@@ -47,14 +47,8 @@ export const legacySrcToToolsImports = [
   },
 ];
 
-export const legacyNonTestToTestImports = [];
-
 export const legacySrcToToolsFiles = [
   ...new Set(legacySrcToToolsImports.map(entry => entry.file)),
-];
-
-export const legacyNonTestToTestFiles = [
-  ...new Set(legacyNonTestToTestImports.map(entry => entry.file)),
 ];
 
 export const publicToolsPackages = [

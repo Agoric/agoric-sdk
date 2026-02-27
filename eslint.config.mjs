@@ -8,7 +8,6 @@ import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
 import { createRequire } from 'module';
 import {
-  legacyNonTestToTestFiles,
   legacySrcToToolsFiles,
 } from './scripts/ci/tools-scope-policy.mjs';
 
@@ -257,13 +256,6 @@ export default [
           ],
         },
       ],
-    },
-  },
-  {
-    files: legacyNonTestToTestFiles,
-
-    rules: {
-      'no-restricted-imports': 'off',
     },
   },
   {
