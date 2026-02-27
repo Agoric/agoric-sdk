@@ -340,7 +340,6 @@ const computeWeightedTargets = (
     remainder -= v;
   }
   if (remainder !== 0n) {
-    // eslint-disable-next-line no-nested-ternary
     weights.sort(([_k1, a], [_k2, b]) => (a < b ? 1 : a > b ? -1 : 0));
     for (const [key, _w] of weights) {
       const a = currentValues[key] || 0n;

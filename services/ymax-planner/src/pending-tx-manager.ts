@@ -481,7 +481,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
-    const { txId, destinationAddress, payloadHash } = tx;
+    const { txId, destinationAddress, payloadHash, sourceAddress } = tx;
     const logPrefix = `[${txId}]`;
 
     if (opts.signal?.aborted) {
@@ -491,6 +491,8 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
 
     // Parse destinationAddress (CAIP-10 router address)
     assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
+    assert(sourceAddress, `${logPrefix} Missing sourceAddress`);
+    assert(payloadHash, `${logPrefix} Missing payloadHash`);
 
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
@@ -502,6 +504,9 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
     const rpcUrl =
       ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
     const rpcClient = makeJsonRpcClient(ctx.fetch, rpcUrl);
+
+    const lcaAddress = parseAccountId(sourceAddress).accountAddress;
+
     const watchArgs = {
       routerAddress: accountAddress as `0x${string}`,
       provider,
@@ -509,6 +514,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
       kvStore: ctx.kvStore,
       txId,
       payloadHash,
+      sourceAddress: lcaAddress,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
 
@@ -585,7 +591,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
       await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
     }
 
-    log(`${logPrefix} ROUTED_GMP tx resolved`);
+    log(`${logPrefix} ROUTED_GMP watch completed`);
   },
 };
 
