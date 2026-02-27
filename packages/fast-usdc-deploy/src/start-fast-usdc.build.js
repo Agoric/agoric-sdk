@@ -7,6 +7,10 @@ import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
 import { configurations } from './utils/deploy-config.js';
 import { toExternalConfig } from './utils/config-marshal.js';
+import {
+  parseOracleArgs,
+  parseArgsOracleOptions,
+} from './utils/oracles-args.js';
 import { getManifestForFastUSDC } from './start-fast-usdc.core.js';
 
 /**
@@ -14,17 +18,18 @@ import { getManifestForFastUSDC } from './start-fast-usdc.core.js';
  * @import {Brand} from '@agoric/ertp';
  * @import {ParseArgsConfig} from 'node:util'
  * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc';
+ * @import {FastUSDCOracleOpts} from './utils/oracles-args.js';
  */
 
 const { keys } = Object;
 
 /** @type {ParseArgsConfig['options']} */
 const options = {
+  ...parseArgsOracleOptions,
   flatFee: { type: 'string', default: '0.01' },
   variableRate: { type: 'string', default: '0.01' },
   contractRate: { type: 'string', default: '0.2' },
   net: { type: 'string' },
-  oracle: { type: 'string', multiple: true },
   feedPolicy: { type: 'string' },
   usdcDenom: {
     type: 'string',
@@ -35,7 +40,6 @@ const options = {
   assetInfo: { type: 'string' },
   noNoble: { type: 'boolean', default: false },
 };
-const oraclesUsage = 'use --oracle name:address ...';
 
 const feedPolicyUsage = 'use --feedPolicy <policy> ...';
 
@@ -49,13 +53,12 @@ const assetInfoUsage =
  *   variableRate: string;
  *   contractRate: string;
  *   net?: string;
- *   oracle?: string[];
  *   usdcDenom: string;
  *   feedPolicy?: string;
  *   chainInfo?: string;
  *   assetInfo?: string;
  *   noNoble: boolean;
- * }} FastUSDCOpts
+ * } & FastUSDCOracleOpts} FastUSDCOpts
  */
 
 const crossVatContext = /** @type {const} */ ({
@@ -103,7 +106,6 @@ export default async (homeP, endowments) => {
   // @ts-expect-error ensured by options
   const {
     values: {
-      oracle: oracleArgs,
       net,
       usdcDenom,
       feedPolicy,
@@ -134,24 +136,6 @@ export default async (homeP, endowments) => {
       // use `fromExternalConfig` here to parse
       throw Error('TODO: support unmarshalling feedPolicy');
     }
-  };
-
-  const parseOracleArgs = () => {
-    if (net) {
-      if (!(net in configurations)) {
-        throw Error(`${net} not in ${keys(configurations)}`);
-      }
-      return configurations[net].oracles;
-    }
-    if (!oracleArgs) throw Error(oraclesUsage);
-    return Object.fromEntries(
-      oracleArgs.map(arg => {
-        const result = arg.match(/(?<name>[^:]+):(?<address>.+)/);
-        if (!(result && result.groups)) throw Error(oraclesUsage);
-        const { name, address } = result.groups;
-        return [name, address];
-      }),
-    );
   };
 
   /** @param {string} numeral */
@@ -190,7 +174,7 @@ export default async (homeP, endowments) => {
 
   /** @type {FastUSDCConfig} */
   const config = harden({
-    oracles: parseOracleArgs(),
+    oracles: parseOracleArgs(scriptArgs),
     terms: {
       usdcDenom,
     },

@@ -1,7 +1,8 @@
 /* eslint-env node */
 /**
  * @import {Command} from 'commander';
- * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {CopyRecord} from '@endo/pass-style';
+ * @import {InvokeEntryMessage, OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
@@ -11,7 +12,7 @@ import {
 } from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
 import { Nat } from '@endo/nat';
-import { InvalidArgumentError } from 'commander';
+import { InvalidArgumentError, Option } from 'commander';
 import { INVITATION_MAKERS_DESC } from '../operator-kit-interface.js';
 import { CctpTxEvidenceShape } from '../type-guards.js';
 import { outputActionAndHint } from './bridge-action.js';
@@ -90,7 +91,17 @@ export const addOperatorCommands = (
       'after',
       '\nPipe the STDOUT to a file such as attest.json, then use the Agoric CLI to broadcast it:\n  agoric wallet send --offer attest.json --from gov1 --keyring-backend="test"',
     )
-    .requiredOption('--previousOfferId <string>', 'Offer id', String)
+    .addOption(
+      new Option('--previousOfferId <string>', 'Offer id')
+        .argParser(String)
+        .conflicts(['invokePower', 'invocationId']),
+    )
+    .addOption(
+      new Option('--invokePower <string>', 'Power name')
+        .argParser(String)
+        .conflicts(['previousOfferId', 'offerId'])
+        .default('fastUsdcOperator'),
+    )
     .requiredOption('--forwardingChannel <string>', 'Channel id', String)
     .requiredOption('--recipientAddress <string>', 'bech32 address', String)
     .requiredOption('--blockHash <0xhex>', 'hex hash', parseHex)
@@ -101,11 +112,24 @@ export const addOperatorCommands = (
     .requiredOption('--forwardingAddress <string>', 'bech32 address', String)
     .requiredOption('--sender <string>', 'Ethereum address initiating', String)
     .requiredOption('--txHash <0xhexo>', 'hex hash', parseHex)
-    .option('--offerId <string>', 'Offer id', String, `operatorAttest-${now()}`)
+    .addOption(
+      new Option('--offerId <string>', 'Offer id')
+        .argParser(String)
+        .conflicts(['invokePower', 'invocationId'])
+        .default(`operatorAttest-${now()}`),
+    )
+    .addOption(
+      new Option('--invocationId <string>', 'Invocation id')
+        .argParser(String)
+        .conflicts(['previousOfferId', 'offerId'])
+        .default(`operatorAttestInvocation-${now()}`),
+    )
     .action(async opts => {
       const {
         offerId,
+        invocationId,
         previousOfferId,
+        invokePower,
         forwardingChannel,
         recipientAddress,
         amount,
@@ -121,16 +145,70 @@ export const addOperatorCommands = (
       });
       mustMatch(evidence, CctpTxEvidenceShape);
 
+      if (previousOfferId) {
+        /** @type {OfferSpec} */
+        const offer = {
+          id: offerId,
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: previousOfferId,
+            invitationMakerName: 'SubmitEvidence',
+            invitationArgs: [evidence],
+          },
+          proposal: {},
+        };
+
+        outputActionAndHint(
+          { method: 'executeOffer', offer },
+          { stderr, stdout },
+        );
+      } else if (invokePower) {
+        /** @type {InvokeEntryMessage} */
+        const message = {
+          id: invocationId,
+          targetName: invokePower,
+          method: 'submitEvidence',
+          args: [/** @type {CopyRecord} */ (evidence)],
+        };
+
+        outputActionAndHint(
+          { method: 'invokeEntry', message },
+          { stderr, stdout },
+        );
+      }
+    });
+
+  operator
+    .command('save-facet')
+    .description(
+      'Save the oracle operator facet in the smart-wallet for direct invocation',
+    )
+    .addHelpText(
+      'after',
+      '\nPipe the STDOUT to a file such as save-facet.json, then use the Agoric CLI to broadcast it:\n  agoric wallet send --offer save-facet.json --from gov1 --keyring-backend="test"',
+    )
+    .requiredOption('--previousOfferId <string>', 'Offer id', String)
+    .option(
+      '--offerId <string>',
+      'Offer id',
+      String,
+      `getOperatorFacet-${now()}`,
+    )
+    .option('--saveAsName <string>', 'Name', String, `fastUsdcOperator`)
+    .action(async opts => {
+      const { offerId, previousOfferId, saveAsName } = opts;
+
       /** @type {OfferSpec} */
       const offer = {
         id: offerId,
         invitationSpec: {
           source: 'continuing',
           previousOffer: previousOfferId,
-          invitationMakerName: 'SubmitEvidence',
-          invitationArgs: [evidence],
+          invitationMakerName: 'GetOperatorFacet',
+          invitationArgs: [],
         },
         proposal: {},
+        saveResult: { name: saveAsName, overwrite: true },
       };
 
       outputActionAndHint(

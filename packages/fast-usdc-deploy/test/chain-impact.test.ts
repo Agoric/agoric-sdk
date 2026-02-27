@@ -19,7 +19,7 @@ import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swing
 import { makeArchiveSnapshot, type SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler } from '@agoric/vats';
-import { keyEQ } from '@endo/patterns';
+import { keyEQ, objectMap } from '@endo/patterns';
 import fs from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -50,16 +50,16 @@ const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
  * Contracts such as Fast USDC may delay cleanup of some state.
  * We only observe heap size after a periodic cleanup and a kernel GC.
  */
-const REAP_PERIOD = 4;
+const REAP_PERIOD = 5; // align with user count
 /**
  * REAP_PERIOD * 2 + 1 might be enough to observe stable results:
  * the 1st might still lazily initialize a few things after setup steps,
  * and the final cleanup for some reason ends up freeing some things.
  *
  * Since running iterations is fairly cheap (the setup is the most expensive),
- * we do about 16 reaps to get plenty of data for visualization.
+ * we do 16 reaps to get plenty of data for visualization.
  */
-const SUFFICIENT_ITERATIONS = REAP_PERIOD * 16 - 1;
+const SUFFICIENT_ITERATIONS = REAP_PERIOD * 16;
 
 test.before(async t => {
   const { env } = globalThis.process;
@@ -70,6 +70,7 @@ test.before(async t => {
     STATS_FILE,
     SNAPSHOT_DIR: snapshotDir,
     SIM_ITERS = `${SUFFICIENT_ITERATIONS}`,
+    ORACLE_KIND = 'offer',
   } = env;
   const harness = makeSwingsetHarness({
     // let the largest step in the simulation fit in a block
@@ -93,7 +94,11 @@ test.before(async t => {
   const writeStats = STATS_FILE
     ? (txt: string) => writeFile(STATS_FILE, txt)
     : undefined;
-  const sim = await makeSimulation(ctx);
+  const sim = await makeSimulation(ctx, {
+    oracleKind: ORACLE_KIND as any,
+    userCount: REAP_PERIOD,
+    lpInterval: 1,
+  });
 
   const { log } = console;
   const doCoreEval = async (specifier: string) => {
@@ -111,6 +116,7 @@ test.before(async t => {
 
   t.context = {
     ...ctx,
+    slogSender: ctx.controller.writeSlogObject, // We want timings
     harness,
     observations: [],
     writeStats,
@@ -169,17 +175,6 @@ test.serial('access relevant kernel stats after bootstrap', async t => {
   observations.push({ id: 'post-boot', ...relevant });
 });
 
-test.serial('prep for contract deployment', async t => {
-  const { sim } = t.context;
-  await t.notThrowsAsync(sim.beforeDeploy(t));
-
-  const { controller, observations, storage } = t.context;
-  observations.push({
-    id: 'deploy-prep',
-    ...getResourceUsageStats(controller, storage.data),
-  });
-});
-
 test.serial('deploy contract', async t => {
   const { sim } = t.context;
   const instance = await sim.deployContract(t.context);
@@ -234,22 +229,30 @@ test.serial('iterate simulation several times', async t => {
       }
     }
     const snapshotted = new Set(await controller.snapshotAllVats());
-    await controller.run(); // clear any reactions
+    // Account for snapshot pseudo-deliveries without triggering reap
+    previousReapPos = controller.reapAllVats(
+      objectMap(previousReapPos, () => Infinity),
+    );
+    await controller.run(); // clear any reactions, should be none
     const { kernelTable } = controller.dump();
     const snapshots = [...snapStore.listAllSnapshots()].filter(
       s => s.inUse && snapshotted.has(s.vatID),
     );
 
+    const computrons = harness.totalComputronCount();
     const observation = {
       id: `post-prune-${id}`,
       time: Date.now(),
       kernelTable,
       snapshots,
+      computrons,
       ...getResourceUsageStats(controller, storage.data),
     };
     observations.push(observation);
     slogSender?.({ type: 'cleanup-finish', id, observation });
     await slogSender?.forceFlush?.();
+
+    harness.resetRunPolicy();
   }
 
   const { simulatedIterations } = t.context;

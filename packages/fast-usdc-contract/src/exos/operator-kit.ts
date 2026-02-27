@@ -6,7 +6,7 @@ import type {
   CctpTxEvidence,
   RiskAssessment,
 } from '@agoric/fast-usdc/src/types.js';
-import type { Invitation } from '@agoric/zoe';
+import type { Invitation, ZCF } from '@agoric/zoe';
 
 const trace: (...args: unknown[]) => void = makeTracer('TxOperator');
 
@@ -31,7 +31,7 @@ interface State {
 
 export const prepareOperatorKit = (
   zone: Zone,
-  staticPowers: { makeInertInvitation: () => Promise<Invitation> },
+  staticPowers: { makeInertInvitation: () => Promise<Invitation>; zcf: ZCF },
 ) =>
   zone.exoClassKit(
     'Operator Kit',
@@ -77,6 +77,13 @@ export const prepareOperatorKit = (
           const { operator } = this.facets;
           operator.submitEvidence(evidence, riskAssessment);
           return staticPowers.makeInertInvitation();
+        },
+        GetOperatorFacet(): Promise<Invitation> {
+          const { operator } = this.facets;
+          return staticPowers.zcf.makeInvitation(seat => {
+            seat.exit();
+            return operator;
+          }, 'get operator facet');
         },
       },
       operator: {
