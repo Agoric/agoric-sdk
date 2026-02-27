@@ -47,7 +47,6 @@ func TestSplitHookedAddress(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			baseAddr, hookData, err := agtypes.SplitHookedAddress(tc.hook)
 			if len(tc.err) > 0 {
@@ -86,9 +85,7 @@ func TestExtractBaseAddress(t *testing.T) {
 	}
 
 	for _, b := range bases {
-		b := b
 		for _, s := range suffixes {
-			s := s
 			t.Run(b.name+" "+s.hookStr, func(t *testing.T) {
 				addrHook, err := agtypes.JoinHookedAddress(b.addr, []byte(s.hookStr))
 				require.NoError(t, err)
@@ -168,15 +165,12 @@ func TestExtractBaseAddressFromPacket(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			ftPacketData := transfertypes.NewFungibleTokenPacketData("denom", "100", tc.addrs[agtypes.RoleSender].addr, tc.addrs[agtypes.RoleReceiver].addr, "my-favourite-memo")
 			packetBz := ftPacketData.GetBytes()
 			packet := agtypes.MakeIBCPacket(packetBz, 1234, "my-port", "my-channel", "their-port", "their-channel", clienttypes.NewHeight(133, 445), 10999)
 
 			for role, addrs := range tc.addrs {
-				addrs := addrs
-				role := role
 
 				t.Run(string(role), func(t *testing.T) {
 					baseAddr, err := agtypes.ExtractBaseAddress(addrs.addr)
