@@ -76,6 +76,11 @@ Rollout mode: **Phased allowlist** (selected).
 - [x] Add central allowlist/policy file for phased rollout.
 - [x] Add ESLint boundary enforcement with temporary allowlist.
 - [x] Add CI import-graph check (`rg`-based).
-- [ ] Add package manifest exposure validation.
-- [ ] Wire checks into PR CI.
-- [ ] Run targeted validation and capture follow-up cleanup items.
+- [x] Add package manifest exposure validation.
+- [x] Wire checks into PR CI.
+- [x] Run targeted validation and capture follow-up cleanup items.
+
+### Validation notes
+- `node ./scripts/ci/check-tools-scope-imports.mjs` passes with current allowlist.
+- `node ./scripts/ci/check-tools-scope-manifests.mjs` passes with current policy list.
+- `yarn run -T eslint ...` is currently blocked in this worktree because Yarn install state is missing.
