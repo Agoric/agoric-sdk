@@ -5,7 +5,6 @@ import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import type { JSONRPCClient } from 'json-rpc-2.0';
 import { PendingTxCode } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
@@ -279,12 +278,10 @@ type WatchGmpLookback = {
   chainId: CaipChainId;
   setTimeout: typeof globalThis.setTimeout;
   signal?: AbortSignal;
-  rpcClient: JSONRPCClient;
 };
 
 export const lookBackGmp = async ({
   provider,
-  rpcClient,
   contractAddress,
   txId,
   expectedSourceAddress,
@@ -365,7 +362,7 @@ export const lookBackGmp = async ({
       };
     }
 
-    // Failure path second (expensive on Arb/Ava: uses eth_getBlockReceipts).
+    // Failure path second: uses trace_filter (only on supported chains).
     // Only reached when the success scan found nothing in the block range.
     const failedTx = await scanFailedTxsInChunks({
       ...sharedOpts,
@@ -378,7 +375,6 @@ export const lookBackGmp = async ({
         );
       },
       onRejectedChunk: updateFailedTxLowerBound,
-      rpcClient,
     });
 
     if (failedTx) {

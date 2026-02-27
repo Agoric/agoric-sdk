@@ -4,7 +4,6 @@ import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import type { JSONRPCClient } from 'json-rpc-2.0';
 import type { MakeAbortController } from '../support.ts';
 import {
   getBlockNumberBeforeRealTime,
@@ -341,7 +340,6 @@ type SmartWalletLookback = {
   chainId: CaipChainId;
   setTimeout: typeof globalThis.setTimeout;
   signal?: AbortSignal;
-  rpcClient: JSONRPCClient;
   subscribeToAddr: `0x${string}`;
   makeAbortController: MakeAbortController;
 };
@@ -358,7 +356,6 @@ export const lookBackSmartWalletTx = async ({
   signal,
   kvStore,
   txId,
-  rpcClient,
   subscribeToAddr,
   makeAbortController,
 }: SmartWalletWatch & SmartWalletLookback): Promise<WatcherResult> => {
@@ -441,7 +438,7 @@ export const lookBackSmartWalletTx = async ({
       };
     }
 
-    // Failure path second (expensive on Arb/Ava: uses eth_getBlockReceipts).
+    // Failure path second: uses trace_filter (only on supported chains).
     // Only reached when the success scan found nothing in the block range.
     const failedTx = await scanFailedTxsInChunks({
       ...sharedOpts,
@@ -462,7 +459,6 @@ export const lookBackSmartWalletTx = async ({
       onRejectedChunk: (_, to) => {
         setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
       },
-      rpcClient,
     });
 
     if (failedTx) {
