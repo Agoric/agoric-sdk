@@ -41,6 +41,26 @@ including [unit
 testing](https://github.com/Agoric/agoric-sdk/wiki/agoric-sdk-unit-testing)
 etc.
 
+## `tools` contract
+
+Repository scope boundaries:
+
+- `scripts/`: executable entrypoints only
+- `src/`: production/runtime library code
+- `tools/`: cross-package support utilities (test harnesses, mocks, typed helper interfaces)
+- `test/`: local tests only; not imported by other packages
+
+Direction rules:
+
+- `src/**` must not import `**/tools/**` (except temporary allowlisted legacy imports during migration)
+- `tools/**` may import `src/**`, but not vice versa
+- Non-test files must not import `**/test/**` from local or other packages
+
+Publishing rules:
+
+- Packages that intentionally expose `tools` should use explicit subpath exports (for example `\"./tools/*\": \"./tools/*\"`)
+- Packages that do not expose `tools` should not include `tools/` in published files
+
 ## Landing pull requests
 
 The agreement so far is for every change to have a [conventional commit
