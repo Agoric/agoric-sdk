@@ -44,7 +44,7 @@ machines:
         meta:
           row: Planner Service
           observedFrom:
-             - services/ymax-planner log messages (planRebalanceFlow/planDepositToAllocations)
+            - services/ymax-planner log messages (planRebalanceFlow/planDepositToAllocations)
           invariants:
             - deposit/withdraw amounts reconcile with portfolio status and balances
         on:
@@ -275,7 +275,7 @@ machines:
           observedFrom:
             - Agoric tx history showing MsgTransfer with packet sequence
             - Relayer logs (Hermes/rly) showing SendPacket event
-          observabilityTodo: "TODO: Add relayer metrics endpoint to monitor packet delivery latency"
+          observabilityTodo: 'TODO: Add relayer metrics endpoint to monitor packet delivery latency'
           protocol: IBC
         on:
           packet.received:
@@ -290,7 +290,7 @@ machines:
           row: Noble Chain
           observedFrom:
             - Noble tx history showing RecvPacket
-          observabilityTodo: "TODO: Index Noble RecvPacket events for correlation"
+          observabilityTodo: 'TODO: Index Noble RecvPacket events for correlation'
           protocol: IBC
         on:
           ack.received:
@@ -351,7 +351,7 @@ machines:
           row: Noble Chain
           observedFrom:
             - Noble tx history for ICA controller
-          observabilityTodo: "TODO: Add ICA tx indexing for Noble chain"
+          observabilityTodo: 'TODO: Add ICA tx indexing for Noble chain'
           protocol: IBC
         on:
           packet.sent:
@@ -460,7 +460,7 @@ machines:
           row: Circle Attestation
           observedFrom:
             - Circle Attestation API (iris-api.circle.com/v1/attestations)
-          observabilityTodo: "TODO: Poll Circle attestation API and publish status"
+          observabilityTodo: 'TODO: Poll Circle attestation API and publish status'
           protocol: Circle CCTP
           notes: Circle returns 404 until attestation is published; attested messages do not expire.
         on:
@@ -476,7 +476,7 @@ machines:
           row: EVM Chain
           observedFrom:
             - EVM mempool or pending transactions
-          observabilityTodo: "TODO: Monitor EVM chain for receiveMessage tx"
+          observabilityTodo: 'TODO: Monitor EVM chain for receiveMessage tx'
           protocol: Circle CCTP
         on:
           mint.confirmed:
@@ -529,7 +529,7 @@ machines:
           row: Axelar Network / IBC Relayer
           observedFrom:
             - Axelar GMP explorer (axelarscan.io)
-          observabilityTodo: "TODO: Poll Axelar API for GMP message status"
+          observabilityTodo: 'TODO: Poll Axelar API for GMP message status'
           protocol: Axelar GMP over IBC
         on:
           gmp.executed:
@@ -579,7 +579,7 @@ machines:
           row: Noble Chain
           observedFrom:
             - Noble tx history showing receiveMessage
-          observabilityTodo: "TODO: Monitor Noble for CCTP receiveMessage events"
+          observabilityTodo: 'TODO: Monitor Noble for CCTP receiveMessage events'
           protocol: Circle CCTP
         on:
           mint.confirmed:
@@ -697,7 +697,7 @@ machines:
           row: EVM Chain
           observedFrom:
             - EVM tx history for smart wallet address
-          observabilityTodo: "TODO: Index EVM events for protocol supply operations"
+          observabilityTodo: 'TODO: Index EVM events for protocol supply operations'
           protocol: Aave/Compound/Beefy
         on:
           calls.executed:
@@ -863,7 +863,7 @@ machines:
           row: Noble Chain
           observedFrom:
             - Noble tx history showing MsgSwap
-          observabilityTodo: "TODO: Index Noble MsgSwap events for USDN tracking"
+          observabilityTodo: 'TODO: Index Noble MsgSwap events for USDN tracking'
           protocol: Noble Dollar
         on:
           tx.confirmed:

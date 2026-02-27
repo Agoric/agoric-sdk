@@ -2,20 +2,33 @@
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | null | undefined;
-export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
-export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+export type Exact<T extends { [key: string]: unknown }> = {
+  [K in keyof T]: T[K];
+};
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
+  [SubKey in K]?: Maybe<T[SubKey]>;
+};
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
+  [SubKey in K]: Maybe<T[SubKey]>;
+};
+export type MakeEmpty<
+  T extends { [key: string]: unknown },
+  K extends keyof T,
+> = { [_ in K]?: never };
+export type Incremental<T> =
+  | T
+  | {
+      [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never;
+    };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string; }
-  String: { input: string; output: string; }
-  Boolean: { input: boolean; output: boolean; }
-  Int: { input: number; output: number; }
-  Float: { input: number; output: number; }
+  ID: { input: string; output: string };
+  String: { input: string; output: string };
+  Boolean: { input: boolean; output: boolean };
+  Int: { input: number; output: number };
+  Float: { input: number; output: number };
   /** The JSON scalar type for method information */
-  JSON: { input: any; output: any; }
+  JSON: { input: any; output: any };
 };
 
 export type ApyResult = {
@@ -130,21 +143,17 @@ export type Query = {
   pendleImpliedApy: Array<PendleImpliedApyCalculation>;
 };
 
-
 export type QueryGetProtocolPoolDetailsArgs = {
   input: Array<ProtocolPoolChainInput>;
 };
-
 
 export type QueryGetProtocolPoolPriceArgs = {
   input: Array<ProtocolPoolPriceInput>;
 };
 
-
 export type QueryGetProtocolPoolUserBalanceArgs = {
   input: Array<ProtocolPoolUserBalanceInput>;
 };
-
 
 export type QueryPendleImpliedApyArgs = {
   input: Array<PendlePoolUserImpliedApyInput>;
@@ -160,14 +169,25 @@ export type GetBalancesQueryVariables = Exact<{
   positions: Array<ProtocolPoolUserBalanceInput> | ProtocolPoolUserBalanceInput;
 }>;
 
-
-export type GetBalancesQuery = { __typename?: 'Query', balances: Array<{ __typename?: 'ProtocolPoolUserBalanceResult', chain: string, protocol?: string | null, pool?: string | null, balance?: any | null, error?: string | null }> };
+export type GetBalancesQuery = {
+  __typename?: 'Query';
+  balances: Array<{
+    __typename?: 'ProtocolPoolUserBalanceResult';
+    chain: string;
+    protocol?: string | null;
+    pool?: string | null;
+    balance?: any | null;
+    error?: string | null;
+  }>;
+};
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
 {
-  __apiType?: NonNullable<DocumentTypeDecoration<TResult, TVariables>['__apiType']>;
+  __apiType?: NonNullable<
+    DocumentTypeDecoration<TResult, TVariables>['__apiType']
+  >;
   private value: string;
   public __meta__?: Record<string, any> | undefined;
 
@@ -182,7 +202,8 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
-export const GetBalancesDocument = new TypedDocumentString(`query getBalances(\$positions: [ProtocolPoolUserBalanceInput!]!) {
+export const GetBalancesDocument =
+  new TypedDocumentString(`query getBalances(\$positions: [ProtocolPoolUserBalanceInput!]!) {
   balances: getProtocolPoolUserBalance(input: \$positions) {
     chain
     protocol
@@ -190,4 +211,7 @@ export const GetBalancesDocument = new TypedDocumentString(`query getBalances(\$
     balance
     error
   }
-}`) as unknown as TypedDocumentString<GetBalancesQuery, GetBalancesQueryVariables>;
+}`) as unknown as TypedDocumentString<
+    GetBalancesQuery,
+    GetBalancesQueryVariables
+  >;

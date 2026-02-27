@@ -1,5 +1,6 @@
 # XXX omit backticks UNTIL https://github.com/dotansimha/graphql-code-generator/issues/10480 is fixed
-"""Get the balances for an arbitrary number of deployed pool positions.
+"""
+Get the balances for an arbitrary number of deployed pool positions.
 
 Each position is identified by a blockchain (for EVM chains, a
 '0x<upaddedLowercaseHexDigits>' representation of their EIP-155 CHAIN_ID [cf.

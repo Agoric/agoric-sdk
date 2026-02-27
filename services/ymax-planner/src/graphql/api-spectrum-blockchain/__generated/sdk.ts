@@ -2,14 +2,24 @@ import type { GraphQLClient, RequestOptions } from 'graphql-request';
 import * as Operations from './graphql.ts';
 type GraphQLClientRequestHeaders = RequestOptions['requestHeaders'];
 
+export type SdkFunctionWrapper = <T>(
+  action: (requestHeaders?: Record<string, string>) => Promise<T>,
+  operationName: string,
+  operationType?: string,
+  variables?: any,
+) => Promise<T>;
 
+const defaultWrapper: SdkFunctionWrapper = (
+  action,
+  _operationName,
+  _operationType,
+  _variables,
+) => action();
 
-export type SdkFunctionWrapper = <T>(action: (requestHeaders?:Record<string, string>) => Promise<T>, operationName: string, operationType?: string, variables?: any) => Promise<T>;
-
-
-const defaultWrapper: SdkFunctionWrapper = (action, _operationName, _operationType, _variables) => action();
-
-export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = defaultWrapper) {
+export function getSdk(
+  client: GraphQLClient,
+  withWrapper: SdkFunctionWrapper = defaultWrapper,
+) {
   return {
     /**
      * Get the balances for an arbitrary number of accounts.
@@ -23,9 +33,24 @@ export function getSdk(client: GraphQLClient, withWrapper: SdkFunctionWrapper = 
      * Note that the output 'balance' is a decimal string representing a floating-point
      * token balance (e.g., each unit of which is 1e6 micro-units).
      */
-    getBalances(variables: Operations.GetBalancesQueryVariables, requestHeaders?: GraphQLClientRequestHeaders, signal?: RequestInit['signal']): Promise<Operations.GetBalancesQuery> {
-      return withWrapper((wrappedRequestHeaders) => client.request<Operations.GetBalancesQuery>({ document: Operations.GetBalancesDocument, variables, requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders }, signal }), 'getBalances', 'query', variables);
-    }
+    getBalances(
+      variables: Operations.GetBalancesQueryVariables,
+      requestHeaders?: GraphQLClientRequestHeaders,
+      signal?: RequestInit['signal'],
+    ): Promise<Operations.GetBalancesQuery> {
+      return withWrapper(
+        wrappedRequestHeaders =>
+          client.request<Operations.GetBalancesQuery>({
+            document: Operations.GetBalancesDocument,
+            variables,
+            requestHeaders: { ...requestHeaders, ...wrappedRequestHeaders },
+            signal,
+          }),
+        'getBalances',
+        'query',
+        variables,
+      );
+    },
   };
 }
 export type Sdk = ReturnType<typeof getSdk>;

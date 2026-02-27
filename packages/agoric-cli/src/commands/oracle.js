@@ -291,7 +291,11 @@ export const makeOracleCommand = (
          *  keys: string[],
          *  price: number,
          * }}
-         */ { pair, keys, price },
+         */ {
+          pair,
+          keys,
+          price,
+        },
       ) => {
         const {
           readLatestHead,

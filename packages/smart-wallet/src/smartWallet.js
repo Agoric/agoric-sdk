@@ -326,14 +326,11 @@ export const prepareSmartWallet = (baggage, shared, setTestJig) => {
 
   let withMyStore = true;
 
-  setTestJig?.(
-    () =>
-      /** @type {SmartWalletTestJig} */ ({
-        setWithMyStore: value => {
-          withMyStore = value;
-        },
-      }),
-  );
+  setTestJig?.(() => /** @type {SmartWalletTestJig} */ ({
+    setWithMyStore: value => {
+      withMyStore = value;
+    },
+  }));
 
   const vowTools = prepareVowTools(zone.subZone('vow'));
 

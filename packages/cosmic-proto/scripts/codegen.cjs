@@ -234,25 +234,20 @@ builder
     fixTypeImport('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    const repoRoot = path.join(__dirname, '..', '..', '..');
-    const srcFromRoot = path.relative(
-      repoRoot,
-      path.join(__dirname, '..', 'src'),
-    );
-    const codegenFromRoot = path.join(srcFromRoot, 'codegen');
-    const prettierResult = spawnSync(
+    // top-level to get the root oxfmt config
+    const result = spawnSync(
       'yarn',
-      ['run', '-T', 'prettier', '--write', codegenFromRoot],
+      ['run', '--top-level', 'oxfmt', 'src/codegen'],
       {
-        cwd: repoRoot,
+        cwd: path.join(__dirname, '..'),
         stdio: 'inherit',
       },
     );
-    if (prettierResult.error) {
-      throw prettierResult.error;
+    if (result.error) {
+      throw result.error;
     }
-    assert.equal(prettierResult.status, 0);
-    console.log('💅 code formatted by Prettier');
+    assert.equal(result.status, 0);
+    console.log('💅 code formatted');
 
     console.log('ℹ️ `yarn build && yarn test` to test it.');
   })

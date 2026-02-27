@@ -65,13 +65,12 @@ export const prepareICQConnectionKit = (zone, { watch, asVow }) =>
       }),
     },
     /** @param {Port} port */
-    port =>
-      /** @type {ICQConnectionKitState} */ ({
-        port,
-        connection: undefined,
-        remoteAddress: undefined,
-        localAddress: undefined,
-      }),
+    port => /** @type {ICQConnectionKitState} */ ({
+      port,
+      connection: undefined,
+      remoteAddress: undefined,
+      localAddress: undefined,
+    }),
     {
       connection: {
         getLocalAddress() {

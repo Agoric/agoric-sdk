@@ -32,8 +32,8 @@ const getConversionPlan = value => {
       importPath,
       importedType,
       rawSuffix = '',
-      ,
       // typedefName (unused),
+      ,
       trailing = '',
     ] = match;
 

@@ -20,115 +20,192 @@ type BitcoinBlockDetails {
   weight: String
 }
 
-""" The block details, can be an EVM, Solana, Tendermint or Bitcoin block 
 """
-union BlockDetails = BitcoinBlockDetails | EVMBlockDetails | SolanaBlockDetails | TendermintBlockDetails
+The block details, can be an EVM, Solana, Tendermint or Bitcoin block
+"""
+union BlockDetails =
+  | BitcoinBlockDetails
+  | EVMBlockDetails
+  | SolanaBlockDetails
+  | TendermintBlockDetails
 
-"""The response when getting an address' balance of a token on a chain"""
+"""
+The response when getting an address' balance of a token on a chain
+"""
 type ChainAddressTokenBalance {
-  """ The address """
+  """
+  The address
+  """
   address: String
 
-  """ The balance """
+  """
+  The balance
+  """
   balance: String
 
-  """ The chain name """
+  """
+  The chain name
+  """
   chain: String!
 
-  """ An error string """
+  """
+  An error string
+  """
   error: String
 
-  """ The token, this can be native | address | denom """
+  """
+  The token, this can be native | address | denom
+  """
   token: String
 }
 
-"""The input to get a balance of a user for a token on a chain"""
+"""
+The input to get a balance of a user for a token on a chain
+"""
 input ChainAddressTokenInput {
-  """ The address to query """
+  """
+  The address to query
+  """
   address: String!
 
-  """ The chain name """
+  """
+  The chain name
+  """
   chain: String!
 
-  """ The token to query, this can be native | address | denom """
+  """
+  The token to query, this can be native | address | denom
+  """
   token: String!
 }
 
-"""The response when getting a block of a chain"""
+"""
+The response when getting a block of a chain
+"""
 type ChainBlockDetails {
-  """ The block details """
+  """
+  The block details
+  """
   block: BlockDetails
 
-  """ The chain name """
+  """
+  The chain name
+  """
   chain: String!
 
-  """ Error message """
+  """
+  Error message
+  """
   error: String
 
-  """ The hash of the block """
+  """
+  The hash of the block
+  """
   hash: String
 
-  """ The block number """
+  """
+  The block number
+  """
   height: String
 }
 
-"""The input to get a block by number/height for a chain"""
+"""
+The input to get a block by number/height for a chain
+"""
 input ChainBlockNumberInput {
-  """ The block number or height """
+  """
+  The block number or height
+  """
   block: String!
 
-  """ The chain name """
+  """
+  The chain name
+  """
   chain: String!
 }
 
-"""The input to get a block by hash for a chain"""
+"""
+The input to get a block by hash for a chain
+"""
 input ChainHashInput {
-  """ The chain name """
+  """
+  The chain name
+  """
   chain: String!
 
-  """ The hash of the block """
+  """
+  The hash of the block
+  """
   hash: String!
 }
 
-"""The response when getting the latest block of a chain"""
+"""
+The response when getting the latest block of a chain
+"""
 type ChainHeight {
-  """ The chain name """
+  """
+  The chain name
+  """
   chain: String!
 
-  """ Error message """
+  """
+  Error message
+  """
   error: String
 
-  """ The latest block number / height """
+  """
+  The latest block number / height
+  """
   height: String
 }
 
-"""The response when getting method information for a chain"""
+"""
+The response when getting method information for a chain
+"""
 type ChainMethodInfo {
-  """ The chain ID """
+  """
+  The chain ID
+  """
   chainId: String!
 
-  """ The available methods for this chain """
+  """
+  The available methods for this chain
+  """
   methods: [String!]!
 
-  """ The chain name """
+  """
+  The chain name
+  """
   name: String!
 
-  """ The chain type (EVM, Solana, Bitcoin, Tendermint) """
+  """
+  The chain type (EVM, Solana, Bitcoin, Tendermint)
+  """
   type: String!
 }
 
-"""The response when getting a transaction of a chain"""
+"""
+The response when getting a transaction of a chain
+"""
 type ChainTransactionDetails {
-  """ The chain name """
+  """
+  The chain name
+  """
   chain: String!
 
-  """ Error message """
+  """
+  Error message
+  """
   error: String
 
-  """ The block number """
+  """
+  The block number
+  """
   hash: String
 
-  """ The transaction details """
+  """
+  The transaction details
+  """
   transaction: TransactionDetails
 }
 
@@ -218,13 +295,21 @@ type LoadedAddresses {
 }
 
 type Query {
-  """Get the balance of an address for a token on different chains"""
-  getAddressBalance(input: [ChainAddressTokenInput!]!): [ChainAddressTokenBalance!]!
+  """
+  Get the balance of an address for a token on different chains
+  """
+  getAddressBalance(
+    input: [ChainAddressTokenInput!]!
+  ): [ChainAddressTokenBalance!]!
 
-  """Get the block by hash on different chains"""
+  """
+  Get the block by hash on different chains
+  """
   getBlockByHash(input: [ChainHashInput!]!): [ChainBlockDetails!]!
 
-  """Get the block by number/height on different chains"""
+  """
+  Get the block by number/height on different chains
+  """
   getBlockByNumber(input: [ChainBlockNumberInput!]!): [ChainBlockDetails!]!
 
   """
@@ -232,13 +317,19 @@ type Query {
   """
   getBlockFee(chains: [String!]!): [EVMBlockFeeInfo!]!
 
-  """Get the latest block heights on different chains"""
+  """
+  Get the latest block heights on different chains
+  """
   getBlockHeights(chains: [String!]!): [ChainHeight!]!
 
-  """Get all available methods for each chain"""
+  """
+  Get all available methods for each chain
+  """
   getMethodInfo: JSON!
 
-  """Get the transaction by hash on different chains"""
+  """
+  Get the transaction by hash on different chains
+  """
   getTransactionByHash(input: [ChainHashInput!]!): [ChainTransactionDetails!]!
 }
 
@@ -424,5 +515,10 @@ type TendermintVersion {
   block: String
 }
 
-""" The transaction details, can be an EVM, Solana or Cosmos transaction """
-union TransactionDetails = EVMTransactionDetails | SolanaTransactionDetails | TendermintTransactionDetails
+"""
+The transaction details, can be an EVM, Solana or Cosmos transaction
+"""
+union TransactionDetails =
+  | EVMTransactionDetails
+  | SolanaTransactionDetails
+  | TendermintTransactionDetails

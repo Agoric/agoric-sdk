@@ -2,19 +2,32 @@
 import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = T | null | undefined;
-export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-export type MakeEmpty<T extends { [key: string]: unknown }, K extends keyof T> = { [_ in K]?: never };
-export type Incremental<T> = T | { [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never };
+export type Exact<T extends { [key: string]: unknown }> = {
+  [K in keyof T]: T[K];
+};
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
+  [SubKey in K]?: Maybe<T[SubKey]>;
+};
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
+  [SubKey in K]: Maybe<T[SubKey]>;
+};
+export type MakeEmpty<
+  T extends { [key: string]: unknown },
+  K extends keyof T,
+> = { [_ in K]?: never };
+export type Incremental<T> =
+  | T
+  | {
+      [P in keyof T]?: P extends ' $fragmentName' | '__typename' ? T[P] : never;
+    };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: { input: string; output: string; }
-  String: { input: string; output: string; }
-  Boolean: { input: boolean; output: boolean; }
-  Int: { input: number; output: number; }
-  Float: { input: number; output: number; }
-  JSON: { input: any; output: any; }
+  ID: { input: string; output: string };
+  String: { input: string; output: string };
+  Boolean: { input: boolean; output: boolean };
+  Int: { input: number; output: number };
+  Float: { input: number; output: number };
+  JSON: { input: any; output: any };
 };
 
 export type BitcoinBlockDetails = {
@@ -41,7 +54,11 @@ export type BitcoinBlockDetails = {
 };
 
 /**  The block details, can be an EVM, Solana, Tendermint or Bitcoin block  */
-export type BlockDetails = BitcoinBlockDetails | EvmBlockDetails | SolanaBlockDetails | TendermintBlockDetails;
+export type BlockDetails =
+  | BitcoinBlockDetails
+  | EvmBlockDetails
+  | SolanaBlockDetails
+  | TendermintBlockDetails;
 
 /** The response when getting an address' balance of a token on a chain */
 export type ChainAddressTokenBalance = {
@@ -244,31 +261,25 @@ export type Query = {
   getTransactionByHash: Array<ChainTransactionDetails>;
 };
 
-
 export type QueryGetAddressBalanceArgs = {
   input: Array<ChainAddressTokenInput>;
 };
-
 
 export type QueryGetBlockByHashArgs = {
   input: Array<ChainHashInput>;
 };
 
-
 export type QueryGetBlockByNumberArgs = {
   input: Array<ChainBlockNumberInput>;
 };
-
 
 export type QueryGetBlockFeeArgs = {
   chains: Array<Scalars['String']['input']>;
 };
 
-
 export type QueryGetBlockHeightsArgs = {
   chains: Array<Scalars['String']['input']>;
 };
-
 
 export type QueryGetTransactionByHashArgs = {
   input: Array<ChainHashInput>;
@@ -485,20 +496,34 @@ export type TendermintVersion = {
 };
 
 /**  The transaction details, can be an EVM, Solana or Cosmos transaction  */
-export type TransactionDetails = EvmTransactionDetails | SolanaTransactionDetails | TendermintTransactionDetails;
+export type TransactionDetails =
+  | EvmTransactionDetails
+  | SolanaTransactionDetails
+  | TendermintTransactionDetails;
 
 export type GetBalancesQueryVariables = Exact<{
   accounts: Array<ChainAddressTokenInput> | ChainAddressTokenInput;
 }>;
 
-
-export type GetBalancesQuery = { __typename?: 'Query', balances: Array<{ __typename?: 'ChainAddressTokenBalance', chain: string, address?: string | null, token?: string | null, balance?: string | null, error?: string | null }> };
+export type GetBalancesQuery = {
+  __typename?: 'Query';
+  balances: Array<{
+    __typename?: 'ChainAddressTokenBalance';
+    chain: string;
+    address?: string | null;
+    token?: string | null;
+    balance?: string | null;
+    error?: string | null;
+  }>;
+};
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
 {
-  __apiType?: NonNullable<DocumentTypeDecoration<TResult, TVariables>['__apiType']>;
+  __apiType?: NonNullable<
+    DocumentTypeDecoration<TResult, TVariables>['__apiType']
+  >;
   private value: string;
   public __meta__?: Record<string, any> | undefined;
 
@@ -513,7 +538,8 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
-export const GetBalancesDocument = new TypedDocumentString(`query getBalances(\$accounts: [ChainAddressTokenInput!]!) {
+export const GetBalancesDocument =
+  new TypedDocumentString(`query getBalances(\$accounts: [ChainAddressTokenInput!]!) {
   balances: getAddressBalance(input: \$accounts) {
     chain
     address
@@ -521,4 +547,7 @@ export const GetBalancesDocument = new TypedDocumentString(`query getBalances(\$
     balance
     error
   }
-}`) as unknown as TypedDocumentString<GetBalancesQuery, GetBalancesQueryVariables>;
+}`) as unknown as TypedDocumentString<
+    GetBalancesQuery,
+    GetBalancesQueryVariables
+  >;

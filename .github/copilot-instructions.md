@@ -12,7 +12,7 @@
 ## Code Style Guidelines
 - Use ESM imports/exports (`import/export` not `require()`)
 - TypeScript: strict null checks, no unchecked side effects
-- Follow Prettier formatting (enforced by linting)
+- Follow oxfmt formatting (enforced by linting)
 - Use JSDocs for function documentation
 - Async functions: handle promises properly, no floating promises
 - Avoid deprecated terminology (see eslint.config.mjs)

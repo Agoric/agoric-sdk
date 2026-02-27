@@ -32,9 +32,9 @@ This updates all yarn.lock files across the repository. This is critical because
 
 **Always run this script even if you think only local changes were made.**
 
-### 3. Format Code with Prettier
+### 3. Format Code with oxfmt
 
-Always run Prettier to ensure code style compliance:
+Always run oxfmt to ensure code style compliance:
 
 ```bash
 # From repository root
@@ -44,7 +44,7 @@ yarn format
 Or format specific files:
 
 ```bash
-yarn run -T prettier --write path/to/file.js
+yarn run -T oxfmt path/to/file.js
 ```
 
 ### 4. Run Linting
