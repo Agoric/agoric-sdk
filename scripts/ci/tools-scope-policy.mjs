@@ -47,12 +47,7 @@ export const legacySrcToToolsImports = [
   },
 ];
 
-export const legacyNonTestToTestImports = [
-  {
-    file: 'packages/swingset-liveslots/tools/vo-test-harness.js',
-    specifier: '../test/liveslots-helpers.js',
-  },
-];
+export const legacyNonTestToTestImports = [];
 
 export const legacySrcToToolsFiles = [
   ...new Set(legacySrcToToolsImports.map(entry => entry.file)),
