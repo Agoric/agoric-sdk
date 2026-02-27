@@ -357,7 +357,6 @@ export const main = async (
     now,
     gasEstimator,
     usdcTokensByChain,
-    erc4626VaultAddresses,
     chainNameToChainIdMap: CaipChainIds[clusterName],
   };
 

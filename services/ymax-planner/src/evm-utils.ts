@@ -3,7 +3,10 @@ import type { WebSocketProvider } from 'ethers';
 import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { SupportedChain } from '@agoric/portfolio-api';
-import { isBeefyInstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
+import {
+  isBeefyInstrumentId,
+  isERC4626InstrumentId,
+} from '@agoric/portfolio-api/src/type-guards.js';
 import { Fail, q } from '@endo/errors';
 import type { EvmChain } from './pending-tx-manager.ts';
 import type { EvmProviders } from './support.ts';
@@ -20,10 +23,23 @@ const ERC20_BALANCE_ABI = [
 
 // https://github.com/beefyfinance/beefy-contracts/blob/master/contracts/BIFI/vaults/BeefyVaultV7.sol
 const BEEFY_VAULT_ABI = [
+  ...ERC20_BALANCE_ABI,
   {
     name: 'getPricePerFullShare',
     type: 'function',
     inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+] as const;
+
+// https://ethereum.org/developers/docs/standards/tokens/erc-4626#methods
+const ERC4626_VAULT_ABI = [
+  ...ERC20_BALANCE_ABI,
+  {
+    name: 'convertToAssets',
+    type: 'function',
+    inputs: [{ name: 'shares', type: 'uint256' }],
     outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'view',
   },
@@ -50,42 +66,51 @@ export const getEVMPositionBalance = async (
 };
 
 /**
- * Fetch the price per share for a Beefy vault (scaled by 1e18).
+ * Fetch the underlying asset balance for a Beefy vault position.
+ * Gets mooToken shares via `balanceOf`, then scales by
+ * `getPricePerFullShare()` (1e18 precision) to get the underlying value.
  */
-const getBeefyPricePerShare = async (
+const getBeefyVaultBalance = async (
   vaultAddress: string,
+  userAddress: string,
   provider: WebSocketProvider,
 ): Promise<bigint> => {
   const vault = new Contract(vaultAddress, BEEFY_VAULT_ABI, provider);
   await null;
   try {
+    const shares: bigint = await vault.balanceOf(userAddress);
+    if (shares === 0n) {
+      return 0n;
+    }
     const pricePerFullShare: bigint = await vault.getPricePerFullShare();
-    return pricePerFullShare;
+    return (shares * pricePerFullShare) / BEEFY_VAULT_DECIMALS;
   } catch (cause) {
-    throw Error(`Failed to fetch Beefy price per share`, { cause });
+    throw Error(`Failed to fetch Beefy vault balance`, { cause });
   }
 };
 
 /**
- * Get the price-per-share scaling factor for a position.
- * Beefy vaults return mooToken shares, so we fetch `getPricePerFullShare()`
- * and divide by 1e18. For other protocols (Aave, Compound), `balanceOf`
- * already represents the underlying asset balance, so price per share is 1.
+ * Fetch the underlying asset balance for an ERC-4626 vault position.
+ * Gets vault shares via `balanceOf`, then converts to underlying assets
+ * using the vault's `convertToAssets()` method.
  */
-const getPricePerShare = async (
-  place: PoolKey,
-  tokenAddress: string,
+const getERC4626VaultBalance = async (
+  vaultAddress: string,
+  userAddress: string,
   provider: WebSocketProvider,
-): Promise<{ numerator: bigint; denominator: bigint }> => {
+): Promise<bigint> => {
+  const vault = new Contract(vaultAddress, ERC4626_VAULT_ABI, provider);
   await null;
-  if (isBeefyInstrumentId(place)) {
-    const pricePerFullShare = await getBeefyPricePerShare(
-      tokenAddress,
-      provider,
-    );
-    return { numerator: pricePerFullShare, denominator: BEEFY_VAULT_DECIMALS };
+  try {
+    const shares: bigint = await vault.balanceOf(userAddress);
+    if (shares === 0n) {
+      return 0n;
+    }
+    const underlying: bigint = await vault.convertToAssets(shares);
+    return underlying;
+  } catch (cause) {
+    throw Error(`Failed to fetch ERC-4626 vault balance`, { cause });
   }
-  return { numerator: 1n, denominator: 1n };
 };
 
 type PositionBalanceResult = {
@@ -108,11 +133,12 @@ export type EVMPositionBalancePowers = {
 };
 
 /**
- * Fetch EVM position balances by querying receipt token contracts directly,
- * as a replacement for spectrumPools.getBalances.
+ * Fetch EVM position balances by querying receipt token contracts directly.
  *
- * Gets the raw token balance via `balanceOf`, then scales by the position's
- * price per share (Beefy uses `getPricePerFullShare()`; others default to 1).
+ * Dispatches to protocol-specific functions:
+ * - Beefy: `balanceOf` + `getPricePerFullShare()` scaling
+ * - ERC4626 (Morpho, etc.): `balanceOf` + `convertToAssets()`
+ * - Default (Aave, Compound): simple `balanceOf` (already underlying)
  */
 export const getEVMPositionBalances = async (
   queries: EVMPositionQuery[],
@@ -135,17 +161,22 @@ export const getEVMPositionBalances = async (
           throw Error(`No provider found for chain: ${chainId}`);
         }
 
-        const shares = await getEVMPositionBalance(
-          tokenAddress,
-          address,
-          provider,
-        );
-        const { numerator, denominator } = await getPricePerShare(
-          place,
-          tokenAddress,
-          provider,
-        );
-        const balance = (shares * numerator) / denominator;
+        let balance: bigint;
+        if (isBeefyInstrumentId(place)) {
+          balance = await getBeefyVaultBalance(tokenAddress, address, provider);
+        } else if (isERC4626InstrumentId(place)) {
+          balance = await getERC4626VaultBalance(
+            tokenAddress,
+            address,
+            provider,
+          );
+        } else {
+          balance = await getEVMPositionBalance(
+            tokenAddress,
+            address,
+            provider,
+          );
+        }
 
         return { place, balance } as PositionBalanceResult;
       } catch (err) {

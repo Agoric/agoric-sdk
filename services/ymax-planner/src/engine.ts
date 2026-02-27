@@ -27,7 +27,6 @@ import {
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
-  ERC4626InstrumentId,
   FlowDetail,
   PoolKey as InstrumentId,
   StatusFor,
@@ -57,7 +56,6 @@ import type {
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
-import type { EvmAddress } from '@agoric/fast-usdc';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -188,7 +186,6 @@ export type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  erc4626VaultAddresses: Partial<Record<ERC4626InstrumentId, EvmAddress>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
 
@@ -204,7 +201,6 @@ export type ProcessPortfolioPowers = Pick<
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
-  | 'erc4626VaultAddresses'
   | 'chainNameToChainIdMap'
 > & {
   isDryRun?: boolean;
@@ -259,7 +255,6 @@ export const processPortfolioEvents = async (
     positionTokenAddresses,
     usdcTokensByChain,
     vstoragePathPrefixes,
-    erc4626VaultAddresses,
     evmProviders,
     chainNameToChainIdMap,
 
@@ -287,7 +282,6 @@ export const processPortfolioEvents = async (
     spectrumChainIds,
     positionTokenAddresses,
     usdcTokensByChain,
-    erc4626VaultAddresses,
     evmProviders,
     chainNameToChainIdMap,
   };
