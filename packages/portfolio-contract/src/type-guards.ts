@@ -138,6 +138,8 @@ export const BeefyPoolPlaces = {
   },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 
+export type BeefyInstrumentId = keyof typeof BeefyPoolPlaces;
+
 export const ERC4626PoolPlaces = {
   ERC4626_vaultU2_Ethereum: {
     protocol: 'ERC4626',
