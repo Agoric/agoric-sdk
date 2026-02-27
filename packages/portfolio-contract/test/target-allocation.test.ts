@@ -131,9 +131,16 @@ test('multiple portfolios have independent allocations', async t => {
 
 test('creatorFacet.createVault publishes target allocation', async t => {
   const { common, started } = await setupTrader(t);
-  const targetAllocation = harden({ Aave_Base: 6000n, Compound_Base: 4000n });
+  const createVaultArgs = harden({
+    allocation: {
+      Aave_Base: 6000n,
+      Compound_Base: 4000n,
+    },
+    fee: '0.5bps',
+    cadence: 'P1H',
+  });
 
-  const result = await E(started.creatorFacet).createVault(targetAllocation);
+  const result = await E(started.creatorFacet).createVault(createVaultArgs);
   t.like(result, {
     portfolioId: 0,
     storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
@@ -145,18 +152,25 @@ test('creatorFacet.createVault publishes target allocation', async t => {
   const portfolioStatus = common.bootstrap.storage
     .getDeserialized(result.storagePath)
     .at(-1) as { targetAllocation?: Record<string, bigint> };
-  t.deepEqual(portfolioStatus.targetAllocation, targetAllocation);
+  t.deepEqual(portfolioStatus.targetAllocation, {
+    Aave_Base: 6000n,
+    Compound_Base: 4000n,
+  });
 });
 
 test('creatorFacet.createVault rejects invalid pool keys', async t => {
   const { started } = await setupTrader(t);
-  const badTargetAllocation = harden({
-    Aave_Base: 5000n,
-    Nope_Not_A_Protocol: 5000n,
+  const badCreateVaultArgs = harden({
+    allocation: {
+      Aave_Base: 5000n,
+      Nope_Not_A_Protocol: 5000n,
+    },
+    fee: '0.5bps',
+    cadence: 'P1H',
   });
 
   await t.throwsAsync(
-    () => E(started.creatorFacet).createVault(badTargetAllocation),
+    () => E(started.creatorFacet).createVault(badCreateVaultArgs),
     { message: /Nope_Not_A_Protocol/ },
   );
 });
