@@ -8,7 +8,6 @@
   "ignorePatterns": [
     "build",
     "bundles",
-    "bundle-*.js",
     "compiled",
     "dist",
     "lcov-report",
@@ -22,9 +21,6 @@
     "*.md",
     "**/tsup.config.ts",
     "/packages/xsnap/moddable",
-    "/packages/xsnap/xsnap-native",
-    "/packages/xsnap/lib/object-inspect.js",
-    "/packages/orchestration/src/vendor/",
-    "/packages/orchestration/src/stubs/"
+    "/packages/xsnap/xsnap-native"
   ]
 }
