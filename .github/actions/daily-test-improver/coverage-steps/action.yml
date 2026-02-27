@@ -1,0 +1,115 @@
+name: Build and collect test coverage
+description: >
+  Sets up the environment, builds a targeted subset of packages, runs their
+  tests under c8 coverage, generates an HTML coverage report, and uploads the
+  report as a "coverage" artifact.
+
+  Coverage report will be generated under coverage/html/.
+  A log of all steps is appended to coverage-steps.log in the repo root.
+
+runs:
+  using: composite
+  steps:
+    # ── 1. Node.js ────────────────────────────────────────────────────────────
+    - name: Set up Node.js 22
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Enable corepack and activate pinned Yarn
+      shell: bash
+      run: |
+        corepack enable
+        echo "=== Node / Yarn versions ===" | tee -a coverage-steps.log
+        node --version | tee -a coverage-steps.log
+        yarn --version | tee -a coverage-steps.log
+
+    # ── 2. Install dependencies ───────────────────────────────────────────────
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "=== yarn install ===" | tee -a coverage-steps.log
+        yarn install --immutable 2>&1 | tee -a coverage-steps.log
+        echo "yarn install exit code: $?" | tee -a coverage-steps.log
+
+    # ── 3. Build packages ─────────────────────────────────────────────────────
+    #   We build only the packages that are covered below, plus their
+    #   transitive dependencies, using Lerna's --scope / --include-dependents
+    #   flags.  A full `yarn build` would take far too long in this context.
+    - name: Build targeted packages
+      shell: bash
+      run: |
+        echo "=== Build targeted packages ===" | tee -a coverage-steps.log
+        # Build all packages topologically; skip heavy xs-worker build
+        yarn workspaces foreach \
+          --all \
+          --topological \
+          --exclude @agoric/xs-vat-worker \
+          run build 2>&1 | tee -a coverage-steps.log || true
+        echo "build step done" | tee -a coverage-steps.log
+
+    # ── 4. Run tests under c8 coverage ───────────────────────────────────────
+    #   NODE_V8_COVERAGE tells the V8 engine where to write raw coverage
+    #   data.  C8_OPTIONS=--clean=false lets us accumulate data across
+    #   multiple `test:c8` invocations before generating a single report.
+    - name: Run tests with coverage
+      shell: bash
+      env:
+        NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+        C8_OPTIONS: '--clean=false'
+        NODE_OPTIONS: '--max-old-space-size=4096'
+      run: |
+        echo "=== Run tests with coverage ===" | tee -a coverage-steps.log
+        # Clean previous raw coverage data
+        rm -rf coverage/tmp
+        mkdir -p coverage/tmp
+
+        # Run test:c8 on a targeted set of packages that are small enough to
+        # complete within CI time limits while giving meaningful coverage data.
+        # Add or remove packages here to adjust scope.
+        PACKAGES=(
+          telemetry
+          governance
+          base-zone
+          notifier
+          fast-usdc
+          agoric-cli
+          async-flow
+          kmarshal
+          import-manager
+          network
+        )
+
+        for pkg in "${PACKAGES[@]}"; do
+          echo "--- testing $pkg ---" | tee -a coverage-steps.log
+          (cd packages/$pkg && yarn test:c8 2>&1) | tee -a coverage-steps.log || true
+        done
+        echo "coverage collection done" | tee -a coverage-steps.log
+
+    # ── 5. Generate HTML coverage report ─────────────────────────────────────
+    #   --all ensures files with zero coverage are also included in the report.
+    #   The HTML report lands in coverage/html/.
+    - name: Generate coverage report
+      shell: bash
+      env:
+        NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+      run: |
+        echo "=== Generate coverage report ===" | tee -a coverage-steps.log
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}' \
+          --reporter=text \
+          --reporter=html-spa \
+          --reports-dir=coverage/html \
+          2>&1 | tee -a coverage-steps.log
+        echo "report generation done" | tee -a coverage-steps.log
+
+    # ── 6. Upload coverage artifact ───────────────────────────────────────────
+    #   The artifact is named "coverage" and contains the full HTML report
+    #   under coverage/html/.
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage/html/
+        if-no-files-found: warn
