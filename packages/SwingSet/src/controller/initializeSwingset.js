@@ -8,7 +8,10 @@ import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { ManagerType } from '../typeGuards.js';
-import { provideBundleCache } from '../../tools/bundleTool.js';
+import {
+  makeAmbientBundleToolPowers,
+  makeNodeBundleCache,
+} from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { initializeKernel } from './initializeKernel.js';
@@ -443,8 +446,9 @@ export async function initializeSwingset(
   }
 
   const bundleCache = await (config.bundleCachePath
-    ? provideBundleCache(
+    ? makeNodeBundleCache(
         config.bundleCachePath,
+        makeAmbientBundleToolPowers(),
         {
           dev: config.includeDevDependencies,
           format: config.bundleFormat,
@@ -453,7 +457,6 @@ export async function initializeSwingset(
           // legible.
           byteLimit: Infinity,
         },
-        s => import(s),
       )
     : null);
 

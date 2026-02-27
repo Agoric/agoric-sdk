@@ -5,8 +5,10 @@ export {};
  * @import {NameHub} from '@agoric/vats';
  * @import {ZoeService} from '@agoric/zoe';
  * @import {BundleSource} from '@endo/bundle-source';
+ * @import {writeFile as WriteFile} from 'node:fs/promises';
  * @import {ERef} from '@agoric/vow';
  * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
+ * @import {CoreEvalMaterialRecord} from './writeCoreEvalParts.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {Board} from '@agoric/vats';
  * @import {NameAdmin} from '@agoric/vats';
@@ -64,10 +66,13 @@ export {};
  *  bundleSource: BundleSource,
  *  cacheDir: string,
  *  lookup: (...path: string[]) => unknown,
+ *  log?: typeof console.log,
  *  now: () => number,
+ *  onWriteCoreEval?: (record: CoreEvalMaterialRecord) => void | Promise<void>,
  *  pathResolve: (...path: string[]) => string,
  *  publishBundle: PublishBundleRef,
  *  scriptArgs?: string[],
+ *  writeFile?: WriteFile,
  * }} DeployScriptEndownments
  */
 

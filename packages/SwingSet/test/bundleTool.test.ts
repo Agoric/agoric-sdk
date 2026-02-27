@@ -5,8 +5,8 @@ import { setTimeout as delay } from 'timers/promises';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 import {
+  makeAmbientBundleToolPowers,
   makeNodeBundleCache,
-  provideBundleCache,
 } from '../tools/bundleTool.js';
 
 // Use a directory ignored by AVA watch mode (via ignore-by-default).
@@ -15,6 +15,18 @@ const watchIgnoredTmpRoot = path.join(
   fileURLToPath(new URL('../', import.meta.url)),
   '.sass-cache',
 );
+const testPowers = makeAmbientBundleToolPowers({
+  eventSink: { onBundleToolEvent: () => {} },
+});
+const makeEventSink = () => {
+  const events: Array<{ type: string; reason?: string }> = [];
+  return {
+    events,
+    powers: makeAmbientBundleToolPowers({
+      eventSink: { onBundleToolEvent: event => events.push(event) },
+    }),
+  };
+};
 
 const setupFixture = async (t: ExecutionContext) => {
   await mkdir(watchIgnoredTmpRoot, { recursive: true });
@@ -53,7 +65,7 @@ test.serial('load() breaks stale lock from dead owner pid', async t => {
     'utf8',
   );
 
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(bundlesDir, testPowers);
   const loaded = await cache.load(sourcePath, 'toy');
   t.truthy(loaded);
 });
@@ -66,7 +78,7 @@ test.serial('failed load does not poison later load for same key', async t => {
   const fixtureSource = await readFile(fixtureSourcePath, 'utf8');
   await rm(sourcePath, { force: true });
 
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(bundlesDir, testPowers);
   await t.throwsAsync(() => cache.load(sourcePath, 'toy'), {
     message:
       /no such file or directory|Cannot find module|Failed to load module|Cannot find file/i,
@@ -77,16 +89,15 @@ test.serial('failed load does not poison later load for same key', async t => {
   t.truthy(loaded);
 });
 
-test('provideBundleCache returns shared cache for same key', async t => {
+test('makeNodeBundleCache returns independent cache instances', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
-  const loadModule = specifier => import(specifier);
-  const opts = { format: 'endoZipBase64', dev: false };
+  const opts = { format: 'endoZipBase64' as const, dev: false };
 
-  const cacheAP = provideBundleCache(bundlesDir, opts, loadModule);
-  const cacheBP = provideBundleCache(bundlesDir, opts, loadModule);
-  t.is(cacheAP, cacheBP, 'cache promises are the same');
+  const cacheAP = makeNodeBundleCache(bundlesDir, testPowers, opts);
+  const cacheBP = makeNodeBundleCache(bundlesDir, testPowers, opts);
+  t.not(cacheAP, cacheBP, 'cache promises are distinct');
   const [cacheA, cacheB] = await Promise.all([cacheAP, cacheBP]);
-  t.is(cacheA, cacheB, 'cache fulfilments are the same');
+  t.not(cacheA, cacheB, 'cache fulfilments are distinct');
 
   const [bundleA, bundleB] = await Promise.all([
     cacheA.load(sourcePath, 'toy'),
@@ -102,7 +113,7 @@ test('provideBundleCache returns shared cache for same key', async t => {
 
 test('concurrent load() calls for same key settle without hanging', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(bundlesDir, testPowers);
   const loads = Array.from({ length: 24 }, () => cache.load(sourcePath, 'toy'));
   const bundles = await Promise.all(loads);
   t.is(bundles.length, 24);
@@ -114,7 +125,7 @@ test('concurrent load() calls for same key settle without hanging', async t => {
 
 test('load() accepts file URL source specs', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(bundlesDir, testPowers);
   const sourceURL = pathToFileURL(sourcePath).href;
   const loaded = await cache.load(sourceURL, 'toy');
   t.truthy(loaded);
@@ -147,9 +158,9 @@ test.serial('load() rebuilds when dependency file changes', async t => {
     'utf8',
   );
 
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
-  await cache.load(sourcePath, 'toy');
-  const bundlePath = path.join(bundlesDir, 'bundle-toy.js');
+  const cache = await makeNodeBundleCache(bundlesDir, testPowers);
+  const { bundleFileName } = await cache.validateOrAdd(sourcePath, 'toy');
+  const bundlePath = path.join(bundlesDir, bundleFileName);
   const before = await readFile(bundlePath, 'utf8');
 
   // Ensure mtime differences are observable on coarser filesystems.
@@ -165,7 +176,7 @@ test.serial(
   'add() and validateOrAdd() accept relative and absolute specs',
   async t => {
     const { bundlesDir, sourcePath } = await setupFixture(t);
-    const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+    const cache = await makeNodeBundleCache(bundlesDir, testPowers);
 
     const originalCwd = process.cwd();
     const relDir = path.dirname(sourcePath);
@@ -211,7 +222,7 @@ test.serial(
     const staleTime = Date.now() - 120_000;
     await utimes(malformedLock, staleTime / 1000, staleTime / 1000);
 
-    const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+    const cache = await makeNodeBundleCache(bundlesDir, testPowers);
     const loaded = await cache.load(sourcePath, 'toy');
     t.truthy(loaded);
     const loadedBad = await cache.load(sourcePath, 'toy-bad');
@@ -238,14 +249,14 @@ test.serial('load() handles missing lock path', async t => {
     void rm(brokenLock, { recursive: true, force: true });
   }, 0);
 
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(bundlesDir, testPowers);
   const loaded = await cache.load(sourcePath, 'toy-broken');
   t.truthy(loaded);
 });
 
 test.serial('loadRegistry() loads bundles and validates entries', async t => {
   const { bundlesDir, sourcePath } = await setupFixture(t);
-  const cache = await makeNodeBundleCache(bundlesDir, {}, s => import(s));
+  const cache = await makeNodeBundleCache(bundlesDir, testPowers);
 
   const registry = {
     demo: {
@@ -262,4 +273,19 @@ test.serial('loadRegistry() loads bundles and validates entries', async t => {
       message: /must include sourceSpec or packagePath/i,
     },
   );
+});
+
+test.serial('event sink captures lock and registry events', async t => {
+  const { bundlesDir, sourcePath } = await setupFixture(t);
+  const { events, powers } = makeEventSink();
+  const cache = await makeNodeBundleCache(bundlesDir, powers);
+
+  await cache.load(sourcePath, 'toy-events');
+  await cache.loadRegistry({
+    demo: { sourceSpec: sourcePath, bundleName: 'toy-reg-events' },
+  });
+
+  t.true(events.some(event => event.type === 'lock-acquired'));
+  t.true(events.some(event => event.type === 'lock-released'));
+  t.true(events.some(event => event.type === 'registry-loaded'));
 });
