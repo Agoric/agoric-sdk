@@ -32,6 +32,9 @@ import { setTimeout as delay } from 'timers/promises';
  * }} BundleCache
  */
 
+const BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS = 5 * 60_000;
+const BUNDLE_STALE_LOCK_MS = 60_000;
+
 /**
  * @param {string} dest
  * @param {Parameters<typeof wrappedMaker>[1]} options
@@ -39,9 +42,6 @@ import { setTimeout as delay } from 'timers/promises';
  * @param {number} [pid]
  * @returns {Promise<BundleCache>}
  */
-const BUNDLE_LOCK_ACQUIRE_TIMEOUT_MS = 5 * 60_000;
-const BUNDLE_STALE_LOCK_MS = 60_000;
-
 export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   /** @param {string} sourceSpec */
   const canonicalizeSourceSpec = sourceSpec => {
