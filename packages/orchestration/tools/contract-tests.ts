@@ -6,7 +6,7 @@ import {
   makeAsyncQueue,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { setupFakeNetwork } from '@agoric/orchestration/test/network-fakes.js';
+import { setupFakeNetwork } from '@agoric/orchestration/tools/network-fakes.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import {

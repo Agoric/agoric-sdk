@@ -25,8 +25,11 @@ import {
 import { BridgeId, makeTracer } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import type { Guarded } from '@endo/exo';
-import { defaultMockAckMap, errorAcknowledgments } from './ibc-mocks.js';
-import { decodeProtobufBase64 } from '../tools/protobuf-decoder.js';
+import {
+  defaultMockAckMap,
+  errorAcknowledgments,
+} from './ibc-mock-fixtures.js';
+import { decodeProtobufBase64 } from './protobuf-decoder.js';
 
 const trace = makeTracer('NetworkFakes');
 
@@ -35,7 +38,7 @@ const trace = makeTracer('NetworkFakes');
  *
  * As part of the IBC Channel initialization, the version field is negotiated
  * with the host. `version` is a String or JSON string as determined by the IBC
- * Application protol.
+ * Application protocol.
  *
  * @param version requested version string
  * @param params mock parameters to add to version string
@@ -149,7 +152,7 @@ type BridgeDowncalls = Array<
 /**
  * Make a fake IBC Bridge, extended from the dibc ScopedBridgeManager.
  *
- * Has extra `setMockAck` and `setAddressPrefix` met
+ * Has extra `setMockAck` and `setAddressPrefix` methods.
  *
  * @param zone
  */
@@ -184,7 +187,7 @@ export const makeFakeIBCBridge = (
 
   /**
    * Keep track channels requested by remote chain. Used as a proxy for
-   * counterpaty channel ids
+   * counterparty channel ids.
    */
   const remoteChannelMap: Record<IBCConnectionID, number> = {};
 

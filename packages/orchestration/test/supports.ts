@@ -36,7 +36,7 @@ import fetchedChainInfo from '../src/fetched-chain-info.js';
 import { assetOn } from '../src/utils/asset.js';
 import { registerChainsAndAssets } from '../src/utils/chain-hub-helper.js';
 import { buildVTransferEvent } from '../tools/ibc-mocks.js';
-import { setupFakeNetwork } from './network-fakes.js';
+import { setupFakeNetwork } from '../tools/network-fakes.js';
 
 export {
   makeFakeLocalchainBridge,
