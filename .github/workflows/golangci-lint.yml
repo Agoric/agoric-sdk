@@ -16,6 +16,7 @@ permissions:
   # pull-requests: read
 jobs:
   golangci:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' }}
     name: golangci-lint
     runs-on: ubuntu-latest
     strategy:

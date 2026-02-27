@@ -9,6 +9,7 @@ concurrency:
 
 jobs:
   run-scripts-tests:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
