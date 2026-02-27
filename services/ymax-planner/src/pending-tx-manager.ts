@@ -76,7 +76,7 @@ type GmpTx = PendingTx & { type: typeof TxType.GMP };
 type MakeAccountTx = PendingTx & { type: typeof TxType.MAKE_ACCOUNT };
 type RoutedGmpTx = PendingTx & {
   type: typeof TxType.ROUTED_GMP;
-  payloadHash: string;
+  payloadHash?: string;
 };
 
 type LiveWatchOpts = { mode: 'live'; timeoutMs: number; signal?: AbortSignal };
@@ -492,7 +492,6 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
     // Parse destinationAddress (CAIP-10 router address)
     assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
     assert(sourceAddress, `${logPrefix} Missing sourceAddress`);
-    assert(payloadHash, `${logPrefix} Missing payloadHash`);
 
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);

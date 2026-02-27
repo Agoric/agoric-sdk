@@ -21,6 +21,7 @@ import {
 import type { WatcherResult } from '../pending-tx-manager.ts';
 import {
   extractPayloadHash,
+  extractPaddedTxId,
   fetchReceiptWithRetry,
   handleTxRevert,
   handleOperationFailure,
@@ -53,7 +54,7 @@ type OperationResultWatch = {
   log?: (...args: unknown[]) => void;
   kvStore: KVStore;
   txId: `tx${number}`;
-  payloadHash: string;
+  payloadHash?: string;
   /** The LCA address used as padding template for the txId. */
   sourceAddress: string;
 };
@@ -175,17 +176,11 @@ export const watchOperationResult = ({
       await null;
       if (done) return;
       try {
-        const { idHash, success } = parseOperationResultLog(eventLog);
-
-        if (idHash !== expectedIdHash) {
-          return;
-        }
+        const { success } = parseOperationResultLog(eventLog);
 
         if (success) {
           const txHash = eventLog.transactionHash;
-          log(
-            `✅ SUCCESS: expectedId=${txId} idHash=${idHash} txHash=${txHash}`,
-          );
+          log(`✅ SUCCESS: expectedId=${txId} txHash=${txHash}`);
           return finish({ settled: true, txHash, success: true });
         }
 
@@ -242,8 +237,12 @@ export const watchOperationResult = ({
           const txData = tx.input;
           if (!txHash || !txData) return;
 
-          // Validate the payload hash matches
-          if (extractPayloadHash(txData) !== payloadHash) return;
+          // Match by extracting the padded txId from the payload
+          if (extractPaddedTxId(txData) !== paddedTxId) return;
+
+          if (payloadHash && extractPayloadHash(txData) !== payloadHash) {
+            log(`⚠️  payloadHash mismatch for txId=${txId} txHash=${txHash}`);
+          }
 
           const receipt = await fetchReceiptWithRetry(
             provider,
@@ -450,7 +449,13 @@ export const lookBackOperationResult = async ({
       log,
       signal: sharedSignal,
       toAddress: routerAddress,
-      verifyFailedTx: tx => extractPayloadHash(tx.data) === payloadHash,
+      verifyFailedTx: tx => {
+        if (extractPaddedTxId(tx.data) !== paddedTxId) return false;
+        if (payloadHash && extractPayloadHash(tx.data) !== payloadHash) {
+          log(`⚠️  payloadHash mismatch for txId=${txId} txHash=${tx.hash}`);
+        }
+        return true;
+      },
       onRejectedChunk: updateFailedTxLowerBound,
       rpcClient,
     });

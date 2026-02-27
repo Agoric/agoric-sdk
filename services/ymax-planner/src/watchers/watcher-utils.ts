@@ -137,6 +137,35 @@ export const extractPayloadHash = (data: string): string | null => {
   const [_commandId, _sourceChain, _sourceAddress, payload] = parsed.args;
   return keccak256(payload);
 };
+
+/**
+ * Parses the `execute(bytes32, string, string, bytes)` calldata, extracts the
+ * inner `payload`, strips its 4-byte function selector, and abi-decodes the
+ * first argument as a string — which is the padded txId.
+ *
+ * The router payload is always function-encoded where the first argument is
+ * a string (the padded txId) and the second is an address.
+ *
+ * @param data - Transaction input data (the full `execute()` calldata)
+ * @returns The padded txId string, or null if parsing fails
+ */
+export const extractPaddedTxId = (
+  data: string,
+  abiCoder: AbiCoder = new AbiCoder(),
+): string | null => {
+  try {
+    const parsed = axelarExecuteIface.parseTransaction({ data });
+    if (!parsed) return null;
+
+    const [_commandId, _sourceChain, _sourceAddress, payload] = parsed.args;
+    // Strip the 4-byte selector (0x + 8 hex chars) to get the ABI-encoded args
+    const encodedArgs = `0x${payload.slice(10)}`;
+    const [paddedTxId] = abiCoder.decode(['string'], encodedArgs);
+    return paddedTxId;
+  } catch {
+    return null;
+  }
+};
 //#endregion
 
 //#region Alchemy alchemy_minedTransactions subscription types
