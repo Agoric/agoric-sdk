@@ -1,5 +1,5 @@
 import { Far } from '@endo/marshal';
-import { setupTestLiveslots } from '../test/liveslots-helpers.js';
+import { setupTestLiveslots } from './liveslots-helpers.js';
 
 /**
  * @import {ExecutionContext} from 'ava';

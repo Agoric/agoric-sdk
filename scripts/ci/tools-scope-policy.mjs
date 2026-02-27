@@ -47,27 +47,8 @@ export const legacySrcToToolsImports = [
   },
 ];
 
-export const legacyNonTestToTestImports = [
-  {
-    file: 'packages/builders/scripts/smart-wallet/build-game1-start.js',
-    specifier: '@agoric/smart-wallet/test/start-game1-proposal.js',
-  },
-  {
-    file: 'packages/orchestration/tools/contract-tests.ts',
-    specifier: '@agoric/orchestration/test/network-fakes.js',
-  },
-  {
-    file: 'packages/swingset-liveslots/tools/vo-test-harness.js',
-    specifier: '../test/liveslots-helpers.js',
-  },
-];
-
 export const legacySrcToToolsFiles = [
   ...new Set(legacySrcToToolsImports.map(entry => entry.file)),
-];
-
-export const legacyNonTestToTestFiles = [
-  ...new Set(legacyNonTestToTestImports.map(entry => entry.file)),
 ];
 
 export const publicToolsPackages = [
