@@ -133,6 +133,8 @@
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:packages": "yarn lerna run --no-bail lint",
     "lint:package-names": "./scripts/verify-package-names.js",
+    "lint:tools-scope-imports": "node ./scripts/ci/check-tools-scope-imports.mjs",
+    "lint:tools-scope-manifests": "node ./scripts/ci/check-tools-scope-manifests.mjs",
     "lint:types": "tsc",
     "lint:scripts": "yarn eslint scripts/*js",
     "test": "yarn lerna run --no-bail test",

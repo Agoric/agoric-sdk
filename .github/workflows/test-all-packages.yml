@@ -118,6 +118,11 @@ jobs:
 
       - run: yarn constraints
 
+      - name: enforce tools-scope import boundaries
+        run: yarn lint:tools-scope-imports
+      - name: enforce tools-scope manifest policy
+        run: yarn lint:tools-scope-manifests
+
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
       # master merge check
