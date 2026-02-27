@@ -17,7 +17,7 @@ Opportunity:
 
 Suppose a Ymax-based vault contract, `0xVAU1` on Avalanche, with UI at `/vault-1`, has already been set up, based on `portfolio75` for strategy execution.  (see  [Vault Setup Prerequisite](#vault-setup-prerequisite-how-0xvau1-and-vault-1-exist)).
 
-A trader, Tim (`EOA 0xTIM`), discovers `/vault-1` and wants to participate using familiar ERC-4626 deposit behavior.
+A trader, Tim (EOA `0xTIM`), discovers `/vault-1` and wants to participate using familiar ERC-4626 deposit behavior.
 Tim deposits USDC and receives vault shares (`CVSH`).
 
 Some deposited USDC remains in `0xVAU1` as local liquidity; excess USDC moves to the `@Avalanche` account of `portfolio75` for strategy execution.
@@ -118,19 +118,78 @@ Share value at redeem depends on `totalAssets`, which includes managed assets re
 
 ## Vault Setup Prerequisite (How `0xVAU1` and `/vault-1` Exist)
 
+Making `/vault-1` available requires two setup flows: EVM factory deployment, then creator-driven vault creation wired to Ymax policy/state.
+Recall that `0xVAU1` needs cross-chain valuation input to maintain share-value accounting during redeem.
+The reporting authority chain in this design is:
+
+1. `0xVAU1` must not accept valuation updates from arbitrary callers.
+2. `0xVAU1` accepts managed-assets updates only from `VaultFactory`.
+3. `VaultFactory` accepts reports only from `assetReporter`.
+4. `assetReporter` is configured at factory deployment time.
+5. For this spike, that reporter is a single fixed authorized address.
+
+Hardening and productization of this authority model is tracked in [Appendix B](#appendix-b-product-todos).
+
 ### Prereq Deployment Diagram
+
+Source: [docs-design/vault-evm-prereq-deployment.mmd](./vault-evm-prereq-deployment.mmd)
+
+Before any trader interaction, the vault factory must exist on the target EVM chain.
+For this spike, that means deploying `VaultFactory` on Avalanche C-Chain with constructor configuration for:
+
+- USDC asset address
+- asset-reporter authority address
+
+This establishes the EVM-side deployment anchor used by vault creation.
 
 ### Creator Vault Creation Diagram
 
-### Authority and Trust Notes (Woven Into This Setup)
+Source: [docs-design/vault-creation-flow.mmd](./vault-creation-flow.mmd)
+
+With factory prereqs in place, the creator flow sets up a concrete vault and UI route:
+
+1. Chris submits `createVault(...)` with allocations/fee/cadence choices.
+2. Ymax opens `portfolio75`, computes deterministic vault address, and publishes policy/state to `vstorage`.
+3. Ymax triggers EVM `factory.createVault(...)` (full architecture: via Axelar GMP).
+4. Factory deploys/initializes `vault-contract-1` (`0xVAU1`) with share metadata (`Chris Vault Share`, `CVSH`).
+5. UI receives vault-ready info and serves `/vault-1`.
+
+### Authority and Trust Notes
+
+- Create-vault authority is exposed via the ymax contract's `creatorFacet` _(production alternatives are a TODO; see [Appendix B](#appendix-b-product-todos))_.
+- Managed-assets reporting authority is constrained to `assetReporter -> factory -> vault`.
+- Resolver reports execution success/failure, while policy and outcomes remain auditable through on-chain history and `vstorage`.
 
 ## Rebalance (How Yield Strategy Updates Over Time)
 
+Rebalance runs on a periodic cadence and updates strategy positions independently of direct trader deposit/redeem calls.
+
 ### Rebalance Diagram
 
-### Best-Effort Hourly Semantics
+Source: [docs-design/vault-rebalance-flow.mmd](./vault-rebalance-flow.mmd)
+
+### Best-Effort Cadence Semantics
+
+Rebalance is planner/orchestration-driven and intentionally decoupled from trader deposit/redeem transactions.
+
+In this spike design:
+
+1. Agoric timer ticks on a regular cadence (for example, hourly for `0xVAU1`).
+2. Ymax enforces single-flight execution (no overlapping in-flight rebalance).
+3. If a tick arrives while busy, Ymax coalesces to at most one pending rerun.
+4. While handling the tick, Ymax requests a plan; planner gathers balances + strategy inputs and returns a plan under the current policy version.
+5. Execution applies best-effort partial progress; later cycles reconcile residual drift.
+
+Operationally: attempt on each configured cadence tick when idle; while busy, coalesce to one follow-up attempt.
+Tradeoffs and alternatives are summarized in [A.3](#a3-rebalance-overlap-single-flight-vs-overlap).
 
 ## Spike Status In This Design
+
+Implemented in this spike:
+- Trader deposit flow through ERC-4626-style UX (`approve` + `deposit`).
+- Immediate excess-liquidity handoff from vault local balance to `portfolio75` chain account.
+- Sync redeem path with liquidity/freshness gating.
+- Solidity unit-test coverage for core accounting/authority behavior and local smoke evidence.
 
 ## Appendix A: Alternatives Not Taken
 
@@ -174,17 +233,20 @@ Where this matters:
 
 Chosen for spike:
 - Single-flight execution with coalescing (at most one pending rerun).
+- On-chain timer-initiated cadence (Ymax requests plan on each cadence tick).
 
 Why this was chosen now:
 - Reduces correctness risk from overlapping long-running plans.
 - Makes execution state and failure recovery easier to reason about.
+- Keeps cadence triggering auditable in on-chain behavior.
 
 Rejected for now:
 - Full overlap: higher throughput in theory, but significantly more conflict/ordering complexity.
 - Queue-all-ticks: can accumulate stale work and amplify lag.
+- Planner-initiated cadence triggering: simpler off-chain control, but weaker on-chain visibility/auditability for cadence enforcement.
 
 Operational interpretation:
-- "Best-effort hourly" means attempt at most once per hour when idle; while busy, coalesce to one follow-up attempt.
+- "Best-effort cadence" means attempt on each configured cadence tick when idle; while busy, coalesce to one follow-up attempt.
 
 ### A.4 Liquidity Policy: Tiered vs Fixed vs Percent-Only
 
@@ -211,6 +273,9 @@ Productization question:
 - Managed-assets reporting hardening:
   - Production key custody/rotation/separation-of-duties for `assetReporter`.
   - Explicit freshness/replay protections and operator runbooks.
+- Create-vault authority model:
+  - Evaluate alternatives to creator-facet-only control (for example: permissionless create with policy guards, allowlists, multisig/governance-gated creation).
+  - Choose production ownership and operational controls for `createVault(...)`.
 - Redeem-path hardening:
   - Define/implement `requestRedeem` async fallback UX and contract flow.
   - Define low-liquidity degraded-mode behavior and user messaging.
