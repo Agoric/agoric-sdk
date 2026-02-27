@@ -201,9 +201,7 @@ jobs:
           set +e
           trap 'echo "swing-store shell received SIGHUP"' HUP
           diag_module="$PWD/packages/swing-store/test/ava-process-diagnostics.js"
-          node_report_dir="$PWD/packages/swing-store/node-reports"
-          mkdir -p "$node_report_dir"
-          export NODE_OPTIONS="--require=$diag_module --report-on-fatalerror --report-on-signal --report-signal=SIGSEGV --report-dir=$node_report_dir --report-compact ${NODE_OPTIONS:-}"
+          export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
 
           show_coverage_state() {
             local cov_dir="$1"
@@ -263,8 +261,6 @@ jobs:
           echo "pwd: $(pwd)"
           echo "NODE_OPTIONS: ${NODE_OPTIONS}"
           show_coverage_state "${NODE_V8_COVERAGE:-}"
-          echo "node report dir: $node_report_dir"
-          ls -la "$node_report_dir" || true
           echo "repo-wide coverage json count so far:"
           find ../.. -type f -name 'coverage*.json' | wc -l
           echo "--- free -m ---"
@@ -311,8 +307,6 @@ jobs:
             ps -eo pid,ppid,pgid,sid,stat,etime,pcpu,pmem,comm,args | grep -E '(PID|ava|node|yarn|tee)' || true
             echo "--- coverage state at failure ---"
             show_coverage_state "${NODE_V8_COVERAGE:-}"
-            echo "--- node crash reports at failure ---"
-            ls -la "$node_report_dir" || true
             echo "--- last 200 lines of _testoutput.txt ---"
             tail -n 200 _testoutput.txt || true
 
@@ -329,8 +323,6 @@ jobs:
                 echo ">>> $f"
                 tail -n 120 "$f" || true
               done
-              echo "--- node crash reports after retries ---"
-              ls -la "$node_report_dir" || true
             fi
             echo "::endgroup::"
           fi
@@ -342,7 +334,6 @@ jobs:
           name: swing-store-diag-${{ matrix.engine }}-${{ github.run_id }}
           path: |
             packages/swing-store/_testoutput*.txt
-            packages/swing-store/node-reports/**
             packages/swing-store/coverage-retry-*/
           if-no-files-found: ignore
       - name: yarn test (access-token)
