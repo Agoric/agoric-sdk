@@ -13,239 +13,112 @@ ERC-4626 is the EVM tokenized-vault standard that normalizes deposit/redeem/shar
 Opportunity:
 - connect Ymax to this larger audience by packaging Ymax portfolio execution as the strategy back-end for ERC-4626 vaults.
 
-## Purpose
+## Deposit Flow
 
-Creator vaults should expose ERC-4626 vault UX on an EVM chain while earning yield from Ymax cross-chain strategy execution.
+Suppose a Ymax-based vault contract, `0xVAU1` on Avalanche, with UI at `/vault-1`, has already been set up, based on `portfolio75` for strategy execution.  (see  [Vault Setup Prerequisite](#vault-setup-prerequisite-how-0xvau1-and-vault-1-exist)).
 
-This document describes the target feature architecture first, then records the current spike cut and deferred items.
+A trader, Tim (`EOA 0xTIM`), discovers `/vault-1` and wants to participate using familiar ERC-4626 deposit behavior.
+Tim deposits USDC and receives vault shares (`CVSH`).
 
-A creator vault is a vault instance configured by a creator strategy/policy and exposed at a dedicated UI route.
-For a concrete running example, this doc uses `vault-ui-1` (the route/UI surface) paired with `vault-contract-1` (the EVM ERC-4626 vault contract).
+Some deposited USDC remains in `0xVAU1` as local liquidity; excess USDC moves to the `@Avalanche` account of `portfolio75` for strategy execution.
 
-## Feature Scope
+### Deposit Sequence Diagram
 
-In scope:
-- One concrete creator vault flow (`vault-ui-1` + `vault-contract-1`) for end-user deposit/redeem.
-- ERC-4626-style share accounting on an EVM vault contract.
-- Cross-chain deploy path from vault local liquidity to portfolio smart wallet (`p75 @Avalanche`).
-- Managed-assets reporting path (`assetReporter -> VaultFactory -> VaultContract`).
-
-Deferred or alternative feature concerns:
-- Production APY decentralization hardening (see [Appendix A.1](#appendix-a-alternatives-not-taken-brief)).
-- Async redemption UX (`requestRedeem`) beyond stretch discussion (see [Appendix A.2](#appendix-a-alternatives-not-taken-brief)).
-- Strategy adapter contract layer (see [Appendix A.3](#appendix-a-alternatives-not-taken-brief)).
-- Overlapping rebalance execution policy alternatives (see [Appendix A.4](#appendix-a-alternatives-not-taken-brief)).
-- Alternative local-liquidity policy variants (see [Appendix A.5](#appendix-a-alternatives-not-taken-brief)).
-
-## Design Goals
-
-- Preserve market-norm user semantics: EVM wallet signs `approve` + `deposit`/`redeem`.
-- Keep vault share accounting coherent with cross-chain deployment of assets.
-- Keep trust boundaries explicit and auditable.
-- Produce implementation-level evidence for feasibility estimation.
-
-## Architecture
-
-Core components:
-- End-user UI (`vault-ui-1`): builds tx payloads and reads balances/events.
-- EVM vault (`vault-contract-1`): ERC-4626 surface + managed-assets accounting extension.
-- EVM vault factory: creates vaults and gates managed-assets reporting authority.
-- Ymax contract (Agoric): policy/state publication, create-vault orchestration hooks.
-- Planner + resolver (off-chain): planning/execution/reporting pipeline.
-- Portfolio smart wallet on vault chain (`p75 @Avalanche`): receives deployed excess liquidity. This is the owner portfolio account for the vault on Avalanche.
-
-Key boundary:
-- APY is consumed off-chain by planner from YDS HTTP (Ymax Data Service); APY values are not on-chain inputs for this spike (alternative in [Appendix A.1](#appendix-a-alternatives-not-taken-brief)).
-
-### System Context (High Level)
+Source: [docs-design/vault-deposit-flow.mmd](./vault-deposit-flow.mmd)
 
 ```mermaid
-flowchart LR
-  user[End User]
-  creator[Creator]
-  ui[vault-ui-1]
-  vault[vault-contract-1<br/>ERC-4626]
-  usdc[USDC ERC-20]
-  p75[p75 @Avalanche]
-  yc[Ymax Contract]
-  planner[Planner + Resolver]
-  yds[YDS HTTP]
-  vstorage[vstorage]
-  factory[VaultFactory]
-
-  user --> ui
-  creator --> ui
-  ui --> vault
-  vault --> usdc
-  vault --> p75
-
-  ui --> yc
-  yc --> vstorage
-  planner --> vstorage
-  planner --> yds
-  yc --> factory
-  factory --> vault
-```
-
-## Data and Invariants
-
-Vault state includes:
-- `asset` (USDC ERC-20)
-- `ownerPortfolioAccount` (for example, `p75 @Avalanche`, the vault's portfolio smart-wallet account on Avalanche)
-- `managedAssets`
-- local-liquidity policy params (`floor`, `%`, hysteresis)
-
-Core invariant:
-- `totalAssets = localVaultUsdc + managedAssets`
-
-Implication:
-- Transfers from vault local balance to `ownerPortfolioAccount` must be mirrored by managed-assets accounting.
-
-## Core Flows
-
-Source diagrams:
-- [EVM prereq deployment](./vault-evm-prereq-deployment.mmd)
-- [Creator vault creation](./vault-creation-flow.mmd)
-- [Deposit](./vault-deposit-flow.mmd)
-- [Rebalance](./vault-rebalance-flow.mmd)
-- [Withdraw](./vault-withdraw-flow.mmd)
-
-### 1) Prereq deployment
-
-- Deploy `VaultFactory` with constructor args: `usdc`, `assetReporter`.
-- Use deterministic deployment pattern for consistent addresses across chains.
-
-### 2) Creator vault creation
-
-- Creator initiates `createVault(...)` through UI/control path.
-- Ymax opens portfolio (`p75`), computes deterministic vault address, and publishes policy.
-- Ymax triggers EVM `factory.createVault(...)` (via Axelar General Message Passing (GMP) path in full architecture).
-- Factory initializes vault with concrete share name/symbol (`Chris Vault Share`, `CVSH`) and owner portfolio account.
-
-### 3) Deposit
-
-- User signs `approve(USDC -> vault)` then `deposit(assets, receiver)`.
-- Vault receives USDC, mints shares, computes excess local liquidity, and transfers excess to `ownerPortfolioAccount`.
-- Vault updates managed-assets accounting consistent with transfer out.
-
-```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {'background': '#f3f4f6', 'primaryColor': '#eef2f7', 'secondaryColor': '#e9eef5', 'tertiaryColor': '#f6f8fb', 'lineColor': '#5f6b7a', 'textColor': '#1f2937'}, 'themeCSS': '.sequenceNumber { font-size: 14px !important; font-weight: 600; }'}}%%
 sequenceDiagram
+    title Ymax Vault - Deposit Flow (USDC -> ERC-4626 Shares)
     autonumber
-    actor user as Trader Tim
-    participant wallet as MetaMask
-    participant vault as vault-contract-1
-    participant usdc as USDC
-    participant p75 as p75 @Avalanche
 
-    user->>wallet: approve(USDC->vault-contract-1, amount)
-    wallet-->>usdc: approve(vault-contract-1, amount)
-    user->>wallet: deposit(assets, receiver)
-    wallet-->>vault: deposit(assets, receiver)
-    vault-->>usdc: transferFrom(Trader Tim, vault-contract-1, assets)
-    vault-->>vault: computeExcess(tiered policy + hysteresis)
-    vault-->>usdc: transfer(p75 @Avalanche, excess)
-    vault-->>vault: managedAssets += excess
-    vault-->>wallet: emit Deposit(caller, owner, assets, shares)
+    actor user as Trader Tim<br/>EOA: 0xTIM
+    participant wallet as MetaMask<br/>signer: 0xTIM
+    participant ui as vault-ui-1<br/>URL: /vault-1
+
+    box Avalanche C-Chain
+    participant vault as vault-contract-1<br/>ERC-4626: 0xVAU1
+    participant usdc as USDC Token<br/>ERC-20: 0xUSDC
+    participant p75 as portfolio75 @Avalanche<br/>smart wallet
+    end
+
+    user->>ui: deposit(250USDC)
+    ui-->>ui: approveTx = { to: 0xUSDC,<br/>spender: 0xVAU1, amount: 250USDC,<br/>data, chainId, nonce }
+    ui-->>wallet: requestSignatureAndBroadcast(approveTx)
+    wallet-->>user: promptApproval(approveTx)
+    user->>wallet: approve(approveTx)
+    wallet-->>usdc: approve(0xVAU1, 250USDC)
+    ui-->>ui: depositTx = { to: 0xVAU1,<br/>assets: 250USDC, receiver: 0xTIM,<br/>data, chainId, nonce }
+    ui-->>wallet: requestSignatureAndBroadcast(depositTx)
+    wallet-->>user: promptApproval(depositTx)
+    user->>wallet: approve(depositTx)
+    wallet-->>vault: deposit(250USDC, 0xTIM)
+    vault-->>usdc: transferFrom(0xTIM, 0xVAU1, 250USDC)
+    vault-->>vault: computeExcess(tieredLiquidityPolicy, 5% hysteresis)
+    vault-->>usdc: transfer(portfolio75@Avalanche, excessUSDC)
+    Note over usdc,p75: emit Transfer(0xVAU1,<br/>portfolio75@Avalanche, excessUSDC)
+    vault-->>vault: managedAssets += excessUSDC
+    vault-->>ui: emit Deposit(0xTIM, 0xTIM, 250USDC, 250CVSH)
+    loop polling interval
+        ui->>ui: pollTick()
+        ui-->>vault: balanceOf(0xTIM)
+        vault-->>ui: balance=250CVSH
+    end
+    ui-->>user: balance=250CVSH
 ```
 
-Notation for sequence diagrams in this document:
-- `->>` denotes a spontaneous trigger action.
-- `-->>` denotes a consequence/follow-on action.
+Diagram notation in this doc:
+- `->>` spontaneous trigger action.
+- `-->>` consequence/follow-on action.
 
-### 4) Rebalance
+### Step-by-Step Walkthrough
 
-- Agoric timer triggers best-effort cadence.
-- Single-flight guard prevents overlap.
-- Busy ticks are coalesced (at most one pending rerun).
-- Planner computes plan from balances + APY inputs and returns executable plan.
+1. Tim starts at `/vault-1`, enters 250 in an amount field, and hits Deposit (represented as a `deposit(250USDC)` method invocation on the UI).
+2. The UI asks MetaMask to sign/broadcast an `approve` transaction so `0xVAU1` can pull USDC. _This approve-per-deposit path is a spike simplification; production should use Permit2 (see [Appendix B](#appendix-b-product-todos))_.
+3. The UI asks MetaMask to sign/broadcast `deposit(250USDC, 0xTIM)` on `0xVAU1`.
+4. `0xVAU1` pulls 250 USDC from Tim via `transferFrom`.
+5. `0xVAU1` computes local-liquidity target and excess _(tiered policy with 5% hysteresis for this spike; production parameter tuning is a product TODO in [Appendix B](#appendix-b-product-todos))_.
+6. `0xVAU1` transfers excess USDC to `portfolio75`'s `@Avalanche` account.
+7. `0xVAU1` updates `managedAssets` to preserve `totalAssets` accounting.
+8. `0xVAU1` emits `Deposit(...)`, and the UI reads `balanceOf(0xTIM)` until it shows the new share balance.
 
-Alternative overlap policies are discussed in [Appendix A.4](#appendix-a-alternatives-not-taken-brief).
+### Key Mechanics In This Flow
 
-### 5) Withdraw (sync redeem)
+- Familiar vault UX: two wallet-signed transactions (`approve`, then `deposit`), no custom custody workflow for trader Tim.
+- Cross-chain handoff seam: excess funds move immediately to the `@Avalanche` account of `portfolio75`.
+- Accounting invariant: `totalAssets = usdc.balanceOf(0xVAU1) + managedAssets` remains true as excess is deployed.
+- Evidence shape: deposit correctness is observable from `Deposit` and `Transfer` events plus post-state balances.
 
-- User signs `redeem(shares, receiver, owner)`.
-- Vault succeeds only if local liquidity and report freshness gates pass.
-- Async fallback (`requestRedeem`) is deferred to product follow-up (see [Appendix A.2](#appendix-a-alternatives-not-taken-brief)).
+## Withdraw (Sync Redeem Path)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor user as Trader Tim
-    participant ui as vault-ui-1
-    participant vault as vault-contract-1
-    participant usdc as USDC
+### Withdraw Diagram
 
-    user->>ui: redeem(shares)
-    ui-->>vault: redeem(shares, receiver, owner)
-    vault-->>vault: enforce(liquidity + freshness)
-    vault-->>usdc: transfer(receiver, assets)
-    vault-->>ui: emit Withdraw(...)
-```
+### Freshness and Liquidity Gates
 
-## Authority and Trust Model
+## Vault Setup Prerequisite (How `0xVAU1` and `/vault-1` Exist)
 
-Create-vault authority:
-- Exposed via the Agoric creator facet (control path used by `ymaxControl`).
+### Prereq Deployment Diagram
 
-Managed-assets reporting authority:
-- Planner controls the asset reporter key (`assetReporter`).
-- `factory.reportManagedAssets(...)` requires `msg.sender == assetReporter`.
-- Vault accepts managed-assets reports only from the factory (`assetReporter -> factory -> vault`).
+### Creator Vault Creation Diagram
 
-## Current Spike Status
+### Authority and Trust Notes (Woven Into This Setup)
 
-Implemented in spike:
-- Testnet/local-chain-focused implementation posture.
-- Avoid committing private keys.
-- Local smoke validation for deposit path and accounting evidence.
+## Rebalance (How Yield Strategy Updates Over Time)
 
-Not implemented in spike:
-- Production custody/rotation/separation-of-duties for reporter authority.
-- Timer-driven periodic rebalance code path.
-- Async redeem path (`requestRedeem`).
+### Rebalance Diagram
 
-## Current Spike Parameterization
+### Best-Effort Hourly Semantics
 
-- Rebalance cadence target: `P1H` (best effort).
-- Managed-assets freshness gate for sync redeem: `8h`.
-- Local-liquidity control: tiered target + `5%` hysteresis.
+## Spike Status In This Design
 
-Alternative local-liquidity policies are summarized in [Appendix A.5](#appendix-a-alternatives-not-taken-brief).
+## Appendix A: Alternatives Not Taken
 
-## Validation Strategy
+### A.1 APY Source: Off-Chain YDS vs On-Chain Oracle
 
-- Solidity unit tests first for invariant and authority behavior.
-- Local on-chain smoke run to prove concrete deposit path and event/accounting evidence.
-- UI prototype quality bar: functional for demo, not production-polish.
+### A.2 Redemption Semantics: Sync Redeem vs `requestRedeem`
 
-## Open Product TODOs
+### A.3 Rebalance Overlap: Single-Flight vs Overlap
 
-- APY source decentralization/hardening.
-- Permissioning finalization for `createVault`.
-- Slippage protections for deposit/redeem.
-- Liquidity shortfall / redeem DoS mitigation.
-- Permit2 migration from approve-per-deposit flow.
-- Replenishment strategy when local liquidity is low.
+### A.4 Liquidity Policy: Tiered vs Fixed vs Percent-Only
 
-## Appendix A: Alternatives Not Taken (Brief)
-
-A.1 APY from on-chain oracle aggregation (not chosen for spike)
-- Why not now: orthogonal to main feasibility path; would add significant integration/ops work.
-- Why later: improves decentralization/trust of APY inputs.
-
-A.2 Async `requestRedeem` as primary redemption path (not chosen for spike)
-- Why not now: higher UX and state-machine complexity for end users.
-- Why later: needed when local liquidity constraints make sync redeem unreliable.
-
-A.3 Strategy adapters per protocol (not chosen for spike)
-- Why not now: single-contract approach is faster for proving core accounting and authority seams.
-- Why later: better modularity/upgrade boundaries at product scale.
-
-A.4 Allow overlapping rebalance executions (not chosen for spike)
-- Why not now: overlap complicates correctness and conflict handling under long-running plans.
-- Chosen instead: single-flight + coalesced pending tick.
-
-A.5 Other local-liquidity policies (not chosen for spike default)
-- Fixed absolute liquidity target only: simple, but less adaptive to TVL changes.
-- Percent-only target: adaptive, but can under-buffer small vaults.
-- Chosen instead: tiered (`max(floor, pct*assets)`) + hysteresis.
+## Appendix B: Product TODOs
