@@ -139,6 +139,8 @@
     "test:xs": "yarn workspaces foreach --all run test:xs",
     "typecheck-all": "yarn workspaces foreach --all --parallel --verbose exec sh -c 'rg -q \"\\\"lint:types\\\"\" package.json || exit 0; yarn run -T tsc --noEmit --incremental'",
     "typecheck-quick": "yarn run -T tsc -p tsconfig.check.json",
+    "no-implicit-any:count": "scripts/no-implicit-any.ts count",
+    "no-implicit-any:report": "scripts/no-implicit-any.ts report",
     "build": "yarn workspaces foreach --all --topological run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "scripts/agd-builder.sh stamp yarn-installed",
     "build-lockfiles": "./scripts/update-package-locks.sh",
