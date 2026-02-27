@@ -126,6 +126,7 @@ type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
   TxType.CCTP_TO_EVM,
   TxType.GMP,
+  TxType.ROUTED_GMP,
   TxType.MAKE_ACCOUNT,
 ];
 

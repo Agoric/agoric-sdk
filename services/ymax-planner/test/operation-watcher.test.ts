@@ -19,10 +19,26 @@ import {
 } from '../src/watchers/operation-watcher.ts';
 
 const OPERATION_RESULT_SIGNATURE = id(
-  'OperationResult(string,string,string,address,bool,bytes)',
+  'OperationResult(string,string,string,address,bytes4,bool,bytes)',
 );
 
 const MOCK_SOURCE_ADDRESS = 'agoric1testaddr0123456789abcdefghijklmno';
+
+/**
+ * Build a mock router payload that embeds the padded txId as the first
+ * function argument, mirroring the real contract's `processInstruction`
+ * calldata layout: `selector + abi.encode(string paddedTxId, address, ...)`.
+ */
+const buildRouterPayload = (paddedTxId: string) => {
+  const abiCoder = new AbiCoder();
+  const mockSelector = '0xdeadbeef'; // 4-byte function selector
+  const mockAddress = '0x0000000000000000000000000000000000000001';
+  const encodedArgs = abiCoder.encode(
+    ['string', 'address'],
+    [paddedTxId, mockAddress],
+  );
+  return mockSelector + encodedArgs.slice(2); // selector + encoded args
+};
 
 /**
  * Encode Axelar execute() calldata with a given payload, returning the
@@ -47,13 +63,13 @@ const encodeExecuteCalldata = (payload: string) => {
  * Event: OperationResult(
  *   string indexed id, string indexed sourceAddressIndex,
  *   string sourceAddress, address indexed allegedRemoteAccount,
- *   bool success, bytes reason
+ *   bytes4 instructionSelector, bool success, bytes reason
  * )
  * - topics[0]: event signature
  * - topics[1]: keccak256(paddedId)                  — indexed string hash
  * - topics[2]: keccak256(sourceAddressIndex)         — indexed string hash
  * - topics[3]: allegedRemoteAccount                  — indexed address
- * - data: abi.encode(string, bool, bytes)
+ * - data: abi.encode(string, bytes4, bool, bytes)
  */
 const createMockOperationResultLog = (
   routerAddress: string,
@@ -72,8 +88,8 @@ const createMockOperationResultLog = (
   const mockAccountAddress = zeroPadValue('0x01', 32);
   const reasonBytes = reason ? Buffer.from(reason, 'utf8') : new Uint8Array(0);
   const data = abiCoder.encode(
-    ['string', 'bool', 'bytes'],
-    [MOCK_SOURCE_ADDRESS, success, reasonBytes],
+    ['string', 'bytes4', 'bool', 'bytes'],
+    [MOCK_SOURCE_ADDRESS, '0x00000000', success, reasonBytes],
   );
 
   return {
@@ -330,7 +346,7 @@ test('lookBackOperationResult finds failed OperationResult event with finality p
 
 // --- Revert detection tests ---
 
-test('lookBackOperationResult phase 2 detects reverted tx via payloadHash', async t => {
+test('lookBackOperationResult phase 2 detects reverted tx via padded txId', async t => {
   const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
   const txId = 'tx5' as `tx${number}`;
   const chainId = 'eip155:1';
@@ -338,8 +354,9 @@ test('lookBackOperationResult phase 2 detects reverted tx via payloadHash', asyn
   const latestBlock = 1000;
   const revertTxHash = '0xrevertedtx';
 
-  // Encode execute calldata with a known payload
-  const payload = new AbiCoder().encode(['string'], ['test-payload']);
+  // Build a router payload containing the padded txId
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const payload = buildRouterPayload(paddedId);
   const { calldata, payloadHash } = encodeExecuteCalldata(payload);
 
   // No OperationResult events (phase 1 finds nothing)
@@ -430,8 +447,9 @@ test('watchOperationResult detects revert via Alchemy subscription (live mode)',
   const revertTxHash = '0xrevertedlivetx';
   const blockNumber = 1001;
 
-  // Encode execute calldata with a known payload
-  const payload = new AbiCoder().encode(['string'], ['live-test-payload']);
+  // Build a router payload containing the padded txId
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const payload = buildRouterPayload(paddedId);
   const { calldata, payloadHash } = encodeExecuteCalldata(payload);
 
   // Receipt for the reverted tx (no OperationResult events)
