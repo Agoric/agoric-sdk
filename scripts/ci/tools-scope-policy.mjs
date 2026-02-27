@@ -49,10 +49,6 @@ export const legacySrcToToolsImports = [
 
 export const legacyNonTestToTestImports = [
   {
-    file: 'packages/builders/scripts/smart-wallet/build-game1-start.js',
-    specifier: '@agoric/smart-wallet/test/start-game1-proposal.js',
-  },
-  {
     file: 'packages/orchestration/tools/contract-tests.ts',
     specifier: '@agoric/orchestration/test/network-fakes.js',
   },
