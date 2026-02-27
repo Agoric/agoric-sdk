@@ -19,7 +19,7 @@ import {
 } from '../src/watchers/operation-watcher.ts';
 
 const OPERATION_RESULT_SIGNATURE = id(
-  'OperationResult(string,string,string,address,bool,bytes)',
+  'OperationResult(string,string,string,address,bytes4,bool,bytes)',
 );
 
 const MOCK_SOURCE_ADDRESS = 'agoric1testaddr0123456789abcdefghijklmno';
@@ -63,13 +63,13 @@ const encodeExecuteCalldata = (payload: string) => {
  * Event: OperationResult(
  *   string indexed id, string indexed sourceAddressIndex,
  *   string sourceAddress, address indexed allegedRemoteAccount,
- *   bool success, bytes reason
+ *   bytes4 instructionSelector, bool success, bytes reason
  * )
  * - topics[0]: event signature
  * - topics[1]: keccak256(paddedId)                  — indexed string hash
  * - topics[2]: keccak256(sourceAddressIndex)         — indexed string hash
  * - topics[3]: allegedRemoteAccount                  — indexed address
- * - data: abi.encode(string, bool, bytes)
+ * - data: abi.encode(string, bytes4, bool, bytes)
  */
 const createMockOperationResultLog = (
   routerAddress: string,
@@ -88,8 +88,8 @@ const createMockOperationResultLog = (
   const mockAccountAddress = zeroPadValue('0x01', 32);
   const reasonBytes = reason ? Buffer.from(reason, 'utf8') : new Uint8Array(0);
   const data = abiCoder.encode(
-    ['string', 'bool', 'bytes'],
-    [MOCK_SOURCE_ADDRESS, success, reasonBytes],
+    ['string', 'bytes4', 'bool', 'bytes'],
+    [MOCK_SOURCE_ADDRESS, '0x00000000', success, reasonBytes],
   );
 
   return {
