@@ -94,7 +94,6 @@ import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 
 const { values } = Object;
 
-// eslint-disable-next-line no-nested-ternary
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
 const stdoutIsTty = process.stdout.isTTY;
@@ -127,6 +126,7 @@ type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
   TxType.CCTP_TO_EVM,
   TxType.GMP,
+  TxType.ROUTED_GMP,
   TxType.MAKE_ACCOUNT,
 ];
 
