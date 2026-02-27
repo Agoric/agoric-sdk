@@ -166,3 +166,13 @@ We'd like a quick spike / prototype to begin to estimate the cost and risks of a
 - [ ] Agoric-side seam: planner->contract boundary carries executable plan only (no APY payload), with policy/version context
 - [x] Agoric-side creator flow: creator-facet `createVault(...)` via `ymaxControl` starts a vault-backed portfolio with fixed target allocation and returns `{ portfolioId, storagePath }` for follow-on wiring
 - [ ] Integration smoke (non-UI): end-to-end happy path reaches “funds moved to `@Avalanche` with accounting updated”
+
+
+## notes
+
+ - split portfolio owner capability between
+   - hot: setAllocation, rebalance
+   - cold: withdraw
+     - withdraw only goes to the vault1 account
+
+"help! I need funds" can be a GMP message
