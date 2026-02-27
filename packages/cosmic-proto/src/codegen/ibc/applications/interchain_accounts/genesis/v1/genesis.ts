@@ -6,7 +6,12 @@ import { type ParamsSDKType as Params2SDKType } from '../../host/v1/host.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
 import { type JsonSafe } from '../../../../../json-safe.js';
-/** GenesisState defines the interchain accounts genesis state */
+/**
+ * GenesisState defines the interchain accounts genesis state
+ * @name GenesisState
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.GenesisState
+ */
 export interface GenesisState {
   controllerGenesisState: ControllerGenesisState;
   hostGenesisState: HostGenesisState;
@@ -15,12 +20,22 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.genesis.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the interchain accounts genesis state */
+/**
+ * GenesisState defines the interchain accounts genesis state
+ * @name GenesisStateSDKType
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   controller_genesis_state: ControllerGenesisStateSDKType;
   host_genesis_state: HostGenesisStateSDKType;
 }
-/** ControllerGenesisState defines the interchain accounts controller genesis state */
+/**
+ * ControllerGenesisState defines the interchain accounts controller genesis state
+ * @name ControllerGenesisState
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState
+ */
 export interface ControllerGenesisState {
   activeChannels: ActiveChannel[];
   interchainAccounts: RegisteredInterchainAccount[];
@@ -31,14 +46,24 @@ export interface ControllerGenesisStateProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState';
   value: Uint8Array;
 }
-/** ControllerGenesisState defines the interchain accounts controller genesis state */
+/**
+ * ControllerGenesisState defines the interchain accounts controller genesis state
+ * @name ControllerGenesisStateSDKType
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState
+ */
 export interface ControllerGenesisStateSDKType {
   active_channels: ActiveChannelSDKType[];
   interchain_accounts: RegisteredInterchainAccountSDKType[];
   ports: string[];
   params: Params1SDKType;
 }
-/** HostGenesisState defines the interchain accounts host genesis state */
+/**
+ * HostGenesisState defines the interchain accounts host genesis state
+ * @name HostGenesisState
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.HostGenesisState
+ */
 export interface HostGenesisState {
   activeChannels: ActiveChannel[];
   interchainAccounts: RegisteredInterchainAccount[];
@@ -49,7 +74,12 @@ export interface HostGenesisStateProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.genesis.v1.HostGenesisState';
   value: Uint8Array;
 }
-/** HostGenesisState defines the interchain accounts host genesis state */
+/**
+ * HostGenesisState defines the interchain accounts host genesis state
+ * @name HostGenesisStateSDKType
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.HostGenesisState
+ */
 export interface HostGenesisStateSDKType {
   active_channels: ActiveChannelSDKType[];
   interchain_accounts: RegisteredInterchainAccountSDKType[];
@@ -59,6 +89,9 @@ export interface HostGenesisStateSDKType {
 /**
  * ActiveChannel contains a connection ID, port ID and associated active channel ID, as well as a boolean flag to
  * indicate if the channel is middleware enabled
+ * @name ActiveChannel
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.ActiveChannel
  */
 export interface ActiveChannel {
   connectionId: string;
@@ -73,6 +106,9 @@ export interface ActiveChannelProtoMsg {
 /**
  * ActiveChannel contains a connection ID, port ID and associated active channel ID, as well as a boolean flag to
  * indicate if the channel is middleware enabled
+ * @name ActiveChannelSDKType
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.ActiveChannel
  */
 export interface ActiveChannelSDKType {
   connection_id: string;
@@ -80,7 +116,12 @@ export interface ActiveChannelSDKType {
   channel_id: string;
   is_middleware_enabled: boolean;
 }
-/** RegisteredInterchainAccount contains a connection ID, port ID and associated interchain account address */
+/**
+ * RegisteredInterchainAccount contains a connection ID, port ID and associated interchain account address
+ * @name RegisteredInterchainAccount
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount
+ */
 export interface RegisteredInterchainAccount {
   connectionId: string;
   portId: string;
@@ -90,7 +131,12 @@ export interface RegisteredInterchainAccountProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount';
   value: Uint8Array;
 }
-/** RegisteredInterchainAccount contains a connection ID, port ID and associated interchain account address */
+/**
+ * RegisteredInterchainAccount contains a connection ID, port ID and associated interchain account address
+ * @name RegisteredInterchainAccountSDKType
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount
+ */
 export interface RegisteredInterchainAccountSDKType {
   connection_id: string;
   port_id: string;
@@ -102,9 +148,32 @@ function createBaseGenesisState(): GenesisState {
     hostGenesisState: HostGenesisState.fromPartial({}),
   };
 }
+/**
+ * GenesisState defines the interchain accounts genesis state
+ * @name GenesisState
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl:
     '/ibc.applications.interchain_accounts.genesis.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (ControllerGenesisState.is(o.controllerGenesisState) &&
+          HostGenesisState.is(o.hostGenesisState)))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (ControllerGenesisState.isSDK(o.controller_genesis_state) &&
+          HostGenesisState.isSDK(o.host_genesis_state)))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -206,9 +275,45 @@ function createBaseControllerGenesisState(): ControllerGenesisState {
     params: Params1.fromPartial({}),
   };
 }
+/**
+ * ControllerGenesisState defines the interchain accounts controller genesis state
+ * @name ControllerGenesisState
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState
+ */
 export const ControllerGenesisState = {
   typeUrl:
     '/ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState' as const,
+  aminoType: 'cosmos-sdk/ControllerGenesisState' as const,
+  is(o: any): o is ControllerGenesisState {
+    return (
+      o &&
+      (o.$typeUrl === ControllerGenesisState.typeUrl ||
+        (Array.isArray(o.activeChannels) &&
+          (!o.activeChannels.length || ActiveChannel.is(o.activeChannels[0])) &&
+          Array.isArray(o.interchainAccounts) &&
+          (!o.interchainAccounts.length ||
+            RegisteredInterchainAccount.is(o.interchainAccounts[0])) &&
+          Array.isArray(o.ports) &&
+          (!o.ports.length || typeof o.ports[0] === 'string') &&
+          Params1.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is ControllerGenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ControllerGenesisState.typeUrl ||
+        (Array.isArray(o.active_channels) &&
+          (!o.active_channels.length ||
+            ActiveChannel.isSDK(o.active_channels[0])) &&
+          Array.isArray(o.interchain_accounts) &&
+          (!o.interchain_accounts.length ||
+            RegisteredInterchainAccount.isSDK(o.interchain_accounts[0])) &&
+          Array.isArray(o.ports) &&
+          (!o.ports.length || typeof o.ports[0] === 'string') &&
+          Params1.isSDK(o.params)))
+    );
+  },
   encode(
     message: ControllerGenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -345,9 +450,43 @@ function createBaseHostGenesisState(): HostGenesisState {
     params: Params2.fromPartial({}),
   };
 }
+/**
+ * HostGenesisState defines the interchain accounts host genesis state
+ * @name HostGenesisState
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.HostGenesisState
+ */
 export const HostGenesisState = {
   typeUrl:
     '/ibc.applications.interchain_accounts.genesis.v1.HostGenesisState' as const,
+  aminoType: 'cosmos-sdk/HostGenesisState' as const,
+  is(o: any): o is HostGenesisState {
+    return (
+      o &&
+      (o.$typeUrl === HostGenesisState.typeUrl ||
+        (Array.isArray(o.activeChannels) &&
+          (!o.activeChannels.length || ActiveChannel.is(o.activeChannels[0])) &&
+          Array.isArray(o.interchainAccounts) &&
+          (!o.interchainAccounts.length ||
+            RegisteredInterchainAccount.is(o.interchainAccounts[0])) &&
+          typeof o.port === 'string' &&
+          Params2.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is HostGenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HostGenesisState.typeUrl ||
+        (Array.isArray(o.active_channels) &&
+          (!o.active_channels.length ||
+            ActiveChannel.isSDK(o.active_channels[0])) &&
+          Array.isArray(o.interchain_accounts) &&
+          (!o.interchain_accounts.length ||
+            RegisteredInterchainAccount.isSDK(o.interchain_accounts[0])) &&
+          typeof o.port === 'string' &&
+          Params2.isSDK(o.params)))
+    );
+  },
   encode(
     message: HostGenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -473,9 +612,37 @@ function createBaseActiveChannel(): ActiveChannel {
     isMiddlewareEnabled: false,
   };
 }
+/**
+ * ActiveChannel contains a connection ID, port ID and associated active channel ID, as well as a boolean flag to
+ * indicate if the channel is middleware enabled
+ * @name ActiveChannel
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.ActiveChannel
+ */
 export const ActiveChannel = {
   typeUrl:
     '/ibc.applications.interchain_accounts.genesis.v1.ActiveChannel' as const,
+  aminoType: 'cosmos-sdk/ActiveChannel' as const,
+  is(o: any): o is ActiveChannel {
+    return (
+      o &&
+      (o.$typeUrl === ActiveChannel.typeUrl ||
+        (typeof o.connectionId === 'string' &&
+          typeof o.portId === 'string' &&
+          typeof o.channelId === 'string' &&
+          typeof o.isMiddlewareEnabled === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ActiveChannelSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ActiveChannel.typeUrl ||
+        (typeof o.connection_id === 'string' &&
+          typeof o.port_id === 'string' &&
+          typeof o.channel_id === 'string' &&
+          typeof o.is_middleware_enabled === 'boolean'))
+    );
+  },
   encode(
     message: ActiveChannel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -571,9 +738,34 @@ function createBaseRegisteredInterchainAccount(): RegisteredInterchainAccount {
     accountAddress: '',
   };
 }
+/**
+ * RegisteredInterchainAccount contains a connection ID, port ID and associated interchain account address
+ * @name RegisteredInterchainAccount
+ * @package ibc.applications.interchain_accounts.genesis.v1
+ * @see proto type: ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount
+ */
 export const RegisteredInterchainAccount = {
   typeUrl:
     '/ibc.applications.interchain_accounts.genesis.v1.RegisteredInterchainAccount' as const,
+  aminoType: 'cosmos-sdk/RegisteredInterchainAccount' as const,
+  is(o: any): o is RegisteredInterchainAccount {
+    return (
+      o &&
+      (o.$typeUrl === RegisteredInterchainAccount.typeUrl ||
+        (typeof o.connectionId === 'string' &&
+          typeof o.portId === 'string' &&
+          typeof o.accountAddress === 'string'))
+    );
+  },
+  isSDK(o: any): o is RegisteredInterchainAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RegisteredInterchainAccount.typeUrl ||
+        (typeof o.connection_id === 'string' &&
+          typeof o.port_id === 'string' &&
+          typeof o.account_address === 'string'))
+    );
+  },
   encode(
     message: RegisteredInterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),

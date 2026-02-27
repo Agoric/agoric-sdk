@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryGroupInfoRequest,
@@ -31,7 +31,7 @@ import {
   QueryTallyResultResponse,
   QueryGroupsRequest,
   QueryGroupsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/group/v1/query.js';
 /** Query is the cosmos.group.v1 Query service. */
 export interface Query {
   /** GroupInfo queries group info based on group id. */

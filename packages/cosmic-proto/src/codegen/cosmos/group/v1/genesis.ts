@@ -14,39 +14,59 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** GenesisState defines the group module's genesis state. */
+/**
+ * GenesisState defines the group module's genesis state.
+ * @name GenesisState
+ * @package cosmos.group.v1
+ * @see proto type: cosmos.group.v1.GenesisState
+ */
 export interface GenesisState {
   /**
    * group_seq is the group table orm.Sequence,
    * it is used to get the next group ID.
    */
   groupSeq: bigint;
-  /** groups is the list of groups info. */
+  /**
+   * groups is the list of groups info.
+   */
   groups: GroupInfo[];
-  /** group_members is the list of groups members. */
+  /**
+   * group_members is the list of groups members.
+   */
   groupMembers: GroupMember[];
   /**
    * group_policy_seq is the group policy table orm.Sequence,
    * it is used to generate the next group policy account address.
    */
   groupPolicySeq: bigint;
-  /** group_policies is the list of group policies info. */
+  /**
+   * group_policies is the list of group policies info.
+   */
   groupPolicies: GroupPolicyInfo[];
   /**
    * proposal_seq is the proposal table orm.Sequence,
    * it is used to get the next proposal ID.
    */
   proposalSeq: bigint;
-  /** proposals is the list of proposals. */
+  /**
+   * proposals is the list of proposals.
+   */
   proposals: Proposal[];
-  /** votes is the list of votes. */
+  /**
+   * votes is the list of votes.
+   */
   votes: Vote[];
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.group.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the group module's genesis state. */
+/**
+ * GenesisState defines the group module's genesis state.
+ * @name GenesisStateSDKType
+ * @package cosmos.group.v1
+ * @see proto type: cosmos.group.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   group_seq: bigint;
   groups: GroupInfoSDKType[];
@@ -69,8 +89,54 @@ function createBaseGenesisState(): GenesisState {
     votes: [],
   };
 }
+/**
+ * GenesisState defines the group module's genesis state.
+ * @name GenesisState
+ * @package cosmos.group.v1
+ * @see proto type: cosmos.group.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/cosmos.group.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.groupSeq === 'bigint' &&
+          Array.isArray(o.groups) &&
+          (!o.groups.length || GroupInfo.is(o.groups[0])) &&
+          Array.isArray(o.groupMembers) &&
+          (!o.groupMembers.length || GroupMember.is(o.groupMembers[0])) &&
+          typeof o.groupPolicySeq === 'bigint' &&
+          Array.isArray(o.groupPolicies) &&
+          (!o.groupPolicies.length || GroupPolicyInfo.is(o.groupPolicies[0])) &&
+          typeof o.proposalSeq === 'bigint' &&
+          Array.isArray(o.proposals) &&
+          (!o.proposals.length || Proposal.is(o.proposals[0])) &&
+          Array.isArray(o.votes) &&
+          (!o.votes.length || Vote.is(o.votes[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.group_seq === 'bigint' &&
+          Array.isArray(o.groups) &&
+          (!o.groups.length || GroupInfo.isSDK(o.groups[0])) &&
+          Array.isArray(o.group_members) &&
+          (!o.group_members.length || GroupMember.isSDK(o.group_members[0])) &&
+          typeof o.group_policy_seq === 'bigint' &&
+          Array.isArray(o.group_policies) &&
+          (!o.group_policies.length ||
+            GroupPolicyInfo.isSDK(o.group_policies[0])) &&
+          typeof o.proposal_seq === 'bigint' &&
+          Array.isArray(o.proposals) &&
+          (!o.proposals.length || Proposal.isSDK(o.proposals[0])) &&
+          Array.isArray(o.votes) &&
+          (!o.votes.length || Vote.isSDK(o.votes[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

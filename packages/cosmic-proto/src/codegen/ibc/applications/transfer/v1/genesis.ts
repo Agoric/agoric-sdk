@@ -12,7 +12,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** GenesisState defines the ibc-transfer genesis state */
+/**
+ * GenesisState defines the ibc-transfer genesis state
+ * @name GenesisState
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.GenesisState
+ */
 export interface GenesisState {
   portId: string;
   denomTraces: DenomTrace[];
@@ -27,7 +32,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the ibc-transfer genesis state */
+/**
+ * GenesisState defines the ibc-transfer genesis state
+ * @name GenesisStateSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   port_id: string;
   denom_traces: DenomTraceSDKType[];
@@ -42,8 +52,39 @@ function createBaseGenesisState(): GenesisState {
     totalEscrowed: [],
   };
 }
+/**
+ * GenesisState defines the ibc-transfer genesis state
+ * @name GenesisState
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/ibc.applications.transfer.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.portId === 'string' &&
+          Array.isArray(o.denomTraces) &&
+          (!o.denomTraces.length || DenomTrace.is(o.denomTraces[0])) &&
+          Params.is(o.params) &&
+          Array.isArray(o.totalEscrowed) &&
+          (!o.totalEscrowed.length || Coin.is(o.totalEscrowed[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.port_id === 'string' &&
+          Array.isArray(o.denom_traces) &&
+          (!o.denom_traces.length || DenomTrace.isSDK(o.denom_traces[0])) &&
+          Params.isSDK(o.params) &&
+          Array.isArray(o.total_escrowed) &&
+          (!o.total_escrowed.length || Coin.isSDK(o.total_escrowed[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -12,15 +12,30 @@ import {
 } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** ConfigRequest defines the request structure for the Config gRPC query. */
+/**
+ * ConfigRequest defines the request structure for the Config gRPC query.
+ * @name ConfigRequest
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.ConfigRequest
+ */
 export interface ConfigRequest {}
 export interface ConfigRequestProtoMsg {
   typeUrl: '/cosmos.base.node.v1beta1.ConfigRequest';
   value: Uint8Array;
 }
-/** ConfigRequest defines the request structure for the Config gRPC query. */
+/**
+ * ConfigRequest defines the request structure for the Config gRPC query.
+ * @name ConfigRequestSDKType
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.ConfigRequest
+ */
 export interface ConfigRequestSDKType {}
-/** ConfigResponse defines the response structure for the Config gRPC query. */
+/**
+ * ConfigResponse defines the response structure for the Config gRPC query.
+ * @name ConfigResponse
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.ConfigResponse
+ */
 export interface ConfigResponse {
   minimumGasPrice: string;
   pruningKeepRecent: string;
@@ -31,39 +46,74 @@ export interface ConfigResponseProtoMsg {
   typeUrl: '/cosmos.base.node.v1beta1.ConfigResponse';
   value: Uint8Array;
 }
-/** ConfigResponse defines the response structure for the Config gRPC query. */
+/**
+ * ConfigResponse defines the response structure for the Config gRPC query.
+ * @name ConfigResponseSDKType
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.ConfigResponse
+ */
 export interface ConfigResponseSDKType {
   minimum_gas_price: string;
   pruning_keep_recent: string;
   pruning_interval: string;
   halt_height: bigint;
 }
-/** StateRequest defines the request structure for the status of a node. */
+/**
+ * StateRequest defines the request structure for the status of a node.
+ * @name StatusRequest
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.StatusRequest
+ */
 export interface StatusRequest {}
 export interface StatusRequestProtoMsg {
   typeUrl: '/cosmos.base.node.v1beta1.StatusRequest';
   value: Uint8Array;
 }
-/** StateRequest defines the request structure for the status of a node. */
+/**
+ * StateRequest defines the request structure for the status of a node.
+ * @name StatusRequestSDKType
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.StatusRequest
+ */
 export interface StatusRequestSDKType {}
-/** StateResponse defines the response structure for the status of a node. */
+/**
+ * StateResponse defines the response structure for the status of a node.
+ * @name StatusResponse
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.StatusResponse
+ */
 export interface StatusResponse {
-  /** earliest block height available in the store */
+  /**
+   * earliest block height available in the store
+   */
   earliestStoreHeight: bigint;
-  /** current block height */
+  /**
+   * current block height
+   */
   height: bigint;
-  /** block height timestamp */
+  /**
+   * block height timestamp
+   */
   timestamp?: Timestamp;
-  /** app hash of the current block */
+  /**
+   * app hash of the current block
+   */
   appHash: Uint8Array;
-  /** validator hash provided by the consensus header */
+  /**
+   * validator hash provided by the consensus header
+   */
   validatorHash: Uint8Array;
 }
 export interface StatusResponseProtoMsg {
   typeUrl: '/cosmos.base.node.v1beta1.StatusResponse';
   value: Uint8Array;
 }
-/** StateResponse defines the response structure for the status of a node. */
+/**
+ * StateResponse defines the response structure for the status of a node.
+ * @name StatusResponseSDKType
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.StatusResponse
+ */
 export interface StatusResponseSDKType {
   earliest_store_height: bigint;
   height: bigint;
@@ -74,8 +124,21 @@ export interface StatusResponseSDKType {
 function createBaseConfigRequest(): ConfigRequest {
   return {};
 }
+/**
+ * ConfigRequest defines the request structure for the Config gRPC query.
+ * @name ConfigRequest
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.ConfigRequest
+ */
 export const ConfigRequest = {
   typeUrl: '/cosmos.base.node.v1beta1.ConfigRequest' as const,
+  aminoType: 'cosmos-sdk/ConfigRequest' as const,
+  is(o: any): o is ConfigRequest {
+    return o && o.$typeUrl === ConfigRequest.typeUrl;
+  },
+  isSDK(o: any): o is ConfigRequestSDKType {
+    return o && o.$typeUrl === ConfigRequest.typeUrl;
+  },
   encode(
     _: ConfigRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -129,8 +192,35 @@ function createBaseConfigResponse(): ConfigResponse {
     haltHeight: BigInt(0),
   };
 }
+/**
+ * ConfigResponse defines the response structure for the Config gRPC query.
+ * @name ConfigResponse
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.ConfigResponse
+ */
 export const ConfigResponse = {
   typeUrl: '/cosmos.base.node.v1beta1.ConfigResponse' as const,
+  aminoType: 'cosmos-sdk/ConfigResponse' as const,
+  is(o: any): o is ConfigResponse {
+    return (
+      o &&
+      (o.$typeUrl === ConfigResponse.typeUrl ||
+        (typeof o.minimumGasPrice === 'string' &&
+          typeof o.pruningKeepRecent === 'string' &&
+          typeof o.pruningInterval === 'string' &&
+          typeof o.haltHeight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ConfigResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConfigResponse.typeUrl ||
+        (typeof o.minimum_gas_price === 'string' &&
+          typeof o.pruning_keep_recent === 'string' &&
+          typeof o.pruning_interval === 'string' &&
+          typeof o.halt_height === 'bigint'))
+    );
+  },
   encode(
     message: ConfigResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -231,8 +321,21 @@ export const ConfigResponse = {
 function createBaseStatusRequest(): StatusRequest {
   return {};
 }
+/**
+ * StateRequest defines the request structure for the status of a node.
+ * @name StatusRequest
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.StatusRequest
+ */
 export const StatusRequest = {
   typeUrl: '/cosmos.base.node.v1beta1.StatusRequest' as const,
+  aminoType: 'cosmos-sdk/StatusRequest' as const,
+  is(o: any): o is StatusRequest {
+    return o && o.$typeUrl === StatusRequest.typeUrl;
+  },
+  isSDK(o: any): o is StatusRequestSDKType {
+    return o && o.$typeUrl === StatusRequest.typeUrl;
+  },
   encode(
     _: StatusRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -287,8 +390,38 @@ function createBaseStatusResponse(): StatusResponse {
     validatorHash: new Uint8Array(),
   };
 }
+/**
+ * StateResponse defines the response structure for the status of a node.
+ * @name StatusResponse
+ * @package cosmos.base.node.v1beta1
+ * @see proto type: cosmos.base.node.v1beta1.StatusResponse
+ */
 export const StatusResponse = {
   typeUrl: '/cosmos.base.node.v1beta1.StatusResponse' as const,
+  aminoType: 'cosmos-sdk/StatusResponse' as const,
+  is(o: any): o is StatusResponse {
+    return (
+      o &&
+      (o.$typeUrl === StatusResponse.typeUrl ||
+        (typeof o.earliestStoreHeight === 'bigint' &&
+          typeof o.height === 'bigint' &&
+          (o.appHash instanceof Uint8Array || typeof o.appHash === 'string') &&
+          (o.validatorHash instanceof Uint8Array ||
+            typeof o.validatorHash === 'string')))
+    );
+  },
+  isSDK(o: any): o is StatusResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StatusResponse.typeUrl ||
+        (typeof o.earliest_store_height === 'bigint' &&
+          typeof o.height === 'bigint' &&
+          (o.app_hash instanceof Uint8Array ||
+            typeof o.app_hash === 'string') &&
+          (o.validator_hash instanceof Uint8Array ||
+            typeof o.validator_hash === 'string')))
+    );
+  },
   encode(
     message: StatusResponse,
     writer: BinaryWriter = BinaryWriter.create(),

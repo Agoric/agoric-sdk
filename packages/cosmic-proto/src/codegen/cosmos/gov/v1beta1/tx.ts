@@ -11,19 +11,11 @@ import {
   voteOptionToJSON,
 } from './gov.js';
 import {
-  CoreEvalProposal,
-  type CoreEvalProposalSDKType,
-} from '../../../agoric/swingset/swingset.js';
-import {
-  CommunityPoolSpendProposal,
-  type CommunityPoolSpendProposalSDKType,
-  CommunityPoolSpendProposalWithDeposit,
-  type CommunityPoolSpendProposalWithDepositSDKType,
-} from '../../distribution/v1beta1/distribution.js';
-import {
-  ParameterChangeProposal,
-  type ParameterChangeProposalSDKType,
-} from '../../params/v1beta1/params.js';
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
 import {
   SoftwareUpgradeProposal,
   type SoftwareUpgradeProposalSDKType,
@@ -31,35 +23,53 @@ import {
   type CancelSoftwareUpgradeProposalSDKType,
 } from '../../upgrade/v1beta1/upgrade.js';
 import {
-  ClientUpdateProposal,
-  type ClientUpdateProposalSDKType,
-  UpgradeProposal,
-  type UpgradeProposalSDKType,
-} from '../../../ibc/core/client/v1/client.js';
+  ParameterChangeProposal,
+  type ParameterChangeProposalSDKType,
+} from '../../params/v1beta1/params.js';
+import {
+  CommunityPoolSpendProposal,
+  type CommunityPoolSpendProposalSDKType,
+  CommunityPoolSpendProposalWithDeposit,
+  type CommunityPoolSpendProposalWithDepositSDKType,
+} from '../../distribution/v1beta1/distribution.js';
+import {
+  CoreEvalProposal,
+  type CoreEvalProposalSDKType,
+} from '../../../agoric/swingset/swingset.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
+import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
  * proposal Content.
+ * @name MsgSubmitProposal
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgSubmitProposal
  */
 export interface MsgSubmitProposal {
-  /** content is the proposal's content. */
+  /**
+   * content is the proposal's content.
+   */
   content?:
-    | (CoreEvalProposal &
-        CommunityPoolSpendProposal &
-        CommunityPoolSpendProposalWithDeposit &
-        TextProposal &
-        ParameterChangeProposal &
-        SoftwareUpgradeProposal &
-        CancelSoftwareUpgradeProposal &
-        ClientUpdateProposal &
-        UpgradeProposal &
-        Any)
+    | ClientUpdateProposal
+    | UpgradeProposal
+    | SoftwareUpgradeProposal
+    | CancelSoftwareUpgradeProposal
+    | ParameterChangeProposal
+    | TextProposal
+    | CommunityPoolSpendProposal
+    | CommunityPoolSpendProposalWithDeposit
+    | CoreEvalProposal
+    | Any
     | undefined;
-  /** initial_deposit is the deposit value that must be paid at proposal submission. */
+  /**
+   * initial_deposit is the deposit value that must be paid at proposal submission.
+   */
   initialDeposit: Coin[];
-  /** proposer is the account address of the proposer. */
+  /**
+   * proposer is the account address of the proposer.
+   */
   proposer: string;
 }
 export interface MsgSubmitProposalProtoMsg {
@@ -69,74 +79,124 @@ export interface MsgSubmitProposalProtoMsg {
 /**
  * MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
  * proposal Content.
+ * @name MsgSubmitProposalSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgSubmitProposal
  */
 export interface MsgSubmitProposalSDKType {
   content?:
-    | CoreEvalProposalSDKType
-    | CommunityPoolSpendProposalSDKType
-    | CommunityPoolSpendProposalWithDepositSDKType
-    | TextProposalSDKType
-    | ParameterChangeProposalSDKType
-    | SoftwareUpgradeProposalSDKType
-    | CancelSoftwareUpgradeProposalSDKType
     | ClientUpdateProposalSDKType
     | UpgradeProposalSDKType
+    | SoftwareUpgradeProposalSDKType
+    | CancelSoftwareUpgradeProposalSDKType
+    | ParameterChangeProposalSDKType
+    | TextProposalSDKType
+    | CommunityPoolSpendProposalSDKType
+    | CommunityPoolSpendProposalWithDepositSDKType
+    | CoreEvalProposalSDKType
     | AnySDKType
     | undefined;
   initial_deposit: CoinSDKType[];
   proposer: string;
 }
-/** MsgSubmitProposalResponse defines the Msg/SubmitProposal response type. */
+/**
+ * MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
+ * @name MsgSubmitProposalResponse
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgSubmitProposalResponse
+ */
 export interface MsgSubmitProposalResponse {
-  /** proposal_id defines the unique id of the proposal. */
+  /**
+   * proposal_id defines the unique id of the proposal.
+   */
   proposalId: bigint;
 }
 export interface MsgSubmitProposalResponseProtoMsg {
   typeUrl: '/cosmos.gov.v1beta1.MsgSubmitProposalResponse';
   value: Uint8Array;
 }
-/** MsgSubmitProposalResponse defines the Msg/SubmitProposal response type. */
+/**
+ * MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
+ * @name MsgSubmitProposalResponseSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgSubmitProposalResponse
+ */
 export interface MsgSubmitProposalResponseSDKType {
   proposal_id: bigint;
 }
-/** MsgVote defines a message to cast a vote. */
+/**
+ * MsgVote defines a message to cast a vote.
+ * @name MsgVote
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVote
+ */
 export interface MsgVote {
-  /** proposal_id defines the unique id of the proposal. */
+  /**
+   * proposal_id defines the unique id of the proposal.
+   */
   proposalId: bigint;
-  /** voter is the voter address for the proposal. */
+  /**
+   * voter is the voter address for the proposal.
+   */
   voter: string;
-  /** option defines the vote option. */
+  /**
+   * option defines the vote option.
+   */
   option: VoteOption;
 }
 export interface MsgVoteProtoMsg {
   typeUrl: '/cosmos.gov.v1beta1.MsgVote';
   value: Uint8Array;
 }
-/** MsgVote defines a message to cast a vote. */
+/**
+ * MsgVote defines a message to cast a vote.
+ * @name MsgVoteSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVote
+ */
 export interface MsgVoteSDKType {
   proposal_id: bigint;
   voter: string;
   option: VoteOption;
 }
-/** MsgVoteResponse defines the Msg/Vote response type. */
+/**
+ * MsgVoteResponse defines the Msg/Vote response type.
+ * @name MsgVoteResponse
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteResponse
+ */
 export interface MsgVoteResponse {}
 export interface MsgVoteResponseProtoMsg {
   typeUrl: '/cosmos.gov.v1beta1.MsgVoteResponse';
   value: Uint8Array;
 }
-/** MsgVoteResponse defines the Msg/Vote response type. */
+/**
+ * MsgVoteResponse defines the Msg/Vote response type.
+ * @name MsgVoteResponseSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteResponse
+ */
 export interface MsgVoteResponseSDKType {}
 /**
  * MsgVoteWeighted defines a message to cast a vote.
  *
  * Since: cosmos-sdk 0.43
+ * @name MsgVoteWeighted
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteWeighted
  */
 export interface MsgVoteWeighted {
-  /** proposal_id defines the unique id of the proposal. */
+  /**
+   * proposal_id defines the unique id of the proposal.
+   */
   proposalId: bigint;
-  /** voter is the voter address for the proposal. */
+  /**
+   * voter is the voter address for the proposal.
+   */
   voter: string;
-  /** options defines the weighted vote options. */
+  /**
+   * options defines the weighted vote options.
+   */
   options: WeightedVoteOption[];
 }
 export interface MsgVoteWeightedProtoMsg {
@@ -147,6 +207,9 @@ export interface MsgVoteWeightedProtoMsg {
  * MsgVoteWeighted defines a message to cast a vote.
  *
  * Since: cosmos-sdk 0.43
+ * @name MsgVoteWeightedSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteWeighted
  */
 export interface MsgVoteWeightedSDKType {
   proposal_id: bigint;
@@ -157,6 +220,9 @@ export interface MsgVoteWeightedSDKType {
  * MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
  *
  * Since: cosmos-sdk 0.43
+ * @name MsgVoteWeightedResponse
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteWeightedResponse
  */
 export interface MsgVoteWeightedResponse {}
 export interface MsgVoteWeightedResponseProtoMsg {
@@ -167,34 +233,63 @@ export interface MsgVoteWeightedResponseProtoMsg {
  * MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
  *
  * Since: cosmos-sdk 0.43
+ * @name MsgVoteWeightedResponseSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteWeightedResponse
  */
 export interface MsgVoteWeightedResponseSDKType {}
-/** MsgDeposit defines a message to submit a deposit to an existing proposal. */
+/**
+ * MsgDeposit defines a message to submit a deposit to an existing proposal.
+ * @name MsgDeposit
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgDeposit
+ */
 export interface MsgDeposit {
-  /** proposal_id defines the unique id of the proposal. */
+  /**
+   * proposal_id defines the unique id of the proposal.
+   */
   proposalId: bigint;
-  /** depositor defines the deposit addresses from the proposals. */
+  /**
+   * depositor defines the deposit addresses from the proposals.
+   */
   depositor: string;
-  /** amount to be deposited by depositor. */
+  /**
+   * amount to be deposited by depositor.
+   */
   amount: Coin[];
 }
 export interface MsgDepositProtoMsg {
   typeUrl: '/cosmos.gov.v1beta1.MsgDeposit';
   value: Uint8Array;
 }
-/** MsgDeposit defines a message to submit a deposit to an existing proposal. */
+/**
+ * MsgDeposit defines a message to submit a deposit to an existing proposal.
+ * @name MsgDepositSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgDeposit
+ */
 export interface MsgDepositSDKType {
   proposal_id: bigint;
   depositor: string;
   amount: CoinSDKType[];
 }
-/** MsgDepositResponse defines the Msg/Deposit response type. */
+/**
+ * MsgDepositResponse defines the Msg/Deposit response type.
+ * @name MsgDepositResponse
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgDepositResponse
+ */
 export interface MsgDepositResponse {}
 export interface MsgDepositResponseProtoMsg {
   typeUrl: '/cosmos.gov.v1beta1.MsgDepositResponse';
   value: Uint8Array;
 }
-/** MsgDepositResponse defines the Msg/Deposit response type. */
+/**
+ * MsgDepositResponse defines the Msg/Deposit response type.
+ * @name MsgDepositResponseSDKType
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgDepositResponse
+ */
 export interface MsgDepositResponseSDKType {}
 function createBaseMsgSubmitProposal(): MsgSubmitProposal {
   return {
@@ -203,14 +298,43 @@ function createBaseMsgSubmitProposal(): MsgSubmitProposal {
     proposer: '',
   };
 }
+/**
+ * MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
+ * proposal Content.
+ * @name MsgSubmitProposal
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgSubmitProposal
+ */
 export const MsgSubmitProposal = {
   typeUrl: '/cosmos.gov.v1beta1.MsgSubmitProposal' as const,
+  aminoType: 'cosmos-sdk/MsgSubmitProposal' as const,
+  is(o: any): o is MsgSubmitProposal {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitProposal.typeUrl ||
+        (Array.isArray(o.initialDeposit) &&
+          (!o.initialDeposit.length || Coin.is(o.initialDeposit[0])) &&
+          typeof o.proposer === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgSubmitProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitProposal.typeUrl ||
+        (Array.isArray(o.initial_deposit) &&
+          (!o.initial_deposit.length || Coin.isSDK(o.initial_deposit[0])) &&
+          typeof o.proposer === 'string'))
+    );
+  },
   encode(
     message: MsgSubmitProposal,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
     if (message.content !== undefined) {
-      Any.encode(message.content as Any, writer.uint32(10).fork()).ldelim();
+      Any.encode(
+        GlobalDecoderRegistry.wrapAny(message.content),
+        writer.uint32(10).fork(),
+      ).ldelim();
     }
     for (const v of message.initialDeposit) {
       Coin.encode(v!, writer.uint32(18).fork()).ldelim();
@@ -229,9 +353,7 @@ export const MsgSubmitProposal = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.content = Cosmos_govv1beta1Content_InterfaceDecoder(
-            reader,
-          ) as Any;
+          message.content = GlobalDecoderRegistry.unwrapAny(reader);
           break;
         case 2:
           message.initialDeposit.push(Coin.decode(reader, reader.uint32()));
@@ -248,7 +370,9 @@ export const MsgSubmitProposal = {
   },
   fromJSON(object: any): MsgSubmitProposal {
     return {
-      content: isSet(object.content) ? Any.fromJSON(object.content) : undefined,
+      content: isSet(object.content)
+        ? GlobalDecoderRegistry.fromJSON(object.content)
+        : undefined,
       initialDeposit: Array.isArray(object?.initialDeposit)
         ? object.initialDeposit.map((e: any) => Coin.fromJSON(e))
         : [],
@@ -258,7 +382,9 @@ export const MsgSubmitProposal = {
   toJSON(message: MsgSubmitProposal): JsonSafe<MsgSubmitProposal> {
     const obj: any = {};
     message.content !== undefined &&
-      (obj.content = message.content ? Any.toJSON(message.content) : undefined);
+      (obj.content = message.content
+        ? GlobalDecoderRegistry.toJSON(message.content)
+        : undefined);
     if (message.initialDeposit) {
       obj.initialDeposit = message.initialDeposit.map(e =>
         e ? Coin.toJSON(e) : undefined,
@@ -273,7 +399,7 @@ export const MsgSubmitProposal = {
     const message = createBaseMsgSubmitProposal();
     message.content =
       object.content !== undefined && object.content !== null
-        ? Any.fromPartial(object.content)
+        ? GlobalDecoderRegistry.fromPartial(object.content)
         : undefined;
     message.initialDeposit =
       object.initialDeposit?.map(e => Coin.fromPartial(e)) || [];
@@ -298,8 +424,29 @@ function createBaseMsgSubmitProposalResponse(): MsgSubmitProposalResponse {
     proposalId: BigInt(0),
   };
 }
+/**
+ * MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
+ * @name MsgSubmitProposalResponse
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgSubmitProposalResponse
+ */
 export const MsgSubmitProposalResponse = {
   typeUrl: '/cosmos.gov.v1beta1.MsgSubmitProposalResponse' as const,
+  aminoType: 'cosmos-sdk/MsgSubmitProposalResponse' as const,
+  is(o: any): o is MsgSubmitProposalResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitProposalResponse.typeUrl ||
+        typeof o.proposalId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is MsgSubmitProposalResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitProposalResponse.typeUrl ||
+        typeof o.proposal_id === 'bigint')
+    );
+  },
   encode(
     message: MsgSubmitProposalResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -379,8 +526,33 @@ function createBaseMsgVote(): MsgVote {
     option: 0,
   };
 }
+/**
+ * MsgVote defines a message to cast a vote.
+ * @name MsgVote
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVote
+ */
 export const MsgVote = {
   typeUrl: '/cosmos.gov.v1beta1.MsgVote' as const,
+  aminoType: 'cosmos-sdk/MsgVote' as const,
+  is(o: any): o is MsgVote {
+    return (
+      o &&
+      (o.$typeUrl === MsgVote.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.voter === 'string' &&
+          isSet(o.option)))
+    );
+  },
+  isSDK(o: any): o is MsgVoteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgVote.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.voter === 'string' &&
+          isSet(o.option)))
+    );
+  },
   encode(
     message: MsgVote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -464,8 +636,21 @@ export const MsgVote = {
 function createBaseMsgVoteResponse(): MsgVoteResponse {
   return {};
 }
+/**
+ * MsgVoteResponse defines the Msg/Vote response type.
+ * @name MsgVoteResponse
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteResponse
+ */
 export const MsgVoteResponse = {
   typeUrl: '/cosmos.gov.v1beta1.MsgVoteResponse' as const,
+  aminoType: 'cosmos-sdk/MsgVoteResponse' as const,
+  is(o: any): o is MsgVoteResponse {
+    return o && o.$typeUrl === MsgVoteResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgVoteResponseSDKType {
+    return o && o.$typeUrl === MsgVoteResponse.typeUrl;
+  },
   encode(
     _: MsgVoteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -518,8 +703,37 @@ function createBaseMsgVoteWeighted(): MsgVoteWeighted {
     options: [],
   };
 }
+/**
+ * MsgVoteWeighted defines a message to cast a vote.
+ *
+ * Since: cosmos-sdk 0.43
+ * @name MsgVoteWeighted
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteWeighted
+ */
 export const MsgVoteWeighted = {
   typeUrl: '/cosmos.gov.v1beta1.MsgVoteWeighted' as const,
+  aminoType: 'cosmos-sdk/MsgVoteWeighted' as const,
+  is(o: any): o is MsgVoteWeighted {
+    return (
+      o &&
+      (o.$typeUrl === MsgVoteWeighted.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.voter === 'string' &&
+          Array.isArray(o.options) &&
+          (!o.options.length || WeightedVoteOption.is(o.options[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgVoteWeightedSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgVoteWeighted.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.voter === 'string' &&
+          Array.isArray(o.options) &&
+          (!o.options.length || WeightedVoteOption.isSDK(o.options[0]))))
+    );
+  },
   encode(
     message: MsgVoteWeighted,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -613,8 +827,23 @@ export const MsgVoteWeighted = {
 function createBaseMsgVoteWeightedResponse(): MsgVoteWeightedResponse {
   return {};
 }
+/**
+ * MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
+ *
+ * Since: cosmos-sdk 0.43
+ * @name MsgVoteWeightedResponse
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgVoteWeightedResponse
+ */
 export const MsgVoteWeightedResponse = {
   typeUrl: '/cosmos.gov.v1beta1.MsgVoteWeightedResponse' as const,
+  aminoType: 'cosmos-sdk/MsgVoteWeightedResponse' as const,
+  is(o: any): o is MsgVoteWeightedResponse {
+    return o && o.$typeUrl === MsgVoteWeightedResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgVoteWeightedResponseSDKType {
+    return o && o.$typeUrl === MsgVoteWeightedResponse.typeUrl;
+  },
   encode(
     _: MsgVoteWeightedResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -674,8 +903,35 @@ function createBaseMsgDeposit(): MsgDeposit {
     amount: [],
   };
 }
+/**
+ * MsgDeposit defines a message to submit a deposit to an existing proposal.
+ * @name MsgDeposit
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgDeposit
+ */
 export const MsgDeposit = {
   typeUrl: '/cosmos.gov.v1beta1.MsgDeposit' as const,
+  aminoType: 'cosmos-sdk/MsgDeposit' as const,
+  is(o: any): o is MsgDeposit {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeposit.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.depositor === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgDepositSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeposit.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.depositor === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0]))))
+    );
+  },
   encode(
     message: MsgDeposit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -764,8 +1020,21 @@ export const MsgDeposit = {
 function createBaseMsgDepositResponse(): MsgDepositResponse {
   return {};
 }
+/**
+ * MsgDepositResponse defines the Msg/Deposit response type.
+ * @name MsgDepositResponse
+ * @package cosmos.gov.v1beta1
+ * @see proto type: cosmos.gov.v1beta1.MsgDepositResponse
+ */
 export const MsgDepositResponse = {
   typeUrl: '/cosmos.gov.v1beta1.MsgDepositResponse' as const,
+  aminoType: 'cosmos-sdk/MsgDepositResponse' as const,
+  is(o: any): o is MsgDepositResponse {
+    return o && o.$typeUrl === MsgDepositResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgDepositResponseSDKType {
+    return o && o.$typeUrl === MsgDepositResponse.typeUrl;
+  },
   encode(
     _: MsgDepositResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -813,43 +1082,4 @@ export const MsgDepositResponse = {
       value: MsgDepositResponse.encode(message).finish(),
     };
   },
-};
-export const Cosmos_govv1beta1Content_InterfaceDecoder = (
-  input: BinaryReader | Uint8Array,
-):
-  | CoreEvalProposal
-  | CommunityPoolSpendProposal
-  | CommunityPoolSpendProposalWithDeposit
-  | TextProposal
-  | ParameterChangeProposal
-  | SoftwareUpgradeProposal
-  | CancelSoftwareUpgradeProposal
-  | ClientUpdateProposal
-  | UpgradeProposal
-  | Any => {
-  const reader =
-    input instanceof BinaryReader ? input : new BinaryReader(input);
-  const data = Any.decode(reader, reader.uint32());
-  switch (data.typeUrl) {
-    case '/agoric.swingset.CoreEvalProposal':
-      return CoreEvalProposal.decode(data.value);
-    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposal':
-      return CommunityPoolSpendProposal.decode(data.value);
-    case '/cosmos.distribution.v1beta1.CommunityPoolSpendProposalWithDeposit':
-      return CommunityPoolSpendProposalWithDeposit.decode(data.value);
-    case '/cosmos.gov.v1beta1.TextProposal':
-      return TextProposal.decode(data.value);
-    case '/cosmos.params.v1beta1.ParameterChangeProposal':
-      return ParameterChangeProposal.decode(data.value);
-    case '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal':
-      return SoftwareUpgradeProposal.decode(data.value);
-    case '/cosmos.upgrade.v1beta1.CancelSoftwareUpgradeProposal':
-      return CancelSoftwareUpgradeProposal.decode(data.value);
-    case '/ibc.core.client.v1.ClientUpdateProposal':
-      return ClientUpdateProposal.decode(data.value);
-    case '/ibc.core.client.v1.UpgradeProposal':
-      return UpgradeProposal.decode(data.value);
-    default:
-      return data;
-  }
 };

@@ -14,7 +14,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** ListenEndBlockRequest is the request type for the ListenEndBlock RPC method */
+/**
+ * ListenEndBlockRequest is the request type for the ListenEndBlock RPC method
+ * @name ListenFinalizeBlockRequest
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenFinalizeBlockRequest
+ */
 export interface ListenFinalizeBlockRequest {
   req?: RequestFinalizeBlock;
   res?: ResponseFinalizeBlock;
@@ -23,22 +28,44 @@ export interface ListenFinalizeBlockRequestProtoMsg {
   typeUrl: '/cosmos.store.streaming.abci.ListenFinalizeBlockRequest';
   value: Uint8Array;
 }
-/** ListenEndBlockRequest is the request type for the ListenEndBlock RPC method */
+/**
+ * ListenEndBlockRequest is the request type for the ListenEndBlock RPC method
+ * @name ListenFinalizeBlockRequestSDKType
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenFinalizeBlockRequest
+ */
 export interface ListenFinalizeBlockRequestSDKType {
   req?: RequestFinalizeBlockSDKType;
   res?: ResponseFinalizeBlockSDKType;
 }
-/** ListenEndBlockResponse is the response type for the ListenEndBlock RPC method */
+/**
+ * ListenEndBlockResponse is the response type for the ListenEndBlock RPC method
+ * @name ListenFinalizeBlockResponse
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenFinalizeBlockResponse
+ */
 export interface ListenFinalizeBlockResponse {}
 export interface ListenFinalizeBlockResponseProtoMsg {
   typeUrl: '/cosmos.store.streaming.abci.ListenFinalizeBlockResponse';
   value: Uint8Array;
 }
-/** ListenEndBlockResponse is the response type for the ListenEndBlock RPC method */
+/**
+ * ListenEndBlockResponse is the response type for the ListenEndBlock RPC method
+ * @name ListenFinalizeBlockResponseSDKType
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenFinalizeBlockResponse
+ */
 export interface ListenFinalizeBlockResponseSDKType {}
-/** ListenCommitRequest is the request type for the ListenCommit RPC method */
+/**
+ * ListenCommitRequest is the request type for the ListenCommit RPC method
+ * @name ListenCommitRequest
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenCommitRequest
+ */
 export interface ListenCommitRequest {
-  /** explicitly pass in block height as ResponseCommit does not contain this info */
+  /**
+   * explicitly pass in block height as ResponseCommit does not contain this info
+   */
   blockHeight: bigint;
   res?: ResponseCommit;
   changeSet: StoreKVPair[];
@@ -47,19 +74,34 @@ export interface ListenCommitRequestProtoMsg {
   typeUrl: '/cosmos.store.streaming.abci.ListenCommitRequest';
   value: Uint8Array;
 }
-/** ListenCommitRequest is the request type for the ListenCommit RPC method */
+/**
+ * ListenCommitRequest is the request type for the ListenCommit RPC method
+ * @name ListenCommitRequestSDKType
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenCommitRequest
+ */
 export interface ListenCommitRequestSDKType {
   block_height: bigint;
   res?: ResponseCommitSDKType;
   change_set: StoreKVPairSDKType[];
 }
-/** ListenCommitResponse is the response type for the ListenCommit RPC method */
+/**
+ * ListenCommitResponse is the response type for the ListenCommit RPC method
+ * @name ListenCommitResponse
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenCommitResponse
+ */
 export interface ListenCommitResponse {}
 export interface ListenCommitResponseProtoMsg {
   typeUrl: '/cosmos.store.streaming.abci.ListenCommitResponse';
   value: Uint8Array;
 }
-/** ListenCommitResponse is the response type for the ListenCommit RPC method */
+/**
+ * ListenCommitResponse is the response type for the ListenCommit RPC method
+ * @name ListenCommitResponseSDKType
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenCommitResponse
+ */
 export interface ListenCommitResponseSDKType {}
 function createBaseListenFinalizeBlockRequest(): ListenFinalizeBlockRequest {
   return {
@@ -67,8 +109,21 @@ function createBaseListenFinalizeBlockRequest(): ListenFinalizeBlockRequest {
     res: undefined,
   };
 }
+/**
+ * ListenEndBlockRequest is the request type for the ListenEndBlock RPC method
+ * @name ListenFinalizeBlockRequest
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenFinalizeBlockRequest
+ */
 export const ListenFinalizeBlockRequest = {
   typeUrl: '/cosmos.store.streaming.abci.ListenFinalizeBlockRequest' as const,
+  aminoType: 'cosmos-sdk/ListenFinalizeBlockRequest' as const,
+  is(o: any): o is ListenFinalizeBlockRequest {
+    return o && o.$typeUrl === ListenFinalizeBlockRequest.typeUrl;
+  },
+  isSDK(o: any): o is ListenFinalizeBlockRequestSDKType {
+    return o && o.$typeUrl === ListenFinalizeBlockRequest.typeUrl;
+  },
   encode(
     message: ListenFinalizeBlockRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -169,8 +224,21 @@ export const ListenFinalizeBlockRequest = {
 function createBaseListenFinalizeBlockResponse(): ListenFinalizeBlockResponse {
   return {};
 }
+/**
+ * ListenEndBlockResponse is the response type for the ListenEndBlock RPC method
+ * @name ListenFinalizeBlockResponse
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenFinalizeBlockResponse
+ */
 export const ListenFinalizeBlockResponse = {
   typeUrl: '/cosmos.store.streaming.abci.ListenFinalizeBlockResponse' as const,
+  aminoType: 'cosmos-sdk/ListenFinalizeBlockResponse' as const,
+  is(o: any): o is ListenFinalizeBlockResponse {
+    return o && o.$typeUrl === ListenFinalizeBlockResponse.typeUrl;
+  },
+  isSDK(o: any): o is ListenFinalizeBlockResponseSDKType {
+    return o && o.$typeUrl === ListenFinalizeBlockResponse.typeUrl;
+  },
   encode(
     _: ListenFinalizeBlockResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -234,8 +302,33 @@ function createBaseListenCommitRequest(): ListenCommitRequest {
     changeSet: [],
   };
 }
+/**
+ * ListenCommitRequest is the request type for the ListenCommit RPC method
+ * @name ListenCommitRequest
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenCommitRequest
+ */
 export const ListenCommitRequest = {
   typeUrl: '/cosmos.store.streaming.abci.ListenCommitRequest' as const,
+  aminoType: 'cosmos-sdk/ListenCommitRequest' as const,
+  is(o: any): o is ListenCommitRequest {
+    return (
+      o &&
+      (o.$typeUrl === ListenCommitRequest.typeUrl ||
+        (typeof o.blockHeight === 'bigint' &&
+          Array.isArray(o.changeSet) &&
+          (!o.changeSet.length || StoreKVPair.is(o.changeSet[0]))))
+    );
+  },
+  isSDK(o: any): o is ListenCommitRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ListenCommitRequest.typeUrl ||
+        (typeof o.block_height === 'bigint' &&
+          Array.isArray(o.change_set) &&
+          (!o.change_set.length || StoreKVPair.isSDK(o.change_set[0]))))
+    );
+  },
   encode(
     message: ListenCommitRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -334,8 +427,21 @@ export const ListenCommitRequest = {
 function createBaseListenCommitResponse(): ListenCommitResponse {
   return {};
 }
+/**
+ * ListenCommitResponse is the response type for the ListenCommit RPC method
+ * @name ListenCommitResponse
+ * @package cosmos.store.streaming.abci
+ * @see proto type: cosmos.store.streaming.abci.ListenCommitResponse
+ */
 export const ListenCommitResponse = {
   typeUrl: '/cosmos.store.streaming.abci.ListenCommitResponse' as const,
+  aminoType: 'cosmos-sdk/ListenCommitResponse' as const,
+  is(o: any): o is ListenCommitResponse {
+    return o && o.$typeUrl === ListenCommitResponse.typeUrl;
+  },
+  isSDK(o: any): o is ListenCommitResponseSDKType {
+    return o && o.$typeUrl === ListenCommitResponse.typeUrl;
+  },
   encode(
     _: ListenCommitResponse,
     writer: BinaryWriter = BinaryWriter.create(),

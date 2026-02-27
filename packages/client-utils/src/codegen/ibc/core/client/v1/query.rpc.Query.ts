@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../helpers.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryClientStateRequest,
@@ -23,7 +23,7 @@ import {
   QueryUpgradedConsensusStateResponse,
   QueryVerifyMembershipRequest,
   QueryVerifyMembershipResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/client/v1/query.js';
 /** Query provides defines the gRPC querier service */
 export interface Query {
   /** ClientState queries an IBC light client. */

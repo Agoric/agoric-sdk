@@ -219,8 +219,15 @@ export function lSMTokenDeposit_StatusToJSON(
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name UserRedemptionRecord
+ * @package stride.records
+ * @see proto type: stride.records.UserRedemptionRecord
+ */
 export interface UserRedemptionRecord {
-  /** {chain_id}.{epoch}.{receiver} */
+  /**
+   * {chain_id}.{epoch}.{receiver}
+   */
   id: string;
   receiver: string;
   nativeTokenAmount: string;
@@ -234,6 +241,11 @@ export interface UserRedemptionRecordProtoMsg {
   typeUrl: '/stride.records.UserRedemptionRecord';
   value: Uint8Array;
 }
+/**
+ * @name UserRedemptionRecordSDKType
+ * @package stride.records
+ * @see proto type: stride.records.UserRedemptionRecord
+ */
 export interface UserRedemptionRecordSDKType {
   id: string;
   receiver: string;
@@ -244,6 +256,11 @@ export interface UserRedemptionRecordSDKType {
   claim_is_pending: boolean;
   st_token_amount: string;
 }
+/**
+ * @name DepositRecord
+ * @package stride.records
+ * @see proto type: stride.records.DepositRecord
+ */
 export interface DepositRecord {
   id: bigint;
   amount: string;
@@ -258,6 +275,11 @@ export interface DepositRecordProtoMsg {
   typeUrl: '/stride.records.DepositRecord';
   value: Uint8Array;
 }
+/**
+ * @name DepositRecordSDKType
+ * @package stride.records
+ * @see proto type: stride.records.DepositRecord
+ */
 export interface DepositRecordSDKType {
   id: bigint;
   amount: string;
@@ -268,6 +290,11 @@ export interface DepositRecordSDKType {
   source: DepositRecord_Source;
   delegation_txs_in_progress: bigint;
 }
+/**
+ * @name HostZoneUnbonding
+ * @package stride.records
+ * @see proto type: stride.records.HostZoneUnbonding
+ */
 export interface HostZoneUnbonding {
   stTokenAmount: string;
   nativeTokenAmount: string;
@@ -285,6 +312,11 @@ export interface HostZoneUnbondingProtoMsg {
   typeUrl: '/stride.records.HostZoneUnbonding';
   value: Uint8Array;
 }
+/**
+ * @name HostZoneUnbondingSDKType
+ * @package stride.records
+ * @see proto type: stride.records.HostZoneUnbonding
+ */
 export interface HostZoneUnbondingSDKType {
   st_token_amount: string;
   native_token_amount: string;
@@ -298,6 +330,11 @@ export interface HostZoneUnbondingSDKType {
   status: HostZoneUnbonding_Status;
   user_redemption_records: string[];
 }
+/**
+ * @name EpochUnbondingRecord
+ * @package stride.records
+ * @see proto type: stride.records.EpochUnbondingRecord
+ */
 export interface EpochUnbondingRecord {
   epochNumber: bigint;
   hostZoneUnbondings: HostZoneUnbonding[];
@@ -306,10 +343,20 @@ export interface EpochUnbondingRecordProtoMsg {
   typeUrl: '/stride.records.EpochUnbondingRecord';
   value: Uint8Array;
 }
+/**
+ * @name EpochUnbondingRecordSDKType
+ * @package stride.records
+ * @see proto type: stride.records.EpochUnbondingRecord
+ */
 export interface EpochUnbondingRecordSDKType {
   epoch_number: bigint;
   host_zone_unbondings: HostZoneUnbondingSDKType[];
 }
+/**
+ * @name LSMTokenDeposit
+ * @package stride.records
+ * @see proto type: stride.records.LSMTokenDeposit
+ */
 export interface LSMTokenDeposit {
   depositId: string;
   chainId: string;
@@ -325,6 +372,11 @@ export interface LSMTokenDepositProtoMsg {
   typeUrl: '/stride.records.LSMTokenDeposit';
   value: Uint8Array;
 }
+/**
+ * @name LSMTokenDepositSDKType
+ * @package stride.records
+ * @see proto type: stride.records.LSMTokenDeposit
+ */
 export interface LSMTokenDepositSDKType {
   deposit_id: string;
   chain_id: string;
@@ -348,8 +400,41 @@ function createBaseUserRedemptionRecord(): UserRedemptionRecord {
     stTokenAmount: '',
   };
 }
+/**
+ * @name UserRedemptionRecord
+ * @package stride.records
+ * @see proto type: stride.records.UserRedemptionRecord
+ */
 export const UserRedemptionRecord = {
   typeUrl: '/stride.records.UserRedemptionRecord' as const,
+  is(o: any): o is UserRedemptionRecord {
+    return (
+      o &&
+      (o.$typeUrl === UserRedemptionRecord.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.nativeTokenAmount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.hostZoneId === 'string' &&
+          typeof o.epochNumber === 'bigint' &&
+          typeof o.claimIsPending === 'boolean' &&
+          typeof o.stTokenAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is UserRedemptionRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === UserRedemptionRecord.typeUrl ||
+        (typeof o.id === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.native_token_amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.host_zone_id === 'string' &&
+          typeof o.epoch_number === 'bigint' &&
+          typeof o.claim_is_pending === 'boolean' &&
+          typeof o.st_token_amount === 'string'))
+    );
+  },
   encode(
     message: UserRedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -498,8 +583,41 @@ function createBaseDepositRecord(): DepositRecord {
     delegationTxsInProgress: BigInt(0),
   };
 }
+/**
+ * @name DepositRecord
+ * @package stride.records
+ * @see proto type: stride.records.DepositRecord
+ */
 export const DepositRecord = {
   typeUrl: '/stride.records.DepositRecord' as const,
+  is(o: any): o is DepositRecord {
+    return (
+      o &&
+      (o.$typeUrl === DepositRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.hostZoneId === 'string' &&
+          isSet(o.status) &&
+          typeof o.depositEpochNumber === 'bigint' &&
+          isSet(o.source) &&
+          typeof o.delegationTxsInProgress === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is DepositRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DepositRecord.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          typeof o.amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.host_zone_id === 'string' &&
+          isSet(o.status) &&
+          typeof o.deposit_epoch_number === 'bigint' &&
+          isSet(o.source) &&
+          typeof o.delegation_txs_in_progress === 'bigint'))
+    );
+  },
   encode(
     message: DepositRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -660,8 +778,51 @@ function createBaseHostZoneUnbonding(): HostZoneUnbonding {
     userRedemptionRecords: [],
   };
 }
+/**
+ * @name HostZoneUnbonding
+ * @package stride.records
+ * @see proto type: stride.records.HostZoneUnbonding
+ */
 export const HostZoneUnbonding = {
   typeUrl: '/stride.records.HostZoneUnbonding' as const,
+  is(o: any): o is HostZoneUnbonding {
+    return (
+      o &&
+      (o.$typeUrl === HostZoneUnbonding.typeUrl ||
+        (typeof o.stTokenAmount === 'string' &&
+          typeof o.nativeTokenAmount === 'string' &&
+          typeof o.stTokensToBurn === 'string' &&
+          typeof o.nativeTokensToUnbond === 'string' &&
+          typeof o.claimableNativeTokens === 'string' &&
+          typeof o.undelegationTxsInProgress === 'bigint' &&
+          typeof o.denom === 'string' &&
+          typeof o.hostZoneId === 'string' &&
+          typeof o.unbondingTime === 'bigint' &&
+          isSet(o.status) &&
+          Array.isArray(o.userRedemptionRecords) &&
+          (!o.userRedemptionRecords.length ||
+            typeof o.userRedemptionRecords[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is HostZoneUnbondingSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HostZoneUnbonding.typeUrl ||
+        (typeof o.st_token_amount === 'string' &&
+          typeof o.native_token_amount === 'string' &&
+          typeof o.st_tokens_to_burn === 'string' &&
+          typeof o.native_tokens_to_unbond === 'string' &&
+          typeof o.claimable_native_tokens === 'string' &&
+          typeof o.undelegation_txs_in_progress === 'bigint' &&
+          typeof o.denom === 'string' &&
+          typeof o.host_zone_id === 'string' &&
+          typeof o.unbonding_time === 'bigint' &&
+          isSet(o.status) &&
+          Array.isArray(o.user_redemption_records) &&
+          (!o.user_redemption_records.length ||
+            typeof o.user_redemption_records[0] === 'string')))
+    );
+  },
   encode(
     message: HostZoneUnbonding,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -853,8 +1014,33 @@ function createBaseEpochUnbondingRecord(): EpochUnbondingRecord {
     hostZoneUnbondings: [],
   };
 }
+/**
+ * @name EpochUnbondingRecord
+ * @package stride.records
+ * @see proto type: stride.records.EpochUnbondingRecord
+ */
 export const EpochUnbondingRecord = {
   typeUrl: '/stride.records.EpochUnbondingRecord' as const,
+  is(o: any): o is EpochUnbondingRecord {
+    return (
+      o &&
+      (o.$typeUrl === EpochUnbondingRecord.typeUrl ||
+        (typeof o.epochNumber === 'bigint' &&
+          Array.isArray(o.hostZoneUnbondings) &&
+          (!o.hostZoneUnbondings.length ||
+            HostZoneUnbonding.is(o.hostZoneUnbondings[0]))))
+    );
+  },
+  isSDK(o: any): o is EpochUnbondingRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EpochUnbondingRecord.typeUrl ||
+        (typeof o.epoch_number === 'bigint' &&
+          Array.isArray(o.host_zone_unbondings) &&
+          (!o.host_zone_unbondings.length ||
+            HostZoneUnbonding.isSDK(o.host_zone_unbondings[0]))))
+    );
+  },
   encode(
     message: EpochUnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -955,8 +1141,43 @@ function createBaseLSMTokenDeposit(): LSMTokenDeposit {
     status: 0,
   };
 }
+/**
+ * @name LSMTokenDeposit
+ * @package stride.records
+ * @see proto type: stride.records.LSMTokenDeposit
+ */
 export const LSMTokenDeposit = {
   typeUrl: '/stride.records.LSMTokenDeposit' as const,
+  is(o: any): o is LSMTokenDeposit {
+    return (
+      o &&
+      (o.$typeUrl === LSMTokenDeposit.typeUrl ||
+        (typeof o.depositId === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.ibcDenom === 'string' &&
+          typeof o.stakerAddress === 'string' &&
+          typeof o.validatorAddress === 'string' &&
+          typeof o.amount === 'string' &&
+          Coin.is(o.stToken) &&
+          isSet(o.status)))
+    );
+  },
+  isSDK(o: any): o is LSMTokenDepositSDKType {
+    return (
+      o &&
+      (o.$typeUrl === LSMTokenDeposit.typeUrl ||
+        (typeof o.deposit_id === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.ibc_denom === 'string' &&
+          typeof o.staker_address === 'string' &&
+          typeof o.validator_address === 'string' &&
+          typeof o.amount === 'string' &&
+          Coin.isSDK(o.st_token) &&
+          isSet(o.status)))
+    );
+  },
   encode(
     message: LSMTokenDeposit,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -21,6 +21,7 @@
         "sourceMap": true,
         "isolatedModules": true,
     },
+    "include": ["src"],
     "exclude": [
         "test",
     ]

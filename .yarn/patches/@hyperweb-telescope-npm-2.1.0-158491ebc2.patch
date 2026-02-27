@@ -1,0 +1,88 @@
+diff --git a/main/helpers/internal-for-bigint.js b/main/helpers/internal-for-bigint.js
+index fcaaf835507abec7919a7f9af3189fe77262480d..fe0373dd2b4946c63d4f97780b07eff280291eab 100644
+--- a/main/helpers/internal-for-bigint.js
++++ b/main/helpers/internal-for-bigint.js
+@@ -2,7 +2,9 @@
+ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.getHelperForBigint = void 0;
+ const getHelperForBigint = (options) => {
+-    return `${options.useInterchainJs ?
++    return `${options.prototypes?.typingsFormat?.customTypes?.base64Lib === '@endo/base64' ?
++        'export { decodeBase64 as bytesFromBase64, encodeBase64 as base64FromBytes } from \'@endo/base64\';' :
++        options.useInterchainJs ?
+         'export { fromBase64 as bytesFromBase64, toBase64 as base64FromBytes } from \'@interchainjs/encoding\';' :
+         `declare var self: any | undefined;
+ declare var window: any | undefined;
+diff --git a/main/helpers/internal.js b/main/helpers/internal.js
+index 482abcf1ff22c6613cec30e27d260729a765bcd7..354f199d214d6d33cb7e81f39cb6522390f6aebb 100644
+--- a/main/helpers/internal.js
++++ b/main/helpers/internal.js
+@@ -14,7 +14,9 @@ if (_m0.util.Long !== Long) {
+ 
+ export { Long };
+ 
+-${options.useInterchainJs ?
++${options.prototypes?.typingsFormat?.customTypes?.base64Lib === '@endo/base64' ?
++        'export { decodeBase64 as bytesFromBase64, encodeBase64 as base64FromBytes } from \'@endo/base64\';' :
++        options.useInterchainJs ?
+         'export { fromBase64 as bytesFromBase64, toBase64 as base64FromBytes } from \'@interchainjs/encoding\';' :
+         `declare var self: any | undefined;
+ declare var window: any | undefined;
+diff --git a/module/helpers/internal-for-bigint.js b/module/helpers/internal-for-bigint.js
+index ff470a29d0b4874cd6ea2e0611a4d9e497ce53ae..3ec5ce7d74470f952d4e92e9236adfa7c4ee1c29 100644
+--- a/module/helpers/internal-for-bigint.js
++++ b/module/helpers/internal-for-bigint.js
+@@ -1,5 +1,7 @@
+ export const getHelperForBigint = (options) => {
+-    return `${options.useInterchainJs ?
++    return `${options.prototypes?.typingsFormat?.customTypes?.base64Lib === '@endo/base64' ?
++        'export { decodeBase64 as bytesFromBase64, encodeBase64 as base64FromBytes } from \'@endo/base64\';' :
++        options.useInterchainJs ?
+         'export { fromBase64 as bytesFromBase64, toBase64 as base64FromBytes } from \'@interchainjs/encoding\';' :
+         `declare var self: any | undefined;
+ declare var window: any | undefined;
+diff --git a/module/helpers/internal.js b/module/helpers/internal.js
+index 7a478de0dc2837278f20976c4653a1112ff3e47e..923d5faf0b46f315284f8f3fcdc2f807fc09d453 100644
+--- a/module/helpers/internal.js
++++ b/module/helpers/internal.js
+@@ -11,7 +11,9 @@ if (_m0.util.Long !== Long) {
+ 
+ export { Long };
+ 
+-${options.useInterchainJs ?
++${options.prototypes?.typingsFormat?.customTypes?.base64Lib === '@endo/base64' ?
++        'export { decodeBase64 as bytesFromBase64, encodeBase64 as base64FromBytes } from \'@endo/base64\';' :
++        options.useInterchainJs ?
+         'export { fromBase64 as bytesFromBase64, toBase64 as base64FromBytes } from \'@interchainjs/encoding\';' :
+         `declare var self: any | undefined;
+ declare var window: any | undefined;
+diff --git a/src/helpers/internal-for-bigint.ts b/src/helpers/internal-for-bigint.ts
+index ab282f8c5f484571c21cd7eb494be22085fa282e..a4917e4a2a01eeca4f3954abe386dea98b733f12 100644
+--- a/src/helpers/internal-for-bigint.ts
++++ b/src/helpers/internal-for-bigint.ts
+@@ -1,7 +1,9 @@
+ import { TelescopeOptions } from "@cosmology/types";
+ 
+ export const getHelperForBigint = (options: TelescopeOptions) => {
+-  return `${options.useInterchainJs ?
++  return `${options.prototypes?.typingsFormat?.customTypes?.base64Lib === '@endo/base64' ?
++    'export { decodeBase64 as bytesFromBase64, encodeBase64 as base64FromBytes } from \'@endo/base64\';' :
++    options.useInterchainJs ?
+     'export { fromBase64 as bytesFromBase64, toBase64 as base64FromBytes } from \'@interchainjs/encoding\';' :
+     `declare var self: any | undefined;
+ declare var window: any | undefined;
+diff --git a/src/helpers/internal.ts b/src/helpers/internal.ts
+index 201bc57bee541bf55e9228a65d18e34b45cac32c..4a61b619c996721ce5b44042b64637880ea52b30 100644
+--- a/src/helpers/internal.ts
++++ b/src/helpers/internal.ts
+@@ -13,7 +13,9 @@ if (_m0.util.Long !== Long) {
+ 
+ export { Long };
+ 
+-${options.useInterchainJs ?
++${options.prototypes?.typingsFormat?.customTypes?.base64Lib === '@endo/base64' ?
++    'export { decodeBase64 as bytesFromBase64, encodeBase64 as base64FromBytes } from \'@endo/base64\';' :
++    options.useInterchainJs ?
+     'export { fromBase64 as bytesFromBase64, toBase64 as base64FromBytes } from \'@interchainjs/encoding\';' :
+     `declare var self: any | undefined;
+ declare var window: any | undefined;

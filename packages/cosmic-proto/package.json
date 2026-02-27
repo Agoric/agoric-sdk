@@ -152,6 +152,38 @@
       "types": "./dist/codegen/agoric/swingset/swingset.d.ts",
       "default": "./dist/codegen/agoric/swingset/swingset.js"
     },
+    "./codegen/binary.js": {
+      "types": "./dist/codegen/binary.d.ts",
+      "default": "./dist/codegen/binary.js"
+    },
+    "./codegen/decimals.js": {
+      "types": "./dist/codegen/decimals.d.ts",
+      "default": "./dist/codegen/decimals.js"
+    },
+    "./codegen/helpers.js": {
+      "types": "./dist/codegen/helpers.d.ts",
+      "default": "./dist/codegen/helpers.js"
+    },
+    "./codegen/json-safe.js": {
+      "types": "./dist/codegen/json-safe.d.ts",
+      "default": "./dist/codegen/json-safe.js"
+    },
+    "./codegen/types.js": {
+      "types": "./dist/codegen/types.d.ts",
+      "default": "./dist/codegen/types.js"
+    },
+    "./codegen/utf8.js": {
+      "types": "./dist/codegen/utf8.d.ts",
+      "default": "./dist/codegen/utf8.js"
+    },
+    "./codegen/varint.js": {
+      "types": "./dist/codegen/varint.d.ts",
+      "default": "./dist/codegen/varint.js"
+    },
+    "./codegen/*.js": {
+      "types": "./dist/codegen/*.d.ts",
+      "default": "./dist/codegen/*.js"
+    },
     "./tendermint/*.js": {
       "types": "./dist/codegen/tendermint/*.d.ts",
       "default": "./dist/codegen/tendermint/*.js"
@@ -194,9 +226,9 @@
   "devDependencies": {
     "@agoric/cosmos": "workspace:*",
     "@ava/typescript": "^6.0.0",
-    "@cosmology/telescope": "^1.12.21",
     "@endo/bundle-source": "^4.1.2",
     "@endo/import-bundle": "^1.5.2",
+    "@hyperweb/telescope": "patch:@hyperweb/telescope@npm%3A2.1.0#~/.yarn/patches/@hyperweb-telescope-npm-2.1.0-158491ebc2.patch",
     "ava": "^6.4.1",
     "glob": "^11.0.3",
     "rimraf": "^5.0.0",
@@ -205,8 +237,12 @@
     "typescript": "~6.0.0-beta"
   },
   "dependencies": {
+    "@chain-registry/v2": "^1.71.186",
+    "@chain-registry/v2-types": "^0.53.115",
     "@endo/base64": "^1.0.12",
     "@endo/init": "^1.1.12",
+    "@interchainjs/cosmos": "^1.19.3",
+    "@interchainjs/types": "^1.19.1",
     "bech32": "^2.0.0",
     "query-string": "^9.1.1"
   },

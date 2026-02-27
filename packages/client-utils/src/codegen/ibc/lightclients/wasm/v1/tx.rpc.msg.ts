@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../helpers.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgStoreCode,
   MsgStoreCodeResponse,
@@ -8,7 +8,7 @@ import {
   MsgRemoveChecksumResponse,
   MsgMigrateContract,
   MsgMigrateContractResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/lightclients/wasm/v1/tx.js';
 /** Msg defines the ibc/08-wasm Msg service. */
 export interface Msg {
   /** StoreCode defines a rpc handler method for MsgStoreCode. */
@@ -23,8 +23,8 @@ export interface Msg {
   ): Promise<MsgMigrateContractResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.storeCode = this.storeCode.bind(this);
     this.removeChecksum = this.removeChecksum.bind(this);
@@ -68,3 +68,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

@@ -1,7 +1,7 @@
 //@ts-nocheck
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../../json-safe.js';
@@ -42,7 +42,12 @@ export function typeToJSON(object: Type): string {
       return 'UNRECOGNIZED';
   }
 }
-/** InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field. */
+/**
+ * InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field.
+ * @name InterchainAccountPacketData
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccountPacketData
+ */
 export interface InterchainAccountPacketData {
   type: Type;
   data: Uint8Array;
@@ -52,13 +57,23 @@ export interface InterchainAccountPacketDataProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.v1.InterchainAccountPacketData';
   value: Uint8Array;
 }
-/** InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field. */
+/**
+ * InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field.
+ * @name InterchainAccountPacketDataSDKType
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccountPacketData
+ */
 export interface InterchainAccountPacketDataSDKType {
   type: Type;
   data: Uint8Array;
   memo: string;
 }
-/** CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain. */
+/**
+ * CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain.
+ * @name CosmosTx
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.CosmosTx
+ */
 export interface CosmosTx {
   messages: Any[];
 }
@@ -66,7 +81,12 @@ export interface CosmosTxProtoMsg {
   typeUrl: '/ibc.applications.interchain_accounts.v1.CosmosTx';
   value: Uint8Array;
 }
-/** CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain. */
+/**
+ * CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain.
+ * @name CosmosTxSDKType
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.CosmosTx
+ */
 export interface CosmosTxSDKType {
   messages: AnySDKType[];
 }
@@ -77,9 +97,34 @@ function createBaseInterchainAccountPacketData(): InterchainAccountPacketData {
     memo: '',
   };
 }
+/**
+ * InterchainAccountPacketData is comprised of a raw transaction, type of transaction and optional memo field.
+ * @name InterchainAccountPacketData
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.InterchainAccountPacketData
+ */
 export const InterchainAccountPacketData = {
   typeUrl:
     '/ibc.applications.interchain_accounts.v1.InterchainAccountPacketData' as const,
+  aminoType: 'cosmos-sdk/InterchainAccountPacketData' as const,
+  is(o: any): o is InterchainAccountPacketData {
+    return (
+      o &&
+      (o.$typeUrl === InterchainAccountPacketData.typeUrl ||
+        (isSet(o.type) &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.memo === 'string'))
+    );
+  },
+  isSDK(o: any): o is InterchainAccountPacketDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === InterchainAccountPacketData.typeUrl ||
+        (isSet(o.type) &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.memo === 'string'))
+    );
+  },
   encode(
     message: InterchainAccountPacketData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -175,8 +220,31 @@ function createBaseCosmosTx(): CosmosTx {
     messages: [],
   };
 }
+/**
+ * CosmosTx contains a list of sdk.Msg's. It should be used when sending transactions to an SDK host chain.
+ * @name CosmosTx
+ * @package ibc.applications.interchain_accounts.v1
+ * @see proto type: ibc.applications.interchain_accounts.v1.CosmosTx
+ */
 export const CosmosTx = {
   typeUrl: '/ibc.applications.interchain_accounts.v1.CosmosTx' as const,
+  aminoType: 'cosmos-sdk/CosmosTx' as const,
+  is(o: any): o is CosmosTx {
+    return (
+      o &&
+      (o.$typeUrl === CosmosTx.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.is(o.messages[0]))))
+    );
+  },
+  isSDK(o: any): o is CosmosTxSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CosmosTx.typeUrl ||
+        (Array.isArray(o.messages) &&
+          (!o.messages.length || Any.isSDK(o.messages[0]))))
+    );
+  },
   encode(
     message: CosmosTx,
     writer: BinaryWriter = BinaryWriter.create(),

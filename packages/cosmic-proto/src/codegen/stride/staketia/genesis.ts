@@ -14,17 +14,30 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
-/** Params defines the staketia module parameters. */
+/**
+ * Params defines the staketia module parameters.
+ * @name Params
+ * @package stride.staketia
+ * @see proto type: stride.staketia.Params
+ */
 export interface Params {}
 export interface ParamsProtoMsg {
   typeUrl: '/stride.staketia.Params';
   value: Uint8Array;
 }
-/** Params defines the staketia module parameters. */
+/**
+ * Params defines the staketia module parameters.
+ * @name ParamsSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.Params
+ */
 export interface ParamsSDKType {}
 /**
  * TransferInProgressRecordIds stores record IDs for delegation records
  * that have a transfer in progress
+ * @name TransferInProgressRecordIds
+ * @package stride.staketia
+ * @see proto type: stride.staketia.TransferInProgressRecordIds
  */
 export interface TransferInProgressRecordIds {
   channelId: string;
@@ -38,13 +51,21 @@ export interface TransferInProgressRecordIdsProtoMsg {
 /**
  * TransferInProgressRecordIds stores record IDs for delegation records
  * that have a transfer in progress
+ * @name TransferInProgressRecordIdsSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.TransferInProgressRecordIds
  */
 export interface TransferInProgressRecordIdsSDKType {
   channel_id: string;
   sequence: bigint;
   record_id: bigint;
 }
-/** GenesisState defines the staketia module's genesis state. */
+/**
+ * GenesisState defines the staketia module's genesis state.
+ * @name GenesisState
+ * @package stride.staketia
+ * @see proto type: stride.staketia.GenesisState
+ */
 export interface GenesisState {
   params: Params;
   hostZone: HostZone;
@@ -58,7 +79,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/stride.staketia.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the staketia module's genesis state. */
+/**
+ * GenesisState defines the staketia module's genesis state.
+ * @name GenesisStateSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   host_zone: HostZoneSDKType;
@@ -71,8 +97,20 @@ export interface GenesisStateSDKType {
 function createBaseParams(): Params {
   return {};
 }
+/**
+ * Params defines the staketia module parameters.
+ * @name Params
+ * @package stride.staketia
+ * @see proto type: stride.staketia.Params
+ */
 export const Params = {
   typeUrl: '/stride.staketia.Params' as const,
+  is(o: any): o is Params {
+    return o && o.$typeUrl === Params.typeUrl;
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return o && o.$typeUrl === Params.typeUrl;
+  },
   encode(
     _: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -125,8 +163,33 @@ function createBaseTransferInProgressRecordIds(): TransferInProgressRecordIds {
     recordId: BigInt(0),
   };
 }
+/**
+ * TransferInProgressRecordIds stores record IDs for delegation records
+ * that have a transfer in progress
+ * @name TransferInProgressRecordIds
+ * @package stride.staketia
+ * @see proto type: stride.staketia.TransferInProgressRecordIds
+ */
 export const TransferInProgressRecordIds = {
   typeUrl: '/stride.staketia.TransferInProgressRecordIds' as const,
+  is(o: any): o is TransferInProgressRecordIds {
+    return (
+      o &&
+      (o.$typeUrl === TransferInProgressRecordIds.typeUrl ||
+        (typeof o.channelId === 'string' &&
+          typeof o.sequence === 'bigint' &&
+          typeof o.recordId === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is TransferInProgressRecordIdsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TransferInProgressRecordIds.typeUrl ||
+        (typeof o.channel_id === 'string' &&
+          typeof o.sequence === 'bigint' &&
+          typeof o.record_id === 'bigint'))
+    );
+  },
   encode(
     message: TransferInProgressRecordIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -234,8 +297,60 @@ function createBaseGenesisState(): GenesisState {
     transferInProgressRecordIds: [],
   };
 }
+/**
+ * GenesisState defines the staketia module's genesis state.
+ * @name GenesisState
+ * @package stride.staketia
+ * @see proto type: stride.staketia.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/stride.staketia.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          HostZone.is(o.hostZone) &&
+          Array.isArray(o.delegationRecords) &&
+          (!o.delegationRecords.length ||
+            DelegationRecord.is(o.delegationRecords[0])) &&
+          Array.isArray(o.unbondingRecords) &&
+          (!o.unbondingRecords.length ||
+            UnbondingRecord.is(o.unbondingRecords[0])) &&
+          Array.isArray(o.redemptionRecords) &&
+          (!o.redemptionRecords.length ||
+            RedemptionRecord.is(o.redemptionRecords[0])) &&
+          Array.isArray(o.slashRecords) &&
+          (!o.slashRecords.length || SlashRecord.is(o.slashRecords[0])) &&
+          Array.isArray(o.transferInProgressRecordIds) &&
+          (!o.transferInProgressRecordIds.length ||
+            TransferInProgressRecordIds.is(o.transferInProgressRecordIds[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          HostZone.isSDK(o.host_zone) &&
+          Array.isArray(o.delegation_records) &&
+          (!o.delegation_records.length ||
+            DelegationRecord.isSDK(o.delegation_records[0])) &&
+          Array.isArray(o.unbonding_records) &&
+          (!o.unbonding_records.length ||
+            UnbondingRecord.isSDK(o.unbonding_records[0])) &&
+          Array.isArray(o.redemption_records) &&
+          (!o.redemption_records.length ||
+            RedemptionRecord.isSDK(o.redemption_records[0])) &&
+          Array.isArray(o.slash_records) &&
+          (!o.slash_records.length || SlashRecord.isSDK(o.slash_records[0])) &&
+          Array.isArray(o.transfer_in_progress_record_ids) &&
+          (!o.transfer_in_progress_record_ids.length ||
+            TransferInProgressRecordIds.isSDK(
+              o.transfer_in_progress_record_ids[0],
+            ))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

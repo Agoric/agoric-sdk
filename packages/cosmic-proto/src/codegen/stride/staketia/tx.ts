@@ -56,8 +56,11 @@ export function overwritableRecordTypeToJSON(
 /**
  * Deprecated: Liquid stakes should be handled in stakeibc
  * LiquidStake
+ * @name MsgLiquidStake
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgLiquidStake
+ * @deprecated
  */
-/** @deprecated */
 export interface MsgLiquidStake {
   staker: string;
   nativeAmount: string;
@@ -69,13 +72,21 @@ export interface MsgLiquidStakeProtoMsg {
 /**
  * Deprecated: Liquid stakes should be handled in stakeibc
  * LiquidStake
+ * @name MsgLiquidStakeSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgLiquidStake
+ * @deprecated
  */
-/** @deprecated */
 export interface MsgLiquidStakeSDKType {
   staker: string;
   native_amount: string;
 }
-/** @deprecated */
+/**
+ * @name MsgLiquidStakeResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgLiquidStakeResponse
+ * @deprecated
+ */
 export interface MsgLiquidStakeResponse {
   stToken: Coin;
 }
@@ -83,11 +94,21 @@ export interface MsgLiquidStakeResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgLiquidStakeResponse';
   value: Uint8Array;
 }
-/** @deprecated */
+/**
+ * @name MsgLiquidStakeResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgLiquidStakeResponse
+ * @deprecated
+ */
 export interface MsgLiquidStakeResponseSDKType {
   st_token: CoinSDKType;
 }
-/** RedeemStake */
+/**
+ * RedeemStake
+ * @name MsgRedeemStake
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRedeemStake
+ */
 export interface MsgRedeemStake {
   redeemer: string;
   stTokenAmount: string;
@@ -101,12 +122,22 @@ export interface MsgRedeemStakeProtoMsg {
   typeUrl: '/stride.staketia.MsgRedeemStake';
   value: Uint8Array;
 }
-/** RedeemStake */
+/**
+ * RedeemStake
+ * @name MsgRedeemStakeSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRedeemStake
+ */
 export interface MsgRedeemStakeSDKType {
   redeemer: string;
   st_token_amount: string;
   receiver: string;
 }
+/**
+ * @name MsgRedeemStakeResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRedeemStakeResponse
+ */
 export interface MsgRedeemStakeResponse {
   nativeToken: Coin;
 }
@@ -114,10 +145,20 @@ export interface MsgRedeemStakeResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgRedeemStakeResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgRedeemStakeResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRedeemStakeResponse
+ */
 export interface MsgRedeemStakeResponseSDKType {
   native_token: CoinSDKType;
 }
-/** ConfirmDelegation */
+/**
+ * ConfirmDelegation
+ * @name MsgConfirmDelegation
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmDelegation
+ */
 export interface MsgConfirmDelegation {
   operator: string;
   recordId: bigint;
@@ -127,19 +168,39 @@ export interface MsgConfirmDelegationProtoMsg {
   typeUrl: '/stride.staketia.MsgConfirmDelegation';
   value: Uint8Array;
 }
-/** ConfirmDelegation */
+/**
+ * ConfirmDelegation
+ * @name MsgConfirmDelegationSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmDelegation
+ */
 export interface MsgConfirmDelegationSDKType {
   operator: string;
   record_id: bigint;
   tx_hash: string;
 }
+/**
+ * @name MsgConfirmDelegationResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmDelegationResponse
+ */
 export interface MsgConfirmDelegationResponse {}
 export interface MsgConfirmDelegationResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgConfirmDelegationResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgConfirmDelegationResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmDelegationResponse
+ */
 export interface MsgConfirmDelegationResponseSDKType {}
-/** ConfirmUndelegation */
+/**
+ * ConfirmUndelegation
+ * @name MsgConfirmUndelegation
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUndelegation
+ */
 export interface MsgConfirmUndelegation {
   operator: string;
   recordId: bigint;
@@ -149,19 +210,39 @@ export interface MsgConfirmUndelegationProtoMsg {
   typeUrl: '/stride.staketia.MsgConfirmUndelegation';
   value: Uint8Array;
 }
-/** ConfirmUndelegation */
+/**
+ * ConfirmUndelegation
+ * @name MsgConfirmUndelegationSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUndelegation
+ */
 export interface MsgConfirmUndelegationSDKType {
   operator: string;
   record_id: bigint;
   tx_hash: string;
 }
+/**
+ * @name MsgConfirmUndelegationResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUndelegationResponse
+ */
 export interface MsgConfirmUndelegationResponse {}
 export interface MsgConfirmUndelegationResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgConfirmUndelegationResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgConfirmUndelegationResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUndelegationResponse
+ */
 export interface MsgConfirmUndelegationResponseSDKType {}
-/** ConfirmUnbondedTokenSweep */
+/**
+ * ConfirmUnbondedTokenSweep
+ * @name MsgConfirmUnbondedTokenSweep
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUnbondedTokenSweep
+ */
 export interface MsgConfirmUnbondedTokenSweep {
   operator: string;
   recordId: bigint;
@@ -171,19 +252,39 @@ export interface MsgConfirmUnbondedTokenSweepProtoMsg {
   typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweep';
   value: Uint8Array;
 }
-/** ConfirmUnbondedTokenSweep */
+/**
+ * ConfirmUnbondedTokenSweep
+ * @name MsgConfirmUnbondedTokenSweepSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUnbondedTokenSweep
+ */
 export interface MsgConfirmUnbondedTokenSweepSDKType {
   operator: string;
   record_id: bigint;
   tx_hash: string;
 }
+/**
+ * @name MsgConfirmUnbondedTokenSweepResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUnbondedTokenSweepResponse
+ */
 export interface MsgConfirmUnbondedTokenSweepResponse {}
 export interface MsgConfirmUnbondedTokenSweepResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweepResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgConfirmUnbondedTokenSweepResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUnbondedTokenSweepResponse
+ */
 export interface MsgConfirmUnbondedTokenSweepResponseSDKType {}
-/** AdjustDelegatedBalance */
+/**
+ * AdjustDelegatedBalance
+ * @name MsgAdjustDelegatedBalance
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgAdjustDelegatedBalance
+ */
 export interface MsgAdjustDelegatedBalance {
   operator: string;
   delegationOffset: string;
@@ -193,19 +294,39 @@ export interface MsgAdjustDelegatedBalanceProtoMsg {
   typeUrl: '/stride.staketia.MsgAdjustDelegatedBalance';
   value: Uint8Array;
 }
-/** AdjustDelegatedBalance */
+/**
+ * AdjustDelegatedBalance
+ * @name MsgAdjustDelegatedBalanceSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgAdjustDelegatedBalance
+ */
 export interface MsgAdjustDelegatedBalanceSDKType {
   operator: string;
   delegation_offset: string;
   validator_address: string;
 }
+/**
+ * @name MsgAdjustDelegatedBalanceResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgAdjustDelegatedBalanceResponse
+ */
 export interface MsgAdjustDelegatedBalanceResponse {}
 export interface MsgAdjustDelegatedBalanceResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgAdjustDelegatedBalanceResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgAdjustDelegatedBalanceResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgAdjustDelegatedBalanceResponse
+ */
 export interface MsgAdjustDelegatedBalanceResponseSDKType {}
-/** UpdateInnerRedemptionRate */
+/**
+ * UpdateInnerRedemptionRate
+ * @name MsgUpdateInnerRedemptionRateBounds
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgUpdateInnerRedemptionRateBounds
+ */
 export interface MsgUpdateInnerRedemptionRateBounds {
   creator: string;
   minInnerRedemptionRate: string;
@@ -215,19 +336,39 @@ export interface MsgUpdateInnerRedemptionRateBoundsProtoMsg {
   typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBounds';
   value: Uint8Array;
 }
-/** UpdateInnerRedemptionRate */
+/**
+ * UpdateInnerRedemptionRate
+ * @name MsgUpdateInnerRedemptionRateBoundsSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgUpdateInnerRedemptionRateBounds
+ */
 export interface MsgUpdateInnerRedemptionRateBoundsSDKType {
   creator: string;
   min_inner_redemption_rate: string;
   max_inner_redemption_rate: string;
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBoundsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse
+ */
 export interface MsgUpdateInnerRedemptionRateBoundsResponse {}
 export interface MsgUpdateInnerRedemptionRateBoundsResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBoundsResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse
+ */
 export interface MsgUpdateInnerRedemptionRateBoundsResponseSDKType {}
-/** ResumeHostZone */
+/**
+ * ResumeHostZone
+ * @name MsgResumeHostZone
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgResumeHostZone
+ */
 export interface MsgResumeHostZone {
   creator: string;
 }
@@ -235,17 +376,37 @@ export interface MsgResumeHostZoneProtoMsg {
   typeUrl: '/stride.staketia.MsgResumeHostZone';
   value: Uint8Array;
 }
-/** ResumeHostZone */
+/**
+ * ResumeHostZone
+ * @name MsgResumeHostZoneSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgResumeHostZone
+ */
 export interface MsgResumeHostZoneSDKType {
   creator: string;
 }
+/**
+ * @name MsgResumeHostZoneResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgResumeHostZoneResponse
+ */
 export interface MsgResumeHostZoneResponse {}
 export interface MsgResumeHostZoneResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgResumeHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgResumeHostZoneResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgResumeHostZoneResponse
+ */
 export interface MsgResumeHostZoneResponseSDKType {}
-/** RefreshRedemptionRate */
+/**
+ * RefreshRedemptionRate
+ * @name MsgRefreshRedemptionRate
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRefreshRedemptionRate
+ */
 export interface MsgRefreshRedemptionRate {
   creator: string;
 }
@@ -253,17 +414,37 @@ export interface MsgRefreshRedemptionRateProtoMsg {
   typeUrl: '/stride.staketia.MsgRefreshRedemptionRate';
   value: Uint8Array;
 }
-/** RefreshRedemptionRate */
+/**
+ * RefreshRedemptionRate
+ * @name MsgRefreshRedemptionRateSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRefreshRedemptionRate
+ */
 export interface MsgRefreshRedemptionRateSDKType {
   creator: string;
 }
+/**
+ * @name MsgRefreshRedemptionRateResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRefreshRedemptionRateResponse
+ */
 export interface MsgRefreshRedemptionRateResponse {}
 export interface MsgRefreshRedemptionRateResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgRefreshRedemptionRateResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgRefreshRedemptionRateResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRefreshRedemptionRateResponse
+ */
 export interface MsgRefreshRedemptionRateResponseSDKType {}
-/** OverwriteDelegationRecord */
+/**
+ * OverwriteDelegationRecord
+ * @name MsgOverwriteDelegationRecord
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteDelegationRecord
+ */
 export interface MsgOverwriteDelegationRecord {
   creator: string;
   delegationRecord?: DelegationRecord;
@@ -272,18 +453,38 @@ export interface MsgOverwriteDelegationRecordProtoMsg {
   typeUrl: '/stride.staketia.MsgOverwriteDelegationRecord';
   value: Uint8Array;
 }
-/** OverwriteDelegationRecord */
+/**
+ * OverwriteDelegationRecord
+ * @name MsgOverwriteDelegationRecordSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteDelegationRecord
+ */
 export interface MsgOverwriteDelegationRecordSDKType {
   creator: string;
   delegation_record?: DelegationRecordSDKType;
 }
+/**
+ * @name MsgOverwriteDelegationRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteDelegationRecordResponse
+ */
 export interface MsgOverwriteDelegationRecordResponse {}
 export interface MsgOverwriteDelegationRecordResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgOverwriteDelegationRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgOverwriteDelegationRecordResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteDelegationRecordResponse
+ */
 export interface MsgOverwriteDelegationRecordResponseSDKType {}
-/** OverwriteUnbondingRecord */
+/**
+ * OverwriteUnbondingRecord
+ * @name MsgOverwriteUnbondingRecord
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteUnbondingRecord
+ */
 export interface MsgOverwriteUnbondingRecord {
   creator: string;
   unbondingRecord?: UnbondingRecord;
@@ -292,18 +493,38 @@ export interface MsgOverwriteUnbondingRecordProtoMsg {
   typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecord';
   value: Uint8Array;
 }
-/** OverwriteUnbondingRecord */
+/**
+ * OverwriteUnbondingRecord
+ * @name MsgOverwriteUnbondingRecordSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteUnbondingRecord
+ */
 export interface MsgOverwriteUnbondingRecordSDKType {
   creator: string;
   unbonding_record?: UnbondingRecordSDKType;
 }
+/**
+ * @name MsgOverwriteUnbondingRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteUnbondingRecordResponse
+ */
 export interface MsgOverwriteUnbondingRecordResponse {}
 export interface MsgOverwriteUnbondingRecordResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgOverwriteUnbondingRecordResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteUnbondingRecordResponse
+ */
 export interface MsgOverwriteUnbondingRecordResponseSDKType {}
-/** OverwriteRedemptionRecord */
+/**
+ * OverwriteRedemptionRecord
+ * @name MsgOverwriteRedemptionRecord
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteRedemptionRecord
+ */
 export interface MsgOverwriteRedemptionRecord {
   creator: string;
   redemptionRecord?: RedemptionRecord;
@@ -312,18 +533,38 @@ export interface MsgOverwriteRedemptionRecordProtoMsg {
   typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecord';
   value: Uint8Array;
 }
-/** OverwriteRedemptionRecord */
+/**
+ * OverwriteRedemptionRecord
+ * @name MsgOverwriteRedemptionRecordSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteRedemptionRecord
+ */
 export interface MsgOverwriteRedemptionRecordSDKType {
   creator: string;
   redemption_record?: RedemptionRecordSDKType;
 }
+/**
+ * @name MsgOverwriteRedemptionRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteRedemptionRecordResponse
+ */
 export interface MsgOverwriteRedemptionRecordResponse {}
 export interface MsgOverwriteRedemptionRecordResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgOverwriteRedemptionRecordResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteRedemptionRecordResponse
+ */
 export interface MsgOverwriteRedemptionRecordResponseSDKType {}
-/** SetOperatorAddress */
+/**
+ * SetOperatorAddress
+ * @name MsgSetOperatorAddress
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgSetOperatorAddress
+ */
 export interface MsgSetOperatorAddress {
   signer: string;
   operator: string;
@@ -332,16 +573,31 @@ export interface MsgSetOperatorAddressProtoMsg {
   typeUrl: '/stride.staketia.MsgSetOperatorAddress';
   value: Uint8Array;
 }
-/** SetOperatorAddress */
+/**
+ * SetOperatorAddress
+ * @name MsgSetOperatorAddressSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgSetOperatorAddress
+ */
 export interface MsgSetOperatorAddressSDKType {
   signer: string;
   operator: string;
 }
+/**
+ * @name MsgSetOperatorAddressResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgSetOperatorAddressResponse
+ */
 export interface MsgSetOperatorAddressResponse {}
 export interface MsgSetOperatorAddressResponseProtoMsg {
   typeUrl: '/stride.staketia.MsgSetOperatorAddressResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgSetOperatorAddressResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgSetOperatorAddressResponse
+ */
 export interface MsgSetOperatorAddressResponseSDKType {}
 function createBaseMsgLiquidStake(): MsgLiquidStake {
   return {
@@ -349,8 +605,31 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
     nativeAmount: '',
   };
 }
+/**
+ * Deprecated: Liquid stakes should be handled in stakeibc
+ * LiquidStake
+ * @name MsgLiquidStake
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgLiquidStake
+ * @deprecated
+ */
 export const MsgLiquidStake = {
   typeUrl: '/stride.staketia.MsgLiquidStake' as const,
+  aminoType: 'staketia/MsgLiquidStake' as const,
+  is(o: any): o is MsgLiquidStake {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStake.typeUrl ||
+        (typeof o.staker === 'string' && typeof o.nativeAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgLiquidStakeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStake.typeUrl ||
+        (typeof o.staker === 'string' && typeof o.native_amount === 'string'))
+    );
+  },
   encode(
     message: MsgLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -423,8 +702,25 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
     stToken: Coin.fromPartial({}),
   };
 }
+/**
+ * @name MsgLiquidStakeResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgLiquidStakeResponse
+ * @deprecated
+ */
 export const MsgLiquidStakeResponse = {
   typeUrl: '/stride.staketia.MsgLiquidStakeResponse' as const,
+  is(o: any): o is MsgLiquidStakeResponse {
+    return (
+      o && (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.is(o.stToken))
+    );
+  },
+  isSDK(o: any): o is MsgLiquidStakeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.isSDK(o.st_token))
+    );
+  },
   encode(
     message: MsgLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -500,8 +796,33 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
     receiver: '',
   };
 }
+/**
+ * RedeemStake
+ * @name MsgRedeemStake
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRedeemStake
+ */
 export const MsgRedeemStake = {
   typeUrl: '/stride.staketia.MsgRedeemStake' as const,
+  aminoType: 'staketia/MsgRedeemStake' as const,
+  is(o: any): o is MsgRedeemStake {
+    return (
+      o &&
+      (o.$typeUrl === MsgRedeemStake.typeUrl ||
+        (typeof o.redeemer === 'string' &&
+          typeof o.stTokenAmount === 'string' &&
+          typeof o.receiver === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgRedeemStakeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRedeemStake.typeUrl ||
+        (typeof o.redeemer === 'string' &&
+          typeof o.st_token_amount === 'string' &&
+          typeof o.receiver === 'string'))
+    );
+  },
   encode(
     message: MsgRedeemStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -583,8 +904,26 @@ function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
     nativeToken: Coin.fromPartial({}),
   };
 }
+/**
+ * @name MsgRedeemStakeResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRedeemStakeResponse
+ */
 export const MsgRedeemStakeResponse = {
   typeUrl: '/stride.staketia.MsgRedeemStakeResponse' as const,
+  is(o: any): o is MsgRedeemStakeResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgRedeemStakeResponse.typeUrl || Coin.is(o.nativeToken))
+    );
+  },
+  isSDK(o: any): o is MsgRedeemStakeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRedeemStakeResponse.typeUrl ||
+        Coin.isSDK(o.native_token))
+    );
+  },
   encode(
     message: MsgRedeemStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -660,8 +999,33 @@ function createBaseMsgConfirmDelegation(): MsgConfirmDelegation {
     txHash: '',
   };
 }
+/**
+ * ConfirmDelegation
+ * @name MsgConfirmDelegation
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmDelegation
+ */
 export const MsgConfirmDelegation = {
   typeUrl: '/stride.staketia.MsgConfirmDelegation' as const,
+  aminoType: 'staketia/MsgConfirmDelegation' as const,
+  is(o: any): o is MsgConfirmDelegation {
+    return (
+      o &&
+      (o.$typeUrl === MsgConfirmDelegation.typeUrl ||
+        (typeof o.operator === 'string' &&
+          typeof o.recordId === 'bigint' &&
+          typeof o.txHash === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgConfirmDelegationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgConfirmDelegation.typeUrl ||
+        (typeof o.operator === 'string' &&
+          typeof o.record_id === 'bigint' &&
+          typeof o.tx_hash === 'string'))
+    );
+  },
   encode(
     message: MsgConfirmDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -747,8 +1111,19 @@ export const MsgConfirmDelegation = {
 function createBaseMsgConfirmDelegationResponse(): MsgConfirmDelegationResponse {
   return {};
 }
+/**
+ * @name MsgConfirmDelegationResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmDelegationResponse
+ */
 export const MsgConfirmDelegationResponse = {
   typeUrl: '/stride.staketia.MsgConfirmDelegationResponse' as const,
+  is(o: any): o is MsgConfirmDelegationResponse {
+    return o && o.$typeUrl === MsgConfirmDelegationResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgConfirmDelegationResponseSDKType {
+    return o && o.$typeUrl === MsgConfirmDelegationResponse.typeUrl;
+  },
   encode(
     _: MsgConfirmDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -812,8 +1187,33 @@ function createBaseMsgConfirmUndelegation(): MsgConfirmUndelegation {
     txHash: '',
   };
 }
+/**
+ * ConfirmUndelegation
+ * @name MsgConfirmUndelegation
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUndelegation
+ */
 export const MsgConfirmUndelegation = {
   typeUrl: '/stride.staketia.MsgConfirmUndelegation' as const,
+  aminoType: 'staketia/MsgConfirmUndelegation' as const,
+  is(o: any): o is MsgConfirmUndelegation {
+    return (
+      o &&
+      (o.$typeUrl === MsgConfirmUndelegation.typeUrl ||
+        (typeof o.operator === 'string' &&
+          typeof o.recordId === 'bigint' &&
+          typeof o.txHash === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgConfirmUndelegationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgConfirmUndelegation.typeUrl ||
+        (typeof o.operator === 'string' &&
+          typeof o.record_id === 'bigint' &&
+          typeof o.tx_hash === 'string'))
+    );
+  },
   encode(
     message: MsgConfirmUndelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -901,8 +1301,19 @@ export const MsgConfirmUndelegation = {
 function createBaseMsgConfirmUndelegationResponse(): MsgConfirmUndelegationResponse {
   return {};
 }
+/**
+ * @name MsgConfirmUndelegationResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUndelegationResponse
+ */
 export const MsgConfirmUndelegationResponse = {
   typeUrl: '/stride.staketia.MsgConfirmUndelegationResponse' as const,
+  is(o: any): o is MsgConfirmUndelegationResponse {
+    return o && o.$typeUrl === MsgConfirmUndelegationResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgConfirmUndelegationResponseSDKType {
+    return o && o.$typeUrl === MsgConfirmUndelegationResponse.typeUrl;
+  },
   encode(
     _: MsgConfirmUndelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -966,8 +1377,33 @@ function createBaseMsgConfirmUnbondedTokenSweep(): MsgConfirmUnbondedTokenSweep 
     txHash: '',
   };
 }
+/**
+ * ConfirmUnbondedTokenSweep
+ * @name MsgConfirmUnbondedTokenSweep
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUnbondedTokenSweep
+ */
 export const MsgConfirmUnbondedTokenSweep = {
   typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweep' as const,
+  aminoType: 'staketia/MsgConfirmUnbondedTokenSweep' as const,
+  is(o: any): o is MsgConfirmUnbondedTokenSweep {
+    return (
+      o &&
+      (o.$typeUrl === MsgConfirmUnbondedTokenSweep.typeUrl ||
+        (typeof o.operator === 'string' &&
+          typeof o.recordId === 'bigint' &&
+          typeof o.txHash === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgConfirmUnbondedTokenSweepSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgConfirmUnbondedTokenSweep.typeUrl ||
+        (typeof o.operator === 'string' &&
+          typeof o.record_id === 'bigint' &&
+          typeof o.tx_hash === 'string'))
+    );
+  },
   encode(
     message: MsgConfirmUnbondedTokenSweep,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1061,8 +1497,19 @@ export const MsgConfirmUnbondedTokenSweep = {
 function createBaseMsgConfirmUnbondedTokenSweepResponse(): MsgConfirmUnbondedTokenSweepResponse {
   return {};
 }
+/**
+ * @name MsgConfirmUnbondedTokenSweepResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgConfirmUnbondedTokenSweepResponse
+ */
 export const MsgConfirmUnbondedTokenSweepResponse = {
   typeUrl: '/stride.staketia.MsgConfirmUnbondedTokenSweepResponse' as const,
+  is(o: any): o is MsgConfirmUnbondedTokenSweepResponse {
+    return o && o.$typeUrl === MsgConfirmUnbondedTokenSweepResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgConfirmUnbondedTokenSweepResponseSDKType {
+    return o && o.$typeUrl === MsgConfirmUnbondedTokenSweepResponse.typeUrl;
+  },
   encode(
     _: MsgConfirmUnbondedTokenSweepResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1126,8 +1573,33 @@ function createBaseMsgAdjustDelegatedBalance(): MsgAdjustDelegatedBalance {
     validatorAddress: '',
   };
 }
+/**
+ * AdjustDelegatedBalance
+ * @name MsgAdjustDelegatedBalance
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgAdjustDelegatedBalance
+ */
 export const MsgAdjustDelegatedBalance = {
   typeUrl: '/stride.staketia.MsgAdjustDelegatedBalance' as const,
+  aminoType: 'staketia/MsgAdjustDelegatedBalance' as const,
+  is(o: any): o is MsgAdjustDelegatedBalance {
+    return (
+      o &&
+      (o.$typeUrl === MsgAdjustDelegatedBalance.typeUrl ||
+        (typeof o.operator === 'string' &&
+          typeof o.delegationOffset === 'string' &&
+          typeof o.validatorAddress === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgAdjustDelegatedBalanceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgAdjustDelegatedBalance.typeUrl ||
+        (typeof o.operator === 'string' &&
+          typeof o.delegation_offset === 'string' &&
+          typeof o.validator_address === 'string'))
+    );
+  },
   encode(
     message: MsgAdjustDelegatedBalance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1221,8 +1693,19 @@ export const MsgAdjustDelegatedBalance = {
 function createBaseMsgAdjustDelegatedBalanceResponse(): MsgAdjustDelegatedBalanceResponse {
   return {};
 }
+/**
+ * @name MsgAdjustDelegatedBalanceResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgAdjustDelegatedBalanceResponse
+ */
 export const MsgAdjustDelegatedBalanceResponse = {
   typeUrl: '/stride.staketia.MsgAdjustDelegatedBalanceResponse' as const,
+  is(o: any): o is MsgAdjustDelegatedBalanceResponse {
+    return o && o.$typeUrl === MsgAdjustDelegatedBalanceResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgAdjustDelegatedBalanceResponseSDKType {
+    return o && o.$typeUrl === MsgAdjustDelegatedBalanceResponse.typeUrl;
+  },
   encode(
     _: MsgAdjustDelegatedBalanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1286,8 +1769,33 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
     maxInnerRedemptionRate: '',
   };
 }
+/**
+ * UpdateInnerRedemptionRate
+ * @name MsgUpdateInnerRedemptionRateBounds
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgUpdateInnerRedemptionRateBounds
+ */
 export const MsgUpdateInnerRedemptionRateBounds = {
   typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBounds' as const,
+  aminoType: 'staketia/MsgUpdateRedemptionRateBounds' as const,
+  is(o: any): o is MsgUpdateInnerRedemptionRateBounds {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateInnerRedemptionRateBounds.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.minInnerRedemptionRate === 'string' &&
+          typeof o.maxInnerRedemptionRate === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateInnerRedemptionRateBoundsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateInnerRedemptionRateBounds.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.min_inner_redemption_rate === 'string' &&
+          typeof o.max_inner_redemption_rate === 'string'))
+    );
+  },
   encode(
     message: MsgUpdateInnerRedemptionRateBounds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1395,9 +1903,24 @@ export const MsgUpdateInnerRedemptionRateBounds = {
 function createBaseMsgUpdateInnerRedemptionRateBoundsResponse(): MsgUpdateInnerRedemptionRateBoundsResponse {
   return {};
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBoundsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse
+ */
 export const MsgUpdateInnerRedemptionRateBoundsResponse = {
   typeUrl:
     '/stride.staketia.MsgUpdateInnerRedemptionRateBoundsResponse' as const,
+  is(o: any): o is MsgUpdateInnerRedemptionRateBoundsResponse {
+    return (
+      o && o.$typeUrl === MsgUpdateInnerRedemptionRateBoundsResponse.typeUrl
+    );
+  },
+  isSDK(o: any): o is MsgUpdateInnerRedemptionRateBoundsResponseSDKType {
+    return (
+      o && o.$typeUrl === MsgUpdateInnerRedemptionRateBoundsResponse.typeUrl
+    );
+  },
   encode(
     _: MsgUpdateInnerRedemptionRateBoundsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1460,8 +1983,29 @@ function createBaseMsgResumeHostZone(): MsgResumeHostZone {
     creator: '',
   };
 }
+/**
+ * ResumeHostZone
+ * @name MsgResumeHostZone
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgResumeHostZone
+ */
 export const MsgResumeHostZone = {
   typeUrl: '/stride.staketia.MsgResumeHostZone' as const,
+  aminoType: 'staketia/MsgResumeHostZone' as const,
+  is(o: any): o is MsgResumeHostZone {
+    return (
+      o &&
+      (o.$typeUrl === MsgResumeHostZone.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgResumeHostZoneSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgResumeHostZone.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
   encode(
     message: MsgResumeHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1520,8 +2064,19 @@ export const MsgResumeHostZone = {
 function createBaseMsgResumeHostZoneResponse(): MsgResumeHostZoneResponse {
   return {};
 }
+/**
+ * @name MsgResumeHostZoneResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgResumeHostZoneResponse
+ */
 export const MsgResumeHostZoneResponse = {
   typeUrl: '/stride.staketia.MsgResumeHostZoneResponse' as const,
+  is(o: any): o is MsgResumeHostZoneResponse {
+    return o && o.$typeUrl === MsgResumeHostZoneResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgResumeHostZoneResponseSDKType {
+    return o && o.$typeUrl === MsgResumeHostZoneResponse.typeUrl;
+  },
   encode(
     _: MsgResumeHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1581,8 +2136,29 @@ function createBaseMsgRefreshRedemptionRate(): MsgRefreshRedemptionRate {
     creator: '',
   };
 }
+/**
+ * RefreshRedemptionRate
+ * @name MsgRefreshRedemptionRate
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRefreshRedemptionRate
+ */
 export const MsgRefreshRedemptionRate = {
   typeUrl: '/stride.staketia.MsgRefreshRedemptionRate' as const,
+  aminoType: 'staketia/MsgRefreshRedemptionRate' as const,
+  is(o: any): o is MsgRefreshRedemptionRate {
+    return (
+      o &&
+      (o.$typeUrl === MsgRefreshRedemptionRate.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgRefreshRedemptionRateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRefreshRedemptionRate.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
   encode(
     message: MsgRefreshRedemptionRate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1652,8 +2228,19 @@ export const MsgRefreshRedemptionRate = {
 function createBaseMsgRefreshRedemptionRateResponse(): MsgRefreshRedemptionRateResponse {
   return {};
 }
+/**
+ * @name MsgRefreshRedemptionRateResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgRefreshRedemptionRateResponse
+ */
 export const MsgRefreshRedemptionRateResponse = {
   typeUrl: '/stride.staketia.MsgRefreshRedemptionRateResponse' as const,
+  is(o: any): o is MsgRefreshRedemptionRateResponse {
+    return o && o.$typeUrl === MsgRefreshRedemptionRateResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRefreshRedemptionRateResponseSDKType {
+    return o && o.$typeUrl === MsgRefreshRedemptionRateResponse.typeUrl;
+  },
   encode(
     _: MsgRefreshRedemptionRateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1716,8 +2303,29 @@ function createBaseMsgOverwriteDelegationRecord(): MsgOverwriteDelegationRecord 
     delegationRecord: undefined,
   };
 }
+/**
+ * OverwriteDelegationRecord
+ * @name MsgOverwriteDelegationRecord
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteDelegationRecord
+ */
 export const MsgOverwriteDelegationRecord = {
   typeUrl: '/stride.staketia.MsgOverwriteDelegationRecord' as const,
+  aminoType: 'staketia/MsgOverwriteDelegationRecord' as const,
+  is(o: any): o is MsgOverwriteDelegationRecord {
+    return (
+      o &&
+      (o.$typeUrl === MsgOverwriteDelegationRecord.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgOverwriteDelegationRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgOverwriteDelegationRecord.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
   encode(
     message: MsgOverwriteDelegationRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1810,8 +2418,19 @@ export const MsgOverwriteDelegationRecord = {
 function createBaseMsgOverwriteDelegationRecordResponse(): MsgOverwriteDelegationRecordResponse {
   return {};
 }
+/**
+ * @name MsgOverwriteDelegationRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteDelegationRecordResponse
+ */
 export const MsgOverwriteDelegationRecordResponse = {
   typeUrl: '/stride.staketia.MsgOverwriteDelegationRecordResponse' as const,
+  is(o: any): o is MsgOverwriteDelegationRecordResponse {
+    return o && o.$typeUrl === MsgOverwriteDelegationRecordResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgOverwriteDelegationRecordResponseSDKType {
+    return o && o.$typeUrl === MsgOverwriteDelegationRecordResponse.typeUrl;
+  },
   encode(
     _: MsgOverwriteDelegationRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1874,8 +2493,29 @@ function createBaseMsgOverwriteUnbondingRecord(): MsgOverwriteUnbondingRecord {
     unbondingRecord: undefined,
   };
 }
+/**
+ * OverwriteUnbondingRecord
+ * @name MsgOverwriteUnbondingRecord
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteUnbondingRecord
+ */
 export const MsgOverwriteUnbondingRecord = {
   typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecord' as const,
+  aminoType: 'staketia/MsgOverwriteUnbondingRecord' as const,
+  is(o: any): o is MsgOverwriteUnbondingRecord {
+    return (
+      o &&
+      (o.$typeUrl === MsgOverwriteUnbondingRecord.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgOverwriteUnbondingRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgOverwriteUnbondingRecord.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
   encode(
     message: MsgOverwriteUnbondingRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1968,8 +2608,19 @@ export const MsgOverwriteUnbondingRecord = {
 function createBaseMsgOverwriteUnbondingRecordResponse(): MsgOverwriteUnbondingRecordResponse {
   return {};
 }
+/**
+ * @name MsgOverwriteUnbondingRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteUnbondingRecordResponse
+ */
 export const MsgOverwriteUnbondingRecordResponse = {
   typeUrl: '/stride.staketia.MsgOverwriteUnbondingRecordResponse' as const,
+  is(o: any): o is MsgOverwriteUnbondingRecordResponse {
+    return o && o.$typeUrl === MsgOverwriteUnbondingRecordResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgOverwriteUnbondingRecordResponseSDKType {
+    return o && o.$typeUrl === MsgOverwriteUnbondingRecordResponse.typeUrl;
+  },
   encode(
     _: MsgOverwriteUnbondingRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2032,8 +2683,29 @@ function createBaseMsgOverwriteRedemptionRecord(): MsgOverwriteRedemptionRecord 
     redemptionRecord: undefined,
   };
 }
+/**
+ * OverwriteRedemptionRecord
+ * @name MsgOverwriteRedemptionRecord
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteRedemptionRecord
+ */
 export const MsgOverwriteRedemptionRecord = {
   typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecord' as const,
+  aminoType: 'staketia/MsgOverwriteRedemptionRecord' as const,
+  is(o: any): o is MsgOverwriteRedemptionRecord {
+    return (
+      o &&
+      (o.$typeUrl === MsgOverwriteRedemptionRecord.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgOverwriteRedemptionRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgOverwriteRedemptionRecord.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
   encode(
     message: MsgOverwriteRedemptionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2126,8 +2798,19 @@ export const MsgOverwriteRedemptionRecord = {
 function createBaseMsgOverwriteRedemptionRecordResponse(): MsgOverwriteRedemptionRecordResponse {
   return {};
 }
+/**
+ * @name MsgOverwriteRedemptionRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgOverwriteRedemptionRecordResponse
+ */
 export const MsgOverwriteRedemptionRecordResponse = {
   typeUrl: '/stride.staketia.MsgOverwriteRedemptionRecordResponse' as const,
+  is(o: any): o is MsgOverwriteRedemptionRecordResponse {
+    return o && o.$typeUrl === MsgOverwriteRedemptionRecordResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgOverwriteRedemptionRecordResponseSDKType {
+    return o && o.$typeUrl === MsgOverwriteRedemptionRecordResponse.typeUrl;
+  },
   encode(
     _: MsgOverwriteRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2190,8 +2873,29 @@ function createBaseMsgSetOperatorAddress(): MsgSetOperatorAddress {
     operator: '',
   };
 }
+/**
+ * SetOperatorAddress
+ * @name MsgSetOperatorAddress
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgSetOperatorAddress
+ */
 export const MsgSetOperatorAddress = {
   typeUrl: '/stride.staketia.MsgSetOperatorAddress' as const,
+  aminoType: 'staketia/MsgSetOperatorAddress' as const,
+  is(o: any): o is MsgSetOperatorAddress {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetOperatorAddress.typeUrl ||
+        (typeof o.signer === 'string' && typeof o.operator === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgSetOperatorAddressSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetOperatorAddress.typeUrl ||
+        (typeof o.signer === 'string' && typeof o.operator === 'string'))
+    );
+  },
   encode(
     message: MsgSetOperatorAddress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2262,8 +2966,19 @@ export const MsgSetOperatorAddress = {
 function createBaseMsgSetOperatorAddressResponse(): MsgSetOperatorAddressResponse {
   return {};
 }
+/**
+ * @name MsgSetOperatorAddressResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.MsgSetOperatorAddressResponse
+ */
 export const MsgSetOperatorAddressResponse = {
   typeUrl: '/stride.staketia.MsgSetOperatorAddressResponse' as const,
+  is(o: any): o is MsgSetOperatorAddressResponse {
+    return o && o.$typeUrl === MsgSetOperatorAddressResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSetOperatorAddressResponseSDKType {
+    return o && o.$typeUrl === MsgSetOperatorAddressResponse.typeUrl;
+  },
   encode(
     _: MsgSetOperatorAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),

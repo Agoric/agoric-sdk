@@ -12,6 +12,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * @param remote_domain the remote domain_id corresponding to the token
  * @param remote_token the remote token address
  * @param local_token the corresponding Noble token denom in uunits
+ * @name TokenPair
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPair
  */
 export interface TokenPair {
   remoteDomain: number;
@@ -30,6 +33,9 @@ export interface TokenPairProtoMsg {
  * @param remote_domain the remote domain_id corresponding to the token
  * @param remote_token the remote token address
  * @param local_token the corresponding Noble token denom in uunits
+ * @name TokenPairSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPair
  */
 export interface TokenPairSDKType {
   remote_domain: number;
@@ -43,8 +49,40 @@ function createBaseTokenPair(): TokenPair {
     localToken: '',
   };
 }
+/**
+ * TokenPair is used to look up the Noble token (i.e. "uusdc") from a remote
+ * domain token address Multiple remote_domain + remote_token pairs can map to
+ * the same local_token
+ *
+ * @param remote_domain the remote domain_id corresponding to the token
+ * @param remote_token the remote token address
+ * @param local_token the corresponding Noble token denom in uunits
+ * @name TokenPair
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.TokenPair
+ */
 export const TokenPair = {
   typeUrl: '/circle.cctp.v1.TokenPair' as const,
+  is(o: any): o is TokenPair {
+    return (
+      o &&
+      (o.$typeUrl === TokenPair.typeUrl ||
+        (typeof o.remoteDomain === 'number' &&
+          (o.remoteToken instanceof Uint8Array ||
+            typeof o.remoteToken === 'string') &&
+          typeof o.localToken === 'string'))
+    );
+  },
+  isSDK(o: any): o is TokenPairSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TokenPair.typeUrl ||
+        (typeof o.remote_domain === 'number' &&
+          (o.remote_token instanceof Uint8Array ||
+            typeof o.remote_token === 'string') &&
+          typeof o.local_token === 'string'))
+    );
+  },
   encode(
     message: TokenPair,
     writer: BinaryWriter = BinaryWriter.create(),

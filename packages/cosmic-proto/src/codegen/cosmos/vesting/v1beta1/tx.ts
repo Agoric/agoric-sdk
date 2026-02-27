@@ -7,12 +7,17 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgCreateVestingAccount defines a message that enables creating a vesting
  * account.
+ * @name MsgCreateVestingAccount
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateVestingAccount
  */
 export interface MsgCreateVestingAccount {
   fromAddress: string;
   toAddress: string;
   amount: Coin[];
-  /** end of vesting as unix time (in seconds). */
+  /**
+   * end of vesting as unix time (in seconds).
+   */
   endTime: bigint;
   delayed: boolean;
 }
@@ -23,6 +28,9 @@ export interface MsgCreateVestingAccountProtoMsg {
 /**
  * MsgCreateVestingAccount defines a message that enables creating a vesting
  * account.
+ * @name MsgCreateVestingAccountSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateVestingAccount
  */
 export interface MsgCreateVestingAccountSDKType {
   from_address: string;
@@ -31,19 +39,32 @@ export interface MsgCreateVestingAccountSDKType {
   end_time: bigint;
   delayed: boolean;
 }
-/** MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type. */
+/**
+ * MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type.
+ * @name MsgCreateVestingAccountResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse
+ */
 export interface MsgCreateVestingAccountResponse {}
 export interface MsgCreateVestingAccountResponseProtoMsg {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse';
   value: Uint8Array;
 }
-/** MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type. */
+/**
+ * MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type.
+ * @name MsgCreateVestingAccountResponseSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse
+ */
 export interface MsgCreateVestingAccountResponseSDKType {}
 /**
  * MsgCreatePermanentLockedAccount defines a message that enables creating a permanent
  * locked account.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCreatePermanentLockedAccount
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount
  */
 export interface MsgCreatePermanentLockedAccount {
   fromAddress: string;
@@ -59,6 +80,9 @@ export interface MsgCreatePermanentLockedAccountProtoMsg {
  * locked account.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCreatePermanentLockedAccountSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount
  */
 export interface MsgCreatePermanentLockedAccountSDKType {
   from_address: string;
@@ -69,6 +93,9 @@ export interface MsgCreatePermanentLockedAccountSDKType {
  * MsgCreatePermanentLockedAccountResponse defines the Msg/CreatePermanentLockedAccount response type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCreatePermanentLockedAccountResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse
  */
 export interface MsgCreatePermanentLockedAccountResponse {}
 export interface MsgCreatePermanentLockedAccountResponseProtoMsg {
@@ -79,6 +106,9 @@ export interface MsgCreatePermanentLockedAccountResponseProtoMsg {
  * MsgCreatePermanentLockedAccountResponse defines the Msg/CreatePermanentLockedAccount response type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCreatePermanentLockedAccountResponseSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse
  */
 export interface MsgCreatePermanentLockedAccountResponseSDKType {}
 /**
@@ -86,11 +116,16 @@ export interface MsgCreatePermanentLockedAccountResponseSDKType {}
  * account.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCreatePeriodicVestingAccount
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount
  */
 export interface MsgCreatePeriodicVestingAccount {
   fromAddress: string;
   toAddress: string;
-  /** start of vesting as unix time (in seconds). */
+  /**
+   * start of vesting as unix time (in seconds).
+   */
   startTime: bigint;
   vestingPeriods: Period[];
   /**
@@ -109,6 +144,9 @@ export interface MsgCreatePeriodicVestingAccountProtoMsg {
  * account.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCreatePeriodicVestingAccountSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount
  */
 export interface MsgCreatePeriodicVestingAccountSDKType {
   from_address: string;
@@ -122,6 +160,9 @@ export interface MsgCreatePeriodicVestingAccountSDKType {
  * response type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCreatePeriodicVestingAccountResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse
  */
 export interface MsgCreatePeriodicVestingAccountResponse {}
 export interface MsgCreatePeriodicVestingAccountResponseProtoMsg {
@@ -133,19 +174,37 @@ export interface MsgCreatePeriodicVestingAccountResponseProtoMsg {
  * response type.
  *
  * Since: cosmos-sdk 0.46
+ * @name MsgCreatePeriodicVestingAccountResponseSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse
  */
 export interface MsgCreatePeriodicVestingAccountResponseSDKType {}
-/** MsgCreateClawbackVestingAccount defines a message that enables creating a ClawbackVestingAccount. */
+/**
+ * MsgCreateClawbackVestingAccount defines a message that enables creating a ClawbackVestingAccount.
+ * @name MsgCreateClawbackVestingAccount
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount
+ */
 export interface MsgCreateClawbackVestingAccount {
-  /** Address of the account providing the funds, which must also sign the request. */
+  /**
+   * Address of the account providing the funds, which must also sign the request.
+   */
   fromAddress: string;
-  /** Address of the account to receive the funds. */
+  /**
+   * Address of the account to receive the funds.
+   */
   toAddress: string;
-  /** Start time of the vesting. Periods start relative to this time. */
+  /**
+   * Start time of the vesting. Periods start relative to this time.
+   */
   startTime: bigint;
-  /** Unlocking events as a sequence of durations and amounts, starting relative to start_time. */
+  /**
+   * Unlocking events as a sequence of durations and amounts, starting relative to start_time.
+   */
   lockupPeriods: Period[];
-  /** Vesting events as a sequence of durations and amounts, starting relative to start_time. */
+  /**
+   * Vesting events as a sequence of durations and amounts, starting relative to start_time.
+   */
   vestingPeriods: Period[];
   /**
    * If true, merge this new grant into an existing ClawbackVestingAccount,
@@ -158,7 +217,12 @@ export interface MsgCreateClawbackVestingAccountProtoMsg {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount';
   value: Uint8Array;
 }
-/** MsgCreateClawbackVestingAccount defines a message that enables creating a ClawbackVestingAccount. */
+/**
+ * MsgCreateClawbackVestingAccount defines a message that enables creating a ClawbackVestingAccount.
+ * @name MsgCreateClawbackVestingAccountSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount
+ */
 export interface MsgCreateClawbackVestingAccountSDKType {
   from_address: string;
   to_address: string;
@@ -167,19 +231,38 @@ export interface MsgCreateClawbackVestingAccountSDKType {
   vesting_periods: PeriodSDKType[];
   merge: boolean;
 }
-/** MsgCreateClawbackVestingAccountResponse defines the MsgCreateClawbackVestingAccount response type. */
+/**
+ * MsgCreateClawbackVestingAccountResponse defines the MsgCreateClawbackVestingAccount response type.
+ * @name MsgCreateClawbackVestingAccountResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse
+ */
 export interface MsgCreateClawbackVestingAccountResponse {}
 export interface MsgCreateClawbackVestingAccountResponseProtoMsg {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse';
   value: Uint8Array;
 }
-/** MsgCreateClawbackVestingAccountResponse defines the MsgCreateClawbackVestingAccount response type. */
+/**
+ * MsgCreateClawbackVestingAccountResponse defines the MsgCreateClawbackVestingAccount response type.
+ * @name MsgCreateClawbackVestingAccountResponseSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse
+ */
 export interface MsgCreateClawbackVestingAccountResponseSDKType {}
-/** MsgClawback defines a message that removes unvested tokens from a ClawbackVestingAccount. */
+/**
+ * MsgClawback defines a message that removes unvested tokens from a ClawbackVestingAccount.
+ * @name MsgClawback
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgClawback
+ */
 export interface MsgClawback {
-  /** funder_address is the address which funded the account */
+  /**
+   * funder_address is the address which funded the account
+   */
   funderAddress: string;
-  /** address is the address of the ClawbackVestingAccount to claw back from. */
+  /**
+   * address is the address of the ClawbackVestingAccount to claw back from.
+   */
   address: string;
   /**
    * dest_address specifies where the clawed-back tokens should be transferred.
@@ -191,19 +274,34 @@ export interface MsgClawbackProtoMsg {
   typeUrl: '/cosmos.vesting.v1beta1.MsgClawback';
   value: Uint8Array;
 }
-/** MsgClawback defines a message that removes unvested tokens from a ClawbackVestingAccount. */
+/**
+ * MsgClawback defines a message that removes unvested tokens from a ClawbackVestingAccount.
+ * @name MsgClawbackSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgClawback
+ */
 export interface MsgClawbackSDKType {
   funder_address: string;
   address: string;
   dest_address: string;
 }
-/** MsgClawbackResponse defines the MsgClawback response type. */
+/**
+ * MsgClawbackResponse defines the MsgClawback response type.
+ * @name MsgClawbackResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgClawbackResponse
+ */
 export interface MsgClawbackResponse {}
 export interface MsgClawbackResponseProtoMsg {
   typeUrl: '/cosmos.vesting.v1beta1.MsgClawbackResponse';
   value: Uint8Array;
 }
-/** MsgClawbackResponse defines the MsgClawback response type. */
+/**
+ * MsgClawbackResponse defines the MsgClawback response type.
+ * @name MsgClawbackResponseSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgClawbackResponse
+ */
 export interface MsgClawbackResponseSDKType {}
 /**
  * MsgReturnGrants defines a message for a grantee to return all granted assets,
@@ -211,9 +309,14 @@ export interface MsgClawbackResponseSDKType {}
  * are transferred to the original funder of the account. Might not be complete if
  * some vested assets have been transferred out of the account. Currently only applies to
  * ClawbackVesting accounts.
+ * @name MsgReturnGrants
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgReturnGrants
  */
 export interface MsgReturnGrants {
-  /** address is the address of the grantee account returning the grant. */
+  /**
+   * address is the address of the grantee account returning the grant.
+   */
   address: string;
 }
 export interface MsgReturnGrantsProtoMsg {
@@ -226,17 +329,30 @@ export interface MsgReturnGrantsProtoMsg {
  * are transferred to the original funder of the account. Might not be complete if
  * some vested assets have been transferred out of the account. Currently only applies to
  * ClawbackVesting accounts.
+ * @name MsgReturnGrantsSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgReturnGrants
  */
 export interface MsgReturnGrantsSDKType {
   address: string;
 }
-/** MsgReturnGrantsResponse defines the ReturnGrants response type. */
+/**
+ * MsgReturnGrantsResponse defines the ReturnGrants response type.
+ * @name MsgReturnGrantsResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgReturnGrantsResponse
+ */
 export interface MsgReturnGrantsResponse {}
 export interface MsgReturnGrantsResponseProtoMsg {
   typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrantsResponse';
   value: Uint8Array;
 }
-/** MsgReturnGrantsResponse defines the ReturnGrants response type. */
+/**
+ * MsgReturnGrantsResponse defines the ReturnGrants response type.
+ * @name MsgReturnGrantsResponseSDKType
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgReturnGrantsResponse
+ */
 export interface MsgReturnGrantsResponseSDKType {}
 function createBaseMsgCreateVestingAccount(): MsgCreateVestingAccount {
   return {
@@ -247,8 +363,40 @@ function createBaseMsgCreateVestingAccount(): MsgCreateVestingAccount {
     delayed: false,
   };
 }
+/**
+ * MsgCreateVestingAccount defines a message that enables creating a vesting
+ * account.
+ * @name MsgCreateVestingAccount
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateVestingAccount
+ */
 export const MsgCreateVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccount' as const,
+  aminoType: 'cosmos-sdk/MsgCreateVestingAccount' as const,
+  is(o: any): o is MsgCreateVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateVestingAccount.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0])) &&
+          typeof o.endTime === 'bigint' &&
+          typeof o.delayed === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgCreateVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateVestingAccount.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0])) &&
+          typeof o.end_time === 'bigint' &&
+          typeof o.delayed === 'boolean'))
+    );
+  },
   encode(
     message: MsgCreateVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -365,8 +513,21 @@ export const MsgCreateVestingAccount = {
 function createBaseMsgCreateVestingAccountResponse(): MsgCreateVestingAccountResponse {
   return {};
 }
+/**
+ * MsgCreateVestingAccountResponse defines the Msg/CreateVestingAccount response type.
+ * @name MsgCreateVestingAccountResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse
+ */
 export const MsgCreateVestingAccountResponse = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateVestingAccountResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreateVestingAccountResponse' as const,
+  is(o: any): o is MsgCreateVestingAccountResponse {
+    return o && o.$typeUrl === MsgCreateVestingAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreateVestingAccountResponseSDKType {
+    return o && o.$typeUrl === MsgCreateVestingAccountResponse.typeUrl;
+  },
   encode(
     _: MsgCreateVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -430,8 +591,38 @@ function createBaseMsgCreatePermanentLockedAccount(): MsgCreatePermanentLockedAc
     amount: [],
   };
 }
+/**
+ * MsgCreatePermanentLockedAccount defines a message that enables creating a permanent
+ * locked account.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name MsgCreatePermanentLockedAccount
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount
+ */
 export const MsgCreatePermanentLockedAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccount' as const,
+  aminoType: 'cosmos-sdk/MsgCreatePermLockedAccount' as const,
+  is(o: any): o is MsgCreatePermanentLockedAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreatePermanentLockedAccount.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgCreatePermanentLockedAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreatePermanentLockedAccount.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0]))))
+    );
+  },
   encode(
     message: MsgCreatePermanentLockedAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -526,9 +717,24 @@ export const MsgCreatePermanentLockedAccount = {
 function createBaseMsgCreatePermanentLockedAccountResponse(): MsgCreatePermanentLockedAccountResponse {
   return {};
 }
+/**
+ * MsgCreatePermanentLockedAccountResponse defines the Msg/CreatePermanentLockedAccount response type.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name MsgCreatePermanentLockedAccountResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse
+ */
 export const MsgCreatePermanentLockedAccountResponse = {
   typeUrl:
     '/cosmos.vesting.v1beta1.MsgCreatePermanentLockedAccountResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreatePermanentLockedAccountResponse' as const,
+  is(o: any): o is MsgCreatePermanentLockedAccountResponse {
+    return o && o.$typeUrl === MsgCreatePermanentLockedAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreatePermanentLockedAccountResponseSDKType {
+    return o && o.$typeUrl === MsgCreatePermanentLockedAccountResponse.typeUrl;
+  },
   encode(
     _: MsgCreatePermanentLockedAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -595,8 +801,42 @@ function createBaseMsgCreatePeriodicVestingAccount(): MsgCreatePeriodicVestingAc
     merge: false,
   };
 }
+/**
+ * MsgCreateVestingAccount defines a message that enables creating a vesting
+ * account.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name MsgCreatePeriodicVestingAccount
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount
+ */
 export const MsgCreatePeriodicVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccount' as const,
+  aminoType: 'cosmos-sdk/MsgCreatePeriodVestAccount' as const,
+  is(o: any): o is MsgCreatePeriodicVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreatePeriodicVestingAccount.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          typeof o.startTime === 'bigint' &&
+          Array.isArray(o.vestingPeriods) &&
+          (!o.vestingPeriods.length || Period.is(o.vestingPeriods[0])) &&
+          typeof o.merge === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgCreatePeriodicVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreatePeriodicVestingAccount.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          typeof o.start_time === 'bigint' &&
+          Array.isArray(o.vesting_periods) &&
+          (!o.vesting_periods.length || Period.isSDK(o.vesting_periods[0])) &&
+          typeof o.merge === 'boolean'))
+    );
+  },
   encode(
     message: MsgCreatePeriodicVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -718,9 +958,25 @@ export const MsgCreatePeriodicVestingAccount = {
 function createBaseMsgCreatePeriodicVestingAccountResponse(): MsgCreatePeriodicVestingAccountResponse {
   return {};
 }
+/**
+ * MsgCreateVestingAccountResponse defines the Msg/CreatePeriodicVestingAccount
+ * response type.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name MsgCreatePeriodicVestingAccountResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse
+ */
 export const MsgCreatePeriodicVestingAccountResponse = {
   typeUrl:
     '/cosmos.vesting.v1beta1.MsgCreatePeriodicVestingAccountResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreatePeriodicVestingAccountResponse' as const,
+  is(o: any): o is MsgCreatePeriodicVestingAccountResponse {
+    return o && o.$typeUrl === MsgCreatePeriodicVestingAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreatePeriodicVestingAccountResponseSDKType {
+    return o && o.$typeUrl === MsgCreatePeriodicVestingAccountResponse.typeUrl;
+  },
   encode(
     _: MsgCreatePeriodicVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -788,8 +1044,43 @@ function createBaseMsgCreateClawbackVestingAccount(): MsgCreateClawbackVestingAc
     merge: false,
   };
 }
+/**
+ * MsgCreateClawbackVestingAccount defines a message that enables creating a ClawbackVestingAccount.
+ * @name MsgCreateClawbackVestingAccount
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount
+ */
 export const MsgCreateClawbackVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccount' as const,
+  aminoType: 'cosmos-sdk/MsgCreateClawbackVestingAccount' as const,
+  is(o: any): o is MsgCreateClawbackVestingAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateClawbackVestingAccount.typeUrl ||
+        (typeof o.fromAddress === 'string' &&
+          typeof o.toAddress === 'string' &&
+          typeof o.startTime === 'bigint' &&
+          Array.isArray(o.lockupPeriods) &&
+          (!o.lockupPeriods.length || Period.is(o.lockupPeriods[0])) &&
+          Array.isArray(o.vestingPeriods) &&
+          (!o.vestingPeriods.length || Period.is(o.vestingPeriods[0])) &&
+          typeof o.merge === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgCreateClawbackVestingAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateClawbackVestingAccount.typeUrl ||
+        (typeof o.from_address === 'string' &&
+          typeof o.to_address === 'string' &&
+          typeof o.start_time === 'bigint' &&
+          Array.isArray(o.lockup_periods) &&
+          (!o.lockup_periods.length || Period.isSDK(o.lockup_periods[0])) &&
+          Array.isArray(o.vesting_periods) &&
+          (!o.vesting_periods.length || Period.isSDK(o.vesting_periods[0])) &&
+          typeof o.merge === 'boolean'))
+    );
+  },
   encode(
     message: MsgCreateClawbackVestingAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -929,9 +1220,22 @@ export const MsgCreateClawbackVestingAccount = {
 function createBaseMsgCreateClawbackVestingAccountResponse(): MsgCreateClawbackVestingAccountResponse {
   return {};
 }
+/**
+ * MsgCreateClawbackVestingAccountResponse defines the MsgCreateClawbackVestingAccount response type.
+ * @name MsgCreateClawbackVestingAccountResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse
+ */
 export const MsgCreateClawbackVestingAccountResponse = {
   typeUrl:
     '/cosmos.vesting.v1beta1.MsgCreateClawbackVestingAccountResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreateClawbackVestingAccountResponse' as const,
+  is(o: any): o is MsgCreateClawbackVestingAccountResponse {
+    return o && o.$typeUrl === MsgCreateClawbackVestingAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreateClawbackVestingAccountResponseSDKType {
+    return o && o.$typeUrl === MsgCreateClawbackVestingAccountResponse.typeUrl;
+  },
   encode(
     _: MsgCreateClawbackVestingAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -996,8 +1300,33 @@ function createBaseMsgClawback(): MsgClawback {
     destAddress: '',
   };
 }
+/**
+ * MsgClawback defines a message that removes unvested tokens from a ClawbackVestingAccount.
+ * @name MsgClawback
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgClawback
+ */
 export const MsgClawback = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgClawback' as const,
+  aminoType: 'cosmos-sdk/MsgClawback' as const,
+  is(o: any): o is MsgClawback {
+    return (
+      o &&
+      (o.$typeUrl === MsgClawback.typeUrl ||
+        (typeof o.funderAddress === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.destAddress === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgClawbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgClawback.typeUrl ||
+        (typeof o.funder_address === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.dest_address === 'string'))
+    );
+  },
   encode(
     message: MsgClawback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1078,8 +1407,21 @@ export const MsgClawback = {
 function createBaseMsgClawbackResponse(): MsgClawbackResponse {
   return {};
 }
+/**
+ * MsgClawbackResponse defines the MsgClawback response type.
+ * @name MsgClawbackResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgClawbackResponse
+ */
 export const MsgClawbackResponse = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgClawbackResponse' as const,
+  aminoType: 'cosmos-sdk/MsgClawbackResponse' as const,
+  is(o: any): o is MsgClawbackResponse {
+    return o && o.$typeUrl === MsgClawbackResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgClawbackResponseSDKType {
+    return o && o.$typeUrl === MsgClawbackResponse.typeUrl;
+  },
   encode(
     _: MsgClawbackResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1133,8 +1475,31 @@ function createBaseMsgReturnGrants(): MsgReturnGrants {
     address: '',
   };
 }
+/**
+ * MsgReturnGrants defines a message for a grantee to return all granted assets,
+ * including delegated, undelegated and unbonding, vested and unvested,
+ * are transferred to the original funder of the account. Might not be complete if
+ * some vested assets have been transferred out of the account. Currently only applies to
+ * ClawbackVesting accounts.
+ * @name MsgReturnGrants
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgReturnGrants
+ */
 export const MsgReturnGrants = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrants' as const,
+  aminoType: 'cosmos-sdk/MsgReturnGrants' as const,
+  is(o: any): o is MsgReturnGrants {
+    return (
+      o &&
+      (o.$typeUrl === MsgReturnGrants.typeUrl || typeof o.address === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgReturnGrantsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgReturnGrants.typeUrl || typeof o.address === 'string')
+    );
+  },
   encode(
     message: MsgReturnGrants,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1193,8 +1558,21 @@ export const MsgReturnGrants = {
 function createBaseMsgReturnGrantsResponse(): MsgReturnGrantsResponse {
   return {};
 }
+/**
+ * MsgReturnGrantsResponse defines the ReturnGrants response type.
+ * @name MsgReturnGrantsResponse
+ * @package cosmos.vesting.v1beta1
+ * @see proto type: cosmos.vesting.v1beta1.MsgReturnGrantsResponse
+ */
 export const MsgReturnGrantsResponse = {
   typeUrl: '/cosmos.vesting.v1beta1.MsgReturnGrantsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgReturnGrantsResponse' as const,
+  is(o: any): o is MsgReturnGrantsResponse {
+    return o && o.$typeUrl === MsgReturnGrantsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgReturnGrantsResponseSDKType {
+    return o && o.$typeUrl === MsgReturnGrantsResponse.typeUrl;
+  },
   encode(
     _: MsgReturnGrantsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

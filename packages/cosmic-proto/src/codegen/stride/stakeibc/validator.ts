@@ -3,6 +3,11 @@ import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name Validator
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Validator
+ */
 export interface Validator {
   name: string;
   address: string;
@@ -18,6 +23,11 @@ export interface ValidatorProtoMsg {
   typeUrl: '/stride.stakeibc.Validator';
   value: Uint8Array;
 }
+/**
+ * @name ValidatorSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Validator
+ */
 export interface ValidatorSDKType {
   name: string;
   address: string;
@@ -42,8 +52,43 @@ function createBaseValidator(): Validator {
     slashQueryInProgress: false,
   };
 }
+/**
+ * @name Validator
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Validator
+ */
 export const Validator = {
   typeUrl: '/stride.stakeibc.Validator' as const,
+  is(o: any): o is Validator {
+    return (
+      o &&
+      (o.$typeUrl === Validator.typeUrl ||
+        (typeof o.name === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.weight === 'bigint' &&
+          typeof o.delegation === 'string' &&
+          typeof o.slashQueryProgressTracker === 'string' &&
+          typeof o.slashQueryCheckpoint === 'string' &&
+          typeof o.sharesToTokensRate === 'string' &&
+          typeof o.delegationChangesInProgress === 'bigint' &&
+          typeof o.slashQueryInProgress === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ValidatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Validator.typeUrl ||
+        (typeof o.name === 'string' &&
+          typeof o.address === 'string' &&
+          typeof o.weight === 'bigint' &&
+          typeof o.delegation === 'string' &&
+          typeof o.slash_query_progress_tracker === 'string' &&
+          typeof o.slash_query_checkpoint === 'string' &&
+          typeof o.shares_to_tokens_rate === 'string' &&
+          typeof o.delegation_changes_in_progress === 'bigint' &&
+          typeof o.slash_query_in_progress === 'boolean'))
+    );
+  },
   encode(
     message: Validator,
     writer: BinaryWriter = BinaryWriter.create(),

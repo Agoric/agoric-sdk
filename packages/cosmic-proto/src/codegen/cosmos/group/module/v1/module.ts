@@ -6,7 +6,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Module is the config object of the group module. */
+/**
+ * Module is the config object of the group module.
+ * @name Module
+ * @package cosmos.group.module.v1
+ * @see proto type: cosmos.group.module.v1.Module
+ */
 export interface Module {
   /**
    * max_execution_period defines the max duration after a proposal's voting period ends that members can send a MsgExec
@@ -23,7 +28,12 @@ export interface ModuleProtoMsg {
   typeUrl: '/cosmos.group.module.v1.Module';
   value: Uint8Array;
 }
-/** Module is the config object of the group module. */
+/**
+ * Module is the config object of the group module.
+ * @name ModuleSDKType
+ * @package cosmos.group.module.v1
+ * @see proto type: cosmos.group.module.v1.Module
+ */
 export interface ModuleSDKType {
   max_execution_period: DurationSDKType;
   max_metadata_len: bigint;
@@ -34,8 +44,31 @@ function createBaseModule(): Module {
     maxMetadataLen: BigInt(0),
   };
 }
+/**
+ * Module is the config object of the group module.
+ * @name Module
+ * @package cosmos.group.module.v1
+ * @see proto type: cosmos.group.module.v1.Module
+ */
 export const Module = {
   typeUrl: '/cosmos.group.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Duration.is(o.maxExecutionPeriod) &&
+          typeof o.maxMetadataLen === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Duration.isSDK(o.max_execution_period) &&
+          typeof o.max_metadata_len === 'bigint'))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),

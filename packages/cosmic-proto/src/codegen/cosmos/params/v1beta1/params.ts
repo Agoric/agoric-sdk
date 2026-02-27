@@ -2,7 +2,12 @@
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** ParameterChangeProposal defines a proposal to change one or more parameters. */
+/**
+ * ParameterChangeProposal defines a proposal to change one or more parameters.
+ * @name ParameterChangeProposal
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.ParameterChangeProposal
+ */
 export interface ParameterChangeProposal {
   $typeUrl?: '/cosmos.params.v1beta1.ParameterChangeProposal';
   title: string;
@@ -13,7 +18,12 @@ export interface ParameterChangeProposalProtoMsg {
   typeUrl: '/cosmos.params.v1beta1.ParameterChangeProposal';
   value: Uint8Array;
 }
-/** ParameterChangeProposal defines a proposal to change one or more parameters. */
+/**
+ * ParameterChangeProposal defines a proposal to change one or more parameters.
+ * @name ParameterChangeProposalSDKType
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.ParameterChangeProposal
+ */
 export interface ParameterChangeProposalSDKType {
   $typeUrl?: '/cosmos.params.v1beta1.ParameterChangeProposal';
   title: string;
@@ -23,6 +33,9 @@ export interface ParameterChangeProposalSDKType {
 /**
  * ParamChange defines an individual parameter change, for use in
  * ParameterChangeProposal.
+ * @name ParamChange
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.ParamChange
  */
 export interface ParamChange {
   subspace: string;
@@ -36,6 +49,9 @@ export interface ParamChangeProtoMsg {
 /**
  * ParamChange defines an individual parameter change, for use in
  * ParameterChangeProposal.
+ * @name ParamChangeSDKType
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.ParamChange
  */
 export interface ParamChangeSDKType {
   subspace: string;
@@ -50,8 +66,35 @@ function createBaseParameterChangeProposal(): ParameterChangeProposal {
     changes: [],
   };
 }
+/**
+ * ParameterChangeProposal defines a proposal to change one or more parameters.
+ * @name ParameterChangeProposal
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.ParameterChangeProposal
+ */
 export const ParameterChangeProposal = {
   typeUrl: '/cosmos.params.v1beta1.ParameterChangeProposal' as const,
+  aminoType: 'cosmos-sdk/ParameterChangeProposal' as const,
+  is(o: any): o is ParameterChangeProposal {
+    return (
+      o &&
+      (o.$typeUrl === ParameterChangeProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.changes) &&
+          (!o.changes.length || ParamChange.is(o.changes[0]))))
+    );
+  },
+  isSDK(o: any): o is ParameterChangeProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ParameterChangeProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.changes) &&
+          (!o.changes.length || ParamChange.isSDK(o.changes[0]))))
+    );
+  },
   encode(
     message: ParameterChangeProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -151,8 +194,34 @@ function createBaseParamChange(): ParamChange {
     value: '',
   };
 }
+/**
+ * ParamChange defines an individual parameter change, for use in
+ * ParameterChangeProposal.
+ * @name ParamChange
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.ParamChange
+ */
 export const ParamChange = {
   typeUrl: '/cosmos.params.v1beta1.ParamChange' as const,
+  aminoType: 'cosmos-sdk/ParamChange' as const,
+  is(o: any): o is ParamChange {
+    return (
+      o &&
+      (o.$typeUrl === ParamChange.typeUrl ||
+        (typeof o.subspace === 'string' &&
+          typeof o.key === 'string' &&
+          typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is ParamChangeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ParamChange.typeUrl ||
+        (typeof o.subspace === 'string' &&
+          typeof o.key === 'string' &&
+          typeof o.value === 'string'))
+    );
+  },
   encode(
     message: ParamChange,
     writer: BinaryWriter = BinaryWriter.create(),

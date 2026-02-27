@@ -5,179 +5,363 @@ import { Algorithm, algorithmFromJSON, algorithmToJSON } from './algorithm.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
+/**
+ * @name MsgWithdrawProtocolFees
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawProtocolFees
+ */
 export interface MsgWithdrawProtocolFees {
-  /** Address of the signer who is requesting the fee withdrawal. */
+  /**
+   * Address of the signer who is requesting the fee withdrawal.
+   */
   signer: string;
-  /** Address to which the withdrawn fees will be sent. */
+  /**
+   * Address to which the withdrawn fees will be sent.
+   */
   to: string;
 }
 export interface MsgWithdrawProtocolFeesProtoMsg {
   typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFees';
   value: Uint8Array;
 }
+/**
+ * @name MsgWithdrawProtocolFeesSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawProtocolFees
+ */
 export interface MsgWithdrawProtocolFeesSDKType {
   signer: string;
   to: string;
 }
+/**
+ * @name MsgWithdrawProtocolFeesResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawProtocolFeesResponse
+ */
 export interface MsgWithdrawProtocolFeesResponse {}
 export interface MsgWithdrawProtocolFeesResponseProtoMsg {
   typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFeesResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgWithdrawProtocolFeesResponseSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawProtocolFeesResponse
+ */
 export interface MsgWithdrawProtocolFeesResponseSDKType {}
+/**
+ * @name MsgWithdrawRewards
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawRewards
+ */
 export interface MsgWithdrawRewards {
-  /** Address of the signer who is requesting the reward withdrawal. */
+  /**
+   * Address of the signer who is requesting the reward withdrawal.
+   */
   signer: string;
 }
 export interface MsgWithdrawRewardsProtoMsg {
   typeUrl: '/noble.swap.v1.MsgWithdrawRewards';
   value: Uint8Array;
 }
+/**
+ * @name MsgWithdrawRewardsSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawRewards
+ */
 export interface MsgWithdrawRewardsSDKType {
   signer: string;
 }
+/**
+ * @name MsgWithdrawRewardsResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawRewardsResponse
+ */
 export interface MsgWithdrawRewardsResponse {
-  /** List of rewards withdrawn by the user. */
+  /**
+   * List of rewards withdrawn by the user.
+   */
   rewards: Coin[];
 }
 export interface MsgWithdrawRewardsResponseProtoMsg {
   typeUrl: '/noble.swap.v1.MsgWithdrawRewardsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgWithdrawRewardsResponseSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawRewardsResponse
+ */
 export interface MsgWithdrawRewardsResponseSDKType {
   rewards: CoinSDKType[];
 }
+/**
+ * @name MsgSwap
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgSwap
+ */
 export interface MsgSwap {
-  /** Address of the signer who is initiating the swap. */
+  /**
+   * Address of the signer who is initiating the swap.
+   */
   signer: string;
-  /** The coin to be swapped. */
+  /**
+   * The coin to be swapped.
+   */
   amount: Coin;
-  /** The routes through which the swap will occur. */
+  /**
+   * The routes through which the swap will occur.
+   */
   routes: Route[];
-  /** The minimum amount of tokens expected after the swap. */
+  /**
+   * The minimum amount of tokens expected after the swap.
+   */
   min: Coin;
 }
 export interface MsgSwapProtoMsg {
   typeUrl: '/noble.swap.v1.MsgSwap';
   value: Uint8Array;
 }
+/**
+ * @name MsgSwapSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgSwap
+ */
 export interface MsgSwapSDKType {
   signer: string;
   amount: CoinSDKType;
   routes: RouteSDKType[];
   min: CoinSDKType;
 }
+/**
+ * @name MsgSwapResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgSwapResponse
+ */
 export interface MsgSwapResponse {
-  /** The resulting amount of tokens after the swap. */
+  /**
+   * The resulting amount of tokens after the swap.
+   */
   result: Coin;
-  /** Details of each individual swap involved in the process. */
+  /**
+   * Details of each individual swap involved in the process.
+   */
   swaps: Swap[];
 }
 export interface MsgSwapResponseProtoMsg {
   typeUrl: '/noble.swap.v1.MsgSwapResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgSwapResponseSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgSwapResponse
+ */
 export interface MsgSwapResponseSDKType {
   result: CoinSDKType;
   swaps: SwapSDKType[];
 }
+/**
+ * @name MsgPauseByAlgorithm
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByAlgorithm
+ */
 export interface MsgPauseByAlgorithm {
-  /** Address of the signer who is requesting to pause the pools. */
+  /**
+   * Address of the signer who is requesting to pause the pools.
+   */
   signer: string;
-  /** The algorithm used by the pools to be paused. */
+  /**
+   * The algorithm used by the pools to be paused.
+   */
   algorithm: Algorithm;
 }
 export interface MsgPauseByAlgorithmProtoMsg {
   typeUrl: '/noble.swap.v1.MsgPauseByAlgorithm';
   value: Uint8Array;
 }
+/**
+ * @name MsgPauseByAlgorithmSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByAlgorithm
+ */
 export interface MsgPauseByAlgorithmSDKType {
   signer: string;
   algorithm: Algorithm;
 }
+/**
+ * @name MsgPauseByAlgorithmResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByAlgorithmResponse
+ */
 export interface MsgPauseByAlgorithmResponse {
-  /** List of IDs of the paused pools. */
+  /**
+   * List of IDs of the paused pools.
+   */
   pausedPools: bigint[];
 }
 export interface MsgPauseByAlgorithmResponseProtoMsg {
   typeUrl: '/noble.swap.v1.MsgPauseByAlgorithmResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgPauseByAlgorithmResponseSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByAlgorithmResponse
+ */
 export interface MsgPauseByAlgorithmResponseSDKType {
   paused_pools: bigint[];
 }
+/**
+ * @name MsgPauseByPoolIds
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByPoolIds
+ */
 export interface MsgPauseByPoolIds {
-  /** Address of the signer who is requesting to pause the pools. */
+  /**
+   * Address of the signer who is requesting to pause the pools.
+   */
   signer: string;
-  /** List of IDs of the pools to be paused. */
+  /**
+   * List of IDs of the pools to be paused.
+   */
   poolIds: bigint[];
 }
 export interface MsgPauseByPoolIdsProtoMsg {
   typeUrl: '/noble.swap.v1.MsgPauseByPoolIds';
   value: Uint8Array;
 }
+/**
+ * @name MsgPauseByPoolIdsSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByPoolIds
+ */
 export interface MsgPauseByPoolIdsSDKType {
   signer: string;
   pool_ids: bigint[];
 }
+/**
+ * @name MsgPauseByPoolIdsResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByPoolIdsResponse
+ */
 export interface MsgPauseByPoolIdsResponse {
-  /** List of IDs of the paused pools. */
+  /**
+   * List of IDs of the paused pools.
+   */
   pausedPools: bigint[];
 }
 export interface MsgPauseByPoolIdsResponseProtoMsg {
   typeUrl: '/noble.swap.v1.MsgPauseByPoolIdsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgPauseByPoolIdsResponseSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByPoolIdsResponse
+ */
 export interface MsgPauseByPoolIdsResponseSDKType {
   paused_pools: bigint[];
 }
+/**
+ * @name MsgUnpauseByAlgorithm
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByAlgorithm
+ */
 export interface MsgUnpauseByAlgorithm {
-  /** Address of the signer who is requesting to unpause the pools. */
+  /**
+   * Address of the signer who is requesting to unpause the pools.
+   */
   signer: string;
-  /** The algorithm used by the pools to be unpaused. */
+  /**
+   * The algorithm used by the pools to be unpaused.
+   */
   algorithm: Algorithm;
 }
 export interface MsgUnpauseByAlgorithmProtoMsg {
   typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithm';
   value: Uint8Array;
 }
+/**
+ * @name MsgUnpauseByAlgorithmSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByAlgorithm
+ */
 export interface MsgUnpauseByAlgorithmSDKType {
   signer: string;
   algorithm: Algorithm;
 }
+/**
+ * @name MsgUnpauseByAlgorithmResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByAlgorithmResponse
+ */
 export interface MsgUnpauseByAlgorithmResponse {
-  /** List of IDs of the unpaused pools. */
+  /**
+   * List of IDs of the unpaused pools.
+   */
   unpausedPools: bigint[];
 }
 export interface MsgUnpauseByAlgorithmResponseProtoMsg {
   typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithmResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgUnpauseByAlgorithmResponseSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByAlgorithmResponse
+ */
 export interface MsgUnpauseByAlgorithmResponseSDKType {
   unpaused_pools: bigint[];
 }
+/**
+ * @name MsgUnpauseByPoolIds
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByPoolIds
+ */
 export interface MsgUnpauseByPoolIds {
-  /** Address of the signer who is requesting to unpause the pools. */
+  /**
+   * Address of the signer who is requesting to unpause the pools.
+   */
   signer: string;
-  /** List of IDs of the pools to be unpaused. */
+  /**
+   * List of IDs of the pools to be unpaused.
+   */
   poolIds: bigint[];
 }
 export interface MsgUnpauseByPoolIdsProtoMsg {
   typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIds';
   value: Uint8Array;
 }
+/**
+ * @name MsgUnpauseByPoolIdsSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByPoolIds
+ */
 export interface MsgUnpauseByPoolIdsSDKType {
   signer: string;
   pool_ids: bigint[];
 }
+/**
+ * @name MsgUnpauseByPoolIdsResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByPoolIdsResponse
+ */
 export interface MsgUnpauseByPoolIdsResponse {
-  /** List of IDs of the unpaused pools. */
+  /**
+   * List of IDs of the unpaused pools.
+   */
   unpausedPools: bigint[];
 }
 export interface MsgUnpauseByPoolIdsResponseProtoMsg {
   typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIdsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgUnpauseByPoolIdsResponseSDKType
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByPoolIdsResponse
+ */
 export interface MsgUnpauseByPoolIdsResponseSDKType {
   unpaused_pools: bigint[];
 }
@@ -187,8 +371,28 @@ function createBaseMsgWithdrawProtocolFees(): MsgWithdrawProtocolFees {
     to: '',
   };
 }
+/**
+ * @name MsgWithdrawProtocolFees
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawProtocolFees
+ */
 export const MsgWithdrawProtocolFees = {
   typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFees' as const,
+  aminoType: 'swap/WithdrawProtocolFees' as const,
+  is(o: any): o is MsgWithdrawProtocolFees {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawProtocolFees.typeUrl ||
+        (typeof o.signer === 'string' && typeof o.to === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgWithdrawProtocolFeesSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawProtocolFees.typeUrl ||
+        (typeof o.signer === 'string' && typeof o.to === 'string'))
+    );
+  },
   encode(
     message: MsgWithdrawProtocolFees,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -265,8 +469,19 @@ export const MsgWithdrawProtocolFees = {
 function createBaseMsgWithdrawProtocolFeesResponse(): MsgWithdrawProtocolFeesResponse {
   return {};
 }
+/**
+ * @name MsgWithdrawProtocolFeesResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawProtocolFeesResponse
+ */
 export const MsgWithdrawProtocolFeesResponse = {
   typeUrl: '/noble.swap.v1.MsgWithdrawProtocolFeesResponse' as const,
+  is(o: any): o is MsgWithdrawProtocolFeesResponse {
+    return o && o.$typeUrl === MsgWithdrawProtocolFeesResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgWithdrawProtocolFeesResponseSDKType {
+    return o && o.$typeUrl === MsgWithdrawProtocolFeesResponse.typeUrl;
+  },
   encode(
     _: MsgWithdrawProtocolFeesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -328,8 +543,28 @@ function createBaseMsgWithdrawRewards(): MsgWithdrawRewards {
     signer: '',
   };
 }
+/**
+ * @name MsgWithdrawRewards
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawRewards
+ */
 export const MsgWithdrawRewards = {
   typeUrl: '/noble.swap.v1.MsgWithdrawRewards' as const,
+  aminoType: 'swap/WithdrawRewards' as const,
+  is(o: any): o is MsgWithdrawRewards {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawRewards.typeUrl ||
+        typeof o.signer === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgWithdrawRewardsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawRewards.typeUrl ||
+        typeof o.signer === 'string')
+    );
+  },
   encode(
     message: MsgWithdrawRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -393,8 +628,29 @@ function createBaseMsgWithdrawRewardsResponse(): MsgWithdrawRewardsResponse {
     rewards: [],
   };
 }
+/**
+ * @name MsgWithdrawRewardsResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgWithdrawRewardsResponse
+ */
 export const MsgWithdrawRewardsResponse = {
   typeUrl: '/noble.swap.v1.MsgWithdrawRewardsResponse' as const,
+  is(o: any): o is MsgWithdrawRewardsResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawRewardsResponse.typeUrl ||
+        (Array.isArray(o.rewards) &&
+          (!o.rewards.length || Coin.is(o.rewards[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgWithdrawRewardsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgWithdrawRewardsResponse.typeUrl ||
+        (Array.isArray(o.rewards) &&
+          (!o.rewards.length || Coin.isSDK(o.rewards[0]))))
+    );
+  },
   encode(
     message: MsgWithdrawRewardsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -475,8 +731,36 @@ function createBaseMsgSwap(): MsgSwap {
     min: Coin.fromPartial({}),
   };
 }
+/**
+ * @name MsgSwap
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgSwap
+ */
 export const MsgSwap = {
   typeUrl: '/noble.swap.v1.MsgSwap' as const,
+  aminoType: 'swap/Swap' as const,
+  is(o: any): o is MsgSwap {
+    return (
+      o &&
+      (o.$typeUrl === MsgSwap.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Coin.is(o.amount) &&
+          Array.isArray(o.routes) &&
+          (!o.routes.length || Route.is(o.routes[0])) &&
+          Coin.is(o.min)))
+    );
+  },
+  isSDK(o: any): o is MsgSwapSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSwap.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Coin.isSDK(o.amount) &&
+          Array.isArray(o.routes) &&
+          (!o.routes.length || Route.isSDK(o.routes[0])) &&
+          Coin.isSDK(o.min)))
+    );
+  },
   encode(
     message: MsgSwap,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -579,8 +863,31 @@ function createBaseMsgSwapResponse(): MsgSwapResponse {
     swaps: [],
   };
 }
+/**
+ * @name MsgSwapResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgSwapResponse
+ */
 export const MsgSwapResponse = {
   typeUrl: '/noble.swap.v1.MsgSwapResponse' as const,
+  is(o: any): o is MsgSwapResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgSwapResponse.typeUrl ||
+        (Coin.is(o.result) &&
+          Array.isArray(o.swaps) &&
+          (!o.swaps.length || Swap.is(o.swaps[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgSwapResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSwapResponse.typeUrl ||
+        (Coin.isSDK(o.result) &&
+          Array.isArray(o.swaps) &&
+          (!o.swaps.length || Swap.isSDK(o.swaps[0]))))
+    );
+  },
   encode(
     message: MsgSwapResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -661,8 +968,28 @@ function createBaseMsgPauseByAlgorithm(): MsgPauseByAlgorithm {
     algorithm: 0,
   };
 }
+/**
+ * @name MsgPauseByAlgorithm
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByAlgorithm
+ */
 export const MsgPauseByAlgorithm = {
   typeUrl: '/noble.swap.v1.MsgPauseByAlgorithm' as const,
+  aminoType: 'swap/PauseByAlgorithm' as const,
+  is(o: any): o is MsgPauseByAlgorithm {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByAlgorithm.typeUrl ||
+        (typeof o.signer === 'string' && isSet(o.algorithm)))
+    );
+  },
+  isSDK(o: any): o is MsgPauseByAlgorithmSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByAlgorithm.typeUrl ||
+        (typeof o.signer === 'string' && isSet(o.algorithm)))
+    );
+  },
   encode(
     message: MsgPauseByAlgorithm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -738,8 +1065,29 @@ function createBaseMsgPauseByAlgorithmResponse(): MsgPauseByAlgorithmResponse {
     pausedPools: [],
   };
 }
+/**
+ * @name MsgPauseByAlgorithmResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByAlgorithmResponse
+ */
 export const MsgPauseByAlgorithmResponse = {
   typeUrl: '/noble.swap.v1.MsgPauseByAlgorithmResponse' as const,
+  is(o: any): o is MsgPauseByAlgorithmResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByAlgorithmResponse.typeUrl ||
+        (Array.isArray(o.pausedPools) &&
+          (!o.pausedPools.length || typeof o.pausedPools[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgPauseByAlgorithmResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByAlgorithmResponse.typeUrl ||
+        (Array.isArray(o.paused_pools) &&
+          (!o.paused_pools.length || typeof o.paused_pools[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgPauseByAlgorithmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -830,8 +1178,32 @@ function createBaseMsgPauseByPoolIds(): MsgPauseByPoolIds {
     poolIds: [],
   };
 }
+/**
+ * @name MsgPauseByPoolIds
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByPoolIds
+ */
 export const MsgPauseByPoolIds = {
   typeUrl: '/noble.swap.v1.MsgPauseByPoolIds' as const,
+  aminoType: 'swap/PauseByPoolIds' as const,
+  is(o: any): o is MsgPauseByPoolIds {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByPoolIds.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.poolIds) &&
+          (!o.poolIds.length || typeof o.poolIds[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgPauseByPoolIdsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByPoolIds.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.pool_ids) &&
+          (!o.pool_ids.length || typeof o.pool_ids[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgPauseByPoolIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -916,8 +1288,29 @@ function createBaseMsgPauseByPoolIdsResponse(): MsgPauseByPoolIdsResponse {
     pausedPools: [],
   };
 }
+/**
+ * @name MsgPauseByPoolIdsResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgPauseByPoolIdsResponse
+ */
 export const MsgPauseByPoolIdsResponse = {
   typeUrl: '/noble.swap.v1.MsgPauseByPoolIdsResponse' as const,
+  is(o: any): o is MsgPauseByPoolIdsResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByPoolIdsResponse.typeUrl ||
+        (Array.isArray(o.pausedPools) &&
+          (!o.pausedPools.length || typeof o.pausedPools[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgPauseByPoolIdsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgPauseByPoolIdsResponse.typeUrl ||
+        (Array.isArray(o.paused_pools) &&
+          (!o.paused_pools.length || typeof o.paused_pools[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgPauseByPoolIdsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1008,8 +1401,28 @@ function createBaseMsgUnpauseByAlgorithm(): MsgUnpauseByAlgorithm {
     algorithm: 0,
   };
 }
+/**
+ * @name MsgUnpauseByAlgorithm
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByAlgorithm
+ */
 export const MsgUnpauseByAlgorithm = {
   typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithm' as const,
+  aminoType: 'swap/UnpauseByAlgorithm' as const,
+  is(o: any): o is MsgUnpauseByAlgorithm {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByAlgorithm.typeUrl ||
+        (typeof o.signer === 'string' && isSet(o.algorithm)))
+    );
+  },
+  isSDK(o: any): o is MsgUnpauseByAlgorithmSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByAlgorithm.typeUrl ||
+        (typeof o.signer === 'string' && isSet(o.algorithm)))
+    );
+  },
   encode(
     message: MsgUnpauseByAlgorithm,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1085,8 +1498,30 @@ function createBaseMsgUnpauseByAlgorithmResponse(): MsgUnpauseByAlgorithmRespons
     unpausedPools: [],
   };
 }
+/**
+ * @name MsgUnpauseByAlgorithmResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByAlgorithmResponse
+ */
 export const MsgUnpauseByAlgorithmResponse = {
   typeUrl: '/noble.swap.v1.MsgUnpauseByAlgorithmResponse' as const,
+  is(o: any): o is MsgUnpauseByAlgorithmResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByAlgorithmResponse.typeUrl ||
+        (Array.isArray(o.unpausedPools) &&
+          (!o.unpausedPools.length || typeof o.unpausedPools[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgUnpauseByAlgorithmResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByAlgorithmResponse.typeUrl ||
+        (Array.isArray(o.unpaused_pools) &&
+          (!o.unpaused_pools.length ||
+            typeof o.unpaused_pools[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgUnpauseByAlgorithmResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1177,8 +1612,32 @@ function createBaseMsgUnpauseByPoolIds(): MsgUnpauseByPoolIds {
     poolIds: [],
   };
 }
+/**
+ * @name MsgUnpauseByPoolIds
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByPoolIds
+ */
 export const MsgUnpauseByPoolIds = {
   typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIds' as const,
+  aminoType: 'swap/UnpauseByPoolIds' as const,
+  is(o: any): o is MsgUnpauseByPoolIds {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByPoolIds.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.poolIds) &&
+          (!o.poolIds.length || typeof o.poolIds[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgUnpauseByPoolIdsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByPoolIds.typeUrl ||
+        (typeof o.signer === 'string' &&
+          Array.isArray(o.pool_ids) &&
+          (!o.pool_ids.length || typeof o.pool_ids[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgUnpauseByPoolIds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1266,8 +1725,30 @@ function createBaseMsgUnpauseByPoolIdsResponse(): MsgUnpauseByPoolIdsResponse {
     unpausedPools: [],
   };
 }
+/**
+ * @name MsgUnpauseByPoolIdsResponse
+ * @package noble.swap.v1
+ * @see proto type: noble.swap.v1.MsgUnpauseByPoolIdsResponse
+ */
 export const MsgUnpauseByPoolIdsResponse = {
   typeUrl: '/noble.swap.v1.MsgUnpauseByPoolIdsResponse' as const,
+  is(o: any): o is MsgUnpauseByPoolIdsResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByPoolIdsResponse.typeUrl ||
+        (Array.isArray(o.unpausedPools) &&
+          (!o.unpausedPools.length || typeof o.unpausedPools[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is MsgUnpauseByPoolIdsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUnpauseByPoolIdsResponse.typeUrl ||
+        (Array.isArray(o.unpaused_pools) &&
+          (!o.unpaused_pools.length ||
+            typeof o.unpaused_pools[0] === 'bigint')))
+    );
+  },
   encode(
     message: MsgUnpauseByPoolIdsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

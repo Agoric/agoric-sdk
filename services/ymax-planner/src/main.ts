@@ -20,7 +20,7 @@ import {
   makeSequencingSmartWallet,
   reflectWalletStore,
 } from '@agoric/client-utils';
-import type { BaseAccountSDKType } from '@agoric/client-utils/src/codegen/cosmos/auth/v1beta1/auth.js';
+import type { BaseAccountSDKType } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import {
   deeplyFulfilledObject,

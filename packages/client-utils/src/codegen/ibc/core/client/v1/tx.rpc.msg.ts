@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../helpers.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgCreateClient,
   MsgCreateClientResponse,
@@ -16,7 +16,7 @@ import {
   MsgIBCSoftwareUpgradeResponse,
   MsgUpdateParams,
   MsgUpdateParamsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/ibc/core/client/v1/tx.js';
 /** Msg defines the ibc/client Msg service. */
 export interface Msg {
   /** CreateClient defines a rpc handler method for MsgCreateClient. */
@@ -41,8 +41,8 @@ export interface Msg {
   ): Promise<MsgUpdateParamsResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.createClient = this.createClient.bind(this);
     this.updateClient = this.updateClient.bind(this);
@@ -136,3 +136,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

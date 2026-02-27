@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgSend,
   MsgSendResponse,
@@ -10,7 +10,7 @@ import {
   MsgUpdateParamsResponse,
   MsgSetSendEnabled,
   MsgSetSendEnabledResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/bank/v1beta1/tx.js';
 /** Msg defines the bank Msg service. */
 export interface Msg {
   /** Send defines a method for sending coins from one account to another account. */
@@ -37,8 +37,8 @@ export interface Msg {
   ): Promise<MsgSetSendEnabledResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.send = this.send.bind(this);
     this.multiSend = this.multiSend.bind(this);
@@ -86,3 +86,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

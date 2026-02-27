@@ -7,11 +7,18 @@ import { type JsonSafe } from '../../json-safe.js';
 /**
  * CommunityPoolRebate stores the size of the community pool liquid stake
  * (denominated in stTokens) and the rebate rate as a decimal
+ * @name CommunityPoolRebate
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolRebate
  */
 export interface CommunityPoolRebate {
-  /** Rebate percentage as a decimal (e.g. 0.2 for 20%) */
+  /**
+   * Rebate percentage as a decimal (e.g. 0.2 for 20%)
+   */
   rebateRate: string;
-  /** Number of stTokens received from the community pool liquid stake */
+  /**
+   * Number of stTokens received from the community pool liquid stake
+   */
   liquidStakedStTokenAmount: string;
 }
 export interface CommunityPoolRebateProtoMsg {
@@ -21,38 +28,72 @@ export interface CommunityPoolRebateProtoMsg {
 /**
  * CommunityPoolRebate stores the size of the community pool liquid stake
  * (denominated in stTokens) and the rebate rate as a decimal
+ * @name CommunityPoolRebateSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolRebate
  */
 export interface CommunityPoolRebateSDKType {
   rebate_rate: string;
   liquid_staked_st_token_amount: string;
 }
-/** Core data structure to track liquid staking zones */
+/**
+ * Core data structure to track liquid staking zones
+ * @name HostZone
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.HostZone
+ */
 export interface HostZone {
-  /** Chain ID of the host zone */
+  /**
+   * Chain ID of the host zone
+   */
   chainId: string;
-  /** Bech32 prefix of host zone's address */
+  /**
+   * Bech32 prefix of host zone's address
+   */
   bech32prefix: string;
-  /** ConnectionID from Stride to the host zone (ID is on the stride side) */
+  /**
+   * ConnectionID from Stride to the host zone (ID is on the stride side)
+   */
   connectionId: string;
-  /** Transfer Channel ID from Stride to the host zone (ID is on the stride side) */
+  /**
+   * Transfer Channel ID from Stride to the host zone (ID is on the stride side)
+   */
   transferChannelId: string;
-  /** ibc denom of the host zone's native token on stride */
+  /**
+   * ibc denom of the host zone's native token on stride
+   */
   ibcDenom: string;
-  /** native denom on host zone */
+  /**
+   * native denom on host zone
+   */
   hostDenom: string;
-  /** The unbonding period in days (e.g. 21) */
+  /**
+   * The unbonding period in days (e.g. 21)
+   */
   unbondingPeriod: bigint;
-  /** List of validators that are delegated to */
+  /**
+   * List of validators that are delegated to
+   */
   validators: Validator[];
-  /** Address that custodies native tokens during a liquid stake */
+  /**
+   * Address that custodies native tokens during a liquid stake
+   */
   depositAddress: string;
-  /** ICA Address on the host zone responsible for collecting rewards */
+  /**
+   * ICA Address on the host zone responsible for collecting rewards
+   */
   withdrawalIcaAddress: string;
-  /** ICA Address on the host zone responsible for commission */
+  /**
+   * ICA Address on the host zone responsible for commission
+   */
   feeIcaAddress: string;
-  /** ICA Address on the host zone responsible for staking and unstaking */
+  /**
+   * ICA Address on the host zone responsible for staking and unstaking
+   */
   delegationIcaAddress: string;
-  /** ICA Address that receives unstaked tokens after they've finished unbonding */
+  /**
+   * ICA Address that receives unstaked tokens after they've finished unbonding
+   */
   redemptionIcaAddress: string;
   /**
    * ICA Address that receives tokens from a community pool to liquid stake or
@@ -83,11 +124,17 @@ export interface HostZone {
    * the main community pool
    */
   communityPoolTreasuryAddress: string;
-  /** The total delegated balance on the host zone */
+  /**
+   * The total delegated balance on the host zone
+   */
   totalDelegations: string;
-  /** The redemption rate from the previous epoch */
+  /**
+   * The redemption rate from the previous epoch
+   */
   lastRedemptionRate: string;
-  /** The current redemption rate */
+  /**
+   * The current redemption rate
+   */
   redemptionRate: string;
   /**
    * The min outer redemption rate bound - controlled only be governance
@@ -114,23 +161,34 @@ export interface HostZone {
    * or undelegation ICA tx
    */
   maxMessagesPerIcaTx: bigint;
-  /** Indicates whether redemptions are allowed through this module */
+  /**
+   * Indicates whether redemptions are allowed through this module
+   */
   redemptionsEnabled: boolean;
   /**
    * An optional fee rebate
    * If there is no rebate for the host zone, this will be nil
    */
   communityPoolRebate?: CommunityPoolRebate;
-  /** A boolean indicating whether the chain has LSM enabled */
+  /**
+   * A boolean indicating whether the chain has LSM enabled
+   */
   lsmLiquidStakeEnabled: boolean;
-  /** A boolean indicating whether the chain is currently halted */
+  /**
+   * A boolean indicating whether the chain is currently halted
+   */
   halted: boolean;
 }
 export interface HostZoneProtoMsg {
   typeUrl: '/stride.stakeibc.HostZone';
   value: Uint8Array;
 }
-/** Core data structure to track liquid staking zones */
+/**
+ * Core data structure to track liquid staking zones
+ * @name HostZoneSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.HostZone
+ */
 export interface HostZoneSDKType {
   chain_id: string;
   bech32prefix: string;
@@ -169,8 +227,31 @@ function createBaseCommunityPoolRebate(): CommunityPoolRebate {
     liquidStakedStTokenAmount: '',
   };
 }
+/**
+ * CommunityPoolRebate stores the size of the community pool liquid stake
+ * (denominated in stTokens) and the rebate rate as a decimal
+ * @name CommunityPoolRebate
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolRebate
+ */
 export const CommunityPoolRebate = {
   typeUrl: '/stride.stakeibc.CommunityPoolRebate' as const,
+  is(o: any): o is CommunityPoolRebate {
+    return (
+      o &&
+      (o.$typeUrl === CommunityPoolRebate.typeUrl ||
+        (typeof o.rebateRate === 'string' &&
+          typeof o.liquidStakedStTokenAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is CommunityPoolRebateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommunityPoolRebate.typeUrl ||
+        (typeof o.rebate_rate === 'string' &&
+          typeof o.liquid_staked_st_token_amount === 'string'))
+    );
+  },
   encode(
     message: CommunityPoolRebate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -280,8 +361,86 @@ function createBaseHostZone(): HostZone {
     halted: false,
   };
 }
+/**
+ * Core data structure to track liquid staking zones
+ * @name HostZone
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.HostZone
+ */
 export const HostZone = {
   typeUrl: '/stride.stakeibc.HostZone' as const,
+  is(o: any): o is HostZone {
+    return (
+      o &&
+      (o.$typeUrl === HostZone.typeUrl ||
+        (typeof o.chainId === 'string' &&
+          typeof o.bech32prefix === 'string' &&
+          typeof o.connectionId === 'string' &&
+          typeof o.transferChannelId === 'string' &&
+          typeof o.ibcDenom === 'string' &&
+          typeof o.hostDenom === 'string' &&
+          typeof o.unbondingPeriod === 'bigint' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0])) &&
+          typeof o.depositAddress === 'string' &&
+          typeof o.withdrawalIcaAddress === 'string' &&
+          typeof o.feeIcaAddress === 'string' &&
+          typeof o.delegationIcaAddress === 'string' &&
+          typeof o.redemptionIcaAddress === 'string' &&
+          typeof o.communityPoolDepositIcaAddress === 'string' &&
+          typeof o.communityPoolReturnIcaAddress === 'string' &&
+          typeof o.communityPoolStakeHoldingAddress === 'string' &&
+          typeof o.communityPoolRedeemHoldingAddress === 'string' &&
+          typeof o.communityPoolTreasuryAddress === 'string' &&
+          typeof o.totalDelegations === 'string' &&
+          typeof o.lastRedemptionRate === 'string' &&
+          typeof o.redemptionRate === 'string' &&
+          typeof o.minRedemptionRate === 'string' &&
+          typeof o.maxRedemptionRate === 'string' &&
+          typeof o.minInnerRedemptionRate === 'string' &&
+          typeof o.maxInnerRedemptionRate === 'string' &&
+          typeof o.maxMessagesPerIcaTx === 'bigint' &&
+          typeof o.redemptionsEnabled === 'boolean' &&
+          typeof o.lsmLiquidStakeEnabled === 'boolean' &&
+          typeof o.halted === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is HostZoneSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HostZone.typeUrl ||
+        (typeof o.chain_id === 'string' &&
+          typeof o.bech32prefix === 'string' &&
+          typeof o.connection_id === 'string' &&
+          typeof o.transfer_channel_id === 'string' &&
+          typeof o.ibc_denom === 'string' &&
+          typeof o.host_denom === 'string' &&
+          typeof o.unbonding_period === 'bigint' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0])) &&
+          typeof o.deposit_address === 'string' &&
+          typeof o.withdrawal_ica_address === 'string' &&
+          typeof o.fee_ica_address === 'string' &&
+          typeof o.delegation_ica_address === 'string' &&
+          typeof o.redemption_ica_address === 'string' &&
+          typeof o.community_pool_deposit_ica_address === 'string' &&
+          typeof o.community_pool_return_ica_address === 'string' &&
+          typeof o.community_pool_stake_holding_address === 'string' &&
+          typeof o.community_pool_redeem_holding_address === 'string' &&
+          typeof o.community_pool_treasury_address === 'string' &&
+          typeof o.total_delegations === 'string' &&
+          typeof o.last_redemption_rate === 'string' &&
+          typeof o.redemption_rate === 'string' &&
+          typeof o.min_redemption_rate === 'string' &&
+          typeof o.max_redemption_rate === 'string' &&
+          typeof o.min_inner_redemption_rate === 'string' &&
+          typeof o.max_inner_redemption_rate === 'string' &&
+          typeof o.max_messages_per_ica_tx === 'bigint' &&
+          typeof o.redemptions_enabled === 'boolean' &&
+          typeof o.lsm_liquid_stake_enabled === 'boolean' &&
+          typeof o.halted === 'boolean'))
+    );
+  },
   encode(
     message: HostZone,
     writer: BinaryWriter = BinaryWriter.create(),
