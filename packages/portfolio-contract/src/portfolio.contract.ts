@@ -72,10 +72,12 @@ import {
   ERC4626PoolPlaces,
   makeProposalShapes,
   TargetAllocationShape,
+  VaultConfigShape,
   type EVMContractAddressesMap,
   type OfferArgsFor,
   type ProposalType,
   type StatusFor,
+  type VaultConfig,
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
@@ -733,7 +735,7 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
-      createVault: M.callWhen(TargetAllocationShape).returns(M.record()),
+      createVault: M.callWhen(VaultConfigShape).returns(M.record()),
       withdrawFees: M.callWhen(M.string())
         .optional(M.record())
         .returns(M.record()),
@@ -797,17 +799,19 @@ export const contract = async (
         trace('delivered EVM wallet handler invitation');
       },
       /**
-       * Create a vault-backed portfolio policy with a fixed target allocation.
+       * Create a vault-backed portfolio policy from creator-configured vault settings.
        * Returns immediately with stable identifiers while account provisioning
        * and any downstream planner handling continue asynchronously.
+       *
+       * TODO(#vaults): consume fee/cadence end-to-end; currently only allocation
+       * is used.
        */
-      async createVault(targetAllocation: TargetAllocation) {
-        mustMatch(targetAllocation, TargetAllocationShape);
+      async createVault({ allocation, fee: _fee, cadence: _cadence }: VaultConfig) {
         const kit = makeNextPortfolioKit();
         const seat = zcf.makeEmptySeatKit().zcfSeat;
         void openPortfolio(
           seat,
-          { targetAllocation },
+          { targetAllocation: allocation },
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
           // @ts-ignore XXX Guest...
           kit,

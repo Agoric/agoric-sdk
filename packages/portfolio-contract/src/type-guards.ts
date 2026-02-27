@@ -263,6 +263,22 @@ export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
 export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
   M.recordOf(PoolKeyShapeExt, M.nat());
 
+export type VaultConfig = {
+  allocation: TargetAllocation;
+  fee: unknown;
+  cadence: unknown;
+};
+
+export const VaultConfigShape: TypedPattern<VaultConfig> = M.splitRecord(
+  {
+    allocation: TargetAllocationShape,
+    fee: M.any(),
+    cadence: M.any(),
+  },
+  {},
+  {},
+);
+
 // #endregion
 
 // #region ymax0 vstorage keys and values
