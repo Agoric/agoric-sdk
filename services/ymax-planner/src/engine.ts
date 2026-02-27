@@ -812,7 +812,7 @@ export const startEngine = async (
       data = marshaller.fromCapData(marshalledData);
       if (
         data?.status !== TxStatus.PENDING ||
-        data.type === TxType.CCTP_TO_AGORIC
+        !RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)
       )
         return;
       mustMatch(harden(data), PublishedTxShape, path);
