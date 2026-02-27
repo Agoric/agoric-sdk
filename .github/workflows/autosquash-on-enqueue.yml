@@ -1,0 +1,112 @@
+name: Autosquash on queue enqueue
+
+on:
+  pull_request_target:
+    types:
+      - enqueued
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: autosquash-on-enqueue-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  autosquash:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.base.ref == 'master' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Configure git identity
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Fetch base branch
+        run: git fetch origin "${BASE_REF}"
+
+      - name: Detect fixup commits
+        id: detect
+        run: |
+          set -euo pipefail
+          count=$(git rev-list "origin/${BASE_REF}..HEAD" --grep='^\(fixup\|squash\|amend\)! ' --count)
+          echo "count=${count}" >>"${GITHUB_OUTPUT}"
+          if [ "${count}" -gt 0 ]; then
+            echo 'Found fixup/squash/amend commits:'
+            git log --format='%h %s' --reverse "origin/${BASE_REF}..HEAD" --grep='^\(fixup\|squash\|amend\)! '
+          else
+            echo 'No fixup/squash/amend commits found.'
+          fi
+
+      - name: Autosquash commits
+        id: autosquash
+        if: steps.detect.outputs.count != '0'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          GIT_SEQUENCE_EDITOR=: git rebase -i --autosquash "origin/${BASE_REF}"
+
+      - name: Push rewritten branch
+        if: steps.detect.outputs.count != '0' && steps.autosquash.outcome == 'success'
+        run: git push --force-with-lease origin "HEAD:${HEAD_REF}"
+
+      - name: Re-enable auto-merge
+        if: steps.detect.outputs.count != '0' && steps.autosquash.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh pr merge "${PR_URL}" --auto --merge
+
+      - name: Comment on autosquash conflict
+        if: steps.detect.outputs.count != '0' && steps.autosquash.outcome != 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.payload.pull_request.number,
+              body: [
+                'Autosquash failed while this PR was entering the merge queue.',
+                '',
+                'The branch history could not be rewritten cleanly with `git rebase --autosquash`.',
+                'Please run autosquash locally, resolve conflicts, and push. Then enqueue again.',
+              ].join('\n'),
+            });
+
+      - name: Fail on autosquash conflict
+        if: steps.detect.outputs.count != '0' && steps.autosquash.outcome != 'success'
+        run: exit 1
+
+  skip-forks:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.base.ref == 'master' &&
+      github.event.pull_request.head.repo.full_name != github.repository
+    steps:
+      - name: Comment for fork PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: context.payload.pull_request.number,
+              body: [
+                'Autosquash-on-enqueue skipped: this PR branch is in a fork.',
+                '',
+                'For safety, the workflow only rewrites branches in this repository.',
+                'Please autosquash locally and push, then enqueue again.',
+              ].join('\n'),
+            });
