@@ -75,7 +75,7 @@ Rollout mode: **Phased allowlist** (selected).
 - [x] Add repo-level `tools` contract policy doc section.
 - [x] Add central allowlist/policy file for phased rollout.
 - [x] Add ESLint boundary enforcement with temporary allowlist.
-- [ ] Add CI import-graph check (`rg`-based).
+- [x] Add CI import-graph check (`rg`-based).
 - [ ] Add package manifest exposure validation.
 - [ ] Wire checks into PR CI.
 - [ ] Run targeted validation and capture follow-up cleanup items.
