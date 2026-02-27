@@ -4,6 +4,15 @@
   "private": true,
   "description": "Config and utilities to bootstrap an Agoric chain",
   "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./supports.js": "./src/supports.js",
+    "./drivers.js": "./src/drivers.js",
+    "./liquidation.js": "./src/liquidation.js",
+    "./walletFactoryContext.js": "./src/walletFactoryContext.js",
+    "./ibc/mocks.js": "./src/ibc/mocks.js",
+    "./package.json": "./package.json"
+  },
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
@@ -13,7 +22,8 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:types": "yarn run -T tsc",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:eslint": "yarn run -T eslint .",
+    "lint:exports": "node scripts/check-unused-exports.js"
   },
   "keywords": [],
   "author": "Agoric",
@@ -59,7 +69,6 @@
     "viem": "^2.31.0"
   },
   "devDependencies": {
-    "@aglocal/fast-usdc-deploy": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/store": "workspace:*",

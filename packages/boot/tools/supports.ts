@@ -52,7 +52,6 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
-import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fast-usdc.core.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
@@ -76,17 +75,17 @@ const trace = makeTracer('BSTSupport', false);
 // Doesn't help in CI but speeds up local development.
 // CI is on Github Actions, so fetching is reliable.
 // Files appear in a .cache directory.
-export const fetchCached = NodeFetchCache.create({
+const fetchCached = NodeFetchCache.create({
   cache: new FileSystemCache(),
 }) as unknown as typeof globalThis.fetch;
 
-type ConsumeBootrapItem = <N extends string>(
+type BootstrapPowersShape = { consume: object };
+
+type ConsumeBootstrapItem<Powers extends BootstrapPowersShape> = <N extends string>(
   name: N,
-) => N extends keyof FastUSDCCorePowers['consume']
-  ? FastUSDCCorePowers['consume'][N]
-  : N extends keyof EconomyBootstrapPowers['consume']
-    ? EconomyBootstrapPowers['consume'][N]
-    : unknown;
+) => N extends keyof Powers['consume']
+  ? Powers['consume'][N]
+  : any;
 
 type BootstrapPublishedPathTypes = FastUsdcPublishedPathTypes &
   GovernancePublishedPathTypes;
@@ -95,22 +94,24 @@ type BootstrapPublishedPathTypes = FastUsdcPublishedPathTypes &
 /**
  * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
  */
-type BootstrapEV = EProxy & {
+type BootstrapEV<Powers extends BootstrapPowersShape> = EProxy & {
   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
   vat: <N extends string>(
     name: N,
   ) => N extends 'bootstrap'
     ? Omit<BootstrapRootObject, 'consumeItem'> & {
         // XXX not really local
-        consumeItem: ConsumeBootrapItem;
-      } & Remote<{ consumeItem: ConsumeBootrapItem }>
+        consumeItem: ConsumeBootstrapItem<Powers>;
+      } & Remote<{ consumeItem: ConsumeBootstrapItem<Powers> }>
     : Record<string, (...args: any) => Promise<any>>;
 };
 
-const makeBootstrapRunUtils = makeRunUtils as (
+const makeBootstrapRunUtils = makeRunUtils as <
+  Powers extends BootstrapPowersShape,
+>(
   controller: SwingsetController,
   harness?: RunHarness,
-) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
+) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV<Powers> };
 
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
@@ -157,7 +158,7 @@ export const keyArrayEqual = (
    `defaultManagerType`)
  * @returns Path to the generated config file
  */
-export const getNodeTestVaultsConfig = async ({
+const getNodeTestVaultsConfig = async ({
   bundleDir,
   configPath,
   defaultManagerType = 'local' as ManagerType,
@@ -206,7 +207,7 @@ export const getNodeTestVaultsConfig = async ({
   return testConfigPath;
 };
 
-interface Powers {
+interface ProposalExtractorPowers {
   childProcess: Pick<typeof import('node:child_process'), 'execFileSync'>;
   fs: typeof import('node:fs/promises');
 }
@@ -220,7 +221,7 @@ interface Powers {
  * @returns A function that builds and extracts proposal data
  */
 export const makeProposalExtractor = (
-  { childProcess, fs }: Powers,
+  { childProcess, fs }: ProposalExtractorPowers,
   resolveBase = import.meta.url,
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
@@ -345,7 +346,7 @@ export const matchAmount = (
  * @param value - Value object to test
  * @param ref - Reference value object to compare against
  */
-export const matchValue = (t: AvaT, value, ref) => {
+const matchValue = (t: AvaT, value, ref) => {
   matchRef(t, value.brand, ref.brand);
   t.is(value.denom, ref.denom);
   matchRef(t, value.issuer, ref.issuer);
@@ -430,7 +431,9 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
    `defaultManagerType`)
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
-export const makeSwingsetTestKit = async (
+export const makeSwingsetTestKit = async <
+  Powers extends BootstrapPowersShape = EconomyBootstrapPowers,
+>(
   log: (..._: any[]) => void,
   bundleDir = 'bundles',
   {
@@ -745,7 +748,7 @@ export const makeSwingsetTestKit = async (
   // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
   // exercised in the right way.
   await controller.run();
-  const runUtils = makeBootstrapRunUtils(controller, harness);
+  const runUtils = makeBootstrapRunUtils<Powers>(controller, harness);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
@@ -775,9 +778,9 @@ export const makeSwingsetTestKit = async (
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
-      'bootstrap',
-    ).consumeItem('coreEvalBridgeHandler');
+    const coreEvalBridgeHandler = (await EV.vat('bootstrap').consumeItem(
+      'coreEvalBridgeHandler',
+    )) as BridgeHandler;
     await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
     log(`proposal executed`);
   };
@@ -914,7 +917,9 @@ export const makeSwingsetTestKit = async (
     slogSender,
   };
 };
-export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
+export type SwingsetTestKit<
+  Powers extends BootstrapPowersShape = EconomyBootstrapPowers,
+> = Awaited<ReturnType<typeof makeSwingsetTestKit<Powers>>>;
 
 /**
  * Creates a harness for measuring computron usage in SwingSet tests.

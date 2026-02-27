@@ -294,11 +294,9 @@ test('supersede', async t => {
     message: 'invalid round to report',
   });
 
-  try {
-    await E(aggregator.creator).getRoundData(4);
-  } catch (error) {
-    t.is(error.message, 'No data present');
-  }
+  await t.throwsAsync(E(aggregator.creator).getRoundData(4), {
+    message: 'No data present',
+  });
 });
 
 test('interleaved', async t => {
@@ -330,11 +328,9 @@ test('interleaved', async t => {
   await E(oracleB).pushPrice({ roundId: 1, unitPrice: 200n });
   await oracleTimer.tick();
 
-  try {
-    await E(aggregator.creator).getRoundData(1);
-  } catch (error) {
-    t.is(error.message, 'No data present');
-  }
+  await t.throwsAsync(E(aggregator.creator).getRoundData(1), {
+    message: 'No data present',
+  });
 
   // ----- round 2: interleaved round submission -- just making sure this works
   await oracleTimer.tick();
@@ -359,11 +355,9 @@ test('interleaved', async t => {
   t.is(round1Attempt2.answer, 200n);
   t.is(round2Attempt1.answer, 2000n);
 
-  try {
-    await E(aggregator.creator).getRoundData(3);
-  } catch (error) {
-    t.is(error.message, 'No data present');
-  }
+  await t.throwsAsync(E(aggregator.creator).getRoundData(3), {
+    message: 'No data present',
+  });
 
   // ----- round 3/4: complicated supersedable case
   await oracleTimer.tick();
@@ -381,17 +375,11 @@ test('interleaved', async t => {
   await E(oracleC).pushPrice({ roundId: 4, unitPrice: 6000n });
   await oracleTimer.tick(); // --- round 3 has NOW timed out, meaning it is now supersedable
 
-  try {
-    await E(aggregator.creator).getRoundData(3);
-  } catch (error) {
-    t.is(error.message, 'No data present');
-  }
-
-  try {
-    await E(aggregator.creator).getRoundData(4);
-  } catch (error) {
-    t.is(error.message, 'No data present');
-  }
+  const round3Attempt2 = await E(aggregator.creator).getRoundData(3);
+  t.is(round3Attempt2.answer, 2000n);
+  await t.throwsAsync(E(aggregator.creator).getRoundData(4), {
+    message: 'No data present',
+  });
 
   // so NOW we should be able to submit round 4, and round 3 should just be copied from round 2
   await E(oracleA).pushPrice({ roundId: 4, unitPrice: 4000n });
