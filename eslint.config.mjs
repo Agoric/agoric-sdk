@@ -7,6 +7,10 @@ import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
 import { createRequire } from 'module';
+import {
+  legacyNonTestToTestFiles,
+  legacySrcToToolsFiles,
+} from './scripts/ci/tools-scope-policy.mjs';
 
 // Workaround for https://github.com/anza-xyz/eslint-plugin-require-extensions/issues/18
 const require = createRequire(import.meta.url);
@@ -206,6 +210,60 @@ export default [
             'Prefer objectMap over Object.fromEntries(Object.entries(...))',
         },
       ],
+    },
+  },
+  {
+    files: [
+      'packages/*/src/**/*.{js,ts,mjs,cjs}',
+      'packages/wallet/api/src/**/*.{js,ts,mjs,cjs}',
+    ],
+
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            '**/tools/**',
+            '@agoric/*/tools/**',
+            '@aglocal/*/tools/**',
+            '../tools/**',
+            './tools/**',
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: legacySrcToToolsFiles,
+
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
+    files: ['packages/**/*.{js,ts,mjs,cjs}'],
+    ignores: ['packages/*/test/**', 'packages/wallet/api/test/**'],
+
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            '**/test/**',
+            '@agoric/*/test/**',
+            '@aglocal/*/test/**',
+            '../test/**',
+            './test/**',
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: legacyNonTestToTestFiles,
+
+    rules: {
+      'no-restricted-imports': 'off',
     },
   },
   {
