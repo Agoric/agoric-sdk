@@ -124,6 +124,7 @@
     "docs:markdown-build": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.build.json",
     "docs:update-functions-path": "node ./scripts/update-typedoc-functions-path.cjs",
     "doctor": "./scripts/env-doctor.sh",
+    "hooks:install": "./scripts/install-git-hooks.sh",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
