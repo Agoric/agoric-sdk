@@ -7,10 +7,7 @@ import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
 import { createRequire } from 'module';
-import {
-  legacyNonTestToTestFiles,
-  legacySrcToToolsFiles,
-} from './scripts/ci/tools-scope-policy.mjs';
+import { legacySrcToToolsFiles } from './scripts/ci/tools-scope-policy.mjs';
 
 // Workaround for https://github.com/anza-xyz/eslint-plugin-require-extensions/issues/18
 const require = createRequire(import.meta.url);
@@ -229,13 +226,6 @@ export default [
           ],
         },
       ],
-    },
-  },
-  {
-    files: legacyNonTestToTestFiles,
-
-    rules: {
-      'no-restricted-imports': 'off',
     },
   },
   {

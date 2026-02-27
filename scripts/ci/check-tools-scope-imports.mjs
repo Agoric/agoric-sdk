@@ -1,21 +1,13 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
-import {
-  legacyNonTestToTestImports,
-  legacySrcToToolsImports,
-} from './tools-scope-policy.mjs';
+import { legacySrcToToolsImports } from './tools-scope-policy.mjs';
 
 const IMPORT_SPECIFIER_RE =
   /^\s*(?:import\s+[^'\"]*from\s+|export\s+[^'\"]*from\s+|import\s*\(|import\s*)\s*['\"]([^'\"]+)['\"]/;
 
 const ALLOWLIST_SRC_TOOLS = new Set(
   legacySrcToToolsImports.map(({ file, specifier }) => `${file}|${specifier}`),
-);
-const ALLOWLIST_NONTEST_TEST = new Set(
-  legacyNonTestToTestImports.map(
-    ({ file, specifier }) => `${file}|${specifier}`,
-  ),
 );
 
 const repoRoot = process.cwd();
@@ -98,39 +90,31 @@ const nonTestToTest = findImports(
 const disallowedSrcToTools = srcToTools.filter(
   ({ file, specifier }) => !ALLOWLIST_SRC_TOOLS.has(`${file}|${specifier}`),
 );
-const disallowedNonTestToTest = nonTestToTest.filter(
-  ({ file, specifier }) => !ALLOWLIST_NONTEST_TEST.has(`${file}|${specifier}`),
-);
 
 for (const { file, specifier } of srcToTools) {
   if (!ALLOWLIST_SRC_TOOLS.has(`${file}|${specifier}`)) continue;
   ALLOWLIST_SRC_TOOLS.delete(`${file}|${specifier}`);
 }
-for (const { file, specifier } of nonTestToTest) {
-  if (!ALLOWLIST_NONTEST_TEST.has(`${file}|${specifier}`)) continue;
-  ALLOWLIST_NONTEST_TEST.delete(`${file}|${specifier}`);
-}
-
 let ok = true;
 if (disallowedSrcToTools.length) {
   ok = false;
-  console.error('Found non-allowlisted src -> tools imports:');
+  console.error('Found src -> tools imports:');
   for (const { file, specifier } of disallowedSrcToTools) {
     console.error(`  - ${file} imports ${specifier}`);
   }
 }
 
-if (disallowedNonTestToTest.length) {
+if (nonTestToTest.length) {
   ok = false;
-  console.error('Found non-allowlisted non-test -> test imports:');
-  for (const { file, specifier } of disallowedNonTestToTest) {
+  console.error('Found non-test -> test imports:');
+  for (const { file, specifier } of nonTestToTest) {
     console.error(`  - ${file} imports ${specifier}`);
   }
 }
 
-if (ALLOWLIST_SRC_TOOLS.size || ALLOWLIST_NONTEST_TEST.size) {
+if (ALLOWLIST_SRC_TOOLS.size) {
   console.warn('Allowlist entries no longer matched (consider removing):');
-  for (const entry of [...ALLOWLIST_SRC_TOOLS, ...ALLOWLIST_NONTEST_TEST]) {
+  for (const entry of ALLOWLIST_SRC_TOOLS) {
     const [file, specifier] = entry.split('|');
     console.warn(`  - ${file} imports ${specifier}`);
   }
