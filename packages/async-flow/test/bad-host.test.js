@@ -18,7 +18,6 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {Zone} from '@agoric/base-zone'
  */
 

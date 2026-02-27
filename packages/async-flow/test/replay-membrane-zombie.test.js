@@ -18,8 +18,7 @@ import { prepareBijection } from '../src/bijection.js';
 import { makeReplayMembrane } from '../src/replay-membrane.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
- * @import {Zone} from '@agoric/base-zone'
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 const watchWake = _vowish => {};

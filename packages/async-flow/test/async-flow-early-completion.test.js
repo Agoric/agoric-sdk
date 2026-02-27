@@ -19,7 +19,7 @@ import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
- * @import {Vow, VowTools} from '@agoric/vow'
+ * @import {Vow} from '@agoric/vow'
  * @import {AsyncFlow} from '../src/async-flow.js'
  */
 
