@@ -49,10 +49,6 @@ export const legacySrcToToolsImports = [
 
 export const legacyNonTestToTestImports = [
   {
-    file: 'packages/orchestration/tools/contract-tests.ts',
-    specifier: '@agoric/orchestration/test/network-fakes.js',
-  },
-  {
     file: 'packages/swingset-liveslots/tools/vo-test-harness.js',
     specifier: '../test/liveslots-helpers.js',
   },
