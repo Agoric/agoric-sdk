@@ -1,12 +1,13 @@
 /* eslint-env node */
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
 import { provideBundleCache } from './bundleTool.js';
 import {
   buildSwingsetKernelConfig,
   initializeSwingsetKernel,
 } from '../src/controller/initializeSwingset.js';
-import { parseBundleSpec } from '../src/controller/bundle-spec.js';
 
 /**
  * @import {SwingSetConfig} from '../src/types-external.js';
@@ -15,17 +16,11 @@ import { parseBundleSpec } from '../src/controller/bundle-spec.js';
  * @import {InitializeSwingsetRuntimeOptions} from '../src/controller/initializeSwingset.js';
  */
 
-/**
- * @param {string} bundleSpecPath
- */
-const readBundleSpecFile = bundleSpecPath =>
-  parseBundleSpec(
-    filePath => fs.readFileSync(filePath, 'utf-8'),
-    bundleSpecPath,
-  );
+const readBundleSpecFile = makeReadJsonFile(fs.promises);
 
-const sharedBundleCachePath = new URL('../../../bundles', import.meta.url)
-  .pathname;
+const sharedBundleCachePath = fileURLToPath(
+  new URL('../../../bundles', import.meta.url),
+);
 
 /**
  * Test-only wrapper that supplies ambient-powered bundleSpec loading.
@@ -64,7 +59,7 @@ export const initializeTestSwingset = async (
     initializationOptions,
     {
       ...runtimeOptions,
-      readBundleSpec: runtimeOptions.readBundleSpec || readBundleSpecFile,
+      bundleFromPath: runtimeOptions.bundleFromPath || readBundleSpecFile,
       bundleFromSourceSpec: (sourceSpec, _options) => cache.load(sourceSpec),
     },
   );

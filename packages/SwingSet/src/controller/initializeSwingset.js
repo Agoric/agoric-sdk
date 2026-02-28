@@ -21,7 +21,7 @@ import { initializeKernel } from './initializeKernel.js';
  * @import {BundleHandler} from './bundle-handler.js';
  */
 /**
- * @typedef {(bundleSpecPath: string) => EndoZipBase64Bundle} ReadBundleSpecPower
+ * @typedef {(path: string) => Promise<EndoZipBase64Bundle>} BundleFromPathPower
  */
 /**
  * @typedef {(sourceSpec: string, options: {
@@ -101,6 +101,7 @@ export async function buildKernelBundles() {
 }
 
 export function swingsetIsInitialized(kernelStorage) {
+  insistStorageAPI(kernelStorage.kvStore);
   return !!(
     kernelStorage.kvStore.get('version') ||
     kernelStorage.kvStore.get('initialized')
@@ -132,9 +133,10 @@ function sortObjectProperties(obj, firsts = []) {
 /**
  * @typedef {{
  *   env?: Record<string, string | undefined>,
- *   readBundleSpec?: ReadBundleSpecPower,
+ *   bundleFromPath?: BundleFromPathPower,
  *   bundleFromSourceSpec?: BundleFromSourceSpecPower,
  *   bundleHandler?: BundleHandler,
+ *   verbose?: boolean,
  * }} InitializeSwingsetRuntimeOptions
  */
 
@@ -153,7 +155,7 @@ export async function buildSwingsetKernelConfig(
   initializationOptions = {},
   runtimeOptions = {},
 ) {
-  const { readBundleSpec, bundleFromSourceSpec } = runtimeOptions;
+  const { bundleFromPath, bundleFromSourceSpec } = runtimeOptions;
 
   // copy config so we can safely mess with it even if it's shared or hardened
   config = deepCopyJsonable(config);
@@ -201,7 +203,6 @@ export async function buildSwingsetKernelConfig(
     initializationOptions.kernelBundles || buildVatAndDeviceBundles();
   const kernelBundles = await obtainKernelBundles();
   const {
-    verbose,
     addVatAdmin = true,
     addComms = true,
     addVattp = true,
@@ -292,10 +293,10 @@ export async function buildSwingsetKernelConfig(
     if ('bundle' in desc) {
       return desc.bundle;
     } else if ('bundleSpec' in desc) {
-      const readBundleSpecFile =
-        readBundleSpec ||
-        Fail`runtimeOptions.readBundleSpec is required for bundleSpec`;
-      return readBundleSpecFile(desc.bundleSpec);
+      if (!bundleFromPath) {
+        throw Fail`runtimeOptions.bundleFromPath is required for bundleSpec`;
+      }
+      return bundleFromPath(desc.bundleSpec);
     } else if ('sourceSpec' in desc) {
       const options = {
         dev: config.includeDevDependencies,
@@ -304,10 +305,9 @@ export async function buildSwingsetKernelConfig(
         // large, but do not travel through RPC and we still want to be legible.
         byteLimit: Infinity,
       };
-      if (bundleFromSourceSpec) {
-        return bundleFromSourceSpec(desc.sourceSpec, options);
-      }
-      return bundleSource(desc.sourceSpec, options);
+      return bundleFromSourceSpec
+        ? bundleFromSourceSpec(desc.sourceSpec, options)
+        : bundleSource(desc.sourceSpec, options);
     } else if ('bundleName' in desc) {
       if (!nameToBundle) {
         throw Fail`cannot use .bundleName in config.bundles`;
@@ -423,12 +423,14 @@ export async function buildSwingsetKernelConfig(
     kconfig.namedBundleIDs[name] = nameToBundle[name].id;
   }
   delete kconfig.bundles;
-
-  if (verbose) {
-    kdebugEnable(true);
-  }
   return kconfig;
 }
+
+/** @type {(kernelStorage: SwingStoreKernelStorage) => void} */
+const assertUninitialized = kernelStorage => {
+  !swingsetIsInitialized(kernelStorage) ||
+    Fail`kernel store already initialized`;
+};
 
 /**
  * Initialize kernel state from a pre-built kernel config.
@@ -443,10 +445,7 @@ export async function initializeSwingsetKernel(
   kernelStorage,
   runtimeOptions = {},
 ) {
-  const kvStore = kernelStorage.kvStore;
-  insistStorageAPI(kvStore);
-  !swingsetIsInitialized(kernelStorage) ||
-    Fail`kernel store already initialized`;
+  assertUninitialized(kernelStorage);
 
   const {
     bundleHandler = makeWorkerBundleHandler(
@@ -475,11 +474,13 @@ export async function initializeSwingset(
   initializationOptions = {},
   runtimeOptions = {},
 ) {
+  assertUninitialized(kernelStorage);
   const kernelConfig = await buildSwingsetKernelConfig(
     config,
     bootstrapArgs,
     initializationOptions,
     runtimeOptions,
   );
+  if (runtimeOptions.verbose) kdebugEnable(true);
   return initializeSwingsetKernel(kernelConfig, kernelStorage, runtimeOptions);
 }

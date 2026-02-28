@@ -7,10 +7,8 @@ import { makeSwingsetConfigIO } from './swingset-config.js';
 const { loadBasedir, normalizeConfig, loadSwingsetConfigFile } =
   makeSwingsetConfigIO({
     readdirSync: fs.readdirSync,
-    statSync: fs.statSync,
     existsSync: fs.existsSync,
-    readFileSync: (filePath, encoding) =>
-      fs.readFileSync(filePath, /** @type {BufferEncoding} */ (encoding)),
+    readFileSync: (filePath, encoding) => fs.readFileSync(filePath, encoding),
     pathResolve: path.resolve,
     cwd: () => process.cwd(),
     importMetaResolve,
