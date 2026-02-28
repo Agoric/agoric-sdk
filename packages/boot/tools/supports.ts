@@ -18,6 +18,7 @@ import {
   VBankAccount,
   type Remote,
 } from '@agoric/internal';
+import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
@@ -225,8 +226,7 @@ export const makeProposalExtractor = (
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
 
-  const readJSONFile = async filePath =>
-    harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
+  const readJSONFile = makeReadJsonFile(fs, harden);
 
   // XXX parses the output to find the files but could write them to a path that can be traversed
   const parseProposalParts = (agoricRunOutput: string) => {

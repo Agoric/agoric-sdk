@@ -62,7 +62,6 @@ _agstate
 .next
 build
 bundles
-bundle-*.js
 compiled
 dist
 api-docs
@@ -87,4 +86,3 @@ endo-sha.txt
 .aider*
 !.aiderignore
 .claude
-

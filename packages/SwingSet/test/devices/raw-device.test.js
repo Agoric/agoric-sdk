@@ -6,11 +6,8 @@ import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/kmarshal';
 
-import {
-  initializeSwingset,
-  makeSwingsetController,
-  buildKernelBundles,
-} from '../../src/index.js';
+import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { bundleOpts } from '../util.js';
 
 function dfile(name) {

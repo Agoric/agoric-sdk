@@ -4,10 +4,8 @@ import { test } from '../../../tools/prepare-test-env-ava.js';
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
-import {
-  initializeSwingset,
-  makeSwingsetController,
-} from '../../../src/index.js';
+import { makeSwingsetController } from '../../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../../tools/test-swingset.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;

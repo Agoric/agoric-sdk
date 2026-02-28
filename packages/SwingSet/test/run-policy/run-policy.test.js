@@ -4,7 +4,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { kslot, kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import {
   crankCounter,
   computronCounter,
