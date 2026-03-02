@@ -13,19 +13,20 @@ import {
   readableOrder,
 } from '@aglocal/portfolio-contract/test/supports.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
-import type {
-  NetworkSpec,
-  PoolKey,
-} from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
-import type { PortfolioPublishedPathTypes } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type {
+  PoolKey,
+  PortfolioPublishedPathTypes,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { Far } from '@endo/pass-style';
+import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
   getCurrentBalances,
@@ -36,15 +37,12 @@ import {
 } from '../src/plan-deposit.ts';
 import type { PlannerContext } from '../src/plan-deposit.ts';
 import {
-  erc4626VaultsMock,
   mockEvmCtx,
   mockGasEstimator,
   createMockSpectrumBlockchain,
-  createMockSpectrumPools,
+  LOW_BALANCE_ADDRESS,
 } from './mocks.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type { Sdk as SpectrumPoolsSdk } from '../src/graphql/api-spectrum-pools/__generated/sdk.ts';
-import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -79,9 +77,8 @@ const handleDeposit = async (
     cosmosRest?: CosmosRestClient;
     gasEstimator: GasEstimator;
     spectrumBlockchain?: SpectrumBlockchainSdk;
-    spectrumPools?: SpectrumPoolsSdk;
     spectrumChainIds?: Partial<Record<SupportedChain, string>>;
-    spectrumPoolIds?: Partial<Record<PoolKey, string>>;
+    positionTokenAddresses?: Partial<Record<PoolKey, string>>;
     usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
   },
   network: NetworkSpec = TEST_NETWORK,
@@ -94,11 +91,9 @@ const handleDeposit = async (
   }
   const currentBalances = await getCurrentBalances(status, amount.brand, {
     spectrumChainIds: powers.spectrumChainIds || {},
-    spectrumPoolIds: powers.spectrumPoolIds || {},
     usdcTokensByChain: powers.usdcTokensByChain || {},
-    erc4626VaultAddresses: {},
+    positionTokenAddresses: powers.positionTokenAddresses || {},
     spectrumBlockchain: createMockSpectrumBlockchain({}),
-    spectrumPools: createMockSpectrumPools({}),
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
     cosmosRest: powers.cosmosRest || ({} as unknown as CosmosRestClient),
@@ -124,8 +119,8 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
   const status = {
     positionKeys: ['Aave_Arbitrum', 'Compound_Base'],
     accountIdByChain: {
-      Arbitrum: 'eip155:42161:0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa',
-      Base: 'eip155:8453:0xBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBb',
+      Arbitrum: `eip155:42161:${LOW_BALANCE_ADDRESS}`,
+      Base: 'eip155:8453:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     },
   } as any;
 
@@ -138,27 +133,22 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
   const balances = await getNonDustBalances(status, depositBrand, {
     cosmosRest: mockCosmosRestClient,
     spectrumBlockchain: createMockSpectrumBlockchain({}),
-    spectrumPools: createMockSpectrumPools({
-      Aave_Arbitrum: 100n,
-      Compound_Base: 150n,
-    }),
     spectrumChainIds: { Arbitrum: '0xa4b1', Base: '0x2105' },
-    spectrumPoolIds: {
-      Aave_Arbitrum: 'Aave_Arbitrum',
-      Compound_Base: 'Compound_Base',
-    },
     usdcTokensByChain: {
       Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
       Base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     },
-    erc4626VaultAddresses: {},
-    chainNameToChainIdMap: CaipChainIds.testnet,
+    positionTokenAddresses: {
+      Aave_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      Compound_Base: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+    },
+    chainNameToChainIdMap: CaipChainIds.mainnet,
     evmProviders: mockEvmCtx.evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
   t.false(Object.hasOwn(balances, 'Aave_Arbitrum'));
-  t.is(balances.Compound_Base!.value, 150n);
+  t.is(balances.Compound_Base!.value, 1000n);
 });
 
 test('getNonDustBalances retains noble balances above the dust epsilon', async t => {
@@ -181,11 +171,9 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
   const balances = await getNonDustBalances(status, depositBrand, {
     cosmosRest: mockCosmosRestClient,
     spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 101 }),
-    spectrumPools: createMockSpectrumPools({}),
     spectrumChainIds: { noble: 'noble-1' },
-    spectrumPoolIds: {},
     usdcTokensByChain: { noble: 'uusdc' },
-    erc4626VaultAddresses: {},
+    positionTokenAddresses: {},
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
   });
@@ -202,11 +190,12 @@ test('handleDeposit works with mocked dependencies', async t => {
     Compound_Arbitrum: 20n,
   };
   const initialBalances = {
-    USDN: 200_000n,
-    Aave_Arbitrum: 100_000n,
-    Compound_Arbitrum: 50_000n,
+    USDN: 5000n,
+    Aave_Arbitrum: 1000n,
+    Compound_Arbitrum: 1000n,
   };
-  const deposit = makeDeposit(9_650_000n);
+  const toDeposit = 93_000n;
+  const deposit = makeDeposit(toDeposit);
 
   // Mock VstorageKit readPublished
   const mockReadPublished = async (path: string) => {
@@ -216,7 +205,7 @@ test('handleDeposit works with mocked dependencies', async t => {
         flowCount: 0,
         accountIdByChain: {
           noble: 'cosmos:grand-1:noble1test',
-          Arbitrum: 'eip155:42161:0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa',
+          Arbitrum: 'eip155:42161:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
         },
         targetAllocation,
         policyVersion: 4,
@@ -237,18 +226,14 @@ test('handleDeposit works with mocked dependencies', async t => {
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
-    spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.2 }),
-    spectrumPools: createMockSpectrumPools({
-      Aave_Arbitrum: 100_000n,
-      Compound_Arbitrum: 50_000n,
-    }),
+    spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.005 }),
     spectrumChainIds: {
       noble: 'noble-1',
       Arbitrum: '0xa4b1',
     },
-    spectrumPoolIds: {
-      Aave_Arbitrum: 'Aave_Arbitrum',
-      Compound_Arbitrum: 'Compound_Arbitrum',
+    positionTokenAddresses: {
+      Aave_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      Compound_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     },
     usdcTokensByChain: {
       noble: 'uusdc',
@@ -257,26 +242,38 @@ test('handleDeposit works with mocked dependencies', async t => {
     cosmosRest: {} as unknown as CosmosRestClient,
     gasEstimator: mockGasEstimator,
   });
+
+  const totalDeposit =
+    toDeposit +
+    initialBalances.USDN +
+    initialBalances.Aave_Arbitrum +
+    initialBalances.Compound_Arbitrum;
+
+  const usdnAllocation = (totalDeposit * targetAllocation.USDN) / 100n;
+  const aaveAllocation = (totalDeposit * targetAllocation.Aave_Arbitrum) / 100n;
+  const compoundAllocation =
+    (totalDeposit * targetAllocation.Compound_Arbitrum) / 100n;
+
   arrayIsLike(t, result.plan.flow, [
     makeMovementDesc('<Deposit>', '@agoric', deposit.value),
     makeMovementDesc('@agoric', '@noble', deposit.value),
-    makeMovementDesc('@noble', 'USDN', 5_000_000n - initialBalances.USDN),
+    makeMovementDesc('@noble', 'USDN', usdnAllocation - initialBalances.USDN),
     makeMovementDesc(
       '@noble',
       '@Arbitrum',
-      5_000_000n -
+      usdnAllocation -
         initialBalances.Aave_Arbitrum -
         initialBalances.Compound_Arbitrum,
     ),
     makeMovementDesc(
       '@Arbitrum',
       'Aave_Arbitrum',
-      3_000_000n - initialBalances.Aave_Arbitrum,
+      aaveAllocation - initialBalances.Aave_Arbitrum,
     ),
     makeMovementDesc(
       '@Arbitrum',
       'Compound_Arbitrum',
-      2_000_000n - initialBalances.Compound_Arbitrum,
+      compoundAllocation - initialBalances.Compound_Arbitrum,
     ),
   ]);
   t.snapshot(result);
@@ -316,7 +313,6 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
     spectrumBlockchain: createMockSpectrumBlockchain({}),
-    spectrumPools: createMockSpectrumPools({}),
     gasEstimator: mockGasEstimator,
   });
 
@@ -340,8 +336,8 @@ test('handleDeposit handles different position types correctly', async t => {
         flowCount: 0,
         accountIdByChain: {
           noble: 'cosmos:grand-1:noble1test',
-          Avalanche: 'eip155:43114:0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa',
-          Ethereum: 'eip155:1:0xBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBbBb',
+          Avalanche: 'eip155:43113:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+          Ethereum: 'eip155:1:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
         },
         targetAllocation: {
           USDN: 40n,
@@ -370,18 +366,14 @@ test('handleDeposit handles different position types correctly', async t => {
     {
       readPublished: mockVstorageKit.readPublished,
       spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.3 }),
-      spectrumPools: createMockSpectrumPools({
-        Aave_Avalanche: 150_000n,
-        Compound_Ethereum: 75_000n,
-      }),
       spectrumChainIds: {
         noble: 'noble-1',
         Avalanche: '0xa86a',
         Ethereum: '0x1',
       },
-      spectrumPoolIds: {
-        Aave_Avalanche: 'Aave_Avalanche',
-        Compound_Ethereum: 'Compound_Ethereum',
+      positionTokenAddresses: {
+        Aave_Avalanche: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+        Compound_Ethereum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
       },
       usdcTokensByChain: {
         noble: 'uusdc',
@@ -649,15 +641,15 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
       agoric: 'agoricdev-25',
       noble: 'grand-1',
     },
-    spectrumPoolIds: {},
+    positionTokenAddresses: {
+      ERC4626_vaultU2_Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+    },
     spectrumBlockchain: createMockSpectrumBlockchain({}),
-    spectrumPools: createMockSpectrumPools({}),
     usdcTokensByChain: {
       Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       agoric: 'uusdc',
       noble: 'uusdc',
     },
-    erc4626VaultAddresses: erc4626VaultsMock,
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
   });

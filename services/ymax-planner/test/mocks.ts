@@ -3,7 +3,6 @@ import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import type { ERC4626InstrumentId } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -12,10 +11,13 @@ import {
   type AxelarChain,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
-import type { EvmAddress } from '@agoric/fast-usdc';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import type { Log } from 'ethers/providers';
-import { encodeAbiParameters, toFunctionSelector } from 'viem';
+import {
+  decodeFunctionData,
+  encodeAbiParameters,
+  toFunctionSelector,
+} from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
@@ -90,40 +92,13 @@ export const createMockSpectrumBlockchain = (amounts: {
     },
   }) as SpectrumBlockchainSdk;
 
-export const createMockSpectrumPools = (amounts: { [key: string]: bigint }) =>
-  ({
-    async getBalances({
-      positions,
-    }: {
-      positions: {
-        chain: string;
-        protocol: string;
-        pool: string;
-        address: string;
-      }[];
-    }) {
-      return {
-        balances: positions.map(query => {
-          const amount = amounts[query.pool];
-          const balance =
-            amount !== undefined ? { USDC: Number(amount) / 1e6 } : null;
-          return {
-            balance,
-            error: null,
-          };
-        }),
-      };
-    },
-  }) as SpectrumPoolsSdk;
-
 /** Return a correctly-typed record lacking significant functionality. */
 export const createMockEnginePowers = (): EnginePowers => ({
   evmCtx: mockEvmCtx,
   rpc: {} as any,
   spectrumBlockchain: createMockSpectrumBlockchain({}),
-  spectrumPools: createMockSpectrumPools({}),
   spectrumChainIds: {},
-  spectrumPoolIds: {},
+  positionTokenAddresses: {},
   cosmosRest: {} as any,
   network: TEST_NETWORK,
   signingSmartWalletKit: {} as any,
@@ -132,16 +107,8 @@ export const createMockEnginePowers = (): EnginePowers => ({
   now: () => NaN,
   gasEstimator: {} as any,
   usdcTokensByChain: {},
-  erc4626VaultAddresses: {},
   chainNameToChainIdMap: CaipChainIds.testnet,
 });
-
-export const erc4626VaultsMock: Partial<
-  Record<ERC4626InstrumentId, EvmAddress>
-> = {
-  // @ts-expect-error TS strings don't track length; see https://github.com/microsoft/TypeScript/issues/52243
-  ERC4626_vaultU2_Ethereum: '0xbcc48e14f89f2bff20a7827148b466ae8f2fbc9b',
-};
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
   return {
@@ -166,6 +133,10 @@ export const mockGasEstimator = makeGasEstimator({
   axelarChainIdMap: mockAxelarChainIdMap,
   fetch: mockFetchForGasEstimate,
 });
+
+// This address will return < 1 USDC balance when .balanceOf is used on it
+// in the mockProvider
+export const LOW_BALANCE_ADDRESS = '0x89B0CC00b2bDd56234b5C6ccD7b6F48EA68a0150';
 
 export const createMockProvider = (
   latestBlock = 1000,
@@ -345,6 +316,21 @@ export const createMockProvider = (
       const selector = data.slice(0, 10);
 
       if (selector === toFunctionSelector('balanceOf(address)')) {
+        const { args } = decodeFunctionData({
+          abi: [
+            {
+              name: 'balanceOf',
+              type: 'function',
+              inputs: [{ name: 'account', type: 'address' }],
+              outputs: [{ name: '', type: 'uint256' }],
+              stateMutability: 'view',
+            },
+          ],
+          data,
+        });
+        const [account] = args;
+
+        if (account === LOW_BALANCE_ADDRESS) return encodeAmount(100n);
         return encodeAmount(1000n);
       }
 
@@ -386,8 +372,10 @@ const createMockEvmProviders = (
 ): Record<CaipChainId, WebSocketProvider> => ({
   'eip155:1': createMockProvider(latestBlock, events),
   'eip155:42161': createMockProvider(latestBlock, events),
+  'eip155:421614': createMockProvider(latestBlock, events),
   'eip155:8453': createMockProvider(latestBlock, events),
   'eip155:11155111': createMockProvider(latestBlock, events),
+  'eip155:43113': createMockProvider(latestBlock, events),
 });
 
 export const mockEvmCtx = {

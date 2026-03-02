@@ -461,9 +461,6 @@ const fakePortfolioKit = async ({
         return { balances };
       },
     };
-    powers.spectrumPools = {
-      getBalances: makeNotImplementedAsync('spectrumPools.getBalances'),
-    };
   }
   updateVstorage(portfolioPath, 'set', {
     object: initialPortfolioStatus,
