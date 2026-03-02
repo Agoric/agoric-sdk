@@ -68,31 +68,6 @@ Important status-quo consequence:
 
 Fee Paid total for this flow is `6,865.312767 BLD` ≈ `$30.90` on `2026-02-05`, using `BLD/USD = 0.004500173541` from [CoinGecko historical price data](https://api.coingecko.com/api/v3/coins/agoric/history?date=05-02-2026&localization=false).
 
-This case maps directly to the 6-step sequence above:
-1. User initiated a withdraw with `amount=3,000,000` (USDC base units), `type=withdraw`, `toChain=Ethereum`.
-2. Portfolio contract recorded flow state under vstorage `portfolio80.flowsRunning.flow3` (status details include `type=withdraw`, `toChain=Ethereum`, `amount=3,000,000`).
-3. Planner observed that running flow state and current portfolio balances/allocations.
-4. Planner estimated costs and submitted `resolvePlan(...)` in tx `72C1CBB7099BCE96F5B0352B8F697A58B14FF35C9C8077D20E36F8233CD0745F` at `23926041` / `2026-02-05T20:41:45Z`.
-5. Contract executed plan movements, including `tx1787` (`@Ethereum -> -Ethereum`, `withdrawToEVM`).
-6. Resolver/watchers tracked remote execution and the flow reached terminal state.
-
-Step 4 detail for `tx1787`: for the `@Ethereum -> -Ethereum` step, the planner first classifies it as an EVM withdraw leg and looks up a configured gas-limit value. For this path, it uses `gasLimit = 279473`. It then asks Axelar for a fee quote in `uBLD` using Agoric as source chain and Ethereum as destination chain.
-
-```http
-POST https://api.axelarscan.io/gmp/estimateGasFee
-Content-Type: application/json
-
-{
-  "sourceChain": "agoric",
-  "destinationChain": "Ethereum",
-  "gasLimit": "279473",
-  "sourceTokenSymbol": "ubld",
-  "gasMultiplier": "1"
-}
-```
-
-After Axelar returns the estimate, the planner applies its built-in fee policy: add a 20% buffer (`ceil(estimate * 1.2)`) and enforce a minimum of `5,000,000 uBLD`. For `tx1787`, that produces `6,350,461,608 uBLD` (`6,350.461608 BLD`, shown as `6.3505e+3`), implying a pre-buffer Axelar estimate of `5,292,051,340 uBLD`.
-
 ### `80.3` per-step fee trace
 
 Planner fee below is converted from `uBLD` to `BLD`.
@@ -128,6 +103,32 @@ Note: for CCTP legs originating from Noble (for example `@noble -> @Ethereum`), 
 
 </details>
 
+### How fees are computed
+
+This case maps directly to the 6-step sequence above:
+1. User initiated a withdraw with `amount=3,000,000` (USDC base units), `type=withdraw`, `toChain=Ethereum`.
+2. Portfolio contract recorded flow state under vstorage `portfolio80.flowsRunning.flow3` (status details include `type=withdraw`, `toChain=Ethereum`, `amount=3,000,000`).
+3. Planner observed that running flow state and current portfolio balances/allocations.
+4. Planner estimated costs and submitted `resolvePlan(...)` in tx `72C1CBB7099BCE96F5B0352B8F697A58B14FF35C9C8077D20E36F8233CD0745F` at `23926041` / `2026-02-05T20:41:45Z`.
+5. Contract executed plan movements, including `tx1787` (`@Ethereum -> -Ethereum`, `withdrawToEVM`).
+6. Resolver/watchers tracked remote execution and the flow reached terminal state.
+
+Step 4 detail for `tx1787`: for the `@Ethereum -> -Ethereum` step, the planner first classifies it as an EVM withdraw leg and looks up a configured gas-limit value. For this path, it uses `gasLimit = 279473`. It then asks Axelar for a fee quote in `uBLD` using Agoric as source chain and Ethereum as destination chain.
+
+```http
+POST https://api.axelarscan.io/gmp/estimateGasFee
+Content-Type: application/json
+
+{
+  "sourceChain": "agoric",
+  "destinationChain": "Ethereum",
+  "gasLimit": "279473",
+  "sourceTokenSymbol": "ubld",
+  "gasMultiplier": "1"
+}
+```
+
+After Axelar returns the estimate, the planner applies its built-in fee policy: add a 20% buffer (`ceil(estimate * 1.2)`) and enforce a minimum of `5,000,000 uBLD`. For `tx1787`, that produces `6,350,461,608 uBLD` (`6,350.461608 BLD`, shown as `6.3505e+3`), implying a pre-buffer Axelar estimate of `5,292,051,340 uBLD`.
 
 ### `104.1` per-step fee trace (makeAccount case)
 
