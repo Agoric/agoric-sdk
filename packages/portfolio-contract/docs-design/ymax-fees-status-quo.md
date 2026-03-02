@@ -53,6 +53,12 @@ There are two distinct fee domains:
 1. Planner quoted fee in `uBLD` (attached per movement step as `fee.value`).
 2. Actual execution fee on remote EVM chains (native gas from transaction receipts, e.g. ETH).
 
+| Term | Unit | Meaning in this document |
+|---|---|---|
+| Planner fee | `uBLD` (shown as `BLD` in tables) | Fee amount attached to a planned movement step (`fee.value`) at planning time. |
+| Fee Paid | `BLD` | Portion of planner fee that is actually spent by YMax for the step in observed execution. |
+| Observed EVM fee | native gas token (shown as `ETH`) | On-chain execution gas from EVM receipts for the step, regardless of payer. |
+
 Important status-quo consequence:
 - We can link these two domains per flow/step analytically, but they are not represented as a single reconciled fee ledger in one canonical production table today.
 
