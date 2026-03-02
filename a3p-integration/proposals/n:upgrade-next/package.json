@@ -30,6 +30,7 @@
     "ts-blank-space": "^0.6.2"
   },
   "resolutions": {
+    "agoric": "portal:../../agoric-sdk/packages/agoric-cli",
     "@agoric/access-token": "portal:../../agoric-sdk/packages/access-token",
     "@agoric/base-zone": "portal:../../agoric-sdk/packages/base-zone",
     "@agoric/cache": "portal:../../agoric-sdk/packages/cache",
