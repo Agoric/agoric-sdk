@@ -1,6 +1,10 @@
 import { Contract } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
-import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type {
+  BeefyInstrumentId,
+  ERC4626InstrumentId,
+  PoolKey,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { SupportedChain } from '@agoric/portfolio-api';
 import {
@@ -8,8 +12,62 @@ import {
   isERC4626InstrumentId,
 } from '@agoric/portfolio-api/src/type-guards.js';
 import { Fail, q } from '@endo/errors';
+import type { EvmAddress } from '@agoric/fast-usdc';
+import { fromUniqueEntries, typedEntries } from '@agoric/internal';
 import type { EvmChain } from './pending-tx-manager.ts';
 import type { EvmProviders } from './support.ts';
+
+export const getPoolTokenAddresses = axelarCfg => {
+  const isERC4626Entry = ([name, _addr]) => isERC4626InstrumentId(name);
+  const erc4626VaultEntries = typedEntries(axelarCfg).flatMap(
+    ([_chainName, { contracts }]) =>
+      typedEntries(contracts).filter(isERC4626Entry),
+  );
+
+  const erc4626VaultAddresses: Partial<
+    Record<ERC4626InstrumentId, EvmAddress>
+  > = fromUniqueEntries(erc4626VaultEntries);
+
+  const isBeefyEntry = ([name, _addr]) => isBeefyInstrumentId(name);
+  const beefyVaultEntries = typedEntries(axelarCfg).flatMap(
+    ([_chainName, { contracts }]) =>
+      typedEntries(contracts).filter(isBeefyEntry),
+  );
+
+  const beefyVaultAddresses: Partial<Record<BeefyInstrumentId, EvmAddress>> =
+    fromUniqueEntries(beefyVaultEntries);
+
+  const aaveEntries = typedEntries(axelarCfg).flatMap(
+    ([chainName, { contracts }]) =>
+      typedEntries(contracts)
+        .filter(([name, _addr]) => name === 'aaveUSDC')
+        .map(
+          ([_name, addr]) =>
+            [`Aave_${chainName}`, addr] as [PoolKey, EvmAddress],
+        ),
+  );
+  const aavePoolAddresses = fromUniqueEntries(aaveEntries);
+
+  const compoundEntries = typedEntries(axelarCfg).flatMap(
+    ([chainName, { contracts }]) =>
+      typedEntries(contracts)
+        .filter(([name, _addr]) => name === 'compound')
+        .map(
+          ([_name, addr]) =>
+            [`Compound_${chainName}`, addr] as [PoolKey, EvmAddress],
+        ),
+  );
+  const compoundPoolAddresses = fromUniqueEntries(compoundEntries);
+
+  const positionTokenAddresses = {
+    ...erc4626VaultAddresses,
+    ...beefyVaultAddresses,
+    ...aavePoolAddresses,
+    ...compoundPoolAddresses,
+  } as Partial<Record<string, string>>;
+
+  return positionTokenAddresses;
+};
 
 const ERC20_BALANCE_ABI = [
   {
