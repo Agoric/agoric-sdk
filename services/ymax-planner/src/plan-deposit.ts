@@ -2,7 +2,6 @@ import { assert, Fail, X } from '@endo/errors';
 
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
-  ERC4626InstrumentId,
   PoolKey,
   PoolPlaceInfo,
   StatusFor,
@@ -14,26 +13,19 @@ import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
-import type { EvmAddress } from '@agoric/fast-usdc';
 import { objectMap, objectMetaMap, typedEntries } from '@agoric/internal';
 import type { Caip10Record, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
-import {
-  ACCOUNT_DUST_EPSILON,
-  isInstrumentId,
-  YieldProtocol,
-} from '@agoric/portfolio-api';
+import { ACCOUNT_DUST_EPSILON, isInstrumentId } from '@agoric/portfolio-api';
 
 import type { CosmosRestClient } from './cosmos-rest-client.js';
-import { getERC4626VaultsBalances } from './erc4626-utils.ts';
+import { getEVMPositionBalances } from './evm-utils.ts';
 import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
-import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { EvmChain } from './pending-tx-manager.ts';
 import type { EvmProviders } from './support.ts';
-import { spectrumProtocols, UserInputError } from './support.ts';
+import { UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
 
 const scale6 = (x: number) => {
@@ -63,23 +55,12 @@ const amountFromAccountBalance = (
   balance === undefined
     ? undefined
     : AmountMath.make(brand, scale6(Number(balance)));
-type PositionBalance = ProtocolPoolUserBalanceResult['balance'];
-const amountFromPositionBalance = (
-  brand: Brand<'nat'>,
-  balanceRecord: PositionBalance,
-) =>
-  balanceRecord?.USDC === undefined
-    ? undefined
-    : AmountMath.make(brand, scale6(balanceRecord.USDC));
-
 export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
   spectrumBlockchain: SpectrumBlockchainSdk;
-  spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
-  spectrumPoolIds: Partial<Record<PoolKey, string>>;
+  positionTokenAddresses: Partial<Record<PoolKey, string>>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  erc4626VaultAddresses: Partial<Record<ERC4626InstrumentId, EvmAddress>>;
   evmProviders: EvmProviders;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
@@ -112,36 +93,16 @@ const makeSpectrumAccountQuery = (
   return { chain: chainId, address, token };
 };
 
-const makeSpectrumPoolQuery = (
-  desc: PositionQueryDescriptor,
-  powers: BalanceQueryPowers,
-) => {
-  const { place, chainName, protocol, address } = desc;
-  return {
-    chain: lookupValueForKey(powers.spectrumChainIds, chainName),
-    protocol: lookupValueForKey(spectrumProtocols, protocol),
-    pool: lookupValueForKey(powers.spectrumPoolIds, place),
-    address,
-  };
-};
-
-export type ERC4626VaultQuery = {
-  place: PoolKey;
-  chainName: SupportedChain;
-  address: string;
-};
-
 export const getCurrentBalances = async (
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
   powers: BalanceQueryPowers,
 ): Promise<Partial<Record<AssetPlaceRef, NatAmount | undefined>>> => {
   const { positionKeys, accountIdByChain } = status;
-  const { spectrumBlockchain, spectrumPools } = powers;
+  const { spectrumBlockchain } = powers;
   const addressInfo = new Map<SupportedChain, Caip10Record>();
   const accountQueries = [] as AccountQueryDescriptor[];
   const positionQueries = [] as PositionQueryDescriptor[];
-  const erc4626Queries = [] as PositionQueryDescriptor[];
   const balances = new Map<AssetPlaceRef, NatAmount | undefined>();
   const errors = [] as Error[];
   for (const [chainName, accountId] of typedEntries(
@@ -174,11 +135,8 @@ export const getCurrentBalances = async (
         // USDN Vaults are not "pools" and specifically are not in the Spectrum
         // Pools API.
         accountQueries.push({ place, chainName, address, asset: protocol });
-      } else if (protocol === YieldProtocol.ERC4626) {
-        // ERC-4626 vault queries are issued directly.
-        erc4626Queries.push({ place, chainName, protocol, address });
       } else {
-        // Other queries go through the Spectrum Pools API.
+        // EVM position queries (Aave, Beefy, Compound, ERC4626) are issued directly.
         positionQueries.push({ place, chainName, protocol, address });
       }
     } catch (err) {
@@ -189,44 +147,33 @@ export const getCurrentBalances = async (
   const spectrumAccountQueries = accountQueries.map(desc =>
     makeSpectrumAccountQuery(desc, powers),
   );
-  const spectrumPoolQueries = positionQueries.map(desc =>
-    makeSpectrumPoolQuery(desc, powers),
-  );
 
-  const [accountResult, positionResult, erc4626Result] =
-    await Promise.allSettled([
-      spectrumAccountQueries.length
-        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
-        : { balances: [] },
-      spectrumPoolQueries.length
-        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
-        : { balances: [] },
-      erc4626Queries.length
-        ? getERC4626VaultsBalances(erc4626Queries, powers)
-        : { balances: [] },
-    ]);
+  const [accountResult, positionResult] = await Promise.allSettled([
+    spectrumAccountQueries.length
+      ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
+      : { balances: [] },
+    positionQueries.length
+      ? getEVMPositionBalances(positionQueries, powers)
+      : { balances: [] },
+  ]);
 
   if (
     accountResult.status !== 'fulfilled' ||
-    positionResult.status !== 'fulfilled' ||
-    erc4626Result.status !== 'fulfilled'
+    positionResult.status !== 'fulfilled'
   ) {
-    const rejections = [accountResult, positionResult, erc4626Result].flatMap(
-      settlement =>
-        settlement.status === 'fulfilled' ? [] : [settlement.reason],
+    const rejections = [accountResult, positionResult].flatMap(settlement =>
+      settlement.status === 'fulfilled' ? [] : [settlement.reason],
     );
     errors.push(...rejections);
     throw AggregateError(errors, 'Could not get balances');
   }
   const accountBalances = accountResult.value.balances;
   const positionBalances = positionResult.value.balances;
-  const erc4626Balances = erc4626Result.value.balances;
   if (
     accountBalances.length !== accountQueries.length ||
-    positionBalances.length !== positionQueries.length ||
-    erc4626Balances.length !== erc4626Queries.length
+    positionBalances.length !== positionQueries.length
   ) {
-    const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length, erc4626Balances.length]}] results but got [${[accountQueries.length, positionQueries.length, erc4626Queries.length]}]`;
+    const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length]}] results but got [${[accountQueries.length, positionQueries.length]}]`;
     throw AggregateError(errors, msg);
   }
   for (let i = 0; i < accountQueries.length; i += 1) {
@@ -245,14 +192,8 @@ export const getCurrentBalances = async (
       balances.set(place, AmountMath.make(brand, BigInt(result.balance)));
     }
   }
-  for (let i = 0; i < positionQueries.length; i += 1) {
-    const { place } = positionQueries[i];
+  for (let i = 0; i < positionBalances.length; i += 1) {
     const result = positionBalances[i];
-    if (result.error) errors.push(Error(result.error));
-    balances.set(place, amountFromPositionBalance(brand, result.balance));
-  }
-  for (let i = 0; i < erc4626Queries.length; i += 1) {
-    const result = erc4626Balances[i];
     if (result.error) {
       errors.push(Error(result.error));
     }
