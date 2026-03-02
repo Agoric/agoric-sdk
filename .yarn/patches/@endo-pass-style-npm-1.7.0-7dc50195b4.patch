@@ -1,0 +1,123 @@
+diff --git a/src/passStyle-helpers.d.ts b/src/passStyle-helpers.d.ts
+index d160ff0..89c4c03 100644
+--- a/src/passStyle-helpers.d.ts
++++ b/src/passStyle-helpers.d.ts
+@@ -8,7 +8,20 @@ export const hasOwnPropertyOf: (o: object, v: PropertyKey) => boolean;
+ export const isPrimitive: (val: unknown) => val is JSPrimitive;
+ export function isObject(val: any): boolean;
+ export function isTypedArray(object: unknown): boolean;
+-export const PASS_STYLE: unique symbol;
++/**
++ * We cast our `Symbol.for()` to a string constant here to avoid exposing the
++ * `unique symbol` type publicly.  The cast doesn't change any runtime
++ * behavior... it's still actually a symbol.
++ *
++ * Without this workaround, we've observed errors when using
++ * `typescript@5.9.3`'s `tsc` to generate declaration files (.d.ts) for
++ * consumers of modules that import `PASS_STYLE`:
++ * @example
++ *   error TS9006: Declaration emit for this file requires using private name
++ *   'PASS_STYLE' from module '.../@endo/pass-style/src/types"'. An explicit
++ *   type annotation may unblock declaration emit.
++ */
++export const PASS_STYLE: "Symbol(passStyle)";
+ /**
+  * Below we have a series of predicate functions and their (curried) assertion
+  * functions. The semantics of the assertion function is just to assert that
+@@ -40,4 +53,4 @@ import type { JSPrimitive } from './types.js';
+ import type { Checker } from './types.js';
+ import type { Rejector } from '@endo/errors/rejector.js';
+ import type { PassStyle } from './types.js';
+-//# sourceMappingURL=passStyle-helpers.d.ts.map
+\ No newline at end of file
++//# sourceMappingURL=passStyle-helpers.d.ts.map
+diff --git a/src/passStyle-helpers.js b/src/passStyle-helpers.js
+index ffbb9cd..942de55 100644
+--- a/src/passStyle-helpers.js
++++ b/src/passStyle-helpers.js
+@@ -68,7 +68,22 @@ export const isTypedArray = object => {
+ };
+ hideAndHardenFunction(isTypedArray);
+ 
+-export const PASS_STYLE = Symbol.for('passStyle');
++/**
++ * We cast our `Symbol.for()` to a string constant here to avoid exposing the
++ * `unique symbol` type publicly.  The cast doesn't change any runtime
++ * behavior... it's still actually a symbol.
++ *
++ * Without this workaround, we've observed errors when using
++ * `typescript@5.9.3`'s `tsc` to generate declaration files (.d.ts) for
++ * consumers of modules that import `PASS_STYLE`:
++ * @example
++ *   error TS9006: Declaration emit for this file requires using private name
++ *   'PASS_STYLE' from module '.../@endo/pass-style/src/types"'. An explicit
++ *   type annotation may unblock declaration emit.
++ */
++export const PASS_STYLE = /** @type {'Symbol(passStyle)'} */ (
++  /** @type {unknown} */ (Symbol.for('passStyle'))
++);
+ 
+ /**
+  * Below we have a series of predicate functions and their (curried) assertion
+diff --git a/src/types.d.ts b/src/types.d.ts
+index 00183b1..65c60dd 100644
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -75,7 +75,13 @@ export type PassStyled<S extends PassStyleMarker, I extends InterfaceSpec> = {
+ 
+ export type ExtractStyle<P extends PassStyled<any, any>> = P[typeof PASS_STYLE];
+ 
+-export type PassByCopy = Atom | Error | CopyArray | CopyRecord | CopyTagged;
++export type PassByCopy =
++  | Atom
++  | Error
++  | CopyArray
++  | CopyReadonlyArray
++  | CopyRecord
++  | CopyTagged;
+ 
+ export type PassByRef =
+   | RemotableObject
+@@ -114,13 +120,18 @@ export type Passable<
+ 
+ export type Container<PC extends PassableCap, E extends Error> =
+   | CopyArrayInterface<PC, E>
++  | CopyReadonlyArrayInterface<PC, E>
+   | CopyRecordInterface<PC, E>
+   | CopyTaggedInterface<PC, E>;
+-interface CopyArrayInterface<PC extends PassableCap, E extends Error>
++export interface CopyArrayInterface<PC extends PassableCap, E extends Error>
+   extends CopyArray<Passable<PC, E>> {}
+-interface CopyRecordInterface<PC extends PassableCap, E extends Error>
++export interface CopyReadonlyArrayInterface<
++  PC extends PassableCap,
++  E extends Error,
++> extends CopyReadonlyArray<Passable<PC, E>> {}
++export interface CopyRecordInterface<PC extends PassableCap, E extends Error>
+   extends CopyRecord<Passable<PC, E>> {}
+-interface CopyTaggedInterface<PC extends PassableCap, E extends Error>
++export interface CopyTaggedInterface<PC extends PassableCap, E extends Error>
+   extends CopyTagged<string, Passable<PC, E>> {}
+ 
+ export type PassStyleOf = {
+@@ -134,7 +145,7 @@ export type PassStyleOf = {
+   (p: Promise<any>): 'promise';
+   (p: Error): 'error';
+   (p: CopyTagged): 'tagged';
+-  (p: any[]): 'copyArray';
++  (p: readonly any[]): 'copyArray';
+   (p: Iterable<any>): 'remotable';
+   (p: Iterator<any, any, undefined>): 'remotable';
+   <T extends PassStyled<PassStyleMarker, any>>(p: T): ExtractStyle<T>;
+@@ -204,6 +215,11 @@ export type PassableCap =
+  */
+ export type CopyArray<T extends Passable = any> = Array<T>;
+ 
++/**
++ * A Passable and Readonly sequence of Passable values.
++ */
++export type CopyReadonlyArray<T extends Passable = any> = ReadonlyArray<T>;
++
+ /**
+  * A hardened immutable ArrayBuffer.
+  */
