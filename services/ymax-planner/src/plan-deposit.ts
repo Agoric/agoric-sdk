@@ -59,7 +59,7 @@ export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
   spectrumBlockchain: SpectrumBlockchainSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
-  positionTokenAddresses: Partial<Record<PoolKey, string>>;
+  positionTokenAddresses: Partial<Record<PoolKey | `@${EvmChain}`, string>>;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   evmProviders: EvmProviders;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
@@ -73,9 +73,9 @@ type AccountQueryDescriptor = {
 };
 
 type PositionQueryDescriptor = {
-  place: PoolKey;
+  place: PoolKey | `@${EvmChain}`;
   chainName: SupportedChain;
-  protocol: PoolPlaceInfo['protocol'];
+  protocol: PoolPlaceInfo['protocol'] | 'USDC';
   address: string;
 };
 
@@ -113,9 +113,20 @@ export const getCurrentBalances = async (
     try {
       const addressParts = parseAccountId(accountId);
       addressInfo.set(chainName, addressParts);
-      const { accountAddress: address } = addressParts;
-      accountQueries.push({ place, chainName, address, asset: 'USDC' });
-    } catch {
+      const { namespace, accountAddress: address } = addressParts;
+      if (namespace === 'eip155') {
+        // EVM chain USDC balances are fetched directly via Alchemy.
+        positionQueries.push({
+          place: place as `@${EvmChain}`,
+          chainName,
+          protocol: 'USDC',
+          address,
+        });
+      } else {
+        accountQueries.push({ place, chainName, address, asset: 'USDC' });
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_err) {
       errors.push(Error(`Invalid CAIP-10 address for chain: ${chainName}`));
     }
   }
@@ -196,9 +207,12 @@ export const getCurrentBalances = async (
       errors.push(Error(result.error));
     }
     if (result.balance === undefined) {
-      balances.set(result.place, undefined);
+      balances.set(result.place as AssetPlaceRef, undefined);
     } else {
-      balances.set(result.place, AmountMath.make(brand, result.balance));
+      balances.set(
+        result.place as AssetPlaceRef,
+        AmountMath.make(brand, result.balance),
+      );
     }
   }
 

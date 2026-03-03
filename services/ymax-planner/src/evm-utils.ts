@@ -36,7 +36,7 @@ export const getPoolTokenAddresses = (
    * XXX This should take `axelarCfg` as an argument and be promoted up out of
    * getPoolTokenAddresses.
    */
-  const pickContracts = <K extends PoolKey>(
+  const pickContracts = <K extends PoolKey | `@${EvmChain}`>(
     keyFromContractLabel: (
       name: keyof EVMContractAddresses,
       chainName: EvmChain,
@@ -61,11 +61,17 @@ export const getPoolTokenAddresses = (
     (label, chainName) =>
       label === 'compound' && (`Compound_${chainName}` as PoolKey),
   );
+  const usdcAddresses = pickContracts(
+    (label, chainName) =>
+      label === 'usdc' && (`@${chainName}` as `@${EvmChain}`),
+  );
+
   const positionTokenAddresses = {
     ...erc4626VaultAddresses,
     ...beefyVaultAddresses,
     ...aavePoolAddresses,
     ...compoundPoolAddresses,
+    ...usdcAddresses,
   } as Partial<Record<PoolKey, EvmAddress>>;
 
   return positionTokenAddresses;
@@ -179,20 +185,20 @@ const getERC4626VaultBalance = async (
 };
 
 type PositionBalanceResult = {
-  place: PoolKey;
+  place: PoolKey | `@${EvmChain}`;
   balance: bigint | undefined;
   error?: string;
 };
 
 export type EVMPositionQuery = {
-  place: PoolKey;
+  place: PoolKey | `@${EvmChain}`;
   chainName: SupportedChain;
   address: string;
 };
 
 export type EVMPositionBalancePowers = {
-  /** Map from instrument ID (e.g. 'Aave_Ethereum') to its receipt token address */
-  positionTokenAddresses: Partial<Record<PoolKey, string>>;
+  /** Map from place (e.g. 'Aave_Ethereum', '@Ethereum') to its token address */
+  positionTokenAddresses: Partial<Record<PoolKey | `@${EvmChain}`, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
   evmProviders: EvmProviders;
 };
