@@ -27,6 +27,7 @@ import { objectMap } from '@agoric/internal';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { Far } from '@endo/pass-style';
 import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
   getCurrentBalances,
@@ -43,7 +44,6 @@ import {
   createMockProviderSets,
 } from './mocks.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type { EvmAddress } from '@agoric/fast-usdc';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -79,7 +79,7 @@ const handleDeposit = async (
     gasEstimator: GasEstimator;
     spectrumBlockchain?: SpectrumBlockchainSdk;
     spectrumChainIds?: Partial<Record<SupportedChain, string>>;
-    positionTokenAddresses?: Partial<Record<PoolKey, string>>;
+    positionTokenAddresses?: Partial<Record<PoolKey | `@${EvmChain}`, string>>;
     usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
     addressToBalanceMap?: Partial<Record<EvmAddress, bigint>>;
   },
@@ -140,14 +140,13 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
   const balances = await getNonDustBalances(status, depositBrand, {
     cosmosRest: mockCosmosRestClient,
     spectrumBlockchain: createMockSpectrumBlockchain({}),
-    spectrumChainIds: { Arbitrum: '0xa4b1', Base: '0x2105' },
-    usdcTokensByChain: {
-      Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-      Base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    },
+    spectrumChainIds: {},
+    usdcTokensByChain: {},
     positionTokenAddresses: {
       Aave_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
       Compound_Base: compoundBaseAddress,
+      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      '@Base': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     },
     chainNameToChainIdMap: CaipChainIds.mainnet,
     evmProviders: createMockProviderSets({
@@ -244,15 +243,14 @@ test('handleDeposit works with mocked dependencies', async t => {
     spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.2 }),
     spectrumChainIds: {
       noble: 'noble-1',
-      Arbitrum: '0xa4b1',
     },
     positionTokenAddresses: {
       Aave_Arbitrum: aaveArbitrumAddress,
       Compound_Arbitrum: compoundArbitrumAddress,
+      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     },
     usdcTokensByChain: {
       noble: 'uusdc',
-      Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     },
     cosmosRest: {} as unknown as CosmosRestClient,
     gasEstimator: mockGasEstimator,
@@ -379,17 +377,15 @@ test('handleDeposit handles different position types correctly', async t => {
       spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.3 }),
       spectrumChainIds: {
         noble: 'noble-1',
-        Avalanche: '0xa86a',
-        Ethereum: '0x1',
       },
       positionTokenAddresses: {
         Aave_Avalanche: aaveAvalancheAddress,
         Compound_Ethereum: compoundEthereumAddress,
+        '@Avalanche': '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
+        '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       },
       usdcTokensByChain: {
         noble: 'uusdc',
-        Avalanche: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
-        Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       },
       cosmosRest: {} as unknown as CosmosRestClient,
       gasEstimator: mockGasEstimator,
@@ -655,16 +651,15 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
   const balances = await getNonDustBalances(status, depositBrand, {
     cosmosRest: {} as unknown as CosmosRestClient,
     spectrumChainIds: {
-      Ethereum: '0xaaa',
       agoric: 'agoricdev-25',
       noble: 'grand-1',
     },
     positionTokenAddresses: {
       ERC4626_vaultU2_Ethereum: erc4626Address,
+      '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     },
     spectrumBlockchain: createMockSpectrumBlockchain({}),
     usdcTokensByChain: {
-      Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
       agoric: 'uusdc',
       noble: 'uusdc',
     },

@@ -143,7 +143,6 @@ export const mockGasEstimator = makeGasEstimator({
 export const createMockProvider = (
   latestBlock = 1000,
   events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
-  // maps address to an amount to retrun for it e.g '0x111...' => 100n
   // Allows each test to specify custom balances for certain addresses
   addressToBalanceMap = {},
 ): WebSocketProvider => {
