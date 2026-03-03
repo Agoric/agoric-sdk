@@ -59,11 +59,23 @@ export const getPoolTokenAddresses = axelarCfg => {
   );
   const compoundPoolAddresses = fromUniqueEntries(compoundEntries);
 
+  const usdcEntries = typedEntries(axelarCfg).flatMap(
+    ([chainName, { contracts }]) =>
+      typedEntries(contracts)
+        .filter(([name, _addr]) => name === 'usdc')
+        .map(
+          ([_name, addr]) =>
+            [`@${chainName}`, addr] as [`@${EvmChain}`, EvmAddress],
+        ),
+  );
+  const usdcAddresses = fromUniqueEntries(usdcEntries);
+
   const positionTokenAddresses = {
     ...erc4626VaultAddresses,
     ...beefyVaultAddresses,
     ...aavePoolAddresses,
     ...compoundPoolAddresses,
+    ...usdcAddresses,
   } as Partial<Record<string, string>>;
 
   return positionTokenAddresses;
@@ -172,20 +184,20 @@ const getERC4626VaultBalance = async (
 };
 
 type PositionBalanceResult = {
-  place: PoolKey;
+  place: string;
   balance: bigint | undefined;
   error?: string;
 };
 
 export type EVMPositionQuery = {
-  place: PoolKey;
+  place: string;
   chainName: SupportedChain;
   address: string;
 };
 
 export type EVMPositionBalancePowers = {
-  /** Map from instrument ID (e.g. 'Aave_Ethereum') to its receipt token address */
-  positionTokenAddresses: Partial<Record<PoolKey, string>>;
+  /** Map from place (e.g. 'Aave_Ethereum', '@Ethereum') to its token address */
+  positionTokenAddresses: Partial<Record<string, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
   evmProviders: EvmProviders;
 };

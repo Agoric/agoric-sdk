@@ -27,6 +27,7 @@ import { objectMap } from '@agoric/internal';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { Far } from '@endo/pass-style';
 import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
 import {
   getCurrentBalances,
@@ -40,9 +41,10 @@ import {
   mockEvmCtx,
   mockGasEstimator,
   createMockSpectrumBlockchain,
-  LOW_BALANCE_ADDRESS,
+  createMockEvmProviders,
 } from './mocks.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { EvmChain } from '../src/pending-tx-manager.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -78,8 +80,9 @@ const handleDeposit = async (
     gasEstimator: GasEstimator;
     spectrumBlockchain?: SpectrumBlockchainSdk;
     spectrumChainIds?: Partial<Record<SupportedChain, string>>;
-    positionTokenAddresses?: Partial<Record<PoolKey, string>>;
+    positionTokenAddresses?: Partial<Record<PoolKey | `@${EvmChain}`, string>>;
     usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
+    addressToBalanceMap?: Partial<Record<EvmAddress, bigint>>;
   },
   network: NetworkSpec = TEST_NETWORK,
 ) => {
@@ -95,7 +98,9 @@ const handleDeposit = async (
     positionTokenAddresses: powers.positionTokenAddresses || {},
     spectrumBlockchain: createMockSpectrumBlockchain({}),
     chainNameToChainIdMap: CaipChainIds.testnet,
-    evmProviders: mockEvmCtx.evmProviders,
+    evmProviders: createMockEvmProviders({
+      addressToBalanceMap: powers.addressToBalanceMap || {},
+    }),
     cosmosRest: powers.cosmosRest || ({} as unknown as CosmosRestClient),
     ...powers,
   });
@@ -119,10 +124,13 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
   const status = {
     positionKeys: ['Aave_Arbitrum', 'Compound_Base'],
     accountIdByChain: {
-      Arbitrum: `eip155:42161:${LOW_BALANCE_ADDRESS}`,
+      Arbitrum: `eip155:42161:0xaf88d065e77c8cC2239327C5EDb3A432268e5831`,
       Base: 'eip155:8453:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     },
   } as any;
+
+  const compundBaseAddress =
+    '0xaf88d065e77c8cC2239327C5EDb3A432268e5832' as EvmAddress;
 
   const mockCosmosRestClient = {
     async getAccountBalance() {
@@ -133,17 +141,23 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
   const balances = await getNonDustBalances(status, depositBrand, {
     cosmosRest: mockCosmosRestClient,
     spectrumBlockchain: createMockSpectrumBlockchain({}),
-    spectrumChainIds: { Arbitrum: '0xa4b1', Base: '0x2105' },
+    spectrumChainIds: {},
     usdcTokensByChain: {
       Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
       Base: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
     },
     positionTokenAddresses: {
       Aave_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-      Compound_Base: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      Compound_Base: compundBaseAddress,
+      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      '@Base': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     },
     chainNameToChainIdMap: CaipChainIds.mainnet,
-    evmProviders: mockEvmCtx.evmProviders,
+    evmProviders: createMockEvmProviders({
+      addressToBalanceMap: {
+        [compundBaseAddress]: 1000n,
+      },
+    }),
   });
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
@@ -224,16 +238,18 @@ test('handleDeposit works with mocked dependencies', async t => {
       mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
   };
 
+  const arbitrumPoolAddress =
+    '0xaf88d065e77c8cC2239327C5EDb3A432268e5832' as EvmAddress;
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
     spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.005 }),
     spectrumChainIds: {
       noble: 'noble-1',
-      Arbitrum: '0xa4b1',
     },
     positionTokenAddresses: {
-      Aave_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-      Compound_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      Aave_Arbitrum: arbitrumPoolAddress,
+      Compound_Arbitrum: arbitrumPoolAddress,
+      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     },
     usdcTokensByChain: {
       noble: 'uusdc',
@@ -241,6 +257,9 @@ test('handleDeposit works with mocked dependencies', async t => {
     },
     cosmosRest: {} as unknown as CosmosRestClient,
     gasEstimator: mockGasEstimator,
+    addressToBalanceMap: {
+      [arbitrumPoolAddress]: 1000n,
+    },
   });
 
   const totalDeposit =
@@ -368,12 +387,12 @@ test('handleDeposit handles different position types correctly', async t => {
       spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.3 }),
       spectrumChainIds: {
         noble: 'noble-1',
-        Avalanche: '0xa86a',
-        Ethereum: '0x1',
       },
       positionTokenAddresses: {
         Aave_Avalanche: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
         Compound_Ethereum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+        '@Avalanche': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+        '@Ethereum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
       },
       usdcTokensByChain: {
         noble: 'uusdc',
@@ -634,15 +653,18 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
     },
   } as StatusFor['portfolio'];
 
+  const erc4626Address =
+    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB49' as EvmAddress;
+
   const balances = await getNonDustBalances(status, depositBrand, {
     cosmosRest: {} as unknown as CosmosRestClient,
     spectrumChainIds: {
-      Ethereum: '0xaaa',
       agoric: 'agoricdev-25',
       noble: 'grand-1',
     },
     positionTokenAddresses: {
-      ERC4626_vaultU2_Ethereum: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      ERC4626_vaultU2_Ethereum: erc4626Address,
+      '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
     },
     spectrumBlockchain: createMockSpectrumBlockchain({}),
     usdcTokensByChain: {
@@ -651,7 +673,11 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
       noble: 'uusdc',
     },
     chainNameToChainIdMap: CaipChainIds.testnet,
-    evmProviders: mockEvmCtx.evmProviders,
+    evmProviders: createMockEvmProviders({
+      addressToBalanceMap: {
+        [erc4626Address]: 1000n,
+      },
+    }),
   });
 
   t.deepEqual(Object.keys(balances), ['ERC4626_vaultU2_Ethereum']);
