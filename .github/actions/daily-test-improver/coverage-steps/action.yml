@@ -1,0 +1,47 @@
+name: Daily Test Coverage Improver - Coverage Steps
+description: |
+  Build the repository, run all package tests with coverage collection,
+  generate a combined HTML+JSON coverage report, and upload it as an artifact.
+  This mirrors the approach used in `.github/workflows/after-merge.yml` and
+  `scripts/ci/generate-test-coverage-report.sh`.
+  
+  Coverage report is generated at: coverage/html/index.html
+  Combined raw V8 coverage data is at: coverage/tmp/
+  
+  Each step appends its output to coverage-steps.log in the repository root.
+
+runs:
+  using: composite
+  steps:
+    # Set up Node.js (v22) and restore cached build artifacts.
+    # This uses the repo's own restore-node composite action which handles
+    # Node setup, Yarn cache, and building all workspace packages.
+    - name: Set up Node.js and restore build
+      uses: ./.github/actions/restore-node
+      with:
+        node-version: 'node-new'
+
+    # Run all package test:c8 scripts to collect V8 coverage data.
+    # NODE_V8_COVERAGE is set to accumulate raw coverage into coverage/tmp/.
+    # C8_OPTIONS=--clean=false prevents each package from clearing prior data.
+    # NODE_MEMORY_SIZE=8192 prevents OOM during full-suite runs.
+    # Output is appended to coverage-steps.log.
+    - name: Run tests with coverage collection
+      shell: bash
+      env:
+        NODE_MEMORY_SIZE: '8192'
+      run: |
+        echo "=== Running tests with coverage ===" | tee -a coverage-steps.log
+        ./scripts/ci/generate-test-coverage-report.sh 2>&1 | tee -a coverage-steps.log
+        echo "=== Test run complete ===" | tee -a coverage-steps.log
+
+    # Upload the combined coverage report (HTML + raw JSON) as a GitHub Actions
+    # artifact named "coverage". The artifact contains:
+    #   coverage/html/   - browsable HTML report (open index.html)
+    #   coverage/tmp/    - raw V8 JSON coverage files
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage
+        if-no-files-found: warn
