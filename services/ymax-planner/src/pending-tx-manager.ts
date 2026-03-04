@@ -492,16 +492,15 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
     caipId in ctx.evmProviders ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const provider = ctx.evmProviders[caipId] as WebSocketProvider;
-    const rpcUrl =
-      ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
-    const rpcClient = makeJsonRpcClient(ctx.fetch, rpcUrl);
+    const rpc =
+      ctx.retryProviders[caipId] ||
+      Fail`${logPrefix} No retry provider for chain: ${caipId}`;
 
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
     const watchArgs = {
       routerAddress: accountAddress as `0x${string}`,
-      provider,
+      provider: rpc,
       chainId: caipId,
       kvStore: ctx.kvStore,
       txId,
@@ -541,8 +540,8 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
-      const currentBlock = await provider.getBlockNumber();
-      await waitForBlock(provider, currentBlock + 1);
+      const currentBlock = await rpc.getBlockNumber();
+      await waitForBlock(rpc, currentBlock + 1);
 
       // Scan historical blocks
       const lookBackResult = await lookBackOperationResult({
@@ -550,7 +549,6 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         signal: abortController.signal,
         setTimeout: ctx.setTimeout,
-        rpcClient,
         makeAbortController: ctx.makeAbortController,
       });
 

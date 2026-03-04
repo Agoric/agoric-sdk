@@ -1,14 +1,14 @@
-import type { Filter, WebSocketProvider, Log } from 'ethers';
+import type { Filter, Log } from 'ethers';
 import { id, AbiCoder } from 'ethers';
 import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import type { JSONRPCClient } from 'json-rpc-2.0';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
+  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import type { MakeAbortController } from '../support.ts';
@@ -49,7 +49,7 @@ const OPERATION_RESULT_SIGNATURE = id(
 
 type OperationResultWatch = {
   routerAddress: `0x${string}`;
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   chainId: CaipChainId;
   log?: (...args: unknown[]) => void;
   kvStore: KVStore;
@@ -389,13 +389,11 @@ export const lookBackOperationResult = async ({
   kvStore,
   setTimeout = globalThis.setTimeout,
   payloadHash,
-  rpcClient,
   makeAbortController,
 }: OperationResultWatch & {
   publishTimeMs: number;
   signal?: AbortSignal;
   setTimeout?: typeof globalThis.setTimeout;
-  rpcClient: JSONRPCClient;
   makeAbortController: MakeAbortController;
 }): Promise<WatcherResult> => {
   await null;
@@ -500,7 +498,6 @@ export const lookBackOperationResult = async ({
       verifyFailedTx: tx =>
         matchesTxPayload(tx.data, paddedTxId, payloadHash, log, tx.hash, txId),
       onRejectedChunk: updateFailedTxLowerBound,
-      rpcClient,
     });
 
     if (failedTx) {
