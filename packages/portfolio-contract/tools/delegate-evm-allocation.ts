@@ -1,0 +1,241 @@
+#!/usr/bin/env -S node --import @endo/init --import ts-blank-space/register
+/** @file CLI for ymax-tool-style direct DelegateAllocation submission. */
+// XXX: Keep this under tools/ for now; putting it under scripts/ currently
+// conflicts with this package's tsconfig/eslint project inclusion.
+
+import {
+  fetchEnvNetworkConfig,
+  makeSigningSmartWalletKit,
+  makeSmartWalletKit,
+} from '@agoric/client-utils';
+import { getYmaxStandaloneOperationData } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { SigningStargateClient } from '@cosmjs/stargate';
+import { randomBytes } from 'node:crypto';
+import { parseArgs as parseNodeArgs } from 'node:util';
+import { mnemonicToAccount } from 'viem/accounts';
+
+type Address = `0x${string}`;
+
+const YMAX0_FACTORY_MAINNET =
+  '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A' as const;
+const YMAX1_FACTORY_MAINNET =
+  '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A' as const;
+const FACTORY_TESTNET = '0x45F636F03F8570768A7907C0b21BDf791e69B437' as const;
+const TESTNET_CHAIN_IDS = new Set<bigint>([
+  421614n, 11155111n, 43113n, 84532n, 11155420n,
+]);
+
+const usage = `Usage:
+  ./tools/delegate-evm-allocation.ts --portfolio N --address 0xDELEGATE [--chain-id N] [--contract ymax0|ymax1] [--deadline UNIX_SECONDS]
+
+Environment:
+  AGORIC_NET                    network selector for @agoric/client-utils
+                                (options: devnet, main; default: devnet).
+  TRADER_KEY                    EVM owner mnemonic (signs DelegateAllocation).
+  EMS_KEY                       Agoric wallet mnemonic that invokes evmWalletHandler.
+
+Options:
+  --portfolio <id>      Portfolio ID as integer.
+  --address <0x...>     Delegate EVM address to authorize for allocation control.
+  --chain-id <n>        EVM chain ID for EIP-712 domain
+                         (421614=Arbitrum Sepolia, 11155111=Ethereum Sepolia, 43113=Avalanche Fuji);
+                         default: 421614 on devnet, 1 on main.
+  --contract <v>        ymax0 or ymax1 (default: ymax0).
+  --deadline <unix>     Optional UNIX-seconds deadline (default: now + 3600).
+  -h, --help            Show this help.
+`;
+
+const parseCli = (argv: string[]) => {
+  const { values, positionals } = parseNodeArgs({
+    args: argv.slice(2),
+    allowPositionals: true,
+    strict: true,
+    options: {
+      portfolio: { type: 'string' },
+      address: { type: 'string' },
+      'chain-id': { type: 'string' },
+      contract: { type: 'string' },
+      deadline: { type: 'string' },
+      help: { type: 'boolean', short: 'h' },
+    },
+  });
+  if (positionals.length > 0) {
+    throw Error(`${usage}\nunexpected positional args: ${positionals.join(' ')}`);
+  }
+  return values;
+};
+
+type CliValues = ReturnType<typeof parseCli>;
+
+const requiredArg = (
+  args: CliValues,
+  key: 'portfolio' | 'address',
+): string => {
+  const value = args[key];
+  if (!value) throw Error(`${usage}\nmissing --${key}`);
+  return value;
+};
+
+const parseBigint = (raw: string, label: string): bigint => {
+  try {
+    return BigInt(raw);
+  } catch {
+    throw Error(`${label} must be an integer: ${raw}`);
+  }
+};
+
+const parseOptionalBigint = (
+  raw: string | undefined,
+  label: string,
+): bigint | undefined => (raw ? parseBigint(raw, label) : undefined);
+
+const parseAddress = (raw: string): Address => {
+  if (!/^0x[0-9a-fA-F]{40}$/.test(raw)) {
+    throw Error(`--address must be a 20-byte hex address: ${raw}`);
+  }
+  return raw as Address;
+};
+
+const parseContract = (raw: string | undefined): 'ymax0' | 'ymax1' => {
+  const contract = raw ?? 'ymax0';
+  if (contract === 'ymax0' || contract === 'ymax1') return contract;
+  throw Error('--contract must be ymax0 or ymax1');
+};
+
+const resolveVerifyingContract = ({
+  chainId,
+  contract,
+}: {
+  chainId: bigint;
+  contract: 'ymax0' | 'ymax1';
+}) => {
+  if (TESTNET_CHAIN_IDS.has(chainId)) return FACTORY_TESTNET;
+  return contract === 'ymax1'
+    ? YMAX1_FACTORY_MAINNET
+    : YMAX0_FACTORY_MAINNET;
+};
+
+const randomNonce = (): bigint => {
+  const bytes = randomBytes(8);
+  let value = 0n;
+  for (const b of bytes) value = (value << 8n) + BigInt(b);
+  return value;
+};
+
+const main = async (
+  argv = process.argv,
+  env = process.env,
+  {
+    fetch = globalThis.fetch,
+    setTimeout = globalThis.setTimeout,
+    now = Date.now,
+  } = {},
+) => {
+  const args = parseCli(argv);
+  if (args.help) {
+    console.error(usage);
+    return;
+  }
+
+  const portfolio = parseBigint(requiredArg(args, 'portfolio'), '--portfolio');
+  const delegateAddress = parseAddress(requiredArg(args, 'address'));
+  const agoricNet = env.AGORIC_NET ?? 'devnet';
+  const chainId =
+    parseOptionalBigint(args['chain-id'], '--chain-id') ??
+    (agoricNet === 'main' ? 1n : 421614n);
+  const contract = parseContract(args.contract);
+  const deadline = args.deadline
+    ? parseBigint(args.deadline, '--deadline')
+    : BigInt(Math.floor(now() / 1000) + 3600);
+
+  const ownerMnemonic = env.TRADER_KEY;
+  if (!ownerMnemonic) {
+    throw Error(`${usage}\nTRADER_KEY not set`);
+  }
+
+  const handlerMnemonic = env.EMS_KEY;
+  if (!handlerMnemonic) {
+    throw Error(`${usage}\nEMS_KEY not set`);
+  }
+
+  const ownerEvmAccount = mnemonicToAccount(ownerMnemonic);
+  const verifyingContract = resolveVerifyingContract({ chainId, contract });
+
+  const typedData = getYmaxStandaloneOperationData(
+    {
+      portfolio,
+      address: delegateAddress,
+      nonce: randomNonce(),
+      deadline,
+    },
+    'DelegateAllocation',
+    chainId,
+    verifyingContract,
+  );
+  const signature = await ownerEvmAccount.signTypedData(typedData);
+
+  // #region Copied from multichain-testing/scripts/ymax-tool.ts
+  // This smart-wallet setup is shared with ymax-tool and should be factored.
+  const networkConfig = await fetchEnvNetworkConfig({
+    env: { ...env, AGORIC_NET: agoricNet },
+    fetch,
+  });
+  const walletKit = await makeSmartWalletKit(
+    {
+      fetch,
+      delay: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
+    },
+    networkConfig,
+  );
+  const signer = await makeSigningSmartWalletKit(
+    {
+      connectWithSigner: SigningStargateClient.connectWithSigner,
+      walletUtils: walletKit,
+    },
+    handlerMnemonic,
+  );
+  // #endregion
+
+  // #region Copied from multichain-testing/scripts/ymax-tool.ts
+  // This invokeEntry payload shape is shared with ymax-tool and should be factored.
+  const tx = await signer.sendBridgeAction(
+    harden({
+      method: 'invokeEntry',
+      message: {
+        id: `delegate-allocation-${new Date(now()).toISOString()}`,
+        targetName: 'evmWalletHandler',
+        method: 'handleMessage',
+        args: [{ ...typedData, signature }],
+      },
+    }),
+  );
+  // #endregion
+
+  if (tx.code !== 0) {
+    throw Error(`DelegateAllocation tx failed (${tx.code}): ${tx.rawLog}`);
+  }
+
+  console.log(
+    JSON.stringify(
+      {
+        status: 'submitted',
+        txHash: tx.transactionHash,
+        height: tx.height,
+        owner: ownerEvmAccount.address,
+        delegate: delegateAddress,
+        portfolio: String(portfolio),
+        chainId: String(chainId),
+        contract,
+        verifyingContract,
+      },
+      null,
+      2,
+    ),
+  );
+};
+
+main().catch(err => {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(message);
+  process.exitCode = 1;
+});
