@@ -11,6 +11,7 @@ import { makeZoeForTest, setUpZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
  * @import {start as startValueVow} from '../../../src/contracts/valueVow.contract.js';
+ * @import {SourceBundle} from '@agoric/zoe';
  * @import {Installation} from '../../../src/zoeService/utils.js';
  * @import {TestFn} from 'ava';
  * @import {Baggage} from '@agoric/swingset-liveslots';
@@ -27,7 +28,7 @@ test.before(async t => {
   const bundleCache = await unsafeSharedBundleCache;
   const zoe = makeZoeForTest();
   const installation = await E(zoe).install(
-    await bundleCache.load(contractFile),
+    /** @type {SourceBundle} */ (await bundleCache.load(contractFile)),
   );
 
   t.context = {

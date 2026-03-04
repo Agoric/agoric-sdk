@@ -27,6 +27,7 @@ import { prepareSmartWallet } from '../src/smartWallet.js';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js';
  * @import {BridgeAction} from '../src/smartWallet.js';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {SourceBundle} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {MapStore} from '@agoric/store';
@@ -93,7 +94,7 @@ const makeTestContext = async t => {
     /**
      * @type {Promise<Installation<typeof prepare>>}
      */
-    const installation = E(zoe).install(bundle);
+    const installation = E(zoe).install(/** @type {SourceBundle} */ (bundle));
     return E(zoe).startInstance(installation);
   };
   const { instance: anyInstance } = await startAnyContract();

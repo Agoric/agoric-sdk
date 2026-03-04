@@ -86,7 +86,8 @@ export const makePopulatedFakeVatAdmin = () => {
 
   for (const [name, bundle] of Object.entries(bundles)) {
     // These *do* have real bundles, with an ID and everything.
-    const id = bundle.endoZipBase64Sha512;
+    const id = /** @type {{endoZipBase64Sha512: string}} */ (bundle)
+      .endoZipBase64Sha512;
     const cap = vatAdminState.installNamedBundle(name, id, bundle);
     fakeCapToName.set(cap, name);
     fakeNameToCap.set(name, cap);

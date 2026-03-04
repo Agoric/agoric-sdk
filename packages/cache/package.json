@@ -24,7 +24,7 @@
     "@agoric/store": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@endo/far": "^1.1.14",
-    "@endo/marshal": "^1.8.0"
+    "@endo/marshal": "^1.9.0"
   },
   "devDependencies": {
     "@agoric/zoe": "workspace:*",

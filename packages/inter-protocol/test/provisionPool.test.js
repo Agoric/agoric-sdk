@@ -38,6 +38,7 @@ import {
  * @import {Installation} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {Purse} from '@agoric/ertp';
+ * @import {SourceBundle} from '@agoric/zoe';
  * @import {ERef} from '@agoric/vow';
  */
 
@@ -53,13 +54,17 @@ const test = unknownTest;
 
 const makeTestContext = async () => {
   const bundleCache = await unsafeSharedBundleCache;
-  const { psmBundle, provisionPoolBundle: policyBundle } =
+  const { psmBundle: rawPsmBundle, provisionPoolBundle: rawPolicyBundle } =
     await bundleCache.loadRegistry(interProtocolBundleSpecs);
-  const { committeeBundle } = await bundleCache.loadRegistry(
-    governanceSourceSpecRegistry,
-  );
-  const { centralSupplyBundle } = await bundleCache.loadRegistry(
-    vatsSourceSpecRegistry,
+  const { committeeBundle: rawCommitteeBundle } =
+    await bundleCache.loadRegistry(governanceSourceSpecRegistry);
+  const { centralSupplyBundle: rawCentralSupplyBundle } =
+    await bundleCache.loadRegistry(vatsSourceSpecRegistry);
+  const psmBundle = /** @type {SourceBundle} */ (rawPsmBundle);
+  const policyBundle = /** @type {SourceBundle} */ (rawPolicyBundle);
+  const committeeBundle = /** @type {SourceBundle} */ (rawCommitteeBundle);
+  const centralSupplyBundle = /** @type {SourceBundle} */ (
+    rawCentralSupplyBundle
   );
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
 

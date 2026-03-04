@@ -58,7 +58,7 @@ export const parseGraphqlEndpoints = (
  */
 export const lookupValueForKey = <K extends string, V>(
   source: Partial<Record<K, V>>,
-  key: K,
+  key: string,
 ): V => {
   const value = getOwn(source, key);
   if (value === undefined && !hasOwn(source, key)) {
