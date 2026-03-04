@@ -35,6 +35,7 @@ const noopFinisher = harden(() => {});
  */
 function addSlogCallbacks(slogCallbacks, unusedMsgPrefix, methods) {
   const unused = new Set(Object.keys(slogCallbacks));
+  // @ts-expect-error objectMap return type widened by Endo update
   const wrappedMethods = /** @type {Methods} */ (
     objectMap(methods, (impl, methodKey) => {
       const methodName = /** @type {keyof typeof slogCallbacks} */ (methodKey);

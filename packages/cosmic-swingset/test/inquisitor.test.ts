@@ -3,6 +3,7 @@ import anyTest from 'ava';
 
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
+import pathlib from 'node:path';
 
 import tmp from 'tmp';
 
@@ -16,7 +17,7 @@ import {
 } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
-import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 import type { SwingStore } from '@agoric/swing-store';
 import { makeHelpers, makeSwingStoreOverlay } from '../tools/inquisitor.mjs';
@@ -171,10 +172,11 @@ test('vat lifecycle', async t => {
   } = tmp.fileSync({ detachDescriptor: true });
   t.teardown(() => removeCallback());
   fs.writeSync(fd, swingStore.debug.serialize());
-  const bundleCache = await unsafeSharedBundleCache;
-  const bundle = await bundleCache.load(
+  const bundleDir = pathlib.resolve('bundles');
+  const bundleCache = await provideBundleCache(bundleDir, {}, s => import(s));
+  const bundle = (await bundleCache.load(
     resolveToPath('@agoric/swingset-vat/tools/vat-puppet-v2.js'),
-  );
+  )) as { endoZipBase64Sha512: string };
   const bundleID = `b1-${bundle.endoZipBase64Sha512}`;
   for (const label of ['first overlay', 'second overlay']) {
     t.log(label);
@@ -199,7 +201,7 @@ test('vat lifecycle', async t => {
       `${label} swingset restart must preserve vat heap`,
     );
 
-    await overlay.kernelStorage.bundleStore.addBundle(bundleID, bundle);
+    await overlay.kernelStorage.bundleStore.addBundle(bundleID, bundle as any);
     t.is(
       await EV.vat('bootstrap').upgradeVat('puppet', bundleID),
       1,

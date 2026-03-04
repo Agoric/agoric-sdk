@@ -103,9 +103,8 @@ const startContract = async (
     installation,
     { USDC: usdc.issuer },
     { usdcDenom: uusdcOnAgoric },
-    // @ts-expect-error XXX contract expecting CosmosChainInfo with bech32
-    // prefix but the Orchestration setup doesn't have it. The tests pass anyway
-    // so we elide this infidelity to production.
+    // contract expects CosmosChainInfo with bech32 prefix, but the
+    // orchestration test setup omits it.
     commonPrivateArgs,
   );
 

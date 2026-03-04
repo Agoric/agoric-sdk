@@ -38,10 +38,12 @@ const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
  */
 export const withCosmosChainId = ci =>
   /** @type {{[K in keyof CI]: CI[K] & { chainId: string }}} */ (
-    objectMap(ci, v => ({
-      chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
-      ...v,
-    }))
+    /** @type {unknown} */ (
+      objectMap(ci, v => ({
+        chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
+        ...v,
+      }))
+    )
   );
 
 /**
