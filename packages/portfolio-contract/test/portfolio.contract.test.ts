@@ -1002,6 +1002,8 @@ const setupPlanner = async (
     common,
     zoe,
     started,
+    timerService,
+    contractBaggage,
     makeFundedTrader,
     trader1,
     planner1,
@@ -3034,4 +3036,102 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
 
   // XXX: At this level we cannot (yet) check that the from account is no longer failed
   // we could observe that another flow does not trigger another make-account.
+});
+
+test('trader delegates to agent; agent changes allocations', async t => {
+  const {
+    common,
+    planner1,
+    txResolver,
+    evmTrader,
+    timerService,
+    zoe,
+    started,
+    contractBaggage,
+  } = await setupPlanner(t);
+  const { usdc, bld } = common.brands;
+
+  const agentPrivateKey =
+    '0x8b3a350cf5c34c9194ca3a545d2f44f3f83f6f8eb4fbe49f9f6e6b7965a7ab44' as const;
+  const { evmTrader: agentTrader } = await makeEvmTraderKit(
+    {
+      common,
+      zoe,
+      started,
+      timerService,
+      contractBaggage,
+    },
+    { privateKey: agentPrivateKey },
+  );
+
+  await planner1.redeem();
+
+  const fromChain = 'Arbitrum' as const;
+  const depositAmount = usdc.units(1_000);
+  const initialAllocations = [
+    { instrument: 'Aave_Arbitrum', portion: 5_000n },
+    { instrument: 'Compound_Arbitrum', portion: 5_000n },
+  ] as const;
+
+  const openResult = await (async () => {
+    const result = await evmTrader
+      .forChain(fromChain)
+      .openPortfolio(initialAllocations as any, depositAmount.value);
+    await ackNFA(common.utils);
+    return result;
+  })();
+
+  // Complete the initial deposit flow so the portfolio is ready.
+  await (async () => {
+    const status = await evmTrader.getPortfolioStatus();
+    const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
+    const sync = [policyVersion, rebalanceCount] as const;
+    const [[flowKey, detail]] = Object.entries(flowsRunning);
+    const flowId = Number(flowKey.replace('flow', ''));
+    if (detail.type !== 'deposit') throw t.fail(detail.type);
+    const amount = AmountMath.make(usdc.brand, detail.amount.value);
+    const fee = bld.units(100);
+    const plan: FundsFlowPlan = {
+      flow: [
+        { src: `+${fromChain}`, dest: `@${fromChain}`, amount, fee },
+        { src: `@${fromChain}`, dest: 'Aave_Arbitrum', amount, fee },
+      ],
+    };
+    await E(planner1.stub).resolvePlan(
+      openResult.portfolioId,
+      flowId,
+      plan,
+      ...sync,
+    );
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+    await txResolver.drainPending();
+  })();
+
+  t.deepEqual(
+    (await evmTrader.getPortfolioStatus()).flowsRunning,
+    {},
+    'no flows running after initial deposit completion',
+  );
+
+  const authResult = await evmTrader
+    .forChain(fromChain)
+    .delegateAllocation(agentTrader.getAddress(), openResult.portfolioId);
+  t.truthy(authResult, 'owner can authorize allocation agent');
+
+  const flowKey = await agentTrader
+    .forChain(fromChain)
+    .setTargetAllocationForPortfolio(openResult.portfolioId, [
+      { instrument: 'Aave_Arbitrum', portion: 7_000n },
+      { instrument: 'Compound_Arbitrum', portion: 3_000n },
+    ]);
+  t.regex(flowKey, /^flow\d+$/);
+
+  const statusAfter = await evmTrader.getPortfolioStatus();
+  t.deepEqual(statusAfter.targetAllocation, {
+    Aave_Arbitrum: 7_000n,
+    Compound_Arbitrum: 3_000n,
+  });
+  t.like(statusAfter.flowsRunning, { [flowKey]: { type: 'rebalance' } });
 });

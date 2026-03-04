@@ -49,6 +49,7 @@ import type { ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
 import type { TypedDataDefinition } from 'viem';
 import type { PrivateKeyAccount } from 'viem/accounts';
+import type { Address } from 'abitype';
 import type { EVMWalletMessageHandler } from '../src/evm-wallet-handler.exo.ts';
 
 const { fromEntries } = Object;
@@ -465,6 +466,22 @@ export const makeEvmTrader = ({
           await submitMessage(message);
           return getMessageResult(expectedNonce, deadline) as Promise<string>;
         },
+        async rebalanceForPortfolio(portfolio: number) {
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(portfolio),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Rebalance',
+            chainId,
+            depositFactory,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
         async setTargetAllocation(allocations: TargetAllocation[]) {
           const currentPortfolioId = self.getPortfolioId();
           const deadline = await getDeadline();
@@ -476,6 +493,62 @@ export const makeEvmTrader = ({
               deadline,
             },
             'SetTargetAllocation',
+            chainId,
+            depositFactory,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async setTargetAllocationForPortfolio(
+          portfolio: number,
+          allocations: TargetAllocation[],
+        ) {
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              allocations,
+              portfolio: BigInt(portfolio),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'SetTargetAllocation',
+            chainId,
+            depositFactory,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async delegateAllocation(address: Address, portfolio?: number) {
+          const targetPortfolio = portfolio ?? self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(targetPortfolio),
+              address,
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'DelegateAllocation',
+            chainId,
+            depositFactory,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async revokeAllocation(address: Address, portfolio?: number) {
+          const targetPortfolio = portfolio ?? self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(targetPortfolio),
+              address,
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'RevokeAllocation',
             chainId,
             depositFactory,
           );

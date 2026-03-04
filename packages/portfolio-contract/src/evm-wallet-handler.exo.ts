@@ -175,10 +175,22 @@ export const prepareEVMPortfolioOperationManager = (
     vowTools: { asVow, watch, when },
     portfolioContractPublicFacet,
     publishStatus,
+    bindAllocationAgent,
+    revokeAllocationAgent,
   }: {
     vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
     portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
     publishStatus: PublishStatus;
+    bindAllocationAgent: (opts: {
+      ownerAddress: Address;
+      agentAddress: Address;
+      portfolioId: bigint;
+    }) => Promise<void>;
+    revokeAllocationAgent: (opts: {
+      ownerAddress: Address;
+      agentAddress: Address;
+      portfolioId: bigint;
+    }) => Promise<void>;
   },
 ) => {
   const makeOutcomeHandlers = zone.exoClassKit(
@@ -291,7 +303,6 @@ export const prepareEVMPortfolioOperationManager = (
         nonce,
         deadline,
       });
-
       try {
         switch (operationDetails.operation) {
           case 'OpenPortfolio': {
@@ -330,6 +341,36 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
+          case 'DelegateAllocation': {
+            const {
+              data: { portfolio: portfolioId, address: agentAddress },
+            } = operationDetails;
+            const pId = BigInt(portfolioId);
+            wallet.portfolios.get(pId);
+            // TODO(#0000): Avoid `await` in this host path by either:
+            //  (a) switching this flow to Vow handlers, or
+            //  (b) removing `Remote<PortfolioEVMFacet>` support here so
+            //      `getAllocationFacet` can be invoked synchronously.
+            await bindAllocationAgent({
+              ownerAddress: address,
+              agentAddress,
+              portfolioId: pId,
+            });
+            return BasicOutcomeWatcher.onFulfilled(`portfolio${pId}`);
+          }
+          case 'RevokeAllocation': {
+            const {
+              data: { portfolio: portfolioId, address: agentAddress },
+            } = operationDetails;
+            const pId = BigInt(portfolioId);
+            wallet.portfolios.get(pId);
+            await revokeAllocationAgent({
+              ownerAddress: address,
+              agentAddress,
+              portfolioId: pId,
+            });
+            return BasicOutcomeWatcher.onFulfilled(`portfolio${pId}`);
+          }
           case 'Deposit': {
             const {
               permitDetails,
@@ -362,8 +403,7 @@ export const prepareEVMPortfolioOperationManager = (
             return watch(result, BasicOutcomeWatcher);
           }
           default:
-            // @ts-expect-error exhaustiveness check
-            Fail`Unsupported operation: ${q(operationDetails.operation)}`;
+            Fail`Unsupported operation`;
         }
       } catch (e) {
         return BasicOutcomeWatcher.onRejected(e);
@@ -427,18 +467,65 @@ export const prepareEVMWalletHandlerKit = (
   // responsible for using consistent casing across all signed messages.
   const walletByAddress = zone.mapStore<Address, EVMWallet>('wallets');
 
-  const getWalletForAddress = (address: Address): EVMWallet =>
+  const provideWalletForAddress = (address: Address): EVMWallet =>
     provideLazy(walletByAddress, address, () =>
       harden({
         portfolios: zone.detached().mapStore('portfolios'),
       }),
     );
+  const bindAllocationAgent = ({
+    ownerAddress,
+    agentAddress,
+    portfolioId,
+  }: {
+    ownerAddress: Address;
+    agentAddress: Address;
+    portfolioId: bigint;
+  }): Promise<void> => {
+    const ownerWallet = provideWalletForAddress(ownerAddress);
+    const portfolio = ownerWallet.portfolios.get(portfolioId);
+    return E(portfolio)
+      .getAllocationFacet(agentAddress)
+      .then(allocationFacet => {
+        const agentWallet = provideWalletForAddress(agentAddress);
+        if (agentWallet.portfolios.has(portfolioId)) {
+          agentWallet.portfolios.set(portfolioId, allocationFacet);
+        } else {
+          agentWallet.portfolios.init(portfolioId, allocationFacet);
+        }
+      });
+  };
+  const revokeAllocationAgent = ({
+    ownerAddress,
+    agentAddress,
+    portfolioId,
+  }: {
+    ownerAddress: Address;
+    agentAddress: Address;
+    portfolioId: bigint;
+  }): Promise<void> => {
+    const ownerWallet = provideWalletForAddress(ownerAddress);
+    const portfolio = ownerWallet.portfolios.get(portfolioId);
+    return E(portfolio)
+      .getAllocationFacet(agentAddress)
+      .then(expectedFacet => {
+        const agentWallet = provideWalletForAddress(agentAddress);
+        agentWallet.portfolios.has(portfolioId) ||
+          Fail`portfolio ${portfolioId} is not delegated to ${agentAddress}`;
+        const actualFacet = agentWallet.portfolios.get(portfolioId);
+        actualFacet === expectedFacet ||
+          Fail`delegation mismatch for portfolio ${portfolioId} and ${agentAddress}`;
+        agentWallet.portfolios.delete(portfolioId);
+      });
+  };
 
   const { insertNonce, removeExpiredNonces } = makeNonceManager(zone);
   const { handleOperation } = prepareEVMPortfolioOperationManager(zone, {
     vowTools,
     portfolioContractPublicFacet,
     publishStatus,
+    bindAllocationAgent,
+    revokeAllocationAgent,
   });
 
   const MessageHandlerI = M.interface('EVMWalletMessageHandler', {
@@ -492,7 +579,7 @@ export const prepareEVMWalletHandlerKit = (
             Fail`Deadline too far in the future: ${q(deadline)} vs ${q(localChainTime)}`;
           insertNonce({ walletOwner: evmWalletAddress, nonce, deadline });
 
-          const wallet = getWalletForAddress(evmWalletAddress);
+          const wallet = provideWalletForAddress(evmWalletAddress);
           // Resolves promptly
           const walletNode: Remote<StorageNode> =
             await E(storageNode).makeChildNode(evmWalletAddress);

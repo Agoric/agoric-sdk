@@ -12,6 +12,7 @@ import type { VowTools } from '@agoric/vow';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { E } from '@endo/far';
 import {
   makeNonceManager,
   prepareEVMPortfolioOperationManager,
@@ -76,9 +77,37 @@ const makeMockPortfolioEvmHandler = ({
       return vowTools.asVow(() => `portfolios.portfolio${portfolioId}`);
     },
   });
+  const allocationFacet = zone.exo(
+    `${namePrefix}MockAllocationFacet`,
+    undefined,
+    {
+      getReaderFacet() {
+        return reader as PortfolioKit['reader'];
+      },
+      getAllocationFacet(_address: string) {
+        throw Error('Not implemented');
+      },
+      rebalance(..._args: RebalanceArgs) {
+        calls.rebalance.push([undefined, undefined]);
+        throw Error('Not implemented');
+      },
+      setTargetAllocation(_allocations: unknown) {
+        return 'ok';
+      },
+      deposit(..._args: DepositArgs) {
+        throw Error('Not implemented');
+      },
+      withdraw(..._args: WithdrawArgs) {
+        throw Error('Not implemented');
+      },
+    },
+  );
   return zone.exo(`${namePrefix}MockPortfolioEvmHandler`, undefined, {
     getReaderFacet() {
       return reader as PortfolioKit['reader'];
+    },
+    getAllocationFacet(_address: string) {
+      return allocationFacet;
     },
     deposit(...args: DepositArgs) {
       calls.deposit.push(args);
@@ -112,7 +141,9 @@ const makeMockWallet = (
   for (const [id, handler] of portfolios) {
     portfoliosStore.init(BigInt(id), handler);
   }
-  return harden({ portfolios: portfoliosStore });
+  return harden({
+    portfolios: portfoliosStore,
+  });
 };
 
 /**
@@ -258,11 +289,28 @@ const makeHandleOperationTestSetup = (
     getNextPortfolioId,
   });
   const { publishStatus, getStatuses } = makeStatusCollector();
+  const delegatedPortfolios = new Map<string, PortfolioEVMFacet>();
 
   const { handleOperation } = prepareEVMPortfolioOperationManager(zone, {
     vowTools,
     portfolioContractPublicFacet: mockPublicFacet,
     publishStatus,
+    bindAllocationAgent: async ({ ownerAddress, portfolioId, agentAddress }) => {
+      void ownerAddress;
+      const portfolio = mockWallet.portfolios.get(portfolioId);
+      const allocationFacet = await E(portfolio).getAllocationFacet(
+        agentAddress,
+      );
+      delegatedPortfolios.set(`${agentAddress}:${portfolioId}`, allocationFacet);
+    },
+    revokeAllocationAgent: async ({ ownerAddress, portfolioId, agentAddress }) => {
+      void ownerAddress;
+      const key = `${agentAddress}:${portfolioId}`;
+      if (!delegatedPortfolios.has(key)) {
+        throw Error(`portfolio not delegated: ${key}`);
+      }
+      delegatedPortfolios.delete(key);
+    },
   });
 
   const getCalls = () =>
@@ -279,6 +327,7 @@ const makeHandleOperationTestSetup = (
     mockWallet,
     mockStorageNode,
     getStatuses,
+    delegatedPortfolios,
     handleOperation,
   };
 };
@@ -480,6 +529,165 @@ test('handleOperation invokes withdraw with correct parameters', async t => {
   t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
   t.snapshot(getCalls(), 'Calls');
   t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation - DelegateAllocation stores allocation facet', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    delegatedPortfolios,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vowAuthz', {
+    portfolios: [{ id: 42 }],
+    namePrefix: 'authz_',
+  });
+
+  const authorizeOperationDetails = {
+    operation: 'DelegateAllocation',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+    },
+    data: {
+      portfolio: 42n,
+      address: '0xAgentAddress',
+    },
+  } as any;
+
+  const key = '0xAgentAddress:42';
+  t.false(delegatedPortfolios.has(key));
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: '0xOwnerAddress',
+    operationDetails: harden(authorizeOperationDetails),
+    nonce: 456n,
+    deadline: 1700000000n,
+  });
+
+  await vowTools.when(resultVow);
+  t.true(delegatedPortfolios.has(key), 'delegated facet should be stored');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation - RevokeAllocation removes delegated facet', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    mockWallet,
+    delegatedPortfolios,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vowRevokeOk', {
+    portfolios: [{ id: 42 }],
+    namePrefix: 'revoke_ok_',
+  });
+
+  const delegateOperationDetails = harden({
+    operation: 'DelegateAllocation',
+    domain: { name: 'Ymax', version: '1', chainId: 42161n },
+    data: { portfolio: 42n, address: '0xAgentAddress' },
+  } as any);
+  await vowTools.when(
+    handleOperation({
+      wallet: mockWallet,
+      storageNode: mockStorageNode,
+      address: '0xOwnerAddress',
+      operationDetails: delegateOperationDetails,
+      nonce: 100n,
+      deadline: 1700000000n,
+    }),
+  );
+  const key = '0xAgentAddress:42';
+  t.true(delegatedPortfolios.has(key));
+
+  const revokeOperationDetails = harden({
+    operation: 'RevokeAllocation',
+    domain: { name: 'Ymax', version: '1', chainId: 42161n },
+    data: { portfolio: 42n, address: '0xAgentAddress' },
+  } as any);
+  await vowTools.when(
+    handleOperation({
+      wallet: mockWallet,
+      storageNode: mockStorageNode,
+      address: '0xOwnerAddress',
+      operationDetails: revokeOperationDetails,
+      nonce: 101n,
+      deadline: 1700000000n,
+    }),
+  );
+  t.false(delegatedPortfolios.has(key));
+
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation - RevokeAllocation fails strict when delegation missing', async t => {
+  const { zone } = t.context;
+  const { vowTools, mockWallet, mockStorageNode, getStatuses, handleOperation } =
+    makeHandleOperationTestSetup(zone, 'vowRevokeMissing', {
+      portfolios: [{ id: 42 }],
+      namePrefix: 'revoke_missing_',
+    });
+
+  const revokeOperationDetails = harden({
+    operation: 'RevokeAllocation',
+    domain: { name: 'Ymax', version: '1', chainId: 42161n },
+    data: { portfolio: 42n, address: '0xAgentAddress' },
+  } as any);
+  await vowTools.when(
+    handleOperation({
+      wallet: mockWallet,
+      storageNode: mockStorageNode,
+      address: '0xOwnerAddress',
+      operationDetails: revokeOperationDetails,
+      nonce: 200n,
+      deadline: 1700000000n,
+    }),
+  );
+
+  const statuses = getStatuses();
+  const last = statuses.at(-1);
+  t.truthy(last);
+  t.is(last?.status, 'error');
+  t.regex(last?.error ?? '', /not delegated/i);
+});
+
+test('handleOperation - RevokeAllocation fails when owner lacks portfolio', async t => {
+  const { zone } = t.context;
+  const { vowTools, mockWallet, mockStorageNode, getStatuses, handleOperation } =
+    makeHandleOperationTestSetup(zone, 'vowRevokeOwner', {
+      portfolios: [],
+      namePrefix: 'revoke_owner_',
+    });
+
+  const revokeOperationDetails = harden({
+    operation: 'RevokeAllocation',
+    domain: { name: 'Ymax', version: '1', chainId: 42161n },
+    data: { portfolio: 42n, address: '0xAgentAddress' },
+  } as any);
+  await vowTools.when(
+    handleOperation({
+      wallet: mockWallet,
+      storageNode: mockStorageNode,
+      address: '0xMallory',
+      operationDetails: revokeOperationDetails,
+      nonce: 300n,
+      deadline: 1700000000n,
+    }),
+  );
+
+  const statuses = getStatuses();
+  const last = statuses.at(-1);
+  t.truthy(last);
+  t.is(last?.status, 'error');
+  t.regex(last?.error ?? '', /(not found|key)/i);
 });
 
 test('handleOperation fails for unknown portfolio', async t => {
