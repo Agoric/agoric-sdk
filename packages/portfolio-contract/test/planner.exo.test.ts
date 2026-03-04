@@ -117,6 +117,20 @@ test('planner exo resolvePlan method', async t => {
       'rebalanceCount 2 after second resolvePlan',
     );
   }
+
+  {
+    const { flowId } = aPortfolio.manager.startFlow({
+      type: 'rebalance',
+    });
+
+    const newPositionPlan: MovementDesc[] = [
+      { src: '@noble', dest: 'Aave_Arbitrum', amount },
+    ];
+    t.throws(
+      () => planner.resolvePlan(portfolioId, flowId, newPositionPlan, 1, 2),
+      { message: /planner cannot add positions/i },
+    );
+  }
 });
 
 test('planner allows cosmos-based portfolio to withdraw to <Cash> via @chain account', async t => {
@@ -262,6 +276,84 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
     flowsRunning: {
       flow1: { type: 'rebalance', agent: 'agent1', agentMemo: '12345' },
     },
+  });
+});
+
+test('planner cannot start delegated rebalance with new positions', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+
+  const mockExecutePlan = () => {
+    return vt.asVow(() => undefined);
+  };
+  const mockZcf = {
+    makeEmptySeatKit: () => ({
+      zcfSeat: null as any,
+    }),
+  } as ZCF;
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const marshaller = board.getReadonlyMarshaller();
+  const plannerDelegations = new Map<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >();
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    executePlan: mockExecutePlan as any,
+    zcf: mockZcf,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    deliverDelegation(
+      client: PortfolioDelegationClient,
+      _portfolioId,
+      _agentId,
+      _grantee,
+      _permissions,
+    ) {
+      plannerDelegations.set(aPortfolio.planner, client);
+    },
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
+
+  const makePlanner = preparePlanner(zone, {
+    getPortfolioPlanner: mockGetPortfolioPlanner,
+    getPlannerDelegation: portfolioPlanner =>
+      plannerDelegations.get(portfolioPlanner),
+    shapes: makeOfferArgsShapes(USDC),
+  });
+  const planner = makePlanner();
+
+  aPortfolio.manager.setTargetAllocation({ USDN: 100n });
+  await aPortfolio.manager.setAutoFeatures({
+    rebalance: true,
+  });
+
+  const amount = { brand: USDC, value: 100n };
+  const newPositionPlan: MovementDesc[] = [
+    { src: '@noble', dest: 'Aave_Arbitrum', amount },
+  ];
+
+  const rebalanceParams = {
+    syncState: {
+      policyVersion: 1,
+      rebalanceCount: 0,
+    },
+    agentMemo: '12345',
+  };
+
+  t.throws(() => planner.rebalance(1, rebalanceParams, newPositionPlan), {
+    message: /planner cannot add positions/i,
   });
 });
 
