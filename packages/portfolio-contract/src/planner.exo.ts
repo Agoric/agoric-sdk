@@ -4,9 +4,11 @@
  */
 import { makeTracer, type TypedPattern } from '@agoric/internal';
 import type { FundsFlowPlan } from '@agoric/portfolio-api';
+import { isInstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
 import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
+import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
@@ -52,6 +54,22 @@ export const preparePlanner = (
     { order: OrderShape },
   );
   const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
+  // TODO(#11782): vet more of plan semantics; currently only enforces
+  // delegate-style "no new positions".
+  const vetNoNewPositions = (
+    portfolioId: number,
+    planOrSteps: FundsFlowPlan | MovementDesc[],
+  ) => {
+    const { reader } = getPortfolio(portfolioId);
+    const allowedPositions = Object.keys(reader.getTargetAllocation() ?? {});
+    const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
+    const destinations = [...new Set(steps.map(({ dest }) => dest))];
+    const unexpected = destinations.filter(
+      dest => isInstrumentId(dest) && !allowedPositions.includes(dest),
+    );
+    unexpected.length === 0 ||
+      Fail`planner cannot add positions: ${unexpected.join(', ')}`;
+  };
 
   const PlannerI = M.interface('Planner', {
     submit: M.call(M.number(), M.arrayOf(movementDescShape), M.number())
@@ -94,6 +112,7 @@ export const preparePlanner = (
       ): Vow<void> {
         return vowTools.asVow(async () => {
           trace('TODO(#11782): vet plan', { portfolioId, plan });
+          vetNoNewPositions(portfolioId, plan);
           const pKit = getPortfolio(portfolioId);
           pKit.planner.submitVersion(policyVersion, rebalanceCount);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
@@ -111,6 +130,7 @@ export const preparePlanner = (
           .sub(`portfolio${portfolioId}`)
           .sub(`flow${flowId}`);
         traceFlow('TODO(#11782): vet plan', planOrSteps);
+        vetNoNewPositions(portfolioId, planOrSteps);
         const { planner: portfolioPlanner } = getPortfolio(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);

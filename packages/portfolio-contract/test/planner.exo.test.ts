@@ -105,6 +105,14 @@ test('planner exo submit method', async t => {
     'planner may rebalance >1 times at same policyVersion',
   );
 
+  const newPositionPlan: MovementDesc[] = [
+    { src: '@noble', dest: 'Aave_Arbitrum', amount },
+  ];
+  await t.throwsAsync(
+    vt.when(planner.submit(portfolioId, newPositionPlan, 1, 2)),
+    { message: /planner cannot add positions/i },
+  );
+
   aPortfolio.manager.startFlow({ type: 'withdraw', amount });
   await t.notThrowsAsync(
     vt.when(planner.resolvePlan(portfolioId, 1, plan, 1, 2)),
