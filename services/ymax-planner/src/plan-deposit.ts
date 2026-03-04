@@ -132,8 +132,7 @@ export const getCurrentBalances = async (
         addressInfo.get(chainName) ||
         Fail`No ${chainName} address for instrument ${instrument}`;
       if (namespace !== 'eip155') {
-        // USDN Vaults are not "pools" and specifically are not in the Spectrum
-        // Pools API.
+        // A USDN Vault is queried as an "account" rather than a "position".
         accountQueries.push({ place, chainName, address, asset: protocol });
       } else {
         // EVM position queries (Aave, Beefy, Compound, ERC4626) are issued directly.
