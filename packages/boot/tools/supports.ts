@@ -59,7 +59,6 @@ import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fas
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
-import type { FastUsdcPublishedPathTypes } from '@agoric/fast-usdc';
 import type { GovernancePublishedPathTypes } from '@agoric/governance/src/types.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
@@ -91,8 +90,7 @@ type ConsumeBootrapItem = <N extends string>(
     ? EconomyBootstrapPowers['consume'][N]
     : unknown;
 
-type BootstrapPublishedPathTypes = FastUsdcPublishedPathTypes &
-  GovernancePublishedPathTypes;
+type BootstrapPublishedPathTypes = GovernancePublishedPathTypes;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**
