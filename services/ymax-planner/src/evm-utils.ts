@@ -83,6 +83,11 @@ export const getPoolTokenAddresses = (
   return positionTokenAddresses;
 };
 
+/**
+ * Minimal ERC-20 ABI for reading token balances via `balanceOf(address)`.
+ *
+ * @see {@link https://eips.ethereum.org/EIPS/eip-20#balanceof}
+ */
 const ERC20_BALANCE_ABI = [
   {
     name: 'balanceOf',
