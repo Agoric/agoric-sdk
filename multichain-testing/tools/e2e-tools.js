@@ -1,6 +1,10 @@
 // @ts-check
 /* global harden */
-import { makeSmartWalletKit, LOCAL_CONFIG } from '@agoric/client-utils';
+import {
+  LOCAL_CONFIG,
+  makeVstorageKit,
+  makeSmartWalletKitFromVstorageKit,
+} from '@agoric/client-utils';
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
@@ -602,17 +606,14 @@ export const makeE2ETools = async (
    */
   const vstorageClient = makeQueryKit(vstorage).query;
 
-  /** @type {import('@agoric/client-utils').SmartWalletKit} */
-  const smartWalletKit = await makeSmartWalletKit(
-    {
-      fetch,
-      delay,
-    },
-    LOCAL_CONFIG,
-  );
+  /** @type {import('@agoric/client-utils').VstorageKit<import('@agoric/fast-usdc').FastUsdcPublishedPathTypes>} */
+  const vstorageKit = makeVstorageKit({ fetch }, LOCAL_CONFIG);
+
+  const smartWalletKit = await makeSmartWalletKitFromVstorageKit(vstorageKit);
 
   return {
     vstorageClient,
+    vstorageKit,
     smartWalletKit,
     installBundles,
     runCoreEval: buildAndRunCoreEval,
