@@ -1,0 +1,4 @@
+interface:
+  display_name: "YMax Yield Delegate"
+  short_description: "Maximize YMax yield as delegated allocator"
+  default_prompt: "Use this skill when operating as a delegated allocation agent: gather YDS data, choose allocation changes to improve yield, submit SetTargetAllocation, and verify outcomes."
