@@ -32,7 +32,6 @@ import {
 } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { Fail } from '@endo/errors';
 import type { ForwardInfo } from '@agoric/orchestration';
-import type { FastUSDCCorePowers } from '../src/start-fast-usdc.core.js';
 import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,
@@ -69,8 +68,6 @@ const {
   channelId: agoricToNobleChannel,
   counterPartyChannelId: nobleToAgoricChannel,
 } = fetchedChainInfo.agoric.connections['noble-1'].transferChannel;
-
-type FastUsdcKit = Awaited<FastUSDCCorePowers['consume']['fastUsdcKit']>;
 
 test.before('bootstrap', async t => {
   const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
@@ -592,9 +589,7 @@ test.serial('makes usdc advance', async t => {
   ]);
 
   // Restart contract to make sure it doesn't break advance flow
-  const kit = (await EV.vat('bootstrap').consumeItem(
-    'fastUsdcKit',
-  )) as FastUsdcKit;
+  const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
   t.deepEqual(actual, { incarnationNumber: 4 });
 
@@ -1068,9 +1063,7 @@ test.serial('restart contract', async t => {
     runUtils: { EV },
     storage,
   } = t.context;
-  const kit = (await EV.vat('bootstrap').consumeItem(
-    'fastUsdcKit',
-  )) as FastUsdcKit;
+  const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const usdc = kit.privateArgs.feeConfig.flat.brand;
   const newFlat = AmountMath.make(usdc, 9_999n);
   const newVariableRate = makeRatio(3n, usdc, 100n, usdc);
@@ -1116,9 +1109,7 @@ test.serial('replace operators', async t => {
     runUtils: { EV },
     walletFactoryDriver: wfd,
   } = t.context;
-  const { creatorFacet } = (await EV.vat('bootstrap').consumeItem(
-    'fastUsdcKit',
-  )) as FastUsdcKit;
+  const { creatorFacet } = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
 
   const EUD = 'dydx1anything';
   const { settlementAccount } = readPublished('fastUsdc');
