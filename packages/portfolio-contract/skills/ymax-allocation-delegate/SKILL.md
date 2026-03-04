@@ -22,7 +22,7 @@ Maximize expected yield for an already-open YMax portfolio by updating target al
 
 ## Decision Policy
 Use a conservative policy to avoid churn:
-- Do not submit unless expected annualized improvement is at least 50 bps.
+- Do not submit unless expected annualized improvement is at least 25 bps.
 - Do not change more than 20 percentage points of total allocation in one update.
 - Do not submit more than once per portfolio per 30 minutes unless previous submission failed due to input error and the fix is deterministic.
 - If required yield inputs are missing or stale, do not submit; escalate.
