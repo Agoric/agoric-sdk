@@ -4,7 +4,6 @@ import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import type { JSONRPCClient } from 'json-rpc-2.0';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
@@ -389,13 +388,11 @@ export const lookBackOperationResult = async ({
   kvStore,
   setTimeout = globalThis.setTimeout,
   payloadHash,
-  rpcClient,
   makeAbortController,
 }: OperationResultWatch & {
   publishTimeMs: number;
   signal?: AbortSignal;
   setTimeout?: typeof globalThis.setTimeout;
-  rpcClient: JSONRPCClient;
   makeAbortController: MakeAbortController;
 }): Promise<WatcherResult> => {
   await null;
@@ -500,7 +497,6 @@ export const lookBackOperationResult = async ({
       verifyFailedTx: tx =>
         matchesTxPayload(tx.data, paddedTxId, payloadHash, log, tx.hash, txId),
       onRejectedChunk: updateFailedTxLowerBound,
-      rpcClient,
     });
 
     if (failedTx) {

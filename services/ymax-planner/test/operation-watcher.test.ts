@@ -264,7 +264,6 @@ test('lookBackOperationResult finds successful OperationResult event (lookback m
     txId,
     sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash: MOCK_PAYLOAD_HASH,
-    rpcClient: {} as any,
     makeAbortController,
     publishTimeMs: Date.now() - 60000, // 1 minute ago
     log: logger,
@@ -328,7 +327,6 @@ test('lookBackOperationResult finds failed OperationResult event with finality p
     txId,
     sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash: MOCK_PAYLOAD_HASH,
-    rpcClient: {} as any,
     makeAbortController,
     publishTimeMs: Date.now() - 60000, // 1 minute ago
     log: logger,
@@ -412,9 +410,6 @@ test('lookBackOperationResult phase 2 detects reverted tx via padded txId', asyn
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
 
-  // Mock rpcClient (not used for trace_filter path but required by type)
-  const mockRpcClient = {} as any;
-
   const result = await lookBackOperationResult({
     routerAddress: routerAddress as `0x${string}`,
     provider,
@@ -423,7 +418,6 @@ test('lookBackOperationResult phase 2 detects reverted tx via padded txId', asyn
     txId,
     sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash,
-    rpcClient: mockRpcClient,
     makeAbortController,
     publishTimeMs: Date.now() - 60000,
     log: logger,
@@ -542,8 +536,6 @@ test('lookBackOperationResult returns not-found when both phases find nothing', 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
 
-  const mockRpcClient = {} as any;
-
   const result = await lookBackOperationResult({
     routerAddress: routerAddress as `0x${string}`,
     provider,
@@ -552,7 +544,6 @@ test('lookBackOperationResult returns not-found when both phases find nothing', 
     txId,
     sourceAddress: MOCK_SOURCE_ADDRESS,
     payloadHash,
-    rpcClient: mockRpcClient,
     makeAbortController,
     publishTimeMs: Date.now() - 60000,
     log: logger,

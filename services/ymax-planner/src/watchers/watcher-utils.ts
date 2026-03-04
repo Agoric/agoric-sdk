@@ -8,7 +8,10 @@ import { Interface, AbiCoder, getAddress, keccak256 } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
 import { decodeAbiParameters } from 'viem';
-import { getConfirmationsRequired } from '../support.ts';
+import {
+  getConfirmationsRequired,
+  getRevertConfirmationsRequired,
+} from '../support.ts';
 
 /** Scope tag for failed-transaction lookback searches. */
 export const FAILED_TX_SCOPE = 'failedTx';
@@ -263,23 +266,21 @@ export const fetchReceiptWithRetry = async (
  * to ensure the result is permanent before reporting it. This prevents
  * premature failure reports that could be reversed by a blockchain reorg.
  *
- * @returns Confirmed receipt and confirmation count, or null if reorged out
+ * @returns Confirmed receipt, or null if reorged out
  */
 const waitForFinalConfirmations = async (
   txHash: string,
-  chainId: CaipChainId | `${string}:${string}`,
+  confirmations: number,
   provider: WebSocketProvider,
   log: (...args: unknown[]) => void,
-): Promise<{ receipt: TransactionReceipt; confirmations: number } | null> => {
-  const confirmations = getConfirmationsRequired(chainId);
+): Promise<TransactionReceipt | null> => {
   const receipt = await provider.waitForTransaction(txHash, confirmations);
   if (!receipt) {
     log(
       `Transaction ${txHash} not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
     );
-    return null;
   }
-  return { receipt, confirmations };
+  return receipt;
 };
 
 /**
@@ -311,24 +312,25 @@ export const handleTxRevert = async (
   // success → failure just as it can flip failure → success.
   if (receipt.status !== 0) return null;
 
-  const confirmed = await waitForFinalConfirmations(
+  const confirmations = getRevertConfirmationsRequired(chainId);
+  const confirmedReceipt = await waitForFinalConfirmations(
     txHash,
-    chainId,
+    confirmations,
     provider,
     log,
   );
-  if (!confirmed) return null;
+  if (!confirmedReceipt) return null;
 
   // Re-check status after confirmations in case of reorg
-  if (confirmed.receipt.status === 0) {
+  if (confirmedReceipt.status === 0) {
     log(
-      `❌ REVERTED (${confirmed.confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmed.receipt.blockNumber} - transaction failed`,
+      `❌ REVERTED (${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
     );
     return { settled: true, txHash, success: false };
   } else {
     // Transaction was reorged and succeeded - treat as success
     log(
-      `✅ SUCCESS (after reorg, ${confirmed.confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmed.receipt.blockNumber}`,
+      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
     );
     return { settled: true, txHash, success: true };
   }
@@ -362,15 +364,16 @@ export const handleOperationFailure = async <T extends { success: boolean }>(
 ): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
   const txHash = eventLog.transactionHash;
 
-  const confirmed = await waitForFinalConfirmations(
+  const confirmations = getConfirmationsRequired(chainId);
+  const confirmedReceipt = await waitForFinalConfirmations(
     txHash,
-    chainId,
+    confirmations,
     provider,
     log,
   );
-  if (!confirmed) return null;
+  if (!confirmedReceipt) return null;
 
-  const finalBlock = confirmed.receipt.blockNumber;
+  const finalBlock = confirmedReceipt.blockNumber;
 
   // Re-fetch logs to verify the failure is still present
   const logsInBlock = await provider.getLogs({
@@ -383,7 +386,7 @@ export const handleOperationFailure = async <T extends { success: boolean }>(
 
   if (!confirmedLog) {
     log(
-      `Event not found after ${confirmed.confirmations} confirmations (possibly reorged): ${identifier} txHash=${txHash}`,
+      `Event not found after ${confirmations} confirmations (possibly reorged): ${identifier} txHash=${txHash}`,
     );
     return null;
   }
@@ -392,13 +395,13 @@ export const handleOperationFailure = async <T extends { success: boolean }>(
 
   if (confirmedParsed.success) {
     log(
-      `✅ SUCCESS (after reorg, ${confirmed.confirmations} confirmations): ${identifier} txHash=${txHash}`,
+      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash}`,
     );
     return { settled: true, txHash, success: true };
   }
 
   log(
-    `❌ FAILURE (${confirmed.confirmations} confirmations): ${identifier} txHash=${txHash}`,
+    `❌ FAILURE (${confirmations} confirmations): ${identifier} txHash=${txHash}`,
   );
   return { settled: true, txHash, success: false };
 };

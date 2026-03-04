@@ -491,9 +491,6 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
     const provider = ctx.evmProviders[caipId] as WebSocketProvider;
-    const rpcUrl =
-      ctx.rpcUrls[caipId] || Fail`${logPrefix} No RPC URL for chain: ${caipId}`;
-    const rpcClient = makeJsonRpcClient(ctx.fetch, rpcUrl);
 
     const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
@@ -548,7 +545,6 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
         publishTimeMs: opts.publishTimeMs,
         signal: abortController.signal,
         setTimeout: ctx.setTimeout,
-        rpcClient,
         makeAbortController: ctx.makeAbortController,
       });
 

@@ -372,7 +372,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
   t.true(
     logs.some(l =>
       l.includes(
-        `[${txId}] ❌ REVERTED (25 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock} - transaction failed`,
+        `[${txId}] ❌ REVERTED (240 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock} - transaction failed`,
       ),
     ),
   );
