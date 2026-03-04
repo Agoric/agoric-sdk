@@ -423,6 +423,8 @@ export const prepareEVMWalletHandlerKit = (
   });
 
   // TODO: key/value shapes?
+  // NOTE: Keys are case-sensitive Address strings. Client integrations are
+  // responsible for using consistent casing across all signed messages.
   const walletByAddress = zone.mapStore<Address, EVMWallet>('wallets');
 
   const getWalletForAddress = (address: Address): EVMWallet =>
