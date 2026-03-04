@@ -16,63 +16,6 @@ tool (
 	google.golang.org/protobuf/cmd/protoc-gen-go
 )
 
-// Agoric-specific replacements:
-replace (
-	// The following replacements cannot be used because, due to backporting,
-	// parts of cosmos-sdk depend on APIs from future cosmos-sdk modules published
-	// only on cosmossdk.io.  To work around this, we have to rely on published modules,
-	// rather than from sources within the same cosmos-sdk.
-	//
-	// TODO: Check if this is still true past v0.50.13.
-	//
-	// cosmossdk.io/api => github.com/agoric-labs/cosmos-sdk/api v0.50.14-alpha.agoric.2
-	// cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject v0.50.14-alpha.agoric.2
-	// cosmossdk.io/log => github.com/agoric-labs/cosmos-sdk/log v0.50.14-alpha.agoric.2
-	//
-	// Ensure specific packages use our fork
-	cosmossdk.io/client/v2 => github.com/agoric-labs/cosmos-sdk/client/v2 v2.0.0-v0.50.14-alpha.agoric.2
-	cosmossdk.io/core => github.com/agoric-labs/cosmos-sdk/core v0.50.14-alpha.agoric.2
-	cosmossdk.io/errors => github.com/agoric-labs/cosmos-sdk/errors v0.50.14-alpha.agoric.2
-	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.50.14-alpha.agoric.2
-	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.50.14-alpha.agoric.2
-	cosmossdk.io/store => github.com/agoric-labs/cosmos-sdk/store v0.50.14-alpha.agoric.2
-	cosmossdk.io/tools/confix => github.com/agoric-labs/cosmos-sdk/tools/confix v0.50.14-alpha.agoric.2
-	cosmossdk.io/x/circuit => github.com/agoric-labs/cosmos-sdk/x/circuit v0.50.14-alpha.agoric.2
-	cosmossdk.io/x/evidence => github.com/agoric-labs/cosmos-sdk/x/evidence v0.50.14-alpha.agoric.2
-	cosmossdk.io/x/feegrant => github.com/agoric-labs/cosmos-sdk/x/feegrant v0.50.14-alpha.agoric.2
-	cosmossdk.io/x/tx => github.com/agoric-labs/cosmos-sdk/x/tx v0.50.14-alpha.agoric.3
-	cosmossdk.io/x/upgrade => github.com/agoric-labs/cosmos-sdk/x/upgrade v0.50.14-alpha.agoric.2
-
-	// use cometbft
-	// Use our fork at least until post-v0.34.14 is released with
-	// https://github.com/cometbft/cometbft/issue/6899 resolved.
-	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.38.17-alpha.agoric.1
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.50.14-alpha.agoric.3
-	github.com/cosmos/ibc-go/modules/capability => github.com/agoric-labs/ibc-go/modules/capability v1.0.1-v8.7.0-alpha.agoric.1
-
-	github.com/cosmos/ibc-go/v8 => github.com/agoric-labs/ibc-go/v8 v8.7.0-alpha.agoric.1
-
-	github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
-)
-
-replace (
-	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
-
-	github.com/btcsuite/btcd/btcec/v2 => github.com/btcsuite/btcd/btcec/v2 v2.3.2
-
-	// https://pkg.go.dev/vuln/GO-2023-2409
-	github.com/dvsekhvalnov/jose2go => github.com/dvsekhvalnov/jose2go v1.5.1-0.20231206184617-48ba0b76bc88
-
-	// Fix upstream GHSA-3vp4-m3rf-835h vulnerability.
-	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.0
-
-	// https://pkg.go.dev/vuln/GO-2023-1578
-	github.com/hashicorp/go-getter => github.com/hashicorp/go-getter v1.7.0
-
-	// replace broken goleveldb.
-	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-)
-
 require (
 	cosmossdk.io/api v0.7.6
 	cosmossdk.io/client/v2 v2.0.0-beta.5.0.20241121152743-3dad36d9a29e
@@ -80,7 +23,7 @@ require (
 	cosmossdk.io/errors v1.0.1
 	cosmossdk.io/log v1.4.1
 	cosmossdk.io/math v1.4.0
-	cosmossdk.io/simapp v0.0.0-00010101000000-000000000000
+	cosmossdk.io/simapp v0.0.0-20250708143716-f2e6295b662f
 	cosmossdk.io/store v1.1.1
 	cosmossdk.io/tools/confix v0.1.2
 	cosmossdk.io/x/evidence v0.1.1
@@ -109,8 +52,8 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.11.1
 	go.uber.org/mock v0.5.2
-	google.golang.org/genproto/googleapis/api v0.0.0-20260128011058-8636f8732409
-	google.golang.org/grpc v1.78.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20260209200024-4cfbd4190f57
+	google.golang.org/grpc v1.79.1
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -164,7 +107,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.30.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
-	github.com/Masterminds/semver/v3 v3.3.1 // indirect
+	github.com/Masterminds/semver/v3 v3.3.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.1 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
@@ -201,7 +144,7 @@ require (
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/ckaznocha/intrange v0.3.0 // indirect
 	github.com/cli/browser v1.3.0 // indirect
-	github.com/cncf/xds/go v0.0.0-20251022180443-0feb69152e9f // indirect
+	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
 	github.com/cockroachdb/fifo v0.0.0-20240616162244-4768e80dfb9a // indirect
@@ -243,8 +186,8 @@ require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.7.0 // indirect
 	github.com/emicklei/dot v1.6.2 // indirect
-	github.com/envoyproxy/go-control-plane/envoy v1.35.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
+	github.com/envoyproxy/go-control-plane/envoy v1.36.0 // indirect
+	github.com/envoyproxy/protoc-gen-validate v1.3.0 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
@@ -276,7 +219,7 @@ require (
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gofrs/flock v0.13.0 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
-	github.com/gogo/protobuf v1.3.3 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.2.5 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -308,7 +251,7 @@ require (
 	github.com/gostaticanalysis/nilerr v0.1.1 // indirect
 	github.com/goware/urlx v0.3.2 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.7 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-getter v1.7.5 // indirect
@@ -462,7 +405,7 @@ require (
 	go.lsp.dev/uri v0.3.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/contrib/detectors/gcp v1.38.0 // indirect
+	go.opentelemetry.io/contrib/detectors/gcp v1.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.64.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
@@ -479,17 +422,17 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/oauth2 v0.34.0 // indirect
+	golang.org/x/oauth2 v0.35.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260109210033-bd525da824e2 // indirect
 	golang.org/x/term v0.39.0 // indirect
-	golang.org/x/text v0.33.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.10.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect
 	google.golang.org/api v0.223.0 // indirect
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260128011058-8636f8732409 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260209200024-4cfbd4190f57 // indirect
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -502,4 +445,22 @@ require (
 	pgregory.net/rapid v1.1.0 // indirect
 	pluginrpc.com/pluginrpc v0.5.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
+)
+
+replace (
+	github.com/99designs/keyring => github.com/cosmos/keyring v1.2.0
+
+	github.com/btcsuite/btcd/btcec/v2 => github.com/btcsuite/btcd/btcec/v2 v2.3.2
+
+	// https://pkg.go.dev/vuln/GO-2023-2409
+	github.com/dvsekhvalnov/jose2go => github.com/dvsekhvalnov/jose2go v1.5.1-0.20231206184617-48ba0b76bc88
+
+	// Fix upstream GHSA-3vp4-m3rf-835h vulnerability.
+	github.com/gin-gonic/gin => github.com/gin-gonic/gin v1.9.0
+
+	// https://pkg.go.dev/vuln/GO-2023-1578
+	github.com/hashicorp/go-getter => github.com/hashicorp/go-getter v1.7.0
+
+	// replace broken goleveldb.
+	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 )
