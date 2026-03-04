@@ -29,13 +29,13 @@
   "dependencies": {
     "@agoric/base-zone": "workspace:*",
     "@agoric/vat-data": "workspace:*",
-    "@endo/errors": "^1.2.13",
+    "@endo/errors": "^1.3.0",
     "@endo/far": "^1.1.14",
-    "@endo/pass-style": "^1.6.3"
+    "@endo/pass-style": "^1.7.0"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
-    "@endo/patterns": "^1.7.0",
+    "@endo/patterns": "^1.8.0",
     "ava": "^6.4.1"
   },
   "publishConfig": {

@@ -18,7 +18,6 @@ import {
   compoundAddresses,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { EvmContext } from './pending-tx-manager.ts';
-import { lookupValueForKey } from './utils.ts';
 
 export const UserInputError = class extends Error {} as ErrorConstructor;
 harden(UserInputError);
@@ -53,23 +52,34 @@ const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
   'cosmos:grand-1 noble': 'grand-1',
 };
 
-// Note that lookupValueForKey throws when the key is not found.
 export const spectrumChainIdsByCluster: Readonly<
   Record<ClusterName, ROPartial<SupportedChain, string>>
 > = {
   mainnet: {
-    ...objectMap(CaipChainIds.mainnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    .../** @type {ROPartial<SupportedChain, string>} */ /** @type {unknown} */ objectMap(
+      CaipChainIds.mainnet,
+      (chainId, chainLabel) =>
+        spectrumChainIds[
+          `${chainId} ${chainLabel}` as keyof typeof spectrumChainIds
+        ],
     ),
   },
   testnet: {
-    ...objectMap(CaipChainIds.testnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    .../** @type {ROPartial<SupportedChain, string>} */ /** @type {unknown} */ objectMap(
+      CaipChainIds.testnet,
+      (chainId, chainLabel) =>
+        spectrumChainIds[
+          `${chainId} ${chainLabel}` as keyof typeof spectrumChainIds
+        ],
     ),
   },
   local: {
-    ...objectMap(CaipChainIds.local, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
+    .../** @type {ROPartial<SupportedChain, string>} */ /** @type {unknown} */ objectMap(
+      CaipChainIds.local,
+      (chainId, chainLabel) =>
+        spectrumChainIds[
+          `${chainId} ${chainLabel}` as keyof typeof spectrumChainIds
+        ],
     ),
   },
 };

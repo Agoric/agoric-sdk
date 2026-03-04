@@ -359,7 +359,6 @@ test.serial('create from kit', async t => {
     name: contractName,
     storageNode,
     kit,
-    // @ts-expect-error commonPrivateArgs is not actually PortfolioPrivateArgs
     initialPrivateArgs,
   });
   expectType<typeof cc>(undefined as unknown as ContractControl<YMaxStartFn>);

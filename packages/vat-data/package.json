@@ -21,14 +21,14 @@
     "@agoric/base-zone": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
-    "@endo/errors": "^1.2.13",
-    "@endo/exo": "^1.5.12",
-    "@endo/patterns": "^1.7.0"
+    "@endo/errors": "^1.3.0",
+    "@endo/exo": "^1.6.0",
+    "@endo/patterns": "^1.8.0"
   },
   "devDependencies": {
     "@endo/far": "^1.1.14",
-    "@endo/init": "^1.1.12",
-    "@endo/ses-ava": "^1.3.2",
+    "@endo/init": "^1.1.13",
+    "@endo/ses-ava": "^1.4.0",
     "ava": "^6.4.1",
     "tsd": "^0.33.0"
   },

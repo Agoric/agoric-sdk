@@ -195,8 +195,8 @@
     "@agoric/cosmos": "workspace:*",
     "@ava/typescript": "^6.0.0",
     "@cosmology/telescope": "^1.12.21",
-    "@endo/bundle-source": "^4.1.2",
-    "@endo/import-bundle": "^1.5.2",
+    "@endo/bundle-source": "^4.2.0",
+    "@endo/import-bundle": "^1.6.0",
     "ava": "^6.4.1",
     "glob": "^11.0.3",
     "rimraf": "^5.0.0",
@@ -206,7 +206,7 @@
   },
   "dependencies": {
     "@endo/base64": "^1.0.12",
-    "@endo/init": "^1.1.12",
+    "@endo/init": "^1.1.13",
     "bech32": "^2.0.0",
     "query-string": "^9.1.1"
   },
