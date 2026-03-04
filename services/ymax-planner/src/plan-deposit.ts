@@ -3,6 +3,7 @@ import { assert, Fail, X } from '@endo/errors';
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
   PoolKey,
+  PoolPlaceInfo,
   StatusFor,
   TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
@@ -72,9 +73,9 @@ type AccountQueryDescriptor = {
 };
 
 type PositionQueryDescriptor = {
-  place: string;
+  place: PoolKey | `@${EvmChain}`;
   chainName: SupportedChain;
-  protocol: string;
+  protocol: PoolPlaceInfo['protocol'] | 'USDC';
   address: string;
 };
 
@@ -115,7 +116,12 @@ export const getCurrentBalances = async (
       const { namespace, accountAddress: address } = addressParts;
       if (namespace === 'eip155') {
         // EVM chain USDC balances are fetched directly via Alchemy.
-        alchemyQueries.push({ place, chainName, protocol: 'USDC', address });
+        alchemyQueries.push({
+          place: place as `@${EvmChain}`,
+          chainName,
+          protocol: 'USDC',
+          address,
+        });
       } else {
         spectrumQueries.push({ place, chainName, address, asset: 'USDC' });
       }

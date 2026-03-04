@@ -184,20 +184,20 @@ const getERC4626VaultBalance = async (
 };
 
 type PositionBalanceResult = {
-  place: string;
+  place: PoolKey | `@${EvmChain}`;
   balance: bigint | undefined;
   error?: string;
 };
 
 export type EVMPositionQuery = {
-  place: string;
+  place: PoolKey | `@${EvmChain}`;
   chainName: SupportedChain;
   address: string;
 };
 
 export type EVMPositionBalancePowers = {
   /** Map from place (e.g. 'Aave_Ethereum', '@Ethereum') to its token address */
-  positionTokenAddresses: Partial<Record<string, string>>;
+  positionTokenAddresses: Partial<Record<PoolKey | `@${EvmChain}`, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
   evmProviders: EvmProviders;
 };
