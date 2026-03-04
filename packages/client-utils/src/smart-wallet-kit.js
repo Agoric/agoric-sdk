@@ -9,13 +9,12 @@ import {
 /**
  * @import {EReturn} from '@endo/far';
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
- * @import {OfferId, OfferStatus} from '@agoric/smart-wallet/src/offers.js';
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
- * @import {RetryOptionsAndPowers} from './sync-tools.js';
  * @import {VstorageKit} from './types.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
- * @import {Instance, InvitationDetails} from '@agoric/zoe';
+ * @import {PublishedPathTypes} from './types.js';
+ * @import {SmartWalletPublishedPathTypes} from '@agoric/smart-wallet/src/types.js';
  */
 
 /**
@@ -24,7 +23,8 @@ import {
  * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
  * vstorage tree.) It was once called WalletUtils, which is more accurate.
  *
- * @param {VstorageKit} vsk
+ * @template {PublishedPathTypes & SmartWalletPublishedPathTypes} [Ext=Record<never, never>]
+ * @param {VstorageKit<Ext>} vsk
  * @param {object} [options]
  * @param {boolean} [options.names]
  * @alpha
