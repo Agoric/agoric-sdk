@@ -1056,6 +1056,24 @@ test('address of LCA for fees is published', async t => {
       Ethereum: `eip155:1:${contracts.Ethereum.depositFactory}`,
       Optimism: `eip155:10:${contracts.Optimism.depositFactory}`,
     },
+    evmRemoteAccountConfig: {
+      currentRouterAddresses: {
+        Arbitrum: 'eip155:42161:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Avalanche: 'eip155:43114:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Base: 'eip155:8453:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Ethereum: 'eip155:1:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Optimism: 'eip155:10:0x4028686122Ae547e6B551C85962C5dA52db69743',
+      },
+      factoryAddresses: {
+        Arbitrum: 'eip155:42161:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Avalanche: 'eip155:43114:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Base: 'eip155:8453:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Ethereum: 'eip155:1:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Optimism: 'eip155:10:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+      },
+      remoteAccountBytecodeHash:
+        '0x24ea336fcf84934abf4d7be919b1c8917bd8a51cd25fcb43c50e4184eda29c13',
+    },
   });
 });
 
