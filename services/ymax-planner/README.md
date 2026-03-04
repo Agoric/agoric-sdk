@@ -181,6 +181,55 @@ an absolute path is recommended
 - `YDS_API_KEY`: API key for authenticating with YDS (required with `YDS_URL`)
 - `DOTENV`: Path to environment file containing defaults of above (default ".env")
 
+## External Service Dependencies
+
+The planner relies on several external services for balance queries, gas
+estimation, and event subscriptions. The diagram below shows how data flows
+between them:
+
+```
+ymax-planner
+├── Spectrum Blockchain API ── Query non-EVM token balances (Agoric USDC/USDN, Noble)
+├── Alchemy RPC (WebSocket) ── Query on-chain EVM balances directly
+│   ├── ERC-20 balanceOf ───── Aave aTokens, Compound cUSDCv3, chain USDC
+│   ├── Beefy vaults ──────── balanceOf + getPricePerFullShare (mooToken → underlying)
+│   └── ERC-4626 vaults ───── balanceOf + convertToAssets (Morpho, etc.)
+├── Axelar API ─────────────── Estimate cross-chain gas fees (GMP)
+```
+
+### Alchemy RPC
+
+**Env var**: `ALCHEMY_API_KEY`
+
+Provides WebSocket connections to EVM chains (Ethereum, Arbitrum, Avalanche,
+Base, Optimism and their testnets). Used to query on-chain token balances by
+calling contract methods directly:
+
+- **Aave / Compound**: Simple `balanceOf` — receipt tokens (aTokens, cUSDCv3)
+  already represent underlying USDC value.
+- **Beefy vaults**: `balanceOf` returns mooToken shares, then
+  `getPricePerFullShare()` (1e18 precision) converts to underlying value.
+- **ERC-4626 vaults** (Morpho, etc.): `balanceOf` returns vault shares, then
+  `convertToAssets(shares)` converts to underlying value.
+- **USDC on EVM chains**: Simple `balanceOf` on the USDC token contract.
+
+### Spectrum Blockchain API (GraphQL)
+
+**Env var**: `GRAPHQL_ENDPOINTS` (JSON — maps API directory names to endpoint URLs)
+
+Queries token balances for **non-EVM** accounts (Agoric, Noble) via the
+`getBalances` GraphQL query. Supports failover across multiple endpoints.
+
+### Axelar API
+
+**Env var**: `CLUSTER` (determines mainnet vs testnet endpoint)
+
+Estimates gas fees for cross-chain transfers via Axelar's General Message
+Passing protocol. Called during rebalance planning to account for transfer costs.
+
+- Mainnet: `https://api.axelarscan.io/`
+- Testnet: `https://testnet.api.axelarscan.io/`
+
 ## Architecture
 
 
