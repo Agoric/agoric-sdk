@@ -230,41 +230,20 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/cosmic-proto@npm:0.4.1-dev-02b7d6a.0.02b7d6a":
-  version: 0.4.1-dev-02b7d6a.0.02b7d6a
-  resolution: "@agoric/cosmic-proto@npm:0.4.1-dev-02b7d6a.0.02b7d6a"
+"@agoric/cosmic-proto@portal:./local-packages/cosmic-proto::locator=root-workspace-0b6124%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@agoric/cosmic-proto@portal:./local-packages/cosmic-proto::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
+    "@chain-registry/v2": "npm:^1.71.186"
+    "@chain-registry/v2-types": "npm:^0.53.115"
     "@endo/base64": "npm:^1.0.12"
     "@endo/init": "npm:^1.1.12"
+    "@interchainjs/cosmos": "npm:^1.19.3"
+    "@interchainjs/types": "npm:^1.19.1"
     bech32: "npm:^2.0.0"
     query-string: "npm:^9.1.1"
-  checksum: 10c0/a40018572cf41c07a8ec5b9d40e943aa1305ec6027183c8cf0d1d10695ea16147b96cc222c4a755e84f5556a668c588fd98a27295a285cd47311d1082f4ff4ff
   languageName: node
-  linkType: hard
-
-"@agoric/cosmic-proto@npm:0.4.1-dev-49971f5.0.49971f5, @agoric/cosmic-proto@npm:dev":
-  version: 0.4.1-dev-49971f5.0.49971f5
-  resolution: "@agoric/cosmic-proto@npm:0.4.1-dev-49971f5.0.49971f5"
-  dependencies:
-    "@endo/base64": "npm:^1.0.12"
-    "@endo/init": "npm:^1.1.12"
-    bech32: "npm:^2.0.0"
-    query-string: "npm:^9.1.1"
-  checksum: 10c0/ccc5e6a2b690043e73a9ff8fc996672295cd76fa7713372091a10d548769c25a7176325789e2170d6a29994027c9272bea21a808a45d67a188a1ee71038ac8ad
-  languageName: node
-  linkType: hard
-
-"@agoric/cosmic-proto@npm:0.4.1-dev-68fa208.0.68fa208":
-  version: 0.4.1-dev-68fa208.0.68fa208
-  resolution: "@agoric/cosmic-proto@npm:0.4.1-dev-68fa208.0.68fa208"
-  dependencies:
-    "@endo/base64": "npm:^1.0.12"
-    "@endo/init": "npm:^1.1.12"
-    bech32: "npm:^2.0.0"
-    query-string: "npm:^9.1.1"
-  checksum: 10c0/83eeab9d07d43fddd54ab0494e5d2edc019099a43f54fdfe7a80d90f5c8367a40461143d0432e852f3a90027e66f28cca2b8658f6ffe86b78a77bd54d552cab8
-  languageName: node
-  linkType: hard
+  linkType: soft
 
 "@agoric/deploy-script-support@portal:./local-packages/deploy-script-support::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
@@ -1628,6 +1607,22 @@ __metadata:
     "@babel/helper-string-parser": "npm:^7.25.9"
     "@babel/helper-validator-identifier": "npm:^7.25.9"
   checksum: 10c0/7a7f83f568bfc3dfabfaf9ae3a97ab5c061726c0afa7dcd94226d4f84a81559da368ed79671e3a8039d16f12476cf110381a377ebdea07587925f69628200dac
+  languageName: node
+  linkType: hard
+
+"@chain-registry/v2-types@npm:^0.53.115, @chain-registry/v2-types@npm:^0.53.146":
+  version: 0.53.146
+  resolution: "@chain-registry/v2-types@npm:0.53.146"
+  checksum: 10c0/197d4ac8022294b28e5303863ea2aea2bffeca0af1c8b15917e80aef7b28eaf8d9e7691c8e9266ec6a10af1957b7facdac811529e72b571e4711781e54d80a8d
+  languageName: node
+  linkType: hard
+
+"@chain-registry/v2@npm:^1.71.186":
+  version: 1.71.237
+  resolution: "@chain-registry/v2@npm:1.71.237"
+  dependencies:
+    "@chain-registry/v2-types": "npm:^0.53.146"
+  checksum: 10c0/949068c947a53ef4ab49d47df49a677a338d6ff6cb817fa7987c05e4987152ab35c72e584d615c27201cebd0da57485d5c831193eae83f0d686601558f988c5b
   languageName: node
   linkType: hard
 
@@ -5146,6 +5141,7 @@ __metadata:
   dependencies:
     "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract"
     "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy"
+    "@agoric/cosmic-proto": "npm:dev"
     "@agoric/deploy-script-support": "npm:dev"
     "@agoric/portfolio-api": "npm:dev"
     "@agoric/synthetic-chain": "npm:^0.6.1"
