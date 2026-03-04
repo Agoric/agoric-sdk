@@ -9,7 +9,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { NatAmount } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
-import { typedEntries } from '@agoric/internal';
+import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -38,7 +38,12 @@ import type { TargetAllocation as PermittedAllocation } from '@agoric/portfolio-
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
 import { hexToBytes } from '@noble/hashes/utils';
-import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
+import {
+  extractEvmRemoteAccountConfig,
+  makeEip155ChainIdToAxelarChain,
+  type EVMContractAddresses,
+  type PortfolioPrivateArgs,
+} from '../src/portfolio.contract.ts';
 import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
@@ -51,6 +56,7 @@ import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
   makeEvmTraderKit,
+  provideMakePrivateArgs,
   setupTrader,
   simulateAckTransferToAxelar,
   simulateCCTPAck,
@@ -1129,7 +1135,172 @@ test('address of LCA for fees is published', async t => {
       Ethereum: `eip155:1:${contracts.Ethereum.depositFactory}`,
       Optimism: `eip155:10:${contracts.Optimism.depositFactory}`,
     },
+    evmRemoteAccountConfig: {
+      currentRouterAddresses: {
+        Arbitrum: 'eip155:42161:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Avalanche: 'eip155:43114:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Base: 'eip155:8453:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Ethereum: 'eip155:1:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Optimism: 'eip155:10:0x4028686122Ae547e6B551C85962C5dA52db69743',
+      },
+      factoryAddresses: {
+        Arbitrum: 'eip155:42161:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Avalanche: 'eip155:43114:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Base: 'eip155:8453:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Ethereum: 'eip155:1:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Optimism: 'eip155:10:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+      },
+      remoteAccountImplementationAddresses: {
+        Arbitrum: 'eip155:42161:0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+        Avalanche: 'eip155:43114:0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+        Base: 'eip155:8453:0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+        Ethereum: 'eip155:1:0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+        Optimism: 'eip155:10:0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+      },
+    },
   });
+});
+
+const setupEvmRemoteAccountConfigTest = (
+  mapContractEntry: (
+    value: `0x${string}` | undefined,
+    key: keyof EVMContractAddresses,
+    chain: AxelarChain,
+  ) => `0x${string}` | undefined = value => value,
+) => {
+  const makePrivateArgs = provideMakePrivateArgs({} as any, undefined as any);
+  const { chainInfo, contracts: originalContracts } = makePrivateArgs();
+  const chainIdToAxelarChain = makeEip155ChainIdToAxelarChain(chainInfo);
+
+  const contracts = objectMap(
+    originalContracts,
+    (addresses, chain) =>
+      fromTypedEntries(
+        typedEntries(addresses).flatMap(([key, value]) => {
+          const mappedValue = mapContractEntry(
+            value,
+            key as keyof EVMContractAddresses,
+            chain,
+          );
+          return mappedValue ? [[key, mappedValue]] : [];
+        }),
+      ) as EVMContractAddresses,
+  );
+
+  return {
+    chainIdToAxelarChain,
+    contracts,
+  };
+};
+
+test('evmRemoteAccountConfig - extract bails if router address invalid', async t => {
+  const { chainIdToAxelarChain, contracts } = setupEvmRemoteAccountConfigTest(
+    (value, key) => (key === 'remoteAccountRouter' ? undefined : value),
+  );
+
+  const config = extractEvmRemoteAccountConfig(chainIdToAxelarChain, contracts);
+
+  t.is(config, undefined);
+});
+
+test('evmRemoteAccountConfig - empty router config', async t => {
+  const { chainIdToAxelarChain, contracts } = setupEvmRemoteAccountConfigTest(
+    (value, key) => (key === 'remoteAccountRouter' ? '0x' : value),
+  );
+
+  const config = extractEvmRemoteAccountConfig(chainIdToAxelarChain, contracts);
+
+  t.deepEqual(config?.currentRouterAddresses, {});
+});
+
+test('evmRemoteAccountConfig - partial router config', async t => {
+  const { chainIdToAxelarChain, contracts } = setupEvmRemoteAccountConfigTest(
+    (value, key, chain) =>
+      key === 'remoteAccountRouter' && ['Optimism', 'Avalanche'].includes(chain)
+        ? '0x'
+        : value,
+  );
+
+  const config = extractEvmRemoteAccountConfig(chainIdToAxelarChain, contracts);
+
+  t.deepEqual(config?.currentRouterAddresses, {
+    Arbitrum: 'eip155:42161:0x4028686122Ae547e6B551C85962C5dA52db69743',
+    Base: 'eip155:8453:0x4028686122Ae547e6B551C85962C5dA52db69743',
+    Ethereum: 'eip155:1:0x4028686122Ae547e6B551C85962C5dA52db69743',
+  });
+});
+
+test('evmRemoteAccountConfig - fails if invalid implementation', async t => {
+  // even if router addresses config is empty, implementation addresses should be specified
+  const { chainIdToAxelarChain, contracts } = setupEvmRemoteAccountConfigTest(
+    (value, key) =>
+      key === 'remoteAccountImplementation'
+        ? undefined
+        : key === 'remoteAccountRouter'
+          ? '0x'
+          : value,
+  );
+
+  t.throws(() =>
+    extractEvmRemoteAccountConfig(chainIdToAxelarChain, contracts),
+  );
+});
+
+test('evmRemoteAccountConfig - fails if invalid factory', async t => {
+  // even if router addresses config is empty, factory addresses should be specified
+  const { chainIdToAxelarChain, contracts } = setupEvmRemoteAccountConfigTest(
+    (value, key) =>
+      key === 'remoteAccountFactory'
+        ? undefined
+        : key === 'remoteAccountRouter'
+          ? '0x'
+          : value,
+  );
+
+  t.throws(() =>
+    extractEvmRemoteAccountConfig(chainIdToAxelarChain, contracts),
+  );
+});
+
+test('evmRemoteAccountConfig - fails if missing factory entry', async t => {
+  const { chainIdToAxelarChain, contracts } = setupEvmRemoteAccountConfigTest(
+    (value, key, chain) =>
+      key === 'remoteAccountRouter' && ['Optimism', 'Avalanche'].includes(chain)
+        ? '0x'
+        : key === 'remoteAccountFactory' && ['Ethereum'].includes(chain)
+          ? '0x'
+          : value,
+  );
+
+  t.throws(
+    () => extractEvmRemoteAccountConfig(chainIdToAxelarChain, contracts),
+    {
+      message: message =>
+        message.includes('Ethereum') &&
+        message.includes('remoteAccountFactory'),
+    },
+  );
+});
+
+test('evmRemoteAccountConfig - fails if missing implementation entry', async t => {
+  const { chainIdToAxelarChain, contracts } = setupEvmRemoteAccountConfigTest(
+    (value, key, chain) =>
+      (key === 'remoteAccountFactory' || key === 'remoteAccountRouter') &&
+      ['Optimism', 'Avalanche'].includes(chain)
+        ? '0x'
+        : key === 'remoteAccountImplementation' && ['Ethereum'].includes(chain)
+          ? '0x'
+          : value,
+  );
+
+  t.throws(
+    () => extractEvmRemoteAccountConfig(chainIdToAxelarChain, contracts),
+    {
+      message: message =>
+        message.includes('Ethereum') &&
+        message.includes('remoteAccountImplementation'),
+    },
+  );
 });
 
 test('request rebalance - send same targetAllocation', async t => {
