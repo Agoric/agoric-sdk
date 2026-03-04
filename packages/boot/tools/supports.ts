@@ -8,7 +8,10 @@ import { basename, join } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
 
-import type { TypedPublishedFor } from '@agoric/client-utils';
+import type {
+  PublishedPathTypes as ClientPublishedPathTypes,
+  TypedPublishedFor,
+} from '@agoric/client-utils';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { makeHelpers } from '@agoric/cosmic-swingset/tools/inquisitor.mjs';
 import {
@@ -430,7 +433,9 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
    `defaultManagerType`)
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
-export const makeSwingsetTestKit = async (
+export const makeSwingsetTestKit = async <
+  PublishedPathTypes extends ClientPublishedPathTypes = BootstrapPublishedPathTypes,
+>(
   log: (..._: any[]) => void,
   bundleDir = 'bundles',
   {
@@ -477,7 +482,7 @@ export const makeSwingsetTestKit = async (
   const readPublished = <T extends string>(subpath: T) =>
     readLatest(`published.${subpath}`) as TypedPublishedFor<
       T,
-      BootstrapPublishedPathTypes
+      PublishedPathTypes
     >;
 
   let lastBankNonce = 0n;
@@ -914,7 +919,9 @@ export const makeSwingsetTestKit = async (
     slogSender,
   };
 };
-export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
+export type SwingsetTestKit<
+  PublishedPathTypes extends ClientPublishedPathTypes = BootstrapPublishedPathTypes,
+> = Awaited<ReturnType<typeof makeSwingsetTestKit<PublishedPathTypes>>>;
 
 /**
  * Creates a harness for measuring computron usage in SwingSet tests.
