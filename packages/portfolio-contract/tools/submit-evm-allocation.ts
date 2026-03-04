@@ -7,11 +7,18 @@ import {
   type TargetAllocation,
   type YmaxStandaloneOperationData,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import {
+  fetchEnvNetworkConfig,
+  makeSigningSmartWalletKit,
+  makeSmartWalletKit,
+} from '@agoric/client-utils';
+import { SigningStargateClient } from '@cosmjs/stargate';
 import { randomBytes } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { parseArgs as parseNodeArgs } from 'node:util';
+import type { Passable } from '@endo/pass-style';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 
 type JsonValue =
@@ -38,6 +45,10 @@ type EvmOperationSubmitResponse = {
   error: string | null;
   timestamp: string;
 };
+type SubmitMode = 'yds' | 'wallet';
+type SignedSetTargetAllocation = YmaxStandaloneOperationData<'SetTargetAllocation'> & {
+  signature: `0x${string}`;
+};
 
 const ESCAPE_CHARS = /^[!"#$%&'()*+,-]/;
 const CONFIG_FILE_BASENAME = 'ymax-openclaw-agent.json';
@@ -55,7 +66,7 @@ const usage = `Usage:
   for example: devnet
     ./tools/submit-evm-allocation.ts --setup --yds https://dev0.ymax.app --chain-id 421614 --portfolio 7 --ymax-version ymax0
   To submit allocations:
-    ./tools/submit-evm-allocation.ts (--allocations-file ./allocations.json | --allocations '[{"instrument":"USDC","portion":"100"}]') [--deadline UNIX_SECONDS]
+    ./tools/submit-evm-allocation.ts (--allocations-file ./allocations.json | --allocations '[{"instrument":"USDC","portion":"100"}]') [--deadline UNIX_SECONDS] [--submit-mode yds|wallet]
 
 Options:
   --setup                 Run setup mode.
@@ -67,6 +78,11 @@ Options:
   --allocations-file <p>  JSON file containing target allocations (submit mode).
   --allocations <json>    Inline JSON array of target allocations (submit mode).
   --deadline <unix>       Optional UNIX-seconds deadline (submit mode).
+  --submit-mode <m>       yds (default) posts to /evm-operations; wallet uses EMS_KEY to invoke evmWalletHandler directly.
+
+Environment:
+  AGORIC_NET              for --submit-mode wallet (default: devnet).
+  EMS_KEY                 mnemonic for Agoric wallet sender in --submit-mode wallet.
 
 Query hints:
   API docs: https://dev0.ymax.app/docs
@@ -86,6 +102,7 @@ const parseCli = (argv: string[]) => {
       portfolio: { type: 'string' },
       'ymax-version': { type: 'string' },
       deadline: { type: 'string' },
+      'submit-mode': { type: 'string' },
       allocations: { type: 'string' },
       'allocations-file': { type: 'string' },
     },
@@ -129,6 +146,11 @@ const parseYmaxVersion = (raw: string | undefined): 'ymax0' | 'ymax1' => {
   const version = raw ?? 'ymax0';
   if (version === 'ymax0' || version === 'ymax1') return version;
   throw Error('--ymax-version must be ymax0 or ymax1');
+};
+const parseSubmitMode = (raw: string | undefined): SubmitMode => {
+  const mode = raw ?? 'yds';
+  if (mode === 'yds' || mode === 'wallet') return mode;
+  throw Error('--submit-mode must be yds or wallet');
 };
 
 const resolveVerifyingContract = ({
@@ -399,7 +421,8 @@ const postSignedOperation = async ({
   });
 
   if (!response.ok) {
-    throw Error(`HTTP ${response.status} ${response.statusText}`);
+    const body = await response.text();
+    throw Error(`HTTP ${response.status} ${response.statusText}; body: ${body}`);
   }
 
   const result = await response.json();
@@ -410,8 +433,80 @@ const postSignedOperation = async ({
   return result;
 };
 
-const runSubmit = async (args: CliValues, configFile: string) => {
+const submitViaWallet = async ({
+  signedMessage,
+  env,
+  fetch,
+  setTimeout,
+  now,
+}: {
+  signedMessage: SignedSetTargetAllocation;
+  env: typeof process.env;
+  fetch: typeof globalThis.fetch;
+  setTimeout: typeof globalThis.setTimeout;
+  now: typeof Date.now;
+}) => {
+  const handlerMnemonic = env.EMS_KEY;
+  if (!handlerMnemonic) {
+    throw Error(`${usage}\nEMS_KEY not set for --submit-mode wallet`);
+  }
+  const agoricNet = env.AGORIC_NET ?? 'devnet';
+
+  // #region Copied from multichain-testing/scripts/ymax-tool.ts
+  // This smart-wallet setup is shared with ymax-tool and should be factored.
+  const networkConfig = await fetchEnvNetworkConfig({
+    env: { ...env, AGORIC_NET: agoricNet },
+    fetch,
+  });
+  const walletKit = await makeSmartWalletKit(
+    {
+      fetch,
+      delay: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
+    },
+    networkConfig,
+  );
+  const signer = await makeSigningSmartWalletKit(
+    {
+      connectWithSigner: SigningStargateClient.connectWithSigner,
+      walletUtils: walletKit,
+    },
+    handlerMnemonic,
+  );
+  // #endregion
+
+  // #region Copied from multichain-testing/scripts/ymax-tool.ts
+  // This invokeEntry payload shape is shared with ymax-tool and should be factored.
+  const tx = await signer.sendBridgeAction(
+    harden({
+      method: 'invokeEntry',
+      message: {
+        id: `set-target-allocation-${new Date(now()).toISOString()}`,
+        targetName: 'evmWalletHandler',
+        method: 'handleMessage',
+        args: [signedMessage] as Passable[],
+      },
+    }),
+  );
+  // #endregion
+
+  if (tx.code !== 0) {
+    throw Error(`wallet submit tx failed (${tx.code}): ${tx.rawLog}`);
+  }
+  return tx;
+};
+
+const runSubmit = async (
+  args: CliValues,
+  configFile: string,
+  {
+    env = process.env,
+    fetch = globalThis.fetch,
+    setTimeout = globalThis.setTimeout,
+    now = Date.now,
+  } = {},
+) => {
   const cfg = await loadSetupConfig(configFile);
+  const submitMode = parseSubmitMode(args['submit-mode']);
   const deadline = parseOptionalBigint(args, 'deadline');
 
   const allocations = await loadAllocations(args);
@@ -431,7 +526,30 @@ const runSubmit = async (args: CliValues, configFile: string) => {
   });
 
   const signature = await account.signTypedData(typedData);
-  const signedMessage = harden({ ...typedData, signature });
+  const signedMessage: SignedSetTargetAllocation = harden({
+    ...typedData,
+    signature,
+  });
+
+  if (submitMode === 'wallet') {
+    const tx = await submitViaWallet({
+      signedMessage,
+      env,
+      fetch,
+      setTimeout,
+      now,
+    });
+    console.error('submitted via wallet invokeEntry', { txHash: tx.transactionHash });
+    console.log(
+      JSON.stringify({
+        ok: true,
+        submitMode,
+        txHash: tx.transactionHash,
+        height: tx.height,
+      }),
+    );
+    return;
+  }
 
   const result = await postSignedOperation({
     ydsBaseUrl: cfg.yds,
@@ -446,6 +564,7 @@ const runSubmit = async (args: CliValues, configFile: string) => {
   console.log(
     JSON.stringify({
       ok: true,
+      submitMode,
       operationId: result.id,
       txHash: result.txHash,
       status: result.status,
