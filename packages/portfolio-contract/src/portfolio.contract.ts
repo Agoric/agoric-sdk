@@ -254,6 +254,7 @@ const publishStatus = <K extends keyof StatusFor>(
   node: ERemote<StorageNode>,
   status: StatusFor[K],
 ) => {
+  // @ts-expect-error Passable type regression
   const capData = marshalData.toCapData(harden(status));
   void E(node).setValue(JSON.stringify(capData));
 };
