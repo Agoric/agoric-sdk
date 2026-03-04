@@ -1,6 +1,6 @@
 ---
 name: ymax-allocation-delegate
-description: Optimize YMax portfolio yield as a delegated allocation agent. Use when the operator has delegate authority for an existing portfolio and needs to (1) inspect YDS/OpenAPI data, (2) choose allocation changes among existing instruments, (3) submit SetTargetAllocation, and (4) verify outcome and diagnose failures.
+description: Optimize YMax portfolio yield as a delegated allocation agent. Use when the operator has delegate authority for an existing portfolio and needs to inspect YDS/OpenAPI data, choose allocation changes among existing instruments, submit SetTargetAllocation, and verify outcome and diagnose failures.
 ---
 
 # YMax Allocation Delegate
@@ -14,35 +14,22 @@ Maximize expected yield for an already-open YMax portfolio by updating target al
 - Do not add instruments not already present in the portfolio target allocation.
 - Prefer small, explainable re-allocations over large jumps when data confidence is weak.
 
-## Workflow
-1. Identify environment and target portfolio.
-2. Query YDS state and API surface before deciding any change.
-3. Build a yield hypothesis from available data.
-4. Produce a candidate allocation using only existing instruments.
-5. Submit `SetTargetAllocation`.
-6. Verify acceptance and resulting portfolio state.
-7. If rejected, diagnose from error payload and retry with corrected input.
+## Run Order
+1. Complete onboarding and authorization handshake: [agent-onboarding.md](references/agent-onboarding.md).
+2. Gather data and constraints from YDS/OpenAPI: [yds-query-playbook.md](references/yds-query-playbook.md).
+3. Execute delegated allocation update and verification: [set-target-allocation.md](references/set-target-allocation.md).
+4. Follow the end-to-end scenario template: [worked-example.md](references/worked-example.md).
 
-## Query-First Loop
-Read [yds-query-playbook.md](references/yds-query-playbook.md) before making allocation changes.
-
-Use this loop each run:
-1. Fetch current portfolio status/allocation.
-2. Fetch any available performance/yield-related data from documented endpoints.
-3. Compare current allocation with hypothesis.
-4. Compute updated allocation over existing instruments only.
-5. Submit and verify.
-
-## Submission Path
-Use the existing CLI in repo for delegated allocation submission:
-- `packages/portfolio-contract/tools/submit-evm-allocation.ts`
-
-Expected operator inputs:
-- configured key and endpoint state (`--setup` mode)
-- allocation payload (`--allocations` or `--allocations-file`)
+## Decision Policy
+Use a conservative policy to avoid churn:
+- Do not submit unless expected annualized improvement is at least 50 bps.
+- Do not change more than 20 percentage points of total allocation in one update.
+- Do not submit more than once per portfolio per 30 minutes unless previous submission failed due to input error and the fix is deterministic.
+- If required yield inputs are missing or stale, do not submit; escalate.
 
 ## Failure Triage
-- If response says unknown operation type, treat as backend API/version mismatch.
-- If response says permit/domain validation failure, check chain ID and verifying-contract assumptions.
-- If response says authorization/delegation failure, confirm delegate address and portfolio pairing.
-- If response says no new positions/instruments, remove unexpected instruments and resubmit.
+- Unknown operation type: backend API/version mismatch; escalate.
+- Permit/domain validation failure: check chain ID/verifying-contract/key assumptions.
+- Authorization/delegation failure: confirm delegated address/portfolio pairing and owner delegation state.
+- No-new-positions failure: remove unexpected instruments and retry once.
+- If the same non-input error repeats twice, stop retries and escalate.

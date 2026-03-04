@@ -19,7 +19,8 @@ Use this to avoid assuming endpoint names.
 curl -sS "$YDS_BASE/portfolios/portfolio${PORTFOLIO_ID}" | jq .
 ```
 
-Extract currently allowed instruments from current target allocation and keep delegate updates within that set.
+Extract currently allowed instruments from current target allocation.
+If no instruments are present, do not submit allocation changes; escalate to owner/operator.
 
 ## Optional: Inspect Endpoint Schemas
 ```sh
@@ -29,31 +30,12 @@ curl -sS "$YDS_BASE/openapi.json" \
 
 If path differs, query the exact discovered path from the OpenAPI listing.
 
-## Build Allocation Candidate
+## Build Yield Hypothesis Inputs
+- Current target allocation.
+- Any available performance/yield-related endpoint data from discovered API surface.
+- Data freshness checks for each input source.
+
+## Build Candidate Constraints
 - Keep instrument set unchanged from current allocation.
-- Reweight portions according to current yield hypothesis.
-- Keep a record of rationale and data sources used.
-
-## Submit Allocation
-Use the repo tool:
-
-```sh
-./packages/portfolio-contract/tools/submit-evm-allocation.ts \
-  --allocations '[{"instrument":"Aave_Arbitrum","portion":"70"},{"instrument":"Compound_Arbitrum","portion":"30"}]'
-```
-
-## Verify Result
-1. Check CLI response for accepted operation id / status.
-2. Re-query portfolio endpoint.
-3. Confirm target allocation matches submission.
-4. If not, inspect error payload and retry.
-
-## Common Errors
-- Unknown Ymax operation type:
-  - backend not upgraded for new operation set.
-- Permit validation failed:
-  - domain/signature mismatch (chain id, contract, key usage).
-- Authorization failure:
-  - delegate not bound to that portfolio or wrong signer.
-- Cannot add instruments:
-  - candidate allocation included destination not in allowed set.
+- If any candidate instrument is not in the allowed set, fail before submit.
+- Record rationale and source timestamps used in decision.
