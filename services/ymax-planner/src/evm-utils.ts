@@ -88,7 +88,7 @@ export const getPoolTokenAddresses = (
  *
  * @see {@link https://eips.ethereum.org/EIPS/eip-20#balanceof}
  */
-const ERC20_BALANCE_ABI = [
+export const ERC20_BALANCE_ABI = [
   {
     name: 'balanceOf',
     type: 'function',

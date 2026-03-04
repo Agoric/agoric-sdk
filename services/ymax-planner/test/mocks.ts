@@ -27,7 +27,7 @@ import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
 import type { YdsNotifier } from '../src/yds-notifier.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type { Sdk as SpectrumPoolsSdk } from '../src/graphql/api-spectrum-pools/__generated/sdk.ts';
+import { ERC20_BALANCE_ABI } from '../src/evm-utils.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -317,15 +317,7 @@ export const createMockProvider = (
 
       if (selector === toFunctionSelector('balanceOf(address)')) {
         const { args } = decodeFunctionData({
-          abi: [
-            {
-              name: 'balanceOf',
-              type: 'function',
-              inputs: [{ name: 'account', type: 'address' }],
-              outputs: [{ name: '', type: 'uint256' }],
-              stateMutability: 'view',
-            },
-          ],
+          abi: ERC20_BALANCE_ABI,
           data,
         });
         const [account] = args;
