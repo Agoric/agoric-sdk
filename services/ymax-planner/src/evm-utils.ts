@@ -17,7 +17,21 @@ import { fromUniqueEntries, typedEntries } from '@agoric/internal';
 import type { EvmChain } from './pending-tx-manager.ts';
 import type { EvmProviders } from './support.ts';
 
-export const getPoolTokenAddresses = axelarCfg => {
+/**
+ * Build a unified map of pool/instrument IDs to their on-chain token contract
+ * addresses from the axelar chain config. Extracts addresses for:
+ * - ERC-4626 vaults
+ * - Beefy vaults
+ * - Aave pools
+ * - Compound pools
+ * - USDC tokens (for USDC-based positions without a receipt token)
+ *
+ * These addresses are used by {@link getEVMPositionBalances} to query on-chain
+ * balances via Alchemy
+ */
+export const getPoolTokenAddresses = (
+  axelarCfg,
+): Partial<Record<PoolKey | `@${EvmChain}`, EvmAddress>> => {
   const isERC4626Entry = ([name, _addr]) => isERC4626InstrumentId(name);
   const erc4626VaultEntries = typedEntries(axelarCfg).flatMap(
     ([_chainName, { contracts }]) =>
