@@ -1,0 +1,42 @@
+go 1.24.0
+
+use .
+
+// Agoric-specific replacements:
+replace (
+	cosmossdk.io/api => github.com/agoric-labs/cosmos-sdk/api v0.53.6-alpha.agoric.0
+	cosmossdk.io/client/v2 => github.com/agoric-labs/cosmos-sdk/client/v2 v2.0.0-beta.11-v0.53.6-alpha.agoric.0
+	cosmossdk.io/collections => github.com/agoric-labs/cosmos-sdk/collections v0.53.6-alpha.agoric.0
+	cosmossdk.io/core => github.com/agoric-labs/cosmos-sdk/core v0.53.6-alpha.agoric.0
+	cosmossdk.io/depinject => github.com/agoric-labs/cosmos-sdk/depinject v0.53.6-alpha.agoric.0
+	cosmossdk.io/errors => github.com/agoric-labs/cosmos-sdk/errors v0.53.6-alpha.agoric.0
+	cosmossdk.io/log => github.com/agoric-labs/cosmos-sdk/log v0.53.6-alpha.agoric.0
+	cosmossdk.io/math => github.com/agoric-labs/cosmos-sdk/math v0.53.6-alpha.agoric.0
+	cosmossdk.io/simapp => github.com/agoric-labs/cosmos-sdk/simapp v0.53.6-alpha.agoric.0
+	cosmossdk.io/store => github.com/agoric-labs/cosmos-sdk/store v0.53.6-alpha.agoric.0
+	cosmossdk.io/systemtests => github.com/agoric-labs/cosmos-sdk/systemtests v0.53.6-alpha.agoric.0
+	cosmossdk.io/tests => github.com/agoric-labs/cosmos-sdk/tests v0.53.6-alpha.agoric.0
+	cosmossdk.io/tests/systemtests => github.com/agoric-labs/cosmos-sdk/tests/systemtests v0.53.6-alpha.agoric.0
+	cosmossdk.io/tools/benchmark => github.com/agoric-labs/cosmos-sdk/tools/benchmark v0.53.6-alpha.agoric.0
+	cosmossdk.io/tools/confix => github.com/agoric-labs/cosmos-sdk/tools/confix v0.53.6-alpha.agoric.0
+	cosmossdk.io/tools/cosmovisor => github.com/agoric-labs/cosmos-sdk/tools/cosmovisor v0.53.6-alpha.agoric.0
+	cosmossdk.io/x/circuit => github.com/agoric-labs/cosmos-sdk/x/circuit v0.53.6-alpha.agoric.0
+	cosmossdk.io/x/evidence => github.com/agoric-labs/cosmos-sdk/x/evidence v0.53.6-alpha.agoric.0
+	cosmossdk.io/x/feegrant => github.com/agoric-labs/cosmos-sdk/x/feegrant v0.53.6-alpha.agoric.0
+	cosmossdk.io/x/nft => github.com/agoric-labs/cosmos-sdk/x/nft v0.53.6-alpha.agoric.0
+	cosmossdk.io/x/tx => github.com/agoric-labs/cosmos-sdk/x/tx v0.53.6-alpha.agoric.0
+	cosmossdk.io/x/upgrade => github.com/agoric-labs/cosmos-sdk/x/upgrade v0.53.6-alpha.agoric.0
+
+	// use cometbft
+	// Use our fork at least until post-v0.34.14 is released with
+	// https://github.com/cometbft/cometbft/issue/6899 resolved.
+	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.38.21-alpha.agoric.0
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.53.6-alpha.agoric.0
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 => github.com/agoric-labs/ibc-apps/middleware/packet-forward-middleware/v10 v10.0.0-alpha.agoric.0
+	github.com/cosmos/ibc-go/e2e => github.com/agoric-labs/ibc-go/e2e v10.5.0-alpha.agoric.0
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10 => github.com/agoric-labs/ibc-go/modules/light-clients/08-wasm/v10 v10.5.0-alpha.agoric.0
+	github.com/cosmos/ibc-go/simapp => github.com/agoric-labs/ibc-go/simapp v10.5.0-alpha.agoric.0
+	github.com/cosmos/ibc-go/v10 => github.com/agoric-labs/ibc-go/v10 v10.5.0-alpha.agoric.0
+)
+
+replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
