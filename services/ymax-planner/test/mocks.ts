@@ -19,6 +19,7 @@ import {
   toFunctionSelector,
 } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { EvmAddress } from '@agoric/fast-usdc/src/types.ts';
 import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
@@ -134,13 +135,12 @@ export const mockGasEstimator = makeGasEstimator({
   fetch: mockFetchForGasEstimate,
 });
 
-// This address will return < 1 USDC balance when .balanceOf is used on it
-// in the mockProvider
-export const LOW_BALANCE_ADDRESS = '0x89B0CC00b2bDd56234b5C6ccD7b6F48EA68a0150';
-
 export const createMockProvider = (
   latestBlock = 1000,
   events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
+  // maps address to an amount to retrun for it e.g '0x111...' => 100n
+  // Allows each test to specify custom balances for certain addresses
+  addressToBalanceMap = {},
 ): WebSocketProvider => {
   const eventListeners = new Map<string, Function[]>();
   let currentBlock = latestBlock;
@@ -303,7 +303,7 @@ export const createMockProvider = (
     call: async (transaction: any) => {
       // Mock implementation for contract calls like balanceOf and convertToAssets
       // For testing purposes, we return mock data
-      const { data } = transaction;
+      const { to, data } = transaction;
 
       const encodeAmount = (amount: bigint) =>
         encodeAbiParameters([{ type: 'uint256' }], [amount]);
@@ -321,9 +321,20 @@ export const createMockProvider = (
           data,
         });
         const [account] = args;
+        // Firstly check if theres a mapping for the pool,
+        // then check if theres a mapping for the account
+        // If theres a mapping for both, accountBalance takes precedence
+        const poolBalance = addressToBalanceMap[to];
+        const accountBalance = addressToBalanceMap[account];
 
-        if (account === LOW_BALANCE_ADDRESS) return encodeAmount(100n);
-        return encodeAmount(1000n);
+        const balance =
+          accountBalance !== undefined
+            ? accountBalance
+            : poolBalance !== undefined
+              ? poolBalance
+              : 0n;
+
+        return encodeAmount(balance);
       }
 
       if (selector === toFunctionSelector('convertToAssets(uint256)')) {
@@ -358,21 +369,30 @@ export const createMockProvider = (
   return mockProvider as unknown as WebSocketProvider;
 };
 
-const createMockEvmProviders = (
+export const createMockEvmProviders = ({
   latestBlock = 1000,
-  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
-): Record<CaipChainId, WebSocketProvider> => ({
-  'eip155:1': createMockProvider(latestBlock, events),
-  'eip155:42161': createMockProvider(latestBlock, events),
-  'eip155:421614': createMockProvider(latestBlock, events),
-  'eip155:8453': createMockProvider(latestBlock, events),
-  'eip155:11155111': createMockProvider(latestBlock, events),
-  'eip155:43113': createMockProvider(latestBlock, events),
+  events,
+  addressToBalanceMap = {},
+}: {
+  latestBlock?: number;
+  events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[];
+  addressToBalanceMap?: Partial<Record<EvmAddress, bigint>>;
+}): Record<CaipChainId, WebSocketProvider> => ({
+  'eip155:1': createMockProvider(latestBlock, events, addressToBalanceMap),
+  'eip155:42161': createMockProvider(latestBlock, events, addressToBalanceMap),
+  'eip155:421614': createMockProvider(latestBlock, events, addressToBalanceMap),
+  'eip155:8453': createMockProvider(latestBlock, events, addressToBalanceMap),
+  'eip155:11155111': createMockProvider(
+    latestBlock,
+    events,
+    addressToBalanceMap,
+  ),
+  'eip155:43113': createMockProvider(latestBlock, events, addressToBalanceMap),
 });
 
 export const mockEvmCtx = {
   usdcAddresses: {},
-  evmProviders: createMockEvmProviders(),
+  evmProviders: createMockEvmProviders({}),
   kvStore: makeKVStoreFromMap(new Map()),
   setTimeout: globalThis.setTimeout,
   makeAbortController,
@@ -486,7 +506,7 @@ export const createMockPendingTxOpts = (
 ): HandlePendingTxOpts => ({
   cosmosRest: {} as unknown as CosmosRestClient,
   cosmosRpc: {} as unknown as CosmosRPCClient,
-  evmProviders: createMockEvmProviders(latestBlock, events),
+  evmProviders: createMockEvmProviders({ latestBlock, events }),
   fetch: async () => ({ ok: true, json: async () => ({}) }) as Response,
   setTimeout: globalThis.setTimeout,
   marshaller: boardSlottingMarshaller(),
