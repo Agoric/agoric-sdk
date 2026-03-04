@@ -1,0 +1,98 @@
+# Coverage Steps Action for Daily Test Coverage Improver
+#
+# This composite action builds the Agoric SDK monorepo, runs all package tests
+# with V8 coverage collection via `c8`, generates a combined HTML coverage
+# report, and uploads it as a GitHub Actions artifact called "coverage".
+#
+# Coverage reports will be generated under:
+#   ./coverage/html/   - HTML report (html-spa format)
+#   ./coverage/tmp/    - Raw V8 JSON coverage files
+#
+# Log output from each step is appended to coverage-steps.log at the repo root.
+
+name: 'Daily Test Coverage Improver - Coverage Steps'
+description: 'Build, test, and generate a combined coverage report for agoric-sdk'
+
+runs:
+  using: composite
+  steps:
+    # Step 1: Set up Node.js
+    # Uses Node 20 (node-old) for broad compatibility with the monorepo.
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'yarn'
+
+    # Step 2: Install dependencies using Yarn with frozen lockfile
+    # Appends progress to coverage-steps.log
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "=== Step: Install dependencies ===" | tee -a coverage-steps.log
+        corepack enable 2>&1 | tee -a coverage-steps.log
+        yarn install --immutable 2>&1 | tee -a coverage-steps.log
+        echo "--- dependencies installed ---" >> coverage-steps.log
+
+    # Step 3: Build all packages
+    # The build step compiles TypeScript, generates kernel bundles, etc.
+    # This is required before running tests to ensure all artifacts exist.
+    - name: Build packages
+      shell: bash
+      run: |
+        echo "=== Step: Build packages ===" | tee -a coverage-steps.log
+        yarn build 2>&1 | tee -a coverage-steps.log
+        echo "--- build complete ---" >> coverage-steps.log
+
+    # Step 4: Run all package tests with c8 coverage collection
+    # Uses NODE_V8_COVERAGE to direct V8 coverage output to coverage/tmp.
+    # C8_OPTIONS=--clean=false allows accumulating coverage across all packages
+    # without each package wiping the previous data.
+    # Uses --no-bail so that failing tests in one package don't stop others.
+    - name: Run tests with coverage
+      shell: bash
+      run: |
+        echo "=== Step: Run tests with coverage ===" | tee -a coverage-steps.log
+        export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+        export C8_OPTIONS="--clean=false"
+        export NODE_OPTIONS="--max-old-space-size=8192"
+        rm -rf "$NODE_V8_COVERAGE"
+        mkdir -p "$NODE_V8_COVERAGE"
+        yarn lerna run test:c8 --no-bail 2>&1 | tee -a coverage-steps.log
+        echo "--- tests complete ---" >> coverage-steps.log
+
+    # Step 5: Generate combined HTML coverage report
+    # Reports over all src and tools files across packages, including those
+    # not loaded during tests (--all flag), to show complete coverage picture.
+    # Output goes to coverage/html/ in the html-spa format.
+    - name: Generate coverage report
+      shell: bash
+      run: |
+        echo "=== Step: Generate coverage report ===" | tee -a coverage-steps.log
+        export NODE_V8_COVERAGE="$PWD/coverage/tmp"
+        export C8_OPTIONS="--clean=false"
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}/**' \
+          --reporter=html-spa \
+          --reports-dir=coverage/html \
+          2>&1 | tee -a coverage-steps.log
+        echo "--- report generated at coverage/html/ ---" >> coverage-steps.log
+        # Also generate a simple text summary for quick review
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}/**' \
+          --reporter=text-summary \
+          2>&1 | tee -a coverage-steps.log
+
+    # Step 6: Upload the coverage report as an artifact named "coverage"
+    # This makes the report available for download from the GitHub Actions run.
+    # Includes both the HTML report and the log file for inspection.
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: |
+          coverage/html/
+          coverage-steps.log
+        retention-days: 30
