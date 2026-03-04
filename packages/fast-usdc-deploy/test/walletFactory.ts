@@ -6,18 +6,47 @@ import {
 import {
   fetchCoreEvalRelease,
   makeSwingsetTestKit,
+  type BootstrapEV,
 } from '@aglocal/boot/tools/supports.js';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
+import type { FastUsdcPublishedPathTypes } from '@agoric/fast-usdc';
+import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import type { FastUSDCCorePowers } from '../src/start-fast-usdc.core.js';
+import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
+import type { Remote } from '@agoric/internal';
+
+type ConsumeBootstrapItem = <N extends string>(
+  name: N,
+) => N extends keyof FastUSDCCorePowers['consume']
+  ? FastUSDCCorePowers['consume'][N]
+  : N extends keyof EconomyBootstrapPowers['consume']
+    ? EconomyBootstrapPowers['consume'][N]
+    : unknown;
+
+export type FastUsdcEV = BootstrapEV & {
+  vat: <N extends string>(
+    name: N,
+  ) => N extends 'bootstrap'
+    ? Omit<BootstrapRootObject, 'consumeItem'> & {
+        // XXX not really local
+        consumeItem: ConsumeBootstrapItem;
+      } & Remote<{ consumeItem: ConsumeBootstrapItem }>
+    : Record<string, (...args: any) => Promise<any>>;
+};
 
 export const makeWalletFactoryContext = async (
   t,
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
   opts = {},
 ) => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    configSpecifier,
-    ...opts,
-  });
+  const swingsetTestKit = await makeSwingsetTestKit<FastUsdcPublishedPathTypes>(
+    t.log,
+    undefined,
+    {
+      configSpecifier,
+      ...opts,
+    },
+  );
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -59,6 +88,9 @@ export const makeWalletFactoryContext = async (
   );
   return {
     ...swingsetTestKit,
+    runUtils: swingsetTestKit.runUtils as typeof swingsetTestKit.runUtils & {
+      EV: FastUsdcEV;
+    },
     swingsetTestKit,
     agoricNamesRemotes,
     evalReleasedProposal,

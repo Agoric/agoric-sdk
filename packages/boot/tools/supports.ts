@@ -98,7 +98,7 @@ type BootstrapPublishedPathTypes = FastUsdcPublishedPathTypes &
 /**
  * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
  */
-type BootstrapEV = EProxy & {
+export type BootstrapEV = EProxy & {
   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
   vat: <N extends string>(
     name: N,
@@ -434,7 +434,8 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
 export const makeSwingsetTestKit = async <
-  PublishedPathTypes extends ClientPublishedPathTypes = BootstrapPublishedPathTypes,
+  PublishedPathTypes extends ClientPublishedPathTypes =
+    BootstrapPublishedPathTypes,
 >(
   log: (..._: any[]) => void,
   bundleDir = 'bundles',
@@ -920,7 +921,8 @@ export const makeSwingsetTestKit = async <
   };
 };
 export type SwingsetTestKit<
-  PublishedPathTypes extends ClientPublishedPathTypes = BootstrapPublishedPathTypes,
+  PublishedPathTypes extends ClientPublishedPathTypes =
+    BootstrapPublishedPathTypes,
 > = Awaited<ReturnType<typeof makeSwingsetTestKit<PublishedPathTypes>>>;
 
 /**
