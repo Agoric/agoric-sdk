@@ -26,7 +26,7 @@ import type { EvmProviders } from './support.ts';
  * - Compound pools
  * - USDC tokens (for USDC-based positions without a receipt token)
  *
- * These addresses are used by {@link getEVMPositionBalances} to query on-chain
+ * These addresses are used by {@link getErc20PositionBalances} to query on-chain
  * balances via Alchemy
  */
 export const getPoolTokenAddresses = (
@@ -127,7 +127,7 @@ const BEEFY_VAULT_DECIMALS = 10n ** 18n;
 /**
  * Fetch the ERC-20 token balance for an address using an ethers WebSocketProvider.
  */
-export const getEVMPositionBalance = async (
+export const getErc20PositionBalance = async (
   tokenAddress: string,
   userAddress: string,
   provider: WebSocketProvider,
@@ -217,7 +217,7 @@ export type EVMPositionBalancePowers = {
  * - ERC4626 (Morpho, etc.): `balanceOf` + `convertToAssets()`
  * - Default (Aave, Compound): simple `balanceOf` (already underlying)
  */
-export const getEVMPositionBalances = async (
+export const getErc20PositionBalances = async (
   queries: EVMPositionQuery[],
   powers: EVMPositionBalancePowers,
 ): Promise<{ balances: PositionBalanceResult[] }> => {
@@ -248,7 +248,7 @@ export const getEVMPositionBalances = async (
             provider,
           );
         } else {
-          balance = await getEVMPositionBalance(
+          balance = await getErc20PositionBalance(
             tokenAddress,
             address,
             provider,

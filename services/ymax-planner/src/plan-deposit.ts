@@ -20,7 +20,7 @@ import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
 import { ACCOUNT_DUST_EPSILON, isInstrumentId } from '@agoric/portfolio-api';
 
 import type { CosmosRestClient } from './cosmos-rest-client.js';
-import { getEVMPositionBalances } from './evm-utils.ts';
+import { getErc20PositionBalances } from './evm-utils.ts';
 import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { EvmChain } from './pending-tx-manager.ts';
@@ -153,7 +153,7 @@ export const getCurrentBalances = async (
       ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
       : { balances: [] },
     positionQueries.length
-      ? getEVMPositionBalances(positionQueries, powers)
+      ? getErc20PositionBalances(positionQueries, powers)
       : { balances: [] },
   ]);
 
