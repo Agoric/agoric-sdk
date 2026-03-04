@@ -78,6 +78,8 @@ const OperationTypes = {
     { name: 'allocations', type: 'Allocation[]' },
     PortfolioIdParam,
   ],
+  DelegateAllocation: [{ name: 'address', type: 'address' }, PortfolioIdParam],
+  RevokeAllocation: [{ name: 'address', type: 'address' }, PortfolioIdParam],
   Deposit: [PortfolioIdParam],
   /**
    * Withdraw funds from a portfolio to the source EVM account.
