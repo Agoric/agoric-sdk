@@ -159,12 +159,12 @@ const main = async (
   }
 
   const { portfolio, delegateAddress, contract } = parsed;
+  const nonce = bytesToBigint(randomBytes(8));
+  const { deadline = addMinutes(now(), 60) } = parsed;
   const agoricNet = env.AGORIC_NET ?? 'devnet';
   const { chainId = agoricNet === 'main' ? 1n : 421614n } = parsed;
-  const { deadline = addMinutes(now(), 60) } = parsed;
   const network = TESTNET_CHAIN_IDS.includes(chainId) ? 'testnet' : 'mainnet';
   const verifyingContract = factories[network][contract];
-  const nonce = bytesToBigint(randomBytes(8));
   const delegationIntent = getYmaxStandaloneOperationData(
     { portfolio, address: delegateAddress, nonce, deadline },
     'DelegateAllocation',
