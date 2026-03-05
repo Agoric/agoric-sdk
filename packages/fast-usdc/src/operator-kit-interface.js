@@ -18,6 +18,7 @@ export const OperatorKitI = {
     SubmitEvidence: M.call(CctpTxEvidenceShape)
       .optional(RiskAssessmentShape)
       .returns(M.promise()),
+    GetOperatorFacet: M.call().returns(M.promise()),
   }),
 
   operator: M.interface('Operator', {

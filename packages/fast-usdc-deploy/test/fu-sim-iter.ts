@@ -14,14 +14,19 @@ import type {
   PoolMetrics,
 } from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
-import { BridgeId } from '@agoric/internal';
+import type { OperatorKit } from '@aglocal/fast-usdc-contract/src/exos/operator-kit.js';
+import { BridgeId, type Remote } from '@agoric/internal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
+import type {
+  InvokeEntryMessage,
+  OfferSpec,
+} from '@agoric/smart-wallet/src/offers.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
+import type { CopyRecord } from '@endo/pass-style';
 import { configurations } from '../src/utils/deploy-config.js';
 import { type WalletFactoryTestContext } from './walletFactory.js';
 
@@ -37,7 +42,7 @@ const prefixedRange = (n: number, pfx: string) =>
 
 const nobleAgoricChannelId = 'channel-21';
 
-const makeTxOracle = (
+const makeOfferTxOracle = (
   ctx: WalletFactoryTestContext,
   _name: string,
   addr: string,
@@ -75,11 +80,79 @@ const makeTxOracle = (
         proposal: {},
       };
       await wallet.sendOffer(it);
-      return it;
     },
   });
 };
-type TxOracle = ReturnType<typeof makeTxOracle>;
+
+const makeDirectTxOracle = (ctx: WalletFactoryTestContext, name: string) => {
+  const {
+    runUtils: { EV },
+  } = ctx;
+  const operatorKit = makePromiseKit<Remote<OperatorKit['operator']>>();
+
+  return harden({
+    async provision() {
+      const { creatorFacet } =
+        await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+      operatorKit.resolve(EV(creatorFacet).initOperator(name));
+    },
+    async claim() {
+      await operatorKit.promise;
+    },
+    async submit(evidence: CctpTxEvidence) {
+      const operator = await operatorKit.promise;
+      await EV(operator).submitEvidence(evidence);
+    },
+  });
+};
+
+const makeInvokeTxOracle = (
+  ctx: WalletFactoryTestContext,
+  name: string,
+  addr: string,
+) => {
+  const oracle = makeOfferTxOracle(ctx, name, addr);
+  const walletPK = makePromiseKit<SmartWallet>();
+
+  return harden({
+    async provision() {
+      walletPK.resolve(oracle.provision());
+      return walletPK.promise;
+    },
+    async claim() {
+      const wallet = await walletPK.promise;
+      await oracle.claim();
+      await wallet.sendOffer({
+        id: 'get-operator-facet',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'GetOperatorFacet',
+          invitationArgs: [],
+        },
+        proposal: {},
+        saveResult: { name: 'fastUsdcOperator', overwrite: true },
+      });
+    },
+    async submit(evidence: CctpTxEvidence, nonce: number) {
+      const wallet = await walletPK.promise;
+      const it: InvokeEntryMessage = {
+        id: `submit-evidence-${nonce}`,
+        targetName: 'fastUsdcOperator',
+        method: 'submitEvidence',
+        args: [evidence as CopyRecord],
+      };
+      await wallet.invokeEntry(it);
+    },
+  });
+};
+
+type TxOracle = Pick<ReturnType<typeof makeOfferTxOracle>, 'submit'>;
+const oracleMakers = {
+  offer: makeOfferTxOracle,
+  direct: makeDirectTxOracle,
+  invoke: makeInvokeTxOracle,
+};
 
 const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
   const { storage } = ctx;
@@ -280,30 +353,42 @@ const makeIBCChannel = (
   });
 };
 
-export const makeSimulation = (ctx: WalletFactoryTestContext) => {
+export const makeSimulation = (
+  ctx: WalletFactoryTestContext,
+  {
+    oracleKind = 'offer',
+    lpInterval = 1,
+    lpCount = 3,
+    userCount = 5,
+  }: {
+    oracleKind?: keyof typeof oracleMakers;
+    lpInterval?: number;
+    lpCount?: number;
+    userCount?: number;
+  } = {},
+) => {
+  const makeOracle = oracleMakers[oracleKind];
+
   const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
   const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
-    ([name, addr]) => makeTxOracle(ctx, name, addr),
+    ([name, addr]) => makeOracle(ctx, name, addr),
   );
 
   const fastQ = makeFastUsdcQuery(ctx);
-  const lps = range(3).map(ix =>
+  const lpInit = makeLP(ctx, encodeBech32('agoric', [50, 0]));
+  const lps = range(lpCount).map(ix =>
     makeLP(ctx, encodeBech32('agoric', [100, ix])),
   );
-  const users = prefixedRange(5, `0xFEED`).map(addr =>
+  const users = prefixedRange(userCount, `0xFEED`).map(addr =>
     makeUA(addr as EvmAddress, fastQ, cctp, oracles),
   );
 
   return harden({
     oracles,
+    lpInit,
     lps,
     users,
-
-    async beforeDeploy(t: ExecutionContext) {
-      t.log('provision oracle smart wallets');
-      await Promise.all(oracles.map(o => o.provision()));
-    },
 
     async deployContract(context: WalletFactoryTestContext) {
       const {
@@ -325,22 +410,40 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
 
       const materials = buildProposal(
         '@aglocal/fast-usdc-deploy/src/start-fast-usdc.build.js',
-        ['--net', 'MAINNET'],
+        ['--net', 'MAINNET', '--noOracle'],
       );
       await evalProposal(materials);
       refreshAgoricNamesRemotes();
       return agoricNamesRemotes.instance.fastUsdc;
     },
 
-    async beforeIterations(t: ExecutionContext) {
-      t.log('oracles accept invitations');
-      await Promise.all(oracles.map(o => o.claim()));
+    async beforeIterations(t: ExecutionContext<WalletFactoryTestContext>) {
+      const { buildProposal, evalProposal } = t.context;
+
+      t.log('provision oracles');
+      await Promise.all(oracles.map(o => o.provision()));
+
+      if (oracleKind !== 'direct') {
+        const materials = buildProposal(
+          '@aglocal/fast-usdc-deploy/src/add-operators.build.js',
+          ['--net', 'MAINNET'],
+        );
+        await evalProposal(materials);
+
+        t.log('oracles accept invitations');
+        await Promise.all(oracles.map(o => o.claim()));
+      }
+
+      await lpInit.deposit(6_000_000_000n, 0);
     },
 
     async iteration(t: ExecutionContext, iter: number) {
-      const lpIx = iter % lps.length;
+      const lpRem = iter % lpInterval;
+      const lpIter = (iter - lpRem) / lpInterval;
+      const lpIx = lpIter % lps.length;
       const lp = lps[lpIx];
-      await lp.deposit(BigInt((lpIx + 1) * 2000) * 1_000_000n, iter);
+      await (lpRem === 0 &&
+        lp.deposit(BigInt((lpIx + 1) * 2000) * 1_000_000n, lpIter + 1));
 
       const { settlementAccount, poolAccount } = fastQ.contractRecord();
 
@@ -381,12 +484,14 @@ export const makeSimulation = (ctx: WalletFactoryTestContext) => {
       if (beforeWithdraw.encumberedBalance.value > 0n) {
         throw t.fail(`still encumbered: ${beforeWithdraw.encumberedBalance}`);
       }
-      const partWd =
-        Number(beforeWithdraw.shareWorth.numerator.value) / lps.length;
-      // 0.8 to avoid: Withdrawal of X failed because the purse only contained Y
-      const amountWd = BigInt(Math.round(partWd * (0.8 - lpIx * 0.1)));
-      // XXX simulate failed withrawals?
-      await lp.withdraw(amountWd, iter);
+      if (lpRem === 0) {
+        const partWd =
+          Number(beforeWithdraw.shareWorth.numerator.value) / lps.length;
+        // 0.8 to avoid: Withdrawal of X failed because the purse only contained Y
+        const amountWd = BigInt(Math.round(partWd * (0.8 - lpIx * 0.1)));
+        // XXX simulate failed withrawals?
+        await lp.withdraw(amountWd, iter);
+      }
     },
 
     async cleanup(doCoreEval: (specifier: string) => Promise<void>) {
