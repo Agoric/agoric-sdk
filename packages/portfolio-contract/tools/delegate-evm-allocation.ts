@@ -148,8 +148,6 @@ const main = async (
     setTimeout = globalThis.setTimeout,
     now = Date.now,
     connectWithSigner = SigningStargateClient.connectWithSigner,
-    delay = (ms: number): Promise<void> =>
-      new Promise(resolve => setTimeout(resolve, ms)),
     randomBytes = cryptoRandomBytes,
   } = {},
 ) => {
@@ -181,6 +179,8 @@ const main = async (
   const ems = await (async () => {
     const devenv = { ...env, AGORIC_NET: agoricNet };
     const networkConfig = await fetchEnvNetworkConfig({ env: devenv, fetch });
+    const delay = (ms: number): Promise<void> =>
+      new Promise(resolve => setTimeout(resolve, ms));
     const walletKit = await makeSmartWalletKit({ fetch, delay }, networkConfig);
     return makeSigningSmartWalletKit(
       { connectWithSigner, walletUtils: walletKit },
