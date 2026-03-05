@@ -23,6 +23,7 @@
     "eslint": "^9.0.0"
   },
   "devDependencies": {
+    "@endo/init": "^1.1.12",
     "eslint": "^9.0.0",
     "eslint-plugin-eslint-plugin": "^7.2.0"
   },

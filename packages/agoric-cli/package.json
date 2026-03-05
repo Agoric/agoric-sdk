@@ -93,7 +93,10 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "timeout": "2m"
+    "timeout": "2m",
+    "require": [
+      "@endo/init/debug.js"
+    ]
   },
   "typeCoverage": {
     "atLeast": 77.09

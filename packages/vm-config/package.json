@@ -4,7 +4,10 @@
   "description": "Config to start an Agoric VM",
   "type": "module",
   "main": "./index.js",
-  "repository": "https://github.com/Agoric/agoric-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
@@ -26,6 +29,7 @@
     "@agoric/zoe": "workspace:*"
   },
   "devDependencies": {
+    "@endo/init": "^1.1.12",
     "ava": "^6.4.1",
     "c8": "^10.1.3"
   },

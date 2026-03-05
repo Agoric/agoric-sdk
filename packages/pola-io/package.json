@@ -18,6 +18,7 @@
     "@agoric/internal": "workspace:*"
   },
   "devDependencies": {
+    "@endo/init": "^1.1.12",
     "ava": "^6.4.1"
   },
   "files": [
@@ -35,7 +36,10 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "timeout": "2m"
+    "timeout": "2m",
+    "require": [
+      "@endo/init/debug.js"
+    ]
   },
   "typeCoverage": {
     "atLeast": 92.3

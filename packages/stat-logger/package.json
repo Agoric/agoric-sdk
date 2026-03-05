@@ -4,7 +4,10 @@
   "description": "Simple library for logging and graphing performance statistics",
   "type": "module",
   "main": "src/index.js",
-  "repository": "https://github.com/Agoric/agoric-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "author": "Agoric",
   "license": "Apache-2.0",
   "scripts": {
@@ -42,5 +45,8 @@
   },
   "engines": {
     "node": "^20.9 || ^22.11"
+  },
+  "devDependencies": {
+    "@endo/init": "^1.1.12"
   }
 }
