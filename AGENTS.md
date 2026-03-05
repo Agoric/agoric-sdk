@@ -16,7 +16,10 @@ per https://agents.md/
 - `yarn run -T tsc --noEmit --incremental`: Fast typecheck within a package; do this after changes.
     - Watch mode for type errors in active workspaces: run `yarn run -T tsc --noEmit --incremental --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
 - `yarn typecheck-quick` to do a fast typecheck over the whole repo (4-7 seconds)
-- `yarn format`: Format code via Prettier; `yarn lint:format` to check only.
+- `yarn format`: Format code via dprint; `yarn lint:format` to check only.
+- Git hooks: installed by `scripts/install-git-hooks.sh`.
+  - Install or refresh hooks with `yarn hooks:install`.
+  - Pre-commit runs `scripts/git-hooks/pre-commit-dprint.sh`, which formats only staged JS/TS files with the pinned local binary `./node_modules/.bin/dprint` and re-stages them.
 - `./scripts/env-doctor.sh`: Verify toolchain (Node, Go, compiler) versions.
 - Example, single package: `cd packages/eventual-send && yarn test`.
 - Packing/debugging workflow:
@@ -27,7 +30,7 @@ per https://agents.md/
 
 ## Coding Style & Naming Conventions
 - ESM by default; JS and TypeScript both used. Target Node ^20.9 or ^22.11.
-- Prettier enforced with single quotes; 2-space indentation.
+- dprint enforced (Prettier-compatible options include single quotes and trailing commas).
 - ESLint configured via `eslint.config.mjs` (includes AVA, TypeScript, JSDoc, and repository-specific rules).
 - Package names: publishable packages use `@agoric/*`; private/local packages use `@aglocal/*` (verify with `yarn lint:package-names`).
 - `@aglocal` packages are private and never published; `@agoric` packages are published and may only depend on published packages, so `@agoric` packages must never import `@aglocal` packages.
