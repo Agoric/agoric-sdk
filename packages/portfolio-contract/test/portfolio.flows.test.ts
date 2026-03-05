@@ -2417,6 +2417,45 @@ test('withPermit: A finishes before attempt B starts', makeAccountEVMRace, {
   BHasDeposit: true,
 });
 
+const provideFailsOnIncompatibleAccount = test.macro({
+  title: (providedTitle = '') =>
+    `EVM makeAccount with existing router-based account: ${providedTitle}`,
+  async exec(t, provide: ProvideEVMAccountFn) {
+    const { orch, ctx, makeProgressTracker } = mocks({});
+
+    const pKit = await ctx.makePortfolioKit();
+    await provideCosmosAccount(orch, 'agoric', pKit, silent);
+    const lca = pKit.reader.getLocalAccount();
+
+    const chainName = 'Arbitrum';
+    const { [chainName]: chainInfo } = axelarCCTPConfig;
+    const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
+
+    pKit.manager.resolveAccount({
+      chainName,
+      namespace: 'eip155',
+      chainId: `eip155:${chainInfo.reference}`,
+      remoteAddress: '0xExistingIncompatibleAccount',
+      routerAddress: '0xRouterAddress',
+    });
+
+    const progressTracker = makeProgressTracker();
+
+    t.throws(() =>
+      provide(chainName, chainInfo, gmp, lca, ctx, pKit, {
+        orchOpts: { progressTracker },
+      }),
+    );
+  },
+});
+
+test('provide', provideFailsOnIncompatibleAccount, provideEVMAccount);
+test(
+  'provideWithPermit',
+  provideFailsOnIncompatibleAccount,
+  provideEVMAccountWithPermitStub,
+);
+
 test('planner rejects plan and flow fails gracefully', async t => {
   const { orch, ctx, offer, storage } = mocks({});
 
