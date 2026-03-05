@@ -344,7 +344,7 @@ export const diagnoseNearMisses = (graph: FlowGraph) => {
         if (!interHubEdges.includes(cand))
           hint = `consider adding inter-hub ${cand}`;
       }
-      // eslint-disable-next-line no-nested-ternary
+
       const category = !reachDir.has(t)
         ? 'no-directed-path'
         : !reachCap.has(t)

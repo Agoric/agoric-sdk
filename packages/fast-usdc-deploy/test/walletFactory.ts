@@ -8,13 +8,22 @@ import {
   makeSwingsetTestKit,
 } from '@aglocal/boot/tools/supports.js';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
+import type { FastUsdcPublishedPathTypes } from '@agoric/fast-usdc';
+import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import type { FastUSDCCorePowers } from '../src/start-fast-usdc.core.js';
+
+type FastUsdcBootstrapVatItems = FastUSDCCorePowers['consume'] &
+  EconomyBootstrapPowers['consume'];
 
 export const makeWalletFactoryContext = async (
   t,
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
   opts = {},
 ) => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+  const swingsetTestKit = await makeSwingsetTestKit<
+    FastUsdcPublishedPathTypes,
+    FastUsdcBootstrapVatItems
+  >(t.log, undefined, {
     configSpecifier,
     ...opts,
   });

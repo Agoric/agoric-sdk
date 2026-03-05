@@ -8,7 +8,10 @@ import { basename, join } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
 
-import type { TypedPublishedFor } from '@agoric/client-utils';
+import type {
+  PublishedPathTypes as ClientPublishedPathTypes,
+  TypedPublishedFor,
+} from '@agoric/client-utils';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import { makeHelpers } from '@agoric/cosmic-swingset/tools/inquisitor.mjs';
 import {
@@ -52,16 +55,14 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
-import type { FastUSDCCorePowers } from '@aglocal/fast-usdc-deploy/src/start-fast-usdc.core.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
-import type { FastUsdcPublishedPathTypes } from '@agoric/fast-usdc';
 import type { GovernancePublishedPathTypes } from '@agoric/governance/src/types.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
+import type { IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
@@ -80,37 +81,45 @@ export const fetchCached = NodeFetchCache.create({
   cache: new FileSystemCache(),
 }) as unknown as typeof globalThis.fetch;
 
-type ConsumeBootrapItem = <N extends string>(
-  name: N,
-) => N extends keyof FastUSDCCorePowers['consume']
-  ? FastUSDCCorePowers['consume'][N]
-  : N extends keyof EconomyBootstrapPowers['consume']
-    ? EconomyBootstrapPowers['consume'][N]
-    : unknown;
+type BootstrapVatItemMap = EconomyBootstrapPowers['consume'] &
+  Record<string, unknown>;
 
-type BootstrapPublishedPathTypes = FastUsdcPublishedPathTypes &
-  GovernancePublishedPathTypes;
+type ConsumeBootstrapItem<BootstrapVatItems extends BootstrapVatItemMap> = {
+  <N extends keyof BootstrapVatItems>(name: N): BootstrapVatItems[N];
+  <N extends string>(name: N): unknown;
+};
+
+type BootstrapPublishedPathTypes = GovernancePublishedPathTypes;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**
  * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
  */
-type BootstrapEV = EProxy & {
+export type BootstrapEV<
+  BootstrapVatItems extends BootstrapVatItemMap =
+    EconomyBootstrapPowers['consume'],
+> = EProxy & {
   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
   vat: <N extends string>(
     name: N,
   ) => N extends 'bootstrap'
     ? Omit<BootstrapRootObject, 'consumeItem'> & {
         // XXX not really local
-        consumeItem: ConsumeBootrapItem;
-      } & Remote<{ consumeItem: ConsumeBootrapItem }>
+        consumeItem: ConsumeBootstrapItem<BootstrapVatItems>;
+      } & Remote<{ consumeItem: ConsumeBootstrapItem<BootstrapVatItems> }>
     : Record<string, (...args: any) => Promise<any>>;
 };
 
-const makeBootstrapRunUtils = makeRunUtils as (
+const makeBootstrapRunUtils = <
+  BootstrapVatItems extends BootstrapVatItemMap =
+    EconomyBootstrapPowers['consume'],
+>(
   controller: SwingsetController,
   harness?: RunHarness,
-) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
+) =>
+  makeRunUtils(controller, harness) as Omit<RunUtils, 'EV'> & {
+    EV: BootstrapEV<BootstrapVatItems>;
+  };
 
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
@@ -430,7 +439,12 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
    `defaultManagerType`)
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
-export const makeSwingsetTestKit = async (
+export const makeSwingsetTestKit = async <
+  PublishedPathTypes extends ClientPublishedPathTypes =
+    BootstrapPublishedPathTypes,
+  BootstrapVatItems extends BootstrapVatItemMap =
+    EconomyBootstrapPowers['consume'],
+>(
   log: (..._: any[]) => void,
   bundleDir = 'bundles',
   {
@@ -477,7 +491,7 @@ export const makeSwingsetTestKit = async (
   const readPublished = <T extends string>(subpath: T) =>
     readLatest(`published.${subpath}`) as TypedPublishedFor<
       T,
-      BootstrapPublishedPathTypes
+      PublishedPathTypes
     >;
 
   let lastBankNonce = 0n;
@@ -745,7 +759,10 @@ export const makeSwingsetTestKit = async (
   // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
   // exercised in the right way.
   await controller.run();
-  const runUtils = makeBootstrapRunUtils(controller, harness);
+  const runUtils = makeBootstrapRunUtils<BootstrapVatItems>(
+    controller,
+    harness,
+  );
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
@@ -775,9 +792,9 @@ export const makeSwingsetTestKit = async (
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
-      'bootstrap',
-    ).consumeItem('coreEvalBridgeHandler');
+    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
+      'coreEvalBridgeHandler',
+    );
     await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
     log(`proposal executed`);
   };
@@ -914,7 +931,14 @@ export const makeSwingsetTestKit = async (
     slogSender,
   };
 };
-export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
+export type SwingsetTestKit<
+  PublishedPathTypes extends ClientPublishedPathTypes =
+    BootstrapPublishedPathTypes,
+  BootstrapVatItems extends BootstrapVatItemMap =
+    EconomyBootstrapPowers['consume'],
+> = Awaited<
+  ReturnType<typeof makeSwingsetTestKit<PublishedPathTypes, BootstrapVatItems>>
+>;
 
 /**
  * Creates a harness for measuring computron usage in SwingSet tests.

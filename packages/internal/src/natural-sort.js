@@ -21,7 +21,7 @@ const compareNats = (a, b) => {
 
 // TODO: compareByCodePoints
 // https://github.com/endojs/endo/pull/2008
-// eslint-disable-next-line no-nested-ternary
+
 const compareStrings = (a, b) => (a > b ? 1 : a < b ? -1 : 0);
 
 const rCaptureDigits = /([0-9]+)/;

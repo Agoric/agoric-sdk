@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { assert, b, Fail } from '@endo/errors';
+import { assert, bare, Fail } from '@endo/errors';
 import { deepCopyJsonable, makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
@@ -135,7 +135,6 @@ export function loadBasedir(basedir, options = {}) {
     const m = rVatName.exec(file);
     return m && dirent.isFile() ? [{ file, label: m[1] }] : [];
   });
-  // eslint-disable-next-line no-shadow,no-nested-ternary
   vatFiles.sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
   for (const { file, label } of vatFiles) {
     const vatSourcePath = path.resolve(basedir, file);
@@ -209,7 +208,7 @@ async function normalizeConfigDescriptor(
   const normalizeSpec = async (entry, specKey, name) => {
     const sourcePath = await resolveSpecFromConfig(referrer, entry[specKey]);
     fs.existsSync(sourcePath) ||
-      Fail`${sourcePath} for ${b(groupName)}[${name}].${b(specKey)} in ${configPath} config file does not exist`;
+      Fail`${sourcePath} for ${bare(groupName)}[${name}].${bare(specKey)} in ${configPath} config file does not exist`;
     entry[specKey] = sourcePath;
   };
 

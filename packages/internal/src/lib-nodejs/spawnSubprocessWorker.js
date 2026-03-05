@@ -18,7 +18,6 @@ import {
 // toChild, fromChild } pair of Streams which accept/emit hardened Arrays of
 // JSON-serializable data.
 
-// eslint-disable-next-line no-unused-vars
 function parentLog(_first, ..._args) {
   // console.error(`--parent: ${_first}`, ..._args);
 }
