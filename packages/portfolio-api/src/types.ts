@@ -3,6 +3,7 @@ import type { NatAmount } from '@agoric/ertp';
 import {
   type AccountId,
   type Bech32Address,
+  type CaipChainId,
   type CosmosChainAddress,
   type TrafficEntry,
 } from '@agoric/orchestration';
@@ -10,6 +11,7 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
+import type { Address as EVMAddress } from 'abitype';
 import type {
   AxelarChain,
   SupportedChain,
@@ -190,6 +192,38 @@ export type TrafficReport = {
 export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
 
+export type PortfolioRemoteAccountCommonStates =
+  | 'provisioning'
+  | 'active'
+  | 'failed';
+
+export type PortfolioGenericRemoteAccountState =
+  | {
+      chainId: CaipChainId;
+      address: string;
+      state: PortfolioRemoteAccountCommonStates;
+    }
+  | {
+      state: 'provisioning' | 'unknown';
+    };
+
+export type PortfolioEVMRemoteAccountState = {
+  chainId: `eip155:${number | bigint | string}`;
+  address: EVMAddress;
+  state: PortfolioRemoteAccountCommonStates;
+};
+
+export type PortfolioCosmosRemoteAccountState = {
+  chainId: `cosmos:${string}`;
+  address: Bech32Address;
+  state: PortfolioRemoteAccountCommonStates;
+};
+
+export type PortfolioRemoteAccountState =
+  | PortfolioEVMRemoteAccountState
+  | PortfolioCosmosRemoteAccountState
+  | PortfolioGenericRemoteAccountState;
+
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
@@ -203,8 +237,20 @@ export type StatusFor = {
   };
   portfolio: {
     positionKeys: InstrumentId[];
+    // accountIdByChain and accountsPending deprecated
+    // in favor of accountStateByChain
     accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
     accountsPending?: SupportedChain[];
+    accountStateByChain?: {
+      [evmChain in AxelarChain]?: PortfolioEVMRemoteAccountState;
+    } & {
+      [cosmosChain in 'agoric' | 'noble']?: PortfolioCosmosRemoteAccountState;
+    } & {
+      [genericChain in Exclude<
+        SupportedChain,
+        AxelarChain | 'agoric' | 'noble'
+      >]?: PortfolioGenericRemoteAccountState;
+    };
     depositAddress?: Bech32Address;
     /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;

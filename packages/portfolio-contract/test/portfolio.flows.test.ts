@@ -82,7 +82,7 @@ import {
   sendGMPContractCall,
   sendPermit2GMP,
   type EVMContext,
-} from '../src/pos-gmp.flows.ts';
+} from '../src/pos-evm.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
@@ -2058,7 +2058,7 @@ const makeAccountEVMRace = test.macro({
 
     const { log, kinks } = offer;
     type Kink = typeof kinks extends Set<infer U> ? U : never;
-    const { info: A, progressTracker: AProgressTracker } = attempt();
+    const { info: Ap, progressTracker: AProgressTracker } = attempt();
 
     const resolveAfterBStarts: ((r: unknown) => void)[] = [];
     const removeKink = (kink: Kink) => {
@@ -2187,6 +2187,7 @@ const makeAccountEVMRace = test.macro({
         throw Error(`unexpected errAt value: ${errAt}`);
     }
 
+    const A = await Ap;
     const { remoteAddress } = A;
     t.log('promptly available address', remoteAddress);
 
@@ -2195,12 +2196,13 @@ const makeAccountEVMRace = test.macro({
     const methodsBeforeB = getMethods();
     t.log('calls before B:', methodsBeforeB.join(', '));
 
-    const { info: B, progressTracker: BProgressTracker } = attempt(provideB);
+    const { info: Bp, progressTracker: BProgressTracker } = attempt(provideB);
 
     for (const resolve of resolveAfterBStarts) {
       resolve(null);
     }
 
+    const B = await Bp;
     t.is(B.remoteAddress, remoteAddress, 'same address for both racers');
 
     const AErr = await (errAt
@@ -3349,7 +3351,7 @@ test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t 
   await provideCosmosAccount(orch, 'agoric', kit, silent);
 
   t.throws(() => kit.evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match expected account/,
+    message: /permit spender .* does not match/,
   });
 });
 
@@ -3674,7 +3676,7 @@ test(
   'sendGMPContractCall unsubscribes resolver on send failure',
   expectUnhandled(1),
   async t => {
-    const { resolverClient, storage } = mocks({});
+    const { resolverClient, storage, makeProgressTracker } = mocks({});
     const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
     const ctx = {
       feeAccount: {
@@ -3715,9 +3717,13 @@ test(
       },
     ];
 
-    await t.throwsAsync(() => sendGMPContractCall(ctx, gmpAcct, calls), {
-      message: 'fee send failed',
-    });
+    await t.throwsAsync(
+      () =>
+        sendGMPContractCall(ctx, gmpAcct, calls, {
+          progressTracker: makeProgressTracker(),
+        }),
+      { message: 'fee send failed' },
+    );
 
     await eventLoopIteration();
     const values = storage.getDeserialized('published.ymax0.pendingTxs.tx0');
@@ -3731,7 +3737,7 @@ test(
   'sendPermit2GMP unsubscribes resolver on send failure',
   expectUnhandled(1),
   async t => {
-    const { resolverClient, storage } = mocks({});
+    const { resolverClient, storage, makeProgressTracker } = mocks({});
     const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
     const ctx = {
       feeAccount: {
@@ -3776,7 +3782,10 @@ test(
     };
 
     await t.throwsAsync(
-      () => sendPermit2GMP(ctx, gmpAcct, permit2Payload, 1_000_000n),
+      () =>
+        sendPermit2GMP(ctx, gmpAcct, permit2Payload, 1_000_000n, {
+          progressTracker: makeProgressTracker(),
+        }),
       { message: 'fee send failed' },
     );
 

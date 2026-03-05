@@ -2230,7 +2230,7 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
         permit2Payload: newPermit2Payload,
       }),
     {
-      message: /permit spender .* does not match expected account/,
+      message: /permit spender .* does not match/,
     },
     'deposit rejects bad spender for new chain',
   );

@@ -8,18 +8,21 @@ import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.j
 import { hexToBytes } from '@noble/hashes/utils';
 import {
   type AccountId,
+  type Caip10Record,
   type CaipChainId,
   type IBCConnectionInfo,
 } from '@agoric/orchestration';
 import {
   coerceAccountId,
   parseAccountId,
+  parseAccountIdArg,
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FundsFlowPlan,
   FlowConfig,
   PortfolioContinuingInvitationMaker,
+  PortfolioRemoteAccountState,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -27,7 +30,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type {
-  YmaxSharedDomain,
+  YmaxFullDomain,
   TargetAllocation as EIP712Allocation,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
@@ -37,10 +40,10 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { Fail, X } from '@endo/errors';
+import { Fail, X, bare } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import type { Address } from 'abitype';
+import type { Address as EVMAddress } from 'abitype';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
@@ -68,7 +71,7 @@ export type GMPAccountInfo = {
   chainName: AxelarChain;
   err?: string;
   chainId: CaipChainId;
-  remoteAddress: `0x${string}`;
+  remoteAddress: EVMAddress;
 };
 type AgoricAccountInfo = {
   namespace: 'cosmos';
@@ -127,13 +130,32 @@ export const PortfolioStateShape = {
 };
 harden(PortfolioStateShape);
 
+export const makeValidateOpenMessageRepresentativeInfo =
+  (
+    eip155ChainIdToAxelarChain: {
+      [chainId in `${number | bigint}`]?: AxelarChain;
+    },
+    contracts: EVMContractAddressesMap,
+  ) =>
+  (chainId: number | bigint, representativeContract: EVMAddress) => {
+    const fromChain = eip155ChainIdToAxelarChain[`${chainId}`];
+    if (!fromChain) {
+      throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
+    }
+    sameEvmAddress(
+      representativeContract,
+      contracts[fromChain].depositFactory,
+    ) ||
+      Fail`${representativeContract} does not match depositFactory address ${contracts[fromChain].depositFactory} for chain ${fromChain}`;
+  };
+
 /**
  * For publishing, represent accounts collection using accountId values
  */
 const accountIdByChain = (
   accounts: PortfolioKitState['accounts'],
-): Partial<Record<SupportedChain, AccountId>> => {
-  const byChain = {};
+): StatusFor['portfolio']['accountIdByChain'] => {
+  const byChain: Partial<Record<SupportedChain, AccountId>> = {};
   for (const [n, info] of accounts.entries()) {
     switch (info.namespace) {
       case 'cosmos':
@@ -156,6 +178,72 @@ const accountIdByChain = (
     }
   }
   return harden(byChain);
+};
+
+/**
+ * For publishing, represent accounts collection using accountId values
+ */
+const accountStateByChain = (
+  accounts: PortfolioKitState['accounts'],
+  pending: PortfolioKitState['accountsPending'],
+) => {
+  const byChain: Partial<Record<SupportedChain, PortfolioRemoteAccountState>> =
+    {};
+  for (const [n, info] of accounts.entries()) {
+    let accountDetails:
+      | { chainId: CaipChainId; address: string; router?: EVMAddress }
+      | undefined;
+
+    switch (info.namespace) {
+      case 'cosmos': {
+        let cosmosAccountDetails: Caip10Record | undefined;
+        switch (info.chainName) {
+          case 'agoric':
+            cosmosAccountDetails = parseAccountIdArg(info.lca.getAddress());
+            break;
+          case 'noble':
+            cosmosAccountDetails = parseAccountIdArg(info.ica.getAddress());
+            break;
+          default:
+            trace('skipping: unexpected chainName', info);
+        }
+        if (cosmosAccountDetails) {
+          accountDetails = {
+            chainId: `${cosmosAccountDetails.namespace}:${cosmosAccountDetails.reference}`,
+            address: cosmosAccountDetails.accountAddress,
+          };
+        }
+        break;
+      }
+      case 'eip155': {
+        const { chainId, remoteAddress } = info;
+        accountDetails = {
+          chainId,
+          address: remoteAddress,
+        };
+        break;
+      }
+      default:
+        assert.fail(X`no such type: ${info}`);
+    }
+
+    const isPending = pending.has(n);
+    const hasError = !!info.err;
+
+    if (accountDetails) {
+      byChain[n] = {
+        state: hasError ? 'failed' : isPending ? 'provisioning' : 'active',
+        ...(accountDetails || {}),
+      };
+    } else {
+      byChain[n] = { state: 'unknown' };
+    }
+  }
+  for (const chain of pending.keys()) {
+    if (accounts.has(chain)) continue;
+    byChain[chain] = { state: 'provisioning' };
+  }
+  return harden(byChain) as StatusFor['portfolio']['accountStateByChain'];
 };
 
 const { fromEntries } = Object;
@@ -361,6 +449,10 @@ export const preparePortfolioKit = (
           const { accounts } = this.state;
           return accountIdByChain(accounts);
         },
+        accountStateByChain() {
+          const { accounts, accountsPending } = this.state;
+          return accountStateByChain(accounts, accountsPending);
+        },
         /**
          * Returns the CAIP-10 account ID of the authenticated EVM account
          * that opened this portfolio, or undefined if not set.
@@ -403,13 +495,14 @@ export const preparePortfolioKit = (
             flowCount: nextFlowId - 1,
             flowsRunning: makeFlowsRunningRecord(flowsRunning),
             accountIdByChain: accountIdByChain(accounts),
+            accountStateByChain: accountStateByChain(accounts, accountsPending),
             ...(accounts.has('agoric') ? agoricAux() : {}),
             ...(targetAllocation && { targetAllocation }),
             ...(sourceAccountId && { sourceAccountId }),
             accountsPending: [...accountsPending.keys()],
             policyVersion,
             rebalanceCount,
-          });
+          } satisfies StatusFor['portfolio']);
         },
         finishFlow(flowId) {
           const { flowsRunning } = this.state;
@@ -683,6 +776,77 @@ export const preparePortfolioKit = (
           return this.facets.reader;
         },
         /**
+         * Validate that the representative EVM contract information corresponds
+         * to this portfolio. For deposits, performs stricter checks to ensure
+         * the deposit's permit is redeemable.
+         *
+         * @param chainId the EVM chainId of the representative contract
+         * @param representativeContract the domain verifying contract or deposit permit spender address
+         * @param strictForDeposit validate that any existing remote account matches the factory-predicted address
+         */
+        validateRepresentativeInfo(
+          chainId: bigint | number,
+          representativeContract: EVMAddress,
+          strictForDeposit: boolean = false,
+        ) {
+          const { accounts } = this.state;
+
+          const fromChain = eip155ChainIdToAxelarChain[`${chainId}`];
+          if (!fromChain) {
+            throw Fail`no Axelar chain for EIP-155 chainId ${chainId}`;
+          }
+
+          const addresses = contracts[fromChain];
+
+          // The representative contract may be the chain's well-known
+          // depositFactory address, in which case if an account already exists,
+          // it must match the factory-predicted address for deposit operations.
+          // Otherwise, the representative contract must be the portfolio's
+          // remote account address.
+          // If the account already exists, use the stored address.
+          // If not, predict the address using `factory`.
+          let expectedRepresentativeContract: EVMAddress;
+
+          const depositFactoryAddress = addresses.depositFactory;
+          const getPredictedAddress = () =>
+            predictWalletAddress({
+              owner: this.facets.reader.getLocalAccount().getAddress().value,
+              factoryAddress: addresses.factory,
+              gasServiceAddress: addresses.gasService,
+              gatewayAddress: addresses.gateway,
+              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
+            });
+
+          if (
+            depositFactoryAddress &&
+            sameEvmAddress(representativeContract, depositFactoryAddress)
+          ) {
+            if (accounts.has(fromChain) && strictForDeposit) {
+              const info = accounts.get(fromChain) as GMPAccountInfo;
+              const predictedAddress = getPredictedAddress();
+              sameEvmAddress(info.remoteAddress, predictedAddress) ||
+                Fail`existing remote account address ${info.remoteAddress} does not match factory predicted address ${predictedAddress} for chain ${fromChain}`;
+            }
+            // If the factory predicted address match, the representative contract is allowed
+            // to be the deposit factory address.
+            expectedRepresentativeContract = depositFactoryAddress;
+          } else if (accounts.has(fromChain)) {
+            // The account exists, so we can check the expected representative contract against
+            // the stored remote account address.
+            const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
+            expectedRepresentativeContract = gmpInfo.remoteAddress;
+          } else {
+            // The account doesn't exist yet, but it is expected to become the representative contract.
+            expectedRepresentativeContract = getPredictedAddress();
+          }
+
+          sameEvmAddress(
+            representativeContract,
+            expectedRepresentativeContract,
+          ) ||
+            Fail`${bare(strictForDeposit ? 'permit spender' : 'verifying contract')} ${representativeContract} does not match expected representative ${expectedRepresentativeContract}`;
+        },
+        /**
          * Initiate a deposit from an EVM account using Permit2.
          *
          * The permit's owner must match the address portion of `sourceAccountId`,
@@ -691,67 +855,27 @@ export const preparePortfolioKit = (
          * @param depositDetails - The permit2 deposit details including chainId, token, amount, spender, and permit2Payload
          */
         deposit(depositDetails: PermitDetails) {
-          const { sourceAccountId, accounts } = this.state;
+          const { sourceAccountId } = this.state;
           if (!sourceAccountId) {
             throw Fail`deposit requires sourceAccountId to be set (portfolio must be opened from EVM)`;
           }
           const { accountAddress } = parseAccountId(sourceAccountId);
 
+          const owner = depositDetails.permit2Payload.owner;
+          sameEvmAddress(owner, accountAddress as EVMAddress) ||
+            Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
+
+          this.facets.evmHandler.validateRepresentativeInfo(
+            depositDetails.chainId,
+            depositDetails.spender,
+            true,
+          );
+
           const fromChain =
-            eip155ChainIdToAxelarChain[`${Number(depositDetails.chainId)}`];
+            eip155ChainIdToAxelarChain[`${depositDetails.chainId}`];
           if (!fromChain) {
             throw Fail`no Axelar chain for EIP-155 chainId ${depositDetails.chainId}`;
           }
-
-          const owner = depositDetails.permit2Payload.owner;
-          sameEvmAddress(owner, accountAddress as Address) ||
-            Fail`permit owner ${owner} does not match portfolio source address ${accountAddress}`;
-
-          // For deposits:
-          // The spender may be the chain's well-known depositFactory address,
-          // in which case if an account already exists, it must match the
-          // factory-predicted address.
-          // Otherwise, spender must be the portfolio's smart wallet address.
-          // If the account already exists, use the stored address.
-          // If not, predict the address using `factory` (which will be used to
-          // create it).
-          let expectedSpender: Address;
-
-          const depositFactoryAddress = contracts[fromChain].depositFactory;
-          const getPredictedAddress = () =>
-            predictWalletAddress({
-              owner: this.facets.reader.getLocalAccount().getAddress().value,
-              factoryAddress: contracts[fromChain].factory,
-              gasServiceAddress: contracts[fromChain].gasService,
-              gatewayAddress: contracts[fromChain].gateway,
-              walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
-            });
-
-          if (
-            depositFactoryAddress &&
-            sameEvmAddress(depositDetails.spender, depositFactoryAddress)
-          ) {
-            if (accounts.has(fromChain)) {
-              const info = accounts.get(fromChain) as GMPAccountInfo;
-              const predictedAddress = getPredictedAddress();
-              sameEvmAddress(info.remoteAddress, predictedAddress) ||
-                Fail`existing account remote address ${info.remoteAddress} does not match factory predicted address ${predictedAddress} for chain ${fromChain}`;
-            }
-            // If the factory predicted address match, the spender is the allowed
-            // to be the deposit factory address.
-            expectedSpender = depositFactoryAddress;
-          } else if (accounts.has(fromChain)) {
-            // The account exists, so we can check the expected spender against
-            // the stored remote address.
-            const gmpInfo = accounts.get(fromChain) as GMPAccountInfo;
-            expectedSpender = gmpInfo.remoteAddress;
-          } else {
-            // The account doesn't exist yet, but it is expected to become the spender.
-            expectedSpender = getPredictedAddress();
-          }
-
-          sameEvmAddress(depositDetails.spender, expectedSpender) ||
-            Fail`permit spender ${depositDetails.spender} does not match expected account ${expectedSpender}`;
 
           sameEvmAddress(depositDetails.token, contracts[fromChain].usdc) ||
             Fail`permit token address ${depositDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
@@ -823,9 +947,9 @@ export const preparePortfolioKit = (
           domain,
           address,
         }: {
-          withdrawDetails: { amount: bigint; token: Address };
-          domain?: Partial<YmaxSharedDomain>;
-          address?: Address;
+          withdrawDetails: { amount: bigint; token: EVMAddress };
+          domain?: Partial<YmaxFullDomain>;
+          address?: EVMAddress;
         }) {
           const { sourceAccountId } = this.state;
           if (!sourceAccountId) {
@@ -837,7 +961,7 @@ export const preparePortfolioKit = (
 
           namespace === 'eip155' ||
             Fail`withdraw sourceAccountId must be in eip155 namespace: ${sourceAccountId}`;
-          const evmAddress = accountAddress as Address;
+          const evmAddress = accountAddress as EVMAddress;
 
           const chainIdStr = String(
             domain?.chainId ?? reference,

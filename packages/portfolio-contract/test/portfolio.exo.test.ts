@@ -692,7 +692,7 @@ test('evmHandler deposit rejects spender mismatch', t => {
   };
 
   t.throws(() => evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match expected account/,
+    message: /permit spender .* does not match expected/,
   });
 });
 
