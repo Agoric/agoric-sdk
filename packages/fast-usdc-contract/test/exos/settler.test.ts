@@ -1207,7 +1207,7 @@ test('forward not attempted: unsupported destination', async t => {
   ]);
 });
 
-test('forward via cctp failed (MsgTransfer)', async t => {
+test.failing('forward via cctp failed (MsgTransfer)', async t => {
   const {
     common,
     makeSettler,
@@ -1254,6 +1254,11 @@ test('forward via cctp failed (MsgTransfer)', async t => {
       ],
     ],
     'Should attempt transfer to intermediate recipient',
+  );
+  t.deepEqual(
+    accounts.intermediate.callLog,
+    [],
+    'Should not attempt depositForBurn after intermediate transfer rejection',
   );
 
   // Verify error was logged
