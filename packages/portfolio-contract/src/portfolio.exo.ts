@@ -253,7 +253,6 @@ export const preparePortfolioKit = (
   const publishStatus: PublishStatusFn = (path, status): void => {
     const node = providePathNode(path);
     // Don't await, just writing to vstorage.
-    // @ts-expect-error Passable type regression
     void E.when(E(marshaller).toCapData(status), capData =>
       E(node).setValue(JSON.stringify(capData)),
     );

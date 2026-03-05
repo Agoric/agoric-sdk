@@ -150,7 +150,6 @@ export const prepareResolverKit = (
     node: ERemote<StorageNode>,
     value: PublishedTx,
   ): void => {
-    // @ts-expect-error Passable type regression
     void E.when(E(marshaller).toCapData(value), capData =>
       E(node).setValue(JSON.stringify(capData)),
     );
