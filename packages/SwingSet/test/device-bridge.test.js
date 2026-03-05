@@ -4,11 +4,8 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 
-import {
-  initializeSwingset,
-  makeSwingsetController,
-  buildBridge,
-} from '../src/index.js';
+import { makeSwingsetController, buildBridge } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 
 test('bridge device', async t => {
   const outboundLog = [];

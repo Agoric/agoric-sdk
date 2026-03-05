@@ -564,7 +564,6 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   }
 
   // XXX TEMP
-  // eslint-disable-next-line no-unused-vars
   function meterCrossedThreshold(_meterID, _remaining) {
     // const { updater } = meterByID.get(meterID); // XXX RESTORE
     // updater.updateState(remaining); // XXX RESTORE

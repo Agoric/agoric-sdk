@@ -4,12 +4,16 @@ export {
 } from './controller/controller.js';
 export {
   swingsetIsInitialized,
+  buildSwingsetKernelConfig,
+  initializeSwingsetKernel,
   initializeSwingset,
   buildKernelBundles,
+} from './controller/initializeSwingset.js';
+export {
   loadBasedir,
   loadSwingsetConfigFile,
   normalizeConfig,
-} from './controller/initializeSwingset.js';
+} from './controller/swingset-config-node.js';
 export { upgradeSwingset } from './controller/upgradeSwingset.js';
 export {
   buildMailboxStateMap,

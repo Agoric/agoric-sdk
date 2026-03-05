@@ -9,7 +9,8 @@ import {
   makeSnapStore,
   makeSnapStoreIO,
 } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 
 test('only preload maxVatsOnline vats', async t => {
   const bpath = new URL('vat-preload-bootstrap.js', import.meta.url).pathname;

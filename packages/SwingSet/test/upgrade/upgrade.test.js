@@ -11,11 +11,8 @@ import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
-import {
-  buildKernelBundles,
-  initializeSwingset,
-  makeSwingsetController,
-} from '../../src/index.js';
+import { buildKernelBundles, makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { makeRunUtils } from '../../tools/run-utils.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
 
