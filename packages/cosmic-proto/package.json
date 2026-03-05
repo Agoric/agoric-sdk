@@ -228,7 +228,7 @@
     "@ava/typescript": "^6.0.0",
     "@endo/bundle-source": "^4.1.2",
     "@endo/import-bundle": "^1.5.2",
-    "@hyperweb/telescope": "patch:@hyperweb/telescope@npm%3A2.1.0#~/.yarn/patches/@hyperweb-telescope-npm-2.1.0-158491ebc2.patch",
+    "@hyperweb/telescope": "^2.2.1",
     "ava": "^6.4.1",
     "glob": "^11.0.3",
     "rimraf": "^5.0.0",
