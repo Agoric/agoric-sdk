@@ -14,7 +14,7 @@ import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 const compareAmounts = (a: NatAmount, b: NatAmount): -1 | 0 | 1 => {
   const aValue = a.value;
   const bValue = b.value;
-  // eslint-disable-next-line no-nested-ternary
+
   return aValue > bValue ? 1 : aValue < bValue ? 1 : 0;
 };
 

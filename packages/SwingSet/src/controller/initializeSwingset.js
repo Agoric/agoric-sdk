@@ -135,7 +135,7 @@ export function loadBasedir(basedir, options = {}) {
     const m = rVatName.exec(file);
     return m && dirent.isFile() ? [{ file, label: m[1] }] : [];
   });
-  // eslint-disable-next-line no-shadow,no-nested-ternary
+  // eslint-disable-next-line no-shadow
   vatFiles.sort((a, b) => (a.label < b.label ? -1 : a.label > b.label ? 1 : 0));
   for (const { file, label } of vatFiles) {
     const vatSourcePath = path.resolve(basedir, file);
