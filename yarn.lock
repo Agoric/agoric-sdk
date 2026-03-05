@@ -3887,7 +3887,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/pass-style@npm:1.7.0, @endo/pass-style@npm:^1.7.0":
+"@endo/pass-style@npm:1.7.0":
   version: 1.7.0
   resolution: "@endo/pass-style@npm:1.7.0"
   dependencies:
