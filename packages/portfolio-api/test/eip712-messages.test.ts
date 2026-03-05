@@ -307,6 +307,8 @@ test('validateYmaxOperationTypeName passes for valid types', t => {
     'OpenPortfolio',
     'Rebalance',
     'SetTargetAllocation',
+    'DelegateAllocation',
+    'RevokeAllocation',
     'Deposit',
     'Withdraw',
   ];

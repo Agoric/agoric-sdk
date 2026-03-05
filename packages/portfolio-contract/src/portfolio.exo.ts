@@ -159,6 +159,12 @@ const accountIdByChain = (
 };
 
 const { fromEntries } = Object;
+const toTargetAllocation = (
+  allocations: readonly EIP712Allocation[],
+): TargetAllocation =>
+  Object.fromEntries(
+    allocations.map(({ instrument, portion }) => [instrument, portion]),
+  );
 
 /** publish everyting about flowsRunning but the sync VowKit */
 const makeFlowsRunningRecord = (
@@ -674,6 +680,71 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
         },
       },
+      allocation: {
+        getReaderFacet() {
+          return this.facets.reader;
+        },
+        getAllocationFacet(_address: Address) {
+          throw Fail`allocation facet cannot delegate allocation control`;
+        },
+        setTargetAllocation(allocations: readonly EIP712Allocation[]) {
+          allocations.length > 0 ||
+            Fail`setTargetAllocation requires non-empty allocations`;
+
+          const nextTargetAllocation = toTargetAllocation(allocations);
+          const existing = Object.keys(this.state.targetAllocation ?? {});
+          const nextKeys = Object.keys(nextTargetAllocation);
+          const unexpected = nextKeys.filter(
+            instrument => !existing.includes(instrument),
+          );
+          const missing = existing.filter(instrument => !nextKeys.includes(instrument));
+          (unexpected.length === 0 && missing.length === 0) ||
+            Fail`allocation facet cannot change positions; unexpected: ${unexpected.join(
+              ', ',
+            )}; missing: ${missing.join(', ')}`;
+
+          this.facets.manager.setTargetAllocation(nextTargetAllocation);
+          return 'ok';
+        },
+        /**
+         * Initiate a rebalance with an optional target allocation.
+         * If a new allocation is provided, it is validated by this facet.
+         */
+        rebalance(
+          allocations?: readonly EIP712Allocation[] | undefined,
+          depositDetails?: PermitDetails,
+        ) {
+          const { sourceAccountId } = this.state;
+          if (!sourceAccountId) {
+            throw Fail`rebalance requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          }
+
+          !depositDetails || Fail`rebalance does not yet support deposit`;
+          if (allocations) {
+            this.facets.allocation.setTargetAllocation(allocations);
+          }
+          const { targetAllocation } = this.state;
+          if (!targetAllocation || Object.keys(targetAllocation).length === 0) {
+            Fail`rebalance requires targetAllocation to be set`;
+          }
+          const flowDetail: FlowDetail = { type: 'rebalance' };
+          const startedFlow = this.facets.manager.startFlow(flowDetail);
+          const seat = zcf.makeEmptySeatKit().zcfSeat;
+
+          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          return `flow${startedFlow.flowId}`;
+        },
+        deposit(_depositDetails: PermitDetails) {
+          throw Fail`allocation facet cannot deposit`;
+        },
+        withdraw(_args: {
+          withdrawDetails: { amount: bigint; token: Address };
+          domain?: Partial<YmaxSharedDomain>;
+          address?: Address;
+        }) {
+          throw Fail`allocation facet cannot withdraw`;
+        },
+      },
       evmHandler: {
         /**
          * Note: evmHandler is only valid for portfolios opened from EVM.
@@ -681,6 +752,23 @@ export const preparePortfolioKit = (
          */
         getReaderFacet() {
           return this.facets.reader;
+        },
+        getAllocationFacet(address: Address) {
+          void address;
+          return this.facets.allocation;
+        },
+        rebalance(
+          allocations?: readonly EIP712Allocation[] | undefined,
+          depositDetails?: PermitDetails,
+        ) {
+          if (allocations) {
+            allocations.length > 0 ||
+              Fail`rebalance with allocations requires non-empty allocations`;
+
+            const targetAllocation = toTargetAllocation(allocations);
+            this.facets.manager.setTargetAllocation(targetAllocation);
+          }
+          return this.facets.allocation.rebalance(undefined, depositDetails);
         },
         /**
          * Initiate a deposit from an EVM account using Permit2.
@@ -770,46 +858,6 @@ export const preparePortfolioKit = (
             undefined,
             { evmDepositDetail: { ...depositDetails, fromChain } },
           );
-          return `flow${startedFlow.flowId}`;
-        },
-        /**
-         * Initiate a rebalance with an optional target allocation.
-         * If a new allocation is not provided, uses the previously set target allocation.
-         */
-        rebalance(
-          allocations?: readonly EIP712Allocation[] | undefined,
-          depositDetails?: PermitDetails,
-        ) {
-          const { sourceAccountId } = this.state;
-          if (!sourceAccountId) {
-            throw Fail`rebalance requires sourceAccountId to be set (portfolio must be opened from EVM)`;
-          }
-
-          !depositDetails || Fail`rebalance does not yet support deposit`;
-
-          if (allocations) {
-            allocations.length > 0 ||
-              Fail`rebalance with allocations requires non-empty allocations`;
-
-            // XXX: validate instruments
-            const targetAllocation: TargetAllocation = Object.fromEntries(
-              allocations.map(({ instrument, portion }) => [
-                instrument,
-                portion,
-              ]),
-            );
-
-            this.facets.manager.setTargetAllocation(targetAllocation);
-          } else {
-            const { targetAllocation } = this.state;
-            (targetAllocation && Object.keys(targetAllocation).length > 0) ||
-              Fail`rebalance requires targetAllocation to be set`;
-          }
-          const flowDetail: FlowDetail = { type: 'rebalance' };
-          const startedFlow = this.facets.manager.startFlow(flowDetail);
-          const seat = zcf.makeEmptySeatKit().zcfSeat;
-
-          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
         /**

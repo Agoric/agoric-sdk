@@ -3787,3 +3787,103 @@ test(
     t.truthy(last.rejectionReason, 'includes rejection reason');
   },
 );
+
+test('trader delegates to agent; agent changes allocations', async t => {
+  const sourceAccountId =
+    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
+  const delegate = '0x9999999999999999999999999999999999999999';
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const fee = AmountMath.make(BLD, 100n);
+
+  const { ctx, storage, txResolver } = mocks({}, {});
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  const portfolioId = kit.reader.getPortfolioId();
+  const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
+
+  // Feature sketch: grant returns the allocationFacet capability.
+  const allocationFacet = kit.evmHandler.getAllocationFacet(delegate);
+  t.truthy(allocationFacet);
+
+  kit.evmHandler.rebalance([
+    { instrument: 'Aave_Arbitrum', portion: 50n },
+    { instrument: 'Compound_Arbitrum', portion: 50n },
+  ]);
+
+  const setTargetResult = allocationFacet.setTargetAllocation([
+    { instrument: 'Aave_Arbitrum', portion: 60n },
+    { instrument: 'Compound_Arbitrum', portion: 40n },
+  ]);
+  t.is(setTargetResult, 'ok');
+
+  const flowKey = allocationFacet.rebalance();
+  t.regex(flowKey, /^flow\d+$/);
+
+  let flowNum: number | undefined;
+  const plannerP = (async () => {
+    const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+    const [[flowId, detail]] = Object.entries(flowsRunning);
+    if (detail.type !== 'rebalance')
+      throw t.fail(`expected rebalance, got ${detail.type}`);
+    flowNum = Number(flowId.replace('flow', ''));
+    const steps: MovementDesc[] = [
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount, fee },
+      { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount, fee },
+    ];
+    kit.planner.resolveFlowPlan(flowNum, steps);
+    await txResolver.drainPending();
+  })();
+  await plannerP;
+  await eventLoopIteration();
+
+  if (flowNum === undefined) throw new Error('flow number not captured');
+  const flowHistory = await getFlowHistory(portfolioId, flowNum);
+  t.is(flowHistory.at(-1)?.state, 'done');
+
+  const status = await getPortfolioStatus(portfolioId);
+  t.deepEqual(status.targetAllocation, {
+    Aave_Arbitrum: 60n,
+    Compound_Arbitrum: 40n,
+  });
+});
+
+test('allocation facet cannot add positions', async t => {
+  const sourceAccountId =
+    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
+  const delegate = '0x9999999999999999999999999999999999999999';
+  const { ctx } = mocks({}, {});
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+
+  kit.evmHandler.rebalance([{ instrument: 'Aave_Arbitrum', portion: 100n }]);
+  const allocationFacet = kit.evmHandler.getAllocationFacet(delegate);
+
+  t.throws(
+    () =>
+      allocationFacet.setTargetAllocation([
+        { instrument: 'Aave_Arbitrum', portion: 50n },
+        { instrument: 'Compound_Arbitrum', portion: 50n },
+      ]),
+    { message: /cannot change positions/i },
+  );
+});
+
+test('allocation facet cannot remove positions', async t => {
+  const sourceAccountId =
+    'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
+  const delegate = '0x9999999999999999999999999999999999999999';
+  const { ctx } = mocks({}, {});
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+
+  kit.evmHandler.rebalance([
+    { instrument: 'Aave_Arbitrum', portion: 50n },
+    { instrument: 'Compound_Arbitrum', portion: 50n },
+  ]);
+  const allocationFacet = kit.evmHandler.getAllocationFacet(delegate);
+
+  t.throws(
+    () =>
+      allocationFacet.setTargetAllocation([
+        { instrument: 'Aave_Arbitrum', portion: 100n },
+      ]),
+    { message: /cannot change positions/i },
+  );
+});
