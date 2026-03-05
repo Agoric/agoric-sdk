@@ -12,7 +12,7 @@ import { getYmaxStandaloneOperationData } from '@agoric/portfolio-api/src/evm-wa
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { randomBytes } from 'node:crypto';
 import { parseArgs as parseNodeArgs } from 'node:util';
-import { mnemonicToAccount } from 'viem/accounts';
+import { mnemonicToAccount, privateKeyToAccount } from 'viem/accounts';
 
 type Address = `0x${string}`;
 
@@ -31,7 +31,8 @@ const usage = `Usage:
 Environment:
   AGORIC_NET                    network selector for @agoric/client-utils
                                 (options: devnet, main; default: devnet).
-  TRADER_KEY                    EVM owner mnemonic (signs DelegateAllocation).
+  TRADER_KEY                    EVM owner signer key (signs DelegateAllocation):
+                                either mnemonic words or 0x<64-hex> private key.
   EMS_KEY                       Agoric wallet mnemonic that invokes evmWalletHandler.
 
 Options:
@@ -122,6 +123,20 @@ const randomNonce = (): bigint => {
   return value;
 };
 
+const getTraderEvmAccount = (rawKey: string) => {
+  const key = rawKey.trim();
+  if (/^0x[0-9a-fA-F]{64}$/.test(key)) {
+    return privateKeyToAccount(key as `0x${string}`);
+  }
+  try {
+    return mnemonicToAccount(key);
+  } catch {
+    throw Error(
+      'TRADER_KEY must be either mnemonic words or a 0x-prefixed 32-byte private key',
+    );
+  }
+};
+
 const main = async (
   argv = process.argv,
   env = process.env,
@@ -158,7 +173,7 @@ const main = async (
     throw Error(`${usage}\nEMS_KEY not set`);
   }
 
-  const ownerEvmAccount = mnemonicToAccount(ownerMnemonic);
+  const ownerEvmAccount = getTraderEvmAccount(ownerMnemonic);
   const verifyingContract = resolveVerifyingContract({ chainId, contract });
 
   const typedData = getYmaxStandaloneOperationData(
