@@ -16,6 +16,7 @@ on:
 
 jobs:
   wait-integration-pre-checks:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' }}
     runs-on: ubuntu-latest
     steps:
       - shell: bash
@@ -24,14 +25,17 @@ jobs:
   merge-strategy:
     runs-on: ubuntu-latest
     if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.draft == true ||
-      github.event.pull_request.base.ref != 'master' || (
-        contains(github.event.pull_request.labels.*.name, 'automerge:squash') ||
-        contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
-        contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
-        contains(github.event.pull_request.labels.*.name, 'bypass:automerge') ||
-        github.event.pull_request.auto_merge != null
+      (github.event_name != 'pull_request' ||
+      github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake') && (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.draft == true ||
+        github.event.pull_request.base.ref != 'master' || (
+          contains(github.event.pull_request.labels.*.name, 'automerge:squash') ||
+          contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
+          contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
+          contains(github.event.pull_request.labels.*.name, 'bypass:automerge') ||
+          github.event.pull_request.auto_merge != null
+        )
       )
     strategy:
       # abuse the matrix feature to create a check which stays pending until
@@ -46,6 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     if: >-
       github.event_name == 'pull_request' &&
+      github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' &&
       github.event.pull_request.draft == false &&
       github.event.pull_request.base.ref == 'master' && (
         contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||

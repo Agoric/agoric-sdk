@@ -9,7 +9,7 @@ on:
     branches: [master]
   schedule:
     # We start a little earlier to give our build cache time to populate.
-    - cron: '47 5 * * *'
+    - cron: "47 5 * * *"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,7 +18,7 @@ concurrency:
 env:
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
-  TEST_COLLECT: 'tee -a _testoutput.txt'
+  TEST_COLLECT: "tee -a _testoutput.txt"
 
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
@@ -32,11 +32,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['node-new', 'node-old']
+        node-version: ["node-new", "node-old"]
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
+          submodules: "true"
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -57,7 +57,7 @@ jobs:
       # install node_modules
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       # Releasing SDK builds all packages in this order during `lerna publish`.
       # Due to ambient types, certain build orders (from the dependency graph)
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       # eslint and tsc
       # XXX running tsc in every package is slow and redundant.
@@ -109,7 +109,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       - name: lint repo format
         run: yarn lint:format
@@ -149,7 +149,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       - name: Update package lockfiles
         run: scripts/update-package-locks.sh || exit 0
@@ -170,10 +170,10 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest-16core # avoid exit 129
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
@@ -194,6 +194,148 @@ jobs:
       #  category here, or that don't have a package.json.
       #- name: yarn test (everything)
       #  run: yarn ${{ steps.vars.outputs.test }}
+      - name: yarn test (swing-store)
+        if: (success() || failure())
+        shell: bash
+        run: |
+          set +e
+          trap 'echo "swing-store shell received SIGHUP"' HUP
+          diag_module="$PWD/packages/swing-store/test/ava-process-diagnostics.js"
+          export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
+
+          show_coverage_state() {
+            local cov_dir="$1"
+            if [ -n "$cov_dir" ] && [ -d "$cov_dir" ]; then
+              echo "coverage dir: $cov_dir"
+              find "$cov_dir" -maxdepth 1 -type f -name '*.json' | wc -l
+              du -sh "$cov_dir" || true
+              find "$cov_dir" -maxdepth 1 -type f -name '*.json' -printf '%T@ %f\n' 2>/dev/null | sort -n | tail -n 5 || true
+            else
+              echo "coverage dir not present: ${cov_dir:-<unset>}"
+            fi
+          }
+
+          run_ava_attempt() {
+            local label="$1"
+            local worker_mode="$2"
+            local cov_mode="$3"
+            local out_file="$4"
+            local attempt_cov="${NODE_V8_COVERAGE:-}"
+            local -a cmd=(node ../../node_modules/ava/entrypoints/cli.mjs)
+            if [ "$worker_mode" = "no-workers" ]; then
+              cmd+=(--no-worker-threads)
+            fi
+            if [ "$cov_mode" = "fresh" ]; then
+              attempt_cov="$PWD/coverage-retry-${label// /-}-$RANDOM"
+              mkdir -p "$attempt_cov"
+            elif [ "$cov_mode" = "off" ]; then
+              attempt_cov=""
+            fi
+
+            echo "--- attempt: $label ---"
+            echo "attempt worker mode: $worker_mode"
+            echo "attempt coverage mode: $cov_mode"
+            if [ -n "$attempt_cov" ]; then
+              echo "attempt NODE_V8_COVERAGE=$attempt_cov"
+              NODE_V8_COVERAGE="$attempt_cov" "${cmd[@]}" > >(tee -a "$out_file") 2>&1
+            else
+              echo "attempt NODE_V8_COVERAGE=<unset>"
+              env -u NODE_V8_COVERAGE "${cmd[@]}" > >(tee -a "$out_file") 2>&1
+            fi
+            local attempt_rc=$?
+            echo "attempt exit code: $attempt_rc"
+            show_coverage_state "$attempt_cov"
+            return "$attempt_rc"
+          }
+
+          # include the following string for check-untested-packages.mjs to believe that this package is being tested
+          # cd packages/swing-store && yarn ${{ steps.vars.outputs.test }}
+          # now actually run this test command, so that we get the diagnostics on this package if it fails
+          cd packages/swing-store || exit $?
+
+          echo "::group::swing-store preflight diagnostics"
+          echo "matrix.engine=${{ matrix.engine }}"
+          echo "test target=${{ steps.vars.outputs.test }}"
+          echo "node: $(node -v)"
+          echo "yarn: $(yarn -v)"
+          echo "pwd: $(pwd)"
+          echo "NODE_OPTIONS: ${NODE_OPTIONS}"
+          show_coverage_state "${NODE_V8_COVERAGE:-}"
+          echo "repo-wide coverage json count so far:"
+          find ../.. -type f -name 'coverage*.json' | wc -l
+          echo "--- free -m ---"
+          free -m || true
+          echo "--- df -h . ---"
+          df -h . || true
+          echo "::endgroup::"
+
+          if [ "${{ steps.vars.outputs.test }}" = "test" ]; then
+            run_ava_attempt "main" "default" "default" "_testoutput.txt"
+            rc=$?
+            pipe_status=("$rc" 0)
+          else
+            yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+            pipe_status=("${PIPESTATUS[@]}")
+            rc=0
+            for ((idx=${#pipe_status[@]} - 1; idx >= 0; idx--)); do
+              if [ "${pipe_status[$idx]}" -ne 0 ]; then
+                rc="${pipe_status[$idx]}"
+                break
+              fi
+            done
+          fi
+
+          if [ "$rc" -ne 0 ]; then
+            echo "::group::swing-store failure diagnostics"
+            echo "test command exit code: $rc"
+            if [ "$rc" -eq 129 ]; then
+              echo "exit 129 indicates SIGHUP"
+            fi
+            if [ "$rc" -eq 139 ]; then
+              echo "exit 139 indicates SIGSEGV"
+            fi
+            echo "PIPESTATUS (test tee): ${pipe_status[*]}"
+            echo "NODE_OPTIONS: ${NODE_OPTIONS}"
+            echo "node: $(node -v)"
+            echo "yarn: $(yarn -v)"
+            echo "pwd: $(pwd)"
+            echo "--- ulimit -a ---"
+            ulimit -a || true
+            echo "--- process tree (pstree) ---"
+            pstree -pal "$$" || true
+            echo "--- process list (filtered for test processes) ---"
+            ps -eo pid,ppid,pgid,sid,stat,etime,pcpu,pmem,comm,args | grep -E '(PID|ava|node|yarn|tee)' || true
+            echo "--- coverage state at failure ---"
+            show_coverage_state "${NODE_V8_COVERAGE:-}"
+            echo "--- last 200 lines of _testoutput.txt ---"
+            tail -n 200 _testoutput.txt || true
+
+            # Triangulation probes to isolate coverage-state and worker-thread effects.
+            if [ "${{ matrix.engine }}" = "node-old" ] && [ "${{ steps.vars.outputs.test }}" = "test" ]; then
+              run_ava_attempt "retry-a-same" "default" "default" "_testoutput_retry_a.txt"; echo "retry-a exit code: $?"
+              run_ava_attempt "retry-b-cov-off" "default" "off" "_testoutput_retry_b.txt"; echo "retry-b exit code: $?"
+              run_ava_attempt "retry-c-cov-fresh" "default" "fresh" "_testoutput_retry_c.txt"; echo "retry-c exit code: $?"
+              run_ava_attempt "retry-d-nowork-same" "no-workers" "default" "_testoutput_retry_d.txt"; echo "retry-d exit code: $?"
+              run_ava_attempt "retry-e-nowork-fresh" "no-workers" "fresh" "_testoutput_retry_e.txt"; echo "retry-e exit code: $?"
+              echo "--- last 120 lines of retry outputs ---"
+              for f in _testoutput_retry_*.txt; do
+                [ -f "$f" ] || continue
+                echo ">>> $f"
+                tail -n 120 "$f" || true
+              done
+            fi
+            echo "::endgroup::"
+          fi
+          exit "$rc"
+      - name: upload swing-store crash artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: swing-store-diag-${{ matrix.engine }}-${{ github.run_id }}
+          path: |
+            packages/swing-store/_testoutput*.txt
+            packages/swing-store/coverage-retry-*/
+          if-no-files-found: ignore
       - name: yarn test (access-token)
         if: (success() || failure())
         run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -233,9 +375,6 @@ jobs:
       - name: yarn test (store)
         if: (success() || failure())
         run: cd packages/store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (swing-store)
-        if: (success() || failure())
-        run: cd packages/swing-store && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (cosmic-proto)
         if: (success() || failure())
         run: cd packages/cosmic-proto && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -276,16 +415,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
+          submodules: "true"
 
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 'node-new'
+          node-version: "node-new"
 
       # Some codegen (e.g., cosmic-proto) depends on Go toolchain
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: "1.22"
 
       - name: Verify codegen idempotence
         shell: bash
@@ -298,7 +437,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
@@ -433,7 +572,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in governance/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -471,7 +610,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in governance/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -509,7 +648,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in portfolio-contract/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -547,7 +686,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in solo/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -581,11 +720,11 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest-16core # avoid exit 129
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
@@ -599,7 +738,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: "1.22"
       - name: yarn test (cosmic-swingset)
         if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -627,7 +766,7 @@ jobs:
     strategy:
       matrix:
         # test:xs is noop in inter-protocol/package.json
-        engine: ['node-new', 'node-old']
+        engine: ["node-new", "node-old"]
     steps:
       - name: set vars
         id: vars
@@ -664,7 +803,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3]
         total_nodes: [4] # the total number of nodes
@@ -707,7 +846,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
         # Run parallel testing jobs, each executing a subset.
         node_index: [0, 1, 2, 3, 4]
         total_nodes: [5] # the total number of nodes
@@ -756,7 +895,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars
@@ -797,7 +936,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        engine: ['node-new', 'node-old', 'xs']
+        engine: ["node-new", "node-old", "xs"]
     steps:
       - name: set vars
         id: vars

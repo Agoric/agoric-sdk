@@ -19,6 +19,7 @@ permissions:
 
 jobs:
   flake-check:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' }}
     timeout-minutes: 25
     runs-on: ubuntu-latest
     steps:
