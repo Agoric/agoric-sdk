@@ -11,21 +11,9 @@ import {
   voteOptionToJSON,
 } from './gov.js';
 import {
-  ClientUpdateProposal,
-  type ClientUpdateProposalSDKType,
-  UpgradeProposal,
-  type UpgradeProposalSDKType,
-} from '../../../ibc/core/client/v1/client.js';
-import {
-  SoftwareUpgradeProposal,
-  type SoftwareUpgradeProposalSDKType,
-  CancelSoftwareUpgradeProposal,
-  type CancelSoftwareUpgradeProposalSDKType,
-} from '../../upgrade/v1beta1/upgrade.js';
-import {
-  ParameterChangeProposal,
-  type ParameterChangeProposalSDKType,
-} from '../../params/v1beta1/params.js';
+  CoreEvalProposal,
+  type CoreEvalProposalSDKType,
+} from '../../../agoric/swingset/swingset.js';
 import {
   CommunityPoolSpendProposal,
   type CommunityPoolSpendProposalSDKType,
@@ -33,9 +21,21 @@ import {
   type CommunityPoolSpendProposalWithDepositSDKType,
 } from '../../distribution/v1beta1/distribution.js';
 import {
-  CoreEvalProposal,
-  type CoreEvalProposalSDKType,
-} from '../../../agoric/swingset/swingset.js';
+  ParameterChangeProposal,
+  type ParameterChangeProposalSDKType,
+} from '../../params/v1beta1/params.js';
+import {
+  SoftwareUpgradeProposal,
+  type SoftwareUpgradeProposalSDKType,
+  CancelSoftwareUpgradeProposal,
+  type CancelSoftwareUpgradeProposalSDKType,
+} from '../../upgrade/v1beta1/upgrade.js';
+import {
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
@@ -52,15 +52,15 @@ export interface MsgSubmitProposal {
    * content is the proposal's content.
    */
   content?:
-    | ClientUpdateProposal
-    | UpgradeProposal
-    | SoftwareUpgradeProposal
-    | CancelSoftwareUpgradeProposal
-    | ParameterChangeProposal
-    | TextProposal
+    | CoreEvalProposal
     | CommunityPoolSpendProposal
     | CommunityPoolSpendProposalWithDeposit
-    | CoreEvalProposal
+    | TextProposal
+    | ParameterChangeProposal
+    | SoftwareUpgradeProposal
+    | CancelSoftwareUpgradeProposal
+    | ClientUpdateProposal
+    | UpgradeProposal
     | Any
     | undefined;
   /**
@@ -85,15 +85,15 @@ export interface MsgSubmitProposalProtoMsg {
  */
 export interface MsgSubmitProposalSDKType {
   content?:
-    | ClientUpdateProposalSDKType
-    | UpgradeProposalSDKType
-    | SoftwareUpgradeProposalSDKType
-    | CancelSoftwareUpgradeProposalSDKType
-    | ParameterChangeProposalSDKType
-    | TextProposalSDKType
+    | CoreEvalProposalSDKType
     | CommunityPoolSpendProposalSDKType
     | CommunityPoolSpendProposalWithDepositSDKType
-    | CoreEvalProposalSDKType
+    | TextProposalSDKType
+    | ParameterChangeProposalSDKType
+    | SoftwareUpgradeProposalSDKType
+    | CancelSoftwareUpgradeProposalSDKType
+    | ClientUpdateProposalSDKType
+    | UpgradeProposalSDKType
     | AnySDKType
     | undefined;
   initial_deposit: CoinSDKType[];

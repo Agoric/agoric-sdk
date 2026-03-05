@@ -11,62 +11,19 @@ export const createRPCQueryClient = async ({
   const client = new QueryClient(tmClient);
   return {
     cosmos: {
-      upgrade: {
+      auth: {
         v1beta1: (
-          await import('./upgrade/v1beta1/query.rpc.Query.js')
+          await import('./auth/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
-      tx: {
+      authz: {
         v1beta1: (
-          await import('./tx/v1beta1/service.rpc.Service.js')
+          await import('./authz/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
-      staking: {
+      bank: {
         v1beta1: (
-          await import('./staking/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      params: {
-        v1beta1: (
-          await import('./params/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      mint: {
-        v1beta1: (
-          await import('./mint/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      group: {
-        v1: (
-          await import('./group/v1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      gov: {
-        v1beta1: (
-          await import('./gov/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-        v1: (
-          await import('./gov/v1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      feegrant: {
-        v1beta1: (
-          await import('./feegrant/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      distribution: {
-        v1beta1: (
-          await import('./distribution/v1beta1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      consensus: {
-        v1: (
-          await import('./consensus/v1/query.rpc.Query.js')
-        ).createRpcQueryExtension(client),
-      },
-      circuit: {
-        v1: (
-          await import('./circuit/v1/query.rpc.Query.js')
+          await import('./bank/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
       base: {
@@ -76,19 +33,62 @@ export const createRPCQueryClient = async ({
           ).createRpcQueryExtension(client),
         },
       },
-      bank: {
-        v1beta1: (
-          await import('./bank/v1beta1/query.rpc.Query.js')
+      circuit: {
+        v1: (
+          await import('./circuit/v1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
-      authz: {
-        v1beta1: (
-          await import('./authz/v1beta1/query.rpc.Query.js')
+      consensus: {
+        v1: (
+          await import('./consensus/v1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
-      auth: {
+      distribution: {
         v1beta1: (
-          await import('./auth/v1beta1/query.rpc.Query.js')
+          await import('./distribution/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      feegrant: {
+        v1beta1: (
+          await import('./feegrant/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      gov: {
+        v1: (
+          await import('./gov/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+        v1beta1: (
+          await import('./gov/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      group: {
+        v1: (
+          await import('./group/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      mint: {
+        v1beta1: (
+          await import('./mint/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      params: {
+        v1beta1: (
+          await import('./params/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      staking: {
+        v1beta1: (
+          await import('./staking/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      tx: {
+        v1beta1: (
+          await import('./tx/v1beta1/service.rpc.Service.js')
+        ).createRpcQueryExtension(client),
+      },
+      upgrade: {
+        v1beta1: (
+          await import('./upgrade/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
     },

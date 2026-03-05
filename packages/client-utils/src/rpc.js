@@ -1,6 +1,6 @@
 import { makeTendermintRpcClient } from '@agoric/casting';
 import { StargateClient } from '@cosmjs/stargate';
-import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
+import { Tendermint37Client } from '@cosmjs/tendermint-rpc';
 
 /**
  * @import {MinimalNetworkConfig} from './network-config.js';
@@ -12,11 +12,11 @@ export const pickEndpoint = ({ rpcAddrs }) => rpcAddrs[0];
 /**
  * @param {string} endpoint
  * @param {{ fetch: typeof window.fetch }} io
- * @returns {Tendermint34Client}
+ * @returns {Tendermint37Client}
  */
 export const makeTendermint34Client = (endpoint, { fetch }) => {
   const rpcClient = makeTendermintRpcClient(endpoint, fetch);
-  return Tendermint34Client.create(rpcClient);
+  return Tendermint37Client.create(rpcClient);
 };
 
 /**

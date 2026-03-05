@@ -15,11 +15,20 @@ import {
   type TimestampSDKType,
 } from '../../../google/protobuf/timestamp.js';
 import {
-  ClientUpdateProposal,
-  type ClientUpdateProposalSDKType,
-  UpgradeProposal,
-  type UpgradeProposalSDKType,
-} from '../../../ibc/core/client/v1/client.js';
+  CoreEvalProposal,
+  type CoreEvalProposalSDKType,
+} from '../../../agoric/swingset/swingset.js';
+import {
+  CommunityPoolSpendProposal,
+  type CommunityPoolSpendProposalSDKType,
+  CommunityPoolSpendProposalWithDeposit,
+  type CommunityPoolSpendProposalWithDepositSDKType,
+} from '../../distribution/v1beta1/distribution.js';
+import { TextProposal, type TextProposalSDKType } from '../v1beta1/gov.js';
+import {
+  ParameterChangeProposal,
+  type ParameterChangeProposalSDKType,
+} from '../../params/v1beta1/params.js';
 import {
   SoftwareUpgradeProposal,
   type SoftwareUpgradeProposalSDKType,
@@ -27,20 +36,11 @@ import {
   type CancelSoftwareUpgradeProposalSDKType,
 } from '../../upgrade/v1beta1/upgrade.js';
 import {
-  ParameterChangeProposal,
-  type ParameterChangeProposalSDKType,
-} from '../../params/v1beta1/params.js';
-import { TextProposal, type TextProposalSDKType } from '../v1beta1/gov.js';
-import {
-  CommunityPoolSpendProposal,
-  type CommunityPoolSpendProposalSDKType,
-  CommunityPoolSpendProposalWithDeposit,
-  type CommunityPoolSpendProposalWithDepositSDKType,
-} from '../../distribution/v1beta1/distribution.js';
-import {
-  CoreEvalProposal,
-  type CoreEvalProposalSDKType,
-} from '../../../agoric/swingset/swingset.js';
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -145,15 +145,15 @@ export interface MsgExecLegacyContent {
    * content is the proposal's content.
    */
   content?:
-    | ClientUpdateProposal
-    | UpgradeProposal
-    | SoftwareUpgradeProposal
-    | CancelSoftwareUpgradeProposal
-    | ParameterChangeProposal
-    | TextProposal
+    | CoreEvalProposal
     | CommunityPoolSpendProposal
     | CommunityPoolSpendProposalWithDeposit
-    | CoreEvalProposal
+    | TextProposal
+    | ParameterChangeProposal
+    | SoftwareUpgradeProposal
+    | CancelSoftwareUpgradeProposal
+    | ClientUpdateProposal
+    | UpgradeProposal
     | Any
     | undefined;
   /**
@@ -174,15 +174,15 @@ export interface MsgExecLegacyContentProtoMsg {
  */
 export interface MsgExecLegacyContentSDKType {
   content?:
-    | ClientUpdateProposalSDKType
-    | UpgradeProposalSDKType
-    | SoftwareUpgradeProposalSDKType
-    | CancelSoftwareUpgradeProposalSDKType
-    | ParameterChangeProposalSDKType
-    | TextProposalSDKType
+    | CoreEvalProposalSDKType
     | CommunityPoolSpendProposalSDKType
     | CommunityPoolSpendProposalWithDepositSDKType
-    | CoreEvalProposalSDKType
+    | TextProposalSDKType
+    | ParameterChangeProposalSDKType
+    | SoftwareUpgradeProposalSDKType
+    | CancelSoftwareUpgradeProposalSDKType
+    | ClientUpdateProposalSDKType
+    | UpgradeProposalSDKType
     | AnySDKType
     | undefined;
   authority: string;

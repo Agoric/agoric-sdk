@@ -10,21 +10,9 @@ import {
   type DurationSDKType,
 } from '../../../google/protobuf/duration.js';
 import {
-  ClientUpdateProposal,
-  type ClientUpdateProposalSDKType,
-  UpgradeProposal,
-  type UpgradeProposalSDKType,
-} from '../../../ibc/core/client/v1/client.js';
-import {
-  SoftwareUpgradeProposal,
-  type SoftwareUpgradeProposalSDKType,
-  CancelSoftwareUpgradeProposal,
-  type CancelSoftwareUpgradeProposalSDKType,
-} from '../../upgrade/v1beta1/upgrade.js';
-import {
-  ParameterChangeProposal,
-  type ParameterChangeProposalSDKType,
-} from '../../params/v1beta1/params.js';
+  CoreEvalProposal,
+  type CoreEvalProposalSDKType,
+} from '../../../agoric/swingset/swingset.js';
 import {
   CommunityPoolSpendProposal,
   type CommunityPoolSpendProposalSDKType,
@@ -32,9 +20,21 @@ import {
   type CommunityPoolSpendProposalWithDepositSDKType,
 } from '../../distribution/v1beta1/distribution.js';
 import {
-  CoreEvalProposal,
-  type CoreEvalProposalSDKType,
-} from '../../../agoric/swingset/swingset.js';
+  ParameterChangeProposal,
+  type ParameterChangeProposalSDKType,
+} from '../../params/v1beta1/params.js';
+import {
+  SoftwareUpgradeProposal,
+  type SoftwareUpgradeProposalSDKType,
+  CancelSoftwareUpgradeProposal,
+  type CancelSoftwareUpgradeProposalSDKType,
+} from '../../upgrade/v1beta1/upgrade.js';
+import {
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { Decimal } from '../../../decimals.js';
@@ -295,14 +295,14 @@ export interface Proposal {
    */
   content?:
     | TextProposal
-    | ClientUpdateProposal
-    | UpgradeProposal
-    | SoftwareUpgradeProposal
-    | CancelSoftwareUpgradeProposal
-    | ParameterChangeProposal
+    | CoreEvalProposal
     | CommunityPoolSpendProposal
     | CommunityPoolSpendProposalWithDeposit
-    | CoreEvalProposal
+    | ParameterChangeProposal
+    | SoftwareUpgradeProposal
+    | CancelSoftwareUpgradeProposal
+    | ClientUpdateProposal
+    | UpgradeProposal
     | Any
     | undefined;
   /**
@@ -350,14 +350,14 @@ export interface ProposalSDKType {
   proposal_id: bigint;
   content?:
     | TextProposalSDKType
-    | ClientUpdateProposalSDKType
-    | UpgradeProposalSDKType
-    | SoftwareUpgradeProposalSDKType
-    | CancelSoftwareUpgradeProposalSDKType
-    | ParameterChangeProposalSDKType
+    | CoreEvalProposalSDKType
     | CommunityPoolSpendProposalSDKType
     | CommunityPoolSpendProposalWithDepositSDKType
-    | CoreEvalProposalSDKType
+    | ParameterChangeProposalSDKType
+    | SoftwareUpgradeProposalSDKType
+    | CancelSoftwareUpgradeProposalSDKType
+    | ClientUpdateProposalSDKType
+    | UpgradeProposalSDKType
     | AnySDKType
     | undefined;
   status: ProposalStatus;

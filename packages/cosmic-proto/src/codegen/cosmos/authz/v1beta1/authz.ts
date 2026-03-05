@@ -5,17 +5,17 @@ import {
   type TimestampSDKType,
 } from '../../../google/protobuf/timestamp.js';
 import {
-  TransferAuthorization,
-  type TransferAuthorizationSDKType,
-} from '../../../ibc/applications/transfer/v1/authz.js';
+  SendAuthorization,
+  type SendAuthorizationSDKType,
+} from '../../bank/v1beta1/authz.js';
 import {
   StakeAuthorization,
   type StakeAuthorizationSDKType,
 } from '../../staking/v1beta1/authz.js';
 import {
-  SendAuthorization,
-  type SendAuthorizationSDKType,
-} from '../../bank/v1beta1/authz.js';
+  TransferAuthorization,
+  type TransferAuthorizationSDKType,
+} from '../../../ibc/applications/transfer/v1/authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -59,9 +59,9 @@ export interface GenericAuthorizationSDKType {
 export interface Grant {
   authorization?:
     | GenericAuthorization
-    | TransferAuthorization
-    | StakeAuthorization
     | SendAuthorization
+    | StakeAuthorization
+    | TransferAuthorization
     | Any
     | undefined;
   /**
@@ -85,9 +85,9 @@ export interface GrantProtoMsg {
 export interface GrantSDKType {
   authorization?:
     | GenericAuthorizationSDKType
-    | TransferAuthorizationSDKType
-    | StakeAuthorizationSDKType
     | SendAuthorizationSDKType
+    | StakeAuthorizationSDKType
+    | TransferAuthorizationSDKType
     | AnySDKType
     | undefined;
   expiration?: TimestampSDKType;
@@ -104,9 +104,9 @@ export interface GrantAuthorization {
   grantee: string;
   authorization?:
     | GenericAuthorization
-    | TransferAuthorization
-    | StakeAuthorization
     | SendAuthorization
+    | StakeAuthorization
+    | TransferAuthorization
     | Any
     | undefined;
   expiration?: Timestamp;
@@ -127,9 +127,9 @@ export interface GrantAuthorizationSDKType {
   grantee: string;
   authorization?:
     | GenericAuthorizationSDKType
-    | TransferAuthorizationSDKType
-    | StakeAuthorizationSDKType
     | SendAuthorizationSDKType
+    | StakeAuthorizationSDKType
+    | TransferAuthorizationSDKType
     | AnySDKType
     | undefined;
   expiration?: TimestampSDKType;
