@@ -105,7 +105,7 @@ def classify(run_num, bridge_inbound, first_delivery):
             public_invitation_maker = invitation_spec.get("publicInvitationMaker")
             call_pipe = invitation_spec.get("callPipe")
 
-            # TODO: all these names are scoped by the contract being targetted,
+            # TODO: all these names are scoped by the contract being targeted,
             # so I need to scan for a board ID and build a table. This approach
             # will stop working when two different contracts use the same
             # invitation-maker name.
