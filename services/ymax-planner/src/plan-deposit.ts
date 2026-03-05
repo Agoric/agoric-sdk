@@ -226,14 +226,15 @@ export const getCurrentBalances = async (
     alchemyQueries.length
       ? getErc20Balances(alchemyQueries, powers)
       : { balances: [] },
-    spectrumAccountQueries.length
-      ? spectrumBlockchain.getBalances({
-          accounts: spectrumAccountQueries.map(queryDesc =>
-            makeSpectrumGetAddressBalanceInput(queryDesc, powers),
-          ),
-        })
-      : { balances: [] },
+    {
+      balances: [
+        { chain: 'agoric', balance: '0' },
+        { chain: 'noble', balance: '0' },
+      ],
+    },
   ]);
+
+  console.log('rabi....', { spectrumAccountResult, alchemyResult });
 
   if (
     alchemyResult.status !== 'fulfilled' ||
