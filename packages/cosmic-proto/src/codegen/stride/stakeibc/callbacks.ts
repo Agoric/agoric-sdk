@@ -14,6 +14,11 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name SplitDelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitDelegation
+ */
 export interface SplitDelegation {
   validator: string;
   amount: string;
@@ -22,10 +27,20 @@ export interface SplitDelegationProtoMsg {
   typeUrl: '/stride.stakeibc.SplitDelegation';
   value: Uint8Array;
 }
+/**
+ * @name SplitDelegationSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitDelegation
+ */
 export interface SplitDelegationSDKType {
   validator: string;
   amount: string;
 }
+/**
+ * @name SplitUndelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitUndelegation
+ */
 export interface SplitUndelegation {
   validator: string;
   nativeTokenAmount: string;
@@ -34,10 +49,20 @@ export interface SplitUndelegationProtoMsg {
   typeUrl: '/stride.stakeibc.SplitUndelegation';
   value: Uint8Array;
 }
+/**
+ * @name SplitUndelegationSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitUndelegation
+ */
 export interface SplitUndelegationSDKType {
   validator: string;
   native_token_amount: string;
 }
+/**
+ * @name DelegateCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegateCallback
+ */
 export interface DelegateCallback {
   hostZoneId: string;
   depositRecordId: bigint;
@@ -47,11 +72,21 @@ export interface DelegateCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.DelegateCallback';
   value: Uint8Array;
 }
+/**
+ * @name DelegateCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegateCallback
+ */
 export interface DelegateCallbackSDKType {
   host_zone_id: string;
   deposit_record_id: bigint;
   split_delegations: SplitDelegationSDKType[];
 }
+/**
+ * @name ClaimCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ClaimCallback
+ */
 export interface ClaimCallback {
   userRedemptionRecordId: string;
   chainId: string;
@@ -61,11 +96,21 @@ export interface ClaimCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.ClaimCallback';
   value: Uint8Array;
 }
+/**
+ * @name ClaimCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ClaimCallback
+ */
 export interface ClaimCallbackSDKType {
   user_redemption_record_id: string;
   chain_id: string;
   epoch_number: bigint;
 }
+/**
+ * @name ReinvestCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ReinvestCallback
+ */
 export interface ReinvestCallback {
   reinvestAmount: Coin;
   hostZoneId: string;
@@ -74,10 +119,20 @@ export interface ReinvestCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.ReinvestCallback';
   value: Uint8Array;
 }
+/**
+ * @name ReinvestCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ReinvestCallback
+ */
 export interface ReinvestCallbackSDKType {
   reinvest_amount: CoinSDKType;
   host_zone_id: string;
 }
+/**
+ * @name UndelegateCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.UndelegateCallback
+ */
 export interface UndelegateCallback {
   hostZoneId: string;
   splitUndelegations: SplitUndelegation[];
@@ -87,11 +142,21 @@ export interface UndelegateCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.UndelegateCallback';
   value: Uint8Array;
 }
+/**
+ * @name UndelegateCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.UndelegateCallback
+ */
 export interface UndelegateCallbackSDKType {
   host_zone_id: string;
   split_undelegations: SplitUndelegationSDKType[];
   epoch_unbonding_record_ids: bigint[];
 }
+/**
+ * @name RedemptionCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RedemptionCallback
+ */
 export interface RedemptionCallback {
   hostZoneId: string;
   epochUnbondingRecordIds: bigint[];
@@ -100,10 +165,20 @@ export interface RedemptionCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.RedemptionCallback';
   value: Uint8Array;
 }
+/**
+ * @name RedemptionCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RedemptionCallback
+ */
 export interface RedemptionCallbackSDKType {
   host_zone_id: string;
   epoch_unbonding_record_ids: bigint[];
 }
+/**
+ * @name Rebalancing
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Rebalancing
+ */
 export interface Rebalancing {
   srcValidator: string;
   dstValidator: string;
@@ -113,11 +188,21 @@ export interface RebalancingProtoMsg {
   typeUrl: '/stride.stakeibc.Rebalancing';
   value: Uint8Array;
 }
+/**
+ * @name RebalancingSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Rebalancing
+ */
 export interface RebalancingSDKType {
   src_validator: string;
   dst_validator: string;
   amt: string;
 }
+/**
+ * @name RebalanceCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RebalanceCallback
+ */
 export interface RebalanceCallback {
   hostZoneId: string;
   rebalancings: Rebalancing[];
@@ -126,10 +211,20 @@ export interface RebalanceCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.RebalanceCallback';
   value: Uint8Array;
 }
+/**
+ * @name RebalanceCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RebalanceCallback
+ */
 export interface RebalanceCallbackSDKType {
   host_zone_id: string;
   rebalancings: RebalancingSDKType[];
 }
+/**
+ * @name DetokenizeSharesCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DetokenizeSharesCallback
+ */
 export interface DetokenizeSharesCallback {
   deposit?: LSMTokenDeposit;
 }
@@ -137,9 +232,19 @@ export interface DetokenizeSharesCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.DetokenizeSharesCallback';
   value: Uint8Array;
 }
+/**
+ * @name DetokenizeSharesCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DetokenizeSharesCallback
+ */
 export interface DetokenizeSharesCallbackSDKType {
   deposit?: LSMTokenDepositSDKType;
 }
+/**
+ * @name LSMLiquidStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.LSMLiquidStake
+ */
 export interface LSMLiquidStake {
   deposit?: LSMTokenDeposit;
   hostZone?: HostZone;
@@ -149,11 +254,21 @@ export interface LSMLiquidStakeProtoMsg {
   typeUrl: '/stride.stakeibc.LSMLiquidStake';
   value: Uint8Array;
 }
+/**
+ * @name LSMLiquidStakeSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.LSMLiquidStake
+ */
 export interface LSMLiquidStakeSDKType {
   deposit?: LSMTokenDepositSDKType;
   host_zone?: HostZoneSDKType;
   validator?: ValidatorSDKType;
 }
+/**
+ * @name ValidatorSharesToTokensQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorSharesToTokensQueryCallback
+ */
 export interface ValidatorSharesToTokensQueryCallback {
   lsmLiquidStake?: LSMLiquidStake;
 }
@@ -161,20 +276,42 @@ export interface ValidatorSharesToTokensQueryCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback';
   value: Uint8Array;
 }
+/**
+ * @name ValidatorSharesToTokensQueryCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorSharesToTokensQueryCallback
+ */
 export interface ValidatorSharesToTokensQueryCallbackSDKType {
   lsm_liquid_stake?: LSMLiquidStakeSDKType;
 }
+/**
+ * @name DelegatorSharesQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegatorSharesQueryCallback
+ */
 export interface DelegatorSharesQueryCallback {
-  /** Validator delegation at the time the query is submitted */
+  /**
+   * Validator delegation at the time the query is submitted
+   */
   initialValidatorDelegation: string;
 }
 export interface DelegatorSharesQueryCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback';
   value: Uint8Array;
 }
+/**
+ * @name DelegatorSharesQueryCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegatorSharesQueryCallback
+ */
 export interface DelegatorSharesQueryCallbackSDKType {
   initial_validator_delegation: string;
 }
+/**
+ * @name CommunityPoolBalanceQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolBalanceQueryCallback
+ */
 export interface CommunityPoolBalanceQueryCallback {
   icaType: ICAAccountType;
   denom: string;
@@ -183,10 +320,20 @@ export interface CommunityPoolBalanceQueryCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback';
   value: Uint8Array;
 }
+/**
+ * @name CommunityPoolBalanceQueryCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolBalanceQueryCallback
+ */
 export interface CommunityPoolBalanceQueryCallbackSDKType {
   ica_type: ICAAccountType;
   denom: string;
 }
+/**
+ * @name TradeRouteCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRouteCallback
+ */
 export interface TradeRouteCallback {
   rewardDenom: string;
   hostDenom: string;
@@ -195,6 +342,11 @@ export interface TradeRouteCallbackProtoMsg {
   typeUrl: '/stride.stakeibc.TradeRouteCallback';
   value: Uint8Array;
 }
+/**
+ * @name TradeRouteCallbackSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRouteCallback
+ */
 export interface TradeRouteCallbackSDKType {
   reward_denom: string;
   host_denom: string;
@@ -205,8 +357,27 @@ function createBaseSplitDelegation(): SplitDelegation {
     amount: '',
   };
 }
+/**
+ * @name SplitDelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitDelegation
+ */
 export const SplitDelegation = {
   typeUrl: '/stride.stakeibc.SplitDelegation' as const,
+  is(o: any): o is SplitDelegation {
+    return (
+      o &&
+      (o.$typeUrl === SplitDelegation.typeUrl ||
+        (typeof o.validator === 'string' && typeof o.amount === 'string'))
+    );
+  },
+  isSDK(o: any): o is SplitDelegationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SplitDelegation.typeUrl ||
+        (typeof o.validator === 'string' && typeof o.amount === 'string'))
+    );
+  },
   encode(
     message: SplitDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -277,8 +448,29 @@ function createBaseSplitUndelegation(): SplitUndelegation {
     nativeTokenAmount: '',
   };
 }
+/**
+ * @name SplitUndelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.SplitUndelegation
+ */
 export const SplitUndelegation = {
   typeUrl: '/stride.stakeibc.SplitUndelegation' as const,
+  is(o: any): o is SplitUndelegation {
+    return (
+      o &&
+      (o.$typeUrl === SplitUndelegation.typeUrl ||
+        (typeof o.validator === 'string' &&
+          typeof o.nativeTokenAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is SplitUndelegationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SplitUndelegation.typeUrl ||
+        (typeof o.validator === 'string' &&
+          typeof o.native_token_amount === 'string'))
+    );
+  },
   encode(
     message: SplitUndelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -353,8 +545,35 @@ function createBaseDelegateCallback(): DelegateCallback {
     splitDelegations: [],
   };
 }
+/**
+ * @name DelegateCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegateCallback
+ */
 export const DelegateCallback = {
   typeUrl: '/stride.stakeibc.DelegateCallback' as const,
+  is(o: any): o is DelegateCallback {
+    return (
+      o &&
+      (o.$typeUrl === DelegateCallback.typeUrl ||
+        (typeof o.hostZoneId === 'string' &&
+          typeof o.depositRecordId === 'bigint' &&
+          Array.isArray(o.splitDelegations) &&
+          (!o.splitDelegations.length ||
+            SplitDelegation.is(o.splitDelegations[0]))))
+    );
+  },
+  isSDK(o: any): o is DelegateCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegateCallback.typeUrl ||
+        (typeof o.host_zone_id === 'string' &&
+          typeof o.deposit_record_id === 'bigint' &&
+          Array.isArray(o.split_delegations) &&
+          (!o.split_delegations.length ||
+            SplitDelegation.isSDK(o.split_delegations[0]))))
+    );
+  },
   encode(
     message: DelegateCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -452,8 +671,31 @@ function createBaseClaimCallback(): ClaimCallback {
     epochNumber: BigInt(0),
   };
 }
+/**
+ * @name ClaimCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ClaimCallback
+ */
 export const ClaimCallback = {
   typeUrl: '/stride.stakeibc.ClaimCallback' as const,
+  is(o: any): o is ClaimCallback {
+    return (
+      o &&
+      (o.$typeUrl === ClaimCallback.typeUrl ||
+        (typeof o.userRedemptionRecordId === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.epochNumber === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ClaimCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClaimCallback.typeUrl ||
+        (typeof o.user_redemption_record_id === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.epoch_number === 'bigint'))
+    );
+  },
   encode(
     message: ClaimCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -542,8 +784,27 @@ function createBaseReinvestCallback(): ReinvestCallback {
     hostZoneId: '',
   };
 }
+/**
+ * @name ReinvestCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ReinvestCallback
+ */
 export const ReinvestCallback = {
   typeUrl: '/stride.stakeibc.ReinvestCallback' as const,
+  is(o: any): o is ReinvestCallback {
+    return (
+      o &&
+      (o.$typeUrl === ReinvestCallback.typeUrl ||
+        (Coin.is(o.reinvestAmount) && typeof o.hostZoneId === 'string'))
+    );
+  },
+  isSDK(o: any): o is ReinvestCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ReinvestCallback.typeUrl ||
+        (Coin.isSDK(o.reinvest_amount) && typeof o.host_zone_id === 'string'))
+    );
+  },
   encode(
     message: ReinvestCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -623,8 +884,39 @@ function createBaseUndelegateCallback(): UndelegateCallback {
     epochUnbondingRecordIds: [],
   };
 }
+/**
+ * @name UndelegateCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.UndelegateCallback
+ */
 export const UndelegateCallback = {
   typeUrl: '/stride.stakeibc.UndelegateCallback' as const,
+  is(o: any): o is UndelegateCallback {
+    return (
+      o &&
+      (o.$typeUrl === UndelegateCallback.typeUrl ||
+        (typeof o.hostZoneId === 'string' &&
+          Array.isArray(o.splitUndelegations) &&
+          (!o.splitUndelegations.length ||
+            SplitUndelegation.is(o.splitUndelegations[0])) &&
+          Array.isArray(o.epochUnbondingRecordIds) &&
+          (!o.epochUnbondingRecordIds.length ||
+            typeof o.epochUnbondingRecordIds[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is UndelegateCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === UndelegateCallback.typeUrl ||
+        (typeof o.host_zone_id === 'string' &&
+          Array.isArray(o.split_undelegations) &&
+          (!o.split_undelegations.length ||
+            SplitUndelegation.isSDK(o.split_undelegations[0])) &&
+          Array.isArray(o.epoch_unbonding_record_ids) &&
+          (!o.epoch_unbonding_record_ids.length ||
+            typeof o.epoch_unbonding_record_ids[0] === 'bigint')))
+    );
+  },
   encode(
     message: UndelegateCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -739,8 +1031,33 @@ function createBaseRedemptionCallback(): RedemptionCallback {
     epochUnbondingRecordIds: [],
   };
 }
+/**
+ * @name RedemptionCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RedemptionCallback
+ */
 export const RedemptionCallback = {
   typeUrl: '/stride.stakeibc.RedemptionCallback' as const,
+  is(o: any): o is RedemptionCallback {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionCallback.typeUrl ||
+        (typeof o.hostZoneId === 'string' &&
+          Array.isArray(o.epochUnbondingRecordIds) &&
+          (!o.epochUnbondingRecordIds.length ||
+            typeof o.epochUnbondingRecordIds[0] === 'bigint')))
+    );
+  },
+  isSDK(o: any): o is RedemptionCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionCallback.typeUrl ||
+        (typeof o.host_zone_id === 'string' &&
+          Array.isArray(o.epoch_unbonding_record_ids) &&
+          (!o.epoch_unbonding_record_ids.length ||
+            typeof o.epoch_unbonding_record_ids[0] === 'bigint')))
+    );
+  },
   encode(
     message: RedemptionCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -833,8 +1150,31 @@ function createBaseRebalancing(): Rebalancing {
     amt: '',
   };
 }
+/**
+ * @name Rebalancing
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.Rebalancing
+ */
 export const Rebalancing = {
   typeUrl: '/stride.stakeibc.Rebalancing' as const,
+  is(o: any): o is Rebalancing {
+    return (
+      o &&
+      (o.$typeUrl === Rebalancing.typeUrl ||
+        (typeof o.srcValidator === 'string' &&
+          typeof o.dstValidator === 'string' &&
+          typeof o.amt === 'string'))
+    );
+  },
+  isSDK(o: any): o is RebalancingSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Rebalancing.typeUrl ||
+        (typeof o.src_validator === 'string' &&
+          typeof o.dst_validator === 'string' &&
+          typeof o.amt === 'string'))
+    );
+  },
   encode(
     message: Rebalancing,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -920,8 +1260,31 @@ function createBaseRebalanceCallback(): RebalanceCallback {
     rebalancings: [],
   };
 }
+/**
+ * @name RebalanceCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.RebalanceCallback
+ */
 export const RebalanceCallback = {
   typeUrl: '/stride.stakeibc.RebalanceCallback' as const,
+  is(o: any): o is RebalanceCallback {
+    return (
+      o &&
+      (o.$typeUrl === RebalanceCallback.typeUrl ||
+        (typeof o.hostZoneId === 'string' &&
+          Array.isArray(o.rebalancings) &&
+          (!o.rebalancings.length || Rebalancing.is(o.rebalancings[0]))))
+    );
+  },
+  isSDK(o: any): o is RebalanceCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RebalanceCallback.typeUrl ||
+        (typeof o.host_zone_id === 'string' &&
+          Array.isArray(o.rebalancings) &&
+          (!o.rebalancings.length || Rebalancing.isSDK(o.rebalancings[0]))))
+    );
+  },
   encode(
     message: RebalanceCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1002,8 +1365,19 @@ function createBaseDetokenizeSharesCallback(): DetokenizeSharesCallback {
     deposit: undefined,
   };
 }
+/**
+ * @name DetokenizeSharesCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DetokenizeSharesCallback
+ */
 export const DetokenizeSharesCallback = {
   typeUrl: '/stride.stakeibc.DetokenizeSharesCallback' as const,
+  is(o: any): o is DetokenizeSharesCallback {
+    return o && o.$typeUrl === DetokenizeSharesCallback.typeUrl;
+  },
+  isSDK(o: any): o is DetokenizeSharesCallbackSDKType {
+    return o && o.$typeUrl === DetokenizeSharesCallback.typeUrl;
+  },
   encode(
     message: DetokenizeSharesCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1088,8 +1462,19 @@ function createBaseLSMLiquidStake(): LSMLiquidStake {
     validator: undefined,
   };
 }
+/**
+ * @name LSMLiquidStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.LSMLiquidStake
+ */
 export const LSMLiquidStake = {
   typeUrl: '/stride.stakeibc.LSMLiquidStake' as const,
+  is(o: any): o is LSMLiquidStake {
+    return o && o.$typeUrl === LSMLiquidStake.typeUrl;
+  },
+  isSDK(o: any): o is LSMLiquidStakeSDKType {
+    return o && o.$typeUrl === LSMLiquidStake.typeUrl;
+  },
   encode(
     message: LSMLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1195,8 +1580,19 @@ function createBaseValidatorSharesToTokensQueryCallback(): ValidatorSharesToToke
     lsmLiquidStake: undefined,
   };
 }
+/**
+ * @name ValidatorSharesToTokensQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorSharesToTokensQueryCallback
+ */
 export const ValidatorSharesToTokensQueryCallback = {
   typeUrl: '/stride.stakeibc.ValidatorSharesToTokensQueryCallback' as const,
+  is(o: any): o is ValidatorSharesToTokensQueryCallback {
+    return o && o.$typeUrl === ValidatorSharesToTokensQueryCallback.typeUrl;
+  },
+  isSDK(o: any): o is ValidatorSharesToTokensQueryCallbackSDKType {
+    return o && o.$typeUrl === ValidatorSharesToTokensQueryCallback.typeUrl;
+  },
   encode(
     message: ValidatorSharesToTokensQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1282,8 +1678,27 @@ function createBaseDelegatorSharesQueryCallback(): DelegatorSharesQueryCallback 
     initialValidatorDelegation: '',
   };
 }
+/**
+ * @name DelegatorSharesQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.DelegatorSharesQueryCallback
+ */
 export const DelegatorSharesQueryCallback = {
   typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback' as const,
+  is(o: any): o is DelegatorSharesQueryCallback {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorSharesQueryCallback.typeUrl ||
+        typeof o.initialValidatorDelegation === 'string')
+    );
+  },
+  isSDK(o: any): o is DelegatorSharesQueryCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorSharesQueryCallback.typeUrl ||
+        typeof o.initial_validator_delegation === 'string')
+    );
+  },
   encode(
     message: DelegatorSharesQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1360,8 +1775,27 @@ function createBaseCommunityPoolBalanceQueryCallback(): CommunityPoolBalanceQuer
     denom: '',
   };
 }
+/**
+ * @name CommunityPoolBalanceQueryCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.CommunityPoolBalanceQueryCallback
+ */
 export const CommunityPoolBalanceQueryCallback = {
   typeUrl: '/stride.stakeibc.CommunityPoolBalanceQueryCallback' as const,
+  is(o: any): o is CommunityPoolBalanceQueryCallback {
+    return (
+      o &&
+      (o.$typeUrl === CommunityPoolBalanceQueryCallback.typeUrl ||
+        (isSet(o.icaType) && typeof o.denom === 'string'))
+    );
+  },
+  isSDK(o: any): o is CommunityPoolBalanceQueryCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommunityPoolBalanceQueryCallback.typeUrl ||
+        (isSet(o.ica_type) && typeof o.denom === 'string'))
+    );
+  },
   encode(
     message: CommunityPoolBalanceQueryCallback,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1446,8 +1880,28 @@ function createBaseTradeRouteCallback(): TradeRouteCallback {
     hostDenom: '',
   };
 }
+/**
+ * @name TradeRouteCallback
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.TradeRouteCallback
+ */
 export const TradeRouteCallback = {
   typeUrl: '/stride.stakeibc.TradeRouteCallback' as const,
+  is(o: any): o is TradeRouteCallback {
+    return (
+      o &&
+      (o.$typeUrl === TradeRouteCallback.typeUrl ||
+        (typeof o.rewardDenom === 'string' && typeof o.hostDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is TradeRouteCallbackSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TradeRouteCallback.typeUrl ||
+        (typeof o.reward_denom === 'string' &&
+          typeof o.host_denom === 'string'))
+    );
+  },
   encode(
     message: TradeRouteCallback,
     writer: BinaryWriter = BinaryWriter.create(),

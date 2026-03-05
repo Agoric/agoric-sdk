@@ -2,39 +2,71 @@
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** EventGrant is emitted on Msg/Grant */
+/**
+ * EventGrant is emitted on Msg/Grant
+ * @name EventGrant
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.EventGrant
+ */
 export interface EventGrant {
-  /** Msg type URL for which an autorization is granted */
+  /**
+   * Msg type URL for which an autorization is granted
+   */
   msgTypeUrl: string;
-  /** Granter account address */
+  /**
+   * Granter account address
+   */
   granter: string;
-  /** Grantee account address */
+  /**
+   * Grantee account address
+   */
   grantee: string;
 }
 export interface EventGrantProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.EventGrant';
   value: Uint8Array;
 }
-/** EventGrant is emitted on Msg/Grant */
+/**
+ * EventGrant is emitted on Msg/Grant
+ * @name EventGrantSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.EventGrant
+ */
 export interface EventGrantSDKType {
   msg_type_url: string;
   granter: string;
   grantee: string;
 }
-/** EventRevoke is emitted on Msg/Revoke */
+/**
+ * EventRevoke is emitted on Msg/Revoke
+ * @name EventRevoke
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.EventRevoke
+ */
 export interface EventRevoke {
-  /** Msg type URL for which an autorization is revoked */
+  /**
+   * Msg type URL for which an autorization is revoked
+   */
   msgTypeUrl: string;
-  /** Granter account address */
+  /**
+   * Granter account address
+   */
   granter: string;
-  /** Grantee account address */
+  /**
+   * Grantee account address
+   */
   grantee: string;
 }
 export interface EventRevokeProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.EventRevoke';
   value: Uint8Array;
 }
-/** EventRevoke is emitted on Msg/Revoke */
+/**
+ * EventRevoke is emitted on Msg/Revoke
+ * @name EventRevokeSDKType
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.EventRevoke
+ */
 export interface EventRevokeSDKType {
   msg_type_url: string;
   granter: string;
@@ -47,8 +79,33 @@ function createBaseEventGrant(): EventGrant {
     grantee: '',
   };
 }
+/**
+ * EventGrant is emitted on Msg/Grant
+ * @name EventGrant
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.EventGrant
+ */
 export const EventGrant = {
   typeUrl: '/cosmos.authz.v1beta1.EventGrant' as const,
+  aminoType: 'cosmos-sdk/EventGrant' as const,
+  is(o: any): o is EventGrant {
+    return (
+      o &&
+      (o.$typeUrl === EventGrant.typeUrl ||
+        (typeof o.msgTypeUrl === 'string' &&
+          typeof o.granter === 'string' &&
+          typeof o.grantee === 'string'))
+    );
+  },
+  isSDK(o: any): o is EventGrantSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventGrant.typeUrl ||
+        (typeof o.msg_type_url === 'string' &&
+          typeof o.granter === 'string' &&
+          typeof o.grantee === 'string'))
+    );
+  },
   encode(
     message: EventGrant,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -129,8 +186,33 @@ function createBaseEventRevoke(): EventRevoke {
     grantee: '',
   };
 }
+/**
+ * EventRevoke is emitted on Msg/Revoke
+ * @name EventRevoke
+ * @package cosmos.authz.v1beta1
+ * @see proto type: cosmos.authz.v1beta1.EventRevoke
+ */
 export const EventRevoke = {
   typeUrl: '/cosmos.authz.v1beta1.EventRevoke' as const,
+  aminoType: 'cosmos-sdk/EventRevoke' as const,
+  is(o: any): o is EventRevoke {
+    return (
+      o &&
+      (o.$typeUrl === EventRevoke.typeUrl ||
+        (typeof o.msgTypeUrl === 'string' &&
+          typeof o.granter === 'string' &&
+          typeof o.grantee === 'string'))
+    );
+  },
+  isSDK(o: any): o is EventRevokeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EventRevoke.typeUrl ||
+        (typeof o.msg_type_url === 'string' &&
+          typeof o.granter === 'string' &&
+          typeof o.grantee === 'string'))
+    );
+  },
   encode(
     message: EventRevoke,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -10,10 +10,19 @@ import {
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 
 /**
- * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {StreamCell} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
+ */
+
+/**
+ * @typedef {{
+ *   code?: number;
+ *   codespace?: string;
+ *   height?: string | number;
+ *   log?: string;
+ *   value?: string;
+ * }} AbciQueryResponse
  */
 
 const kindToRpc = /** @type {const} */ ({
@@ -130,6 +139,9 @@ export const makeVStorage = ({ fetch }, config) => {
     }
 
     const { value: b64Value } = response;
+    if (typeof b64Value !== 'string') {
+      throw Error(`missing value reading ${kind} of ${path}`);
+    }
     const result = codec.response.decode(decodeBase64(b64Value));
     /** @type {QueryMetaResponseBase} */
     const metaResponseBase = {

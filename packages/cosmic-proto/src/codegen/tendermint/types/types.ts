@@ -63,7 +63,12 @@ export function signedMsgTypeToJSON(object: SignedMsgType): string {
       return 'UNRECOGNIZED';
   }
 }
-/** PartsetHeader */
+/**
+ * PartsetHeader
+ * @name PartSetHeader
+ * @package tendermint.types
+ * @see proto type: tendermint.types.PartSetHeader
+ */
 export interface PartSetHeader {
   total: number;
   hash: Uint8Array;
@@ -72,11 +77,21 @@ export interface PartSetHeaderProtoMsg {
   typeUrl: '/tendermint.types.PartSetHeader';
   value: Uint8Array;
 }
-/** PartsetHeader */
+/**
+ * PartsetHeader
+ * @name PartSetHeaderSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.PartSetHeader
+ */
 export interface PartSetHeaderSDKType {
   total: number;
   hash: Uint8Array;
 }
+/**
+ * @name Part
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Part
+ */
 export interface Part {
   index: number;
   bytes: Uint8Array;
@@ -86,12 +101,22 @@ export interface PartProtoMsg {
   typeUrl: '/tendermint.types.Part';
   value: Uint8Array;
 }
+/**
+ * @name PartSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Part
+ */
 export interface PartSDKType {
   index: number;
   bytes: Uint8Array;
   proof: ProofSDKType;
 }
-/** BlockID */
+/**
+ * BlockID
+ * @name BlockID
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockID
+ */
 export interface BlockID {
   hash: Uint8Array;
   partSetHeader: PartSetHeader;
@@ -100,44 +125,81 @@ export interface BlockIDProtoMsg {
   typeUrl: '/tendermint.types.BlockID';
   value: Uint8Array;
 }
-/** BlockID */
+/**
+ * BlockID
+ * @name BlockIDSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockID
+ */
 export interface BlockIDSDKType {
   hash: Uint8Array;
   part_set_header: PartSetHeaderSDKType;
 }
-/** Header defines the structure of a block header. */
+/**
+ * Header defines the structure of a block header.
+ * @name Header
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Header
+ */
 export interface Header {
-  /** basic block info */
+  /**
+   * basic block info
+   */
   version: Consensus;
   chainId: string;
   height: bigint;
   time: Timestamp;
-  /** prev block info */
+  /**
+   * prev block info
+   */
   lastBlockId: BlockID;
-  /** hashes of block data */
+  /**
+   * hashes of block data
+   */
   lastCommitHash: Uint8Array;
-  /** transactions */
+  /**
+   * transactions
+   */
   dataHash: Uint8Array;
-  /** hashes from the app output from the prev block */
+  /**
+   * hashes from the app output from the prev block
+   */
   validatorsHash: Uint8Array;
-  /** validators for the next block */
+  /**
+   * validators for the next block
+   */
   nextValidatorsHash: Uint8Array;
-  /** consensus params for current block */
+  /**
+   * consensus params for current block
+   */
   consensusHash: Uint8Array;
-  /** state after txs from the previous block */
+  /**
+   * state after txs from the previous block
+   */
   appHash: Uint8Array;
-  /** root hash of all results from the txs from the previous block */
+  /**
+   * root hash of all results from the txs from the previous block
+   */
   lastResultsHash: Uint8Array;
-  /** consensus info */
+  /**
+   * consensus info
+   */
   evidenceHash: Uint8Array;
-  /** original proposer of the block */
+  /**
+   * original proposer of the block
+   */
   proposerAddress: Uint8Array;
 }
 export interface HeaderProtoMsg {
   typeUrl: '/tendermint.types.Header';
   value: Uint8Array;
 }
-/** Header defines the structure of a block header. */
+/**
+ * Header defines the structure of a block header.
+ * @name HeaderSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Header
+ */
 export interface HeaderSDKType {
   version: ConsensusSDKType;
   chain_id: string;
@@ -154,7 +216,12 @@ export interface HeaderSDKType {
   evidence_hash: Uint8Array;
   proposer_address: Uint8Array;
 }
-/** Data contains the set of transactions included in the block */
+/**
+ * Data contains the set of transactions included in the block
+ * @name Data
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Data
+ */
 export interface Data {
   /**
    * Txs that will be applied by state @ block.Height+1.
@@ -167,19 +234,29 @@ export interface DataProtoMsg {
   typeUrl: '/tendermint.types.Data';
   value: Uint8Array;
 }
-/** Data contains the set of transactions included in the block */
+/**
+ * Data contains the set of transactions included in the block
+ * @name DataSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Data
+ */
 export interface DataSDKType {
   txs: Uint8Array[];
 }
 /**
  * Vote represents a prevote or precommit vote from validators for
  * consensus.
+ * @name Vote
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Vote
  */
 export interface Vote {
   type: SignedMsgType;
   height: bigint;
   round: number;
-  /** zero if vote is nil. */
+  /**
+   * zero if vote is nil.
+   */
   blockId: BlockID;
   timestamp: Timestamp;
   validatorAddress: Uint8Array;
@@ -208,6 +285,9 @@ export interface VoteProtoMsg {
 /**
  * Vote represents a prevote or precommit vote from validators for
  * consensus.
+ * @name VoteSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Vote
  */
 export interface VoteSDKType {
   type: SignedMsgType;
@@ -221,7 +301,12 @@ export interface VoteSDKType {
   extension: Uint8Array;
   extension_signature: Uint8Array;
 }
-/** Commit contains the evidence that a block was committed by a set of validators. */
+/**
+ * Commit contains the evidence that a block was committed by a set of validators.
+ * @name Commit
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Commit
+ */
 export interface Commit {
   height: bigint;
   round: number;
@@ -232,14 +317,24 @@ export interface CommitProtoMsg {
   typeUrl: '/tendermint.types.Commit';
   value: Uint8Array;
 }
-/** Commit contains the evidence that a block was committed by a set of validators. */
+/**
+ * Commit contains the evidence that a block was committed by a set of validators.
+ * @name CommitSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Commit
+ */
 export interface CommitSDKType {
   height: bigint;
   round: number;
   block_id: BlockIDSDKType;
   signatures: CommitSigSDKType[];
 }
-/** CommitSig is a part of the Vote included in a Commit. */
+/**
+ * CommitSig is a part of the Vote included in a Commit.
+ * @name CommitSig
+ * @package tendermint.types
+ * @see proto type: tendermint.types.CommitSig
+ */
 export interface CommitSig {
   blockIdFlag: BlockIDFlag;
   validatorAddress: Uint8Array;
@@ -250,13 +345,23 @@ export interface CommitSigProtoMsg {
   typeUrl: '/tendermint.types.CommitSig';
   value: Uint8Array;
 }
-/** CommitSig is a part of the Vote included in a Commit. */
+/**
+ * CommitSig is a part of the Vote included in a Commit.
+ * @name CommitSigSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.CommitSig
+ */
 export interface CommitSigSDKType {
   block_id_flag: BlockIDFlag;
   validator_address: Uint8Array;
   timestamp: TimestampSDKType;
   signature: Uint8Array;
 }
+/**
+ * @name ExtendedCommit
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ExtendedCommit
+ */
 export interface ExtendedCommit {
   height: bigint;
   round: number;
@@ -267,6 +372,11 @@ export interface ExtendedCommitProtoMsg {
   typeUrl: '/tendermint.types.ExtendedCommit';
   value: Uint8Array;
 }
+/**
+ * @name ExtendedCommitSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ExtendedCommit
+ */
 export interface ExtendedCommitSDKType {
   height: bigint;
   round: number;
@@ -277,15 +387,22 @@ export interface ExtendedCommitSDKType {
  * ExtendedCommitSig retains all the same fields as CommitSig but adds vote
  * extension-related fields. We use two signatures to ensure backwards compatibility.
  * That is the digest of the original signature is still the same in prior versions
+ * @name ExtendedCommitSig
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ExtendedCommitSig
  */
 export interface ExtendedCommitSig {
   blockIdFlag: BlockIDFlag;
   validatorAddress: Uint8Array;
   timestamp: Timestamp;
   signature: Uint8Array;
-  /** Vote extension data */
+  /**
+   * Vote extension data
+   */
   extension: Uint8Array;
-  /** Vote extension signature */
+  /**
+   * Vote extension signature
+   */
   extensionSignature: Uint8Array;
 }
 export interface ExtendedCommitSigProtoMsg {
@@ -296,6 +413,9 @@ export interface ExtendedCommitSigProtoMsg {
  * ExtendedCommitSig retains all the same fields as CommitSig but adds vote
  * extension-related fields. We use two signatures to ensure backwards compatibility.
  * That is the digest of the original signature is still the same in prior versions
+ * @name ExtendedCommitSigSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ExtendedCommitSig
  */
 export interface ExtendedCommitSigSDKType {
   block_id_flag: BlockIDFlag;
@@ -305,6 +425,11 @@ export interface ExtendedCommitSigSDKType {
   extension: Uint8Array;
   extension_signature: Uint8Array;
 }
+/**
+ * @name Proposal
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Proposal
+ */
 export interface Proposal {
   type: SignedMsgType;
   height: bigint;
@@ -318,6 +443,11 @@ export interface ProposalProtoMsg {
   typeUrl: '/tendermint.types.Proposal';
   value: Uint8Array;
 }
+/**
+ * @name ProposalSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Proposal
+ */
 export interface ProposalSDKType {
   type: SignedMsgType;
   height: bigint;
@@ -327,6 +457,11 @@ export interface ProposalSDKType {
   timestamp: TimestampSDKType;
   signature: Uint8Array;
 }
+/**
+ * @name SignedHeader
+ * @package tendermint.types
+ * @see proto type: tendermint.types.SignedHeader
+ */
 export interface SignedHeader {
   header?: Header;
   commit?: Commit;
@@ -335,10 +470,20 @@ export interface SignedHeaderProtoMsg {
   typeUrl: '/tendermint.types.SignedHeader';
   value: Uint8Array;
 }
+/**
+ * @name SignedHeaderSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.SignedHeader
+ */
 export interface SignedHeaderSDKType {
   header?: HeaderSDKType;
   commit?: CommitSDKType;
 }
+/**
+ * @name LightBlock
+ * @package tendermint.types
+ * @see proto type: tendermint.types.LightBlock
+ */
 export interface LightBlock {
   signedHeader?: SignedHeader;
   validatorSet?: ValidatorSet;
@@ -347,10 +492,20 @@ export interface LightBlockProtoMsg {
   typeUrl: '/tendermint.types.LightBlock';
   value: Uint8Array;
 }
+/**
+ * @name LightBlockSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.LightBlock
+ */
 export interface LightBlockSDKType {
   signed_header?: SignedHeaderSDKType;
   validator_set?: ValidatorSetSDKType;
 }
+/**
+ * @name BlockMeta
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockMeta
+ */
 export interface BlockMeta {
   blockId: BlockID;
   blockSize: bigint;
@@ -361,13 +516,23 @@ export interface BlockMetaProtoMsg {
   typeUrl: '/tendermint.types.BlockMeta';
   value: Uint8Array;
 }
+/**
+ * @name BlockMetaSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockMeta
+ */
 export interface BlockMetaSDKType {
   block_id: BlockIDSDKType;
   block_size: bigint;
   header: HeaderSDKType;
   num_txs: bigint;
 }
-/** TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree. */
+/**
+ * TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
+ * @name TxProof
+ * @package tendermint.types
+ * @see proto type: tendermint.types.TxProof
+ */
 export interface TxProof {
   rootHash: Uint8Array;
   data: Uint8Array;
@@ -377,7 +542,12 @@ export interface TxProofProtoMsg {
   typeUrl: '/tendermint.types.TxProof';
   value: Uint8Array;
 }
-/** TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree. */
+/**
+ * TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
+ * @name TxProofSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.TxProof
+ */
 export interface TxProofSDKType {
   root_hash: Uint8Array;
   data: Uint8Array;
@@ -389,8 +559,30 @@ function createBasePartSetHeader(): PartSetHeader {
     hash: new Uint8Array(),
   };
 }
+/**
+ * PartsetHeader
+ * @name PartSetHeader
+ * @package tendermint.types
+ * @see proto type: tendermint.types.PartSetHeader
+ */
 export const PartSetHeader = {
   typeUrl: '/tendermint.types.PartSetHeader' as const,
+  is(o: any): o is PartSetHeader {
+    return (
+      o &&
+      (o.$typeUrl === PartSetHeader.typeUrl ||
+        (typeof o.total === 'number' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string')))
+    );
+  },
+  isSDK(o: any): o is PartSetHeaderSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PartSetHeader.typeUrl ||
+        (typeof o.total === 'number' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string')))
+    );
+  },
   encode(
     message: PartSetHeader,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -467,8 +659,31 @@ function createBasePart(): Part {
     proof: Proof.fromPartial({}),
   };
 }
+/**
+ * @name Part
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Part
+ */
 export const Part = {
   typeUrl: '/tendermint.types.Part' as const,
+  is(o: any): o is Part {
+    return (
+      o &&
+      (o.$typeUrl === Part.typeUrl ||
+        (typeof o.index === 'number' &&
+          (o.bytes instanceof Uint8Array || typeof o.bytes === 'string') &&
+          Proof.is(o.proof)))
+    );
+  },
+  isSDK(o: any): o is PartSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Part.typeUrl ||
+        (typeof o.index === 'number' &&
+          (o.bytes instanceof Uint8Array || typeof o.bytes === 'string') &&
+          Proof.isSDK(o.proof)))
+    );
+  },
   encode(
     message: Part,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -557,8 +772,30 @@ function createBaseBlockID(): BlockID {
     partSetHeader: PartSetHeader.fromPartial({}),
   };
 }
+/**
+ * BlockID
+ * @name BlockID
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockID
+ */
 export const BlockID = {
   typeUrl: '/tendermint.types.BlockID' as const,
+  is(o: any): o is BlockID {
+    return (
+      o &&
+      (o.$typeUrl === BlockID.typeUrl ||
+        ((o.hash instanceof Uint8Array || typeof o.hash === 'string') &&
+          PartSetHeader.is(o.partSetHeader)))
+    );
+  },
+  isSDK(o: any): o is BlockIDSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BlockID.typeUrl ||
+        ((o.hash instanceof Uint8Array || typeof o.hash === 'string') &&
+          PartSetHeader.isSDK(o.part_set_header)))
+    );
+  },
   encode(
     message: BlockID,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -657,8 +894,71 @@ function createBaseHeader(): Header {
     proposerAddress: new Uint8Array(),
   };
 }
+/**
+ * Header defines the structure of a block header.
+ * @name Header
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Header
+ */
 export const Header = {
   typeUrl: '/tendermint.types.Header' as const,
+  is(o: any): o is Header {
+    return (
+      o &&
+      (o.$typeUrl === Header.typeUrl ||
+        (Consensus.is(o.version) &&
+          typeof o.chainId === 'string' &&
+          typeof o.height === 'bigint' &&
+          Timestamp.is(o.time) &&
+          BlockID.is(o.lastBlockId) &&
+          (o.lastCommitHash instanceof Uint8Array ||
+            typeof o.lastCommitHash === 'string') &&
+          (o.dataHash instanceof Uint8Array ||
+            typeof o.dataHash === 'string') &&
+          (o.validatorsHash instanceof Uint8Array ||
+            typeof o.validatorsHash === 'string') &&
+          (o.nextValidatorsHash instanceof Uint8Array ||
+            typeof o.nextValidatorsHash === 'string') &&
+          (o.consensusHash instanceof Uint8Array ||
+            typeof o.consensusHash === 'string') &&
+          (o.appHash instanceof Uint8Array || typeof o.appHash === 'string') &&
+          (o.lastResultsHash instanceof Uint8Array ||
+            typeof o.lastResultsHash === 'string') &&
+          (o.evidenceHash instanceof Uint8Array ||
+            typeof o.evidenceHash === 'string') &&
+          (o.proposerAddress instanceof Uint8Array ||
+            typeof o.proposerAddress === 'string')))
+    );
+  },
+  isSDK(o: any): o is HeaderSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Header.typeUrl ||
+        (Consensus.isSDK(o.version) &&
+          typeof o.chain_id === 'string' &&
+          typeof o.height === 'bigint' &&
+          Timestamp.isSDK(o.time) &&
+          BlockID.isSDK(o.last_block_id) &&
+          (o.last_commit_hash instanceof Uint8Array ||
+            typeof o.last_commit_hash === 'string') &&
+          (o.data_hash instanceof Uint8Array ||
+            typeof o.data_hash === 'string') &&
+          (o.validators_hash instanceof Uint8Array ||
+            typeof o.validators_hash === 'string') &&
+          (o.next_validators_hash instanceof Uint8Array ||
+            typeof o.next_validators_hash === 'string') &&
+          (o.consensus_hash instanceof Uint8Array ||
+            typeof o.consensus_hash === 'string') &&
+          (o.app_hash instanceof Uint8Array ||
+            typeof o.app_hash === 'string') &&
+          (o.last_results_hash instanceof Uint8Array ||
+            typeof o.last_results_hash === 'string') &&
+          (o.evidence_hash instanceof Uint8Array ||
+            typeof o.evidence_hash === 'string') &&
+          (o.proposer_address instanceof Uint8Array ||
+            typeof o.proposer_address === 'string')))
+    );
+  },
   encode(
     message: Header,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -921,8 +1221,34 @@ function createBaseData(): Data {
     txs: [],
   };
 }
+/**
+ * Data contains the set of transactions included in the block
+ * @name Data
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Data
+ */
 export const Data = {
   typeUrl: '/tendermint.types.Data' as const,
+  is(o: any): o is Data {
+    return (
+      o &&
+      (o.$typeUrl === Data.typeUrl ||
+        (Array.isArray(o.txs) &&
+          (!o.txs.length ||
+            o.txs[0] instanceof Uint8Array ||
+            typeof o.txs[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is DataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Data.typeUrl ||
+        (Array.isArray(o.txs) &&
+          (!o.txs.length ||
+            o.txs[0] instanceof Uint8Array ||
+            typeof o.txs[0] === 'string')))
+    );
+  },
   encode(
     message: Data,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1000,8 +1326,55 @@ function createBaseVote(): Vote {
     extensionSignature: new Uint8Array(),
   };
 }
+/**
+ * Vote represents a prevote or precommit vote from validators for
+ * consensus.
+ * @name Vote
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Vote
+ */
 export const Vote = {
   typeUrl: '/tendermint.types.Vote' as const,
+  is(o: any): o is Vote {
+    return (
+      o &&
+      (o.$typeUrl === Vote.typeUrl ||
+        (isSet(o.type) &&
+          typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.is(o.blockId) &&
+          Timestamp.is(o.timestamp) &&
+          (o.validatorAddress instanceof Uint8Array ||
+            typeof o.validatorAddress === 'string') &&
+          typeof o.validatorIndex === 'number' &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          (o.extension instanceof Uint8Array ||
+            typeof o.extension === 'string') &&
+          (o.extensionSignature instanceof Uint8Array ||
+            typeof o.extensionSignature === 'string')))
+    );
+  },
+  isSDK(o: any): o is VoteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Vote.typeUrl ||
+        (isSet(o.type) &&
+          typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.isSDK(o.block_id) &&
+          Timestamp.isSDK(o.timestamp) &&
+          (o.validator_address instanceof Uint8Array ||
+            typeof o.validator_address === 'string') &&
+          typeof o.validator_index === 'number' &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          (o.extension instanceof Uint8Array ||
+            typeof o.extension === 'string') &&
+          (o.extension_signature instanceof Uint8Array ||
+            typeof o.extension_signature === 'string')))
+    );
+  },
   encode(
     message: Vote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1194,8 +1567,36 @@ function createBaseCommit(): Commit {
     signatures: [],
   };
 }
+/**
+ * Commit contains the evidence that a block was committed by a set of validators.
+ * @name Commit
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Commit
+ */
 export const Commit = {
   typeUrl: '/tendermint.types.Commit' as const,
+  is(o: any): o is Commit {
+    return (
+      o &&
+      (o.$typeUrl === Commit.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.is(o.blockId) &&
+          Array.isArray(o.signatures) &&
+          (!o.signatures.length || CommitSig.is(o.signatures[0]))))
+    );
+  },
+  isSDK(o: any): o is CommitSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Commit.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.isSDK(o.block_id) &&
+          Array.isArray(o.signatures) &&
+          (!o.signatures.length || CommitSig.isSDK(o.signatures[0]))))
+    );
+  },
   encode(
     message: Commit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1309,8 +1710,38 @@ function createBaseCommitSig(): CommitSig {
     signature: new Uint8Array(),
   };
 }
+/**
+ * CommitSig is a part of the Vote included in a Commit.
+ * @name CommitSig
+ * @package tendermint.types
+ * @see proto type: tendermint.types.CommitSig
+ */
 export const CommitSig = {
   typeUrl: '/tendermint.types.CommitSig' as const,
+  is(o: any): o is CommitSig {
+    return (
+      o &&
+      (o.$typeUrl === CommitSig.typeUrl ||
+        (isSet(o.blockIdFlag) &&
+          (o.validatorAddress instanceof Uint8Array ||
+            typeof o.validatorAddress === 'string') &&
+          Timestamp.is(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string')))
+    );
+  },
+  isSDK(o: any): o is CommitSigSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommitSig.typeUrl ||
+        (isSet(o.block_id_flag) &&
+          (o.validator_address instanceof Uint8Array ||
+            typeof o.validator_address === 'string') &&
+          Timestamp.isSDK(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string')))
+    );
+  },
   encode(
     message: CommitSig,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1422,8 +1853,37 @@ function createBaseExtendedCommit(): ExtendedCommit {
     extendedSignatures: [],
   };
 }
+/**
+ * @name ExtendedCommit
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ExtendedCommit
+ */
 export const ExtendedCommit = {
   typeUrl: '/tendermint.types.ExtendedCommit' as const,
+  is(o: any): o is ExtendedCommit {
+    return (
+      o &&
+      (o.$typeUrl === ExtendedCommit.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.is(o.blockId) &&
+          Array.isArray(o.extendedSignatures) &&
+          (!o.extendedSignatures.length ||
+            ExtendedCommitSig.is(o.extendedSignatures[0]))))
+    );
+  },
+  isSDK(o: any): o is ExtendedCommitSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ExtendedCommit.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          BlockID.isSDK(o.block_id) &&
+          Array.isArray(o.extended_signatures) &&
+          (!o.extended_signatures.length ||
+            ExtendedCommitSig.isSDK(o.extended_signatures[0]))))
+    );
+  },
   encode(
     message: ExtendedCommit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1544,8 +2004,48 @@ function createBaseExtendedCommitSig(): ExtendedCommitSig {
     extensionSignature: new Uint8Array(),
   };
 }
+/**
+ * ExtendedCommitSig retains all the same fields as CommitSig but adds vote
+ * extension-related fields. We use two signatures to ensure backwards compatibility.
+ * That is the digest of the original signature is still the same in prior versions
+ * @name ExtendedCommitSig
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ExtendedCommitSig
+ */
 export const ExtendedCommitSig = {
   typeUrl: '/tendermint.types.ExtendedCommitSig' as const,
+  is(o: any): o is ExtendedCommitSig {
+    return (
+      o &&
+      (o.$typeUrl === ExtendedCommitSig.typeUrl ||
+        (isSet(o.blockIdFlag) &&
+          (o.validatorAddress instanceof Uint8Array ||
+            typeof o.validatorAddress === 'string') &&
+          Timestamp.is(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          (o.extension instanceof Uint8Array ||
+            typeof o.extension === 'string') &&
+          (o.extensionSignature instanceof Uint8Array ||
+            typeof o.extensionSignature === 'string')))
+    );
+  },
+  isSDK(o: any): o is ExtendedCommitSigSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ExtendedCommitSig.typeUrl ||
+        (isSet(o.block_id_flag) &&
+          (o.validator_address instanceof Uint8Array ||
+            typeof o.validator_address === 'string') &&
+          Timestamp.isSDK(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          (o.extension instanceof Uint8Array ||
+            typeof o.extension === 'string') &&
+          (o.extension_signature instanceof Uint8Array ||
+            typeof o.extension_signature === 'string')))
+    );
+  },
   encode(
     message: ExtendedCommitSig,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1690,8 +2190,41 @@ function createBaseProposal(): Proposal {
     signature: new Uint8Array(),
   };
 }
+/**
+ * @name Proposal
+ * @package tendermint.types
+ * @see proto type: tendermint.types.Proposal
+ */
 export const Proposal = {
   typeUrl: '/tendermint.types.Proposal' as const,
+  is(o: any): o is Proposal {
+    return (
+      o &&
+      (o.$typeUrl === Proposal.typeUrl ||
+        (isSet(o.type) &&
+          typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          typeof o.polRound === 'number' &&
+          BlockID.is(o.blockId) &&
+          Timestamp.is(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string')))
+    );
+  },
+  isSDK(o: any): o is ProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Proposal.typeUrl ||
+        (isSet(o.type) &&
+          typeof o.height === 'bigint' &&
+          typeof o.round === 'number' &&
+          typeof o.pol_round === 'number' &&
+          BlockID.isSDK(o.block_id) &&
+          Timestamp.isSDK(o.timestamp) &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string')))
+    );
+  },
   encode(
     message: Proposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1834,8 +2367,19 @@ function createBaseSignedHeader(): SignedHeader {
     commit: undefined,
   };
 }
+/**
+ * @name SignedHeader
+ * @package tendermint.types
+ * @see proto type: tendermint.types.SignedHeader
+ */
 export const SignedHeader = {
   typeUrl: '/tendermint.types.SignedHeader' as const,
+  is(o: any): o is SignedHeader {
+    return o && o.$typeUrl === SignedHeader.typeUrl;
+  },
+  isSDK(o: any): o is SignedHeaderSDKType {
+    return o && o.$typeUrl === SignedHeader.typeUrl;
+  },
   encode(
     message: SignedHeader,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1914,8 +2458,19 @@ function createBaseLightBlock(): LightBlock {
     validatorSet: undefined,
   };
 }
+/**
+ * @name LightBlock
+ * @package tendermint.types
+ * @see proto type: tendermint.types.LightBlock
+ */
 export const LightBlock = {
   typeUrl: '/tendermint.types.LightBlock' as const,
+  is(o: any): o is LightBlock {
+    return o && o.$typeUrl === LightBlock.typeUrl;
+  },
+  isSDK(o: any): o is LightBlockSDKType {
+    return o && o.$typeUrl === LightBlock.typeUrl;
+  },
   encode(
     message: LightBlock,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2010,8 +2565,33 @@ function createBaseBlockMeta(): BlockMeta {
     numTxs: BigInt(0),
   };
 }
+/**
+ * @name BlockMeta
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockMeta
+ */
 export const BlockMeta = {
   typeUrl: '/tendermint.types.BlockMeta' as const,
+  is(o: any): o is BlockMeta {
+    return (
+      o &&
+      (o.$typeUrl === BlockMeta.typeUrl ||
+        (BlockID.is(o.blockId) &&
+          typeof o.blockSize === 'bigint' &&
+          Header.is(o.header) &&
+          typeof o.numTxs === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is BlockMetaSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BlockMeta.typeUrl ||
+        (BlockID.isSDK(o.block_id) &&
+          typeof o.block_size === 'bigint' &&
+          Header.isSDK(o.header) &&
+          typeof o.num_txs === 'bigint'))
+    );
+  },
   encode(
     message: BlockMeta,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2125,8 +2705,31 @@ function createBaseTxProof(): TxProof {
     proof: undefined,
   };
 }
+/**
+ * TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
+ * @name TxProof
+ * @package tendermint.types
+ * @see proto type: tendermint.types.TxProof
+ */
 export const TxProof = {
   typeUrl: '/tendermint.types.TxProof' as const,
+  is(o: any): o is TxProof {
+    return (
+      o &&
+      (o.$typeUrl === TxProof.typeUrl ||
+        ((o.rootHash instanceof Uint8Array || typeof o.rootHash === 'string') &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is TxProofSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxProof.typeUrl ||
+        ((o.root_hash instanceof Uint8Array ||
+          typeof o.root_hash === 'string') &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: TxProof,
     writer: BinaryWriter = BinaryWriter.create(),

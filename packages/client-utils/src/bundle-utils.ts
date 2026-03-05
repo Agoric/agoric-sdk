@@ -7,11 +7,11 @@ import {
   MsgInstallBundle,
   MsgInstallBundleResponse,
   MsgSendChunk,
-} from './codegen/agoric/swingset/msgs.js';
+} from '@agoric/cosmic-proto/codegen/agoric/swingset/msgs.js';
 import type {
   ChunkedArtifact,
   ChunkInfo,
-} from './codegen/agoric/swingset/swingset.js';
+} from '@agoric/cosmic-proto/codegen/agoric/swingset/swingset.js';
 
 export interface BundleJson {
   moduleFormat: 'endoZipBase64';

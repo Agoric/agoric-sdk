@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../helpers.js';
-import { BinaryReader } from '../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgInstallBundle,
   MsgInstallBundleResponse,
@@ -16,7 +16,7 @@ import {
   MsgProvisionResponse,
   MsgCoreEval,
   MsgCoreEvalResponse,
-} from './msgs.js';
+} from '@agoric/cosmic-proto/codegen/agoric/swingset/msgs.js';
 /** Transactions. */
 export interface Msg {
   /** Install a JavaScript sources bundle on the chain's SwingSet controller. */
@@ -39,8 +39,8 @@ export interface Msg {
   coreEval(request: MsgCoreEval): Promise<MsgCoreEvalResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.installBundle = this.installBundle.bind(this);
     this.sendChunk = this.sendChunk.bind(this);
@@ -120,3 +120,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

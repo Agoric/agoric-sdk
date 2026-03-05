@@ -15,6 +15,9 @@ import { type JsonSafe } from '../../../../json-safe.js';
  * end, the timeout for this upgrade attempt and the next packet sequence
  * which allows the counterparty to efficiently know the highest sequence it has received.
  * The next sequence send is used for pruning and upgrading from unordered to ordered channels.
+ * @name Upgrade
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Upgrade
  */
 export interface Upgrade {
   fields: UpgradeFields;
@@ -31,6 +34,9 @@ export interface UpgradeProtoMsg {
  * end, the timeout for this upgrade attempt and the next packet sequence
  * which allows the counterparty to efficiently know the highest sequence it has received.
  * The next sequence send is used for pruning and upgrading from unordered to ordered channels.
+ * @name UpgradeSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Upgrade
  */
 export interface UpgradeSDKType {
   fields: UpgradeFieldsSDKType;
@@ -40,6 +46,9 @@ export interface UpgradeSDKType {
 /**
  * UpgradeFields are the fields in a channel end which may be changed
  * during a channel upgrade.
+ * @name UpgradeFields
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.UpgradeFields
  */
 export interface UpgradeFields {
   ordering: Order;
@@ -53,6 +62,9 @@ export interface UpgradeFieldsProtoMsg {
 /**
  * UpgradeFields are the fields in a channel end which may be changed
  * during a channel upgrade.
+ * @name UpgradeFieldsSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.UpgradeFields
  */
 export interface UpgradeFieldsSDKType {
   ordering: Order;
@@ -63,11 +75,18 @@ export interface UpgradeFieldsSDKType {
  * ErrorReceipt defines a type which encapsulates the upgrade sequence and error associated with the
  * upgrade handshake failure. When a channel upgrade handshake is aborted both chains are expected to increment to the
  * next sequence.
+ * @name ErrorReceipt
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.ErrorReceipt
  */
 export interface ErrorReceipt {
-  /** the channel upgrade sequence */
+  /**
+   * the channel upgrade sequence
+   */
   sequence: bigint;
-  /** the error message detailing the cause of failure */
+  /**
+   * the error message detailing the cause of failure
+   */
   message: string;
 }
 export interface ErrorReceiptProtoMsg {
@@ -78,6 +97,9 @@ export interface ErrorReceiptProtoMsg {
  * ErrorReceipt defines a type which encapsulates the upgrade sequence and error associated with the
  * upgrade handshake failure. When a channel upgrade handshake is aborted both chains are expected to increment to the
  * next sequence.
+ * @name ErrorReceiptSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.ErrorReceipt
  */
 export interface ErrorReceiptSDKType {
   sequence: bigint;
@@ -90,8 +112,37 @@ function createBaseUpgrade(): Upgrade {
     nextSequenceSend: BigInt(0),
   };
 }
+/**
+ * Upgrade is a verifiable type which contains the relevant information
+ * for an attempted upgrade. It provides the proposed changes to the channel
+ * end, the timeout for this upgrade attempt and the next packet sequence
+ * which allows the counterparty to efficiently know the highest sequence it has received.
+ * The next sequence send is used for pruning and upgrading from unordered to ordered channels.
+ * @name Upgrade
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Upgrade
+ */
 export const Upgrade = {
   typeUrl: '/ibc.core.channel.v1.Upgrade' as const,
+  aminoType: 'cosmos-sdk/Upgrade' as const,
+  is(o: any): o is Upgrade {
+    return (
+      o &&
+      (o.$typeUrl === Upgrade.typeUrl ||
+        (UpgradeFields.is(o.fields) &&
+          Timeout.is(o.timeout) &&
+          typeof o.nextSequenceSend === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is UpgradeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Upgrade.typeUrl ||
+        (UpgradeFields.isSDK(o.fields) &&
+          Timeout.isSDK(o.timeout) &&
+          typeof o.next_sequence_send === 'bigint'))
+    );
+  },
   encode(
     message: Upgrade,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -196,8 +247,38 @@ function createBaseUpgradeFields(): UpgradeFields {
     version: '',
   };
 }
+/**
+ * UpgradeFields are the fields in a channel end which may be changed
+ * during a channel upgrade.
+ * @name UpgradeFields
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.UpgradeFields
+ */
 export const UpgradeFields = {
   typeUrl: '/ibc.core.channel.v1.UpgradeFields' as const,
+  aminoType: 'cosmos-sdk/UpgradeFields' as const,
+  is(o: any): o is UpgradeFields {
+    return (
+      o &&
+      (o.$typeUrl === UpgradeFields.typeUrl ||
+        (isSet(o.ordering) &&
+          Array.isArray(o.connectionHops) &&
+          (!o.connectionHops.length ||
+            typeof o.connectionHops[0] === 'string') &&
+          typeof o.version === 'string'))
+    );
+  },
+  isSDK(o: any): o is UpgradeFieldsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === UpgradeFields.typeUrl ||
+        (isSet(o.ordering) &&
+          Array.isArray(o.connection_hops) &&
+          (!o.connection_hops.length ||
+            typeof o.connection_hops[0] === 'string') &&
+          typeof o.version === 'string'))
+    );
+  },
   encode(
     message: UpgradeFields,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -284,8 +365,31 @@ function createBaseErrorReceipt(): ErrorReceipt {
     message: '',
   };
 }
+/**
+ * ErrorReceipt defines a type which encapsulates the upgrade sequence and error associated with the
+ * upgrade handshake failure. When a channel upgrade handshake is aborted both chains are expected to increment to the
+ * next sequence.
+ * @name ErrorReceipt
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.ErrorReceipt
+ */
 export const ErrorReceipt = {
   typeUrl: '/ibc.core.channel.v1.ErrorReceipt' as const,
+  aminoType: 'cosmos-sdk/ErrorReceipt' as const,
+  is(o: any): o is ErrorReceipt {
+    return (
+      o &&
+      (o.$typeUrl === ErrorReceipt.typeUrl ||
+        (typeof o.sequence === 'bigint' && typeof o.message === 'string'))
+    );
+  },
+  isSDK(o: any): o is ErrorReceiptSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ErrorReceipt.typeUrl ||
+        (typeof o.sequence === 'bigint' && typeof o.message === 'string'))
+    );
+  },
   encode(
     message: ErrorReceipt,
     writer: BinaryWriter = BinaryWriter.create(),

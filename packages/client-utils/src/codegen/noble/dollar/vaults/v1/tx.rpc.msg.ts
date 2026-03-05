@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../helpers.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgLock,
   MsgLockResponse,
@@ -8,7 +8,7 @@ import {
   MsgUnlockResponse,
   MsgSetPausedState,
   MsgSetPausedStateResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/noble/dollar/vaults/v1/tx.js';
 export interface Msg {
   lock(request: MsgLock): Promise<MsgLockResponse>;
   unlock(request: MsgUnlock): Promise<MsgUnlockResponse>;
@@ -17,8 +17,8 @@ export interface Msg {
   ): Promise<MsgSetPausedStateResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.lock = this.lock.bind(this);
     this.unlock = this.unlock.bind(this);
@@ -58,3 +58,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};
