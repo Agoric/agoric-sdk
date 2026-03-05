@@ -92,8 +92,7 @@ harden(TxType);
  * for the ROUTED_GMP type.
  *
  * @typedef {object} PublishedRoutedGMPTxDetails
- * @property {TxType & ('ROUTED_GMP')} type - The type of
- * transaction (CCTP_TO_EVM, GMP, CCTP_TO_AGORIC, or MAKE_ACCOUNT)
+ * @property {TxType & ('ROUTED_GMP')} type - The type of transaction, always "ROUTED_GMP"
  * @property {AccountId} destinationAddress - The router account handling this transaction
  * @property {AccountId} sourceAddress - The source LCA address initiating the
  * transaction (either portfolio or contract)
