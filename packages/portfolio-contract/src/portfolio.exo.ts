@@ -72,6 +72,10 @@ export type GMPAccountInfo = {
   err?: string;
   chainId: CaipChainId;
   remoteAddress: EVMAddress;
+  // routerAddress only present if useRouter set on portfolio
+  routerAddress?: EVMAddress;
+  // transferringFromRouter only present while router ownership transfer in progress
+  transferringFromRouter?: EVMAddress;
 };
 type AgoricAccountInfo = {
   namespace: 'cosmos';
@@ -216,10 +220,11 @@ const accountStateByChain = (
         break;
       }
       case 'eip155': {
-        const { chainId, remoteAddress } = info;
+        const { chainId, remoteAddress, routerAddress } = info;
         accountDetails = {
           chainId,
           address: remoteAddress,
+          ...(routerAddress ? { router: routerAddress } : {}),
         };
         break;
       }
@@ -231,6 +236,7 @@ const accountStateByChain = (
     const hasError = !!info.err;
 
     if (accountDetails) {
+      // XXX: handle transferring state when we implement support for it
       byChain[n] = {
         state: hasError ? 'failed' : isPending ? 'provisioning' : 'active',
         ...(accountDetails || {}),
