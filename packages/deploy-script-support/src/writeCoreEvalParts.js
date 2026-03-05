@@ -22,7 +22,14 @@ import {
  * @property {string} name
  * @property {string} permit
  * @property {string} script
- * @property {{entrypoint: string, bundleID: string, fileName: string}[]} bundles
+ * @property {{entrypoint: string, bundleID?: string, bundleName?: string, fileName?: string}[]} bundles
+ */
+/**
+ * @typedef {{
+ *   plan: CoreEvalPlan,
+ *   eval: { json_permits: string, js_code: string },
+ *   bundles: { entrypoint: string, bundleID?: string, bundleName?: string, fileName?: string, bundle: BundleSourceResult<'endoZipBase64'> }[],
+ * }} CoreEvalMaterialRecord
  */
 
 /**
@@ -45,6 +52,7 @@ import {
  *   getBundlerMaker: () => Promise<BundleMaker>,
  *   getBundleSpec: (bundle: Promise<BundleSourceResult<'endoZipBase64'>>, getBundle: () => Bundler, opts?: any) => Promise<ManifestBundleRef>,
  *   log?: typeof console.log,
+ *   onWriteCoreEval?: (record: CoreEvalMaterialRecord) => void | Promise<void>,
  *   writeFile?: typeof fs.promises.writeFile
  * }} io
  * @returns {WriteCoreEval}
@@ -56,6 +64,7 @@ export const makeWriteCoreEval = (
     getBundlerMaker,
     getBundleSpec,
     log = console.log,
+    onWriteCoreEval = () => {},
     writeFile = fs.promises.writeFile,
   },
 ) => {
@@ -120,7 +129,8 @@ export const makeWriteCoreEval = (
       return ns.default;
     };
 
-    const bundles = [];
+    /** @type {CoreEvalMaterialRecord['bundles']} */
+    const bundleRecords = [];
 
     /**
      * Install an entrypoint.
@@ -136,9 +146,13 @@ export const makeWriteCoreEval = (
       // Serialise the installations.
       mutex = E.when(mutex, async () => {
         // console.log('installing', { filePrefix, entrypoint, bundlePath });
-        const spec = await getBundleSpec(bundle, getBundler, opts);
-        bundles.push({
+        const [spec, builtBundle] = await Promise.all([
+          getBundleSpec(bundle, getBundler, opts),
+          bundle,
+        ]);
+        bundleRecords.push({
           entrypoint,
+          bundle: builtBundle,
           ...spec,
         });
         return spec;
@@ -205,13 +219,21 @@ behavior;
       name: filePrefix,
       script: codeFile,
       permit: permitFile,
-      bundles,
+      bundles: bundleRecords.map(({ bundle: _bundle, ...spec }) => spec),
     };
 
     await writeFile(
       `${filePrefix}-plan.json`,
       `${JSON.stringify(plan, null, 2)}\n`,
     );
+    await onWriteCoreEval({
+      plan,
+      eval: {
+        json_permits: JSON.stringify(evalPermits, null, 2),
+        js_code: trimmed,
+      },
+      bundles: bundleRecords,
+    });
 
     log(`\
 You can now run a governance submission command like:
