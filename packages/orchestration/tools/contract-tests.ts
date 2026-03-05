@@ -31,7 +31,6 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
-import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import { withChainCapabilities, type ChainInfo } from '../index.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
@@ -263,11 +262,16 @@ export const setupOrchestrationTest = async ({
 
   const chainInfo = harden(() => {
     const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
-    const { ethereum, solana } = objectMap(cctpChainInfo, v => ({
-      ...v,
+    const ethereum = {
+      ...cctpChainInfo.ethereum,
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
-      chainId: `${v.namespace}:${v.reference}`,
-    }));
+      chainId: `${cctpChainInfo.ethereum.namespace}:${cctpChainInfo.ethereum.reference}`,
+    };
+    const solana = {
+      ...cctpChainInfo.solana,
+      // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
+      chainId: `${cctpChainInfo.solana.namespace}:${cctpChainInfo.solana.reference}`,
+    };
     return {
       agoric,
       osmosis,

@@ -10,7 +10,7 @@ import {
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
 import type { EVProxy } from '@agoric/swingset-vat/tools/run-utils.js';
-import type { Installation, ZoeService } from '@agoric/zoe';
+import type { Installation, SourceBundle, ZoeService } from '@agoric/zoe';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 
@@ -72,7 +72,7 @@ test.serial('test contracts are installed', async t => {
   const { EV } = t.context.runUtils;
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   for (const [name, path] of entries(asset)) {
-    const bundle = await bundleCache.load(path, name);
+    const bundle = (await bundleCache.load(path, name)) as SourceBundle;
     const installation = await EV(zoe).install(bundle);
     t.truthy(installation);
     assign(t.context.installation, { [name]: installation });

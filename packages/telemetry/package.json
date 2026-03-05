@@ -24,11 +24,11 @@
   "dependencies": {
     "@agoric/internal": "workspace:*",
     "@agoric/store": "workspace:*",
-    "@endo/errors": "^1.2.13",
-    "@endo/init": "^1.1.12",
-    "@endo/marshal": "^1.8.0",
-    "@endo/promise-kit": "^1.1.13",
-    "@endo/stream": "^1.2.13",
+    "@endo/errors": "^1.3.0",
+    "@endo/init": "^1.1.13",
+    "@endo/marshal": "^1.9.0",
+    "@endo/promise-kit": "^1.2.0",
+    "@endo/stream": "^1.3.0",
     "@opentelemetry/api": "~1.9.0",
     "@opentelemetry/api-logs": "0.57.1",
     "@opentelemetry/exporter-logs-otlp-http": "0.57.1",
@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@endo/lockdown": "^1.0.18",
-    "@endo/ses-ava": "^1.3.2",
+    "@endo/ses-ava": "^1.4.0",
     "ava": "^6.4.1",
     "c8": "^10.1.3",
     "tmp": "^0.2.1"

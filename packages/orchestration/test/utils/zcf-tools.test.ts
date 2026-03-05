@@ -26,7 +26,7 @@ const makeTestContext = async () => {
 
   const bid = fakeVatAdmin.vatAdminState.registerBundle(
     'b1-contract',
-    contractBundle,
+    contractBundle as any,
   );
   const installation = await E(zoe).installBundleID(bid);
 

@@ -18,11 +18,21 @@ import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.j
 
 const bundleCache = await unsafeSharedBundleCache;
 const {
-  binaryVoteCounterBundle,
-  committeeBundle,
-  contractGovernorBundle,
-  puppetContractGovernorBundle,
+  binaryVoteCounterBundle: rawBinaryVoteCounterBundle,
+  committeeBundle: rawCommitteeBundle,
+  contractGovernorBundle: rawContractGovernorBundle,
+  puppetContractGovernorBundle: rawPuppetContractGovernorBundle,
 } = await bundleCache.loadRegistry(governanceSourceSpecRegistry);
+const binaryVoteCounterBundle = /** @type {SourceBundle} */ (
+  rawBinaryVoteCounterBundle
+);
+const committeeBundle = /** @type {SourceBundle} */ (rawCommitteeBundle);
+const contractGovernorBundle = /** @type {SourceBundle} */ (
+  rawContractGovernorBundle
+);
+const puppetContractGovernorBundle = /** @type {SourceBundle} */ (
+  rawPuppetContractGovernorBundle
+);
 
 /**
  * @import {FeeMintAccess, SourceBundle, ZoeService} from '@agoric/zoe';
@@ -50,7 +60,9 @@ export const DENOM_UNIT = 1_000_000n;
  * @returns {Promise<SourceBundle>}
  */
 export const provideBundle = (_t, sourceRoot, bundleName) => {
-  return bundleCache.load(sourceRoot, bundleName);
+  return /** @type {Promise<SourceBundle>} */ (
+    bundleCache.load(sourceRoot, bundleName)
+  );
 };
 harden(provideBundle);
 
