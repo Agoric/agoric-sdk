@@ -518,6 +518,30 @@ export const handlePendingTx = async (
   await null;
   const logPrefix = `[${tx.txId}]`;
 
+  if (
+    [
+      'tx146',
+      'tx220',
+      'tx87',
+      'tx204',
+      'tx89',
+      'tx177',
+      'tx138',
+      'tx143',
+      'tx73',
+      'tx94',
+      'tx84',
+      'tx91',
+      'tx81',
+      'tx172',
+      'tx234',
+      'tx258',
+      'tx261',
+    ].includes(tx.txId)
+  ) {
+    return;
+  }
+
   const monitor = MONITORS.get(tx.type);
   if (monitor === null) {
     // Previously logged as unhandled type, skip silently.

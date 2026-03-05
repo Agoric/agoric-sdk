@@ -195,16 +195,19 @@ export const getCurrentBalances = async (
 
   const [accountResult, positionResult, erc4626Result] =
     await Promise.allSettled([
-      spectrumAccountQueries.length
-        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
-        : { balances: [] },
-      spectrumPoolQueries.length
-        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
-        : { balances: [] },
+      {
+        balances: [
+          { chain: 'agoric', balance: '0' },
+          { chain: 'noble', balance: '0' },
+        ],
+      },
+      { balances: [] },
       erc4626Queries.length
         ? getERC4626VaultsBalances(erc4626Queries, powers)
         : { balances: [] },
     ]);
+
+  console.log('rabi....', { accountResult, positionResult, erc4626Result });
 
   if (
     accountResult.status !== 'fulfilled' ||
