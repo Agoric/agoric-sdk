@@ -515,6 +515,7 @@ export const sendGMPContractCall = async (
         multiCalls: calls.map(callData => ({
           ...constructContractCall(callData),
           value: 0n,
+          gasLimit: 0n,
         })),
       },
     },
@@ -581,6 +582,7 @@ export const sendPermit2GMP = async (
             target: addresses.permit2,
             data: encodedCall,
             value: 0n,
+            gasLimit: 0n,
           },
         ],
       },
