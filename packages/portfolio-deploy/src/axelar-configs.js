@@ -422,11 +422,11 @@ const remoteAccountFactory = harden({
     Optimism: undefined, // https://optimistic.etherscan.io/address/0x
   },
   testnet: {
-    Arbitrum: undefined, // https://sepolia.arbiscan.io/address/0x
-    Avalanche: undefined, // https://testnet.snowtrace.io/address/0x
-    Base: undefined, // https://sepolia.basescan.org/address/0x
-    Ethereum: undefined, // https://sepolia.etherscan.io/address/0x
-    Optimism: undefined, // https://sepolia-optimism.etherscan.io/address/0x
+    Arbitrum: '0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2', // https://sepolia.arbiscan.io/address/0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2
+    Avalanche: '0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2', // https://testnet.snowtrace.io/address/0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2
+    Base: '0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2', // https://sepolia.basescan.org/address/0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2
+    Ethereum: '0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2', // https://sepolia.etherscan.io/address/0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2
+    Optimism: '0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2', // https://sepolia-optimism.etherscan.io/address/0xE0c44AF6F3BfB1D054cd6f71E1F580e5217766e2
   },
 });
 
@@ -441,11 +441,11 @@ const remoteAccountRouter = harden({
     Optimism: undefined, // https://optimistic.etherscan.io/address/0x
   },
   testnet: {
-    Arbitrum: undefined, // https://sepolia.arbiscan.io/address/0x
-    Avalanche: undefined,
-    Base: undefined, // https://sepolia.basescan.org/address/0x
-    Ethereum: undefined, // https://sepolia.etherscan.io/address/0x
-    Optimism: undefined,
+    Arbitrum: '0x64854523C70d14c07eCaCdd5bec9B7e41F2325AC', // https://sepolia.arbiscan.io/address/0x64854523C70d14c07eCaCdd5bec9B7e41F2325AC
+    Avalanche: '0x',
+    Base: '0x64854523C70d14c07eCaCdd5bec9B7e41F2325AC', // https://sepolia.basescan.org/address/0x64854523C70d14c07eCaCdd5bec9B7e41F2325AC
+    Ethereum: '0x64854523C70d14c07eCaCdd5bec9B7e41F2325AC', // https://sepolia.etherscan.io/address/0x64854523C70d14c07eCaCdd5bec9B7e41F2325AC
+    Optimism: '0x',
   },
 });
 
