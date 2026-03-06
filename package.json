@@ -147,8 +147,19 @@
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
   },
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "files": [
       "packages/*/test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
+    ],
+    "require": [
+      "@endo/init/debug.js"
     ],
     "timeout": "30m"
   }
