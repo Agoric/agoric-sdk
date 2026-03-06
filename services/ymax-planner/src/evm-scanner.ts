@@ -53,6 +53,26 @@ type BinarySearch = {
 };
 
 /**
+ * A thin provider facade whose methods automatically retry on Alchemy 429
+ * rate-limit errors using exponential backoff with jitter.
+ */
+const makeRetryProvider = (
+  provider: WebSocketProvider,
+  setTimeout: typeof globalThis.setTimeout,
+) => ({
+  getBlock: (n: number) =>
+    withRateLimitRetry(() => provider.getBlock(n), setTimeout),
+  getBlockNumber: () =>
+    withRateLimitRetry(() => provider.getBlockNumber(), setTimeout),
+  getLogs: (filter: Filter) =>
+    withRateLimitRetry(() => provider.getLogs(filter), setTimeout),
+  send: (...args: Parameters<WebSocketProvider['send']>) =>
+    withRateLimitRetry(() => provider.send(...args), setTimeout),
+});
+
+type RetryProvider = ReturnType<typeof makeRetryProvider>;
+
+/**
  * Generic binary search helper for finding the greatest value that satisfies a predicate.
  * Assumes a transition from acceptance to rejection somewhere in [start, end].
  *
@@ -99,24 +119,27 @@ export const getBlockNumberBeforeRealTime = async (
   {
     fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
     meanBlockDurationMs,
+    setTimeout = globalThis.setTimeout,
   }: {
     fudgeFactorMs?: number;
     meanBlockDurationMs?: number;
+    setTimeout?: typeof globalThis.setTimeout;
   } = {},
 ) => {
   const posixSeconds = Math.floor((targetMs - fudgeFactorMs) / 1000);
+  const rpc = makeRetryProvider(provider, setTimeout);
 
   // Try to find a good starting point.
   let startNumber = 0;
-  const latestNumber = await provider.getBlockNumber();
-  const latestBlock = await provider.getBlock(latestNumber);
+  const latestNumber = await rpc.getBlockNumber();
+  const latestBlock = await rpc.getBlock(latestNumber);
   const deltaSec = latestBlock!.timestamp - posixSeconds;
   if (deltaSec <= 0) return latestNumber;
   if (deltaSec > 0 && meanBlockDurationMs) {
     const deltaBlocks = Math.ceil(deltaSec / (meanBlockDurationMs / 1000));
     const pastNumber = latestNumber - deltaBlocks * 2;
     if (startNumber < pastNumber) {
-      const pastBlock = await provider.getBlock(pastNumber);
+      const pastBlock = await rpc.getBlock(pastNumber);
       if (pastBlock?.timestamp && pastBlock.timestamp <= posixSeconds) {
         startNumber = pastNumber;
       }
@@ -124,7 +147,7 @@ export const getBlockNumberBeforeRealTime = async (
   }
 
   const blockNumber = await binarySearch(startNumber, latestNumber, async n => {
-    const block = await provider.getBlock(n);
+    const block = await rpc.getBlock(n);
     return block?.timestamp ? block.timestamp <= posixSeconds : false;
   });
   return blockNumber;
@@ -140,8 +163,48 @@ const isRateLimitError = (err: unknown): boolean =>
   isError(err, 'UNKNOWN_ERROR') &&
   (err as { error?: { code?: number } }).error?.code === 429;
 
-const RATE_LIMIT_BACKOFF_MS = 1_000;
-const MAX_RATE_LIMIT_RETRIES = 3;
+/**
+ * Alchemy-recommended retry parameters for 429 rate-limit errors.
+ * Uses exponential backoff with jitter:
+ *   delay = min(2^attempt * minTimeout + random(0..1000), maxTimeout)
+ *
+ * @see https://www.alchemy.com/docs/how-to-implement-retries
+ */
+const RATE_LIMIT_RETRIES = 5;
+const RATE_LIMIT_MIN_TIMEOUT_MS = 1_000;
+const RATE_LIMIT_MAX_TIMEOUT_MS = 60_000;
+const RATE_LIMIT_FACTOR = 2;
+
+/** Compute exponential backoff delay with jitter for a given attempt. */
+const rateLimitBackoffMs = (attempt: number): number => {
+  const jitter = Math.random() * 1000;
+  return Math.min(
+    RATE_LIMIT_FACTOR ** attempt * RATE_LIMIT_MIN_TIMEOUT_MS + jitter,
+    RATE_LIMIT_MAX_TIMEOUT_MS,
+  );
+};
+
+/**
+ * Retry a provider call on Alchemy 429 rate-limit errors using exponential
+ * backoff with jitter, per Alchemy's recommended strategy.
+ *
+ * @see https://www.alchemy.com/docs/how-to-implement-retries
+ */
+export const withRateLimitRetry = async <T>(
+  fn: () => Promise<T>,
+  setTimeout: typeof globalThis.setTimeout = globalThis.setTimeout,
+): Promise<T> => {
+  await null;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (!isRateLimitError(err) || attempt >= RATE_LIMIT_RETRIES) throw err;
+      const delay = rateLimitBackoffMs(attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
 
 /** Common configuration for all chunk-based EVM chain scanning. */
 type ScanOptsBase = {
@@ -225,9 +288,9 @@ const getTraces = async (
   fromBlock: string,
   toBlock: string,
   toAddress: string,
-  provider: WebSocketProvider,
+  rpc: RetryProvider,
 ): Promise<CallTraceResult[]> => {
-  const result: CallTraceResult[] | null = await provider.send('trace_filter', [
+  const result: CallTraceResult[] | null = await rpc.send('trace_filter', [
     { fromBlock, toBlock, toAddress: [toAddress] },
   ]);
   return result ?? [];
@@ -265,6 +328,7 @@ const scanEvmBlocksInChunks = async <T>(
   } = opts;
 
   const blockTimeMs = getBlockTimeMs(chainId);
+  const rpc = makeRetryProvider(provider, setTimeout);
   await null;
   let rateLimitRetries = 0;
   for (let currentBlock = -Infinity, start = fromBlock; start <= toBlock; ) {
@@ -276,7 +340,7 @@ const scanEvmBlocksInChunks = async <T>(
 
     try {
       // Wait for the chain to catch up if end block doesn't exist yet
-      if (end > currentBlock) currentBlock = await provider.getBlockNumber();
+      if (end > currentBlock) currentBlock = await rpc.getBlockNumber();
       if (end > currentBlock) {
         const blocksToWait = Math.max(50, chunkSize);
         const waitTimeMs = blocksToWait * blockTimeMs;
@@ -294,11 +358,11 @@ const scanEvmBlocksInChunks = async <T>(
       await opts.onRejectedChunk?.(start, end);
       rateLimitRetries = 0;
     } catch (err) {
-      if (isRateLimitError(err) && rateLimitRetries < MAX_RATE_LIMIT_RETRIES) {
+      if (isRateLimitError(err) && rateLimitRetries < RATE_LIMIT_RETRIES) {
         rateLimitRetries += 1;
-        const backoffMs = RATE_LIMIT_BACKOFF_MS * rateLimitRetries;
+        const backoffMs = rateLimitBackoffMs(rateLimitRetries - 1);
         log(
-          `[${label}] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${MAX_RATE_LIMIT_RETRIES} after ${backoffMs}ms`,
+          `[${label}] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${RATE_LIMIT_RETRIES} after ${Math.round(backoffMs)}ms`,
         );
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         continue; // Retry same chunk
@@ -328,6 +392,8 @@ export const scanEvmLogsInChunks = async (
     ...rest
   } = opts;
 
+  const rpc = makeRetryProvider(provider, rest.setTimeout);
+
   return scanEvmBlocksInChunks<Log>({
     ...rest,
     provider,
@@ -340,7 +406,7 @@ export const scanEvmLogsInChunks = async (
         fromBlock: start,
         toBlock: end,
       };
-      const logs = await provider.getLogs(chunkFilter);
+      const logs = await rpc.getLogs(chunkFilter);
       for (const evt of logs) {
         if (await predicate(evt)) {
           log(`[LogScan] Match in tx=${evt.transactionHash}`);
@@ -368,13 +434,14 @@ const scanChunkTracesForFailedTx = async (
   end: number,
   opts: FailedTxScanOpts,
 ): Promise<TransactionResponse | undefined> => {
-  const { provider, toAddress, verifyFailedTx } = opts;
+  const { provider, toAddress, verifyFailedTx, setTimeout } = opts;
+  const rpc = makeRetryProvider(provider, setTimeout);
 
   const traces = await getTraces(
     toQuantity(start),
     toQuantity(end),
     toAddress,
-    provider,
+    rpc,
   );
 
   const failedTopLevel = traces.filter(
