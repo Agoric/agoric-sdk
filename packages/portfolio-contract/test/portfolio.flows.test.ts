@@ -1974,13 +1974,15 @@ const ProvideStepsOrder = Object.fromEntries(
   ProvideSteps.map((s, i) => [s, i]),
 ) as { [K in EStep]: number };
 
-type ProvideEVMAccountFn = (
-  ...args: Parameters<typeof provideEVMAccount>
-) => ReturnType<typeof provideEVMAccount>;
+type ProvideEVMAccountFn<
+  P extends (...args: any) => any = typeof provideEVMAccount,
+> = (...args: Parameters<P>) => ReturnType<P> | Promise<ReturnType<P>>;
 
 const makeProvideEVMAccountWithPermitStub =
   (
-    provideEVMWithPermit: typeof provideEVMAccountWithPermit,
+    provideEVMWithPermit: ProvideEVMAccountFn<
+      typeof provideEVMAccountWithPermit
+    >,
   ): ProvideEVMAccountFn =>
   (chainName, chainInfo, gmp, lca, ctx, pk, { orchOpts } = {}) =>
     provideEVMWithPermit(
@@ -2567,11 +2569,12 @@ const provideFailsOnIncompatibleAccount = test.macro({
     });
 
     const progressTracker = makeProgressTracker();
-    const infoP = provide(chainName, chainInfo, gmp, lca, ctx, pKit, {
-      orchOpts: { progressTracker },
-    });
 
-    await t.throwsAsync(infoP);
+    await t.throwsAsync(async () =>
+      provide(chainName, chainInfo, gmp, lca, ctx, pKit, {
+        orchOpts: { progressTracker },
+      }),
+    );
   },
 });
 

@@ -108,7 +108,7 @@ export const sendPermit2GMP: typeof sendLegacyPermit2GMP = async (
     ? sendRoutedPermit2GMP(ctx, gmpAcct, ...args)
     : sendLegacyPermit2GMP(ctx, gmpAcct, ...args);
 
-export const provideEVMAccount: typeof provideEVMLegacyAccount = async (
+export const provideEVMAccount: typeof provideEVMRoutedAccount = async (
   ...args
 ) => {
   const chainName = args[0];

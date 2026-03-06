@@ -1853,12 +1853,8 @@ const queuePermit2Step = async (
     ? lca.makeProgressTracker()
     : undefined;
 
-  const provideEVMAccountWithPermit = isRouterSpender
-    ? provideEVMRoutedAccountWithPermit
-    : provideEVMLegacyAccountWithPermit;
-
   // For openPortfolio: atomic createAndDeposit via depositFactory
-  const acct = await provideEVMAccountWithPermit(
+  const args: Parameters<typeof provideEVMLegacyAccountWithPermit> = [
     fromChain,
     chainInfo,
     gmp,
@@ -1867,7 +1863,12 @@ const queuePermit2Step = async (
     pKit,
     permit2Payload,
     { progressTracker },
-  );
+  ];
+
+  const acct = isRouterSpender
+    ? // eslint-disable-next-line @jessie.js/safe-await-separator
+      await provideEVMRoutedAccountWithPermit(...args)
+    : provideEVMLegacyAccountWithPermit(...args);
 
   // We made the progressTracker above, so we must finalize it.
   const done = progressTracker
