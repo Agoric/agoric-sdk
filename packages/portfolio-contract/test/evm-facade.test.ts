@@ -13,7 +13,7 @@ import {
 } from '../src/evm-facade.ts';
 import { depositFactoryABI } from '../src/interfaces/orch-factory.ts';
 import { depositFactoryCreateAndDepositInputs } from '../src/utils/evm-orch-factory.ts';
-import { contractWithTargetAndValue } from '../src/utils/evm-orch-router.ts';
+import { contractWithCallMetadata } from '../src/utils/evm-orch-router.ts';
 
 const erc20Abi = [
   {
@@ -80,10 +80,10 @@ test('makeEvmContract is equivalent to makeEvmAbiCallBatch and encodes calls', t
   const expectedCalls = batch
     .finish()
     .map(callData => constructContractCall(callData))
-    .map(call => ({ ...call, value: 0n })); // Router calls include a value field
+    .map(call => ({ ...call, value: 0n, gasLimit: 0n })); // Router calls include value and gasLimit fields
 
   const erc20Contract = makeEvmContract(erc20Abi);
-  const token2 = contractWithTargetAndValue(erc20Contract, tokenAddress);
+  const token2 = contractWithCallMetadata(erc20Contract, tokenAddress);
   const calls = [
     token2.approve(spender, 123n),
     token2.transfer(recipient, 456n),

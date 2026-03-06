@@ -6,9 +6,20 @@ import { assert, Fail } from '@endo/errors';
 import type { Bech32Address } from '@agoric/orchestration';
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import { hexToBytes } from '@noble/hashes/utils';
-import type { Abi, Address, Hex } from 'viem';
+import type {
+  Abi,
+  AbiStateMutability,
+  Address,
+  ContractFunctionName,
+  Hex,
+} from 'viem';
 import { computeCreate2Address } from './create2.ts';
-import type { AbiContract } from '../evm-facade.ts';
+import type {
+  AbiContract,
+  AbiContractArgs,
+  AbiSend,
+  AbiTagged,
+} from '../evm-facade.ts';
 import type { ContractCall } from '../interfaces/orch-router.ts';
 
 export const toUtf8 = (() => {
@@ -40,23 +51,54 @@ export const predictRemoteAccountAddress = ({
   return out;
 };
 
-// XXX: extend this helper to support contract.fn.withValue(123n)(...args) or
-// similar to support providing explicit value, possibly only for payable methods.
-export const contractWithTargetAndValue = <T extends AbiContract<Abi, Hex>>(
+export type AbiExtendedContractMethod<TArgs extends readonly unknown[]> = {
+  (...args: TArgs): ContractCall;
+
+  with(
+    metadata: Partial<Pick<ContractCall, 'value' | 'gasLimit'>>,
+  ): (...args: TArgs) => ContractCall;
+};
+
+export type AbiExtendedContract<TAbi extends Abi> = {
+  [Name in ContractFunctionName<
+    TAbi,
+    AbiStateMutability
+  >]: AbiExtendedContractMethod<AbiContractArgs<TAbi, Name>>;
+} & (Extract<TAbi[number], { type: 'receive' }> extends never
+  ? {} // eslint-disable-line @typescript-eslint/no-empty-object-type
+  : { [AbiSend]: AbiExtendedContractMethod<[]> });
+
+type AbiFromContract<T> =
+  T extends AbiTagged<infer U>
+    ? U
+    : T extends AbiContract<infer U, Hex>
+      ? U
+      : never;
+
+export const contractWithCallMetadata = <T extends AbiContract<Abi, Hex>>(
   contract: T,
   target: Address,
-): T extends AbiContract<infer U, Hex>
-  ? AbiContract<U, ContractCall>
-  : never => {
-  const wrapped = Object.fromEntries(
-    Object.entries(contract).map(([fnName, fn]) => [
-      fnName,
-      (...args: unknown[]) =>
-        ({ target, data: fn(...args), value: 0n }) satisfies ContractCall,
-    ]),
-  );
+): AbiExtendedContract<AbiFromContract<T>> => {
+  const wrapped: Record<
+    string | symbol,
+    AbiExtendedContractMethod<readonly unknown[]>
+  > = {};
+  for (const fnName of Reflect.ownKeys(contract as AbiContract<Abi, Hex>)) {
+    const fn = (contract as any)[fnName] as (
+      ...args: readonly unknown[]
+    ) => Hex;
+    const withMetadata: AbiExtendedContractMethod<readonly unknown[]>['with'] =
+      ({ value = BigInt(0), gasLimit = BigInt(0) }) =>
+      (...args: readonly unknown[]) => ({
+        target,
+        data: fn(...args),
+        value,
+        gasLimit,
+      });
+    wrapped[fnName] = Object.assign(withMetadata({}), { with: withMetadata });
+  }
 
-  return wrapped as any;
+  return harden(wrapped) as AbiExtendedContract<AbiFromContract<T>>;
 };
 
 export const padTxId = (txId: string, template: string) => {
