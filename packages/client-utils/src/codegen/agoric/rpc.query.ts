@@ -54,9 +54,19 @@ export const createRPCQueryClient = async ({
           await import('../cosmos/consensus/v1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
+      counter: {
+        v1: (
+          await import('../cosmos/counter/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
       distribution: {
         v1beta1: (
           await import('../cosmos/distribution/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      epochs: {
+        v1beta1: (
+          await import('../cosmos/epochs/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
       feegrant: {
@@ -85,6 +95,11 @@ export const createRPCQueryClient = async ({
       params: {
         v1beta1: (
           await import('../cosmos/params/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      protocolpool: {
+        v1: (
+          await import('../cosmos/protocolpool/v1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
       staking: {

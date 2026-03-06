@@ -18,7 +18,7 @@ import {
 import {
   MerklePath,
   type MerklePathSDKType,
-} from '../../commitment/v1/commitment.js';
+} from '../../commitment/v2/commitment.js';
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
@@ -172,7 +172,7 @@ export interface QueryConsensusStateRequest {
    */
   revisionHeight: bigint;
   /**
-   * latest_height overrrides the height field and queries the latest stored
+   * latest_height overrides the height field and queries the latest stored
    * ConsensusState
    */
   latestHeight: boolean;
@@ -459,6 +459,60 @@ export interface QueryClientParamsResponseSDKType {
   params?: ParamsSDKType;
 }
 /**
+ * QueryClientCreatorRequest is the request type for the Query/ClientCreator RPC
+ * method.
+ * @name QueryClientCreatorRequest
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.QueryClientCreatorRequest
+ */
+export interface QueryClientCreatorRequest {
+  /**
+   * client unique identifier
+   */
+  clientId: string;
+}
+export interface QueryClientCreatorRequestProtoMsg {
+  typeUrl: '/ibc.core.client.v1.QueryClientCreatorRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryClientCreatorRequest is the request type for the Query/ClientCreator RPC
+ * method.
+ * @name QueryClientCreatorRequestSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.QueryClientCreatorRequest
+ */
+export interface QueryClientCreatorRequestSDKType {
+  client_id: string;
+}
+/**
+ * QueryClientCreatorResponse is the response type for the Query/ClientCreator RPC
+ * method.
+ * @name QueryClientCreatorResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.QueryClientCreatorResponse
+ */
+export interface QueryClientCreatorResponse {
+  /**
+   * creator of the client
+   */
+  creator: string;
+}
+export interface QueryClientCreatorResponseProtoMsg {
+  typeUrl: '/ibc.core.client.v1.QueryClientCreatorResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryClientCreatorResponse is the response type for the Query/ClientCreator RPC
+ * method.
+ * @name QueryClientCreatorResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.QueryClientCreatorResponse
+ */
+export interface QueryClientCreatorResponseSDKType {
+  creator: string;
+}
+/**
  * QueryUpgradedClientStateRequest is the request type for the
  * Query/UpgradedClientState RPC method
  * @name QueryUpgradedClientStateRequest
@@ -572,10 +626,6 @@ export interface QueryVerifyMembershipRequest {
    */
   proofHeight: Height;
   /**
-   * the commitment key path.
-   */
-  merklePath: MerklePath;
-  /**
    * the value which is proven.
    */
   value: Uint8Array;
@@ -587,6 +637,10 @@ export interface QueryVerifyMembershipRequest {
    * optional block delay
    */
   blockDelay: bigint;
+  /**
+   * the commitment key path.
+   */
+  merklePath: MerklePath;
 }
 export interface QueryVerifyMembershipRequestProtoMsg {
   typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest';
@@ -602,10 +656,10 @@ export interface QueryVerifyMembershipRequestSDKType {
   client_id: string;
   proof: Uint8Array;
   proof_height: HeightSDKType;
-  merkle_path: MerklePathSDKType;
   value: Uint8Array;
   time_delay: bigint;
   block_delay: bigint;
+  merkle_path: MerklePathSDKType;
 }
 /**
  * QueryVerifyMembershipResponse is the response type for the Query/VerifyMembership RPC method
@@ -2219,6 +2273,196 @@ export const QueryClientParamsResponse = {
     };
   },
 };
+function createBaseQueryClientCreatorRequest(): QueryClientCreatorRequest {
+  return {
+    clientId: '',
+  };
+}
+/**
+ * QueryClientCreatorRequest is the request type for the Query/ClientCreator RPC
+ * method.
+ * @name QueryClientCreatorRequest
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.QueryClientCreatorRequest
+ */
+export const QueryClientCreatorRequest = {
+  typeUrl: '/ibc.core.client.v1.QueryClientCreatorRequest' as const,
+  aminoType: 'cosmos-sdk/QueryClientCreatorRequest' as const,
+  is(o: any): o is QueryClientCreatorRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryClientCreatorRequest.typeUrl ||
+        typeof o.clientId === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryClientCreatorRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryClientCreatorRequest.typeUrl ||
+        typeof o.client_id === 'string')
+    );
+  },
+  encode(
+    message: QueryClientCreatorRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.clientId !== '') {
+      writer.uint32(10).string(message.clientId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryClientCreatorRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryClientCreatorRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.clientId = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryClientCreatorRequest {
+    return {
+      clientId: isSet(object.clientId) ? String(object.clientId) : '',
+    };
+  },
+  toJSON(
+    message: QueryClientCreatorRequest,
+  ): JsonSafe<QueryClientCreatorRequest> {
+    const obj: any = {};
+    message.clientId !== undefined && (obj.clientId = message.clientId);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryClientCreatorRequest>,
+  ): QueryClientCreatorRequest {
+    const message = createBaseQueryClientCreatorRequest();
+    message.clientId = object.clientId ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryClientCreatorRequestProtoMsg,
+  ): QueryClientCreatorRequest {
+    return QueryClientCreatorRequest.decode(message.value);
+  },
+  toProto(message: QueryClientCreatorRequest): Uint8Array {
+    return QueryClientCreatorRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryClientCreatorRequest,
+  ): QueryClientCreatorRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.QueryClientCreatorRequest',
+      value: QueryClientCreatorRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryClientCreatorResponse(): QueryClientCreatorResponse {
+  return {
+    creator: '',
+  };
+}
+/**
+ * QueryClientCreatorResponse is the response type for the Query/ClientCreator RPC
+ * method.
+ * @name QueryClientCreatorResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.QueryClientCreatorResponse
+ */
+export const QueryClientCreatorResponse = {
+  typeUrl: '/ibc.core.client.v1.QueryClientCreatorResponse' as const,
+  aminoType: 'cosmos-sdk/QueryClientCreatorResponse' as const,
+  is(o: any): o is QueryClientCreatorResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryClientCreatorResponse.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryClientCreatorResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryClientCreatorResponse.typeUrl ||
+        typeof o.creator === 'string')
+    );
+  },
+  encode(
+    message: QueryClientCreatorResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.creator !== '') {
+      writer.uint32(10).string(message.creator);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryClientCreatorResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryClientCreatorResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.creator = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryClientCreatorResponse {
+    return {
+      creator: isSet(object.creator) ? String(object.creator) : '',
+    };
+  },
+  toJSON(
+    message: QueryClientCreatorResponse,
+  ): JsonSafe<QueryClientCreatorResponse> {
+    const obj: any = {};
+    message.creator !== undefined && (obj.creator = message.creator);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryClientCreatorResponse>,
+  ): QueryClientCreatorResponse {
+    const message = createBaseQueryClientCreatorResponse();
+    message.creator = object.creator ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryClientCreatorResponseProtoMsg,
+  ): QueryClientCreatorResponse {
+    return QueryClientCreatorResponse.decode(message.value);
+  },
+  toProto(message: QueryClientCreatorResponse): Uint8Array {
+    return QueryClientCreatorResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryClientCreatorResponse,
+  ): QueryClientCreatorResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.QueryClientCreatorResponse',
+      value: QueryClientCreatorResponse.encode(message).finish(),
+    };
+  },
+};
 function createBaseQueryUpgradedClientStateRequest(): QueryUpgradedClientStateRequest {
   return {};
 }
@@ -2572,10 +2816,10 @@ function createBaseQueryVerifyMembershipRequest(): QueryVerifyMembershipRequest 
     clientId: '',
     proof: new Uint8Array(),
     proofHeight: Height.fromPartial({}),
-    merklePath: MerklePath.fromPartial({}),
     value: new Uint8Array(),
     timeDelay: BigInt(0),
     blockDelay: BigInt(0),
+    merklePath: MerklePath.fromPartial({}),
   };
 }
 /**
@@ -2594,10 +2838,10 @@ export const QueryVerifyMembershipRequest = {
         (typeof o.clientId === 'string' &&
           (o.proof instanceof Uint8Array || typeof o.proof === 'string') &&
           Height.is(o.proofHeight) &&
-          MerklePath.is(o.merklePath) &&
           (o.value instanceof Uint8Array || typeof o.value === 'string') &&
           typeof o.timeDelay === 'bigint' &&
-          typeof o.blockDelay === 'bigint'))
+          typeof o.blockDelay === 'bigint' &&
+          MerklePath.is(o.merklePath)))
     );
   },
   isSDK(o: any): o is QueryVerifyMembershipRequestSDKType {
@@ -2607,10 +2851,10 @@ export const QueryVerifyMembershipRequest = {
         (typeof o.client_id === 'string' &&
           (o.proof instanceof Uint8Array || typeof o.proof === 'string') &&
           Height.isSDK(o.proof_height) &&
-          MerklePath.isSDK(o.merkle_path) &&
           (o.value instanceof Uint8Array || typeof o.value === 'string') &&
           typeof o.time_delay === 'bigint' &&
-          typeof o.block_delay === 'bigint'))
+          typeof o.block_delay === 'bigint' &&
+          MerklePath.isSDK(o.merkle_path)))
     );
   },
   encode(
@@ -2626,9 +2870,6 @@ export const QueryVerifyMembershipRequest = {
     if (message.proofHeight !== undefined) {
       Height.encode(message.proofHeight, writer.uint32(26).fork()).ldelim();
     }
-    if (message.merklePath !== undefined) {
-      MerklePath.encode(message.merklePath, writer.uint32(34).fork()).ldelim();
-    }
     if (message.value.length !== 0) {
       writer.uint32(42).bytes(message.value);
     }
@@ -2637,6 +2878,9 @@ export const QueryVerifyMembershipRequest = {
     }
     if (message.blockDelay !== BigInt(0)) {
       writer.uint32(56).uint64(message.blockDelay);
+    }
+    if (message.merklePath !== undefined) {
+      MerklePath.encode(message.merklePath, writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -2660,9 +2904,6 @@ export const QueryVerifyMembershipRequest = {
         case 3:
           message.proofHeight = Height.decode(reader, reader.uint32());
           break;
-        case 4:
-          message.merklePath = MerklePath.decode(reader, reader.uint32());
-          break;
         case 5:
           message.value = reader.bytes();
           break;
@@ -2671,6 +2912,9 @@ export const QueryVerifyMembershipRequest = {
           break;
         case 7:
           message.blockDelay = reader.uint64();
+          break;
+        case 8:
+          message.merklePath = MerklePath.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -2688,9 +2932,6 @@ export const QueryVerifyMembershipRequest = {
       proofHeight: isSet(object.proofHeight)
         ? Height.fromJSON(object.proofHeight)
         : undefined,
-      merklePath: isSet(object.merklePath)
-        ? MerklePath.fromJSON(object.merklePath)
-        : undefined,
       value: isSet(object.value)
         ? bytesFromBase64(object.value)
         : new Uint8Array(),
@@ -2700,6 +2941,9 @@ export const QueryVerifyMembershipRequest = {
       blockDelay: isSet(object.blockDelay)
         ? BigInt(object.blockDelay.toString())
         : BigInt(0),
+      merklePath: isSet(object.merklePath)
+        ? MerklePath.fromJSON(object.merklePath)
+        : undefined,
     };
   },
   toJSON(
@@ -2715,10 +2959,6 @@ export const QueryVerifyMembershipRequest = {
       (obj.proofHeight = message.proofHeight
         ? Height.toJSON(message.proofHeight)
         : undefined);
-    message.merklePath !== undefined &&
-      (obj.merklePath = message.merklePath
-        ? MerklePath.toJSON(message.merklePath)
-        : undefined);
     message.value !== undefined &&
       (obj.value = base64FromBytes(
         message.value !== undefined ? message.value : new Uint8Array(),
@@ -2727,6 +2967,10 @@ export const QueryVerifyMembershipRequest = {
       (obj.timeDelay = (message.timeDelay || BigInt(0)).toString());
     message.blockDelay !== undefined &&
       (obj.blockDelay = (message.blockDelay || BigInt(0)).toString());
+    message.merklePath !== undefined &&
+      (obj.merklePath = message.merklePath
+        ? MerklePath.toJSON(message.merklePath)
+        : undefined);
     return obj;
   },
   fromPartial(
@@ -2739,10 +2983,6 @@ export const QueryVerifyMembershipRequest = {
       object.proofHeight !== undefined && object.proofHeight !== null
         ? Height.fromPartial(object.proofHeight)
         : undefined;
-    message.merklePath =
-      object.merklePath !== undefined && object.merklePath !== null
-        ? MerklePath.fromPartial(object.merklePath)
-        : undefined;
     message.value = object.value ?? new Uint8Array();
     message.timeDelay =
       object.timeDelay !== undefined && object.timeDelay !== null
@@ -2752,6 +2992,10 @@ export const QueryVerifyMembershipRequest = {
       object.blockDelay !== undefined && object.blockDelay !== null
         ? BigInt(object.blockDelay.toString())
         : BigInt(0);
+    message.merklePath =
+      object.merklePath !== undefined && object.merklePath !== null
+        ? MerklePath.fromPartial(object.merklePath)
+        : undefined;
     return message;
   },
   fromProtoMsg(
