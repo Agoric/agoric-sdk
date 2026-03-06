@@ -820,6 +820,8 @@ export const preparePortfolioKit = (
           this.facets.reporter.publishStatus();
         },
       },
+      // XXX: for compat with devnet
+      allocation: {},
       evmHandler: {
         /**
          * Note: evmHandler is only valid for portfolios opened from EVM.
