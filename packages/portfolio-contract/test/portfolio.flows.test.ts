@@ -81,8 +81,14 @@ import {
   provideEVMAccountWithPermit,
   sendGMPContractCall,
   sendPermit2GMP,
-  type EVMContext,
-} from '../src/pos-evm.flows.ts';
+} from '../src/axelar-gmp-legacy.flows.ts';
+import {
+  provideEVMAccount as provideEVMRoutedAccount,
+  provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit,
+  sendGMPContractCall as sendRoutedGMPContractCall,
+  sendPermit2GMP as sendPermit2RoutedGMP,
+} from '../src/axelar-gmp-router.flows.ts';
+import type { EVMContext } from '../src/pos-evm.flows.ts';
 import {
   makeSwapLockMessages,
   makeUnlockSwapMessages,
@@ -630,6 +636,8 @@ const mocks = (
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
     walletBytecode: '0x1234',
+    remoteAccountBytecodeHash:
+      '0x24ea336fcf84934abf4d7be919b1c8917bd8a51cd25fcb43c50e4184eda29c13',
     gmpAddresses,
     usdc: { brand: USDC, denom },
     gmpFeeInfo: { brand: BLD, denom: 'uaxl' },
@@ -682,6 +690,7 @@ const mocks = (
     eip155ChainIdToAxelarChain,
     contracts: contractsMock,
     walletBytecode: ctx1.walletBytecode,
+    remoteAccountBytecodeHash: ctx1.remoteAccountBytecodeHash,
     ...(null as any),
   });
   const makePortfolioKitGuest = (opts?: { sourceAccountId?: AccountId }) =>
@@ -1965,43 +1974,47 @@ const ProvideStepsOrder = Object.fromEntries(
   ProvideSteps.map((s, i) => [s, i]),
 ) as { [K in EStep]: number };
 
-type ProvideEVMAccountFn = (
-  ...args: Parameters<typeof provideEVMAccount>
-) => ReturnType<typeof provideEVMAccount>;
+type ProvideEVMAccountFn<
+  P extends (...args: any) => any = typeof provideEVMAccount,
+> = (...args: Parameters<P>) => ReturnType<P> | Promise<ReturnType<P>>;
 
-const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
-  chainName,
-  chainInfo,
-  gmp,
-  lca,
-  ctx,
-  pk,
-  { orchOpts } = {},
-) =>
-  provideEVMAccountWithPermit(
-    chainName,
-    chainInfo,
-    gmp,
-    lca,
-    ctx,
-    pk,
-    {
-      permit: {
-        permitted: {
-          token: '0x0000000000000000000000000000000000000001',
-          amount: 1n,
+const makeProvideEVMAccountWithPermitStub =
+  (
+    provideEVMWithPermit: ProvideEVMAccountFn<
+      typeof provideEVMAccountWithPermit
+    >,
+  ): ProvideEVMAccountFn =>
+  (chainName, chainInfo, gmp, lca, ctx, pk, { orchOpts } = {}) =>
+    provideEVMWithPermit(
+      chainName,
+      chainInfo,
+      gmp,
+      lca,
+      ctx,
+      pk,
+      {
+        permit: {
+          permitted: {
+            token: '0x0000000000000000000000000000000000000001',
+            amount: 1n,
+          },
+          nonce: 1n,
+          deadline: 1n,
         },
-        nonce: 1n,
-        deadline: 1n,
+        owner: '0x1111111111111111111111111111111111111111',
+        witness:
+          '0x0000000000000000000000000000000000000000000000000000000000000000',
+        witnessTypeString: 'OpenPortfolioWitness',
+        signature: '0x1234' as `0x${string}`,
       },
-      owner: '0x1111111111111111111111111111111111111111',
-      witness:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      witnessTypeString: 'OpenPortfolioWitness',
-      signature: '0x1234' as `0x${string}`,
-    },
-    orchOpts,
-  );
+      orchOpts,
+    );
+
+const provideEVMAccountWithPermitStub = makeProvideEVMAccountWithPermitStub(
+  provideEVMAccountWithPermit,
+);
+const provideEVMRoutedAccountWithPermitStub =
+  makeProvideEVMAccountWithPermitStub(provideEVMRoutedAccountWithPermit);
 
 type MakeAccountEVMRaceParams = {
   provide: ProvideEVMAccountFn;
@@ -2397,6 +2410,199 @@ test('withPermit: A finishes before attempt B starts', makeAccountEVMRace, {
   headStart: 'resolve',
   BHasDeposit: true,
 });
+
+test(
+  'routed: A and B arrive together; A wins the race; B adopts',
+  makeAccountEVMRace,
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'predict',
+  },
+);
+test('routed: A pays fee; B adopts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccount,
+  headStart: 'send',
+});
+test(
+  'routed: A fails to pay fee; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'send',
+    errAt: 'send',
+  },
+);
+test('routed: A registers txN; B adopts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccount,
+  headStart: 'register',
+});
+test('routed: A transfers to axelar; B adopts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccount,
+  headStart: 'txfr',
+});
+test(
+  'routed: A times out on axelar; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  { provide: provideEVMRoutedAccount, headStart: 'register', errAt: 'txfr' },
+);
+test(
+  'routed: A times out on axelar; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  { provide: provideEVMRoutedAccount, headStart: 'txfr', errAt: 'txfr' },
+);
+test(
+  'routed: A gets rejected txN; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'txfr',
+    errAt: 'resolve',
+  },
+);
+test(
+  'routed: A gets rejected txN; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'resolve',
+    errAt: 'resolve',
+  },
+);
+test('routed: A finishes before attempt B starts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccount,
+  headStart: 'resolve',
+});
+
+test(
+  'routed: withPermit: A and B arrive together; A wins the race; B adopts',
+  makeAccountEVMRace,
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    provideB: provideEVMRoutedAccount,
+    headStart: 'predict',
+  },
+);
+test('routed: withPermit: A registers txN; B adopts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccountWithPermitStub,
+  provideB: provideEVMRoutedAccount,
+  headStart: 'register',
+});
+test(
+  'routed: withPermit: A transfers to axelar; B adopts',
+  makeAccountEVMRace,
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    provideB: provideEVMRoutedAccount,
+    headStart: 'txfr',
+  },
+);
+test(
+  'routed: withPermit: A times out on axelar; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    provideB: provideEVMRoutedAccount,
+    headStart: 'register',
+    errAt: 'txfr',
+  },
+);
+test(
+  'routed: withPermit: A times out on axelar; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    headStart: 'txfr',
+    errAt: 'txfr',
+    BHasDeposit: true,
+  },
+);
+test(
+  'routed: withPermit: A gets rejected txN; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    provideB: provideEVMRoutedAccount,
+    headStart: 'txfr',
+    errAt: 'resolve',
+  },
+);
+test(
+  'routed: withPermit: A gets rejected txN; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    headStart: 'resolve',
+    errAt: 'resolve',
+    BHasDeposit: true,
+  },
+);
+test(
+  'routed: withPermit: A finishes before attempt B starts',
+  makeAccountEVMRace,
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    headStart: 'resolve',
+    BHasDeposit: true,
+  },
+);
+
+const provideFailsOnIncompatibleAccount = test.macro({
+  title: (providedTitle = '') =>
+    `EVM makeAccount with incompatible existing account: ${providedTitle}`,
+  async exec(t, provide: ProvideEVMAccountFn, withRouter: boolean) {
+    const { orch, ctx, makeProgressTracker } = mocks({});
+
+    const pKit = await ctx.makePortfolioKit();
+    await provideCosmosAccount(orch, 'agoric', pKit, silent);
+    const lca = pKit.reader.getLocalAccount();
+
+    const chainName = 'Arbitrum';
+    const { [chainName]: chainInfo } = axelarCCTPConfig;
+    const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
+
+    pKit.manager.resolveAccount({
+      chainName,
+      namespace: 'eip155',
+      chainId: `eip155:${chainInfo.reference}`,
+      remoteAddress: '0xExistingIncompatibleAccount',
+      ...(withRouter ? { routerAddress: '0xRouterAddress' } : {}),
+    });
+
+    const progressTracker = makeProgressTracker();
+
+    await t.throwsAsync(async () =>
+      provide(chainName, chainInfo, gmp, lca, ctx, pKit, {
+        orchOpts: { progressTracker },
+      }),
+    );
+  },
+});
+
+test(
+  'router account with legacy provide',
+  provideFailsOnIncompatibleAccount,
+  provideEVMAccount,
+  true,
+);
+test(
+  'router account with legacy provideWithPermit',
+  provideFailsOnIncompatibleAccount,
+  provideEVMAccountWithPermitStub,
+  true,
+);
+
+test(
+  'legacy account with routed provide',
+  provideFailsOnIncompatibleAccount,
+  provideEVMRoutedAccount,
+  false,
+);
+test(
+  'legacy account with routed provideWithPermit',
+  provideFailsOnIncompatibleAccount,
+  provideEVMRoutedAccountWithPermitStub,
+  false,
+);
 
 test('planner rejects plan and flow fails gracefully', async t => {
   const { orch, ctx, offer, storage } = mocks({});
@@ -3416,6 +3622,87 @@ test('evmHandler.deposit via Permit2 to missing and existing wallet with deposit
   await documentStorageSchema(t, storage, docOpts);
 });
 
+/**
+ * This test uses the router contract as the spender address.
+ */
+test('evmHandler.deposit via Permit2 to missing and existing wallet with router as spender succeeds', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const permitDetails = makePermitDetails({
+    spender: contractsMock.Arbitrum.remoteAccountRouter,
+  });
+  const destinationAccountId =
+    `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.remoteAccountRouter}` as AccountId;
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const contractAddress = (await ctx.contractAccount).getAddress();
+  const contractAccountId =
+    `cosmos:${contractAddress.chainId}:${contractAddress.value}` as AccountId;
+
+  const { accountIdByChain: byChainBefore } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // Only agoric, no Arbitrum account yet since we haven't done any flows
+  t.deepEqual(Object.keys(byChainBefore), ['agoric']);
+
+  const lca = kit.reader.getLocalAccount();
+  const principalAccount = lca.getAddress().value;
+
+  // Do an initial deposit, then do another deposit with the same permit details
+  // to ensure we can use the provide with permit logic on an existing account.
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
+    {
+      type: 'ROUTED_GMP',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: destinationAccountId,
+      details: {
+        instructionType: 'ProvideRemoteAccount',
+        expectedRemoteAddress: contractsMock.Arbitrum.remoteAccountFactory,
+        principalAccount,
+      },
+    },
+    'check first deposit creates and deposits via the router',
+  );
+
+  const {
+    accountIdByChain: byChainAfter,
+    accountsPending,
+    accountStateByChain = {},
+  } = await getPortfolioStatus(kit.reader.getPortfolioId());
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.deepEqual(accountsPending, []);
+  t.like(accountStateByChain.Arbitrum, {
+    state: 'active',
+    router: contractsMock.Arbitrum.remoteAccountRouter,
+  });
+
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx2').at(-1),
+    {
+      type: 'ROUTED_GMP',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: destinationAccountId,
+      details: {
+        instructionType: 'ProvideRemoteAccount',
+        expectedRemoteAddress: contractsMock.Arbitrum.remoteAccountFactory,
+        principalAccount,
+        remoteAccountAddress: accountStateByChain.Arbitrum!.address,
+      },
+    },
+    'check second deposit goes through same flow and hits the router address again',
+  );
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
 test('evmHandler.deposit via Permit2 with existing remote account as spender succeeds', async t => {
   const { orch, ctx, storage, txResolver } = mocks({}, {});
   const { getPortfolioStatus } = makeStorageTools(storage);
@@ -3672,10 +3959,10 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test(
-  'sendGMPContractCall unsubscribes resolver on send failure',
-  expectUnhandled(1),
-  async t => {
+const sendGMPContractCallTest = test.macro({
+  title: (providedTitle = '', useRouter: boolean) =>
+    `sendGMPContractCall unsubscribes resolver on send failure (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
+  async exec(t, useRouter: boolean) {
     const { resolverClient, storage, makeProgressTracker } = mocks({});
     const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
     const ctx = {
@@ -3702,6 +3989,9 @@ test(
       chainName: 'Avalanche',
       remoteAddress: '0x1234567890AbcdEF1234567890aBcdef12345678',
       chainId: 'eip155:43114',
+      ...(useRouter
+        ? { routerAddress: contractsMock.Avalanche.remoteAccountRouter }
+        : {}),
     } as const;
 
     const calls = [
@@ -3717,9 +4007,11 @@ test(
       },
     ];
 
+    const send = useRouter ? sendRoutedGMPContractCall : sendGMPContractCall;
+
     await t.throwsAsync(
       () =>
-        sendGMPContractCall(ctx, gmpAcct, calls, {
+        send(ctx, gmpAcct, calls, {
           progressTracker: makeProgressTracker(),
         }),
       { message: 'fee send failed' },
@@ -3731,12 +4023,15 @@ test(
     t.is(last.status, 'failed', 'transaction settled as failed');
     t.truthy(last.rejectionReason, 'includes rejection reason');
   },
-);
+});
 
-test(
-  'sendPermit2GMP unsubscribes resolver on send failure',
-  expectUnhandled(1),
-  async t => {
+test(expectUnhandled(1, sendGMPContractCallTest), false);
+test(sendGMPContractCallTest, true);
+
+const sendPermit2GMPTest = test.macro({
+  title: (providedTitle = '', useRouter: boolean) =>
+    `sendPermit2GMP unsubscribes resolver on send failure (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
+  async exec(t, useRouter: boolean) {
     const { resolverClient, storage, makeProgressTracker } = mocks({});
     const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
     const ctx = {
@@ -3763,6 +4058,9 @@ test(
       chainName: 'Avalanche',
       remoteAddress: '0x1234567890AbcdEF1234567890aBcdef12345678',
       chainId: 'eip155:43114',
+      ...(useRouter
+        ? { routerAddress: contractsMock.Avalanche.remoteAccountRouter }
+        : {}),
     } as const;
 
     const permit2Payload = {
@@ -3781,9 +4079,11 @@ test(
       signature: '0x1234' as `0x${string}`,
     };
 
+    const send = useRouter ? sendPermit2RoutedGMP : sendPermit2GMP;
+
     await t.throwsAsync(
       () =>
-        sendPermit2GMP(ctx, gmpAcct, permit2Payload, 1_000_000n, {
+        send(ctx, gmpAcct, permit2Payload, 1_000_000n, {
           progressTracker: makeProgressTracker(),
         }),
       { message: 'fee send failed' },
@@ -3795,4 +4095,6 @@ test(
     t.is(last.status, 'failed', 'transaction settled as failed');
     t.truthy(last.rejectionReason, 'includes rejection reason');
   },
-);
+});
+test(expectUnhandled(1, sendPermit2GMPTest), false);
+test(sendPermit2GMPTest, true);

@@ -125,12 +125,13 @@ const extractContractAddresses = <T extends keyof EVMContractAddresses>(
   key: T,
 ): Record<AxelarChain, AccountId> => {
   const addresses = fromTypedEntries(
-    Object.entries(chainIdToAxelarChain).map(
-      ([chainId, chainName]) =>
-        [
-          chainName satisfies AxelarChain,
-          `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
-        ] as const,
+    Object.entries(chainIdToAxelarChain).map(([chainId, chainName]) =>
+      contracts[chainName][key]
+        ? ([
+            chainName satisfies AxelarChain,
+            `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
+          ] as const)
+        : Fail`missing ${key} address for chain ${chainName}`,
     ),
   ) satisfies Record<AxelarChain, AccountId>;
   return addresses;
@@ -139,16 +140,22 @@ const extractContractAddresses = <T extends keyof EVMContractAddresses>(
 const interfaceTODO = undefined;
 
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
-  M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    depositFactory: M.string(),
-    factory: M.string(),
-    usdc: M.string(),
-    permit2: M.string(),
-    gateway: M.string(),
-    gasService: M.string(),
-  });
+  M.splitRecord(
+    {
+      aavePool: M.string(),
+      compound: M.string(),
+      depositFactory: M.string(),
+      factory: M.string(), // legacy factory
+      usdc: M.string(),
+      permit2: M.string(),
+      gateway: M.string(),
+      gasService: M.string(),
+    },
+    {
+      remoteAccountFactory: M.string(),
+      remoteAccountRouter: M.string(),
+    },
+  );
 
 export type AxelarConfig = {
   [chain in AxelarChain]: {
@@ -190,6 +197,8 @@ export type EVMContractAddresses = {
   compound: `0x${string}`;
   depositFactory: `0x${string}`;
   factory: `0x${string}`;
+  remoteAccountFactory?: `0x${string}`;
+  remoteAccountRouter?: `0x${string}`;
   usdc: `0x${string}`;
   permit2: `0x${string}`;
   tokenMessenger: `0x${string}`;
@@ -239,6 +248,7 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
+  remoteAccountBytecodeHash?: `0x${string}`;
   gmpAddresses: GmpAddresses;
   defaultFlowConfig?: FlowConfig | null;
 };
@@ -261,6 +271,7 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
     },
     {
       defaultFlowConfig: M.or(FlowConfigShape, M.null()),
+      remoteAccountBytecodeHash: M.string(),
     },
     {},
   );
@@ -328,6 +339,7 @@ export const contract = async (
     axelarIds,
     contracts,
     walletBytecode,
+    remoteAccountBytecodeHash,
     storageNode,
     gmpAddresses,
     timerService,
@@ -390,9 +402,37 @@ export const contract = async (
       'depositFactory',
     );
 
+    const routerConfig: Pick<StatusFor['contract'], 'evmRemoteAccountConfig'> =
+      {};
+    try {
+      const currentRouterAddresses = extractContractAddresses(
+        eip155ChainIdToAxelarChain,
+        contracts,
+        'remoteAccountRouter',
+      );
+      const factoryAddresses = extractContractAddresses(
+        eip155ChainIdToAxelarChain,
+        contracts,
+        'remoteAccountFactory',
+      );
+      remoteAccountBytecodeHash ||
+        Fail`remoteAccountBytecodeHash is required for router-based evm accounts`;
+      routerConfig.evmRemoteAccountConfig = {
+        currentRouterAddresses,
+        factoryAddresses,
+        remoteAccountBytecodeHash,
+      };
+    } catch {
+      trace('Router based evm accounts not configured');
+    }
+
     publishStatus(
       storageNode,
-      harden({ contractAccount: addr.value, depositFactoryAddresses }),
+      harden({
+        contractAccount: addr.value,
+        depositFactoryAddresses,
+        ...routerConfig,
+      } satisfies StatusFor['contract']),
     );
     trace('published contractAccount', addr.value);
   });
@@ -422,6 +462,7 @@ export const contract = async (
     axelarIds,
     contracts,
     walletBytecode,
+    remoteAccountBytecodeHash,
     gmpAddresses,
     resolverClient,
     inertSubscriber,
@@ -500,6 +541,7 @@ export const contract = async (
     offerArgsShapes,
     transferChannels,
     walletBytecode,
+    remoteAccountBytecodeHash,
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,

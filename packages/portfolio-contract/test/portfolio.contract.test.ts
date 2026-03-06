@@ -1056,6 +1056,24 @@ test('address of LCA for fees is published', async t => {
       Ethereum: `eip155:1:${contracts.Ethereum.depositFactory}`,
       Optimism: `eip155:10:${contracts.Optimism.depositFactory}`,
     },
+    evmRemoteAccountConfig: {
+      currentRouterAddresses: {
+        Arbitrum: 'eip155:42161:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Avalanche: 'eip155:43114:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Base: 'eip155:8453:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Ethereum: 'eip155:1:0x4028686122Ae547e6B551C85962C5dA52db69743',
+        Optimism: 'eip155:10:0x4028686122Ae547e6B551C85962C5dA52db69743',
+      },
+      factoryAddresses: {
+        Arbitrum: 'eip155:42161:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Avalanche: 'eip155:43114:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Base: 'eip155:8453:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Ethereum: 'eip155:1:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+        Optimism: 'eip155:10:0x7F649a200382A9b909989168A7fF5a87B8aea189',
+      },
+      remoteAccountBytecodeHash:
+        '0x24ea336fcf84934abf4d7be919b1c8917bd8a51cd25fcb43c50e4184eda29c13',
+    },
   });
 });
 
@@ -2743,11 +2761,11 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     t.like(
       flowsInfo,
       [
-        { type: TxType.MAKE_ACCOUNT },
-        { type: TxType.MAKE_ACCOUNT },
-        { type: TxType.MAKE_ACCOUNT },
+        { type: TxType.ROUTED_GMP },
+        { type: TxType.ROUTED_GMP },
+        { type: TxType.ROUTED_GMP },
       ],
-      'flow1 has 3 pending make-account txs',
+      'flow1 has 3 pending routed GMP txs for make-account',
     );
 
     const txIdByChain = getTxIdByChain(flowsInfo);
@@ -2845,9 +2863,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
         const tx = common.bootstrap.storage.getDeserialized(path).at(-1) as any;
         return { txId: path.split('.').at(-1), ...tx };
       })
-      .filter(
-        tx => tx?.status === 'failed' && tx?.type === TxType.MAKE_ACCOUNT,
-      );
+      .filter(tx => tx?.status === 'failed' && tx?.type === TxType.ROUTED_GMP);
   };
 
   await eventLoopIteration();
@@ -2863,7 +2879,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     t.is(step0Pending.length, 2);
     t.like(
       step0Pending,
-      [{ type: TxType.MAKE_ACCOUNT }, { type: TxType.MAKE_ACCOUNT }],
+      [{ type: TxType.ROUTED_GMP }, { type: TxType.ROUTED_GMP }],
       'two make-account pending',
     );
     await txResolver.settleTransaction(step0Pending[0].txId, 'success');
@@ -2874,7 +2890,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     const step1Pending = await findPendingTxInfo();
     t.is(step1Pending.length, 1);
-    t.like(step1Pending, [{ type: TxType.GMP }], 'one GMP pending');
+    t.like(step1Pending, [{ type: TxType.ROUTED_GMP }], 'one GMP pending');
     await txResolver.settleTransaction(step1Pending[0].txId, 'success');
     await eventLoopIteration();
 
@@ -2882,7 +2898,9 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     const step23Pending = await findPendingTxInfo();
-    const gmpStep23 = step23Pending.filter(info => info.type === TxType.GMP);
+    const gmpStep23 = step23Pending.filter(
+      info => info.type === TxType.ROUTED_GMP,
+    );
     t.is(gmpStep23.length, 2);
     await txResolver.settleTransaction(gmpStep23[0].txId, 'success');
     await txResolver.settleTransaction(gmpStep23[1].txId, 'success');
@@ -2957,7 +2975,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
       step8Pending,
       [
         { type: TxType.CCTP_TO_EVM, txId: cctpTxIdByChain[otherSuccessChain] },
-        { type: TxType.GMP },
+        { type: TxType.ROUTED_GMP },
       ],
       'only one GMP pending after single CCTP ack',
     );
@@ -2975,7 +2993,10 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     t.is(step7Pending.length, 2);
     t.like(
       step7Pending,
-      [{ type: TxType.GMP, txId: step8Pending[1].txId }, { type: TxType.GMP }],
+      [
+        { type: TxType.ROUTED_GMP, txId: step8Pending[1].txId },
+        { type: TxType.ROUTED_GMP },
+      ],
       'both GMP now pending',
     );
     await txResolver.settleTransaction(step7Pending[1].txId, 'success');

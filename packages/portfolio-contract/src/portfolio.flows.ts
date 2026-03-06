@@ -73,12 +73,14 @@ import {
   CompoundProtocol,
   ERC4626Protocol,
   provideEVMAccount,
-  provideEVMAccountWithPermit,
   sendGMPContractCall,
   sendPermit2GMP,
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-evm.flows.ts';
+import { provideEVMAccountWithPermit as provideEVMLegacyAccountWithPermit } from './axelar-gmp-legacy.flows.ts';
+import { provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit } from './axelar-gmp-router.flows.ts';
+
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import {
@@ -119,6 +121,7 @@ export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
   walletBytecode: `0x${string}`;
+  remoteAccountBytecodeHash?: `0x${string}`;
   gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
@@ -1816,12 +1819,20 @@ const queuePermit2Step = async (
     gmpChain: Chain<{ chainId: string }>;
     steps: MovementDesc[];
     permit2Payload: PermitDetails['permit2Payload'];
+    isRouterSpender: boolean;
     fromChain: AxelarChain;
     chainInfo: BaseChainInfo<'eip155'>;
     config?: FlowConfig;
   },
 ) => {
-  const { gmpChain, steps, permit2Payload, fromChain, chainInfo } = details;
+  const {
+    gmpChain,
+    steps,
+    permit2Payload,
+    isRouterSpender,
+    fromChain,
+    chainInfo,
+  } = details;
   const permitStep = steps.find(
     step => step.src === `+${fromChain}` && step.dest === `@${fromChain}`,
   );
@@ -1843,7 +1854,7 @@ const queuePermit2Step = async (
     : undefined;
 
   // For openPortfolio: atomic createAndDeposit via depositFactory
-  const acct = await provideEVMAccountWithPermit(
+  const args: Parameters<typeof provideEVMLegacyAccountWithPermit> = [
     fromChain,
     chainInfo,
     gmp,
@@ -1852,7 +1863,12 @@ const queuePermit2Step = async (
     pKit,
     permit2Payload,
     { progressTracker },
-  );
+  ];
+
+  const acct = isRouterSpender
+    ? // eslint-disable-next-line @jessie.js/safe-await-separator
+      await provideEVMRoutedAccountWithPermit(...args)
+    : provideEVMLegacyAccountWithPermit(...args);
 
   // We made the progressTracker above, so we must finalize it.
   const done = progressTracker
@@ -1905,19 +1921,24 @@ export const executePlan = (async (
     let queuedSteps: ExecutePlanOptions['queuedSteps'];
     if (options?.evmDepositDetail) {
       const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
-      // Only use queuePermit2Step for openPortfolio (spender = depositFactory).
+      // Only use queuePermit2Step for openPortfolio (spender = depositFactory/router).
       // Deposits to existing portfolios use the depositFromEVM case in stepFlow.
-      const isDepositFactory = sameEvmAddress(
+
+      const isRouterSpender = sameEvmAddress(
         spender,
-        ctx.contracts[fromChain].depositFactory,
+        ctx.contracts[fromChain].remoteAccountRouter,
       );
-      if (isDepositFactory) {
+      const isRepresentativeSpender =
+        isRouterSpender ||
+        sameEvmAddress(spender, ctx.contracts[fromChain].depositFactory);
+      if (isRepresentativeSpender) {
         const gmpChain = await orch.getChain('axelar');
         const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
         queuedSteps = await queuePermit2Step(pKit, ctx, {
           gmpChain,
           steps,
           permit2Payload,
+          isRouterSpender,
           fromChain,
           chainInfo,
           config,
