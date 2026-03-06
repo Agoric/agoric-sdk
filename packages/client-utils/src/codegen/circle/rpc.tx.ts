@@ -22,6 +22,11 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
         await import('../cosmos/bank/v1beta1/tx.rpc.msg.js')
       ).MsgClientImpl(rpc),
     },
+    benchmark: {
+      v1: new (
+        await import('../cosmos/benchmark/v1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
     circuit: {
       v1: new (
         await import('../cosmos/circuit/v1/tx.rpc.msg.js')
@@ -30,6 +35,11 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
     consensus: {
       v1: new (
         await import('../cosmos/consensus/v1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
+    counter: {
+      v1: new (
+        await import('../cosmos/counter/v1/tx.rpc.msg.js')
       ).MsgClientImpl(rpc),
     },
     distribution: {
@@ -58,6 +68,11 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
     mint: {
       v1beta1: new (
         await import('../cosmos/mint/v1beta1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
+    protocolpool: {
+      v1: new (
+        await import('../cosmos/protocolpool/v1/tx.rpc.msg.js')
       ).MsgClientImpl(rpc),
     },
     staking: {
