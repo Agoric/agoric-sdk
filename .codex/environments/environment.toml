@@ -4,7 +4,7 @@ name = "agoric-sdk"
 
 [setup]
 script = '''
-yarn install
-yarn build
-
+# Apparently this script block  only runs upon new local worktree creation,
+# because when I tested in a Cloud run it didn't run at all.
+bash scripts/env/worktree-setup.sh
 '''
