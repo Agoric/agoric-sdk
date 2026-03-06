@@ -535,10 +535,9 @@ __metadata:
     "@interchainjs/types": "npm:^1.19.1"
     ava: "npm:^6.4.1"
     bech32: "npm:^2.0.0"
-    glob: "npm:^11.0.3"
+    esbuild: "npm:^0.25.2"
     query-string: "npm:^9.1.1"
     rimraf: "npm:^5.0.0"
-    terser: "npm:^5.39.0"
     tsd: "npm:^0.33.0"
     typescript: "npm:~6.0.0-beta"
   languageName: unknown
@@ -5158,16 +5157,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jridgewell/source-map@npm:^0.3.3":
-  version: 0.3.6
-  resolution: "@jridgewell/source-map@npm:0.3.6"
-  dependencies:
-    "@jridgewell/gen-mapping": "npm:^0.3.5"
-    "@jridgewell/trace-mapping": "npm:^0.3.25"
-  checksum: 10c0/6a4ecc713ed246ff8e5bdcc1ef7c49aaa93f7463d948ba5054dda18b02dcc6a055e2828c577bcceee058f302ce1fc95595713d44f5c45e43d459f88d267f2f04
-  languageName: node
-  linkType: hard
-
 "@jridgewell/sourcemap-codec@npm:^1.4.14, @jridgewell/sourcemap-codec@npm:^1.5.0":
   version: 1.5.0
   resolution: "@jridgewell/sourcemap-codec@npm:1.5.0"
@@ -5175,7 +5164,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jridgewell/trace-mapping@npm:^0.3.12, @jridgewell/trace-mapping@npm:^0.3.24, @jridgewell/trace-mapping@npm:^0.3.25, @jridgewell/trace-mapping@npm:^0.3.28, @jridgewell/trace-mapping@npm:^0.3.9":
+"@jridgewell/trace-mapping@npm:^0.3.12, @jridgewell/trace-mapping@npm:^0.3.24, @jridgewell/trace-mapping@npm:^0.3.28, @jridgewell/trace-mapping@npm:^0.3.9":
   version: 0.3.31
   resolution: "@jridgewell/trace-mapping@npm:0.3.31"
   dependencies:
@@ -7239,7 +7228,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn@npm:^8.11.0, acorn@npm:^8.14.0, acorn@npm:^8.15.0, acorn@npm:^8.6.0, acorn@npm:^8.8.2, acorn@npm:^8.9.0":
+"acorn@npm:^8.11.0, acorn@npm:^8.14.0, acorn@npm:^8.15.0, acorn@npm:^8.6.0, acorn@npm:^8.9.0":
   version: 8.15.0
   resolution: "acorn@npm:8.15.0"
   bin:
@@ -8066,13 +8055,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"buffer-from@npm:^1.0.0":
-  version: 1.1.1
-  resolution: "buffer-from@npm:1.1.1"
-  checksum: 10c0/a8c5057c985d8071e7a64988ad72f313e08eb3001eda76bead78b1f9afc7a07d20be9677eed0b5791727baeecd56360fe541bc5dd74feb40efe202a74584d533
-  languageName: node
-  linkType: hard
-
 "buffer@npm:^5.5.0":
   version: 5.7.1
   resolution: "buffer@npm:5.7.1"
@@ -8739,13 +8721,6 @@ __metadata:
   version: 12.1.0
   resolution: "commander@npm:12.1.0"
   checksum: 10c0/6e1996680c083b3b897bfc1cfe1c58dfbcd9842fd43e1aaf8a795fbc237f65efcc860a3ef457b318e73f29a4f4a28f6403c3d653d021d960e4632dd45bde54a9
-  languageName: node
-  linkType: hard
-
-"commander@npm:^2.20.0":
-  version: 2.20.3
-  resolution: "commander@npm:2.20.3"
-  checksum: 10c0/74c781a5248c2402a0a3e966a0a2bba3c054aad144f5c023364be83265e796b20565aa9feff624132ff629aa64e16999fa40a743c10c12f7c61e96a794b99288
   languageName: node
   linkType: hard
 
@@ -11302,7 +11277,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^11.0.0, glob@npm:^11.0.3":
+"glob@npm:^11.0.0":
   version: 11.0.3
   resolution: "glob@npm:11.0.3"
   dependencies:
@@ -16962,16 +16937,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"source-map-support@npm:~0.5.20":
-  version: 0.5.21
-  resolution: "source-map-support@npm:0.5.21"
-  dependencies:
-    buffer-from: "npm:^1.0.0"
-    source-map: "npm:^0.6.0"
-  checksum: 10c0/9ee09942f415e0f721d6daad3917ec1516af746a8120bba7bb56278707a37f1eb8642bde456e98454b8a885023af81a16e646869975f06afc1a711fb90484e7d
-  languageName: node
-  linkType: hard
-
 "source-map@npm:0.8.0-beta.0":
   version: 0.8.0-beta.0
   resolution: "source-map@npm:0.8.0-beta.0"
@@ -16981,7 +16946,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"source-map@npm:^0.6.0, source-map@npm:^0.6.1":
+"source-map@npm:^0.6.1":
   version: 0.6.1
   resolution: "source-map@npm:0.6.1"
   checksum: 10c0/ab55398007c5e5532957cb0beee2368529618ac0ab372d789806f5718123cc4367d57de3904b4e6a4170eb5a0b0f41373066d02ca0735a0c4d75c7d328d3e011
@@ -17570,20 +17535,6 @@ __metadata:
     mkdirp: "npm:^0.5.1"
     rimraf: "npm:~2.6.2"
   checksum: 10c0/7a1cd75efa65b9ca97fc0dfa752673842d23fa41d9c641a447d86ca986eb7662f0d17771e1edf8d0149e76de3c6e7005faf2ccaa3baf64811c86d1d1a951dda7
-  languageName: node
-  linkType: hard
-
-"terser@npm:^5.39.0":
-  version: 5.39.0
-  resolution: "terser@npm:5.39.0"
-  dependencies:
-    "@jridgewell/source-map": "npm:^0.3.3"
-    acorn: "npm:^8.8.2"
-    commander: "npm:^2.20.0"
-    source-map-support: "npm:~0.5.20"
-  bin:
-    terser: bin/terser
-  checksum: 10c0/83326545ea1aecd6261030568b6191ccfa4cb6aa61d9ea41746a52479f50017a78b77e4725fbbc207c5df841ffa66a773c5ac33636e95c7ab94fe7e0379ae5c7
   languageName: node
   linkType: hard
 
