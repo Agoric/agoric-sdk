@@ -254,6 +254,7 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
     `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
     `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] Address mismatch for txHash=0x123abc: sourceAddress=agoric1test expectedWallet=${wrongWalletAddrChecksummed}`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${correctTxHash} block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);

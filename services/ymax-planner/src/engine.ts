@@ -564,6 +564,13 @@ export const processPendingTxEvents = async (
 
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
+
+      // Skip if a watcher is already running for this txId.
+      if (pendingTxAbortControllers.has(txId)) {
+        log(`Watcher already active for ${txId}, skipping`);
+        continue;
+      }
+
       log('New pending tx', tx);
 
       const abortController = provideLazyMap(

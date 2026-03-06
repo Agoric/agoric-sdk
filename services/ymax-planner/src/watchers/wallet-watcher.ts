@@ -203,7 +203,13 @@ export const watchSmartWalletTx = ({
 
         const tx = msg.params?.result?.transaction;
         const removed = msg.params?.result?.removed;
-        if (!tx) return;
+        if (!tx) {
+          log(
+            `Subscription message missing transaction data`,
+            msg.params?.result,
+          );
+          return;
+        }
 
         // Ignore transactions that have been removed from canonical chain (reorged)
         if (removed === true) {
@@ -216,7 +222,10 @@ export const watchSmartWalletTx = ({
         const txHash = tx.hash;
         const txData = tx.input;
         const txTo = tx.to;
-        if (!txHash || !txData || !txTo) return;
+        if (!txHash || !txData || !txTo) {
+          log(`Subscription message missing txHash, input, or to field`);
+          return;
+        }
 
         // Determine which contract is being called and use appropriate parser
         const isFactoryPath = getAddress(txTo) === getAddress(factoryAddr);
@@ -224,7 +233,12 @@ export const watchSmartWalletTx = ({
           ? extractFactoryExecuteData(txData)
           : extractDepositFactoryExecuteData(txData);
 
-        if (!executeData) return;
+        if (!executeData) {
+          log(
+            `Calldata did not match factory execute ABI for txHash=${txHash} to=${txTo}`,
+          );
+          return;
+        }
 
         const { sourceAddress, expectedWalletAddress } = executeData;
 
@@ -233,6 +247,9 @@ export const watchSmartWalletTx = ({
           sourceAddress !== expectedSourceAddress ||
           getAddress(expectedWalletAddress) !== getAddress(expectedAddr)
         ) {
+          log(
+            `Address mismatch for txHash=${txHash}: sourceAddress=${sourceAddress} expectedWallet=${expectedWalletAddress}`,
+          );
           return;
         }
 
