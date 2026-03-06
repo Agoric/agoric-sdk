@@ -2519,7 +2519,7 @@ test(
   expectUnhandled(1, makeAccountEVMRace),
   {
     provide: provideEVMRoutedAccountWithPermitStub,
-    provideB: provideEVMAccount,
+    provideB: provideEVMRoutedAccount,
     headStart: 'txfr',
     errAt: 'resolve',
   },
@@ -2546,8 +2546,8 @@ test(
 
 const provideFailsOnIncompatibleAccount = test.macro({
   title: (providedTitle = '') =>
-    `EVM makeAccount with existing router-based account: ${providedTitle}`,
-  async exec(t, provide: ProvideEVMAccountFn) {
+    `EVM makeAccount with incompatible existing account: ${providedTitle}`,
+  async exec(t, provide: ProvideEVMAccountFn, withRouter: boolean) {
     const { orch, ctx, makeProgressTracker } = mocks({});
 
     const pKit = await ctx.makePortfolioKit();
@@ -2563,7 +2563,7 @@ const provideFailsOnIncompatibleAccount = test.macro({
       namespace: 'eip155',
       chainId: `eip155:${chainInfo.reference}`,
       remoteAddress: '0xExistingIncompatibleAccount',
-      routerAddress: '0xRouterAddress',
+      ...(withRouter ? { routerAddress: '0xRouterAddress' } : {}),
     });
 
     const progressTracker = makeProgressTracker();
@@ -2575,11 +2575,30 @@ const provideFailsOnIncompatibleAccount = test.macro({
   },
 });
 
-test('provide', provideFailsOnIncompatibleAccount, provideEVMAccount);
 test(
-  'provideWithPermit',
+  'router account with legacy provide',
+  provideFailsOnIncompatibleAccount,
+  provideEVMAccount,
+  true,
+);
+test(
+  'router account with legacy provideWithPermit',
   provideFailsOnIncompatibleAccount,
   provideEVMAccountWithPermitStub,
+  true,
+);
+
+test(
+  'legacy account with routed provide',
+  provideFailsOnIncompatibleAccount,
+  provideEVMRoutedAccount,
+  false,
+);
+test(
+  'legacy account with routed provideWithPermit',
+  provideFailsOnIncompatibleAccount,
+  provideEVMRoutedAccountWithPermitStub,
+  false,
 );
 
 test('planner rejects plan and flow fails gracefully', async t => {
