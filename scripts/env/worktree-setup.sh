@@ -141,9 +141,9 @@ find "$SOURCE" -name "*.tsbuildinfo" -type f 2>/dev/null | while read -r f; do
 done
 phase_end
 
-# dist directories
-phase_start "copy dist directories"
-find "$SOURCE/packages" -type d -name dist 2>/dev/null | while read -r d; do
+# dist and bundles directories
+phase_start "copy dist and bundles directories"
+find "$SOURCE/packages" \( -type d -name dist -o -type d -name bundles \) 2>/dev/null | while read -r d; do
   rel=${d#"$SOURCE/"}
   mkdir -p "$(dirname "$ROOT/$rel")"
   clone "$d" "$ROOT/$rel"
