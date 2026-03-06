@@ -76,6 +76,18 @@ type ProvideEVMAccountSendCallFactory = (
   sendCallArg?: unknown,
 ) => ProvideEVMAccountSendCall;
 
+const assertNotRouterBasedAccount = ({
+  routerAddress,
+  remoteAddress,
+  chainName,
+}: GMPAccountInfo) => {
+  // If we somehow got asked to send a GMP message to a router-based account,
+  // something went wrong
+  if (routerAddress) {
+    throw Fail`Remote account ${remoteAddress} on ${chainName} should not be a router-enabled account`;
+  }
+};
+
 // Shared "provide pattern" with a pluggable GMP call, so we can reuse the
 // reservation/resolve/error-handling logic across account-creation variants.
 const makeProvideEVMAccount = ({
@@ -147,6 +159,8 @@ const makeProvideEVMAccount = ({
       const evmAccount = isNewAccount
         ? predictAddress(principalAccount)
         : pk.reader.getGMPInfo(chainName);
+
+      assertNotRouterBasedAccount(evmAccount);
 
       // Bail out early if another caller created the account, and this is not a deposit.
       if (!manager && mode !== 'createAndDeposit') {
@@ -423,6 +437,8 @@ export const sendGMPContractCall = async (
   const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
   const axelarId = axelarIds[chainName];
 
+  assertNotRouterBasedAccount(gmpAcct);
+
   const sourceAddress = coerceAccountId(lca.getAddress());
   const { result, txId } = resolverClient.registerTransaction(
     TxType.GMP,
@@ -507,6 +523,8 @@ export const sendPermit2GMP = async (
 
   const { permit, owner, witness, witnessTypeString, signature } =
     permit2Payload;
+
+  assertNotRouterBasedAccount(gmpAcct);
 
   transferAmount <= permit.permitted.amount ||
     Fail`insufficient permitted amount ${q(permit.permitted.amount)} for transferAmount ${q(transferAmount)}`;
