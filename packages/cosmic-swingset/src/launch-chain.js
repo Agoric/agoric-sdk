@@ -166,7 +166,7 @@ const getHostKey = path => `host.${path}`;
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {ERef<string | SwingSetConfig> | (() => ERef<string | SwingSetConfig>)} getVatConfig
  * @param {unknown} bootstrapArgs JSON-serializable data
- * @param {{}} env
+ * @param {Record<string, string | undefined>} env
  * @param {*} options
  */
 export async function buildSwingset(
