@@ -29,6 +29,7 @@ harden(TxStatus);
 export const TxType = keyMirror({
   CCTP_TO_EVM: null,
   GMP: null,
+  ROUTED_GMP: null,
   CCTP_TO_AGORIC: null,
   IBC_FROM_AGORIC: null,
   IBC_FROM_REMOTE: null,

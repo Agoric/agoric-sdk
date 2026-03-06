@@ -255,6 +255,31 @@ export const getConfirmationsRequired = (chainId: CaipChainId): number => {
 };
 
 /**
+ * Time to wait before confirming a transaction revert, in milliseconds.
+ * This gives Axelar relayers a window to retry the transaction
+ * (observed ~6 min retries for SubcallOutOfGas cases).
+ */
+const REVERT_WAIT_TIME_MS = 10 * 60 * 1_000; // 10 minutes
+
+/**
+ * Get the number of confirmations required before confirming a transaction
+ * revert. Uses a higher threshold than normal confirmations to give Axelar
+ * relayers time to retry reverted transactions.
+ *
+ * The value is computed from {@link REVERT_WAIT_TIME_MS} and the chain's
+ * block time, floored at the normal confirmation requirement.
+ */
+export const getRevertConfirmationsRequired = (
+  chainId: CaipChainId,
+): number => {
+  const blockTimeMs = getBlockTimeMs(chainId);
+  return Math.max(
+    getConfirmationsRequired(chainId),
+    Math.ceil(REVERT_WAIT_TIME_MS / blockTimeMs),
+  );
+};
+
+/**
  * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
  *   or @agoric/orchestration
  */
