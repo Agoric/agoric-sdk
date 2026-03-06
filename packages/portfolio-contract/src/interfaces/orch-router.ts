@@ -14,7 +14,8 @@ import type { Abi, AbiParameter, AbiParameterToPrimitiveType } from 'viem';
 export const contractCallComponents = [
   { name: 'target', type: 'address' },
   { name: 'data', type: 'bytes' },
-  { name: 'value', type: 'uint256' },
+  { name: 'value', type: 'uint192' },
+  { name: 'gasLimit', type: 'uint64' },
 ] as const satisfies AbiParameter[];
 
 export type ContractCall = AbiParameterToPrimitiveType<{
@@ -241,10 +242,10 @@ export const remoteAccountABI = [
 export const remoteAccountFactoryABI = [
   {
     type: 'function',
-    name: 'provide',
+    name: 'provideRemoteAccount',
     inputs: [
       { name: 'principalAccount', type: 'string' },
-      { name: 'expectedRouter', type: 'address' },
+      { name: 'expectedOwner', type: 'address' },
       { name: 'expectedAddress', type: 'address' },
     ],
     outputs: [{ name: '', type: 'bool' }],
@@ -252,10 +253,10 @@ export const remoteAccountFactoryABI = [
   },
   {
     type: 'function',
-    name: 'provideForRouter',
+    name: 'provideRemoteAccountForOwner',
     inputs: [
       { name: 'principalAccount', type: 'string' },
-      { name: 'router', type: 'address' },
+      { name: 'owner', type: 'address' },
       { name: 'expectedAddress', type: 'address' },
     ],
     outputs: [{ name: '', type: 'bool' }],
