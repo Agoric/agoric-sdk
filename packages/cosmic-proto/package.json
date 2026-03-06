@@ -208,8 +208,10 @@
     "!CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && scripts/minify.cjs",
-    "clean": "rimraf dist",
+    "build": "yarn build:js && yarn build:types",
+    "build:js": "esbuild \"src/**/*.ts\" \"src/**/*.js\" --outdir=dist --outbase=src --platform=node --format=esm --target=es2022 --sourcemap --sources-content=false --minify",
+    "build:types": "tsc --project tsconfig.build.json --emitDeclarationOnly && echo 👩‍⚖️ type defs emitted",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "codegen": "./update-protos.sh && scripts/codegen.cjs",
     "prepare": "npm run build",
     "lint-fix": "yarn lint:eslint --fix",
@@ -230,9 +232,9 @@
     "@endo/import-bundle": "^1.5.2",
     "@hyperweb/telescope": "^2.2.1",
     "ava": "^6.4.1",
+    "esbuild": "^0.25.2",
     "glob": "^11.0.3",
     "rimraf": "^5.0.0",
-    "terser": "^5.39.0",
     "tsd": "^0.33.0",
     "typescript": "~6.0.0-beta"
   },
