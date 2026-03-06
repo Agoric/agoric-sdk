@@ -133,7 +133,7 @@ $do_not_build || (
   fi
   print+=(-print)
   src=$(
-    find "$GOLANG_DIR" \( ! -name '*_test.go' -name '*.go' -o -name '*.cc' -o -name 'go.*' \) \
+    find "$GOLANG_DIR" \( ! -name '*_test.go' -name '*.go' -o -name '*.cc' -o -name 'go.*' -o -name 'swagger.yaml' \) \
       "${print[@]}" | head -1 || true
   )
   test -z "$src" || {
