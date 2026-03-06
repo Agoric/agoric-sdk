@@ -15,11 +15,7 @@ export interface Query {
    * key.
    */
   params(request: QueryParamsRequest): Promise<QueryParamsResponse>;
-  /**
-   * Subspaces queries for all registered subspaces and all keys for a subspace.
-   *
-   * Since: cosmos-sdk 0.46
-   */
+  /** Subspaces queries for all registered subspaces and all keys for a subspace. */
   subspaces(request?: QuerySubspacesRequest): Promise<QuerySubspacesResponse>;
 }
 export class QueryClientImpl implements Query {
