@@ -1,0 +1,50 @@
+name: Auto Retry Automerge CI
+
+on:
+  workflow_run:
+    workflows:
+      - 'Test all Packages'
+      - 'Integration tests'
+      - 'Test Golang'
+      - 'Multichain E2E Tests'
+    types:
+      - completed
+  pull_request:
+    types:
+      - labeled
+
+permissions:
+  actions: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  retry-from-workflow-run:
+    if: github.event_name == 'workflow_run'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retry failed jobs for automerge workflow run
+        run: ./.github/scripts/auto-retry-automerge.mts
+        env:
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PAYLOAD_JSON: ${{ toJson(github.event) }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  retry-from-label:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retry failed jobs for labeled automerge PR
+        run: node --experimental-strip-types ./.github/scripts/auto-retry-automerge.mts
+        env:
+          GITHUB_API_URL: ${{ github.api_url }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_PAYLOAD_JSON: ${{ toJson(github.event) }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
