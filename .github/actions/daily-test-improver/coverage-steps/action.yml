@@ -1,0 +1,73 @@
+name: 'Daily Test Coverage Improver - Coverage Steps'
+description: >
+  Build agoric-sdk, run all package tests with coverage, generate a combined
+  HTML coverage report, and upload it as the "coverage" artifact.
+  Coverage reports are written to coverage/html/.
+  A running log of each step is appended to coverage-steps.log in the repo root.
+
+runs:
+  using: composite
+  steps:
+    # Step 1: Enable corepack so the pinned Yarn version (from packageManager) is available.
+    - name: Enable corepack
+      shell: bash
+      run: |
+        corepack enable 2>&1 | tee -a coverage-steps.log
+
+    # Step 2: Install all Node.js dependencies using the pinned Yarn version.
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "=== yarn install ===" | tee -a coverage-steps.log
+        yarn install --immutable 2>&1 | tee -a coverage-steps.log
+
+    # Step 3: Build all packages (required before running tests; generates kernel bundles etc.).
+    - name: Build all packages
+      shell: bash
+      run: |
+        echo "=== yarn build ===" | tee -a coverage-steps.log
+        yarn build 2>&1 | tee -a coverage-steps.log
+
+    # Step 4: Run all package tests with V8 coverage collection enabled.
+    #   NODE_V8_COVERAGE directs V8 to write coverage JSON to coverage/tmp/.
+    #   C8_OPTIONS=--clean=false lets coverage accumulate across packages.
+    #   NODE_OPTIONS limits memory to avoid OOM on large packages.
+    #   yarn lerna run test:c8 --no-bail runs every package's test:c8 script,
+    #   continuing even when individual packages fail.
+    - name: Run tests with coverage
+      shell: bash
+      run: |
+        echo "=== Running tests with coverage ===" | tee -a coverage-steps.log
+        export NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/tmp"
+        export C8_OPTIONS="--clean=false"
+        export NODE_OPTIONS="--max-old-space-size=8192"
+        rm -rf "$NODE_V8_COVERAGE"
+        mkdir -p "$NODE_V8_COVERAGE"
+        yarn lerna run test:c8 --no-bail 2>&1 | tee -a coverage-steps.log || true
+
+    # Step 5: Generate a combined HTML coverage report over all packages'
+    #   src/ and tools/ directories. Output goes to coverage/html/.
+    - name: Generate coverage report
+      shell: bash
+      run: |
+        echo "=== Generating coverage report ===" | tee -a coverage-steps.log
+        export NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/tmp"
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}' \
+          --reporter=html-spa \
+          --reporter=text-summary \
+          --reports-dir=coverage/html \
+          2>&1 | tee -a coverage-steps.log
+
+    # Step 6: Upload the combined coverage report and the step log as the
+    #   "coverage" artifact. The report is in coverage/html/ and the log is
+    #   coverage-steps.log.
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: |
+          coverage/html/
+          coverage-steps.log
+        retention-days: 14
