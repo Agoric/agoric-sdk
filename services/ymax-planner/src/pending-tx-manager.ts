@@ -537,6 +537,19 @@ export const handlePendingTx = async (
       'tx234',
       'tx258',
       'tx261',
+      'tx263',
+      'tx100',
+      'tx118',
+      'tx65',
+      'tx78',
+      'tx82',
+      'tx85',
+      'tx86',
+      'tx99',
+      'tx88',
+      'tx90',
+      'tx97',
+      'tx98',
     ].includes(tx.txId)
   ) {
     return;
