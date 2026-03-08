@@ -1,0 +1,96 @@
+name: Build and Collect Coverage
+description: >
+  Builds the Agoric SDK monorepo, runs tests with V8 coverage collection,
+  generates a combined HTML coverage report, and uploads it as an artifact.
+  All step output is also appended to coverage-steps.log in the repo root.
+
+  Coverage report is generated at: coverage/html/index.html
+  The artifact named "coverage" contains the coverage/html directory.
+
+runs:
+  using: composite
+  steps:
+    # Step 1: Enable corepack and set up Yarn 4 (packageManager field in root package.json).
+    - name: Enable corepack and install Yarn
+      shell: bash
+      run: |
+        echo "=== Step: Enable corepack ===" | tee -a coverage-steps.log
+        corepack enable 2>&1 | tee -a coverage-steps.log
+        echo "Node version: $(node --version)" | tee -a coverage-steps.log
+        echo "Yarn version: $(yarn --version)" | tee -a coverage-steps.log
+
+    # Step 2: Install all workspace dependencies.
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "=== Step: yarn install ===" | tee -a coverage-steps.log
+        yarn install --immutable 2>&1 | tee -a coverage-steps.log
+        echo "yarn install exit code: $?" | tee -a coverage-steps.log
+
+    # Step 3: Build all packages (compiles TypeScript, generates kernel bundles, etc.).
+    - name: Build all packages
+      shell: bash
+      run: |
+        echo "=== Step: yarn build ===" | tee -a coverage-steps.log
+        yarn build 2>&1 | tee -a coverage-steps.log
+        echo "yarn build exit code: $?" | tee -a coverage-steps.log
+
+    # Step 4: Run tests with V8 coverage collection.
+    # - NODE_V8_COVERAGE points to where raw V8 coverage JSON files are written.
+    # - C8_OPTIONS=--clean=false allows coverage to accumulate across all packages.
+    # - --no-bail means all packages are tested even if some fail.
+    # - NODE_OPTIONS limits memory to avoid OOM on large test runs.
+    # The test:c8 script in each package runs: c8 --all ava (or similar).
+    - name: Run tests with coverage
+      shell: bash
+      env:
+        NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+        C8_OPTIONS: --clean=false
+        NODE_OPTIONS: --max-old-space-size=4096
+      run: |
+        echo "=== Step: Run tests with coverage ===" | tee -a coverage-steps.log
+        # Remove any old coverage data
+        rm -rf coverage/tmp
+        mkdir -p coverage/tmp
+        # Run test:c8 for all packages, continuing even if some fail
+        yarn lerna run test:c8 --no-bail 2>&1 | tee -a coverage-steps.log
+        echo "lerna test:c8 exit code: $?" | tee -a coverage-steps.log
+
+    # Step 5: Generate a combined HTML coverage report from accumulated V8 data.
+    # The --all flag includes source files that were not loaded during tests (0% coverage).
+    # The --include pattern covers all src/ and tools/ files in the packages/ directory.
+    # Output is written to coverage/html/.
+    - name: Generate HTML coverage report
+      shell: bash
+      env:
+        NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+      run: |
+        echo "=== Step: Generate HTML coverage report ===" | tee -a coverage-steps.log
+        yarn c8 report \
+          --all \
+          --include 'packages/*/{src,tools}/**' \
+          --reporter=html-spa \
+          --reporter=text-summary \
+          --reports-dir=coverage/html \
+          2>&1 | tee -a coverage-steps.log
+        echo "Coverage report generation exit code: $?" | tee -a coverage-steps.log
+        echo "Coverage files:" | tee -a coverage-steps.log
+        ls coverage/html/ 2>&1 | tee -a coverage-steps.log
+
+    # Step 6: Copy the coverage log into the coverage/html directory so it's included
+    # in the artifact for later inspection.
+    - name: Copy log into coverage directory
+      shell: bash
+      run: |
+        echo "=== Step: Copying coverage-steps.log to coverage directory ===" | tee -a coverage-steps.log
+        cp coverage-steps.log coverage/html/coverage-steps.log 2>/dev/null || true
+
+    # Step 7: Upload the combined HTML coverage report as the "coverage" artifact.
+    # The artifact will be available for download from the workflow run.
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage/html/
+        if-no-files-found: warn
+        retention-days: 30
