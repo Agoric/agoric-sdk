@@ -391,11 +391,11 @@ const factoryAddresses = harden({
 const depositFactoryAddresses = harden({
   // TODO: These are addresses specific to ymax0 and its current contractAddress
   mainnet: {
-    Arbitrum: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://arbiscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
-    Avalanche: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://snowtrace.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
-    Base: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://basescan.org/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
-    Ethereum: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://etherscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
-    Optimism: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://optimistic.etherscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Arbitrum: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A', // https://arbiscan.io/address/0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A
+    Avalanche: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A', // https://snowtrace.io/address/0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A
+    Base: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A', // https://basescan.org/address/0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A
+    Ethereum: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A', // https://etherscan.io/address/0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A
+    Optimism: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A', // https://optimistic.etherscan.io/address/0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A
   },
   testnet: {
     Arbitrum: '0x45F636F03F8570768A7907C0b21BDf791e69B437', // https://sepolia.arbiscan.io/address/0x45F636F03F8570768A7907C0b21BDf791e69B437
