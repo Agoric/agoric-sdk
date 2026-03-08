@@ -56,3 +56,11 @@ harden(isWithdrawToChainRef);
 export const isERC4626InstrumentId = (ref: string): boolean =>
   ref.startsWith('ERC4626_');
 harden(isERC4626InstrumentId);
+
+/**
+ * Is the input an Beefy InstrumentId
+ * (i.e., does it start with 'Beefy_')?
+ */
+export const isBeefyInstrumentId = (ref: string): boolean =>
+  ref.startsWith('Beefy_');
+harden(isBeefyInstrumentId);

@@ -27,7 +27,6 @@ import {
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
-  ERC4626InstrumentId,
   FlowDetail,
   PoolKey as InstrumentId,
   StatusFor,
@@ -57,12 +56,10 @@ import type {
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
-import type { EvmAddress } from '@agoric/fast-usdc';
 
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { logger, runWithFlowTrace } from './logger.ts';
 import type {
   EvmChain,
@@ -176,9 +173,8 @@ export type Powers = {
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch' | 'cosmosRest'>;
   rpc: CosmosRPCClient;
   spectrumBlockchain: SpectrumBlockchainSdk;
-  spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
-  spectrumPoolIds: Partial<Record<InstrumentId, string>>;
+  positionTokenAddresses: Partial<Record<InstrumentId, string>>;
   cosmosRest: CosmosRestClient;
   network: NetworkSpec;
   signingSmartWalletKit: SigningSmartWalletKit;
@@ -190,7 +186,6 @@ export type Powers = {
   now: typeof Date.now;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  erc4626VaultAddresses: Partial<Record<ERC4626InstrumentId, EvmAddress>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
 
@@ -199,15 +194,13 @@ export type ProcessPortfolioPowers = Pick<
   | 'cosmosRest'
   | 'network'
   | 'spectrumBlockchain'
-  | 'spectrumPools'
   | 'spectrumChainIds'
-  | 'spectrumPoolIds'
+  | 'positionTokenAddresses'
   | 'signingSmartWalletKit'
   | 'walletStore'
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
-  | 'erc4626VaultAddresses'
   | 'chainNameToChainIdMap'
 > & {
   isDryRun?: boolean;
@@ -258,12 +251,10 @@ export const processPortfolioEvents = async (
     walletStore,
     getWalletInvocationUpdate,
     spectrumBlockchain,
-    spectrumPools,
     spectrumChainIds,
-    spectrumPoolIds,
+    positionTokenAddresses,
     usdcTokensByChain,
     vstoragePathPrefixes,
-    erc4626VaultAddresses,
     evmProviders,
     chainNameToChainIdMap,
 
@@ -288,11 +279,9 @@ export const processPortfolioEvents = async (
   const balanceQueryPowers: BalanceQueryPowers = {
     cosmosRest,
     spectrumBlockchain,
-    spectrumPools,
     spectrumChainIds,
-    spectrumPoolIds,
+    positionTokenAddresses,
     usdcTokensByChain,
-    erc4626VaultAddresses,
     evmProviders,
     chainNameToChainIdMap,
   };

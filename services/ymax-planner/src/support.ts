@@ -2,21 +2,13 @@ import { WebSocketProvider } from 'ethers';
 import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
-import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 import {
   CaipChainIds,
   EvmWalletOperationType,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
-import type {
-  PoolKey as InstrumentId,
-  PoolPlaceInfo,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
-import {
-  aaveRewardsControllerAddresses,
-  compoundAddresses,
-} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
 
@@ -72,55 +64,6 @@ export const spectrumChainIdsByCluster: Readonly<
       lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
     ),
   },
-};
-
-export const spectrumPoolIdsByCluster: Readonly<
-  Record<ClusterName, ROPartial<InstrumentId, string>>
-> = {
-  mainnet: {
-    ...fromTypedEntries(
-      typedEntries(aaveRewardsControllerAddresses.mainnet).map(
-        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
-      ),
-    ),
-    ...fromTypedEntries(
-      typedEntries(compoundAddresses.mainnet).map(([chainName, addr]) => [
-        `Compound_${chainName}` as InstrumentId,
-        addr,
-      ]),
-    ),
-    Beefy_re7_Avalanche: 'euler-avax-re7labs-usdc',
-    Beefy_morphoGauntletUsdc_Ethereum: 'morpho-gauntlet-usdc',
-    Beefy_morphoSmokehouseUsdc_Ethereum: 'morpho-smokehouse-usdc',
-    Beefy_morphoSeamlessUsdc_Base: 'morpho-seamless-usdc',
-    Beefy_compoundUsdc_Optimism: 'compound-op-usdc',
-    Beefy_compoundUsdc_Arbitrum: 'compound-arbitrum-usdc',
-  },
-  testnet: {
-    ...fromTypedEntries(
-      typedEntries(aaveRewardsControllerAddresses.testnet).map(
-        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
-      ),
-    ),
-    ...fromTypedEntries(
-      typedEntries(compoundAddresses.testnet).map(([chainName, addr]) => [
-        `Compound_${chainName}` as InstrumentId,
-        addr,
-      ]),
-    ),
-  },
-  local: {},
-};
-
-// Not a keyMirror because some values change casing from keys
-export const spectrumProtocols: Readonly<
-  Record<PoolPlaceInfo['protocol'], string>
-> = {
-  Aave: 'aave',
-  Beefy: 'beefy',
-  Compound: 'compound',
-  USDN: 'USDN',
-  ERC4626: 'ERC4626',
 };
 
 /**

@@ -32,7 +32,6 @@ export interface YmaxPlannerConfig {
   readonly alchemyApiKey: string;
   readonly requestLimits: Partial<RequestLimits>;
   readonly spectrumBlockchainEndpoints: string[];
-  readonly spectrumPoolsEndpoints: string[];
   readonly cosmosRest: {
     readonly agoricNetworkSpec: string;
     readonly agoricNetSubdomain?: string;
@@ -165,12 +164,10 @@ export const loadConfig = async (
     env.GRAPHQL_ENDPOINTS as string,
     'GRAPHQL_ENDPOINTS',
   );
-  const {
-    'api-spectrum-blockchain': spectrumBlockchainEndpoints,
-    'api-spectrum-pools': spectrumPoolsEndpoints,
-  } = graphqlEndpoints;
-  (spectrumBlockchainEndpoints && spectrumPoolsEndpoints) ||
-    Fail`GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain and api-spectrum-pools is required`;
+  const { 'api-spectrum-blockchain': spectrumBlockchainEndpoints } =
+    graphqlEndpoints;
+  spectrumBlockchainEndpoints ||
+    Fail`GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain is required`;
   const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
 
   const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
@@ -184,7 +181,6 @@ export const loadConfig = async (
     alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
     requestLimits: { timeout, maxRetries },
     spectrumBlockchainEndpoints,
-    spectrumPoolsEndpoints,
     cosmosRest: {
       agoricNetworkSpec,
       agoricNetSubdomain,
