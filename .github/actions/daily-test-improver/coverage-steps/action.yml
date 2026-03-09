@@ -1,0 +1,87 @@
+# Daily Test Coverage Improver - Coverage Steps
+#
+# This composite action builds agoric-sdk, runs tests with V8 coverage collection,
+# generates a combined HTML coverage report, and uploads it as an artifact called "coverage".
+#
+# Coverage report location: coverage/html/index.html (relative to repo root)
+# Raw V8 coverage data:      coverage/tmp/
+#
+# Each step appends its output to coverage-steps.log in the repo root.
+# Node.js memory is set to 8192 MB to handle the full test suite.
+
+name: 'Daily Test Coverage Improver - Coverage Steps'
+description: 'Build agoric-sdk, run all tests with coverage, and upload the report'
+
+runs:
+  using: composite
+  steps:
+    # Step 1: Set up the pinned Node.js version (22) using corepack
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    # Step 2: Enable corepack so the pinned Yarn version is used
+    - name: Enable corepack and install dependencies
+      shell: bash
+      run: |
+        {
+          echo "=== Enable corepack ==="
+          bash scripts/ensure-corepack-yarn.sh
+          echo "=== yarn install ==="
+          yarn install --immutable
+        } 2>&1 | tee -a coverage-steps.log
+
+    # Step 3: Build all packages (generates kernel bundles, TypeScript output, etc.)
+    - name: Build all packages
+      shell: bash
+      run: |
+        {
+          echo "=== yarn build ==="
+          yarn build
+        } 2>&1 | tee -a coverage-steps.log
+
+    # Step 4: Run the full test suite with V8 coverage collection.
+    # - NODE_V8_COVERAGE points c8 at a temp directory to accumulate raw V8 data.
+    # - C8_OPTIONS=--clean=false prevents each package from wiping data collected
+    #   by previous packages.
+    # - --no-bail ensures all packages are tested even when some fail.
+    - name: Run tests with coverage
+      shell: bash
+      env:
+        NODE_MEMORY_SIZE: '8192'
+        NODE_OPTIONS: '--max-old-space-size=8192'
+        NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/tmp
+        C8_OPTIONS: '--clean=false'
+      run: |
+        {
+          echo "=== Preparing coverage directory ==="
+          rm -rf coverage/tmp
+          mkdir -p coverage/tmp
+
+          echo "=== Running yarn lerna run test:c8 ==="
+          yarn lerna run test:c8 --no-bail || true
+        } 2>&1 | tee -a coverage-steps.log
+
+    # Step 5: Generate the combined HTML coverage report from all accumulated V8 data.
+    # --all includes source files that were never loaded (shows 0% coverage for untested files).
+    # --include restricts the report to package src/ and tools/ directories.
+    - name: Generate coverage report
+      shell: bash
+      run: |
+        {
+          echo "=== Generating coverage HTML report ==="
+          yarn c8 report \
+            --all \
+            --include 'packages/*/{src,tools}' \
+            --reporter=html-spa \
+            --reports-dir=coverage/html
+          echo "=== Coverage report generated at coverage/html/index.html ==="
+        } 2>&1 | tee -a coverage-steps.log
+
+    # Step 6: Upload the coverage directory (both raw data and HTML report) as an artifact.
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage
+        path: coverage
