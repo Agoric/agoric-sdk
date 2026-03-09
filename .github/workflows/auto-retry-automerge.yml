@@ -27,10 +27,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Set up Corepack Yarn
-        run: bash scripts/ensure-corepack-yarn.sh
-      - name: Install Node dependencies
-        run: yarn install --mode=skip-build --immutable
       - name: Retry failed jobs for automerge workflow run
         run: ./.github/scripts/auto-retry-automerge.mts
         env:
@@ -49,10 +45,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Set up Corepack Yarn
-        run: bash scripts/ensure-corepack-yarn.sh
-      - name: Install Node dependencies
-        run: yarn install --mode=skip-build --immutable
       - name: Retry failed jobs for labeled automerge PR
         run: ./.github/scripts/auto-retry-automerge.mts
         env:

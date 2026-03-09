@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --import ts-blank-space/register
+#!/usr/bin/env -S node --experimental-strip-types
 
 type Label = { name?: string };
 type PullRequestRef = { number?: number; labels?: Label[] };
@@ -245,38 +245,7 @@ const retryForAutomergeLabelEvent = async (payload: {
   }
 };
 
-const runSelfTest = (args: string[]) => {
-  const [command, ...rest] = args;
-  switch (command) {
-    case 'hasAutomergeLabel':
-      console.log(JSON.stringify(hasAutomergeLabel(JSON.parse(rest[0]))));
-      return;
-    case 'isRetryableWorkflowRun':
-      console.log(JSON.stringify(isRetryableWorkflowRun(JSON.parse(rest[0]))));
-      return;
-    case 'selectLatestRetryableRuns':
-      console.log(
-        JSON.stringify(
-          selectLatestRetryableRuns(
-            JSON.parse(rest[0]),
-            JSON.parse(rest[1]),
-          ).map(run => run.id),
-        ),
-      );
-      return;
-    default:
-      throw new Error(
-        `Unsupported self-test command ${command || '<missing>'}`,
-      );
-  }
-};
-
 const main = async () => {
-  if (process.argv[2] === '--self-test') {
-    runSelfTest(process.argv.slice(3));
-    return;
-  }
-
   const eventName = getRequiredEnv('GITHUB_EVENT_NAME');
   const payload = parseJsonEnv<Record<string, unknown>>(
     'GITHUB_EVENT_PAYLOAD_JSON',
