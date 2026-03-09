@@ -53,24 +53,41 @@ type BinarySearch = {
 };
 
 /**
- * A thin provider facade whose methods automatically retry on Alchemy 429
+ * A provider facade whose methods automatically retry on Alchemy 429
  * rate-limit errors using exponential backoff with jitter.
  */
-const makeRetryProvider = (
+export const makeEvmRpc = (
   provider: WebSocketProvider,
   setTimeout: typeof globalThis.setTimeout,
 ) => ({
+  // RPC calls with retry
   getBlock: (n: number) =>
     withRateLimitRetry(() => provider.getBlock(n), setTimeout),
   getBlockNumber: () =>
     withRateLimitRetry(() => provider.getBlockNumber(), setTimeout),
   getLogs: (filter: Filter) =>
     withRateLimitRetry(() => provider.getLogs(filter), setTimeout),
+  getNetwork: () => withRateLimitRetry(() => provider.getNetwork(), setTimeout),
+  getTransactionReceipt: (txHash: string) =>
+    withRateLimitRetry(
+      () => provider.getTransactionReceipt(txHash),
+      setTimeout,
+    ),
+  waitForTransaction: (
+    ...args: Parameters<WebSocketProvider['waitForTransaction']>
+  ) =>
+    withRateLimitRetry(() => provider.waitForTransaction(...args), setTimeout),
   send: (...args: Parameters<WebSocketProvider['send']>) =>
     withRateLimitRetry(() => provider.send(...args), setTimeout),
+  // Subscription pass-throughs (no retry needed)
+  on: provider.on.bind(provider) as WebSocketProvider['on'],
+  off: provider.off.bind(provider) as WebSocketProvider['off'],
+  get websocket() {
+    return (provider as any).websocket;
+  },
 });
 
-type RetryProvider = ReturnType<typeof makeRetryProvider>;
+export type EvmRpc = ReturnType<typeof makeEvmRpc>;
 
 /**
  * Generic binary search helper for finding the greatest value that satisfies a predicate.
@@ -114,20 +131,17 @@ export const binarySearch = (async <Index extends number | bigint>(
  * equal to targetMs.
  */
 export const getBlockNumberBeforeRealTime = async (
-  provider: WebSocketProvider,
+  rpc: EvmRpc,
   targetMs: number,
   {
     fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
     meanBlockDurationMs,
-    setTimeout = globalThis.setTimeout,
   }: {
     fudgeFactorMs?: number;
     meanBlockDurationMs?: number;
-    setTimeout?: typeof globalThis.setTimeout;
   } = {},
 ) => {
   const posixSeconds = Math.floor((targetMs - fudgeFactorMs) / 1000);
-  const rpc = makeRetryProvider(provider, setTimeout);
 
   // Try to find a good starting point.
   let startNumber = 0;
@@ -208,7 +222,7 @@ export const withRateLimitRetry = async <T>(
 
 /** Common configuration for all chunk-based EVM chain scanning. */
 type ScanOptsBase = {
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   fromBlock: number;
   toBlock: number;
   chainId: CaipChainId;
@@ -288,7 +302,7 @@ const getTraces = async (
   fromBlock: string,
   toBlock: string,
   toAddress: string,
-  rpc: RetryProvider,
+  rpc: EvmRpc,
 ): Promise<CallTraceResult[]> => {
   const result: CallTraceResult[] | null = await rpc.send('trace_filter', [
     { fromBlock, toBlock, toAddress: [toAddress] },
@@ -328,9 +342,7 @@ const scanEvmBlocksInChunks = async <T>(
   } = opts;
 
   const blockTimeMs = getBlockTimeMs(chainId);
-  const rpc = makeRetryProvider(provider, setTimeout);
   await null;
-  let rateLimitRetries = 0;
   for (let currentBlock = -Infinity, start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log(`[${label}] Aborted`);
@@ -340,7 +352,7 @@ const scanEvmBlocksInChunks = async <T>(
 
     try {
       // Wait for the chain to catch up if end block doesn't exist yet
-      if (end > currentBlock) currentBlock = await rpc.getBlockNumber();
+      if (end > currentBlock) currentBlock = await provider.getBlockNumber();
       if (end > currentBlock) {
         const blocksToWait = Math.max(50, chunkSize);
         const waitTimeMs = blocksToWait * blockTimeMs;
@@ -356,19 +368,9 @@ const scanEvmBlocksInChunks = async <T>(
       const result = await scanChunk(start, end);
       if (result) return result;
       await opts.onRejectedChunk?.(start, end);
-      rateLimitRetries = 0;
     } catch (err) {
-      if (isRateLimitError(err) && rateLimitRetries < RATE_LIMIT_RETRIES) {
-        rateLimitRetries += 1;
-        const backoffMs = rateLimitBackoffMs(rateLimitRetries - 1);
-        log(
-          `[${label}] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${RATE_LIMIT_RETRIES} after ${Math.round(backoffMs)}ms`,
-        );
-        await new Promise(resolve => setTimeout(resolve, backoffMs));
-        continue; // Retry same chunk
-      }
+      // Rate-limit retries are handled by EvmRpc; only log here.
       log(`[${label}] Error in chunk ${start}–${end}:`, err);
-      rateLimitRetries = 0;
     }
 
     start += chunkSize;
@@ -392,8 +394,6 @@ export const scanEvmLogsInChunks = async (
     ...rest
   } = opts;
 
-  const rpc = makeRetryProvider(provider, rest.setTimeout);
-
   return scanEvmBlocksInChunks<Log>({
     ...rest,
     provider,
@@ -406,7 +406,7 @@ export const scanEvmLogsInChunks = async (
         fromBlock: start,
         toBlock: end,
       };
-      const logs = await rpc.getLogs(chunkFilter);
+      const logs = await provider.getLogs(chunkFilter);
       for (const evt of logs) {
         if (await predicate(evt)) {
           log(`[LogScan] Match in tx=${evt.transactionHash}`);
@@ -434,14 +434,13 @@ const scanChunkTracesForFailedTx = async (
   end: number,
   opts: FailedTxScanOpts,
 ): Promise<TransactionResponse | undefined> => {
-  const { provider, toAddress, verifyFailedTx, setTimeout } = opts;
-  const rpc = makeRetryProvider(provider, setTimeout);
+  const { provider, toAddress, verifyFailedTx } = opts;
 
   const traces = await getTraces(
     toQuantity(start),
     toQuantity(end),
     toAddress,
-    rpc,
+    provider,
   );
 
   const failedTopLevel = traces.filter(
@@ -538,10 +537,7 @@ export const scanFailedTxsInChunks = async (
   });
 };
 
-export const waitForBlock = async (
-  provider: WebSocketProvider,
-  targetBlock: number,
-) => {
+export const waitForBlock = async (provider: EvmRpc, targetBlock: number) => {
   return new Promise(resolve => {
     const listener = blockNumber => {
       if (blockNumber >= targetBlock) {

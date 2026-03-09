@@ -1,4 +1,4 @@
-import type { Filter, WebSocketProvider } from 'ethers';
+import type { Filter } from 'ethers';
 import { id, zeroPadValue, getAddress, AbiCoder } from 'ethers';
 import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
@@ -9,6 +9,7 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
+  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
@@ -78,7 +79,7 @@ export const parseSmartWalletCreatedLog = (log: any) => {
 type SmartWalletWatchBase = {
   factoryAddr: `0x${string}`;
   subscribeToAddr: `0x${string}`;
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   expectedAddr: `0x${string}`;
   expectedSourceAddress: string;
   chainId: CaipChainId;

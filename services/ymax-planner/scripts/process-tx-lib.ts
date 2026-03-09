@@ -28,9 +28,13 @@ import { loadConfig } from '../src/config.ts';
 import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import { createEVMContext, prepareAbortController } from '../src/support.ts';
+import { makeEvmRpc } from '../src/evm-scanner.ts';
 import type { SimplePowers } from '../src/main.ts';
 import { makeSQLiteKeyValueStore } from '../src/kv-store.ts';
-import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+import type {
+  EvmRpcProviders,
+  HandlePendingTxOpts,
+} from '../src/pending-tx-manager.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import {
   parseStreamCell,
@@ -128,6 +132,13 @@ export const processTx = async (
   failedEvmChains.length === 0 ||
     Fail`Could not connect to EVM chains: ${q(failedEvmChains)}`;
 
+  const retryProviders = Object.fromEntries(
+    Object.entries(evmCtx.evmProviders).map(([caip, provider]) => [
+      caip,
+      makeEvmRpc(provider, setTimeout),
+    ]),
+  ) as EvmRpcProviders;
+
   const { db, kvStore } = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
     trace: () => {},
   });
@@ -179,6 +190,7 @@ export const processTx = async (
       // Prepare powers for handling the transaction
       const txPowers: HandlePendingTxOpts = Object.freeze({
         ...evmCtx,
+        retryProviders,
         cosmosRest,
         cosmosRpc: rpc,
         fetch,
