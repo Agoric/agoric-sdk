@@ -37,6 +37,7 @@ echo "worktree setup starting..."
 ROOT=$(git rev-parse --show-toplevel)
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 SETUP_START_MS=$(perl -MTime::HiRes=time -e 'printf("%.0f\n", time() * 1000)')
+COWSYNC_BIN=${COWSYNC_BIN:-/Users/turadg/Code/cowsync/target/debug/cowsync}
 PRIMARY=$(git worktree list --porcelain | awk '
 /^worktree / {
   print $2
@@ -54,6 +55,10 @@ phase_end() {
   end_ms=$(perl -MTime::HiRes=time -e 'printf("%.0f\n", time() * 1000)')
   elapsed_ms=$((end_ms - PHASE_START_MS))
   echo "phase done: $PHASE_NAME (${elapsed_ms}ms)"
+}
+
+sync_with_cowsync() {
+  "$COWSYNC_BIN" "$@"
 }
 
 ###############################################################################
@@ -122,7 +127,11 @@ clone() {
 if [ -d "$SOURCE/node_modules" ] && [ ! -d "$ROOT/node_modules" ]; then
   phase_start "copy node_modules"
   echo "reusing node_modules"
-  clone "$SOURCE/node_modules" "$ROOT/node_modules"
+  if [ -x "$COWSYNC_BIN" ]; then
+    sync_with_cowsync --include 'node_modules/**' "$SOURCE" "$ROOT"
+  else
+    clone "$SOURCE/node_modules" "$ROOT/node_modules"
+  fi
   phase_end
 fi
 
@@ -132,23 +141,34 @@ fi
 
 echo "copying build caches..."
 
-# TypeScript incremental caches
-phase_start "copy tsbuildinfo"
-find "$SOURCE" -name "*.tsbuildinfo" -type f 2>/dev/null | while read -r f; do
-  rel=${f#"$SOURCE/"}
-  mkdir -p "$(dirname "$ROOT/$rel")"
-  clone "$f" "$ROOT/$rel"
-done
-phase_end
+if [ -x "$COWSYNC_BIN" ]; then
+  phase_start "copy build caches"
+  sync_with_cowsync \
+    --include '**/*.tsbuildinfo' \
+    --include 'packages/**/dist/**' \
+    --include 'packages/**/bundles/**' \
+    "$SOURCE" \
+    "$ROOT"
+  phase_end
+else
+  # TypeScript incremental caches
+  phase_start "copy tsbuildinfo"
+  find "$SOURCE" -name "*.tsbuildinfo" -type f 2>/dev/null | while read -r f; do
+    rel=${f#"$SOURCE/"}
+    mkdir -p "$(dirname "$ROOT/$rel")"
+    clone "$f" "$ROOT/$rel"
+  done
+  phase_end
 
-# dist and bundles directories
-phase_start "copy dist and bundles directories"
-find "$SOURCE/packages" \( -type d -name dist -o -type d -name bundles \) 2>/dev/null | while read -r d; do
-  rel=${d#"$SOURCE/"}
-  mkdir -p "$(dirname "$ROOT/$rel")"
-  clone "$d" "$ROOT/$rel"
-done
-phase_end
+  # dist and bundles directories
+  phase_start "copy dist and bundles directories"
+  find "$SOURCE/packages" \( -type d -name dist -o -type d -name bundles \) 2>/dev/null | while read -r d; do
+    rel=${d#"$SOURCE/"}
+    mkdir -p "$(dirname "$ROOT/$rel")"
+    clone "$d" "$ROOT/$rel"
+  done
+  phase_end
+fi
 
 SETUP_END_MS=$(perl -MTime::HiRes=time -e 'printf("%.0f\n", time() * 1000)')
 echo "worktree setup complete ($((SETUP_END_MS - SETUP_START_MS))ms total)"
