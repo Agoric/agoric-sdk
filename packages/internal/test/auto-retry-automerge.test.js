@@ -1,56 +1,53 @@
 // @ts-check
 import test from 'ava';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
-const moduleUrl = new URL(
-  '../../../.github/scripts/auto-retry-automerge.mts',
-  import.meta.url,
-).href;
+const scriptPath = fileURLToPath(
+  new URL('../../../.github/scripts/auto-retry-automerge.mts', import.meta.url),
+);
 
 /**
- * @param {string} expression
+ * @param {string} command
+ * @param {...string} args
  * @returns {unknown}
  */
-const evalModuleExpression = expression => {
-  const stdout = execFileSync(
-    process.execPath,
-    [
-      '--experimental-strip-types',
-      '--input-type=module',
-      '-e',
-      `import * as mod from ${JSON.stringify(moduleUrl)}; console.log(JSON.stringify(${expression}));`,
-    ],
-    {
-      encoding: 'utf8',
-    },
-  );
+const runSelfTest = (command, ...args) => {
+  const stdout = execFileSync(scriptPath, ['--self-test', command, ...args], {
+    encoding: 'utf8',
+  });
   return JSON.parse(stdout.trim());
 };
 
 test('hasAutomergeLabel matches supported labels only', t => {
   t.true(
-    evalModuleExpression(
-      `mod.hasAutomergeLabel([{ name: 'automerge:squash' }])`,
+    runSelfTest(
+      'hasAutomergeLabel',
+      JSON.stringify([{ name: 'automerge:squash' }]),
     ),
   );
   t.true(
-    evalModuleExpression(
-      `mod.hasAutomergeLabel([{ name: 'automerge:no-update' }])`,
+    runSelfTest(
+      'hasAutomergeLabel',
+      JSON.stringify([{ name: 'automerge:no-update' }]),
     ),
   );
   t.true(
-    evalModuleExpression(
-      `mod.hasAutomergeLabel([{ name: 'automerge:rebase' }])`,
+    runSelfTest(
+      'hasAutomergeLabel',
+      JSON.stringify([{ name: 'automerge:rebase' }]),
     ),
   );
   t.false(
-    evalModuleExpression(
-      `mod.hasAutomergeLabel([{ name: 'bypass:automerge' }])`,
+    runSelfTest(
+      'hasAutomergeLabel',
+      JSON.stringify([{ name: 'bypass:automerge' }]),
     ),
   );
   t.false(
-    evalModuleExpression(
-      `mod.hasAutomergeLabel([{ name: 'force:integration' }])`,
+    runSelfTest(
+      'hasAutomergeLabel',
+      JSON.stringify([{ name: 'force:integration' }]),
     ),
   );
 });
@@ -66,45 +63,53 @@ test('isRetryableWorkflowRun allows up to 3 retries and stops at attempt 4', t =
   };
   const baseRunExpr = JSON.stringify(baseRun);
 
-  t.true(evalModuleExpression(`mod.isRetryableWorkflowRun(${baseRunExpr})`));
+  t.true(runSelfTest('isRetryableWorkflowRun', baseRunExpr));
   t.true(
-    evalModuleExpression(
-      `mod.isRetryableWorkflowRun({ ...${baseRunExpr}, conclusion: 'timed_out' })`,
+    runSelfTest(
+      'isRetryableWorkflowRun',
+      JSON.stringify({ ...baseRun, conclusion: 'timed_out' }),
     ),
   );
   t.false(
-    evalModuleExpression(
-      `mod.isRetryableWorkflowRun({ ...${baseRunExpr}, conclusion: 'cancelled' })`,
+    runSelfTest(
+      'isRetryableWorkflowRun',
+      JSON.stringify({ ...baseRun, conclusion: 'cancelled' }),
     ),
   );
   t.false(
-    evalModuleExpression(
-      `mod.isRetryableWorkflowRun({ ...${baseRunExpr}, event: 'merge_group' })`,
-    ),
-  );
-  t.true(
-    evalModuleExpression(
-      `mod.isRetryableWorkflowRun({ ...${baseRunExpr}, run_attempt: 2 })`,
+    runSelfTest(
+      'isRetryableWorkflowRun',
+      JSON.stringify({ ...baseRun, event: 'merge_group' }),
     ),
   );
   t.true(
-    evalModuleExpression(
-      `mod.isRetryableWorkflowRun({ ...${baseRunExpr}, run_attempt: 3 })`,
+    runSelfTest(
+      'isRetryableWorkflowRun',
+      JSON.stringify({ ...baseRun, run_attempt: 2 }),
+    ),
+  );
+  t.true(
+    runSelfTest(
+      'isRetryableWorkflowRun',
+      JSON.stringify({ ...baseRun, run_attempt: 3 }),
     ),
   );
   t.false(
-    evalModuleExpression(
-      `mod.isRetryableWorkflowRun({ ...${baseRunExpr}, run_attempt: 4 })`,
+    runSelfTest(
+      'isRetryableWorkflowRun',
+      JSON.stringify({ ...baseRun, run_attempt: 4 }),
     ),
   );
   t.false(
-    evalModuleExpression(
-      `mod.isRetryableWorkflowRun({ ...${baseRunExpr}, name: 'Some other workflow' })`,
+    runSelfTest(
+      'isRetryableWorkflowRun',
+      JSON.stringify({ ...baseRun, name: 'Some other workflow' }),
     ),
   );
   t.false(
-    evalModuleExpression(
-      `mod.isRetryableWorkflowRun({ ...${baseRunExpr}, pull_requests: [] })`,
+    runSelfTest(
+      'isRetryableWorkflowRun',
+      JSON.stringify({ ...baseRun, pull_requests: [] }),
     ),
   );
 });
@@ -185,12 +190,12 @@ test('selectLatestRetryableRuns keeps only newest failed run per monitored workf
   ];
 
   const retryRuns = /** @type {number[]} */ (
-    evalModuleExpression(
-      `mod.selectLatestRetryableRuns(${JSON.stringify(runs)}, ${JSON.stringify(
-        headSha,
-      )}).map(run => run.id).sort((a, b) => a - b)`,
+    runSelfTest(
+      'selectLatestRetryableRuns',
+      JSON.stringify(runs),
+      JSON.stringify(headSha),
     )
-  );
+  ).sort((a, b) => a - b);
 
   t.deepEqual(retryRuns, [11, 12, 16]);
 });
