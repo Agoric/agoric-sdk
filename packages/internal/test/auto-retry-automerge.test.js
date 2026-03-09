@@ -29,7 +29,7 @@ const evalModuleExpression = expression => {
   return JSON.parse(stdout.trim());
 };
 
-testNode22('hasAutomergeLabel matches supported labels only', t => {
+testNode22('hasAutomergeLabel matches automerge and bypass labels only', t => {
   t.true(
     evalModuleExpression(
       `mod.hasAutomergeLabel([{ name: 'automerge:squash' }])`,
@@ -45,7 +45,7 @@ testNode22('hasAutomergeLabel matches supported labels only', t => {
       `mod.hasAutomergeLabel([{ name: 'automerge:rebase' }])`,
     ),
   );
-  t.false(
+  t.true(
     evalModuleExpression(
       `mod.hasAutomergeLabel([{ name: 'bypass:automerge' }])`,
     ),

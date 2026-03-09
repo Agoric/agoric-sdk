@@ -19,6 +19,7 @@ const AUTOMERGE_LABELS = new Set([
   'automerge:squash',
   'automerge:no-update',
   'automerge:rebase',
+  'bypass:automerge',
 ]);
 
 const MONITORED_WORKFLOWS = new Set([
