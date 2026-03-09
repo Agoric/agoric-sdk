@@ -2,6 +2,7 @@
 
 type Label = { name?: string };
 type PullRequestRef = { number?: number; labels?: Label[] };
+type PullRequest = PullRequestRef & { labels?: Label[] };
 type WorkflowRun = {
   id: number;
   name?: string;
@@ -161,6 +162,31 @@ const listWorkflowRunsForHeadSha = async (
   }
 };
 
+const getPullRequest = async (pullNumber: number): Promise<PullRequest> => {
+  const owner = getRequiredEnv('GITHUB_REPOSITORY_OWNER');
+  const repo = getRequiredEnv('GITHUB_REPOSITORY').split('/')[1];
+  return (await githubRequest(
+    'GET',
+    `/repos/${owner}/${repo}/pulls/${pullNumber}`,
+  )) as PullRequest;
+};
+
+const findAutomergePullRequest = async (
+  pullRequests: PullRequestRef[],
+): Promise<PullRequest | undefined> => {
+  for (const pullRequestRef of pullRequests) {
+    if (!pullRequestRef.number) {
+      continue;
+    }
+    const pullRequest = await getPullRequest(pullRequestRef.number);
+    if (hasAutomergeLabel(pullRequest.labels)) {
+      return pullRequest;
+    }
+  }
+
+  return undefined;
+};
+
 const retryForWorkflowRunEvent = async (payload: {
   workflow_run: WorkflowRun;
 }) => {
@@ -171,7 +197,7 @@ const retryForWorkflowRunEvent = async (payload: {
   }
 
   const prs = run.pull_requests || [];
-  const eligiblePr = prs.find(pr => hasAutomergeLabel(pr.labels));
+  const eligiblePr = await findAutomergePullRequest(prs);
   if (!eligiblePr) {
     console.log(
       `Workflow run ${run.id} has no associated PR with an automerge label`,
