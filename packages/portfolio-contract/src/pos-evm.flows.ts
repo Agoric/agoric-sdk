@@ -24,7 +24,6 @@ import {
   coerceAccountId,
   leftPadEthAddressTo32Bytes,
 } from '@agoric/orchestration/src/utils/address.js';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -95,10 +94,13 @@ const { keys } = Object;
 /** @see {@link https://developers.circle.com/cctp/supported-domains} */
 const nobleDomain = 4;
 
+// XXX concession to test legibility
+const TEST_NOBLE_ADDRESS = 'noble1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqe6u37k';
+
 const bech32ToBytes32 = (addr: Bech32Address) => {
   if (addr === 'noble1test') {
     trace('XXX replacing test address to convert to bytes32');
-    addr = makeTestAddress(3, 'noble');
+    addr = TEST_NOBLE_ADDRESS;
   }
   const { data } = fromBech32(addr);
   const dh = encodeHex(data);
