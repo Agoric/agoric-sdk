@@ -7,6 +7,7 @@ type WorkflowRun = {
   id: number;
   name?: string;
   conclusion?: string | null;
+  status?: string;
   event?: string;
   run_attempt?: number;
   pull_requests?: PullRequestRef[];
@@ -55,14 +56,15 @@ const isRetryableForHeadSha = (
   headSha: string,
 ): boolean => run.head_sha === headSha && isRetryableWorkflowRun(run);
 
-const selectLatestRetryableRuns = (
-  runs: WorkflowRun[],
-  headSha: string,
-): WorkflowRun[] => {
+const selectLatestRunsByWorkflow = (runs: WorkflowRun[], headSha: string) => {
   const latestByWorkflow = new Map<string, WorkflowRun>();
 
   for (const run of runs) {
-    if (!isRetryableForHeadSha(run, headSha) || !run.name) {
+    if (
+      run.head_sha !== headSha ||
+      !isMonitoredWorkflow(run.name) ||
+      !run.name
+    ) {
       continue;
     }
     const prior = latestByWorkflow.get(run.name);
@@ -81,7 +83,54 @@ const selectLatestRetryableRuns = (
     }
   }
 
-  return [...latestByWorkflow.values()];
+  return latestByWorkflow;
+};
+
+const isPendingWorkflowRun = (run: Partial<WorkflowRun>): boolean =>
+  run.status === 'queued' ||
+  run.status === 'in_progress' ||
+  run.status === 'requested' ||
+  (!run.conclusion && run.status === 'completed');
+
+const shouldRetryLatestRun = (run: Partial<WorkflowRun>): boolean =>
+  isMonitoredWorkflow(run.name) &&
+  run.event === 'pull_request' &&
+  typeof run.run_attempt === 'number' &&
+  run.run_attempt < MAX_RUN_ATTEMPT &&
+  RETRYABLE_CONCLUSIONS.has(run.conclusion || '') &&
+  !isPendingWorkflowRun(run) &&
+  Array.isArray(run.pull_requests) &&
+  run.pull_requests.length > 0;
+
+const collectRetryTargetsForLabelEvent = (
+  runs: WorkflowRun[],
+  headSha: string,
+): WorkflowRun[] =>
+  [...selectLatestRunsByWorkflow(runs, headSha).values()].filter(
+    shouldRetryLatestRun,
+  );
+
+const listPullRequestWorkflowRunsForHeadSha = async (
+  headSha: string,
+): Promise<WorkflowRun[]> => {
+  const owner = getRequiredEnv('GITHUB_REPOSITORY_OWNER');
+  const repo = getRequiredEnv('GITHUB_REPOSITORY').split('/')[1];
+  const runs: WorkflowRun[] = [];
+
+  for (let page = 1; ; page += 1) {
+    const response = (await githubRequest(
+      'GET',
+      `/repos/${owner}/${repo}/actions/runs?event=pull_request&head_sha=${encodeURIComponent(
+        headSha,
+      )}&per_page=100&page=${page}`,
+    )) as { workflow_runs?: WorkflowRun[] };
+
+    const pageRuns = response.workflow_runs || [];
+    runs.push(...pageRuns);
+    if (pageRuns.length < 100) {
+      return runs;
+    }
+  }
 };
 
 const getRequiredEnv = (name: string): string => {
@@ -136,30 +185,6 @@ const rerunFailedJobs = async (runId: number) => {
     'POST',
     `/repos/${owner}/${repo}/actions/runs/${runId}/rerun-failed-jobs`,
   );
-};
-
-const listWorkflowRunsForHeadSha = async (
-  headSha: string,
-): Promise<WorkflowRun[]> => {
-  const owner = getRequiredEnv('GITHUB_REPOSITORY_OWNER');
-  const repo = getRequiredEnv('GITHUB_REPOSITORY').split('/')[1];
-  /** @type {WorkflowRun[]} */
-  const runs = [];
-
-  for (let page = 1; ; page += 1) {
-    const response = (await githubRequest(
-      'GET',
-      `/repos/${owner}/${repo}/actions/runs?event=pull_request&status=completed&head_sha=${encodeURIComponent(
-        headSha,
-      )}&per_page=100&page=${page}`,
-    )) as { workflow_runs?: WorkflowRun[] };
-
-    const pageRuns = response.workflow_runs || [];
-    runs.push(...pageRuns);
-    if (pageRuns.length < 100) {
-      return runs;
-    }
-  }
 };
 
 const getPullRequest = async (pullNumber: number): Promise<PullRequest> => {
@@ -233,8 +258,8 @@ const retryForAutomergeLabelEvent = async (payload: {
     return;
   }
 
-  const runs = await listWorkflowRunsForHeadSha(headSha);
-  const retryRuns = selectLatestRetryableRuns(runs, headSha);
+  const runs = await listPullRequestWorkflowRunsForHeadSha(headSha);
+  const retryRuns = collectRetryTargetsForLabelEvent(runs, headSha);
   if (retryRuns.length === 0) {
     console.log(`No failed monitored workflow runs found for ${headSha}`);
     return;
@@ -280,8 +305,11 @@ export {
   hasAutomergeLabel,
   isAutomergeLabel,
   isMonitoredWorkflow,
+  isPendingWorkflowRun,
   isRetryableWorkflowRun,
+  shouldRetryLatestRun,
   retryForAutomergeLabelEvent,
   retryForWorkflowRunEvent,
-  selectLatestRetryableRuns,
+  selectLatestRunsByWorkflow,
+  collectRetryTargetsForLabelEvent,
 };

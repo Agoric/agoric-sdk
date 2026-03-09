@@ -57,6 +57,23 @@ testNode22('hasAutomergeLabel matches supported labels only', t => {
   );
 });
 
+testNode22('isPendingWorkflowRun matches active rerun states', t => {
+  t.true(
+    evalModuleExpression(`mod.isPendingWorkflowRun({ status: 'queued' })`),
+  );
+  t.true(
+    evalModuleExpression(`mod.isPendingWorkflowRun({ status: 'in_progress' })`),
+  );
+  t.true(
+    evalModuleExpression(`mod.isPendingWorkflowRun({ status: 'requested' })`),
+  );
+  t.false(
+    evalModuleExpression(
+      `mod.isPendingWorkflowRun({ status: 'completed', conclusion: 'failure' })`,
+    ),
+  );
+});
+
 testNode22(
   'isRetryableWorkflowRun allows up to 3 retries and stops at attempt 4',
   t => {
@@ -115,7 +132,7 @@ testNode22(
 );
 
 testNode22(
-  'selectLatestRetryableRuns keeps only newest failed run per monitored workflow on current SHA',
+  'selectLatestRunsByWorkflow prefers the newest run even if an older one failed',
   t => {
     const headSha = 'abc123';
     const runs = [
@@ -151,11 +168,12 @@ testNode22(
       },
       {
         id: 13,
-        name: 'Test Golang',
+        name: 'Integration tests',
         head_sha: headSha,
-        conclusion: 'failure',
+        conclusion: 'success',
         event: 'pull_request',
-        run_attempt: 4,
+        status: 'completed',
+        run_attempt: 2,
         pull_requests: [{ number: 1 }],
         created_at: '2026-03-06T10:07:00Z',
       },
@@ -165,6 +183,7 @@ testNode22(
         head_sha: headSha,
         conclusion: 'failure',
         event: 'pull_request',
+        status: 'completed',
         run_attempt: 2,
         pull_requests: [{ number: 1 }],
         created_at: '2026-03-06T10:07:30Z',
@@ -191,14 +210,181 @@ testNode22(
       },
     ];
 
+    const latestRuns = /** @type {number[]} */ (
+      evalModuleExpression(
+        `Array.from(mod.selectLatestRunsByWorkflow(${JSON.stringify(runs)}, ${JSON.stringify(
+          headSha,
+        )}).values()).map(run => run.id).sort((a, b) => a - b)`,
+      )
+    );
+
+    t.deepEqual(latestRuns, [11, 13, 15, 16]);
+  },
+);
+
+testNode22(
+  'collectRetryTargetsForLabelEvent ignores workflows whose latest run already succeeded',
+  t => {
+    const headSha = 'abc123';
+    const runs = [
+      {
+        id: 101,
+        name: 'Test all Packages',
+        head_sha: headSha,
+        conclusion: 'failure',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 1,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:00:00Z',
+      },
+      {
+        id: 102,
+        name: 'Test all Packages',
+        head_sha: headSha,
+        conclusion: 'success',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 2,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:05:00Z',
+      },
+      {
+        id: 103,
+        name: 'Integration tests',
+        head_sha: headSha,
+        conclusion: 'failure',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 1,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:06:00Z',
+      },
+    ];
+
     const retryRuns = /** @type {number[]} */ (
       evalModuleExpression(
-        `mod.selectLatestRetryableRuns(${JSON.stringify(runs)}, ${JSON.stringify(
+        `mod.collectRetryTargetsForLabelEvent(${JSON.stringify(runs)}, ${JSON.stringify(
           headSha,
         )}).map(run => run.id).sort((a, b) => a - b)`,
       )
     );
 
-    t.deepEqual(retryRuns, [11, 12, 16]);
+    t.deepEqual(retryRuns, [103]);
+  },
+);
+
+testNode22(
+  'collectRetryTargetsForLabelEvent ignores workflows whose latest rerun is already in progress',
+  t => {
+    const headSha = 'abc123';
+    const runs = [
+      {
+        id: 201,
+        name: 'Test all Packages',
+        head_sha: headSha,
+        conclusion: 'failure',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 1,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:00:00Z',
+      },
+      {
+        id: 202,
+        name: 'Test all Packages',
+        head_sha: headSha,
+        conclusion: null,
+        status: 'in_progress',
+        event: 'pull_request',
+        run_attempt: 2,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:05:00Z',
+      },
+      {
+        id: 203,
+        name: 'Integration tests',
+        head_sha: headSha,
+        conclusion: 'failure',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 1,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:06:00Z',
+      },
+    ];
+
+    const retryRuns = /** @type {number[]} */ (
+      evalModuleExpression(
+        `mod.collectRetryTargetsForLabelEvent(${JSON.stringify(runs)}, ${JSON.stringify(
+          headSha,
+        )}).map(run => run.id).sort((a, b) => a - b)`,
+      )
+    );
+
+    t.deepEqual(retryRuns, [203]);
+  },
+);
+
+testNode22(
+  "collectRetryTargetsForLabelEvent only retries Mathieu's still-failing workflow",
+  t => {
+    const headSha = 'abc123';
+    const runs = [
+      {
+        id: 301,
+        name: 'Test all Packages',
+        head_sha: headSha,
+        conclusion: 'failure',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 1,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:00:00Z',
+      },
+      {
+        id: 302,
+        name: 'Test all Packages',
+        head_sha: headSha,
+        conclusion: 'success',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 2,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:05:00Z',
+      },
+      {
+        id: 303,
+        name: 'Integration tests',
+        head_sha: headSha,
+        conclusion: 'failure',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 1,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:06:00Z',
+      },
+      {
+        id: 304,
+        name: 'Integration tests',
+        head_sha: headSha,
+        conclusion: 'failure',
+        status: 'completed',
+        event: 'pull_request',
+        run_attempt: 2,
+        pull_requests: [{ number: 1 }],
+        created_at: '2026-03-06T10:07:00Z',
+      },
+    ];
+
+    const retryRuns = /** @type {number[]} */ (
+      evalModuleExpression(
+        `mod.collectRetryTargetsForLabelEvent(${JSON.stringify(runs)}, ${JSON.stringify(
+          headSha,
+        )}).map(run => run.id).sort((a, b) => a - b)`,
+      )
+    );
+
+    t.deepEqual(retryRuns, [304]);
   },
 );
