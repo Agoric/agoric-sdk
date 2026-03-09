@@ -9,7 +9,10 @@ import type {
   TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  type EvmRpcProviders,
+} from '../src/pending-tx-manager.ts';
 import {
   processPendingTxEvents,
   processInitialPendingTransactions,
@@ -885,6 +888,7 @@ const makeFailedTxTestContext = ({
   const ctxWithFetch = harden({
     ...opts,
     evmProviders: newEvmProviders,
+    retryProviders: newEvmProviders as unknown as EvmRpcProviders,
     fetch: makeFetchMock({ failedTxHash }),
   });
 

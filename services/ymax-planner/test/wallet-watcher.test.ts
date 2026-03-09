@@ -3,7 +3,10 @@ import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
 import { objectMap } from '@endo/patterns';
 import type { WebSocketProvider } from 'ethers';
 import { createMockPendingTxOpts } from './mocks.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  type EvmRpcProviders,
+} from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
@@ -356,6 +359,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
   const ctxWithFetch = harden({
     ...opts,
     evmProviders: newEvmProviders,
+    retryProviders: newEvmProviders as EvmRpcProviders,
     fetch: async () => ({}) as Response,
   });
 

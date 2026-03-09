@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import type { Filter, WebSocketProvider } from 'ethers';
+import type { Filter } from 'ethers';
 import type { WebSocket } from 'ws';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
@@ -10,6 +10,7 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
+  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import type { MakeAbortController } from '../support.ts';
@@ -34,7 +35,7 @@ const MULTICALL_STATUS_SIGNATURE = ethers.id(
 );
 
 type WatchGmp = {
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   contractAddress: `0x${string}`;
   txId: TxId;
   expectedSourceAddress: string;
