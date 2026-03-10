@@ -9,9 +9,8 @@ Primary goals:
 - Show what is estimated vs what is actually paid.
 - Provide concrete per-step/per-chain fee data from production flow artifacts.
 
-TODO: Replace or remove `.context-fees/*` references so this committed doc does not link to ephemera paths.
-
 Artifacts for this analysis are under `.context-fees/flow-reports/`.
+TODO: Replace or remove this `.context-fees/*` reference so this committed doc does not link to ephemera paths.
 
 ## Sequence Basis (Design + Implementation)
 
