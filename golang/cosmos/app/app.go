@@ -126,6 +126,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
+	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
@@ -556,17 +557,28 @@ func NewAgoricApp(
 	// wasmLightClientModule := ibcwasm.NewLightClientModule(app.WasmClientKeeper, storeProvider)
 	// clientKeeper.AddRoute(ibcwasmtypes.ModuleName, &wasmLightClientModule)
 
+	// Create the IBC router, which maps *module names* (not PortIDs) to modules.
+	ibcRouter := ibcporttypes.NewRouter()
+	vibcDynamicRouter := vibckeeper.NewDynamicPortRouter(ibcRouter)
+	vibcScope := vibckeeper.NewDynamicPortScope(
+		runtime.NewKVStoreService(keys[vibc.StoreKey]),
+		vibcDynamicRouter,
+		app.SwingSetKeeper.PushAction,
+	)
+
 	app.VibcKeeper = vibc.NewKeeper(
 		appCodec,
 		app.IBCKeeper.ChannelKeeper,
 		app.IBCKeeper.ClientKeeper,
-	).WithScope(
-		runtime.NewKVStoreService(keys[vibc.StoreKey]),
-		app.SwingSetKeeper.PushAction,
-	)
+	).WithScope(vibcScope)
 
 	vibcModule := vibc.NewAppModule(app.VibcKeeper, app.BankKeeper)
 	vibcIBCModule := vibc.NewIBCModule(app.VibcKeeper)
+	vibcScope.SetDynamicModule(vibcIBCModule)
+	vibcDynamicRouter.AddLegacyPrefixRoute("icacontroller-", vibcIBCModule)
+	vibcDynamicRouter.AddLegacyPrefixRoute("icqcontroller-", vibcIBCModule)
+	vibcDynamicRouter.AddLegacyPrefixRoute("port-", vibcIBCModule)
+	vibcDynamicRouter.AddLegacyPrefixRoute("custom-", vibcIBCModule)
 	app.vibcPort = app.AgdServer.MustRegisterPortHandler("vibc", vibc.NewReceiver(app.VibcKeeper))
 
 	app.VtransferKeeper = vtransferkeeper.NewKeeper(
@@ -665,14 +677,9 @@ func NewAgoricApp(
 	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
 
 	ics20TransferModule := ibctransfer.NewAppModule(app.TransferKeeper)
-	// Create the IBC router, which maps *module names* (not PortIDs) to modules.
-	ibcRouter := ibcporttypes.NewRouter()
 
 	// Add an IBC route for the ICA Host.
 	ibcRouter.AddRoute(icahosttypes.SubModuleName, icaHostIBCModule)
-
-	// Add an IBC route for vIBC.
-	ibcRouter.AddRoute(vibc.ModuleName, vibcIBCModule)
 
 	// Add an IBC route for ICS-20 fungible token transfers, wrapping base
 	// Cosmos functionality with middleware (from the inside out, Cosmos
@@ -688,7 +695,7 @@ func NewAgoricApp(
 	ibcRouter.AddRoute(ibctransfertypes.ModuleName, ics20TransferStack)
 
 	// Seal the router
-	app.IBCKeeper.SetRouter(ibcRouter)
+	app.IBCKeeper.SetRouter(vibcDynamicRouter)
 
 	// The local chain keeper provides ICA/ICQ-like support for the VM to
 	// control a fresh account and/or query this Cosmos-SDK instance.
@@ -955,10 +962,8 @@ func NewAgoricApp(
 	// another, which shouldn't re-run store upgrades.
 	if isPrimaryUpgradeName(upgradeInfo.Name) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
-			Added: []string{
-			},
-			Deleted: []string{
-			},
+			Added:   []string{},
+			Deleted: []string{},
 		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades
@@ -968,6 +973,9 @@ func NewAgoricApp(
 	if loadLatest {
 		if err := app.LoadLatestVersion(); err != nil {
 			tmos.Exit(fmt.Sprintf("failed to load latest version: %s", err))
+		}
+		if err := app.VibcKeeper.LoadDynamicPortBindings(app.NewUncachedContext(false, tmproto.Header{})); err != nil {
+			panic(fmt.Errorf("failed to load vibc dynamic port bindings: %s", err))
 		}
 	}
 

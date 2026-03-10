@@ -1,18 +1,12 @@
 package keeper
 
 import (
-	"fmt"
-
-	corestore "cosmossdk.io/core/store"
-	"cosmossdk.io/store/prefix"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
-	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
 	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 
 	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -26,8 +20,6 @@ var (
 	_ types.ReceiverImpl    = Keeper{}
 )
 
-const boundPortStoreKeyPrefix = "boundPort-"
-
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
 	cdc codec.Codec
@@ -36,8 +28,7 @@ type Keeper struct {
 	clientKeeper  types.ClientKeeper
 
 	// Filled out by `WithScope`
-	storeService corestore.KVStoreService
-	pushAction   vm.ActionPusher
+	scope *DynamicPortScope
 }
 
 // NewKeeper creates a new vibc Keeper instance
@@ -55,16 +46,15 @@ func NewKeeper(
 }
 
 // WithScope returns a new Keeper copied from the receiver, but with the given
-// store service and push action.
-func (k Keeper) WithScope(storeService corestore.KVStoreService, pushAction vm.ActionPusher) Keeper {
-	k.storeService = storeService
-	k.pushAction = pushAction
+// dynamic port scope.
+func (k Keeper) WithScope(scope *DynamicPortScope) Keeper {
+	k.scope = scope
 	return k
 }
 
 // PushAction sends a vm.Action to the VM controller.
 func (k Keeper) PushAction(ctx sdk.Context, action vm.Action) error {
-	return k.pushAction(ctx, action)
+	return k.scope.PushAction(ctx, action)
 }
 
 // GetICS4Wrapper returns the ICS4Wrapper interface for the keeper.
@@ -167,22 +157,19 @@ func (k Keeper) ReceiveBindPort(ctx sdk.Context, portID string) error {
 	return k.BindPort(ctx, portID)
 }
 
-// BindPort keeps track of existing port usage to prevent accidental conflicts.
+// BindPort dynamically binds an exact port ID to the vibc IBC module.
 func (k Keeper) BindPort(ctx sdk.Context, portID string) error {
-	if err := host.PortIdentifierValidator(portID); err != nil {
-		return err
-	}
+	return k.scope.BindPort(ctx, portID)
+}
 
-	kvstore := k.storeService.OpenKVStore(ctx)
-	store := runtime.KVStoreAdapter(kvstore)
-	boundPorts := prefix.NewStore(store, []byte(boundPortStoreKeyPrefix))
+// RevokePort removes a previously dynamic exact port binding.
+func (k Keeper) RevokePort(ctx sdk.Context, portID string) error {
+	return k.scope.RevokePort(ctx, portID)
+}
 
-	key := []byte(portID)
-	if boundPorts.Has(key) {
-		return fmt.Errorf("port %s is already bound", portID)
-	}
-	boundPorts.Set(key, []byte{1})
-	return nil
+// LoadDynamicPortBindings rehydrates persisted dynamic bindings into the live router.
+func (k Keeper) LoadDynamicPortBindings(ctx sdk.Context) error {
+	return k.scope.LoadBindings(ctx)
 }
 
 // ReceiveTimeoutExecuted is a wrapper function for the channel Keeper's

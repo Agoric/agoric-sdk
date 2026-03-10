@@ -18,6 +18,7 @@ import (
 	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
+	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
 	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
@@ -141,7 +142,7 @@ func NewKeeper(
 
 	// This vibcKeeper is used to send notifications from the vtransfer middleware
 	// to the VM.
-	vibcKeeper := prototypeVibcKeeper.WithScope(nil, wrappedPushAction)
+	vibcKeeper := prototypeVibcKeeper.WithScope(vibckeeper.NewDynamicPortScope(nil, nil, wrappedPushAction))
 	k := Keeper{
 		ReceiverImpl: vibcKeeper,
 

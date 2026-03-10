@@ -32,11 +32,11 @@ replace (
 	// https://github.com/cometbft/cometbft/issue/6899 resolved.
 	github.com/cometbft/cometbft => github.com/agoric-labs/cometbft v0.38.21-alpha.agoric.0
 	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.53.6-alpha.agoric.0
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 => github.com/agoric-labs/ibc-apps/middleware/packet-forward-middleware/v10 v10.0.0-alpha.agoric.0
-	github.com/cosmos/ibc-go/e2e => github.com/agoric-labs/ibc-go/e2e v10.5.0-alpha.agoric.0
-	github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10 => github.com/agoric-labs/ibc-go/modules/light-clients/08-wasm/v10 v10.5.0-alpha.agoric.0
-	github.com/cosmos/ibc-go/simapp => github.com/agoric-labs/ibc-go/simapp v10.5.0-alpha.agoric.0
-	github.com/cosmos/ibc-go/v10 => github.com/agoric-labs/ibc-go/v10 v10.5.0-alpha.agoric.0
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10 => github.com/agoric-labs/ibc-apps/middleware/packet-forward-middleware/v10 v10.5.0-alpha.agoric.1
+	github.com/cosmos/ibc-go/e2e => github.com/agoric-labs/ibc-go/e2e v10.5.0-alpha.agoric.3
+	github.com/cosmos/ibc-go/modules/light-clients/08-wasm/v10 => github.com/agoric-labs/ibc-go/modules/light-clients/08-wasm/v10 v10.5.0-alpha.agoric.3
+	github.com/cosmos/ibc-go/simapp => github.com/agoric-labs/ibc-go/simapp v10.5.0-alpha.agoric.3
+	github.com/cosmos/ibc-go/v10 => github.com/agoric-labs/ibc-go/v10 v10.5.0-alpha.agoric.3
 )
 
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
