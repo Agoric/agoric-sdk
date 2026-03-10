@@ -32,6 +32,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
+import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   fakeLocalChainBridgeQueryHandler,
   fakeLocalChainBridgeTxMsgHandler,
@@ -446,7 +447,7 @@ export const makeSwingsetTestKit = async <
     EconomyBootstrapPowers['consume'],
 >(
   log: (..._: any[]) => void,
-  bundleDir = 'bundles',
+  bundleDir = sharedBundleCachePath,
   {
     configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,

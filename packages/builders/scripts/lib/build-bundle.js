@@ -2,7 +2,10 @@
 import { dirname, resolve as pathResolve } from 'path';
 import { fileURLToPath } from 'url';
 
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import {
+  sharedBundleCachePath,
+  unsafeMakeBundleCache,
+} from '@agoric/swingset-vat/tools/bundleTool.js';
 
 /** @type {Map<string, Promise<Awaited<ReturnType<typeof unsafeMakeBundleCache>>>>} */
 const bundleCaches = new Map();
@@ -31,7 +34,7 @@ export const buildBundlePath = async (
   bundleName = undefined,
   options = {},
 ) => {
-  const { bundleDirRel = '../bundles' } = options;
+  const { bundleDirRel } = options;
   const fromDir = dirname(fileURLToPath(fromMetaUrl));
   /** @type {string | undefined} */
   let sourceSpec;
@@ -61,7 +64,9 @@ export const buildBundlePath = async (
     );
   }
 
-  const bundleDir = pathResolve(fromDir, bundleDirRel);
+  const bundleDir = bundleDirRel
+    ? pathResolve(fromDir, bundleDirRel)
+    : sharedBundleCachePath;
   // Use '\0' to avoid ambiguity between key components.
   const cacheKey = [bundleDir, sourceSpec, resolvedBundleName].join('\0');
   const cached = bundlePathCache.get(cacheKey);

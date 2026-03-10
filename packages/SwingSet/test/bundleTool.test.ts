@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import {
   makeNodeBundleCache,
   provideBundleCache,
+  sharedBundleCachePath,
 } from '../tools/bundleTool.js';
 
 // Use a directory ignored by AVA watch mode (via ignore-by-default).
@@ -98,6 +99,11 @@ test('provideBundleCache returns shared cache for same key', async t => {
     bundleB,
     'cache.load fulfills to deeply equal value for same key',
   );
+});
+
+test('sharedBundleCachePath resolves from the repo root', t => {
+  const repoRoot = fileURLToPath(new URL('../../..', import.meta.url));
+  t.is(sharedBundleCachePath, path.join(repoRoot, 'bundles'));
 });
 
 test('concurrent load() calls for same key settle without hanging', async t => {
