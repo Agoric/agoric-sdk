@@ -94,10 +94,18 @@ const toyHashWithWitness = ({
     witnessTypeString,
   ]);
 
-const makeNarrator = () => {
+type EventLabel = ['emit', name: string, args: Record<string, unknown>];
+
+const props = (ps: Record<string, unknown>, ellipsis = '') =>
+  `{ ${Object.entries(ps)
+    .map(([p, v]) => `${p}: ${v}`)
+    .join(', ')}${ellipsis} }`;
+
+const makeSequenceDiagram = () => {
   const arrows: string[] = [];
   const names = new Map<string, string>();
-  return freeze({
+
+  const self = freeze({
     reset() {
       arrows.length = 0;
       names.clear();
@@ -110,6 +118,19 @@ const makeNarrator = () => {
         `${names.get(from) ?? from}${arrow}${names.get(to) ?? to}: ${label}`,
       );
     },
+    start(from: string, to: string, label: string) {
+      self.arrow(from, '->>', to, label);
+    },
+    cont(from: string, to: string, info: string | EventLabel) {
+      if (typeof info === 'string') {
+        return self.arrow(from, '-->>', to, info);
+      }
+      const [_, name, args] = info;
+      self.arrow(from, '-->>', to, `emit: ${name}${props(args)}`);
+    },
+    think(actor: string, label: string) {
+      self.arrow(actor, '-->>', actor, label);
+    },
     label(id: string) {
       return names.get(id) ?? id;
     },
@@ -117,9 +138,10 @@ const makeNarrator = () => {
       return freeze([...arrows]);
     },
   });
+  return self;
 };
 
-const narrator = makeNarrator();
+const viz = makeSequenceDiagram();
 const testS = test.serial;
 
 const makeEVM = () => {
@@ -173,12 +195,7 @@ const makeEVM = () => {
     },
     emitTransfer(log: Transfer) {
       logs.push(log);
-      narrator.arrow(
-        log.from,
-        '-->>',
-        log.to,
-        `emit: Transfer{ value: ${log.value} }`,
-      );
+      viz.cont(log.from, log.to, ['emit', 'Transfer', { value: log.value }]);
     },
     getLogs(pred: (log: Transfer) => boolean = () => true) {
       return freeze(logs.filter(pred));
@@ -232,13 +249,11 @@ const makePermit2 = (evm: ReturnType<typeof makeEVM>) => {
           witness,
           witnessTypeString,
         }) || Fail`invalid signature for spender ${evm.msgSender()}`;
-      narrator.arrow(
+      const [from, to] = [viz.label(owner), viz.label(transferDetails.to)];
+      viz.cont(
         evm.self(),
-        '-->>',
         permit.permitted.token,
-        `transfer{ from: ${narrator.label(owner)}, to: ${narrator.label(
-          transferDetails.to,
-        )}, value: ${amount} }`,
+        `transfer${props({ from, to, value: amount })}`,
       );
       const usdc = evm
         .from(evm.self())
@@ -286,12 +301,7 @@ const makeEthereumWallet = (
       };
       const { permit, owner, witness, witnessTypeString, signature } =
         permit2Payload;
-      narrator.arrow(
-        address,
-        '-->>',
-        contracts.permit2,
-        'permitWitnessTransferFrom(...)',
-      );
+      viz.cont(address, contracts.permit2, 'permitWitnessTransferFrom(...)');
       permit2.permitWitnessTransferFrom(
         permit,
         permitted,
@@ -300,12 +310,8 @@ const makeEthereumWallet = (
         witnessTypeString,
         signature,
       );
-      narrator.arrow(
-        address,
-        '-->>',
-        withdraw.token,
-        `transfer{ to: ${narrator.label(recipient)}, value: ${withdraw.amount} }`,
-      );
+      const [to, value] = [viz.label(recipient), withdraw.amount];
+      viz.cont(address, withdraw.token, `transfer${props({ to, value })}`);
       withdrawToken.transfer(recipient, withdraw.amount);
     },
   });
@@ -346,19 +352,13 @@ const plannerAlgorithm = (
     Fail`unsupported amount ${flowDetail.amount.value}`;
   const gasLimit = 279_473n;
   const quote = 370_132n;
-  narrator.arrow(
+  viz.think(actor, 'previewPlan = run planner-algorithm in preview mode');
+  viz.cont(
     actor,
-    '-->>',
-    actor,
-    'previewPlan = run planner-algorithm in preview mode',
-  );
-  narrator.arrow(
-    actor,
-    '-->>',
     'axelar',
-    `estimateGasFee({ destinationChain: ${flowDetail.toChain}, gasLimit: ${gasLimit}, sourceTokenSymbol: uusdc, ... })`,
+    `estimateGasFee(${props({ destinationChain: flowDetail.toChain, gasLimit, sourceTokenSymbol: 'uusdc' }, ', ...')})`,
   );
-  narrator.arrow('axelar', '-->>', actor, `${quote}uusdc`);
+  viz.cont('axelar', actor, `${quote}uusdc`);
   return [
     { from: '@noble', to: '@Ethereum' },
     {
@@ -386,15 +386,12 @@ const makePlanner = () =>
       const plan = plannerAlgorithm(flowDetail, 'ypr');
       const chargeableStep =
         plan.find(isChargeableStep) || Fail`missing chargeable step`;
-      narrator.arrow(
-        'ypr',
-        '-->>',
+      viz.think(
         'ypr',
         `plan = [ ..., { from: @Ethereum, fee: ${chargeableStep.fee}uBLD, userFee: ${chargeableStep.userFee}uusdc }, ... ] = run planner-algorithm`,
       );
-      narrator.arrow(
+      viz.cont(
         'ypr',
-        '-->>',
         'portfolio',
         `resolvePlan(${portfolioId}, ${flowId}, plan, ${portfolioPolicyVersion}, ${rebalanceCount})`,
       );
@@ -455,13 +452,11 @@ const makePortfolio = (
         fee: permit2Payload.permit.permitted.amount,
         toChain,
       };
-      narrator.arrow(
-        'portfolio',
-        '-->>',
+      viz.think(
         'portfolio',
         `chainId = domain.chainId; toChain = chainIdToAxelarChain(chainId); flowDetail = { type: withdraw, amount: ${withdrawDetails.withdraw.amount}USDC, fee: ${permit2Payload.permit.permitted.amount}uusdc, toChain }`,
       );
-      narrator.arrow('portfolio', '-->>', 'ypr', 'plan(flowDetail)');
+      viz.cont('portfolio', 'ypr', 'plan(flowDetail)');
       // XXX The planner could/should reject the request itself if flowDetail.fee
       // is insufficient, rather than always returning a plan and leaving the
       // contract to reject it afterward.
@@ -473,18 +468,15 @@ const makePortfolio = (
         flowDetail,
       });
       const userFee = sumUserFees(plan);
-      narrator.arrow(
-        'portfolio',
-        '-->>',
+      viz.think(
         'portfolio',
         'assert(permit2Payload.permit.amount >= userFee(plan))',
       );
       permit2Payload.permit.permitted.amount >= userFee ||
         Fail`authorized fee ${permit2Payload.permit.permitted.amount} is less than required user fee ${userFee}`;
-      narrator.arrow('portfolio', '-->>', 'orch', 'executePlan(plan)');
-      narrator.arrow(
+      viz.cont('portfolio', 'orch', 'executePlan(plan)');
+      viz.cont(
         'orch',
-        '-->>',
         '@Ethereum',
         'withdrawWithFee({ withdrawDetails, permit2Payload })',
       );
@@ -578,7 +570,7 @@ const makeYDS = (vstorage: ReturnType<typeof makeVStorage>['readFacet']) =>
         'yds',
       );
       const total = sumUserFees(plan);
-      narrator.arrow('yds', '-->>', 'ui', `{ denom: USDC, value: ${total} }`);
+      viz.cont('yds', 'ui', props({ denom: 'USDC', value: total }));
       return total;
     },
   });
@@ -592,23 +584,20 @@ const makeEMS = (publicFacet: PublicFacet, emh: EMH) =>
     async handleMessage(t: Ex, owner: Address, signedMessage: SignedMessage) {
       // XXX Sim limitation: real EMS recovers the signer from signedMessage.
       // This sim keeps owner explicit so it can stay focused on the fee flow.
-      narrator.arrow('ems', '-->>', 'ems', 'validatePermit2(signedMessage)');
-      narrator.arrow('ems', '-->>', 'emh', 'handleMessage(signedMessage)');
-      narrator.arrow(
+      viz.think('ems', 'validatePermit2(signedMessage)');
+      viz.cont('ems', 'emh', 'handleMessage(signedMessage)');
+      const { portfolio } = signedMessage.message.ymaxWithdraw;
+      const { amount } = signedMessage.message.ymaxWithdraw.withdraw;
+      viz.think(
         'emh',
-        '-->>',
-        'emh',
-        `withdrawDetails = { portfolio: ${signedMessage.message.ymaxWithdraw.portfolio}, withdraw: { token: USDC, amount: ${signedMessage.message.ymaxWithdraw.withdraw.amount} } }`,
+        `withdrawDetails = ${props({ portfolio, withdraw: props({ token: 'USDC', amount }) })}`,
       );
-      narrator.arrow(
-        'emh',
-        '-->>',
+      viz.think(
         'emh',
         `domain = { chainId: ${signedMessage.domain!.chainId}, ... }; permit2Payload = { permit.amount: ${signedMessage.message.permitted.amount}, signature, ... }`,
       );
-      narrator.arrow(
+      viz.cont(
         'emh',
-        '-->>',
         'portfolio',
         'withdraw({ withdrawDetails, domain, permit2Payload })',
       );
@@ -663,13 +652,13 @@ const makeUI = (
               toChain === 'Ethereum'
                 ? networks.Ethereum
                 : Fail`unsupported toChain ${toChain}`;
-            narrator.arrow(
+            const { chainId } = network;
+            viz.think(
               'ui',
-              '-->>',
-              'ui',
-              `domain = { chainId: ${network.chainId}, verifyingContract: ${narrator.label(
-                network.permit2,
-              )} }; permitted = { token: ${narrator.label(network.usdc)}, amount: ${fee} }`,
+              `domain = ${props({
+                chainId,
+                verifyingContract: viz.label(network.permit2),
+              })}; permitted = { token: ${viz.label(network.usdc)}, amount: ${fee} }`,
             );
             return {
               domain: {
@@ -699,18 +688,11 @@ const makeUI = (
           };
           return freeze({
             quoteWithdraw(args: { amount: bigint; toChain: ToChain }) {
-              narrator.arrow(
-                'ui',
-                '-->>',
+              viz.think(
                 'ui',
                 `quoteReq = { type: withdraw, amount: { denom: USDC, value: ${args.amount} }, toChain: ${args.toChain} }`,
               );
-              narrator.arrow(
-                'ui',
-                '->>',
-                'yds',
-                `quote(${portfolioId}, quoteReq)`,
-              );
+              viz.cont('ui', 'yds', `quote(${portfolioId}, quoteReq)`);
               return yds.quoteWithdraw({ owner, ...args });
             },
             confirmWithdraw({
@@ -723,27 +705,20 @@ const makeUI = (
               toChain: ToChain;
             }): UnsignedMessage {
               const total = amount + fee;
-              narrator.arrow(
+              viz.cont(
                 'ui',
-                '-->>',
                 'user',
                 `confirmWithdraw({ amount: ${formatUSDC(amount)} USDC, fee: ${formatUSDC(fee)} USDC, total: ${formatUSDC(total)} USDC })`,
               );
-              narrator.arrow(
+              viz.cont(
                 'ui',
-                '-->>',
                 'ui',
                 `ymaxWithdraw = { portfolio: ${portfolioId}, withdraw: { token: USDC, amount: ${amount} } }; signedMessage = Permit2Witness({ domain, permitted, ymaxWithdraw }, signature)`,
               );
               return makeSignedWithdraw({ amount, fee, toChain });
             },
             async submitWithdraw(t2: Ex, signedMessage: SignedMessage) {
-              narrator.arrow(
-                'ui',
-                '->>',
-                'ems',
-                'handleMessage(signedMessage)',
-              );
+              viz.cont('ui', 'ems', 'handleMessage(signedMessage)');
               return ems.handleMessage(t2, owner, signedMessage);
             },
           });
@@ -767,16 +742,14 @@ const makeUser = (
     ) {
       const ui = uiApp.connectWallet(eoa);
       const dashboard = await ui.createPortfolio(t);
-      narrator.arrow(
+      viz.start(
         'user',
-        '->>',
         'ui',
         `withdraw({ amount: ${formatUSDC(args.amount)} USDC, toChain: ${args.toChain} })`,
       );
       const fee = await dashboard.quoteWithdraw(args);
-      narrator.arrow(
+      viz.start(
         'user',
-        '->>',
         'ui',
         `confirmWithdraw({ amount: ${formatUSDC(args.amount)} USDC, fee: ${formatUSDC(fee)} USDC, total: ${formatUSDC(args.amount + fee)} USDC, toChain: ${args.toChain} })`,
       );
@@ -800,7 +773,7 @@ const makeUser = (
 };
 
 testS('80.3 withdraw collects user fee and withdraws USDC', async t => {
-  narrator.reset();
+  viz.reset();
   const ethL1 = makeEVM();
   const addresses = freeze({
     permit2: '0x0000000000000000000000000000000000000002',
@@ -808,10 +781,10 @@ testS('80.3 withdraw collects user fee and withdraws USDC', async t => {
     spender: '0x00000000000000000000000000000000000000f1',
     feeCollector: '0x0000000000000000000000000000000000000fee',
   } as const);
-  narrator.name(addresses.permit2, 'p2');
-  narrator.name(addresses.usdc, 'usdc');
-  narrator.name(addresses.feeCollector, 'feeCollector');
-  narrator.name(walletAddressForPortfolio(80n), '@Ethereum');
+  viz.name(addresses.permit2, 'p2');
+  viz.name(addresses.usdc, 'usdc');
+  viz.name(addresses.feeCollector, 'feeCollector');
+  viz.name(walletAddressForPortfolio(80n), '@Ethereum');
 
   ethL1.register(makeERC20(ethL1), addresses.usdc);
   const permit2 = ethL1.register(makePermit2(ethL1), addresses.permit2);
@@ -831,7 +804,7 @@ testS('80.3 withdraw collects user fee and withdraws USDC', async t => {
   const ui = makeUI(yds, makeEMS(publicFacet, creatorFacet.getEMH()));
 
   const user = makeUser();
-  narrator.name(user.getEOA(), '-Ethereum');
+  viz.name(user.getEOA(), '-Ethereum');
   await user.run(t, ui);
 
   const portfolioId = vstorage.readFacet.getPortfolioId(user.getEOA());
@@ -848,13 +821,13 @@ testS('80.3 withdraw collects user fee and withdraws USDC', async t => {
       value: 3_000_000n,
     },
   ]);
-  t.snapshot(narrator.lines());
+  t.snapshot(viz.lines());
 });
 
 testS(
   'withdraw fails if signed spender does not match Permit2 caller',
   async t => {
-    narrator.reset();
+    viz.reset();
     const ethL1 = makeEVM();
     const addresses = freeze({
       permit2: '0x0000000000000000000000000000000000000002',
