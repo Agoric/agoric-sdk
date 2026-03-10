@@ -27,8 +27,8 @@
 
 2. Treat the user-facing gas number as a quoted hold/charge, not a best-effort display-only estimate.
    - For Agoric-initiated offers, the Zoe offer includes extra USDC for gas.
-   - For EVM-initiated offers, the signed payload/permit includes `maxGasFee` or equivalent bound and authorizes transfer of deposit amount plus quoted gas.
-   - Contract escrows that USDC immediately into a YMax-owned fee account on the initiating chain.
+   - For EVM-initiated withdraws, the signed Permit2 witness authorizes transfer of the quoted gas amount.
+   - The contract carries that fee authority into the resolved plan, and YMax orchestration executes the fee pull during `withdrawWithFee(...)`.
 
 3. Leave execution funding paths mostly unchanged in MVP.
    - Planner still emits the operational `uBLD` fee values needed by current orchestration.
@@ -187,7 +187,7 @@ sequenceDiagram
     ems-->>ems: validatePermit2(signedMessage)
     ems-->>emh: handleMessage(signedMessage)
     emh-->>emh: withdrawDetails = { portfolio: 80,<br/>withdraw: { token: USDC, amount: 3000000 } }
-    emh-->>emh: domain = { chainId: 1, ... }<br/>permit2Payload = { permit.amount: 444159,<br/>signature, ... }
+    emh-->>emh: domain = { chainId: 1, ... }<br/>spender = @Ethereum<br/>permit2Payload = { permit.amount: 444159,<br/>signature, ... }
 ```
 
 ```mermaid
@@ -210,7 +210,7 @@ sequenceDiagram
     participant feeCollector as feeCollector
     end
 
-    emh-->>portfolio: withdraw({ withdrawDetails,<br/>domain, permit2Payload })
+    emh-->>portfolio: withdraw({ withdrawDetails,<br/>domain, spender, permit2Payload })
     portfolio-->>portfolio: chainId = domain.chainId<br/>toChain = chainIdToAxelarChain(chainId)<br/>flowDetail = { type: withdraw, amount: 3000000USDC,<br/>fee: 444159uusdc, toChain }
     portfolio-->>ypr: plan(flowDetail)
     Note over portfolio,ypr: via vstorage
@@ -301,7 +301,7 @@ sequenceDiagram
       - portfolio `80`
       - amount `3000000`
       - token `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`
-10. `EMH` starts the live withdraw workflow by calling `withdraw({ withdrawDetails, domain, permit2Payload })`. The portfolio contract derives destination chain `Ethereum` from `domain.chainId = 1`, constructs `flowDetail = { type: "withdraw", amount: 3000000USDC, fee: 444159uusdc, toChain }`, and publishes the live planning request to `ypr` via vstorage.
+10. `EMH` starts the live withdraw workflow by calling `withdraw({ withdrawDetails, domain, spender, permit2Payload })`. The portfolio contract derives destination chain `Ethereum` from `domain.chainId = 1`, constructs `flowDetail = { type: "withdraw", amount: 3000000USDC, fee: 444159uusdc, toChain }`, and publishes the live planning request to `ypr` via vstorage. The extracted `spender` identifies the `@Ethereum` wallet that is allowed to exercise the Permit2 witness during execution.
 11. `ypr` resolves the live plan for `portfolio80` / `flow3`; in the observed production flow this was `resolvePlan(80, 3, ..., 2, 1)` in tx `72C1CBB7099BCE96F5B0352B8F697A58B14FF35C9C8077D20E36F8233CD0745F` at `2026-02-05T20:41:45Z`. In this design, `ypr` reruns `planner-algorithm` for the live request, including the same Axelar estimation step used in preview mode, and the resolved plan is where both fee magnitudes first become explicit together:
    - user-facing fee to collect: `444159 uusdc`
    - operational Axelar fee to pay: `109496306 uBLD`
