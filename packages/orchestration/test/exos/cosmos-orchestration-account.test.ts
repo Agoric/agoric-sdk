@@ -68,7 +68,7 @@ import {
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
-import { protoMsgMocks } from '../ibc-mocks.js';
+import { protoMsgMocks } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 import { leftPadEthAddressTo32Bytes } from '../../src/utils/address.js';

@@ -13,7 +13,7 @@ import {
   defineDurableKind,
   partialAssign,
   watchPromise,
-} from './index.js';
+} from '../src/index.js';
 
 // for use in assignments below
 const anyVal = null as any;
