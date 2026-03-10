@@ -1,6 +1,8 @@
 #!/bin/bash
 
-setopt KSH_ARRAYS BASH_REMATCH 2>/dev/null
+if [ -n "${ZSH_VERSION-}" ]; then
+  setopt KSH_ARRAYS BASH_REMATCH 2>/dev/null
+fi
 
 # shellcheck disable=SC2296
 thisdir=$(cd "$(dirname -- "${BASH_SOURCE[0]:-${(%):-%x}}")" >/dev/null && pwd)

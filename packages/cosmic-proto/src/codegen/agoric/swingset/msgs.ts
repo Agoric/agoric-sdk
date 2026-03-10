@@ -1381,7 +1381,7 @@ function createBaseMsgCoreEval(): MsgCoreEval {
  */
 export const MsgCoreEval = {
   typeUrl: '/agoric.swingset.MsgCoreEval' as const,
-  aminoType: 'cosmos-sdk/x/swingset/MsgCoreEval' as const,
+  aminoType: 'swingset/CoreEval' as const,
   is(o: any): o is MsgCoreEval {
     return (
       o &&

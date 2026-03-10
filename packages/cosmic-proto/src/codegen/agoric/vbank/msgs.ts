@@ -6,29 +6,53 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** MsgSetDenomMetadata represents a message to set the metadata for a denom. */
+/**
+ * MsgSetDenomMetadata represents a message to set the metadata for a denom.
+ * @name MsgSetDenomMetadata
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.MsgSetDenomMetadata
+ */
 export interface MsgSetDenomMetadata {
-  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  /**
+   * authority is the address that controls the module (defaults to x/gov unless overwritten).
+   */
   authority: string;
-  /** metadata is the bank denom metadata to set. */
+  /**
+   * metadata is the bank denom metadata to set.
+   */
   metadata: Metadata;
 }
 export interface MsgSetDenomMetadataProtoMsg {
   typeUrl: '/agoric.vbank.MsgSetDenomMetadata';
   value: Uint8Array;
 }
-/** MsgSetDenomMetadata represents a message to set the metadata for a denom. */
+/**
+ * MsgSetDenomMetadata represents a message to set the metadata for a denom.
+ * @name MsgSetDenomMetadataSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.MsgSetDenomMetadata
+ */
 export interface MsgSetDenomMetadataSDKType {
   authority: string;
   metadata: MetadataSDKType;
 }
-/** MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method. */
+/**
+ * MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method.
+ * @name MsgSetDenomMetadataResponse
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.MsgSetDenomMetadataResponse
+ */
 export interface MsgSetDenomMetadataResponse {}
 export interface MsgSetDenomMetadataResponseProtoMsg {
   typeUrl: '/agoric.vbank.MsgSetDenomMetadataResponse';
   value: Uint8Array;
 }
-/** MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method. */
+/**
+ * MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method.
+ * @name MsgSetDenomMetadataResponseSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.MsgSetDenomMetadataResponse
+ */
 export interface MsgSetDenomMetadataResponseSDKType {}
 function createBaseMsgSetDenomMetadata(): MsgSetDenomMetadata {
   return {
@@ -36,8 +60,29 @@ function createBaseMsgSetDenomMetadata(): MsgSetDenomMetadata {
     metadata: Metadata.fromPartial({}),
   };
 }
+/**
+ * MsgSetDenomMetadata represents a message to set the metadata for a denom.
+ * @name MsgSetDenomMetadata
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.MsgSetDenomMetadata
+ */
 export const MsgSetDenomMetadata = {
   typeUrl: '/agoric.vbank.MsgSetDenomMetadata' as const,
+  aminoType: 'vbank/SetDenomMetadata' as const,
+  is(o: any): o is MsgSetDenomMetadata {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetDenomMetadata.typeUrl ||
+        (typeof o.authority === 'string' && Metadata.is(o.metadata)))
+    );
+  },
+  isSDK(o: any): o is MsgSetDenomMetadataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetDenomMetadata.typeUrl ||
+        (typeof o.authority === 'string' && Metadata.isSDK(o.metadata)))
+    );
+  },
   encode(
     message: MsgSetDenomMetadata,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -116,8 +161,20 @@ export const MsgSetDenomMetadata = {
 function createBaseMsgSetDenomMetadataResponse(): MsgSetDenomMetadataResponse {
   return {};
 }
+/**
+ * MsgSetDenomMetadataResponse is the response type for the Msg/SetDenomMetadata RPC method.
+ * @name MsgSetDenomMetadataResponse
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.MsgSetDenomMetadataResponse
+ */
 export const MsgSetDenomMetadataResponse = {
   typeUrl: '/agoric.vbank.MsgSetDenomMetadataResponse' as const,
+  is(o: any): o is MsgSetDenomMetadataResponse {
+    return o && o.$typeUrl === MsgSetDenomMetadataResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSetDenomMetadataResponseSDKType {
+    return o && o.$typeUrl === MsgSetDenomMetadataResponse.typeUrl;
+  },
   encode(
     _: MsgSetDenomMetadataResponse,
     writer: BinaryWriter = BinaryWriter.create(),

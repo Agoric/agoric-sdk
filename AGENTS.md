@@ -17,7 +17,7 @@ per [[https://agents.md/]]
   tools are usable in the current shell. This only needs to be run once in each
   shell instance, but is harmless to run multiple times.
 - `yarn install`: Install or refresh JS package dependencies.
-- `yarn codegen`: Regenerate derived source files across the entire repository.
+- `scripts/codegen.sh`: Regenerate derived source files across the entire repository.
   Required when `*.proto` files are changed, or network resources need to be
   reprocessed (such as chain registry entries or GraphQL schemata).
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
