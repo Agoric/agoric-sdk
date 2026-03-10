@@ -115,12 +115,10 @@ sequenceDiagram
     ui-->>ui: quoteReq = { type: withdraw,<br/>amount: { denom: USDC, value: 3000000 },<br/>toChain: Ethereum }
     ui->>yds: quote(80, quoteReq)
     yds-->>yds: previewPlan = run planner-algorithm in preview mode
-    yds-->>axelar: estimateGasFee({ destinationChain: Ethereum,<br/>gasLimit: 151320, sourceTokenSymbol: uusdc, ... })
-    axelar-->>yds: 270424uusdc
     yds-->>axelar: estimateGasFee({ destinationChain: Ethereum,<br/>gasLimit: 279473, sourceTokenSymbol: uusdc, ... })
     axelar-->>yds: 370132uusdc
     Note over yds: apply local 1.2x buffer per step
-    yds-->>yds: feeQuote = { withdrawToEVM: 444159uusdc,<br/>total: 444159uusdc }
+    yds-->>yds: feeQuote = { total: 444159uusdc }
     yds-->>ui: { denom: USDC, value: 444159 }
     ui-->>user: confirmWithdraw({ amount: 3.00 USDC,<br/>fee: 0.44 USDC, total: 3.44 USDC })
 ```
@@ -146,7 +144,6 @@ sequenceDiagram
    - This includes the same external estimation work used for live planning, especially Axelar gas-estimation calls for fee-bearing GMP/EVM steps.
    - Fee policy marks one plan step as chargeable in this preview plan:
      - `@Ethereum -> -Ethereum` (`withdrawToEVM`)
-   - The preview still estimates the `@noble -> @Ethereum` (`CCTP`) leg for operational context, but MVP does not charge the user for it because Noble relayers, not YMax, pay that Ethereum cost in status quo.
 
    Step 3 detail for the `@Ethereum -> -Ethereum` preview step: once `planner-algorithm` has classified that leg as an EVM withdraw to Ethereum, it looks up the same configured gas-limit value used by live planning. For this path, that is `gasLimit = 279473`. For the user-facing quote, it asks Axelar for a fee quote in `uusdc` using Agoric as source chain and Ethereum as destination chain.
 
@@ -163,7 +160,7 @@ sequenceDiagram
    }
    ```
 
-   Observed on `2026-03-09`, this request returns `370132 uusdc` for the `@Ethereum -> -Ethereum` preview step. The corresponding `@noble -> @Ethereum` estimate, using `gasLimit = 151320` and the same `sourceTokenSymbol = uusdc`, returns `270424 uusdc`, but MVP does not charge the user for that relayer-paid leg. Current `planner-algorithm` then applies the local 1.2x buffer to the chargeable step:
+   Observed on `2026-03-09`, this request returns `370132 uusdc` for the `@Ethereum -> -Ethereum` preview step. Current `planner-algorithm` then applies the local 1.2x buffer to the chargeable step:
    - `@Ethereum -> -Ethereum`: `ceil(370132 * 1.2) = 444159 uusdc`
    - rolled-up `feeQuote.total = 444159 uusdc` (`0.444159 USDC`)
 
@@ -221,6 +218,7 @@ sequenceDiagram
     participant userEth as -Ethereum
     participant p2 as Permit2
     participant usdc as USDC
+    participant feeCollector as feeCollector
     end
 
     emh-->>portfolio: withdraw({ withdrawDetails,<br/>domain, permit2Payload })
@@ -235,8 +233,8 @@ sequenceDiagram
     orch-->>acctEth: withdrawWithFee({ withdrawDetails,<br/>permit2Payload })
     Note over orch,acctEth: via Axelar<br/>fee: 109496306uBLD
     acctEth-->>p2: permitWitnessTransferFrom(...)
-    p2-->>usdc: transfer{ from: 0xED123,<br/>to: @Ethereum, value: 444159 }
-    usdc-->>acctEth: emit: Transfer{ to: @Ethereum,<br/>value: 444159 }
+    p2-->>usdc: transfer{ from: 0xED123,<br/>to: feeCollector, value: 444159 }
+    usdc-->>feeCollector: emit: Transfer{ to: feeCollector,<br/>value: 444159 }
     acctEth-->>usdc: transfer{ to: -Ethereum,<br/>value: 3000000 }
     usdc-->>userEth: emit: Transfer{ to: -Ethereum,<br/>value: 3000000 }
 ```
