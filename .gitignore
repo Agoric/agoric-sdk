@@ -11,6 +11,10 @@ lib-cov
 coverage
 coverage.txt
 
+# Codecov uploads
+/codecov
+/codecov.*
+
 # Profiling output
 *.heapsnapshot
 
