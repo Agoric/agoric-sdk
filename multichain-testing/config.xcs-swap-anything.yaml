@@ -119,6 +119,7 @@ relayers:
   - name: osmosis-cosmoshub
     type: hermes
     # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
+    image: ghcr.io/hyperweb-io/starship/hermes:1.13.1
     replicas: 1
     chains:
       - osmosislocal
@@ -126,6 +127,7 @@ relayers:
   - name: agoric-osmosis
     type: hermes
     # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
+    image: ghcr.io/hyperweb-io/starship/hermes:1.13.1
     replicas: 1
     chains:
       - agoriclocal
@@ -138,6 +140,7 @@ relayers:
   - name: agoric-cosmoshub
     type: hermes
     # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
+    image: ghcr.io/hyperweb-io/starship/hermes:1.13.1
     replicas: 1
     chains:
       - agoriclocal

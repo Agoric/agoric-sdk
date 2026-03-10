@@ -99,18 +99,24 @@ chains:
 relayers:
   - name: osmosis-noble
     type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
+    image: ghcr.io/hyperweb-io/starship/hermes:1.13.1
     replicas: 1
     chains:
       - osmosislocal
       - noblelocal
   - name: agoric-osmosis
     type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
+    image: ghcr.io/hyperweb-io/starship/hermes:1.13.1
     replicas: 1
     chains:
       - agoriclocal
       - osmosislocal
   - name: agoric-noble
     type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
+    image: ghcr.io/hyperweb-io/starship/hermes:1.13.1
     replicas: 1
     chains:
       - agoriclocal
