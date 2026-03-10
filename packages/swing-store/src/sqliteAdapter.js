@@ -52,21 +52,9 @@ export function createDatabase(location, options = {}) {
 
   const db = new DatabaseSync(location, { readOnly: readonly });
 
-  // Track transaction state manually since @photostructure/sqlite doesn't expose it
-  let transactionDepth = 0;
-
-  // @ts-ignore - We're intentionally creating a wrapper with extended functionality
+  /** @type {WrappedDatabase} */
   const wrapped = {
-    prepare: sql => {
-      const stmt = db.prepare(sql);
-      const onBegin = () => {
-        transactionDepth += 1;
-      };
-      const onCommitOrRollback = () => {
-        transactionDepth = Math.max(0, transactionDepth - 1);
-      };
-      return wrapStatement(stmt, sql, onBegin, onCommitOrRollback);
-    },
+    prepare: sql => wrapStatement(db.prepare(sql), sql),
 
     exec: sql => {
       return db.exec(sql);
@@ -77,16 +65,7 @@ export function createDatabase(location, options = {}) {
     },
 
     get inTransaction() {
-      // Check actual transaction state from SQLite
-      try {
-        const stmt = db.prepare('SELECT 1');
-        stmt.finalize();
-        // If we can prepare a statement, check if we're in a transaction
-        // by attempting to execute a dummy statement
-        return transactionDepth > 0;
-      } catch {
-        return false;
-      }
+      return db.isTransaction;
     },
 
     /**
@@ -180,11 +159,9 @@ export function createDatabase(location, options = {}) {
  * Wraps a StatementSync to add better-sqlite3 compatibility features
  * @param {import('@photostructure/sqlite').StatementSync} stmt - The statement instance from DatabaseSync
  * @param {string} sql - The SQL text for transaction tracking
- * @param {() => void} onBegin - Callback when BEGIN is executed
- * @param {() => void} onCommitOrRollback - Callback when COMMIT/ROLLBACK is executed
  * @returns {WrappedStatement}
  */
-function wrapStatement(stmt, sql, onBegin, onCommitOrRollback) {
+function wrapStatement(stmt, sql) {
   let pluckEnabled = false;
   let pluckColumn = 0;
   let rawEnabled = false;
@@ -284,30 +261,17 @@ function wrapStatement(stmt, sql, onBegin, onCommitOrRollback) {
     },
 
     run: (...args) => {
-      // Track transactions
-      const upperSQL = sql.trim().toUpperCase();
-      if (upperSQL.startsWith('BEGIN')) {
-        onBegin();
-      } else if (upperSQL === 'COMMIT' || upperSQL === 'ROLLBACK') {
-        onCommitOrRollback();
-      }
-
       const transformedArgs = hasNamedParams ? transformParams(args) : args;
       return stmt.run(...transformedArgs);
     },
 
     /**
-     * Iterate over results
-     * better-sqlite3's iterate() returns an iterator that yields rows one at a time
-     * In @photostructure/sqlite, we need to fetch all results and return an iterator
+     * Iterate over results without materializing the full result set in memory.
      * @param {...any} args
      */
     *iterate(...args) {
       const transformedArgs = hasNamedParams ? transformParams(args) : args;
-      // Execute the query and get all results
-      const results = stmt.all(...transformedArgs);
-      // Yield each result
-      for (const row of results) {
+      for (const row of stmt.iterate(...transformedArgs)) {
         if (pluckEnabled) {
           const values = Object.values(row);
           yield values[pluckColumn];

@@ -71,6 +71,7 @@ const IN_MEMORY = ':memory:';
  *
  * @typedef {{
  *   dump: (includeHistorical?: boolean) => SwingStoreDebugDump,
+ *   getDatabase: () => ReturnType<import('./sqliteAdapter.js').createDatabase>,
  *   serialize: () => Buffer,
  * }} SwingStoreDebugTools
  *
@@ -511,25 +512,9 @@ export function makeSwingStore(path, forceReset, options = {}) {
    */
   async function close() {
     db || Fail`db not initialized`;
-    // If we're in a transaction, roll it back before closing
     if (db.inTransaction) {
-      try {
-        db.exec('ROLLBACK');
-      } catch (err) {
-        // Ignore rollback errors during close
-        console.warn('ROLLBACK failed during close:', err.message);
-      }
-    }
-    // Checkpoint the WAL to ensure all changes are flushed to the main db file
-    // This helps prevent lock issues when reopening the database
-    if (filePath !== IN_MEMORY && !readonly) {
-      try {
-        // eslint-disable-next-line no-restricted-syntax
-        db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
-      } catch (err) {
-        // Ignore checkpoint errors during close
-        console.warn('WAL checkpoint failed during close:', err.message);
-      }
+      // Preserve swing-store's "abort on close without commit" behavior.
+      db.exec('ROLLBACK');
     }
     db.close();
     db = null;
