@@ -16,7 +16,7 @@ import type {
   Hex,
 } from 'viem';
 
-type AbiContractArgs<
+export type AbiContractArgs<
   TAbi extends Abi,
   Name extends ContractFunctionName<TAbi, AbiStateMutability>,
 > =
@@ -28,7 +28,7 @@ type AbiContractArgs<
     ? ContractFunctionArgs<TAbi, AbiStateMutability, Name>
     : readonly unknown[];
 
-type AbiContract<TAbi extends Abi> = {
+export type AbiContract<TAbi extends Abi> = {
   [Name in ContractFunctionName<TAbi, AbiStateMutability>]: (
     ...args: AbiContractArgs<TAbi, Name>
   ) => void;
