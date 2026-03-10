@@ -35,17 +35,14 @@
    - Contract / LCA / relayer paths continue paying the actual execution costs the same way they do today.
    - This minimizes change in cross-chain execution logic and localizes MVP work to quote, collection, and accounting.
 
-4. Add a reconciliation record after execution finishes.
+4. Reuse existing persisted execution records after execution finishes.
    - Resolver/watchers already join flow steps to remote tx outcomes.
-   - Extend that path to produce a per-flow fee settlement record:
-     - quoted amount in USDC
-     - actual observed Ethereum gas costs by step
-     - conversion inputs used for accounting
-     - retained subsidy or over-collection delta
-   - MVP can keep the user charge fixed at the upfront quote and use reconciliation for internal accounting only.
+   - MVP does not need a new canonical fee-settlement store.
+   - The important persisted facts already exist in the signed Permit2 message, the resolved plan's `userFee`, and the executed Permit2/ERC20 transfer.
 
 Expected code change for this design:
 - extend the planner-facing `FlowDetail` for `withdraw` to carry the user-authorized fee amount alongside the principal amount, so live planning can treat the fee ceiling as part of the request rather than as out-of-band contract state.
+- TODO: pin down the exact contract-facing argument shape for the withdraw path, rather than mixing design-time names (`withdrawDetails`, `domain`, `spender`, `permit2Payload`) with current-master implementation vocabulary.
 
 ### Why this design fits the current system
 
@@ -64,12 +61,6 @@ Expected code change for this design:
 - extend withdraw `FlowDetail` with a user-authorized `fee`
 - add per-step `userFee` on chargeable resolved-plan steps alongside operational `fee`
 - keep the quote response minimal in MVP: `{ denom: "USDC", value: "..." }`
-- add `feeSettlement`
-  - `quotedUsdc`
-  - `chargedUsdc`
-  - `actuals[]`
-  - `deltaUsdc`
-  - `status` (`quoted`, `collected`, `executed`, `reconciled`)
 
 ### Non-goals for MVP
 
@@ -291,6 +282,7 @@ sequenceDiagram
    - verify signature shape and deadline
    - verify Permit2 allowance / approval state for the quoted USDC transfer
    - verify the user's USDC balance is sufficient for the quoted fee
+   - TODO: enumerate failure modes for each arrow in this flow, starting with quote failure, EMS validation failure, planner refusal, contract insufficiency rejection, and EVM execution failure.
 8. `EMS` forwards the signed message to `EMH` via the wallet-handler path.
 9. `EMH` performs the handler-side signature checks and extracts:
    - fee-transfer authority:
@@ -323,7 +315,7 @@ sequenceDiagram
 
 ### Reconciliation Flow
 
-After execution completes, resolver/watchers and reconciliation logic join the quote-time charge, the resolved-plan operational fee amounts, and the realized execution evidence into one fee-settlement record.
+After execution completes, resolver/watchers can join the resolved-plan fee amounts and the realized execution evidence from existing chain records. MVP does not require a separate persisted fee-settlement record.
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'background': '#f3f4f6', 'primaryColor': '#eef2f7', 'secondaryColor': '#e9eef5', 'tertiaryColor': '#f6f8fb', 'lineColor': '#5f6b7a', 'textColor': '#1f2937'}, 'themeCSS': '.sequenceNumber { font-size: 14px !important; font-weight: 600; }'}}%%
@@ -333,35 +325,28 @@ sequenceDiagram
 
     participant orch as YMax orchestration
     participant resolver as resolver/watchers
-    participant recon as fee reconciliation
     participant reporting as reporting
 
     orch-->>resolver: { flow: 80.3, feeCollected: 444159uusdc,<br/>resolvedPlanFee: 109496306uBLD }
     resolver-->>resolver: actuals = { tx1787: 0.001838957998646800ETH }
-    resolver-->>recon: reconcileFee({ quotedUsdc: 444159,<br/>resolvedPlanFee: 109496306uBLD,<br/>actuals })
-    recon-->>recon: feeSettlement = { status: reconciled,<br/>chargedUsdc: 444159, actuals,<br/>delta: subsidyOrOvercollection }
-    recon-->>reporting: feeSettlement
-    reporting-->>reporting: answer({ shownToUser, chargedToUser, incurredByYMax })
+    resolver-->>reporting: correlate({ signedFee: 444159,<br/>resolvedPlanFee: 109496306uBLD,<br/>actuals })
+    reporting-->>reporting: answer({ signedByUser,<br/>requiredByPlan, incurredByYMax })
 ```
 
 ### Accounting story
 
-14. Flow reconciliation writes a record roughly like:
-   - quoted gas: the quoted `withdrawToEVM` preview step at quote time
-   - operational fee magnitude from the resolved plan: the `uBLD` `move.fee` value attached to that YMax-paid step
-   - actual gas: observed Ethereum cost for the executed form of that YMax-paid step (`tx1787` in observed `80.3`)
-   - delta: internal subsidy or over-collection
-15. MVP product logic keeps the user settlement at the quoted amount already charged up front.
-16. Internal reporting can then answer, for `80.3`, both:
-   - what the user was shown/charged on the “Gas” line
-   - what YMax actually incurred on Ethereum mainnet
-
-TODO: explain operator treasury loop. YMax collects gas reimbursement in USDC but currently pays operational fees from BLD in `contractAccount`, so viable long-term operation requires some process to convert collected USDC back into BLD and replenish `contractAccount`. That treasury-management design is out of scope for this document.
+TODO: explain operator treasury loop. YMax collects gas reimbursement in USDC but currently pays operational fees from BLD in `contractAccount`, so viable long-term operation requires some process to convert collected USDC back into BLD and replenish `contractAccount`. The important persisted amount for MVP is the amount the user signed and Permit2 actually transfers, not a new fee-settlement record.
 
 ### Consequence for `80.3`
 
 - Under status quo, `80.3` shows expensive Ethereum execution but no user-facing fee collection path.
 - Under this design, `80.3` becomes a normal withdraw where the UI shows a single USDC gas quote before submission, the contract collects it immediately, and reconciliation later measures whether that quote fully covered the mainnet costs.
+
+TODO: convert this design into implementation-driving tests:
+- happy-path flow tests
+- contract tests for quote/submit/execute
+- boundary tests for insufficient authorized fee and wrong spender
+- reconciliation/accounting tests once the persistence actor is specified
 
 ### Buffering alternatives
 
@@ -404,3 +389,7 @@ Implication for design:
 This endpoint should be a thin wrapper around `planner-algorithm`, not an alternate planning implementation. The goal is one planning codepath with two callers:
 - preview caller: YDS quote endpoint
 - privileged execution caller: `ypr`
+
+### Security
+
+TODO: analyze the security boundaries explicitly and turn them into invariants plus tests. At minimum this should cover Permit2 spender binding, fee-recipient wiring, replay/nonces as inherited from the current `evm-wallet` design, authority over `@Ethereum`, and which actor is trusted to choose each execution-time parameter.
