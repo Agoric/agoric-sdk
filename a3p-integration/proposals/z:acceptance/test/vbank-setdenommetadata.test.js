@@ -143,28 +143,22 @@ test.before(async t => {
   const user = await getUser('gov1');
   const govAddresses = [GOV1ADDR, GOV2ADDR, GOV4ADDR];
 
-  await Promise.all(
-    govAddresses.map(async address => {
-      try {
-        execa('agd', [
-          'tx',
-          'bank',
-          'send',
-          user,
-          address,
-          '100000000ubld',
-          '--chain-id',
-          'agoriclocal',
-          '--keyring-backend',
-          'test',
-          '--yes',
-          '-bblock', // Wait for tx to be included
-        ]);
-      } catch (error) {
-        t.log(`Funding ${address} may have failed:`, error.message);
-      }
-    }),
-  );
+  for (const address of govAddresses) {
+    await execa('agd', [
+      'tx',
+      'bank',
+      'send',
+      user,
+      address,
+      '100000000ubld',
+      '--chain-id',
+      'agoriclocal',
+      '--keyring-backend',
+      'test',
+      '--yes',
+      '-bblock',
+    ]);
+  }
 });
 
 test.serial('can query existing denom metadata', async t => {
