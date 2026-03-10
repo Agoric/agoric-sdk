@@ -22,7 +22,8 @@
    - For MVP that policy is: include Ethereum-mainnet steps whose execution costs are actually paid by YMax.
    - The plan carries both:
      - step-level operational fee data for execution (`fee` in `uBLD`, `detail.evmGas`, etc.)
-     - a user-facing `feeQuote` summary in USDC with step breakdown and a policy version.
+     - step-level `userFee` data for chargeable steps
+   - The YDS quote response can stay simple and just return a USDC amount object such as `{ denom: "USDC", value: "444159" }`.
 
 2. Treat the user-facing gas number as a quoted hold/charge, not a best-effort display-only estimate.
    - For Agoric-initiated offers, the Zoe offer includes extra USDC for gas.
@@ -60,21 +61,10 @@ Expected code change for this design:
 
 ### Data model additions to plan toward
 
-- `feeQuote.policyVersion`
-- `feeQuote.portfolioPolicyVersion`
-- `feeQuote.rebalanceCount`
-- `feeQuote.initiatingChain`
-- `feeQuote.quoteDenom = USDC`
-- `feeQuote.total`
-- `feeQuote.steps[]`
-  - `stepId`
-  - `chain`
-  - `how`
-  - `chargeable`
-  - `quoteSource` (`walletEstimate`, `returnFeeEstimate`, etc.)
-  - `operationalFee` (`uBLD` and/or `detail.evmGas`)
-  - `quotedUsdc`
-- `feeSettlement`
+- extend withdraw `FlowDetail` with a user-authorized `fee`
+- add per-step `userFee` on chargeable resolved-plan steps alongside operational `fee`
+- keep the quote response minimal in MVP: `{ denom: "USDC", value: "..." }`
+- add `feeSettlement`
   - `quotedUsdc`
   - `chargedUsdc`
   - `actuals[]`
@@ -118,7 +108,6 @@ sequenceDiagram
     yds-->>axelar: estimateGasFee({ destinationChain: Ethereum,<br/>gasLimit: 279473, sourceTokenSymbol: uusdc, ... })
     axelar-->>yds: 370132uusdc
     Note over yds: apply local 1.2x buffer per step
-    yds-->>yds: feeQuote = { total: 444159uusdc }
     yds-->>ui: { denom: USDC, value: 444159 }
     ui-->>user: confirmWithdraw({ amount: 3.00 USDC,<br/>fee: 0.44 USDC, total: 3.44 USDC })
 ```
@@ -192,7 +181,7 @@ sequenceDiagram
     end
 
     user->>ui: confirmWithdraw({ amount: 3.00 USDC,<br/>fee: 0.44 USDC, total: 3.44 USDC,<br/>toChain: Ethereum })
-    ui-->>ui: domain = { chainId: 1, verifyingContract: FACTORY }<br/>permitted = { token: USDC, amount: 444159 }
+    ui-->>ui: domain = { chainId: 1, verifyingContract: Permit2 }<br/>permitted = { token: USDC, amount: 444159 }
     ui-->>ui: ymaxWithdraw = { portfolio: 80,<br/>withdraw: { token: USDC, amount: 3000000 } }<br/>signedMessage = Permit2Witness({ domain, permitted,<br/>ymaxWithdraw }, signature)
     ui->>ems: handleMessage(signedMessage)
     ems-->>ems: validatePermit2(signedMessage)
@@ -233,7 +222,7 @@ sequenceDiagram
     orch-->>acctEth: withdrawWithFee({ withdrawDetails,<br/>permit2Payload })
     Note over orch,acctEth: via Axelar<br/>fee: 109496306uBLD
     acctEth-->>p2: permitWitnessTransferFrom(...)
-    p2-->>usdc: transfer{ from: 0xED123,<br/>to: feeCollector, value: 444159 }
+    p2-->>usdc: transfer{ from: -Ethereum,<br/>to: feeCollector, value: 444159 }
     usdc-->>feeCollector: emit: Transfer{ to: feeCollector,<br/>value: 444159 }
     acctEth-->>usdc: transfer{ to: -Ethereum,<br/>value: 3000000 }
     usdc-->>userEth: emit: Transfer{ to: -Ethereum,<br/>value: 3000000 }
@@ -241,7 +230,7 @@ sequenceDiagram
 
 ### Execution story
 
-6. User confirms and signs one Permit2 witness message, and the client submits that signed payload to YDS.
+6. User confirms and signs one Permit2 witness message, and the client submits that signed payload to `EMS`.
    - This design uses the same Permit2 witness mechanism already used by deposit-style flows, but here the permitted transfer is the quoted gas charge instead of portfolio principal.
    - The signed Permit2 data authorizes transfer of `444159 uusdc` (`0.444159 USDC`) from the user's Ethereum wallet and binds that transfer to the specific `portfolio80` withdraw instruction.
    - HAZARD WARNING: Permit2 does not bind the fee recipient (`transferDetails.to`) in the signed message. The signature covers the permitted token/amount, spender, nonce, deadline, and witness, but not the ultimate recipient of the pulled funds. If YMax orchestration or the `@Ethereum` wallet supplies the wrong recipient to `permitWitnessTransferFrom(...)`, Permit2 will still transfer the funds to that wrong address. This must be treated as a critical integration hazard and reviewed accordingly. See Uniswap Permit2 issue [#250](https://github.com/Uniswap/permit2/issues/250).
@@ -269,9 +258,7 @@ sequenceDiagram
        ],
        "YmaxV1Withdraw": [
          { "name": "withdraw", "type": "Asset" },
-         { "name": "portfolio", "type": "uint256" },
-         { "name": "portfolioPolicyVersion", "type": "uint256" },
-         { "name": "rebalanceCount", "type": "uint256" }
+         { "name": "portfolio", "type": "uint256" }
        ],
        "Asset": [
          { "name": "token", "type": "address" },
@@ -288,8 +275,6 @@ sequenceDiagram
        "spender": "0x9524EEb5F792944a0FE929bb8Efb354438B19F7C",
        "ymaxWithdraw": {
          "portfolio": "80",
-         "portfolioPolicyVersion": "2",
-         "rebalanceCount": "1",
          "withdraw": {
            "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
            "amount": "3000000"
@@ -311,15 +296,13 @@ sequenceDiagram
    - fee-transfer authority:
      - token `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`
       - amount `444159`
-      - spender `0x9524EEb5F792944a0FE929bb8Efb354438B19F7C`
+      - spender `@Ethereum` (`0x9524EEb5F792944a0FE929bb8Efb354438B19F7C`)
    - withdraw instruction:
       - portfolio `80`
       - amount `3000000`
       - token `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48`
-      - `portfolioPolicyVersion = 2`
-      - `rebalanceCount = 1`
-10. `EMH` starts the live withdraw workflow by calling `withdraw(signedMessage)`. The portfolio contract derives destination chain `Ethereum` from the signed message's `domain.chainId = 1` and carries the extracted Permit2 authority into execution as `permit2Payload`.
-11. `ypr` resolves the live plan for `portfolio80` / `flow3`; in the observed production flow this was `resolvePlan(80, 3, ..., 2, 1)` in tx `72C1CBB7099BCE96F5B0352B8F697A58B14FF35C9C8077D20E36F8233CD0745F` at `2026-02-05T20:41:45Z`. In this design, the resolved plan is where both fee magnitudes first become explicit together:
+10. `EMH` starts the live withdraw workflow by calling `withdraw({ withdrawDetails, domain, permit2Payload })`. The portfolio contract derives destination chain `Ethereum` from `domain.chainId = 1`, constructs `flowDetail = { type: "withdraw", amount: 3000000USDC, fee: 444159uusdc, toChain }`, and publishes the live planning request to `ypr` via vstorage.
+11. `ypr` resolves the live plan for `portfolio80` / `flow3`; in the observed production flow this was `resolvePlan(80, 3, ..., 2, 1)` in tx `72C1CBB7099BCE96F5B0352B8F697A58B14FF35C9C8077D20E36F8233CD0745F` at `2026-02-05T20:41:45Z`. In this design, `ypr` reruns `planner-algorithm` for the live request, including the same Axelar estimation step used in preview mode, and the resolved plan is where both fee magnitudes first become explicit together:
    - user-facing fee to collect: `444159 uusdc`
    - operational Axelar fee to pay: `109496306 uBLD`
    The portfolio contract rejects the flow unless the signed Permit2 fee amount is greater than or equal to the YMax-paid fee policy applied to that resolved plan.
@@ -333,9 +316,9 @@ sequenceDiagram
    - For reference, the observed `80.3` resolved plan carried a much larger spike-day `uBLD` fee for that same YMax-paid step:
      - `@Ethereum -> -Ethereum`: `6350461608 uBLD`
    - The `@noble -> @Ethereum` step is still part of the flow, but Noble relayers, not YMax, pay that Ethereum gas in status quo.
-12. YMax orchestration executes the withdrawal as it does in status quo, except that the resolved plan now includes a fee-collection step that moves `444159 uusdc` from the user's wallet into the YMax-controlled fee collection path on the initiating chain and records `feeSettlement.status = collected`; YMax orchestration funds the remaining YMax-paid steps the same way it does today:
-   - existing `uBLD` / GMP funding paths pay for orchestration
-   - YMax-controlled Ethereum execution path covers `withdrawToEVM`
+12. YMax orchestration executes the resolved plan. As part of `withdrawWithFee(...)`, the wallet at `@Ethereum` calls `Permit2.permitWitnessTransferFrom(...)`, which moves `444159 uusdc` from `-Ethereum` into `feeCollector`, and then calls `USDC.transfer(...)` to move `3000000` USDC from `@Ethereum` to `-Ethereum`. YMax orchestration still funds the YMax-paid execution path the same way it does today:
+   - existing `uBLD` / GMP funding paths pay the operational Axelar fee
+   - the YMax-controlled Ethereum wallet executes `withdrawToEVM`
 13. Resolver/watchers observe completion and collect actual fee evidence for the executed form of the YMax-paid step, which in observed `80.3` was `tx1787`.
 
 ### Reconciliation Flow
@@ -416,7 +399,7 @@ Implication for design:
 
 - `POST /portfolio/:id/quote`
   - input: operation plus all quote-defining parameters in the request body
-  - output: quote envelope plus `feeQuote`
+  - output: a quoted amount such as `{ denom: "USDC", value: "444159" }`
 
 This endpoint should be a thin wrapper around `planner-algorithm`, not an alternate planning implementation. The goal is one planning codepath with two callers:
 - preview caller: YDS quote endpoint
