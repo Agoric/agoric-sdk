@@ -284,6 +284,7 @@ export async function xsnap(options) {
         snapshotLoader = undefined;
         return cleanup();
       }
+      return undefined;
     });
   }
 

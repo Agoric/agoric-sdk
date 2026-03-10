@@ -19,6 +19,7 @@ import type {
 } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
+import type { PortfolioPublishedPathTypes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
@@ -74,7 +75,7 @@ const handleDeposit = async (
   amount: NatAmount,
   feeBrand: Brand<'nat'>,
   powers: {
-    readPublished: VstorageKit['readPublished'];
+    readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
     cosmosRest?: CosmosRestClient;
     gasEstimator: GasEstimator;
     spectrumBlockchain?: SpectrumBlockchainSdk;
@@ -226,9 +227,13 @@ test('handleDeposit works with mocked dependencies', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
-    readPublished: mockReadPublished,
-  } as VstorageKit;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
@@ -300,9 +305,13 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
-    readPublished: mockReadPublished,
-  } as VstorageKit;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
@@ -346,9 +355,13 @@ test('handleDeposit handles different position types correctly', async t => {
   };
 
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
-    readPublished: mockReadPublished,
-  } as VstorageKit;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
 
   const result = await handleDeposit(
     portfolioKey,
@@ -757,43 +770,47 @@ test('planRebalanceToAllocations uses CCTPv2 for multi-EVM rebalance', async t =
   }
 });
 
-test('planRebalanceToAllocations selects correct routes for Base → Avalanche + Noble split', async t => {
-  // Starting: Funds on Base
-  // Goal: Split between Avalanche Aave and Noble USDN
-  // Expected:
-  //   - Base → Avalanche via CCTPv2 (direct, ~60s)
-  //   - Base → Noble via CCTPv1 (via @agoric, ~1080s)
-  // CCTPv2 should NOT be used for the Noble leg
+// Disabled per https://github.com/Agoric/agoric-private/issues/768
+test.failing(
+  'planRebalanceToAllocations selects correct routes for Base → Avalanche + Noble split',
+  async t => {
+    // Starting: Funds on Base
+    // Goal: Split between Avalanche Aave and Noble USDN
+    // Expected:
+    //   - Base → Avalanche via CCTPv2 (direct, ~60s)
+    //   - Base → Noble via CCTPv1 (via @agoric, ~1080s)
+    // CCTPv2 should NOT be used for the Noble leg
 
-  const targetAllocation = {
-    Aave_Avalanche: 50n,
-    USDN: 50n,
-  };
-  const currentBalances = {
-    Aave_Base: makeDeposit(20_000_000n),
-  };
+    const targetAllocation = {
+      Aave_Avalanche: 50n,
+      USDN: 50n,
+    };
+    const currentBalances = {
+      Aave_Base: makeDeposit(20_000_000n),
+    };
 
-  const plan = await planRebalanceToAllocations({
-    ...plannerContext,
-    currentBalances,
-    targetAllocation,
-    network: PROD_NETWORK, // XXX why doesn't this work with the test net???
-  });
+    const plan = await planRebalanceToAllocations({
+      ...plannerContext,
+      currentBalances,
+      targetAllocation,
+      network: PROD_NETWORK, // XXX why doesn't this work with the test net???
+    });
 
-  // Check Avalanche route uses CCTPv2
-  const toAvalancheStep = plan.flow.find(
-    m => m.src === '@Base' && m.dest === '@Avalanche',
-  );
-  t.truthy(toAvalancheStep, 'Should have Base → Avalanche step');
-  t.deepEqual(
-    toAvalancheStep?.detail,
-    { cctpVersion: 2n },
-    'Avalanche route should use CCTPv2',
-  );
+    // Check Avalanche route uses CCTPv2
+    const toAvalancheStep = plan.flow.find(
+      m => m.src === '@Base' && m.dest === '@Avalanche',
+    );
+    t.truthy(toAvalancheStep, 'Should have Base → Avalanche step');
+    t.deepEqual(
+      toAvalancheStep?.detail,
+      { cctpVersion: 2n },
+      'Avalanche route should use CCTPv2',
+    );
 
-  // Snapshot the full plan for regression tracking
-  t.snapshot(plan, 'Base to Avalanche + Noble split routing');
-});
+    // Snapshot the full plan for regression tracking
+    t.snapshot(plan, 'Base to Avalanche + Noble split routing');
+  },
+);
 
 test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', async t => {
   const targetAllocation = {

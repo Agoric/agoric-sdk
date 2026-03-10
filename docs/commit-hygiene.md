@@ -47,6 +47,14 @@ Or format specific files:
 yarn run -T prettier --write path/to/file.js
 ```
 
+### 3b. Install Git Hooks (recommended once per clone)
+
+Install repository hooks so staged JS/TS files are auto-formatted on commit:
+
+```bash
+yarn hooks:install
+```
+
 ### 4. Run Linting
 
 Ensure your changes pass linting:

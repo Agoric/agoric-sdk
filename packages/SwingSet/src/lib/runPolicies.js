@@ -94,14 +94,14 @@ export function computronCounter(limit, options = {}) {
 }
 
 export function wallClockWaiter(seconds) {
-  const timeout = Date.now() + 1000 * seconds;
+  const timeout = performance.now() + 1000 * seconds;
   /** @type { RunPolicy } */
   const policy = harden({
     allowCleanup: () => true, // unlimited budget
-    vatCreated: () => Date.now() < timeout,
-    crankComplete: () => Date.now() < timeout,
-    crankFailed: () => Date.now() < timeout,
-    emptyCrank: () => Date.now() < timeout,
+    vatCreated: () => performance.now() < timeout,
+    crankComplete: () => performance.now() < timeout,
+    crankFailed: () => performance.now() < timeout,
+    emptyCrank: () => performance.now() < timeout,
   });
   return policy;
 }

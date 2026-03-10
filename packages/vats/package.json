@@ -6,8 +6,6 @@
   "main": "./index.js",
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
-    "build": "yarn build:bundles",
-    "build:bundles": "node scripts/build-bundles.js",
     "prepack": "yarn run -T prepack-package",
     "postpack": "yarn run -T postpack-package",
     "test": "ava",
@@ -57,6 +55,7 @@
     "CHANGELOG.md",
     "src/",
     "scripts/",
+    "source-spec-registry.*",
     "tools/",
     "index.*"
   ],

@@ -15,7 +15,7 @@ import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
 /**
- * @import {Logger} from 'anylogger';
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  */
 
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });

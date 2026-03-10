@@ -1,4 +1,4 @@
-import type { Filter, WebSocketProvider, Log } from 'ethers';
+import type { Filter, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
@@ -6,8 +6,9 @@ import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  type EvmRpc,
   type WatcherTimeoutOptions,
-} from '../support.ts';
+} from '../evm-scanner.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
@@ -39,7 +40,7 @@ const TRANSFER_SIGNATURE = id('Transfer(address,address,uint256)');
 
 type CctpWatch = {
   usdcAddress: `0x${string}`;
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   toAddress: `0x${string}`;
   expectedAmount: bigint;
   log?: (...args: unknown[]) => void;
@@ -161,6 +162,7 @@ export const lookBackCctp = async ({
   expectedAmount,
   publishTimeMs,
   chainId,
+  setTimeout,
   log = () => {},
   signal,
   kvStore,
@@ -168,6 +170,7 @@ export const lookBackCctp = async ({
 }: CctpWatch & {
   publishTimeMs: number;
   chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
   signal?: AbortSignal;
 }): Promise<WatcherResult> => {
   await null;
@@ -192,20 +195,19 @@ export const lookBackCctp = async ({
 
     // XXX: Consider async iteration pattern for more flexible log scanning
     // See: https://github.com/Agoric/agoric-sdk/pull/11915#discussion_r2353872425
-    const matchingEvent = await scanEvmLogsInChunks(
-      {
-        provider,
-        baseFilter,
-        fromBlock: savedFromBlock,
-        toBlock,
-        chainId,
-        log,
-        signal,
-        onRejectedChunk: async (_, to) => {
-          await setTxBlockLowerBound(kvStore, txId, to);
-        },
+    const matchingEvent = await scanEvmLogsInChunks({
+      provider,
+      baseFilter,
+      fromBlock: savedFromBlock,
+      toBlock,
+      chainId,
+      setTimeout,
+      log,
+      signal,
+      onRejectedChunk: async (_, to) => {
+        await setTxBlockLowerBound(kvStore, txId, to);
       },
-      ev => {
+      predicate: ev => {
         try {
           const t = parseTransferLog(ev);
           log(`Check: amount=${t.amount}`);
@@ -215,7 +217,7 @@ export const lookBackCctp = async ({
           return false;
         }
       },
-    );
+    });
 
     if (!matchingEvent) {
       log(`[${PendingTxCode.CCTP_TX_NOT_FOUND}] No matching transfer found`);

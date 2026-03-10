@@ -44,6 +44,53 @@ export const fsStreamReady = stream =>
     stream.on('error', onError);
   });
 
+/**
+ * Wait for a stream event and reject on stream error first.
+ *
+ * @param {ReadStream | WriteStream | Socket} stream
+ * @param {'drain' | 'ready'} eventName
+ * @returns {Promise<void>}
+ */
+const onceWithError = (stream, eventName) =>
+  new Promise((resolve, reject) => {
+    const onEvent = () => {
+      cleanup();
+      resolve();
+    };
+    /** @param {Error} err */
+    const onError = err => {
+      cleanup();
+      reject(err);
+    };
+    const cleanup = () => {
+      stream.off(eventName, onEvent);
+      stream.off('error', onError);
+    };
+    stream.on(eventName, onEvent);
+    stream.on('error', onError);
+  });
+
+/**
+ * @param {WriteStream | Socket} stream
+ * @param {string | Uint8Array} data
+ * @returns {Promise<boolean>} whether caller must await drain
+ */
+const writeChunk = (stream, data) =>
+  new Promise((resolve, reject) => {
+    let waitForDrain;
+    try {
+      waitForDrain = !stream.write(data, err => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(waitForDrain);
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+
 /** @typedef {NonNullable<Awaited<ReturnType<typeof makeFsStreamWriter>>>} FsStreamWriter */
 /** @param {string | undefined | null} filePath */
 export const makeFsStreamWriter = async filePath => {
@@ -60,7 +107,7 @@ export const makeFsStreamWriter = async filePath => {
     return { handle: fh, stream: fh.createWriteStream({ flush: true }) };
   })();
   await fsStreamReady(stream);
-  const writeAsync = promisify(stream.write.bind(stream));
+  const waitForDrainAsync = () => onceWithError(stream, 'drain');
   const closeAsync =
     useStdout || !(/** @type {any} */ (stream).close)
       ? undefined
@@ -87,11 +134,11 @@ export const makeFsStreamWriter = async filePath => {
   const write = async data => {
     const written = closed
       ? Promise.reject(Error('Stream closed'))
-      : writeAsync(data);
+      : writeChunk(stream, data);
     updateFlushed(written);
     const waitForDrain = await written;
     if (waitForDrain) {
-      await new Promise(resolve => stream.once('drain', resolve));
+      await waitForDrainAsync();
     }
   };
 

@@ -9,7 +9,7 @@ TEMP=$(mktemp -d)
 # }
 # trap cleanup EXIT
 
-yarn pack -f "$TEMP/package.tar"
+yarn pack --out "$TEMP/package.tar"
 (
   cd "$TEMP"
   tar xvf package.tar

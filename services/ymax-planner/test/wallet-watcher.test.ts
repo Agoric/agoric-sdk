@@ -1,7 +1,12 @@
 import test from 'ava';
-import { zeroPadValue, AbiCoder } from 'ethers';
+import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
+import { objectMap } from '@endo/patterns';
+import type { WebSocketProvider } from 'ethers';
 import { createMockPendingTxOpts } from './mocks.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import {
+  handlePendingTx,
+  type EvmRpcProviders,
+} from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
@@ -252,7 +257,128 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
     `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
     `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] Address mismatch for txHash=0x123abc: sourceAddress=agoric1test expectedWallet=${wrongWalletAddrChecksummed}`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${correctTxHash} block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
+});
+
+test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t => {
+  const logs: string[] = [];
+  const mockLog = (...args: unknown[]) => logs.push(args.join(' '));
+
+  const txId = 'tx10' as `tx${number}`;
+  const chain = 'eip155:8453'; // Base (trace_filter supported)
+
+  // Encode Factory.execute() calldata with the wallet address as payload
+  const axelarExecuteIface = new Interface([
+    'function execute(bytes32 commandId, string sourceChain, string sourceAddress, bytes payload) external',
+  ]);
+  const payload = abiCoder.encode(['address'], [expectedWalletAddr]);
+  const mockCalldata = axelarExecuteIface.encodeFunctionData('execute', [
+    ethers.hexlify(ethers.randomBytes(32)),
+    'agoric',
+    walletOwner,
+    payload,
+  ]);
+
+  const failedTxHash = '0xdeadbeef123' as `0x${string}`;
+
+  const makeAccountTx: PendingTx = {
+    txId,
+    type: TxType.MAKE_ACCOUNT,
+    status: 'pending',
+    destinationAddress: `${chain}:${factoryAddress}`,
+    expectedAddr: expectedWalletAddr,
+    factoryAddr: factoryAddress,
+    sourceAddress,
+  };
+
+  const opts = createMockPendingTxOpts();
+  const mockProvider = opts.evmProviders[chain] as any;
+
+  const currentTimeMs = 1700000000;
+  const txTimestampMs = currentTimeMs - 10 * 1000;
+  const avgBlockTimeMs = 2500;
+
+  const latestBlock = 1_450_031;
+  mockProvider.getBlockNumber = async () => latestBlock;
+
+  mockProvider.getBlock = async (blockNumber: number) => {
+    const blocksAgo = latestBlock - blockNumber;
+    const ts = currentTimeMs - blocksAgo * avgBlockTimeMs;
+    return { timestamp: Math.floor(ts / 1000) };
+  };
+
+  // Providers: getLogs returns [] so the event scanner finds nothing.
+  // The failed-tx scanner (trace_filter) is the one that produces the result.
+  const newEvmProviders = objectMap(
+    opts.evmProviders,
+    provider =>
+      ({
+        ...provider,
+        getLogs: async () => [],
+        // Emit the correct block number so waitForBlock resolves deterministically
+        on: (event: any, listener: Function) => {
+          if (event === 'block') {
+            queueMicrotask(() => listener(latestBlock + 1));
+          }
+        },
+        // trace_filter uses provider.send()
+        send: async (method: string, _params: unknown[]) => {
+          if (method === 'trace_filter') {
+            return [
+              {
+                action: {
+                  from: '0x0000000000000000000000000000000000000000',
+                  to: factoryAddress.toLowerCase(),
+                  input: mockCalldata,
+                  value: '0x0',
+                  gas: '0x186a0',
+                  callType: 'call',
+                },
+                blockNumber: latestBlock,
+                transactionHash: failedTxHash,
+                error: 'Reverted',
+                type: 'call',
+                subtraces: 0,
+                traceAddress: [],
+              },
+            ];
+          }
+          return null;
+        },
+        getTransactionReceipt: async () => ({
+          status: 0,
+          blockNumber: latestBlock,
+          transactionHash: failedTxHash,
+        }),
+      }) as unknown as WebSocketProvider,
+  );
+
+  const ctxWithFetch = harden({
+    ...opts,
+    evmProviders: newEvmProviders,
+    retryProviders: newEvmProviders as EvmRpcProviders,
+    fetch: async () => ({}) as Response,
+  });
+
+  await handlePendingTx(
+    { ...makeAccountTx },
+    {
+      ...ctxWithFetch,
+      log: mockLog,
+      txTimestampMs,
+    },
+  );
+
+  t.true(logs.some(l => l.includes(`handling ${TxType.MAKE_ACCOUNT}`)));
+  t.true(
+    logs.some(l =>
+      l.includes(
+        `[${txId}] ❌ REVERTED (25 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock} - transaction failed`,
+      ),
+    ),
+  );
+  t.true(logs.some(l => l.includes('MAKE_ACCOUNT tx resolved')));
 });

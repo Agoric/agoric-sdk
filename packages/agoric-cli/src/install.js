@@ -13,7 +13,7 @@ const REQUIRED_AGORIC_START_PACKAGES = [
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-export default async function installMain(progname, rawArgs, powers, opts) {
+export default async function installMain(_progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
 

@@ -12,7 +12,7 @@ import os from 'os';
 
 // Configure logs.
 import './anylogger-agoric.js';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import main from './main.js';
 

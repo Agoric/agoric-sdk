@@ -433,7 +433,7 @@ export default function buildKernel(
 
   // this is called for syscall.exit, which allows the crank to complete
   // before terminating the vat
-  function requestTermination(vatID, reject, info) {
+  function requestTermination(_vatID, reject, info) {
     insistCapData(info);
     vatRequestedTermination = { reject, info };
   }

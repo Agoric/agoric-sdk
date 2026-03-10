@@ -6,7 +6,7 @@ import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type {
   FullMessageDetails,
   YmaxOperationDetails,
-} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
 import { prepareVowTools } from '@agoric/vow/vat.js';
@@ -30,6 +30,10 @@ type OpenPortfolioArgs = Parameters<
   ContractPublicFacet['openPortfolioFromEVM']
 >;
 
+type ValidateEVMMessageDomainArgs = Parameters<
+  ContractPublicFacet['validateEVMMessageDomain']
+>;
+
 type WithdrawArgs = Parameters<PortfolioEVMFacet['withdraw']>;
 
 type DepositArgs = Parameters<PortfolioEVMFacet['deposit']>;
@@ -38,6 +42,7 @@ type RebalanceArgs = Parameters<PortfolioEVMFacet['rebalance']>;
 
 type MockPortfolioCalls = {
   openPortfolioFromEVM: OpenPortfolioArgs[];
+  validateEVMMessageDomain: ValidateEVMMessageDomainArgs[];
   withdraw: WithdrawArgs[];
   deposit: DepositArgs[];
   rebalance: RebalanceArgs[];
@@ -79,6 +84,9 @@ const makeMockPortfolioEvmHandler = ({
   return zone.exo(`${namePrefix}MockPortfolioEvmHandler`, undefined, {
     getReaderFacet() {
       return reader as PortfolioKit['reader'];
+    },
+    validateRepresentativeInfo(..._args: unknown[]) {
+      throw Error('Not implemented');
     },
     deposit(...args: DepositArgs) {
       calls.deposit.push(args);
@@ -158,30 +166,35 @@ const makeMockPublicFacet = ({
   namePrefix: string;
   getNextPortfolioId: () => number;
 }) => {
-  const publicFacet: Pick<ContractPublicFacet, 'openPortfolioFromEVM'> =
-    zone.exo(`${namePrefix}MockPublicFacet`, undefined, {
-      async openPortfolioFromEVM(...args: OpenPortfolioArgs) {
-        calls.openPortfolioFromEVM.push(args);
+  const publicFacet: Pick<
+    ContractPublicFacet,
+    'openPortfolioFromEVM' | 'validateEVMMessageDomain'
+  > = zone.exo(`${namePrefix}MockPublicFacet`, undefined, {
+    async openPortfolioFromEVM(...args: OpenPortfolioArgs) {
+      calls.openPortfolioFromEVM.push(args);
 
-        const id = getNextPortfolioId();
+      const id = getNextPortfolioId();
 
-        const evmHandler = makeMockPortfolioEvmHandler({
-          zone,
-          vowTools,
-          portfolioId: id,
-          calls,
-          namePrefix: `${namePrefix}${id}_`,
-        });
+      const evmHandler = makeMockPortfolioEvmHandler({
+        zone,
+        vowTools,
+        portfolioId: id,
+        calls,
+        namePrefix: `${namePrefix}${id}_`,
+      });
 
-        const storagePath: string = await vowTools.asPromise(
-          evmHandler.getReaderFacet().getStoragePath(),
-        );
-        return harden({
-          storagePath,
-          evmHandler,
-        });
-      },
-    });
+      const storagePath: string = await vowTools.asPromise(
+        evmHandler.getReaderFacet().getStoragePath(),
+      );
+      return harden({
+        storagePath,
+        evmHandler,
+      });
+    },
+    async validateEVMMessageDomain(...args: ValidateEVMMessageDomainArgs) {
+      calls.validateEVMMessageDomain.push(args);
+    },
+  });
   return publicFacet as ContractPublicFacet;
 };
 
@@ -223,6 +236,7 @@ const makeHandleOperationTestSetup = (
   // Track all portfolio method calls
   const calls: MockPortfolioCalls = {
     openPortfolioFromEVM: [],
+    validateEVMMessageDomain: [],
     withdraw: [],
     deposit: [],
     rebalance: [],
@@ -346,6 +360,7 @@ test('handleOperation - openPortfolio', async t => {
       name: 'Ymax',
       version: '1',
       chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
     },
     data: {
       allocations: [{ instrument: 'inst1', portion: 100n }],
@@ -410,6 +425,7 @@ test('handleOperation - openPortfolio requires permitDetails', async t => {
       name: 'Ymax',
       version: '1',
       chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
     },
     data: {
       allocations: [{ instrument: 'inst1', portion: 100n }],
@@ -454,6 +470,7 @@ test('handleOperation invokes withdraw with correct parameters', async t => {
       name: 'Ymax',
       version: '1',
       chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
     },
     data: {
       portfolio: 42n,
@@ -503,6 +520,7 @@ test('handleOperation fails for unknown portfolio', async t => {
       name: 'Ymax',
       version: '1',
       chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
     },
     data: {
       portfolio: 999n, // doesn't exist

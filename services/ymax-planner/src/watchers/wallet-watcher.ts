@@ -1,15 +1,18 @@
-import type { Filter, WebSocketProvider } from 'ethers';
+import type { Filter } from 'ethers';
 import { id, zeroPadValue, getAddress, AbiCoder } from 'ethers';
 import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import type { MakeAbortController } from '../support.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  scanFailedTxsInChunks,
+  type EvmRpc,
   type WatcherTimeoutOptions,
-} from '../support.ts';
+} from '../evm-scanner.ts';
+import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
@@ -21,6 +24,7 @@ import {
   extractFactoryExecuteData,
   extractDepositFactoryExecuteData,
   DEFAULT_RETRY_OPTIONS,
+  FAILED_TX_SCOPE,
   type AlchemySubscriptionMessage,
   type RetryOptions,
   handleTxRevert,
@@ -75,7 +79,7 @@ export const parseSmartWalletCreatedLog = (log: any) => {
 type SmartWalletWatchBase = {
   factoryAddr: `0x${string}`;
   subscribeToAddr: `0x${string}`;
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   expectedAddr: `0x${string}`;
   expectedSourceAddress: string;
   chainId: CaipChainId;
@@ -200,7 +204,13 @@ export const watchSmartWalletTx = ({
 
         const tx = msg.params?.result?.transaction;
         const removed = msg.params?.result?.removed;
-        if (!tx) return;
+        if (!tx) {
+          log(
+            `Subscription message missing transaction data`,
+            msg.params?.result,
+          );
+          return;
+        }
 
         // Ignore transactions that have been removed from canonical chain (reorged)
         if (removed === true) {
@@ -213,7 +223,10 @@ export const watchSmartWalletTx = ({
         const txHash = tx.hash;
         const txData = tx.input;
         const txTo = tx.to;
-        if (!txHash || !txData || !txTo) return;
+        if (!txHash || !txData || !txTo) {
+          log(`Subscription message missing txHash, input, or to field`);
+          return;
+        }
 
         // Determine which contract is being called and use appropriate parser
         const isFactoryPath = getAddress(txTo) === getAddress(factoryAddr);
@@ -221,7 +234,12 @@ export const watchSmartWalletTx = ({
           ? extractFactoryExecuteData(txData)
           : extractDepositFactoryExecuteData(txData);
 
-        if (!executeData) return;
+        if (!executeData) {
+          log(
+            `Calldata did not match factory execute ABI for txHash=${txHash} to=${txTo}`,
+          );
+          return;
+        }
 
         const { sourceAddress, expectedWalletAddress } = executeData;
 
@@ -230,6 +248,9 @@ export const watchSmartWalletTx = ({
           sourceAddress !== expectedSourceAddress ||
           getAddress(expectedWalletAddress) !== getAddress(expectedAddr)
         ) {
+          log(
+            `Address mismatch for txHash=${txHash}: sourceAddress=${sourceAddress} expectedWallet=${expectedWalletAddress}`,
+          );
           return;
         }
 
@@ -332,21 +353,30 @@ export const watchSmartWalletTx = ({
   });
 };
 
+type SmartWalletLookback = {
+  publishTimeMs: number;
+  chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
+  subscribeToAddr: `0x${string}`;
+  makeAbortController: MakeAbortController;
+};
+
 export const lookBackSmartWalletTx = async ({
   factoryAddr,
   provider,
   expectedAddr,
+  expectedSourceAddress,
   publishTimeMs,
   chainId,
+  setTimeout,
   log = () => {},
   signal,
   kvStore,
   txId,
-}: SmartWalletWatch & {
-  publishTimeMs: number;
-  chainId: CaipChainId;
-  signal?: AbortSignal;
-}): Promise<WatcherResult> => {
+  subscribeToAddr,
+  makeAbortController,
+}: SmartWalletWatch & SmartWalletLookback): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -356,6 +386,8 @@ export const lookBackSmartWalletTx = async ({
     const toBlock = await provider.getBlockNumber();
 
     const savedFromBlock = getTxBlockLowerBound(kvStore, txId) || fromBlock;
+    const savedFailedTxFromBlock =
+      getTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE) || fromBlock;
 
     log(
       `Searching blocks ${savedFromBlock} → ${toBlock} for SmartWalletCreated events emitted by ${factoryAddr}`,
@@ -384,52 +416,93 @@ export const lookBackSmartWalletTx = async ({
       }
     };
 
-    const matchingEvent = await Promise.race([
-      scanEvmLogsInChunks(
-        {
-          provider,
-          baseFilter: baseFilterV1,
-          fromBlock: savedFromBlock,
-          toBlock,
-          chainId,
-          log,
-          signal,
-          onRejectedChunk: (_, to) => {
-            setTxBlockLowerBound(kvStore, txId, to);
-          },
-        },
-        checkMatch,
-      ),
-      scanEvmLogsInChunks(
-        {
-          provider,
-          baseFilter: baseFilterV2,
-          fromBlock: savedFromBlock,
-          toBlock,
-          chainId,
-          log,
-          signal,
-          onRejectedChunk: (_, to) => {
-            setTxBlockLowerBound(kvStore, txId, to);
-          },
-        },
-        checkMatch,
-      ),
-    ]);
+    // Options shared by all scans. The abort signal propagates external
+    // cancellation.
+    const { signal: sharedSignal } = makeAbortController(
+      undefined,
+      signal ? [signal] : [],
+    );
+    const sharedOpts = {
+      provider,
+      toBlock,
+      chainId,
+      setTimeout,
+      log,
+      signal: sharedSignal,
+    };
+    const logScanOpts = {
+      ...sharedOpts,
+      fromBlock: savedFromBlock,
+      onRejectedChunk: (_, to) => setTxBlockLowerBound(kvStore, txId, to),
+      predicate: checkMatch,
+    };
 
-    if (!matchingEvent) {
-      log(
-        `[${PendingTxCode.WALLET_TX_NOT_FOUND}] No matching SmartWalletCreated event found`,
-      );
-      return { settled: false };
+    // Success path first (cheap on all chains: uses eth_getLogs).
+    // v1 and v2 event signatures are scanned concurrently.
+    const [v1Result, v2Result] = await Promise.all([
+      scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV1 }),
+      scanEvmLogsInChunks({ ...logScanOpts, baseFilter: baseFilterV2 }),
+    ]);
+    const matchingEvent = v1Result || v2Result;
+
+    if (matchingEvent) {
+      log(`Found matching SmartWalletCreated event`);
+      deleteTxBlockLowerBound(kvStore, txId);
+      deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
+      return {
+        settled: true,
+        txHash: matchingEvent.transactionHash,
+        success: true,
+      };
     }
 
-    deleteTxBlockLowerBound(kvStore, txId);
-    return {
-      settled: true,
-      txHash: matchingEvent.transactionHash,
-      success: true,
-    };
+    // Failure path second: uses trace_filter (only on supported chains).
+    // Only reached when the success scan found nothing in the block range.
+    const failedTx = await scanFailedTxsInChunks({
+      ...sharedOpts,
+      fromBlock: savedFailedTxFromBlock,
+      toAddress: subscribeToAddr,
+      verifyFailedTx: tx => {
+        if (!tx.to) return false;
+        const isFactoryPath = getAddress(tx.to) === getAddress(factoryAddr);
+        const data = isFactoryPath
+          ? extractFactoryExecuteData(tx.data)
+          : extractDepositFactoryExecuteData(tx.data);
+        return (
+          !!data &&
+          getAddress(data.expectedWalletAddress) === getAddress(expectedAddr) &&
+          data.sourceAddress === expectedSourceAddress
+        );
+      },
+      onRejectedChunk: (_, to) => {
+        setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
+      },
+    });
+
+    if (failedTx) {
+      log(`Found matching failed transaction`);
+      const receipt = await provider.getTransactionReceipt(failedTx.hash);
+      if (receipt) {
+        const result = await handleTxRevert(
+          receipt,
+          failedTx.hash,
+          `expectedAddr=${expectedAddr}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          deleteTxBlockLowerBound(kvStore, txId);
+          deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
+          return result;
+        }
+      }
+    }
+
+    log(
+      `[${PendingTxCode.WALLET_TX_NOT_FOUND}] No matching SmartWalletCreated event found`,
+    );
+    return { settled: false };
   } catch (error) {
     log(`Error:`, error);
     return { settled: false };

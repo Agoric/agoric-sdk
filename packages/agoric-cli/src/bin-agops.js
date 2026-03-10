@@ -10,7 +10,7 @@ import { E } from '@endo/far';
 import { execFileSync } from 'child_process';
 import path from 'path';
 import process from 'process';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { Command, CommanderError, createCommand } from 'commander';
 import { makeOracleCommand } from './commands/oracle.js';
 import { makeGovCommand } from './commands/gov.js';

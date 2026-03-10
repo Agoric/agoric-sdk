@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgCreateVestingAccount,
   MsgCreateVestingAccountResponse,
@@ -14,7 +14,7 @@ import {
   MsgClawbackResponse,
   MsgReturnGrants,
   MsgReturnGrantsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/vesting/v1beta1/tx.js';
 /** Msg defines the bank Msg service. */
 export interface Msg {
   /**
@@ -55,8 +55,8 @@ export interface Msg {
   returnGrants(request: MsgReturnGrants): Promise<MsgReturnGrantsResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.createVestingAccount = this.createVestingAccount.bind(this);
     this.createPermanentLockedAccount =
@@ -143,3 +143,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

@@ -13,7 +13,7 @@
   "scripts": {
     "repl": "node src/xsrepl.js",
     "build:bin": "/bin/sh -c 'if test -d ./test; then node src/build.js; else yarn build:from-env; fi'",
-    "build:env": "node src/build.js --show-env > build.env",
+    "build:env": "/bin/sh -c 'node src/build.js --show-env > build.env.new && mv build.env.new build.env'",
     "build:from-env": "{ cat build.env; echo node src/build.js; } | xargs env",
     "build": "yarn build:bin && yarn build:env",
     "check-version": "/bin/sh -c 'if test \"${npm_package_version}\" != \"$(./scripts/get_xsnap_version.sh)\"; then echo \"xsnap version mismatch; expected '${npm_package_version}'\"; exit 1; fi'",

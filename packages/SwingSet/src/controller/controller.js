@@ -6,7 +6,7 @@ import { performance } from 'perf_hooks';
 import { spawn as ambientSpawn } from 'child_process';
 import fs from 'fs';
 import { tmpName } from 'tmp';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import microtime from 'microtime';
 
 import { assert, q, Fail } from '@endo/errors';

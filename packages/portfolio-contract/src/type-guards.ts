@@ -8,7 +8,7 @@
  * makers for ongoing operations like rebalancing.
  *
  * **Proposals and Offer Args**
- * - {@link ProposalType.openPortfolio}: Initial funding with USDC, Access tokens, and protocol allocations
+ * - {@link ProposalType.openPortfolio}: Initial funding with USDC and protocol allocations
  * - {@link ProposalType.rebalance}: Add funds (give) or withdraw funds (want) from protocols
  * - {@link OfferArgsFor}: Cross-chain parameters like `destinationEVMChain` for EVM operations
  *
@@ -69,13 +69,14 @@ export const makeProposalShapes = (
   accessBrand?: Brand<'nat'>,
 ) => {
   const $Shape = makeNatAmountShape(usdcBrand);
-  const accessShape = harden({
+  const openOptionalGive = harden({
+    Deposit: $Shape,
     ...(accessBrand && { Access: makeNatAmountShape(accessBrand, 1n) }),
   });
 
   const openPortfolio = M.splitRecord(
     {
-      give: M.splitRecord(accessShape, { Deposit: $Shape }, {}),
+      give: M.splitRecord({}, openOptionalGive, {}),
     },
     { want: {}, exit: M.any() },
     {},
@@ -266,6 +267,30 @@ export const TargetAllocationShapeExt: TypedPattern<Record<string, NatValue>> =
 
 // #region ymax0 vstorage keys and values
 // XXX the vstorage path API is kinda awkward to use; see ymax-deploy.test.ts
+
+/**
+ * Published vstorage values produced by the portfolio contract.
+ */
+export type PortfolioPublishedPathTypes = {
+  ymax0: StatusFor['contract'];
+  ymax1: StatusFor['contract'];
+  'ymax0.portfolios': StatusFor['portfolios'];
+  'ymax1.portfolios': StatusFor['portfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}`]: StatusFor['portfolio'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.positions.${string}`]: StatusFor['position'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`]: StatusFor['pendingTx'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`]: StatusFor['flow'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`]: StatusFor['flowSteps'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}.portfolio`]: StatusFor['evmWalletPortfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}`]: StatusFor['evmWallet'];
+};
 
 /**
  * Creates vstorage path for portfolio status under published.ymax0.

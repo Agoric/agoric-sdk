@@ -16,6 +16,7 @@ import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-s
 import {
   TargetAllocationShape,
   type OfferArgsFor,
+  type PortfolioPublishedPathTypes,
   type ProposalType,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
@@ -36,6 +37,7 @@ import {
   makeVstorageKit,
   type makeSmartWalletKit,
   type SigningSmartWalletKit,
+  type TypedPublishedFor,
   type VstorageKit,
 } from '@agoric/client-utils';
 import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
@@ -205,6 +207,9 @@ const parseTypedJSON = <T>(
 };
 
 type SmartWalletKit = Awaited<ReturnType<typeof makeSmartWalletKit>>;
+type PortfolioReadPublished = <P extends string>(
+  subpath: P,
+) => Promise<TypedPublishedFor<P, PortfolioPublishedPathTypes>>;
 
 const noPoll = (wk: SmartWalletKit): SmartWalletKit => ({
   ...wk,
@@ -830,7 +835,10 @@ const main = async (
       const { path } = opened;
       // XXX would be nice if readPublished allowed ^published.
       const subPath = path.replace(/^published./, '') as typeof path;
-      const pq = makePortfolioQuery(walletKit.readPublished, subPath);
+      const pq = makePortfolioQuery(
+        walletKit.readPublished as PortfolioReadPublished,
+        subPath,
+      );
       const status = await pq.getPortfolioStatus();
       trace('status', status);
       if (status.depositAddress && env.AGORIC_NET === 'devnet') {

@@ -8,7 +8,7 @@ import { existsSync as existsSyncAmbient } from 'fs';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import WebSocket from 'ws';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import morgan from 'morgan';
 import { format as urlFormat } from 'url';
 

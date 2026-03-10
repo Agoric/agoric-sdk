@@ -237,7 +237,7 @@ export const makeReadCachingStorage = kvStore => {
       value = kvStore.get(key);
       cache.set(
         key,
-        // eslint-disable-next-line no-nested-ternary
+
         value === undefined ? (kvStore.has(key) ? undef : deleted) : value,
       );
       return value;

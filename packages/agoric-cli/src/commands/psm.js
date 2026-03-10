@@ -13,7 +13,7 @@ import { asPercent } from '../lib/format.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 
 /**
- * @import {Logger} from 'anylogger';
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  */
 

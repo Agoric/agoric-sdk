@@ -29,7 +29,7 @@
     "eslint": "^9.39.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-jessie": "^0.0.6",
-    "eslint-config-prettier": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-ava": "^15.1.0",
     "eslint-plugin-github": "^5.1.6",
     "eslint-plugin-import": "^2.31.0",
@@ -37,7 +37,7 @@
     "eslint-plugin-require-extensions": "^0.1.3",
     "execa": "^9.6.0",
     "npm-run-all": "^4.1.5",
-    "prettier": "^3.7.4",
+    "prettier": "^3.8.1",
     "prettier-plugin-jsdoc": "~1.8.0",
     "prettier-plugin-sh": "^0.18.0",
     "ts-blank-space": "^0.6.2",
@@ -45,7 +45,7 @@
     "type-coverage": "^2.29.7",
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "^4.2.1",
-    "typescript": "~5.9.3",
+    "typescript": "~6.0.0-beta",
     "typescript-eslint": "^8.40.0"
   },
   "resolutions": {
@@ -57,7 +57,7 @@
     "@cosmjs/proto-signing@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/stargate@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0",
-    "@cosmology/telescope@npm:^1.12.21": "patch:@cosmology/telescope@npm%3A1.12.21#~/.yarn/patches/@cosmology-telescope-npm-1.12.21-6ca5e89f7e.patch",
+    "@hyperweb/telescope@npm:^2.2.1": "patch:@hyperweb/telescope@npm%3A2.2.1#~/.yarn/patches/@hyperweb-telescope-npm-2.2.1-36a0c8cf9a.patch",
     "@endo/bundle-source": "patch:@endo/bundle-source@npm%3A4.1.2#~/.yarn/patches/@endo-bundle-source-npm-4.1.2-80da9522ea.patch",
     "@noble/hashes@npm:^1": "npm:~1.8.0",
     "@noble/hashes@npm:^1.5.0": "npm:~1.8.0",
@@ -85,7 +85,7 @@
     "rxjs@npm:^7.5.5": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
     "ava@npm:^6.4.1": "patch:ava@npm%3A6.4.1#~/.yarn/patches/ava-npm-6.4.1-be769b2551.patch",
     "@lerna-lite/version@npm:4.6.1": "patch:@lerna-lite/version@npm%3A4.6.1#~/.yarn/patches/@lerna-lite-version-npm-4.6.1-77cc9b6d7e.patch",
-    "@cosmology/ast": "patch:@cosmology/ast@npm%3A1.10.12#~/.yarn/patches/@cosmology-ast-npm-1.10.12-ccbeaa7cd2.patch",
+    "@cosmology/ast@npm:2.2.0": "patch:@cosmology/ast@npm%3A2.2.0#~/.yarn/patches/@cosmology-ast-npm-2.2.0-40b2669a5e.patch",
     "@endo/eventual-send@npm:^1.3.4": "patch:@endo/eventual-send@npm%3A1.3.4#~/.yarn/patches/@endo-eventual-send-npm-1.3.4-12411c5a98.patch",
     "@endo/far@npm:^1.1.14": "patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch",
     "@endo/far@npm:^1.0.0": "patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch",
@@ -97,7 +97,8 @@
     "@graphql-codegen/visitor-plugin-common@npm:6.1.0": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.1.0#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.1.0-c6f558d634.patch",
     "@graphql-tools/optimize@npm:^2.0.0": "patch:@graphql-tools/optimize@npm%3A2.0.0#~/.yarn/patches/@graphql-tools-optimize-npm-2.0.0-710bf461f3.patch",
     "@graphql-codegen/visitor-plugin-common@npm:^6.2.2": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch",
-    "@graphql-codegen/visitor-plugin-common@npm:6.2.2": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch"
+    "@graphql-codegen/visitor-plugin-common@npm:6.2.2": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch",
+    "concordance@npm:^5.0.4": "patch:concordance@npm%3A5.0.4#~/.yarn/patches/concordance-npm-5.0.4-e641405dd9.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3@10.1.0": {
@@ -125,6 +126,7 @@
     "docs:markdown-build": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.build.json",
     "docs:update-functions-path": "node ./scripts/update-typedoc-functions-path.cjs",
     "doctor": "./scripts/env-doctor.sh",
+    "hooks:install": "./scripts/install-git-hooks.sh",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
@@ -134,6 +136,7 @@
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:packages": "yarn lerna run --no-bail lint",
     "lint:package-names": "./scripts/verify-package-names.js",
+    "lint:tools-scope-imports": "node ./scripts/ci/check-tools-scope-imports.mjs",
     "lint:types": "tsc",
     "lint:scripts": "yarn eslint scripts/*js",
     "test": "yarn lerna run --no-bail test",

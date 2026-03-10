@@ -1,14 +1,25 @@
-import binaryVoteCounter from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import committee from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernor from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import walletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js';
-import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
-import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
-import provisionPool from '@agoric/vats/bundles/bundle-provisionPool.js';
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
-import econCommitteeCharter from '@agoric/inter-protocol/bundles/bundle-econCommitteeCharter.js';
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
-import psm from '@agoric/inter-protocol/bundles/bundle-psm.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
+import { smartWalletSourceSpecRegistry } from '@agoric/smart-wallet/source-spec-registry.js';
+import { interProtocolBundleSpecs } from '../../source-spec-registry.js';
+
+const bundleCache = await unsafeSharedBundleCache;
+const {
+  binaryVoteCounterBundle: binaryVoteCounter,
+  committeeBundle: committee,
+  contractGovernorBundle: contractGovernor,
+} = await bundleCache.loadRegistry(governanceSourceSpecRegistry);
+const { walletFactoryBundle: walletFactory } = await bundleCache.loadRegistry(
+  smartWalletSourceSpecRegistry,
+);
+const { centralSupplyBundle: centralSupply, mintHolderBundle: mintHolder } =
+  await bundleCache.loadRegistry(vatsSourceSpecRegistry);
+const {
+  provisionPoolBundle: provisionPool,
+  econCommitteeCharterBundle: econCommitteeCharter,
+  psmBundle: psm,
+} = await bundleCache.loadRegistry(interProtocolBundleSpecs);
 
 export const bundles = {
   binaryVoteCounter,

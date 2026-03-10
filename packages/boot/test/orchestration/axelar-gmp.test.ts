@@ -1,4 +1,3 @@
-import { makeWalletFactoryContext } from '@aglocal/fast-usdc-deploy/test/walletFactory.js';
 import { BridgeId } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
@@ -10,6 +9,7 @@ import type { ExecutionContext, TestFn } from 'ava';
 import { encodeAbiParameters } from 'viem';
 import { makeReceiveUpCallPayload } from '../../tools/axelar-supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { makeWalletFactoryContext } from '../bootstrapTests/walletFactory.js';
 
 export type WalletFactoryDriver = Awaited<
   ReturnType<typeof makeWalletFactoryDriver>

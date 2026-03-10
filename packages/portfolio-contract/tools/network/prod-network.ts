@@ -181,6 +181,8 @@ export const PROD_NETWORK: NetworkSpec = {
     // Estimated time: ~13-60 seconds depending on finality threshold
     // Note: CCTPv2 contracts must be deployed on both source and destination chains
 
+    /* DIRECT CCTPv2 TEMPORARILY DISABLED
+
     // Arbitrum ↔ other EVM chains
     {
       src: '@Arbitrum',
@@ -368,6 +370,8 @@ export const PROD_NETWORK: NetworkSpec = {
       min: 100_000n,
       feeMode: 'evmToEvm',
     },
+
+    */
   ],
 };
 

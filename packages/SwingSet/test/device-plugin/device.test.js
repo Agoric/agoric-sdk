@@ -12,11 +12,7 @@ import {
 import { buildBridge } from '../../src/devices/bridge/bridge.js';
 import { buildPlugin } from '../../src/devices/plugin/plugin.js';
 
-test.before('initialize storage', t => {
-  t.context.kernelStorage = initSwingStore().kernelStorage;
-});
-
-async function setupVatController(t) {
+async function setupVatController(t, kernelStorage) {
   const inputQueue = [];
   const queueThunkForKernel = async thunk => {
     inputQueue.push(thunk);
@@ -37,15 +33,19 @@ async function setupVatController(t) {
     bridge: { ...bridge.endowments },
   };
 
-  if (!swingsetIsInitialized(t.context.kernelStorage)) {
+  if (!swingsetIsInitialized(kernelStorage)) {
     const config = {
       bootstrap: 'bootstrap',
       vats: {
         bootstrap: {
           sourceSpec: new URL('bootstrap.js', import.meta.url).pathname,
+          // Replay-sensitive test: avoid GC-driven BOYD nondeterminism.
+          reapInterval: 'never',
         },
         bridge: {
           sourceSpec: new URL('vat-bridge.js', import.meta.url).pathname,
+          // Replay-sensitive test: avoid GC-driven BOYD nondeterminism.
+          reapInterval: 'never',
         },
       },
       devices: {
@@ -57,12 +57,9 @@ async function setupVatController(t) {
         },
       },
     };
-    await initializeSwingset(config, ['plugin'], t.context.kernelStorage);
+    await initializeSwingset(config, ['plugin'], kernelStorage);
   }
-  const c = await makeSwingsetController(
-    t.context.kernelStorage,
-    deviceEndowments,
-  );
+  const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   const cycle = async () => {
     await c.run();
@@ -74,9 +71,12 @@ async function setupVatController(t) {
   return { bridge, cycle, dump: c.dump, plugin, queueThunkForKernel };
 }
 
-test.serial('plugin first time', async t => {
-  const { bridge, cycle, dump, queueThunkForKernel } =
-    await setupVatController(t);
+test('plugin first time', async t => {
+  const kernelStorage = initSwingStore().kernelStorage;
+  const { bridge, cycle, dump, queueThunkForKernel } = await setupVatController(
+    t,
+    kernelStorage,
+  );
 
   void queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
   await cycle();
@@ -89,16 +89,19 @@ test.serial('plugin first time', async t => {
   ]);
 });
 
-// NOTE: the following test CANNOT be run standalone. It requires execution of
-// the prior test to establish its necessary starting state.  This is a bad
-// practice and should be fixed.  It's not bad enough to warrant fixing right
-// now, but worth flagging with this comment as a help to anyone else who gets
-// tripped up by it.
+test('plugin after restart', async t => {
+  const kernelStorage = initSwingStore().kernelStorage;
 
-test.serial('plugin after restart', async t => {
+  const {
+    bridge: bridge1,
+    cycle: cycle1,
+    queueThunkForKernel: queue1,
+  } = await setupVatController(t, kernelStorage);
+  void queue1(() => bridge1.deliverInbound('pingpong'));
+  await cycle1();
+
   const { bridge, cycle, dump, plugin, queueThunkForKernel } =
-    await setupVatController(t);
-
+    await setupVatController(t, kernelStorage);
   plugin.reset();
   void queueThunkForKernel(() => bridge.deliverInbound('pingpong'));
   await cycle();

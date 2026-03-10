@@ -1,5 +1,5 @@
 import process from 'node:process';
-import anylogger from 'anylogger';
+import anylogger from '../../vendor/anylogger.js';
 
 const console = anylogger('shutdown');
 

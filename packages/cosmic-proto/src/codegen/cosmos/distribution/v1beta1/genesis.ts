@@ -23,11 +23,18 @@ import { type JsonSafe } from '../../../json-safe.js';
  * DelegatorWithdrawInfo is the address for where distributions rewards are
  * withdrawn to by default this struct is only used at genesis to feed in
  * default withdraw addresses.
+ * @name DelegatorWithdrawInfo
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.DelegatorWithdrawInfo
  */
 export interface DelegatorWithdrawInfo {
-  /** delegator_address is the address of the delegator. */
+  /**
+   * delegator_address is the address of the delegator.
+   */
   delegatorAddress: string;
-  /** withdraw_address is the address to withdraw the delegation rewards to. */
+  /**
+   * withdraw_address is the address to withdraw the delegation rewards to.
+   */
   withdrawAddress: string;
 }
 export interface DelegatorWithdrawInfoProtoMsg {
@@ -38,23 +45,40 @@ export interface DelegatorWithdrawInfoProtoMsg {
  * DelegatorWithdrawInfo is the address for where distributions rewards are
  * withdrawn to by default this struct is only used at genesis to feed in
  * default withdraw addresses.
+ * @name DelegatorWithdrawInfoSDKType
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.DelegatorWithdrawInfo
  */
 export interface DelegatorWithdrawInfoSDKType {
   delegator_address: string;
   withdraw_address: string;
 }
-/** ValidatorOutstandingRewardsRecord is used for import/export via genesis json. */
+/**
+ * ValidatorOutstandingRewardsRecord is used for import/export via genesis json.
+ * @name ValidatorOutstandingRewardsRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorOutstandingRewardsRecord
+ */
 export interface ValidatorOutstandingRewardsRecord {
-  /** validator_address is the address of the validator. */
+  /**
+   * validator_address is the address of the validator.
+   */
   validatorAddress: string;
-  /** outstanding_rewards represents the outstanding rewards of a validator. */
+  /**
+   * outstanding_rewards represents the outstanding rewards of a validator.
+   */
   outstandingRewards: DecCoin[];
 }
 export interface ValidatorOutstandingRewardsRecordProtoMsg {
   typeUrl: '/cosmos.distribution.v1beta1.ValidatorOutstandingRewardsRecord';
   value: Uint8Array;
 }
-/** ValidatorOutstandingRewardsRecord is used for import/export via genesis json. */
+/**
+ * ValidatorOutstandingRewardsRecord is used for import/export via genesis json.
+ * @name ValidatorOutstandingRewardsRecordSDKType
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorOutstandingRewardsRecord
+ */
 export interface ValidatorOutstandingRewardsRecordSDKType {
   validator_address: string;
   outstanding_rewards: DecCoinSDKType[];
@@ -62,11 +86,18 @@ export interface ValidatorOutstandingRewardsRecordSDKType {
 /**
  * ValidatorAccumulatedCommissionRecord is used for import / export via genesis
  * json.
+ * @name ValidatorAccumulatedCommissionRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorAccumulatedCommissionRecord
  */
 export interface ValidatorAccumulatedCommissionRecord {
-  /** validator_address is the address of the validator. */
+  /**
+   * validator_address is the address of the validator.
+   */
   validatorAddress: string;
-  /** accumulated is the accumulated commission of a validator. */
+  /**
+   * accumulated is the accumulated commission of a validator.
+   */
   accumulated: ValidatorAccumulatedCommission;
 }
 export interface ValidatorAccumulatedCommissionRecordProtoMsg {
@@ -76,6 +107,9 @@ export interface ValidatorAccumulatedCommissionRecordProtoMsg {
 /**
  * ValidatorAccumulatedCommissionRecord is used for import / export via genesis
  * json.
+ * @name ValidatorAccumulatedCommissionRecordSDKType
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorAccumulatedCommissionRecord
  */
 export interface ValidatorAccumulatedCommissionRecordSDKType {
   validator_address: string;
@@ -84,13 +118,22 @@ export interface ValidatorAccumulatedCommissionRecordSDKType {
 /**
  * ValidatorHistoricalRewardsRecord is used for import / export via genesis
  * json.
+ * @name ValidatorHistoricalRewardsRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorHistoricalRewardsRecord
  */
 export interface ValidatorHistoricalRewardsRecord {
-  /** validator_address is the address of the validator. */
+  /**
+   * validator_address is the address of the validator.
+   */
   validatorAddress: string;
-  /** period defines the period the historical rewards apply to. */
+  /**
+   * period defines the period the historical rewards apply to.
+   */
   period: bigint;
-  /** rewards defines the historical rewards of a validator. */
+  /**
+   * rewards defines the historical rewards of a validator.
+   */
   rewards: ValidatorHistoricalRewards;
 }
 export interface ValidatorHistoricalRewardsRecordProtoMsg {
@@ -100,97 +143,178 @@ export interface ValidatorHistoricalRewardsRecordProtoMsg {
 /**
  * ValidatorHistoricalRewardsRecord is used for import / export via genesis
  * json.
+ * @name ValidatorHistoricalRewardsRecordSDKType
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorHistoricalRewardsRecord
  */
 export interface ValidatorHistoricalRewardsRecordSDKType {
   validator_address: string;
   period: bigint;
   rewards: ValidatorHistoricalRewardsSDKType;
 }
-/** ValidatorCurrentRewardsRecord is used for import / export via genesis json. */
+/**
+ * ValidatorCurrentRewardsRecord is used for import / export via genesis json.
+ * @name ValidatorCurrentRewardsRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorCurrentRewardsRecord
+ */
 export interface ValidatorCurrentRewardsRecord {
-  /** validator_address is the address of the validator. */
+  /**
+   * validator_address is the address of the validator.
+   */
   validatorAddress: string;
-  /** rewards defines the current rewards of a validator. */
+  /**
+   * rewards defines the current rewards of a validator.
+   */
   rewards: ValidatorCurrentRewards;
 }
 export interface ValidatorCurrentRewardsRecordProtoMsg {
   typeUrl: '/cosmos.distribution.v1beta1.ValidatorCurrentRewardsRecord';
   value: Uint8Array;
 }
-/** ValidatorCurrentRewardsRecord is used for import / export via genesis json. */
+/**
+ * ValidatorCurrentRewardsRecord is used for import / export via genesis json.
+ * @name ValidatorCurrentRewardsRecordSDKType
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorCurrentRewardsRecord
+ */
 export interface ValidatorCurrentRewardsRecordSDKType {
   validator_address: string;
   rewards: ValidatorCurrentRewardsSDKType;
 }
-/** DelegatorStartingInfoRecord used for import / export via genesis json. */
+/**
+ * DelegatorStartingInfoRecord used for import / export via genesis json.
+ * @name DelegatorStartingInfoRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.DelegatorStartingInfoRecord
+ */
 export interface DelegatorStartingInfoRecord {
-  /** delegator_address is the address of the delegator. */
+  /**
+   * delegator_address is the address of the delegator.
+   */
   delegatorAddress: string;
-  /** validator_address is the address of the validator. */
+  /**
+   * validator_address is the address of the validator.
+   */
   validatorAddress: string;
-  /** starting_info defines the starting info of a delegator. */
+  /**
+   * starting_info defines the starting info of a delegator.
+   */
   startingInfo: DelegatorStartingInfo;
 }
 export interface DelegatorStartingInfoRecordProtoMsg {
   typeUrl: '/cosmos.distribution.v1beta1.DelegatorStartingInfoRecord';
   value: Uint8Array;
 }
-/** DelegatorStartingInfoRecord used for import / export via genesis json. */
+/**
+ * DelegatorStartingInfoRecord used for import / export via genesis json.
+ * @name DelegatorStartingInfoRecordSDKType
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.DelegatorStartingInfoRecord
+ */
 export interface DelegatorStartingInfoRecordSDKType {
   delegator_address: string;
   validator_address: string;
   starting_info: DelegatorStartingInfoSDKType;
 }
-/** ValidatorSlashEventRecord is used for import / export via genesis json. */
+/**
+ * ValidatorSlashEventRecord is used for import / export via genesis json.
+ * @name ValidatorSlashEventRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorSlashEventRecord
+ */
 export interface ValidatorSlashEventRecord {
-  /** validator_address is the address of the validator. */
+  /**
+   * validator_address is the address of the validator.
+   */
   validatorAddress: string;
-  /** height defines the block height at which the slash event occurred. */
+  /**
+   * height defines the block height at which the slash event occurred.
+   */
   height: bigint;
-  /** period is the period of the slash event. */
+  /**
+   * period is the period of the slash event.
+   */
   period: bigint;
-  /** validator_slash_event describes the slash event. */
+  /**
+   * validator_slash_event describes the slash event.
+   */
   validatorSlashEvent: ValidatorSlashEvent;
 }
 export interface ValidatorSlashEventRecordProtoMsg {
   typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEventRecord';
   value: Uint8Array;
 }
-/** ValidatorSlashEventRecord is used for import / export via genesis json. */
+/**
+ * ValidatorSlashEventRecord is used for import / export via genesis json.
+ * @name ValidatorSlashEventRecordSDKType
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorSlashEventRecord
+ */
 export interface ValidatorSlashEventRecordSDKType {
   validator_address: string;
   height: bigint;
   period: bigint;
   validator_slash_event: ValidatorSlashEventSDKType;
 }
-/** GenesisState defines the distribution module's genesis state. */
+/**
+ * GenesisState defines the distribution module's genesis state.
+ * @name GenesisState
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.GenesisState
+ */
 export interface GenesisState {
-  /** params defines all the parameters of the module. */
+  /**
+   * params defines all the parameters of the module.
+   */
   params: Params;
-  /** fee_pool defines the fee pool at genesis. */
+  /**
+   * fee_pool defines the fee pool at genesis.
+   */
   feePool: FeePool;
-  /** fee_pool defines the delegator withdraw infos at genesis. */
+  /**
+   * fee_pool defines the delegator withdraw infos at genesis.
+   */
   delegatorWithdrawInfos: DelegatorWithdrawInfo[];
-  /** fee_pool defines the previous proposer at genesis. */
+  /**
+   * fee_pool defines the previous proposer at genesis.
+   */
   previousProposer: string;
-  /** fee_pool defines the outstanding rewards of all validators at genesis. */
+  /**
+   * fee_pool defines the outstanding rewards of all validators at genesis.
+   */
   outstandingRewards: ValidatorOutstandingRewardsRecord[];
-  /** fee_pool defines the accumulated commissions of all validators at genesis. */
+  /**
+   * fee_pool defines the accumulated commissions of all validators at genesis.
+   */
   validatorAccumulatedCommissions: ValidatorAccumulatedCommissionRecord[];
-  /** fee_pool defines the historical rewards of all validators at genesis. */
+  /**
+   * fee_pool defines the historical rewards of all validators at genesis.
+   */
   validatorHistoricalRewards: ValidatorHistoricalRewardsRecord[];
-  /** fee_pool defines the current rewards of all validators at genesis. */
+  /**
+   * fee_pool defines the current rewards of all validators at genesis.
+   */
   validatorCurrentRewards: ValidatorCurrentRewardsRecord[];
-  /** fee_pool defines the delegator starting infos at genesis. */
+  /**
+   * fee_pool defines the delegator starting infos at genesis.
+   */
   delegatorStartingInfos: DelegatorStartingInfoRecord[];
-  /** fee_pool defines the validator slash events at genesis. */
+  /**
+   * fee_pool defines the validator slash events at genesis.
+   */
   validatorSlashEvents: ValidatorSlashEventRecord[];
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/cosmos.distribution.v1beta1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the distribution module's genesis state. */
+/**
+ * GenesisState defines the distribution module's genesis state.
+ * @name GenesisStateSDKType
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.GenesisState
+ */
 export interface GenesisStateSDKType {
   params: ParamsSDKType;
   fee_pool: FeePoolSDKType;
@@ -209,8 +333,33 @@ function createBaseDelegatorWithdrawInfo(): DelegatorWithdrawInfo {
     withdrawAddress: '',
   };
 }
+/**
+ * DelegatorWithdrawInfo is the address for where distributions rewards are
+ * withdrawn to by default this struct is only used at genesis to feed in
+ * default withdraw addresses.
+ * @name DelegatorWithdrawInfo
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.DelegatorWithdrawInfo
+ */
 export const DelegatorWithdrawInfo = {
   typeUrl: '/cosmos.distribution.v1beta1.DelegatorWithdrawInfo' as const,
+  aminoType: 'cosmos-sdk/DelegatorWithdrawInfo' as const,
+  is(o: any): o is DelegatorWithdrawInfo {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorWithdrawInfo.typeUrl ||
+        (typeof o.delegatorAddress === 'string' &&
+          typeof o.withdrawAddress === 'string'))
+    );
+  },
+  isSDK(o: any): o is DelegatorWithdrawInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorWithdrawInfo.typeUrl ||
+        (typeof o.delegator_address === 'string' &&
+          typeof o.withdraw_address === 'string'))
+    );
+  },
   encode(
     message: DelegatorWithdrawInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -290,9 +439,36 @@ function createBaseValidatorOutstandingRewardsRecord(): ValidatorOutstandingRewa
     outstandingRewards: [],
   };
 }
+/**
+ * ValidatorOutstandingRewardsRecord is used for import/export via genesis json.
+ * @name ValidatorOutstandingRewardsRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorOutstandingRewardsRecord
+ */
 export const ValidatorOutstandingRewardsRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorOutstandingRewardsRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorOutstandingRewardsRecord' as const,
+  is(o: any): o is ValidatorOutstandingRewardsRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorOutstandingRewardsRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          Array.isArray(o.outstandingRewards) &&
+          (!o.outstandingRewards.length ||
+            DecCoin.is(o.outstandingRewards[0]))))
+    );
+  },
+  isSDK(o: any): o is ValidatorOutstandingRewardsRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorOutstandingRewardsRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          Array.isArray(o.outstanding_rewards) &&
+          (!o.outstanding_rewards.length ||
+            DecCoin.isSDK(o.outstanding_rewards[0]))))
+    );
+  },
   encode(
     message: ValidatorOutstandingRewardsRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -388,9 +564,33 @@ function createBaseValidatorAccumulatedCommissionRecord(): ValidatorAccumulatedC
     accumulated: ValidatorAccumulatedCommission.fromPartial({}),
   };
 }
+/**
+ * ValidatorAccumulatedCommissionRecord is used for import / export via genesis
+ * json.
+ * @name ValidatorAccumulatedCommissionRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorAccumulatedCommissionRecord
+ */
 export const ValidatorAccumulatedCommissionRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorAccumulatedCommissionRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorAccumulatedCommissionRecord' as const,
+  is(o: any): o is ValidatorAccumulatedCommissionRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorAccumulatedCommissionRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          ValidatorAccumulatedCommission.is(o.accumulated)))
+    );
+  },
+  isSDK(o: any): o is ValidatorAccumulatedCommissionRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorAccumulatedCommissionRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          ValidatorAccumulatedCommission.isSDK(o.accumulated)))
+    );
+  },
   encode(
     message: ValidatorAccumulatedCommissionRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -491,9 +691,35 @@ function createBaseValidatorHistoricalRewardsRecord(): ValidatorHistoricalReward
     rewards: ValidatorHistoricalRewards.fromPartial({}),
   };
 }
+/**
+ * ValidatorHistoricalRewardsRecord is used for import / export via genesis
+ * json.
+ * @name ValidatorHistoricalRewardsRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorHistoricalRewardsRecord
+ */
 export const ValidatorHistoricalRewardsRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorHistoricalRewardsRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorHistoricalRewardsRecord' as const,
+  is(o: any): o is ValidatorHistoricalRewardsRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorHistoricalRewardsRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          typeof o.period === 'bigint' &&
+          ValidatorHistoricalRewards.is(o.rewards)))
+    );
+  },
+  isSDK(o: any): o is ValidatorHistoricalRewardsRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorHistoricalRewardsRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          typeof o.period === 'bigint' &&
+          ValidatorHistoricalRewards.isSDK(o.rewards)))
+    );
+  },
   encode(
     message: ValidatorHistoricalRewardsRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -607,9 +833,32 @@ function createBaseValidatorCurrentRewardsRecord(): ValidatorCurrentRewardsRecor
     rewards: ValidatorCurrentRewards.fromPartial({}),
   };
 }
+/**
+ * ValidatorCurrentRewardsRecord is used for import / export via genesis json.
+ * @name ValidatorCurrentRewardsRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorCurrentRewardsRecord
+ */
 export const ValidatorCurrentRewardsRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorCurrentRewardsRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorCurrentRewardsRecord' as const,
+  is(o: any): o is ValidatorCurrentRewardsRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorCurrentRewardsRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          ValidatorCurrentRewards.is(o.rewards)))
+    );
+  },
+  isSDK(o: any): o is ValidatorCurrentRewardsRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorCurrentRewardsRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          ValidatorCurrentRewards.isSDK(o.rewards)))
+    );
+  },
   encode(
     message: ValidatorCurrentRewardsRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -709,8 +958,33 @@ function createBaseDelegatorStartingInfoRecord(): DelegatorStartingInfoRecord {
     startingInfo: DelegatorStartingInfo.fromPartial({}),
   };
 }
+/**
+ * DelegatorStartingInfoRecord used for import / export via genesis json.
+ * @name DelegatorStartingInfoRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.DelegatorStartingInfoRecord
+ */
 export const DelegatorStartingInfoRecord = {
   typeUrl: '/cosmos.distribution.v1beta1.DelegatorStartingInfoRecord' as const,
+  aminoType: 'cosmos-sdk/DelegatorStartingInfoRecord' as const,
+  is(o: any): o is DelegatorStartingInfoRecord {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorStartingInfoRecord.typeUrl ||
+        (typeof o.delegatorAddress === 'string' &&
+          typeof o.validatorAddress === 'string' &&
+          DelegatorStartingInfo.is(o.startingInfo)))
+    );
+  },
+  isSDK(o: any): o is DelegatorStartingInfoRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DelegatorStartingInfoRecord.typeUrl ||
+        (typeof o.delegator_address === 'string' &&
+          typeof o.validator_address === 'string' &&
+          DelegatorStartingInfo.isSDK(o.starting_info)))
+    );
+  },
   encode(
     message: DelegatorStartingInfoRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -823,8 +1097,35 @@ function createBaseValidatorSlashEventRecord(): ValidatorSlashEventRecord {
     validatorSlashEvent: ValidatorSlashEvent.fromPartial({}),
   };
 }
+/**
+ * ValidatorSlashEventRecord is used for import / export via genesis json.
+ * @name ValidatorSlashEventRecord
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.ValidatorSlashEventRecord
+ */
 export const ValidatorSlashEventRecord = {
   typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEventRecord' as const,
+  aminoType: 'cosmos-sdk/ValidatorSlashEventRecord' as const,
+  is(o: any): o is ValidatorSlashEventRecord {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorSlashEventRecord.typeUrl ||
+        (typeof o.validatorAddress === 'string' &&
+          typeof o.height === 'bigint' &&
+          typeof o.period === 'bigint' &&
+          ValidatorSlashEvent.is(o.validatorSlashEvent)))
+    );
+  },
+  isSDK(o: any): o is ValidatorSlashEventRecordSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorSlashEventRecord.typeUrl ||
+        (typeof o.validator_address === 'string' &&
+          typeof o.height === 'bigint' &&
+          typeof o.period === 'bigint' &&
+          ValidatorSlashEvent.isSDK(o.validator_slash_event)))
+    );
+  },
   encode(
     message: ValidatorSlashEventRecord,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -962,8 +1263,87 @@ function createBaseGenesisState(): GenesisState {
     validatorSlashEvents: [],
   };
 }
+/**
+ * GenesisState defines the distribution module's genesis state.
+ * @name GenesisState
+ * @package cosmos.distribution.v1beta1
+ * @see proto type: cosmos.distribution.v1beta1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/cosmos.distribution.v1beta1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.is(o.params) &&
+          FeePool.is(o.feePool) &&
+          Array.isArray(o.delegatorWithdrawInfos) &&
+          (!o.delegatorWithdrawInfos.length ||
+            DelegatorWithdrawInfo.is(o.delegatorWithdrawInfos[0])) &&
+          typeof o.previousProposer === 'string' &&
+          Array.isArray(o.outstandingRewards) &&
+          (!o.outstandingRewards.length ||
+            ValidatorOutstandingRewardsRecord.is(o.outstandingRewards[0])) &&
+          Array.isArray(o.validatorAccumulatedCommissions) &&
+          (!o.validatorAccumulatedCommissions.length ||
+            ValidatorAccumulatedCommissionRecord.is(
+              o.validatorAccumulatedCommissions[0],
+            )) &&
+          Array.isArray(o.validatorHistoricalRewards) &&
+          (!o.validatorHistoricalRewards.length ||
+            ValidatorHistoricalRewardsRecord.is(
+              o.validatorHistoricalRewards[0],
+            )) &&
+          Array.isArray(o.validatorCurrentRewards) &&
+          (!o.validatorCurrentRewards.length ||
+            ValidatorCurrentRewardsRecord.is(o.validatorCurrentRewards[0])) &&
+          Array.isArray(o.delegatorStartingInfos) &&
+          (!o.delegatorStartingInfos.length ||
+            DelegatorStartingInfoRecord.is(o.delegatorStartingInfos[0])) &&
+          Array.isArray(o.validatorSlashEvents) &&
+          (!o.validatorSlashEvents.length ||
+            ValidatorSlashEventRecord.is(o.validatorSlashEvents[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Params.isSDK(o.params) &&
+          FeePool.isSDK(o.fee_pool) &&
+          Array.isArray(o.delegator_withdraw_infos) &&
+          (!o.delegator_withdraw_infos.length ||
+            DelegatorWithdrawInfo.isSDK(o.delegator_withdraw_infos[0])) &&
+          typeof o.previous_proposer === 'string' &&
+          Array.isArray(o.outstanding_rewards) &&
+          (!o.outstanding_rewards.length ||
+            ValidatorOutstandingRewardsRecord.isSDK(
+              o.outstanding_rewards[0],
+            )) &&
+          Array.isArray(o.validator_accumulated_commissions) &&
+          (!o.validator_accumulated_commissions.length ||
+            ValidatorAccumulatedCommissionRecord.isSDK(
+              o.validator_accumulated_commissions[0],
+            )) &&
+          Array.isArray(o.validator_historical_rewards) &&
+          (!o.validator_historical_rewards.length ||
+            ValidatorHistoricalRewardsRecord.isSDK(
+              o.validator_historical_rewards[0],
+            )) &&
+          Array.isArray(o.validator_current_rewards) &&
+          (!o.validator_current_rewards.length ||
+            ValidatorCurrentRewardsRecord.isSDK(
+              o.validator_current_rewards[0],
+            )) &&
+          Array.isArray(o.delegator_starting_infos) &&
+          (!o.delegator_starting_infos.length ||
+            DelegatorStartingInfoRecord.isSDK(o.delegator_starting_infos[0])) &&
+          Array.isArray(o.validator_slash_events) &&
+          (!o.validator_slash_events.length ||
+            ValidatorSlashEventRecord.isSDK(o.validator_slash_events[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

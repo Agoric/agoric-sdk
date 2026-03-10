@@ -20,14 +20,29 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
-/** Host Zone */
+/**
+ * Host Zone
+ * @name QueryHostZoneRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryHostZoneRequest
+ */
 export interface QueryHostZoneRequest {}
 export interface QueryHostZoneRequestProtoMsg {
   typeUrl: '/stride.staketia.QueryHostZoneRequest';
   value: Uint8Array;
 }
-/** Host Zone */
+/**
+ * Host Zone
+ * @name QueryHostZoneRequestSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryHostZoneRequest
+ */
 export interface QueryHostZoneRequestSDKType {}
+/**
+ * @name QueryHostZoneResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryHostZoneResponse
+ */
 export interface QueryHostZoneResponse {
   hostZone?: HostZone;
 }
@@ -35,10 +50,20 @@ export interface QueryHostZoneResponseProtoMsg {
   typeUrl: '/stride.staketia.QueryHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryHostZoneResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryHostZoneResponse
+ */
 export interface QueryHostZoneResponseSDKType {
   host_zone?: HostZoneSDKType;
 }
-/** All Delegation Records */
+/**
+ * All Delegation Records
+ * @name QueryDelegationRecordsRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryDelegationRecordsRequest
+ */
 export interface QueryDelegationRecordsRequest {
   includeArchived: boolean;
 }
@@ -46,10 +71,20 @@ export interface QueryDelegationRecordsRequestProtoMsg {
   typeUrl: '/stride.staketia.QueryDelegationRecordsRequest';
   value: Uint8Array;
 }
-/** All Delegation Records */
+/**
+ * All Delegation Records
+ * @name QueryDelegationRecordsRequestSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryDelegationRecordsRequest
+ */
 export interface QueryDelegationRecordsRequestSDKType {
   include_archived: boolean;
 }
+/**
+ * @name QueryDelegationRecordsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryDelegationRecordsResponse
+ */
 export interface QueryDelegationRecordsResponse {
   delegationRecords: DelegationRecord[];
 }
@@ -57,10 +92,20 @@ export interface QueryDelegationRecordsResponseProtoMsg {
   typeUrl: '/stride.staketia.QueryDelegationRecordsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryDelegationRecordsResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryDelegationRecordsResponse
+ */
 export interface QueryDelegationRecordsResponseSDKType {
   delegation_records: DelegationRecordSDKType[];
 }
-/** All Unbonding Records */
+/**
+ * All Unbonding Records
+ * @name QueryUnbondingRecordsRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryUnbondingRecordsRequest
+ */
 export interface QueryUnbondingRecordsRequest {
   includeArchived: boolean;
 }
@@ -68,10 +113,20 @@ export interface QueryUnbondingRecordsRequestProtoMsg {
   typeUrl: '/stride.staketia.QueryUnbondingRecordsRequest';
   value: Uint8Array;
 }
-/** All Unbonding Records */
+/**
+ * All Unbonding Records
+ * @name QueryUnbondingRecordsRequestSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryUnbondingRecordsRequest
+ */
 export interface QueryUnbondingRecordsRequestSDKType {
   include_archived: boolean;
 }
+/**
+ * @name QueryUnbondingRecordsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryUnbondingRecordsResponse
+ */
 export interface QueryUnbondingRecordsResponse {
   unbondingRecords: UnbondingRecord[];
 }
@@ -79,10 +134,20 @@ export interface QueryUnbondingRecordsResponseProtoMsg {
   typeUrl: '/stride.staketia.QueryUnbondingRecordsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryUnbondingRecordsResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryUnbondingRecordsResponse
+ */
 export interface QueryUnbondingRecordsResponseSDKType {
   unbonding_records: UnbondingRecordSDKType[];
 }
-/** Single Redemption Record */
+/**
+ * Single Redemption Record
+ * @name QueryRedemptionRecordRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordRequest
+ */
 export interface QueryRedemptionRecordRequest {
   unbondingRecordId: bigint;
   address: string;
@@ -91,11 +156,21 @@ export interface QueryRedemptionRecordRequestProtoMsg {
   typeUrl: '/stride.staketia.QueryRedemptionRecordRequest';
   value: Uint8Array;
 }
-/** Single Redemption Record */
+/**
+ * Single Redemption Record
+ * @name QueryRedemptionRecordRequestSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordRequest
+ */
 export interface QueryRedemptionRecordRequestSDKType {
   unbonding_record_id: bigint;
   address: string;
 }
+/**
+ * @name QueryRedemptionRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordResponse
+ */
 export interface QueryRedemptionRecordResponse {
   redemptionRecordResponse?: RedemptionRecordResponse;
 }
@@ -103,10 +178,20 @@ export interface QueryRedemptionRecordResponseProtoMsg {
   typeUrl: '/stride.staketia.QueryRedemptionRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryRedemptionRecordResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordResponse
+ */
 export interface QueryRedemptionRecordResponseSDKType {
   redemption_record_response?: RedemptionRecordResponseSDKType;
 }
-/** All Redemption Records */
+/**
+ * All Redemption Records
+ * @name QueryRedemptionRecordsRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordsRequest
+ */
 export interface QueryRedemptionRecordsRequest {
   address: string;
   unbondingRecordId: bigint;
@@ -116,12 +201,22 @@ export interface QueryRedemptionRecordsRequestProtoMsg {
   typeUrl: '/stride.staketia.QueryRedemptionRecordsRequest';
   value: Uint8Array;
 }
-/** All Redemption Records */
+/**
+ * All Redemption Records
+ * @name QueryRedemptionRecordsRequestSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordsRequest
+ */
 export interface QueryRedemptionRecordsRequestSDKType {
   address: string;
   unbonding_record_id: bigint;
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryRedemptionRecordsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordsResponse
+ */
 export interface QueryRedemptionRecordsResponse {
   redemptionRecordResponses: RedemptionRecordResponse[];
   pagination?: PageResponse;
@@ -130,18 +225,38 @@ export interface QueryRedemptionRecordsResponseProtoMsg {
   typeUrl: '/stride.staketia.QueryRedemptionRecordsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryRedemptionRecordsResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordsResponse
+ */
 export interface QueryRedemptionRecordsResponseSDKType {
   redemption_record_responses: RedemptionRecordResponseSDKType[];
   pagination?: PageResponseSDKType;
 }
-/** All Slash Records */
+/**
+ * All Slash Records
+ * @name QuerySlashRecordsRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QuerySlashRecordsRequest
+ */
 export interface QuerySlashRecordsRequest {}
 export interface QuerySlashRecordsRequestProtoMsg {
   typeUrl: '/stride.staketia.QuerySlashRecordsRequest';
   value: Uint8Array;
 }
-/** All Slash Records */
+/**
+ * All Slash Records
+ * @name QuerySlashRecordsRequestSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QuerySlashRecordsRequest
+ */
 export interface QuerySlashRecordsRequestSDKType {}
+/**
+ * @name QuerySlashRecordsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QuerySlashRecordsResponse
+ */
 export interface QuerySlashRecordsResponse {
   slashRecords: SlashRecord[];
 }
@@ -149,12 +264,24 @@ export interface QuerySlashRecordsResponseProtoMsg {
   typeUrl: '/stride.staketia.QuerySlashRecordsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QuerySlashRecordsResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QuerySlashRecordsResponse
+ */
 export interface QuerySlashRecordsResponseSDKType {
   slash_records: SlashRecordSDKType[];
 }
-/** Data structure for frontend to consume */
+/**
+ * Data structure for frontend to consume
+ * @name RedemptionRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.RedemptionRecordResponse
+ */
 export interface RedemptionRecordResponse {
-  /** Redemption record */
+  /**
+   * Redemption record
+   */
   redemptionRecord?: RedemptionRecord;
   /**
    * The Unix timestamp (in seconds) at which the unbonding for the UR
@@ -166,7 +293,12 @@ export interface RedemptionRecordResponseProtoMsg {
   typeUrl: '/stride.staketia.RedemptionRecordResponse';
   value: Uint8Array;
 }
-/** Data structure for frontend to consume */
+/**
+ * Data structure for frontend to consume
+ * @name RedemptionRecordResponseSDKType
+ * @package stride.staketia
+ * @see proto type: stride.staketia.RedemptionRecordResponse
+ */
 export interface RedemptionRecordResponseSDKType {
   redemption_record?: RedemptionRecordSDKType;
   unbonding_completion_time_seconds: bigint;
@@ -174,8 +306,20 @@ export interface RedemptionRecordResponseSDKType {
 function createBaseQueryHostZoneRequest(): QueryHostZoneRequest {
   return {};
 }
+/**
+ * Host Zone
+ * @name QueryHostZoneRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryHostZoneRequest
+ */
 export const QueryHostZoneRequest = {
   typeUrl: '/stride.staketia.QueryHostZoneRequest' as const,
+  is(o: any): o is QueryHostZoneRequest {
+    return o && o.$typeUrl === QueryHostZoneRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryHostZoneRequestSDKType {
+    return o && o.$typeUrl === QueryHostZoneRequest.typeUrl;
+  },
   encode(
     _: QueryHostZoneRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -229,8 +373,19 @@ function createBaseQueryHostZoneResponse(): QueryHostZoneResponse {
     hostZone: undefined,
   };
 }
+/**
+ * @name QueryHostZoneResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryHostZoneResponse
+ */
 export const QueryHostZoneResponse = {
   typeUrl: '/stride.staketia.QueryHostZoneResponse' as const,
+  is(o: any): o is QueryHostZoneResponse {
+    return o && o.$typeUrl === QueryHostZoneResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryHostZoneResponseSDKType {
+    return o && o.$typeUrl === QueryHostZoneResponse.typeUrl;
+  },
   encode(
     message: QueryHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -302,8 +457,28 @@ function createBaseQueryDelegationRecordsRequest(): QueryDelegationRecordsReques
     includeArchived: false,
   };
 }
+/**
+ * All Delegation Records
+ * @name QueryDelegationRecordsRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryDelegationRecordsRequest
+ */
 export const QueryDelegationRecordsRequest = {
   typeUrl: '/stride.staketia.QueryDelegationRecordsRequest' as const,
+  is(o: any): o is QueryDelegationRecordsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDelegationRecordsRequest.typeUrl ||
+        typeof o.includeArchived === 'boolean')
+    );
+  },
+  isSDK(o: any): o is QueryDelegationRecordsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDelegationRecordsRequest.typeUrl ||
+        typeof o.include_archived === 'boolean')
+    );
+  },
   encode(
     message: QueryDelegationRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -378,8 +553,31 @@ function createBaseQueryDelegationRecordsResponse(): QueryDelegationRecordsRespo
     delegationRecords: [],
   };
 }
+/**
+ * @name QueryDelegationRecordsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryDelegationRecordsResponse
+ */
 export const QueryDelegationRecordsResponse = {
   typeUrl: '/stride.staketia.QueryDelegationRecordsResponse' as const,
+  is(o: any): o is QueryDelegationRecordsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDelegationRecordsResponse.typeUrl ||
+        (Array.isArray(o.delegationRecords) &&
+          (!o.delegationRecords.length ||
+            DelegationRecord.is(o.delegationRecords[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryDelegationRecordsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDelegationRecordsResponse.typeUrl ||
+        (Array.isArray(o.delegation_records) &&
+          (!o.delegation_records.length ||
+            DelegationRecord.isSDK(o.delegation_records[0]))))
+    );
+  },
   encode(
     message: QueryDelegationRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -462,8 +660,28 @@ function createBaseQueryUnbondingRecordsRequest(): QueryUnbondingRecordsRequest 
     includeArchived: false,
   };
 }
+/**
+ * All Unbonding Records
+ * @name QueryUnbondingRecordsRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryUnbondingRecordsRequest
+ */
 export const QueryUnbondingRecordsRequest = {
   typeUrl: '/stride.staketia.QueryUnbondingRecordsRequest' as const,
+  is(o: any): o is QueryUnbondingRecordsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryUnbondingRecordsRequest.typeUrl ||
+        typeof o.includeArchived === 'boolean')
+    );
+  },
+  isSDK(o: any): o is QueryUnbondingRecordsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryUnbondingRecordsRequest.typeUrl ||
+        typeof o.include_archived === 'boolean')
+    );
+  },
   encode(
     message: QueryUnbondingRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -538,8 +756,31 @@ function createBaseQueryUnbondingRecordsResponse(): QueryUnbondingRecordsRespons
     unbondingRecords: [],
   };
 }
+/**
+ * @name QueryUnbondingRecordsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryUnbondingRecordsResponse
+ */
 export const QueryUnbondingRecordsResponse = {
   typeUrl: '/stride.staketia.QueryUnbondingRecordsResponse' as const,
+  is(o: any): o is QueryUnbondingRecordsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryUnbondingRecordsResponse.typeUrl ||
+        (Array.isArray(o.unbondingRecords) &&
+          (!o.unbondingRecords.length ||
+            UnbondingRecord.is(o.unbondingRecords[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryUnbondingRecordsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryUnbondingRecordsResponse.typeUrl ||
+        (Array.isArray(o.unbonding_records) &&
+          (!o.unbonding_records.length ||
+            UnbondingRecord.isSDK(o.unbonding_records[0]))))
+    );
+  },
   encode(
     message: QueryUnbondingRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -623,8 +864,30 @@ function createBaseQueryRedemptionRecordRequest(): QueryRedemptionRecordRequest 
     address: '',
   };
 }
+/**
+ * Single Redemption Record
+ * @name QueryRedemptionRecordRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordRequest
+ */
 export const QueryRedemptionRecordRequest = {
   typeUrl: '/stride.staketia.QueryRedemptionRecordRequest' as const,
+  is(o: any): o is QueryRedemptionRecordRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordRequest.typeUrl ||
+        (typeof o.unbondingRecordId === 'bigint' &&
+          typeof o.address === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryRedemptionRecordRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordRequest.typeUrl ||
+        (typeof o.unbonding_record_id === 'bigint' &&
+          typeof o.address === 'string'))
+    );
+  },
   encode(
     message: QueryRedemptionRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -714,8 +977,19 @@ function createBaseQueryRedemptionRecordResponse(): QueryRedemptionRecordRespons
     redemptionRecordResponse: undefined,
   };
 }
+/**
+ * @name QueryRedemptionRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordResponse
+ */
 export const QueryRedemptionRecordResponse = {
   typeUrl: '/stride.staketia.QueryRedemptionRecordResponse' as const,
+  is(o: any): o is QueryRedemptionRecordResponse {
+    return o && o.$typeUrl === QueryRedemptionRecordResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryRedemptionRecordResponseSDKType {
+    return o && o.$typeUrl === QueryRedemptionRecordResponse.typeUrl;
+  },
   encode(
     message: QueryRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -804,8 +1078,30 @@ function createBaseQueryRedemptionRecordsRequest(): QueryRedemptionRecordsReques
     pagination: undefined,
   };
 }
+/**
+ * All Redemption Records
+ * @name QueryRedemptionRecordsRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordsRequest
+ */
 export const QueryRedemptionRecordsRequest = {
   typeUrl: '/stride.staketia.QueryRedemptionRecordsRequest' as const,
+  is(o: any): o is QueryRedemptionRecordsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordsRequest.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.unbondingRecordId === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is QueryRedemptionRecordsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordsRequest.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.unbonding_record_id === 'bigint'))
+    );
+  },
   encode(
     message: QueryRedemptionRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -913,8 +1209,31 @@ function createBaseQueryRedemptionRecordsResponse(): QueryRedemptionRecordsRespo
     pagination: undefined,
   };
 }
+/**
+ * @name QueryRedemptionRecordsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QueryRedemptionRecordsResponse
+ */
 export const QueryRedemptionRecordsResponse = {
   typeUrl: '/stride.staketia.QueryRedemptionRecordsResponse' as const,
+  is(o: any): o is QueryRedemptionRecordsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordsResponse.typeUrl ||
+        (Array.isArray(o.redemptionRecordResponses) &&
+          (!o.redemptionRecordResponses.length ||
+            RedemptionRecordResponse.is(o.redemptionRecordResponses[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryRedemptionRecordsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryRedemptionRecordsResponse.typeUrl ||
+        (Array.isArray(o.redemption_record_responses) &&
+          (!o.redemption_record_responses.length ||
+            RedemptionRecordResponse.isSDK(o.redemption_record_responses[0]))))
+    );
+  },
   encode(
     message: QueryRedemptionRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1021,8 +1340,20 @@ export const QueryRedemptionRecordsResponse = {
 function createBaseQuerySlashRecordsRequest(): QuerySlashRecordsRequest {
   return {};
 }
+/**
+ * All Slash Records
+ * @name QuerySlashRecordsRequest
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QuerySlashRecordsRequest
+ */
 export const QuerySlashRecordsRequest = {
   typeUrl: '/stride.staketia.QuerySlashRecordsRequest' as const,
+  is(o: any): o is QuerySlashRecordsRequest {
+    return o && o.$typeUrl === QuerySlashRecordsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QuerySlashRecordsRequestSDKType {
+    return o && o.$typeUrl === QuerySlashRecordsRequest.typeUrl;
+  },
   encode(
     _: QuerySlashRecordsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1080,8 +1411,29 @@ function createBaseQuerySlashRecordsResponse(): QuerySlashRecordsResponse {
     slashRecords: [],
   };
 }
+/**
+ * @name QuerySlashRecordsResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.QuerySlashRecordsResponse
+ */
 export const QuerySlashRecordsResponse = {
   typeUrl: '/stride.staketia.QuerySlashRecordsResponse' as const,
+  is(o: any): o is QuerySlashRecordsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QuerySlashRecordsResponse.typeUrl ||
+        (Array.isArray(o.slashRecords) &&
+          (!o.slashRecords.length || SlashRecord.is(o.slashRecords[0]))))
+    );
+  },
+  isSDK(o: any): o is QuerySlashRecordsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySlashRecordsResponse.typeUrl ||
+        (Array.isArray(o.slash_records) &&
+          (!o.slash_records.length || SlashRecord.isSDK(o.slash_records[0]))))
+    );
+  },
   encode(
     message: QuerySlashRecordsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1165,8 +1517,28 @@ function createBaseRedemptionRecordResponse(): RedemptionRecordResponse {
     unbondingCompletionTimeSeconds: BigInt(0),
   };
 }
+/**
+ * Data structure for frontend to consume
+ * @name RedemptionRecordResponse
+ * @package stride.staketia
+ * @see proto type: stride.staketia.RedemptionRecordResponse
+ */
 export const RedemptionRecordResponse = {
   typeUrl: '/stride.staketia.RedemptionRecordResponse' as const,
+  is(o: any): o is RedemptionRecordResponse {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionRecordResponse.typeUrl ||
+        typeof o.unbondingCompletionTimeSeconds === 'bigint')
+    );
+  },
+  isSDK(o: any): o is RedemptionRecordResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === RedemptionRecordResponse.typeUrl ||
+        typeof o.unbonding_completion_time_seconds === 'bigint')
+    );
+  },
   encode(
     message: RedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -29,7 +29,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** GenesisState defines the cctp module's genesis state. */
+/**
+ * GenesisState defines the cctp module's genesis state.
+ * @name GenesisState
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.GenesisState
+ */
 export interface GenesisState {
   owner: string;
   attesterManager: string;
@@ -50,7 +55,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/circle.cctp.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the cctp module's genesis state. */
+/**
+ * GenesisState defines the cctp module's genesis state.
+ * @name GenesisStateSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   owner: string;
   attester_manager: string;
@@ -85,8 +95,59 @@ function createBaseGenesisState(): GenesisState {
     tokenMessengerList: [],
   };
 }
+/**
+ * GenesisState defines the cctp module's genesis state.
+ * @name GenesisState
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/circle.cctp.v1.GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.owner === 'string' &&
+          typeof o.attesterManager === 'string' &&
+          typeof o.pauser === 'string' &&
+          typeof o.tokenController === 'string' &&
+          Array.isArray(o.attesterList) &&
+          (!o.attesterList.length || Attester.is(o.attesterList[0])) &&
+          Array.isArray(o.perMessageBurnLimitList) &&
+          (!o.perMessageBurnLimitList.length ||
+            PerMessageBurnLimit.is(o.perMessageBurnLimitList[0])) &&
+          Array.isArray(o.tokenPairList) &&
+          (!o.tokenPairList.length || TokenPair.is(o.tokenPairList[0])) &&
+          Array.isArray(o.usedNoncesList) &&
+          (!o.usedNoncesList.length || Nonce.is(o.usedNoncesList[0])) &&
+          Array.isArray(o.tokenMessengerList) &&
+          (!o.tokenMessengerList.length ||
+            RemoteTokenMessenger.is(o.tokenMessengerList[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.owner === 'string' &&
+          typeof o.attester_manager === 'string' &&
+          typeof o.pauser === 'string' &&
+          typeof o.token_controller === 'string' &&
+          Array.isArray(o.attester_list) &&
+          (!o.attester_list.length || Attester.isSDK(o.attester_list[0])) &&
+          Array.isArray(o.per_message_burn_limit_list) &&
+          (!o.per_message_burn_limit_list.length ||
+            PerMessageBurnLimit.isSDK(o.per_message_burn_limit_list[0])) &&
+          Array.isArray(o.token_pair_list) &&
+          (!o.token_pair_list.length ||
+            TokenPair.isSDK(o.token_pair_list[0])) &&
+          Array.isArray(o.used_nonces_list) &&
+          (!o.used_nonces_list.length || Nonce.isSDK(o.used_nonces_list[0])) &&
+          Array.isArray(o.token_messenger_list) &&
+          (!o.token_messenger_list.length ||
+            RemoteTokenMessenger.isSDK(o.token_messenger_list[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

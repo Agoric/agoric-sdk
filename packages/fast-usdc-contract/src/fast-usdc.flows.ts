@@ -61,7 +61,7 @@ export const makeNobleAccount = (async (orch: Orchestrator) => {
 harden(makeNobleAccount);
 
 export const forwardFunds = async (
-  orch: Orchestrator,
+  _orch: Orchestrator,
   {
     currentChainReference,
     supportsCctp,
@@ -185,7 +185,7 @@ export interface ContextAdvance {
 }
 
 export const advanceFunds = (async (
-  orch: Orchestrator,
+  _orch: Orchestrator,
   {
     chainHubTools,
     feeConfig,

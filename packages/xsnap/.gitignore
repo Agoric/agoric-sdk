@@ -1,5 +1,7 @@
 build
 build.config.env
 dist
+moddable
 test/fixture-snap-pool/
 test/fixture-snap-shot.xss
+xsnap-native

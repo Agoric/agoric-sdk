@@ -4,7 +4,12 @@ import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 import { type JsonSafe } from '../../../json-safe.js';
-/** PubKey defines a secp256r1 ECDSA public key. */
+/**
+ * PubKey defines a secp256r1 ECDSA public key.
+ * @name PubKey
+ * @package cosmos.crypto.secp256r1
+ * @see proto type: cosmos.crypto.secp256r1.PubKey
+ */
 export interface PubKey {
   /**
    * Point on secp256r1 curve in a compressed representation as specified in section
@@ -16,20 +21,37 @@ export interface PubKeyProtoMsg {
   typeUrl: '/cosmos.crypto.secp256r1.PubKey';
   value: Uint8Array;
 }
-/** PubKey defines a secp256r1 ECDSA public key. */
+/**
+ * PubKey defines a secp256r1 ECDSA public key.
+ * @name PubKeySDKType
+ * @package cosmos.crypto.secp256r1
+ * @see proto type: cosmos.crypto.secp256r1.PubKey
+ */
 export interface PubKeySDKType {
   key: Uint8Array;
 }
-/** PrivKey defines a secp256r1 ECDSA private key. */
+/**
+ * PrivKey defines a secp256r1 ECDSA private key.
+ * @name PrivKey
+ * @package cosmos.crypto.secp256r1
+ * @see proto type: cosmos.crypto.secp256r1.PrivKey
+ */
 export interface PrivKey {
-  /** secret number serialized using big-endian encoding */
+  /**
+   * secret number serialized using big-endian encoding
+   */
   secret: Uint8Array;
 }
 export interface PrivKeyProtoMsg {
   typeUrl: '/cosmos.crypto.secp256r1.PrivKey';
   value: Uint8Array;
 }
-/** PrivKey defines a secp256r1 ECDSA private key. */
+/**
+ * PrivKey defines a secp256r1 ECDSA private key.
+ * @name PrivKeySDKType
+ * @package cosmos.crypto.secp256r1
+ * @see proto type: cosmos.crypto.secp256r1.PrivKey
+ */
 export interface PrivKeySDKType {
   secret: Uint8Array;
 }
@@ -38,8 +60,31 @@ function createBasePubKey(): PubKey {
     key: new Uint8Array(),
   };
 }
+/**
+ * PubKey defines a secp256r1 ECDSA public key.
+ * @name PubKey
+ * @package cosmos.crypto.secp256r1
+ * @see proto type: cosmos.crypto.secp256r1.PubKey
+ */
 export const PubKey = {
   typeUrl: '/cosmos.crypto.secp256r1.PubKey' as const,
+  aminoType: 'cosmos-sdk/PubKey' as const,
+  is(o: any): o is PubKey {
+    return (
+      o &&
+      (o.$typeUrl === PubKey.typeUrl ||
+        o.key instanceof Uint8Array ||
+        typeof o.key === 'string')
+    );
+  },
+  isSDK(o: any): o is PubKeySDKType {
+    return (
+      o &&
+      (o.$typeUrl === PubKey.typeUrl ||
+        o.key instanceof Uint8Array ||
+        typeof o.key === 'string')
+    );
+  },
   encode(
     message: PubKey,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -103,8 +148,31 @@ function createBasePrivKey(): PrivKey {
     secret: new Uint8Array(),
   };
 }
+/**
+ * PrivKey defines a secp256r1 ECDSA private key.
+ * @name PrivKey
+ * @package cosmos.crypto.secp256r1
+ * @see proto type: cosmos.crypto.secp256r1.PrivKey
+ */
 export const PrivKey = {
   typeUrl: '/cosmos.crypto.secp256r1.PrivKey' as const,
+  aminoType: 'cosmos-sdk/PrivKey' as const,
+  is(o: any): o is PrivKey {
+    return (
+      o &&
+      (o.$typeUrl === PrivKey.typeUrl ||
+        o.secret instanceof Uint8Array ||
+        typeof o.secret === 'string')
+    );
+  },
+  isSDK(o: any): o is PrivKeySDKType {
+    return (
+      o &&
+      (o.$typeUrl === PrivKey.typeUrl ||
+        o.secret instanceof Uint8Array ||
+        typeof o.secret === 'string')
+    );
+  },
   encode(
     message: PrivKey,
     writer: BinaryWriter = BinaryWriter.create(),

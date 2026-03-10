@@ -930,6 +930,77 @@ test.skip('CCTP settlement works with new invitation after contract remove and s
   });
 });
 
+test.serial(
+  'upgrade contract preserves portfolios and allows opening without Access',
+  async t => {
+    const {
+      runUtils: { EV },
+      agoricNamesRemotes,
+      walletFactoryDriver: wfd,
+    } = t.context;
+
+    t.truthy(agoricNamesRemotes.instance.ymax0);
+
+    const controllerWallet = await wfd.provideSmartWallet(controllerAddr);
+    const wallet = await wfd.provideSmartWallet(beneficiary);
+
+    const getPortfolioCount = () => {
+      try {
+        const portfolioData = t.context.readPublished('ymax0.portfolios');
+        const match = portfolioData.addPortfolio.match(/^portfolio(\d+)$/);
+        return parseInt(match![1], 10) + 1;
+      } catch {
+        return 0;
+      }
+    };
+
+    const portfolioCountBefore = getPortfolioCount();
+    t.log('Portfolios before upgrade:', portfolioCountBefore);
+
+    const zoe = await EV.vat('bootstrap').consumeItem('zoe');
+    const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+    // Scope choice for this test: upgrade-to-current-installation is intentional.
+    // This validates upgrade plumbing + state preservation + post-upgrade behavior,
+    // but does not attempt to prove an old-bundle -> new-bundle migration.
+    const installation = await EV(agoricNames).lookup('installation', 'ymax0');
+    const bundleId = await EV(zoe).getBundleIDFromInstallation(installation);
+    t.true(typeof bundleId === 'string' && bundleId.length > 0);
+
+    await controllerWallet.invokeEntry({
+      id: `upgrade-${Date.now()}`,
+      targetName: 'ymaxControl',
+      method: 'upgrade',
+      args: [{ bundleId }],
+    });
+
+    const portfolioCountAfterUpgrade = getPortfolioCount();
+    t.is(
+      portfolioCountAfterUpgrade,
+      portfolioCountBefore,
+      'Upgrade should preserve existing portfolios',
+    );
+
+    await wallet.sendOffer({
+      id: `open-after-upgrade-no-access`,
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['ymax0'],
+        callPipe: [['makeOpenPortfolioInvitation']],
+      },
+      proposal: { give: {} },
+      offerArgs: {},
+    });
+    await eventLoopIteration();
+
+    const portfolioCountAfterOpen = getPortfolioCount();
+    t.is(
+      portfolioCountAfterOpen,
+      portfolioCountBefore + 1,
+      'Should open one additional portfolio after upgrade without Access',
+    );
+  },
+);
+
 const { make } = AmountMath;
 
 // give: ...rest: {"Access":{"brand":"[Alleged: BoardRemotePoC26 brand]","value":"[1n]"}} - Must be: {}

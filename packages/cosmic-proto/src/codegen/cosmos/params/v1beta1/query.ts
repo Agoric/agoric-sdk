@@ -3,32 +3,58 @@ import { ParamChange, type ParamChangeSDKType } from './params.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** QueryParamsRequest is request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QueryParamsRequest
+ */
 export interface QueryParamsRequest {
-  /** subspace defines the module to query the parameter for. */
+  /**
+   * subspace defines the module to query the parameter for.
+   */
   subspace: string;
-  /** key defines the key of the parameter in the subspace. */
+  /**
+   * key defines the key of the parameter in the subspace.
+   */
   key: string;
 }
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/cosmos.params.v1beta1.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {
   subspace: string;
   key: string;
 }
-/** QueryParamsResponse is response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** param defines the queried parameter. */
+  /**
+   * param defines the queried parameter.
+   */
   param: ParamChange;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/cosmos.params.v1beta1.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   param: ParamChangeSDKType;
 }
@@ -37,6 +63,9 @@ export interface QueryParamsResponseSDKType {
  * subspaces and all keys for a subspace.
  *
  * Since: cosmos-sdk 0.46
+ * @name QuerySubspacesRequest
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QuerySubspacesRequest
  */
 export interface QuerySubspacesRequest {}
 export interface QuerySubspacesRequestProtoMsg {
@@ -48,6 +77,9 @@ export interface QuerySubspacesRequestProtoMsg {
  * subspaces and all keys for a subspace.
  *
  * Since: cosmos-sdk 0.46
+ * @name QuerySubspacesRequestSDKType
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QuerySubspacesRequest
  */
 export interface QuerySubspacesRequestSDKType {}
 /**
@@ -55,6 +87,9 @@ export interface QuerySubspacesRequestSDKType {}
  * registered subspaces and all keys for a subspace.
  *
  * Since: cosmos-sdk 0.46
+ * @name QuerySubspacesResponse
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QuerySubspacesResponse
  */
 export interface QuerySubspacesResponse {
   subspaces: Subspace[];
@@ -68,6 +103,9 @@ export interface QuerySubspacesResponseProtoMsg {
  * registered subspaces and all keys for a subspace.
  *
  * Since: cosmos-sdk 0.46
+ * @name QuerySubspacesResponseSDKType
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QuerySubspacesResponse
  */
 export interface QuerySubspacesResponseSDKType {
   subspaces: SubspaceSDKType[];
@@ -77,6 +115,9 @@ export interface QuerySubspacesResponseSDKType {
  * the subspace.
  *
  * Since: cosmos-sdk 0.46
+ * @name Subspace
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.Subspace
  */
 export interface Subspace {
   subspace: string;
@@ -91,6 +132,9 @@ export interface SubspaceProtoMsg {
  * the subspace.
  *
  * Since: cosmos-sdk 0.46
+ * @name SubspaceSDKType
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.Subspace
  */
 export interface SubspaceSDKType {
   subspace: string;
@@ -102,8 +146,29 @@ function createBaseQueryParamsRequest(): QueryParamsRequest {
     key: '',
   };
 }
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/cosmos.params.v1beta1.QueryParamsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsRequest.typeUrl ||
+        (typeof o.subspace === 'string' && typeof o.key === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsRequest.typeUrl ||
+        (typeof o.subspace === 'string' && typeof o.key === 'string'))
+    );
+  },
   encode(
     message: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -176,8 +241,27 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     param: ParamChange.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.params.v1beta1.QueryParamsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || ParamChange.is(o.param))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || ParamChange.isSDK(o.param))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -247,8 +331,24 @@ export const QueryParamsResponse = {
 function createBaseQuerySubspacesRequest(): QuerySubspacesRequest {
   return {};
 }
+/**
+ * QuerySubspacesRequest defines a request type for querying for all registered
+ * subspaces and all keys for a subspace.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name QuerySubspacesRequest
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QuerySubspacesRequest
+ */
 export const QuerySubspacesRequest = {
   typeUrl: '/cosmos.params.v1beta1.QuerySubspacesRequest' as const,
+  aminoType: 'cosmos-sdk/QuerySubspacesRequest' as const,
+  is(o: any): o is QuerySubspacesRequest {
+    return o && o.$typeUrl === QuerySubspacesRequest.typeUrl;
+  },
+  isSDK(o: any): o is QuerySubspacesRequestSDKType {
+    return o && o.$typeUrl === QuerySubspacesRequest.typeUrl;
+  },
   encode(
     _: QuerySubspacesRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -302,8 +402,34 @@ function createBaseQuerySubspacesResponse(): QuerySubspacesResponse {
     subspaces: [],
   };
 }
+/**
+ * QuerySubspacesResponse defines the response types for querying for all
+ * registered subspaces and all keys for a subspace.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name QuerySubspacesResponse
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.QuerySubspacesResponse
+ */
 export const QuerySubspacesResponse = {
   typeUrl: '/cosmos.params.v1beta1.QuerySubspacesResponse' as const,
+  aminoType: 'cosmos-sdk/QuerySubspacesResponse' as const,
+  is(o: any): o is QuerySubspacesResponse {
+    return (
+      o &&
+      (o.$typeUrl === QuerySubspacesResponse.typeUrl ||
+        (Array.isArray(o.subspaces) &&
+          (!o.subspaces.length || Subspace.is(o.subspaces[0]))))
+    );
+  },
+  isSDK(o: any): o is QuerySubspacesResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QuerySubspacesResponse.typeUrl ||
+        (Array.isArray(o.subspaces) &&
+          (!o.subspaces.length || Subspace.isSDK(o.subspaces[0]))))
+    );
+  },
   encode(
     message: QuerySubspacesResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -379,8 +505,36 @@ function createBaseSubspace(): Subspace {
     keys: [],
   };
 }
+/**
+ * Subspace defines a parameter subspace name and all the keys that exist for
+ * the subspace.
+ *
+ * Since: cosmos-sdk 0.46
+ * @name Subspace
+ * @package cosmos.params.v1beta1
+ * @see proto type: cosmos.params.v1beta1.Subspace
+ */
 export const Subspace = {
   typeUrl: '/cosmos.params.v1beta1.Subspace' as const,
+  aminoType: 'cosmos-sdk/Subspace' as const,
+  is(o: any): o is Subspace {
+    return (
+      o &&
+      (o.$typeUrl === Subspace.typeUrl ||
+        (typeof o.subspace === 'string' &&
+          Array.isArray(o.keys) &&
+          (!o.keys.length || typeof o.keys[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is SubspaceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Subspace.typeUrl ||
+        (typeof o.subspace === 'string' &&
+          Array.isArray(o.keys) &&
+          (!o.keys.length || typeof o.keys[0] === 'string')))
+    );
+  },
   encode(
     message: Subspace,
     writer: BinaryWriter = BinaryWriter.create(),

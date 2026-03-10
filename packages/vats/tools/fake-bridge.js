@@ -110,7 +110,7 @@ export const makeFakeBankBridge = (
           });
         }
         default:
-          Fail`unknown type ${type}`;
+          throw Fail`unknown type ${type}`;
       }
     },
     fromBridge: async obj => {

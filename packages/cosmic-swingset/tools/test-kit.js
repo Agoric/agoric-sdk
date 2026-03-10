@@ -298,7 +298,7 @@ export const makeCosmicSwingsetTestKit = async (
     blockTime: lastBlockTime,
     params: lastBlockParams,
   } = initMessage;
-  let lastBlockWalltime = Date.now();
+  let lastBlockWalltime = performance.now();
   await blockingSend(initMessage);
 
   /**
@@ -313,7 +313,7 @@ export const makeCosmicSwingsetTestKit = async (
   // Advance block time at a nominal rate of one second per real millisecond,
   // but introduce discontinuities as necessary to maintain monotonicity.
   const nextBlockTime = () => {
-    const delta = Math.floor(Date.now() - lastBlockWalltime);
+    const delta = Math.floor(performance.now() - lastBlockWalltime);
     return lastBlockTime + (delta > 0 ? delta : 1);
   };
 
@@ -334,7 +334,7 @@ export const makeCosmicSwingsetTestKit = async (
       blockTime > lastBlockTime ||
       Fail`blockTime ${blockTime} must be greater than ${lastBlockTime}`;
     needsBootstrap = false;
-    lastBlockWalltime = Date.now();
+    lastBlockWalltime = performance.now();
     lastBlockHeight = blockHeight;
     lastBlockTime = blockTime;
     lastBlockParams = params;

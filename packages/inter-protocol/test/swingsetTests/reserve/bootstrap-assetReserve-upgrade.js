@@ -1,6 +1,5 @@
 /* eslint-disable @agoric/group-jsdoc-imports */
 
-import { Fail } from '@endo/errors';
 import { makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import {
@@ -12,10 +11,11 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { withAmountUtils } from '../../supports.js';
 
 /**
  * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe';

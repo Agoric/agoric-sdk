@@ -82,10 +82,10 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
 
   switch (artifactMode) {
     case 'debug':
-    // eslint-disable-next-line no-fallthrough
+    // @ts-expect-error intentional fallthrough for mode hierarchy
     case 'operational':
       if (manifest.artifactMode === 'operational') break;
-    // eslint-disable-next-line no-fallthrough
+    // @ts-expect-error intentional fallthrough for mode hierarchy
     case 'replay':
       if (manifest.artifactMode === 'replay') break;
     // eslint-disable-next-line no-fallthrough
@@ -168,7 +168,7 @@ export const performStateSyncImport = async (
         .pipe(
           new Transform({
             objectMode: true,
-            transform(data, encoding, callback) {
+            transform(data, _encoding, callback) {
               try {
                 callback(null, JSON.parse(data));
               } catch (error) {

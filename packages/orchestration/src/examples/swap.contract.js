@@ -61,13 +61,13 @@ harden(makeNatAmountShape);
  *   marshaller: Remote<Marshaller>;
  *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
- * }} privateArgs
+ * }} _privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
 const contract = async (
   zcf,
-  privateArgs,
+  _privateArgs,
   zone,
   { orchestrateAll, zoeTools },
 ) => {

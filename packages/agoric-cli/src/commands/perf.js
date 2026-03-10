@@ -20,7 +20,7 @@ import {
 } from '../lib/chain.js';
 
 /**
- * @import {Logger} from 'anylogger';
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  */
 
 // tight for perf testing but less than this tends to hang.

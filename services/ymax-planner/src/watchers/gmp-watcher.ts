@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import type { Filter, WebSocketProvider } from 'ethers';
+import type { Filter } from 'ethers';
 import type { WebSocket } from 'ws';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
@@ -9,8 +9,11 @@ import { PendingTxCode } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
-} from '../support.ts';
-import type { MakeAbortController, WatcherTimeoutOptions } from '../support.ts';
+  scanFailedTxsInChunks,
+  type EvmRpc,
+  type WatcherTimeoutOptions,
+} from '../evm-scanner.ts';
+import type { MakeAbortController } from '../support.ts';
 import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
@@ -21,6 +24,7 @@ import {
   fetchReceiptWithRetry,
   extractGmpExecuteData,
   DEFAULT_RETRY_OPTIONS,
+  FAILED_TX_SCOPE,
   type AlchemySubscriptionMessage,
   type RetryOptions,
   handleTxRevert,
@@ -31,7 +35,7 @@ const MULTICALL_STATUS_SIGNATURE = ethers.id(
 );
 
 type WatchGmp = {
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   contractAddress: `0x${string}`;
   txId: TxId;
   expectedSourceAddress: string;
@@ -154,7 +158,13 @@ export const watchGmp = ({
 
         const tx = msg.params?.result?.transaction;
         const removed = msg.params?.result?.removed;
-        if (!tx) return;
+        if (!tx) {
+          log(
+            `Subscription message missing transaction data`,
+            msg.params?.result,
+          );
+          return;
+        }
 
         // Ignore transactions that have been removed from canonical chain (reorged)
         if (removed === true) {
@@ -166,10 +176,22 @@ export const watchGmp = ({
 
         const txHash = tx.hash;
         const txData = tx.input;
-        if (!txHash || !txData) return;
+        if (!txHash || !txData) {
+          log(`Subscription message missing txHash or input data`);
+          return;
+        }
 
         const executeData = extractGmpExecuteData(txData);
-        if (!executeData || executeData.txId !== txId) return;
+        if (!executeData) {
+          log(`Calldata did not match Axelar execute ABI for txHash=${txHash}`);
+          return;
+        }
+        if (executeData.txId !== txId) {
+          log(
+            `Matched different txId: expected=${txId} got=${executeData.txId} txHash=${txHash}`,
+          );
+          return;
+        }
 
         if (executeData.sourceAddress !== expectedSourceAddress) {
           log(
@@ -247,6 +269,7 @@ export const watchGmp = ({
           hashesOnly: false,
         },
       ]);
+      log(`Subscribed with subId=${subId} for contract=${contractAddress}`);
     };
 
     if (ws.readyState === 1) {
@@ -270,21 +293,26 @@ export const watchGmp = ({
 
 export const MULTICALL_STATUS_EVENT = 'status';
 
+type WatchGmpLookback = {
+  publishTimeMs: number;
+  chainId: CaipChainId;
+  setTimeout: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
+};
+
 export const lookBackGmp = async ({
   provider,
   contractAddress,
   txId,
+  expectedSourceAddress,
   publishTimeMs,
   chainId,
+  setTimeout,
   log = () => {},
   signal,
   kvStore,
   makeAbortController,
-}: WatchGmp & {
-  publishTimeMs: number;
-  chainId: CaipChainId;
-  signal?: AbortSignal;
-}): Promise<WatcherResult> => {
+}: WatchGmp & WatchGmpLookback): Promise<WatcherResult> => {
   await null;
   try {
     const fromBlock = await getBlockNumberBeforeRealTime(
@@ -295,6 +323,8 @@ export const lookBackGmp = async ({
 
     const statusEventLowerBound =
       getTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT) || fromBlock;
+    const failedTxLowerBound =
+      getTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE) || fromBlock;
 
     log(
       `Searching blocks ${statusEventLowerBound} → ${toBlock} for MulticallStatus or MulticallExecuted with txId ${txId} at ${contractAddress}`,
@@ -313,42 +343,78 @@ export const lookBackGmp = async ({
 
     const updateStatusEventLowerBound = (_from: number, to: number) =>
       setTxBlockLowerBound(kvStore, txId, to, MULTICALL_STATUS_EVENT);
+    const updateFailedTxLowerBound = (_from: number, to: number) =>
+      setTxBlockLowerBound(kvStore, txId, to, FAILED_TX_SCOPE);
 
-    // Options shared by both scans (including an abort signal that is triggered
-    // by a match from either).
+    // Options shared by both scans. The abort signal propagates external
+    // cancellation.
     // see `prepareAbortController` in services/ymax-planner/src/main.ts
-    const { abort: abortScans, signal: sharedSignal } = makeAbortController(
+    const { signal: sharedSignal } = makeAbortController(
       undefined,
       signal ? [signal] : [],
     );
-    const baseScanOpts = {
+    const sharedOpts = {
       provider,
       toBlock,
       chainId,
+      setTimeout,
       log,
       signal: sharedSignal,
     };
 
-    const matchingEvent = await scanEvmLogsInChunks(
-      {
-        ...baseScanOpts,
-        baseFilter: statusFilter,
-        fromBlock: statusEventLowerBound,
-        onRejectedChunk: updateStatusEventLowerBound,
-      },
-      isMatch,
-    );
-
-    abortScans();
+    // Success path first (cheap on all chains: uses eth_getLogs).
+    const matchingEvent = await scanEvmLogsInChunks({
+      ...sharedOpts,
+      baseFilter: statusFilter,
+      fromBlock: statusEventLowerBound,
+      onRejectedChunk: updateStatusEventLowerBound,
+      predicate: isMatch,
+    });
 
     if (matchingEvent) {
       log(`Found matching event`);
       deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+      deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
       return {
         settled: true,
         txHash: matchingEvent.transactionHash,
         success: true,
       };
+    }
+
+    // Failure path second: uses trace_filter (only on supported chains).
+    // Only reached when the success scan found nothing in the block range.
+    const failedTx = await scanFailedTxsInChunks({
+      ...sharedOpts,
+      fromBlock: failedTxLowerBound,
+      toAddress: contractAddress,
+      verifyFailedTx: tx => {
+        const data = extractGmpExecuteData(tx.data);
+        return (
+          data?.txId === txId && data.sourceAddress === expectedSourceAddress
+        );
+      },
+      onRejectedChunk: updateFailedTxLowerBound,
+    });
+
+    if (failedTx) {
+      log(`Found matching failed transaction`);
+      const receipt = await provider.getTransactionReceipt(failedTx.hash);
+      if (receipt) {
+        const result = await handleTxRevert(
+          receipt,
+          failedTx.hash,
+          `txId=${txId}`,
+          chainId,
+          provider,
+          log,
+        );
+        if (result) {
+          deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
+          deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
+          return result;
+        }
+      }
     }
 
     log(

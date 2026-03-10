@@ -4,34 +4,63 @@ import {
   type ParamsSDKType,
   Egress,
   type EgressSDKType,
+  ChunkedArtifact,
+  type ChunkedArtifactSDKType,
 } from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params defines the parameters of the module. */
+  /**
+   * params defines the parameters of the module.
+   */
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
-/** QueryEgressRequest is the request type for the Query/Egress RPC method */
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export interface QueryEgressRequest {
   peer: Uint8Array;
 }
@@ -39,11 +68,21 @@ export interface QueryEgressRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryEgressRequest';
   value: Uint8Array;
 }
-/** QueryEgressRequest is the request type for the Query/Egress RPC method */
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export interface QueryEgressRequestSDKType {
   peer: Uint8Array;
 }
-/** QueryEgressResponse is the egress response. */
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export interface QueryEgressResponse {
   egress?: Egress;
 }
@@ -51,11 +90,21 @@ export interface QueryEgressResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryEgressResponse';
   value: Uint8Array;
 }
-/** QueryEgressResponse is the egress response. */
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export interface QueryEgressResponseSDKType {
   egress?: EgressSDKType;
 }
-/** QueryMailboxRequest is the mailbox query. */
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export interface QueryMailboxRequest {
   peer: Uint8Array;
 }
@@ -63,11 +112,21 @@ export interface QueryMailboxRequestProtoMsg {
   typeUrl: '/agoric.swingset.QueryMailboxRequest';
   value: Uint8Array;
 }
-/** QueryMailboxRequest is the mailbox query. */
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export interface QueryMailboxRequestSDKType {
   peer: Uint8Array;
 }
-/** QueryMailboxResponse is the mailbox response. */
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export interface QueryMailboxResponse {
   value: string;
 }
@@ -75,15 +134,85 @@ export interface QueryMailboxResponseProtoMsg {
   typeUrl: '/agoric.swingset.QueryMailboxResponse';
   value: Uint8Array;
 }
-/** QueryMailboxResponse is the mailbox response. */
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export interface QueryMailboxResponseSDKType {
   value: string;
+}
+/**
+ * QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusRequest
+ */
+export interface QueryChunkedArtifactStatusRequest {
+  chunkedArtifactId: bigint;
+}
+export interface QueryChunkedArtifactStatusRequestProtoMsg {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusRequestSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusRequest
+ */
+export interface QueryChunkedArtifactStatusRequestSDKType {
+  chunked_artifact_id: bigint;
+}
+/**
+ * QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusResponse
+ */
+export interface QueryChunkedArtifactStatusResponse {
+  chunkedArtifactId: bigint;
+  chunkedArtifact?: ChunkedArtifact;
+  /**
+   * Start time in UNIX epoch seconds.
+   */
+  startTimeUnix: bigint;
+  startBlockHeight: bigint;
+}
+export interface QueryChunkedArtifactStatusResponseProtoMsg {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusResponseSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusResponse
+ */
+export interface QueryChunkedArtifactStatusResponseSDKType {
+  chunked_artifact_id: bigint;
+  chunked_artifact?: ChunkedArtifactSDKType;
+  start_time_unix: bigint;
+  start_block_height: bigint;
 }
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/agoric.swingset.QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -137,8 +266,25 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/agoric.swingset.QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -206,8 +352,30 @@ function createBaseQueryEgressRequest(): QueryEgressRequest {
     peer: new Uint8Array(),
   };
 }
+/**
+ * QueryEgressRequest is the request type for the Query/Egress RPC method
+ * @name QueryEgressRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressRequest
+ */
 export const QueryEgressRequest = {
   typeUrl: '/agoric.swingset.QueryEgressRequest' as const,
+  is(o: any): o is QueryEgressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryEgressRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryEgressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEgressRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
   encode(
     message: QueryEgressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -276,8 +444,20 @@ function createBaseQueryEgressResponse(): QueryEgressResponse {
     egress: undefined,
   };
 }
+/**
+ * QueryEgressResponse is the egress response.
+ * @name QueryEgressResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryEgressResponse
+ */
 export const QueryEgressResponse = {
   typeUrl: '/agoric.swingset.QueryEgressResponse' as const,
+  is(o: any): o is QueryEgressResponse {
+    return o && o.$typeUrl === QueryEgressResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryEgressResponseSDKType {
+    return o && o.$typeUrl === QueryEgressResponse.typeUrl;
+  },
   encode(
     message: QueryEgressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -345,8 +525,30 @@ function createBaseQueryMailboxRequest(): QueryMailboxRequest {
     peer: new Uint8Array(),
   };
 }
+/**
+ * QueryMailboxRequest is the mailbox query.
+ * @name QueryMailboxRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxRequest
+ */
 export const QueryMailboxRequest = {
   typeUrl: '/agoric.swingset.QueryMailboxRequest' as const,
+  is(o: any): o is QueryMailboxRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryMailboxRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxRequest.typeUrl ||
+        o.peer instanceof Uint8Array ||
+        typeof o.peer === 'string')
+    );
+  },
   encode(
     message: QueryMailboxRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -415,8 +617,28 @@ function createBaseQueryMailboxResponse(): QueryMailboxResponse {
     value: '',
   };
 }
+/**
+ * QueryMailboxResponse is the mailbox response.
+ * @name QueryMailboxResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryMailboxResponse
+ */
 export const QueryMailboxResponse = {
   typeUrl: '/agoric.swingset.QueryMailboxResponse' as const,
+  is(o: any): o is QueryMailboxResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxResponse.typeUrl ||
+        typeof o.value === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryMailboxResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryMailboxResponse.typeUrl ||
+        typeof o.value === 'string')
+    );
+  },
   encode(
     message: QueryMailboxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -472,6 +694,272 @@ export const QueryMailboxResponse = {
     return {
       typeUrl: '/agoric.swingset.QueryMailboxResponse',
       value: QueryMailboxResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryChunkedArtifactStatusRequest(): QueryChunkedArtifactStatusRequest {
+  return {
+    chunkedArtifactId: BigInt(0),
+  };
+}
+/**
+ * QueryChunkedArtifactStatusRequest is the request type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusRequest
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusRequest
+ */
+export const QueryChunkedArtifactStatusRequest = {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest' as const,
+  is(o: any): o is QueryChunkedArtifactStatusRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryChunkedArtifactStatusRequest.typeUrl ||
+        typeof o.chunkedArtifactId === 'bigint')
+    );
+  },
+  isSDK(o: any): o is QueryChunkedArtifactStatusRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryChunkedArtifactStatusRequest.typeUrl ||
+        typeof o.chunked_artifact_id === 'bigint')
+    );
+  },
+  encode(
+    message: QueryChunkedArtifactStatusRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chunkedArtifactId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.chunkedArtifactId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryChunkedArtifactStatusRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryChunkedArtifactStatusRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.chunkedArtifactId = reader.uint64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryChunkedArtifactStatusRequest {
+    return {
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(
+    message: QueryChunkedArtifactStatusRequest,
+  ): JsonSafe<QueryChunkedArtifactStatusRequest> {
+    const obj: any = {};
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryChunkedArtifactStatusRequest>,
+  ): QueryChunkedArtifactStatusRequest {
+    const message = createBaseQueryChunkedArtifactStatusRequest();
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryChunkedArtifactStatusRequestProtoMsg,
+  ): QueryChunkedArtifactStatusRequest {
+    return QueryChunkedArtifactStatusRequest.decode(message.value);
+  },
+  toProto(message: QueryChunkedArtifactStatusRequest): Uint8Array {
+    return QueryChunkedArtifactStatusRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryChunkedArtifactStatusRequest,
+  ): QueryChunkedArtifactStatusRequestProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusRequest',
+      value: QueryChunkedArtifactStatusRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryChunkedArtifactStatusResponse(): QueryChunkedArtifactStatusResponse {
+  return {
+    chunkedArtifactId: BigInt(0),
+    chunkedArtifact: undefined,
+    startTimeUnix: BigInt(0),
+    startBlockHeight: BigInt(0),
+  };
+}
+/**
+ * QueryChunkedArtifactStatusResponse is the response type for the Query/ChunkedArtifact RPC method.
+ * @name QueryChunkedArtifactStatusResponse
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueryChunkedArtifactStatusResponse
+ */
+export const QueryChunkedArtifactStatusResponse = {
+  typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse' as const,
+  is(o: any): o is QueryChunkedArtifactStatusResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryChunkedArtifactStatusResponse.typeUrl ||
+        (typeof o.chunkedArtifactId === 'bigint' &&
+          typeof o.startTimeUnix === 'bigint' &&
+          typeof o.startBlockHeight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is QueryChunkedArtifactStatusResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryChunkedArtifactStatusResponse.typeUrl ||
+        (typeof o.chunked_artifact_id === 'bigint' &&
+          typeof o.start_time_unix === 'bigint' &&
+          typeof o.start_block_height === 'bigint'))
+    );
+  },
+  encode(
+    message: QueryChunkedArtifactStatusResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chunkedArtifactId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.chunkedArtifactId);
+    }
+    if (message.chunkedArtifact !== undefined) {
+      ChunkedArtifact.encode(
+        message.chunkedArtifact,
+        writer.uint32(18).fork(),
+      ).ldelim();
+    }
+    if (message.startTimeUnix !== BigInt(0)) {
+      writer.uint32(24).int64(message.startTimeUnix);
+    }
+    if (message.startBlockHeight !== BigInt(0)) {
+      writer.uint32(32).int64(message.startBlockHeight);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryChunkedArtifactStatusResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryChunkedArtifactStatusResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.chunkedArtifactId = reader.uint64();
+          break;
+        case 2:
+          message.chunkedArtifact = ChunkedArtifact.decode(
+            reader,
+            reader.uint32(),
+          );
+          break;
+        case 3:
+          message.startTimeUnix = reader.int64();
+          break;
+        case 4:
+          message.startBlockHeight = reader.int64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryChunkedArtifactStatusResponse {
+    return {
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
+      chunkedArtifact: isSet(object.chunkedArtifact)
+        ? ChunkedArtifact.fromJSON(object.chunkedArtifact)
+        : undefined,
+      startTimeUnix: isSet(object.startTimeUnix)
+        ? BigInt(object.startTimeUnix.toString())
+        : BigInt(0),
+      startBlockHeight: isSet(object.startBlockHeight)
+        ? BigInt(object.startBlockHeight.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(
+    message: QueryChunkedArtifactStatusResponse,
+  ): JsonSafe<QueryChunkedArtifactStatusResponse> {
+    const obj: any = {};
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    message.chunkedArtifact !== undefined &&
+      (obj.chunkedArtifact = message.chunkedArtifact
+        ? ChunkedArtifact.toJSON(message.chunkedArtifact)
+        : undefined);
+    message.startTimeUnix !== undefined &&
+      (obj.startTimeUnix = (message.startTimeUnix || BigInt(0)).toString());
+    message.startBlockHeight !== undefined &&
+      (obj.startBlockHeight = (
+        message.startBlockHeight || BigInt(0)
+      ).toString());
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryChunkedArtifactStatusResponse>,
+  ): QueryChunkedArtifactStatusResponse {
+    const message = createBaseQueryChunkedArtifactStatusResponse();
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
+    message.chunkedArtifact =
+      object.chunkedArtifact !== undefined && object.chunkedArtifact !== null
+        ? ChunkedArtifact.fromPartial(object.chunkedArtifact)
+        : undefined;
+    message.startTimeUnix =
+      object.startTimeUnix !== undefined && object.startTimeUnix !== null
+        ? BigInt(object.startTimeUnix.toString())
+        : BigInt(0);
+    message.startBlockHeight =
+      object.startBlockHeight !== undefined && object.startBlockHeight !== null
+        ? BigInt(object.startBlockHeight.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryChunkedArtifactStatusResponseProtoMsg,
+  ): QueryChunkedArtifactStatusResponse {
+    return QueryChunkedArtifactStatusResponse.decode(message.value);
+  },
+  toProto(message: QueryChunkedArtifactStatusResponse): Uint8Array {
+    return QueryChunkedArtifactStatusResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryChunkedArtifactStatusResponse,
+  ): QueryChunkedArtifactStatusResponseProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.QueryChunkedArtifactStatusResponse',
+      value: QueryChunkedArtifactStatusResponse.encode(message).finish(),
     };
   },
 };

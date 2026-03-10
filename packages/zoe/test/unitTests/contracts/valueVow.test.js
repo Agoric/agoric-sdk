@@ -4,7 +4,7 @@ import path from 'path';
 
 import { heapVowTools } from '@agoric/vow/vat.js';
 
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E } from '@endo/eventual-send';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { makeZoeForTest, setUpZoeForTest } from '../../../tools/setup-zoe.js';
@@ -24,7 +24,7 @@ const contractFile = `${dirname}/../../../src/contracts/valueVow.contract.js`;
 const test = anyTest;
 
 test.before(async t => {
-  const bundleCache = await unsafeMakeBundleCache('bundles');
+  const bundleCache = await unsafeSharedBundleCache;
   const zoe = makeZoeForTest();
   const installation = await E(zoe).install(
     await bundleCache.load(contractFile),

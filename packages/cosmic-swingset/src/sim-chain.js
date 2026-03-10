@@ -7,7 +7,7 @@ import {
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import { getTelemetryProviders, makeSlogSender } from '@agoric/telemetry';
 

@@ -8,7 +8,7 @@ import { open as tempOpen } from 'temp';
 
 import WebSocket from 'ws';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { Fail, makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';

@@ -19,27 +19,54 @@ import {
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
-/** QueryParamsRequest is request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryParamsRequest
+ */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/stride.records.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params holds all the parameters of this module. */
+  /**
+   * params holds all the parameters of this module.
+   */
   params: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/stride.records.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params: ParamsSDKType;
 }
+/**
+ * @name QueryGetDepositRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetDepositRecordRequest
+ */
 export interface QueryGetDepositRecordRequest {
   id: bigint;
 }
@@ -47,9 +74,19 @@ export interface QueryGetDepositRecordRequestProtoMsg {
   typeUrl: '/stride.records.QueryGetDepositRecordRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetDepositRecordRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetDepositRecordRequest
+ */
 export interface QueryGetDepositRecordRequestSDKType {
   id: bigint;
 }
+/**
+ * @name QueryGetDepositRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetDepositRecordResponse
+ */
 export interface QueryGetDepositRecordResponse {
   depositRecord: DepositRecord;
 }
@@ -57,9 +94,19 @@ export interface QueryGetDepositRecordResponseProtoMsg {
   typeUrl: '/stride.records.QueryGetDepositRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetDepositRecordResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetDepositRecordResponse
+ */
 export interface QueryGetDepositRecordResponseSDKType {
   deposit_record: DepositRecordSDKType;
 }
+/**
+ * @name QueryAllDepositRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllDepositRecordRequest
+ */
 export interface QueryAllDepositRecordRequest {
   pagination?: PageRequest;
 }
@@ -67,9 +114,19 @@ export interface QueryAllDepositRecordRequestProtoMsg {
   typeUrl: '/stride.records.QueryAllDepositRecordRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllDepositRecordRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllDepositRecordRequest
+ */
 export interface QueryAllDepositRecordRequestSDKType {
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryAllDepositRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllDepositRecordResponse
+ */
 export interface QueryAllDepositRecordResponse {
   depositRecord: DepositRecord[];
   pagination?: PageResponse;
@@ -78,10 +135,20 @@ export interface QueryAllDepositRecordResponseProtoMsg {
   typeUrl: '/stride.records.QueryAllDepositRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllDepositRecordResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllDepositRecordResponse
+ */
 export interface QueryAllDepositRecordResponseSDKType {
   deposit_record: DepositRecordSDKType[];
   pagination?: PageResponseSDKType;
 }
+/**
+ * @name QueryDepositRecordByHostRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryDepositRecordByHostRequest
+ */
 export interface QueryDepositRecordByHostRequest {
   hostZoneId: string;
 }
@@ -89,9 +156,19 @@ export interface QueryDepositRecordByHostRequestProtoMsg {
   typeUrl: '/stride.records.QueryDepositRecordByHostRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryDepositRecordByHostRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryDepositRecordByHostRequest
+ */
 export interface QueryDepositRecordByHostRequestSDKType {
   host_zone_id: string;
 }
+/**
+ * @name QueryDepositRecordByHostResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryDepositRecordByHostResponse
+ */
 export interface QueryDepositRecordByHostResponse {
   depositRecord: DepositRecord[];
 }
@@ -99,9 +176,19 @@ export interface QueryDepositRecordByHostResponseProtoMsg {
   typeUrl: '/stride.records.QueryDepositRecordByHostResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryDepositRecordByHostResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryDepositRecordByHostResponse
+ */
 export interface QueryDepositRecordByHostResponseSDKType {
   deposit_record: DepositRecordSDKType[];
 }
+/**
+ * @name QueryGetUserRedemptionRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetUserRedemptionRecordRequest
+ */
 export interface QueryGetUserRedemptionRecordRequest {
   id: string;
 }
@@ -109,9 +196,19 @@ export interface QueryGetUserRedemptionRecordRequestProtoMsg {
   typeUrl: '/stride.records.QueryGetUserRedemptionRecordRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetUserRedemptionRecordRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetUserRedemptionRecordRequest
+ */
 export interface QueryGetUserRedemptionRecordRequestSDKType {
   id: string;
 }
+/**
+ * @name QueryGetUserRedemptionRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetUserRedemptionRecordResponse
+ */
 export interface QueryGetUserRedemptionRecordResponse {
   userRedemptionRecord: UserRedemptionRecord;
 }
@@ -119,9 +216,19 @@ export interface QueryGetUserRedemptionRecordResponseProtoMsg {
   typeUrl: '/stride.records.QueryGetUserRedemptionRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetUserRedemptionRecordResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetUserRedemptionRecordResponse
+ */
 export interface QueryGetUserRedemptionRecordResponseSDKType {
   user_redemption_record: UserRedemptionRecordSDKType;
 }
+/**
+ * @name QueryAllUserRedemptionRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordRequest
+ */
 export interface QueryAllUserRedemptionRecordRequest {
   pagination?: PageRequest;
 }
@@ -129,9 +236,19 @@ export interface QueryAllUserRedemptionRecordRequestProtoMsg {
   typeUrl: '/stride.records.QueryAllUserRedemptionRecordRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllUserRedemptionRecordRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordRequest
+ */
 export interface QueryAllUserRedemptionRecordRequestSDKType {
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryAllUserRedemptionRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordResponse
+ */
 export interface QueryAllUserRedemptionRecordResponse {
   userRedemptionRecord: UserRedemptionRecord[];
   pagination?: PageResponse;
@@ -140,11 +257,21 @@ export interface QueryAllUserRedemptionRecordResponseProtoMsg {
   typeUrl: '/stride.records.QueryAllUserRedemptionRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllUserRedemptionRecordResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordResponse
+ */
 export interface QueryAllUserRedemptionRecordResponseSDKType {
   user_redemption_record: UserRedemptionRecordSDKType[];
   pagination?: PageResponseSDKType;
 }
-/** Query UserRedemptionRecords by chainId / userId pair */
+/**
+ * Query UserRedemptionRecords by chainId / userId pair
+ * @name QueryAllUserRedemptionRecordForUserRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordForUserRequest
+ */
 export interface QueryAllUserRedemptionRecordForUserRequest {
   chainId: string;
   day: bigint;
@@ -156,7 +283,12 @@ export interface QueryAllUserRedemptionRecordForUserRequestProtoMsg {
   typeUrl: '/stride.records.QueryAllUserRedemptionRecordForUserRequest';
   value: Uint8Array;
 }
-/** Query UserRedemptionRecords by chainId / userId pair */
+/**
+ * Query UserRedemptionRecords by chainId / userId pair
+ * @name QueryAllUserRedemptionRecordForUserRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordForUserRequest
+ */
 export interface QueryAllUserRedemptionRecordForUserRequestSDKType {
   chain_id: string;
   day: bigint;
@@ -164,6 +296,11 @@ export interface QueryAllUserRedemptionRecordForUserRequestSDKType {
   limit: bigint;
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryAllUserRedemptionRecordForUserResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordForUserResponse
+ */
 export interface QueryAllUserRedemptionRecordForUserResponse {
   userRedemptionRecord: UserRedemptionRecord[];
   pagination?: PageResponse;
@@ -172,10 +309,20 @@ export interface QueryAllUserRedemptionRecordForUserResponseProtoMsg {
   typeUrl: '/stride.records.QueryAllUserRedemptionRecordForUserResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllUserRedemptionRecordForUserResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordForUserResponse
+ */
 export interface QueryAllUserRedemptionRecordForUserResponseSDKType {
   user_redemption_record: UserRedemptionRecordSDKType[];
   pagination?: PageResponseSDKType;
 }
+/**
+ * @name QueryGetEpochUnbondingRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetEpochUnbondingRecordRequest
+ */
 export interface QueryGetEpochUnbondingRecordRequest {
   epochNumber: bigint;
 }
@@ -183,9 +330,19 @@ export interface QueryGetEpochUnbondingRecordRequestProtoMsg {
   typeUrl: '/stride.records.QueryGetEpochUnbondingRecordRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetEpochUnbondingRecordRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetEpochUnbondingRecordRequest
+ */
 export interface QueryGetEpochUnbondingRecordRequestSDKType {
   epoch_number: bigint;
 }
+/**
+ * @name QueryGetEpochUnbondingRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetEpochUnbondingRecordResponse
+ */
 export interface QueryGetEpochUnbondingRecordResponse {
   epochUnbondingRecord: EpochUnbondingRecord;
 }
@@ -193,9 +350,19 @@ export interface QueryGetEpochUnbondingRecordResponseProtoMsg {
   typeUrl: '/stride.records.QueryGetEpochUnbondingRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryGetEpochUnbondingRecordResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetEpochUnbondingRecordResponse
+ */
 export interface QueryGetEpochUnbondingRecordResponseSDKType {
   epoch_unbonding_record: EpochUnbondingRecordSDKType;
 }
+/**
+ * @name QueryAllEpochUnbondingRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllEpochUnbondingRecordRequest
+ */
 export interface QueryAllEpochUnbondingRecordRequest {
   pagination?: PageRequest;
 }
@@ -203,9 +370,19 @@ export interface QueryAllEpochUnbondingRecordRequestProtoMsg {
   typeUrl: '/stride.records.QueryAllEpochUnbondingRecordRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllEpochUnbondingRecordRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllEpochUnbondingRecordRequest
+ */
 export interface QueryAllEpochUnbondingRecordRequestSDKType {
   pagination?: PageRequestSDKType;
 }
+/**
+ * @name QueryAllEpochUnbondingRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllEpochUnbondingRecordResponse
+ */
 export interface QueryAllEpochUnbondingRecordResponse {
   epochUnbondingRecord: EpochUnbondingRecord[];
   pagination?: PageResponse;
@@ -214,10 +391,20 @@ export interface QueryAllEpochUnbondingRecordResponseProtoMsg {
   typeUrl: '/stride.records.QueryAllEpochUnbondingRecordResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryAllEpochUnbondingRecordResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllEpochUnbondingRecordResponse
+ */
 export interface QueryAllEpochUnbondingRecordResponseSDKType {
   epoch_unbonding_record: EpochUnbondingRecordSDKType[];
   pagination?: PageResponseSDKType;
 }
+/**
+ * @name QueryLSMDepositRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositRequest
+ */
 export interface QueryLSMDepositRequest {
   chainId: string;
   denom: string;
@@ -226,10 +413,20 @@ export interface QueryLSMDepositRequestProtoMsg {
   typeUrl: '/stride.records.QueryLSMDepositRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryLSMDepositRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositRequest
+ */
 export interface QueryLSMDepositRequestSDKType {
   chain_id: string;
   denom: string;
 }
+/**
+ * @name QueryLSMDepositResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositResponse
+ */
 export interface QueryLSMDepositResponse {
   deposit: LSMTokenDeposit;
 }
@@ -237,9 +434,19 @@ export interface QueryLSMDepositResponseProtoMsg {
   typeUrl: '/stride.records.QueryLSMDepositResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryLSMDepositResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositResponse
+ */
 export interface QueryLSMDepositResponseSDKType {
   deposit: LSMTokenDepositSDKType;
 }
+/**
+ * @name QueryLSMDepositsRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositsRequest
+ */
 export interface QueryLSMDepositsRequest {
   chainId: string;
   validatorAddress: string;
@@ -249,11 +456,21 @@ export interface QueryLSMDepositsRequestProtoMsg {
   typeUrl: '/stride.records.QueryLSMDepositsRequest';
   value: Uint8Array;
 }
+/**
+ * @name QueryLSMDepositsRequestSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositsRequest
+ */
 export interface QueryLSMDepositsRequestSDKType {
   chain_id: string;
   validator_address: string;
   status: string;
 }
+/**
+ * @name QueryLSMDepositsResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositsResponse
+ */
 export interface QueryLSMDepositsResponse {
   deposits: LSMTokenDeposit[];
 }
@@ -261,14 +478,31 @@ export interface QueryLSMDepositsResponseProtoMsg {
   typeUrl: '/stride.records.QueryLSMDepositsResponse';
   value: Uint8Array;
 }
+/**
+ * @name QueryLSMDepositsResponseSDKType
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositsResponse
+ */
 export interface QueryLSMDepositsResponseSDKType {
   deposits: LSMTokenDepositSDKType[];
 }
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/stride.records.QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -322,8 +556,25 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * QueryParamsResponse is response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/stride.records.QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return (
+      o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
+    );
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryParamsResponse.typeUrl || Params.isSDK(o.params))
+    );
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -391,8 +642,27 @@ function createBaseQueryGetDepositRecordRequest(): QueryGetDepositRecordRequest 
     id: BigInt(0),
   };
 }
+/**
+ * @name QueryGetDepositRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetDepositRecordRequest
+ */
 export const QueryGetDepositRecordRequest = {
   typeUrl: '/stride.records.QueryGetDepositRecordRequest' as const,
+  is(o: any): o is QueryGetDepositRecordRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetDepositRecordRequest.typeUrl ||
+        typeof o.id === 'bigint')
+    );
+  },
+  isSDK(o: any): o is QueryGetDepositRecordRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetDepositRecordRequest.typeUrl ||
+        typeof o.id === 'bigint')
+    );
+  },
   encode(
     message: QueryGetDepositRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -467,8 +737,27 @@ function createBaseQueryGetDepositRecordResponse(): QueryGetDepositRecordRespons
     depositRecord: DepositRecord.fromPartial({}),
   };
 }
+/**
+ * @name QueryGetDepositRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetDepositRecordResponse
+ */
 export const QueryGetDepositRecordResponse = {
   typeUrl: '/stride.records.QueryGetDepositRecordResponse' as const,
+  is(o: any): o is QueryGetDepositRecordResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetDepositRecordResponse.typeUrl ||
+        DepositRecord.is(o.depositRecord))
+    );
+  },
+  isSDK(o: any): o is QueryGetDepositRecordResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetDepositRecordResponse.typeUrl ||
+        DepositRecord.isSDK(o.deposit_record))
+    );
+  },
   encode(
     message: QueryGetDepositRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -551,8 +840,19 @@ function createBaseQueryAllDepositRecordRequest(): QueryAllDepositRecordRequest 
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllDepositRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllDepositRecordRequest
+ */
 export const QueryAllDepositRecordRequest = {
   typeUrl: '/stride.records.QueryAllDepositRecordRequest' as const,
+  is(o: any): o is QueryAllDepositRecordRequest {
+    return o && o.$typeUrl === QueryAllDepositRecordRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllDepositRecordRequestSDKType {
+    return o && o.$typeUrl === QueryAllDepositRecordRequest.typeUrl;
+  },
   encode(
     message: QueryAllDepositRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -633,8 +933,30 @@ function createBaseQueryAllDepositRecordResponse(): QueryAllDepositRecordRespons
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllDepositRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllDepositRecordResponse
+ */
 export const QueryAllDepositRecordResponse = {
   typeUrl: '/stride.records.QueryAllDepositRecordResponse' as const,
+  is(o: any): o is QueryAllDepositRecordResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllDepositRecordResponse.typeUrl ||
+        (Array.isArray(o.depositRecord) &&
+          (!o.depositRecord.length || DepositRecord.is(o.depositRecord[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllDepositRecordResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllDepositRecordResponse.typeUrl ||
+        (Array.isArray(o.deposit_record) &&
+          (!o.deposit_record.length ||
+            DepositRecord.isSDK(o.deposit_record[0]))))
+    );
+  },
   encode(
     message: QueryAllDepositRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -737,8 +1059,27 @@ function createBaseQueryDepositRecordByHostRequest(): QueryDepositRecordByHostRe
     hostZoneId: '',
   };
 }
+/**
+ * @name QueryDepositRecordByHostRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryDepositRecordByHostRequest
+ */
 export const QueryDepositRecordByHostRequest = {
   typeUrl: '/stride.records.QueryDepositRecordByHostRequest' as const,
+  is(o: any): o is QueryDepositRecordByHostRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDepositRecordByHostRequest.typeUrl ||
+        typeof o.hostZoneId === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDepositRecordByHostRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDepositRecordByHostRequest.typeUrl ||
+        typeof o.host_zone_id === 'string')
+    );
+  },
   encode(
     message: QueryDepositRecordByHostRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -810,8 +1151,30 @@ function createBaseQueryDepositRecordByHostResponse(): QueryDepositRecordByHostR
     depositRecord: [],
   };
 }
+/**
+ * @name QueryDepositRecordByHostResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryDepositRecordByHostResponse
+ */
 export const QueryDepositRecordByHostResponse = {
   typeUrl: '/stride.records.QueryDepositRecordByHostResponse' as const,
+  is(o: any): o is QueryDepositRecordByHostResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDepositRecordByHostResponse.typeUrl ||
+        (Array.isArray(o.depositRecord) &&
+          (!o.depositRecord.length || DepositRecord.is(o.depositRecord[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryDepositRecordByHostResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDepositRecordByHostResponse.typeUrl ||
+        (Array.isArray(o.deposit_record) &&
+          (!o.deposit_record.length ||
+            DepositRecord.isSDK(o.deposit_record[0]))))
+    );
+  },
   encode(
     message: QueryDepositRecordByHostResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -894,8 +1257,27 @@ function createBaseQueryGetUserRedemptionRecordRequest(): QueryGetUserRedemption
     id: '',
   };
 }
+/**
+ * @name QueryGetUserRedemptionRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetUserRedemptionRecordRequest
+ */
 export const QueryGetUserRedemptionRecordRequest = {
   typeUrl: '/stride.records.QueryGetUserRedemptionRecordRequest' as const,
+  is(o: any): o is QueryGetUserRedemptionRecordRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUserRedemptionRecordRequest.typeUrl ||
+        typeof o.id === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryGetUserRedemptionRecordRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUserRedemptionRecordRequest.typeUrl ||
+        typeof o.id === 'string')
+    );
+  },
   encode(
     message: QueryGetUserRedemptionRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -967,8 +1349,27 @@ function createBaseQueryGetUserRedemptionRecordResponse(): QueryGetUserRedemptio
     userRedemptionRecord: UserRedemptionRecord.fromPartial({}),
   };
 }
+/**
+ * @name QueryGetUserRedemptionRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetUserRedemptionRecordResponse
+ */
 export const QueryGetUserRedemptionRecordResponse = {
   typeUrl: '/stride.records.QueryGetUserRedemptionRecordResponse' as const,
+  is(o: any): o is QueryGetUserRedemptionRecordResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUserRedemptionRecordResponse.typeUrl ||
+        UserRedemptionRecord.is(o.userRedemptionRecord))
+    );
+  },
+  isSDK(o: any): o is QueryGetUserRedemptionRecordResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetUserRedemptionRecordResponse.typeUrl ||
+        UserRedemptionRecord.isSDK(o.user_redemption_record))
+    );
+  },
   encode(
     message: QueryGetUserRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1055,8 +1456,19 @@ function createBaseQueryAllUserRedemptionRecordRequest(): QueryAllUserRedemption
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllUserRedemptionRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordRequest
+ */
 export const QueryAllUserRedemptionRecordRequest = {
   typeUrl: '/stride.records.QueryAllUserRedemptionRecordRequest' as const,
+  is(o: any): o is QueryAllUserRedemptionRecordRequest {
+    return o && o.$typeUrl === QueryAllUserRedemptionRecordRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllUserRedemptionRecordRequestSDKType {
+    return o && o.$typeUrl === QueryAllUserRedemptionRecordRequest.typeUrl;
+  },
   encode(
     message: QueryAllUserRedemptionRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1137,8 +1549,31 @@ function createBaseQueryAllUserRedemptionRecordResponse(): QueryAllUserRedemptio
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllUserRedemptionRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordResponse
+ */
 export const QueryAllUserRedemptionRecordResponse = {
   typeUrl: '/stride.records.QueryAllUserRedemptionRecordResponse' as const,
+  is(o: any): o is QueryAllUserRedemptionRecordResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUserRedemptionRecordResponse.typeUrl ||
+        (Array.isArray(o.userRedemptionRecord) &&
+          (!o.userRedemptionRecord.length ||
+            UserRedemptionRecord.is(o.userRedemptionRecord[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllUserRedemptionRecordResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUserRedemptionRecordResponse.typeUrl ||
+        (Array.isArray(o.user_redemption_record) &&
+          (!o.user_redemption_record.length ||
+            UserRedemptionRecord.isSDK(o.user_redemption_record[0]))))
+    );
+  },
   encode(
     message: QueryAllUserRedemptionRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1249,9 +1684,35 @@ function createBaseQueryAllUserRedemptionRecordForUserRequest(): QueryAllUserRed
     pagination: undefined,
   };
 }
+/**
+ * Query UserRedemptionRecords by chainId / userId pair
+ * @name QueryAllUserRedemptionRecordForUserRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordForUserRequest
+ */
 export const QueryAllUserRedemptionRecordForUserRequest = {
   typeUrl:
     '/stride.records.QueryAllUserRedemptionRecordForUserRequest' as const,
+  is(o: any): o is QueryAllUserRedemptionRecordForUserRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUserRedemptionRecordForUserRequest.typeUrl ||
+        (typeof o.chainId === 'string' &&
+          typeof o.day === 'bigint' &&
+          typeof o.address === 'string' &&
+          typeof o.limit === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is QueryAllUserRedemptionRecordForUserRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUserRedemptionRecordForUserRequest.typeUrl ||
+        (typeof o.chain_id === 'string' &&
+          typeof o.day === 'bigint' &&
+          typeof o.address === 'string' &&
+          typeof o.limit === 'bigint'))
+    );
+  },
   encode(
     message: QueryAllUserRedemptionRecordForUserRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1377,9 +1838,32 @@ function createBaseQueryAllUserRedemptionRecordForUserResponse(): QueryAllUserRe
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllUserRedemptionRecordForUserResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllUserRedemptionRecordForUserResponse
+ */
 export const QueryAllUserRedemptionRecordForUserResponse = {
   typeUrl:
     '/stride.records.QueryAllUserRedemptionRecordForUserResponse' as const,
+  is(o: any): o is QueryAllUserRedemptionRecordForUserResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUserRedemptionRecordForUserResponse.typeUrl ||
+        (Array.isArray(o.userRedemptionRecord) &&
+          (!o.userRedemptionRecord.length ||
+            UserRedemptionRecord.is(o.userRedemptionRecord[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllUserRedemptionRecordForUserResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllUserRedemptionRecordForUserResponse.typeUrl ||
+        (Array.isArray(o.user_redemption_record) &&
+          (!o.user_redemption_record.length ||
+            UserRedemptionRecord.isSDK(o.user_redemption_record[0]))))
+    );
+  },
   encode(
     message: QueryAllUserRedemptionRecordForUserResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1487,8 +1971,27 @@ function createBaseQueryGetEpochUnbondingRecordRequest(): QueryGetEpochUnbonding
     epochNumber: BigInt(0),
   };
 }
+/**
+ * @name QueryGetEpochUnbondingRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetEpochUnbondingRecordRequest
+ */
 export const QueryGetEpochUnbondingRecordRequest = {
   typeUrl: '/stride.records.QueryGetEpochUnbondingRecordRequest' as const,
+  is(o: any): o is QueryGetEpochUnbondingRecordRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochUnbondingRecordRequest.typeUrl ||
+        typeof o.epochNumber === 'bigint')
+    );
+  },
+  isSDK(o: any): o is QueryGetEpochUnbondingRecordRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochUnbondingRecordRequest.typeUrl ||
+        typeof o.epoch_number === 'bigint')
+    );
+  },
   encode(
     message: QueryGetEpochUnbondingRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1566,8 +2069,27 @@ function createBaseQueryGetEpochUnbondingRecordResponse(): QueryGetEpochUnbondin
     epochUnbondingRecord: EpochUnbondingRecord.fromPartial({}),
   };
 }
+/**
+ * @name QueryGetEpochUnbondingRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryGetEpochUnbondingRecordResponse
+ */
 export const QueryGetEpochUnbondingRecordResponse = {
   typeUrl: '/stride.records.QueryGetEpochUnbondingRecordResponse' as const,
+  is(o: any): o is QueryGetEpochUnbondingRecordResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochUnbondingRecordResponse.typeUrl ||
+        EpochUnbondingRecord.is(o.epochUnbondingRecord))
+    );
+  },
+  isSDK(o: any): o is QueryGetEpochUnbondingRecordResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryGetEpochUnbondingRecordResponse.typeUrl ||
+        EpochUnbondingRecord.isSDK(o.epoch_unbonding_record))
+    );
+  },
   encode(
     message: QueryGetEpochUnbondingRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1654,8 +2176,19 @@ function createBaseQueryAllEpochUnbondingRecordRequest(): QueryAllEpochUnbonding
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllEpochUnbondingRecordRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllEpochUnbondingRecordRequest
+ */
 export const QueryAllEpochUnbondingRecordRequest = {
   typeUrl: '/stride.records.QueryAllEpochUnbondingRecordRequest' as const,
+  is(o: any): o is QueryAllEpochUnbondingRecordRequest {
+    return o && o.$typeUrl === QueryAllEpochUnbondingRecordRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryAllEpochUnbondingRecordRequestSDKType {
+    return o && o.$typeUrl === QueryAllEpochUnbondingRecordRequest.typeUrl;
+  },
   encode(
     message: QueryAllEpochUnbondingRecordRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1736,8 +2269,31 @@ function createBaseQueryAllEpochUnbondingRecordResponse(): QueryAllEpochUnbondin
     pagination: undefined,
   };
 }
+/**
+ * @name QueryAllEpochUnbondingRecordResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryAllEpochUnbondingRecordResponse
+ */
 export const QueryAllEpochUnbondingRecordResponse = {
   typeUrl: '/stride.records.QueryAllEpochUnbondingRecordResponse' as const,
+  is(o: any): o is QueryAllEpochUnbondingRecordResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllEpochUnbondingRecordResponse.typeUrl ||
+        (Array.isArray(o.epochUnbondingRecord) &&
+          (!o.epochUnbondingRecord.length ||
+            EpochUnbondingRecord.is(o.epochUnbondingRecord[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryAllEpochUnbondingRecordResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryAllEpochUnbondingRecordResponse.typeUrl ||
+        (Array.isArray(o.epoch_unbonding_record) &&
+          (!o.epoch_unbonding_record.length ||
+            EpochUnbondingRecord.isSDK(o.epoch_unbonding_record[0]))))
+    );
+  },
   encode(
     message: QueryAllEpochUnbondingRecordResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1845,8 +2401,27 @@ function createBaseQueryLSMDepositRequest(): QueryLSMDepositRequest {
     denom: '',
   };
 }
+/**
+ * @name QueryLSMDepositRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositRequest
+ */
 export const QueryLSMDepositRequest = {
   typeUrl: '/stride.records.QueryLSMDepositRequest' as const,
+  is(o: any): o is QueryLSMDepositRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryLSMDepositRequest.typeUrl ||
+        (typeof o.chainId === 'string' && typeof o.denom === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryLSMDepositRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryLSMDepositRequest.typeUrl ||
+        (typeof o.chain_id === 'string' && typeof o.denom === 'string'))
+    );
+  },
   encode(
     message: QueryLSMDepositRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1921,8 +2496,27 @@ function createBaseQueryLSMDepositResponse(): QueryLSMDepositResponse {
     deposit: LSMTokenDeposit.fromPartial({}),
   };
 }
+/**
+ * @name QueryLSMDepositResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositResponse
+ */
 export const QueryLSMDepositResponse = {
   typeUrl: '/stride.records.QueryLSMDepositResponse' as const,
+  is(o: any): o is QueryLSMDepositResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryLSMDepositResponse.typeUrl ||
+        LSMTokenDeposit.is(o.deposit))
+    );
+  },
+  isSDK(o: any): o is QueryLSMDepositResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryLSMDepositResponse.typeUrl ||
+        LSMTokenDeposit.isSDK(o.deposit))
+    );
+  },
   encode(
     message: QueryLSMDepositResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2005,8 +2599,31 @@ function createBaseQueryLSMDepositsRequest(): QueryLSMDepositsRequest {
     status: '',
   };
 }
+/**
+ * @name QueryLSMDepositsRequest
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositsRequest
+ */
 export const QueryLSMDepositsRequest = {
   typeUrl: '/stride.records.QueryLSMDepositsRequest' as const,
+  is(o: any): o is QueryLSMDepositsRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryLSMDepositsRequest.typeUrl ||
+        (typeof o.chainId === 'string' &&
+          typeof o.validatorAddress === 'string' &&
+          typeof o.status === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryLSMDepositsRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryLSMDepositsRequest.typeUrl ||
+        (typeof o.chain_id === 'string' &&
+          typeof o.validator_address === 'string' &&
+          typeof o.status === 'string'))
+    );
+  },
   encode(
     message: QueryLSMDepositsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2097,8 +2714,29 @@ function createBaseQueryLSMDepositsResponse(): QueryLSMDepositsResponse {
     deposits: [],
   };
 }
+/**
+ * @name QueryLSMDepositsResponse
+ * @package stride.records
+ * @see proto type: stride.records.QueryLSMDepositsResponse
+ */
 export const QueryLSMDepositsResponse = {
   typeUrl: '/stride.records.QueryLSMDepositsResponse' as const,
+  is(o: any): o is QueryLSMDepositsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryLSMDepositsResponse.typeUrl ||
+        (Array.isArray(o.deposits) &&
+          (!o.deposits.length || LSMTokenDeposit.is(o.deposits[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryLSMDepositsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryLSMDepositsResponse.typeUrl ||
+        (Array.isArray(o.deposits) &&
+          (!o.deposits.length || LSMTokenDeposit.isSDK(o.deposits[0]))))
+    );
+  },
   encode(
     message: QueryLSMDepositsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

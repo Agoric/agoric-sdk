@@ -97,13 +97,13 @@ async function testCranks(t, mode) {
     const seqnum = JSON.parse(kernelStorage.kvStore.get(ckey));
     t.deepEqual(seqnum, kser(5));
   } else if (mode === 'wallclock') {
-    const startMS = Date.now();
+    const startMS = performance.now();
     // On an idle system, this does about 120 cranks per second when run
     // alone. When the rest of test-run-policy.js is running in parallel, it
     // does about 100 cps.
     more = await c.run(wallClockWaiter(1.0));
     t.truthy(more, 'vat was supposed to run forever');
-    const elapsedMS = Date.now() - startMS;
+    const elapsedMS = performance.now() - startMS;
     const elapsed = elapsedMS / 1000;
     // console.log(`elapsed`, elapsed, more);
     t.true(elapsed < 200.0, `time distort: ${elapsed} >= 200.0s`);

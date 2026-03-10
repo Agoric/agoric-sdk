@@ -2,18 +2,21 @@
 
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import bundleSource from '@endo/bundle-source';
-import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
 import path from 'path';
+import { zoeSourceSpecRegistry } from '@agoric/zoe/source-spec-registry.js';
 
 const CONTRACT_FILES = ['committee', 'binaryVoteCounter'];
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 test.before(async t => {
-  const start = Date.now();
+  const start = performance.now();
   const kernelBundles = await buildKernelBundles();
-  const step2 = Date.now();
+  const bundleCache = await unsafeSharedBundleCache;
+  const { zcfBundle } = await bundleCache.loadRegistry(zoeSourceSpecRegistry);
+  const step2 = performance.now();
   const contractBundles = {};
   await Promise.all(
     CONTRACT_FILES.map(async settings => {
@@ -24,7 +27,7 @@ test.before(async t => {
       contractBundles[bundleName] = bundle;
     }),
   );
-  const step3 = Date.now();
+  const step3 = performance.now();
 
   const vats = {};
   await Promise.all(
@@ -46,7 +49,7 @@ test.before(async t => {
   config.bundles = { zcf: { bundle: zcfBundle } };
   config.defaultManagerType = 'xs-worker'; // originally wanted for metering
 
-  const step4 = Date.now();
+  const step4 = performance.now();
   const ktime = `${(step2 - start) / 1000}s kernel`;
   const ctime = `${(step3 - step2) / 1000}s contracts`;
   const vtime = `${(step4 - step3) / 1000}s vats`;

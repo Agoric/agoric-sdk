@@ -4,7 +4,7 @@
 // so let the JS tooling know about it by importing it here.
 import '@agoric/builders';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import bundleSource from '@endo/bundle-source';
 import { assert, Fail, makeError, X } from '@endo/errors';

@@ -5,10 +5,61 @@ import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
+/** Current state of this chunk. */
+export enum ChunkState {
+  /** CHUNK_STATE_UNSPECIFIED - Unknown state. */
+  CHUNK_STATE_UNSPECIFIED = 0,
+  /** CHUNK_STATE_IN_FLIGHT - The chunk is still in-flight. */
+  CHUNK_STATE_IN_FLIGHT = 1,
+  /** CHUNK_STATE_RECEIVED - The chunk has been received. */
+  CHUNK_STATE_RECEIVED = 2,
+  /** CHUNK_STATE_PROCESSED - The chunk has been processed. */
+  CHUNK_STATE_PROCESSED = 3,
+  UNRECOGNIZED = -1,
+}
+export const ChunkStateSDKType = ChunkState;
+export function chunkStateFromJSON(object: any): ChunkState {
+  switch (object) {
+    case 0:
+    case 'CHUNK_STATE_UNSPECIFIED':
+      return ChunkState.CHUNK_STATE_UNSPECIFIED;
+    case 1:
+    case 'CHUNK_STATE_IN_FLIGHT':
+      return ChunkState.CHUNK_STATE_IN_FLIGHT;
+    case 2:
+    case 'CHUNK_STATE_RECEIVED':
+      return ChunkState.CHUNK_STATE_RECEIVED;
+    case 3:
+    case 'CHUNK_STATE_PROCESSED':
+      return ChunkState.CHUNK_STATE_PROCESSED;
+    case -1:
+    case 'UNRECOGNIZED':
+    default:
+      return ChunkState.UNRECOGNIZED;
+  }
+}
+export function chunkStateToJSON(object: ChunkState): string {
+  switch (object) {
+    case ChunkState.CHUNK_STATE_UNSPECIFIED:
+      return 'CHUNK_STATE_UNSPECIFIED';
+    case ChunkState.CHUNK_STATE_IN_FLIGHT:
+      return 'CHUNK_STATE_IN_FLIGHT';
+    case ChunkState.CHUNK_STATE_RECEIVED:
+      return 'CHUNK_STATE_RECEIVED';
+    case ChunkState.CHUNK_STATE_PROCESSED:
+      return 'CHUNK_STATE_PROCESSED';
+    case ChunkState.UNRECOGNIZED:
+    default:
+      return 'UNRECOGNIZED';
+  }
+}
 /**
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
  * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposal
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
  */
 export interface CoreEvalProposal {
   $typeUrl?: '/agoric.swingset.CoreEvalProposal';
@@ -28,6 +79,9 @@ export interface CoreEvalProposalProtoMsg {
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.
  * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposalSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
  */
 export interface CoreEvalProposalSDKType {
   $typeUrl?: '/agoric.swingset.CoreEvalProposal';
@@ -38,6 +92,9 @@ export interface CoreEvalProposalSDKType {
 /**
  * CoreEval defines an individual SwingSet core evaluation, for use in
  * CoreEvalProposal.
+ * @name CoreEval
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
  */
 export interface CoreEval {
   /**
@@ -58,12 +115,20 @@ export interface CoreEvalProtoMsg {
 /**
  * CoreEval defines an individual SwingSet core evaluation, for use in
  * CoreEvalProposal.
+ * @name CoreEvalSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
  */
 export interface CoreEvalSDKType {
   json_permits: string;
   js_code: string;
 }
-/** Params are the swingset configuration/governance parameters. */
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name Params
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export interface Params {
   /**
    * Map from unit name to a value in SwingSet "beans".
@@ -118,12 +183,36 @@ export interface Params {
    * permuting it.
    */
   vatCleanupBudget: UintMapEntry[];
+  /**
+   * The maximum number of blocks that an async installation can use.  -1 is
+   * unlimited.
+   */
+  installationDeadlineBlocks: bigint;
+  /**
+   * The maximum number of seconds that an async installation can use.  -1 is
+   * unlimited.
+   */
+  installationDeadlineSeconds: bigint;
+  /**
+   * The maximum size of a bundle (0 implies default 10000000 bytes). This
+   * limit is exclusive.
+   */
+  bundleUncompressedSizeLimitBytes: bigint;
+  /**
+   * The maximum size of a bundle or artifact chunk (0 implies default 490000 bytes)
+   */
+  chunkSizeLimitBytes: bigint;
 }
 export interface ParamsProtoMsg {
   typeUrl: '/agoric.swingset.Params';
   value: Uint8Array;
 }
-/** Params are the swingset configuration/governance parameters. */
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name ParamsSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export interface ParamsSDKType {
   beans_per_unit: StringBeansSDKType[];
   fee_unit_price: CoinSDKType[];
@@ -131,40 +220,88 @@ export interface ParamsSDKType {
   power_flag_fees: PowerFlagFeeSDKType[];
   queue_max: QueueSizeSDKType[];
   vat_cleanup_budget: UintMapEntrySDKType[];
+  installation_deadline_blocks: bigint;
+  installation_deadline_seconds: bigint;
+  bundle_uncompressed_size_limit_bytes: bigint;
+  chunk_size_limit_bytes: bigint;
 }
-/** The current state of the module. */
+/**
+ * The current state of the module.
+ * @name State
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export interface State {
   /**
    * The allowed number of items to add to queues, as determined by SwingSet.
    * Transactions which attempt to enqueue more should be rejected.
    */
   queueAllowed: QueueSize[];
+  /**
+   * Doubly-linked list in order of ascending start block and time.
+   */
+  firstChunkedArtifactId: bigint;
+  /**
+   * The last chunked artifact id that has not expired nor completed.
+   */
+  lastChunkedArtifactId: bigint;
+  /**
+   * The next monotonically increasing chunked artifact id to allocate.
+   */
+  nextChunkedArtifactId: bigint;
 }
 export interface StateProtoMsg {
   typeUrl: '/agoric.swingset.State';
   value: Uint8Array;
 }
-/** The current state of the module. */
+/**
+ * The current state of the module.
+ * @name StateSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export interface StateSDKType {
   queue_allowed: QueueSizeSDKType[];
+  first_chunked_artifact_id: bigint;
+  last_chunked_artifact_id: bigint;
+  next_chunked_artifact_id: bigint;
 }
-/** Map element of a string key to a Nat bean count. */
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeans
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export interface StringBeans {
-  /** What the beans are for. */
+  /**
+   * What the beans are for.
+   */
   key: string;
-  /** The actual bean value. */
+  /**
+   * The actual bean value.
+   */
   beans: string;
 }
 export interface StringBeansProtoMsg {
   typeUrl: '/agoric.swingset.StringBeans';
   value: Uint8Array;
 }
-/** Map element of a string key to a Nat bean count. */
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeansSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export interface StringBeansSDKType {
   key: string;
   beans: string;
 }
-/** Map a provisioning power flag to its corresponding fee. */
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFee
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export interface PowerFlagFee {
   powerFlag: string;
   fee: Coin[];
@@ -173,7 +310,12 @@ export interface PowerFlagFeeProtoMsg {
   typeUrl: '/agoric.swingset.PowerFlagFee';
   value: Uint8Array;
 }
-/** Map a provisioning power flag to its corresponding fee. */
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFeeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export interface PowerFlagFeeSDKType {
   power_flag: string;
   fee: CoinSDKType[];
@@ -181,11 +323,18 @@ export interface PowerFlagFeeSDKType {
 /**
  * Map element of a string key to a size.
  * TODO: Replace with UintMapEntry?
+ * @name QueueSize
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
  */
 export interface QueueSize {
-  /** What the size is for. */
+  /**
+   * What the size is for.
+   */
   key: string;
-  /** The actual size value. */
+  /**
+   * The actual size value.
+   */
   size: number;
 }
 export interface QueueSizeProtoMsg {
@@ -195,6 +344,9 @@ export interface QueueSizeProtoMsg {
 /**
  * Map element of a string key to a size.
  * TODO: Replace with UintMapEntry?
+ * @name QueueSizeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
  */
 export interface QueueSizeSDKType {
   key: string;
@@ -204,6 +356,9 @@ export interface QueueSizeSDKType {
  * Map element of a string key to an unsigned integer.
  * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
  * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
  */
 export interface UintMapEntry {
   key: string;
@@ -217,23 +372,38 @@ export interface UintMapEntryProtoMsg {
  * Map element of a string key to an unsigned integer.
  * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
  * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntrySDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
  */
 export interface UintMapEntrySDKType {
   key: string;
   value: string;
 }
-/** Egress is the format for a swingset egress. */
+/**
+ * Egress is the format for a swingset egress.
+ * @name Egress
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export interface Egress {
   nickname: string;
   peer: Uint8Array;
-  /** TODO: Remove these power flags as they are deprecated and have no effect. */
+  /**
+   * TODO: Remove these power flags as they are deprecated and have no effect.
+   */
   powerFlags: string[];
 }
 export interface EgressProtoMsg {
   typeUrl: '/agoric.swingset.Egress';
   value: Uint8Array;
 }
-/** Egress is the format for a swingset egress. */
+/**
+ * Egress is the format for a swingset egress.
+ * @name EgressSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export interface EgressSDKType {
   nickname: string;
   peer: Uint8Array;
@@ -244,6 +414,9 @@ export interface EgressSDKType {
  * Artifacts may be stored or transmitted in any order. Most handlers do
  * maintain the artifact order from their original source as an effect of how
  * they handle the artifacts.
+ * @name SwingStoreArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
  */
 export interface SwingStoreArtifact {
   name: string;
@@ -258,10 +431,143 @@ export interface SwingStoreArtifactProtoMsg {
  * Artifacts may be stored or transmitted in any order. Most handlers do
  * maintain the artifact order from their original source as an effect of how
  * they handle the artifacts.
+ * @name SwingStoreArtifactSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
  */
 export interface SwingStoreArtifactSDKType {
   name: string;
   data: Uint8Array;
+}
+/**
+ * ChunkedArtifact is the manifest for an artifact that is submitted across
+ * multiple transactions, in chunks, as when using InstallBundle to submit
+ * chunks.
+ * @name ChunkedArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifact
+ */
+export interface ChunkedArtifact {
+  /**
+   * The SHA-512 hash of the entire artifact's contents.
+   */
+  sha512: string;
+  /**
+   * The size of the final artifact in bytes.
+   */
+  sizeBytes: bigint;
+  /**
+   * Information about the chunks that will be concatenated to form this
+   * artifact.
+   */
+  chunks: ChunkInfo[];
+}
+export interface ChunkedArtifactProtoMsg {
+  typeUrl: '/agoric.swingset.ChunkedArtifact';
+  value: Uint8Array;
+}
+/**
+ * ChunkedArtifact is the manifest for an artifact that is submitted across
+ * multiple transactions, in chunks, as when using InstallBundle to submit
+ * chunks.
+ * @name ChunkedArtifactSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifact
+ */
+export interface ChunkedArtifactSDKType {
+  sha512: string;
+  size_bytes: bigint;
+  chunks: ChunkInfoSDKType[];
+}
+/**
+ * Information about a chunk of an artifact.
+ * @name ChunkInfo
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkInfo
+ */
+export interface ChunkInfo {
+  /**
+   * The SHA-512 hash of the chunk contents.
+   */
+  sha512: string;
+  /**
+   * The chunk size in bytes.
+   */
+  sizeBytes: bigint;
+  /**
+   * The current state of the chunk.
+   */
+  state: ChunkState;
+}
+export interface ChunkInfoProtoMsg {
+  typeUrl: '/agoric.swingset.ChunkInfo';
+  value: Uint8Array;
+}
+/**
+ * Information about a chunk of an artifact.
+ * @name ChunkInfoSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkInfo
+ */
+export interface ChunkInfoSDKType {
+  sha512: string;
+  size_bytes: bigint;
+  state: ChunkState;
+}
+/**
+ * A node in a doubly-linked-list of chunked artifacts, as used for chunked
+ * bundle installation, in order of ascending block time.
+ * This list is not circular and has no sentinel head node; the start and end
+ * are indicated by prev_id/next_id being 0.
+ * The keeper uses this to expediently expire stale incomplete artifacts.
+ * @name ChunkedArtifactNode
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifactNode
+ */
+export interface ChunkedArtifactNode {
+  /**
+   * The id of the pending bundle installation.
+   */
+  chunkedArtifactId: bigint;
+  /**
+   * The ID of the next chunked artifact in the list.
+   * A value of 0 indicates the end of the list.
+   */
+  nextId: bigint;
+  /**
+   * The ID of the previous chunked artifact in the list.
+   * A value of 0 indicates the start of the list.
+   */
+  prevId: bigint;
+  /**
+   * The time at which the pending installation began, in UNIX epoch seconds.
+   */
+  startTimeUnix: bigint;
+  /**
+   * The block at which the pending installation began.
+   */
+  startBlockHeight: bigint;
+}
+export interface ChunkedArtifactNodeProtoMsg {
+  typeUrl: '/agoric.swingset.ChunkedArtifactNode';
+  value: Uint8Array;
+}
+/**
+ * A node in a doubly-linked-list of chunked artifacts, as used for chunked
+ * bundle installation, in order of ascending block time.
+ * This list is not circular and has no sentinel head node; the start and end
+ * are indicated by prev_id/next_id being 0.
+ * The keeper uses this to expediently expire stale incomplete artifacts.
+ * @name ChunkedArtifactNodeSDKType
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifactNode
+ */
+export interface ChunkedArtifactNodeSDKType {
+  chunked_artifact_id: bigint;
+  next_id: bigint;
+  prev_id: bigint;
+  start_time_unix: bigint;
+  start_block_height: bigint;
 }
 function createBaseCoreEvalProposal(): CoreEvalProposal {
   return {
@@ -271,8 +577,37 @@ function createBaseCoreEvalProposal(): CoreEvalProposal {
     evals: [],
   };
 }
+/**
+ * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
+ * core.
+ * See `bridgeCoreEval` in agoric-sdk packages/vats/src/core/chain-behaviors.js.
+ * @name CoreEvalProposal
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEvalProposal
+ */
 export const CoreEvalProposal = {
   typeUrl: '/agoric.swingset.CoreEvalProposal' as const,
+  aminoType: 'swingset/CoreEvalProposal' as const,
+  is(o: any): o is CoreEvalProposal {
+    return (
+      o &&
+      (o.$typeUrl === CoreEvalProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.evals) &&
+          (!o.evals.length || CoreEval.is(o.evals[0]))))
+    );
+  },
+  isSDK(o: any): o is CoreEvalProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CoreEvalProposal.typeUrl ||
+        (typeof o.title === 'string' &&
+          typeof o.description === 'string' &&
+          Array.isArray(o.evals) &&
+          (!o.evals.length || CoreEval.isSDK(o.evals[0]))))
+    );
+  },
   encode(
     message: CoreEvalProposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -359,8 +694,29 @@ function createBaseCoreEval(): CoreEval {
     jsCode: '',
   };
 }
+/**
+ * CoreEval defines an individual SwingSet core evaluation, for use in
+ * CoreEvalProposal.
+ * @name CoreEval
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.CoreEval
+ */
 export const CoreEval = {
   typeUrl: '/agoric.swingset.CoreEval' as const,
+  is(o: any): o is CoreEval {
+    return (
+      o &&
+      (o.$typeUrl === CoreEval.typeUrl ||
+        (typeof o.jsonPermits === 'string' && typeof o.jsCode === 'string'))
+    );
+  },
+  isSDK(o: any): o is CoreEvalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CoreEval.typeUrl ||
+        (typeof o.json_permits === 'string' && typeof o.js_code === 'string'))
+    );
+  },
   encode(
     message: CoreEval,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -434,10 +790,66 @@ function createBaseParams(): Params {
     powerFlagFees: [],
     queueMax: [],
     vatCleanupBudget: [],
+    installationDeadlineBlocks: BigInt(0),
+    installationDeadlineSeconds: BigInt(0),
+    bundleUncompressedSizeLimitBytes: BigInt(0),
+    chunkSizeLimitBytes: BigInt(0),
   };
 }
+/**
+ * Params are the swingset configuration/governance parameters.
+ * @name Params
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Params
+ */
 export const Params = {
   typeUrl: '/agoric.swingset.Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.beansPerUnit) &&
+          (!o.beansPerUnit.length || StringBeans.is(o.beansPerUnit[0])) &&
+          Array.isArray(o.feeUnitPrice) &&
+          (!o.feeUnitPrice.length || Coin.is(o.feeUnitPrice[0])) &&
+          typeof o.bootstrapVatConfig === 'string' &&
+          Array.isArray(o.powerFlagFees) &&
+          (!o.powerFlagFees.length || PowerFlagFee.is(o.powerFlagFees[0])) &&
+          Array.isArray(o.queueMax) &&
+          (!o.queueMax.length || QueueSize.is(o.queueMax[0])) &&
+          Array.isArray(o.vatCleanupBudget) &&
+          (!o.vatCleanupBudget.length ||
+            UintMapEntry.is(o.vatCleanupBudget[0])) &&
+          typeof o.installationDeadlineBlocks === 'bigint' &&
+          typeof o.installationDeadlineSeconds === 'bigint' &&
+          typeof o.bundleUncompressedSizeLimitBytes === 'bigint' &&
+          typeof o.chunkSizeLimitBytes === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.beans_per_unit) &&
+          (!o.beans_per_unit.length ||
+            StringBeans.isSDK(o.beans_per_unit[0])) &&
+          Array.isArray(o.fee_unit_price) &&
+          (!o.fee_unit_price.length || Coin.isSDK(o.fee_unit_price[0])) &&
+          typeof o.bootstrap_vat_config === 'string' &&
+          Array.isArray(o.power_flag_fees) &&
+          (!o.power_flag_fees.length ||
+            PowerFlagFee.isSDK(o.power_flag_fees[0])) &&
+          Array.isArray(o.queue_max) &&
+          (!o.queue_max.length || QueueSize.isSDK(o.queue_max[0])) &&
+          Array.isArray(o.vat_cleanup_budget) &&
+          (!o.vat_cleanup_budget.length ||
+            UintMapEntry.isSDK(o.vat_cleanup_budget[0])) &&
+          typeof o.installation_deadline_blocks === 'bigint' &&
+          typeof o.installation_deadline_seconds === 'bigint' &&
+          typeof o.bundle_uncompressed_size_limit_bytes === 'bigint' &&
+          typeof o.chunk_size_limit_bytes === 'bigint'))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -459,6 +871,18 @@ export const Params = {
     }
     for (const v of message.vatCleanupBudget) {
       UintMapEntry.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    if (message.installationDeadlineBlocks !== BigInt(0)) {
+      writer.uint32(56).int64(message.installationDeadlineBlocks);
+    }
+    if (message.installationDeadlineSeconds !== BigInt(0)) {
+      writer.uint32(64).int64(message.installationDeadlineSeconds);
+    }
+    if (message.bundleUncompressedSizeLimitBytes !== BigInt(0)) {
+      writer.uint32(72).int64(message.bundleUncompressedSizeLimitBytes);
+    }
+    if (message.chunkSizeLimitBytes !== BigInt(0)) {
+      writer.uint32(80).int64(message.chunkSizeLimitBytes);
     }
     return writer;
   },
@@ -494,6 +918,18 @@ export const Params = {
             UintMapEntry.decode(reader, reader.uint32()),
           );
           break;
+        case 7:
+          message.installationDeadlineBlocks = reader.int64();
+          break;
+        case 8:
+          message.installationDeadlineSeconds = reader.int64();
+          break;
+        case 9:
+          message.bundleUncompressedSizeLimitBytes = reader.int64();
+          break;
+        case 10:
+          message.chunkSizeLimitBytes = reader.int64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -521,6 +957,20 @@ export const Params = {
       vatCleanupBudget: Array.isArray(object?.vatCleanupBudget)
         ? object.vatCleanupBudget.map((e: any) => UintMapEntry.fromJSON(e))
         : [],
+      installationDeadlineBlocks: isSet(object.installationDeadlineBlocks)
+        ? BigInt(object.installationDeadlineBlocks.toString())
+        : BigInt(0),
+      installationDeadlineSeconds: isSet(object.installationDeadlineSeconds)
+        ? BigInt(object.installationDeadlineSeconds.toString())
+        : BigInt(0),
+      bundleUncompressedSizeLimitBytes: isSet(
+        object.bundleUncompressedSizeLimitBytes,
+      )
+        ? BigInt(object.bundleUncompressedSizeLimitBytes.toString())
+        : BigInt(0),
+      chunkSizeLimitBytes: isSet(object.chunkSizeLimitBytes)
+        ? BigInt(object.chunkSizeLimitBytes.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
@@ -562,6 +1012,22 @@ export const Params = {
     } else {
       obj.vatCleanupBudget = [];
     }
+    message.installationDeadlineBlocks !== undefined &&
+      (obj.installationDeadlineBlocks = (
+        message.installationDeadlineBlocks || BigInt(0)
+      ).toString());
+    message.installationDeadlineSeconds !== undefined &&
+      (obj.installationDeadlineSeconds = (
+        message.installationDeadlineSeconds || BigInt(0)
+      ).toString());
+    message.bundleUncompressedSizeLimitBytes !== undefined &&
+      (obj.bundleUncompressedSizeLimitBytes = (
+        message.bundleUncompressedSizeLimitBytes || BigInt(0)
+      ).toString());
+    message.chunkSizeLimitBytes !== undefined &&
+      (obj.chunkSizeLimitBytes = (
+        message.chunkSizeLimitBytes || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
@@ -577,6 +1043,26 @@ export const Params = {
       object.queueMax?.map(e => QueueSize.fromPartial(e)) || [];
     message.vatCleanupBudget =
       object.vatCleanupBudget?.map(e => UintMapEntry.fromPartial(e)) || [];
+    message.installationDeadlineBlocks =
+      object.installationDeadlineBlocks !== undefined &&
+      object.installationDeadlineBlocks !== null
+        ? BigInt(object.installationDeadlineBlocks.toString())
+        : BigInt(0);
+    message.installationDeadlineSeconds =
+      object.installationDeadlineSeconds !== undefined &&
+      object.installationDeadlineSeconds !== null
+        ? BigInt(object.installationDeadlineSeconds.toString())
+        : BigInt(0);
+    message.bundleUncompressedSizeLimitBytes =
+      object.bundleUncompressedSizeLimitBytes !== undefined &&
+      object.bundleUncompressedSizeLimitBytes !== null
+        ? BigInt(object.bundleUncompressedSizeLimitBytes.toString())
+        : BigInt(0);
+    message.chunkSizeLimitBytes =
+      object.chunkSizeLimitBytes !== undefined &&
+      object.chunkSizeLimitBytes !== null
+        ? BigInt(object.chunkSizeLimitBytes.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
@@ -595,16 +1081,56 @@ export const Params = {
 function createBaseState(): State {
   return {
     queueAllowed: [],
+    firstChunkedArtifactId: BigInt(0),
+    lastChunkedArtifactId: BigInt(0),
+    nextChunkedArtifactId: BigInt(0),
   };
 }
+/**
+ * The current state of the module.
+ * @name State
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.State
+ */
 export const State = {
   typeUrl: '/agoric.swingset.State' as const,
+  is(o: any): o is State {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.queueAllowed) &&
+          (!o.queueAllowed.length || QueueSize.is(o.queueAllowed[0])) &&
+          typeof o.firstChunkedArtifactId === 'bigint' &&
+          typeof o.lastChunkedArtifactId === 'bigint' &&
+          typeof o.nextChunkedArtifactId === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is StateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.queue_allowed) &&
+          (!o.queue_allowed.length || QueueSize.isSDK(o.queue_allowed[0])) &&
+          typeof o.first_chunked_artifact_id === 'bigint' &&
+          typeof o.last_chunked_artifact_id === 'bigint' &&
+          typeof o.next_chunked_artifact_id === 'bigint'))
+    );
+  },
   encode(
     message: State,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
     for (const v of message.queueAllowed) {
       QueueSize.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.firstChunkedArtifactId !== BigInt(0)) {
+      writer.uint32(16).uint64(message.firstChunkedArtifactId);
+    }
+    if (message.lastChunkedArtifactId !== BigInt(0)) {
+      writer.uint32(24).uint64(message.lastChunkedArtifactId);
+    }
+    if (message.nextChunkedArtifactId !== BigInt(0)) {
+      writer.uint32(32).uint64(message.nextChunkedArtifactId);
     }
     return writer;
   },
@@ -619,6 +1145,15 @@ export const State = {
         case 1:
           message.queueAllowed.push(QueueSize.decode(reader, reader.uint32()));
           break;
+        case 2:
+          message.firstChunkedArtifactId = reader.uint64();
+          break;
+        case 3:
+          message.lastChunkedArtifactId = reader.uint64();
+          break;
+        case 4:
+          message.nextChunkedArtifactId = reader.uint64();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -631,6 +1166,15 @@ export const State = {
       queueAllowed: Array.isArray(object?.queueAllowed)
         ? object.queueAllowed.map((e: any) => QueueSize.fromJSON(e))
         : [],
+      firstChunkedArtifactId: isSet(object.firstChunkedArtifactId)
+        ? BigInt(object.firstChunkedArtifactId.toString())
+        : BigInt(0),
+      lastChunkedArtifactId: isSet(object.lastChunkedArtifactId)
+        ? BigInt(object.lastChunkedArtifactId.toString())
+        : BigInt(0),
+      nextChunkedArtifactId: isSet(object.nextChunkedArtifactId)
+        ? BigInt(object.nextChunkedArtifactId.toString())
+        : BigInt(0),
     };
   },
   toJSON(message: State): JsonSafe<State> {
@@ -642,12 +1186,39 @@ export const State = {
     } else {
       obj.queueAllowed = [];
     }
+    message.firstChunkedArtifactId !== undefined &&
+      (obj.firstChunkedArtifactId = (
+        message.firstChunkedArtifactId || BigInt(0)
+      ).toString());
+    message.lastChunkedArtifactId !== undefined &&
+      (obj.lastChunkedArtifactId = (
+        message.lastChunkedArtifactId || BigInt(0)
+      ).toString());
+    message.nextChunkedArtifactId !== undefined &&
+      (obj.nextChunkedArtifactId = (
+        message.nextChunkedArtifactId || BigInt(0)
+      ).toString());
     return obj;
   },
   fromPartial(object: Partial<State>): State {
     const message = createBaseState();
     message.queueAllowed =
       object.queueAllowed?.map(e => QueueSize.fromPartial(e)) || [];
+    message.firstChunkedArtifactId =
+      object.firstChunkedArtifactId !== undefined &&
+      object.firstChunkedArtifactId !== null
+        ? BigInt(object.firstChunkedArtifactId.toString())
+        : BigInt(0);
+    message.lastChunkedArtifactId =
+      object.lastChunkedArtifactId !== undefined &&
+      object.lastChunkedArtifactId !== null
+        ? BigInt(object.lastChunkedArtifactId.toString())
+        : BigInt(0);
+    message.nextChunkedArtifactId =
+      object.nextChunkedArtifactId !== undefined &&
+      object.nextChunkedArtifactId !== null
+        ? BigInt(object.nextChunkedArtifactId.toString())
+        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: StateProtoMsg): State {
@@ -669,8 +1240,28 @@ function createBaseStringBeans(): StringBeans {
     beans: '',
   };
 }
+/**
+ * Map element of a string key to a Nat bean count.
+ * @name StringBeans
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.StringBeans
+ */
 export const StringBeans = {
   typeUrl: '/agoric.swingset.StringBeans' as const,
+  is(o: any): o is StringBeans {
+    return (
+      o &&
+      (o.$typeUrl === StringBeans.typeUrl ||
+        (typeof o.key === 'string' && typeof o.beans === 'string'))
+    );
+  },
+  isSDK(o: any): o is StringBeansSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StringBeans.typeUrl ||
+        (typeof o.key === 'string' && typeof o.beans === 'string'))
+    );
+  },
   encode(
     message: StringBeans,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -741,8 +1332,32 @@ function createBasePowerFlagFee(): PowerFlagFee {
     fee: [],
   };
 }
+/**
+ * Map a provisioning power flag to its corresponding fee.
+ * @name PowerFlagFee
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.PowerFlagFee
+ */
 export const PowerFlagFee = {
   typeUrl: '/agoric.swingset.PowerFlagFee' as const,
+  is(o: any): o is PowerFlagFee {
+    return (
+      o &&
+      (o.$typeUrl === PowerFlagFee.typeUrl ||
+        (typeof o.powerFlag === 'string' &&
+          Array.isArray(o.fee) &&
+          (!o.fee.length || Coin.is(o.fee[0]))))
+    );
+  },
+  isSDK(o: any): o is PowerFlagFeeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PowerFlagFee.typeUrl ||
+        (typeof o.power_flag === 'string' &&
+          Array.isArray(o.fee) &&
+          (!o.fee.length || Coin.isSDK(o.fee[0]))))
+    );
+  },
   encode(
     message: PowerFlagFee,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -819,8 +1434,29 @@ function createBaseQueueSize(): QueueSize {
     size: 0,
   };
 }
+/**
+ * Map element of a string key to a size.
+ * TODO: Replace with UintMapEntry?
+ * @name QueueSize
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.QueueSize
+ */
 export const QueueSize = {
   typeUrl: '/agoric.swingset.QueueSize' as const,
+  is(o: any): o is QueueSize {
+    return (
+      o &&
+      (o.$typeUrl === QueueSize.typeUrl ||
+        (typeof o.key === 'string' && typeof o.size === 'number'))
+    );
+  },
+  isSDK(o: any): o is QueueSizeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueueSize.typeUrl ||
+        (typeof o.key === 'string' && typeof o.size === 'number'))
+    );
+  },
   encode(
     message: QueueSize,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -891,8 +1527,30 @@ function createBaseUintMapEntry(): UintMapEntry {
     value: '',
   };
 }
+/**
+ * Map element of a string key to an unsigned integer.
+ * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
+ * zeroes survive "omitempty" JSON serialization.
+ * @name UintMapEntry
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.UintMapEntry
+ */
 export const UintMapEntry = {
   typeUrl: '/agoric.swingset.UintMapEntry' as const,
+  is(o: any): o is UintMapEntry {
+    return (
+      o &&
+      (o.$typeUrl === UintMapEntry.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is UintMapEntrySDKType {
+    return (
+      o &&
+      (o.$typeUrl === UintMapEntry.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
   encode(
     message: UintMapEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -964,8 +1622,34 @@ function createBaseEgress(): Egress {
     powerFlags: [],
   };
 }
+/**
+ * Egress is the format for a swingset egress.
+ * @name Egress
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.Egress
+ */
 export const Egress = {
   typeUrl: '/agoric.swingset.Egress' as const,
+  is(o: any): o is Egress {
+    return (
+      o &&
+      (o.$typeUrl === Egress.typeUrl ||
+        (typeof o.nickname === 'string' &&
+          (o.peer instanceof Uint8Array || typeof o.peer === 'string') &&
+          Array.isArray(o.powerFlags) &&
+          (!o.powerFlags.length || typeof o.powerFlags[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is EgressSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Egress.typeUrl ||
+        (typeof o.nickname === 'string' &&
+          (o.peer instanceof Uint8Array || typeof o.peer === 'string') &&
+          Array.isArray(o.power_flags) &&
+          (!o.power_flags.length || typeof o.power_flags[0] === 'string')))
+    );
+  },
   encode(
     message: Egress,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1056,8 +1740,33 @@ function createBaseSwingStoreArtifact(): SwingStoreArtifact {
     data: new Uint8Array(),
   };
 }
+/**
+ * SwingStoreArtifact encodes an artifact of a swing-store export.
+ * Artifacts may be stored or transmitted in any order. Most handlers do
+ * maintain the artifact order from their original source as an effect of how
+ * they handle the artifacts.
+ * @name SwingStoreArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.SwingStoreArtifact
+ */
 export const SwingStoreArtifact = {
   typeUrl: '/agoric.swingset.SwingStoreArtifact' as const,
+  is(o: any): o is SwingStoreArtifact {
+    return (
+      o &&
+      (o.$typeUrl === SwingStoreArtifact.typeUrl ||
+        (typeof o.name === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is SwingStoreArtifactSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SwingStoreArtifact.typeUrl ||
+        (typeof o.name === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: SwingStoreArtifact,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1127,6 +1836,415 @@ export const SwingStoreArtifact = {
     return {
       typeUrl: '/agoric.swingset.SwingStoreArtifact',
       value: SwingStoreArtifact.encode(message).finish(),
+    };
+  },
+};
+function createBaseChunkedArtifact(): ChunkedArtifact {
+  return {
+    sha512: '',
+    sizeBytes: BigInt(0),
+    chunks: [],
+  };
+}
+/**
+ * ChunkedArtifact is the manifest for an artifact that is submitted across
+ * multiple transactions, in chunks, as when using InstallBundle to submit
+ * chunks.
+ * @name ChunkedArtifact
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifact
+ */
+export const ChunkedArtifact = {
+  typeUrl: '/agoric.swingset.ChunkedArtifact' as const,
+  is(o: any): o is ChunkedArtifact {
+    return (
+      o &&
+      (o.$typeUrl === ChunkedArtifact.typeUrl ||
+        (typeof o.sha512 === 'string' &&
+          typeof o.sizeBytes === 'bigint' &&
+          Array.isArray(o.chunks) &&
+          (!o.chunks.length || ChunkInfo.is(o.chunks[0]))))
+    );
+  },
+  isSDK(o: any): o is ChunkedArtifactSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ChunkedArtifact.typeUrl ||
+        (typeof o.sha512 === 'string' &&
+          typeof o.size_bytes === 'bigint' &&
+          Array.isArray(o.chunks) &&
+          (!o.chunks.length || ChunkInfo.isSDK(o.chunks[0]))))
+    );
+  },
+  encode(
+    message: ChunkedArtifact,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.sha512 !== '') {
+      writer.uint32(10).string(message.sha512);
+    }
+    if (message.sizeBytes !== BigInt(0)) {
+      writer.uint32(16).uint64(message.sizeBytes);
+    }
+    for (const v of message.chunks) {
+      ChunkInfo.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): ChunkedArtifact {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChunkedArtifact();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.sha512 = reader.string();
+          break;
+        case 2:
+          message.sizeBytes = reader.uint64();
+          break;
+        case 3:
+          message.chunks.push(ChunkInfo.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ChunkedArtifact {
+    return {
+      sha512: isSet(object.sha512) ? String(object.sha512) : '',
+      sizeBytes: isSet(object.sizeBytes)
+        ? BigInt(object.sizeBytes.toString())
+        : BigInt(0),
+      chunks: Array.isArray(object?.chunks)
+        ? object.chunks.map((e: any) => ChunkInfo.fromJSON(e))
+        : [],
+    };
+  },
+  toJSON(message: ChunkedArtifact): JsonSafe<ChunkedArtifact> {
+    const obj: any = {};
+    message.sha512 !== undefined && (obj.sha512 = message.sha512);
+    message.sizeBytes !== undefined &&
+      (obj.sizeBytes = (message.sizeBytes || BigInt(0)).toString());
+    if (message.chunks) {
+      obj.chunks = message.chunks.map(e =>
+        e ? ChunkInfo.toJSON(e) : undefined,
+      );
+    } else {
+      obj.chunks = [];
+    }
+    return obj;
+  },
+  fromPartial(object: Partial<ChunkedArtifact>): ChunkedArtifact {
+    const message = createBaseChunkedArtifact();
+    message.sha512 = object.sha512 ?? '';
+    message.sizeBytes =
+      object.sizeBytes !== undefined && object.sizeBytes !== null
+        ? BigInt(object.sizeBytes.toString())
+        : BigInt(0);
+    message.chunks = object.chunks?.map(e => ChunkInfo.fromPartial(e)) || [];
+    return message;
+  },
+  fromProtoMsg(message: ChunkedArtifactProtoMsg): ChunkedArtifact {
+    return ChunkedArtifact.decode(message.value);
+  },
+  toProto(message: ChunkedArtifact): Uint8Array {
+    return ChunkedArtifact.encode(message).finish();
+  },
+  toProtoMsg(message: ChunkedArtifact): ChunkedArtifactProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.ChunkedArtifact',
+      value: ChunkedArtifact.encode(message).finish(),
+    };
+  },
+};
+function createBaseChunkInfo(): ChunkInfo {
+  return {
+    sha512: '',
+    sizeBytes: BigInt(0),
+    state: 0,
+  };
+}
+/**
+ * Information about a chunk of an artifact.
+ * @name ChunkInfo
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkInfo
+ */
+export const ChunkInfo = {
+  typeUrl: '/agoric.swingset.ChunkInfo' as const,
+  is(o: any): o is ChunkInfo {
+    return (
+      o &&
+      (o.$typeUrl === ChunkInfo.typeUrl ||
+        (typeof o.sha512 === 'string' &&
+          typeof o.sizeBytes === 'bigint' &&
+          isSet(o.state)))
+    );
+  },
+  isSDK(o: any): o is ChunkInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ChunkInfo.typeUrl ||
+        (typeof o.sha512 === 'string' &&
+          typeof o.size_bytes === 'bigint' &&
+          isSet(o.state)))
+    );
+  },
+  encode(
+    message: ChunkInfo,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.sha512 !== '') {
+      writer.uint32(10).string(message.sha512);
+    }
+    if (message.sizeBytes !== BigInt(0)) {
+      writer.uint32(16).uint64(message.sizeBytes);
+    }
+    if (message.state !== 0) {
+      writer.uint32(24).int32(message.state);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): ChunkInfo {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChunkInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.sha512 = reader.string();
+          break;
+        case 2:
+          message.sizeBytes = reader.uint64();
+          break;
+        case 3:
+          message.state = reader.int32() as any;
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ChunkInfo {
+    return {
+      sha512: isSet(object.sha512) ? String(object.sha512) : '',
+      sizeBytes: isSet(object.sizeBytes)
+        ? BigInt(object.sizeBytes.toString())
+        : BigInt(0),
+      state: isSet(object.state) ? chunkStateFromJSON(object.state) : -1,
+    };
+  },
+  toJSON(message: ChunkInfo): JsonSafe<ChunkInfo> {
+    const obj: any = {};
+    message.sha512 !== undefined && (obj.sha512 = message.sha512);
+    message.sizeBytes !== undefined &&
+      (obj.sizeBytes = (message.sizeBytes || BigInt(0)).toString());
+    message.state !== undefined &&
+      (obj.state = chunkStateToJSON(message.state));
+    return obj;
+  },
+  fromPartial(object: Partial<ChunkInfo>): ChunkInfo {
+    const message = createBaseChunkInfo();
+    message.sha512 = object.sha512 ?? '';
+    message.sizeBytes =
+      object.sizeBytes !== undefined && object.sizeBytes !== null
+        ? BigInt(object.sizeBytes.toString())
+        : BigInt(0);
+    message.state = object.state ?? 0;
+    return message;
+  },
+  fromProtoMsg(message: ChunkInfoProtoMsg): ChunkInfo {
+    return ChunkInfo.decode(message.value);
+  },
+  toProto(message: ChunkInfo): Uint8Array {
+    return ChunkInfo.encode(message).finish();
+  },
+  toProtoMsg(message: ChunkInfo): ChunkInfoProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.ChunkInfo',
+      value: ChunkInfo.encode(message).finish(),
+    };
+  },
+};
+function createBaseChunkedArtifactNode(): ChunkedArtifactNode {
+  return {
+    chunkedArtifactId: BigInt(0),
+    nextId: BigInt(0),
+    prevId: BigInt(0),
+    startTimeUnix: BigInt(0),
+    startBlockHeight: BigInt(0),
+  };
+}
+/**
+ * A node in a doubly-linked-list of chunked artifacts, as used for chunked
+ * bundle installation, in order of ascending block time.
+ * This list is not circular and has no sentinel head node; the start and end
+ * are indicated by prev_id/next_id being 0.
+ * The keeper uses this to expediently expire stale incomplete artifacts.
+ * @name ChunkedArtifactNode
+ * @package agoric.swingset
+ * @see proto type: agoric.swingset.ChunkedArtifactNode
+ */
+export const ChunkedArtifactNode = {
+  typeUrl: '/agoric.swingset.ChunkedArtifactNode' as const,
+  is(o: any): o is ChunkedArtifactNode {
+    return (
+      o &&
+      (o.$typeUrl === ChunkedArtifactNode.typeUrl ||
+        (typeof o.chunkedArtifactId === 'bigint' &&
+          typeof o.nextId === 'bigint' &&
+          typeof o.prevId === 'bigint' &&
+          typeof o.startTimeUnix === 'bigint' &&
+          typeof o.startBlockHeight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ChunkedArtifactNodeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ChunkedArtifactNode.typeUrl ||
+        (typeof o.chunked_artifact_id === 'bigint' &&
+          typeof o.next_id === 'bigint' &&
+          typeof o.prev_id === 'bigint' &&
+          typeof o.start_time_unix === 'bigint' &&
+          typeof o.start_block_height === 'bigint'))
+    );
+  },
+  encode(
+    message: ChunkedArtifactNode,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.chunkedArtifactId !== BigInt(0)) {
+      writer.uint32(8).uint64(message.chunkedArtifactId);
+    }
+    if (message.nextId !== BigInt(0)) {
+      writer.uint32(16).uint64(message.nextId);
+    }
+    if (message.prevId !== BigInt(0)) {
+      writer.uint32(24).uint64(message.prevId);
+    }
+    if (message.startTimeUnix !== BigInt(0)) {
+      writer.uint32(32).int64(message.startTimeUnix);
+    }
+    if (message.startBlockHeight !== BigInt(0)) {
+      writer.uint32(40).int64(message.startBlockHeight);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): ChunkedArtifactNode {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChunkedArtifactNode();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.chunkedArtifactId = reader.uint64();
+          break;
+        case 2:
+          message.nextId = reader.uint64();
+          break;
+        case 3:
+          message.prevId = reader.uint64();
+          break;
+        case 4:
+          message.startTimeUnix = reader.int64();
+          break;
+        case 5:
+          message.startBlockHeight = reader.int64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ChunkedArtifactNode {
+    return {
+      chunkedArtifactId: isSet(object.chunkedArtifactId)
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0),
+      nextId: isSet(object.nextId)
+        ? BigInt(object.nextId.toString())
+        : BigInt(0),
+      prevId: isSet(object.prevId)
+        ? BigInt(object.prevId.toString())
+        : BigInt(0),
+      startTimeUnix: isSet(object.startTimeUnix)
+        ? BigInt(object.startTimeUnix.toString())
+        : BigInt(0),
+      startBlockHeight: isSet(object.startBlockHeight)
+        ? BigInt(object.startBlockHeight.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(message: ChunkedArtifactNode): JsonSafe<ChunkedArtifactNode> {
+    const obj: any = {};
+    message.chunkedArtifactId !== undefined &&
+      (obj.chunkedArtifactId = (
+        message.chunkedArtifactId || BigInt(0)
+      ).toString());
+    message.nextId !== undefined &&
+      (obj.nextId = (message.nextId || BigInt(0)).toString());
+    message.prevId !== undefined &&
+      (obj.prevId = (message.prevId || BigInt(0)).toString());
+    message.startTimeUnix !== undefined &&
+      (obj.startTimeUnix = (message.startTimeUnix || BigInt(0)).toString());
+    message.startBlockHeight !== undefined &&
+      (obj.startBlockHeight = (
+        message.startBlockHeight || BigInt(0)
+      ).toString());
+    return obj;
+  },
+  fromPartial(object: Partial<ChunkedArtifactNode>): ChunkedArtifactNode {
+    const message = createBaseChunkedArtifactNode();
+    message.chunkedArtifactId =
+      object.chunkedArtifactId !== undefined &&
+      object.chunkedArtifactId !== null
+        ? BigInt(object.chunkedArtifactId.toString())
+        : BigInt(0);
+    message.nextId =
+      object.nextId !== undefined && object.nextId !== null
+        ? BigInt(object.nextId.toString())
+        : BigInt(0);
+    message.prevId =
+      object.prevId !== undefined && object.prevId !== null
+        ? BigInt(object.prevId.toString())
+        : BigInt(0);
+    message.startTimeUnix =
+      object.startTimeUnix !== undefined && object.startTimeUnix !== null
+        ? BigInt(object.startTimeUnix.toString())
+        : BigInt(0);
+    message.startBlockHeight =
+      object.startBlockHeight !== undefined && object.startBlockHeight !== null
+        ? BigInt(object.startBlockHeight.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(message: ChunkedArtifactNodeProtoMsg): ChunkedArtifactNode {
+    return ChunkedArtifactNode.decode(message.value);
+  },
+  toProto(message: ChunkedArtifactNode): Uint8Array {
+    return ChunkedArtifactNode.encode(message).finish();
+  },
+  toProtoMsg(message: ChunkedArtifactNode): ChunkedArtifactNodeProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.ChunkedArtifactNode',
+      value: ChunkedArtifactNode.encode(message).finish(),
     };
   },
 };

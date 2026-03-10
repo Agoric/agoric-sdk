@@ -68,7 +68,7 @@ const genericAskApiKey =
 
 const genericAskDatacenter =
   ({ inquirer }) =>
-  async (provider, PLACEMENT, dcs, placement) => {
+  async (_provider, PLACEMENT, dcs, placement) => {
     const questions = [];
     const count = nodeCount(calculateTotal(placement), true);
     const DONE = {
@@ -132,7 +132,7 @@ const makeProviders = ({ env, inquirer, wr, setup, fetch }) => ({
         /* eslint-enable */
       };
     },
-    askDatacenter: async (provider, PLACEMENT, dcs, placement) => {
+    askDatacenter: async (_provider, PLACEMENT, _dcs, placement) => {
       const { NUM_NODES } = await inquirer.prompt([
         {
           name: 'NUM_NODES',
@@ -169,7 +169,7 @@ module "${PLACEMENT}" {
     value: 'digitalocean',
     askDetails: genericAskApiKey({ env, inquirer }),
     askDatacenter: genericAskDatacenter({ inquirer }),
-    datacenters: async (provider, PLACEMENT, DETAILS) => {
+    datacenters: async (_provider, _PLACEMENT, DETAILS) => {
       const { API_KEYS: apikey } = DETAILS;
       const res = await fetch('https://api.digitalocean.com/v2/regions', {
         headers: { Authorization: `Bearer ${apikey}` },

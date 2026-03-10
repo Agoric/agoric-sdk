@@ -20,6 +20,10 @@ test.before(async t => {
 
 async function main(t, mode) {
   const config = await loadBasedir(dirname);
+  config.bundles = {
+    ...config.bundles,
+    spawn: { sourceSpec: `${dirname}/../../../src/vat-spawned.js` },
+  };
   config.defaultManagerType = 'xs-worker';
   const { kernelBundles, trivialBundle } = t.context.data;
   const argv = [mode, trivialBundle];

@@ -28,7 +28,7 @@ import {
  * @import {createCommand} from 'commander';
  * @import {execFileSync} from 'child_process';
  * @import {Writable} from 'stream';
- * @import {Logger} from 'anylogger';
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {TimestampRecord} from '@agoric/time';
  */

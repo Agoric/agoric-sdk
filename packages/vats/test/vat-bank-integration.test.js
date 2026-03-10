@@ -42,7 +42,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
-  const { vatAdminService } = makePopulatedFakeVatAdmin();
+  const { vatAdminService } = await makePopulatedFakeVatAdmin();
   const { zoeService, feeMintAccess: fma } = makeZoeKitForTest(vatAdminService);
   produce.zoe.resolve(zoeService);
   produce.feeMintAccess.resolve(fma);

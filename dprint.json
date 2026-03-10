@@ -23,8 +23,8 @@
     "/packages/xsnap/xsnap-native"
   ],
   "plugins": [
-    "https://plugins.dprint.dev/toml-0.7.0.wasm",
-    "https://plugins.dprint.dev/dockerfile-0.3.3.wasm",
-    "https://plugins.dprint.dev/prettier-0.62.0.json@80fefd1450bfd3f469590cc6a3f40f6ace26974f948b9602124f486036fbdfab"
+    "./tools/dprint/plugins/toml-0.7.0.wasm",
+    "./tools/dprint/plugins/dockerfile-0.3.3.wasm",
+    "./tools/dprint/plugins/prettier-0.62.0.json@80fefd1450bfd3f469590cc6a3f40f6ace26974f948b9602124f486036fbdfab"
   ]
 }

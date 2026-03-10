@@ -5,6 +5,7 @@
  */
 import { AmountMath, type Payment } from '@agoric/ertp';
 import {
+  fromTypedEntries,
   makeTracer,
   mustMatch,
   NonNullish,
@@ -45,10 +46,11 @@ import {
   YieldProtocol,
   FlowConfigShape,
 } from '@agoric/portfolio-api/src/constants.js';
+import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
 import type {
   PermitDetails,
   YmaxOperationDetails,
-} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { ContractMeta, Invitation, ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
@@ -62,7 +64,11 @@ import type { CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
 import { preparePlanner } from './planner.exo.ts';
-import { preparePortfolioKit, type PortfolioKit } from './portfolio.exo.ts';
+import {
+  makeValidateOpenMessageRepresentativeInfo,
+  preparePortfolioKit,
+  type PortfolioKit,
+} from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { prepareResolverKit } from './resolver/resolver.exo.js';
 import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
@@ -78,7 +84,7 @@ import {
 } from './type-guards.ts';
 
 const trace = makeTracer('PortC');
-const { entries, fromEntries, keys } = Object;
+const { fromEntries, keys } = Object;
 
 const makeTransferChannels = (chainInfo: PortfolioPrivateArgs['chainInfo']) => {
   const { agoric, axelar, noble } = chainInfo as Record<
@@ -111,6 +117,23 @@ const makeEip155ChainIdToAxelarChain = (
     }
   }
   return harden(chainIdToChainName);
+};
+
+const extractContractAddresses = <T extends keyof EVMContractAddresses>(
+  chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
+  contracts: EVMContractAddressesMap,
+  key: T,
+): Record<AxelarChain, AccountId> => {
+  const addresses = fromTypedEntries(
+    Object.entries(chainIdToAxelarChain).map(
+      ([chainId, chainName]) =>
+        [
+          chainName satisfies AxelarChain,
+          `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
+        ] as const,
+    ),
+  ) satisfies Record<AxelarChain, AccountId>;
+  return addresses;
 };
 
 const interfaceTODO = undefined;
@@ -361,19 +384,11 @@ export const contract = async (
   void vowTools.when(contractAccountV, acct => {
     const addr = acct.getAddress();
 
-    type DepositFactoryAddresses = NonNullable<
-      StatusFor['contract']['depositFactoryAddresses']
-    >;
-
-    const depositFactoryAddresses = Object.fromEntries(
-      Object.entries(eip155ChainIdToAxelarChain).map(
-        ([chainId, chainName]) =>
-          [
-            chainName satisfies AxelarChain,
-            `eip155:${chainId}:${contracts[chainName].depositFactory}` satisfies DepositFactoryAddresses[AxelarChain],
-          ] as const,
-      ),
-    ) as DepositFactoryAddresses;
+    const depositFactoryAddresses = extractContractAddresses(
+      eip155ChainIdToAxelarChain,
+      contracts,
+      'depositFactory',
+    );
 
     publishStatus(
       storageNode,
@@ -381,6 +396,12 @@ export const contract = async (
     );
     trace('published contractAccount', addr.value);
   });
+
+  const validateOpenMessageRepresentativeInfo =
+    makeValidateOpenMessageRepresentativeInfo(
+      eip155ChainIdToAxelarChain,
+      contracts,
+    );
 
   const ctx1: flows.PortfolioInstanceContext = {
     zoeTools: zoeTools as any, // XXX Guest...
@@ -532,10 +553,15 @@ export const contract = async (
     'usedAccessTokens',
     () => zcf.makeEmptySeatKit().zcfSeat,
   );
+  // Access token gating has been removed; if provided, consume one for backward compatibility.
   const consumeAccessToken = brands.Access
     ? (seat: ZCFSeat) => {
+        const {
+          give: { Access: offeredAccess },
+        } = seat.getProposal() as ProposalType['openPortfolio'];
+        if (!offeredAccess) return;
         const Access = AmountMath.make(brands.Access, 1n);
-        zcf.atomicRearrange([[seat, usedAccessTokens, { Access }]]);
+        zcf.atomicRearrange(harden([[seat, usedAccessTokens, { Access }]]));
       }
     : () => {};
 
@@ -548,8 +574,7 @@ export const contract = async (
      * The resulting portfolio can be rebalanced via continuing invitations.
      *
      * @see {@link ProposalType.openPortfolio} for proposal structure.
-     *   Note that if the contract is started with an `Access` issuer,
-     *   a non-empty amount of that token is required.
+     *   Access token, if present in terms, is accepted but not required.
      *
      * @see {@link OfferArgsFor.openPortfolio} for offer arguments
      * @see {@link openPortfolio} for the underlying flow implementation
@@ -608,6 +633,11 @@ export const contract = async (
       storagePath: string;
       evmHandler: PortfolioKit['evmHandler'];
     }> {
+      validateOpenMessageRepresentativeInfo(
+        permitDetails.chainId,
+        permitDetails.spender,
+      );
+
       // XXX: validate instruments
       const targetAllocation: TargetAllocation = Object.fromEntries(
         allocations.map(({ instrument, portion }) => [instrument, portion]),
@@ -618,12 +648,6 @@ export const contract = async (
       if (!fromChain) {
         throw Fail`no Axelar chain for EIP-155 chainId ${permitDetails.chainId}`;
       }
-      sameEvmAddress(
-        permitDetails.spender,
-        contracts[fromChain].depositFactory,
-      ) ||
-        Fail`permit2 spender address ${permitDetails.spender} does not match depositFactory address ${contracts[fromChain].depositFactory} for chain ${fromChain}`;
-
       sameEvmAddress(permitDetails.token, contracts[fromChain].usdc) ||
         Fail`permit2 token address ${permitDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
       const amount = AmountMath.make(brands.USDC, permitDetails.amount);
@@ -654,8 +678,25 @@ export const contract = async (
         evmHandler: kit.evmHandler,
       });
     },
+    async validateEVMMessageDomain(
+      domain: YmaxFullDomain,
+      portfolio?: Remote<PortfolioKit['evmHandler']>,
+    ) {
+      await null;
+      if (portfolio) {
+        await E(portfolio).validateRepresentativeInfo(
+          domain.chainId,
+          domain.verifyingContract,
+        );
+      } else {
+        validateOpenMessageRepresentativeInfo(
+          domain.chainId,
+          domain.verifyingContract,
+        );
+      }
+    },
   } satisfies Record<PortfolioPublicInvitationMaker, any> &
-    Record<'openPortfolioFromEVM', any> &
+    Record<'openPortfolioFromEVM' | 'validateEVMMessageDomain', any> &
     ThisType<any>);
 
   const prepareResultOnlyInvitation = <R>(
@@ -696,12 +737,6 @@ export const contract = async (
       timerService,
       portfolioContractPublicFacet: publicFacet,
       publishStatus,
-      validStandaloneContractAddresses: fromEntries(
-        entries(eip155ChainIdToAxelarChain).map(
-          ([chainId, chainName]) =>
-            [chainId, contracts[chainName].depositFactory] as const,
-        ),
-      ),
     },
   );
 

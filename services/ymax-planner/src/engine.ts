@@ -94,7 +94,6 @@ import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 
 const { values } = Object;
 
-// eslint-disable-next-line no-nested-ternary
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
 const stdoutIsTty = process.stdout.isTTY;
@@ -123,6 +122,12 @@ export type VstorageEventDetail = {
 };
 
 type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
+
+const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
+  TxType.CCTP_TO_EVM,
+  TxType.GMP,
+  TxType.MAKE_ACCOUNT,
+];
 
 const makeVstoragePathPrefixes = (contractInstance: string) => ({
   portfoliosPathPrefix: `published.${contractInstance}.portfolios`,
@@ -429,7 +434,7 @@ export const processPortfolioEvents = async (
       ]);
       const status = marshaller.fromCapData(statusCapdata);
       mustMatch(status, PortfolioStatusShapeExt, path);
-      const flowKeys = new Set(flowKeysResp.result.children);
+      const flowKeys = new Set(flowKeysResp.result.children as string[]);
 
       const { depositAddress } = status;
       if (depositAddress) {
@@ -555,11 +560,17 @@ export const processPendingTxEvents = async (
         }
         continue;
       }
-
-      if (data.type === TxType.CCTP_TO_AGORIC) continue;
+      if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) continue;
 
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
+
+      // Skip if a watcher is already running for this txId.
+      if (pendingTxAbortControllers.has(txId)) {
+        log(`Watcher already active for ${txId}, skipping`);
+        continue;
+      }
+
       log('New pending tx', tx);
 
       const abortController = provideLazyMap(
@@ -621,6 +632,8 @@ export const processInitialPendingTransactions = async (
   await makeWorkPool(initialPendingTxData, undefined, async pendingTxRecord => {
     const { blockHeight, tx } = pendingTxRecord;
 
+    if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(tx.type)) return;
+
     const timestampMs = await provideLazyMap(
       blockHeightToTimestamp,
       blockHeight,
@@ -673,7 +686,7 @@ export const startEngine = async (
     feeBrandName: string;
   },
 ) => {
-  const { evmCtx, cosmosRest, now, rpc, signingSmartWalletKit } = powers;
+  const { evmCtx, cosmosRest, rpc, signingSmartWalletKit } = powers;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -784,7 +797,6 @@ export const startEngine = async (
     log: console.warn.bind(console),
     error: console.error.bind(console),
     marshaller,
-    now,
     signingSmartWalletKit,
     vstoragePathPrefixes,
     pendingTxAbortControllers,
@@ -807,7 +819,7 @@ export const startEngine = async (
       data = marshaller.fromCapData(marshalledData);
       if (
         data?.status !== TxStatus.PENDING ||
-        data.type === TxType.CCTP_TO_AGORIC
+        !RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)
       )
         return;
       mustMatch(harden(data), PublishedTxShape, path);

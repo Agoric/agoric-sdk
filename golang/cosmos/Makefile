@@ -6,7 +6,6 @@ GIT_COMMIT = $(shell hash=`git rev-parse --short HEAD 2>/dev/null`; if test -n "
 PR_TARGET_REPO = https://github.com/Agoric/agoric-sdk.git
 # TODO: figure out how to handle other branches like pismo-release
 PR_TARGET_BRANCH = master
-DOCKER := $(shell which docker)
 
 default: all
 
@@ -91,38 +90,21 @@ endif
 ###                           Protobuf                                    ###
 ###############################################################################
 
-usertag:=$(shell id -u)-$(shell id -g)
-protoImageStamp=build/proto-image-$(usertag).stamp
-protoVer=0.15.3
-protoSourceImageName=ghcr.io/cosmos/proto-builder:$(protoVer)
-protoImageName=$(protoSourceImageName)-user-$(usertag)
-#protoUserFlags=-e HOME=/tmp \
-#	--user=$(shell id -u):$(shell id -g) \
-#	$(shell id -G | xargs -n1 printf -- ' --group-add %s')
-protoImage=$(DOCKER) run --rm -v $(CURDIR):/workspace:z --workdir /workspace $(protoImageName)
-
-$(protoImageStamp):
-	@echo "Creating user-specific Protobuf builder image $(protoImageName)"
-	mkdir -p build/empty
-	$(DOCKER) build \
-		--build-arg NEW_UID=$(shell id -u) --build-arg SOURCE_IMAGE=$(protoSourceImageName) \
-		--pull --load -f proto/Dockerfile -t $(protoImageName) build/empty
-	@touch $(protoImageStamp)
-
+BUF_CMD = go tool buf
 proto-all: proto-format proto-lint proto-gen
 
 proto-gen: $(protoImageStamp)
 	@echo "Generating Protobuf files"
-	@$(protoImage) sh ./scripts/protocgen.sh
+	sh ./scripts/protocgen.sh
 
-proto-format: $(protoImageStamp)
-	@$(protoImage) find ./proto -name "*.proto" -exec clang-format -i {} \;
+proto-format:
+	find ./proto -name "*.proto" -exec clang-format -i {} \;
 
-proto-lint: $(protoImageStamp)
-	@$(protoImage) buf lint --error-format=json ./proto
+proto-lint:
+	$(BUF_CMD) lint --error-format=json ./proto
 
-proto-check-breaking: $(protoImageStamp)
-	@$(protoImage) buf breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
+proto-check-breaking:
+	$(BUF_CMD) breaking --against $(PR_TARGET_REPO)#branch=$(PR_TARGET_BRANCH),subdir=golang/cosmos
 
 GOGO_PROTO_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/cosmos/gogoproto)
 # GOOGLE_API_URL = file://$(shell go list -m -f '{{ .Dir }}' github.com/googleapis/googleapis)/google/api
@@ -198,11 +180,11 @@ proto-update-deps:
 .PHONY: proto-all proto-gen proto-swagger-gen proto-format proto-lint proto-check-breaking proto-update-deps mocks
 
 lint:
-	golangci-lint run
+	go tool golangci-lint run
 
 test:
 	go test -coverprofile=coverage.txt -covermode=atomic ./...
 
 mocks:
 	@echo "Generating mocks"
-	@./scripts/mockgen.sh
+	./scripts/mockgen.sh

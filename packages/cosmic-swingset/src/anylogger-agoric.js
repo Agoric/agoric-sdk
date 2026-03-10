@@ -1,12 +1,28 @@
+/**
+ * @file cosmic-swingset anylogger adapter.
+ *
+ * Use this module for cosmic-swingset/runtime logging, where output is consumed
+ * as service logs rather than interactive CLI output.
+ *
+ * Runtime-focused behavior:
+ * - Reads `DEBUG` selectors (`agoric`, `agoric:<level>`, `agoric:none`).
+ * - Adds ISO timestamps and stable labels to emitted messages.
+ * - Suppresses high-volume vat/liveslots logs unless explicitly selected.
+ *
+ * Why this file exists alongside `packages/agoric-cli/src/anylogger-agoric.js`:
+ * - This adapter enforces production/runtime log policy.
+ * - The CLI adapter is tuned for terminal UX (e.g., colored prefixes) and does
+ *   not apply cosmic-swingset suppression semantics.
+ */
 /* eslint-env node */
 import {
   getEnvironmentOptionsList,
   getEnvironmentOption,
 } from '@endo/env-options';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { defineName } from '@agoric/internal/src/js-utils.js';
 
-/** @import {BaseLevels} from 'anylogger'; */
+/** @import {BaseLevels} from '@agoric/internal/vendor/anylogger.js'; */
 /** @typedef {keyof BaseLevels} LogLevel; */
 
 const VAT_LOGGER_PREFIXES = Object.freeze([
@@ -42,14 +58,15 @@ const maxActiveLevelCode = /** @type {number} */ (
 
 const oldExt = anylogger.ext;
 anylogger.ext = logger => {
-  logger = oldExt(logger);
+  const extended = oldExt(logger);
 
   /** @type {(level: LogLevel) => boolean} */
   const enabledFor = level => anylogger.levels[level] <= maxActiveLevelCode;
-  logger.enabledFor = enabledFor;
+  extended.enabledFor = enabledFor;
 
-  const nameColon = `${logger.name}:`;
-  const label = logger.name.replaceAll(':', ': ');
+  const nameColon = `${extended.name}:`;
+  const label = extended.name.replaceAll(':', ': ');
+  const fallbackSink = console.log.bind(console);
 
   // Vat logs are suppressed unless matched by a prefix in DEBUG_LIST.
   const suppressed =
@@ -58,9 +75,11 @@ anylogger.ext = logger => {
 
   const levels = /** @type {LogLevel[]} */ (Object.keys(anylogger.levels));
   for (const level of levels) {
-    const impl = logger[level];
-    const disabled = !impl || suppressed || !enabledFor(level);
-    logger[level] = disabled
+    const impl =
+      (typeof console[level] === 'function' && console[level].bind(console)) ||
+      fallbackSink;
+    const disabled = suppressed || !enabledFor(level);
+    extended[level] = disabled
       ? defineName(`dummy ${level}`, () => {})
       : defineName(level, (...args) => {
           // Prepend a timestamp and label.
@@ -68,5 +87,5 @@ anylogger.ext = logger => {
           impl(`${timestamp} ${label}:`, ...args);
         });
   }
-  return logger;
+  return extended;
 };

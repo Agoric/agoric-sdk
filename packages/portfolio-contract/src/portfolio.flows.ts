@@ -78,7 +78,7 @@ import {
   sendPermit2GMP,
   type EVMContext,
   type GMPAccountStatus,
-} from './pos-gmp.flows.ts';
+} from './pos-evm.flows.ts';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import {
@@ -949,8 +949,7 @@ const stepFlow = async (
             );
           }
 
-          await gInfo.ready;
-          await queuedStep.done;
+          await Promise.all([gInfo.ready, queuedStep.done]);
           return {};
         },
       });
@@ -1071,6 +1070,9 @@ const stepFlow = async (
               await CCTP.apply(ctx, amount, noble, gInfo, ...optsArgs);
               return {};
             }
+            // EVM-originated CCTP sends a GMP call from the smart wallet,
+            // so the wallet contract must exist first.
+            await gInfo.ready;
             const evmCtx = await makeEVMCtx(
               evmChain,
               move,
@@ -1642,7 +1644,7 @@ const resolveCCTPIn = (
  * Prompt.
  */
 export const onAgoricTransfer = (async (
-  orch: Orchestrator,
+  _orch: Orchestrator,
   ctx: OnTransferContext,
   event: VTransferIBCEvent,
   pKit: PortfolioKit,
@@ -1841,7 +1843,7 @@ const queuePermit2Step = async (
     : undefined;
 
   // For openPortfolio: atomic createAndDeposit via depositFactory
-  const acct = provideEVMAccountWithPermit(
+  const acct = await provideEVMAccountWithPermit(
     fromChain,
     chainInfo,
     gmp,

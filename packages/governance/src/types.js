@@ -161,6 +161,16 @@ export {};
  */
 
 /**
+ * Published vstorage values under the `committees.` hierarchy.
+ *
+ * @typedef {{
+ *   [K in `committees.${string}.latestQuestion`]: QuestionDetails;
+ * } & {
+ *   [K in `committees.${string}.latestOutcome`]: OutcomeRecord;
+ * }} GovernancePublishedPathTypes
+ */
+
+/**
  * @typedef {object} GovernancePair
  * @property {Instance} governor
  * @property {Instance} governed

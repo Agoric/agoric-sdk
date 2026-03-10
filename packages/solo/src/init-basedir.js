@@ -5,7 +5,7 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 
 import { assert, X } from '@endo/errors';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { HELPER } from './chain-cosmos-sdk.js';
 
 const console = anylogger('ag-solo:init');

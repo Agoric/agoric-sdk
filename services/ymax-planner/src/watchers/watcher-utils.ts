@@ -1,8 +1,12 @@
-import type { TransactionReceipt, WebSocketProvider } from 'ethers';
+import type { TransactionReceipt } from 'ethers';
 import { Interface, AbiCoder, getAddress } from 'ethers';
 import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
 import { decodeAbiParameters } from 'viem';
+import type { EvmRpc } from '../evm-scanner.ts';
 import { getConfirmationsRequired } from '../support.ts';
+
+/** Scope tag for failed-transaction lookback searches. */
+export const FAILED_TX_SCOPE = 'failedTx';
 
 //#region Axelar execute calldata extraction
 // AxelarExecutable entrypoint (standard)
@@ -166,7 +170,7 @@ export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
 
 /**
  * Fetch transaction receipt with retry logic for freshly mined transactions.
- * @param provider - The WebSocket provider
+ * @param provider - The EVM RPC provider
  * @param txHash - Transaction hash
  * @param log - Logging function
  * @param retryOptions - Retry configuration (limit and backoffLimit)
@@ -174,7 +178,7 @@ export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
  * @returns Transaction receipt or null if not available after retries
  */
 export const fetchReceiptWithRetry = async (
-  provider: WebSocketProvider,
+  provider: EvmRpc,
   txHash: string,
   log: (...args: unknown[]) => void,
   retryOptions: RetryOptions = DEFAULT_RETRY_OPTIONS,
@@ -209,7 +213,7 @@ export const fetchReceiptWithRetry = async (
  * @param txHash - Transaction hash for logging
  * @param identifier - A string identifier for logging (e.g., "txId=tx1" or "expectedAddr=0x123")
  * @param chainId - Chain ID to determine confirmation requirements
- * @param provider - WebSocket provider for waiting for confirmations
+ * @param provider - EVM RPC provider for waiting for confirmations
  * @param log - Logging function
  * @returns Object with settled flag, success status, and transaction hash
  */
@@ -218,10 +222,12 @@ export const handleTxRevert = async (
   txHash: string,
   identifier: string,
   chainId: `${string}:${string}`,
-  provider: WebSocketProvider,
+  provider: EvmRpc,
   log: (...args: unknown[]) => void,
 ): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
   await null;
+  // TODO(https://github.com/Agoric/agoric-private/issues/783): also wait for confirmations on success cases — a reorg can flip
+  // success → failure just as it can flip failure → success.
   if (receipt.status !== 0) return null;
 
   /**

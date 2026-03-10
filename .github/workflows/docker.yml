@@ -304,3 +304,12 @@ jobs:
         run: |
           IMAGE="ghcr.io/agoric/agoric-sdk:ymax-planner@${{ needs.docker-ymax.outputs.digest }}"
           .github/scripts/deploy_vm.sh "$GCE_INSTANCE" "$GCE_ZONE" "$IMAGE" "./.env.gcp"
+
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}

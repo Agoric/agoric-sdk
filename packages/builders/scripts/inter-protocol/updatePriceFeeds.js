@@ -1,5 +1,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 import { getManifestForPriceFeeds } from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**
  * @import {PriceFeedConfig} from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js';
@@ -69,6 +71,16 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
     throw Error(error);
   }
   const { oracleAddresses, inBrandNames, contractTerms } = config;
+  const priceAggregator = interProtocolBundleSpecs.priceAggregator;
+  const priceAggregatorPath = await buildBundlePath(
+    import.meta.url,
+    priceAggregator,
+  );
+  const scaledPriceAuthorityPath = await buildBundlePath(
+    import.meta.url,
+    '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
+    'scaledPriceAuthority',
+  );
   console.log(
     'Generating price feeds update proposal with config',
     JSON.stringify({ oracleAddresses, inBrandNames, contractTerms }),
@@ -82,15 +94,12 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
         inBrandNames,
         contractTerms,
         priceAggregatorRef: publishRef(
-          install(
-            '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
-            '../bundles/bundle-fluxAggregatorKit.js',
-          ),
+          install(priceAggregator.packagePath, priceAggregatorPath),
         ),
         scaledPARef: publishRef(
           install(
             '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
-            '../bundles/bundle-scaledPriceAuthority.js',
+            scaledPriceAuthorityPath,
           ),
         ),
       },

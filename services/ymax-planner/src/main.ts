@@ -20,7 +20,7 @@ import {
   makeSequencingSmartWallet,
   reflectWalletStore,
 } from '@agoric/client-utils';
-import type { BaseAccountSDKType } from '@agoric/client-utils/src/codegen/cosmos/auth/v1beta1/auth.js';
+import type { BaseAccountSDKType } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import {
   deeplyFulfilledObject,
@@ -56,9 +56,13 @@ import {
   spectrumPoolIdsByCluster,
 } from './support.ts';
 import type { MakeAbortController } from './support.ts';
+import { makeEvmRpc } from './evm-scanner.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
+import type { EvmRpcProviders } from './pending-tx-manager.ts';
+
+const { fromEntries, entries } = Object;
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -295,12 +299,21 @@ export const main = async (
       )
     : undefined;
 
+  const retryProviders = fromEntries(
+    entries(evmCtx.evmProviders).map(([caip, provider]) => [
+      caip,
+      makeEvmRpc(provider, setTimeout),
+    ]),
+  ) as EvmRpcProviders;
+
   const powers = {
     evmCtx: {
       kvStore,
       makeAbortController,
+      setTimeout,
       axelarApiUrl: config.axelar.apiUrl,
       ydsNotifier,
+      retryProviders,
       ...evmCtx,
     },
     rpc,

@@ -10,11 +10,18 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** GenesisState defines the ibc connection submodule's genesis state. */
+/**
+ * GenesisState defines the ibc connection submodule's genesis state.
+ * @name GenesisState
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.GenesisState
+ */
 export interface GenesisState {
   connections: IdentifiedConnection[];
   clientConnectionPaths: ConnectionPaths[];
-  /** the sequence for the next generated connection identifier */
+  /**
+   * the sequence for the next generated connection identifier
+   */
   nextConnectionSequence: bigint;
   params: Params;
 }
@@ -22,7 +29,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.core.connection.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the ibc connection submodule's genesis state. */
+/**
+ * GenesisState defines the ibc connection submodule's genesis state.
+ * @name GenesisStateSDKType
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   connections: IdentifiedConnectionSDKType[];
   client_connection_paths: ConnectionPathsSDKType[];
@@ -37,8 +49,43 @@ function createBaseGenesisState(): GenesisState {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * GenesisState defines the ibc connection submodule's genesis state.
+ * @name GenesisState
+ * @package ibc.core.connection.v1
+ * @see proto type: ibc.core.connection.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/ibc.core.connection.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.connections) &&
+          (!o.connections.length ||
+            IdentifiedConnection.is(o.connections[0])) &&
+          Array.isArray(o.clientConnectionPaths) &&
+          (!o.clientConnectionPaths.length ||
+            ConnectionPaths.is(o.clientConnectionPaths[0])) &&
+          typeof o.nextConnectionSequence === 'bigint' &&
+          Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.connections) &&
+          (!o.connections.length ||
+            IdentifiedConnection.isSDK(o.connections[0])) &&
+          Array.isArray(o.client_connection_paths) &&
+          (!o.client_connection_paths.length ||
+            ConnectionPaths.isSDK(o.client_connection_paths[0])) &&
+          typeof o.next_connection_sequence === 'bigint' &&
+          Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),

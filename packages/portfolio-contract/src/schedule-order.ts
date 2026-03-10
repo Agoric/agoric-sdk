@@ -100,6 +100,7 @@ export const runJob = async (
   const results = taskIxs.map(_ => ok);
 
   const failTaskAndAncestors = (ix: Ix, reason: unknown) => {
+    if (results[ix]?.status === 'rejected') return;
     trace('fail', ix, reason);
     todo.delete(ix);
     results[ix] = { status: 'rejected', reason };
@@ -114,7 +115,7 @@ export const runJob = async (
 
   await null;
 
-  while (todo.size > 0) {
+  while (todo.size > 0 || running.size > 0) {
     const runnable = [...todo].filter(v => ready(v) && !running.has(v));
     // trace('runnable', ...runnable);
     if (!runnable.length && !running.size) {
@@ -122,7 +123,15 @@ export const runJob = async (
       throw Error('Job dependency loop prevents completion.');
     }
     for (const ix of runnable) {
-      const done = runTask(ix, [...running.keys(), ix])
+      const runningNow = [...running.keys(), ix];
+      let taskP: Promise<void>;
+      try {
+        taskP = runTask(ix, runningNow);
+      } catch (reason) {
+        failTaskAndAncestors(ix, reason);
+        taskP = Promise.resolve();
+      }
+      const done = Promise.resolve(taskP)
         .then(() => {
           trace('done', ix);
           return ix;
@@ -136,7 +145,7 @@ export const runJob = async (
       trace('started', ix, 'running', ...running.keys());
     }
 
-    if (running.size === 0) break;
+    if (running.size === 0) continue;
 
     // The following `await` cannot throw because every promise in `running`
     // already has a .catch() handler (attached above).

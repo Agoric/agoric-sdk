@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 See [Conventional Commits](https://conventionalcommits.org/) for commit guidelines.
 
+## e1bdc1802e (ymax-v0.3.2602-beta) - 2026-02-13
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2602-beta>
+
+### Major Features
+
+- Remove Access-token requirement for `openPortfolio` offers (#12458).
+- Support EVM `depositFactory` as Permit2 spender for deposit flows (#12418).
+- Enable EVM “deposit more” flow path via `depositFactory` (#12431).
+- Add CCTP v2 support in portfolio contract flows (#12415).
+
+### Major Fixes
+
+- Rework `pendingTx` metadata shapes for portfolio publication and tracking (#12394).
+- Add `progressTracker` to `createAndDeposit` path so remote tx progress is tracked consistently (#12408).
+- Allow `sourceAddress` in published `CCTP_TO_EVM` tx shape (#12442).
+- Remove direct CCTP v2 routes from production network configuration (#12454).
+
+## 16059a9bea (ymax-v0.3.2601-beta) - 2026-01-28
+
+_retroactive release tag published 2026-02-13_
+
+- Release: <https://github.com/Agoric/agoric-sdk/releases/tag/ymax-v0.3.2601-beta>
+
+### Major Fixes
+
+- Ensure `evmHandler.withdraw` and `evmHandler.rebalance` execute their flows (wire through `executePlan`) (#12393).
+
 ## 86de279 - 2026-01-27
 
 ### Features

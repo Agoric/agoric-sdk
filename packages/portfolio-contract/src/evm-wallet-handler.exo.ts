@@ -5,7 +5,7 @@
  */
 import { makeTracer, type ERemote, type Remote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import type { WithSignature } from '@agoric/orchestration/src/utils/viem.ts';
+import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
 import {
   encodeType,
   hashStruct,
@@ -15,15 +15,16 @@ import {
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
 import type { StatusFor } from '@agoric/portfolio-api';
 import type {
+  YmaxFullDomain,
   YmaxPermitWitnessTransferFromData,
   YmaxStandaloneOperationData,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import {
   makeEVMHandlerUtils,
   type FullMessageDetails,
   type PermitDetails,
   type YmaxOperationDetails,
-} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
@@ -54,6 +55,10 @@ interface PortfolioContractPublicFacet {
     evmHandler: PortfolioEVMFacet;
     storagePath: string;
   }>;
+  validateEVMMessageDomain(
+    domain: YmaxFullDomain,
+    portfolio?: Remote<PortfolioEVMFacet>,
+  ): Promise<void>;
 }
 
 /** @private */
@@ -292,7 +297,22 @@ export const prepareEVMPortfolioOperationManager = (
         deadline,
       });
 
+      await null;
       try {
+        const portfolioId =
+          operationDetails.operation !== 'OpenPortfolio'
+            ? operationDetails.data.portfolio
+            : undefined;
+        const portfolio =
+          portfolioId !== undefined
+            ? wallet.portfolios.get(BigInt(portfolioId))
+            : undefined;
+
+        await E(portfolioContractPublicFacet).validateEVMMessageDomain(
+          operationDetails.domain,
+          portfolio,
+        );
+
         switch (operationDetails.operation) {
           case 'OpenPortfolio': {
             const { permitDetails, data } = operationDetails;
@@ -307,53 +327,39 @@ export const prepareEVMPortfolioOperationManager = (
             return watch(result, OpenOutcomeWatcher);
           }
           case 'Rebalance': {
-            const {
-              data: { portfolio: portfolioId },
-              permitDetails,
-            } = operationDetails;
+            const { permitDetails } = operationDetails;
 
-            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
-
-            const result = E(portfolio).rebalance(undefined, permitDetails);
+            const result = E(portfolio!).rebalance(undefined, permitDetails);
 
             return watch(result, BasicOutcomeWatcher);
           }
           case 'SetTargetAllocation': {
             const {
-              data: { portfolio: portfolioId, allocations },
+              data: { allocations },
               permitDetails,
             } = operationDetails;
 
-            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
-
-            const result = E(portfolio).rebalance(allocations, permitDetails);
+            const result = E(portfolio!).rebalance(allocations, permitDetails);
 
             return watch(result, BasicOutcomeWatcher);
           }
           case 'Deposit': {
-            const {
-              permitDetails,
-              data: { portfolio: portfolioId },
-            } = operationDetails;
+            const { permitDetails } = operationDetails;
             if (!permitDetails) {
               throw Fail`Missing permit details for Deposit operation`;
             }
 
-            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
-
-            const result = E(portfolio).deposit(permitDetails);
+            const result = E(portfolio!).deposit(permitDetails);
 
             return watch(result, BasicOutcomeWatcher);
           }
           case 'Withdraw': {
             const {
-              data: { portfolio: portfolioId, withdraw: withdrawDetails },
+              data: { withdraw: withdrawDetails },
               domain,
             } = operationDetails;
 
-            const portfolio = wallet.portfolios.get(BigInt(portfolioId));
-
-            const result = E(portfolio).withdraw({
+            const result = E(portfolio!).withdraw({
               withdrawDetails,
               domain,
               address,
@@ -404,14 +410,12 @@ export const prepareEVMWalletHandlerKit = (
     timerService,
     portfolioContractPublicFacet,
     publishStatus,
-    validStandaloneContractAddresses,
   }: {
     storageNode: ERemote<StorageNode>;
     vowTools: Pick<VowTools, 'asVow' | 'watch' | 'when'>;
     timerService: ERemote<TimerService>;
     portfolioContractPublicFacet: ERemote<PortfolioContractPublicFacet>;
     publishStatus: PublishStatus;
-    validStandaloneContractAddresses: Record<number | string, Address>;
   },
 ) => {
   const { extractOperationDetailsFromSignedData } = makeEVMHandlerUtils({
@@ -465,10 +469,11 @@ export const prepareEVMWalletHandlerKit = (
           trace('handleMessage', messageData);
 
           // Resolves immediately on-chain since all deps are bundled
-          const details = await extractOperationDetailsFromSignedData(
-            messageData,
-            validStandaloneContractAddresses,
-          );
+          // This validates signature, but not the content of the payload
+          // e.g. verifyingContract or permit spender
+          // The domain will be validated by handleOperation
+          const details =
+            await extractOperationDetailsFromSignedData(messageData);
 
           trace('extracted details', details);
 
