@@ -79,6 +79,10 @@ relayers:
     chains:
       - agoriclocal
       - noblelocal
+    config:
+      mode:
+        clients:
+          misbehaviour: false
 
 explorer:
   enabled: false

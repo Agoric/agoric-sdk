@@ -105,6 +105,10 @@ relayers:
     chains:
       - osmosislocal
       - noblelocal
+    config:
+      mode:
+        clients:
+          misbehaviour: false
   - name: agoric-osmosis
     type: hermes
     # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
@@ -113,6 +117,10 @@ relayers:
     chains:
       - agoriclocal
       - osmosislocal
+    config:
+      mode:
+        clients:
+          misbehaviour: false
   - name: agoric-noble
     type: hermes
     # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
@@ -121,6 +129,10 @@ relayers:
     chains:
       - agoriclocal
       - noblelocal
+    config:
+      mode:
+        clients:
+          misbehaviour: false
 
 explorer:
   enabled: false
