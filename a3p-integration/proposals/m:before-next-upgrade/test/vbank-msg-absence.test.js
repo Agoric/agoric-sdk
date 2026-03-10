@@ -5,17 +5,32 @@ import test from 'ava';
 import '@endo/init/debug.js';
 import { execa } from 'execa';
 
+const queryGovModuleAddress = async () => {
+  const result = await execa('agd', [
+    'query',
+    'auth',
+    'module-account',
+    'gov',
+    '--output',
+    'json',
+  ]);
+  const { account } = JSON.parse(result.stdout);
+  return account?.value?.address ?? account?.base_account?.address;
+};
+
 test('vbank/MsgSetDenomMetadata message type should not exist', async t => {
   // Try to create a proposal with the message type
   // If the message type doesn't exist, agd will reject it during validation
   const proposalPath = '/tmp/test-vbank-setdenommetadata-proposal.json';
   const fs = await import('fs/promises');
+  const govModuleAddress = await queryGovModuleAddress();
+  t.truthy(govModuleAddress, 'gov module address should be discoverable');
 
   const proposal = {
     messages: [
       {
         '@type': '/agoric.vbank.MsgSetDenomMetadata',
-        authority: 'agoric10d07y265gmmuvt4z0w9aw880jnsr700j6z2zm3',
+        authority: govModuleAddress,
         metadata: {
           description: 'Test Token',
           denom_units: [

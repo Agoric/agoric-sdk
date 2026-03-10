@@ -63,7 +63,7 @@ test('attempting to submit vbank/MsgSetDenomMetaData proposal should fail', asyn
     messages: [
       {
         '@type': '/agoric.vbank.MsgSetDenomMetaData',
-        authority: 'agoric10d07y265gmmuvt4z0w9aw880jnsr700j6z2zm3', // gov module
+        authority: '<output of agd q auth module-account gov -ojson | jq -r .account.value.address>', // gov module
         metadata: {
           description: 'Test Token',
           denom_units: [
@@ -158,8 +158,18 @@ import { bankSend } from './test-lib/psm-lib.js';
 
 const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
 
-// The governance module address (authority for vbank messages)
-const GOV_MODULE_ADDRESS = 'agoric10d07y265gmmuvt4z0w9aw880jnsr700j6z2zm3';
+const queryGovModuleAddress = async () => {
+  const result = await execa('agd', [
+    'query',
+    'auth',
+    'module-account',
+    'gov',
+    '--output',
+    'json',
+  ]);
+  const { account } = JSON.parse(result.stdout);
+  return account?.value?.address ?? account?.base_account?.address;
+};
 
 /**
  * Query denom metadata from the bank module
@@ -224,7 +234,7 @@ test.serial('can submit and execute vbank/MsgSetDenomMetaData via governance', a
     messages: [
       {
         '@type': '/agoric.vbank.MsgSetDenomMetaData',
-        authority: GOV_MODULE_ADDRESS,
+        authority: govModuleAddress,
         metadata: {
           description: 'Test VBank Token for governance testing',
           denom_units: [
@@ -398,7 +408,7 @@ test.serial('can update existing denom metadata', async t => {
     messages: [
       {
         '@type': '/agoric.vbank.MsgSetDenomMetaData',
-        authority: GOV_MODULE_ADDRESS,
+        authority: govModuleAddress,
         metadata: {
           description: 'Initial description',
           denom_units: [

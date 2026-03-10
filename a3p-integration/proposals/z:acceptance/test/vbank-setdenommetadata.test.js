@@ -8,9 +8,20 @@ import { GOV1ADDR, GOV2ADDR, getUser } from '@agoric/synthetic-chain';
 import { retryUntilCondition } from '@agoric/client-utils';
 
 const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
+const VALIDATOR = 'validator';
 
-// The governance module address (authority for vbank messages)
-const GOV_MODULE_ADDRESS = 'agoric10d07y265gmmuvt4z0w9aw880jnsr700j6z2zm3';
+const queryGovModuleAddress = async () => {
+  const result = await execa('agd', [
+    'query',
+    'auth',
+    'module-account',
+    'gov',
+    '--output',
+    'json',
+  ]);
+  const { account } = JSON.parse(result.stdout);
+  return account?.value?.address ?? account?.base_account?.address;
+};
 
 /**
  * Query denom metadata from the bank module
@@ -130,7 +141,10 @@ const waitForProposalToPass = async proposalId => {
         '--output',
         'json',
       ]);
-      return JSON.parse(proposalResult.stdout);
+      const parsed = JSON.parse(proposalResult.stdout);
+      // Prefer the nested proposal record returned by newer query responses, but
+      // preserve the legacy direct-object behavior as a fallback.
+      return parsed?.proposal ?? parsed;
     },
     proposal => proposal.status === 'PROPOSAL_STATUS_PASSED',
     'proposal to pass',
@@ -196,13 +210,15 @@ test.serial(
     const testDenom = 'utestvbank';
     const proposalPath = '/tmp/vbank-setdenommetadata-proposal.json';
     const fs = await import('fs/promises');
+    const govModuleAddress = await queryGovModuleAddress();
+    t.truthy(govModuleAddress, 'gov module address should be discoverable');
 
     // Create proposal JSON
     const proposal = {
       messages: [
         {
           '@type': '/agoric.vbank.MsgSetDenomMetadata',
-          authority: GOV_MODULE_ADDRESS,
+          authority: govModuleAddress,
           metadata: {
             description: 'Test VBank Token for governance testing',
             denom_units: [
@@ -242,12 +258,12 @@ test.serial(
       const proposalId = await submitProposal(proposalPath, GOV1ADDR);
       t.log(`Proposal ID: ${proposalId}`);
 
-      // Vote on the proposal with governance addresses
-      const voters = [GOV1ADDR, GOV2ADDR, GOV4ADDR];
+      // On-chain x/gov votes must come from a validator key with voting power.
+      const voters = [VALIDATOR];
       await Promise.all(
-        voters.map(async address => {
-          t.log(`Voting yes from ${address}...`);
-          await voteOnProposal(proposalId, address, 'yes');
+        voters.map(async voter => {
+          t.log(`Voting yes from ${voter}...`);
+          await voteOnProposal(proposalId, voter, 'yes');
         }),
       );
 
@@ -314,13 +330,15 @@ test.serial('can update existing denom metadata via governance', async t => {
   const testDenom = 'utestvbank2';
   const proposalPath = '/tmp/vbank-update-metadata-proposal.json';
   const fs = await import('fs/promises');
+  const govModuleAddress = await queryGovModuleAddress();
+  t.truthy(govModuleAddress, 'gov module address should be discoverable');
 
   // First proposal: Set initial metadata
   const initialProposal = {
     messages: [
       {
         '@type': '/agoric.vbank.MsgSetDenomMetadata',
-        authority: GOV_MODULE_ADDRESS,
+        authority: govModuleAddress,
         metadata: {
           description: 'Initial description',
           denom_units: [
@@ -356,9 +374,9 @@ test.serial('can update existing denom metadata via governance', async t => {
     t.log('Submitting initial metadata proposal...');
     const proposalId1 = await submitProposal(proposalPath, GOV1ADDR);
 
-    const voters = [GOV1ADDR, GOV2ADDR, GOV4ADDR];
+    const voters = [VALIDATOR];
     await Promise.all(
-      voters.map(address => voteOnProposal(proposalId1, address, 'yes')),
+      voters.map(voter => voteOnProposal(proposalId1, voter, 'yes')),
     );
 
     await waitForProposalToPass(proposalId1);
@@ -373,7 +391,7 @@ test.serial('can update existing denom metadata via governance', async t => {
       messages: [
         {
           '@type': '/agoric.vbank.MsgSetDenomMetadata',
-          authority: GOV_MODULE_ADDRESS,
+          authority: govModuleAddress,
           metadata: {
             description: 'Updated description',
             denom_units: [
@@ -410,7 +428,7 @@ test.serial('can update existing denom metadata via governance', async t => {
     const proposalId2 = await submitProposal(proposalPath, GOV1ADDR);
 
     await Promise.all(
-      voters.map(address => voteOnProposal(proposalId2, address, 'yes')),
+      voters.map(voter => voteOnProposal(proposalId2, voter, 'yes')),
     );
 
     await waitForProposalToPass(proposalId2);
@@ -442,6 +460,7 @@ test.serial('can update existing denom metadata via governance', async t => {
     t.pass('Successfully updated existing denom metadata');
   } catch (ex) {
     t.log('Error during metadata update test:', ex);
+    throw ex;
   } finally {
     await fs.unlink(proposalPath).catch(() => {});
   }
@@ -452,13 +471,15 @@ test.serial(
   async t => {
     const proposalPath = '/tmp/vbank-invalid-metadata-proposal.json';
     const fs = await import('fs/promises');
+    const govModuleAddress = await queryGovModuleAddress();
+    t.truthy(govModuleAddress, 'gov module address should be discoverable');
 
     // Create proposal with invalid metadata (missing base in denom_units)
     const invalidProposal = {
       messages: [
         {
           '@type': '/agoric.vbank.MsgSetDenomMetadata',
-          authority: GOV_MODULE_ADDRESS,
+          authority: govModuleAddress,
           metadata: {
             description: 'Invalid metadata',
             denom_units: [

@@ -145,7 +145,7 @@ The test creates governance proposals with this structure:
   "messages": [
     {
       "@type": "/agoric.vbank.MsgSetDenomMetaData",
-      "authority": "agoric10d07y265gmmuvt4z0w9aw880jnsr700j6z2zm3",
+      "authority": "<output of agd q auth module-account gov -ojson | jq -r .account.value.address>",
       "metadata": {
         "description": "Test VBank Token for governance testing",
         "denom_units": [
@@ -203,9 +203,9 @@ The test creates governance proposals with this structure:
 
 ## Notes
 
-- The governance module address
-  (`agoric10d07y265gmmuvt4z0w9aw880jnsr700j6z2zm3`) is the required authority
-  for `vbank/MsgSetDenomMetaData`
+- The governance module address returned by
+  `agd q auth module-account gov -ojson | jq -r .account.value.address` is the
+  required authority for `vbank/MsgSetDenomMetaData`
 - Proposals require a deposit of 10,000,000 ubld (10 BLD)
 - The tests use `retryUntilCondition` to wait for proposals to pass
 - Tests clean up temporary files after execution
