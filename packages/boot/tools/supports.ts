@@ -303,7 +303,7 @@ interface BootProfileTraceFile {
 interface BootProfiler {
   measure: <T>(
     name: string,
-    op: () => Promise<T> | T,
+    op: () => PromiseLike<T> | T,
     args?: Record<string, unknown>,
   ) => Promise<T>;
 }
@@ -1382,7 +1382,7 @@ export const makeSwingsetTestKit = async (
     const proposal = harden(
       await profiler.measure(
         'makeSwingsetTestKit.proposal.resolve',
-        async () => proposalP,
+        () => proposalP,
       ),
     );
 
