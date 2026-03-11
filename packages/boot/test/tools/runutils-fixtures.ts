@@ -3,12 +3,15 @@ import { dirname, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { buildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import {
   makeSwingsetTestKit,
+  type SwingsetTestKit,
   type SwingsetTestKitSnapshot,
 } from '../../tools/supports.js';
+import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 
-const FIXTURE_VERSION = 3;
+const FIXTURE_VERSION = 4;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = resolve(here, '../fixtures/runutils');
@@ -18,6 +21,21 @@ export const RUNUTILS_FIXTURE_SPECS = {
     configSpecifier:
       '@agoric/vm-config/decentral-itest-orchestration-config.json',
     description: 'Boot snapshot for vow-offer-results tests',
+    setup: async (kit: SwingsetTestKit) => {
+      const { runUtils, storage } = kit;
+      const { EV } = runUtils;
+
+      await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+      const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
+      const walletFactoryDriver = await makeWalletFactoryDriver(
+        runUtils,
+        storage,
+        agoricNamesRemotes,
+      );
+
+      await walletFactoryDriver.provideSmartWallet('agoric1getter');
+      await walletFactoryDriver.provideSmartWallet('agoric1setter');
+    },
   },
 } as const;
 
@@ -67,6 +85,7 @@ export const createRunUtilsFixture = async (
     swingStorePath,
   });
   try {
+    await spec.setup?.(kit);
     await kit.controller.snapshotAllVats();
     await kit.swingStore.hostStorage.commit();
     const metadata: FixtureMetadata = {
