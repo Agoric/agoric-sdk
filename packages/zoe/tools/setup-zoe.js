@@ -74,11 +74,8 @@ export const setUpZoeForTest = async ({
   const bundleModule = async pathOrExports => {
     if (typeof pathOrExports === 'string') {
       const path = pathOrExports;
-      let pending = bundledPathCache.get(path);
-      if (!pending) {
-        pending = bundleSource(path);
-        bundledPathCache.set(path, pending);
-      }
+      const pending = bundledPathCache.get(path) || bundleSource(path);
+      bundledPathCache.set(path, pending);
       return pending;
     } else {
       assert.equal(
@@ -86,14 +83,16 @@ export const setUpZoeForTest = async ({
           ?.value,
         'Module',
       );
-      let pending = bundledExportsCache.get(pathOrExports);
-      if (!pending) {
-        // Copy all the properties so this object can be hardened.
-        const exports = { ...pathOrExports };
-        // @ts-expect-error Test bundle type needs to make 'test' const.
-        pending = bundleTestExports(exports);
-        bundledExportsCache.set(pathOrExports, pending);
-      }
+      const pending =
+        bundledExportsCache.get(pathOrExports) ||
+        (() => {
+          // Copy all the properties so this object can be hardened.
+          const exports = { ...pathOrExports };
+          return Promise.resolve(
+            /** @type {TestBundle} */ (bundleTestExports(exports)),
+          );
+        })();
+      bundledExportsCache.set(pathOrExports, pending);
       return pending;
     }
   };

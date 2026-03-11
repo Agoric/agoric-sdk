@@ -18,7 +18,7 @@ import {
 export const makeWalletFactoryContext = async (
   t,
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
-  opts = {},
+  opts = {} as Record<string, any>,
 ) => {
   const canResumeFromFixture =
     !opts.snapshot &&
