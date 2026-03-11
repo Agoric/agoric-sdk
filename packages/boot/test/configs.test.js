@@ -38,6 +38,16 @@ const CONFIG_FILES = [
 
 const NON_UPGRADEABLE_VATS = ['pegasus', 'mints'];
 
+const makeMemoizedAsync = fn => {
+  const cache = new Map();
+  return key => {
+    if (!cache.has(key)) {
+      cache.set(key, fn(key));
+    }
+    return cache.get(key);
+  };
+};
+
 /**
  * @param {string} bin
  * @param {{ spawn: typeof spawn }} io
@@ -66,16 +76,48 @@ const makeTestContext = async () => {
   const pathname = new URL(import.meta.url).pathname;
   const dirname = path.dirname(pathname);
   const pathResolve = (...ps) => path.join(dirname, ...ps);
+  const configPaths = new Map();
 
   const bundleCache = await unsafeSharedBundleCache;
 
   const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
 
+  const getConfigPath = makeMemoizedAsync(async configName => {
+    const fullPath = await importConfig(configName);
+    configPaths.set(configName, fullPath);
+    return fullPath;
+  });
+  const getConfigText = makeMemoizedAsync(async configName =>
+    fsPromises.readFile(await getConfigPath(configName), 'utf-8'),
+  );
+  const getProdConfig = makeMemoizedAsync(async configName => {
+    const config = await loadSwingsetConfigFile(
+      await getConfigPath(configName),
+    );
+    if (!config) {
+      throw Error(`missing config ${configName}`);
+    }
+    return config;
+  });
+  const getProposalBundles = makeMemoizedAsync(async configName => {
+    const config = await getProdConfig(configName);
+    const { coreProposals } = /** @type {any} */ (config);
+    const proposals = coreProposals || [];
+    return extractCoreProposalBundles(proposals);
+  });
+  const checkedBundles = new Map();
+
   return {
     bundleCache,
-    pathResolve,
+    checkedBundles,
     basename: path.basename,
+    configPaths,
+    getConfigPath,
+    getConfigText,
+    getProdConfig,
+    getProposalBundles,
+    pathResolve,
     runViz,
   };
 };
@@ -88,7 +130,7 @@ test.before(async t => {
 test('Bootstrap SwingSet config file syntax', async t => {
   await Promise.all(
     CONFIG_FILES.map(async f => {
-      const txt = await fsPromises.readFile(await importConfig(f), 'utf-8');
+      const txt = await t.context.getConfigText(f);
       const config = harden(JSON.parse(txt));
       t.notThrows(() => mustMatch(config, ssShape.SwingSetConfig), f);
     }),
@@ -113,7 +155,7 @@ const hashCode = s => {
 };
 
 const checkBundle = async (t, sourceSpec, seen, name, configSpec) => {
-  const { bundleCache, basename } = t.context;
+  const { bundleCache, basename, checkedBundles } = t.context;
 
   const targetName = `${hashCode(sourceSpec)}-${basename(sourceSpec, '.js')}`;
 
@@ -126,16 +168,27 @@ const checkBundle = async (t, sourceSpec, seen, name, configSpec) => {
 
   if (!seen.has(targetName)) {
     seen.add(targetName);
+    if (!checkedBundles.has(targetName)) {
+      checkedBundles.set(
+        targetName,
+        (async () => {
+          t.log(configSpec, ': check bundle:', name, basename(sourceSpec));
+          const meta = await bundleCache.validateOrAdd(
+            sourceSpec,
+            targetName,
+            noLog,
+          );
+          t.truthy(meta, name);
 
-    t.log(configSpec, ': check bundle:', name, basename(sourceSpec));
-    const meta = await bundleCache.validateOrAdd(sourceSpec, targetName, noLog);
-    t.truthy(meta, name);
-
-    for (const item of meta.contents) {
-      if (item.relativePath.includes('magic-cookie-test-only')) {
-        t.fail(`${configSpec} bundle ${name}: ${item.relativePath}`);
-      }
+          for (const item of meta.contents) {
+            if (item.relativePath.includes('magic-cookie-test-only')) {
+              t.fail(`${configSpec} bundle ${name}: ${item.relativePath}`);
+            }
+          }
+        })(),
+      );
     }
+    await checkedBundles.get(targetName);
   }
 };
 
@@ -144,43 +197,39 @@ test('no test-only code is in production configs', async t => {
 
   const seen = new Set();
 
-  for await (const configSpec of PROD_CONFIG_FILES) {
-    t.log('checking config', configSpec);
-    const fullPath = await importConfig(configSpec);
-    const config = await loadSwingsetConfigFile(fullPath);
-    if (!config) throw t.truthy(config, configSpec); // if/throw refines type
-    const { bundles } = config;
-    if (!bundles) throw t.truthy(bundles, configSpec);
+  await Promise.all(
+    PROD_CONFIG_FILES.map(async configSpec => {
+      t.log('checking config', configSpec);
+      const config = await t.context.getProdConfig(configSpec);
+      const { bundles } = config;
+      if (!bundles) throw t.truthy(bundles, configSpec);
 
-    for await (const [name, spec] of entries(bundles)) {
-      if (!('sourceSpec' in spec)) throw t.fail();
+      await Promise.all(
+        entries(bundles).map(async ([name, spec]) => {
+          if (!('sourceSpec' in spec)) throw t.fail();
 
-      await checkBundle(t, spec.sourceSpec, seen, name, configSpec);
-    }
-  }
+          await checkBundle(t, spec.sourceSpec, seen, name, configSpec);
+        }),
+      );
+    }),
+  );
 });
 
 test('no test-only code is in production proposals', async t => {
   const seen = new Set();
 
-  for await (const configSpec of PROD_CONFIG_FILES) {
-    t.log('checking config', configSpec);
-    const getProposals = async () => {
-      const fullPath = await importConfig(configSpec);
-      const config = await loadSwingsetConfigFile(fullPath);
-      if (!config) throw t.truthy(config, configSpec); // if/throw refines type
-      const { coreProposals } = /** @type {any} */ (config);
-      return coreProposals || [];
-    };
-
-    const coreProposals = await getProposals();
-    const { bundles } = await extractCoreProposalBundles(coreProposals);
-
-    const { entries } = Object;
-    for await (const [name, spec] of entries(bundles)) {
-      await checkBundle(t, spec.sourceSpec, seen, name, configSpec);
-    }
-  }
+  await Promise.all(
+    PROD_CONFIG_FILES.map(async configSpec => {
+      t.log('checking config', configSpec);
+      const { bundles } = await t.context.getProposalBundles(configSpec);
+      const { entries } = Object;
+      await Promise.all(
+        entries(bundles).map(async ([name, spec]) =>
+          checkBundle(t, spec.sourceSpec, seen, name, configSpec),
+        ),
+      );
+    }),
+  );
 });
 
 test('bootstrap permit visualization snapshot', async t => {
