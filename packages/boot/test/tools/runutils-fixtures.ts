@@ -33,8 +33,7 @@ export const RUNUTILS_FIXTURE_SPECS = {
     description: 'Boot snapshot for orchestration tests',
   },
   'orchestration-ready': {
-    configSpecifier:
-      '@agoric/vm-config/decentral-main-vaults-config.json',
+    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
     description: 'Boot snapshot with orchestration initialized',
     setup: async (kit: SwingsetTestKit) => {
       const initOrchestrationProposal = await kit.buildProposal(
@@ -56,6 +55,16 @@ export const RUNUTILS_FIXTURE_SPECS = {
 } as const;
 
 export type RunUtilsFixtureName = keyof typeof RUNUTILS_FIXTURE_SPECS;
+
+export const RUNUTILS_FIXTURE_NAME_BY_CONFIG: Readonly<
+  Record<string, RunUtilsFixtureName>
+> = {
+  '@agoric/vm-config/decentral-demo-config.json': 'demo-base',
+  '@agoric/vm-config/decentral-main-vaults-config.json': 'main-vaults-base',
+  '@agoric/vm-config/decentral-itest-vaults-config.json': 'itest-vaults-base',
+  '@agoric/vm-config/decentral-itest-orchestration-config.json':
+    'orchestration-base',
+};
 
 type FixtureMetadata = {
   version: typeof FIXTURE_VERSION;
@@ -84,6 +93,11 @@ const fixtureLockPath = (name: RunUtilsFixtureName) =>
 
 export const availableRunUtilsFixtureNames = (): RunUtilsFixtureName[] =>
   listNames().filter(isRunUtilsFixtureName);
+
+export const getRunUtilsFixtureNameForConfig = (
+  configSpecifier: string,
+): RunUtilsFixtureName | undefined =>
+  RUNUTILS_FIXTURE_NAME_BY_CONFIG[configSpecifier];
 
 export const createRunUtilsFixture = async (
   name: RunUtilsFixtureName,

@@ -8,6 +8,10 @@ import {
   makeSwingsetTestKit,
 } from '@aglocal/boot/tools/supports.js';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
+import {
+  getRunUtilsFixtureNameForConfig,
+  loadOrCreateRunUtilsFixture,
+} from '../../boot/test/tools/runutils-fixtures.js';
 
 // XXX same as fast-usdc-deploy/test/walletFactory.ts and
 // XXX same as packages/boot/test/bootstrapTests/walletFactory.ts
@@ -16,9 +20,27 @@ export const makeWalletFactoryContext = async (
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
   opts = {},
 ) => {
+  const canResumeFromFixture =
+    !opts.snapshot &&
+    !opts.storage &&
+    !opts.swingStorePath &&
+    Object.keys(opts.configOverrides || {}).length === 0;
+  // Snapshot restores bypass config rewriting, so keep cold boot for callers
+  // that need custom config overrides.
+  const snapshot =
+    opts.snapshot ||
+    (canResumeFromFixture
+      ? await (async () => {
+          const fixtureName = getRunUtilsFixtureNameForConfig(configSpecifier);
+          return fixtureName
+            ? loadOrCreateRunUtilsFixture(fixtureName, t.log)
+            : undefined;
+        })()
+      : undefined);
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier,
     ...opts,
+    ...(snapshot ? { snapshot } : {}),
   });
 
   const { runUtils, storage } = swingsetTestKit;

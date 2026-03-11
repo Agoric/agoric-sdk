@@ -4,6 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import {
   availableRunUtilsFixtureNames,
+  getRunUtilsFixtureNameForConfig,
   isRunUtilsFixtureName,
   loadOrCreateRunUtilsFixture,
   loadRunUtilsFixture,
@@ -24,6 +25,37 @@ test('runutils fixture names are exposed and validated', t => {
   t.true(isRunUtilsFixtureName('orchestration-ready'));
   t.true(isRunUtilsFixtureName('vow-offer-results'));
   t.false(isRunUtilsFixtureName('not-a-fixture'));
+});
+
+test('runutils fixture config mapping covers shared boot snapshots', t => {
+  t.is(
+    getRunUtilsFixtureNameForConfig(
+      '@agoric/vm-config/decentral-demo-config.json',
+    ),
+    'demo-base',
+  );
+  t.is(
+    getRunUtilsFixtureNameForConfig(
+      '@agoric/vm-config/decentral-main-vaults-config.json',
+    ),
+    'main-vaults-base',
+  );
+  t.is(
+    getRunUtilsFixtureNameForConfig(
+      '@agoric/vm-config/decentral-itest-vaults-config.json',
+    ),
+    'itest-vaults-base',
+  );
+  t.is(
+    getRunUtilsFixtureNameForConfig(
+      '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    ),
+    'orchestration-base',
+  );
+  t.is(
+    getRunUtilsFixtureNameForConfig('@agoric/vm-config/not-a-config.json'),
+    undefined,
+  );
 });
 
 test.serial(
