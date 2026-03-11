@@ -801,8 +801,16 @@ export const prepareCosmosOrchestrationAccountKit = (
         onFulfilled(responses) {
           trace('undelegate responses', responses);
           const completionSeconds = responses.reduce((maxTime, resp) => {
-            // ignore nanoseconds and just use seconds from Timestamp
-            const completionS = resp?.completionTime?.seconds ?? 0n;
+            let completionS = maxTime;
+            const { completionTime } = resp || {};
+            if (typeof completionTime === 'string') {
+              completionS = BigInt(
+                Math.ceil(Date.parse(completionTime) / 1000),
+              );
+            } else if (completionTime) {
+              // ignore nanoseconds and just use seconds from Timestamp
+              completionS = BigInt(completionTime.seconds ?? 0);
+            }
             return completionS > maxTime ? completionS : maxTime;
           }, 0n);
           completionSeconds ||

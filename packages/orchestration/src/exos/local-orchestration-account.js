@@ -474,11 +474,19 @@ export const prepareLocalOrchestrationAccountKit = (
          */
         onFulfilled(response) {
           const { completionTime } = response[0];
+
+          let unixEpochSeconds;
+          if (typeof completionTime === 'string') {
+            unixEpochSeconds = BigInt(
+              Math.ceil(Date.parse(completionTime) / 1000),
+            );
+          } else {
+            // ignore nanoseconds and just use seconds from Timestamp
+            unixEpochSeconds = BigInt(completionTime.seconds);
+          }
+
           return watch(
-            E(timerService).wakeAt(
-              // ignore nanoseconds and just use seconds from Timestamp
-              BigInt(completionTime.seconds) + maxClockSkew,
-            ),
+            E(timerService).wakeAt(unixEpochSeconds + maxClockSkew),
             this.facets.returnVoidWatcher,
           );
         },
