@@ -4,18 +4,15 @@ import type { ExecutionContext, TestFn } from 'ava';
 
 import type { IssuerKit } from '@agoric/ertp/src/types.js';
 import { BridgeId, deepCopyJsonable } from '@agoric/internal';
-import { type SwingSetConfig } from '@agoric/swingset-vat';
-import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import type { BankVat } from '@agoric/vats/src/vat-bank.js';
 import type { PriceAuthorityVat } from '@agoric/vats/src/vat-priceAuthority.js';
 import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
 import {
   forkScenario,
+  makeBootControllerFixture,
   makeBridgeDeviceEndowments,
-  makeControllerFixture,
   makeThrowingBridgeHarness,
   type BridgeBackend,
   type ControllerFixture,
@@ -23,61 +20,26 @@ import {
 
 import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
 
-const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
-
 type BaseSetup = Pick<ControllerFixture, 'forkController'>;
 
 const test = anyTest as TestFn<BaseSetup>;
 
-const makeBaseConfig = async (): Promise<SwingSetConfig> =>
-  harden({
+const makeBaseSetup = async (): Promise<BaseSetup> => {
+  return makeBootControllerFixture({
+    testModuleUrl: import.meta.url,
     includeDevDependencies: true, // for vat-data
-    bootstrap: 'bootstrap',
-    defaultReapInterval: 'never',
-    vats: {
-      bootstrap: {
-        sourceSpec: await importSpec(
-          '@agoric/swingset-vat/tools/bootstrap-relay.js',
-        ),
-      },
-    },
     bundles: {
-      bank: {
-        sourceSpec: await importSpec('@agoric/vats/src/vat-bank.js'),
-      },
-      board: {
-        sourceSpec: await importSpec('@agoric/vats/src/vat-board.js'),
-      },
-      bridge: {
-        sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js'),
-      },
-      chain: {
-        sourceSpec: await importSpec('@agoric/vats/src/core/boot-chain.js'),
-      },
-      mint: {
-        sourceSpec: bfile('./vat-mint.js'),
-      },
-      priceAuthority: {
-        sourceSpec: await importSpec('@agoric/vats/src/vat-priceAuthority.js'),
-      },
-      vow: {
-        sourceSpec: bfile('./vat-vow.js'),
-      },
+      bank: '@agoric/vats/src/vat-bank.js',
+      board: '@agoric/vats/src/vat-board.js',
+      bridge: '@agoric/vats/src/vat-bridge.js',
+      chain: '@agoric/vats/src/core/boot-chain.js',
+      mint: './vat-mint.js',
+      priceAuthority: '@agoric/vats/src/vat-priceAuthority.js',
+      vow: './vat-vow.js',
     },
     devices: {
-      bridge: {
-        sourceSpec: bfile('./device-bridge.js'),
-      },
+      bridge: './device-bridge.js',
     },
-    bundleCachePath: sharedBundleCachePath,
-  });
-
-const makeBaseSetup = async (): Promise<BaseSetup> => {
-  const config = await makeBaseConfig();
-  return makeControllerFixture({
-    config,
     baseDeviceEndowments: makeBridgeDeviceEndowments(
       makeThrowingBridgeHarness(),
     ),

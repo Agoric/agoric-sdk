@@ -1,6 +1,7 @@
 import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController, type SwingSetConfig } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import type { ExecutionContext } from 'ava';
 
@@ -31,6 +32,43 @@ export type BridgeHarness = {
 
 export type BridgeBackend = (obj: any) => unknown;
 
+type SourceSpecEntry =
+  | string
+  | {
+      sourceSpec: string;
+    };
+
+type ResolvedSourceSpecEntry = {
+  sourceSpec: string;
+};
+
+type SourceSpecEntries = Record<string, SourceSpecEntry>;
+
+type SetupBase = (context: {
+  controller: BuiltController;
+  runUtils: RunUtils;
+}) => Promise<void>;
+
+type ControllerFixtureOptions = {
+  bootstrapArgs?: unknown[];
+  config: SwingSetConfig;
+  pinVatRoots?: string[];
+  baseDeviceEndowments?: Record<string, unknown>;
+  setupBase?: SetupBase;
+};
+
+type BootControllerFixtureOptions = Omit<ControllerFixtureOptions, 'config'> & {
+  testModuleUrl: string;
+  bootstrap?: string;
+  bootstrapSourceSpec?: string;
+  vats?: SourceSpecEntries;
+  bundles?: SourceSpecEntries;
+  devices?: SourceSpecEntries;
+  bundleCachePath?: string;
+  defaultReapInterval?: string;
+  includeDevDependencies?: boolean;
+};
+
 export const makeBridgeDeviceEndowments = (
   t: BridgeHarness,
   bridgeBackends: Record<string, BridgeBackend> = {},
@@ -52,27 +90,75 @@ export const makeThrowingBridgeHarness = (): BridgeHarness => ({
   },
 });
 
+const isRelativeSourceSpec = (sourceSpec: string) =>
+  sourceSpec.startsWith('./') || sourceSpec.startsWith('../');
+
+export const resolveSourceSpec = async (
+  testModuleUrl: string,
+  entry: SourceSpecEntry,
+): Promise<ResolvedSourceSpecEntry> => {
+  const sourceSpec = typeof entry === 'string' ? entry : entry.sourceSpec;
+  return {
+    sourceSpec: isRelativeSourceSpec(sourceSpec)
+      ? new URL(sourceSpec, testModuleUrl).pathname
+      : new URL(importMetaResolve(sourceSpec, testModuleUrl)).pathname,
+  };
+};
+
+const resolveSourceSpecEntries = async (
+  testModuleUrl: string,
+  entries: SourceSpecEntries = {},
+) => {
+  const resolvedEntries = await Promise.all(
+    Object.entries(entries).map(async ([name, entry]) => [
+      name,
+      await resolveSourceSpec(testModuleUrl, entry),
+    ]),
+  );
+  return Object.fromEntries(resolvedEntries);
+};
+
+export const makeBootSwingSetConfig = async ({
+  testModuleUrl,
+  bootstrap = 'bootstrap',
+  bootstrapSourceSpec = '@agoric/swingset-vat/tools/bootstrap-relay.js',
+  vats = {},
+  bundles = {},
+  devices = {},
+  bundleCachePath = 'bundles',
+  defaultReapInterval = 'never',
+  includeDevDependencies = false,
+}: {
+  testModuleUrl: string;
+  bootstrap?: string;
+  bootstrapSourceSpec?: string;
+  vats?: SourceSpecEntries;
+  bundles?: SourceSpecEntries;
+  devices?: SourceSpecEntries;
+  bundleCachePath?: string;
+  defaultReapInterval?: string;
+  includeDevDependencies?: boolean;
+}): Promise<SwingSetConfig> =>
+  harden({
+    bootstrap,
+    bundleCachePath,
+    defaultReapInterval,
+    includeDevDependencies,
+    vats: {
+      [bootstrap]: await resolveSourceSpec(testModuleUrl, bootstrapSourceSpec),
+      ...(await resolveSourceSpecEntries(testModuleUrl, vats)),
+    },
+    bundles: await resolveSourceSpecEntries(testModuleUrl, bundles),
+    devices: await resolveSourceSpecEntries(testModuleUrl, devices),
+  });
+
 export const makeControllerFixture = async ({
   bootstrapArgs = [],
   config,
   pinVatRoots = ['bootstrap'],
   baseDeviceEndowments = {},
-  setupBase = undefined as
-    | ((context: {
-        controller: BuiltController;
-        runUtils: RunUtils;
-      }) => Promise<void>)
-    | undefined,
-}: {
-  bootstrapArgs?: unknown[];
-  config: SwingSetConfig;
-  pinVatRoots?: string[];
-  baseDeviceEndowments?: Record<string, unknown>;
-  setupBase?: (context: {
-    controller: BuiltController;
-    runUtils: RunUtils;
-  }) => Promise<void>;
-}): Promise<ControllerFixture> => {
+  setupBase,
+}: ControllerFixtureOptions): Promise<ControllerFixture> => {
   const swingStore = initSwingStore();
   const controller = await buildVatController(
     config,
@@ -128,6 +214,39 @@ export const makeControllerFixture = async ({
     await swingStore.hostStorage.close();
   }
 };
+
+export const makeBootControllerFixture = async ({
+  testModuleUrl,
+  bootstrap,
+  bootstrapSourceSpec,
+  vats,
+  bundles,
+  devices,
+  bundleCachePath,
+  defaultReapInterval,
+  includeDevDependencies,
+  bootstrapArgs,
+  pinVatRoots,
+  baseDeviceEndowments,
+  setupBase,
+}: BootControllerFixtureOptions) =>
+  makeControllerFixture({
+    bootstrapArgs,
+    pinVatRoots,
+    baseDeviceEndowments,
+    setupBase,
+    config: await makeBootSwingSetConfig({
+      testModuleUrl,
+      bootstrap,
+      bootstrapSourceSpec,
+      vats,
+      bundles,
+      devices,
+      bundleCachePath,
+      defaultReapInterval,
+      includeDevDependencies,
+    }),
+  });
 
 export const forkScenario = async (
   t: ExecutionContext<{ forkController: ControllerFixture['forkController'] }>,
