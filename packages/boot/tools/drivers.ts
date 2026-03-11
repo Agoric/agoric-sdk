@@ -36,6 +36,29 @@ import type { SwingsetTestKit } from './supports.js';
 
 type Marshaller = Omit<Marshal<string | null>, 'serialize' | 'unserialize'>;
 
+const isBootProfileEnabled = () => {
+  const value = process.env.AGORIC_BOOT_TEST_PROFILE;
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized !== '0' && normalized !== 'false' && normalized !== 'off';
+};
+
+const profileBootStep = async <T>(
+  label: string,
+  op: () => Promise<T>,
+): Promise<T> => {
+  const start = performance.now();
+  try {
+    return await op();
+  } finally {
+    if (isBootProfileEnabled()) {
+      console.warn(`${label}=${(performance.now() - start).toFixed(1)}ms`);
+    }
+  }
+};
+
 // XXX SwingsetTestKit would simplify this
 export const makeWalletFactoryDriver = async (
   runUtils: RunUtils,
@@ -146,9 +169,19 @@ export const makeWalletFactoryDriver = async (
       walletAddress: string,
       myMarshaller?: Marshaller,
     ): Promise<ReturnType<typeof makeWalletDriver>> {
-      const bank = await EV(bankManager).getBankForAddress(walletAddress);
-      return EV(walletFactoryStartResult.creatorFacet)
-        .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
+      const bank = await profileBootStep(
+        `walletFactoryDriver.getBankForAddress.${walletAddress}`,
+        () => EV(bankManager).getBankForAddress(walletAddress),
+      );
+      return profileBootStep(
+        `walletFactoryDriver.provideSmartWallet.${walletAddress}`,
+        () =>
+          EV(walletFactoryStartResult.creatorFacet).provideSmartWallet(
+            walletAddress,
+            bank,
+            namesByAddressAdmin,
+          ),
+      )
         .then(([walletPresence, isNew]) =>
           makeWalletDriver(walletAddress, walletPresence, isNew, myMarshaller),
         );

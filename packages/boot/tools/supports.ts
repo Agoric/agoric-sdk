@@ -1379,7 +1379,12 @@ export const makeSwingsetTestKit = async (
   const evalProposal = async (proposalP: ERef<ProposalMaterials>) => {
     const { EV } = runUtils;
 
-    const proposal = harden(await proposalP);
+    const proposal = harden(
+      await profiler.measure(
+        'makeSwingsetTestKit.proposal.resolve',
+        () => proposalP,
+      ),
+    );
 
     await profiler.measure(
       'makeSwingsetTestKit.proposal.installBundles',
@@ -1398,9 +1403,10 @@ export const makeSwingsetTestKit = async (
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
-      'bootstrap',
-    ).consumeItem('coreEvalBridgeHandler');
+    const coreEvalBridgeHandler: BridgeHandler = await profiler.measure(
+      'makeSwingsetTestKit.proposal.getCoreEvalBridgeHandler',
+      () => EV.vat('bootstrap').consumeItem('coreEvalBridgeHandler'),
+    );
     await profiler.measure(
       'makeSwingsetTestKit.proposal.executeCoreEval',
       () => EV(coreEvalBridgeHandler).fromBridge(bridgeMessage),
