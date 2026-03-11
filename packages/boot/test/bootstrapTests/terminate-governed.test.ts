@@ -2,13 +2,16 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 import type { TestFn } from 'ava';
 import type { ZoeService } from '@agoric/zoe';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
 // A more minimal set would be better. We need governance, but not econ vats.
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-main-vaults-config.json';
 
 const makeDefaultTestContext = async t => {
+  const snapshot = await loadOrCreateRunUtilsFixture('main-vaults-base', t.log);
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier: PLATFORM_CONFIG,
+    snapshot,
   });
   const { runUtils } = swingsetTestKit;
   const { EV } = runUtils;

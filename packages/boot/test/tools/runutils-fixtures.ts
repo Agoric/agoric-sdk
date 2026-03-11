@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { buildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
 import {
   makeSwingsetTestKit,
+  type SwingsetTestKit,
   type SwingsetTestKitSnapshot,
 } from '../../tools/supports.js';
 
@@ -14,10 +15,34 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = resolve(here, '../fixtures/runutils');
 
 export const RUNUTILS_FIXTURE_SPECS = {
+  'main-vaults-base': {
+    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
+    description: 'Boot snapshot for main-vaults wallet tests',
+  },
+  'itest-vaults-base': {
+    configSpecifier: '@agoric/vm-config/decentral-itest-vaults-config.json',
+    description: 'Boot snapshot for itest vaults tests',
+  },
   'orchestration-base': {
     configSpecifier:
       '@agoric/vm-config/decentral-itest-orchestration-config.json',
     description: 'Boot snapshot for orchestration tests',
+  },
+  'orchestration-ready': {
+    configSpecifier:
+      '@agoric/vm-config/decentral-main-vaults-config.json',
+    description: 'Boot snapshot with orchestration initialized',
+    setup: async (kit: SwingsetTestKit) => {
+      const initOrchestrationProposal = await kit.buildProposal(
+        '@agoric/builders/scripts/vats/init-orchestration.js',
+      );
+      await kit.evalProposal(initOrchestrationProposal);
+
+      const writeChainInfoProposal = await kit.buildProposal(
+        '@agoric/builders/scripts/orchestration/write-chain-info.js',
+      );
+      await kit.evalProposal(writeChainInfoProposal);
+    },
   },
   'vow-offer-results': {
     configSpecifier:

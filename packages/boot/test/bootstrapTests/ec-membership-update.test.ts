@@ -15,6 +15,7 @@ import {
 } from '../../tools/drivers.js';
 import { makeLiquidationTestKit } from '../../tools/liquidation.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
 const wallets = [
   'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
@@ -43,8 +44,10 @@ const getVoteId = id => `vote-${id}`;
 
 export const makeZoeTestContext = async t => {
   console.time('ZoeTestContext');
+  const snapshot = await loadOrCreateRunUtilsFixture('main-vaults-base', t.log);
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
+    snapshot,
   });
 
   const { runUtils, storage } = swingsetTestKit;
