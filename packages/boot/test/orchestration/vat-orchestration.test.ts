@@ -19,6 +19,7 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
@@ -50,30 +51,16 @@ const balanceQuery = toRequestQueryJson(
 );
 
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(t);
+  const snapshot = await loadOrCreateRunUtilsFixture('orchestration-ready', t.log);
+  t.context = await makeWalletFactoryContext(t, undefined, { snapshot });
 
-  async function setupDeps() {
-    const {
-      buildProposal,
-      evalProposal,
-      runUtils: { EV },
-    } = t.context;
-    /** ensure orchestration is available */
-    await evalProposal(
-      buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
-    );
-    await evalProposal(
-      buildProposal(
-        '@agoric/builders/scripts/orchestration/write-chain-info.js',
-      ),
-    );
-    const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
-    t.true(await EV(vatStore).has('ibc'), 'ibc');
-    t.true(await EV(vatStore).has('network'), 'network');
-    t.true(await EV(vatStore).has('orchestration'), 'orchestration');
-  }
-
-  await setupDeps();
+  const {
+    runUtils: { EV },
+  } = t.context;
+  const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
+  t.true(await EV(vatStore).has('ibc'), 'ibc');
+  t.true(await EV(vatStore).has('network'), 'network');
+  t.true(await EV(vatStore).has('orchestration'), 'orchestration');
 });
 
 test.after.always(t => t.context.shutdown?.());
