@@ -14,6 +14,11 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = resolve(here, '../fixtures/runutils');
 
 export const RUNUTILS_FIXTURE_SPECS = {
+  'orchestration-base': {
+    configSpecifier:
+      '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    description: 'Boot snapshot for orchestration tests',
+  },
   'vow-offer-results': {
     configSpecifier:
       '@agoric/vm-config/decentral-itest-orchestration-config.json',

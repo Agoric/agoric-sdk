@@ -22,6 +22,7 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
+import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -46,10 +47,11 @@ test.before(async t => {
   insistManagerType(defaultManagerType);
   const harness =
     defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
+  const snapshot = await loadOrCreateRunUtilsFixture('orchestration-base', t.log);
   const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { slogFile, defaultManagerType, harness },
+    { slogFile, defaultManagerType, harness, snapshot },
   );
   t.context = { ...ctx, harness };
 });
