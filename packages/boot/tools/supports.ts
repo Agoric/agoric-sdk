@@ -1382,7 +1382,7 @@ export const makeSwingsetTestKit = async (
     const proposal = harden(
       await profiler.measure(
         'makeSwingsetTestKit.proposal.resolve',
-        () => proposalP,
+        async () => proposalP,
       ),
     );
 
