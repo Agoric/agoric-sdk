@@ -15,14 +15,14 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+  makeBootTestContext,
+  withWalletFactory,
+  type WalletFactoryBootTestContext,
+} from '../tools/boot-test-context.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
-import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
 const test: TestFn<
-  WalletFactoryTestContext & {
+  WalletFactoryBootTestContext & {
     assertInboundQueueLength: (
       phase: 'before' | 'after',
       label: string,
@@ -63,11 +63,12 @@ const wrapSteps = <S extends TestStep[]>(
   ) as unknown as S;
 
 test.before(async t => {
-  const snapshot = await loadOrCreateRunUtilsFixture('orchestration-base', t.log);
-  const context = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { snapshot },
+  const context = await withWalletFactory(
+    await makeBootTestContext(t, {
+      configSpecifier:
+        '@agoric/vm-config/decentral-itest-orchestration-config.json',
+      fixtureName: 'orchestration-base',
+    }),
   );
 
   const { getInboundQueueLength } = context.bridgeUtils;
@@ -90,18 +91,18 @@ test.after.always(t => t.context.shutdown?.());
 
 test.serial('send-anywhere', async t => {
   const {
-    walletFactoryDriver,
-    buildProposal,
-    evalProposal,
+    applyProposal,
     bridgeUtils: { runInbound, flushInboundQueue },
     assertInboundQueueLength,
+    provideSmartWallet,
   } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
 
   t.log('start send-anywhere');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js', [
+  await applyProposal(
+    '@agoric/builders/scripts/testing/init-send-anywhere.js',
+    [
       '--chainInfo',
       JSON.stringify(withChainCapabilities(minimalChainInfos)),
       '--assetInfo',
@@ -116,7 +117,7 @@ test.serial('send-anywhere', async t => {
           },
         ],
       ]),
-    ]),
+    ],
   );
 
   // This test consumes a channel and a test Id.
@@ -133,9 +134,7 @@ test.serial('send-anywhere', async t => {
       makeWallet: async (_opts, label) => {
         lastWalletId += 1;
         const walletId = lastWalletId;
-        const wallet = await walletFactoryDriver.provideSmartWallet(
-          `agoric1test${walletId}`,
-        );
+        const wallet = await provideSmartWallet(`agoric1test${walletId}`);
         // no money in wallet to actually send
         const zero = { brand: IST, value: 0n };
         // send because it won't resolve
@@ -159,7 +158,7 @@ test.serial('send-anywhere', async t => {
         });
 
         t.like(
-          wallet.getCurrentWalletRecord(),
+          wallet.current(),
           { liveOffers: [['send-somewhere']] },
           `${label} live offer until we simulate the transfer ack`,
         );
@@ -168,7 +167,7 @@ test.serial('send-anywhere', async t => {
       },
       checkEmptyBalance: async (opts, label) => {
         t.like(
-          opts.wallet.getLatestUpdateRecord(),
+          opts.wallet.latest(),
           {
             updated: 'balance',
             currentAmount: { value: [] },
@@ -192,7 +191,7 @@ test.serial('send-anywhere', async t => {
         return opts;
       },
       checkTransferSettled: async (opts, label) => {
-        const conclusion = opts.wallet.getLatestUpdateRecord();
+        const conclusion = opts.wallet.latest();
         t.like(conclusion, {
           updated: 'offerStatus',
           status: {
@@ -208,7 +207,7 @@ test.serial('send-anywhere', async t => {
       finalFlush: async (opts, label) => {
         await flushInboundQueue();
         t.like(
-          opts.wallet.getLatestUpdateRecord(),
+          opts.wallet.latest(),
           {
             status: {
               error: undefined,
@@ -224,10 +223,8 @@ test.serial('send-anywhere', async t => {
 
   await testInterruptedSteps(t, allSteps, async () => {
     t.log('restart send-anywhere');
-    await evalProposal(
-      buildProposal(
-        '@agoric/builders/scripts/testing/restart-send-anywhere.js',
-      ),
+    await applyProposal(
+      '@agoric/builders/scripts/testing/restart-send-anywhere.js',
     );
   });
 
@@ -250,18 +247,15 @@ const hasResult = (r: UpdateRecord) => {
 // Tests restart but not of an orchestration() flow
 test.serial('stakeAtom', async t => {
   const {
-    buildProposal,
-    evalProposal,
+    applyProposal,
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
     readLatest,
   } = t.context;
 
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js', [
-      '--chainInfo',
-      JSON.stringify(withChainCapabilities(minimalChainInfos)),
-    ]),
+  await applyProposal(
+    '@agoric/builders/scripts/orchestration/init-stakeAtom.js',
+    ['--chainInfo', JSON.stringify(withChainCapabilities(minimalChainInfos))],
   );
 
   await flushInboundQueue(); // establish baseline
@@ -288,7 +282,7 @@ test.serial('stakeAtom', async t => {
         t.context.num.channel += 1;
         const channel = t.context.num.channel;
 
-        const wallet = await t.context.walletFactoryDriver.provideSmartWallet(
+        const wallet = await t.context.provideSmartWallet(
           `agoric1testStakeAtom${walletId}`,
         );
 
@@ -309,8 +303,7 @@ test.serial('stakeAtom', async t => {
         // no result yet because the IBC incoming messages haven't arrived
         // and won't until we flush.
         await flushInboundQueue();
-        const latest = readLatest(accountPath);
-        t.deepEqual(latest, {
+        t.context.expectPublished(t, accountPath, {
           localAddress: `/ibc-port/icacontroller-${ica}/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"${testAccount}","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-${channel}`,
           remoteAddress: `/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"${testAccount}","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-${channel}`,
         });
@@ -336,10 +329,10 @@ test.serial('stakeAtom', async t => {
         });
         // no result yet because the IBC incoming messages haven't arrived
         // and won't until we flush.
-        t.false(hasResult(opts.wallet!.getLatestUpdateRecord()));
+        t.false(hasResult(opts.wallet!.latest()));
         await flushInboundQueue();
         // now the offer has resolved
-        t.true(hasResult(opts.wallet!.getLatestUpdateRecord()));
+        t.true(hasResult(opts.wallet!.latest()));
         return opts;
       },
     } satisfies Record<string, TestStep<Input>[1]>),
@@ -347,8 +340,8 @@ test.serial('stakeAtom', async t => {
 
   await testInterruptedSteps(t, allSteps, async () => {
     t.log('restart stakeAtom');
-    await evalProposal(
-      buildProposal('@agoric/builders/scripts/testing/restart-stakeAtom.js'),
+    await applyProposal(
+      '@agoric/builders/scripts/testing/restart-stakeAtom.js',
     );
     await flushInboundQueue();
   });
@@ -366,22 +359,19 @@ test.serial('stakeAtom', async t => {
 // the two core-eval functions.
 test.serial('basicFlows', async t => {
   const {
-    walletFactoryDriver,
-    buildProposal,
-    evalProposal,
+    applyProposal,
     bridgeUtils: { getInboundQueueLength, flushInboundQueue },
+    provideSmartWallet,
   } = t.context;
 
   t.log('start basicFlows');
-  await evalProposal(
-    buildProposal(
-      '@agoric/builders/scripts/orchestration/init-basic-flows.js',
-      ['--chainInfo', JSON.stringify(withChainCapabilities(minimalChainInfos))],
-    ),
+  await applyProposal(
+    '@agoric/builders/scripts/orchestration/init-basic-flows.js',
+    ['--chainInfo', JSON.stringify(withChainCapabilities(minimalChainInfos))],
   );
 
   t.log('making offer');
-  const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
+  const wallet = await provideSmartWallet('agoric1test');
   const id1 = 'make-orch-account';
   // send because it won't resolve
   await wallet.sendOffer({
@@ -397,7 +387,7 @@ test.serial('basicFlows', async t => {
     },
   });
   // no errors and no result yet
-  t.like(wallet.getLatestUpdateRecord(), {
+  t.like(wallet.latest(), {
     status: {
       id: id1,
       error: undefined,
@@ -409,18 +399,18 @@ test.serial('basicFlows', async t => {
   // 1x ICQ Channel Open
   t.is(getInboundQueueLength(), 1);
   t.log('flush and verify results');
-  const beforeFlush = wallet.getLatestUpdateRecord();
+  const beforeFlush = wallet.latest();
   t.like(beforeFlush, {
     status: {
       result: undefined,
     },
   });
   t.is(await flushInboundQueue(1), 1);
-  t.like(wallet.getLatestUpdateRecord(), {
+  wallet.expectResult(t, id1, 'UNPUBLISHED');
+  t.like(wallet.latest(), {
     status: {
       id: id1,
       error: undefined,
-      result: 'UNPUBLISHED',
     },
   });
 
@@ -438,7 +428,7 @@ test.serial('basicFlows', async t => {
     },
   });
   // no errors and no result yet
-  t.like(wallet.getLatestUpdateRecord(), {
+  t.like(wallet.latest(), {
     status: {
       id: id2,
       error: undefined,
@@ -451,16 +441,16 @@ test.serial('basicFlows', async t => {
   t.is(getInboundQueueLength(), 3);
 
   t.log('restart basicFlows');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/restart-basic-flows.js'),
+  await applyProposal(
+    '@agoric/builders/scripts/testing/restart-basic-flows.js',
   );
 
   t.is(await flushInboundQueue(3), 3);
-  t.like(wallet.getLatestUpdateRecord(), {
+  wallet.expectResult(t, id2, 'UNPUBLISHED');
+  t.like(wallet.latest(), {
     status: {
       id: id2,
       error: undefined,
-      result: 'UNPUBLISHED',
     },
   });
 });

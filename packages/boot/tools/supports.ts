@@ -1044,6 +1044,23 @@ const restoreFakeStorage = (
  * @param options.swingStorePath - Optional persistent swing-store directory path
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
+export type MakeSwingsetTestKitOptions = {
+  configSpecifier?: string;
+  label?: string | undefined;
+  storage?: FakeStorage | undefined;
+  verbose?: boolean;
+  slogFile?: string | undefined;
+  profileVats?: string[];
+  debugVats?: string[];
+  defaultManagerType?: ManagerType;
+  harness?: RunHarness | undefined;
+  proposalBuildMode?: ProposalBuildMode;
+  resolveBase?: string;
+  configOverrides?: Partial<SwingSetConfig>;
+  snapshot?: SwingsetTestKitSnapshot | undefined;
+  swingStorePath?: string | undefined;
+};
+
 export const makeSwingsetTestKit = async <
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
@@ -1067,7 +1084,7 @@ export const makeSwingsetTestKit = async <
     configOverrides = {} as Partial<SwingSetConfig>,
     snapshot = undefined as SwingsetTestKitSnapshot | undefined,
     swingStorePath = undefined as string | undefined,
-  } = {},
+  }: MakeSwingsetTestKitOptions = {},
 ) => {
   const storage = storageOpt || restoreFakeStorage(snapshot?.storageSnapshot);
   const importSpec = createRequire(resolveBase).resolve;
