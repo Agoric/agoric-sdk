@@ -4,16 +4,14 @@
  */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import {
   forkScenario,
-  makeControllerFixture,
+  makeBootControllerFixture,
 } from '../tools/controller-fixture.js';
 
 /**
  * @import {TestFn} from 'ava';
  * @import {ControllerFixture} from '../tools/controller-fixture.js';
- * @import {SwingSetConfig} from '@agoric/swingset-vat';
  */
 
 /**
@@ -25,34 +23,20 @@ import {
  */
 const test = anyTest;
 
-const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
-
-const makeBaseConfig = async () =>
-  harden({
-    bootstrap: 'bootstrap',
-    vats: {
-      // TODO refactor to use bootstrap-relay.js
-      bootstrap: { sourceSpec: bfile('./bootstrap.js') },
-      zoe: { sourceSpec: await importSpec('@agoric/vats/src/vat-zoe.js') },
-    },
-    bundles: {
-      zcf: {
-        sourceSpec: await importSpec('@agoric/zoe/contractFacet.js'),
-      },
-      mintHolder: {
-        sourceSpec: await importSpec('@agoric/vats/src/mintHolder.js'),
-      },
-    },
-  });
-
 let baseContextP;
 const getBaseContext = () => {
   if (!baseContextP) {
-    baseContextP = makeBaseConfig().then(config =>
-      makeControllerFixture({ config }),
-    );
+    baseContextP = makeBootControllerFixture({
+      testModuleUrl: import.meta.url,
+      bootstrapSourceSpec: './bootstrap.js',
+      vats: {
+        zoe: '@agoric/vats/src/vat-zoe.js',
+      },
+      bundles: {
+        zcf: '@agoric/zoe/contractFacet.js',
+        mintHolder: '@agoric/vats/src/mintHolder.js',
+      },
+    });
   }
   return baseContextP;
 };
