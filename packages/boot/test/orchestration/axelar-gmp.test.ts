@@ -10,6 +10,7 @@ import type { ExecutionContext, TestFn } from 'ava';
 import { encodeAbiParameters } from 'viem';
 import { makeReceiveUpCallPayload } from '../../tools/axelar-supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
 export type WalletFactoryDriver = Awaited<
   ReturnType<typeof makeWalletFactoryDriver>
@@ -37,9 +38,11 @@ type AxelarGmpMemo = {
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 const makeTestContext = async (t: ExecutionContext) => {
+  const snapshot = await loadOrCreateRunUtilsFixture('orchestration-base', t.log);
   const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    { snapshot },
   );
 
   const wallet =
