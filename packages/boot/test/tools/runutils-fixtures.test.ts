@@ -11,7 +11,9 @@ import {
 
 test('runutils fixture names are exposed and validated', t => {
   const names = availableRunUtilsFixtureNames();
+  t.true(names.includes('orchestration-base'));
   t.true(names.includes('vow-offer-results'));
+  t.true(isRunUtilsFixtureName('orchestration-base'));
   t.true(isRunUtilsFixtureName('vow-offer-results'));
   t.false(isRunUtilsFixtureName('not-a-fixture'));
 });
