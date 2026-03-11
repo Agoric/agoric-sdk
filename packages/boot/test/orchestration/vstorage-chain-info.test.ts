@@ -15,9 +15,10 @@ import {
   makeSwingsetHarness,
 } from '../../tools/supports.js';
 import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+  makeBootTestContext,
+  withWalletFactory,
+  type WalletFactoryBootTestContext,
+} from '../tools/boot-test-context.js';
 
 type ChainInfoState = {
   bootReady: Promise<void>;
@@ -31,7 +32,7 @@ type ChainInfoContext = {
   markConfigVerified: (error?: unknown) => void;
   makeBootContext: (
     t: ExecutionContext<unknown>,
-  ) => Promise<WalletFactoryTestContext>;
+  ) => Promise<WalletFactoryBootTestContext>;
 };
 
 const test: TestFn<ChainInfoContext> = anyTest;
@@ -65,15 +66,15 @@ test.before(async t => {
     };
   });
 
-  const makeBootContext = (t0: ExecutionContext<unknown>) =>
-    makeWalletFactoryContext(
-      t0,
-      '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
-      {
+  const makeBootContext = async (t0: ExecutionContext<unknown>) =>
+    withWalletFactory(
+      await makeBootTestContext(t0, {
+        configSpecifier:
+          '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
         slogFile,
         defaultManagerType: managerType,
         harness,
-      },
+      }),
     );
 
   t.context = {
@@ -93,7 +94,7 @@ test.before(async t => {
  */
 test('config', async t => {
   await t.context.state.bootReady;
-  let ctx: WalletFactoryTestContext | undefined;
+  let ctx: WalletFactoryBootTestContext | undefined;
   t.teardown(() => t.context.markConfigVerified());
   try {
     ctx = await t.context.makeBootContext(t);
@@ -172,14 +173,11 @@ test('revise chain info', async t => {
   t.teardown(async () => ctx.shutdown());
 
   const {
-    buildProposal,
-    evalProposal,
+    applyProposal,
     runUtils: { EV },
   } = ctx;
 
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/append-chain-info.js'),
-  );
+  await applyProposal('@agoric/builders/scripts/testing/append-chain-info.js');
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
