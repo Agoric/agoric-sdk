@@ -7,19 +7,20 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { withChainCapabilities } from '@agoric/orchestration';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+  makeBootTestContext,
+  withWalletFactory,
+  type WalletFactoryBootTestContext,
+} from '../tools/boot-test-context.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
-import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<WalletFactoryBootTestContext> = anyTest;
 test.before(async t => {
-  const snapshot = await loadOrCreateRunUtilsFixture('orchestration-base', t.log);
-  t.context = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { snapshot },
+  t.context = await withWalletFactory(
+    await makeBootTestContext(t, {
+      configSpecifier:
+        '@agoric/vm-config/decentral-itest-orchestration-config.json',
+      fixtureName: 'orchestration-base',
+    }),
   );
 });
 test.after.always(t => t.context.shutdown?.());
@@ -35,18 +36,18 @@ test.after.always(t => t.context.shutdown?.());
  */
 test('resume', async t => {
   const {
-    walletFactoryDriver,
+    applyProposal,
     bridgeUtils: { runInbound },
-    buildProposal,
-    evalProposal,
-    storage,
+    provideSmartWallet,
   } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
+  const sendAnywhereLog = t.context.makePublishedLog('send-anywhere.log');
 
   t.log('start sendAnywhere');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js', [
+  await applyProposal(
+    '@agoric/builders/scripts/testing/init-send-anywhere.js',
+    [
       '--chainInfo',
       JSON.stringify(withChainCapabilities(minimalChainInfos)),
       '--assetInfo',
@@ -61,11 +62,11 @@ test('resume', async t => {
           },
         ],
       ]),
-    ]),
+    ],
   );
 
   t.log('making offer');
-  const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
+  const wallet = await provideSmartWallet('agoric1test');
   // no money in wallet to actually send
   const zero = { brand: IST, value: 0n };
   // send because it won't resolve
@@ -83,20 +84,16 @@ test('resume', async t => {
     offerArgs: { destAddr: 'cosmos1whatever', chainName: 'cosmoshub' },
   });
 
-  // XXX golden test
-  const getLogged = () =>
-    JSON.parse(storage.data.get('published.send-anywhere.log')!).values;
-
   // This log shows the flow started, but didn't get past the IBC Transfer settlement
-  t.deepEqual(getLogged(), [
+  sendAnywhereLog.expect(t, [
     'sending {0} from cosmoshub to cosmos1whatever',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
   ]);
 
   t.log('null upgrading sendAnywhere');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/upgrade-send-anywhere.js'),
+  await applyProposal(
+    '@agoric/builders/scripts/testing/upgrade-send-anywhere.js',
   );
 
   // simulate ibc/MsgTransfer ack from remote chain, enabling `.transfer()` promise
@@ -111,7 +108,7 @@ test('resume', async t => {
     }),
   );
 
-  t.deepEqual(getLogged(), [
+  sendAnywhereLog.expect(t, [
     'sending {0} from cosmoshub to cosmos1whatever',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
