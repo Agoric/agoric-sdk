@@ -1029,13 +1029,23 @@ export const makeSwingsetTestKit = async (
   // eslint-disable-next-line no-nested-ternary
   const swingStore = snapshotDir
     ? await (async () => {
-        swingStoreClonePath = await fsAmbientPromises.mkdtemp(
-          join(tmpdir(), 'boot-swingset-fixture-'),
-        );
-        await fsAmbientPromises.cp(snapshotDir, swingStoreClonePath, {
+        const clonedSwingStorePath =
+          swingStorePath ||
+          (await fsAmbientPromises.mkdtemp(
+            join(tmpdir(), 'boot-swingset-fixture-'),
+          ));
+        if (swingStorePath) {
+          await fsAmbientPromises.rm(clonedSwingStorePath, {
+            recursive: true,
+            force: true,
+          });
+        } else {
+          swingStoreClonePath = clonedSwingStorePath;
+        }
+        await fsAmbientPromises.cp(snapshotDir, clonedSwingStorePath, {
           recursive: true,
         });
-        return openSwingStore(swingStoreClonePath);
+        return openSwingStore(clonedSwingStorePath);
       })()
     : // eslint-disable-next-line no-nested-ternary
       snapshot?.swingStoreSerialized

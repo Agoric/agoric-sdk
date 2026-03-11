@@ -6,7 +6,10 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { type SwingsetTestKitSnapshot } from '@aglocal/boot/tools/supports.js';
 import { loadOrCreateRunUtilsFixture } from '../../boot/test/tools/runutils-fixtures.js';
-import { preparePortfolioReadyContext } from './portfolio-fixture-setup.ts';
+import {
+  preparePortfolioNewContractContext,
+  preparePortfolioReadyContext,
+} from './portfolio-fixture-setup.ts';
 import { makeWalletFactoryContext } from './walletFactory.ts';
 
 const FIXTURE_VERSION = 1;
@@ -30,13 +33,24 @@ export const PORTFOLIO_FIXTURE_SPECS = {
       '@agoric/vm-config/decentral-itest-orchestration-config.json',
     description: 'Boot snapshot with portfolio proposals applied',
   },
+  'portfolio-new-contract-ready': {
+    configSpecifier:
+      '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    description: 'Portfolio snapshot after removing and starting a fresh ymax0',
+  },
 } as const;
 
 export type PortfolioFixtureName = keyof typeof PORTFOLIO_FIXTURE_SPECS;
 
 type FixtureBody = {
   version: typeof FIXTURE_VERSION;
-  snapshot: SwingsetTestKitSnapshot;
+  kernelBundleSha512: string;
+  storageSnapshot?: SwingsetTestKitSnapshot['storageSnapshot'];
+};
+type FixtureKernelBundle = NonNullable<SwingsetTestKitSnapshot['kernelBundle']>;
+type FixtureLockBody = {
+  pid: number;
+  createdAt: number;
 };
 
 const listNames = () => Object.keys(PORTFOLIO_FIXTURE_SPECS);
@@ -50,38 +64,87 @@ export const isPortfolioFixtureName = (
 export const availablePortfolioFixtureNames = (): PortfolioFixtureName[] =>
   listNames().filter(isPortfolioFixtureName);
 
-const fixturePath = (name: PortfolioFixtureName) =>
-  `${fixtureDir}/${name}.json`;
+const fixturePath = (name: PortfolioFixtureName) => `${fixtureDir}/${name}`;
+const fixtureMetadataPath = (name: PortfolioFixtureName) =>
+  `${fixturePath(name)}/metadata.json`;
+const fixtureKernelBundlePath = (name: PortfolioFixtureName) =>
+  `${fixturePath(name)}/kernel-bundle.json`;
+const fixtureSwingStorePath = (name: PortfolioFixtureName) =>
+  `${fixturePath(name)}/swingstore`;
 const fixtureLockPath = (name: PortfolioFixtureName) =>
   `${fixtureDir}/${name}.lock`;
+
+const isProcessAlive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM';
+  }
+};
+
+const removeStaleFixtureLock = async (lockPath: string) => {
+  try {
+    const body = JSON.parse(
+      await fs.readFile(lockPath, 'utf-8'),
+    ) as Partial<FixtureLockBody>;
+    if (typeof body.pid === 'number' && isProcessAlive(body.pid)) {
+      return false;
+    }
+  } catch {
+    // Unreadable or truncated lock files are treated as stale.
+  }
+  await fs.rm(lockPath, { force: true });
+  return true;
+};
 
 export const createPortfolioFixture = async (
   name: PortfolioFixtureName,
   log: (...args: unknown[]) => void = console.log,
 ) => {
   const spec = PORTFOLIO_FIXTURE_SPECS[name];
-  const baseSnapshot = await loadOrCreateRunUtilsFixture(
-    'orchestration-base',
-    log,
-  );
+  const baseSnapshot =
+    name === 'portfolio-ready'
+      ? await loadOrCreateRunUtilsFixture('orchestration-base', log)
+      : await loadOrCreatePortfolioFixture('portfolio-ready', log);
+  const kernelBundle = baseSnapshot.kernelBundle;
+  if (!kernelBundle) {
+    throw Error(`Fixture ${name} base snapshot is missing kernel bundle data`);
+  }
+  const path = fixturePath(name);
+  const swingStorePath = fixtureSwingStorePath(name);
+  await fs.rm(path, { recursive: true, force: true });
+  await fs.mkdir(path, { recursive: true });
   const kit = await makeWalletFactoryContext(
     { log } as Parameters<typeof makeWalletFactoryContext>[0],
     spec.configSpecifier,
-    { snapshot: baseSnapshot },
+    { snapshot: baseSnapshot, swingStorePath },
   );
   try {
-    await preparePortfolioReadyContext(kit);
+    if (name === 'portfolio-ready') {
+      await preparePortfolioReadyContext(kit);
+    } else {
+      await preparePortfolioNewContractContext(kit);
+    }
     await kit.controller.snapshotAllVats();
     await kit.swingStore.hostStorage.commit();
 
-    const body: FixtureBody = {
+    const metadata: FixtureBody = {
       version: FIXTURE_VERSION,
-      snapshot: kit.makeSnapshot(),
+      kernelBundleSha512: kernelBundle.endoZipBase64Sha512,
+      storageSnapshot: kit.makeStorageSnapshot(),
     };
-
-    await fs.mkdir(fixtureDir, { recursive: true });
-    await fs.writeFile(fixturePath(name), JSON.stringify(body), 'utf-8');
-    return fixturePath(name);
+    await fs.writeFile(
+      fixtureKernelBundlePath(name),
+      JSON.stringify(kernelBundle),
+      'utf-8',
+    );
+    await fs.writeFile(
+      fixtureMetadataPath(name),
+      JSON.stringify(metadata, null, 2),
+      'utf-8',
+    );
+    return path;
   } finally {
     await kit.shutdown();
   }
@@ -90,15 +153,25 @@ export const createPortfolioFixture = async (
 export const loadPortfolioFixture = async (
   name: PortfolioFixtureName,
 ): Promise<SwingsetTestKitSnapshot> => {
-  const body = JSON.parse(
-    await fs.readFile(fixturePath(name), 'utf-8'),
-  ) as FixtureBody;
-  if (body.version !== FIXTURE_VERSION) {
+  const [metadataBody, kernelBundleBody] = await Promise.all([
+    fs.readFile(fixtureMetadataPath(name), 'utf-8'),
+    fs.readFile(fixtureKernelBundlePath(name), 'utf-8'),
+  ]);
+  const metadata = JSON.parse(metadataBody) as FixtureBody;
+  if (metadata.version !== FIXTURE_VERSION) {
     throw new Error(
-      `Unsupported fixture version ${body.version}, expected ${FIXTURE_VERSION}`,
+      `Unsupported fixture version ${metadata.version}, expected ${FIXTURE_VERSION}`,
     );
   }
-  return body.snapshot;
+  const kernelBundle = JSON.parse(kernelBundleBody) as FixtureKernelBundle;
+  if (kernelBundle.endoZipBase64Sha512 !== metadata.kernelBundleSha512) {
+    throw new Error(`Fixture ${name} kernel bundle hash mismatch`);
+  }
+  return {
+    swingStoreDir: fixtureSwingStorePath(name),
+    kernelBundle,
+    storageSnapshot: metadata.storageSnapshot,
+  };
 };
 
 export const loadOrCreatePortfolioFixture = async (
@@ -118,12 +191,18 @@ export const loadOrCreatePortfolioFixture = async (
       lock = await fs.open(lockPath, 'wx');
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === 'EEXIST') {
+        if (await removeStaleFixtureLock(lockPath)) {
+          continue;
+        }
         await delay(100);
         continue;
       }
       throw e;
     }
     try {
+      await lock.writeFile(
+        JSON.stringify({ pid: process.pid, createdAt: Date.now() }),
+      );
       try {
         return await loadPortfolioFixture(name);
       } catch (cause) {

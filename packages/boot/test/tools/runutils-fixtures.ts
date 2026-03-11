@@ -72,6 +72,10 @@ type FixtureMetadata = {
   storageSnapshot?: SwingsetTestKitSnapshot['storageSnapshot'];
 };
 type FixtureKernelBundle = NonNullable<SwingsetTestKitSnapshot['kernelBundle']>;
+type FixtureLockBody = {
+  pid: number;
+  createdAt: number;
+};
 
 const listNames = () => Object.keys(RUNUTILS_FIXTURE_SPECS);
 
@@ -90,6 +94,30 @@ const fixtureKernelBundlePath = (name: RunUtilsFixtureName) =>
   `${fixturePath(name)}/kernel-bundle.json`;
 const fixtureLockPath = (name: RunUtilsFixtureName) =>
   `${fixturePath(name)}.lock`;
+
+const isProcessAlive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM';
+  }
+};
+
+const removeStaleFixtureLock = async (lockPath: string) => {
+  try {
+    const body = JSON.parse(
+      await fs.readFile(lockPath, 'utf-8'),
+    ) as Partial<FixtureLockBody>;
+    if (typeof body.pid === 'number' && isProcessAlive(body.pid)) {
+      return false;
+    }
+  } catch {
+    // Unreadable or truncated lock files are treated as stale.
+  }
+  await fs.rm(lockPath, { force: true });
+  return true;
+};
 
 export const availableRunUtilsFixtureNames = (): RunUtilsFixtureName[] =>
   listNames().filter(isRunUtilsFixtureName);
@@ -179,12 +207,18 @@ export const loadOrCreateRunUtilsFixture = async (
       lock = await fs.open(lockPath, 'wx');
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === 'EEXIST') {
+        if (await removeStaleFixtureLock(lockPath)) {
+          continue;
+        }
         await delay(100);
         continue;
       }
       throw e;
     }
     try {
+      await lock.writeFile(
+        JSON.stringify({ pid: process.pid, createdAt: Date.now() }),
+      );
       try {
         return await loadRunUtilsFixture(name);
       } catch (cause) {

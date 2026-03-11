@@ -1,6 +1,7 @@
 import { AckBehavior } from '@aglocal/boot/tools/supports.js';
 import { BridgeId } from '@agoric/internal';
 import type { ChainInfo } from '@agoric/orchestration';
+import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
 import type { WalletFactoryTestContext } from './walletFactory.ts';
 
 export const beneficiary = 'agoric126sd64qkuag2fva3vy3syavggvw44ca2zfrzyy';
@@ -183,4 +184,73 @@ export const preparePortfolioReadyContext = async (
     proposal: {},
     saveResult: { name: 'ymaxControl' },
   });
+};
+
+type ConsumeBootstrapItem = <N extends string>(
+  name: N,
+) => N extends keyof PortfolioBootPowers['consume']
+  ? PortfolioBootPowers['consume'][N]
+  : unknown;
+
+export const preparePortfolioNewContractContext = async (
+  ctx: WalletFactoryTestContext,
+) => {
+  const {
+    runUtils: { EV },
+    agoricNamesRemotes,
+    refreshAgoricNamesRemotes,
+    walletFactoryDriver,
+  } = ctx;
+
+  const instancePre = agoricNamesRemotes.instance.ymax0;
+  if (!instancePre) {
+    throw Error('ymax0 instance missing before contract replacement');
+  }
+
+  const installation = agoricNamesRemotes.installation.ymax0;
+  const issuers = {
+    Access: agoricNamesRemotes.issuer.PoC26,
+    USDC: agoricNamesRemotes.issuer.USDC,
+    BLD: agoricNamesRemotes.issuer.BLD,
+    Fee: agoricNamesRemotes.issuer.BLD,
+  };
+
+  const { privateArgs } = await (
+    EV.vat('bootstrap').consumeItem as ConsumeBootstrapItem
+  )('ymax0Kit');
+  const oldBoardId = (instancePre as any).getBoardId();
+  const controllerWallet =
+    await walletFactoryDriver.provideSmartWallet(controllerAddr);
+
+  await controllerWallet.invokeEntry({
+    id: 'fixture-terminate-ymax0',
+    targetName: 'ymaxControl',
+    method: 'terminate',
+    args: [{ message: 'restarting contract', target: oldBoardId }],
+  });
+
+  const privateArgsOverrides = harden({
+    assetInfo: privateArgs.assetInfo,
+    axelarIds: privateArgs.axelarIds,
+    chainInfo: privateArgs.chainInfo,
+    contracts: privateArgs.contracts,
+    gmpAddresses: privateArgs.gmpAddresses,
+    walletBytecode: privateArgs.walletBytecode,
+  });
+
+  await controllerWallet.invokeEntry({
+    id: 'fixture-start-ymax0',
+    targetName: 'ymaxControl',
+    method: 'start',
+    // @ts-expect-error chainInfo incompatible with Passable?
+    args: [{ installation, issuers, privateArgsOverrides }],
+  });
+
+  refreshAgoricNamesRemotes();
+  if (!agoricNamesRemotes.instance.ymax0) {
+    throw Error('ymax0 instance missing after contract replacement');
+  }
+  if (agoricNamesRemotes.instance.ymax0 === instancePre) {
+    throw Error('ymax0 instance did not change after contract replacement');
+  }
 };
