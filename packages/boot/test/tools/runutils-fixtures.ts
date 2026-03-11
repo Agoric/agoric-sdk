@@ -15,6 +15,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const fixtureDir = resolve(here, '../fixtures/runutils');
 
 export const RUNUTILS_FIXTURE_SPECS = {
+  'demo-base': {
+    configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
+    description: 'Boot snapshot for demo config tests',
+  },
   'main-vaults-base': {
     configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
     description: 'Boot snapshot for main-vaults wallet tests',

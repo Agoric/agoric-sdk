@@ -11,11 +11,13 @@ import {
 
 test('runutils fixture names are exposed and validated', t => {
   const names = availableRunUtilsFixtureNames();
+  t.true(names.includes('demo-base'));
   t.true(names.includes('main-vaults-base'));
   t.true(names.includes('itest-vaults-base'));
   t.true(names.includes('orchestration-base'));
   t.true(names.includes('orchestration-ready'));
   t.true(names.includes('vow-offer-results'));
+  t.true(isRunUtilsFixtureName('demo-base'));
   t.true(isRunUtilsFixtureName('main-vaults-base'));
   t.true(isRunUtilsFixtureName('itest-vaults-base'));
   t.true(isRunUtilsFixtureName('orchestration-base'));
