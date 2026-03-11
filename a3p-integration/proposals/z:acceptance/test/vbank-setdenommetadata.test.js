@@ -38,7 +38,10 @@ const queryDenomMetadata = async denom => {
     '--output',
     'json',
   ]);
-  return JSON.parse(result.stdout);
+  const parsed = JSON.parse(result.stdout);
+  // Prefer the nested metadata record returned by bank query responses, but
+  // incorporate the legacy direct-object behavior as a fallback.
+  return parsed?.metadata ? parsed : { metadata: parsed };
 };
 
 /**
@@ -54,7 +57,8 @@ const queryAllDenomMetadata = async () => {
     '--output',
     'json',
   ]);
-  return JSON.parse(result.stdout);
+  const parsed = JSON.parse(result.stdout);
+  return harden(parsed?.metadatas ? parsed : { metadatas: parsed });
 };
 
 /**
@@ -177,14 +181,14 @@ test.before(async t => {
 
 test.serial('can query existing denom metadata', async t => {
   // Query metadata for all denoms
-  const metadata = await queryAllDenomMetadata();
+  const { metadatas } = await queryAllDenomMetadata();
 
-  if (metadata.metadatas) {
+  if (metadatas) {
     // Returned a metadata list.
-    t.true(Array.isArray(metadata.metadatas), 'Metadatas should be an array');
+    t.true(Array.isArray(metadatas), 'Metadatas should be an array');
 
     // Should have at least BLD and IST
-    const denoms = metadata.metadatas.map(m => m.base);
+    const denoms = metadatas.map(m => m.base);
     t.log('Existing denoms:', denoms);
     t.true(denoms.length > 0, 'Should have some existing denoms');
   }
@@ -192,7 +196,7 @@ test.serial('can query existing denom metadata', async t => {
   // Check if we can query a specific denom (BLD should exist)
   let bldMetadata;
   try {
-    bldMetadata = await queryDenomMetadata('ubld');
+    ({ metadata: bldMetadata } = await queryDenomMetadata('ubld'));
   } catch (error) {
     t.log('Could not query ubld metadata:', error);
   }
@@ -278,7 +282,7 @@ test.serial(
 
       // Verify the metadata was set correctly
       t.log('Verifying denom metadata was set...');
-      const metadata = await queryDenomMetadata(testDenom);
+      const { metadata } = await queryDenomMetadata(testDenom);
 
       t.is(metadata.base, testDenom, 'Base denom should match');
       t.is(metadata.display, 'testvbank', 'Display denom should match');
@@ -299,7 +303,7 @@ test.serial(
         'First denom unit should be base',
       );
       t.is(
-        metadata.denom_units[0].exponent,
+        metadata.denom_units[0].exponent ?? 0,
         0,
         'First denom unit exponent should be 0',
       );
@@ -309,7 +313,7 @@ test.serial(
         'Second denom unit should be display',
       );
       t.is(
-        metadata.denom_units[1].exponent,
+        metadata.denom_units[1].exponent ?? 0,
         6,
         'Second denom unit exponent should be 6',
       );
@@ -383,7 +387,7 @@ test.serial('can update existing denom metadata via governance', async t => {
     t.log('Initial metadata set');
 
     // Verify initial metadata
-    const initialMetadata = await queryDenomMetadata(testDenom);
+    const { metadata: initialMetadata } = await queryDenomMetadata(testDenom);
     t.is(initialMetadata.description, 'Initial description');
 
     // Second proposal: Update metadata
@@ -435,7 +439,7 @@ test.serial('can update existing denom metadata via governance', async t => {
     t.log('Metadata updated');
 
     // Verify updated metadata
-    const updatedMetadata = await queryDenomMetadata(testDenom);
+    const { metadata: updatedMetadata } = await queryDenomMetadata(testDenom);
     t.is(
       updatedMetadata.description,
       'Updated description',
