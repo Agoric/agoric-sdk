@@ -1446,6 +1446,13 @@ export const makeSwingsetTestKit = async <
     evals: materials.flatMap(e => e.evals),
     bundles: materials.flatMap(e => e.bundles),
   });
+  const installedProposalBundleIDs = new Set<string>();
+  let coreEvalBridgeHandlerP: Promise<BridgeHandler> | undefined;
+
+  const getProposalBundleID = (bundle: ProposalMaterials['bundles'][number]) =>
+    'endoZipBase64Sha512' in bundle
+      ? `b1-${bundle.endoZipBase64Sha512}`
+      : JSON.stringify(bundle);
 
   const evalProposal = async (proposalP: ERef<ProposalMaterials>) => {
     const { EV } = runUtils;
@@ -1457,22 +1464,30 @@ export const makeSwingsetTestKit = async <
       ),
     );
 
-    await profiler.measure(
+    const installedBundleCount = await profiler.measure(
       'makeSwingsetTestKit.proposal.installBundles',
       async () => {
-        const seenBundleHashes = new Set<string>();
+        let installed = 0;
         for (const bundle of proposal.bundles) {
-          const bundleHash = bundle.endoZipBase64Sha512 ?? bundle.endoZipBase64;
-          if (seenBundleHashes.has(bundleHash)) {
+          const bundleID = getProposalBundleID(bundle);
+          if (installedProposalBundleIDs.has(bundleID)) {
             continue;
           }
-          seenBundleHashes.add(bundleHash);
           await controller.validateAndInstallBundle(bundle);
+          installedProposalBundleIDs.add(bundleID);
+          installed += 1;
         }
+        return installed;
       },
       { bundleCount: proposal.bundles.length },
     );
-    log('installed', proposal.bundles.length, 'bundles');
+    log(
+      'installed',
+      installedBundleCount,
+      'new bundles from',
+      proposal.bundles.length,
+      'proposal bundles',
+    );
 
     log('executing proposal');
     const bridgeMessage = {
@@ -1480,10 +1495,13 @@ export const makeSwingsetTestKit = async <
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler: BridgeHandler = await profiler.measure(
-      'makeSwingsetTestKit.proposal.getCoreEvalBridgeHandler',
-      () => EV.vat('bootstrap').consumeItem('coreEvalBridgeHandler'),
-    );
+    if (!coreEvalBridgeHandlerP) {
+      coreEvalBridgeHandlerP = profiler.measure(
+        'makeSwingsetTestKit.proposal.getCoreEvalBridgeHandler',
+        () => EV.vat('bootstrap').consumeItem('coreEvalBridgeHandler'),
+      );
+    }
+    const coreEvalBridgeHandler: BridgeHandler = await coreEvalBridgeHandlerP;
     await profiler.measure(
       'makeSwingsetTestKit.proposal.executeCoreEval',
       () => EV(coreEvalBridgeHandler).fromBridge(bridgeMessage),
