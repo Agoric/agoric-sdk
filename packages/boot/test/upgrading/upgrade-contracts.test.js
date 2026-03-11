@@ -4,6 +4,7 @@
  */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { initSwingStore } from '@agoric/swing-store';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { buildVatController } from '@agoric/swingset-vat';
 
@@ -13,7 +14,16 @@ import { buildVatController } from '@agoric/swingset-vat';
  */
 
 /**
- * @type {TestFn<{}>}
+ * @typedef {{
+ *   forkController: () => Promise<{
+ *     controller: Awaited<ReturnType<typeof buildVatController>>;
+ *     shutdown: () => Promise<void>;
+ *   }>;
+ * }} TestContext
+ */
+
+/**
+ * @type {TestFn<TestContext>}
  */
 const test = anyTest;
 
@@ -21,9 +31,8 @@ const bfile = name => new URL(name, import.meta.url).pathname;
 const importSpec = async spec =>
   new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
-test('upgrade mintHolder', async t => {
-  /** @type {SwingSetConfig} */
-  const config = harden({
+const makeBaseConfig = async () =>
+  harden({
     bootstrap: 'bootstrap',
     vats: {
       // TODO refactor to use bootstrap-relay.js
@@ -39,12 +48,54 @@ test('upgrade mintHolder', async t => {
       },
     },
   });
-  // console.debug('config', JSON.stringify(config, null, 2));
 
-  const c = await buildVatController(config);
-  t.teardown(c.shutdown);
+let baseContextP;
+const getBaseContext = () => {
+  if (!baseContextP) {
+    baseContextP = (async () => {
+      const config = await makeBaseConfig();
+      const swingStore = initSwingStore();
+      const controller = await buildVatController(config, undefined, {
+        kernelStorage: swingStore.kernelStorage,
+      });
+      try {
+        controller.pinVatRoot('bootstrap');
+        await controller.run();
+        const serialized = swingStore.debug.serialize();
+        return {
+          forkController: async () => {
+            const forkStore = initSwingStore(null, { serialized });
+            const forkController = await buildVatController(config, undefined, {
+              kernelStorage: forkStore.kernelStorage,
+            });
+            forkController.pinVatRoot('bootstrap');
+            await forkController.run();
+            return {
+              controller: forkController,
+              shutdown: async () => {
+                await forkController.shutdown();
+                await forkStore.hostStorage.close();
+              },
+            };
+          },
+        };
+      } finally {
+        await controller.shutdown();
+        await swingStore.hostStorage.close();
+      }
+    })();
+  }
+  return baseContextP;
+};
+
+test.before(async t => {
+  t.context = await getBaseContext();
+});
+
+test('upgrade mintHolder', async t => {
+  const { controller: c, shutdown } = await t.context.forkController();
+  t.teardown(shutdown);
   c.pinVatRoot('bootstrap');
-  await c.run();
 
   const run = async (name, args = []) => {
     assert(Array.isArray(args));
