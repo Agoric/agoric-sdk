@@ -13,13 +13,15 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext as TC,
 } from './walletFactory.ts';
+import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
 const test = anyTest as TestFn<TC>;
 
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(t);
+  const snapshot = await loadOrCreateRunUtilsFixture('main-vaults-base', t.log);
+  t.context = await makeWalletFactoryContext(t, undefined, { snapshot });
 });
 test.after.always(t => {
   return t.context.shutdown && t.context.shutdown();
