@@ -74,7 +74,7 @@ import type { GovernancePublishedPathTypes } from '@agoric/governance';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { IBCDowncallMethod, IBCMethod } from '@agoric/vats';
+import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { ERef } from '@agoric/vow';
 import type { EProxy } from '@endo/eventual-send';
@@ -1450,7 +1450,12 @@ export const makeSwingsetTestKit = async <
   const evalProposal = async (proposalP: ERef<ProposalMaterials>) => {
     const { EV } = runUtils;
 
-    const proposal = harden(await proposalP);
+    const proposal = harden(
+      await profiler.measure(
+        'makeSwingsetTestKit.proposal.resolve',
+        () => proposalP,
+      ),
+    );
 
     await profiler.measure(
       'makeSwingsetTestKit.proposal.installBundles',
@@ -1475,8 +1480,9 @@ export const makeSwingsetTestKit = async <
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-      'coreEvalBridgeHandler',
+    const coreEvalBridgeHandler: BridgeHandler = await profiler.measure(
+      'makeSwingsetTestKit.proposal.getCoreEvalBridgeHandler',
+      () => EV.vat('bootstrap').consumeItem('coreEvalBridgeHandler'),
     );
     await profiler.measure(
       'makeSwingsetTestKit.proposal.executeCoreEval',
