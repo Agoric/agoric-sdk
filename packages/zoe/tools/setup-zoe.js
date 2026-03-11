@@ -11,6 +11,11 @@ import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
  * @import {FeeIssuerConfig, Installation} from '../src/types-index.js';
  */
 
+/** @type {Map<string, Promise<import('@agoric/swingset-vat').EndoZipBase64Bundle | import('@agoric/swingset-vat').TestBundle>>} */
+const bundledPathCache = new Map();
+/** @type {WeakMap<object, Promise<import('@agoric/swingset-vat').EndoZipBase64Bundle | import('@agoric/swingset-vat').TestBundle>>} */
+const bundledExportsCache = new WeakMap();
+
 /**
  * @param {VatAdminSvc} [vatAdminSvc]
  */
@@ -69,17 +74,27 @@ export const setUpZoeForTest = async ({
   const bundleModule = async pathOrExports => {
     if (typeof pathOrExports === 'string') {
       const path = pathOrExports;
-      return bundleSource(path);
+      let pending = bundledPathCache.get(path);
+      if (!pending) {
+        pending = bundleSource(path);
+        bundledPathCache.set(path, pending);
+      }
+      return pending;
     } else {
       assert.equal(
         Object.getOwnPropertyDescriptor(pathOrExports, Symbol.toStringTag)
           ?.value,
         'Module',
       );
-      // Copy all the properties so this object can be hardened.
-      const exports = { ...pathOrExports };
-      // @ts-expect-error Test bundle type needs to make 'test' const.
-      return bundleTestExports(exports);
+      let pending = bundledExportsCache.get(pathOrExports);
+      if (!pending) {
+        // Copy all the properties so this object can be hardened.
+        const exports = { ...pathOrExports };
+        // @ts-expect-error Test bundle type needs to make 'test' const.
+        pending = bundleTestExports(exports);
+        bundledExportsCache.set(pathOrExports, pending);
+      }
+      return pending;
     }
   };
 
