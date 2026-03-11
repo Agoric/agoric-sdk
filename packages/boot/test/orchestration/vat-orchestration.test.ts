@@ -16,12 +16,12 @@ import type { CosmosInterchainService } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
 import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
-import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
+  makeBootTestContext,
+  withWalletFactory,
+  type WalletFactoryBootTestContext,
+} from '../tools/boot-test-context.js';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<WalletFactoryBootTestContext> = anyTest;
 
 const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
 const QueryBalanceResponse = CodecHelper(QueryBalanceResponseType);
@@ -51,8 +51,11 @@ const balanceQuery = toRequestQueryJson(
 );
 
 test.before(async t => {
-  const snapshot = await loadOrCreateRunUtilsFixture('orchestration-ready', t.log);
-  t.context = await makeWalletFactoryContext(t, undefined, { snapshot });
+  t.context = await withWalletFactory(
+    await makeBootTestContext(t, {
+      fixtureName: 'orchestration-ready',
+    }),
+  );
 
   const {
     runUtils: { EV },

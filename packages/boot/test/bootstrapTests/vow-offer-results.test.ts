@@ -2,29 +2,26 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
 import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from './walletFactory.js';
-import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
+  makeBootTestContext,
+  withWalletFactory,
+  type WalletFactoryBootTestContext,
+} from '../tools/boot-test-context.js';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<WalletFactoryBootTestContext> = anyTest;
 
 test.before(async t => {
-  const snapshot = await loadOrCreateRunUtilsFixture(
-    'vow-offer-results',
-    t.log,
-  );
-  t.context = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { snapshot },
+  t.context = await withWalletFactory(
+    await makeBootTestContext(t, {
+      configSpecifier:
+        '@agoric/vm-config/decentral-itest-orchestration-config.json',
+      fixtureName: 'vow-offer-results',
+    }),
   );
 });
 test.after.always(t => t.context.shutdown?.());
 
 test('resolves', async t => {
-  const { walletFactoryDriver, buildProposal, evalProposal, runUtils } =
-    t.context;
+  const { applyProposal, provideSmartWallet, runUtils } = t.context;
   const flushKernel = () => runUtils.queueAndRun(() => undefined, true);
   const timeStep = async <T>(
     label: string,
@@ -39,16 +36,13 @@ test('resolves', async t => {
   };
 
   t.log('start valueVow');
-  const startProposal = await timeStep('build start-valueVow proposal', () =>
-    buildProposal('@agoric/builders/scripts/testing/start-valueVow.js'),
-  );
-  await timeStep('eval start-valueVow proposal', () =>
-    evalProposal(startProposal),
+  await timeStep('apply start-valueVow proposal', () =>
+    applyProposal('@agoric/builders/scripts/testing/start-valueVow.js'),
   );
 
   t.log('use wallet to get a vow');
   const getter = await timeStep('provide getter wallet', () =>
-    walletFactoryDriver.provideSmartWallet('agoric1getter'),
+    provideSmartWallet('agoric1getter'),
   );
   // *send* b/c execution doesn't resolve until even the vow resolves and that won't happen until the set-value
   await timeStep('send getter offer', () =>
@@ -67,32 +61,25 @@ test('resolves', async t => {
 
   t.log('confirm the value is not in offer results');
   {
-    const statusRecord = getter.getLatestUpdateRecord();
-    t.like(statusRecord, {
-      status: {
-        id: 'get-value',
-        numWantsSatisfied: 1,
-      },
-      updated: 'offerStatus',
+    const statusRecord = getter.expectStatus(t, {
+      id: 'get-value',
+      numWantsSatisfied: 1,
     });
+    t.is(statusRecord.updated, 'offerStatus');
     // narrow the type
     assert(statusRecord.updated === 'offerStatus');
     t.false('result' in statusRecord.status, 'no result yet');
   }
 
   t.log('restart valueVow');
-  const restartProposal = await timeStep(
-    'build restart-valueVow proposal',
-    () => buildProposal('@agoric/builders/scripts/testing/restart-valueVow.js'),
-  );
-  await timeStep('eval restart-valueVow proposal', () =>
-    evalProposal(restartProposal),
+  await timeStep('apply restart-valueVow proposal', () =>
+    applyProposal('@agoric/builders/scripts/testing/restart-valueVow.js'),
   );
 
   t.log('use wallet to set value');
   const offerArgs = { value: 'Ciao, mondo!' };
   const setter = await timeStep('provide setter wallet', () =>
-    walletFactoryDriver.provideSmartWallet('agoric1setter'),
+    provideSmartWallet('agoric1setter'),
   );
   await timeStep('execute setter offer', () =>
     setter.executeOffer({
@@ -106,27 +93,9 @@ test('resolves', async t => {
       proposal: {},
     }),
   );
-  t.like(setter.getLatestUpdateRecord(), {
-    updated: 'offerStatus',
-    status: {
-      id: 'set-value',
-      numWantsSatisfied: 1,
-    },
-  });
+  setter.expectStatus(t, { id: 'set-value', numWantsSatisfied: 1 });
 
   t.log('confirm the value is now in offer results');
   await timeStep('flush kernel after setter offer', flushKernel);
-  {
-    const statusRecord = getter.getLatestUpdateRecord();
-    // narrow the type
-    assert(statusRecord.updated === 'offerStatus');
-    t.true('result' in statusRecord.status, 'got result');
-    t.like(statusRecord, {
-      status: {
-        id: 'get-value',
-        result: offerArgs.value,
-      },
-      updated: 'offerStatus',
-    });
-  }
+  getter.expectResult(t, 'get-value', offerArgs.value);
 });

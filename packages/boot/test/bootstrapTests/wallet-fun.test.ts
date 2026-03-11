@@ -10,22 +10,23 @@ import bundleSource from '@endo/bundle-source';
 import type { ExecutionContext, TestFn } from 'ava';
 import { createRequire } from 'node:module';
 import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext as TC,
-} from './walletFactory.ts';
-import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
+  makeBootTestContext,
+  withWalletFactory,
+  type WalletFactoryBootTestContext as TC,
+} from '../tools/boot-test-context.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
 const test = anyTest as TestFn<TC>;
 
 test.before(async t => {
-  const snapshot = await loadOrCreateRunUtilsFixture('main-vaults-base', t.log);
-  t.context = await makeWalletFactoryContext(t, undefined, { snapshot });
+  t.context = await withWalletFactory(
+    await makeBootTestContext(t, {
+      fixtureName: 'main-vaults-base',
+    }),
+  );
 });
-test.after.always(t => {
-  return t.context.shutdown && t.context.shutdown();
-});
+test.after.always(t => t.context.shutdown?.());
 
 const startContract = async <SF>(
   t: ExecutionContext<TC>,
@@ -60,7 +61,7 @@ const showInvitationBalance = (addr: string, r: CurrentWalletRecord) => [
 ];
 
 test('use offer result without zoe', async t => {
-  const { walletFactoryDriver, agoricNamesRemotes } = t.context;
+  const { agoricNamesRemotes, provideSmartWallet } = t.context;
 
   const makeCoreCtx = (addr: string) => {
     const start = async () => {
@@ -89,14 +90,14 @@ test('use offer result without zoe', async t => {
 
   // client-side presence
   const addr = 'agoric1admin';
-  const wd = await walletFactoryDriver.provideSmartWallet(addr);
+  const wd = await provideSmartWallet(addr);
 
   const makePriceOracle = () => {
     const redeemInvitation = async () => {
       const { walletFun } = agoricNamesRemotes.instance;
       t.truthy(walletFun);
 
-      t.log(...showInvitationBalance(addr, wd.getCurrentWalletRecord()));
+      t.log(...showInvitationBalance(addr, wd.current()));
 
       await wd.executeOffer({
         id: 'redeemInvitation',
@@ -108,7 +109,7 @@ test('use offer result without zoe', async t => {
         proposal: {},
         saveResult: { name: 'priceSetter' },
       });
-      t.log('redeemInvitation last update', wd.getLatestUpdateRecord());
+      t.log('redeemInvitation last update', wd.latest());
     };
 
     const useOfferResult = () =>

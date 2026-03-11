@@ -8,17 +8,13 @@ import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
 import { BridgeId } from '@agoric/internal';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import type { ERef } from '@agoric/vow';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
-import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
+import { makeBootTestContext } from '../tools/boot-test-context.js';
 
-const makeDefaultTestContext = async t => {
-  const snapshot = await loadOrCreateRunUtilsFixture('demo-base', t.log);
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+const makeDefaultTestContext = async t =>
+  makeBootTestContext(t, {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
-    snapshot,
+    fixtureName: 'demo-base',
   });
-  return swingsetTestKit;
-};
 type DefaultTestContext = Awaited<ReturnType<typeof makeDefaultTestContext>>;
 
 const test: TestFn<DefaultTestContext> = anyTest;
@@ -28,8 +24,7 @@ test.after.always(t => t.context.shutdown?.());
 
 test('vtransfer', async t => {
   const {
-    buildProposal,
-    evalProposal,
+    applyProposal,
     bridgeUtils: { getOutboundMessages },
     runUtils,
   } = t.context;
@@ -80,10 +75,7 @@ test('vtransfer', async t => {
   // 1 interceptors for target
 
   // Tap into VTRANSFER_IBC_EVENT messages
-  const testVtransferProposal = buildProposal(
-    '@agoric/builders/scripts/vats/test-vtransfer.js',
-  );
-  await evalProposal(testVtransferProposal);
+  await applyProposal('@agoric/builders/scripts/vats/test-vtransfer.js');
 
   // simulate a Golang upcall with arbitrary payload
   // note that property order matters!
@@ -112,7 +104,10 @@ test('vtransfer', async t => {
   ]);
 
   // test adding an interceptor for the same target, which should fail
-  await t.throwsAsync(() => evalProposal(testVtransferProposal), {
-    message: /Target.*already registered/,
-  });
+  await t.throwsAsync(
+    () => applyProposal('@agoric/builders/scripts/vats/test-vtransfer.js'),
+    {
+      message: /Target.*already registered/,
+    },
+  );
 });

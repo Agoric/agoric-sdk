@@ -5,24 +5,25 @@ import type { TestFn } from 'ava';
 import { Fail } from '@endo/errors';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import type { ScopedBridgeManager } from '@agoric/vats';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
-import { makeWalletFactoryDriver } from '../../tools/drivers.js';
-import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
+import {
+  makeBootTestContext,
+  withWalletFactory,
+} from '../tools/boot-test-context.js';
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
-  const snapshot = await loadOrCreateRunUtilsFixture('itest-vaults-base', t.log);
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    configSpecifier: PLATFORM_CONFIG,
-    snapshot,
-  });
+  const swingsetTestKit = await withWalletFactory(
+    await makeBootTestContext(t, {
+      configSpecifier: PLATFORM_CONFIG,
+      fixtureName: 'itest-vaults-base',
+    }),
+  );
 
-  const { runUtils, storage } = swingsetTestKit;
+  const { runUtils } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
 
@@ -32,18 +33,9 @@ export const makeTestContext = async t => {
 
   await eventLoopIteration();
 
-  // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
-    swingsetTestKit.storage,
-  );
-  agoricNamesRemotes.brand.ATOM || Fail`ATOM brand not yet defined`;
+  swingsetTestKit.agoricNamesRemotes.brand.ATOM ||
+    Fail`ATOM brand not yet defined`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
-
-  const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
-    storage,
-    agoricNamesRemotes,
-  );
   console.timeLog('DefaultTestContext', 'walletFactoryDriver');
 
   console.timeEnd('DefaultTestContext');
@@ -52,8 +44,6 @@ export const makeTestContext = async t => {
 
   return {
     ...swingsetTestKit,
-    agoricNamesRemotes,
-    walletFactoryDriver,
     shared,
   };
 };
@@ -71,9 +61,9 @@ test.after.always(t => t.context.shutdown?.());
 const walletAddr = 'agoric1a';
 
 test.serial('open vault', async t => {
-  const { walletFactoryDriver } = t.context;
+  const { provideSmartWallet } = t.context;
 
-  const wd = await walletFactoryDriver.provideSmartWallet(walletAddr);
+  const wd = await provideSmartWallet(walletAddr);
   t.true(wd.isNew);
 
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
@@ -83,10 +73,7 @@ test.serial('open vault', async t => {
     giveCollateral: 9.0,
   });
 
-  t.like(wd.getLatestUpdateRecord(), {
-    updated: 'offerStatus',
-    status: { id: 'open1', numWantsSatisfied: 1 },
-  });
+  wd.expectStatus(t, { id: 'open1', numWantsSatisfied: 1 });
 });
 
 test.serial('make IBC callbacks before upgrade', async t => {
@@ -101,12 +88,10 @@ test.serial('make IBC callbacks before upgrade', async t => {
 });
 
 test.serial('run restart-vats proposal', async t => {
-  const { buildProposal, evalProposal } = t.context;
+  const { applyProposal } = t.context;
 
   t.log('building proposal');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/vats/restart-vats.js'),
-  );
+  await applyProposal('@agoric/builders/scripts/vats/restart-vats.js');
 
   t.pass(); // reached here without throws
 });
@@ -144,9 +129,9 @@ test.serial('read metrics', async t => {
 });
 
 test.serial('open second vault', async t => {
-  const { walletFactoryDriver } = t.context;
+  const { provideSmartWallet } = t.context;
 
-  const wd = await walletFactoryDriver.provideSmartWallet(walletAddr);
+  const wd = await provideSmartWallet(walletAddr);
   t.false(wd.isNew);
 
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
@@ -156,8 +141,5 @@ test.serial('open second vault', async t => {
     giveCollateral: 9.0,
   });
 
-  t.like(wd.getLatestUpdateRecord(), {
-    updated: 'offerStatus',
-    status: { id: 'open2', numWantsSatisfied: 1 },
-  });
+  wd.expectStatus(t, { id: 'open2', numWantsSatisfied: 1 });
 });
