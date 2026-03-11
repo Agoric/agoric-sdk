@@ -1,21 +1,8 @@
-/** @file The mocks used in these tests */
+/** @file Canned IBC message and acknowledgement fixtures for tests and fakes */
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import {
-  MsgBeginRedelegate,
-  MsgBeginRedelegateResponse,
-  MsgDelegate,
-  MsgDelegateResponse,
-  MsgUndelegate,
-  MsgUndelegateResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import {
-  MsgWithdrawDelegatorReward,
-  MsgWithdrawDelegatorRewardResponse,
-} from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
-import type { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import {
   MsgSend,
   MsgSendResponse,
@@ -25,13 +12,26 @@ import {
   MsgDepositForBurnResponse,
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
-  buildMsgResponseString,
-  buildQueryResponseString,
+  MsgWithdrawDelegatorReward,
+  MsgWithdrawDelegatorRewardResponse,
+} from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
+import type { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
+import {
+  MsgBeginRedelegate,
+  MsgBeginRedelegateResponse,
+  MsgDelegate,
+  MsgDelegateResponse,
+  MsgUndelegate,
+  MsgUndelegateResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import {
   buildMsgErrorString,
-  buildTxPacketString,
+  buildMsgResponseString,
   buildQueryPacketString,
+  buildQueryResponseString,
+  buildTxPacketString,
   createMockAckMap,
-} from '../tools/ibc-mocks.js';
+} from './ibc-mocks.js';
 import { leftPadEthAddressTo32Bytes } from '../src/utils/address.js';
 
 /**
@@ -128,7 +128,6 @@ export const protoMsgMocks = {
     ack: buildMsgResponseString(MsgSendResponse, {}),
   },
   depositForBurn: {
-    // msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ21ZS0lTOWphWEpqYkdVdVkyTjBjQzUyTVM1TmMyZEVaWEJ2YzJsMFJtOXlRblZ5YmhKQkNndGpiM050YjNNeGRHVnpkQklITkRJMU1EQXdNQmdHSWlBQUFBQUFBQUFBQUFBQUFBQWc1bzlzSjJyRzRwZXNSc2hLc21DU2duWnBIU29GZFhWelpHTT0iLCJtZW1vIjoiIn0=',
     msg: buildTxPacketString([
       MsgDepositForBurn.toProtoMsg({
         amount: '4250000',
@@ -154,7 +153,6 @@ export const protoMsgMocks = {
         ),
       }),
     ]),
-    // 'depositForBurn via Noble to Base' in cosmos-orchestration-account.test.ts
     ack: buildMsgResponseString(MsgDepositForBurnResponse, {}),
   },
 };

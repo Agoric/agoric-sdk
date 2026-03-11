@@ -27,7 +27,7 @@ import {
   buildQueryPacketString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
-import { defaultMockAckMap } from '../ibc-mocks.js';
+import { defaultMockAckMap } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 
 const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
