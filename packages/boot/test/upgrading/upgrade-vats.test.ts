@@ -2,18 +2,24 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import type { ExecutionContext, TestFn } from 'ava';
 
+import type { IssuerKit } from '@agoric/ertp/src/types.js';
 import { BridgeId, deepCopyJsonable } from '@agoric/internal';
-import { initSwingStore } from '@agoric/swing-store';
-import { buildVatController, type SwingSetConfig } from '@agoric/swingset-vat';
+import { type SwingSetConfig } from '@agoric/swingset-vat';
 import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import type { BankVat } from '@agoric/vats/src/vat-bank.js';
+import type { PriceAuthorityVat } from '@agoric/vats/src/vat-priceAuthority.js';
 import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import type { IssuerKit } from '@agoric/ertp/src/types.js';
-import type { BankVat } from '@agoric/vats/src/vat-bank.js';
-import type { PriceAuthorityVat } from '@agoric/vats/src/vat-priceAuthority.js';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
+import {
+  forkScenario,
+  makeBridgeDeviceEndowments,
+  makeControllerFixture,
+  makeThrowingBridgeHarness,
+  type BridgeBackend,
+  type ControllerFixture,
+} from '../tools/controller-fixture.js';
 
 import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
 
@@ -21,26 +27,7 @@ const bfile = name => new URL(name, import.meta.url).pathname;
 const importSpec = async spec =>
   new URL(importMetaResolve(spec, import.meta.url)).pathname;
 
-type RunUtils = ReturnType<typeof makeRunUtils>;
-type Scenario = {
-  EV: RunUtils['EV'];
-  getCrankNumber: () => number;
-  runUtils: RunUtils;
-  shutdown: () => Promise<void>;
-};
-type BridgeBackend = (obj: any) => unknown;
-type BridgeHarness = {
-  assert: (condition: unknown, message?: string) => void;
-  fail: (message?: string) => never;
-};
-type BaseSetup = {
-  forkScenario: (
-    t: ExecutionContext,
-    options?: {
-      bridgeBackends?: Record<string, BridgeBackend>;
-    },
-  ) => Promise<Scenario>;
-};
+type BaseSetup = Pick<ControllerFixture, 'forkController'>;
 
 const test = anyTest as TestFn<BaseSetup>;
 
@@ -87,73 +74,14 @@ const makeBaseConfig = async (): Promise<SwingSetConfig> =>
     bundleCachePath: sharedBundleCachePath,
   });
 
-const makeBridgeDeviceEndowments = (
-  t: BridgeHarness,
-  bridgeBackends: Record<string, BridgeBackend> = {},
-) => ({
-  bridge: {
-    t,
-    bridgeBackends,
-  },
-});
-
-const makeBaseBridgeHarness = (): BridgeHarness => ({
-  assert(condition, message) {
-    if (!condition) {
-      throw new Error(String(message));
-    }
-  },
-  fail(message) {
-    throw new Error(String(message));
-  },
-});
-
 const makeBaseSetup = async (): Promise<BaseSetup> => {
   const config = await makeBaseConfig();
-  const swingStore = initSwingStore();
-  const controller = await buildVatController(
+  return makeControllerFixture({
     config,
-    undefined,
-    { kernelStorage: swingStore.kernelStorage },
-    makeBridgeDeviceEndowments(makeBaseBridgeHarness()),
-  );
-
-  try {
-    controller.pinVatRoot('bootstrap');
-    await controller.run();
-    const serialized = swingStore.debug.serialize();
-
-    return {
-      forkScenario: async (t, { bridgeBackends = {} } = {}) => {
-        const forkStore = initSwingStore(null, { serialized });
-        const forkController = await buildVatController(
-          config,
-          undefined,
-          { kernelStorage: forkStore.kernelStorage },
-          makeBridgeDeviceEndowments(t, bridgeBackends),
-        );
-
-        forkController.pinVatRoot('bootstrap');
-        await forkController.run();
-
-        const runUtils = makeRunUtils(forkController);
-        const { EV } = runUtils;
-        return {
-          EV,
-          getCrankNumber: () =>
-            Number(forkStore.kernelStorage.kvStore.get('crankNumber')),
-          runUtils,
-          shutdown: async () => {
-            await forkController.shutdown();
-            await forkStore.hostStorage.close();
-          },
-        };
-      },
-    };
-  } finally {
-    await controller.shutdown();
-    await swingStore.hostStorage.close();
-  }
+    baseDeviceEndowments: makeBridgeDeviceEndowments(
+      makeThrowingBridgeHarness(),
+    ),
+  });
 };
 
 let baseSetupP: Promise<BaseSetup> | undefined;
@@ -169,11 +97,10 @@ const makeScenario = async (
   options?: {
     bridgeBackends?: Record<string, BridgeBackend>;
   },
-) => {
-  const scenario = await t.context.forkScenario(t, options);
-  t.teardown(() => scenario.shutdown());
-  return scenario;
-};
+) =>
+  forkScenario(t, {
+    deviceEndowments: makeBridgeDeviceEndowments(t, options?.bridgeBackends),
+  });
 
 test.before(async t => {
   t.context = await getBaseSetup();
@@ -181,7 +108,9 @@ test.before(async t => {
 
 test('forked scenarios start equivalent and isolated', async t => {
   const forkA = await makeScenario(t);
-  const forkB = await t.context.forkScenario(t);
+  const forkB = await t.context.forkController({
+    deviceEndowments: makeBridgeDeviceEndowments(t),
+  });
   t.teardown(() => forkB.shutdown());
 
   const crank0 = forkA.getCrankNumber();
