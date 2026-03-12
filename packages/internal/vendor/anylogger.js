@@ -1,4 +1,5 @@
 // @ts-nocheck
+/* eslint-disable -- vendored upstream source */
 /**
  * VENDORED SOURCE - DO NOT EDIT DIRECTLY
  *
@@ -18,11 +19,11 @@
  *  Get a logger. Any logger.
  */
 // the main `anylogger` function
-const anylogger = ((name) => 
+const anylogger = ((name, opts) => 
 // return the existing logger, or
 anylogger.all[name] ||
     // create and store a new logger with that name
-    (anylogger.all[name] = anylogger.ext(anylogger.new(name))));
+    (anylogger.all[name] = anylogger.ext(anylogger.new(name), opts)));
 // all loggers created so far
 anylogger.all = Object.create(null);
 // the supported levels
@@ -48,11 +49,12 @@ anylogger.log = (name, ...args) => {
 // extends the given `logger` function
 // the implementation here only adds no-ops
 // adapters should change this behavior
-anylogger.ext = (logger) => {
+anylogger.ext = (logger, opts = {}) => {
     logger.enabledFor = () => { };
     for (const method in anylogger.levels) {
         logger[method] = () => { };
     }
+    logger.sub = (subname, opts = {}) => anylogger(`${logger.name}.${subname}`, opts);
     return logger;
 };
 // this is a real ESM module

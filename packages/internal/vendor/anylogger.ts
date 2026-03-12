@@ -53,7 +53,7 @@ export type LoggerName = string;
 /**
  * An adapter accepts a LogFunction and returns a Logger.
  */
-export type Adapter = (logfn: LogFunction) => Logger;
+export type Adapter = (logfn: LogFunction, opts?: any) => Logger;
 
 /**
  * A logger is a log function that has a `name` that corresponds to the logger
@@ -64,6 +64,7 @@ export type Adapter = (logfn: LogFunction) => Logger;
 export type Logger = LogFunction & {
   readonly name: LoggerName;
   enabledFor: (level?: LogLevel) => boolean | void;
+  sub: (subname: string) => Logger;
 } & {
   [P in keyof LogLevels as `${P}`]: LogFunction;
 };
@@ -71,7 +72,7 @@ export type Logger = LogFunction & {
 /**
  * Gets or creates a logger by name.
  */
-export type AnyLogger = ((name: LoggerName) => Logger) & {
+export type AnyLogger = ((name: LoggerName, opts?: any) => Logger) & {
   /**
    * Stores all loggers created so far.
    */
@@ -110,12 +111,14 @@ export type BaseLevels = LogLevels;
  */
 
 // the main `anylogger` function
-const anylogger = ((name: LoggerName) =>
+const anylogger = ((name: LoggerName, opts?: any) =>
   // return the existing logger, or
   anylogger.all[name] ||
   // create and store a new logger with that name
-  (anylogger.all[name] = anylogger.ext(anylogger.new(name)))) as AnyLogger;
-
+  (anylogger.all[name] = anylogger.ext(
+    anylogger.new(name),
+    opts,
+  ))) as AnyLogger;
 // all loggers created so far
 anylogger.all = Object.create(null);
 
@@ -146,11 +149,13 @@ anylogger.log = (name, ...args: any[]) => {
 // extends the given `logger` function
 // the implementation here only adds no-ops
 // adapters should change this behavior
-anylogger.ext = (logger: LogFunction) => {
+anylogger.ext = (logger: LogFunction, opts = {}) => {
   (logger as Logger).enabledFor = () => {};
   for (const method in anylogger.levels) {
     (logger as Logger)[method as LogLevel] = () => {};
   }
+  (logger as Logger).sub = (subname: string, opts = {}) =>
+    anylogger(`${(logger as Logger).name}.${subname}`, opts);
   return logger as Logger;
 };
 
