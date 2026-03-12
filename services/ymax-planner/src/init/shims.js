@@ -1,4 +1,6 @@
 // @ts-nocheck
+
+// This must run before lockdown freezes Promise.
 if (!Promise.withResolvers) {
   Promise.withResolvers = () => {
     let resolve;
