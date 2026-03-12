@@ -11,13 +11,44 @@ const DEFAULT_SUPPRESSED_PREFIXES = Object.freeze([
 ]);
 
 /**
+ * Parsed DEBUG environment settings shared by logging adapters.
+ *
+ * `debugList` is interpreted with the following rules:
+ * - unset `DEBUG` or any non-empty selector list defaults to `log`
+ * - empty-string `DEBUG` defaults to `info`
+ * - a bare `selectorPrefix` aliases to `${selectorPrefix}:debug`
+ * - the last matching `${selectorPrefix}:...` selector wins
+ * - unknown level names, including `none`, disable output via `-Infinity`
+ *
+ * `isSuppressedLogger(name)` applies an additional policy for noisy runtime
+ * logger prefixes. A logger is suppressed only when its name matches one of the
+ * configured `suppressedPrefixes` and no raw DEBUG selector prefix explicitly
+ * unsuppresses it.
+ *
+ * @typedef {object} ParseDebugEnvOptions
+ * @property {string} [debugEnvName]
+ * @property {string | undefined} [debugValue]
+ * @property {string[]} [debugList]
+ * @property {string} [selectorPrefix]
+ * @property {string[]} [suppressedPrefixes]
+ */
+
+/**
+ * @typedef {object} ParsedDebugEnv
+ * @property {string | undefined} debugValue
+ * @property {string[]} debugList
+ * @property {string | undefined} maxActiveLevel
+ * @property {number} maxActiveLevelCode
+ * @property {(level: string | undefined) => boolean} enabledFor
+ * @property {(name: string) => boolean} isSuppressedLogger
+ */
+
+/**
+ * Parse DEBUG-related environment state for anylogger adapters.
+ *
  * @param {Record<string, number>} levels
- * @param {object} [options]
- * @param {string} [options.debugEnvName]
- * @param {string | undefined} [options.debugValue]
- * @param {string[]} [options.debugList]
- * @param {string} [options.selectorPrefix]
- * @param {string[]} [options.suppressedPrefixes]
+ * @param {ParseDebugEnvOptions} [options]
+ * @returns {ParsedDebugEnv}
  */
 export const parseDebugEnv = (levels, options = {}) => {
   const {
@@ -74,4 +105,3 @@ export const parseDebugEnv = (levels, options = {}) => {
     isSuppressedLogger,
   });
 };
-
