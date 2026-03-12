@@ -24,6 +24,27 @@ const queryGovModuleAddress = async () => {
 };
 
 /**
+ * Normalize bank denom metadata query responses while preserving the historic
+ * `{ metadata }` wrapper expected by the tests.
+ *
+ * @param {any} parsed
+ * @returns {{ metadata: any }}
+ */
+const normalizeDenomMetadata = parsed => {
+  return 'metadata' in parsed ? parsed : { metadata: parsed };
+};
+
+/**
+ * Normalize bank denoms-metadata query responses across direct and wrapped shapes.
+ *
+ * @param {any} parsed
+ * @returns {{ metadatas: null | any[] }}
+ */
+const normalizeDenomMetadataList = parsed => {
+  return 'metadatas' in parsed ? parsed : { metadatas: parsed };
+};
+
+/**
  * Query denom metadata from the bank module
  *
  * @param {string} denom
@@ -39,9 +60,7 @@ const queryDenomMetadata = async denom => {
     'json',
   ]);
   const parsed = JSON.parse(result.stdout);
-  // Prefer the nested metadata record returned by bank query responses, but
-  // incorporate the legacy direct-object behavior as a fallback.
-  return parsed?.metadata ? parsed : { metadata: parsed };
+  return normalizeDenomMetadata(parsed);
 };
 
 /**
@@ -57,8 +76,9 @@ const queryAllDenomMetadata = async () => {
     '--output',
     'json',
   ]);
+  console.log('queryAllDenomMetadata stdout:', result.stdout);
   const parsed = JSON.parse(result.stdout);
-  return harden(parsed?.metadatas ? parsed : { metadatas: parsed });
+  return normalizeDenomMetadataList(parsed);
 };
 
 /**
@@ -516,11 +536,20 @@ test.serial(
         { reject: false },
       );
 
+      // This dry-run omits signer context on purpose, so agd rejects the
+      // proposal before message validation with "Address cannot be empty".
+      // That stderr is expected here; the assertion documents it so log
+      // readers do not treat it as an unexpected failure.
       t.log('Validation result:', result.stderr);
       t.not(
         result.exitCode,
         0,
         'Proposal with invalid metadata should fail validation',
+      );
+      t.regex(
+        result.stderr,
+        /Address cannot be empty: invalid request/,
+        'Dry-run rejection should report the expected missing-address error',
       );
     } finally {
       await fs.unlink(proposalPath).catch(() => {});
