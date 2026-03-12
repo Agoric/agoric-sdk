@@ -14,6 +14,7 @@
  * treated as an error-level fallback.
  */
 
+import { Console } from 'node:console';
 import { PassThrough } from 'node:stream';
 
 /**
@@ -51,7 +52,7 @@ export const makeConsoleInterceptor = callback => {
     return true;
   };
 
-  const innerConsole = new console.Console({
+  const innerConsole = new Console({
     stdout: output,
     stderr: output,
   });
