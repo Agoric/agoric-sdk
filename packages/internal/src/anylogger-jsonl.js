@@ -6,13 +6,39 @@
  *
  * Runtime-focused behavior:
  * - Reads `DEBUG` selectors (`agoric`, `agoric:<level>`, `agoric:none`).
- * - Adds ISO timestamps and stable labels to emitted messages.
+ * - Adds epoch-millisecond timestamps and stable labels to emitted messages.
  * - Suppresses high-volume vat/liveslots logs unless explicitly selected.
+ * - Emits one JSON object per accepted log call using `originalConsole` so the
+ *   adapter does not recurse through `patchConsole()`.
  *
  * Why this file exists alongside `packages/agoric-cli/src/anylogger-agoric.js`:
  * - This adapter enforces production/runtime log policy.
  * - The CLI adapter is tuned for terminal UX (e.g., colored prefixes) and does
  *   not apply cosmic-swingset suppression semantics.
+ *
+ * Migration recipe for legacy console-based programs:
+ * - install `patchConsole()` before logs are emitted
+ * - let Node format the original `console.*` arguments
+ * - join the captured chunks into one string message
+ * - check `logger.enabledFor(level)` before forwarding
+ * - call `logger[level](message)` so each intercepted console call becomes one
+ *   JSON Lines record
+ *
+ * This is the least-invasive path to JSONL, but it only preserves the rendered
+ * message text. If the program needs richer structured fields, replace the
+ * original console call sites with direct structured logger calls instead.
+ *
+ * @example
+ *   import patchConsole from './node/patch-console.js';
+ *   import anylogger from './anylogger-jsonl.js';
+ *
+ *   const log = anylogger('worker');
+ *   patchConsole((level, written) => {
+ *     if (!log.enabledFor(level)) {
+ *       return;
+ *     }
+ *     log[level](written.join('').trimEnd());
+ *   });
  */
 /* eslint-env node */
 import os from 'os';
@@ -24,7 +50,7 @@ import anylogger from '../vendor/anylogger.js';
 import { parseDebugEnv } from './debug-env.js';
 import { defineName } from './js-utils.js';
 
-/** @import {BaseLevels} from '../vendor/anylogger.js'; */
+/** @import {Logger, BaseLevels} from '../vendor/anylogger.js'; */
 /** @typedef {keyof BaseLevels} LogLevel; */
 
 const { enabledFor, isSuppressedLogger } = parseDebugEnv(anylogger.levels);
@@ -44,6 +70,16 @@ const hostname = os.hostname();
 const pid = process.pid;
 
 const oldExt = anylogger.ext;
+/**
+ * Extend anylogger so each enabled call prints one JSONL object.
+ *
+ * `opts.context` may provide extra JSON fields. Reserved keys (`level`, `time`,
+ * `pid`, `hostname`, `label`) are ignored so callers cannot overwrite the
+ * adapter's envelope fields.
+ *
+ * @param {Logger} logger
+ * @param {{ context?: Record<string, unknown> }} [opts]
+ */
 anylogger.ext = (logger, opts = {}) => {
   const { context = {} } = opts || {};
   const extended = oldExt(logger);
