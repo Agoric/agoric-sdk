@@ -17,33 +17,11 @@
  *   cosmic-swingset operational logging requirements.
  */
 /* eslint-env node */
-import {
-  getEnvironmentOption,
-  getEnvironmentOptionsList,
-} from '@endo/env-options';
+import { parseDebugEnv } from '@agoric/internal/src/debug-env.js';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
 import chalk from 'chalk';
 
-const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
-
-// Turn on debugging output with DEBUG=agoric or DEBUG=agoric:${level}
-let selectedLevel =
-  DEBUG_LIST.length || getEnvironmentOption('DEBUG', 'unset') === 'unset'
-    ? 'log'
-    : 'info';
-for (const level of DEBUG_LIST) {
-  const parts = level.split(':');
-  if (parts[0] !== 'agoric') {
-    continue;
-  }
-  if (parts.length > 1) {
-    selectedLevel = parts[1];
-  } else {
-    selectedLevel = 'debug';
-  }
-}
-const selectedCode = anylogger.levels[selectedLevel];
-const globalCode = selectedCode === undefined ? -Infinity : selectedCode;
+const { maxActiveLevelCode: globalCode } = parseDebugEnv(anylogger.levels);
 
 const oldExt = anylogger.ext;
 /** @type {typeof anylogger.ext} */
