@@ -18,45 +18,16 @@
 import os from 'os';
 import util from 'util';
 
-import {
-  getEnvironmentOptionsList,
-  getEnvironmentOption,
-} from '@endo/env-options';
 import { originalConsole } from './node/patch-console.js';
 
 import anylogger from '../vendor/anylogger.js';
+import { parseDebugEnv } from './debug-env.js';
 import { defineName } from './js-utils.js';
 
 /** @import {BaseLevels} from '../vendor/anylogger.js'; */
 /** @typedef {keyof BaseLevels} LogLevel; */
 
-const VAT_LOGGER_PREFIXES = Object.freeze([
-  'SwingSet:vat',
-  'SwingSet:ls', // "ls" for "liveslots"
-]);
-
-const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
-
-/**
- * As documented in ../../../docs/env.md, the log level defaults to "log" when
- * environment variable DEBUG is non-empty or unset, and to the quieter "info"
- * when it is set to an empty string, but in either case is overridden if DEBUG
- * is a comma-separated list that contains "agoric:none" or "agoric:${level}" or
- * "agoric" (the last an alias for "agoric:debug").
- *
- * @type {string | undefined}
- */
-const DEBUG = getEnvironmentOption('DEBUG', 'unset');
-/** @type {string | undefined} */
-let maxActiveLevel = DEBUG_LIST.length || DEBUG === 'unset' ? 'log' : 'info';
-for (const selector of DEBUG_LIST) {
-  const fullSelector = selector === 'agoric' ? 'agoric:debug' : selector;
-  const [_, detail] = fullSelector.match(/^agoric:(.*)/s) || [];
-  if (detail) {
-    maxActiveLevel = detail;
-  }
-}
-const maxActiveLevelCode = anylogger.levels[maxActiveLevel] ?? -Infinity;
+const { enabledFor, isSuppressedLogger } = parseDebugEnv(anylogger.levels);
 
 const pinoLevels = {
   fatal: 60, // Critical system failures
@@ -77,17 +48,9 @@ anylogger.ext = (logger, opts = {}) => {
   const { context = {} } = opts || {};
   const extended = oldExt(logger);
 
-  /** @type {(level: LogLevel) => boolean} */
-  const enabledFor = level =>
-    level !== undefined && anylogger.levels[level] <= maxActiveLevelCode;
   extended.enabledFor = enabledFor;
 
-  const nameColon = `${extended.name}:`;
-
-  // Vat logs are suppressed unless matched by a prefix in DEBUG_LIST.
-  const suppressed =
-    VAT_LOGGER_PREFIXES.some(prefix => nameColon.startsWith(`${prefix}:`)) &&
-    !DEBUG_LIST.some(prefix => nameColon.startsWith(`${prefix}:`));
+  const suppressed = isSuppressedLogger(extended.name);
   const label = extended.name;
 
   const { ...safeContext } = context;
