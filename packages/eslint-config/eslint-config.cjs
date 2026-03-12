@@ -111,6 +111,7 @@ module.exports = {
       rules: {
         // Not needed with TypeScript syntax
         'jsdoc/require-returns-type': 'off',
+        'jsdoc/check-param-names': 'off',
         // Handled better by tsc
         'import/no-unresolved': 'off',
         'no-unused-vars': 'off',

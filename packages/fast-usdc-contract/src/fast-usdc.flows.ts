@@ -137,6 +137,7 @@ export const forwardFunds = async (
         destination,
         amount: amount.value,
       });
+      return;
     }
 
     // UNTIL #10449

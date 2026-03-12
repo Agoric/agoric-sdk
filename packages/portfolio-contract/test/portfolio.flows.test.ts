@@ -84,7 +84,10 @@ import {
   type EVMContext,
 } from '../src/pos-evm.flows.ts';
 import {
+  agoricToNoble,
   makeSwapLockMessages,
+  nobleToAgoric,
+  protocolUSDN,
   makeUnlockSwapMessages,
 } from '../src/pos-usdn.flows.ts';
 import { TxStatus } from '../src/resolver/constants.js';
@@ -881,6 +884,24 @@ test('Noble Dollar Swap, Lock messages', async t => {
     );
     t.snapshot(actual, 'un-swap 5K USDN < parity');
   }
+});
+
+test('makeSwapLockMessages uses parity amount for MsgLock when usdnOut is omitted', async t => {
+  const { cosmosId } = mocks();
+  const nobleId = await cosmosId('noble');
+
+  const actual = makeSwapLockMessages(
+    { value: 'noble1test', chainId: nobleId, encoding: 'bech32' },
+    5_000n * 1_000_000n,
+    { vault: 1 },
+  );
+
+  t.is(actual.msgSwap.min?.amount, '5000000000');
+  t.is(
+    actual.msgLock?.amount,
+    '5000000000',
+    'vaulted parity swap should not encode MsgLock amount as "undefined"',
+  );
 });
 
 test('makePortfolioSteps for USDN position', async t => {
@@ -3796,3 +3817,117 @@ test(
     t.truthy(last.rejectionReason, 'includes rejection reason');
   },
 );
+
+test('protocolUSDN.supply executes swap+lock on Noble ICA', async t => {
+  const calls: unknown[][] = [];
+  const ica = {
+    getAddress: () =>
+      harden({
+        value: 'noble1test',
+        chainId: 'noble-1',
+        encoding: 'bech32',
+      }),
+    executeEncodedTx: async (...args: unknown[]) => {
+      calls.push(args);
+      return undefined;
+    },
+  };
+
+  await protocolUSDN.supply(
+    { usdnOut: 9_900_000n, vault: 1 },
+    make(USDC, 10_000_000n),
+    { ica } as any,
+    { timeoutHeight: 123n } as any,
+  );
+
+  t.is(calls.length, 1);
+  const [protoMessages, options] = calls[0];
+  t.is((protoMessages as unknown[]).length, 2);
+  t.deepEqual(options, { timeoutHeight: 123n });
+});
+
+test('protocolUSDN.withdraw rejects claim mode', async t => {
+  const ica = {
+    getAddress: () =>
+      harden({
+        value: 'noble1test',
+        chainId: 'noble-1',
+        encoding: 'bech32',
+      }),
+    executeEncodedTx: async () => undefined,
+  };
+
+  await t.throwsAsync(
+    () =>
+      protocolUSDN.withdraw(
+        { usdnOut: 9_900_000n },
+        make(USDC, 10_000_000n),
+        { ica } as any,
+        true,
+      ),
+    { message: 'claiming USDN is not supported' },
+  );
+});
+
+test('agoricToNoble.apply transfers USDC denom to Noble ICA', async t => {
+  const calls: unknown[][] = [];
+  const src = {
+    lca: {
+      transfer: async (...args: unknown[]) => {
+        calls.push(args);
+      },
+    },
+  };
+  const destAddress = harden({
+    value: 'noble1dest',
+    chainId: 'noble-1',
+    encoding: 'bech32',
+  });
+
+  await agoricToNoble.apply(
+    { usdc: { denom: 'ibc/USDC' as any } },
+    make(USDC, 7_000_000n),
+    src as any,
+    { ica: { getAddress: () => destAddress } } as any,
+    { timeoutRelativeSeconds: 30 } as any,
+  );
+
+  t.deepEqual(calls, [
+    [
+      destAddress,
+      { value: 7_000_000n, denom: 'ibc/USDC' },
+      { timeoutRelativeSeconds: 30 },
+    ],
+  ]);
+});
+
+test('nobleToAgoric.apply transfers uusdc from Noble ICA', async t => {
+  const calls: unknown[][] = [];
+  const destAddress = harden({
+    value: 'agoric1dest',
+    chainId: 'agoric-3',
+    encoding: 'bech32',
+  });
+
+  await nobleToAgoric.apply(
+    {} as any,
+    make(USDC, 8_000_000n),
+    {
+      ica: {
+        transfer: async (...args: unknown[]) => {
+          calls.push(args);
+        },
+      },
+    } as any,
+    { lca: { getAddress: () => destAddress } } as any,
+    { timeoutRelativeSeconds: 60 } as any,
+  );
+
+  t.deepEqual(calls, [
+    [
+      destAddress,
+      { value: 8_000_000n, denom: 'uusdc' },
+      { timeoutRelativeSeconds: 60 },
+    ],
+  ]);
+});
