@@ -94,7 +94,7 @@ sequenceDiagram
 
     user->>ui: withdraw({ amount: 3.00 USDC,<br/>toChain: Ethereum })
     ui-->>ui: quoteReq = { type: withdraw,<br/>amount: { denom: USDC, value: 3000000 },<br/>toChain: Ethereum }
-    ui->>yds: quote(80, quoteReq)
+    ui-->>yds: quote(80, quoteReq)
     yds-->>yds: previewPlan = run planner-algorithm in preview mode
     yds-->>axelar: estimateGasFee({ destinationChain: Ethereum,<br/>gasLimit: 279473, sourceTokenSymbol: uusdc, ... })
     axelar-->>yds: 370132uusdc
@@ -174,7 +174,7 @@ sequenceDiagram
     user->>ui: confirmWithdraw({ amount: 3.00 USDC,<br/>fee: 0.44 USDC, total: 3.44 USDC,<br/>toChain: Ethereum })
     ui-->>ui: domain = { chainId: 1, verifyingContract: Permit2 }<br/>permitted = { token: USDC, amount: 444159 }
     ui-->>ui: ymaxWithdraw = { portfolio: 80,<br/>withdraw: { token: USDC, amount: 3000000 } }<br/>signedMessage = Permit2Witness({ domain, permitted,<br/>ymaxWithdraw }, signature)
-    ui->>ems: handleMessage(signedMessage)
+    ui-->>ems: handleMessage(signedMessage)
     ems-->>ems: validatePermit2(signedMessage)
     ems-->>emh: handleMessage(signedMessage)
     emh-->>emh: withdrawDetails = { portfolio: 80,<br/>withdraw: { token: USDC, amount: 3000000 } }
@@ -210,7 +210,7 @@ sequenceDiagram
     portfolio-->>portfolio: assert(permit2Payload.permit.amount >= userFee(plan))
     portfolio-->>orch: executePlan(plan)
     Note over orch,acctEth: plan steps first move the user's 3.000000 USDC<br/>out of positions into portfolio80's @Ethereum account
-    orch-->>acctEth: withdrawWithFee({ withdrawDetails,<br/>permit2Payload })
+    orch-->>acctEth: multicall([permit2(...),<br/>usdc(...)])
     Note over orch,acctEth: via Axelar<br/>fee: 109496306uBLD
     acctEth-->>p2: permitWitnessTransferFrom(...)
     p2-->>usdc: transfer{ from: -Ethereum,<br/>to: feeCollector, value: 444159 }
@@ -308,7 +308,7 @@ sequenceDiagram
    - For reference, the observed `80.3` resolved plan carried a much larger spike-day `uBLD` fee for that same YMax-paid step:
      - `@Ethereum -> -Ethereum`: `6350461608 uBLD`
    - The `@noble -> @Ethereum` step is still part of the flow, but Noble relayers, not YMax, pay that Ethereum gas in status quo.
-12. YMax orchestration executes the resolved plan. As part of `withdrawWithFee(...)`, the wallet at `@Ethereum` calls `Permit2.permitWitnessTransferFrom(...)`, which moves `444159 uusdc` from `-Ethereum` into `feeCollector`, and then calls `USDC.transfer(...)` to move `3000000` USDC from `@Ethereum` to `-Ethereum`. YMax orchestration still funds the YMax-paid execution path the same way it does today:
+12. YMax orchestration executes the resolved plan by sending a two-call wallet multicall batch to `@Ethereum`: first `Permit2.permitWitnessTransferFrom(...)`, then `USDC.transfer(...)`. Those calls move `444159 uusdc` from `-Ethereum` into `feeCollector` and then move `3000000` USDC from `@Ethereum` to `-Ethereum`. YMax orchestration still funds the YMax-paid execution path the same way it does today:
    - existing `uBLD` / GMP funding paths pay the operational Axelar fee
    - the YMax-controlled Ethereum wallet executes `withdrawToEVM`
 13. Resolver/watchers observe completion and collect actual fee evidence for the executed form of the YMax-paid step, which in observed `80.3` was `tx1787`.

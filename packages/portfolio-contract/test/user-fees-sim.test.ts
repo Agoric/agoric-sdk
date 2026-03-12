@@ -270,49 +270,20 @@ const walletAddressForPortfolio = (portfolioId: bigint): Address =>
 const witnessForPortfolio = (portfolioId: bigint): `0x${string}` =>
   `0x${portfolioId.toString(16).padStart(64, '0')}`;
 
-const makeEthereumWallet = (
-  evm: ReturnType<typeof makeEVM>,
-  contracts: { permit2: Address; feeCollector: Address },
-  salt: bigint,
-) => {
+const makeEthereumWallet = (evm: ReturnType<typeof makeEVM>, salt: bigint) => {
   const address = walletAddressForPortfolio(salt);
   const wallet = freeze({
-    withdrawWithFee(
-      _t: Ex,
-      {
-        withdraw,
-        recipient,
-        permit2Payload,
-      }: {
-        withdraw: { token: Address; amount: bigint };
-        recipient: Address;
-        permit2Payload: PermitDetails['permit2Payload'];
-      },
+    multicall(
+      calls: Array<{
+        target: Address;
+        label: string;
+        run: () => unknown;
+      }>,
     ) {
-      const permit2 = evm
-        .from(address)
-        .getContract(contracts.permit2, permit2Abi);
-      const withdrawToken = evm
-        .from(address)
-        .getContract(withdraw.token, erc20ABI);
-      const permitted = {
-        to: contracts.feeCollector,
-        requestedAmount: permit2Payload.permit.permitted.amount,
-      };
-      const { permit, owner, witness, witnessTypeString, signature } =
-        permit2Payload;
-      viz.cont(address, contracts.permit2, 'permitWitnessTransferFrom(...)');
-      permit2.permitWitnessTransferFrom(
-        permit,
-        permitted,
-        owner,
-        witness,
-        witnessTypeString,
-        signature,
-      );
-      const [to, value] = [viz.label(recipient), withdraw.amount];
-      viz.cont(address, withdraw.token, `transfer${props({ to, value })}`);
-      withdrawToken.transfer(recipient, withdraw.amount);
+      for (const { target, label, run } of calls) {
+        viz.cont(address, target, label);
+        run();
+      }
     },
   });
   evm.register(
@@ -422,7 +393,7 @@ const makePortfolio = (
   portfolioId: bigint,
 ) => {
   const accounts = {
-    Ethereum: makeEthereumWallet(evm, contractAddresses, portfolioId),
+    Ethereum: makeEthereumWallet(evm, portfolioId),
   };
   const flowId = 3n;
   const portfolioPolicyVersion = 2n;
@@ -475,16 +446,52 @@ const makePortfolio = (
       permit2Payload.permit.permitted.amount >= userFee ||
         Fail`authorized fee ${permit2Payload.permit.permitted.amount} is less than required user fee ${userFee}`;
       viz.cont('portfolio', 'orch', 'executePlan(plan)');
-      viz.cont(
-        'orch',
-        '@Ethereum',
-        'withdrawWithFee({ withdrawDetails, permit2Payload })',
-      );
-      return accounts.Ethereum.withdrawWithFee(t, {
-        withdraw: withdrawDetails.withdraw,
-        recipient: owner,
-        permit2Payload,
-      });
+      const walletAddress = walletAddressForPortfolio(portfolioId);
+      const permit2 = evm
+        .from(walletAddress)
+        .getContract(contractAddresses.permit2, permit2Abi);
+      const withdrawToken = evm
+        .from(walletAddress)
+        .getContract(withdrawDetails.withdraw.token, erc20ABI);
+      const transferDetails = {
+        to: contractAddresses.feeCollector,
+        requestedAmount: permit2Payload.permit.permitted.amount,
+      };
+      const {
+        permit,
+        owner: permitOwner,
+        witness,
+        witnessTypeString,
+        signature,
+      } = permit2Payload;
+      const recipient = owner;
+      const [to, value] = [
+        viz.label(recipient),
+        withdrawDetails.withdraw.amount,
+      ];
+      const calls = [
+        {
+          target: contractAddresses.permit2,
+          label: 'permitWitnessTransferFrom(...)',
+          run: () =>
+            permit2.permitWitnessTransferFrom(
+              permit,
+              transferDetails,
+              permitOwner,
+              witness,
+              witnessTypeString,
+              signature,
+            ),
+        },
+        {
+          target: withdrawDetails.withdraw.token,
+          label: `transfer${props({ to, value })}`,
+          run: () =>
+            withdrawToken.transfer(recipient, withdrawDetails.withdraw.amount),
+        },
+      ];
+      viz.cont('orch', '@Ethereum', 'multicall([permit2(...),<br/>usdc(...)])');
+      return accounts.Ethereum.multicall(calls);
     },
   });
 };
@@ -594,12 +601,12 @@ const makeEMS = (publicFacet: PublicFacet, emh: EMH) =>
       );
       viz.think(
         'emh',
-        `domain = { chainId: ${signedMessage.domain!.chainId}, ... }; permit2Payload = { permit.amount: ${signedMessage.message.permitted.amount}, signature, ... }`,
+        `domain = { chainId: ${signedMessage.domain!.chainId}, ... }; spender = @Ethereum; permit2Payload = { permit.amount: ${signedMessage.message.permitted.amount}, signature, ... }`,
       );
       viz.cont(
         'emh',
         'portfolio',
-        'withdraw({ withdrawDetails, domain, permit2Payload })',
+        'withdraw({ withdrawDetails, domain, spender, permit2Payload })',
       );
       return emh.withdraw(t, {
         withdrawDetails: signedMessage.message.ymaxWithdraw,
