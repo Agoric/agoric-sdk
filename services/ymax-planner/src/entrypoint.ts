@@ -1,10 +1,15 @@
 /* eslint-env node */
 
 // We need some pre-lockdown shimming.
+import '@agoric/internal/src/node/patch-console.js';
 import '@endo/init/pre-remoting.js';
 import './shims.cjs';
 // import '@endo/lockdown/commit-debug.js';
+
+// Now we can lockdown!
 import './lockdown.js';
+import '@agoric/internal/src/anylogger-jsonl.js';
+import './console-to-anylogger.js';
 
 // ...but `main` must be loaded *after* lockdown, seemingly because
 // of a "ws" dependency upon EventEmitter that is otherwise broken:
