@@ -276,17 +276,14 @@
       }
     },
     {
-      "files": ["packages/**/*.{js,ts,mjs,cjs}"],
+      // src and tools should not import from test, but test can import from src and tools
+      "files": ["packages/src/*.{js,ts,mjs,cjs}", "packages/tools/*.{js,ts,mjs,cjs}"],
       "rules": {
         "eslint-js/no-restricted-imports": [
           "error",
           {
             "patterns": [
-              "**/test/**",
-              "@agoric/*/test/**",
-              "@aglocal/*/test/**",
-              "../test/**",
-              "./test/**"
+              "**/test/**"
             ]
           }
         ]
@@ -294,6 +291,8 @@
     },
     {
       "files": [
+        // src should not import from tools, but tools can import from src
+        // and src can import from tools of other packages
         "packages/*/src/**/*.{js,ts,mjs,cjs}",
         "packages/wallet/api/src/**/*.{js,ts,mjs,cjs}"
       ],
@@ -302,34 +301,15 @@
           "error",
           {
             "patterns": [
-              "**/tools/**",
-              "@agoric/*/tools/**",
-              "@aglocal/*/tools/**",
               "../tools/**",
-              "./tools/**",
-              "**/test/**",
-              "@agoric/*/test/**",
-              "@aglocal/*/test/**",
-              "../test/**",
-              "./test/**"
+              "../../tools/**",
+              "../../../tools/**",
+              "../../../../tools/**"
             ]
           }
         ]
       }
     },
-    {
-      "files": [
-        "packages/agoric-cli/src/commands/perf.js",
-        "packages/agoric-cli/src/lib/format.js",
-        "packages/benchmark/src/benchmarkerator.js",
-        "packages/orchestration/src/exos/cosmos-orchestration-account.js",
-        "packages/orchestration/src/utils/address.js",
-        "packages/smart-wallet/src/types.ts"
-      ],
-      "rules": {
-        "eslint-js/no-restricted-imports": "off"
-      }
-    }
   ],
   "rules": {
     "no-void": ["warn", { "allowAsStatement": true }],
