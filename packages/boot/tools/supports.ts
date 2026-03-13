@@ -1385,7 +1385,13 @@ export const makeSwingsetTestKit = async <
     await profiler.measure(
       'makeSwingsetTestKit.proposal.installBundles',
       async () => {
+        const seenBundleHashes = new Set<string>();
         for (const bundle of proposal.bundles) {
+          const bundleHash = bundle.endoZipBase64Sha512 ?? bundle.endoZipBase64;
+          if (seenBundleHashes.has(bundleHash)) {
+            continue;
+          }
+          seenBundleHashes.add(bundleHash);
           await controller.validateAndInstallBundle(bundle);
         }
       },
