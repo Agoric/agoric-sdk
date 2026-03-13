@@ -321,10 +321,30 @@ harden(provideBundleCache);
 export const unsafeMakeBundleCache = dest =>
   makeNodeBundleCache(dest, {}, s => import(s));
 
-const sharedBundleCachePath = fileURLToPath(
+/**
+ * This is a hack to share bundles across multiple SwingSet instances. It is
+ * not safe to use in general, as it does not coordinate access to the shared
+ * cache. It is only safe if all users are cooperative and use the same locking
+ * mechanism, which is currently only this module's `withBundleLock`. Even then,
+ * there is a risk of lock contention and timeouts if multiple users are trying
+ * to build the same bundle at the same time. Use with caution.
+ *
+ * Also note that assumes bundles are stored in a `bundles` directory at the
+ * root of the project, which is not guaranteed to be the case in all
+ * environments.
+ */
+export const sharedBundleCachePath = fileURLToPath(
   new URL('../../../bundles', import.meta.url),
 );
 
+/**
+ * "Unsafe" because it entails ambient authority.
+ *
+ * Also note that it uses the shared bundle cache path, which is exported
+ * separately for use in other contexts that need to know where the shared
+ * bundles are located, but that also makes it more likely to cause conflicts if
+ * used in multiple places at once.
+ */
 export const unsafeSharedBundleCache = unsafeMakeBundleCache(
   sharedBundleCachePath,
 );

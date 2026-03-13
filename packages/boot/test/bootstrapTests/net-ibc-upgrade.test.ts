@@ -9,6 +9,7 @@ import {
   testInterruptedSteps,
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
+import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import type { EVProxy } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { Installation, ZoeService } from '@agoric/zoe';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
@@ -27,7 +28,7 @@ const asset = {
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
 
-  const bundleDir = 'bundles';
+  const bundleDir = sharedBundleCachePath;
   const bundleCache = await makeNodeBundleCache(
     bundleDir,
     { cacheSourceMaps: false },
