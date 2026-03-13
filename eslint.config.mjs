@@ -21,34 +21,6 @@ const compat = new FlatCompat({
   allConfig: js.configs.all,
 });
 
-const deprecatedForLoanContract = [
-  ['currency', 'brand, asset or another descriptor'],
-  ['blacklist', 'denylist'],
-  ['whitelist', 'allowlist'],
-  ['RUN', 'IST', '/RUN/'],
-];
-
-const allDeprecated = [...deprecatedForLoanContract, ['loan', 'debt']];
-
-const deprecatedTerminology = Object.fromEntries(
-  Object.entries({
-    all: allDeprecated,
-    loanContract: deprecatedForLoanContract,
-  }).map(([category, deprecated]) => [
-    category,
-    deprecated.flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
-      [
-        ['Literal', 'value'],
-        ['TemplateElement', 'value.raw'],
-        ['Identifier', 'name'],
-      ].map(([selectorType, field]) => ({
-        selector: `${selectorType}[${field}=${badRgx}]`,
-        message: `Use '${good}' instead of deprecated '${bad}'`,
-      })),
-    ),
-  ]),
-);
-
 export default [
   {
     ignores: [
@@ -249,29 +221,6 @@ export default [
     },
   },
   {
-    // Tighten rules for exported code.
-    files: [
-      'packages/*/src/**/*.js',
-      'packages/*/tools/**/*.js',
-      'packages/*/tools/**/*.mjs',
-      'packages/*/*.js',
-      'packages/wallet/api/src/**/*.js',
-    ],
-
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...deprecatedTerminology.all,
-        {
-          selector:
-            'CallExpression[callee.object.name="Object"][callee.property.name="fromEntries"] > CallExpression.arguments[callee.object.name="Object"][callee.property.name="entries"]',
-          message:
-            'Prefer objectMap over Object.fromEntries(Object.entries(...))',
-        },
-      ],
-    },
-  },
-  {
     files: ['packages/**/*.{js,ts,mjs,cjs}'],
     ignores: ['packages/*/test/**', 'packages/wallet/api/test/**'],
 
@@ -356,49 +305,6 @@ export default [
           paths: ['@endo/eventual-send', '@endo/far'],
         },
       ],
-    },
-  },
-  {
-    files: ['packages/*/src/exos/**'],
-
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          // Exclusions are for handlers that return prompt promises
-          selector:
-            'FunctionExpression[async=true]:not(Property[key.name=/^(connectionHandler|tap)$/] > ObjectExpression > Property[key.name=/^(onOpen|onClose|receiveUpcall)$/] > FunctionExpression[async=true])',
-          message: 'Non-immediate functions must return vows, not promises',
-        },
-        {
-          selector: 'ArrowFunctionExpression[async=true]',
-          message:
-            'Non-immediate arrow functions must return vows, not promises',
-        },
-        {
-          selector: "Identifier[name='callWhen']",
-          message:
-            'callWhen wraps the function in a promise; instead immediately return a vow',
-        },
-        {
-          selector: "Identifier[name='heapVowE']",
-          message:
-            'heapVowE shortens vows to promises; instead use `E` from `@endo/far` with `watch` from durable vowTools',
-        },
-        {
-          selector: "Identifier[name='heapVowTools']",
-          message:
-            'heapVowTools are not durable; instead use `prepareVowTools` with a durable zone',
-        },
-      ],
-    },
-  },
-  {
-    // Allow "loan" contracts to mention the word "loan".
-    files: ['packages/zoe/src/contracts/loan/*.js'],
-
-    rules: {
-      'no-restricted-syntax': ['error', ...deprecatedTerminology.loanContract],
     },
   },
   {

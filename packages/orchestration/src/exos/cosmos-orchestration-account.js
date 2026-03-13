@@ -1096,7 +1096,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         asContinuingOffer() {
           // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
-          // eslint-disable-next-line no-restricted-syntax
+          // oxlint-disable-next-line eslint-js/no-restricted-syntax
           return asVow(async () => {
             await null;
             const { holder, invitationMakers: im } = this.facets;
@@ -1117,7 +1117,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         /** @type {HostOf<OrchestrationAccountCommon['getPublicTopics']>} */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
-          // eslint-disable-next-line no-restricted-syntax
+          // oxlint-disable-next-line eslint-js/no-restricted-syntax
           return asVow(async () => {
             await null;
             const { topicKit } = this.state;

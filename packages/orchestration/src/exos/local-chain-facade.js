@@ -1,6 +1,6 @@
 /** @file Localchain Facade exo */
 import { E } from '@endo/far';
-// eslint-disable-next-line no-restricted-syntax -- just the import
+// oxlint-disable-next-line eslint-js/no-restricted-syntax -- just the import
 import { heapVowE } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
@@ -107,7 +107,7 @@ const prepareLocalChainFacadeKit = (
           return watch(
             // XXX makeAccount returns a Promise for an exo but reserves being able to return a vow
             // so we use heapVowE to shorten the promise path
-            // eslint-disable-next-line no-restricted-syntax -- will run in one turn
+            // oxlint-disable-next-line eslint-js/no-restricted-syntax -- will run in one turn
             allVows([lcaP, heapVowE(lcaP).getAddress()]),
             this.facets.makeAccountWatcher,
           );
