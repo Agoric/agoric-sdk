@@ -1022,7 +1022,6 @@ __metadata:
     eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-ava: "npm:^15.1.0"
     eslint-plugin-import: "npm:^2.32.0"
-    eslint-plugin-require-extensions: "npm:^0.1.3"
     execa: "npm:^9.6.0"
     npm-run-all: "npm:^4.1.5"
     oxlint: "npm:^1.55.0"
@@ -10124,15 +10123,6 @@ __metadata:
   peerDependencies:
     eslint: ^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8 || ^9
   checksum: 10c0/bfb1b8fc8800398e62ddfefbf3638d185286edfed26dfe00875cc2846d954491b4f5112457831588b757fa789384e1ae585f812614c4797f0499fa234fd4a48b
-  languageName: node
-  linkType: hard
-
-"eslint-plugin-require-extensions@npm:^0.1.3":
-  version: 0.1.3
-  resolution: "eslint-plugin-require-extensions@npm:0.1.3"
-  peerDependencies:
-    eslint: "*"
-  checksum: 10c0/79aec6ac25139edd7e085c40dae0e7699b66a0f253333a80e5a2857762f258d8cf8c89fc873b9ada7c9d8d7722c0386164783eb979361c5bc02c5e7fc1175403
   languageName: node
   linkType: hard
 
