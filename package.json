@@ -45,7 +45,7 @@
     "type-coverage": "^2.29.7",
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "^4.2.1",
-    "typescript": "~6.0.0-beta",
+    "typescript": "~6.0.1-rc",
     "typescript-eslint": "^8.40.0"
   },
   "resolutions": {
