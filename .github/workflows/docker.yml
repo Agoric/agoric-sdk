@@ -44,7 +44,10 @@ jobs:
       # to push the resulting images
       packages: write
     needs: snapshot
-    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
+    # This repository is public, so standard GitHub-hosted Linux runners are free.
+    # Keep the job on GitHub-hosted compute and use Depot only for the remote image
+    # builds so we retain Depot's layer cache without paying for a Depot runner here.
+    runs-on: ubuntu-latest
     outputs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
@@ -150,7 +153,10 @@ jobs:
 
   docker-solo:
     needs: [docker-sdk, snapshot]
-    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
+    # This repository is public, so standard GitHub-hosted Linux runners are free.
+    # Keep the job on GitHub-hosted compute and use Depot only for the remote image
+    # builds so we retain Depot's layer cache without paying for a Depot runner here.
+    runs-on: ubuntu-latest
     permissions:
       # allow issuing OIDC tokens for this workflow run
       id-token: write
@@ -209,7 +215,10 @@ jobs:
       # to push the resulting images
       packages: write
     needs: snapshot
-    runs-on: 'depot-ubuntu-latest'
+    # This repository is public, so standard GitHub-hosted Linux runners are free.
+    # Keep the job on GitHub-hosted compute and use Depot only for the remote image
+    # builds so we retain Depot's layer cache without paying for a Depot runner here.
+    runs-on: ubuntu-latest
     outputs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
