@@ -1,18 +1,13 @@
 // @ts-check
 
+import { fetchOk } from '@agoric/internal/src/fetch.js';
+
 /**
  * @import {RpcClient} from '@cosmjs/tendermint-rpc';
  * @import {JsonRpcRequest} from '@cosmjs/json-rpc';
  */
 
 const { freeze } = Object;
-
-const filterBadStatus = res => {
-  if (res.status >= 400) {
-    throw Error(`Bad status on response: ${res.status}`);
-  }
-  return res;
-};
 
 /**
  * Make an RpcClient using explicit access to the network.
@@ -53,9 +48,9 @@ export const makeTendermintRpcClient = (url, fetch) => {
           ...headers,
         },
       };
-      return fetch(url, settings)
-        .then(filterBadStatus)
-        .then(res => res.json());
+      return fetchOk(fetch, url, settings, `RPC ${url}`).then(res =>
+        res.json(),
+      );
     },
   });
 };

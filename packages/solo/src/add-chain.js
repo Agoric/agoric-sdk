@@ -5,6 +5,7 @@ import djson from 'deterministic-json';
 import path from 'path';
 import fs from 'fs';
 
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import { Fail } from '@endo/errors';
 import setGCIIngress from './set-gci-ingress.js';
 
@@ -34,12 +35,12 @@ async function addChain(basedir, chainConfig, force = false) {
     const f = fs.readFileSync(url.pathname, 'utf-8');
     netconf = JSON.parse(f);
   } else {
-    const r = await fetch(url.href);
+    const r = await fetchOk(fetch, url.href, undefined, 'Network config');
     netconf = await r.json();
   }
   const gciUrl = new URL(netconf.gci, 'unspecified://');
   if (gciUrl.protocol !== 'unspecified:') {
-    const g = await fetch(gciUrl.href);
+    const g = await fetchOk(fetch, gciUrl.href, undefined, 'Genesis');
     const resp = await g.json();
     let genesis = resp;
     if (resp.jsonrpc === '2.0') {

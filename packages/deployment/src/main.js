@@ -4,6 +4,7 @@ import djson from 'deterministic-json';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import { Fail } from '@endo/errors';
 import { doInit } from './init.js';
 import { shellMetaRegexp, shellEscape } from './run.js';
@@ -337,7 +338,12 @@ show-config      display the client connection parameters
         if (loc.protocol === 'file:') {
           genJSON = await trimReadFile(loc.pathname);
         } else {
-          const res = await fetch(subOpts.genesis);
+          const res = await fetchOk(
+            fetch,
+            subOpts.genesis,
+            undefined,
+            'Genesis',
+          );
           const js = await res.json();
           if (js && js.jsonrpc) {
             genJSON = JSON.stringify(js.result.genesis);

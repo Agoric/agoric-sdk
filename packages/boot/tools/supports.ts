@@ -21,6 +21,7 @@ import {
   VBankAccount,
   type Remote,
 } from '@agoric/internal';
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
@@ -995,21 +996,6 @@ export function insistManagerType(mt) {
   assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
 }
 
-/**
- * @template {Response} [R=Response]
- * @param {R} resp
- * @param {string} [type]
- * @returns {R}
- */
-export const assertOk = (resp: Response, type = 'File') => {
-  if (!resp.ok) {
-    throw new Error(
-      `${type} failed (${resp.status} ${resp.statusText}) at ${resp.url}: `,
-    );
-  }
-  return resp;
-};
-
 // TODO explore doing this as part of a post-install script
 // and having the test import it statically instead of fetching lazily
 /**
@@ -1025,8 +1011,9 @@ export const fetchCoreEvalRelease = async (
   const fetch = fetchCached;
 
   try {
-    const planResponse = await fetch(planUrl);
-    const plan = (await assertOk(planResponse, 'Plan').json()) as {
+    const plan = (await fetchOk(fetch, planUrl, undefined, 'Plan').then(r =>
+      r.json(),
+    )) as {
       name: string;
       permit: string;
       script: string;
@@ -1038,17 +1025,26 @@ export const fetchCoreEvalRelease = async (
     };
 
     assert.equal(plan.name, config.name);
-    const script = await fetch(`${artifacts}/${plan.script}`).then(r =>
-      assertOk(r, 'Script').text(),
-    );
-    const permit = await fetch(`${artifacts}/${plan.permit}`).then(r =>
-      assertOk(r, 'Permit').text(),
-    );
+    const script = await fetchOk(
+      fetch,
+      `${artifacts}/${plan.script}`,
+      undefined,
+      'Script',
+    ).then(r => r.text());
+    const permit = await fetchOk(
+      fetch,
+      `${artifacts}/${plan.permit}`,
+      undefined,
+      'Permit',
+    ).then(r => r.text());
     const bundles: EndoZipBase64Bundle[] = await Promise.all(
       plan.bundles.map(b =>
-        fetch(`${artifacts}/${b.bundleID}.json`).then(r =>
-          assertOk(r, 'Bundle').json(),
-        ),
+        fetchOk(
+          fetch,
+          `${artifacts}/${b.bundleID}.json`,
+          undefined,
+          'Bundle',
+        ).then(r => r.json()),
       ),
     );
 
@@ -1063,11 +1059,19 @@ export const fetchCoreEvalRelease = async (
     const permitName = `${config.name}-permit.json`;
 
     // Fetch script and permit directly
-    const scriptResponse = await fetch(`${artifacts}/${scriptName}`);
-    const script = await assertOk(scriptResponse, 'Script').text();
+    const script = await fetchOk(
+      fetch,
+      `${artifacts}/${scriptName}`,
+      undefined,
+      'Script',
+    ).then(r => r.text());
 
-    const permitResponse = await fetch(`${artifacts}/${permitName}`);
-    const permit = await assertOk(permitResponse, 'Permit').text();
+    const permit = await fetchOk(
+      fetch,
+      `${artifacts}/${permitName}`,
+      undefined,
+      'Permit',
+    ).then(r => r.text());
 
     // Parse script to detect bundle references
     const bundlePattern = /"(b1-[a-f0-9]+)"/g;
@@ -1089,9 +1093,12 @@ export const fetchCoreEvalRelease = async (
     }
     const bundles: EndoZipBase64Bundle[] = await Promise.all(
       uniqueBundleIds.map(bundleId =>
-        fetch(`${artifacts}/${bundleId}.json`).then(r =>
-          assertOk(r, 'Bundle').json(),
-        ),
+        fetchOk(
+          fetch,
+          `${artifacts}/${bundleId}.json`,
+          undefined,
+          'Bundle',
+        ).then(r => r.json()),
       ),
     );
 

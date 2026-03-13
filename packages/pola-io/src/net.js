@@ -1,5 +1,7 @@
 // @ts-check
 
+import { fetchOk } from '@agoric/internal/src/fetch.js';
+
 const { freeze } = Object;
 
 /**
@@ -38,11 +40,7 @@ export const makeWebRd = (root, { fetch, log = console.log }) => {
 
     const checkedFetch = async () => {
       log('WebRd fetch:', there);
-      const res = await fetch(there);
-      if (!res.ok) {
-        throw Error(`${res.statusText} @ ${there}`);
-      }
-      return res;
+      return fetchOk(fetch, there, undefined, `WebRd fetch ${there}`);
     };
     /** @type {TextRd} */
     const self = {

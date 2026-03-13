@@ -1,4 +1,5 @@
 /* global fetch */
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import { Fail } from '@endo/errors';
 import { makeRoundRobinLeader } from './leader.js';
 import {
@@ -52,9 +53,14 @@ export const makeLeaderFromNetworkConfig = (netconfigURL, options = {}) => {
   const where = 'Network config leader';
   return new Promise((resolve, reject) => {
     const makeLeader = async () => {
-      const response = await fetch(netconfigURL, {
-        headers: { accept: 'application/json' },
-      });
+      const response = await fetchOk(
+        fetch,
+        netconfigURL,
+        {
+          headers: { accept: 'application/json' },
+        },
+        'Network config',
+      );
       const networkConfig = await response.json();
       assertNetworkConfig(harden(networkConfig));
       const { rpcAddrs } = networkConfig;

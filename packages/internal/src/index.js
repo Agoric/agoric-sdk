@@ -14,6 +14,7 @@ export * from './cli-utils.js';
 export * from './config.js';
 export * from './debug.js';
 export * from './errors.js';
+export * from './fetch.js';
 export * from './js-utils.js';
 export * from './keyMirror.js';
 export { pureDataMarshaller } from './marshal/pure-data.js';

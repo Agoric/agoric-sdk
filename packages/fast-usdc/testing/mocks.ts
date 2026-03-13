@@ -48,7 +48,13 @@ export const makeFetchMock = get => {
   const queryCounts = {};
   const fetch = async (path: string) => {
     queryCounts[path] = (queryCounts[path] ?? 0) + 1;
-    return { json: async () => get(path) };
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      url: path,
+      json: async () => get(path),
+    };
   };
 
   return { fetch, getQueryCounts: () => queryCounts };

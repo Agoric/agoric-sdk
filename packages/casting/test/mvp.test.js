@@ -160,7 +160,8 @@ test('missing rpc server', async t => {
         jitter: null,
       }),
     {
-      message: /^Unexpected token/,
+      message:
+        /^Network config failed \(404 Not Found\) at http:\/\/localhost:\d+\/missing-network-config$/,
     },
   );
 });
