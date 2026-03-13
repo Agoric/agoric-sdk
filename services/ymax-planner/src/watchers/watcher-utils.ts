@@ -1,9 +1,13 @@
-import type { TransactionReceipt } from 'ethers';
-import { Interface, AbiCoder, getAddress } from 'ethers';
+import type { TransactionReceipt, Filter, Log } from 'ethers';
+import { Interface, AbiCoder, getAddress, keccak256 } from 'ethers';
+import type { CaipChainId } from '@agoric/orchestration';
 import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
 import { decodeAbiParameters } from 'viem';
 import type { EvmRpc } from '../evm-scanner.ts';
-import { getConfirmationsRequired } from '../support.ts';
+import {
+  getConfirmationsRequired,
+  getRevertConfirmationsRequired,
+} from '../support.ts';
 
 /** Scope tag for failed-transaction lookback searches. */
 export const FAILED_TX_SCOPE = 'failedTx';
@@ -117,6 +121,56 @@ export const extractDepositFactoryExecuteData = (
     return null;
   }
 };
+
+/**
+ * Parses the `execute(bytes32, string, string, bytes)` calldata, extracts
+ * the raw `payload` bytes (arg index 3), and returns `keccak256(payload)`.
+ *
+ * @param data - Transaction input data (the full `execute()` calldata)
+ * @returns keccak256(payload) hex string, or null if parsing fails
+ */
+export const extractPayloadHash = (data: string): string | null => {
+  const parsed = axelarExecuteIface.parseTransaction({ data });
+  if (!parsed) return null;
+
+  const [_commandId, _sourceChain, _sourceAddress, payload] = parsed.args;
+  return keccak256(payload);
+};
+
+/**
+ * Parses the `execute(bytes32, string, string, bytes)` calldata, extracts the
+ * inner `payload`, strips its 4-byte function selector, and abi-decodes the
+ * first argument as a string — which is the padded txId.
+ *
+ * The router payload is always function-encoded where the first argument is
+ * a string (the padded txId) and the second is an address.
+ *
+ * @param data - Transaction input data (the full `execute()` calldata)
+ * @returns The padded txId string, or null if parsing fails
+ */
+export const extractPaddedTxId = (
+  data: string,
+  abiCoder: AbiCoder = new AbiCoder(),
+): string | null => {
+  try {
+    const parsed = axelarExecuteIface.parseTransaction({ data });
+    if (!parsed) return null;
+
+    const [_commandId, _sourceChain, sourceAddress, payload] = parsed.args;
+    // Strip the 4-byte selector (0x + 8 hex chars) to get the ABI-encoded args
+    const encodedArgs = `0x${payload.slice(10)}`;
+    const [paddedTxId] = abiCoder.decode(['string'], encodedArgs);
+
+    // Sanity check: the padded txId should match the source address length
+    if (paddedTxId.length !== sourceAddress.length) {
+      return null;
+    }
+
+    return paddedTxId;
+  } catch {
+    return null;
+  }
+};
 //#endregion
 
 //#region Alchemy alchemy_minedTransactions subscription types
@@ -202,6 +256,30 @@ export const fetchReceiptWithRetry = async (
 };
 
 /**
+ * Wait for sufficient block confirmations on a transaction.
+ *
+ * Implements the finality protection pattern: wait for enough confirmations
+ * to ensure the result is permanent before reporting it. This prevents
+ * premature failure reports that could be reversed by a blockchain reorg.
+ *
+ * @returns Confirmed receipt, or null if reorged out
+ */
+const waitForFinalConfirmations = async (
+  txHash: string,
+  confirmations: number,
+  provider: EvmRpc,
+  log: (...args: unknown[]) => void,
+): Promise<TransactionReceipt | null> => {
+  const receipt = await provider.waitForTransaction(txHash, confirmations);
+  if (!receipt) {
+    log(
+      `Transaction ${txHash} not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
+    );
+  }
+  return receipt;
+};
+
+/**
  * Handle receipt status for a transaction that has been validated as matching
  * the watcher's criteria. Returns the result to report to the caller.
  *
@@ -230,23 +308,14 @@ export const handleTxRevert = async (
   // success → failure just as it can flip failure → success.
   if (receipt.status !== 0) return null;
 
-  /**
-   * Transaction reverted - For failure cases, we wait for full finality
-   * confirmations to ensure the failure is permanent. A failure that reorgs
-   * into a success is very hard for our system to recover from, so we must
-   * be certain of the failure.
-   */
-  const confirmations = getConfirmationsRequired(chainId);
-  const confirmedReceipt = await provider.waitForTransaction(
+  const confirmations = getRevertConfirmationsRequired(chainId);
+  const confirmedReceipt = await waitForFinalConfirmations(
     txHash,
     confirmations,
+    provider,
+    log,
   );
-  if (!confirmedReceipt) {
-    log(
-      `Transaction ${txHash} was not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
-    );
-    return null;
-  }
+  if (!confirmedReceipt) return null;
 
   // Re-check status after confirmations in case of reorg
   if (confirmedReceipt.status === 0) {
@@ -261,4 +330,74 @@ export const handleTxRevert = async (
     );
     return { settled: true, txHash, success: true };
   }
+};
+
+/**
+ * Handle event-level failure with finality protection.
+ *
+ * This is for cases where the transaction succeeded (status 1) but the
+ * business logic failed (e.g., OperationResult event with success=false).
+ * We wait for confirmations and re-verify the event to ensure the failure
+ * is permanent before reporting it.
+ *
+ * @param eventLog - The event log containing the failure
+ * @param filter - Filter to re-fetch the event after confirmations
+ * @param parseEvent - Function to parse the event and return its success status
+ * @param identifier - A string identifier for logging
+ * @param chainId - Chain ID to determine confirmation requirements
+ * @param provider - WebSocket provider for waiting for confirmations
+ * @param log - Logging function
+ * @returns Object with settled flag, success status, and transaction hash, or null if reorged
+ */
+export const handleOperationFailure = async <T extends { success: boolean }>(
+  eventLog: Log,
+  filter: Filter,
+  parseEvent: (log: Log) => T,
+  identifier: string,
+  chainId: CaipChainId,
+  provider: EvmRpc,
+  log: (...args: unknown[]) => void,
+): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
+  const txHash = eventLog.transactionHash;
+
+  const confirmations = getConfirmationsRequired(chainId);
+  const confirmedReceipt = await waitForFinalConfirmations(
+    txHash,
+    confirmations,
+    provider,
+    log,
+  );
+  if (!confirmedReceipt) return null;
+
+  const finalBlock = confirmedReceipt.blockNumber;
+
+  // Re-fetch logs to verify the failure is still present
+  const logsInBlock = await provider.getLogs({
+    ...filter,
+    fromBlock: finalBlock,
+    toBlock: finalBlock,
+  });
+
+  const confirmedLog = logsInBlock.find(l => l.transactionHash === txHash);
+
+  if (!confirmedLog) {
+    log(
+      `Event not found after ${confirmations} confirmations (possibly reorged): ${identifier} txHash=${txHash}`,
+    );
+    return null;
+  }
+
+  const confirmedParsed = parseEvent(confirmedLog);
+
+  if (confirmedParsed.success) {
+    log(
+      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash}`,
+    );
+    return { settled: true, txHash, success: true };
+  }
+
+  log(
+    `❌ FAILURE (${confirmations} confirmations): ${identifier} txHash=${txHash}`,
+  );
+  return { settled: true, txHash, success: false };
 };
