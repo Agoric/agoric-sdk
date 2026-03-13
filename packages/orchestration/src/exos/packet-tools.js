@@ -121,15 +121,15 @@ export const preparePacketTools = (zone, vowTools) => {
       }),
       pickDataWatcher: vowExo.watcherShapes.pickDataWatcher,
       tap: M.interface('tap', {
-        // eslint-disable-next-line no-restricted-syntax
+        // oxlint-disable-next-line eslint-js/no-restricted-syntax
         receiveUpcall: M.callWhen(M.any()).returns(M.any()),
       }),
       monitorRegistration: M.interface('monitorRegistration', {
-        // eslint-disable-next-line no-restricted-syntax
+        // oxlint-disable-next-line eslint-js/no-restricted-syntax
         updateTargetApp: M.callWhen(
           M.await(M.remotable('TargetApp')),
         ).returns(),
-        // eslint-disable-next-line no-restricted-syntax
+        // oxlint-disable-next-line eslint-js/no-restricted-syntax
         revoke: M.callWhen().returns(),
       }),
       watchPacketMatch: M.interface('watchPacketMatch', {
@@ -216,7 +216,7 @@ export const preparePacketTools = (zone, vowTools) => {
         /**
          * @param {ERef<TargetApp>} monitor
          */
-        // eslint-disable-next-line no-restricted-syntax
+        // oxlint-disable-next-line eslint-js/no-restricted-syntax
         async monitorTransfers(monitor) {
           // We set the monitor here, but we only ever subscribe our
           // this.facets.tap handler to transfers.
@@ -269,13 +269,13 @@ export const preparePacketTools = (zone, vowTools) => {
       pickDataWatcher: vowExo.watchers.pickDataWatcher,
       monitorRegistration: {
         /** @type {TargetRegistration['updateTargetApp']} */
-        // eslint-disable-next-line no-restricted-syntax
+        // oxlint-disable-next-line eslint-js/no-restricted-syntax
         async updateTargetApp(tap) {
           this.state.monitor = await tap;
           await this.facets.utils.subscribeToTransfers();
         },
         /** @type {TargetRegistration['revoke']} */
-        // eslint-disable-next-line no-restricted-syntax
+        // oxlint-disable-next-line eslint-js/no-restricted-syntax
         async revoke() {
           this.state.monitor = null;
         },

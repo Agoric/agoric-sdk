@@ -344,7 +344,7 @@ export const makeChainHub = (
     zone,
     'lookupChainInfo',
     /** @param {string} chainName */
-    // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
+    // oxlint-disable-next-line eslint-js/no-restricted-syntax -- TODO more exact rules for vow best practices
     async chainName => {
       await null;
       try {
@@ -373,7 +373,7 @@ export const makeChainHub = (
      * @param {string} chainId1
      * @param {string} chainId2
      */
-    // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
+    // oxlint-disable-next-line eslint-js/no-restricted-syntax -- TODO more exact rules for vow best practices
     async (chainId1, chainId2) => {
       await null;
       const key = connectionKey(chainId1, chainId2);
@@ -412,7 +412,7 @@ export const makeChainHub = (
      *   ]
      * >}
      */
-    // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
+    // oxlint-disable-next-line eslint-js/no-restricted-syntax -- TODO more exact rules for vow best practices
     async (primaryName, counterName) => {
       const [primary, counter] = await vowTools.asPromise(
         vowTools.allVows([
