@@ -8,6 +8,7 @@ This document tracks migration progress from `eslint.config.mjs` to `.oxlintrc.j
 - The CI job `lint-oxlint` in `test-all-packages` is non-blocking (`continue-on-error: true`).
 - Oxlint severities are intentionally limited to `off` and `warn`.
 - Support for `no-restricted-syntax` is provided via `oxlint-plugin-eslint` (using the `eslint-js/` prefix).
+- **Type-aware features:** Oxlint is currently run without type-aware features (`--type-aware` or `--type-check`). Rules requiring type information (e.g., `no-floating-promises`) are not yet migrated to Oxlint.
 
 ## `no-restricted-syntax` migration status
 
