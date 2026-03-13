@@ -52,6 +52,7 @@ import type {
 import {
   makeAmbientBundleToolPowers,
   makeNodeBundleCache,
+  sharedBundleCachePath,
 } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   makeRunUtils,
@@ -181,7 +182,7 @@ export const keyArrayEqual = (
  * @returns Path to the generated config file
  */
 export const getNodeTestVaultsConfig = async ({
-  bundleDir,
+  bundleDir = sharedBundleCachePath,
   configPath,
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
@@ -958,7 +959,7 @@ export const makeSwingsetTestKit = async <
     EconomyBootstrapPowers['consume'],
 >(
   log: (..._: any[]) => void,
-  bundleDir = 'bundles',
+  bundleDir = sharedBundleCachePath,
   {
     configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
@@ -1285,9 +1286,9 @@ export const makeSwingsetTestKit = async <
     },
   );
 
-  // XXX This initial run() might not be necessary. Tests pass without it as of
-  // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
-  // exercised in the right way.
+  // Make sure the kernel has progressed past its initial startup work before
+  // handing the harness back to test suites so that bootstrap vats and core
+  // proposals have result slots ready right away.
   await profiler.measure('makeSwingsetTestKit.controller.run.initial', () =>
     controller.run(),
   );
