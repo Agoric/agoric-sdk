@@ -18,12 +18,16 @@ on:
 jobs:
   multichain-e2e:
     name: Multichain E2E (${{ inputs.test_command }})
+    # Keep this on a Depot runner because the job builds via Depot, loads the
+    # resulting image into kind, and then does substantial local Docker/K8s work.
     runs-on: 'depot-ubuntu-24.04-16'
     permissions:
       contents: read
       id-token: write
 
     steps:
+      # We use Depot for the SDK image build so multichain E2E benefits from the
+      # shared remote builder cache used by the other container workflows.
       - uses: depot/setup-action@v1
         with:
           oidc: true
