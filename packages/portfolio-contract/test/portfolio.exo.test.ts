@@ -886,6 +886,191 @@ test('evmHandler withdraw check token address is USDC contract', t => {
   );
 });
 
+test('evmHandler withdraw with Permit2 fee authority includes fee and evmWithdrawDetail', t => {
+  const ownerAddress = '0x1212121212121212121212121212121212121212' as const;
+  const spender = '0x3434343434343434343434343434343434343434' as Address;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 70,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  const ethereumInfo: AccountInfoFor['Ethereum'] = {
+    namespace: 'eip155',
+    chainName: 'Ethereum',
+    chainId: 'eip155:1',
+    remoteAddress: spender,
+  };
+  manager.resolveAccount(ethereumInfo);
+
+  const permit2Payload: PermitDetails['permit2Payload'] = {
+    owner: ownerAddress,
+    witness: '0xWitnessData',
+    witnessTypeString: 'WitnessTypeString',
+    permit: {
+      permitted: {
+        token: contractsMock.Ethereum.usdc,
+        amount: 444_159n,
+      },
+      nonce: 123n,
+      deadline: 1700000000n,
+    },
+    signature: '0xSignatureData',
+  };
+
+  const result = evmHandler.withdraw({
+    withdrawDetails: {
+      amount: 3_000_000n,
+      token: contractsMock.Ethereum.usdc as Address,
+    },
+    domain: { chainId: 1n },
+    spender,
+    permit2Payload,
+  });
+
+  t.is(result, 'flow1');
+  t.like(getCallLog(), [
+    [
+      'executePlan',
+      ,
+      {},
+      ,
+      {
+        type: 'withdraw',
+        amount: AmountMath.make(USDC, 3_000_000n),
+        fee: AmountMath.make(USDC, 444_159n),
+        toChain: 'Ethereum',
+      },
+      { flowId: 1 },
+      ,
+      {
+        evmWithdrawDetail: {
+          toChain: 'Ethereum',
+          spender,
+          permit2Payload,
+        },
+      },
+    ],
+  ]);
+});
+
+test('evmHandler withdraw requires both spender and permit2Payload together', t => {
+  const ownerAddress = '0x5656565656565656565656565656565656565656' as const;
+  const { makePortfolioKit } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 71,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  t.throws(
+    () =>
+      evmHandler.withdraw({
+        withdrawDetails: {
+          amount: 3_000_000n,
+          token: contractsMock.Ethereum.usdc as Address,
+        },
+        domain: { chainId: 1n },
+        spender: '0x3434343434343434343434343434343434343434' as Address,
+      }),
+    {
+      message: /withdraw must provide both spender and permit2Payload together/,
+    },
+  );
+});
+
+test('evmHandler withdraw rejects permit owner mismatch', t => {
+  const ownerAddress = '0x7878787878787878787878787878787878787878' as const;
+  const spender = '0x3434343434343434343434343434343434343434' as Address;
+  const { makePortfolioKit } = makeTestSetup();
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 72,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Ethereum',
+    chainId: 'eip155:1',
+    remoteAddress: spender,
+  } satisfies AccountInfoFor['Ethereum']);
+
+  t.throws(
+    () =>
+      evmHandler.withdraw({
+        withdrawDetails: {
+          amount: 3_000_000n,
+          token: contractsMock.Ethereum.usdc as Address,
+        },
+        domain: { chainId: 1n },
+        spender,
+        permit2Payload: {
+          owner: '0x9999999999999999999999999999999999999999',
+          witness: '0xWitnessData',
+          witnessTypeString: 'WitnessTypeString',
+          permit: {
+            permitted: {
+              token: contractsMock.Ethereum.usdc,
+              amount: 444_159n,
+            },
+            nonce: 123n,
+            deadline: 1700000000n,
+          },
+          signature: '0xSignatureData',
+        },
+      }),
+    {
+      message: /permit owner .* does not match portfolio source address/,
+    },
+  );
+});
+
+test('evmHandler withdraw rejects spender mismatch', t => {
+  const ownerAddress = '0x9090909090909090909090909090909090909090' as const;
+  const expectedSpender = '0x3434343434343434343434343434343434343434' as Address;
+  const wrongSpender = '0x4545454545454545454545454545454545454545' as Address;
+  const { makePortfolioKit } = makeTestSetup();
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 73,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Ethereum',
+    chainId: 'eip155:1',
+    remoteAddress: expectedSpender,
+  } satisfies AccountInfoFor['Ethereum']);
+
+  t.throws(
+    () =>
+      evmHandler.withdraw({
+        withdrawDetails: {
+          amount: 3_000_000n,
+          token: contractsMock.Ethereum.usdc as Address,
+        },
+        domain: { chainId: 1n },
+        spender: wrongSpender,
+        permit2Payload: {
+          owner: ownerAddress,
+          witness: '0xWitnessData',
+          witnessTypeString: 'WitnessTypeString',
+          permit: {
+            permitted: {
+              token: contractsMock.Ethereum.usdc,
+              amount: 444_159n,
+            },
+            nonce: 123n,
+            deadline: 1700000000n,
+          },
+          signature: '0xSignatureData',
+        },
+      }),
+    {
+      message: /verifying contract .* does not match expected representative/,
+    },
+  );
+});
+
 test('evmHandler rebalance requires source account', t => {
   const { makePortfolioKit } = makeTestSetup();
   const { evmHandler } = makePortfolioKit({ portfolioId: 8 });

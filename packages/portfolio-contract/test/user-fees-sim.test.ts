@@ -36,11 +36,8 @@ type SignedMessage = WithSignature<UnsignedMessage>;
 // #endregion
 
 // #region Ymax types
-// Design note: the real withdraw FlowDetail should grow this fee field.
 type QuoteFlowDetail = Extract<FlowDetail, { type: 'withdraw' }>;
-type WithdrawFlowDetail = Extract<FlowDetail, { type: 'withdraw' }> & {
-  fee: bigint;
-};
+type WithdrawFlowDetail = Extract<FlowDetail, { type: 'withdraw' }>;
 type ToChain = NonNullable<QuoteFlowDetail['toChain']>;
 type QuoteWithdrawFlowDetail = QuoteFlowDetail & { toChain: ToChain };
 type WithdrawPlanFlowDetail = WithdrawFlowDetail & { toChain: ToChain };
@@ -420,7 +417,10 @@ const makePortfolio = (
           brand: 'USDC' as never,
           value: withdrawDetails.withdraw.amount,
         },
-        fee: permit2Payload.permit.permitted.amount,
+        fee: {
+          brand: 'USDC' as never,
+          value: permit2Payload.permit.permitted.amount,
+        },
         toChain,
       };
       viz.think(

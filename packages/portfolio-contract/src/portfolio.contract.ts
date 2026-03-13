@@ -148,6 +148,8 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
     permit2: M.string(),
     gateway: M.string(),
     gasService: M.string(),
+  }, {
+    feeCollector: M.string(),
   });
 
 export type AxelarConfig = {
@@ -192,6 +194,9 @@ export type EVMContractAddresses = {
   factory: `0x${string}`;
   usdc: `0x${string}`;
   permit2: `0x${string}`;
+  // SPIKE-DESIGN: prototype remote fee recipient for user-paid withdraw fees.
+  // The final configuration surface is still under design.
+  feeCollector?: `0x${string}`;
   tokenMessenger: `0x${string}`;
   tokenMessengerV2?: `0x${string}`; // CCTPv2 TokenMessenger contract
   aaveUSDC: `0x${string}`;
