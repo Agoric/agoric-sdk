@@ -19,9 +19,14 @@ jobs:
   multichain-e2e:
     name: Multichain E2E (${{ inputs.test_command }})
     runs-on: 'depot-ubuntu-24.04-16'
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - uses: actions/checkout@v4
         with:
           path: ./agoric-sdk

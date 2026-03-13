@@ -20,6 +20,10 @@ on:
           - ymax-hermes
   workflow_call:
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   orchestration-api-hermes:
     name: Orchestration API - Hermes

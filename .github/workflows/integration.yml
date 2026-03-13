@@ -222,8 +222,14 @@ jobs:
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: 'depot-ubuntu-22.04-16'
     timeout-minutes: 60
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
       - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: update job environment
         run: |
           if [ ":$HOME" = : ]; then
@@ -399,12 +405,18 @@ jobs:
   test-multichain-e2e:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/multichain-e2e.yml
 
   test-ymax-planner-build:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - name: Build ymax-planner Docker image
