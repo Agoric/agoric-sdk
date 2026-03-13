@@ -31,6 +31,27 @@ This document tracks migration progress from `eslint.config.mjs` to `.oxlintrc.j
 | `no-restricted-properties` | test/demo files | ✅ Yes | Implemented via `eslint-js/no-restricted-properties`. |
 | `no-restricted-imports` | `packages/boot/test/**/*.test.*s` | ✅ Yes | Implemented via `eslint-js/no-restricted-imports`. |
 
+## JSDoc rule migration status
+
+Native Oxlint JSDoc rules are used where possible. Custom Agoric tags are supported via `tagNamePreference`.
+
+| ESLint rule | Converted to Oxlint | Notes |
+| --- | --- | --- |
+| `jsdoc/check-tag-names` | ✅ Yes | Native. Custom tags (alpha, beta, category, etc.) allowed via `tagNamePreference`. |
+| `jsdoc/check-access` | ✅ Yes | Native. |
+| `jsdoc/check-property-names` | ✅ Yes | Native. |
+| `jsdoc/empty-tags` | ✅ Yes | Native. |
+| `jsdoc/implements-on-classes` | ✅ Yes | Native. |
+| `jsdoc/require-property` | ✅ Yes | Native. |
+| `jsdoc/require-property-name` | ✅ Yes | Native. |
+| `jsdoc/require-property-type` | ✅ Yes | Native. |
+| `jsdoc/no-defaults` | ✅ Yes | Native (set to `off`). |
+| `jsdoc/require-property-description` | ✅ Yes | Native (set to `off`). |
+| `jsdoc/require-yields` | ✅ Yes | Native (set to `off`). |
+| `jsdoc/require-param` | ✅ Yes | Native (set to `off`). |
+| `jsdoc/require-param-type` | ✅ Yes | Native (set to `off`). |
+| `jsdoc/require-returns-type` | ✅ Yes | Native (set to `off`). |
+
 ## ESLint rules that could potentially be turned off later
 
 These should only be disabled in ESLint after we verify semantic parity and acceptable signal/noise in CI:
