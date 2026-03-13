@@ -89,6 +89,33 @@ const tmpDir = makeTempDirFactory(tmp);
 
 const trace = makeTracer('BSTSupport', false);
 
+const configCache = new Map<string, string>();
+
+const makeConfigCacheKey = ({
+  bundleDir,
+  configPath,
+  defaultManagerType,
+  discriminator,
+  configOverrides,
+}: {
+  bundleDir: string;
+  configPath: string;
+  defaultManagerType: ManagerType;
+  discriminator: string;
+  configOverrides: Partial<SwingSetConfig>;
+}) => {
+  const normalizedOverrides = JSON.parse(
+    JSON.stringify(configOverrides ?? {}),
+  ) as Partial<SwingSetConfig>;
+  return JSON.stringify({
+    bundleDir,
+    configPath,
+    defaultManagerType,
+    discriminator,
+    configOverrides: normalizedOverrides,
+  });
+};
+
 // Releases are immutable, so we can cache them.
 // Doesn't help in CI but speeds up local development.
 // CI is on Github Actions, so fetching is reliable.
@@ -188,6 +215,17 @@ export const getNodeTestVaultsConfig = async ({
   discriminator = '',
   configOverrides = {},
 }) => {
+  const cacheKey = makeConfigCacheKey({
+    bundleDir,
+    configPath,
+    defaultManagerType,
+    discriminator,
+    configOverrides,
+  });
+  const cached = configCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
   const configFromFile: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
     await loadSwingsetConfigFile(configPath),
   );
@@ -227,6 +265,7 @@ export const getNodeTestVaultsConfig = async ({
     JSON.stringify(config),
     'utf-8',
   );
+  configCache.set(cacheKey, testConfigPath);
   return testConfigPath;
 };
 
