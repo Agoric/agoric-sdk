@@ -3,7 +3,7 @@
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { parseArgs } from 'util';
+import { parseArgs } from 'node:util';
 import {
   getManifestForPortfolioControl,
   isYMaxContractName,

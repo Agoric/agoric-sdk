@@ -2,17 +2,17 @@
 
 /* global WeakRef FinalizationRegistry */
 
-import fs from 'fs';
+import fs from 'node:fs';
 import '@agoric/internal/src/install-ses-debug.js';
 
-import zlib from 'zlib';
-import readline from 'readline';
-import process from 'process';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { createHash } from 'crypto';
-import { Readable, finished as finishedCallback } from 'stream';
-import { performance } from 'perf_hooks';
+import zlib from 'node:zlib';
+import readline from 'node:readline';
+import process from 'node:process';
+import { spawn } from 'node:child_process';
+import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
+import { Readable, finished as finishedCallback } from 'node:stream';
+import { performance } from 'node:perf_hooks';
 import { tmpName, dirSync as tmpDirSync } from 'tmp';
 import sqlite3 from 'better-sqlite3';
 import yargsParser from 'yargs-parser';

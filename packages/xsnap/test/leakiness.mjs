@@ -7,12 +7,12 @@ import '@endo/eventual-send/shim.js';
 // @ts-expect-error Cannot find module
 import 'data:text/javascript,try { lockdown(); } catch (_err) {}';
 
-import * as proc from 'child_process';
-import * as os from 'os';
-import fs from 'fs';
+import * as proc from 'node:child_process';
+import * as os from 'node:os';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
-import { parseArgs } from 'util';
-import { isMainThread } from 'worker_threads';
+import { parseArgs } from 'node:util';
+import { isMainThread } from 'node:worker_threads';
 
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';

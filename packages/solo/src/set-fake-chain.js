@@ -1,6 +1,6 @@
 // @ts-nocheck
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export default function setFakeChain(basedir, GCI, fakeDelay) {
   const fn = path.join(basedir, 'connections.json');

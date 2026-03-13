@@ -2,7 +2,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { ExecutionContext, TestFn } from 'ava';
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 
 import { typedEntries } from '@agoric/internal';
 import {

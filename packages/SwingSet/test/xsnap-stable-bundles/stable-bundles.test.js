@@ -1,6 +1,6 @@
 // @ts-nocheck
 import test from 'ava';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 import { initSwingStore } from '@agoric/swing-store';
 import {

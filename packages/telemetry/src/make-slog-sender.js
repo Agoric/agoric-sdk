@@ -1,4 +1,4 @@
-import path from 'path';
+import path from 'node:path';
 import tmp from 'tmp';
 import { PromiseAllOrErrors, unprefixedProperties } from '@agoric/internal';
 import { serializeSlogObj } from './serialize-slog-obj.js';

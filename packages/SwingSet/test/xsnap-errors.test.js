@@ -2,8 +2,8 @@
 // @ts-nocheck
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
-import { spawn } from 'child_process';
-import fs from 'fs';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
 import bundleSource from '@endo/bundle-source';
 import { kser } from '@agoric/kmarshal';

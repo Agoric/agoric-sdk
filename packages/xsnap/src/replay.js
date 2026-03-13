@@ -8,12 +8,12 @@
  *     replay steps 00001 to the first snapshot step.
  *  3. For the last folder, play steps 00001 to last.
  */
-import childProcessPowers from 'child_process';
-import osPowers from 'os';
-import fsPowers from 'fs';
-import { Readable } from 'stream';
+import childProcessPowers from 'node:child_process';
+import osPowers from 'node:os';
+import fsPowers from 'node:fs';
+import { Readable } from 'node:stream';
 import { tmpName as tmpNamePower } from 'tmp';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 import { makeQueue } from '@endo/stream';
 import { xsnap, DEFAULT_CRANK_METERING_LIMIT } from './xsnap.js';
 

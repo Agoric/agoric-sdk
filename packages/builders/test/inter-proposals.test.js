@@ -1,6 +1,6 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import * as ambientFs from 'fs';
+import * as ambientFs from 'node:fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /**

@@ -1,7 +1,7 @@
 // @ts-nocheck
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';

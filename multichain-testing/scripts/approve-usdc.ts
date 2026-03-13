@@ -18,9 +18,9 @@
  *   100 USDC = 100_000_000
  */
 
-import { readFileSync } from 'fs';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { ethers } from 'ethers';
 
 // USDC contract addresses

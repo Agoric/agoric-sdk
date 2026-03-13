@@ -1,5 +1,5 @@
-import { Buffer } from 'buffer';
-import path from 'path';
+import { Buffer } from 'node:buffer';
+import path from 'node:path';
 import { Fail } from '@endo/errors';
 
 /**

@@ -1,5 +1,5 @@
 import type { ExecutionContext } from 'ava';
-import { dirname, join } from 'path';
+import { dirname, join } from 'node:path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';

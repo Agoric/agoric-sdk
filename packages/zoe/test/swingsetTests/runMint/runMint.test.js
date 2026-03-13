@@ -1,5 +1,5 @@
 import anyTest from 'ava';
-import path from 'path';
+import path from 'node:path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import bundleSource from '@endo/bundle-source';

@@ -4,8 +4,8 @@
 import '@endo/init';
 
 import anylogger from '@agoric/internal/vendor/anylogger.js';
-import fs from 'fs';
-import { Buffer } from 'buffer';
+import fs from 'node:fs';
+import { Buffer } from 'node:buffer';
 import process from 'node:process';
 
 import { assert, X, Fail } from '@endo/errors';

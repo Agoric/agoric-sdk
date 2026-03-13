@@ -37,7 +37,7 @@ import {
   extractCoreProposalBundles,
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 
 import {
   makeDefaultMeterProvider,

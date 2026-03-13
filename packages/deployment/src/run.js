@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Writable } from 'stream';
+import { Writable } from 'node:stream';
 
 import { Fail } from '@endo/errors';
 

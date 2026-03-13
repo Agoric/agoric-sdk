@@ -2,10 +2,10 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import anyTest from 'ava';
-import { spawn as ambientSpawn } from 'child_process';
-import { promises as fsPromises } from 'fs';
+import { spawn as ambientSpawn } from 'node:child_process';
+import { promises as fsPromises } from 'node:fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import path from 'path';
+import path from 'node:path';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { mustMatch } from '@agoric/store';

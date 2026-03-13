@@ -4,7 +4,7 @@
 
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import path from 'path';
+import path from 'node:path';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

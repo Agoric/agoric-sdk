@@ -1,4 +1,4 @@
-import { dirname } from 'path';
+import { dirname } from 'node:path';
 
 /** @import { readFile as readAsync } from 'node:fs/promises' */
 /** @import { writeFile as writeAsync } from 'node:fs/promises' */

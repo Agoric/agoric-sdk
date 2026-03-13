@@ -1,7 +1,7 @@
 /* eslint-env node */
 import { Command } from 'commander';
-import path from 'path';
-import url from 'url';
+import path from 'node:path';
+import url from 'node:url';
 import { assert, X } from '@endo/errors';
 import {
   DEFAULT_KEEP_POLLING_SECONDS,

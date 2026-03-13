@@ -4,9 +4,9 @@ import { dirname } from 'node:path';
 import yargsParser from 'yargs-parser';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
-import process from 'process';
-import repl from 'repl';
-import util from 'util';
+import process from 'node:process';
+import repl from 'node:repl';
+import util from 'node:util';
 import {
   loadSwingsetConfigFile,
   loadBasedir,

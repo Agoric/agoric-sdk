@@ -1,6 +1,6 @@
 /* eslint-env node */
-import { dirname, resolve as pathResolve } from 'path';
-import { fileURLToPath } from 'url';
+import { dirname, resolve as pathResolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   sharedBundleCachePath,

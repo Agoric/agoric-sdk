@@ -1,6 +1,6 @@
 /* eslint-env node */
 import { makeSmartWalletKit, LOCAL_CONFIG } from '@agoric/client-utils';
-import { execFileSync } from 'child_process';
+import { execFileSync } from 'node:child_process';
 import { makeAgdWalletKit } from './wallet.js';
 
 export const networkConfig = LOCAL_CONFIG;

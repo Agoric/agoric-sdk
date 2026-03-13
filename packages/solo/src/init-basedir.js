@@ -1,8 +1,8 @@
 // @ts-check
 /* eslint-env node */
-import fs from 'fs';
-import path from 'path';
-import { execFileSync } from 'child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 import { assert, X } from '@endo/errors';
 import anylogger from '@agoric/internal/vendor/anylogger.js';

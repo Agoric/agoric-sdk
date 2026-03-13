@@ -1,7 +1,7 @@
 // @ts-check
 /* global setTimeout */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 import { E, Far } from '@endo/far';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeDurableZone } from '@agoric/zone/durable.js';

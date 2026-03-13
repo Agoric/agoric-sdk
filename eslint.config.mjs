@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 import { legacySrcToToolsFiles } from './scripts/ci/tools-scope-policy.mjs';
 
 // Workaround for https://github.com/anza-xyz/eslint-plugin-require-extensions/issues/18

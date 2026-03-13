@@ -1,9 +1,9 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
-import { mkdir, readFile, rm, stat, writeFile } from 'fs/promises';
-import { fileURLToPath } from 'url';
-import path from 'path';
-import { setTimeout as delay } from 'timers/promises';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import { setTimeout as delay } from 'node:timers/promises';
 
 /**
  * @import {EReturn} from '@endo/far';

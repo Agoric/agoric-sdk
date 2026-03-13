@@ -6,9 +6,9 @@
  *   https://nodejs.org/docs/latest/api/child_process.html#advanced-serialization
  */
 
-import { fork } from 'child_process';
-import path from 'path';
-import { promisify } from 'util';
+import { fork } from 'node:child_process';
+import path from 'node:path';
+import { promisify } from 'node:util';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import { q, Fail } from '@endo/errors';

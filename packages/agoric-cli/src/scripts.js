@@ -3,8 +3,8 @@
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/captp';
 
-import { createRequire } from 'module';
-import path from 'path';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 
 /**
  * @import {ModuleFormat} from '@endo/bundle-source';

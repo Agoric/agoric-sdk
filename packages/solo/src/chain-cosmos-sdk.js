@@ -1,9 +1,9 @@
 // @ts-nocheck
 /* global clearTimeout setTimeout */
-import path from 'path';
-import fs from 'fs';
-import url from 'url';
-import { execFile } from 'child_process';
+import path from 'node:path';
+import fs from 'node:fs';
+import url from 'node:url';
+import { execFile } from 'node:child_process';
 import { open as tempOpen } from 'temp';
 
 import WebSocket from 'ws';

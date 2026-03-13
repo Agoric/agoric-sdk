@@ -1,7 +1,7 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 // @ts-nocheck
 import djson from 'deterministic-json';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
 import { Fail } from '@endo/errors';

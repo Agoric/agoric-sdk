@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { Fail } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
