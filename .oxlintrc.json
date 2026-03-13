@@ -54,7 +54,7 @@
       "rules": {
         "no-process-env": "off",
         "eslint-js/no-restricted-syntax": [
-          "warn",
+          "error",
           {
             "selector": "Literal[value=/currency/i]",
             "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
@@ -90,18 +90,6 @@
           {
             "selector": "Identifier[name=/whitelist/i]",
             "message": "Use 'allowlist' instead of deprecated 'whitelist'"
-          },
-          {
-            "selector": "Literal[value=/RUN/]",
-            "message": "Use 'IST' instead of deprecated 'RUN'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/RUN/]",
-            "message": "Use 'IST' instead of deprecated 'RUN'"
-          },
-          {
-            "selector": "Identifier[name=/RUN/]",
-            "message": "Use 'IST' instead of deprecated 'RUN'"
           },
           {
             "selector": "Literal[value=/loan/i]",
