@@ -67,7 +67,6 @@ These should only be disabled in ESLint after we verify semantic parity and acce
 
 - `plugin:@agoric/recommended`
 - `@jessie.js/safe-await-separator`
-- `plugin:require-extensions/recommended`
 - AVA and JSDoc ESLint plugin rules currently used in multiple scoped overrides
 
 ### Oxlint migration feasibility (current)
@@ -76,7 +75,7 @@ These should only be disabled in ESLint after we verify semantic parity and acce
   1. Upstreaming equivalent built-in Oxlint rules, or
   2. Re-expressing specific policies using available Oxlint core rules/selectors (as done for restricted syntax/import/property policies).
 - **Endo/Jessie-specific rules:** `@jessie.js/safe-await-separator` is ecosystem-specific and currently has no known Oxlint equivalent; keep enforced in ESLint for now.
-- **`require-extensions` plugin behavior:** Also currently ESLint-plugin-specific; keep in ESLint until equivalent Oxlint support exists.
+- **`require-extensions` plugin behavior:** Removed from ESLint. TypeScript `nodenext` configuration now handles import extension enforcement.
 
 ### Recommendation
 
