@@ -94,7 +94,6 @@ const assertCells = (t, label, cells, publishCount, expected, options = {}) => {
   }
 };
 
-// eslint-disable-next-line no-shadow
 const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   const publishKit = /** @type {MakePublishKit} */ (makePublishKit)();
   t.deepEqual(ownKeys(publishKit).sort(), ['publisher', 'subscriber']);
@@ -187,7 +186,6 @@ const verifyPublishKit = test.macro(async (t, makePublishKit) => {
   }
 });
 
-// eslint-disable-next-line no-shadow
 const verifySubscribeAfter = test.macro(async (t, makePublishKit) => {
   const { publisher, subscriber } = /** @type {MakePublishKit} */ (
     makePublishKit
@@ -467,7 +465,6 @@ test.failing('durable publish kit upgrade trauma', async t => {
 });
 
 const verifyPublishKitTermination = test.macro(
-  // eslint-disable-next-line no-shadow
   async (t, makePublishKit, config = {}) => {
     const { publisher, subscriber } = /** @type {MakePublishKit} */ (
       makePublishKit
@@ -536,7 +533,6 @@ for (const [type, maker] of Object.entries(makers)) {
   });
 }
 
-// eslint-disable-next-line no-shadow
 const verifySubscribeLatest = test.macro(async (t, makePublishKit) => {
   const { publisher, subscriber } = /** @type {MakePublishKit} */ (
     makePublishKit
@@ -570,7 +566,6 @@ for (const [type, maker] of Object.entries(makers)) {
   test(`subscribeLatest(${type} subscriber)`, verifySubscribeLatest, maker);
 }
 
-// eslint-disable-next-line no-shadow
 const verifySubscribeEach = test.macro(async (t, makePublishKit) => {
   const { publisher, subscriber } = /** @type {MakePublishKit} */ (
     makePublishKit
@@ -611,7 +606,6 @@ for (const [type, maker] of Object.entries(makers)) {
   test(`subscribeEach(${type} subscriber)`, verifySubscribeEach, maker);
 }
 
-// eslint-disable-next-line no-shadow
 const verifySubscribeAfterSequencing = test.macro(async (t, makePublishKit) => {
   // Demonstrate sequencing by publishing to two destinations.
   const { publisher: pub1, subscriber: sub1 } = /** @type {MakePublishKit} */ (

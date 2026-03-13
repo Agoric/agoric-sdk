@@ -923,7 +923,7 @@ test('virtual object gc', t => {
 
   // case 4: ref virtually, export, drop local ref, drop export
   // ref virtually
-  // eslint-disable-next-line no-unused-vars
+
   const ref1 = makeRef(things[3]);
   t.is(log.shift(), `get vom.rc.${tbase}/4 => undefined`);
   t.is(log.shift(), `set vom.rc.${tbase}/4 1`);
@@ -973,7 +973,7 @@ test('virtual object gc', t => {
   t.is(log.shift(), `set vom.es.${tbase}/5 r`);
   t.deepEqual(log, []);
   // ref virtually
-  // eslint-disable-next-line no-unused-vars
+
   const ref2 = makeRef(things[4]);
   t.is(log.shift(), `get vom.rc.${tbase}/5 => undefined`);
   t.is(log.shift(), `set vom.rc.${tbase}/5 1`);
@@ -1016,7 +1016,7 @@ test('virtual object gc', t => {
 
   // case 6: ref virtually, drop local ref
   // ref virtually
-  // eslint-disable-next-line no-unused-vars
+
   const ref3 = makeRef(things[5]);
   t.is(log.shift(), `get vom.rc.${tbase}/6 => undefined`);
   t.is(log.shift(), `set vom.rc.${tbase}/6 1`);

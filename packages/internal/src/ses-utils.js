@@ -136,7 +136,7 @@ export const throwErrorCode = (details, code, opts) => {
  * similarly to a Promise `catch` callback (e.g., substituting a non-error
  * returned value or throwing a possibly-new error). This is useful for (among
  * other things) replacing generic error messages with specific ones (as in
- * {@see tryJsonParse}).
+ * {@link tryJsonParse}).
  *
  * @template {(...args: any[]) => any} F
  * @template [U=ReturnType<F>]

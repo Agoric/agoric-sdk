@@ -101,7 +101,7 @@ export function makeExporter(exportData, artifacts) {
       assert(data, `missing artifact ${name}`);
       yield Buffer.from(data);
     },
-    // eslint-disable-next-line no-empty-function
+
     async close() {},
   };
 }

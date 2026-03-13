@@ -23,7 +23,6 @@ import { startFakeServer } from './fake-rpc-server.js';
 
 // TODO: Replace with test.macro({title, exec}).
 const testHappyPath = (label, ...input) => {
-  // eslint-disable-next-line no-shadow
   const title = label => `happy path ${label}`;
   const makeExec =
     ({ fakeValues, iterate, start = 0, stride = 1, expectedValues, options }) =>

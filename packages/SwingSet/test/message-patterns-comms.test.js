@@ -23,7 +23,6 @@ import { buildPatterns } from './message-patterns.js';
 
 // See message-patterns.js for details.
 
-// eslint-disable-next-line no-unused-vars
 async function runWithTrace(c) {
   let count = 0;
   while (c.dump().runQueue.length) {

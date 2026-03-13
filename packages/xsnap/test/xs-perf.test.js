@@ -259,7 +259,6 @@ test('metering switch - start compartment only', async t => {
 
 /** @param {number} logn */
 function dataStructurePerformance(logn) {
-  // eslint-disable-next-line no-bitwise
   const n = 1 << logn;
   const send = it => {
     // eslint-disable-next-line no-undef

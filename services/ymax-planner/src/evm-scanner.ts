@@ -113,7 +113,7 @@ export const binarySearch = (async <Index extends number | bigint>(
     // their sum with a single-bit right shift (skipped if the sum is already
     // zero).
     const sum = ((left as any) + (right as any)) as Index;
-    // eslint-disable-next-line no-bitwise
+
     const mid = (sum && sum >> unit) as Index;
     if (await isAcceptable(mid)) {
       greatestFound = mid;

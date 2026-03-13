@@ -1,6 +1,5 @@
 // @ts-nocheck
 /* global globalThis, VatData */
-/* eslint-disable no-unused-vars */
 
 import { Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
