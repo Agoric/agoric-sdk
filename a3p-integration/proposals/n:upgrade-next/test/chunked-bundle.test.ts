@@ -25,7 +25,7 @@ import {
   makeAgoricQueryClient,
   makeBundleRegistry,
 } from '@agoric/client-utils';
-import type { BinaryLike } from 'crypto';
+import type { BinaryLike } from 'node:crypto';
 
 const gzip = promisify(gzipCb);
 

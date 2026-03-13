@@ -1,5 +1,5 @@
 // @ts-check
-import fs from 'fs';
+import fs from 'node:fs';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 

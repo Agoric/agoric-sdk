@@ -1,4 +1,4 @@
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 import './lockdown.js';
 
 import { makeMarshal } from '@endo/marshal';

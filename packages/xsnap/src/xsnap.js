@@ -1,10 +1,10 @@
 /* eslint-env node */
 /* eslint no-await-in-loop: ["off"] */
 
-import { finished } from 'stream/promises';
-import { PassThrough, Readable } from 'stream';
-import { promisify } from 'util';
-import { fileURLToPath } from 'url';
+import { finished } from 'node:stream/promises';
+import { PassThrough, Readable } from 'node:stream';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { Fail, q } from '@endo/errors';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';

@@ -1,5 +1,5 @@
-import fs from 'fs';
-import process from 'process';
+import fs from 'node:fs';
+import process from 'node:process';
 import Readlines from 'n-readlines';
 import yargs from 'yargs';
 

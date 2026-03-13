@@ -2,7 +2,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import process from 'process';
+import process from 'node:process';
 
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import {

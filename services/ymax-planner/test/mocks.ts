@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 

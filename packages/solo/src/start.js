@@ -1,11 +1,11 @@
 // @ts-check
 /* eslint-env node */
-import fs from 'fs';
-import url from 'url';
-import path from 'path';
+import fs from 'node:fs';
+import url from 'node:url';
+import path from 'node:path';
 import temp from 'temp';
-import { fork } from 'child_process';
-import { promisify } from 'util';
+import { fork } from 'node:child_process';
+import { promisify } from 'node:util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 

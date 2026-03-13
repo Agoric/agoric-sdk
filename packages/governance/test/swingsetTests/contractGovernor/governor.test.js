@@ -1,5 +1,5 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import path from 'path';
+import path from 'node:path';
 
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';

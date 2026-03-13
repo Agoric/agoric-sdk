@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-nocheck XXX
 /* eslint no-labels: "off", no-extra-label: "off", no-underscore-dangle: "off" */
-import process from 'process';
+import process from 'node:process';
 import sqlite3 from 'better-sqlite3';
 import yargsParser from 'yargs-parser';
 import '@endo/init/debug.js';

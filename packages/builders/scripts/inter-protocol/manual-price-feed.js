@@ -2,7 +2,7 @@ import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 
-import process from 'process';
+import process from 'node:process';
 
 /**
  * @import {Board} from '@agoric/vats';

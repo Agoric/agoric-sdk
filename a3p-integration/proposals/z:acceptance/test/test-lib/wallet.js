@@ -1,7 +1,7 @@
 // @ts-check
 
 import { sendAction } from 'agoric/src/lib/index.js';
-import { inspect } from 'util';
+import { inspect } from 'node:util';
 
 /**
  * Stop-gap using execFileSync until we have a pure JS signing client.

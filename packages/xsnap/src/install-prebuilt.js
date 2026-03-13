@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /* eslint-env node */
 
-import { createHash } from 'crypto';
-import fsTop from 'fs';
-import osTop from 'os';
-import pathTop from 'path';
-import { fileURLToPath } from 'url';
-import * as childProcess from 'child_process';
+import { createHash } from 'node:crypto';
+import fsTop from 'node:fs';
+import osTop from 'node:os';
+import pathTop from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as childProcess from 'node:child_process';
 import { manifestHashes } from './prebuilt-manifest-sha256.js';
 
 /**

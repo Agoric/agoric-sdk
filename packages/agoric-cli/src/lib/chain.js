@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-env node */
 import { normalizeBech32 } from '@cosmjs/encoding';
-import { execFileSync as execFileSyncAmbient } from 'child_process';
+import { execFileSync as execFileSyncAmbient } from 'node:child_process';
 import { makeAgoricQueryClient } from '@agoric/client-utils';
 
 /**

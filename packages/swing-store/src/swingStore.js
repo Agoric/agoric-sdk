@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-env node */
-import * as fs from 'fs';
-import * as pathlib from 'path';
+import * as fs from 'node:fs';
+import * as pathlib from 'node:path';
 
 import sqlite3 from 'better-sqlite3';
 
