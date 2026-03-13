@@ -12,12 +12,7 @@ const orchestrationFlowRestrictions = [
 ];
 
 module.exports = {
-  extends: [
-    'airbnb-base',
-    'plugin:@endo/recommended',
-    'plugin:jsdoc/recommended',
-    'prettier',
-  ],
+  extends: ['airbnb-base', 'plugin:@endo/recommended', 'prettier'],
   plugins: ['import', 'github'],
   rules: {
     'arrow-body-style': 'off',
@@ -75,21 +70,6 @@ module.exports = {
 
     'import/prefer-default-export': 'off',
 
-    'jsdoc/no-multi-asterisks': ['warn', { allowWhitespace: true }],
-    'jsdoc/no-undefined-types': 'off',
-    'jsdoc/require-jsdoc': 'off',
-    'jsdoc/require-property-description': 'off',
-    'jsdoc/require-param-description': 'off',
-    'jsdoc/require-returns': 'off',
-    'jsdoc/require-returns-check': 'off', // TS checks
-    'jsdoc/require-returns-description': 'off',
-    'jsdoc/require-yields': 'off',
-    'jsdoc/tag-lines': 'off',
-    'jsdoc/valid-types': 'off',
-    // Not severe but the default 'warning' clutters output and it's easy to fix
-    'jsdoc/check-param-names': 'error',
-    'jsdoc/check-syntax': 'error',
-
     'import/extensions': ['warn', 'ignorePackages'],
     'import/no-extraneous-dependencies': [
       'error',
@@ -109,9 +89,6 @@ module.exports = {
     {
       files: ['**/*.ts'],
       rules: {
-        // Not needed with TypeScript syntax
-        'jsdoc/require-returns-type': 'off',
-        'jsdoc/check-param-names': 'off',
         // Handled better by tsc
         'import/no-unresolved': 'off',
         'no-unused-vars': 'off',

@@ -1,5 +1,3 @@
-/* eslint-disable jsdoc/require-returns-type */
-
 import { assert, Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { parseVatSlot } from './parseVatSlots.js';
