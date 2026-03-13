@@ -427,31 +427,56 @@ export const mockEvmCtx = {
   } as unknown as YdsNotifier,
 };
 
+const mockWalletRecord = {
+  offerToUsedInvitation: [
+    [
+      'resolver-offer-1',
+      {
+        value: [
+          {
+            description: 'resolver',
+            instance: 'mock-instance',
+            installation: 'mock-installation',
+          },
+        ],
+      },
+    ],
+  ],
+  liveOffers: [],
+  purses: [],
+};
+
+/** CapData encoding of the mock wallet record (no slots needed). */
+const mockWalletCapData = JSON.stringify({
+  body: JSON.stringify(mockWalletRecord),
+  slots: [],
+});
+
+/** StreamCell wrapping the CapData-encoded wallet record. */
+const mockStreamCell = JSON.stringify({
+  blockHeight: '100',
+  values: [mockWalletCapData],
+});
+
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   const executedOffers: OfferSpec[] = [];
 
   return {
     address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
 
+    marshaller: {
+      fromCapData: (capData: { body: string; slots: string[] }) =>
+        JSON.parse(capData.body),
+    },
+
     query: {
-      getCurrentWalletRecord: async () => ({
-        offerToUsedInvitation: [
-          [
-            'resolver-offer-1',
-            {
-              value: [
-                {
-                  description: 'resolver',
-                  instance: 'mock-instance',
-                  installation: 'mock-installation',
-                },
-              ],
-            },
-          ],
-        ],
-        liveOffers: [],
-        purses: [],
-      }),
+      getCurrentWalletRecord: async () => mockWalletRecord,
+      vstorage: {
+        readStorageMeta: async () => ({
+          result: { value: mockStreamCell },
+          blockHeight: 100n,
+        }),
+      },
     },
 
     executeOffer: async (offerSpec: OfferSpec) => {

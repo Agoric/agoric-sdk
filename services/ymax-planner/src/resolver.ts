@@ -1,8 +1,10 @@
 import { type SigningSmartWalletKit } from '@agoric/client-utils';
+import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { StdFee } from '@cosmjs/stargate';
+import { readStreamCellValue } from './vstorage-utils.ts';
 
 type ResolveTxParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
@@ -23,9 +25,17 @@ const smartWalletFee: StdFee = {
   amount: [{ denom: 'ubld', amount: '10000' }],
 };
 
+const WALLET_RECORD_RETRIES = 4;
+
 const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
-  const getCurrentWalletRecord = await wallet.query.getCurrentWalletRecord();
-  const invitation = getCurrentWalletRecord.offerToUsedInvitation
+  const walletPath = `published.wallet.${wallet.address}.current`;
+  const capData = await readStreamCellValue(wallet.query.vstorage, walletPath, {
+    retries: WALLET_RECORD_RETRIES,
+  });
+  const currentRecord: CurrentWalletRecord =
+    wallet.marshaller.fromCapData(capData);
+
+  const invitation = currentRecord.offerToUsedInvitation
     .filter(inv => inv[1].value[0].description === 'resolver')
     .toSorted()
     .at(-1);
