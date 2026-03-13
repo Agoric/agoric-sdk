@@ -1,5 +1,3 @@
-/* eslint-disable ava/assertion-arguments -- the standard diff is unreadable */
-
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
@@ -93,7 +91,7 @@ test.serial('zoe - committee binary vote - valid inputs', async t => {
     'vote outcome: {"text":"Eeny"}',
   ];
 
-  t.deepEqual(dump.log, expected, 'was:\n'.concat(dump.log.join(',\n')));
+  t.deepEqual(dump.log, expected);
 });
 
 test.serial('zoe - committee binary vote - TwoQuestions', async t => {
@@ -129,5 +127,5 @@ test.serial('zoe - committee binary vote - TwoQuestions', async t => {
     'vote outcome: {"text":"1 foot"}',
   ];
 
-  t.deepEqual(dump.log, expected, 'was:\n'.concat(dump.log.join(',\n')));
+  t.deepEqual(dump.log, expected);
 });
