@@ -5,6 +5,10 @@
     {
       "name": "eslint-js",
       "specifier": "oxlint-plugin-eslint"
+    },
+    {
+      "name": "ava",
+      "specifier": "eslint-plugin-ava"
     }
   ],
   "categories": {
@@ -41,7 +45,11 @@
         "groupDescription": "groupDescription",
         "internal": "internal",
         "privateRemarks": "privateRemarks",
-        "remarks": "remarks"
+        "remarks": "remarks",
+        "ts-expect-error": "ts-expect-error",
+        "ts-ignore": "ts-ignore",
+        "ts-nocheck": "ts-nocheck",
+        "ts-check": "ts-check"
       }
     }
   },
@@ -205,14 +213,32 @@
       ],
       "rules": {
         "no-lone-blocks": "off",
-        "eslint-js/no-restricted-properties": [
-          "warn",
-          {
-            "object": "test",
-            "property": "only",
-            "message": "Do not commit .only tests - they prevent other tests from running"
-          }
-        ]
+        // Derived from plugin:ava/recommended
+        // https://github.com/avajs/eslint-plugin-ava/blob/main/index.js
+        "ava/assertion-arguments": "warn",
+        "ava/hooks-order": "warn",
+        "ava/no-async-fn-without-await": "warn",
+        "ava/no-duplicate-modifiers": "warn",
+        "ava/no-identical-title": "warn",
+        "ava/no-ignored-test-files": "warn",
+        "ava/no-import-test-files": "warn",
+        "ava/no-incorrect-deep-equal": "warn",
+        "ava/no-inline-assertions": "warn",
+        "ava/no-nested-tests": "warn",
+        "ava/no-only-test": "warn",
+        "ava/no-skip-assert": "warn",
+        "ava/no-skip-test": "off",
+        "ava/no-todo-implementation": "warn",
+        "ava/no-todo-test": "warn",
+        "ava/no-unknown-modifiers": "warn",
+        "ava/prefer-async-await": "warn",
+        "ava/prefer-t-regex": "warn",
+        "ava/test-title": "warn",
+        "ava/use-t-well": "warn",
+        "ava/use-t": "warn",
+        "ava/use-t-throws-async-well": "warn",
+        "ava/use-test": "off",
+        "ava/use-true-false": "warn"
       }
     },
     {
@@ -344,9 +370,12 @@
     "jsdoc/check-tag-names": "warn",
     "jsdoc/empty-tags": "warn",
     "jsdoc/implements-on-classes": "warn",
+    "jsdoc/no-defaults": "off",
     "jsdoc/require-property": "warn",
+    "jsdoc/require-property-description": "off",
     "jsdoc/require-property-name": "warn",
     "jsdoc/require-property-type": "warn",
+    "jsdoc/require-yields": "off",
     "jsdoc/require-param": "off",
     "jsdoc/require-param-type": "off",
     "jsdoc/require-returns-type": "off",

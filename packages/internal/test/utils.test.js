@@ -303,7 +303,7 @@ const { value: arbShallow } = fc.letrec(tie => ({
     for (const [label, testCase] of Object.entries(cases)) {
       const { permit, attenuation: expected } = testCase;
       const actual = attenuate(specimen, permit);
-      // eslint-disable-next-line ava/assertion-arguments
+      // oxlint-disable-next-line ava/assertion-arguments
       t.deepEqual(actual, expected, label);
     }
   });
