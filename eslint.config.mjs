@@ -1,5 +1,5 @@
 /* eslint-disable no-underscore-dangle, import/no-extraneous-dependencies */
-import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
+import { fixupConfigRules } from '@eslint/compat';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
@@ -111,6 +111,8 @@ export default [
         },
       ],
 
+      'ava/no-skip-test': 'off',
+      'ava/use-test': 'off',
       '@jessie.js/safe-await-separator': 'error',
 
       'no-use-before-define': 'off',
@@ -178,58 +180,6 @@ export default [
     },
   },
   {
-    files: ['packages/**/*.{js,ts,mjs,cjs}'],
-    ignores: ['packages/*/test/**', 'packages/wallet/api/test/**'],
-
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            '**/test/**',
-            '@agoric/*/test/**',
-            '@aglocal/*/test/**',
-            '../test/**',
-            './test/**',
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: [
-      'packages/*/src/**/*.{js,ts,mjs,cjs}',
-      'packages/wallet/api/src/**/*.{js,ts,mjs,cjs}',
-    ],
-
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            '**/tools/**',
-            '@agoric/*/tools/**',
-            '@aglocal/*/tools/**',
-            '../tools/**',
-            './tools/**',
-            '**/test/**',
-            '@agoric/*/test/**',
-            '@aglocal/*/test/**',
-            '../test/**',
-            './test/**',
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: legacySrcToToolsFiles,
-
-    rules: {
-      'no-restricted-imports': 'off',
-    },
-  },
-  {
     files: [
       'packages/**/demo/**/*.js',
       'packages/*/test/**/*.*s',
@@ -243,31 +193,13 @@ export default [
     },
   },
   {
-    files: ['packages/boot/test/**/*.test.*s'],
-
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: ['@endo/eventual-send', '@endo/far'],
-        },
-      ],
-    },
-  },
-  {
     files: ['**/*.ts'],
 
     rules: {
       // TypeScript's `tsc --noEmit` catches undefined names with project-aware
       // analysis, so keep the base ESLint rule disabled to avoid duplicate noise.
       'no-undef': 'off',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
-      ],
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
   {

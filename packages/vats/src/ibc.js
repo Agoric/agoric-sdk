@@ -6,6 +6,7 @@ import { E } from '@endo/far';
 import { byteSourceToBase64, base64ToBytes } from '@agoric/network';
 
 import { makeTracer, NonNullish } from '@agoric/internal';
+// oxlint-disable-next-line eslint-js/no-restricted-imports
 import {
   localAddrToPortID,
   decodeRemoteIbcAddress,

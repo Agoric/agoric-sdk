@@ -7,6 +7,7 @@ import { VowShape } from '@agoric/vow';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
+// oxlint-disable-next-line eslint-js/no-restricted-imports
 import { decodeIbcEndpoint } from '@agoric/vats/tools/ibc-utils.js';
 import {
   AmountArgShape,

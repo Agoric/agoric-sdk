@@ -6,6 +6,7 @@ import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '@agoric/internal/src/tokens.js';
+// oxlint-disable-next-line eslint-js/no-restricted-imports -- legacy
 import {
   makeHistoryReviver,
   makeBoardRemote,
