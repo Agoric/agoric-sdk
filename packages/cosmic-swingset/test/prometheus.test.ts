@@ -6,6 +6,7 @@ import { execa } from 'execa';
 import { q, Fail } from '@endo/errors';
 
 import { BridgeId, VBankAccount, type TotalMap } from '@agoric/internal';
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import {
   HISTOGRAM_METRICS,
   BLOCK_HISTOGRAM_METRICS,
@@ -111,7 +112,12 @@ const testPrometheusMetrics = async t => {
       SLOGSENDER_AGENT_OTEL_EXPORTER_PROMETHEUS_PORT,
     ].map(async port => {
       const url = `http://localhost:${port}/metrics`;
-      const text = await fetch(url).then(resp => resp.text());
+      const text = await fetchOk(
+        fetch,
+        url,
+        undefined,
+        'Prometheus metrics',
+      ).then(resp => resp.text());
       const metaLines = text.match(/^#.*/gm) || [];
       const keys = [] as string[];
       const comparableData = new Map();

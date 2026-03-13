@@ -1,3 +1,5 @@
+import { fetchOk } from '@agoric/internal/src/fetch.js';
+
 /**
  * @typedef {object} MinimalNetworkConfig
  * @property {string} chainName a Cosmos Chain ID (cf. https://evm.cosmos.network/docs/next/documentation/concepts/chain-id and https://github.com/cosmos/chain-registry )
@@ -63,7 +65,12 @@ export const fetchNetworkConfig = async (spec, { fetch }) => {
     return { chainName: chainId, rpcAddrs: [rpcAddr] };
   }
 
-  return fetch(toNetworkConfigUrl(subdomain))
+  return fetchOk(
+    fetch,
+    toNetworkConfigUrl(subdomain),
+    undefined,
+    `network config (${spec})`,
+  )
     .then(res => res.json())
     .catch(err => {
       throw Error(`cannot get network config (${spec}): ${err.message}`);

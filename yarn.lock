@@ -89,6 +89,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/deployment@workspace:packages/deployment"
   dependencies:
+    "@agoric/internal": "workspace:*"
     "@endo/errors": "npm:^1.2.13"
     "@endo/init": "npm:^1.1.12"
     "@endo/marshal": "npm:^1.8.0"

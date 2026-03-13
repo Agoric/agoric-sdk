@@ -22,7 +22,13 @@ const makeMockFetch = (responses = {}) => {
   const defaultMockResponse = makeDefaultMockResponse();
   return async url => {
     const response = responses[url] || defaultMockResponse;
-    return { json: () => Promise.resolve(response) };
+    return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      url,
+      json: () => Promise.resolve(response),
+    };
   };
 };
 

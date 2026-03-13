@@ -104,14 +104,48 @@ const capture = (command, args, opts = {}) =>
   });
 
 /**
+ * `install-prebuilt.js` runs during packed `npm install`, before this repo's
+ * workspace graph is available. Keep this fetch guard local instead of
+ * importing `@agoric/internal`, so prebuilt binary download still works when
+ * the published package is installed on its own.
+ *
+ * @param {Response} response
+ * @param {string} [what]
+ * @returns {Error}
+ */
+const makeFetchError = (response, what = 'Fetch') => {
+  const location = response.url ? ` at ${response.url}` : '';
+  return Error(
+    `${what} failed (${response.status} ${response.statusText})${location}`,
+  );
+};
+
+/**
+ * `install-prebuilt.js` is a CLI entrypoint used by `postinstall`, so it must
+ * not depend on newer `@agoric/internal` exports that may not exist in the
+ * registry version being installed. Inline this helper to keep the install
+ * path self-contained.
+ *
+ * @param {typeof fetch} fetchImpl
+ * @param {RequestInfo | URL} input
+ * @param {RequestInit} [init]
+ * @param {string} [what]
+ * @returns {Promise<Response>}
+ */
+const fetchOk = (fetchImpl, input, init = undefined, what = 'Fetch') =>
+  fetchImpl(input, init).then(response => {
+    if (!response.ok) {
+      throw makeFetchError(response, what);
+    }
+    return response;
+  });
+
+/**
  * @param {string} url
  * @param {string} destPath
  */
 const downloadFile = async (url, destPath) => {
-  const res = await fetch(url);
-  if (!res.ok) {
-    throw Error(`Download failed for ${url}: HTTP ${res.status}`);
-  }
+  const res = await fetchOk(fetch, url, undefined, `Download ${url}`);
   if (!res.body) {
     throw Error(`Download failed for ${url}: missing response body`);
   }

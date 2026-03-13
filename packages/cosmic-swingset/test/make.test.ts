@@ -5,6 +5,7 @@ import anyTest from 'ava';
 import type { TestFn, Macro, ExecutionContext } from 'ava';
 import { spawn as ambientSpawn, type StdioOptions } from 'child_process';
 import * as ambientPath from 'path';
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 
 import {
   prometheusSampleRegExp,
@@ -235,12 +236,9 @@ const getMetrics = async (
   url: string,
   metricNames: string[],
 ): Promise<Record<string, number>> => {
-  const metricsResponse = await fetch(url);
-  if (!metricsResponse.ok) {
-    throw new Error(`Failed to fetch metrics: ${metricsResponse.statusText}`);
-  }
-
-  const metricsText = await metricsResponse.text();
+  const metricsText = await fetchOk(fetch, url, undefined, 'metrics').then(
+    resp => resp.text(),
+  );
 
   const allMetricsEntries: Array<[string, number]> = [
     ...metricsText.matchAll(prometheusSampleRegExp),

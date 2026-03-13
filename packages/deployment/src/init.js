@@ -1,5 +1,6 @@
 // @ts-check
 
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import { Fail } from '@endo/errors';
 import { isPrimitive } from '@endo/marshal';
 import { PLAYBOOK_WRAPPER, SSH_TYPE } from './setup.js';
@@ -171,9 +172,14 @@ module "${PLACEMENT}" {
     askDatacenter: genericAskDatacenter({ inquirer }),
     datacenters: async (_provider, _PLACEMENT, DETAILS) => {
       const { API_KEYS: apikey } = DETAILS;
-      const res = await fetch('https://api.digitalocean.com/v2/regions', {
-        headers: { Authorization: `Bearer ${apikey}` },
-      });
+      const res = await fetchOk(
+        fetch,
+        'https://api.digitalocean.com/v2/regions',
+        {
+          headers: { Authorization: `Bearer ${apikey}` },
+        },
+        'DigitalOcean regions',
+      );
       const json = await res.json();
       if (!json.regions) {
         console.error(`Cannot retrieve digitalocean regions:`, json);
