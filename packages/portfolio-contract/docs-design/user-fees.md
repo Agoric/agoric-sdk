@@ -28,7 +28,7 @@
 2. Treat the user-facing gas number as a quoted hold/charge, not a best-effort display-only estimate.
    - For Agoric-initiated offers, the Zoe offer includes extra USDC for gas.
    - For EVM-initiated withdraws, the signed Permit2 witness authorizes transfer of the quoted gas amount.
-   - The contract carries that fee authority into the resolved plan, and YMax orchestration executes the fee pull during `withdrawWithFee(...)`.
+   - The contract carries that fee authority into the resolved plan, and YMax orchestration executes the fee pull through the `@Ethereum` wallet's `multicall([permit2(...), usdc(...)])`.
 
 3. Leave execution funding paths mostly unchanged in MVP.
    - Planner still emits the operational `uBLD` fee values needed by current orchestration.
@@ -52,7 +52,7 @@ Expected code change for this design:
   - `planner-algorithm` computes step fees and policy classification
   - `ypr` remains the privileged actor that resolves live plans into the contract
   - YDS can expose preview/quote endpoints without receiving `ypr` authority
-  - contract collects user funds and records fee state
+  - contract carries the signed fee authority into execution
   - resolver closes the loop with actuals
 - It avoids a riskier redesign where execution accounts must directly spend user-sourced USDC across chains before MVP.
 
@@ -340,7 +340,7 @@ TODO: explain operator treasury loop. YMax collects gas reimbursement in USDC bu
 ### Consequence for `80.3`
 
 - Under status quo, `80.3` shows expensive Ethereum execution but no user-facing fee collection path.
-- Under this design, `80.3` becomes a normal withdraw where the UI shows a single USDC gas quote before submission, the contract collects it immediately, and reconciliation later measures whether that quote fully covered the mainnet costs.
+- Under this design, `80.3` becomes a normal withdraw where the UI shows a single USDC gas quote before submission, and later execution uses the `@Ethereum` wallet's multicall batch to collect that signed fee and complete the withdraw.
 
 TODO: convert this design into implementation-driving tests:
 - happy-path flow tests
