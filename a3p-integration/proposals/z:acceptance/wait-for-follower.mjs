@@ -1,6 +1,6 @@
 /* eslint-env node */
 
-import { watch, readFileSync } from 'fs';
+import { watch, readFileSync } from 'node:fs';
 
 const FILE_ENCODING = 'utf-8';
 const FILE_PATH = process.env.MESSAGE_FILE_PATH;
