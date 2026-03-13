@@ -344,7 +344,7 @@ hashes.
 
     const hexHash = hash.digest('hex');
     t.log(`${description} produces golden hash ${hexHash}`);
-    // eslint-disable-next-line ava/assertion-arguments -- xxx, use macros
+    // oxlint-disable-next-line ava/assertion-arguments -- xxx, use macros
     t.snapshot(hexHash, description);
     t.deepEqual(messages, [], `${description} messages`);
   }

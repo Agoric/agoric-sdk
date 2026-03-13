@@ -379,7 +379,7 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
     eachIterable,
     Symbol.asyncIterator,
   );
-  // eslint-disable-next-line ava/prefer-async-await
+  // oxlint-disable-next-line ava/prefer-async-await
   const assertDisconnection = (p, label) => {
     const expected = {
       incarnationNumber: 0,
