@@ -7,7 +7,7 @@
 // TODO error on exports that:
 // - don't satisfy orchestration flow type
 
-// eslint-disable-next-line no-restricted-syntax -- intentional for test
+// oxlint-disable-next-line eslint-js/no-restricted-syntax -- intentional for test
 import { E } from '@endo/far';
 
 // eslint-disable-next-line @endo/harden-exports -- intentional for test
@@ -27,7 +27,7 @@ export async function notHardened() {
 }
 
 export const usesE = async (_orch, { someEref }) => {
-  // eslint-disable-next-line no-restricted-syntax -- intentional for test
+  // oxlint-disable-next-line eslint-js/no-restricted-syntax -- intentional for test
   await E(someEref).foo();
 };
 harden(usesE);
