@@ -4,9 +4,14 @@ This document tracks migration progress from `eslint.config.mjs` to `.oxlintrc.j
 
 ## Current mode
 
-- Oxlint runs from `yarn lint:oxlint` as `yarn dlx oxlint@latest --config .oxlintrc.json .`.
-- The CI job `lint-oxlint` in `test-all-packages` is non-blocking (`continue-on-error: true`).
-- Oxlint severities are intentionally limited to `off` and `warn`.
+- Oxlint runs from `yarn lint:oxlint` as `yarn oxlint .` (uses `.oxlintrc.json` automatically).
+- The `yarn lint:oxlint` step runs inside the `lint-primary` CI job and is **blocking** (no `continue-on-error`).
+- Rules enforced by oxlint use `"error"` severity; advisory/informational rules use `"warn"`.
+- `reportUnusedDisableDirectives: warn` is enabled — unused `eslint-disable` comments surface as warnings. This acts as a canary: if a JS plugin bridge rule stops firing, its disable comment in `scripts/lint-rule-tests/` becomes "unused" and surfaces the regression. 
+  - Note that Oxlint expects to be the only linter so it considers `eslint-disable` directives unused if they don't fire in Oxlint.
+  - Rules that aren't migrated yet, such as `@typescript-eslint/*`, need disable comments for Eslint but Oxlint things they're unused
+  - Once we're fully moved to Oxlint change the setting to `error`
+
 - Support for `no-restricted-syntax` is provided via `oxlint-plugin-eslint` (using the `eslint-js/` prefix).
 - **Type-aware features:** Oxlint is currently run without type-aware features (`--type-aware` or `--type-check`). Rules requiring type information (e.g., `no-floating-promises`) are not yet migrated to Oxlint.
 
@@ -82,8 +87,8 @@ These should only be disabled in ESLint after we verify semantic parity and acce
 
 ### Recommendation
 
-Run dual-lint for now:
+Run dual-lint during migration:
 
-1. Keep ESLint as enforcement gate.
-2. Keep Oxlint non-blocking to collect parity data.
-3. Promote only rule families that prove equivalent and low-noise.
+1. Keep ESLint enforcing rules until each rule family is verified equivalent in Oxlint.
+2. Oxlint is now blocking in CI — rules moved to Oxlint must demonstrate semantic parity first.
+3. Promote only rule families that prove equivalent and low-noise; then remove from ESLint.
