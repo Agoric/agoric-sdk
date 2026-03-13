@@ -1825,7 +1825,7 @@ export default function buildKernel(
       vatID,
       vatParameters: vpCapData,
     };
-    // eslint-disable-next-line no-unused-vars
+
     const ds = await processStartVat(startVatMessage);
     // TODO: do something with DeliveryStatus, maybe just assert it's ok
 

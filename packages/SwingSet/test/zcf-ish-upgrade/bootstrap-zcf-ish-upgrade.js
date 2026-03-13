@@ -23,7 +23,7 @@ export const buildRootObject = () => {
       // zygote clone would happen here
 
       const zoeThing = Far('zoeThing', {});
-      // eslint-disable-next-line no-unused-vars
+
       const { publicFacet, privateFacet } = await E(zcfRoot).start(zoeThing);
       return true;
     },

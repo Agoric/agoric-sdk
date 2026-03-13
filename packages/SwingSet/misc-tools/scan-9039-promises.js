@@ -58,7 +58,7 @@ const main = rawArgv => {
     queries += 1;
     return fake[key];
   };
-  // eslint-disable-next-line no-unused-vars
+
   const fakeGet = key => fakeRawGet(key);
 
   // const [get, rawGet] = [fakeGet, fakeRawGet];

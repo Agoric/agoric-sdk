@@ -29,7 +29,7 @@ export const parseFiniteNumber = input => {
 export const bigintReplacer = (_k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
 /** @type {Partial<VBankAssetDetail>} */
-// eslint-disable-next-line no-unused-vars
+
 const exampleAsset = {
   brand: makeBoardRemote({ boardId: 'board0425', iface: 'Alleged: BLD brand' }),
   displayInfo: { assetKind: 'nat', decimalPlaces: 6 },

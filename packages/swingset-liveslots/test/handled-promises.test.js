@@ -12,7 +12,6 @@ import { setupTestLiveslots } from './liveslots-helpers.js';
 import { makeResolve, makeReject } from './util.js';
 import { makeExoUtils } from './exo-utils.js';
 
-// eslint-disable-next-line no-unused-vars
 const compareEntriesByKey = ([ka], [kb]) => (ka < kb ? -1 : 1);
 
 // cf. packages/SwingSet/test/vat-durable-promise-watcher.js
@@ -497,7 +496,7 @@ test('past-incarnation watched promises from original-format kvStore', async t =
 
   // Verify that the data is still in loadable condition.
   const finalClonedStore = new Map(kvStore);
-  // eslint-disable-next-line no-unused-vars
+
   ({ v, dispatch, dispatchMessage } = await setupTestLiveslots(
     t,
     buildPromiseWatcherRootObject,

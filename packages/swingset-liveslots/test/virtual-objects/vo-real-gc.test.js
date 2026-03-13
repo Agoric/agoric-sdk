@@ -17,7 +17,6 @@ test('virtual object state writes', async t => {
     const { defineKind } = VatData;
     const init = () => initData;
     const makeThing = defineKind('thing', init, {
-      // eslint-disable-next-line no-unused-vars
       ping: ({ state }) => 0,
     });
     const root = Far('root', {

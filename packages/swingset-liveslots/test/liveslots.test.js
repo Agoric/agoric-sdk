@@ -305,7 +305,7 @@ async function doResultPromise(t, mode) {
 
   function build(_vatPowers) {
     // inhibit GC of the Presence, so the tests see stable syscalls
-    // eslint-disable-next-line no-unused-vars
+
     let pin;
     return Far('root', {
       async run(target1) {

@@ -141,7 +141,7 @@ export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
       return { safeWrite: dummySafeWrite, startDuration: dummyStartDuration };
     }
     /** @type {(obj: SlogProps) => void} */
-    // eslint-disable-next-line no-shadow
+
     const safeWrite = obj => {
       try {
         writeSlogObject(obj);
@@ -150,7 +150,7 @@ export function makeSlogger(slogCallbacks, writeSlogObject, slogDuration) {
       }
     };
     /** @type {StartDuration} */
-    // eslint-disable-next-line no-shadow
+
     const startDuration = (labels, startProps) => {
       try {
         /** @type {(extraProps?: SlogDurationProps) => void} */

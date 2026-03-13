@@ -128,13 +128,12 @@ export const provide =
 /** @param {VatData} VatData */
 export const makeStoreUtils = VatData => {
   const {
-    // eslint-disable-next-line no-shadow -- these literally do shadow the globals
     makeScalarBigMapStore,
-    // eslint-disable-next-line no-shadow -- these literally do shadow the globals
+
     makeScalarBigWeakMapStore,
-    // eslint-disable-next-line no-shadow -- these literally do shadow the globals
+
     makeScalarBigSetStore,
-    // eslint-disable-next-line no-shadow -- these literally do shadow the globals
+
     makeScalarBigWeakSetStore,
   } = VatData;
 

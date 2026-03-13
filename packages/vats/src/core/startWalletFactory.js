@@ -38,7 +38,7 @@ const trace = makeTracer('StartWF', 'verbose');
  *
  * @typedef {EReturn<typeof startFactoryInstance>} WalletFactoryStartResult
  */
-// eslint-disable-next-line no-unused-vars
+
 const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 
 const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);

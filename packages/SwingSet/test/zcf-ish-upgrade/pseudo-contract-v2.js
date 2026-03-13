@@ -1,5 +1,5 @@
 // @ts-nocheck
-/* eslint-disable no-unused-vars */
+
 import { defineDurableKind, defineDurableKindMulti } from '@agoric/vat-data';
 import { provideHandle, provideBaggageSubset } from './util.js';
 

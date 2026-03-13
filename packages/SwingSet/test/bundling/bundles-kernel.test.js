@@ -30,7 +30,6 @@ test('install bundle', async t => {
     return hash.digest().toString('hex');
   }
 
-  // eslint-disable-next-line no-unused-vars
   const a = await parseArchive(
     decodeBase64(bundle.endoZipBase64),
     '<unknown>',

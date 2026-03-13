@@ -181,7 +181,6 @@ avaRetry(test.serial, 'GC syscall.dropImports', async t => {
 avaRetry(test.serial, 'GC dispatch.retireImports', async t => {
   const { log, syscall } = buildSyscall();
   function build(_vatPowers) {
-    // eslint-disable-next-line no-unused-vars
     let presence1;
     const root = Far('root', {
       one(arg) {

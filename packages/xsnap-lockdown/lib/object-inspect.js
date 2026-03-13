@@ -326,7 +326,7 @@ function inspectString(str, opts) {
   const s = $replace.call(
     // Replace ' with \' and \ with \\.
     $replace.call(str, /(['\\])/g, '\\$1'),
-    // eslint-disable-next-line no-control-regex
+
     /[\x00-\x1f]/g,
     lowbyte,
   );

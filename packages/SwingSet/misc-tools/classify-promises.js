@@ -36,7 +36,7 @@ const krefIsPromise = kref => kref.match(/^[klr]?p/);
 // CapData decoding that exposes slot data (e.g., promise/remotable krefs).
 const { toCapData, fromCapData, getPresence } = (() => {
   const presences = new Map();
-  // eslint-disable-next-line no-shadow
+
   const getPresence = kref => {
     const p = presences.get(kref);
     assert(p !== undefined);
@@ -57,7 +57,7 @@ const { toCapData, fromCapData, getPresence } = (() => {
     presences.set(kref, p);
     return p;
   };
-  // eslint-disable-next-line no-shadow
+
   const { toCapData, fromCapData } = makeMarshal(undefined, slotToPresence, {
     serializeBodyFormat: 'smallcaps',
   });

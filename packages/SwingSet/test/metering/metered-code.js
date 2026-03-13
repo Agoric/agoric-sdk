@@ -23,7 +23,6 @@ export function meterMe(log2, explode = 'no') {
     } else if (explode === 'stack') {
       delveForeverIntoTheRecursiveDepths();
     } else if (explode === 'allocate') {
-      // eslint-disable-next-line no-unused-vars
       const universe = Array(4e9); // more like 1e24, really
       let big = '1234';
       for (;;) {

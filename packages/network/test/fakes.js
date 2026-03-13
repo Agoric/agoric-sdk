@@ -12,7 +12,7 @@ import {
  * @import {Zone} from '@agoric/zone';
  * @import {ListenHandler, MakeEchoConnectionKit} from '../src/index.js';
  */
-// eslint-disable-next-line no-constant-condition
+
 const log = false ? console.log : () => {};
 
 /**

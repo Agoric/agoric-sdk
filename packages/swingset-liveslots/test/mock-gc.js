@@ -13,7 +13,7 @@ export function makeMockGC() {
   const weakRefToVal = new Map();
   const valToWeakRef = new Map();
   const allFRs = [];
-  // eslint-disable-next-line no-unused-vars
+
   function log(...args) {
     // console.log(...args);
   }
