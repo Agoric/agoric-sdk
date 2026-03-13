@@ -30,6 +30,7 @@ This document tracks migration progress from `eslint.config.mjs` to `.oxlintrc.j
 | --- | --- | --- | --- |
 | `no-restricted-properties` | test/demo files | ✅ Yes | Implemented via `eslint-js/no-restricted-properties`. |
 | `no-restricted-imports` | `packages/boot/test/**/*.test.*s` | ✅ Yes | Implemented via `eslint-js/no-restricted-imports`. |
+| `plugin:ava/recommended` | test files | ✅ Yes | Implemented via `ava/` prefix using JS plugin bridge. |
 
 ## JSDoc rule migration status
 
@@ -67,13 +68,14 @@ These should only be disabled in ESLint after we verify semantic parity and acce
 
 - `plugin:@agoric/recommended`
 - `@jessie.js/safe-await-separator`
-- AVA and JSDoc ESLint plugin rules currently used in multiple scoped overrides
+- JSDoc ESLint plugin rules currently used in multiple scoped overrides
 
 ### Oxlint migration feasibility (current)
 
 - **Agoric custom plugin rules:** No direct Oxlint plugin bridge exists for ESLint plugins today, so these cannot be mechanically imported. Migration requires either:
   1. Upstreaming equivalent built-in Oxlint rules, or
   2. Re-expressing specific policies using available Oxlint core rules/selectors (as done for restricted syntax/import/property policies).
+- **AVA rules:** Migrated to Oxlint using the JS plugin bridge with the `ava` alias.
 - **Endo/Jessie-specific rules:** `@jessie.js/safe-await-separator` is ecosystem-specific and currently has no known Oxlint equivalent; keep enforced in ESLint for now.
 - **`require-extensions` plugin behavior:** Removed from ESLint. TypeScript `nodenext` configuration now handles import extension enforcement.
 

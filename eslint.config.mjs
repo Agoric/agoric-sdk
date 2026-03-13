@@ -56,13 +56,7 @@ export default [
     // Include both .js and .ts files for cache package
     files: ['packages/cache/**/*.{js,ts,mjs,cjs}'],
   },
-  ...fixupConfigRules(
-    compat.extends(
-      '@agoric',
-      'plugin:@agoric/recommended',
-      'plugin:ava/recommended',
-    ),
-  ),
+  ...fixupConfigRules(compat.extends('@agoric', 'plugin:@agoric/recommended')),
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,
@@ -117,8 +111,6 @@ export default [
         },
       ],
 
-      'ava/no-skip-test': 'off',
-      'ava/use-test': 'off',
       '@jessie.js/safe-await-separator': 'error',
 
       'no-use-before-define': 'off',
@@ -248,16 +240,6 @@ export default [
     rules: {
       'no-lone-blocks': 'off',
       '@jessie.js/safe-await-separator': 'off',
-
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'test',
-          property: 'only',
-          message:
-            'Do not commit .only tests - they prevent other tests from running',
-        },
-      ],
     },
   },
   {
