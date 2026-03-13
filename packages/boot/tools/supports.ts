@@ -89,6 +89,22 @@ const tmpDir = makeTempDirFactory(tmp);
 
 const trace = makeTracer('BSTSupport', false);
 
+const configFileCache = new Map<
+  string,
+  SwingSetConfig & { coreProposals?: any[] }
+>();
+
+const loadCachedSwingsetConfig = async (
+  path: string,
+): Promise<SwingSetConfig & { coreProposals?: any[] }> => {
+  let cached = configFileCache.get(path);
+  if (!cached) {
+    cached = NonNullish(await loadSwingsetConfigFile(path));
+    configFileCache.set(path, harden(cached));
+  }
+  return structuredClone(cached);
+};
+
 const configCache = new Map<string, string>();
 
 const makeConfigCacheKey = ({
@@ -226,9 +242,8 @@ export const getNodeTestVaultsConfig = async ({
   if (cached) {
     return cached;
   }
-  const configFromFile: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
-    await loadSwingsetConfigFile(configPath),
-  );
+  const configFromFile: SwingSetConfig & { coreProposals?: any[] } =
+    await loadCachedSwingsetConfig(configPath);
 
   const config: SwingSetConfig & { coreProposals?: any[] } = {
     ...configFromFile,
