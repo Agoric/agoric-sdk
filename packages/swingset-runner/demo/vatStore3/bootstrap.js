@@ -3,7 +3,7 @@ import { Far } from '@endo/marshal';
 
 export function buildRootObject() {
   // 'other' is not read but it's used to hold a hard ref
-  // eslint-disable-next-line no-unused-vars
+
   let other;
   let bob;
   let me;

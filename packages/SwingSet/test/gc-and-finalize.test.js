@@ -29,7 +29,7 @@ async function provokeGC(myGC) {
   // finishes, and the local 'victim' binding goes out of scope
 
   // we must retain the FinalizationRegistry to let the callback fire
-  // eslint-disable-next-line no-unused-vars
+
   const { finalized, fr, wr } = makeVictim();
 
   // the transition from UNREACHABLE to COLLECTED can happen at any moment,

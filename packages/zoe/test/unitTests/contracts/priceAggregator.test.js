@@ -73,7 +73,7 @@ import { start } from '../../../src/contracts/priceAggregator.js';
  * storageNode: StorageNode,
  * }} privateArgs
  */
-// eslint-disable-next-line no-unused-vars -- used for typedef
+
 const testStartFn = (zcf, privateArgs) => start(zcf, privateArgs);
 
 /**

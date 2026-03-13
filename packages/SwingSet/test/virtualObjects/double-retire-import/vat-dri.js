@@ -17,13 +17,11 @@ const behavior = {
 const makeVir = defineKind('virtual', initialize, behavior);
 
 function buildVirtuals(sensor0, sensor1) {
-  // eslint-disable-next-line no-unused-vars
   const vir0 = makeVir(sensor0); // gets o+10/1, data holds o-50
   // If I only make one vir, its Representative doesn't get dropped, I
   // don't know why. If I make two, the first gets dropped but not the
   // second.
 
-  // eslint-disable-next-line no-unused-vars
   const vir1 = makeVir(sensor1); // o+10/2, data holds o-51
 
   // We drop everything at the same time. The finalizers run on the

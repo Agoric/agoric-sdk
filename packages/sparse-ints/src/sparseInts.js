@@ -14,7 +14,6 @@ function* generateSparseInts(seed) {
   // Thus, it is totally deterministic, but at least looks a little random
   // and so can be used for e.g., colors in a game or the gallery
 
-  /* eslint-disable no-bitwise */
   const mask = 0xffffffff;
   const startState = Math.floor(seed * mask) ^ 0xdeadbeef;
   let lfsr = startState;
@@ -25,7 +24,6 @@ function* generateSparseInts(seed) {
     const rand = (Math.floor(lfsr) % 0x800000) + 0x7fffff;
     yield rand;
   }
-  /* eslint-enable no-bitwise */
 }
 harden(generateSparseInts);
 export { generateSparseInts };

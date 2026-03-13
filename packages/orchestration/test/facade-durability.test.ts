@@ -206,7 +206,7 @@ test('asset / denom info', async t => {
   const handle = orchestrate(
     'useDenoms',
     { brand },
-    // eslint-disable-next-line no-shadow
+
     async (orc, { brand }) => {
       const c1 = await orc.getChain('mock');
 

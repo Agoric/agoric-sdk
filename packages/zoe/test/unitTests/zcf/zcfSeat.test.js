@@ -38,7 +38,6 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
     Money: simoleanIssuer,
   });
 
-  // eslint-disable-next-line no-unused-vars
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,

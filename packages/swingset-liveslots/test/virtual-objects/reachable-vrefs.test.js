@@ -51,7 +51,7 @@ test('VOM tracks reachable vrefs', t => {
   // object
   const [vref3, obj3] = makePresence();
   t.falsy(vrm.isPresenceReachable(vref3));
-  // eslint-disable-next-line no-unused-vars
+
   const holder3 = makeHolder(obj3);
   t.truthy(vrm.isPresenceReachable(vref3));
 

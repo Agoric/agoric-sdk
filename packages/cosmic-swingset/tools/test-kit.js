@@ -390,7 +390,7 @@ export const makeCosmicSwingsetTestKit = async (
     const fn = new Compartment().evaluate(fnText);
     typeof fn === 'function' || Fail`text must evaluate to a function`;
     /** @type {BootstrapManifestPermit} */
-    // eslint-disable-next-line no-unused-vars
+
     const permit = JSON.parse(jsonPermits);
     /** @type {CoreEvalSDKType} */
     const coreEvalDesc = {
