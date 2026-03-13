@@ -6,11 +6,8 @@ import bundleSource from '@endo/bundle-source';
 import { kunser, kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 
-import {
-  initializeSwingset,
-  makeSwingsetController,
-  buildKernelBundles,
-} from '../../src/index.js';
+import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 
 function dfile(name) {
   return new URL(`./${name}`, import.meta.url).pathname;

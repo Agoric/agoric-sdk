@@ -7,9 +7,9 @@ import { q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   buildKernelBundles,
-  initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
+import { initializeTestSwingset as initializeSwingset } from '@agoric/swingset-vat/tools/test-swingset.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/kmarshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
