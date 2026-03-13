@@ -6,6 +6,7 @@
  * @see {sourceSpec} for core-eval details
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import { mustMatch } from '@agoric/internal';
 import { ChainInfoShape, IBCConnectionInfoShape } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
@@ -68,7 +69,12 @@ const ChainInfosShape = M.recordOf(M.string(), ChainInfoShape);
  * @returns {Promise<MinimalNetworkConfig>}
  */
 const getNetConfig = (net, fetch) =>
-  fetch(`https://${net}.agoric.net/network-config`)
+  fetchOk(
+    fetch,
+    `https://${net}.agoric.net/network-config`,
+    undefined,
+    `network config ${net}`,
+  )
     .then(res => res.text())
     .then(s => JSON.parse(s));
 

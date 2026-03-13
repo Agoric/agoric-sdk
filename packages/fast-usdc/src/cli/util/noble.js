@@ -1,5 +1,6 @@
 /* global globalThis */
 
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import { DirectSecp256k1HdWallet, Registry } from '@cosmjs/proto-signing';
 import { AminoTypes, SigningStargateClient } from '@cosmjs/stargate';
 import { nobleAminoConverters, nobleProtoRegistry } from '@nick134-bit/noblejs';
@@ -96,7 +97,12 @@ export const queryForwardingAccount = async (
   let forwardingAddressRes;
   await null;
   try {
-    forwardingAddressRes = await fetch(query).then(res => res.json());
+    forwardingAddressRes = await fetchOk(
+      fetch,
+      query,
+      undefined,
+      'Forwarding address query',
+    ).then(res => res.json());
   } catch (e) {
     out.error(`Error querying forwarding address from ${query}`);
     throw e;

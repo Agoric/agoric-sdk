@@ -1,4 +1,5 @@
 import { decodeBase64 } from '@endo/base64';
+import { fetchOk } from '@agoric/internal/src/fetch.js';
 import { encodeHex } from '@agoric/internal/src/hex.js';
 import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
 import { mustMatch } from '@agoric/internal';
@@ -90,7 +91,12 @@ export const makeVStorage = ({ fetch }, config) => {
   ) => {
     const url =
       config.rpcAddrs[0] + makeAbciQuery(vstoragePath, { kind, height });
-    const res = await fetch(url, { keepalive: true });
+    const res = await fetchOk(
+      fetch,
+      url,
+      { keepalive: true },
+      'vstorage query',
+    );
     return res.json();
   };
 

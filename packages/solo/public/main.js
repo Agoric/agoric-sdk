@@ -11,6 +11,14 @@ let inpBackground;
 let accessTokenParams;
 let hasAccessToken;
 
+const mustFetch = (...args) =>
+  fetch(...args).then(res => {
+    if (!res.ok) {
+      throw Error(`Fetch failed (${res.status} ${res.statusText}) at ${res.url}`);
+    }
+    return res;
+  });
+
 function getAccessToken() {
   // Fetch the access token from the window's URL.
   accessTokenParams = `?${window.location.hash.slice(1)}`;
@@ -77,7 +85,7 @@ function run() {
   let inputHistoryNum = 0;
 
   async function call(req) {
-    const res = await fetch(`/private/repl${accessTokenParams}`, {
+    const res = await mustFetch(`/private/repl${accessTokenParams}`, {
       method: 'POST',
       body: JSON.stringify(req),
       headers: { 'Content-Type': 'application/json' },
@@ -324,13 +332,8 @@ run();
 
 // Display version information, if possible.
 const fetches = [];
-const fgr = fetch('/git-revision.txt')
-  .then(resp => {
-    if (resp.status < 200 || resp.status >= 300) {
-      throw Error(`status ${resp.status}`);
-    }
-    return resp.text();
-  })
+const fgr = mustFetch('/git-revision.txt')
+  .then(resp => resp.text())
   .then(text => {
     return text.trimRight();
   })
@@ -340,7 +343,7 @@ const fgr = fetch('/git-revision.txt')
   });
 fetches.push(fgr);
 
-const fpj = fetch('/package.json')
+const fpj = mustFetch('/package.json')
   .then(resp => resp.json())
   .catch(e => {
     console.log('Cannot fetch /package.json', e);
@@ -353,11 +356,8 @@ if (
   hasAccessToken &&
   new URLSearchParams(window.location.search).get('w') !== '0'
 ) {
-  fetch(`wallet/${accessTokenParams}`)
-    .then(resp => {
-      if (resp.status < 200 || resp.status >= 300) {
-        throw Error(`status ${resp.status}`);
-      }
+  mustFetch(`wallet/${accessTokenParams}`)
+    .then(() => {
       walletFrame.style.display = 'block';
       walletFrame.src = `wallet/#${accessTokenParams.slice(1)}`;
     })
