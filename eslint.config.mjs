@@ -6,12 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
-import { createRequire } from 'node:module';
 import { legacySrcToToolsFiles } from './scripts/ci/tools-scope-policy.mjs';
-
-// Workaround for https://github.com/anza-xyz/eslint-plugin-require-extensions/issues/18
-const require = createRequire(import.meta.url);
-const requireExtensions = require('eslint-plugin-require-extensions');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -66,13 +61,11 @@ export default [
       '@agoric',
       'plugin:@agoric/recommended',
       'plugin:ava/recommended',
-      'plugin:require-extensions/recommended',
     ),
   ),
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,
-      'require-extensions': fixupPluginRules(requireExtensions),
     },
 
     linterOptions: {
