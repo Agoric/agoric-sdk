@@ -410,8 +410,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: Build ymax-planner Docker image
-        run: docker build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
+        run: depot build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
 
   finalize-integration-result:
     needs:
