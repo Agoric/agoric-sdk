@@ -89,13 +89,14 @@ const getFlowHistory = (
   const flowPaths = range(flowCount).map(
     ix => `${portfolioKey}.flows.flow${ix + 1}`,
   );
-  const flowEntries: [string, StatusFor['flow'][]][] = flowPaths.map(p => [
-    p,
-    storage.getDeserialized(p),
-  ]);
+  const flowEntries: [string, StatusFor['flow'][]][] = flowPaths.flatMap(p =>
+    storage.data.has(p) ? [[p, storage.getDeserialized(p)]] : [],
+  );
   const stepsEntries = flowPaths
     .map(fp => `${fp}.steps`)
-    .map(fsp => [fsp, storage.getDeserialized(fsp).at(-1)]);
+    .flatMap(fsp =>
+      storage.data.has(fsp) ? [[fsp, storage.getDeserialized(fsp).at(-1)]] : [],
+    );
   const zipped = flowEntries.flatMap((e, ix) => [e, stepsEntries[ix]]);
   return {
     flowPaths,
@@ -2024,6 +2025,12 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
   );
 
   // XXX should test the whole flow, not just the start
+  const { contents } = getPortfolioInfo(
+    openResult.storagePath!,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
 });
 
 test.todo('evmHandler.withdraw fails if sourceAccountId not set');
@@ -2241,6 +2248,9 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
     {},
     'no flows running after deposit completes',
   );
+
+  t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
 });
 
 // Test deposits from a NEW chain (where no account exists yet).
@@ -2477,6 +2487,9 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
     {},
     'no flows running after deposit completes',
   );
+
+  t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
 });
 
 test('evmHandler.rebalance with target allocation sets allocation and starts a rebalance flow', async t => {
@@ -2586,6 +2599,12 @@ test('evmHandler.rebalance with target allocation sets allocation and starts a r
   );
 
   // XXX should test the whole flow, not just the start
+  const { contents } = getPortfolioInfo(
+    openResult.storagePath!,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
 });
 
 test('evmHandler.rebalance without target allocation uses existing allocation', async t => {
@@ -2691,6 +2710,12 @@ test('evmHandler.rebalance without target allocation uses existing allocation', 
   );
 
   // XXX should test the whole flow, not just the start
+  const { contents } = getPortfolioInfo(
+    openResult.storagePath!,
+    common.bootstrap.storage,
+  );
+  t.snapshot(contents, 'vstorage');
+  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
 });
 
 test('open portfolio does not require Access token when Access issuer is present', async t => {
