@@ -46,31 +46,31 @@ const rewriteContent = input => {
 
   output = output.replace(
     /(\bfrom\s*)(['"])([^'"]+)\2/g,
-    (match, prefix, quote, spec) =>
+    (_match, prefix, quote, spec) =>
       `${prefix}${quote}${replaceSpec(spec)}${quote}`,
   );
 
   output = output.replace(
     /(\bimport\s*\(\s*)(['"])([^'"]+)\2(\s*\))/g,
-    (match, prefix, quote, spec, suffix) =>
+    (_match, prefix, quote, spec, suffix) =>
       `${prefix}${quote}${replaceSpec(spec)}${quote}${suffix}`,
   );
 
   output = output.replace(
     /(\brequire\s*\(\s*)(['"])([^'"]+)\2(\s*\))/g,
-    (match, prefix, quote, spec, suffix) =>
+    (_match, prefix, quote, spec, suffix) =>
       `${prefix}${quote}${replaceSpec(spec)}${quote}${suffix}`,
   );
 
   output = output.replace(
     /(\bdeclare\s+module\s*)(['"])([^'"]+)\2/g,
-    (match, prefix, quote, spec) =>
+    (_match, prefix, quote, spec) =>
       `${prefix}${quote}${replaceSpec(spec)}${quote}`,
   );
 
   output = output.replace(
     /(<reference\s+path=)(['"])([^'"]+)\2/g,
-    (match, prefix, quote, spec) =>
+    (_match, prefix, quote, spec) =>
       `${prefix}${quote}${replaceSpec(spec)}${quote}`,
   );
 
