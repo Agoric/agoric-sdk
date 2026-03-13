@@ -1,13 +1,11 @@
 /* eslint-env node */
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
-import { provideBundleCache } from './bundleTool.js';
+import fs from 'fs';
 import {
   buildSwingsetKernelConfig,
   initializeSwingsetKernel,
 } from '../src/controller/initializeSwingset.js';
+import { unsafeSharedBundleCache } from './bundleTool.js';
 
 /**
  * @import {SwingSetConfig} from '../src/types-external.js';
@@ -18,14 +16,10 @@ import {
 
 const readBundleSpecFile = makeReadJsonFile(fs.promises);
 
-const sharedBundleCachePath = fileURLToPath(
-  new URL('../../../bundles', import.meta.url),
-);
-
 /**
  * Test-only wrapper that supplies ambient-powered bundleSpec loading.
  *
- * @param {SwingSetConfig} config
+ * @param {Omit<SwingSetConfig, 'bundleCachePath' | 'bundleFormat' | 'includeDevDependencies'>} config
  * @param {unknown} bootstrapArgs
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {InitializationOptions} initializationOptions
@@ -38,20 +32,7 @@ export const initializeTestSwingset = async (
   initializationOptions = {},
   runtimeOptions = {},
 ) => {
-  const {
-    bundleCachePath = sharedBundleCachePath,
-    includeDevDependencies,
-    bundleFormat,
-  } = config;
-  const cache = await provideBundleCache(
-    path.resolve(bundleCachePath),
-    {
-      dev: includeDevDependencies,
-      format: bundleFormat,
-      byteLimit: Infinity,
-    },
-    spec => import(spec),
-  );
+  const cache = await unsafeSharedBundleCache;
 
   const kernelConfig = await buildSwingsetKernelConfig(
     config,
