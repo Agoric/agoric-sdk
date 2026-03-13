@@ -22,6 +22,8 @@ jobs:
 
     steps:
       - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - uses: actions/checkout@v4
         with:
           submodules: 'true'

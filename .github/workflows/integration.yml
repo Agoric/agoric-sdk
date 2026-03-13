@@ -225,6 +225,8 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: update job environment
         run: |
           if [ ":$HOME" = : ]; then
