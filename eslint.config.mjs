@@ -101,12 +101,6 @@ export default [
       },
     },
 
-    settings: {
-      jsdoc: {
-        mode: 'typescript',
-      },
-    },
-
     rules: {
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/no-empty-object-type': 'warn',
@@ -134,26 +128,6 @@ export default [
       'ava/use-test': 'off',
       '@jessie.js/safe-await-separator': 'error',
 
-      'jsdoc/check-tag-names': [
-        'error',
-        {
-          definedTags: [
-            'alpha',
-            'beta',
-            'category',
-            'categoryDescription',
-            'defaultValue',
-            'document',
-            'group',
-            'groupDescription',
-            'internal',
-            'privateRemarks',
-            'remarks',
-          ],
-        },
-      ],
-
-      'jsdoc/no-defaults': 'off',
       'no-use-before-define': 'off',
       'no-empty-function': 'off',
       'no-nested-ternary': 'off',
@@ -162,7 +136,6 @@ export default [
       'no-undefined': 'off',
       'import/no-relative-parent-imports': 'off',
       'no-unused-expressions': 'off',
-      'jsdoc/require-property-description': 'off',
       'unicorn/no-unnecessary-await': 'off',
       'unicorn/consistent-function-scoping': 'off',
       'no-param-reassign': 'off',
@@ -180,7 +153,6 @@ export default [
       'import/no-commonjs': 'off',
       'no-shadow': 'off',
       'unicorn/require-module-specifiers': 'off',
-      'jsdoc/require-yields': 'off',
       'unicorn/no-array-reduce': 'off',
       'unicorn/no-array-for-each': 'off',
       'unicorn/prefer-set-has': 'off',
@@ -311,10 +283,6 @@ export default [
     files: ['**/*.ts'],
 
     rules: {
-      // Not needed with TypeScript syntax
-      'jsdoc/require-param': 'off',
-      'jsdoc/require-param-type': 'off',
-      'jsdoc/require-returns-type': 'off',
       // TypeScript's `tsc --noEmit` catches undefined names with project-aware
       // analysis, so keep the base ESLint rule disabled to avoid duplicate noise.
       'no-undef': 'off',
