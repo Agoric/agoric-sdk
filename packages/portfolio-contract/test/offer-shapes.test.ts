@@ -91,6 +91,24 @@ test('ProposalShapes', t => {
         },
       },
     },
+    deposit: {
+      pass: {
+        giveOnly: { give: { Deposit: usdc(123n) }, want: {} },
+      },
+      fail: {
+        missingGive: { want: {}, give: {} },
+        wrongKeyword: { give: { Cash: usdc(1n) } },
+      },
+    },
+    withdraw: {
+      pass: {
+        wantOnly: { want: { Cash: usdc(123n) }, give: {} },
+      },
+      fail: {
+        missingWant: { give: {}, want: {} },
+        wrongKeyword: { want: { Deposit: usdc(1n) } },
+      },
+    },
   });
   const { entries } = Object;
   for (const [desc, { pass, fail }] of entries(cases)) {
@@ -124,6 +142,17 @@ test('offerArgs can carry usdnOut', t => {
     flow: [{ src: '@noble', dest: 'USDN', amount, detail }],
   });
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
+test('offerArgs deposit allows optional flow', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc(200n);
+  const withFlow = harden({
+    flow: [{ src: '@noble', dest: '@Arbitrum', amount }],
+  });
+
+  t.notThrows(() => mustMatch(harden({}), shapes.deposit), 'empty deposit');
+  t.notThrows(() => mustMatch(withFlow, shapes.deposit), 'deposit with flow');
 });
 
 test('movementDescShape allows unknown additional properties', t => {
@@ -184,6 +213,19 @@ test('numeric position references are rejected', t => {
   });
 });
 
+test('openPortfolio offerArgs enforces 12-step limit', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc(1n);
+  const step = { src: '@noble', dest: '@Arbitrum', amount };
+  const flow = Array.from({ length: 13 }, () => step);
+  const specimen = harden({ flow });
+
+  t.false(
+    matches(specimen, shapes.openPortfolio),
+    'openPortfolio flow length 13 should fail',
+  );
+});
+
 test('vstorage flow type matches shape', t => {
   const amount = usdc(200n);
   const passCases: Record<string, StatusFor['flow']> = harden({
@@ -212,6 +254,29 @@ test('vstorage flow type matches shape', t => {
       step: 1,
       how: 'deposit',
       error: 'Network timeout',
+      where: '@Arbitrum',
+      type: 'deposit',
+      amount,
+    },
+    runningWithSteps: {
+      state: 'run',
+      step: 2,
+      how: 'transfer',
+      steps: [0, 1, 2],
+      type: 'deposit',
+      amount,
+    },
+    doneWithDetail: {
+      state: 'done',
+      type: 'deposit',
+      amount,
+    },
+    failedWithNext: {
+      state: 'fail',
+      step: 1,
+      how: 'deposit',
+      error: 'bad',
+      next: {},
       where: '@Arbitrum',
       type: 'deposit',
       amount,
@@ -393,6 +458,12 @@ test('vstorage position type matches shape', t => {
       totalIn: usdc(2000n),
       totalOut: usdc(1000n),
     },
+    withoutNetTransfers: {
+      protocol: 'USDN',
+      accountId: 'cosmos:noble-1:noble1234567890abcdef1234567890abcdef12345678',
+      totalIn: usdc(2000n),
+      totalOut: usdc(1000n),
+    },
     aavePosition: {
       protocol: 'Aave',
       accountId: 'eip155:1:0x1234567890abcdef1234567890abcdef12345678',
@@ -539,7 +610,7 @@ test('published tx shape accepts nextTxId field', t => {
     hasSource: {
       ...cctp,
       status: TxStatus.PENDING,
-      sourceAddress: 'comsos:agoric:agoric123lkjsdlj',
+      sourceAddress: 'cosmos:agoric:agoric123lkjsdlj',
     },
     cctpPending: {
       ...cctp,
@@ -567,6 +638,31 @@ test('published tx shape accepts nextTxId field', t => {
       ...ibc,
       status: TxStatus.FAILED,
       rejectionReason: 'Some IBC failure reason',
+    },
+    gmpNoSource: {
+      type: TxType.GMP,
+      status: TxStatus.PENDING,
+      destinationAddress: 'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+    },
+    gmpWithSource: {
+      type: TxType.GMP,
+      status: TxStatus.PENDING,
+      destinationAddress: 'eip155:42161:0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64',
+      sourceAddress: 'cosmos:agoric-3:agoric1test',
+    },
+    makeAccountMinimal: {
+      type: TxType.MAKE_ACCOUNT,
+      status: TxStatus.PENDING,
+      destinationAddress: 'cosmos:agoric-3:agoric1factory',
+      expectedAddr: '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
+    },
+    makeAccountFull: {
+      type: TxType.MAKE_ACCOUNT,
+      status: TxStatus.PENDING,
+      destinationAddress: 'cosmos:agoric-3:agoric1factory',
+      expectedAddr: '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
+      sourceAddress: 'cosmos:agoric-3:agoric1test',
+      factoryAddr: '0xef8651dD30cF990A1e831224f2E0996023163A81',
     },
   } satisfies Record<string, PublishedTx>);
 
