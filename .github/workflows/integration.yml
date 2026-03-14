@@ -221,9 +221,14 @@ jobs:
   test-docker-build:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
+    # Keep this validation job on a Depot runner because it builds through Depot
+    # and then uses the loaded image locally for follow-on Docker-heavy checks.
     runs-on: 'depot-ubuntu-22.04-16'
     timeout-minutes: 60
     steps:
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: update job environment
         run: |
           if [ ":$HOME" = : ]; then
@@ -254,7 +259,7 @@ jobs:
         # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
-        run: make docker-build-sdk
+        run: DOCKER_BUILD='depot build --load' make docker-build-sdk
         working-directory: agoric-sdk/packages/deployment
 
       - id: restore-golang
@@ -407,8 +412,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Use Depot so this validation build shares the same remote builder cache
+      # and build behavior as the image publishing workflow.
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: Build ymax-planner Docker image
-        run: docker build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
+        run: depot build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
 
   finalize-integration-result:
     needs:

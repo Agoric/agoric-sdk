@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "skills": {
+    "depot-ci": {
+      "source": "depot/skills",
+      "sourceType": "github",
+      "computedHash": "bd546cda2becf85be8469fb322155d9950f3efbb9989d6bd5cb9674d173a6bb9"
+    },
+    "depot-container-builds": {
+      "source": "depot/skills",
+      "sourceType": "github",
+      "computedHash": "6b3d5d12bc8e22d53ffac262587172e97a88a2141c574c11bbc4f2b131223010"
+    },
+    "depot-general": {
+      "source": "depot/skills",
+      "sourceType": "github",
+      "computedHash": "85b22be5b22beaa6bd9b503feebb44e18cd544e36c8a8148e0b749fe6937eea3"
+    },
+    "depot-github-runners": {
+      "source": "depot/skills",
+      "sourceType": "github",
+      "computedHash": "bdd317533e0329f84cbdc53f48e6bb35f0d5d34072b987c092bad0d90f9149c0"
+    }
+  }
+}
