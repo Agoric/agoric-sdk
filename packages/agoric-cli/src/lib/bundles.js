@@ -96,7 +96,9 @@ export const statPlans = async path => {
     const plan = JSON.parse(fs.readFileSync(join(path, planfile), 'utf8'));
     console.log('\n**\nPLAN', plan.name);
     for (const bundle of plan.bundles) {
-      await statBundle(bundle.fileName);
+      if (bundle.fileName) {
+        await statBundle(bundle.fileName);
+      }
     }
   }
 };
