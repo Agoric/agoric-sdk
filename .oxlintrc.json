@@ -9,6 +9,10 @@
     {
       "name": "ava",
       "specifier": "eslint-plugin-ava"
+    },
+    {
+      "name": "@jessie.js",
+      "specifier": "@jessie.js/eslint-plugin"
     }
   ],
   "categories": {
@@ -90,6 +94,7 @@
         "packages/wallet/api/src/**/*.js"
       ],
       "rules": {
+        "@jessie.js/safe-await-separator": "error",
         "no-process-env": "off",
         "eslint-js/no-restricted-syntax": [
           "error",
@@ -309,7 +314,7 @@
           }
         ]
       }
-    },
+    }
   ],
   "rules": {
     "no-void": ["warn", { "allowAsStatement": true }],

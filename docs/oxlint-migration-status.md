@@ -31,6 +31,7 @@ This document tracks migration progress from `eslint.config.mjs` to `.oxlintrc.j
 | --- | --- | --- | --- |
 | `no-restricted-properties` | test/demo files | ✅ Yes | Implemented via `eslint-js/no-restricted-properties`. |
 | `no-restricted-imports` | `packages/boot/test/**/*.test.*s` | ✅ Yes | Implemented via `eslint-js/no-restricted-imports`. |
+| `@jessie.js/safe-await-separator` | Global (with test/a3p overrides) | ✅ Yes | Implemented via `@jessie.js/` prefix using JS plugin bridge. |
 | `plugin:ava/recommended` | test files | ✅ Yes | Implemented via `ava/` prefix using JS plugin bridge. |
 
 ## JSDoc rule migration status
@@ -61,6 +62,7 @@ These should only be disabled in ESLint after we verify semantic parity and acce
 - `no-restricted-syntax` (scoped entries listed above)
 - `no-restricted-properties` (`test.only` policy)
 - `no-restricted-imports` (`packages/boot/test/**/*.test.*s` scope)
+- `@jessie.js/safe-await-separator` (global and scoped policies)
 - `@typescript-eslint/no-floating-promises` once Oxlint type-aware results are stable enough for policy replacement
 
 ## Evaluation: custom Agoric/Endo plugin migration
@@ -77,7 +79,7 @@ These should only be disabled in ESLint after we verify semantic parity and acce
   1. Upstreaming equivalent built-in Oxlint rules, or
   2. Re-expressing specific policies using available Oxlint core rules/selectors (as done for restricted syntax/import/property policies).
 - **AVA rules:** Migrated to Oxlint using the JS plugin bridge with the `ava` alias.
-- **Endo/Jessie-specific rules:** `@jessie.js/safe-await-separator` is ecosystem-specific and currently has no known Oxlint equivalent; keep enforced in ESLint for now.
+- **Endo/Jessie-specific rules:** `@jessie.js/safe-await-separator` is ecosystem-specific and has been successfully migrated to Oxlint using the JS plugin bridge with the `@jessie.js` alias.
 - **`require-extensions` plugin behavior:** Removed from ESLint. TypeScript `nodenext` configuration now handles import extension enforcement.
 
 ### Recommendation
