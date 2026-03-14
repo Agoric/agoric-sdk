@@ -50,7 +50,6 @@ export const startValueVow = async ({
 harden(startValueVow);
 
 export const getManifestForValueVow = ({ restoreRef }, { valueVowRef }) => {
-  console.log('valueVowRef', valueVowRef);
   return {
     manifest: {
       [startValueVow.name]: {

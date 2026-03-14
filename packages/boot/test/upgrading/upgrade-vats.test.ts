@@ -1,70 +1,97 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { BridgeId, deepCopyJsonable } from '@agoric/internal';
-import { buildVatController, type SwingSetConfig } from '@agoric/swingset-vat';
-import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
-import { Fail } from '@endo/errors';
-import { makeTagged } from '@endo/marshal';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+import type { ExecutionContext, TestFn } from 'ava';
+
 import type { IssuerKit } from '@agoric/ertp/src/types.js';
+import { BridgeId, deepCopyJsonable } from '@agoric/internal';
 import type { BankVat } from '@agoric/vats/src/vat-bank.js';
 import type { PriceAuthorityVat } from '@agoric/vats/src/vat-priceAuthority.js';
+import { Fail } from '@endo/errors';
+import { makeTagged } from '@endo/marshal';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
+import {
+  forkScenario,
+  makeBootControllerFixture,
+  makeBridgeDeviceEndowments,
+  makeThrowingBridgeHarness,
+  type BridgeBackend,
+  type ControllerFixture,
+} from '../tools/controller-fixture.js';
 
 import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
 
-const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+type BaseSetup = Pick<ControllerFixture, 'forkController'>;
 
-const makeCallOutbound = t => (srcID, obj) => {
-  t.log(`callOutbound(${srcID}, ${obj})`);
-  return obj;
+const test = anyTest as TestFn<BaseSetup>;
+
+const makeBaseSetup = async (): Promise<BaseSetup> => {
+  return makeBootControllerFixture({
+    testModuleUrl: import.meta.url,
+    includeDevDependencies: true, // for vat-data
+    bundles: {
+      bank: '@agoric/vats/src/vat-bank.js',
+      board: '@agoric/vats/src/vat-board.js',
+      bridge: '@agoric/vats/src/vat-bridge.js',
+      chain: '@agoric/vats/src/core/boot-chain.js',
+      mint: './vat-mint.js',
+      priceAuthority: '@agoric/vats/src/vat-priceAuthority.js',
+      vow: './vat-vow.js',
+    },
+    devices: {
+      bridge: './device-bridge.js',
+    },
+    baseDeviceEndowments: makeBridgeDeviceEndowments(
+      makeThrowingBridgeHarness(),
+    ),
+  });
+};
+
+let baseSetupP: Promise<BaseSetup> | undefined;
+const getBaseSetup = () => {
+  if (!baseSetupP) {
+    baseSetupP = makeBaseSetup();
+  }
+  return baseSetupP;
 };
 
 const makeScenario = async (
-  t: any,
-  kernelConfigOverrides: Partial<SwingSetConfig> = {},
-  deviceEndowments: Record<string, unknown> = {},
-) => {
-  const config: SwingSetConfig = {
-    includeDevDependencies: true, // for vat-data
-    bootstrap: 'bootstrap',
-    defaultReapInterval: 'never',
-    vats: {
-      bootstrap: {
-        sourceSpec: await importSpec(
-          '@agoric/swingset-vat/tools/bootstrap-relay.js',
-        ),
-      },
-    },
-    bundleCachePath: sharedBundleCachePath,
-    ...kernelConfigOverrides,
+  t: ExecutionContext<BaseSetup>,
+  options?: {
+    bridgeBackends?: Record<string, BridgeBackend>;
+  },
+) =>
+  forkScenario(t, {
+    deviceEndowments: makeBridgeDeviceEndowments(t, options?.bridgeBackends),
+  });
+
+test.before(async t => {
+  t.context = await getBaseSetup();
+});
+
+test('forked scenarios start equivalent and isolated', async t => {
+  const forkA = await makeScenario(t);
+  const forkB = await t.context.forkController({
+    deviceEndowments: makeBridgeDeviceEndowments(t),
+  });
+  t.teardown(() => forkB.shutdown());
+
+  const crank0 = forkA.getCrankNumber();
+  t.is(forkB.getCrankNumber(), crank0);
+
+  const boardVatConfig = {
+    name: 'board',
+    bundleCapName: 'board',
   };
+  await forkA.EV.vat('bootstrap').createVat(boardVatConfig);
+  t.true(forkA.getCrankNumber() > crank0);
+  t.is(forkB.getCrankNumber(), crank0);
 
-  const c = await buildVatController(
-    config,
-    undefined,
-    undefined,
-    deviceEndowments,
-  );
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-
-  await c.run();
-  const runUtils = makeRunUtils(c);
-  return runUtils;
-};
+  const boardRoot = await forkB.EV.vat('bootstrap').createVat(boardVatConfig);
+  t.truthy(boardRoot);
+});
 
 test('upgrade vat-board', async t => {
-  const bundles = {
-    board: {
-      sourceSpec: await importSpec('@agoric/vats/src/vat-board.js'),
-    },
-  };
-
-  const { EV } = await makeScenario(t, { bundles });
+  const { EV } = await makeScenario(t);
 
   t.log('create initial version');
   const boardVatConfig = {
@@ -88,13 +115,7 @@ test('upgrade vat-board', async t => {
 });
 
 test.failing('upgrade bootstrap vat', async t => {
-  const bundles = {
-    chain: {
-      sourceSpec: await importSpec('@agoric/vats/src/core/boot-chain.js'),
-    },
-  };
-  // @ts-expect-error error in skipped test
-  const { EV } = await makeScenario(t, bundles);
+  const { EV } = await makeScenario(t);
 
   t.log('create initial version');
   const chainVatConfig = {
@@ -114,32 +135,17 @@ test.failing('upgrade bootstrap vat', async t => {
 });
 
 test('upgrade vat-bridge', async t => {
-  const bundles = {
-    bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
-  };
-  const devices = {
-    bridge: { sourceSpec: bfile('./device-bridge.js') },
-  };
-
   const expectedStorageValues = ['abc', 'def'];
-  const { EV } = await makeScenario(
-    t,
-    { bundles, devices },
-    {
-      bridge: {
-        t,
-        callOutbound: makeCallOutbound(t),
-        bridgeBackends: {
-          [BridgeId.STORAGE](obj) {
-            const { method, args } = obj;
-            t.is(method, 'set', `storage bridge method must be 'set'`);
-            t.deepEqual(args, [['root1', expectedStorageValues.shift()]]);
-            return undefined;
-          },
-        },
+  const { EV } = await makeScenario(t, {
+    bridgeBackends: {
+      [BridgeId.STORAGE](obj) {
+        const { method, args } = obj;
+        t.is(method, 'set', `storage bridge method must be 'set'`);
+        t.deepEqual(args, [['root1', expectedStorageValues.shift()]]);
+        return undefined;
       },
     },
-  );
+  });
 
   t.log('create initial version');
   const bridgeVatConfig = {
@@ -223,36 +229,19 @@ test('upgrade vat-bridge', async t => {
 });
 
 test('upgrade vat-bank', async t => {
-  const bundles = {
-    bank: { sourceSpec: await importSpec('@agoric/vats/src/vat-bank.js') },
-    bridge: { sourceSpec: await importSpec('@agoric/vats/src/vat-bridge.js') },
-    mint: { sourceSpec: bfile('./vat-mint.js') },
-  };
-  const devices = {
-    bridge: { sourceSpec: bfile('./device-bridge.js') },
-  };
-
-  const { EV } = await makeScenario(
-    t,
-    { bundles, devices },
-    {
-      bridge: {
-        t,
-        callOutbound: makeCallOutbound(t),
-        bridgeBackends: {
-          [BridgeId.BANK](obj) {
-            switch (obj.type) {
-              case 'VBANK_GET_BALANCE': {
-                return '1000';
-              }
-              default:
-                throw Fail`unexpected call to bank handler ${obj}`;
-            }
-          },
-        },
+  const { EV } = await makeScenario(t, {
+    bridgeBackends: {
+      [BridgeId.BANK](obj) {
+        switch (obj.type) {
+          case 'VBANK_GET_BALANCE': {
+            return '1000';
+          }
+          default:
+            Fail`unexpected call to bank handler ${obj}`;
+        }
       },
     },
-  );
+  });
 
   t.log('create initial version');
   const bridgeVatConfig = {
@@ -400,13 +389,7 @@ test('upgrade vat-bank', async t => {
 });
 
 test('upgrade vat-priceAuthority', async t => {
-  const bundles = {
-    priceAuthority: {
-      sourceSpec: await importSpec('@agoric/vats/src/vat-priceAuthority.js'),
-    },
-  };
-
-  const { EV } = await makeScenario(t, { bundles });
+  const { EV } = await makeScenario(t);
 
   t.log('create initial version');
   const priceAuthorityVatConfig = {
@@ -438,13 +421,7 @@ test('upgrade vat-priceAuthority', async t => {
 });
 
 test('upgrade vat-vow', async t => {
-  const bundles = {
-    vow: {
-      sourceSpec: bfile('./vat-vow.js'),
-    },
-  };
-
-  const { EV } = await makeScenario(t, { bundles });
+  const { EV } = await makeScenario(t);
 
   t.log('create initial version, metered');
   const vatAdmin = await EV.vat('bootstrap').getVatAdmin();

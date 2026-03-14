@@ -14,6 +14,7 @@ import type { EVProxy } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { Installation, ZoeService } from '@agoric/zoe';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { loadOrCreateRunUtilsFixture } from '../tools/runutils-fixtures.js';
 
 const { entries, assign } = Object;
 
@@ -34,8 +35,13 @@ export const makeTestContext = async t => {
     { cacheSourceMaps: false },
     s => import(s),
   );
+  const snapshot = await loadOrCreateRunUtilsFixture(
+    'itest-vaults-base',
+    t.log,
+  );
   const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
     configSpecifier: PLATFORM_CONFIG,
+    snapshot,
   });
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
 

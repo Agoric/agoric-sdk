@@ -1,0 +1,68 @@
+✔ configs › Bootstrap SwingSet config file syntax
+✔ configs › bootstrap permit visualization snapshot (391ms)
+✔ bootstrapTests › vow-offer-results › resolves (14.5s)
+✔ orchestration › lca › stakeBld (11.5s)
+✔ orchestration › orchestration › stakeAtom - smart wallet (11.7s)
+✔ bootstrapTests › vats-restart › open vault (340ms)
+✔ bootstrapTests › vats-restart › make IBC callbacks before upgrade
+✔ bootstrapTests › demo-config › sim/demo config launches Vaults as expected by loadgen (2s)
+✔ bootstrapTests › vtransfer › vtransfer (2.8s)
+✔ bootstrapTests › net-ibc-upgrade › bootstrap produces provisioning vat
+✔ bootstrapTests › net-ibc-upgrade › bootstrap launches network, ibc vats
+✔ bootstrapTests › ec-membership-update › normal running of committee (2.7s)
+✔ bootstrapTests › ec-membership-update › check high priority senders before replacing committee
+✔ bootstrapTests › demo-config › demo config meets loadgen constraint: no USDC (4.5s)
+✔ bootstrapTests › demo-config › sim/demo config provides home with .myAddressNameAdmin (4.5s)
+✔ bootstrapTests › demo-config › namesByAddress contains provisioned account (4.5s)
+✔ orchestration › axelar-gmp › makeAccount via axelarGmp (6.1s)
+✔ orchestration › axelar-gmp › get lca address (152ms)
+✔ orchestration › axelar-gmp › receiveUpCall test
+✔ orchestration › axelar-gmp › make offers using the lca
+✔ bootstrapTests › terminate-governed › Create a contract via core-eval and kill it via core-eval by boardID (6s)
+✔ bootstrapTests › updateUpgradedVaultParams › restart vaultFactory, change params (4.1s)
+✔ [expected fail] bootstrapTests › ec-membership-update › replace committee
+✔ bootstrapTests › ec-membership-update › check high priority senders after replacing committee
+✔ orchestration › axelar-gmp › token transfers using lca (6s)
+✔ orchestration › axelar-gmp › make contract calls using lca (4.3s)
+✔ orchestration › contract-upgrade › resume (29.7s)
+✔ [expected fail] bootstrapTests › ec-membership-update › successful proposal and vote by 2 continuing members
+✔ bootstrapTests › ec-membership-update › unsuccessful vote by 2 outgoing members (1.9s)
+✔ bootstrapTests › wallet-fun › use offer result without zoe (19.1s)
+✔ bootstrapTests › ec-membership-update › successful vote by 2 continuing and 1 outgoing members (814ms)
+✔ bootstrapTests › ec-membership-update › unsuccessful vote by 1 continuing and 2 outgoing members (1.4s)
+✔ [expected fail] bootstrapTests › ec-membership-update › EC can govern provisionPool parameter
+✔ [expected fail] bootstrapTests › ec-membership-update › EC can govern reserve parameter
+✔ [expected fail] bootstrapTests › ec-membership-update › EC can govern psm parameter
+✔ [expected fail] bootstrapTests › ec-membership-update › EC can make calls to price feed governed APIs
+✔ [expected fail] bootstrapTests › ec-membership-update › outgoing member should not be able to propose
+✔ orchestration › orchestration › basic-flows (27.6s)
+✔ bootstrapTests › walletSurvivesZoeRestart › wallet survives zoe null upgrade (19.3s)
+✔ orchestration › axelar-gmp › restart axelarGmp (8.7s)
+✔ orchestration › axelar-gmp › make contract calls after contract restart (1.3s)
+✔ bootstrapTests › upgradeAPI › start contract; verify
+✔ tools › ibc › mocks › addParamsToVersion
+✔ bootstrapTests › vats-restart › run restart-vats proposal (34.8s)
+✔ bootstrapTests › vats-restart › use IBC callbacks after upgrade
+✔ bootstrapTests › vats-restart › read metrics
+✔ bootstrapTests › vats-restart › open second vault (645ms)
+✔ bootstrapTests › net-ibc-upgrade › test contracts are installed (29.2s)
+✔ bootstrapTests › upgradeAPI › verify API governance (5.7s)
+✔ bootstrapTests › upgradeAPI › upgrade (478ms)
+✔ configs › no test-only code is in production configs (1m 22.5s)
+✔ orchestration › orchestration › auto-stake-it - proposal (12.5s)
+✔ bootstrapTests › upgradeAPI › verify API governance post-upgrade (3.9s)
+✔ orchestration › orchestration › basic-flows - portfolio holder (21.2s)
+✔ bootstrapTests › net-ibc-upgrade › upgrade at many points in network API flow (30.9s)
+✔ upgrading › upgrade-contracts › upgrade mintHolder (43s)
+✔ configs › no test-only code is in production proposals (2m 21.9s)
+✔ orchestration › vstorage-chain-info › config (105ms)
+✔ orchestration › vstorage-chain-info › revise chain info (4.3s)
+✔ orchestration › restart-contracts › send-anywhere (33.8s)
+✔ orchestration › restart-contracts › stakeAtom (13.8s)
+✔ [expected fail] upgrading › upgrade-vats › upgrade bootstrap vat
+✔ upgrading › upgrade-vats › upgrade vat-board (1m 31.5s)
+✔ upgrading › upgrade-vats › upgrade vat-priceAuthority (1m 31.7s)
+✔ upgrading › upgrade-vats › upgrade vat-bridge (1m 38.1s)
+✔ upgrading › upgrade-vats › upgrade vat-bank (1m 38.4s)
+✔ upgrading › upgrade-vats › upgrade vat-vow (1m 39.3s)
+✔ orchestration › restart-contracts › basicFlows (11.4s)

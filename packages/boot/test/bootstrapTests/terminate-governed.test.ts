@@ -1,14 +1,15 @@
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 import type { ZoeService } from '@agoric/zoe';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { makeBootTestContext } from '../tools/boot-test-context.js';
 
 // A more minimal set would be better. We need governance, but not econ vats.
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-main-vaults-config.json';
 
 const makeDefaultTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+  const swingsetTestKit = await makeBootTestContext(t, {
     configSpecifier: PLATFORM_CONFIG,
+    fixtureName: 'main-vaults-base',
   });
   const { runUtils } = swingsetTestKit;
   const { EV } = runUtils;
@@ -34,15 +35,14 @@ test.after.always(t => {
 
 test(`Create a contract via core-eval and kill it via core-eval by boardID `, async t => {
   const TEST_CONTRACT_LABEL = 'testContractLabel';
-  const { runUtils, buildProposal, evalProposal, zoe } = t.context;
+  const { runUtils, applyProposal, zoe } = t.context;
   const { EV } = runUtils;
 
   // Create a contract via core-eval.
-  const creatorProposal = buildProposal(
+  await applyProposal(
     '@agoric/governance/test/swingsetTests/contractGovernor/add-governedContract.js',
     [TEST_CONTRACT_LABEL],
   );
-  await evalProposal(creatorProposal);
 
   const { boardID, governor, instance, publicFacet } = (await EV.vat(
     'bootstrap',
@@ -62,11 +62,10 @@ test(`Create a contract via core-eval and kill it via core-eval by boardID `, as
   t.is(governedInstance.getKref(), instance.getKref());
 
   // Terminate the pair via proposal.
-  const terminatorProposal = buildProposal(
+  await applyProposal(
     '@agoric/vats/src/proposals/terminate-governed-instance.js',
     [`${boardID}:${TEST_CONTRACT_LABEL}`],
   );
-  await evalProposal(terminatorProposal);
 
   // Confirm termination.
   const expectTerminationError = p =>

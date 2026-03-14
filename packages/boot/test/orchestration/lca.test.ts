@@ -7,46 +7,41 @@ import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+  makeBootTestContext,
+  withWalletFactory,
+  type WalletFactoryBootTestContext,
+} from '../tools/boot-test-context.js';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<WalletFactoryBootTestContext> = anyTest;
 
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  t.context = await withWalletFactory(
+    await makeBootTestContext(t, {
+      configSpecifier:
+        '@agoric/vm-config/decentral-itest-orchestration-config.json',
+      fixtureName: 'orchestration-base',
+    }),
   );
 });
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('stakeBld', async t => {
-  const {
-    agoricNamesRemotes,
-    buildProposal,
-    evalProposal,
-    refreshAgoricNamesRemotes,
-  } = t.context;
+  const { agoricNamesRemotes, applyProposal, provideSmartWallet } = t.context;
 
   // start-stakeBld depends on this. Sanity check in case the context changes.
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
 
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-stakeBld.js'),
+  await applyProposal(
+    '@agoric/builders/scripts/orchestration/init-stakeBld.js',
   );
-  // update now that stakeBld is instantiated
-  refreshAgoricNamesRemotes();
 
   const stakeBld = agoricNamesRemotes.instance.stakeBld as Instance<
     typeof stakeBldStart
   >;
   t.truthy(stakeBld);
 
-  const wd = await t.context.walletFactoryDriver.provideSmartWallet(
-    'agoric1testStakeBld',
-  );
+  const wd = await provideSmartWallet('agoric1testStakeBld');
 
   await wd.executeOffer({
     id: 'request-stake',
@@ -63,8 +58,8 @@ test.serial('stakeBld', async t => {
     },
   });
 
-  const current = wd.getCurrentWalletRecord();
-  const latest = wd.getLatestUpdateRecord();
+  const current = wd.current();
+  const latest = wd.latest();
   t.like(current, {
     offerToPublicSubscriberPaths: [
       // TODO publish something useful
@@ -90,9 +85,7 @@ test.serial('stakeBld', async t => {
       },
     },
   });
-  t.like(wd.getLatestUpdateRecord(), {
-    status: { id: 'request-delegate', numWantsSatisfied: 1 },
-  });
+  wd.expectStatus(t, { id: 'request-delegate', numWantsSatisfied: 1 });
 
   await t.throwsAsync(
     wd.executeOffer({
@@ -135,9 +128,7 @@ test.serial('stakeBld', async t => {
       amount: { denom: 'ibc/1234', value: 10n },
     },
   });
-  t.like(wd.getLatestUpdateRecord(), {
-    status: { id: 'bank-send', numWantsSatisfied: 1 },
-  });
+  wd.expectStatus(t, { id: 'bank-send', numWantsSatisfied: 1 });
 
   await wd.executeOffer({
     id: 'bank-sendAll',
@@ -159,9 +150,7 @@ test.serial('stakeBld', async t => {
       ],
     },
   });
-  t.like(wd.getLatestUpdateRecord(), {
-    status: { id: 'bank-sendAll', numWantsSatisfied: 1 },
-  });
+  wd.expectStatus(t, { id: 'bank-sendAll', numWantsSatisfied: 1 });
 
   await t.throwsAsync(
     wd.executeOffer({

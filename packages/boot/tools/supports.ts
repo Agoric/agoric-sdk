@@ -5,6 +5,7 @@ import childProcessAmbient from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { promises as fsAmbientPromises } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve as pathResolve } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
@@ -33,7 +34,7 @@ import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { krefOf } from '@agoric/kmarshal';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { decodeProtobufBase64 } from '@agoric/orchestration/tools/protobuf-decoder.js';
-import { initSwingStore } from '@agoric/swing-store';
+import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
@@ -73,7 +74,7 @@ import type { GovernancePublishedPathTypes } from '@agoric/governance';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { IBCDowncallMethod, IBCMethod } from '@agoric/vats';
+import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { ERef } from '@agoric/vow';
 import type { EProxy } from '@endo/eventual-send';
@@ -369,7 +370,7 @@ interface BootProfileTraceFile extends TraceFile {
 interface BootProfiler {
   measure: <T>(
     name: string,
-    op: () => Promise<T> | T,
+    op: () => PromiseLike<T> | T,
     args?: Record<string, unknown>,
   ) => Promise<T>;
 }
@@ -951,6 +952,41 @@ export const AckBehavior = {
   Never: 'NEVER',
 } as const;
 type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
+type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
+type FakeStorageMessage = FakeStorage['messages'][number];
+
+type SwingsetStorageSnapshot = {
+  dataEntries: [string, string][];
+  messages: FakeStorageMessage[];
+};
+
+export type SwingsetTestKitSnapshot = {
+  swingStoreSerialized?: Buffer;
+  swingStoreDir?: string;
+  kernelBundle?: EndoZipBase64Bundle;
+  storageSnapshot?: SwingsetStorageSnapshot;
+};
+
+const snapshotFakeStorage = (
+  storage: FakeStorage,
+): SwingsetStorageSnapshot => ({
+  dataEntries: [...storage.data.entries()],
+  messages: [...storage.messages],
+});
+
+const restoreFakeStorage = (
+  storageSnapshot?: SwingsetStorageSnapshot,
+): FakeStorage => {
+  const storage = makeFakeStorageKit('bootstrapTests');
+  if (!storageSnapshot) {
+    return storage;
+  }
+  for (const [key, value] of storageSnapshot.dataEntries) {
+    storage.data.set(key, value);
+  }
+  storage.messages.push(...storageSnapshot.messages);
+  return storage;
+};
 
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks.
@@ -1004,8 +1040,27 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param options.configOverrides - Other SwingSet options to set in the config
    (may be overridden by more specific options such as `bundleDir` and
    `defaultManagerType`)
+ * @param options.snapshot - Optional snapshot to restore SwingSet/kernel state
+ * @param options.swingStorePath - Optional persistent swing-store directory path
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
+export type MakeSwingsetTestKitOptions = {
+  configSpecifier?: string;
+  label?: string | undefined;
+  storage?: FakeStorage | undefined;
+  verbose?: boolean;
+  slogFile?: string | undefined;
+  profileVats?: string[];
+  debugVats?: string[];
+  defaultManagerType?: ManagerType;
+  harness?: RunHarness | undefined;
+  proposalBuildMode?: ProposalBuildMode;
+  resolveBase?: string;
+  configOverrides?: Partial<SwingSetConfig>;
+  snapshot?: SwingsetTestKitSnapshot | undefined;
+  swingStorePath?: string | undefined;
+};
+
 export const makeSwingsetTestKit = async <
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
@@ -1017,7 +1072,7 @@ export const makeSwingsetTestKit = async <
   {
     configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
-    storage = makeFakeStorageKit('bootstrapTests'),
+    storage: storageOpt = undefined as FakeStorage | undefined,
     verbose = false,
     slogFile = undefined as string | undefined,
     profileVats = [] as string[],
@@ -1027,28 +1082,52 @@ export const makeSwingsetTestKit = async <
     proposalBuildMode = 'prefer-in-process' as ProposalBuildMode,
     resolveBase = import.meta.url,
     configOverrides = {} as Partial<SwingSetConfig>,
-  } = {},
+    snapshot = undefined as SwingsetTestKitSnapshot | undefined,
+    swingStorePath = undefined as string | undefined,
+  }: MakeSwingsetTestKitOptions = {},
 ) => {
+  const storage = storageOpt || restoreFakeStorage(snapshot?.storageSnapshot);
   const importSpec = createRequire(resolveBase).resolve;
+  const resolvedConfigPath = importSpec(configSpecifier);
   const profiler = makeBootProfiler();
-  const configPath = await profiler.measure(
-    'makeSwingsetTestKit.getNodeTestVaultsConfig',
-    () =>
-      getNodeTestVaultsConfig({
-        bundleDir,
-        configPath: importSpec(configSpecifier),
-        discriminator: label,
-        defaultManagerType,
-        configOverrides,
-      }),
-    {
-      bundleDir,
-      configSpecifier,
-      defaultManagerType,
-      label,
-    },
-  );
-  const swingStore = initSwingStore();
+  const configPath = snapshot
+    ? undefined
+    : await profiler.measure(
+        'makeSwingsetTestKit.getNodeTestVaultsConfig',
+        () =>
+          getNodeTestVaultsConfig({
+            bundleDir,
+            configPath: resolvedConfigPath,
+            discriminator: label,
+            defaultManagerType,
+            configOverrides,
+          }),
+        {
+          bundleDir,
+          configSpecifier,
+          defaultManagerType,
+          label,
+        },
+      );
+  let swingStoreClonePath: string | undefined;
+  const snapshotDir = snapshot?.swingStoreDir;
+  // eslint-disable-next-line no-nested-ternary
+  const swingStore = snapshotDir
+    ? await (async () => {
+        swingStoreClonePath = await fsAmbientPromises.mkdtemp(
+          join(tmpdir(), 'boot-swingset-fixture-'),
+        );
+        await fsAmbientPromises.cp(snapshotDir, swingStoreClonePath, {
+          recursive: true,
+        });
+        return openSwingStore(swingStoreClonePath);
+      })()
+    : // eslint-disable-next-line no-nested-ternary
+      snapshot?.swingStoreSerialized
+      ? initSwingStore(null, { serialized: snapshot.swingStoreSerialized })
+      : swingStorePath
+        ? initSwingStore(swingStorePath)
+        : initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
@@ -1320,9 +1399,14 @@ export const makeSwingsetTestKit = async <
         mailboxStorage,
         bridgeOutbound,
         kernelStorage,
-        configPath,
+        // Only used when kernel storage is uninitialized; snapshots are already initialized.
+        configPath || resolvedConfigPath,
         [],
-        {},
+        {
+          SWINGSET_STARTUP_PROFILE: process.env.SWINGSET_STARTUP_PROFILE,
+          XSNAP_DEBUG: process.env.XSNAP_DEBUG,
+          XSNAP_TEST_RECORD: process.env.XSNAP_TEST_RECORD,
+        },
         {
           callerWillEvaluateCoreProposals: false,
           debugName: 'TESTBOOT',
@@ -1330,6 +1414,9 @@ export const makeSwingsetTestKit = async <
           slogSender,
           profileVats,
           debugVats,
+          warehousePolicy: snapshot ? { maxPreloadVats: 0 } : undefined,
+          kernelBundle: snapshot?.kernelBundle,
+          cacheKernelBundle: !!snapshot && !snapshot?.kernelBundle,
         },
       ),
     {
@@ -1376,28 +1463,48 @@ export const makeSwingsetTestKit = async <
     evals: materials.flatMap(e => e.evals),
     bundles: materials.flatMap(e => e.bundles),
   });
+  const installedProposalBundleIDs = new Set<string>();
+  let coreEvalBridgeHandlerP: Promise<BridgeHandler> | undefined;
+
+  const getProposalBundleID = (bundle: ProposalMaterials['bundles'][number]) =>
+    'endoZipBase64Sha512' in bundle
+      ? `b1-${bundle.endoZipBase64Sha512}`
+      : JSON.stringify(bundle);
 
   const evalProposal = async (proposalP: ERef<ProposalMaterials>) => {
     const { EV } = runUtils;
 
-    const proposal = harden(await proposalP);
+    const proposal = harden(
+      await profiler.measure(
+        'makeSwingsetTestKit.proposal.resolve',
+        () => proposalP,
+      ),
+    );
 
-    await profiler.measure(
+    const installedBundleCount = await profiler.measure(
       'makeSwingsetTestKit.proposal.installBundles',
       async () => {
-        const seenBundleHashes = new Set<string>();
+        let installed = 0;
         for (const bundle of proposal.bundles) {
-          const bundleHash = bundle.endoZipBase64Sha512 ?? bundle.endoZipBase64;
-          if (seenBundleHashes.has(bundleHash)) {
+          const bundleID = getProposalBundleID(bundle);
+          if (installedProposalBundleIDs.has(bundleID)) {
             continue;
           }
-          seenBundleHashes.add(bundleHash);
           await controller.validateAndInstallBundle(bundle);
+          installedProposalBundleIDs.add(bundleID);
+          installed += 1;
         }
+        return installed;
       },
       { bundleCount: proposal.bundles.length },
     );
-    log('installed', proposal.bundles.length, 'bundles');
+    log(
+      'installed',
+      installedBundleCount,
+      'new bundles from',
+      proposal.bundles.length,
+      'proposal bundles',
+    );
 
     log('executing proposal');
     const bridgeMessage = {
@@ -1405,9 +1512,13 @@ export const makeSwingsetTestKit = async <
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-      'coreEvalBridgeHandler',
-    );
+    if (!coreEvalBridgeHandlerP) {
+      coreEvalBridgeHandlerP = profiler.measure(
+        'makeSwingsetTestKit.proposal.getCoreEvalBridgeHandler',
+        () => EV.vat('bootstrap').consumeItem('coreEvalBridgeHandler'),
+      );
+    }
+    const coreEvalBridgeHandler: BridgeHandler = await coreEvalBridgeHandlerP;
     await profiler.measure(
       'makeSwingsetTestKit.proposal.executeCoreEval',
       () => EV(coreEvalBridgeHandler).fromBridge(bridgeMessage),
@@ -1454,7 +1565,16 @@ export const makeSwingsetTestKit = async <
   };
 
   const shutdown = async () =>
-    Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
+    Promise.all([
+      controller.shutdown(),
+      hostStorage.close(),
+      swingStoreClonePath
+        ? fsAmbientPromises.rm(swingStoreClonePath, {
+            recursive: true,
+            force: true,
+          })
+        : undefined,
+    ]).then(() => {});
 
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
@@ -1525,6 +1645,15 @@ export const makeSwingsetTestKit = async <
     });
   };
 
+  const makeSnapshot = (): SwingsetTestKitSnapshot => {
+    return {
+      swingStoreSerialized: swingStore.debug.serialize(),
+      kernelBundle: snapshot?.kernelBundle,
+      storageSnapshot: snapshotFakeStorage(storage),
+    };
+  };
+  const makeStorageSnapshot = () => snapshotFakeStorage(storage);
+
   return {
     advanceTimeBy,
     advanceTimeTo,
@@ -1540,6 +1669,24 @@ export const makeSwingsetTestKit = async <
     readPublished,
     runUtils,
     shutdown,
+    makeStorageSnapshot,
+    makeSnapshot,
+    forkFromSnapshot: async (
+      forkingSnapshot: SwingsetTestKitSnapshot = makeSnapshot(),
+    ) =>
+      makeSwingsetTestKit(log, bundleDir, {
+        configSpecifier,
+        label,
+        verbose,
+        slogFile,
+        profileVats,
+        debugVats,
+        defaultManagerType,
+        harness,
+        resolveBase,
+        configOverrides,
+        snapshot: forkingSnapshot,
+      }),
     storage,
     swingStore,
     timer,
