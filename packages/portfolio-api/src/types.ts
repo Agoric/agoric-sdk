@@ -105,7 +105,14 @@ export type ProposalType = {
 export type TargetAllocation = Partial<Record<InstrumentId, bigint>>;
 
 export type FlowDetail =
-  | { type: 'withdraw'; amount: NatAmount; toChain?: SupportedChain }
+  // SPIKE-DESIGN: prototype plumbing for user-paid withdraw fees.
+  // The exact withdraw request shape is still being designed.
+  | {
+      type: 'withdraw';
+      amount: NatAmount;
+      fee?: NatAmount;
+      toChain?: SupportedChain;
+    }
   | { type: 'deposit'; amount: NatAmount; fromChain?: SupportedChain }
   | { type: 'rebalance' }; // aka simpleRebalance
 

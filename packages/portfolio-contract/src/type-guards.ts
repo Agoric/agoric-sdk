@@ -350,7 +350,7 @@ const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
 export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   M.splitRecord(
     { type: 'withdraw', amount: AnyNatAmountShape },
-    { toChain: ChainNameExtShape },
+    { fee: AnyNatAmountShape, toChain: ChainNameExtShape },
   ),
   M.splitRecord(
     { type: 'deposit', amount: AnyNatAmountShape },

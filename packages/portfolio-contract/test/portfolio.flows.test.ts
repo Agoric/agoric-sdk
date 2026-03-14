@@ -3202,7 +3202,7 @@ test('evmHandler.withdraw via CCTPtoUser sends depositForBurn to user address', 
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('evmHandler.withdraw via GMP sends ERC20 transfer to user address', async t => {
+test('evmHandler.withdraw via GMP sends Permit2 + ERC20 transfer to user address', async t => {
   const withdrawAmount = 2_000_000n;
   const amount = AmountMath.make(USDC, withdrawAmount);
   const fee = AmountMath.make(BLD, 100n);
@@ -3211,9 +3211,17 @@ test('evmHandler.withdraw via GMP sends ERC20 transfer to user address', async t
   const sourceAccountId =
     'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678';
 
-  const { ctx, offer, storage, txResolver, cosmosId } = mocks({}, {});
+  const { orch, ctx, offer, storage, txResolver, cosmosId } = mocks({}, {});
   const { log } = offer;
   const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const spender = predictWalletAddress({
+    owner: kit.reader.getLocalAccount().getAddress().value,
+    factoryAddress: contractsMock.Arbitrum.factory,
+    gatewayAddress: contractsMock.Arbitrum.gateway,
+    gasServiceAddress: contractsMock.Arbitrum.gasService,
+    walletBytecode: hexToBytes(ctx.walletBytecode.replace(/^0x/, '')),
+  });
   const portfolioId = kit.reader.getPortfolioId();
   const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
   let flowNum: number | undefined;
@@ -3225,6 +3233,23 @@ test('evmHandler.withdraw via GMP sends ERC20 transfer to user address', async t
       token: contractsMock.Arbitrum.usdc,
     },
     domain: { chainId: 42161n },
+    spender,
+    permit2Payload: {
+      owner:
+        '0x1234567890AbcdEF1234567890aBcdef12345678' as `0x${string}`,
+      witness:
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+      witnessTypeString: 'WithdrawWitness',
+      permit: {
+        permitted: {
+          token: contractsMock.Arbitrum.usdc,
+          amount: 444_159n,
+        },
+        nonce: 7115368379195441n,
+        deadline: 1357923600n,
+      },
+      signature: '0x1234',
+    },
   });
   t.regex(flowKey, /^flow\d+$/);
 

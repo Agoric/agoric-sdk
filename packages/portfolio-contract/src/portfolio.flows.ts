@@ -35,6 +35,7 @@ import {
   parseAccountId,
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
+import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.js';
 import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
@@ -133,6 +134,17 @@ export type PortfolioInstanceContext = {
   eip155ChainIdToAxelarChain: Record<`${number}`, AxelarChain>;
 };
 
+// SPIKE-DESIGN: keep this local until the withdraw fee batch shape settles.
+const permit2Abi = [
+  {
+    name: 'permitWitnessTransferFrom',
+    inputs: PermitWitnessTransferFromInputComponents,
+    outputs: [],
+    stateMutability: 'nonpayable',
+    type: 'function',
+  },
+] as const;
+
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
@@ -225,6 +237,13 @@ type FlowStepPowers = {
 
 type ExecutePlanOptions = {
   evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
+  // SPIKE-DESIGN: prototype plumbing for EVM withdraw fee authority.
+  // The remote fee-collection execution shape is still being designed.
+  evmWithdrawDetail?: {
+    toChain: AxelarChain;
+    spender: PermitDetails['spender'];
+    permit2Payload: PermitDetails['permit2Payload'];
+  };
   // XXX consider using pattern matching for queued steps instead of src/dest.
   queuedSteps?: Array<
     Pick<MovementDesc, 'src' | 'dest'> & {
@@ -771,10 +790,13 @@ const stepFlow = async (
   flowId: number,
   flowDetail: FlowDetail,
   config?: FlowConfig,
-  options?: Pick<ExecutePlanOptions, 'queuedSteps' | 'evmDepositDetail'>,
+  options?: Pick<
+    ExecutePlanOptions,
+    'queuedSteps' | 'evmDepositDetail' | 'evmWithdrawDetail'
+  >,
 ) => {
   const features = config?.features;
-  const { queuedSteps, evmDepositDetail } = options ?? {};
+  const { queuedSteps, evmDepositDetail, evmWithdrawDetail } = options ?? {};
   const { flow: moves, order: maybeOrder } = Array.isArray(plan)
     ? { flow: plan }
     : plan;
@@ -1192,8 +1214,48 @@ const stepFlow = async (
           ) => {
             assert(gInfo && agoric, destChain);
 
-            // Build ERC20 transfer call
+            const feeCollector = ctx.contracts[destChain].feeCollector;
+            const withdrawFeeDetail =
+              evmWithdrawDetail?.toChain === destChain
+                ? evmWithdrawDetail
+                : undefined;
+
+            withdrawFeeDetail
+              ? feeCollector ||
+                Fail`withdraw fee collection requires feeCollector for ${destChain}`
+              : undefined;
+
+            // SPIKE-DESIGN: prototype remote wallet multicall for user-paid
+            // withdraw fees. Exact fee recipient configuration and calldata
+            // shape remain under design.
             const session = makeEvmAbiCallBatch();
+            if (withdrawFeeDetail && feeCollector) {
+              const {
+                permit2Payload,
+                permit2Payload: {
+                  permit,
+                  owner,
+                  witness,
+                  witnessTypeString,
+                  signature,
+                },
+              } = withdrawFeeDetail;
+              const permit2 = session.makeContract(
+                ctx.contracts[destChain].permit2,
+                permit2Abi,
+              );
+              permit2.permitWitnessTransferFrom(
+                permit,
+                {
+                  to: feeCollector,
+                  requestedAmount: permit2Payload.permit.permitted.amount,
+                },
+                owner,
+                witness,
+                witnessTypeString,
+                signature,
+              );
+            }
             const usdc = session.makeContract(
               ctx.contracts[destChain].usdc,
               erc20ABI,
@@ -1939,7 +2001,11 @@ export const executePlan = (async (
       flowId,
       flowDetail,
       config,
-      { queuedSteps, evmDepositDetail: options?.evmDepositDetail },
+      {
+        queuedSteps,
+        evmDepositDetail: options?.evmDepositDetail,
+        evmWithdrawDetail: options?.evmWithdrawDetail,
+      },
     );
     return `flow${flowId}`;
   } catch (err) {

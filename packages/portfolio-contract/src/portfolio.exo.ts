@@ -946,10 +946,16 @@ export const preparePortfolioKit = (
           withdrawDetails,
           domain,
           address,
+          spender,
+          permit2Payload,
         }: {
           withdrawDetails: { amount: bigint; token: EVMAddress };
           domain?: Partial<YmaxFullDomain>;
           address?: EVMAddress;
+          // SPIKE-DESIGN: prototype EVM withdraw fee authority shape.
+          // Exact contract-facing args remain under design.
+          spender?: PermitDetails['spender'];
+          permit2Payload?: PermitDetails['permit2Payload'];
         }) {
           const { sourceAccountId } = this.state;
           if (!sourceAccountId) {
@@ -963,15 +969,17 @@ export const preparePortfolioKit = (
             Fail`withdraw sourceAccountId must be in eip155 namespace: ${sourceAccountId}`;
           const evmAddress = accountAddress as EVMAddress;
 
-          const chainIdStr = String(
-            domain?.chainId ?? reference,
-          ) as `${number | bigint}`;
+          const chainId = domain?.chainId ?? BigInt(reference);
+          const chainIdStr = String(chainId) as `${number | bigint}`;
 
           const toChain = eip155ChainIdToAxelarChain[chainIdStr];
 
           if (!toChain) {
             throw Fail`destination chainId ${chainIdStr} is not supported for withdraw`;
           }
+
+          (spender && permit2Payload) || (!spender && !permit2Payload) ||
+            Fail`withdraw must provide both spender and permit2Payload together`;
 
           !address ||
             sameEvmAddress(evmAddress, address) ||
@@ -980,16 +988,44 @@ export const preparePortfolioKit = (
           sameEvmAddress(withdrawDetails.token, contracts[toChain].usdc) ||
             Fail`withdraw token address ${withdrawDetails.token} does not match usdc contract address ${contracts[toChain].usdc} for chain ${toChain}`;
           const amount = AmountMath.make(usdcBrand, withdrawDetails.amount);
+          const fee = permit2Payload
+            ? AmountMath.make(usdcBrand, permit2Payload.permit.permitted.amount)
+            : undefined;
+
+          if (spender && permit2Payload) {
+            sameEvmAddress(permit2Payload.owner, evmAddress) ||
+              Fail`permit owner ${permit2Payload.owner} does not match portfolio source address ${evmAddress}`;
+            this.facets.evmHandler.validateRepresentativeInfo(
+              chainId,
+              spender,
+            );
+          }
 
           const flowDetail = {
             type: 'withdraw',
             amount,
+            ...(fee ? { fee } : {}),
             toChain,
           } satisfies FlowDetail;
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           const seat = zcf.makeEmptySeatKit().zcfSeat;
 
-          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(
+            seat,
+            {},
+            this.facets,
+            flowDetail,
+            startedFlow,
+            undefined,
+            // SPIKE-DESIGN: thread fee authority through executePlan so the
+            // eventual wallet multicall implementation has the signed inputs.
+            {
+              evmWithdrawDetail:
+                spender && permit2Payload
+                  ? { toChain, spender, permit2Payload }
+                  : undefined,
+            },
+          );
           return `flow${startedFlow.flowId}`;
         },
       },
