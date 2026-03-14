@@ -3,8 +3,8 @@ import anyTest from 'ava';
 
 // Use ambient authority only in test.before()
 import type { TestFn, Macro, ExecutionContext } from 'ava';
-import { spawn as ambientSpawn, type StdioOptions } from 'child_process';
-import * as ambientPath from 'path';
+import { spawn as ambientSpawn, type StdioOptions } from 'node:child_process';
+import * as ambientPath from 'node:path';
 
 import {
   prometheusSampleRegExp,

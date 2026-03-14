@@ -2,9 +2,9 @@
 
 import test from 'ava';
 
-import * as proc from 'child_process';
-import fs from 'fs';
-import * as os from 'os';
+import * as proc from 'node:child_process';
+import fs from 'node:fs';
+import * as os from 'node:os';
 import { tmpName } from 'tmp';
 
 import { xsnap } from '../src/xsnap.js';
@@ -259,7 +259,6 @@ test('metering switch - start compartment only', async t => {
 
 /** @param {number} logn */
 function dataStructurePerformance(logn) {
-  // eslint-disable-next-line no-bitwise
   const n = 1 << logn;
   const send = it => {
     // eslint-disable-next-line no-undef

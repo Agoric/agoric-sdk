@@ -17,7 +17,7 @@ const {
 } = globalThis;
 
 class FakeFinalizationRegistry {
-  // eslint-disable-next-line no-useless-constructor, no-empty-function
+  // eslint-disable-next-line no-useless-constructor
   constructor() {}
 
   // eslint-disable-next-line class-methods-use-this

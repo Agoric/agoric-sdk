@@ -1,5 +1,4 @@
 /* global globalThis */
-/* eslint-disable jsdoc/require-returns-type */
 
 import { environmentOptionsListHas } from '@endo/env-options';
 import { assert, Fail, q, b } from '@endo/errors';

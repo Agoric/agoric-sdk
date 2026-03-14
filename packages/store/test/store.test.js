@@ -146,7 +146,6 @@ test('iteration fails with concurrent addition', t => {
   let pos = 0;
   t.throws(
     () => {
-      // eslint-disable-next-line no-unused-vars
       for (const k of m.keys()) {
         pos += 1;
         if (pos === 2) {
@@ -162,7 +161,6 @@ test('iteration fails with concurrent addition', t => {
   pos = 0;
   t.throws(
     () => {
-      // eslint-disable-next-line no-unused-vars
       for (const k of s.keys()) {
         pos += 1;
         if (pos === 2) {

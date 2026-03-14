@@ -1,0 +1,400 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "unicorn", "jsdoc", "node"],
+  "jsPlugins": [
+    {
+      "name": "eslint-js",
+      "specifier": "oxlint-plugin-eslint"
+    },
+    {
+      "name": "ava",
+      "specifier": "eslint-plugin-ava"
+    },
+    {
+      "name": "@jessie.js",
+      "specifier": "@jessie.js/eslint-plugin"
+    }
+  ],
+  "categories": {
+    "correctness": "warn",
+    "suspicious": "warn",
+    "pedantic": "off",
+    "perf": "warn",
+    "restriction": "warn",
+    "style": "off",
+    "nursery": "warn"
+  },
+  "env": {
+    "es2024": true,
+    "node": true
+  },
+  "settings": {
+    "jsdoc": {
+      "mode": "typescript",
+      "ignorePrivate": false,
+      "ignoreInternal": false,
+      "ignoreReplacesDocs": true,
+      "overrideReplacesDocs": true,
+      "augmentsExtendsReplacesDocs": false,
+      "implementsReplacesDocs": false,
+      "exemptDestructuredRootsFromChecks": false,
+      "tagNamePreference": {
+        "alpha": "alpha",
+        "beta": "beta",
+        "category": "category",
+        "categoryDescription": "categoryDescription",
+        "defaultValue": "defaultValue",
+        "document": "document",
+        "group": "group",
+        "groupDescription": "groupDescription",
+        "internal": "internal",
+        "privateRemarks": "privateRemarks",
+        "remarks": "remarks",
+        "ts-expect-error": "ts-expect-error",
+        "ts-ignore": "ts-ignore",
+        "ts-nocheck": "ts-nocheck",
+        "ts-check": "ts-check"
+      }
+    }
+  },
+  "ignorePatterns": [
+    "**/__generated",
+    "**/codegen",
+    "**/coverage/",
+    "**/node_modules/",
+    "**/dist/",
+    "**/output/",
+    "**/build/",
+    "**/bundles/",
+    "**/bundle-*",
+    "examples/",
+    "packages/orchestration/src/vendor/",
+    "packages/orchestration/src/stubs/",
+    "test262/",
+    "**/*.html",
+    "**/ava*.config.js",
+    "**/.ava*.config.js",
+    "**/tsup.config.ts",
+    "*/vendor/**",
+    "yarn.config.cjs",
+    "packages/client-utils/scripts/",
+    "packages/cosmic-proto/proto/",
+    "packages/cosmic-proto/scripts/",
+    "packages/cosmic-swingset/t[0-9]/",
+    "packages/cosmic-swingset/t[0-9].*/",
+    "a3p-integration/agoric-sdk/"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "packages/*/src/**/*.js",
+        "packages/*/tools/**/*.js",
+        "packages/*/tools/**/*.mjs",
+        "packages/*/*.js",
+        "packages/wallet/api/src/**/*.js"
+      ],
+      "rules": {
+        "@jessie.js/safe-await-separator": "error",
+        "no-process-env": "off",
+        "eslint-js/no-restricted-syntax": [
+          "error",
+          {
+            "selector": "Literal[value=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "Identifier[name=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "Literal[value=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "Identifier[name=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "Literal[value=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "Identifier[name=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "Literal[value=/loan/i]",
+            "message": "Use 'debt' instead of deprecated 'loan'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/loan/i]",
+            "message": "Use 'debt' instead of deprecated 'loan'"
+          },
+          {
+            "selector": "Identifier[name=/loan/i]",
+            "message": "Use 'debt' instead of deprecated 'loan'"
+          },
+          {
+            "selector": "CallExpression[callee.object.name=\"Object\"][callee.property.name=\"fromEntries\"] > CallExpression.arguments[callee.object.name=\"Object\"][callee.property.name=\"entries\"]",
+            "message": "Prefer objectMap over Object.fromEntries(Object.entries(...))"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["packages/zoe/src/contracts/loan/*.js"],
+      "rules": {
+        "eslint-js/no-restricted-syntax": [
+          "warn",
+          {
+            "selector": "Literal[value=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "Identifier[name=/currency/i]",
+            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
+          },
+          {
+            "selector": "Literal[value=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "Identifier[name=/blacklist/i]",
+            "message": "Use 'denylist' instead of deprecated 'blacklist'"
+          },
+          {
+            "selector": "Literal[value=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "Identifier[name=/whitelist/i]",
+            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
+          },
+          {
+            "selector": "Literal[value=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          },
+          {
+            "selector": "TemplateElement[value.raw=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          },
+          {
+            "selector": "Identifier[name=/RUN/]",
+            "message": "Use 'IST' instead of deprecated 'RUN'"
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "packages/**/demo/**/*.js",
+        "packages/*/test/**/*.*s",
+        "packages/*/test/**/*.test.*s",
+        "packages/wallet/api/test/**/*.js"
+      ],
+      "rules": {
+        "no-lone-blocks": "off",
+        // Derived from plugin:ava/recommended
+        // https://github.com/avajs/eslint-plugin-ava/blob/main/index.js
+        "ava/assertion-arguments": "warn",
+        "ava/hooks-order": "warn",
+        "ava/no-async-fn-without-await": "warn",
+        "ava/no-duplicate-modifiers": "warn",
+        "ava/no-identical-title": "warn",
+        "ava/no-ignored-test-files": "warn",
+        "ava/no-import-test-files": "warn",
+        "ava/no-incorrect-deep-equal": "warn",
+        "ava/no-inline-assertions": "warn",
+        "ava/no-nested-tests": "warn",
+        "ava/no-only-test": "warn",
+        "ava/no-skip-assert": "warn",
+        "ava/no-skip-test": "off",
+        "ava/no-todo-implementation": "warn",
+        "ava/no-todo-test": "warn",
+        "ava/no-unknown-modifiers": "warn",
+        "ava/prefer-async-await": "warn",
+        "ava/prefer-t-regex": "warn",
+        "ava/test-title": "warn",
+        "ava/use-t-well": "warn",
+        "ava/use-t": "warn",
+        "ava/use-t-throws-async-well": "warn",
+        "ava/use-test": "off",
+        "ava/use-true-false": "warn"
+      }
+    },
+    {
+      "files": ["packages/boot/test/**/*.test.*s"],
+      "rules": {
+        "eslint-js/no-restricted-imports": ["warn", { "paths": ["@endo/eventual-send", "@endo/far"] }]
+      }
+    },
+    {
+      "files": ["packages/*/src/exos/**"],
+      "rules": {
+        "eslint-js/no-restricted-syntax": [
+          "warn",
+          {
+            "selector": "FunctionExpression[async=true]:not(Property[key.name=/^(connectionHandler|tap)$/] > ObjectExpression > Property[key.name=/^(onOpen|onClose|receiveUpcall)$/] > FunctionExpression[async=true])",
+            "message": "Non-immediate functions must return vows, not promises"
+          },
+          {
+            "selector": "ArrowFunctionExpression[async=true]",
+            "message": "Non-immediate arrow functions must return vows, not promises"
+          },
+          {
+            "selector": "Identifier[name='callWhen']",
+            "message": "callWhen wraps the function in a promise; instead immediately return a vow"
+          },
+          {
+            "selector": "Identifier[name='heapVowE']",
+            "message": "heapVowE shortens vows to promises; instead use `E` from `@endo/far` with `watch` from durable vowTools"
+          },
+          {
+            "selector": "Identifier[name='heapVowTools']",
+            "message": "heapVowTools are not durable; instead use `prepareVowTools` with a durable zone"
+          }
+        ]
+      }
+    },
+    {
+      // src and tools should not import from test, but test can import from src and tools
+      "files": ["packages/src/*.{js,ts,mjs,cjs}", "packages/tools/*.{js,ts,mjs,cjs}"],
+      "rules": {
+        "eslint-js/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              "**/test/**"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        // src should not import from tools, but tools can import from src
+        // and src can import from tools of other packages
+        "packages/*/src/**/*.{js,ts,mjs,cjs}",
+        "packages/wallet/api/src/**/*.{js,ts,mjs,cjs}"
+      ],
+      "rules": {
+        "eslint-js/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              "../tools/**",
+              "../../tools/**",
+              "../../../tools/**",
+              "../../../../tools/**"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "rules": {
+    "no-void": ["warn", { "allowAsStatement": true }],
+    "no-use-before-define": "off",
+    "no-empty-function": "off",
+    "no-console": "off",
+    "import/no-default-export": "off",
+    "no-undef": "off",
+    "eslint-js/no-restricted-syntax": "off",
+    "eslint-js/no-restricted-imports": "off",
+    "no-undefined": "off",
+    "no-await-in-loop": "off",
+    "no-dupe-keys": "off",
+    "import/no-relative-parent-imports": "off",
+    "no-unused-expressions": "off",
+    "unicorn/no-unnecessary-await": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "no-param-reassign": "off",
+    "import/no-unassigned-import": "off",
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-anonymous-default-export": "off",
+    "unicorn/prefer-number-properties": "off",
+    "no-unused-vars": "off",
+    "node/no-process-env": "off",
+    "no-eq-null": "off",
+    "complexity": "off",
+    "unicorn/no-process-exit": "off",
+    "no-bitwise": "off",
+    "import/unambiguous": "off",
+    "import/no-commonjs": "off",
+    "no-shadow": "off",
+    "unicorn/require-module-specifiers": "off",
+    "unicorn/no-array-reduce": "off",
+    "unicorn/no-array-for-each": "off",
+    "unicorn/prefer-set-has": "off",
+    "jsdoc/check-access": "warn",
+    "jsdoc/check-property-names": "warn",
+    "jsdoc/check-tag-names": "warn",
+    "jsdoc/empty-tags": "warn",
+    "jsdoc/implements-on-classes": "warn",
+    "jsdoc/no-defaults": "off",
+    "jsdoc/require-property": "warn",
+    "jsdoc/require-property-description": "off",
+    "jsdoc/require-property-name": "warn",
+    "jsdoc/require-property-type": "warn",
+    "jsdoc/require-yields": "off",
+    "jsdoc/require-param": "off",
+    "jsdoc/require-param-type": "off",
+    "jsdoc/require-returns-type": "off",
+    "preserve-caught-error": "off",
+    "unicorn/no-useless-spread": "off",
+    "unicorn/no-array-reverse": "off",
+    "unicorn/prefer-module": "off",
+    "unicorn/no-single-promise-in-promise-methods": "off",
+    "import/named": "off",
+    "no-plusplus": "off",
+    "unicorn/no-empty-file": "off",
+    "no-unmodified-loop-condition": "off",
+    "unicorn/prefer-array-flat-map": "off",
+    "import/no-named-as-default-member": "off",
+    "unicorn/no-await-in-promise-methods": "off",
+    "unicorn/no-abusive-eslint-disable": "off",
+    "no-unreachable": "off",
+    "unicorn/no-new-array": "off",
+    "no-useless-escape": "off",
+    "import/no-cycle": "off",
+    "unicorn/prefer-string-starts-ends-with": "off",
+    "import/no-named-as-default": "off",
+    "no-unassigned-vars": "off",
+    "unicorn/no-useless-fallback-in-spread": "off",
+    "unicorn/no-thenable": "off",
+    "unicorn/no-instanceof-builtins": "off",
+    "no-var": "off",
+    "no-unexpected-multiline": "off",
+    "unicorn/prefer-array-find": "off",
+    "unicorn/prefer-add-event-listener": "off",
+    "unicorn/no-useless-length-check": "off",
+    "import/default": "off",
+    "no-control-regex": "off",
+    "no-constant-condition": "off",
+    "default-case": "off"
+  }
+}

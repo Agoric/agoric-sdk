@@ -71,7 +71,6 @@ const ignore = () => {};
 
 const tmpDir = makeTempDirFactory(tmp);
 
-// eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
 
 const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
@@ -246,10 +245,10 @@ export const makeLaunchChain = (
   stateDBDir,
   {
     env = {},
-    // eslint-disable-next-line no-shadow
+
     fs,
     path,
-    // eslint-disable-next-line no-shadow
+
     tmp,
     processValue = makeProcessValue({ env, args: [] }),
     readyForCommit,
@@ -819,7 +818,7 @@ export default async function main(
             discardStateSyncExport(),
           ]);
         });
-        // eslint-disable-next-line no-shadow
+
         blockingSend = async action => {
           const result = sendToSwingset(action);
           pendingBlockingSend = Promise.resolve(result).then(ignore, ignore);

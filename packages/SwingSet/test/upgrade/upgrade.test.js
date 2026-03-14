@@ -30,7 +30,6 @@ test.before(async t => {
   /** @type {any} */ (t.context).data = { kernelBundles };
 });
 
-// eslint-disable-next-line no-unused-vars
 const dumpState = (debug, vatID) => {
   const s = debug.dump().kvEntries;
   const keys = Array.from(Object.keys(s)).sort();

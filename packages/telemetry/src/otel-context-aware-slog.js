@@ -6,7 +6,7 @@ import {
   LoggerProvider,
   SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { makeContextualSlogProcessor } from './context-aware-slog.js';
 import { getResourceAttributes } from './index.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';

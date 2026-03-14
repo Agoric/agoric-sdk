@@ -1,5 +1,5 @@
-import fs from 'fs';
-import process from 'process';
+import fs from 'node:fs';
+import process from 'node:process';
 
 export function makeStatLogger(tag, headers, options) {
   const dir = (options && options.dir) || '.';

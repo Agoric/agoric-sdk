@@ -1,17 +1,12 @@
 /* eslint-disable no-underscore-dangle, import/no-extraneous-dependencies */
-import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
+import { fixupConfigRules } from '@eslint/compat';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
-import { createRequire } from 'module';
 import { legacySrcToToolsFiles } from './scripts/ci/tools-scope-policy.mjs';
-
-// Workaround for https://github.com/anza-xyz/eslint-plugin-require-extensions/issues/18
-const require = createRequire(import.meta.url);
-const requireExtensions = require('eslint-plugin-require-extensions');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,34 +15,6 @@ const compat = new FlatCompat({
   recommendedConfig: js.configs.recommended,
   allConfig: js.configs.all,
 });
-
-const deprecatedForLoanContract = [
-  ['currency', 'brand, asset or another descriptor'],
-  ['blacklist', 'denylist'],
-  ['whitelist', 'allowlist'],
-  ['RUN', 'IST', '/RUN/'],
-];
-
-const allDeprecated = [...deprecatedForLoanContract, ['loan', 'debt']];
-
-const deprecatedTerminology = Object.fromEntries(
-  Object.entries({
-    all: allDeprecated,
-    loanContract: deprecatedForLoanContract,
-  }).map(([category, deprecated]) => [
-    category,
-    deprecated.flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
-      [
-        ['Literal', 'value'],
-        ['TemplateElement', 'value.raw'],
-        ['Identifier', 'name'],
-      ].map(([selectorType, field]) => ({
-        selector: `${selectorType}[${field}=${badRgx}]`,
-        message: `Use '${good}' instead of deprecated '${bad}'`,
-      })),
-    ),
-  ]),
-);
 
 export default [
   {
@@ -89,18 +56,10 @@ export default [
     // Include both .js and .ts files for cache package
     files: ['packages/cache/**/*.{js,ts,mjs,cjs}'],
   },
-  ...fixupConfigRules(
-    compat.extends(
-      '@agoric',
-      'plugin:@agoric/recommended',
-      'plugin:ava/recommended',
-      'plugin:require-extensions/recommended',
-    ),
-  ),
+  ...fixupConfigRules(compat.extends('@agoric', 'plugin:@agoric/recommended')),
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,
-      'require-extensions': fixupPluginRules(requireExtensions),
     },
 
     linterOptions: {
@@ -129,12 +88,6 @@ export default [
       },
     },
 
-    settings: {
-      jsdoc: {
-        mode: 'typescript',
-      },
-    },
-
     rules: {
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/no-empty-object-type': 'warn',
@@ -160,105 +113,69 @@ export default [
 
       'ava/no-skip-test': 'off',
       'ava/use-test': 'off',
-      '@jessie.js/safe-await-separator': 'error',
 
-      'jsdoc/check-tag-names': [
-        'error',
-        {
-          definedTags: [
-            'alpha',
-            'beta',
-            'category',
-            'categoryDescription',
-            'defaultValue',
-            'document',
-            'group',
-            'groupDescription',
-            'internal',
-            'privateRemarks',
-            'remarks',
-          ],
-        },
-      ],
-
-      'jsdoc/no-defaults': 'off',
       'no-use-before-define': 'off',
+      'no-empty-function': 'off',
       'no-nested-ternary': 'off',
-    },
-  },
-  {
-    // Tighten rules for exported code.
-    files: [
-      'packages/*/src/**/*.js',
-      'packages/*/tools/**/*.js',
-      'packages/*/tools/**/*.mjs',
-      'packages/*/*.js',
-      'packages/wallet/api/src/**/*.js',
-    ],
-
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        ...deprecatedTerminology.all,
-        {
-          selector:
-            'CallExpression[callee.object.name="Object"][callee.property.name="fromEntries"] > CallExpression.arguments[callee.object.name="Object"][callee.property.name="entries"]',
-          message:
-            'Prefer objectMap over Object.fromEntries(Object.entries(...))',
-        },
-      ],
-    },
-  },
-  {
-    files: ['packages/**/*.{js,ts,mjs,cjs}'],
-    ignores: ['packages/*/test/**', 'packages/wallet/api/test/**'],
-
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            '**/test/**',
-            '@agoric/*/test/**',
-            '@aglocal/*/test/**',
-            '../test/**',
-            './test/**',
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: [
-      'packages/*/src/**/*.{js,ts,mjs,cjs}',
-      'packages/wallet/api/src/**/*.{js,ts,mjs,cjs}',
-    ],
-
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            '**/tools/**',
-            '@agoric/*/tools/**',
-            '@aglocal/*/tools/**',
-            '../tools/**',
-            './tools/**',
-            '**/test/**',
-            '@agoric/*/test/**',
-            '@aglocal/*/test/**',
-            '../test/**',
-            './test/**',
-          ],
-        },
-      ],
-    },
-  },
-  {
-    files: legacySrcToToolsFiles,
-
-    rules: {
-      'no-restricted-imports': 'off',
+      'no-console': 'off',
+      'import/no-default-export': 'off',
+      'no-undefined': 'off',
+      'import/no-relative-parent-imports': 'off',
+      'no-unused-expressions': 'off',
+      'unicorn/no-unnecessary-await': 'off',
+      'unicorn/consistent-function-scoping': 'off',
+      'no-param-reassign': 'off',
+      'import/no-unassigned-import': 'off',
+      'unicorn/no-array-sort': 'off',
+      'unicorn/no-anonymous-default-export': 'off',
+      'unicorn/prefer-number-properties': 'off',
+      'no-unused-vars': 'off',
+      'node/no-process-env': 'off',
+      'no-eq-null': 'off',
+      complexity: 'off',
+      'unicorn/no-process-exit': 'off',
+      'no-bitwise': 'off',
+      'import/unambiguous': 'off',
+      'import/no-commonjs': 'off',
+      'no-shadow': 'off',
+      'unicorn/require-module-specifiers': 'off',
+      'unicorn/no-array-reduce': 'off',
+      'unicorn/no-array-for-each': 'off',
+      'unicorn/prefer-set-has': 'off',
+      'preserve-caught-error': 'off',
+      'unicorn/no-useless-spread': 'off',
+      'unicorn/no-array-reverse': 'off',
+      'unicorn/prefer-module': 'off',
+      'unicorn/no-single-promise-in-promise-methods': 'off',
+      'import/named': 'off',
+      'no-plusplus': 'off',
+      'unicorn/no-empty-file': 'off',
+      'no-unmodified-loop-condition': 'off',
+      'unicorn/prefer-array-flat-map': 'off',
+      'import/no-named-as-default-member': 'off',
+      'unicorn/no-await-in-promise-methods': 'off',
+      'unicorn/no-abusive-eslint-disable': 'off',
+      'no-unreachable': 'off',
+      'unicorn/no-new-array': 'off',
+      'no-useless-escape': 'off',
+      'import/no-cycle': 'off',
+      'unicorn/prefer-string-starts-ends-with': 'off',
+      'import/no-named-as-default': 'off',
+      'no-unassigned-vars': 'off',
+      'unicorn/no-useless-fallback-in-spread': 'off',
+      'unicorn/no-thenable': 'off',
+      'unicorn/no-instanceof-builtins': 'off',
+      'no-var': 'off',
+      'no-unexpected-multiline': 'off',
+      'unicorn/prefer-array-find': 'off',
+      'unicorn/prefer-add-event-listener': 'off',
+      'unicorn/no-useless-length-check': 'off',
+      'import/default': 'off',
+      'no-control-regex': 'off',
+      'no-constant-condition': 'off',
+      'default-case': 'off',
+      'no-await-in-loop': 'off',
+      'no-dupe-keys': 'off',
     },
   },
   {
@@ -271,90 +188,16 @@ export default [
 
     rules: {
       'no-lone-blocks': 'off',
-      '@jessie.js/safe-await-separator': 'off',
-
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'test',
-          property: 'only',
-          message:
-            'Do not commit .only tests - they prevent other tests from running',
-        },
-      ],
-    },
-  },
-  {
-    files: ['packages/boot/test/**/*.test.*s'],
-
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          paths: ['@endo/eventual-send', '@endo/far'],
-        },
-      ],
-    },
-  },
-  {
-    files: ['packages/*/src/exos/**'],
-
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          // Exclusions are for handlers that return prompt promises
-          selector:
-            'FunctionExpression[async=true]:not(Property[key.name=/^(connectionHandler|tap)$/] > ObjectExpression > Property[key.name=/^(onOpen|onClose|receiveUpcall)$/] > FunctionExpression[async=true])',
-          message: 'Non-immediate functions must return vows, not promises',
-        },
-        {
-          selector: 'ArrowFunctionExpression[async=true]',
-          message:
-            'Non-immediate arrow functions must return vows, not promises',
-        },
-        {
-          selector: "Identifier[name='callWhen']",
-          message:
-            'callWhen wraps the function in a promise; instead immediately return a vow',
-        },
-        {
-          selector: "Identifier[name='heapVowE']",
-          message:
-            'heapVowE shortens vows to promises; instead use `E` from `@endo/far` with `watch` from durable vowTools',
-        },
-        {
-          selector: "Identifier[name='heapVowTools']",
-          message:
-            'heapVowTools are not durable; instead use `prepareVowTools` with a durable zone',
-        },
-      ],
-    },
-  },
-  {
-    // Allow "loan" contracts to mention the word "loan".
-    files: ['packages/zoe/src/contracts/loan/*.js'],
-
-    rules: {
-      'no-restricted-syntax': ['error', ...deprecatedTerminology.loanContract],
     },
   },
   {
     files: ['**/*.ts'],
 
     rules: {
-      // Not needed with TypeScript syntax
-      'jsdoc/require-param': 'off',
-      'jsdoc/require-param-type': 'off',
-      'jsdoc/require-returns-type': 'off',
+      // TypeScript's `tsc --noEmit` catches undefined names with project-aware
+      // analysis, so keep the base ESLint rule disabled to avoid duplicate noise.
       'no-undef': 'off',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
-      ],
+      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
   {
@@ -410,10 +253,6 @@ export default [
         useProjectService: false,
         project: false,
       },
-    },
-
-    rules: {
-      '@jessie.js/safe-await-separator': 'off',
     },
   },
   {

@@ -1,6 +1,6 @@
 /* eslint-env node */
 import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
-import fs from 'fs';
+import fs from 'node:fs';
 import {
   buildSwingsetKernelConfig,
   initializeSwingsetKernel,

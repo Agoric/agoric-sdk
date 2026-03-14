@@ -47,7 +47,7 @@
     "graphql": "^16.12.0",
     "nodemon": "^3.1.10",
     "ts-blank-space": "^0.6.2",
-    "typescript": "^5.9.2"
+    "typescript": "~6.0.1-rc"
   },
   "dependencies": {
     "@aglocal/portfolio-contract": "workspace:*",

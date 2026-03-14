@@ -49,7 +49,7 @@ const makeWatcher = defineDurableKind(
 );
 
 // TODO: explore 'export modRetains'
-// eslint-disable-next-line no-unused-vars
+
 let modRetains;
 
 /**

@@ -1,8 +1,8 @@
-import path from 'path';
-import fs from 'fs';
-import process from 'process';
-import repl from 'repl';
-import util from 'util';
+import path from 'node:path';
+import fs from 'node:fs';
+import process from 'node:process';
+import repl from 'node:repl';
+import util from 'node:util';
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
   buildTimer,
@@ -270,7 +270,7 @@ export async function main() {
   let nextArg;
 
   const initializeInspectorSession = () =>
-    import('inspector').then(({ Session }) => {
+    import('node:inspector').then(({ Session }) => {
       inspectorSession = new Session();
       inspectorSession.connect();
     });

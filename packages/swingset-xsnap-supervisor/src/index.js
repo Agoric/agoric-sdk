@@ -1,4 +1,4 @@
-import fs from 'fs';
+import fs from 'node:fs';
 import { bundlePaths, hashPaths } from './paths.js';
 
 const read = (name, path) => {

@@ -23,10 +23,10 @@
  * this file and the accompanying `yarn docs:update-functions-path`.
  */
 
-const fsp = require('fs').promises;
-const path = require('path');
-const zlib = require('zlib');
-const process = require('process');
+const fsp = require('node:fs').promises;
+const path = require('node:path');
+const zlib = require('node:zlib');
+const process = require('node:process');
 
 const config = {
   oldDirName: 'functions',

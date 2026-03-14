@@ -254,9 +254,9 @@ const doublefreetest = test.macro(async (t, mode) => {
   ];
   let fromThing;
   let toThing;
-  // eslint-disable-next-line no-unused-vars
+
   let fromName;
-  // eslint-disable-next-line no-unused-vars
+
   let toName;
 
   function buildRootObject(vatPowers) {

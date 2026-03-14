@@ -2,10 +2,10 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import anyTest from 'ava';
-import { spawn as ambientSpawn } from 'child_process';
-import { promises as fsPromises } from 'fs';
+import { spawn as ambientSpawn } from 'node:child_process';
+import { promises as fsPromises } from 'node:fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import path from 'path';
+import path from 'node:path';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { mustMatch } from '@agoric/store';
@@ -104,9 +104,9 @@ const hashCode = s => {
   if (s.length === 0) return hash;
   for (i = 0; i < s.length; i += 1) {
     chr = s.charCodeAt(i);
-    // eslint-disable-next-line no-bitwise
+
     hash = (hash << 5) - hash + chr;
-    // eslint-disable-next-line no-bitwise
+
     hash |= 0; // Convert to 32bit integer
   }
   return Math.abs(hash);

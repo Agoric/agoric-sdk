@@ -1,6 +1,5 @@
-// eslint-disable-next-line no-unused-vars
 import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
-// eslint-disable-next-line no-unused-vars
+
 import { watchPromise } from './watch-promise.js';
 
 // Ensure this is a module.

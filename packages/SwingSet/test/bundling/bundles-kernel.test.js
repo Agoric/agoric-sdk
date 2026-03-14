@@ -1,7 +1,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import bundleSource from '@endo/bundle-source';
 import { parseArchive } from '@endo/compartment-mapper';
 import { decodeBase64 } from '@endo/base64';
@@ -30,7 +30,6 @@ test('install bundle', async t => {
     return hash.digest().toString('hex');
   }
 
-  // eslint-disable-next-line no-unused-vars
   const a = await parseArchive(
     decodeBase64(bundle.endoZipBase64),
     '<unknown>',

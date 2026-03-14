@@ -1,6 +1,6 @@
 // @ts-check
-import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 import engineGC from './engine-gc.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';

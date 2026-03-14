@@ -1,6 +1,6 @@
 /* eslint-env node */
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import { Fail } from '@endo/errors';
 import {
   importMailbox,

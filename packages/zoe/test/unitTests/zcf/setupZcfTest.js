@@ -2,7 +2,7 @@ import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
 
-import path from 'path';
+import path from 'node:path';
 
 import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';

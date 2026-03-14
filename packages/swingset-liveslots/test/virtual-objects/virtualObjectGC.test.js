@@ -170,7 +170,7 @@ function buildRootObject(vatPowers) {
   // we actually use consumes when *it* is created. This ensures that the
   // creation of both things and faceted things during tests result in the same
   // sequence of subIDs rather than being out of phase by 1
-  // eslint-disable-next-line no-unused-vars
+
   const unusedFacetedCacheDisplacer = makeFacetedThing('cacheDisplacer');
 
   const makeVirtualHolder = defineKind('holder', (held = null) => ({ held }), {

@@ -51,7 +51,7 @@ export const makePortableHexCodec = () => {
         if (b === undefined) {
           throw new Error(`Invalid hex string: ${hex}`);
         }
-        // eslint-disable-next-line no-bitwise
+
         buf[i >> 1] = b;
       }
       return buf;

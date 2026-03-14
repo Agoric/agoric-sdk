@@ -1,8 +1,8 @@
 #! /usr/bin/env node
 // @ts-check
 /* eslint-env node */
-import { execFileSync } from 'child_process';
-import { basename } from 'path';
+import { execFileSync } from 'node:child_process';
+import { basename } from 'node:path';
 import { listWorkspaces } from '../src/lib/packageManager.js';
 
 const workspaces = listWorkspaces({ execFileSync });

@@ -1,6 +1,6 @@
 // @ts-check
-import { fork } from 'child_process';
-import path from 'path';
+import { fork } from 'node:child_process';
+import path from 'node:path';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { parse, stringify } from '@endo/marshal';

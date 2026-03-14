@@ -2,11 +2,11 @@
 /* eslint-env node */
 import '@endo/init';
 
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import temp from 'temp';
-import process from 'process';
-import { exec, spawn } from 'child_process';
+import process from 'node:process';
+import { exec, spawn } from 'node:child_process';
 import inquirer from 'inquirer';
 
 import { running } from './run.js';

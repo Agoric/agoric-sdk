@@ -27,7 +27,6 @@
  *     // }
  */
 
-/* eslint-disable no-bitwise */
 import { bech32 } from 'bech32';
 import queryString from 'query-string';
 

@@ -7,7 +7,7 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
-import path from 'path';
+import path from 'node:path';
 
 import {
   ChoiceMethod,

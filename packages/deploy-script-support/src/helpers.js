@@ -3,8 +3,8 @@
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 
-import fs from 'fs/promises';
-import os from 'os';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 
 import { makeInstall } from './install.js';
 import { makeOfferAndFindInvitationAmount } from './offer.js';

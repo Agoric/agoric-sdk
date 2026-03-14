@@ -1,6 +1,6 @@
 import test from 'ava';
 import { Far } from '@endo/marshal';
-import { setTimeout } from 'timers';
+import { setTimeout } from 'node:timers';
 
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';
 import { makeAtomicProvider } from '../src/stores/store-utils.js';

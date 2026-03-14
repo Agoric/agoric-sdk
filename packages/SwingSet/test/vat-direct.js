@@ -22,7 +22,6 @@ const promiseRejection = (vpid, reason) =>
   promiseSettlement(vpid, true, reason);
 
 export default function setup(syscall, _state, _helpers, vatPowers) {
-  // eslint-disable-next-line no-unused-vars
   const { testLog } = vatPowers;
 
   let vatName;

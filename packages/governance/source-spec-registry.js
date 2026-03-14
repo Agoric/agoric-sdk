@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 
 /** @param {string} packagePath */
 const resolveSourceSpec = packagePath =>

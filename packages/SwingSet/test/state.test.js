@@ -3,7 +3,7 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import { KERNEL_STATS_METRICS } from '@agoric/internal/src/metrics.js';
 import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';

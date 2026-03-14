@@ -1,4 +1,4 @@
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 import { makeB0ID } from './util.js';
 
 /**
@@ -101,7 +101,7 @@ export function makeExporter(exportData, artifacts) {
       assert(data, `missing artifact ${name}`);
       yield Buffer.from(data);
     },
-    // eslint-disable-next-line no-empty-function
+
     async close() {},
   };
 }

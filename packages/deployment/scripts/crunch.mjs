@@ -2,7 +2,7 @@
 /* eslint-env node */
 // crunch.mjs - crunch a kvstore trace file's writes into TSV
 
-import fs from 'fs';
+import fs from 'node:fs';
 import ReadlineTransform from 'readline-transform';
 
 const [TRACE_FILE, FIRST_BLOCK_HEIGHT = 0, LAST_BLOCK_HEIGHT = Infinity] =

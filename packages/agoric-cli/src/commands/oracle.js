@@ -13,7 +13,7 @@ import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { Command } from 'commander';
-import { inspect } from 'util';
+import { inspect } from 'node:util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
 import {

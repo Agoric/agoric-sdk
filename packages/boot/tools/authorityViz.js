@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 import '@endo/init';
-import process from 'process';
+import process from 'node:process';
 
 import { Fail, q } from '@endo/errors';
 
@@ -271,7 +271,7 @@ const main = async (args, { stdout, fsp, meta }) => {
 
 const run = async () => {
   const [fsp, metaResolve] = await Promise.all([
-    import('fs/promises'),
+    import('node:fs/promises'),
     import('import-meta-resolve'),
   ]);
 

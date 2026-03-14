@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 /* global process */
-import { spawnSync } from 'child_process';
-import { createRequire } from 'module';
+import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 

@@ -1,7 +1,7 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 // @ts-nocheck
 import djson from 'deterministic-json';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 import chalk from 'chalk';
 import parseArgs from 'minimist';
 import { Fail } from '@endo/errors';
@@ -297,7 +297,7 @@ show-config      display the client connection parameters
 
     case 'bootstrap-cosmos': {
       await inited();
-      // eslint-disable-next-line no-unused-vars
+
       const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
         string: ['bump', 'import-from', 'genesis'],
         stopEarly: true,

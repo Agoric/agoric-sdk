@@ -1,6 +1,6 @@
 // @ts-check
 
-import { resolve as pathResolve } from 'path';
+import { resolve as pathResolve } from 'node:path';
 
 export const makeProcessValue = ({ env, args }) => {
   /**

@@ -1,6 +1,6 @@
-import path from 'path';
+import path from 'node:path';
 import { Fail } from '@endo/errors';
-import { type as osType } from 'os';
+import { type as osType } from 'node:os';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
 /**

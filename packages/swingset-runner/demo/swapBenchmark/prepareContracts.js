@@ -3,7 +3,7 @@ import '@endo/init';
 import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import fs from 'fs';
+import fs from 'node:fs';
 
 const CONTRACT_FILES = ['atomicSwap.js'];
 

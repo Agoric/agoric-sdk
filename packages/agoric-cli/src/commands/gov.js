@@ -6,7 +6,7 @@ import {
   makeAgoricNames,
   makeVstorageKit,
 } from '@agoric/client-utils';
-import { execFileSync as execFileSyncAmbient } from 'child_process';
+import { execFileSync as execFileSyncAmbient } from 'node:child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {

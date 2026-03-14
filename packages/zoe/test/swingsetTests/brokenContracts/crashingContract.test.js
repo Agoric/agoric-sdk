@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 import test from 'ava';
-import path from 'path';
+import path from 'node:path';
 
 import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
