@@ -25,11 +25,7 @@ export interface Msg {
   revokeAllowance(
     request: MsgRevokeAllowance,
   ): Promise<MsgRevokeAllowanceResponse>;
-  /**
-   * PruneAllowances prunes expired fee allowances, currently up to 75 at a time.
-   *
-   * Since cosmos-sdk 0.50
-   */
+  /** PruneAllowances prunes expired fee allowances, currently up to 75 at a time. */
   pruneAllowances(
     request: MsgPruneAllowances,
   ): Promise<MsgPruneAllowancesResponse>;

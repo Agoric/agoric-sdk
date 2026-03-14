@@ -3,22 +3,112 @@ import type { MessageBody, TypedJson } from './helpers.js';
 
 const { freeze } = Object;
 
-// This is a mapping from typeUrl to the fields that should be non-nullish.
+/** Name of a field to its boolean annotation. */
+type BooleanAnnotations = Record<string, boolean>;
+
+/** Name of a field to its alias. */
+type EmbedAnnotations = Record<string, string>;
+interface ManualAnnotations {
+  'gogoproto.nullable'?: BooleanAnnotations;
+  'gogoproto.embed'?: EmbedAnnotations;
+}
+
+// This is a mapping from typeUrl to maps of annotation metadata.
 // TODO: codegen
-const nonNullishFieldsFromTypeUrl: Record<string, string[]> = {
-  '/ibc.applications.transfer.v1.MsgTransfer': [
-    'timeout_height',
-    'timeoutHeight',
-  ],
+const manualAnnotationsFromTypeUrl: Record<string, ManualAnnotations> = {
+  '/ibc.applications.transfer.v1.MsgTransfer': {
+    'gogoproto.nullable': {
+      timeout_height: false,
+      timeoutHeight: false,
+      token: false,
+    },
+  },
+  '/cosmos.auth.v1beta1.ModuleAccount': {
+    'gogoproto.embed': {
+      base_account: 'baseAccount',
+    },
+  },
+  '/cosmos.tx.v1beta1.TxBody': {
+    'gogoproto.nullable': {
+      timeout_timestamp: true,
+      timeoutTimestamp: true,
+    },
+  },
 };
 
-// This is a mapping from typeUrl to the fields that are embedded.
-// TODO: codegen
-const embeddedFieldsFromTypeUrl: Record<
-  string,
-  { [valueProp: string]: string }
-> = {
-  '/cosmos.auth.v1beta1.ModuleAccount': { base_account: 'baseAccount' },
+const makeFromPartial = <TU = string, MT = MessageBody<TU>, IM = MT>(
+  codec: Proto3Codec<TU, MT, IM>,
+  annotations: ManualAnnotations,
+) => {
+  const embedPropMap = {
+    ...manualAnnotationsFromTypeUrl[codec.typeUrl as string]?.[
+      'gogoproto.embed'
+    ],
+    ...annotations?.['gogoproto.embed'],
+  };
+
+  const nullableAnnotations = {
+    ...manualAnnotationsFromTypeUrl[codec.typeUrl as string]?.[
+      'gogoproto.nullable'
+    ],
+    ...annotations?.['gogoproto.nullable'],
+  };
+
+  const nullableFields = [] as string[];
+  const nonNullableFields = [] as string[];
+  for (const [fieldName, isNullable] of Object.entries(nullableAnnotations)) {
+    if (isNullable) {
+      nullableFields.push(fieldName);
+    } else {
+      nonNullableFields.push(fieldName);
+    }
+  }
+
+  const fromPartial = (message: Partial<MT>): MT => {
+    const input = { ...message };
+
+    // For each embedded field, if the message is missing the message property
+    // but has the value property, copy the value to the message property. This
+    // allows users to provide either the embedded object or its fields
+    // directly.
+    for (const [valueProp, messageProp] of Object.entries(embedPropMap)) {
+      if (input[messageProp] == null) {
+        input[messageProp] = input[valueProp] ?? input;
+      }
+    }
+
+    for (const prop of nonNullableFields) {
+      if (input[prop] == null) {
+        input[prop] = {};
+      }
+    }
+
+    freeze(input);
+    const filled = { ...codec.fromPartial(input) };
+
+    // Spread the object embeddeds into the filled object.
+    for (const messageProp of Object.values(embedPropMap)) {
+      const embedded = filled[messageProp] ?? filled;
+      if (Object(embedded) !== embedded) continue;
+      for (const [key, val] of Object.entries(embedded)) {
+        if (filled[key] == null) {
+          filled[key] = val;
+        }
+      }
+    }
+
+    // Delete the empty nullable fields from the impartial object.
+    for (const prop of nullableFields) {
+      if (message[prop] == null) {
+        // impartial[prop] = undefined;
+        delete filled[prop];
+      }
+    }
+
+    return freeze(filled);
+  };
+
+  return fromPartial;
 };
 
 export type ProtoMsg<TU = string> = {
@@ -79,55 +169,45 @@ export interface Proto3Codec<TU = string, MT = MessageBody<TU>, IM = MT> {
  * @template [TU=string]
  * @template [MT=MessageBody<TU>]
  * @param {Proto3Codec<TU, MT>} codec The original codec.
- * @param {string[]} [nonNullishFields] The properties that should be replaced with `{}` if nullish.
+ * @param {ManualAnnotations} [annotations] The value for `(gogoproto.nullable)`-annotated fields.
  * @returns {Proto3Codec<TU, MT, Partial<MT>>} A new codec that can handle partial input messages.
  */
 export const Codec = <TU = string, MT = MessageBody<TU>>(
   codec: Proto3Codec<TU, MT>,
-  nonNullishFields?: string[],
+  annotations: ManualAnnotations = {},
 ): Proto3Codec<TU, MT, Partial<MT>> => {
-  const nonNullish =
-    nonNullishFields ??
-    nonNullishFieldsFromTypeUrl[codec.typeUrl as string] ??
-    [];
+  const fromPartial = makeFromPartial(codec, annotations);
+
   const cdc = freeze({
     typeUrl: codec.typeUrl,
     encode(message, writer) {
-      return codec.encode(cdc.fromPartial(message), writer);
+      return codec.encode(fromPartial(message), writer);
     },
     decode(reader, length) {
-      return codec.decode(reader, length);
+      return fromPartial(codec.decode(reader, length));
     },
     fromJSON(object) {
-      return codec.fromJSON(object);
+      return fromPartial(codec.fromJSON(object));
     },
     toJSON(message) {
-      return codec.toJSON(cdc.fromPartial(message));
+      return codec.toJSON(fromPartial(message));
     },
     fromPartial(object) {
-      const filled = { ...object };
-      for (const prop of nonNullish) {
-        if (filled[prop] == null) {
-          // XXX We replace them with empty objects, at least until codegen
-          // understands this is how `(gogoproto.nullable = false)` should
-          // behave.
-          filled[prop] = {};
-        }
-      }
-      return codec.fromPartial(filled);
+      return fromPartial(object);
     },
     fromProtoMsg(message) {
-      return codec.fromProtoMsg(message);
+      return fromPartial(codec.fromProtoMsg(message));
     },
     toProto(message) {
-      return codec.toProto(cdc.fromPartial(message));
+      return codec.toProto(fromPartial(message));
     },
     toProtoMsg(message) {
-      return codec.toProtoMsg(cdc.fromPartial(message));
+      return codec.toProtoMsg(fromPartial(message));
     },
   });
   return cdc;
 };
+
 export interface Proto3CodecHelper<
   TU = string,
   MT = MessageBody<TU>,
@@ -148,32 +228,34 @@ export interface Proto3CodecHelper<
  * @template [TU=string]
  * @template [MT=MessageBody<TU>]
  * @param {Proto3Codec<TU, MT>} codec The original codec.
- * @param {string[]} [nonNullishFields] The fields that should be replaced with `{}` if nullish.
+ * @param {ManualAnnotations} [annotations] The fields that are marked with `gogoproto.nullable`.
  * @returns {Proto3CodecHelper<TU, MT>} Codec and helpers that can handle partial input messages.
  */
 export const CodecHelper = <TU = string, MT = MessageBody<TU>>(
   codec: Proto3Codec<TU, MT>,
-  nonNullishFields?: string[],
+  annotations: ManualAnnotations = {},
 ): Proto3CodecHelper<TU, MT> => {
-  const cdc = Codec(codec, nonNullishFields);
+  const cdc = Codec(codec, annotations);
+  const fromPartial = makeFromPartial(cdc, annotations);
+
   const help: Proto3CodecHelper<TU, MT> = freeze({
     ...cdc,
     typedAmino(message) {
-      return { type: codec.typeUrl, value: cdc.fromPartial(message) };
+      return { type: codec.typeUrl, value: fromPartial(message) };
     },
     typedEncode(message) {
       return {
         typeUrl: codec.typeUrl,
-        value: cdc.fromPartial(message),
+        value: fromPartial(message),
       } as EncodeObject<TU>;
     },
     typedJson(message) {
       return {
         '@type': codec.typeUrl,
-        ...cdc.fromPartial(message),
+        ...fromPartial(message),
       } as TypedJson<TU>;
     },
-    fromTyped(object, embeddedFields) {
+    fromTyped(object) {
       const { typeUrl, value } = extractTypeUrlAndValue(object);
       if (typeUrl !== codec.typeUrl) {
         throw TypeError(
@@ -181,38 +263,12 @@ export const CodecHelper = <TU = string, MT = MessageBody<TU>>(
         );
       }
 
-      const embedPropMap =
-        embeddedFields ?? embeddedFieldsFromTypeUrl[typeUrl] ?? {};
-      const spreadEmbedded = (message: MT) => {
-        for (const [valueProp, messageProp] of Object.entries(embedPropMap)) {
-          if (message[messageProp] == null) {
-            message[messageProp] = value[valueProp] ?? value;
-          }
-        }
-
-        const filled = cdc.fromPartial(message);
-
-        // Spread the embeddeds into the filled object.
-        for (const messageProp of Object.values(embedPropMap)) {
-          const embedded = filled[messageProp] ?? filled;
-          if (Object(embedded) === embedded) {
-            for (const [key, val] of Object.entries(embedded)) {
-              if (filled[key] == null) {
-                filled[key] = val;
-              }
-            }
-          }
-        }
-
-        return filled;
-      };
-
       if (value instanceof Uint8Array) {
         // ProtoMsg
-        return spreadEmbedded(cdc.fromProtoMsg({ typeUrl, value }));
+        return cdc.fromProtoMsg({ typeUrl, value });
       }
 
-      return spreadEmbedded(cdc.fromPartial(value));
+      return fromPartial(value);
     },
   });
   return help;

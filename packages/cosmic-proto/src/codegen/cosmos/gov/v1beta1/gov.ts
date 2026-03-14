@@ -29,12 +29,6 @@ import {
   CancelSoftwareUpgradeProposal,
   type CancelSoftwareUpgradeProposalSDKType,
 } from '../../upgrade/v1beta1/upgrade.js';
-import {
-  ClientUpdateProposal,
-  type ClientUpdateProposalSDKType,
-  UpgradeProposal,
-  type UpgradeProposalSDKType,
-} from '../../../ibc/core/client/v1/client.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { Decimal } from '../../../decimals.js';
@@ -176,8 +170,6 @@ export function proposalStatusToJSON(object: ProposalStatus): string {
 }
 /**
  * WeightedVoteOption defines a unit of vote for vote split.
- *
- * Since: cosmos-sdk 0.43
  * @name WeightedVoteOption
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.WeightedVoteOption
@@ -198,8 +190,6 @@ export interface WeightedVoteOptionProtoMsg {
 }
 /**
  * WeightedVoteOption defines a unit of vote for vote split.
- *
- * Since: cosmos-sdk 0.43
  * @name WeightedVoteOptionSDKType
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.WeightedVoteOption
@@ -301,8 +291,6 @@ export interface Proposal {
     | ParameterChangeProposal
     | SoftwareUpgradeProposal
     | CancelSoftwareUpgradeProposal
-    | ClientUpdateProposal
-    | UpgradeProposal
     | Any
     | undefined;
   /**
@@ -356,8 +344,6 @@ export interface ProposalSDKType {
     | ParameterChangeProposalSDKType
     | SoftwareUpgradeProposalSDKType
     | CancelSoftwareUpgradeProposalSDKType
-    | ClientUpdateProposalSDKType
-    | UpgradeProposalSDKType
     | AnySDKType
     | undefined;
   status: ProposalStatus;
@@ -433,8 +419,6 @@ export interface Vote {
   option: VoteOption;
   /**
    * options is the weighted vote options.
-   *
-   * Since: cosmos-sdk 0.43
    */
   options: WeightedVoteOption[];
 }
@@ -559,8 +543,6 @@ function createBaseWeightedVoteOption(): WeightedVoteOption {
 }
 /**
  * WeightedVoteOption defines a unit of vote for vote split.
- *
- * Since: cosmos-sdk 0.43
  * @name WeightedVoteOption
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.WeightedVoteOption
