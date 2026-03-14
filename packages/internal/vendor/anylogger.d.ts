@@ -44,7 +44,7 @@ export type LoggerName = string;
 /**
  * An adapter accepts a LogFunction and returns a Logger.
  */
-export type Adapter = (logfn: LogFunction) => Logger;
+export type Adapter = (logfn: LogFunction, opts?: any) => Logger;
 /**
  * A logger is a log function that has a `name` that corresponds to the logger
  * name, a method `enabledFor(level: LogLevel)` to check whether the logger is
@@ -54,13 +54,14 @@ export type Adapter = (logfn: LogFunction) => Logger;
 export type Logger = LogFunction & {
     readonly name: LoggerName;
     enabledFor: (level?: LogLevel) => boolean | void;
+    sub: (subname: string) => Logger;
 } & {
     [P in keyof LogLevels as `${P}`]: LogFunction;
 };
 /**
  * Gets or creates a logger by name.
  */
-export type AnyLogger = ((name: LoggerName) => Logger) & {
+export type AnyLogger = ((name: LoggerName, opts?: any) => Logger) & {
     /**
      * Stores all loggers created so far.
      */

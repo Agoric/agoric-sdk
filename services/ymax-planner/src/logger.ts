@@ -38,9 +38,11 @@ export const runWithFlowTrace = async <T>(
 type LogTarget = Pick<Console, 'debug' | 'info' | 'log' | 'warn' | 'error'>;
 
 // Module state to allow swapping out the log target (e.g., for tests).
-let logTarget: LogTarget = console;
+let logTarget: LogTarget | undefined;
 
-export const setLogTarget = (target: LogTarget) => {
+const getLogTarget = () => logTarget || console;
+
+export const setLogTarget = (target?: LogTarget) => {
   logTarget = target;
 };
 
@@ -49,11 +51,11 @@ export const setLogTarget = (target: LogTarget) => {
  * traceId from AsyncLocalStorage when present.
  */
 export const logger = {
-  debug: (...args: any[]) => logTarget.debug(...withPrefix(args)),
-  log: (...args: any[]) => logTarget.log(...withPrefix(args)),
-  info: (...args: any[]) => logTarget.info(...withPrefix(args)),
-  warn: (...args: any[]) => logTarget.warn(...withPrefix(args)),
-  error: (...args: any[]) => logTarget.error(...withPrefix(args)),
+  debug: (...args: any[]) => getLogTarget().debug(...withPrefix(args)),
+  log: (...args: any[]) => getLogTarget().log(...withPrefix(args)),
+  info: (...args: any[]) => getLogTarget().info(...withPrefix(args)),
+  warn: (...args: any[]) => getLogTarget().warn(...withPrefix(args)),
+  error: (...args: any[]) => getLogTarget().error(...withPrefix(args)),
 };
 
 export const getCurrentTraceId = () => traceStore.getStore()?.traceId;
