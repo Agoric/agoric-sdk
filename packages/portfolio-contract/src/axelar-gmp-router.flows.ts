@@ -12,8 +12,8 @@ import type {
   BaseChainInfo,
   Bech32Address,
   Chain,
-  DenomAmount,
   OrchestrationOptions,
+  ProgressTracker,
 } from '@agoric/orchestration';
 import {
   AxelarGMPMessageType,
@@ -24,28 +24,39 @@ import {
   coerceAccountId,
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
-import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
-import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.js';
+import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
+import { PermitWitnessTransferFromFunctionABIType } from '@agoric/orchestration/src/utils/permit2.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { Fail, makeError, q } from '@endo/errors';
-import { hexToBytes } from '@noble/hashes/utils';
-import type { Address } from 'viem';
-import { makeEvmAbiCallBatch, makeGmpBuilder } from './evm-facade.ts';
-import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
-import type { GmpAddresses } from './portfolio.contract.ts';
+import type { PureData } from '@endo/pass-style';
+import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { makeEvmContract } from './evm-facade.ts';
+import {
+  remoteAccountAxelarRouterABI,
+  type RouterOperationPayload,
+  type SupportedOperations,
+  type ProvideRemoteAccountInstruction,
+} from './interfaces/orch-router.ts';
+import type { EVMContractAddresses } from './portfolio.contract.ts';
 import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
 import {
   type LocalAccount,
   type PortfolioInstanceContext,
 } from './portfolio.flows.ts';
-import { TxType } from './resolver/constants.js';
-import type { TxId } from './resolver/types.ts';
-import { predictWalletAddress } from './utils/evm-orch-factory.ts';
+import {
+  TxType,
+  type PublishedRoutedGMPTxDetails,
+} from './resolver/constants.js';
+import {
+  padTxId,
+  predictRemoteAccountAddress,
+} from './utils/evm-orch-router.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import type { EVMContext } from './pos-evm.flows.ts';
 
-const trace = makeTracer('GMPF');
+const trace = makeTracer('GMPRF');
 
 export type GMPAccountStatus = GMPAccountInfo & {
   /** created and ready to accept GMP messages */
@@ -54,81 +65,231 @@ export type GMPAccountStatus = GMPAccountInfo & {
   done: Promise<unknown>;
 };
 
-/**
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/c3305c4/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L137-L150 Factory.sol (_execute method)}
- */
+const gmpRouterContract = makeEvmContract(remoteAccountAxelarRouterABI);
 
-type ProvideEVMAccountSendCall = (params: {
-  dest: {
-    axelarId: string;
-    address: Address;
-  };
-  fee: DenomAmount;
-  portfolioLca: LocalAccount;
-  contractAccount: LocalAccount;
-  gmpChain: Chain<{ chainId: string }>;
-  gmpAddresses: GmpAddresses;
-  expectedWalletAddress: Address;
-  orchOpts?: OrchestrationOptions;
-}) => Promise<void>;
+export const sendGMPRouterInstruction = async <T extends SupportedOperations>(
+  ctx: Omit<EVMContext, 'feeAccount'> & {
+    feeAccount: EVMContext['feeAccount'] | Promise<EVMContext['feeAccount']>;
+    progressTracker: ProgressTracker;
+    remoteAccount: GMPAccountInfo;
+    trace?: ReturnType<typeof makeTracer>;
+  },
+  payload: RouterOperationPayload<T> & {
+    ignoreNonCurrentRouter?: boolean;
+    sendFromContract?: boolean;
+    debuggingDetails?: Record<string, PureData>;
+  },
+) => {
+  const {
+    feeAccount,
+    lca,
+    gmpChain,
+    gmpFee,
+    gmpAddresses,
+    addresses,
+    resolverClient,
+    axelarIds,
+    remoteAccount,
+    progressTracker,
+  } = ctx;
+  const {
+    chainName,
+    routerAddress,
+    remoteAddress,
+    chainId: remoteChainId,
+    transferringFromRouter,
+  } = remoteAccount;
+  const axelarId = axelarIds[chainName];
 
-type ProvideEVMAccountSendCallFactory = (
-  sendCallArg?: unknown,
-) => ProvideEVMAccountSendCall;
+  const {
+    ignoreNonCurrentRouter = false,
+    sendFromContract = false,
+    debuggingDetails = {},
+  } = payload;
 
-// Shared "provide pattern" with a pluggable GMP call, so we can reuse the
-// reservation/resolve/error-handling logic across account-creation variants.
-const makeProvideEVMAccount = ({
-  // XXX getSendCall is awkward given the mode switch
-  getSendCall,
-  txType,
-  mode,
-}: {
-  getSendCall: ProvideEVMAccountSendCallFactory;
-  txType: TxType;
-  mode: 'makeAccount' | 'createAndDeposit';
-}) => {
-  return async (
-    chainName: AxelarChain,
-    chainInfo: BaseChainInfo,
-    gmp: {
-      chain: Chain<{ chainId: string }>;
-      fee: NatValue;
+  if (!routerAddress) {
+    throw Fail`Remote account ${remoteAddress} on ${chainName} is not a router-enabled account`;
+  }
+
+  if (
+    !ignoreNonCurrentRouter &&
+    !sameEvmAddress(routerAddress, addresses.remoteAccountRouter)
+  ) {
+    Fail`Remote account ${remoteAddress} on ${chainName} is not using the current router. Must transfer first.`;
+  }
+
+  !transferringFromRouter ||
+    Fail`Remote account ${remoteAddress} on ${chainName} is currently transferring`;
+
+  const contractAccount = await feeAccount;
+
+  const destinationAddress = `${remoteChainId}:${routerAddress}` as const;
+
+  const sourceAccount = sendFromContract ? contractAccount : lca;
+  const sourceAddress = coerceAccountId(sourceAccount.getAddress());
+
+  const watchTx = resolverClient.createPendingTx({
+    type: TxType.ROUTED_GMP,
+    destinationAddress,
+    sourceAddress,
+    incomplete: true,
+  });
+  const txId = watchTx.txId;
+  const resultP = watchTx.result as unknown as Promise<void>; // XXX host/guest;
+
+  const result = ctx.trace
+    ? resultP.catch(err => {
+        ctx.trace!(txId, 'rejected', err);
+        throw err;
+      })
+    : resultP;
+
+  try {
+    appendTxIds(progressTracker, [txId]);
+
+    // We should never get here if router config is invalid
+    const { remoteAccountFactory } = addresses;
+    assert(remoteAccountFactory);
+
+    const expectedRemoteAddress = sendFromContract
+      ? remoteAccountFactory
+      : remoteAddress;
+
+    const { instruction, instructionType } =
+      payload as RouterOperationPayload<SupportedOperations>;
+
+    const functionName = `process${instructionType}Instruction` as const;
+    const encodedPayloadHex = gmpRouterContract[functionName](
+      padTxId(txId, sourceAccount.getAddress().value),
+      expectedRemoteAddress,
+      // @ts-expect-error something with union of callables/args
+      instruction,
+    );
+    const encodedPayload = hexToBytes(encodedPayloadHex.slice(2));
+    const payloadHash = `0x${bytesToHex(keccak256(encodedPayload))}` as const;
+
+    resolverClient.updateTxMeta(
+      txId,
+      harden({
+        type: TxType.ROUTED_GMP,
+        destinationAddress,
+        sourceAddress,
+        payloadHash,
+        details: {
+          instructionSelector: encodedPayloadHex.slice(0, 10) as `0x${string}`,
+          instructionType,
+          expectedRemoteAddress,
+          ...(sendFromContract
+            ? {
+                principalAccount: lca.getAddress().value,
+                remoteAccountAddress: remoteAddress,
+              }
+            : {}),
+          ...debuggingDetails,
+        },
+      } satisfies PublishedRoutedGMPTxDetails),
+    );
+
+    const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
+    const memo: AxelarGmpOutgoingMemo = {
+      destination_chain: axelarId,
+      destination_address: routerAddress,
+      payload: Array.from(encodedPayload),
+      type: AxelarGMPMessageType.ContractCall,
+      fee: { amount: String(gmpFee.value), recipient: AXELAR_GAS },
+    };
+    const { chainId } = await gmpChain.getChainInfo();
+
+    const gmp = {
+      chainId,
+      value: AXELAR_GMP,
+      encoding: 'bech32' as const,
+    };
+    ctx.trace?.('send routed gmp', txId);
+    if (contractAccount !== sourceAccount) {
+      await contractAccount.send(sourceAccount.getAddress(), gmpFee, {
+        progressTracker,
+      });
+    }
+    await sourceAccount.transfer(gmp, gmpFee, {
+      progressTracker,
+      memo: JSON.stringify(memo),
+    });
+  } catch (reason) {
+    result.catch(() => {});
+    resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
+    throw reason;
+  }
+
+  ctx.trace?.('awaiting routed gmp', txId);
+  await result;
+};
+
+const predictAccountInfo = (
+  ctx: {
+    addresses: EVMContractAddresses;
+    chainName: AxelarChain;
+    chainInfo: BaseChainInfo;
+    trace?: ReturnType<typeof makeTracer>;
+  },
+  owner: Bech32Address,
+) => {
+  const {
+    remoteAccountImplementation: implementationAddress,
+    remoteAccountFactory: factoryAddress,
+    remoteAccountRouter: routerAddress,
+  } = ctx.addresses;
+  ctx.trace?.(
+    'router factory',
+    factoryAddress,
+    'for implementation',
+    implementationAddress,
+  );
+  assert(factoryAddress && implementationAddress && routerAddress);
+  const remoteAddress = predictRemoteAccountAddress({
+    owner,
+    factoryAddress,
+    implementationAddress,
+  });
+  const info: GMPAccountInfo = {
+    namespace: 'eip155',
+    chainName: ctx.chainName,
+    chainId: `${ctx.chainInfo.namespace}:${ctx.chainInfo.reference}`,
+    remoteAddress,
+    routerAddress,
+  } satisfies GMPAccountInfo;
+  ctx.trace?.(
+    'CREATE2',
+    remoteAddress,
+    'for',
+    owner,
+    'with router',
+    routerAddress,
+  );
+  return info;
+};
+
+export const makeProvideEVMAccount =
+  (sendGMP: typeof sendGMPRouterInstruction) =>
+  (
+    ctx: Omit<EVMContext, 'feeAccount'> & {
+      feeAccount: Promise<EVMContext['feeAccount']> | EVMContext['feeAccount'];
+      chainName: AxelarChain;
+      chainInfo: BaseChainInfo;
+      pk: GuestInterface<PortfolioKit>;
+      progressTracker: ProgressTracker;
     },
-    lca: LocalAccount,
-    ctx: PortfolioInstanceContext,
-    pk: GuestInterface<PortfolioKit>,
-    opts: { orchOpts?: OrchestrationOptions; sendCallArg?: unknown } = {},
-  ): Promise<GMPAccountStatus> => {
-    // sendCall is either sendMakeAccountCall or sendCreateAndDepositCall
-    const sendCall = getSendCall(opts.sendCallArg);
+    {
+      permit2Payload,
+    }: {
+      permit2Payload?: PermitDetails['permit2Payload'];
+    } = {},
+  ): GMPAccountStatus => {
+    const { pk, chainName, lca, gmpFee } = ctx;
+
     const pId = pk.reader.getPortfolioId();
     const traceChain = trace.sub(`portfolio${pId}`).sub(chainName);
 
-    const contracts = ctx.contracts[chainName];
-    const factoryAddress = contracts.factory;
-    assert(factoryAddress);
-
-    const predictAddress = (owner: Bech32Address) => {
-      traceChain('factory', mode, factoryAddress);
-      const remoteAddress = predictWalletAddress({
-        owner,
-        factoryAddress,
-        gasServiceAddress: contracts.gasService,
-        gatewayAddress: contracts.gateway,
-        // XXX converting a 9k hex string to bytes for every account is a waste.
-        // But Uint8Array is not Passable. Pass it via prepareXYZ()?
-        walletBytecode: hexToBytes(ctx.walletBytecode.replace(/^0x/, '')),
-      });
-      const info: GMPAccountInfo = {
-        namespace: 'eip155',
-        chainName,
-        chainId: `${chainInfo.namespace}:${chainInfo.reference}`,
-        remoteAddress,
-      };
-      traceChain('CREATE2', info.remoteAddress, 'for', owner);
-      return info;
-    };
     const reserve = pk.manager.reserveAccountState(chainName);
     const readyP = reserve.ready as unknown as Promise<void>; // XXX host/guest
 
@@ -138,18 +299,24 @@ const makeProvideEVMAccount = ({
       isNewAccount || reserve.state === 'failed' ? pk.manager : undefined;
 
     const handleFail = (reason: unknown) => {
-      traceChain('failed to', mode, reason);
+      traceChain('failed to make account', reason);
       manager?.releaseAccount(chainName, reason);
     };
 
     try {
       const principalAccount = lca.getAddress().value;
       const evmAccount = isNewAccount
-        ? predictAddress(principalAccount)
+        ? predictAccountInfo({ ...ctx, trace: traceChain }, principalAccount)
         : pk.reader.getGMPInfo(chainName);
 
+      // In the case of an account that previously failed to be created,
+      // we are not currently able to recover. Too many code paths assume the
+      // account details are immutable.
+      // Our caller should never have gotten us here in the first place.
+      assert(evmAccount.routerAddress);
+
       // Bail out early if another caller created the account, and this is not a deposit.
-      if (!manager && mode !== 'createAndDeposit') {
+      if (!manager && !permit2Payload) {
         return {
           ...evmAccount,
           ready: readyP,
@@ -160,7 +327,10 @@ const makeProvideEVMAccount = ({
       if (isNewAccount) {
         manager!.initAccountInfo(evmAccount);
       } else {
-        const expectedAddress = predictAddress(principalAccount).remoteAddress;
+        const expectedAddress = predictAccountInfo(
+          { ...ctx, trace: traceChain },
+          principalAccount,
+        ).remoteAddress;
 
         if (!sameEvmAddress(evmAccount.remoteAddress, expectedAddress)) {
           const reason = makeError(
@@ -177,72 +347,54 @@ const makeProvideEVMAccount = ({
         }
       }
 
-      const installContractWithDeposit = async () => {
-        let txId: TxId | undefined;
+      const payload = {
+        ...(permit2Payload
+          ? ({
+              instructionType: 'ProvideRemoteAccount',
+              instruction: {
+                depositPermit: [permit2Payload],
+                expectedAccountAddress: evmAccount.remoteAddress,
+                principalAccount,
+              } satisfies ProvideRemoteAccountInstruction,
+              sendFromContract: true,
+              debuggingDetails: {
+                depositFrom: permit2Payload.owner,
+                depositAmount: permit2Payload.permit.permitted.amount,
+              },
+            } as const)
+          : ({
+              instructionType: 'RemoteAccountExecute',
+              instruction: {
+                multiCalls: [],
+              },
+              debuggingDetails: {
+                stepType: 'ProvideRemoteAccount',
+              },
+            } as const)),
+      };
+
+      const send = async () => {
         await null;
         try {
-          const axelarId = ctx.axelarIds[chainName];
-          const fee = { denom: ctx.gmpFeeInfo.denom, value: gmp.fee };
-          fee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
+          gmpFee.value > 0n || Fail`axelar makeAccount requires > 0 fee`;
 
-          const contractAccount = await ctx.contractAccount;
-
-          const src = contractAccount.getAddress();
-          traceChain('Axelar fee sent from', src.value);
-
-          const contractKey = {
-            makeAccount: 'factory',
-            createAndDeposit: 'depositFactory',
-          } as const;
-          const destinationAddress = contracts[contractKey[mode]];
-
-          const sourceAddress = coerceAccountId(
-            mode === 'createAndDeposit'
-              ? contractAccount.getAddress()
-              : lca.getAddress(),
+          await sendGMP(
+            {
+              ...ctx,
+              remoteAccount: evmAccount,
+              trace: traceChain,
+            },
+            payload,
           );
-          const watchTx = ctx.resolverClient.registerTransaction(
-            txType,
-            `${evmAccount.chainId}:${destinationAddress}`,
-            undefined,
-            evmAccount.remoteAddress,
-            sourceAddress,
-            factoryAddress,
-          );
-          txId = watchTx.txId;
-          appendTxIds(opts.orchOpts?.progressTracker, [txId]);
-
-          const result = watchTx.result as unknown as Promise<void>; // XXX host/guest;
-          result.catch(err => {
-            trace(txId, 'rejected', err);
-          });
-
-          await sendCall({
-            dest: { axelarId, address: destinationAddress },
-            portfolioLca: lca,
-            fee,
-            gmpAddresses: ctx.gmpAddresses,
-            gmpChain: gmp.chain,
-            contractAccount,
-            expectedWalletAddress: evmAccount.remoteAddress,
-            ...('orchOpts' in opts ? { orchOpts: opts.orchOpts } : {}),
-          });
-
-          traceChain('await', mode, txId);
-          await result;
-
           manager?.resolveAccount(evmAccount);
         } catch (reason) {
           handleFail(reason);
-          if (txId) {
-            ctx.resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
-          }
           throw reason;
         }
         await readyP;
       };
 
-      const done = installContractWithDeposit();
+      const done = send();
       return {
         ...evmAccount,
         ready: readyP,
@@ -253,127 +405,16 @@ const makeProvideEVMAccount = ({
       throw reason;
     }
   };
-};
 
-/**
- * Invoke EVM Wallet Factory contract to create a remote account
- * at a predicatble address.
- *
- * The factory contract:
- * 1. Creates the smart wallet: `createSmartWallet(sourceAddress)`
- * 2. Emits a SmartWalletCreated event.
- */
-export const sendMakeAccountCall = async ({
-  dest,
-  fee,
-  portfolioLca,
-  contractAccount: feeAccount,
-  gmpAddresses,
-  gmpChain,
-  expectedWalletAddress,
-  ...optsArgs
-}: Parameters<ProvideEVMAccountSendCall>[0]) => {
-  const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
+type ProvideEVMAccountContext = Parameters<
+  ReturnType<typeof makeProvideEVMAccount>
+>[0];
 
-  const gmpBuilder = makeGmpBuilder();
-  const factory = gmpBuilder.makeContract(dest.address, factoryABI);
-  factory.createSmartWallet(expectedWalletAddress);
-  const payload = gmpBuilder.getPayload();
+// Legacy adapters
 
-  const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: dest.axelarId,
-    destination_address: dest.address,
-    payload: Array.from(payload),
-    type: AxelarGMPMessageType.ContractCall,
-    fee: { amount: String(fee.value), recipient: AXELAR_GAS },
-  };
-  const { chainId } = await gmpChain.getChainInfo();
-
-  await feeAccount.send(
-    portfolioLca.getAddress(),
-    fee,
-    ...('orchOpts' in optsArgs ? [optsArgs.orchOpts] : []),
-  );
-
-  const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
-  await portfolioLca.transfer(gmp, fee, {
-    ...optsArgs.orchOpts,
-    memo: JSON.stringify(memo),
-  });
-};
-
-export const provideEVMAccount = makeProvideEVMAccount({
-  getSendCall: () => sendMakeAccountCall,
-  txType: TxType.MAKE_ACCOUNT,
-  mode: 'makeAccount',
-});
-
-/**
- * Send a GMP call that creates a smart wallet and deposits funds via Permit2.
- */
-export const sendCreateAndDepositCall = async ({
-  dest,
-  fee,
-  portfolioLca,
-  contractAccount,
-  permit2Payload,
-  gmpAddresses,
-  gmpChain,
-  expectedWalletAddress,
-  ...optsArgs
-}: Parameters<ProvideEVMAccountSendCall>[0] & {
-  permit2Payload: PermitDetails['permit2Payload'];
-}) => {
-  const lcaOwner = portfolioLca.getAddress().value;
-  const {
-    owner: tokenOwner,
-    permit,
-    signature,
-    witness,
-    witnessTypeString,
-  } = permit2Payload;
-
-  const gmpBuilder = makeGmpBuilder();
-  const factory = gmpBuilder.makeContract(dest.address, depositFactoryABI);
-  factory.createAndDeposit({
-    lcaOwner,
-    tokenOwner,
-    permit,
-    signature,
-    witness,
-    witnessTypeString,
-    expectedWalletAddress,
-  });
-  const payload = gmpBuilder.getPayload();
-
-  const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
-  const memo: AxelarGmpOutgoingMemo = {
-    destination_chain: dest.axelarId,
-    destination_address: dest.address,
-    payload: Array.from(payload),
-    type: AxelarGMPMessageType.ContractCall,
-    fee: { amount: String(fee.value), recipient: AXELAR_GAS },
-  };
-  const { chainId } = await gmpChain.getChainInfo();
-
-  const gmp = { chainId, value: AXELAR_GMP, encoding: 'bech32' as const };
-  await contractAccount.transfer(gmp, fee, {
-    ...optsArgs.orchOpts,
-    memo: JSON.stringify(memo),
-  });
-};
-
-const makeSendCreateAndDepositCall = (
-  permit2Payload: PermitDetails['permit2Payload'],
-): ProvideEVMAccountSendCall => {
-  return params => sendCreateAndDepositCall({ ...params, permit2Payload });
-};
-
-const provideEVMAccountWithPermitBase = makeProvideEVMAccount({
-  getSendCall: makeSendCreateAndDepositCall,
-  txType: TxType.MAKE_ACCOUNT,
-  mode: 'createAndDeposit',
-});
+export const provideEVMRoutedAccount = makeProvideEVMAccount(
+  sendGMPRouterInstruction,
+);
 
 export const provideEVMAccountWithPermit = (
   chainName: AxelarChain,
@@ -385,25 +426,71 @@ export const provideEVMAccountWithPermit = (
   lca: LocalAccount,
   ctx: PortfolioInstanceContext,
   pk: GuestInterface<PortfolioKit>,
-  permit2Payload: PermitDetails['permit2Payload'],
+  permit2Payload?: PermitDetails['permit2Payload'],
   orchOpts?: OrchestrationOptions,
-): Promise<GMPAccountStatus> =>
-  provideEVMAccountWithPermitBase(chainName, chainInfo, gmp, lca, ctx, pk, {
-    orchOpts,
-    sendCallArg: permit2Payload,
+): GMPAccountStatus => {
+  const {
+    axelarIds,
+    contracts,
+    contractAccount: feeAccount,
+    gmpAddresses,
+    gmpFeeInfo,
+    resolverClient,
+  } = ctx;
+
+  const addresses = contracts[chainName];
+
+  const fee = { denom: gmpFeeInfo.denom, value: gmp.fee };
+
+  const { progressTracker } = orchOpts ?? {};
+  assert(progressTracker);
+
+  const newCtx = {
+    addresses,
+    axelarIds,
+    chainInfo,
+    chainName,
+    feeAccount,
+    gmpAddresses,
+    gmpChain: gmp.chain,
+    gmpFee: fee,
+    resolverClient,
+    lca,
+    pk,
+    progressTracker,
+    nobleForwardingChannel: ctx.transferChannels.noble.counterPartyChannelId,
+  } as const satisfies ProvideEVMAccountContext;
+
+  return provideEVMRoutedAccount(newCtx, {
+    permit2Payload,
   });
+};
+
+export const provideEVMAccount = (
+  chainName: AxelarChain,
+  chainInfo: BaseChainInfo,
+  gmp: {
+    chain: Chain<{ chainId: string }>;
+    fee: NatValue;
+  },
+  lca: LocalAccount,
+  ctx: PortfolioInstanceContext,
+  pk: GuestInterface<PortfolioKit>,
+  opts: { orchOpts?: OrchestrationOptions } = {},
+): GMPAccountStatus =>
+  provideEVMAccountWithPermit(
+    chainName,
+    chainInfo,
+    gmp,
+    lca,
+    ctx,
+    pk,
+    undefined,
+    opts.orchOpts,
+  );
 
 /**
  * Sends a GMP call to execute contract calls on a remote smart wallet.
- *
- * The payload is encoded as CallParams[] which the smart wallet contract
- * decodes and executes via multicall(). The remote wallet is itself a smart contract.
- *
- * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/3e5c4a140bf5e9f1606c72f54815d61231ef1fa5/packages/axelar-local-dev-cosmos/src/__tests__/contracts/Factory.sol#L40-L66 Factory.sol (lines 40–66)}
- *
- * The smart wallet contract:
- * 1. Decodes payload as CallParams[]: `CallParams[] memory calls = abi.decode(payload, (CallParams[]))`
- * 2. Executes each call via multicall: `calls[i].target.call(calls[i].data)`
  */
 export const sendGMPContractCall = async (
   ctx: EVMContext,
@@ -411,66 +498,27 @@ export const sendGMPContractCall = async (
   calls: ContractCall[],
   ...optsArgs: [OrchestrationOptions?]
 ) => {
-  await null;
-  const {
-    lca,
-    gmpChain,
-    gmpFee: fee,
-    gmpAddresses,
-    resolverClient,
-    axelarIds,
-  } = ctx;
-  const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
-  const axelarId = axelarIds[chainName];
+  const { progressTracker } = optsArgs[0] ?? {};
+  assert(progressTracker);
 
-  const sourceAddress = coerceAccountId(lca.getAddress());
-  const { result, txId } = resolverClient.registerTransaction(
-    TxType.GMP,
-    `${gmpChainId}:${remoteAddress}`,
-    undefined,
-    undefined,
-    sourceAddress,
+  await sendGMPRouterInstruction(
+    { ...ctx, remoteAccount: gmpAcct, progressTracker },
+    {
+      instructionType: 'RemoteAccountExecute',
+      instruction: {
+        multiCalls: calls.map(callData => ({
+          ...constructContractCall(callData),
+          value: 0n,
+          gasLimit: 0n,
+        })),
+      },
+    },
   );
-  try {
-    appendTxIds(optsArgs[0]?.progressTracker, [txId]);
-
-    const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
-    const memo: AxelarGmpOutgoingMemo = {
-      destination_chain: axelarId,
-      destination_address: remoteAddress,
-      payload: buildGMPPayload(calls, txId),
-      type: AxelarGMPMessageType.ContractCall,
-      fee: { amount: String(fee.value), recipient: AXELAR_GAS },
-    };
-    const { chainId } = await gmpChain.getChainInfo();
-    const gmp = {
-      chainId,
-      value: AXELAR_GMP,
-      encoding: 'bech32' as const,
-    };
-    await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
-    await lca.transfer(gmp, fee, {
-      ...optsArgs[0],
-      memo: JSON.stringify(memo),
-    });
-  } catch (reason) {
-    resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
-    throw reason;
-  }
-  await result;
 };
 
-// XXX refactor overlap with PermitWitnessTransferFromFunctionABIType
-// that one results in type errors
-const permit2Abi = [
-  {
-    name: 'permitWitnessTransferFrom',
-    inputs: PermitWitnessTransferFromInputComponents,
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-] as const;
+const permit2Contract = makeEvmContract([
+  PermitWitnessTransferFromFunctionABIType,
+]);
 
 /**
  * Sends a GMP call to execute a Permit2 permitWitnessTransferFrom.
@@ -491,19 +539,11 @@ export const sendPermit2GMP = async (
   transferAmount: bigint,
   ...optsArgs: [OrchestrationOptions?]
 ) => {
-  await null;
-  const {
-    lca,
-    gmpChain,
-    gmpFee: fee,
-    gmpAddresses,
-    resolverClient,
-    axelarIds,
-    addresses,
-  } = ctx;
-  const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
-  const walletAddress = remoteAddress as Address;
-  const axelarId = axelarIds[chainName];
+  const { addresses } = ctx;
+  const { progressTracker } = optsArgs[0] ?? {};
+  assert(progressTracker);
+
+  const { remoteAddress } = gmpAcct;
 
   const { permit, owner, witness, witnessTypeString, signature } =
     permit2Payload;
@@ -513,13 +553,11 @@ export const sendPermit2GMP = async (
 
   // Build the transferDetails - tokens go to the wallet
   const transferDetails = {
-    to: walletAddress,
+    to: remoteAddress,
     requestedAmount: transferAmount,
   };
 
-  const session = makeEvmAbiCallBatch();
-  const permit2 = session.makeContract(addresses.permit2, permit2Abi);
-  permit2.permitWitnessTransferFrom(
+  const encodedCall = permit2Contract.permitWitnessTransferFrom(
     permit,
     transferDetails,
     owner,
@@ -527,39 +565,25 @@ export const sendPermit2GMP = async (
     witnessTypeString,
     signature,
   );
-  const calls = session.finish();
 
-  const sourceAddress = coerceAccountId(lca.getAddress());
-  const { result, txId } = resolverClient.registerTransaction(
-    TxType.GMP,
-    `${gmpChainId}:${remoteAddress}`,
-    undefined,
-    undefined,
-    sourceAddress,
+  await sendGMPRouterInstruction(
+    { ...ctx, remoteAccount: gmpAcct, progressTracker },
+    {
+      instructionType: 'RemoteAccountExecute',
+      instruction: {
+        multiCalls: [
+          {
+            target: addresses.permit2,
+            data: encodedCall,
+            value: 0n,
+            gasLimit: 0n,
+          },
+        ],
+      },
+      debuggingDetails: {
+        depositFrom: owner,
+        depositAmount: transferAmount,
+      },
+    },
   );
-  try {
-    const { AXELAR_GMP, AXELAR_GAS } = gmpAddresses;
-    const memo: AxelarGmpOutgoingMemo = {
-      destination_chain: axelarId,
-      destination_address: remoteAddress,
-      payload: buildGMPPayload(calls, txId),
-      type: AxelarGMPMessageType.ContractCall,
-      fee: { amount: String(fee.value), recipient: AXELAR_GAS },
-    };
-    const { chainId } = await gmpChain.getChainInfo();
-    const gmp = {
-      chainId,
-      value: AXELAR_GMP,
-      encoding: 'bech32' as const,
-    };
-    await ctx.feeAccount.send(lca.getAddress(), fee, ...optsArgs);
-    await lca.transfer(gmp, fee, {
-      ...optsArgs[0],
-      memo: JSON.stringify(memo),
-    });
-  } catch (reason) {
-    resolverClient.unsubscribe(txId, `unsubscribe: ${reason}`);
-    throw reason;
-  }
-  await result;
 };

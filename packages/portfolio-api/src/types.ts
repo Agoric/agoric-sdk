@@ -210,8 +210,18 @@ export type PortfolioGenericRemoteAccountState =
 export type PortfolioEVMRemoteAccountState = {
   chainId: `eip155:${number | bigint | string}`;
   address: EVMAddress;
-  state: PortfolioRemoteAccountCommonStates;
-};
+} & (
+  | {
+      state: PortfolioRemoteAccountCommonStates;
+      // router is not present for legacy accounts
+      router?: EVMAddress;
+    }
+  | {
+      state: 'transferring';
+      router: EVMAddress;
+      fromRouter: EVMAddress;
+    }
+);
 
 export type PortfolioCosmosRemoteAccountState = {
   chainId: `cosmos:${string}`;
@@ -227,7 +237,14 @@ export type PortfolioRemoteAccountState =
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
-    depositFactoryAddresses?: Record<AxelarChain, AccountId>;
+    depositFactoryAddresses?: Partial<Record<AxelarChain, AccountId>>;
+    evmRemoteAccountConfig?: {
+      remoteAccountImplementationAddresses: Partial<
+        Record<AxelarChain, AccountId>
+      >;
+      factoryAddresses: Partial<Record<AxelarChain, AccountId>>;
+      currentRouterAddresses: Partial<Record<AxelarChain, AccountId>>;
+    };
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;

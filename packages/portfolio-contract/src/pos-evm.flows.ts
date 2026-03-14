@@ -59,20 +59,18 @@ import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { PoolKey } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
-  provideEVMAccount,
-  provideEVMAccountWithPermit,
-  sendGMPContractCall,
-  sendPermit2GMP,
+  provideEVMAccount as provideEVMLegacyAccount,
+  sendGMPContractCall as sendLegacyGMPContractCall,
+  sendPermit2GMP as sendLegacyPermit2GMP,
   type GMPAccountStatus,
 } from './axelar-gmp-legacy.flows.ts';
+import {
+  provideEVMAccount as provideEVMRoutedAccount,
+  sendGMPContractCall as sendRoutedGMPContractCall,
+  sendPermit2GMP as sendRoutedPermit2GMP,
+} from './axelar-gmp-router.flows.ts';
 
-export {
-  provideEVMAccount,
-  provideEVMAccountWithPermit,
-  sendGMPContractCall,
-  sendPermit2GMP,
-  type GMPAccountStatus,
-};
+export type { GMPAccountStatus };
 
 export type EVMContext = {
   feeAccount: LocalAccount;
@@ -90,6 +88,40 @@ export type EVMContext = {
 
 const trace = makeTracer('GMPF');
 const { keys } = Object;
+
+export const sendGMPContractCall: typeof sendLegacyGMPContractCall = async (
+  ctx,
+  gmpAcct,
+  ...args
+) =>
+  gmpAcct.routerAddress
+    ? sendRoutedGMPContractCall(ctx, gmpAcct, ...args)
+    : sendLegacyGMPContractCall(ctx, gmpAcct, ...args);
+
+export const sendPermit2GMP: typeof sendLegacyPermit2GMP = async (
+  ctx,
+  gmpAcct,
+  ...args
+) =>
+  gmpAcct.routerAddress
+    ? sendRoutedPermit2GMP(ctx, gmpAcct, ...args)
+    : sendLegacyPermit2GMP(ctx, gmpAcct, ...args);
+
+export const provideEVMAccount: typeof provideEVMLegacyAccount = (...args) => {
+  const chainName = args[0];
+  const { contracts } = args[4];
+  const pk = args[5];
+  const addresses = contracts[chainName];
+
+  // We may be replaying an old flow that didn't know about routers yet.
+  // We must not add a new interaction with host objects in that case.
+  // Use the presence of `remoteAccountRouter` in addresses as a signal.
+  if (addresses.remoteAccountRouter && pk.reader.useRouterForChain(chainName)) {
+    return provideEVMRoutedAccount(...args);
+  } else {
+    return provideEVMLegacyAccount(...args);
+  }
+};
 
 /** @see {@link https://developers.circle.com/cctp/supported-domains} */
 const nobleDomain = 4;
