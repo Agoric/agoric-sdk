@@ -113,7 +113,6 @@ export default [
 
       'ava/no-skip-test': 'off',
       'ava/use-test': 'off',
-      '@jessie.js/safe-await-separator': 'error',
 
       'no-use-before-define': 'off',
       'no-empty-function': 'off',
@@ -189,7 +188,6 @@ export default [
 
     rules: {
       'no-lone-blocks': 'off',
-      '@jessie.js/safe-await-separator': 'off',
     },
   },
   {
@@ -261,10 +259,6 @@ export default [
         useProjectService: false,
         project: false,
       },
-    },
-
-    rules: {
-      '@jessie.js/safe-await-separator': 'off',
     },
   },
   {
