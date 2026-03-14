@@ -11,7 +11,7 @@ ignore_dirty_yarn_lock=$2 || exit $?
 
 # Check for unexpected changes
 # Fail if git status detects changes
-changes=$(git status --porcelain)
+changes=$(git status . --porcelain)
 
 if [ "$ignore_dirty_yarn_lock" = true ]; then
   # When integration is requested with a specific Endo branch, ignore changes:

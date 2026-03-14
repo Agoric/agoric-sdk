@@ -14,6 +14,7 @@
     "build:all": "make",
     "build:gyp": "make compile-gyp",
     "build:gyp-debug": "make compile-gyp GYP_DEBUG=--debug",
+    "codegen": "make proto-all",
     "test:xs": "exit 0",
     "prepack": "git rev-parse --short HEAD > git-revision.txt && rm -rf build",
     "postpack": "git clean -f git-revision.txt",

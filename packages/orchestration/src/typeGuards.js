@@ -240,7 +240,10 @@ harden(chainFacadeMethods);
  * `seconds` is a big integer but since it goes through JSON it is encoded as
  * string
  */
-export const TimestampProtoShape = { seconds: M.string(), nanos: M.number() };
+export const TimestampProtoShape = M.or(M.string(), {
+  seconds: M.string(),
+  nanos: M.number(),
+});
 harden(TimestampProtoShape);
 
 /**
