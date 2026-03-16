@@ -1246,6 +1246,9 @@ const stepFlow = async (
             // Wait for the smart wallet to be ready (created via provideEVMAccount)
             await gInfo.ready;
 
+            sameEvmAddress(gInfo.remoteAddress, evmDepositDetail.spender) ||
+              Fail`depositFromEVM spender ${evmDepositDetail.spender} must be the same as the remote account address ${gInfo.remoteAddress}`;
+
             // Create EVM context for GMP call
             const evmCtx = await makeEVMCtx(
               srcChain,
