@@ -75,8 +75,8 @@ type FakeVstorageKitConfig = {
  * auto-wrapping contents in a StreamCell.
  */
 const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
-  let { blockHeight = 100n, marshaller = boardSlottingMarshaller<string>() } =
-    config;
+  let { blockHeight = 100n } = config;
+  const { marshaller = boardSlottingMarshaller<string>() } = config;
   const serialize = (value: PassableObj) =>
     JSON.stringify(marshaller.toCapData(value));
   const vstorageStrings = new Map<string, string | string[]>();

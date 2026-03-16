@@ -15,6 +15,7 @@
   "dependencies": {
     "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",
     "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy",
+    "@agoric/client-utils": "portal:./local-packages/client-utils",
     "@agoric/cosmic-proto": "dev",
     "@agoric/deploy-script-support": "dev",
     "@agoric/portfolio-api": "dev",

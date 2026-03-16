@@ -275,26 +275,24 @@ module.exports = {
                   `${buildNewBlock(importTypeName, importPath)}\n`,
                 ),
               );
-            } else {
+            } else if (
               // If we do have a block, ensure it includes `@import {typeName} from 'importPath'`
-              if (
-                !alreadyHasImport(
-                  topBlockComment.value,
-                  importTypeName,
-                  importPath,
-                )
-              ) {
-                fixOps.push(
-                  fixer.replaceTextRange(
-                    topBlockComment.range,
-                    appendImportToComment(
-                      topBlockComment,
-                      importTypeName,
-                      importPath,
-                    ),
+              !alreadyHasImport(
+                topBlockComment.value,
+                importTypeName,
+                importPath,
+              )
+            ) {
+              fixOps.push(
+                fixer.replaceTextRange(
+                  topBlockComment.range,
+                  appendImportToComment(
+                    topBlockComment,
+                    importTypeName,
+                    importPath,
                   ),
-                );
-              }
+                ),
+              );
             }
 
             // (b) Remove the inline usage from *this* comment

@@ -23,6 +23,7 @@
     "@aglocal/portfolio-deploy": "dev",
     "@agoric/client-utils": "dev",
     "@agoric/deploy-script-support": "dev",
+    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
     "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.6.1#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.1-f801222832.patch",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
