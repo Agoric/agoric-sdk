@@ -47,7 +47,7 @@ const fuAssetInfo = (assetInfo: string): string => {
 
 const makeTestContext = async (t: ExecutionContext) => {
   const { setupTestKeys, ...common } = await commonSetup(t, {
-    config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
+    config: `../config.fusdc${RELAYER_TYPE ? `.${RELAYER_TYPE}` : ''}.yaml`,
   });
 
   const {
@@ -99,11 +99,11 @@ const makeTestContext = async (t: ExecutionContext) => {
   await faucetTools.fundFaucet([['noble', 'uusdc']]);
 
   // save an LP in test context
-  const lpUser = await provisionSmartWallet(wallets['lp'], {
+  const lpUser = await provisionSmartWallet(wallets.lp, {
     USDC: 8_000n,
     BLD: 100n,
   });
-  const feeUser = await provisionSmartWallet(wallets['feeDest'], { BLD: 100n });
+  const feeUser = await provisionSmartWallet(wallets.feeDest, { BLD: 100n });
 
   const { vstorageClient } = common;
   const api = makeQueryClient(await useChain('agoric').getRestEndpoint());
@@ -185,7 +185,7 @@ const makeTestContext = async (t: ExecutionContext) => {
     );
 
     await common.retryUntilCondition(
-      () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
+      () => queryClient.queryBalance(wallets.lp, 'ufastlp'),
       ({ balance }) => isGTE(toAmt(FastLP, balance), want.PoolShare),
       'lp has pool shares',
       { log: trace },
@@ -549,14 +549,14 @@ test.serial('lp withdraws', async t => {
   const metricsPre = await fastLPQ(vstorageClient).metrics();
 
   const { balance: lpCoins } = await queryClient.queryBalance(
-    wallets['lp'],
+    wallets.lp,
     'ufastlp',
   );
   const give = { PoolShare: toAmt(FastLP, lpCoins) };
   t.log('give', give, lpCoins);
 
   const { balance: usdcCoinsPre } = await queryClient.queryBalance(
-    wallets['lp'],
+    wallets.lp,
     usdcDenom,
   );
   t.log('usdc coins pre', usdcCoinsPre);
@@ -576,7 +576,7 @@ test.serial('lp withdraws', async t => {
   });
 
   await retryUntilCondition(
-    () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
+    () => queryClient.queryBalance(wallets.lp, 'ufastlp'),
     ({ balance }) => isEmpty(toAmt(FastLP, balance)),
     'lp no longer has pool shares',
     { log: trace },
@@ -584,7 +584,7 @@ test.serial('lp withdraws', async t => {
 
   const USDC = want.USDC.brand;
   await retryUntilCondition(
-    () => queryClient.queryBalance(wallets['lp'], usdcDenom),
+    () => queryClient.queryBalance(wallets.lp, usdcDenom),
     // TODO refactor this retry until balance changes, then separately assert it's correct
     ({ balance }) =>
       !isGTE(
@@ -605,7 +605,7 @@ test.serial('distribute FastUSDC contract fees', async t => {
   );
 
   const opts = {
-    destinationAddress: io.wallets['feeDest'],
+    destinationAddress: io.wallets.feeDest,
     feePortion: 0.25,
   };
   t.log('build, run proposal to distribute fees', opts);
@@ -784,7 +784,7 @@ test.serial('sendFromSettlementAccount', async t => {
   );
 
   const opts = {
-    destinationAddress: io.wallets['feeDest'],
+    destinationAddress: io.wallets.feeDest,
     principal: '1232869579', // truncation of real value to not exceed available funds
   };
 

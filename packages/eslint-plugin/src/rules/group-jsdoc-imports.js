@@ -1,7 +1,12 @@
 /**
+ * @import {Bar} from 'foo';
+ * @import {Rule} from 'eslint';
+ */
+
+/**
  * ESLint rule: group-jsdoc-imports
  *
- * Moves inline JSDoc type imports (e.g. \@type {import('foo').Bar})
+ * Moves inline JSDoc type imports (e.g. \@type {Bar})
  * into a top-level JSDoc block with \@import lines, then references the
  * import by name (e.g. \@type {Bar}).
  *
@@ -14,7 +19,7 @@
  *    }
  *  }
  *
- * @type {import('eslint').Rule.RuleModule}
+ * @type {Rule.RuleModule}
  */
 /**
  * ESLint rule: group-jsdoc-imports (one-fix-per-inline-import version)

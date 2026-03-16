@@ -76,7 +76,7 @@ export const spawnRetentiveVatSequence = async ({
 }) => {
   await null;
   /** @type {Awaited<ReturnType<xsnap>> | undefined} */
-  let vat = undefined;
+  let vat;
   try {
     for (let i = 0; i < chunkCount; i += 1) {
       // Make a new vat, replacing a previous vat if present.
@@ -155,7 +155,10 @@ if (isEntryPoint) {
     },
   };
   const { values: config } = parseArgs({ options: cliOptions });
-  let chunkCount, chunkSize, idleDuration, xsnapOptions;
+  let chunkCount;
+  let chunkSize;
+  let idleDuration;
+  let xsnapOptions;
   try {
     if (config.help) throw Error();
     const parseNat = str => Nat(/[0-9]/.test(str || '') ? Number(str) : NaN);

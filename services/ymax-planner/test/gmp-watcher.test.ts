@@ -189,9 +189,9 @@ test('handlePendingTx detects legitimate failure from ContractCallFailed revert'
     // Set up provider.call to throw ContractCallFailed error
     provider.call = async () => {
       const error: any = new Error('execution reverted');
-      error.data =
-        CONTRACT_CALL_FAILED_ERROR +
-        '0000000000000000000000000000000000000000000000000000000000000001';
+      error.data = `${
+        CONTRACT_CALL_FAILED_ERROR
+      }0000000000000000000000000000000000000000000000000000000000000001`;
       throw error;
     };
 

@@ -15,9 +15,9 @@ import {
   makeSmartWalletKitFromVstorageKit,
   makeVstorageKitFromVstorage,
   reflectWalletStore,
+  boardSlottingMarshaller,
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
-import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { partialMap, typedEntries } from '@agoric/internal';
 import type { RecordFromTuple } from '@agoric/internal';
 import { compareByCodePoints } from '@agoric/internal/src/kv-store.js';

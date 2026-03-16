@@ -106,7 +106,7 @@ const createMockOperationResultLog = (
   };
 };
 
-const MOCK_PAYLOAD_HASH = '0x' + '00'.repeat(32);
+const MOCK_PAYLOAD_HASH = `0x${'00'.repeat(32)}`;
 
 const makeAbortController = prepareAbortController({
   setTimeout,

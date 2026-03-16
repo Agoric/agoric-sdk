@@ -154,7 +154,6 @@ export const getCurrentBalances = async (
       addressInfo.set(chainName, addressParts);
       const { accountAddress: address } = addressParts;
       accountQueries.push({ place, chainName, address, asset: 'USDC' });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_err) {
       errors.push(Error(`Invalid CAIP-10 address for chain: ${chainName}`));
     }

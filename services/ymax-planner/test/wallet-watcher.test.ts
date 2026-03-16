@@ -2,13 +2,13 @@ import test from 'ava';
 import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
 import { objectMap } from '@endo/patterns';
 import type { WebSocketProvider } from 'ethers';
+import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { createMockPendingTxOpts } from './mocks.ts';
 import {
   handlePendingTx,
   type EvmRpcProviders,
 } from '../src/pending-tx-manager.ts';
-import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   SMART_WALLET_CREATED_SIGNATURE,
   parseSmartWalletCreatedLog,

@@ -18,6 +18,11 @@ import {
 import { E, Far } from '@endo/far';
 import { Fail } from '@endo/errors';
 
+/**
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {BoardRemote} from '@agoric/vats/tools/board-utils.js';
+ */
+
 export { boardSlottingMarshaller };
 
 /** @type {(val: any) => string} */
@@ -239,7 +244,7 @@ harden(storageHelper);
 /**
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
+ * @returns {Promise<AgoricNamesRemotes>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
   /** @type {Record<string, string>} */
@@ -249,7 +254,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );
-      /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
+      /** @type {Array<[string, BoardRemote]>} */
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
       for (const [name, remote] of parts) {
         if ('getBoardId' in remote) {

@@ -67,7 +67,6 @@ const bigIntExtremes = (first: bigint, ...rest: bigint[]) => {
 const bigIntMax = (first: bigint, ...rest: bigint[]): bigint =>
   bigIntExtremes(first, ...rest).max;
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const trace = makeTracer('solve');
 
 /** The count of minor units per major unit (e.g., uusdc per USDC) */

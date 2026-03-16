@@ -1,10 +1,10 @@
 import type { ExecutionContext } from 'ava';
 import type { Denom } from '@agoric/orchestration';
+import { makeTracer } from '@agoric/internal';
 import { makeFundAndTransfer } from './ibc-transfer.js';
 import type { MultichainRegistry } from './registry.js';
 import type { RetryUntilCondition } from './sleep.js';
 import type { AgdTools } from './agd-tools.js';
-import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('Faucet');
 

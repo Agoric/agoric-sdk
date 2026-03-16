@@ -444,7 +444,7 @@ export type EVMContractAddressesMap = {
 };
 
 // keep these types imported for IDE navigation
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
 const keepDocsTypesImported:
   | undefined
   | ContinuingInvitationSpec

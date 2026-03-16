@@ -224,7 +224,7 @@ test.serial('Send Local Query from chain object', async t => {
   const { wallets, provisionSmartWallet, vstorageClient, retryUntilCondition } =
     t.context;
 
-  const agoricAddr = wallets['agoric'];
+  const agoricAddr = wallets.agoric;
   const wdUser1 = await provisionSmartWallet(agoricAddr, {
     BLD: 100n,
     IST: 100n,

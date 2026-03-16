@@ -50,7 +50,7 @@ const testPrometheusMetrics = async t => {
       console.log(`--subprocess ${child.pid}`);
       await child;
       childOk = true;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-empty
+      // eslint-disable-next-line no-empty
     } catch (_err) {}
     if (child) console.log(`\n--subprocess ${child.pid}--\n`);
     t.true(childOk, 'subprocess retry');

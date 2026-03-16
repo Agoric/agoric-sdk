@@ -449,7 +449,7 @@ export const makeOsmosisSwapTools = async t => {
           {
             operation: 'set',
             chain_name: name,
-            prefix: prefix,
+            prefix,
           },
         ],
       },

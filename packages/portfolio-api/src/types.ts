@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- doesn't see type usage in JSDoc */
 import type { NatAmount } from '@agoric/ertp';
 import {
   type AccountId,

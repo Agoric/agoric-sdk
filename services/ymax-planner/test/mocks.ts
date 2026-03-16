@@ -358,7 +358,7 @@ export const createMockProvider = (
 
       throw Error(`Unrecognized function selector in mock call: ${selector}`);
     },
-    waitForTransaction: async function (
+    async waitForTransaction(
       this: any,
       txHash: string,
       confirmations?: number,
@@ -518,7 +518,7 @@ export const createMockCosmosRestClient = (
   let callCount = 0;
   const balanceResponses = config.balanceResponses ?? DEFAULT_BALANCE_RESPONSES;
   const initialAccount = config.initialAccount ?? DEFAULT_ACCOUNT;
-  let mockAccount = initialAccount;
+  const mockAccount = initialAccount;
 
   return {
     getAccountBalance: async (_chainKey, _address, denom) => {

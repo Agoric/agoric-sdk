@@ -29,7 +29,11 @@ import fsp from 'node:fs/promises';
 import { NonNullish } from '@agoric/internal/src/errors.js';
 import { getBalances } from './utils.js';
 
-/** @import {Result as ExecaResult, ExecaError} from 'execa'; */
+/** @import {Result as ExecaResult, ExecaError} from 'execa';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {ExecutionContext} from 'ava';
+ */
 /**
  * @typedef {ExecaResult & { all: string } & (
  *     | { failed: false }
@@ -142,11 +146,11 @@ export const logRecord = (label, data, log = console.log) => {
 
 /**
  * @typedef {object} PsmMetrics
- * @property {import('@agoric/ertp').Amount<'nat'>} anchorPoolBalance
- * @property {import('@agoric/ertp').Amount<'nat'>} feePoolBalance
- * @property {import('@agoric/ertp').Amount<'nat'>} mintedPoolBalance
- * @property {import('@agoric/ertp').Amount<'nat'>} totalAnchorProvided
- * @property {import('@agoric/ertp').Amount<'nat'>} totalMintedProvided
+ * @property {Amount<'nat'>} anchorPoolBalance
+ * @property {Amount<'nat'>} feePoolBalance
+ * @property {Amount<'nat'>} mintedPoolBalance
+ * @property {Amount<'nat'>} totalAnchorProvided
+ * @property {Amount<'nat'>} totalMintedProvided
  */
 
 const fromBoard = makeFromBoard();
@@ -169,7 +173,7 @@ const snapshotAgoricNames = async () => {
 };
 
 /**
- * @param {import('@agoric/ertp').Brand} brand
+ * @param {Brand} brand
  * @param {bigint} numValInPercent
  */
 const toRatio = (brand, numValInPercent) => {
@@ -374,7 +378,7 @@ export const getPsmMetrics = async anchor => {
 };
 
 export const checkGovParams = async (
-  /** @type {import("ava").ExecutionContext<unknown>} */ t,
+  /** @type {ExecutionContext<unknown>} */ t,
   /** @type {any} */ expected,
   /** @type {string} */ psmName,
 ) => {
@@ -593,7 +597,7 @@ const extractBalance = (balances, targetDenom) => {
  * equality, but if that fails we recheck against an assumption that a fee of
  * the default "minFeeDebit" has been charged.
  *
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {number} actualBalance
  * @param {number} expectedBalance
  */
@@ -616,7 +620,7 @@ export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
 
 /**
  *
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {PsmMetrics} metricsBefore
  * @param {Coin[]} balancesBefore
  * @param {{trader: string; fee: number; anchor: string;} & (

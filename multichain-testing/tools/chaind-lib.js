@@ -3,7 +3,11 @@
 import assert from 'node:assert';
 import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
 
-/**Add commentMore actions
+/**
+ * @import {execFileSync} from 'child_process';
+ */
+
+/** Add commentMore actions
  * @typedef {{ event: string, condition?: '=', value: string }} EventQuery
  */
 
@@ -354,7 +358,7 @@ export const makeAgd = ({ execFileSync }) => {
 
 /** @typedef {ReturnType<typeof makeAgd>} Agd */
 
-/** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
+/** @param {{ execFileSync: typeof execFileSync, log: typeof console.log }} powers */
 export const makeCopyFiles = (
   { execFileSync, log },
   {

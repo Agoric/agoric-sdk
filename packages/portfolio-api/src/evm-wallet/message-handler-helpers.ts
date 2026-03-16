@@ -117,7 +117,6 @@ export const makeEVMHandlerUtils = (viemUtils: {
     validateYmaxDomain(domain, validContractAddresses);
     validateYmaxOperationTypeName<T>(standaloneData.primaryType);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { nonce, deadline, ..._operationData } = standaloneData.message;
     const operationData = _operationData as YmaxOperationType<T>;
     const operation = standaloneData.primaryType;

@@ -30,6 +30,12 @@ import { makeRetryUntilCondition } from './sleep.js';
  * @import {Amount} from '@agoric/ertp';
  * @import {BundleCache} from '@agoric/swingset-vat/tools/bundleTool.js';
  * @import {execFileSync} from 'child_process';
+ * @import {execFile} from 'child_process';
+ * @import {CachedBundle} from '../test/boot-tools.js';
+ * @import {VstorageKit} from '@agoric/client-utils';
+ * @import {FastUsdcPublishedPathTypes} from '@agoric/fast-usdc';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {AmountKeywordRecord} from '@agoric/zoe';
  */
 
 const trace = makeTracer('E2ET');
@@ -502,7 +508,7 @@ const runCoreEval = async (
  * @param {BundleCache} bundleCache
  * @param {object} io
  * @param {typeof execFileSync} io.execFileSync
- * @param {typeof import('child_process').execFile} io.execFile
+ * @param {typeof execFile} io.execFile
  * @param {typeof window.fetch} io.fetch
  * @param {typeof window.setTimeout} io.setTimeout
  * @param {string} [io.bundleDir]
@@ -548,7 +554,7 @@ export const makeE2ETools = async (
   const installBundles = async (fullPaths, progress) => {
     await null;
     // @ts-expect-error FIXME no type
-    /** @type {Record<string, import('../test/boot-tools.js').CachedBundle>} */
+    /** @type {Record<string, CachedBundle>} */
     const bundles = {};
     // for (const [name, rootModPath] of Object.entries(bundleRoots)) {
     for (const fullPath of fullPaths) {
@@ -606,7 +612,7 @@ export const makeE2ETools = async (
    */
   const vstorageClient = makeQueryKit(vstorage).query;
 
-  /** @type {import('@agoric/client-utils').VstorageKit<import('@agoric/fast-usdc').FastUsdcPublishedPathTypes>} */
+  /** @type {VstorageKit<FastUsdcPublishedPathTypes>} */
   const vstorageKit = makeVstorageKit({ fetch }, LOCAL_CONFIG);
 
   const smartWalletKit = await makeSmartWalletKitFromVstorageKit(vstorageKit);
@@ -655,7 +661,7 @@ export const makeE2ETools = async (
 export const seatLike = updates => {
   const sync = {
     result: makePromiseKit(),
-    /** @type {import('@endo/promise-kit').PromiseKit<import('@agoric/zoe').AmountKeywordRecord>} */
+    /** @type {PromiseKit<AmountKeywordRecord>} */
     payouts: makePromiseKit(),
   };
   (async () => {

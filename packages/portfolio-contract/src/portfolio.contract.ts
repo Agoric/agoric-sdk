@@ -920,7 +920,6 @@ export const contract = async (
 };
 harden(contract);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const keepDocsTypesImported:
   | undefined
   | YieldProtocol
