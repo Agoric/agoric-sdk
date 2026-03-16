@@ -35,7 +35,7 @@ import {
   parseAccountId,
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
-import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.js';
+import { PermitWitnessTransferFromFunctionABIType } from '@agoric/orchestration/src/utils/permit2/signatureTransferHelpers.js';
 import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
@@ -134,16 +134,7 @@ export type PortfolioInstanceContext = {
   eip155ChainIdToAxelarChain: Record<`${number}`, AxelarChain>;
 };
 
-// SPIKE-DESIGN: keep this local until the withdraw fee batch shape settles.
-const permit2Abi = [
-  {
-    name: 'permitWitnessTransferFrom',
-    inputs: PermitWitnessTransferFromInputComponents,
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-] as const;
+const permit2Abi = [PermitWitnessTransferFromFunctionABIType] as const;
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;

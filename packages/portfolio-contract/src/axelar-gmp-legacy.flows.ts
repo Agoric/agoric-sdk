@@ -25,7 +25,7 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
-import { PermitWitnessTransferFromInputComponents } from '@agoric/orchestration/src/utils/permit2.js';
+import { PermitWitnessTransferFromFunctionABIType } from '@agoric/orchestration/src/utils/permit2/signatureTransferHelpers.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { Fail, makeError, q } from '@endo/errors';
@@ -460,17 +460,7 @@ export const sendGMPContractCall = async (
   await result;
 };
 
-// XXX refactor overlap with PermitWitnessTransferFromFunctionABIType
-// that one results in type errors
-const permit2Abi = [
-  {
-    name: 'permitWitnessTransferFrom',
-    inputs: PermitWitnessTransferFromInputComponents,
-    outputs: [],
-    stateMutability: 'nonpayable',
-    type: 'function',
-  },
-] as const;
+const permit2Abi = [PermitWitnessTransferFromFunctionABIType] as const;
 
 /**
  * Sends a GMP call to execute a Permit2 permitWitnessTransferFrom.
