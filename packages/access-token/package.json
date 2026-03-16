@@ -14,7 +14,7 @@
     "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:eslint": "yarn run -T eslint .",
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
     "lint:types": "yarn run -T tsc"
   },
   "dependencies": {

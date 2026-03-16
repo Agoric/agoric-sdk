@@ -129,6 +129,7 @@
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
     "format": "dprint fmt",
     "lint:format": "dprint check",
+    "lint:eslint": "node ./scripts/eslint-repo.mjs",
     "lint-fix": "yarn lerna run --no-bail lint-fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:oxlint": "yarn oxlint .",

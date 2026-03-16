@@ -6,7 +6,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
-import { legacySrcToToolsFiles } from './scripts/ci/tools-scope-policy.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +18,16 @@ const compat = new FlatCompat({
 export default [
   {
     ignores: [
+      '**/*.d.ts',
+      '**/*.test-d.ts',
+      // Has its own eslint config
+      'multichain-testing/',
+      // XXX outside the project service
+      'packages/eslint-config',
+      'packages/eslint-plugin',
+      'services/ymax-planner/esbuild.config.mjs',
+      '.github',
+      '.yarn',
       '**/__generated',
       '**/codegen',
       '**/coverage/',
@@ -28,24 +37,29 @@ export default [
       '**/build/',
       '**/bundles/',
       '**/bundle-*',
+      '**/demo/',
       'examples/',
       'packages/orchestration/src/vendor/',
       'packages/orchestration/src/stubs/',
-      'test262/',
       '**/*.html',
       '**/ava*.config.js',
       '**/.ava*.config.js',
       '**/tsup.config.ts',
+      '**/scripts/**',
       '**/vendor/**',
       'yarn.config.cjs',
       'packages/client-utils/scripts/',
       'packages/cosmic-proto/proto/',
       'packages/cosmic-proto/scripts/',
+      'packages/xsnap/moddable/',
+      'packages/xsnap/xsnap-native/',
       // Cosmic-swingset specific ignores
       'packages/cosmic-swingset/t[0-9]/',
       'packages/cosmic-swingset/t[0-9].*/',
       // a3p-integration specific ignores
       'a3p-integration/agoric-sdk/',
+      'a3p-integration/proposals/*/local-packages/',
+      'golang/',
     ],
   },
   {
@@ -197,19 +211,6 @@ export default [
       // TypeScript's `tsc --noEmit` catches undefined names with project-aware
       // analysis, so keep the base ESLint rule disabled to avoid duplicate noise.
       'no-undef': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-    },
-  },
-  {
-    files: ['**/*.d.ts'],
-
-    rules: {
-      'no-redeclare': 'off',
-    },
-  },
-  {
-    files: ['**/*.test-d.ts'],
-    rules: {
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },

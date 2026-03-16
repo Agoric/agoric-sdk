@@ -99,9 +99,11 @@ jobs:
       # only checks for oxlint rules. So we still run the package linters below.
       - run: yarn lint:oxlint
 
-      # eslint and tsc
+      # Run ESLint once from the repo root so type-aware project state can be reused.
+      - run: yarn lint:eslint --quiet
+
       # XXX running tsc in every package is slow and redundant.
-      - run: yarn lint:packages
+      - run: yarn typecheck-all
 
   # A second job for what's not covered in primary
   lint-rest:
