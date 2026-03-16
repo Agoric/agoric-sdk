@@ -1,16 +1,5 @@
 /* eslint-env node */
 
-const orchestrationFlowRestrictions = [
-  {
-    selector: "Identifier[name='heapVowE']",
-    message: 'Eventual send is not yet supported within an orchestration flow',
-  },
-  {
-    selector: "Identifier[name='E']",
-    message: 'Eventual send is not yet supported within an orchestration flow',
-  },
-];
-
 module.exports = {
   extends: ['airbnb-base', 'plugin:@endo/recommended', 'prettier'],
   plugins: ['import', 'github'],
@@ -39,7 +28,7 @@ module.exports = {
     'no-loop-func': 'off',
     'no-param-reassign': 'off',
     'no-promise-executor-return': 'off', // common to return setTimeout(), we know the value won't be accessible
-    'no-restricted-syntax': ['off'],
+    'no-restricted-syntax': 'off',
     'no-return-assign': 'off',
     'no-unused-expressions': 'off',
     'prefer-arrow-callback': 'off',
@@ -95,17 +84,9 @@ module.exports = {
       },
     },
     {
-      // Zoe contract module
-      files: ['**/*.contract.js'],
+      // Zoe contract module and orchestration flows
+      files: ['**/*.contract.js', '**/*.flows.js'],
       rules: {
-        '@endo/harden-exports': 'error',
-      },
-    },
-    {
-      // Orchestration flows
-      files: ['**/*.flows.js'],
-      rules: {
-        'no-restricted-syntax': ['error', ...orchestrationFlowRestrictions],
         '@endo/harden-exports': 'error',
       },
     },
