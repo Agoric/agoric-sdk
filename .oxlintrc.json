@@ -13,6 +13,10 @@
     {
       "name": "@jessie.js",
       "specifier": "@jessie.js/eslint-plugin"
+    },
+    {
+      "name": "@endo",
+      "specifier": "@endo/eslint-plugin"
     }
   ],
   "categories": {
@@ -151,6 +155,12 @@
             "message": "Prefer objectMap over Object.fromEntries(Object.entries(...))"
           }
         ]
+      }
+    },
+    {
+      "files": ["**/*.contract.js", "**/*.flows.js"],
+      "rules": {
+        "@endo/harden-exports": "error"
       }
     },
     {
