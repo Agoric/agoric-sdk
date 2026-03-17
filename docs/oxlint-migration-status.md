@@ -36,7 +36,7 @@ This document tracks migration progress from `eslint.config.mjs` to `.oxlintrc.j
 | --- | --- | --- | --- |
 | `no-restricted-properties` | test/demo files | ✅ Yes | Implemented via `eslint-js/no-restricted-properties`. |
 | `no-restricted-imports` | `packages/boot/test/**/*.test.*s` | ✅ Yes | Implemented via `eslint-js/no-restricted-imports`. |
-| `@jessie.js/safe-await-separator` | Global (with test/a3p overrides) | ✅ Yes | Implemented via `@jessie.js/` prefix using JS plugin bridge. |
+| `@jessie.js/safe-await-separator` | Global (with test/a3p overrides) | ✅ Yes | Implemented via `@jessie.js/` prefix using JS plugin bridge. Parity verified by `scripts/lint-rule-tests/safe-await-separator.bad.js` fixture + `reportUnusedDisableDirectives`. |
 | `plugin:ava/recommended` | test files | ✅ Yes | Implemented via `ava/` prefix using JS plugin bridge. |
 
 ## JSDoc rule migration status

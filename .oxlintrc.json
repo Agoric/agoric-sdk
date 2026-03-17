@@ -95,7 +95,8 @@
         "packages/*/tools/**/*.js",
         "packages/*/tools/**/*.mjs",
         "packages/*/*.js",
-        "packages/wallet/api/src/**/*.js"
+        "packages/wallet/api/src/**/*.js",
+        "scripts/lint-rule-tests/**/*.js"
       ],
       "rules": {
         "@jessie.js/safe-await-separator": "error",
@@ -422,5 +423,12 @@
     "no-control-regex": "off",
     "no-constant-condition": "off",
     "default-case": "off"
+  },
+  "options": {
+    // "error" would be ideal but causes false positives: eslint-disable comments for
+    // TypeScript rules (@typescript-eslint/*) that oxlint doesn't enforce appear
+    // "unused" to oxlint even though they are needed by ESLint. Promote to "error"
+    // once those TypeScript-specific disables are converted to // @ts-expect-error.
+    "reportUnusedDisableDirectives": "warn"
   }
 }
