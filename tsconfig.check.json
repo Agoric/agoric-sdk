@@ -23,14 +23,6 @@
     "exclude": [
         "a3p-integration", // vendored package problems
         "multichain-testing", // not relevant for coding loop (and noble-usdn-lab.ts is very slow)
-        "packages/benchmark",
-        "packages/create-dapp",
-        "packages/solo",
-        "packages/stat-logger",
-        "packages/swingset-runner",
-        "packages/xsnap/moddable",
-        "packages/xsnap/xsnap-native",
-        "packages/xsnap-lockdown",
         "**/build",
         "**/bundles",
         "**/coverage",
