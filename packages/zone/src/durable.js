@@ -90,7 +90,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   /** @type {Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
   /** @type {Zone['exoClassKit']} */
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- happens only integrating with Endo master
+  // oxlint-disable-next-line typescript/ban-ts-comment -- happens only integrating with Endo master
   // @ts-ignore FIXME in Endo
   const exoClassKit = (...args) => prepareExoClassKit(baggage, ...args);
   /** @type {Zone['exo']} */

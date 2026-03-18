@@ -11,7 +11,7 @@ import { q, b, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isPrimitive } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// oxlint-disable-next-line typescript/ban-ts-comment
 // @ts-ignore TS7016 The 'jessie.js' library may need to update its package.json or typings
 import { asyncGenerate } from 'jessie.js';
 import { logLevels } from './js-utils.js';

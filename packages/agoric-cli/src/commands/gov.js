@@ -53,7 +53,7 @@ export const makeGovCommand = (_logger, io = {}) => {
     // default to conventional ambient IO facilities.
     stdout = process.stdout,
     stderr = process.stderr,
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // oxlint-disable-next-line typescript/ban-ts-comment
     // @ts-ignore some resolutions don't expect this on global
     fetch = global.fetch,
     execFileSync = execFileSyncAmbient,

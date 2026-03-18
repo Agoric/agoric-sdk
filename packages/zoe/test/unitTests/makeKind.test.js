@@ -12,7 +12,7 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/../minimalMakeKindContract.js`;
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// oxlint-disable-next-line typescript/ban-ts-comment
 // @ts-ignore some resolutions don't expect this on global
 const VatData = global.VatData;
 

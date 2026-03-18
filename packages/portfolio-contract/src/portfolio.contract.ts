@@ -674,7 +674,7 @@ export const contract = async (
           void openPortfolio(
             seat,
             offerArgs,
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
+            // oxlint-disable-next-line typescript/ban-ts-comment -- sensitive to build order
             // @ts-ignore XXX Guest...
             kit,
           );
@@ -732,7 +732,7 @@ export const contract = async (
       void orchFns2.openPortfolio(
         seat,
         { targetAllocation },
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- sensitive to build order
+        // oxlint-disable-next-line typescript/ban-ts-comment -- sensitive to build order
         // @ts-ignore XXX Guest...
         kit,
         {

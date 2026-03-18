@@ -102,7 +102,7 @@ export const prepareOwnable = (
   const makeOwnable = underlying => makeRevocable(underlying);
   // Using at-ts-ignore rather than at-ts-expect-error because the vscode
   // ts server says it is an error but `yarn lint` says it is not.
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // oxlint-disable-next-line typescript/ban-ts-comment
   // @ts-ignore Return type is more precise than revocable supports
   return harden(makeOwnable);
 };

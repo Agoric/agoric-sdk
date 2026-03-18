@@ -10,7 +10,7 @@ const replacer = (_key, value) => {
         // `errors`).
         const obj = { errorType: value.name, message: value.message };
         if (hasOwn(value, 'cause')) obj.cause = value.cause;
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // oxlint-disable-next-line typescript/ban-ts-comment
         // @ts-ignore TS2339 property "errors" is only on AggregateError
         if (hasOwn(value, 'errors')) obj.errors = value.errors;
         const stack = value.stack;

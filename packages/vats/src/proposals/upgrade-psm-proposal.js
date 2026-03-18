@@ -42,7 +42,7 @@ export const upgradePSMProposal = async (
 
   for (const { psm, psmAdminFacet, label } of psmKitMap.values()) {
     const [originalPrivateArgs, poserInvitation] = await Promise.all([
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // oxlint-disable-next-line typescript/ban-ts-comment
       // @ts-ignore Local tsc sees this as an error but typedoc does not
       deeplyFulfilled(instancePrivateArgs.get(psm)),
       E(electorateCreatorFacet).getPoserInvitation(),

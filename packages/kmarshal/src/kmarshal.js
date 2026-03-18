@@ -21,7 +21,7 @@ const { toStringTag } = Symbol;
 
 const makeStandinPromise = kref => {
   const p = Promise.resolve(`${kref} stand in`);
-  // eslint-disable-next-line @typescript-eslint/no-floating-promises
+  // oxlint-disable-next-line typescript/no-floating-promises
   Object.defineProperty(p, toStringTag, {
     value: kref,
     enumerable: false,
