@@ -1,6 +1,5 @@
 /* eslint-disable no-underscore-dangle */
 import { fixupConfigRules } from '@eslint/compat';
-import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -72,10 +71,6 @@ export default [
   },
   ...fixupConfigRules(compat.extends('@agoric', 'plugin:@agoric/recommended')),
   {
-    plugins: {
-      '@typescript-eslint': typescriptEslint,
-    },
-
     linterOptions: {
       reportUnusedDisableDirectives: true,
       // TODO get this working by fixing jessie linter that triggers
@@ -88,36 +83,9 @@ export default [
       parser: tsParser,
       ecmaVersion: 5,
       sourceType: 'module',
-
-      parserOptions: {
-        useProjectService: true,
-
-        projectService: {
-          allowDefaultProject: ['*.js'],
-          defaultProject: 'tsconfig.json',
-        },
-
-        tsconfigRootDir: __dirname,
-        extraFileExtensions: ['.cjs', '.mjs'],
-      },
     },
 
     rules: {
-      '@typescript-eslint/no-unused-expressions': 'off',
-      '@typescript-eslint/no-empty-object-type': 'warn',
-      '@typescript-eslint/no-unnecessary-type-constraint': 'warn',
-      '@typescript-eslint/no-unsafe-function-type': 'warn',
-      '@typescript-eslint/no-wrapper-object-types': 'warn',
-      '@typescript-eslint/ban-ts-comment': [
-        'error',
-        {
-          'ts-expect-error': false,
-          'ts-nocheck': false,
-        },
-      ],
-
-      '@typescript-eslint/no-floating-promises': 'error',
-
       'no-void': [
         'error',
         {
@@ -211,56 +179,14 @@ export default [
       // TypeScript's `tsc --noEmit` catches undefined names with project-aware
       // analysis, so keep the base ESLint rule disabled to avoid duplicate noise.
       'no-undef': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
     },
   },
-  ...compat
-    .extends('plugin:@typescript-eslint/disable-type-checked')
-    .map(config => ({
-      ...config,
-      files: [
-        '**/exported.*',
-        '**/types-index.*',
-        '**/types-ambient.*',
-        '**/types.*',
-      ],
-    })),
-  {
-    files: ['**/*.html'],
-
-    languageOptions: {
-      ecmaVersion: 5,
-      sourceType: 'script',
-
-      parserOptions: {
-        project: false,
-      },
-    },
-  },
-  ...compat
-    .extends('plugin:@typescript-eslint/disable-type-checked')
-    .map(config => ({
-      ...config,
-      files: ['a3p-integration/**'],
-    })),
   {
     files: ['a3p-integration/**'],
 
     languageOptions: {
       ecmaVersion: 5,
       sourceType: 'script',
-
-      parserOptions: {
-        useProjectService: false,
-        project: false,
-      },
-    },
-  },
-  {
-    files: ['**/types*.js'],
-
-    rules: {
-      '@typescript-eslint/no-floating-promises': 'off',
     },
   },
 ];

@@ -35,7 +35,6 @@
     "@types/eslint": "^9.6.1",
     "@types/fs-extra": "^11",
     "@types/node": "^22.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.26.1",
     "@typescript-eslint/parser": "^8.26.1",
     "ava": "^6.2.0",
     "eslint": "^9.22.0",
