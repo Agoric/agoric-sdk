@@ -6,7 +6,7 @@
 // eslint-disable-next-line import/order -- has side-effects AND exports
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
 import { makeSwingsetController, buildKernelBundles } from '../src/index.js';
@@ -23,7 +23,6 @@ import { buildPatterns } from './message-patterns.js';
 
 // See message-patterns.js for details.
 
-// eslint-disable-next-line no-unused-vars
 async function runWithTrace(c) {
   let count = 0;
   while (c.dump().runQueue.length) {

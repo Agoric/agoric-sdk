@@ -4,11 +4,11 @@
 
 import '@endo/init/legacy.js';
 
-import path from 'path';
+import path from 'node:path';
 import WebSocket from 'ws';
-import { spawn } from 'child_process';
-import rawFs from 'fs';
-import os from 'os';
+import { spawn } from 'node:child_process';
+import rawFs from 'node:fs';
+import os from 'node:os';
 
 // Configure logs.
 import './anylogger-agoric.js';

@@ -1,16 +1,16 @@
 // @ts-nocheck
 /* global setTimeout clearTimeout setInterval clearInterval process */
 // Start a network service
-import path from 'path';
-import http from 'http';
-import { createConnection } from 'net';
-import { existsSync as existsSyncAmbient } from 'fs';
+import path from 'node:path';
+import http from 'node:http';
+import { createConnection } from 'node:net';
+import { existsSync as existsSyncAmbient } from 'node:fs';
 import express from 'express';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import WebSocket from 'ws';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
 import morgan from 'morgan';
-import { format as urlFormat } from 'url';
+import { format as urlFormat } from 'node:url';
 
 import { getAccessToken } from '@agoric/access-token';
 
@@ -60,7 +60,6 @@ const verifyToken = (actual, expected) => {
   // The bitwise operations here and fixed loop length are necessary to
   // guarantee constant time.
   for (let i = 0; i < expectedLength; i += 1) {
-    // eslint-disable-next-line no-bitwise
     failed |= stringToCompare.charCodeAt(i) ^ expected.charCodeAt(i);
   }
 

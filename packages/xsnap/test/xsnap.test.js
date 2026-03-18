@@ -2,11 +2,11 @@
 
 import test from 'ava';
 
-import { createHash } from 'crypto';
-import * as proc from 'child_process';
-import * as os from 'os';
-import fs from 'fs';
-import path from 'path';
+import { createHash } from 'node:crypto';
+import * as proc from 'node:child_process';
+import * as os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
 import { tmpName } from 'tmp';
 
 import { xsnap } from '../src/xsnap.js';
@@ -344,7 +344,7 @@ hashes.
 
     const hexHash = hash.digest('hex');
     t.log(`${description} produces golden hash ${hexHash}`);
-    // eslint-disable-next-line ava/assertion-arguments -- xxx, use macros
+    // oxlint-disable-next-line ava/assertion-arguments -- xxx, use macros
     t.snapshot(hexHash, description);
     t.deepEqual(messages, [], `${description} messages`);
   }

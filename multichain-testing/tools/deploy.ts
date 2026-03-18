@@ -1,5 +1,5 @@
 /** @file run a builder and deploy it onto the Agoric chain in local Starship cluster */
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 import type { AgdTools } from './agd-tools.js';
 import type { CoreEvalPlan } from '@agoric/deploy-script-support/src/writeCoreEvalParts.js';
 import { makeTracer, toCLIOptions } from '@agoric/internal';

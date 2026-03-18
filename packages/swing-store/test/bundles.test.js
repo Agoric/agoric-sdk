@@ -1,6 +1,6 @@
 // @ts-check
 import test from 'ava';
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 import tmp from 'tmp';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { createSHA256 } from '../src/hasher.js';

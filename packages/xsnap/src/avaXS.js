@@ -8,8 +8,8 @@ Usage:
 
 import '@endo/init';
 
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { tmpName } from 'tmp';
 
 import { assert, q, Fail } from '@endo/errors';

@@ -1,9 +1,9 @@
 // @ts-check
 
-import path from 'path';
-import { createGunzip } from 'zlib';
-import { Readable } from 'stream';
-import { Buffer } from 'buffer';
+import path from 'node:path';
+import { createGunzip } from 'node:zlib';
+import { Readable } from 'node:stream';
+import { Buffer } from 'node:buffer';
 
 import sqlite3 from 'better-sqlite3';
 import test from 'ava';

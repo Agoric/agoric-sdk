@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
@@ -38,7 +38,6 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
     Money: simoleanIssuer,
   });
 
-  // eslint-disable-next-line no-unused-vars
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,

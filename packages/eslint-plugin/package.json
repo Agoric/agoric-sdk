@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "eslint": "^9.0.0",
-    "eslint-plugin-eslint-plugin": "^7.2.0"
+    "eslint-plugin-eslint-plugin": "^7.3.2"
   },
   "license": "Apache-2.0",
   "engines": {

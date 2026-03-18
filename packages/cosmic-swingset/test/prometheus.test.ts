@@ -212,7 +212,7 @@ const testPrometheusMetrics = async t => {
       const baseName = name.replace(/_sum$/, '');
       const meta =
         HISTOGRAM_METRICS[baseName] || BLOCK_HISTOGRAM_METRICS[baseName];
-      // eslint-disable-next-line no-shadow
+
       const unit = meta?.unit;
       if (unit === 'ms') return [isRetry ? 500 : 100, unit];
       if (unit === 's') return [isRetry ? 0.5 : 0.1, unit];

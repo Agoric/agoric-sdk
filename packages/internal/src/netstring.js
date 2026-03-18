@@ -2,7 +2,7 @@
 import { Fail } from '@endo/errors';
 
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
-import { Transform } from 'stream';
+import { Transform } from 'node:stream';
 
 const COLON = 58;
 const COMMA = 44;

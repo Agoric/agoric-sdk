@@ -1,7 +1,7 @@
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import path from 'path';
+import path from 'node:path';
 import bundleSource from '@endo/bundle-source';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';

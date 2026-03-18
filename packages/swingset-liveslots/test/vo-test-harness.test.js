@@ -5,7 +5,7 @@ async function voTestTest(t, mode) {
   let makeThing;
 
   // eslint thinks `retainer` is unused, but eslint is very wrong
-  // eslint-disable-next-line no-unused-vars
+
   let retainer;
 
   function prepare(vatData) {

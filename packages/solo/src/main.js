@@ -1,8 +1,8 @@
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import parseArgs from 'minimist';
-import process from 'process';
-import { spawnSync } from 'child_process';
+import process from 'node:process';
+import { spawnSync } from 'node:child_process';
 import { assert } from '@endo/errors';
 
 import anylogger from '@agoric/internal/vendor/anylogger.js';

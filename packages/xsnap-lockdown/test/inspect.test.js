@@ -93,7 +93,7 @@ test('unconfined inspect', t => {
     // eslint-disable-next-line no-eval
     const evaled = (1, eval)(`(${toEval})`);
     // t.log(evaled);
-    // eslint-disable-next-line ava/assertion-arguments
+    // oxlint-disable-next-line ava/assertion-arguments
     t.is(unconfinedInspect(evaled), toRender, toEval);
   }
 });
