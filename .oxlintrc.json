@@ -1,6 +1,9 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["import", "unicorn", "jsdoc", "node"],
+  "plugins": ["import", "unicorn", "jsdoc", "node", "typescript"],
+  "options": {
+    "typeAware": true
+  },
   "jsPlugins": [
     {
       "name": "eslint-js",
@@ -344,7 +347,11 @@
     }
   ],
   "rules": {
-    "no-void": ["warn", { "allowAsStatement": true }],
+    "typescript/prefer-readonly-parameter-types": "off", // we use mutable parameters for things like accumulators and builders
+    "typescript/promise-function-async": "off", // we use non-async functions that return promises, and async functions that return vows
+    "typescript/no-unnecessary-type-assertion": "off", // belt and suspenders
+    "typescript/no-floating-promises": "error",
+    "no-void": ["error", { "allowAsStatement": true }],
     "no-use-before-define": "off",
     "no-empty-function": "off",
     "no-console": "off",

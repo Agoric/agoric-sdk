@@ -8,7 +8,7 @@ This document tracks migration progress from `eslint.config.mjs` to `.oxlintrc.j
 - The CI job `lint-oxlint` in `test-all-packages` is non-blocking (`continue-on-error: true`).
 - Oxlint severities are intentionally limited to `off` and `warn`.
 - Support for `no-restricted-syntax` is provided via `oxlint-plugin-eslint` (using the `eslint-js/` prefix).
-- **Type-aware features:** Oxlint is currently run without type-aware features (`--type-aware` or `--type-check`). Rules requiring type information (e.g., `no-floating-promises`) are not yet migrated to Oxlint.
+- **Type-aware features:** Oxlint runs with `options.typeAware: true` (via `oxlint-tsgolint`). Type-aware rules such as `typescript/no-floating-promises` are active.
 
 ## `no-restricted-syntax` migration status
 
@@ -33,6 +33,7 @@ This document tracks migration progress from `eslint.config.mjs` to `.oxlintrc.j
 | `no-restricted-imports` | `packages/boot/test/**/*.test.*s` | ✅ Yes | Implemented via `eslint-js/no-restricted-imports`. |
 | `@jessie.js/safe-await-separator` | Global (with test/a3p overrides) | ✅ Yes | Implemented via `@jessie.js/` prefix using JS plugin bridge. |
 | `plugin:ava/recommended` | test files | ✅ Yes | Implemented via `ava/` prefix using JS plugin bridge. |
+| `@typescript-eslint/no-floating-promises` | Global (off for `**/types*.js`) | ✅ Yes | Native `typescript` plugin with `options.typeAware: true`; requires `oxlint-tsgolint`. |
 
 ## JSDoc rule migration status
 
@@ -63,7 +64,7 @@ These should only be disabled in ESLint after we verify semantic parity and acce
 - `no-restricted-properties` (`test.only` policy)
 - `no-restricted-imports` (`packages/boot/test/**/*.test.*s` scope)
 - `@jessie.js/safe-await-separator` (global and scoped policies)
-- `@typescript-eslint/no-floating-promises` once Oxlint type-aware results are stable enough for policy replacement
+- `@typescript-eslint/no-floating-promises` (now running as `typescript/no-floating-promises` in Oxlint; disable in ESLint once Oxlint results are verified stable)
 
 ## Evaluation: custom Agoric/Endo plugin migration
 
