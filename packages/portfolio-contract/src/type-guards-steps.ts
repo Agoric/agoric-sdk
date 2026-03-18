@@ -126,6 +126,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     },
     {
       fee: AnyNatAmountShape,
+      userFee: AnyNatAmountShape,
       detail: M.recordOf(M.string(), M.nat()),
       claim: M.boolean(),
     },

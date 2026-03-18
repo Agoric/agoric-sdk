@@ -30,17 +30,9 @@ const decodeWalletMulticall = (memo: string) => {
     payload,
   );
 
-  const [permit2Call, usdcTransferCall] = callMessage.calls;
   return {
     id: callMessage.id,
-    permit2: decodeFunctionData({
-      abi: [PermitWitnessTransferFromFunctionABIType],
-      data: permit2Call.data,
-    }),
-    transfer: decodeFunctionData({
-      abi: erc20ABI,
-      data: usdcTransferCall.data,
-    }),
+    calls: callMessage.calls,
   };
 };
 
@@ -59,145 +51,238 @@ const getRemoteAddress = (
     walletBytecode: hexToBytes(bytecode.replace(/^0x/, '')),
   });
 
-test('withdraw with Ethereum step sends fee to fee collector', async t => {
-  const trader = {
-    sourceAccountId:
-      'eip155:1:0x1234567890AbcdEF1234567890aBcdef12345678' as const,
-    withdraw: {
-      chainId: 1n,
-      amount: AmountMath.make(USDC, 2_000_000n),
-      token: contractsMock.Ethereum.usdc,
-    },
-  };
-  const traderAddress = parseAccountId(trader.sourceAccountId)
-    .accountAddress as `0x${string}`;
-
+const axelarQuotes = {
   // docs-design/user-fees.md: observed on 2026-03-09 for
   // sourceChain=agoric, destinationChain=Ethereum, gasLimit=279473
-  const axelarQuotes = { uusdc: 370_132n, ubld: 91_246_921n };
-  const paddedQuotes = {
-    uusdc: withPad(axelarQuotes.uusdc),
-    ubld: withPad(axelarQuotes.ubld),
-  };
+  uusdc: 370_132n,
+  ubld: 91_246_921n,
+};
+const paddedQuotes = {
+  uusdc: withPad(axelarQuotes.uusdc),
+  ubld: withPad(axelarQuotes.ubld),
+};
 
-  const { orch, ctx, offer, storage, txResolver, cosmosId } = mocks({}, {});
-  const { log } = offer;
-  const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
-
-  const traderP = (async () => {
-    const kit = await ctx.makePortfolioKit({
-      sourceAccountId: trader.sourceAccountId,
-    });
-    await provideCosmosAccount(orch, 'agoric', kit, silent);
-
-    const { value: owner } = kit.reader.getLocalAccount().getAddress();
-    const atEthereum = getRemoteAddress('Ethereum', owner, ctx.walletBytecode);
-
-    const [payloadMisc, permitMisc] = [
-      {
-        witnessTypeString: 'WithdrawWitness',
-        witness:
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-        signature: '0x1234',
-      },
-      { nonce: 7115368379195441n, deadline: 1357923600n },
-    ] as const;
-
-    const { token, chainId, amount } = trader.withdraw;
-    const flowKey = kit.evmHandler.withdraw({
-      withdrawDetails: { token, amount: amount.value },
-      domain: { chainId },
-      spender: atEthereum,
-      permit2Payload: {
-        owner: traderAddress,
-        permit: {
-          permitted: { token, amount: paddedQuotes.uusdc },
-          ...permitMisc,
-        },
-        ...payloadMisc,
-      },
-    });
-    const flowNum = Number(flowKey.replace('flow', ''));
-
-    return {
-      flowNum,
-      plannerFacet: kit.planner,
-      portfolioId: kit.reader.getPortfolioId(),
+type WithdrawScenario = {
+  trader: {
+    sourceAccountId: `eip155:${number}:${`0x${string}`}`;
+    remoteChain: AxelarChain;
+    withdraw: {
+      chainId: bigint;
+      amount: ReturnType<typeof AmountMath.make>;
+      token: `0x${string}`;
     };
-  })();
+  };
+  plan: (amount: ReturnType<typeof AmountMath.make>) => MovementDesc[];
+  expected: {
+    permit2: false | { feeCollector: `0x${string}`; requestedAmount: bigint };
+  };
+};
 
-  const plannerRun = async (
-    traderStartedP: Promise<{
-      flowNum: number;
-      plannerFacet: Awaited<ReturnType<typeof ctx.makePortfolioKit>>['planner'];
-      portfolioId: number;
-    }>,
-  ) => {
-    const { flowNum, portfolioId, plannerFacet } = await traderStartedP;
+const runWithdrawScenario = test.macro({
+  exec: async (t, scenario: WithdrawScenario) => {
+    const { trader } = scenario;
+    const traderAddress = parseAccountId(trader.sourceAccountId)
+      .accountAddress as `0x${string}`;
+
+    const { orch, ctx, offer, storage, txResolver, cosmosId } = mocks({}, {});
+    const { log } = offer;
+    const { getPortfolioStatus, getFlowHistory } = makeStorageTools(storage);
+
+    const traderP = (async () => {
+      const kit = await ctx.makePortfolioKit({
+        sourceAccountId: trader.sourceAccountId,
+      });
+      await provideCosmosAccount(orch, 'agoric', kit, silent);
+
+      const { value: owner } = kit.reader.getLocalAccount().getAddress();
+      const spender = getRemoteAddress(
+        trader.remoteChain,
+        owner,
+        ctx.walletBytecode,
+      );
+
+      const [payloadMisc, permitMisc] = [
+        {
+          witnessTypeString: 'WithdrawWitness',
+          witness:
+            '0x0000000000000000000000000000000000000000000000000000000000000000',
+          signature: '0x1234',
+        },
+        { nonce: 7115368379195441n, deadline: 1357923600n },
+      ] as const;
+
+      const { token, chainId, amount } = trader.withdraw;
+      const flowKey = kit.evmHandler.withdraw({
+        withdrawDetails: { token, amount: amount.value },
+        domain: { chainId },
+        spender,
+        permit2Payload: {
+          owner: traderAddress,
+          permit: {
+            permitted: { token, amount: paddedQuotes.uusdc },
+            ...permitMisc,
+          },
+          ...payloadMisc,
+        },
+      });
+      const flowNum = Number(flowKey.replace('flow', ''));
+
+      return {
+        flowNum,
+        plannerFacet: kit.planner,
+        portfolioId: kit.reader.getPortfolioId(),
+      };
+    })();
+
+    const plannerRun = async (
+      traderStartedP: Promise<{
+        flowNum: number;
+        plannerFacet: Awaited<
+          ReturnType<typeof ctx.makePortfolioKit>
+        >['planner'];
+        portfolioId: number;
+      }>,
+    ) => {
+      const { flowNum, portfolioId, plannerFacet } = await traderStartedP;
+      const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
+      const detail = flowsRunning[`flow${flowNum}`];
+      if (detail.type !== 'withdraw')
+        throw t.fail(`expected withdraw, got ${detail.type}`);
+      t.is(detail.toChain, trader.remoteChain);
+      t.deepEqual(detail.amount, trader.withdraw.amount);
+      t.deepEqual(detail.fee, AmountMath.make(USDC, paddedQuotes.uusdc));
+
+      const steps = scenario.plan(detail.amount);
+      plannerFacet.resolveFlowPlan(flowNum, steps);
+      await txResolver.drainPending();
+    };
+
+    const [{ flowNum, portfolioId }] = await Promise.all([
+      traderP,
+      plannerRun(traderP),
+    ]);
+    await eventLoopIteration();
+
+    const axelarId = await cosmosId('axelar');
+    const axelarTransfer = log.findLast(
+      (entry: any) =>
+        entry._method === 'transfer' && entry.address?.chainId === axelarId,
+    );
+    t.truthy(axelarTransfer, 'GMP transfer should be made for withdrawToEVM');
+
+    const rawMemo = axelarTransfer?.opts?.memo;
+    t.truthy(rawMemo, 'GMP transfer should include a wallet payload memo');
+
+    const decoded = decodeWalletMulticall(rawMemo as string);
+    const decodedCalls = decoded.calls.map((call, index) =>
+      decodeFunctionData({
+        abi:
+          index === 0 && scenario.expected.permit2
+            ? [PermitWitnessTransferFromFunctionABIType]
+            : erc20ABI,
+        data: call.data,
+      }),
+    );
+
+    if (scenario.expected.permit2) {
+      t.is(decodedCalls.length, 2);
+      t.like(decodedCalls[0], {
+        functionName: 'permitWitnessTransferFrom',
+      });
+      t.like((decodedCalls[0] as any).args[1], {
+        to: scenario.expected.permit2.feeCollector,
+        requestedAmount: scenario.expected.permit2.requestedAmount,
+      });
+      t.is((decodedCalls[0] as any).args[2], traderAddress);
+      t.like(decodedCalls[1], {
+        functionName: 'transfer',
+      });
+      t.deepEqual((decodedCalls[1] as any).args, [
+        traderAddress,
+        trader.withdraw.amount.value,
+      ]);
+    } else {
+      t.is(decodedCalls.length, 1);
+      t.like(decodedCalls[0], {
+        functionName: 'transfer',
+      });
+      t.deepEqual((decodedCalls[0] as any).args, [
+        traderAddress,
+        trader.withdraw.amount.value,
+      ]);
+    }
+
+    const failCall = log.find((entry: any) => entry._method === 'fail');
+    t.falsy(failCall, 'seat should not fail');
+
     const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
-    const detail = flowsRunning[`flow${flowNum}`];
-    if (detail.type !== 'withdraw')
-      throw t.fail(`expected withdraw, got ${detail.type}`);
-    t.is(detail.toChain, 'Ethereum');
-    t.deepEqual(detail.amount, trader.withdraw.amount);
-    t.deepEqual(detail.fee, AmountMath.make(USDC, paddedQuotes.uusdc));
+    t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after completion');
+    const flowHistory = await getFlowHistory(portfolioId, flowNum);
+    t.is(flowHistory.at(-1)?.state, 'done');
 
-    const steps: MovementDesc[] = [
+    t.snapshot(log, 'call log');
+    t.snapshot(decodedCalls, 'decoded wallet multicall');
+    await documentStorageSchema(t, storage, docOpts);
+  },
+  title: (_providedTitle = '', _scenario: WithdrawScenario) => _providedTitle,
+});
+
+test(
+  'withdraw with Ethereum step sends fee to fee collector',
+  runWithdrawScenario,
+  {
+    trader: {
+      sourceAccountId:
+        'eip155:1:0x1234567890AbcdEF1234567890aBcdef12345678' as const,
+      remoteChain: 'Ethereum',
+      withdraw: {
+        chainId: 1n,
+        amount: AmountMath.make(USDC, 2_000_000n),
+        token: contractsMock.Ethereum.usdc,
+      },
+    },
+    plan: amount => [
       {
         src: '@Ethereum',
         dest: '-Ethereum',
-        amount: detail.amount,
+        amount,
         fee: AmountMath.make(BLD, paddedQuotes.ubld),
+        userFee: AmountMath.make(USDC, paddedQuotes.uusdc),
       },
-    ];
-    plannerFacet.resolveFlowPlan(flowNum, steps);
-    await txResolver.drainPending();
-  };
+    ],
+    expected: {
+      permit2: {
+        feeCollector: contractsMock.Ethereum.feeCollector,
+        requestedAmount: paddedQuotes.uusdc,
+      },
+    },
+  } satisfies WithdrawScenario,
+);
 
-  const [{ flowNum, portfolioId }] = await Promise.all([
-    traderP,
-    plannerRun(traderP),
-  ]);
-  await eventLoopIteration();
-
-  const axelarId = await cosmosId('axelar');
-  const axelarTransfer = log.findLast(
-    (entry: any) =>
-      entry._method === 'transfer' && entry.address?.chainId === axelarId,
-  );
-  t.truthy(axelarTransfer, 'GMP transfer should be made for withdrawToEVM');
-
-  const rawMemo = axelarTransfer?.opts?.memo;
-  t.truthy(rawMemo, 'GMP transfer should include a wallet payload memo');
-
-  const decodedCalls = decodeWalletMulticall(rawMemo as string);
-
-  t.like(decodedCalls.permit2, {
-    functionName: 'permitWitnessTransferFrom',
-  });
-  t.like(decodedCalls.permit2.args[1], {
-    to: contractsMock.Ethereum.feeCollector,
-    requestedAmount: paddedQuotes.uusdc,
-  });
-  t.is(decodedCalls.permit2.args[2], traderAddress);
-
-  t.like(decodedCalls.transfer, {
-    functionName: 'transfer',
-  });
-  t.deepEqual(decodedCalls.transfer.args, [
-    traderAddress,
-    trader.withdraw.amount.value,
-  ]);
-
-  const failCall = log.find((entry: any) => entry._method === 'fail');
-  t.falsy(failCall, 'seat should not fail');
-
-  const { flowsRunning = {} } = await getPortfolioStatus(portfolioId);
-  t.deepEqual(flowsRunning, {}, 'flow should be cleaned up after completion');
-  const flowHistory = await getFlowHistory(portfolioId, flowNum);
-  t.is(flowHistory.at(-1)?.state, 'done');
-
-  t.snapshot(log, 'call log');
-  t.snapshot(decodedCalls, 'decoded wallet multicall');
-  await documentStorageSchema(t, storage, docOpts);
-});
+test(
+  'withdraw without Ethereum charge step does not send fee to fee collector',
+  runWithdrawScenario,
+  {
+    trader: {
+      sourceAccountId:
+        'eip155:42161:0x1234567890AbcdEF1234567890aBcdef12345678' as const,
+      remoteChain: 'Arbitrum',
+      withdraw: {
+        chainId: 42161n,
+        amount: AmountMath.make(USDC, 2_000_000n),
+        token: contractsMock.Arbitrum.usdc,
+      },
+    },
+    plan: amount => [
+      {
+        src: '@Arbitrum',
+        dest: '-Arbitrum',
+        amount,
+        fee: AmountMath.make(BLD, 100n),
+      },
+    ],
+    expected: {
+      permit2: false,
+    },
+  } satisfies WithdrawScenario,
+);

@@ -106,7 +106,9 @@ export type TargetAllocation = Partial<Record<InstrumentId, bigint>>;
 
 export type FlowDetail =
   // SPIKE-DESIGN: prototype plumbing for user-paid withdraw fees.
-  // The exact withdraw request shape is still being designed.
+  // The exact withdraw request shape is still being designed. In the current
+  // prototype, `fee` acts as an authorized fee ceiling carried with the
+  // withdraw request, not necessarily the final amount charged by execution.
   | {
       type: 'withdraw';
       amount: NatAmount;
@@ -144,6 +146,10 @@ export type MovementDesc = {
   dest: AssetPlaceRef;
   /** for example: GMP fee */
   fee?: NatAmount;
+  // SPIKE-DESIGN: planner-selected user fee to collect for this step.
+  // This is provisional until the public resolved-plan fee model is settled.
+  /** planner-selected user fee to collect for this step */
+  userFee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
   claim?: boolean;

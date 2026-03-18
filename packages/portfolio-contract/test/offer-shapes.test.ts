@@ -117,6 +117,15 @@ test('offerArgs can carry fee', t => {
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
+test('offerArgs can carry userFee', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const [amount, userFee] = [usdc(200n), usdc(44n)];
+  const specimen = harden({
+    flow: [{ src: '@Ethereum', dest: '-Ethereum', amount, userFee }],
+  });
+  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
 test('offerArgs can carry usdnOut', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const [amount, detail] = [usdc(200n), { usdnOut: 198n }];
@@ -343,6 +352,12 @@ test('vstorage flow detail type matches shape', t => {
       amount: usdc(1n),
       toChain: 'noble',
     },
+    withdrawWithFee: {
+      type: 'withdraw',
+      amount: usdc(1n),
+      fee: usdc(44n),
+      toChain: 'Ethereum',
+    },
   });
 
   const failCases = harden({
@@ -378,6 +393,25 @@ test('vstorage portfolio status accepts flow detail with fromChain', t => {
         type: 'deposit',
         amount: usdc(1n),
         fromChain: 'Base',
+      },
+    },
+  });
+  t.notThrows(() => mustMatch(status, PortfolioStatusShapeExt));
+});
+
+test('vstorage portfolio status accepts withdraw flow detail with fee', t => {
+  const status = harden({
+    positionKeys: [],
+    flowCount: 1,
+    accountIdByChain: {},
+    policyVersion: 1,
+    rebalanceCount: 0,
+    flowsRunning: {
+      flow1: {
+        type: 'withdraw',
+        amount: usdc(1n),
+        fee: usdc(44n),
+        toChain: 'Ethereum',
       },
     },
   });

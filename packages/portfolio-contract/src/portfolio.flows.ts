@@ -1206,21 +1206,26 @@ const stepFlow = async (
             assert(gInfo && agoric, destChain);
 
             const feeCollector = ctx.contracts[destChain].feeCollector;
+            const stepUserFee = move.userFee;
             const withdrawFeeDetail =
-              evmWithdrawDetail?.toChain === destChain
+              stepUserFee && evmWithdrawDetail?.toChain === destChain
                 ? evmWithdrawDetail
                 : undefined;
 
-            withdrawFeeDetail
+            stepUserFee
               ? feeCollector ||
                 Fail`withdraw fee collection requires feeCollector for ${destChain}`
+              : undefined;
+            stepUserFee
+              ? withdrawFeeDetail ||
+                Fail`withdraw fee collection requires Permit2 authority for ${destChain}`
               : undefined;
 
             // SPIKE-DESIGN: prototype remote wallet multicall for user-paid
             // withdraw fees. Exact fee recipient configuration and calldata
             // shape remain under design.
             const session = makeEvmAbiCallBatch();
-            if (withdrawFeeDetail && feeCollector) {
+            if (stepUserFee && withdrawFeeDetail && feeCollector) {
               const {
                 permit2Payload,
                 permit2Payload: {
@@ -1231,6 +1236,8 @@ const stepFlow = async (
                   signature,
                 },
               } = withdrawFeeDetail;
+              permit.permitted.amount >= stepUserFee.value ||
+                Fail`authorized fee ${permit.permitted.amount} is less than required user fee ${stepUserFee.value}`;
               const permit2 = session.makeContract(
                 ctx.contracts[destChain].permit2,
                 permit2Abi,
@@ -1239,7 +1246,7 @@ const stepFlow = async (
                 permit,
                 {
                   to: feeCollector,
-                  requestedAmount: permit2Payload.permit.permitted.amount,
+                  requestedAmount: stepUserFee.value,
                 },
                 owner,
                 witness,
