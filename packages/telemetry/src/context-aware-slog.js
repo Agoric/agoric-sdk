@@ -1,103 +1,12 @@
 /* eslint-env node */
 
-/**
- * @typedef {Partial<{
- *    'block.height': Slog['blockHeight'];
- *    'block.time': Slog['blockTime'];
- *    'crank.deliveryNum': Slog['deliveryNum'];
- *    'crank.num': Slog['crankNum'];
- *    'crank.type': Slog['crankType'];
- *    'crank.vatID': Slog['vatID'];
- *    init: boolean;
- *    replay: boolean;
- *    'run.id': string;
- *    'run.num': string | null;
- *    'run.trigger.blockHeight': Slog['blockHeight'];
- *    'run.trigger.msgIdx': number;
- *    'run.trigger.sender': Slog['sender'];
- *    'run.trigger.source': Slog['source'];
- *    'run.trigger.bundleHash': Slog['endoZipBase64Sha512'];
- *    'run.trigger.time': Slog['blockTime'];
- *    'run.trigger.txHash': string;
- *    'run.trigger.type': string;
- *  }>
- * } Context
- *
- * @typedef {{
- *  'crank.syscallNum'?: Slog['syscallNum'];
- *  'process.uptime': Slog['monotime'];
- * } & Context} LogAttributes
- *
- * @typedef {{
- *  blockHeight?: number;
- *  blockTime?: number;
- *  crankNum?: bigint;
- *  crankType?: string;
- *  deliveryNum?: bigint;
- *  inboundNum?: string;
- *  monotime: number;
- *  remainingBeans?: bigint;
- *  replay?: boolean;
- *  runNum?: number;
- *  sender?: string;
- *  source?: string;
- *  endoZipBase64Sha512?: string;
- *  syscallNum?: number;
- *  time: number;
- *  type: string;
- *  vatID?: string;
- * }} Slog
- */
+import { SLOG_TYPES } from './constants.js';
 
-const SLOG_TYPES = {
-  CLIST: 'clist',
-  CONSOLE: 'console',
-  COSMIC_SWINGSET: {
-    AFTER_COMMIT_STATS: 'cosmic-swingset-after-commit-stats',
-    BEGIN_BLOCK: 'cosmic-swingset-begin-block',
-    BOOTSTRAP_BLOCK: {
-      FINISH: 'cosmic-swingset-bootstrap-block-finish',
-      START: 'cosmic-swingset-bootstrap-block-start',
-    },
-    COMMIT: {
-      FINISH: 'cosmic-swingset-commit-finish',
-      START: 'cosmic-swingset-commit-start',
-    },
-    END_BLOCK: {
-      FINISH: 'cosmic-swingset-end-block-finish',
-      START: 'cosmic-swingset-end-block-start',
-    },
-    // eslint-disable-next-line no-restricted-syntax
-    RUN: {
-      FINISH: 'cosmic-swingset-run-finish',
-      START: 'cosmic-swingset-run-start',
-    },
-  },
-  COSMIC_SWINGSET_TRIGGERS: {
-    BRIDGE_INBOUND: 'cosmic-swingset-bridge-inbound',
-    DELIVER_INBOUND: 'cosmic-swingset-deliver-inbound',
-    TIMER_POLL: 'cosmic-swingset-timer-poll',
-    INSTALL_BUNDLE: 'cosmic-swingset-install-bundle',
-  },
-  CRANK: {
-    FINISH: 'crank-finish',
-    START: 'crank-start',
-  },
-  DELIVER: 'deliver',
-  DELIVER_RESULT: 'deliver-result',
-  KERNEL: {
-    INIT: {
-      FINISH: 'kernel-init-finish',
-      START: 'kernel-init-start',
-    },
-  },
-  REPLAY: {
-    FINISH: 'finish-replay',
-    START: 'start-replay',
-  },
-  SYSCALL: 'syscall',
-  SYSCALL_RESULT: 'syscall-result',
-};
+/**
+ * @typedef {import('./types.js').Context} Context
+ * @typedef {import('./types.js').LogAttributes} LogAttributes
+ * @typedef {import('./types.js').Slog} Slog
+ */
 
 /**
  * @template {Record<string, any>} [T={}]
