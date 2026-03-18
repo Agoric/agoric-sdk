@@ -827,5 +827,5 @@ test.serial('BLD for ATOM on Osmosis, receiver on Agoric', async t => {
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
-  deleteTestKeys(accounts);
+  await deleteTestKeys(accounts);
 });

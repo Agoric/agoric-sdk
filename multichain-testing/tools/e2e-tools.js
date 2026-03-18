@@ -664,7 +664,7 @@ export const seatLike = updates => {
     /** @type {PromiseKit<AmountKeywordRecord>} */
     payouts: makePromiseKit(),
   };
-  (async () => {
+  void (async () => {
     await null;
     try {
       // XXX an error here is somehow and unhandled rejection

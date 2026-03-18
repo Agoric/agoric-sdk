@@ -43,7 +43,7 @@ export function makeQueryClient(apiUrl: string) {
           setTimeout(() => doFetch(retries + 1), retryDelayMS);
         }
       };
-      doFetch(0);
+      void doFetch(0);
     });
   };
 

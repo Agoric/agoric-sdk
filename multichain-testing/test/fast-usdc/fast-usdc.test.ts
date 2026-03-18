@@ -298,7 +298,7 @@ test.before(async t => (t.context = await makeTestContext(t)));
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
-  deleteTestKeys(accounts);
+  await deleteTestKeys(accounts);
 });
 
 const toAmt = (

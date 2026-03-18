@@ -24,7 +24,7 @@ test.before(async t => {
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
-  deleteTestKeys(accounts);
+  await deleteTestKeys(accounts);
 });
 
 test('Deposit IST to orchAccount and then withdraw', async t => {

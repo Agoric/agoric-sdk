@@ -62,4 +62,4 @@ for (const file of resultFiles) {
 }
 
 const timeSeries = makeTimeSeries(timeSeriesData);
-sendMetricsToGCP(timeSeries);
+void sendMetricsToGCP(timeSeries);

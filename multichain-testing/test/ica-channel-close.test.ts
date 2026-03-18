@@ -34,7 +34,7 @@ test.before(async t => {
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
-  deleteTestKeys(accounts);
+  await deleteTestKeys(accounts);
 });
 
 // XXX until https://github.com/Agoric/agoric-sdk/issues/9066,

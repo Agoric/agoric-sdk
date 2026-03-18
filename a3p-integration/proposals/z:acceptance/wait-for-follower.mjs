@@ -65,6 +65,7 @@ const watchSharedFile = filePath => {
   );
 };
 
+// oxlint-disable-next-line typescript/no-floating-promises
 FILE_PATH &&
   watchSharedFile(FILE_PATH).then(
     fileContent => fileContent && console.log(fileContent),

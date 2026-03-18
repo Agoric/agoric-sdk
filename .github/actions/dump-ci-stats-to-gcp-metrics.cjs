@@ -103,7 +103,7 @@ async function fetchJobDetails(repo, runId) {
 }
 
 // Main function to send metrics
-(async () => {
+void (async () => {
   try {
     const workflowStats = await fetchWorkflowDetails();
 

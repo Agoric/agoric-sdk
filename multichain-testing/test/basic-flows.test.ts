@@ -26,7 +26,7 @@ test.before(async t => {
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
-  deleteTestKeys(accounts);
+  await deleteTestKeys(accounts);
 });
 
 const makeAccountScenario = test.macro({
