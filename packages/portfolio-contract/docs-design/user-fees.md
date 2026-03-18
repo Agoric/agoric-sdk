@@ -69,6 +69,31 @@ Expected code change for this design:
 - No requirement that remote execution accounts spend the exact USDC collected from the user.
 - No refund/surcharge loop in the critical path; that can follow once reconciliation quality is proven.
 
+### Policy Scope Across Flow Types
+
+For this design, the resolved plan carries step-level `userFee` annotations, and the contract checks the rolled-up total:
+
+- `userFee(plan) = sum(step.userFee)`
+- For MVP, `step.userFee` is populated only for Ethereum-mainnet steps whose execution costs are actually paid by YMax.
+
+This scope is broader than withdraw. The same rule applies to any resolved plan, including:
+
+- create-portfolio-and-deposit, where chargeable steps can include `+Ethereum -> @Ethereum` (`createAndDeposit`) and later same-plan Ethereum execution.
+- deposit-more to an existing portfolio, where chargeable steps can arise anywhere in the same plan that new capital is deployed through YMax-paid Ethereum-mainnet execution, regardless of which chain the deposit originated from.
+- rebalance, where the quoted fee is the sum of every chargeable Ethereum-mainnet step in the rebalance plan.
+- withdraw, where the quoted fee includes chargeable `@Ethereum -> -Ethereum` execution and any other chargeable Ethereum-mainnet steps in the same plan.
+
+Observed checkpoint from `104.1`:
+
+- Under this policy, the observed `104.1` deposit-more flow would charge for the three Ethereum-mainnet steps that YMax pays for:
+  - `+Ethereum -> @Ethereum` (`createAndDeposit`): `97.429 BLD`
+  - `@Ethereum -> ERC4626_morphoClearstarHighYieldUsdc_Ethereum` (`ERC4626`): `107.67 BLD`
+  - `@Ethereum -> @agoric` (`CCTP`): `78.594 BLD`
+- That sums to `283.693 BLD`.
+- Using the status-quo `2026-02-18` checkpoint price `BLD/USD = 0.004911666143521906`, that is about `$1.393405`, so a checkpoint quote would be about `1_393_405 uusdc` if treated at USDC par.
+
+This `104.1` number is an inference from the observed status-quo step fees in [ymax-fees-status-quo.md](./ymax-fees-status-quo.md), not yet a separately observed quoted `userFee` field from production.
+
 ## `80.3` Re-told With This Design In Place
 
 Diagram notation in this section:
