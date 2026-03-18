@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document summarizes how fees work today in YMax, using one detailed flow (`portfolio80/flow3`) and three additional flows (`104.1`, `104.2`, `105.1`) to show what generalizes.
+This document summarizes how fees work today in YMax, using one detailed flow (`portfolio80/flow3`) and three additional flows (`104.1`, `104.2`, `105.1`) to show what generalizes across user-facing operation kinds.
 
 Primary goals:
 - Explain where fee values come from in the current architecture.
@@ -164,9 +164,21 @@ Fee Paid total for this flow is `265.951924 BLD` ≈ `$1.31` on `2026-02-18`, us
 | Flow | Type | Direction | Planner tx hash | Planner time (UTC) | Steps |
 |---|---|---|---|---|---:|
 | `80.3` | withdraw | `toChain=Ethereum` | `72C1...745F` | `2026-02-05T20:41:45Z` | 9 |
-| `104.1` | deposit | `fromChain=Ethereum` | `246F...C4FF` | `2026-02-18T16:15:49Z` | 10 |
+| `104.1` | deposit (more) | `fromChain=Ethereum` | `246F...C4FF` | `2026-02-18T16:15:49Z` | 10 |
 | `104.2` | withdraw | `toChain=Ethereum` | `6268...6EB4` | `2026-02-19T23:31:29Z` | 10 |
-| `105.1` | deposit | `fromChain=Ethereum` | `E50B...E92A` | `2026-02-19T15:54:54Z` | 3 |
+| `105.1` | deposit (init) | `fromChain=Ethereum` | `E50B...E92A` | `2026-02-19T15:54:54Z` | 3 |
+
+Key:
+
+- `more`: deposit into an already existing portfolio.
+- `init`: create a portfolio and deposit in the same user flow.
+
+### Operation-kind checkpoint view
+
+- `80.3` is the withdraw baseline.
+- `104.1` is the best observed deposit-more baseline. It starts on Ethereum and then fans out into same-plan Ethereum, Arbitrum, Optimism, and Base steps.
+- `105.1` is the best observed create-and-deposit baseline. Its three-step shape is the compact "open from Ethereum, then immediately place funds" case.
+- A dedicated observed rebalance baseline is not yet included in this extracted set, even though rebalance uses the same step-level fee machinery. Adding one would complete the four-kind baseline.
 
 ### Fee comparison (max actually paid step)
 
@@ -184,6 +196,11 @@ Fee Paid total for this flow is `265.951924 BLD` ≈ `$1.31` on `2026-02-18`, us
 - Actual observed EVM costs came from tx receipts and were measurable per step.
 - `detail.evmGas` appears on selected cross-chain steps (not every step).
 - Non-EVM legs (for example Agoric↔Noble IBC) are part of the flow but not represented as EVM receipt fees.
+- The same status-quo machinery already spans multiple user-facing flow kinds:
+  - create-and-deposit
+  - deposit-more
+  - withdraw
+  - and, by architecture, rebalance as another resolved-plan consumer of the same step fee metadata
 
 ## Status Quo Conclusions
 
