@@ -20,7 +20,15 @@
     {
       "name": "@endo",
       "specifier": "@endo/eslint-plugin"
-    }
+    },
+    {
+      "name": "@agoric",
+      "specifier": "@agoric/eslint-plugin"
+    },
+    {
+      "name": "import-js",
+      "specifier": "eslint-plugin-import"
+    },
   ],
   "categories": {
     "correctness": "warn",
@@ -236,7 +244,86 @@
     }
   ],
   "rules": {
-    "typescript/prefer-readonly-parameter-types": "off", // we use mutable parameters for things like accumulators and builders
+    // Rules not yet migrated from ESLint — kept here so oxlint enforces them
+    "@agoric/group-jsdoc-imports": "warn",
+    "@agoric/no-typedef-import": "error",
+    "@endo/assert-fail-as-throw": "error",
+    "@jessie.js/safe-await-separator": "warn",
+    "import/first": "error",
+    "import/no-duplicates": "error",
+    "import/no-mutable-exports": "error",
+    "import/no-named-default": "error",
+    "prefer-exponentiation-operator": "error",
+    "prefer-numeric-literals": "error",
+    "prefer-object-spread": "error",
+    "prefer-rest-params": "error",
+    "prefer-spread": "error",
+    // These import rules aren't in the native oxlint import plugin,
+    // so they run via eslint-plugin-import as jsPlugin "import-js"
+    "import-js/newline-after-import": "error",
+    "import-js/no-extraneous-dependencies": "error",
+    "import-js/no-import-module-exports": "error",
+    "import-js/no-relative-packages": "error",
+    "import-js/no-useless-path-segments": "error",
+    "import-js/order": "error",
+    // Native oxlint rules migrated from ESLint
+    "array-callback-return": "error",
+    "default-case-last": "error",
+    "dot-notation": "off", // stylistic
+    "eqeqeq": "warn",
+    "func-names": "warn",
+    "grouped-accessor-pairs": "error",
+    "guard-for-in": "error",
+    "max-classes-per-file": "error",
+    "new-cap": "error",
+    "no-array-constructor": "error",
+    "no-constructor-return": "error",
+    "no-extra-label": "error",
+    "no-fallthrough": "warn",
+    "no-label-var": "error",
+    "no-lonely-if": "error",
+    "no-multi-assign": "error",
+    "no-multi-str": "error",
+    "no-new-func": "error",
+    "no-new-wrappers": "error",
+    "no-prototype-builtins": "error",
+    "no-redeclare": "error",
+    "no-script-url": "error",
+    "no-self-compare": "error",
+    "no-template-curly-in-string": "error",
+    "no-throw-literal": "error",
+    "no-useless-computed-key": "error",
+    "no-useless-return": "error",
+    "operator-assignment": "error",
+    "radix": "error",
+    "symbol-description": "error",
+    "vars-on-top": "error",
+    "yoda": "error",
+    // Core ESLint rules via oxlint-plugin-eslint (eslint-js)
+    "eslint-js/camelcase": "error",
+    "eslint-js/dot-notation": "error",
+    "eslint-js/global-require": "error",
+    "eslint-js/lines-around-directive": "error",
+    "eslint-js/lines-between-class-members": "error",
+    "eslint-js/no-buffer-constructor": "error",
+    "eslint-js/no-dupe-args": "error",
+    "eslint-js/no-implied-eval": "error",
+    "eslint-js/no-new-object": "error",
+    "eslint-js/no-new-require": "error",
+    "eslint-js/no-new-symbol": "error",
+    "eslint-js/no-octal": "error",
+    "eslint-js/no-octal-escape": "error",
+    "eslint-js/no-path-concat": "error",
+    "eslint-js/no-restricted-exports": "error",
+    "eslint-js/no-restricted-properties": "error",
+    "eslint-js/no-return-await": "error",
+    "eslint-js/no-undef-init": "error",
+    "eslint-js/no-underscore-dangle": "error",
+    "eslint-js/no-unreachable-loop": "error",
+    "eslint-js/object-shorthand": "error",
+    "eslint-js/one-var": "error",
+    "eslint-js/spaced-comment": "error",
+"typescript/prefer-readonly-parameter-types": "off", // we use mutable parameters for things like accumulators and builders
     "typescript/promise-function-async": "off", // we use non-async functions that return promises, and async functions that return vows
     "typescript/no-unnecessary-type-assertion": "off", // belt and suspenders
     "typescript/no-floating-promises": "error",
