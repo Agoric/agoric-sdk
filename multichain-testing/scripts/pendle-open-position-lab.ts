@@ -169,6 +169,40 @@ const PENDLE_ROUTER_ABI = [
 type ConvertResponse = {
   requiredApprovals?: Array<{ token: Address; amount: string }>;
   routes: Array<{
+    contractParamInfo?: {
+      method: string;
+      contractCallParams: [
+        Address,
+        Address,
+        string,
+        {
+          guessMin: string;
+          guessMax: string;
+          guessOffchain: string;
+          maxIteration: string;
+          eps: string;
+        },
+        {
+          tokenIn: Address;
+          netTokenIn: string;
+          tokenMintSy: Address;
+          pendleSwap: Address;
+          swapData: {
+            swapType: string;
+            extRouter: Address;
+            extCalldata: Hex;
+            needScale: boolean;
+          };
+        },
+        {
+          limitRouter: Address;
+          epsSkipMarket: string;
+          normalFills: [];
+          flashFills: [];
+          optData: Hex;
+        },
+      ];
+    };
     tx: { to: Address; data: Hex; value?: string; from?: Address };
     outputs?: Array<{ token: Address; amount: string }>;
     data?: { impliedApy?: number; effectiveApy?: number };
@@ -239,6 +273,45 @@ const reportQuote = ({
   }
 };
 
+const normalizeSwapExactTokenForPtParams = (
+  params: NonNullable<
+    ConvertResponse['routes'][number]['contractParamInfo']
+  >['contractCallParams'],
+) => {
+  const [receiver, market, minPtOut, guessPtOut, input, limit] = params;
+  return [
+    receiver,
+    market,
+    BigInt(minPtOut),
+    {
+      guessMin: BigInt(guessPtOut.guessMin),
+      guessMax: BigInt(guessPtOut.guessMax),
+      guessOffchain: BigInt(guessPtOut.guessOffchain),
+      maxIteration: BigInt(guessPtOut.maxIteration),
+      eps: BigInt(guessPtOut.eps),
+    },
+    {
+      tokenIn: input.tokenIn,
+      netTokenIn: BigInt(input.netTokenIn),
+      tokenMintSy: input.tokenMintSy,
+      pendleSwap: input.pendleSwap,
+      swapData: {
+        swapType: Number(input.swapData.swapType),
+        extRouter: input.swapData.extRouter,
+        extCalldata: input.swapData.extCalldata,
+        needScale: input.swapData.needScale,
+      },
+    },
+    {
+      limitRouter: limit.limitRouter,
+      epsSkipMarket: BigInt(limit.epsSkipMarket),
+      normalFills: limit.normalFills,
+      flashFills: limit.flashFills,
+      optData: limit.optData,
+    },
+  ] as const;
+};
+
 const ensureApprovals = async ({
   requiredApprovals,
   spender,
@@ -292,13 +365,24 @@ const executeRoute = async ({
   client: { public: PublicClient; wallet: WalletClient };
   account: Account;
 }) => {
-  const hash = await client.wallet.sendTransaction({
-    account,
-    chain: arbitrumViemChain,
-    to: route.tx.to,
-    data: route.tx.data,
-    value: route.tx.value ? BigInt(route.tx.value) : undefined,
+  const cpi = route.contractParamInfo;
+  if (!cpi) throw Error('Pendle SDK route missing contractParamInfo');
+  if (cpi.method !== 'swapExactTokenForPt') {
+    throw Error(`unsupported Pendle method: ${cpi.method}`);
+  }
+  const router = getContract({
+    address: route.tx.to,
+    abi: PENDLE_ROUTER_ABI,
+    client,
   });
+  const hash = await router.write.swapExactTokenForPt(
+    normalizeSwapExactTokenForPtParams(cpi.contractCallParams),
+    {
+      account,
+      chain: arbitrumViemChain,
+      value: route.tx.value ? BigInt(route.tx.value) : undefined,
+    },
+  );
   console.log('swap tx', hash);
   const receipt = await client.public.waitForTransactionReceipt({ hash });
   console.log('status', receipt.status);
