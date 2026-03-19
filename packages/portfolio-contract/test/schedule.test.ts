@@ -208,6 +208,25 @@ test('runJob takes advantage of partial order', async t => {
   await t.notThrowsAsync(runJob(job, runTask, t.log));
 });
 
+test('runJob starts runnable tasks in ascending index order', async t => {
+  const started: number[] = [];
+  await runJob(
+    {
+      taskQty: 5,
+      order: [
+        [2, [0]],
+        [3, [1]],
+      ],
+    },
+    async ix => {
+      started.push(ix);
+    },
+    t.log,
+  );
+
+  t.deepEqual(started, [0, 1, 4, 2, 3]);
+});
+
 test('runJob fails on cycle', async t => {
   const jobInfo = {
     steps: [

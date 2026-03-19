@@ -656,6 +656,26 @@ type Way =
       claim?: boolean;
     };
 
+const getExecutionChain = (way: Way): AxelarChain | undefined => {
+  switch (way.how) {
+    case 'depositFromEVM':
+      return way.src;
+    case 'withdrawToEVM':
+      return way.dest;
+    case 'CCTP':
+      return 'src' in way ? way.src : undefined;
+    case 'Aave':
+    case 'Beefy':
+    case 'Compound':
+    case 'ERC4626':
+      return keys(AxelarChain).includes(PoolPlaces[way.poolKey].chainName)
+        ? (PoolPlaces[way.poolKey].chainName as AxelarChain)
+        : undefined;
+    default:
+      return undefined;
+  }
+};
+
 // exported only for testing
 export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
   const { src } = moveDesc;
@@ -774,6 +794,40 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
   }
 };
 
+/**
+ * Pick the first chargeable step for each EVM chain.
+ *
+ * The current scheduler starts runnable steps in ascending index order, so this
+ * helper uses the lowest-index user-fee step for each chain.
+ */
+export const getChargeStepIndexes = (
+  plan: MovementDesc[] | FundsFlowPlan,
+): Partial<Record<AxelarChain, number>> => {
+  const { flow: moves } = Array.isArray(plan) ? { flow: plan } : plan;
+  const result: Partial<Record<AxelarChain, number>> = {};
+  for (const [index, move] of moves.entries()) {
+    if (!move.userFee) continue;
+    const chain = getExecutionChain(wayFromSrcToDest(move));
+    if (!chain) {
+      // TODO: integrate this with vetting plans
+      throw Fail`cannot determine execution chain for chargeable step ${q(move)}`;
+    }
+    if (result[chain] === undefined) {
+      result[chain] = index;
+    }
+  }
+  return result;
+};
+
+export const getChargingChain = (
+  plan: MovementDesc[] | FundsFlowPlan,
+): AxelarChain | undefined => {
+  const chargingChains = keys(getChargeStepIndexes(plan));
+  chargingChains.length <= 1 ||
+    Fail`MVP supports user fees on at most one EVM chain per plan, got ${chargingChains.join(', ')}`;
+  return chargingChains[0] as AxelarChain | undefined;
+};
+
 const stepFlow = async (
   orch: Orchestrator,
   ctx: PortfolioInstanceContext,
@@ -794,6 +848,7 @@ const stepFlow = async (
   const { flow: moves, order: maybeOrder } = Array.isArray(plan)
     ? { flow: plan }
     : plan;
+  getChargingChain(plan);
   const totalUserFee = sum(moves.map(step => step.userFee?.value));
 
   const phasesForStep: Map<TxPhase, TxId[]>[] = moves.map(
@@ -876,7 +931,7 @@ const stepFlow = async (
     move: MovementDesc,
   ): AssetMovement => {
     // XXX move this check up to wayFromSrcToDest
-    const chainName = 'src' in way ? way.src : way.dest;
+    const chainName = PoolPlaces[way.poolKey].chainName;
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
 
