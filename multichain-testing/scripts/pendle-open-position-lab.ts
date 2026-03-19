@@ -11,8 +11,10 @@ import {
   getContract,
   type Address,
   type Chain,
+  type Client,
   type Hex,
   type PublicClient,
+  type Transport,
   type WalletClient,
 } from 'viem';
 import {
@@ -20,6 +22,18 @@ import {
   privateKeyToAccount,
   type Account,
 } from 'viem/accounts';
+
+const usage = (argv0: string) => `Usage: ${argv0}
+
+Environment:
+  MNEMONIC   optional EVM wallet mnemonic
+  TRADER_KEY optional EVM private key
+  RPC_URL    optional Arbitrum RPC URL (default: ${arbitrum.main.rpcs[0]})
+  RECEIVER   optional, defaults to the trader account address
+  SLIPPAGE   optional, defaults to 0.01
+
+Arguments:
+  amountIn   required USDC amount like 4.25`;
 
 const arbitrum = {
   main: {
@@ -52,18 +66,6 @@ const arbitrumViemChain = {
     public: { http: [...arbitrum.main.rpcs] },
   },
 } as const satisfies Chain;
-
-const usage = (argv0: string) => `Usage: ${argv0}
-
-Environment:
-  MNEMONIC   optional EVM wallet mnemonic
-  TRADER_KEY optional EVM private key
-  RPC_URL    optional Arbitrum RPC URL (default: ${arbitrum.main.rpcs[0]})
-  RECEIVER   optional, defaults to the trader account address
-  SLIPPAGE   optional, defaults to 0.01
-
-Arguments:
-  amountIn   required USDC amount like 4.25`;
 
 const parseUsdc = (s: string) => {
   s.match(/^\d+(\.\d{1,6})?$/) ||
@@ -152,8 +154,58 @@ const PENDLE_ROUTER_ABI = [
         components: [
           { name: 'limitRouter', type: 'address' },
           { name: 'epsSkipMarket', type: 'uint256' },
-          { name: 'normalFills', type: 'tuple[]', components: [] },
-          { name: 'flashFills', type: 'tuple[]', components: [] },
+          {
+            name: 'normalFills',
+            type: 'tuple[]',
+            components: [
+              {
+                name: 'order',
+                type: 'tuple',
+                components: [
+                  { name: 'salt', type: 'uint256' },
+                  { name: 'expiry', type: 'uint256' },
+                  { name: 'nonce', type: 'uint256' },
+                  { name: 'orderType', type: 'uint8' },
+                  { name: 'token', type: 'address' },
+                  { name: 'YT', type: 'address' },
+                  { name: 'maker', type: 'address' },
+                  { name: 'receiver', type: 'address' },
+                  { name: 'makingAmount', type: 'uint256' },
+                  { name: 'lnImpliedRate', type: 'uint256' },
+                  { name: 'failSafeRate', type: 'uint256' },
+                  { name: 'permit', type: 'bytes' },
+                ],
+              },
+              { name: 'signature', type: 'bytes' },
+              { name: 'makingAmount', type: 'uint256' },
+            ],
+          },
+          {
+            name: 'flashFills',
+            type: 'tuple[]',
+            components: [
+              {
+                name: 'order',
+                type: 'tuple',
+                components: [
+                  { name: 'salt', type: 'uint256' },
+                  { name: 'expiry', type: 'uint256' },
+                  { name: 'nonce', type: 'uint256' },
+                  { name: 'orderType', type: 'uint8' },
+                  { name: 'token', type: 'address' },
+                  { name: 'YT', type: 'address' },
+                  { name: 'maker', type: 'address' },
+                  { name: 'receiver', type: 'address' },
+                  { name: 'makingAmount', type: 'uint256' },
+                  { name: 'lnImpliedRate', type: 'uint256' },
+                  { name: 'failSafeRate', type: 'uint256' },
+                  { name: 'permit', type: 'bytes' },
+                ],
+              },
+              { name: 'signature', type: 'bytes' },
+              { name: 'makingAmount', type: 'uint256' },
+            ],
+          },
           { name: 'optData', type: 'bytes' },
         ],
       },
@@ -312,22 +364,25 @@ const normalizeSwapExactTokenForPtParams = (
   ] as const;
 };
 
+type SigningClient = WalletClient<Transport, Chain, Account>;
+
 const ensureApprovals = async ({
   requiredApprovals,
   spender,
   client,
-  account,
 }: {
   requiredApprovals: ConvertResponse['requiredApprovals'];
   spender: Address;
-  client: { public: PublicClient; wallet: WalletClient };
-  account: Account;
+  client: { public: PublicClient; wallet: SigningClient };
 }) => {
   const usdc = getContract({
     address: arbitrum.main.tokens.usdc,
     abi: ERC20_ABI,
-    client,
+    client: { public: client.public, wallet: client.wallet },
   });
+
+  const { address: owner } = client.wallet.account;
+
   for (const approval of requiredApprovals || []) {
     if (
       approval.token.toLowerCase() !== arbitrum.main.tokens.usdc.toLowerCase()
@@ -335,10 +390,7 @@ const ensureApprovals = async ({
       continue;
     }
     const need = BigInt(approval.amount);
-    const have = (await usdc.read.allowance([
-      account.address,
-      spender,
-    ])) as bigint;
+    const have = (await usdc.read.allowance([owner, spender])) as bigint;
     if (have >= need) continue;
     console.log(
       'approving',
@@ -347,10 +399,7 @@ const ensureApprovals = async ({
       spender,
       '(Pendle SDK route tx.to)',
     );
-    const hash = await usdc.write.approve([spender, need], {
-      account,
-      chain: arbitrumViemChain,
-    });
+    const hash = await usdc.write.approve([spender, need]);
     console.log('approve tx', hash);
     await client.public.waitForTransactionReceipt({ hash });
   }
@@ -358,12 +407,12 @@ const ensureApprovals = async ({
 
 const executeRoute = async ({
   route,
+  routerAddress,
   client,
-  account,
 }: {
   route: ConvertResponse['routes'][number];
-  client: { public: PublicClient; wallet: WalletClient };
-  account: Account;
+  routerAddress: Address;
+  client: { public: PublicClient; wallet: SigningClient };
 }) => {
   const cpi = route.contractParamInfo;
   if (!cpi) throw Error('Pendle SDK route missing contractParamInfo');
@@ -371,15 +420,13 @@ const executeRoute = async ({
     throw Error(`unsupported Pendle method: ${cpi.method}`);
   }
   const router = getContract({
-    address: route.tx.to,
+    address: routerAddress,
     abi: PENDLE_ROUTER_ABI,
     client,
   });
   const hash = await router.write.swapExactTokenForPt(
     normalizeSwapExactTokenForPtParams(cpi.contractCallParams),
     {
-      account,
-      chain: arbitrumViemChain,
       value: route.tx.value ? BigInt(route.tx.value) : undefined,
     },
   );
@@ -407,17 +454,18 @@ const main = async ({
     RPC_URL = arbitrum.main.rpcs[0],
     SLIPPAGE = '0.01',
   } = env;
-  const amountInArg = argv[2];
   if (!MNEMONIC && !TRADER_KEY) {
     throw Error('set either MNEMONIC or TRADER_KEY');
   }
+
+  const amountInArg = argv[2];
   if (!amountInArg) throw Error('amountIn argument not set');
+  const amountIn = parseUsdc(amountInArg);
 
   const account = TRADER_KEY
     ? privateKeyToAccount(normalizePrivateKey(TRADER_KEY))
     : mnemonicToAccount(MNEMONIC!);
   const receiver = (env.RECEIVER || account.address) as Address;
-  const amountIn = parseUsdc(amountInArg);
   const transport = http(RPC_URL);
   const chain = arbitrumViemChain;
   const client = {
@@ -437,16 +485,9 @@ const main = async ({
     amountIn,
     route,
   });
-  await ensureApprovals({
-    requiredApprovals: quote.requiredApprovals,
-    spender: route.tx.to,
-    client,
-    account,
-  });
-  await executeRoute({ route, client, account });
-
-  // TODO later: encode the router call directly with viem instead of relying on Hosted SDK tx payloads.
-  void PENDLE_ROUTER_ABI;
+  const { requiredApprovals } = quote;
+  await ensureApprovals({ requiredApprovals, spender: route.tx.to, client });
+  await executeRoute({ route, routerAddress: route.tx.to, client });
 };
 
 void main().catch(err => {
