@@ -323,9 +323,13 @@
     "eslint-js/object-shorthand": "error",
     "eslint-js/one-var": "error",
     "eslint-js/spaced-comment": "error",
-"typescript/prefer-readonly-parameter-types": "off", // we use mutable parameters for things like accumulators and builders
+    "typescript/prefer-readonly-parameter-types": "off", // we use mutable parameters for things like accumulators and builders
     "typescript/promise-function-async": "off", // we use non-async functions that return promises, and async functions that return vows
     "typescript/no-unnecessary-type-assertion": "off", // belt and suspenders
+    "typescript/consistent-return": "off", // good but not yet
+    "typescript/strict-void-return": "off", // good but not yet
+    "typescript/no-unsafe-type-assertion": "off", // good but not yet
+    "typescript/no-unnecessary-condition": "off", // good but not yet
     "typescript/no-floating-promises": "error",
     "no-void": ["error", { "allowAsStatement": true }],
     "no-use-before-define": "off",
