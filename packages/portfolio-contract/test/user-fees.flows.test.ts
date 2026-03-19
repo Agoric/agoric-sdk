@@ -306,20 +306,36 @@ test(
   } satisfies WithdrawScenario,
 );
 
+// Needs create-and-deposit to carry fee authority alongside the queued Permit2
+// setup, and execution to add a feeCollector pull on the first charge step for
+// the paying chain before continuing with principal deployment.
 test.todo(
   'create-and-deposit on Ethereum L1 collects userFee(plan) to feeCollector',
 );
 
+// Needs depositFromEVM to accept user-fee authority in addition to principal
+// transfer authority, and execution to charge plan.userFee on the paying chain
+// without conflating it with the deposit amount.
 test.todo('deposit-more on Ethereum L1 collects userFee(plan) to feeCollector');
 
+// Needs rebalance offers / flow detail to carry fee authority for each paying
+// chain, and execution to collect the plan-derived userFee on the selected
+// charge step(s) instead of only supporting withdrawToEVM.
 test.todo(
   'rebalance with Ethereum-mainnet execution collects userFee(plan) to feeCollector',
 );
 
+// Needs the charge-step-selection helper wired into execution plus a policy for
+// what happens when charging is front-loaded but later chargeable steps fail.
+// The implementation then needs to report attempted / skipped charge steps
+// coherently in flow status.
 test.todo(
   'userFee(plan) with >1 Ethereum-mainnet step handles partial execution failure when some chargeable steps succeed and some fail',
 );
 
+// Needs execution to use getChargeStepIndexes()/getChargingChain() so the total
+// fee is pulled exactly once on the chosen charge step, instead of every
+// withdrawToEVM step on that chain seeing the same rolled-up totalUserFee.
 test.todo(
   'withdraw charges the sum of user fees across multiple executable Ethereum steps',
 );
