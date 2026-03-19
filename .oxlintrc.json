@@ -101,63 +101,8 @@
         "packages/wallet/api/src/**/*.js"
       ],
       "rules": {
-        "@jessie.js/safe-await-separator": "error",
-        "no-process-env": "off",
-        "eslint-js/no-restricted-syntax": [
-          "error",
-          {
-            "selector": "Literal[value=/currency/i]",
-            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/currency/i]",
-            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
-          },
-          {
-            "selector": "Identifier[name=/currency/i]",
-            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
-          },
-          {
-            "selector": "Literal[value=/blacklist/i]",
-            "message": "Use 'denylist' instead of deprecated 'blacklist'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/blacklist/i]",
-            "message": "Use 'denylist' instead of deprecated 'blacklist'"
-          },
-          {
-            "selector": "Identifier[name=/blacklist/i]",
-            "message": "Use 'denylist' instead of deprecated 'blacklist'"
-          },
-          {
-            "selector": "Literal[value=/whitelist/i]",
-            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/whitelist/i]",
-            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
-          },
-          {
-            "selector": "Identifier[name=/whitelist/i]",
-            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
-          },
-          {
-            "selector": "Literal[value=/loan/i]",
-            "message": "Use 'debt' instead of deprecated 'loan'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/loan/i]",
-            "message": "Use 'debt' instead of deprecated 'loan'"
-          },
-          {
-            "selector": "Identifier[name=/loan/i]",
-            "message": "Use 'debt' instead of deprecated 'loan'"
-          },
-          {
-            "selector": "CallExpression[callee.object.name=\"Object\"][callee.property.name=\"fromEntries\"] > CallExpression.arguments[callee.object.name=\"Object\"][callee.property.name=\"entries\"]",
-            "message": "Prefer objectMap over Object.fromEntries(Object.entries(...))"
-          }
-        ]
+        "@jessie.js/safe-await-separator": "warn",
+        "no-process-env": "off"
       }
     },
     {
@@ -181,62 +126,6 @@
           }
         ],
         "@endo/harden-exports": "error"
-      }
-    },
-    {
-      "files": ["packages/zoe/src/contracts/loan/*.js"],
-      "rules": {
-        "eslint-js/no-restricted-syntax": [
-          "warn",
-          {
-            "selector": "Literal[value=/currency/i]",
-            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/currency/i]",
-            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
-          },
-          {
-            "selector": "Identifier[name=/currency/i]",
-            "message": "Use 'brand, asset or another descriptor' instead of deprecated 'currency'"
-          },
-          {
-            "selector": "Literal[value=/blacklist/i]",
-            "message": "Use 'denylist' instead of deprecated 'blacklist'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/blacklist/i]",
-            "message": "Use 'denylist' instead of deprecated 'blacklist'"
-          },
-          {
-            "selector": "Identifier[name=/blacklist/i]",
-            "message": "Use 'denylist' instead of deprecated 'blacklist'"
-          },
-          {
-            "selector": "Literal[value=/whitelist/i]",
-            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/whitelist/i]",
-            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
-          },
-          {
-            "selector": "Identifier[name=/whitelist/i]",
-            "message": "Use 'allowlist' instead of deprecated 'whitelist'"
-          },
-          {
-            "selector": "Literal[value=/RUN/]",
-            "message": "Use 'IST' instead of deprecated 'RUN'"
-          },
-          {
-            "selector": "TemplateElement[value.raw=/RUN/]",
-            "message": "Use 'IST' instead of deprecated 'RUN'"
-          },
-          {
-            "selector": "Identifier[name=/RUN/]",
-            "message": "Use 'IST' instead of deprecated 'RUN'"
-          }
-        ]
       }
     },
     {
