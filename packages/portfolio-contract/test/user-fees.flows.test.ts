@@ -14,7 +14,13 @@ import { walletMulticallABI } from '../src/interfaces/orch-factory.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { erc20ABI } from '../src/interfaces/erc20.ts';
 import { type MovementDesc } from '../src/type-guards-steps.ts';
-import { BLD, USDC, docOpts, mocks, silent } from './flow-test-kit.ts';
+import {
+  BLD,
+  USDC,
+  docOpts,
+  mocks,
+  silent,
+} from './flow-test-kit.ts';
 import { contractsMock } from './mocks.ts';
 import { makeStorageTools } from './supports.ts';
 import { provideCosmosAccount } from '../src/portfolio.flows.ts';
@@ -61,11 +67,14 @@ const paddedQuotes = {
   uusdc: withPad(axelarQuotes.uusdc),
   ubld: withPad(axelarQuotes.ubld),
 };
+const sum = (values: bigint[]) =>
+  values.reduce((total, value) => total + value, 0n);
 
 type WithdrawScenario = {
   trader: {
     sourceAccountId: `eip155:${number}:${`0x${string}`}`;
     remoteChain: AxelarChain;
+    authorizedUserFee?: bigint;
     withdraw: {
       chainId: bigint;
       amount: ReturnType<typeof AmountMath.make>;
@@ -81,6 +90,7 @@ type WithdrawScenario = {
 const runWithdrawScenario = test.macro({
   exec: async (t, scenario: WithdrawScenario) => {
     const { trader } = scenario;
+    const authorizedUserFee = trader.authorizedUserFee ?? paddedQuotes.uusdc;
     const traderAddress = parseAccountId(trader.sourceAccountId)
       .accountAddress as `0x${string}`;
 
@@ -119,7 +129,7 @@ const runWithdrawScenario = test.macro({
         permit2Payload: {
           owner: traderAddress,
           permit: {
-            permitted: { token, amount: paddedQuotes.uusdc },
+            permitted: { token, amount: authorizedUserFee },
             ...permitMisc,
           },
           ...payloadMisc,
@@ -150,7 +160,7 @@ const runWithdrawScenario = test.macro({
         throw t.fail(`expected withdraw, got ${detail.type}`);
       t.is(detail.toChain, trader.remoteChain);
       t.deepEqual(detail.amount, trader.withdraw.amount);
-      t.deepEqual(detail.fee, AmountMath.make(USDC, paddedQuotes.uusdc));
+      t.deepEqual(detail.fee, AmountMath.make(USDC, authorizedUserFee));
 
       const steps = scenario.plan(detail.amount);
       plannerFacet.resolveFlowPlan(flowNum, steps);
@@ -260,6 +270,56 @@ test(
 );
 
 test(
+  'withdraw charges the sum of user fees across a 4-step plan',
+  runWithdrawScenario,
+  {
+    trader: {
+      sourceAccountId:
+        'eip155:1:0x1234567890AbcdEF1234567890aBcdef12345678' as const,
+      remoteChain: 'Ethereum',
+      authorizedUserFee: sum([90_000n, paddedQuotes.uusdc]),
+      withdraw: {
+        chainId: 1n,
+        amount: AmountMath.make(USDC, 2_000_000n),
+        token: contractsMock.Ethereum.usdc,
+      },
+    },
+    plan: amount => [
+      {
+        src: '+agoric',
+        dest: '@agoric',
+        amount,
+      },
+      {
+        src: '@agoric',
+        dest: '@noble',
+        amount,
+      },
+      {
+        src: '@noble',
+        dest: '@Ethereum',
+        amount,
+        fee: AmountMath.make(BLD, 100n),
+        userFee: AmountMath.make(USDC, 90_000n),
+      },
+      {
+        src: '@Ethereum',
+        dest: '-Ethereum',
+        amount,
+        fee: AmountMath.make(BLD, paddedQuotes.ubld),
+        userFee: AmountMath.make(USDC, paddedQuotes.uusdc),
+      },
+    ],
+    expected: {
+      permit2: {
+        feeCollector: contractsMock.Ethereum.feeCollector,
+        requestedAmount: sum([90_000n, paddedQuotes.uusdc]),
+      },
+    },
+  } satisfies WithdrawScenario,
+);
+
+test(
   'withdraw without Ethereum charge step does not send fee to fee collector',
   runWithdrawScenario,
   {
@@ -285,4 +345,18 @@ test(
       permit2: false,
     },
   } satisfies WithdrawScenario,
+);
+
+test.todo(
+  'create-and-deposit on Ethereum L1 collects userFee(plan) to feeCollector',
+);
+
+test.todo('deposit-more on Ethereum L1 collects userFee(plan) to feeCollector');
+
+test.todo(
+  'rebalance with Ethereum-mainnet execution collects userFee(plan) to feeCollector',
+);
+
+test.todo(
+  'userFee(plan) with >1 Ethereum-mainnet step handles partial execution failure when some chargeable steps succeed and some fail',
 );

@@ -244,6 +244,9 @@ type ExecutePlanOptions = {
   >;
 };
 
+const sum = (xs: (bigint | undefined)[]): bigint =>
+  xs.reduce<bigint>((total, value) => total + (value ?? 0n), 0n);
+
 const makeFlowStepPowers = (
   {
     flowId,
@@ -791,6 +794,7 @@ const stepFlow = async (
   const { flow: moves, order: maybeOrder } = Array.isArray(plan)
     ? { flow: plan }
     : plan;
+  const totalUserFee = sum(moves.map(step => step.userFee?.value));
 
   const phasesForStep: Map<TxPhase, TxId[]>[] = moves.map(
     () => new Map<TxPhase, TxId[]>(),
@@ -1206,17 +1210,16 @@ const stepFlow = async (
             assert(gInfo && agoric, destChain);
 
             const feeCollector = ctx.contracts[destChain].feeCollector;
-            const stepUserFee = move.userFee;
             const withdrawFeeDetail =
-              stepUserFee && evmWithdrawDetail?.toChain === destChain
+              totalUserFee > 0n && evmWithdrawDetail?.toChain === destChain
                 ? evmWithdrawDetail
                 : undefined;
 
-            stepUserFee
+            totalUserFee > 0n
               ? feeCollector ||
                 Fail`withdraw fee collection requires feeCollector for ${destChain}`
               : undefined;
-            stepUserFee
+            totalUserFee > 0n
               ? withdrawFeeDetail ||
                 Fail`withdraw fee collection requires Permit2 authority for ${destChain}`
               : undefined;
@@ -1225,7 +1228,7 @@ const stepFlow = async (
             // withdraw fees. Exact fee recipient configuration and calldata
             // shape remain under design.
             const session = makeEvmAbiCallBatch();
-            if (stepUserFee && withdrawFeeDetail && feeCollector) {
+            if (totalUserFee > 0n && withdrawFeeDetail && feeCollector) {
               const {
                 permit2Payload,
                 permit2Payload: {
@@ -1236,8 +1239,8 @@ const stepFlow = async (
                   signature,
                 },
               } = withdrawFeeDetail;
-              permit.permitted.amount >= stepUserFee.value ||
-                Fail`authorized fee ${permit.permitted.amount} is less than required user fee ${stepUserFee.value}`;
+              permit.permitted.amount >= totalUserFee ||
+                Fail`authorized fee ${permit.permitted.amount} is less than required user fee ${totalUserFee}`;
               const permit2 = session.makeContract(
                 ctx.contracts[destChain].permit2,
                 permit2Abi,
@@ -1246,7 +1249,7 @@ const stepFlow = async (
                 permit,
                 {
                   to: feeCollector,
-                  requestedAmount: stepUserFee.value,
+                  requestedAmount: totalUserFee,
                 },
                 owner,
                 witness,
