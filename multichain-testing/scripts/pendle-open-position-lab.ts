@@ -11,12 +11,15 @@ import {
   getContract,
   type Address,
   type Chain,
-  type Client,
   type Hex,
   type PublicClient,
   type WalletClient,
 } from 'viem';
-import { mnemonicToAccount, type Account } from 'viem/accounts';
+import {
+  mnemonicToAccount,
+  privateKeyToAccount,
+  type Account,
+} from 'viem/accounts';
 
 const arbitrum = {
   main: {
@@ -53,9 +56,10 @@ const arbitrumViemChain = {
 const usage = (argv0: string) => `Usage: ${argv0}
 
 Environment:
-  MNEMONIC   required EVM wallet mnemonic
+  MNEMONIC   optional EVM wallet mnemonic
+  TRADER_KEY optional EVM private key
   RPC_URL    optional Arbitrum RPC URL (default: ${arbitrum.main.rpcs[0]})
-  RECEIVER   optional, defaults to the mnemonic-derived address
+  RECEIVER   optional, defaults to the trader account address
   SLIPPAGE   optional, defaults to 0.01
 
 Arguments:
@@ -68,6 +72,15 @@ const parseUsdc = (s: string) => {
     })();
   const [whole, frac = ''] = s.split('.');
   return BigInt(whole) * 1_000_000n + BigInt(frac.padEnd(6, '0'));
+};
+
+const normalizePrivateKey = (s: string): Hex => {
+  const trimmed = s.trim();
+  const hex = trimmed.startsWith('0x') ? trimmed : `0x${trimmed}`;
+  if (!/^0x[0-9a-fA-F]{64}$/.test(hex)) {
+    throw Error('invalid TRADER_KEY: expected 32-byte hex, with or without 0x');
+  }
+  return hex as Hex;
 };
 
 const ERC20_ABI = [
@@ -304,12 +317,21 @@ const main = async ({
     console.error(usage(argv[1]));
     return;
   }
-  const { MNEMONIC, RPC_URL = arbitrum.main.rpcs[0], SLIPPAGE = '0.01' } = env;
+  const {
+    MNEMONIC,
+    TRADER_KEY,
+    RPC_URL = arbitrum.main.rpcs[0],
+    SLIPPAGE = '0.01',
+  } = env;
   const amountInArg = argv[2];
-  if (!MNEMONIC) throw Error('MNEMONIC not set');
+  if (!MNEMONIC && !TRADER_KEY) {
+    throw Error('set either MNEMONIC or TRADER_KEY');
+  }
   if (!amountInArg) throw Error('amountIn argument not set');
 
-  const account = mnemonicToAccount(MNEMONIC);
+  const account = TRADER_KEY
+    ? privateKeyToAccount(normalizePrivateKey(TRADER_KEY))
+    : mnemonicToAccount(MNEMONIC!);
   const receiver = (env.RECEIVER || account.address) as Address;
   const amountIn = parseUsdc(amountInArg);
   const transport = http(RPC_URL);
