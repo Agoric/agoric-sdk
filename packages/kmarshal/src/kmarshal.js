@@ -19,7 +19,10 @@ import { makeMarshal } from '@endo/marshal';
 
 const { toStringTag } = Symbol;
 
-const makeStandinPromise = kref => {
+/**
+ * @param {string} kref
+ */
+export const makeStandinPromise = kref => {
   const p = Promise.resolve(`${kref} stand in`);
   // oxlint-disable-next-line typescript/no-floating-promises
   Object.defineProperty(p, toStringTag, {
