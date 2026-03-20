@@ -3,6 +3,8 @@
  *
  * Require checking `response.ok` on awaited `fetch()` results before using other
  * properties or methods on the response object.
+ *
+ * @import {Rule} from 'eslint';
  */
 
 const isFetchCall = node => {
@@ -25,6 +27,7 @@ const isAwaitedFetchCall = node =>
     node && node.type === 'AwaitExpression' && isFetchCall(node.argument),
   );
 
+/** @type {Rule.RuleModule} */
 module.exports = {
   meta: {
     type: 'problem',
