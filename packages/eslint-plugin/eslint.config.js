@@ -1,3 +1,4 @@
+/* oxlint-disable import-js/no-import-module-exports -- XXX mixing ESM and CJS for now */
 import eslintPluginEslintPlugin from 'eslint-plugin-eslint-plugin';
 
 exports.default = [
