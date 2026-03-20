@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// @ts-nocheck XXX
-/* oxlint-disable eslint/no-extra-labels, eslint/no-labels -- labels for loop control and underscore for "private" variables */
+/* oxlint-disable no-extra-labels, no-labels, no-underscore-dangle -- labels for loop control and underscore for "private" variables */
 import process from 'node:process';
 import sqlite3 from 'better-sqlite3';
 import yargsParser from 'yargs-parser';
@@ -79,6 +78,7 @@ const makeSyscallShape = type =>
  * @returns {Pattern}
  */
 const makeMethargsShape = (methodName, argsShape = M.arrayOf(M.any())) =>
+  // @ts-expect-error
   harden([methodName, argsShape]);
 
 // A syscall sequence of minimum length 2 in which the first is a send and it is
@@ -385,6 +385,7 @@ const main = rawArgv => {
           JSON.parse(toCapData(harden(Object.entries(details))).body.slice(1)),
         );
       } else if (details !== undefined) {
+        // @ts-expect-error {} not assignable to Passable
         details = JSON.parse(toCapData(harden(details)).body.slice(1));
       }
       console.log(JSON.stringify({ kpid, decider, subscriber, type, details }));
