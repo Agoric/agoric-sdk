@@ -3,7 +3,7 @@
 // direct dependencies), but eslint doesn't know that, so disable the
 // complaint.
 
-/* eslint-disable import/no-extraneous-dependencies */
+/* oxlint-disable import-js/no-extraneous-dependencies */
 
 /// <reference types="ses" />
 

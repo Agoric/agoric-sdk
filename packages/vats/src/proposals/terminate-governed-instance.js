@@ -7,7 +7,7 @@
  *       agoric run /path/to/$0 <$instanceHandleBoardID:$instanceKitLabel>...
  */
 
-/* eslint-disable import/no-extraneous-dependencies */
+/* oxlint-disable import-js/no-extraneous-dependencies */
 // dynamic import { makeHelpers } from '@agoric/deploy-script-support';
 // dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
 import { E, passStyleOf } from '@endo/far';

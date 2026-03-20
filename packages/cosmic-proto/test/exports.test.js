@@ -1,4 +1,4 @@
-/* eslint-disable import/no-extraneous-dependencies -- requiring the package itself to check exports map */
+/* oxlint-disable import-js/no-extraneous-dependencies -- requiring the package itself to check exports map */
 // @ts-check
 
 import test from 'ava';
