@@ -1,4 +1,4 @@
-import { type NatValue } from '@agoric/ertp';
+import type { NatValue } from '@agoric/ertp';
 import {
   PendingTxStatus,
   TerminalTxStatus,
@@ -31,7 +31,7 @@ import { M } from '@endo/patterns';
 import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
-import { type RouteHealth } from '../utils/route-health.ts';
+import type { RouteHealth } from '../utils/route-health.ts';
 import { makeSettlementMatcher } from '../utils/settlement-matcher.ts';
 
 interface StatusManagerPowers {

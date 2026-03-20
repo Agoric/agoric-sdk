@@ -79,10 +79,10 @@ import type { ERef } from '@agoric/vow';
 import type { EProxy } from '@endo/eventual-send';
 import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
-import {
-  type TraceCompleteEvent,
-  type TraceFile,
-  type TraceMetadataEvent,
+import type {
+  TraceCompleteEvent,
+  TraceFile,
+  TraceMetadataEvent,
 } from './profiling-types.js';
 
 const tmpDir = makeTempDirFactory(tmp);

@@ -1,4 +1,4 @@
-import { type NatValue } from '@agoric/ertp';
+import type { NatValue } from '@agoric/ertp';
 import { EvmHashShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type { EvmHash } from '@agoric/fast-usdc/src/types.js';
 import type { TypedPattern } from '@agoric/internal';

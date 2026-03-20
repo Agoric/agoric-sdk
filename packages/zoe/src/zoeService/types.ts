@@ -126,14 +126,14 @@ export type GetInvitationDetails = (
  */
 export type InstallBundle = (
   bundle: Bundle | SourceBundle,
-  bundleLabel?: string | undefined,
+  bundleLabel?: string,
 ) => Promise<Installation>;
 /**
  * Create an installation from a Bundle ID. Returns an installation.
  */
 export type InstallBundleID = (
   bundleID: BundleID,
-  bundleLabel?: string | undefined,
+  bundleLabel?: string,
 ) => Promise<Installation>;
 /**
  * Verify that an alleged Installation is real, and return the Bundle ID it

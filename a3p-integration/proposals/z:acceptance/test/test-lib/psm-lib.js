@@ -378,7 +378,7 @@ export const getPsmMetrics = async anchor => {
 };
 
 export const checkGovParams = async (
-  /** @type {ExecutionContext<unknown>} */ t,
+  /** @type {ExecutionContext} */ t,
   /** @type {any} */ expected,
   /** @type {string} */ psmName,
 ) => {

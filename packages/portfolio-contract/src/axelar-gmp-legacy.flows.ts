@@ -35,9 +35,9 @@ import { makeEvmAbiCallBatch, makeGmpBuilder } from './evm-facade.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
 import type { GmpAddresses } from './portfolio.contract.ts';
 import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
-import {
-  type LocalAccount,
-  type PortfolioInstanceContext,
+import type {
+  LocalAccount,
+  PortfolioInstanceContext,
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { TxId } from './resolver/types.ts';

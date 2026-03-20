@@ -10,7 +10,7 @@ import {
   MsgSend as MsgSendType,
   MsgSendResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
-import { type Coin as CoinType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+import type { Coin as CoinType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import {
   QueryDelegationRewardsRequest as QueryDelegationRewardsRequestType,
   QueryDelegationRewardsResponse,

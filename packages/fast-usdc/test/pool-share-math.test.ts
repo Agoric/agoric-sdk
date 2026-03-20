@@ -21,8 +21,8 @@ import type { PoolStats } from '../src/types.js';
 const { add, make, isEmpty, makeEmpty, subtract } = AmountMath;
 
 const issuerKits = {
-  PoolShare: makeIssuerKit<'nat'>('PoolShare'),
-  USDC: makeIssuerKit<'nat'>('USDC'),
+  PoolShare: makeIssuerKit('PoolShare'),
+  USDC: makeIssuerKit('USDC'),
 };
 const brands = harden({
   PoolShares: issuerKits.PoolShare.brand,

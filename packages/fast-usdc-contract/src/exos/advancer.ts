@@ -46,7 +46,7 @@ import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
-import { type advanceFunds as advanceFundsT } from '../fast-usdc.flows.ts';
+import type { advanceFunds as advanceFundsT } from '../fast-usdc.flows.ts';
 import { makeSupportsCctp } from '../utils/cctp.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { SettlerKit } from './settler.js';

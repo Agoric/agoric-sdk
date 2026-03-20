@@ -30,7 +30,7 @@ import type { ContractStartFunction } from '../zoeService/utils.js';
  * Any passable non-thenable. Often an explanatory string.
  */
 export type Completion = Passable;
-export type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
+export type ZCFMakeEmptySeatKit = (exit?: ExitRule) => ZcfSeatKit;
 
 export type InvitationAmount = Amount<'set', InvitationDetails>;
 
@@ -105,7 +105,7 @@ export type ZCF<CT = Record<string, unknown>> = {
   getAssetKind: (brand: Brand) => AssetKind;
   makeZCFMint: <K_2 extends AssetKind = 'nat'>(
     keyword: Keyword,
-    assetKind?: K_2 | undefined,
+    assetKind?: K_2,
     displayInfo?: AdditionalDisplayInfo,
     options?: import('@agoric/ertp').IssuerOptionsRecord,
   ) => Promise<ZCFMint<K_2>>;

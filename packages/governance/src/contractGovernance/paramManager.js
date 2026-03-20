@@ -58,7 +58,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Invitation) => ParamManagerBuilder} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
- * @property {(name: string, value: CopyRecord<any>) => ParamManagerBuilder} addRecord
+ * @property {(name: string, value: CopyRecord) => ParamManagerBuilder} addRecord
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
  * @property {(name: string, value: Timestamp) => ParamManagerBuilder} addTimestamp
  * @property {(name: string, value: RelativeTime) => ParamManagerBuilder} addRelativeTime

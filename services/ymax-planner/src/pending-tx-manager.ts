@@ -102,7 +102,7 @@ export type PendingTxMonitor<
   ) => Promise<void>;
 };
 
-const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
+const cctpMonitor: PendingTxMonitor<CctpTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
@@ -217,7 +217,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
   },
 };
 
-const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
+const gmpMonitor: PendingTxMonitor<GmpTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
@@ -341,7 +341,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   },
 };
 
-const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
+const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
@@ -470,7 +470,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
   },
 };
 
-const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
+const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
@@ -592,10 +592,7 @@ const ibcFromAgoricMonitor: PendingTxMonitor = {
   },
 };
 
-const MONITORS = new Map<
-  TxType,
-  PendingTxMonitor<PendingTx, EvmContext> | null
->([
+const MONITORS = new Map<TxType, PendingTxMonitor<PendingTx> | null>([
   [TxType.CCTP_TO_EVM, cctpMonitor],
   [TxType.GMP, gmpMonitor],
   [TxType.ROUTED_GMP, routedGmpMonitor],

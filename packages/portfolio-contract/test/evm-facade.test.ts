@@ -5,7 +5,7 @@ import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-
 import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { hexToBytes } from '@noble/hashes/utils';
-import { type Abi } from 'viem';
+import type { Abi } from 'viem';
 import {
   makeEvmAbiCallBatch,
   makeGmpBuilder,

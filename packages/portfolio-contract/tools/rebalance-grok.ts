@@ -216,7 +216,7 @@ export const grokRebalanceScenarios = (data: Array<string[]>) => {
 };
 
 export const withBrand = (
-  scenario: RebalanceScenario<Dollars>,
+  scenario: RebalanceScenario,
   brand: Brand<'nat'>,
   feeBrand = brand,
 ): RebalanceScenario<NatAmount> => {

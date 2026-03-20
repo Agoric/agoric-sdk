@@ -224,7 +224,7 @@ const trace = makeTracer('SmrtWlt');
  *     updateRecorderKit: RecorderKit<UpdateRecord>;
  *     currentRecorderKit: RecorderKit<CurrentWalletRecord>;
  *     liveOffers: MapStore<OfferId, OfferStatus>;
- *     liveOfferSeats: MapStore<OfferId, UserSeat<unknown>>;
+ *     liveOfferSeats: MapStore<OfferId, UserSeat>;
  *     liveOfferPayments: MapStore<OfferId, MapStore<Brand, Payment>>;
  *     myStore?: MapStore<string, unknown> | undefined;
  *   }

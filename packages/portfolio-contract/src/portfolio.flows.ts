@@ -7,7 +7,7 @@
 
 import type { GuestInterface } from '@agoric/async-flow';
 import { VaultType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/vaults.js';
-import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
+import type { Amount, Brand, NatAmount } from '@agoric/ertp';
 import {
   deeplyFulfilledObject,
   fromTypedEntries,

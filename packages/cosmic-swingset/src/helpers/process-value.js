@@ -5,7 +5,7 @@ import { resolve as pathResolve } from 'node:path';
 export const makeProcessValue = ({ env, args }) => {
   /**
    * @param {string} flagName
-   * @param {string | undefined} [deflt]
+   * @param {string  } [deflt]
    * @returns {string | undefined}
    */
   const getFlag = (flagName, deflt) => {

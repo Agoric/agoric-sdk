@@ -1,10 +1,10 @@
 import type { NatAmount } from '@agoric/ertp';
-import {
-  type AccountId,
-  type Bech32Address,
-  type CaipChainId,
-  type CosmosChainAddress,
-  type TrafficEntry,
+import type {
+  AccountId,
+  Bech32Address,
+  CaipChainId,
+  CosmosChainAddress,
+  TrafficEntry,
 } from '@agoric/orchestration';
 import type {
   ContinuingInvitationSpec,

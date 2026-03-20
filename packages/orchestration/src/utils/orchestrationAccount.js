@@ -64,7 +64,7 @@ export const orchestrationAccountMethods = {
  * @param {CaipChainId} srcChain
  * @param {CaipChainId} dstChain
  * @param {IBCConnectionInfo['transferChannel']} ibcChannel
- * @returns {(TrafficEntry<'ibc'> & { incomplete: true })[]}
+ * @returns {(TrafficEntry & { incomplete: true })[]}
  */
 const startIbcTransfer = (srcChain, dstChain, ibcChannel) =>
   harden([
@@ -106,9 +106,9 @@ const attachGenericSequence = (entry, sequence) => {
 };
 
 /**
- * @param {(TrafficEntry<'ibc'> & { incomplete?: any })[]} entries
- * @param {TrafficEntry<'ibc'>['seq']} sequence
- * @returns {TrafficEntry<'ibc'>[]}
+ * @param {(TrafficEntry & { incomplete?: any })[]} entries
+ * @param {TrafficEntry['seq']} sequence
+ * @returns {TrafficEntry[]}
  */
 const finishIbcTransfer = (entries, sequence) => {
   entries.length === 1 || Fail`expected single traffic entry to finish`;
@@ -124,7 +124,7 @@ const finishIbcTransfer = (entries, sequence) => {
 
 /**
  * @param {CaipChainId} dstChain
- * @returns {(TrafficEntry<'ibc'> & { incomplete: true })[]}
+ * @returns {(TrafficEntry & { incomplete: true })[]}
  */
 const startIbcICA = dstChain =>
   harden([
@@ -139,12 +139,12 @@ const startIbcICA = dstChain =>
   ]);
 
 /**
- * @param {(TrafficEntry<'ibc'> & { incomplete?: any })[]} entries
+ * @param {(TrafficEntry & { incomplete?: any })[]} entries
  * @param {CaipChainId} srcChain
  * @param {Pick<IBCEndpoint, 'portID' | 'channelID'>} srcEndpoint
  * @param {Pick<IBCEndpoint, 'portID' | 'channelID'>} dstEndpoint
- * @param {TrafficEntry<'ibc'>['seq']} sequence
- * @returns {TrafficEntry<'ibc'>[]}
+ * @param {TrafficEntry['seq']} sequence
+ * @returns {TrafficEntry[]}
  */
 const finishIbcICA = (
   entries,
@@ -176,7 +176,7 @@ const finishIbcICA = (
   ]);
   return [
     attachGenericSequence(
-      /** @type {TrafficEntry<'ibc'>} */ ({
+      /** @type {TrafficEntry} */ ({
         ...entry,
         src,
         dst,

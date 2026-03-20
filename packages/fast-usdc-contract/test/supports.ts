@@ -13,13 +13,13 @@ import {
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
-import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
+import type { DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { type Zone } from '@agoric/zone';
+import type { Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';

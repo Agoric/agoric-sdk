@@ -49,7 +49,7 @@ export const mergeCoreProposals = (...args) => {
 harden(mergeCoreProposals);
 
 /**
- * @param {(ModuleSpecifier | FilePath)[]} paths
+ * @param {(ModuleSpecifier  )[]} paths
  * @typedef {string} ModuleSpecifier
  * @typedef {string} FilePath
  */

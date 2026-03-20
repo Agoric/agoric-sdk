@@ -13,7 +13,7 @@ import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 export * from './make-slog-sender.js';
 
 /**
- * @typedef {((obj: {}, jsonObj?: string | undefined) => void) & {
+ * @typedef {((obj: {}, jsonObj?: string  ) => void) & {
  *  usesJsonObject?: boolean;
  *  forceFlush?: () => Promise<void>;
  *  shutdown?: () => Promise<void>;

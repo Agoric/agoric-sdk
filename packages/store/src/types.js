@@ -127,14 +127,14 @@ export {};
  *   example a scalar store only allows primitives and remotables.
  * @property {(key: K, value: V) => void} set Set the key. Throws if not found.
  * @property {(key: K) => void} delete Remove the key. Throws if not found.
- * @property {(entries: CopyMap<any, Passable> | Iterable<[K, V]>) => void} addAll
+ * @property {(entries: CopyMap<any> | Iterable<[K, V]>) => void} addAll
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<K>} keys
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<V>} values
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => Iterable<[K, V]>} entries
  * @property {(
  *   keyPatt?: Pattern,
  *   valuePatt?: Pattern,
- * ) => CopyMap<any, Passable>} snapshot
+ * ) => CopyMap<any>} snapshot
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => number} getSize
  * @property {(keyPatt?: Pattern, valuePatt?: Pattern) => void} clear
  */

@@ -519,7 +519,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          *   counterparty: CaipChainId,
          *   ra: RemoteIbcAddress,
          * ]} _param0
-         * @param {{ result: Vow<any>; meta: Record<string, any> }} param1
+         * @param {{ result: Vow; meta: Record<string, any> }} param1
          * @param {string} _protocol
          */
         onFulfilled(_param0, { result, meta }, _protocol) {
@@ -1071,7 +1071,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         Transfer() {
           /**
            * @type {OfferHandler<
-           *   Vow<any>,
+           *   Vow,
            *   {
            *     amount: AmountArg;
            *     destination: AccountIdArg;

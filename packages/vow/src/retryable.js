@@ -12,7 +12,7 @@ import { makeAsVow, toPassableCap, VowShape } from './vow-utils.js';
 
 /**
  * @typedef {object} PreparationOptions
- * @property {() => VowKit<any>} makeVowKit
+ * @property {() => VowKit} makeVowKit
  * @property {IsRetryableReason} isRetryableReason
  */
 

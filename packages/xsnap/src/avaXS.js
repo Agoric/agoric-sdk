@@ -120,7 +120,7 @@ async function runTestScript(
   /**
    * Handle callback "command" from xsnap subprocess.
    *
-   * @type { (msg: ArrayBuffer) => Promise<Uint8Array<ArrayBufferLike>> }
+   * @type { (msg: ArrayBuffer) => Promise<Uint8Array> }
    */
   async function handleCommand(message) {
     /**

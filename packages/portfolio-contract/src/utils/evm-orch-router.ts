@@ -68,10 +68,9 @@ export type AbiExtendedContractMethod<TArgs extends readonly unknown[]> = {
 };
 
 export type AbiExtendedContract<TAbi extends Abi> = {
-  [Name in ContractFunctionName<
-    TAbi,
-    AbiStateMutability
-  >]: AbiExtendedContractMethod<AbiContractArgs<TAbi, Name>>;
+  [Name in ContractFunctionName<TAbi>]: AbiExtendedContractMethod<
+    AbiContractArgs<TAbi, Name>
+  >;
 } & (Extract<TAbi[number], { type: 'receive' }> extends never
   ? {} // eslint-disable-line @typescript-eslint/no-empty-object-type
   : { [AbiSend]: AbiExtendedContractMethod<[]> });

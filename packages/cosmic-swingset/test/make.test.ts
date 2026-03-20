@@ -20,7 +20,7 @@ const defaultFDs: StdioOptions = ['ignore', 'ignore', 'ignore'];
 const debugFDs: StdioOptions = ['ignore', 'inherit', 'inherit'];
 const fdList: StdioOptions = process.env.DEBUG ? debugFDs : defaultFDs;
 
-const makeTestContext = async (t: ExecutionContext<unknown>) => {
+const makeTestContext = async (t: ExecutionContext) => {
   const filename = new URL(import.meta.url).pathname;
   const dirname = ambientPath.dirname(filename);
   const makefileDir = ambientPath.join(dirname, '..');

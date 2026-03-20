@@ -16,13 +16,10 @@ import {
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import { VaultType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/vaults.js';
 import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import { type NatValue } from '@agoric/ertp';
+import type { NatValue } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { type CosmosChainAddress, type Denom } from '@agoric/orchestration';
-import {
-  type ProtocolDetail,
-  type TransportDetail,
-} from './portfolio.flows.ts';
+import type { CosmosChainAddress, Denom } from '@agoric/orchestration';
+import type { ProtocolDetail, TransportDetail } from './portfolio.flows.ts';
 
 const Any = CodecHelper(AnyType);
 const MsgLock = CodecHelper(MsgLockType);

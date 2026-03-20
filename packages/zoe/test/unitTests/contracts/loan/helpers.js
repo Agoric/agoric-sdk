@@ -18,7 +18,7 @@ import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 /**
- * @param {ExecutionContext<unknown>} t
+ * @param {ExecutionContext} t
  * @param {UserSeat} seat
  * @param {Keyword} keyword
  * @param {IssuerKit} kit
@@ -40,7 +40,7 @@ export const checkPayout = async (
 };
 
 /**
- * @param {ExecutionContext<unknown>} t
+ * @param {ExecutionContext} t
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Invitation>} invitation
  * @param {string} expected
@@ -51,7 +51,7 @@ export const checkDescription = async (t, zoe, invitation, expected) => {
 };
 
 /**
- * @param {ExecutionContext<unknown>} t
+ * @param {ExecutionContext} t
  * @param {ERef<ZoeService>} zoe
  * @param {ERef<Invitation>} invitation
  * @param {InvitationDetails} expectedNullHandle expected invitation
@@ -147,7 +147,7 @@ export const makeSeatKit = async (zcf, proposal, payments) => {
 
 /**
  * @callback PerformAddCollateral
- * @param {ExecutionContext<unknown>} t
+ * @param {ExecutionContext} t
  * @param {ZoeService} zoe
  * @param {IssuerKit} collateralKit
  * @param {IssuerKit} loanKit

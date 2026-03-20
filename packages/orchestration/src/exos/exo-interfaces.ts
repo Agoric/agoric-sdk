@@ -21,7 +21,7 @@ export interface CosmosInterchainService {
     chainId: string,
     hostConnectionId: IBCConnectionID,
     controllerConnectionId: IBCConnectionID,
-    opts?: ICAChannelAddressOpts | undefined,
+    opts?: ICAChannelAddressOpts,
   ): Vow<IcaAccount>;
   /**
    * @param {IBCConnectionID} controllerConnectionId
@@ -30,6 +30,6 @@ export interface CosmosInterchainService {
    */
   provideICQConnection(
     controllerConnectionId: IBCConnectionID,
-    version?: string | undefined,
+    version?: string,
   ): Vow<ICQConnection> | ICQConnection;
 }

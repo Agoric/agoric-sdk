@@ -345,7 +345,7 @@ const openPositionsEVM = async ({
 
   const allocations: Allocation[] = Object.entries(targetAllocation).map(
     ([instrument, amount]) => ({
-      instrument: instrument,
+      instrument,
       portion: amount,
     }),
   );
@@ -357,7 +357,7 @@ const openPositionsEVM = async ({
 
   const deposit: TokenPermissions = {
     token: axelarChainConfig.contracts.usdc,
-    amount: amount,
+    amount,
   };
 
   const witness = getYmaxWitness('OpenPortfolio', { allocations });

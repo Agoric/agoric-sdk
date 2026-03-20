@@ -118,7 +118,7 @@ export const makeKernelStats = kernelStatsMetrics => {
   /**
    * Return a fresh snapshot, with or without local stats.
    *
-   * @param {boolean | undefined} [consensusOnly]
+   * @param {boolean  } [consensusOnly]
    * @returns {Record<string, number>}
    */
   const getStats = consensusOnly => {

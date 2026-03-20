@@ -16,7 +16,7 @@ import {
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
-import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
+import type { DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   ROOT_STORAGE_PATH,

@@ -28,7 +28,7 @@ import {
 import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
-import { type Zone } from '@agoric/zone';
+import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePassableKit } from '@endo/marshal';

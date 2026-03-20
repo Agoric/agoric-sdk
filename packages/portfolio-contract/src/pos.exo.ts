@@ -10,7 +10,7 @@ import { AnyNatAmountShape } from '@agoric/orchestration';
 import type { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
-import { type PublishStatusFn } from './portfolio.exo.ts';
+import type { PublishStatusFn } from './portfolio.exo.ts';
 import { makePositionPath, type PoolKey } from './type-guards.ts';
 
 const { assign } = Object;

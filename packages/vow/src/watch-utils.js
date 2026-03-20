@@ -26,7 +26,7 @@ const VowShape = M.tagged(
  * @param {object} powers
  * @param {Watch} powers.watch
  * @param {When} powers.when
- * @param {() => VowKit<any>} powers.makeVowKit
+ * @param {() => VowKit} powers.makeVowKit
  * @param {IsRetryableReason} powers.isRetryableReason
  */
 export const prepareWatchUtils = (

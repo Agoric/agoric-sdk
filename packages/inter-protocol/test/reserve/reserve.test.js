@@ -97,8 +97,7 @@ test('reserve add collateral', async t => {
  *         failsAfterRevokeAll?: boolean;
  *       };
  *     },
- *   ],
- *   unknown
+ *   ]
  * >}
  */
 const reserveWithCollateral = test.macro(async (t, { makeInvitationMaker }) => {

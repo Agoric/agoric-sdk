@@ -41,9 +41,9 @@ import {
 } from './interfaces/orch-router.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
-import {
-  type LocalAccount,
-  type PortfolioInstanceContext,
+import type {
+  LocalAccount,
+  PortfolioInstanceContext,
 } from './portfolio.flows.ts';
 import {
   TxType,

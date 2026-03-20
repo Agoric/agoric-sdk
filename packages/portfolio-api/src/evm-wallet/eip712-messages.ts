@@ -295,7 +295,7 @@ export function validateYmaxDomainBase(
 
 export function validateYmaxDomain(
   domain: TypedDataDomain,
-  validContractAddresses?: Record<number | string, Address> | undefined,
+  validContractAddresses?: Record<number | string, Address>,
 ): asserts domain is YmaxFullDomain {
   const baseDomain = domain;
   validateYmaxDomainBase(baseDomain);

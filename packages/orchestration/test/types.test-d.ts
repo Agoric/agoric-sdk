@@ -184,7 +184,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   const getDenomInfo: HostOf<Orchestrator['getDenomInfo']> = null as any;
   const chainHostOf = getDenomInfo('uatom', 'cosmoshub').chain;
-  expectType<Vow<any>>(chainHostOf.getChainInfo());
+  expectType<Vow>(chainHostOf.getChainInfo());
 }
 
 {
@@ -211,9 +211,9 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 {
   type TransferStepsVow = HostOf<OrchestrationAccount<any>['transferSteps']>;
 
-  const transferStepsVow: TransferStepsVow = (..._args: any[]): Vow<any> =>
+  const transferStepsVow: TransferStepsVow = (..._args: any[]): Vow =>
     ({}) as any;
-  expectType<(...args: any[]) => Vow<any>>(transferStepsVow);
+  expectType<(...args: any[]) => Vow>(transferStepsVow);
 }
 
 // VowifyAll

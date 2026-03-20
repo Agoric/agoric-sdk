@@ -1,7 +1,7 @@
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
-import { type RouteHealth } from './route-health.ts';
+import type { RouteHealth } from './route-health.ts';
 
 import type { StatusManager } from '../exos/status-manager.ts';
 import type * as flows from '../fast-usdc.flows.ts';

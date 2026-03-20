@@ -443,8 +443,7 @@ export type BootstrapSpace = WellKnownSpaces &
     {
       loadVat: VatLoader;
       loadCriticalVat: VatLoader;
-    },
-    object
+    }
   >;
 
 export type NamedVatPowers = {

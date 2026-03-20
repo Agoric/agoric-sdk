@@ -1,7 +1,7 @@
 import type { IBCChannelID, IBCConnectionID, IBCPortID } from '@agoric/vats';
-import {
-  type LocalIbcAddress,
-  type RemoteIbcAddress,
+import type {
+  LocalIbcAddress,
+  RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 
 // XXX consider moving to vats/tools/ibc-utils by updating current values or renaming as `NEGOTIATED_...`

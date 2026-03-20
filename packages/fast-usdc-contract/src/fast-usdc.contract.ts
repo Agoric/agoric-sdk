@@ -44,7 +44,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { type EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.ts';
@@ -270,7 +270,7 @@ export const contract = async (
     async getContractFeeBalance(): Promise<Amount<'nat'>> {
       return poolKit.feeRecipient.getContractFeeBalance();
     },
-    async makeWithdrawFeesInvitation(): Promise<Invitation<unknown>> {
+    async makeWithdrawFeesInvitation(): Promise<Invitation> {
       return poolKit.feeRecipient.makeWithdrawFeesInvitation();
     },
     async connectToNoble(

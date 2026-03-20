@@ -33,7 +33,7 @@ const just = obj => {
 /**
  * @callback MatchEvent
  * @param {EVow<Pattern>} pattern
- * @returns {Vow<{ resolver: VowResolver<any>; match: Vow<any> }>}
+ * @returns {Vow<{ resolver: VowResolver; match: Vow }>}
  */
 
 /**
@@ -43,7 +43,7 @@ const just = obj => {
  *   opts: PacketOptions,
  * ) => Vow<{
  *   eventPattern: Pattern;
- *   resultV: Vow<any>;
+ *   resultV: Vow;
  * }>} sendPacket
  */
 
@@ -318,7 +318,7 @@ export const preparePacketTools = (zone, vowTools) => {
         /**
          * @param {[
          *   {
-         *     resolver: VowResolver<any>;
+         *     resolver: VowResolver;
          *     match: Vow<
          *       IBCEvent<'acknowledgementPacket'> | IBCEvent<'timeoutPacket'>
          *     >;

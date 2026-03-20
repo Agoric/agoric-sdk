@@ -2,7 +2,7 @@
  * @file Type-safe EVM contract call builder for Axelar GMP integration.
  * @see {@link makeEvmAbiCallBatch} for creating contract call batches
  */
-import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
+import type { ContractCall } from '@agoric/orchestration/src/axelar-types.js';
 import {
   encodeAbiParameters,
   encodeFunctionData,
@@ -23,7 +23,7 @@ export const AbiSend = Symbol('send');
 
 export type AbiContractArgs<
   TAbi extends Abi,
-  Name extends ContractFunctionName<TAbi, AbiStateMutability>,
+  Name extends ContractFunctionName<TAbi>,
 > =
   ContractFunctionArgs<
     TAbi,
@@ -34,7 +34,7 @@ export type AbiContractArgs<
     : readonly unknown[];
 
 export type AbiContract<TAbi extends Abi, R = void> = {
-  [Name in ContractFunctionName<TAbi, AbiStateMutability>]: (
+  [Name in ContractFunctionName<TAbi>]: (
     ...args: AbiContractArgs<TAbi, Name>
   ) => R;
 };

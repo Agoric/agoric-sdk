@@ -113,7 +113,7 @@ export const prepareRevocableMakerKit = (
 
   const revocableKindName = `${uKindName}_caretaker`;
 
-  /** @type {Amplify<any>} */
+  /** @type {Amplify} */
   let amplifier;
 
   const makeRevocableKit = zone.exoClassKit(

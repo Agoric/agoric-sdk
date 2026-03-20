@@ -22,7 +22,7 @@ import type { VowTools } from '@agoric/vow';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
 import type { ExecutionContext } from 'ava';
-import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+import type { start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import {
   makePositionPath,
   portfolioIdOfPath,

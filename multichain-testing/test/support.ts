@@ -10,7 +10,7 @@ import {
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { withCosmosChainId } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 import { makeAgdTools } from '../tools/agd-tools.js';
-import { type E2ETools } from '../tools/e2e-tools.js';
+import type { E2ETools } from '../tools/e2e-tools.js';
 import {
   makeGetFile,
   makeSetupRegistry,

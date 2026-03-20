@@ -116,7 +116,7 @@ export {};
 
 /**
  * @typedef { TextPosition | ChangeParamsPosition | NoChangeParamsPosition | InvokeApiPosition | DontInvokeApiPosition |
- *    OfferFilterPosition | NoChangeOfferFilterPosition | InvokeApiPosition } Position
+ *    OfferFilterPosition | NoChangeOfferFilterPosition   } Position
  */
 
 /**

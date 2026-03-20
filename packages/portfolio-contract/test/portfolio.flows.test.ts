@@ -11,7 +11,7 @@ import type { GuestInterface } from '@agoric/async-flow';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { AmountMath, makeIssuerKit, type NatAmount } from '@agoric/ertp';
 import { makeTracer, mustMatch, type TraceLogger } from '@agoric/internal';
-import { type StorageMessage } from '@agoric/internal/src/lib-chainStorage.js';
+import type { StorageMessage } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -38,10 +38,10 @@ import {
   chainOfAccount,
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import {
-  type AxelarChain,
-  type FlowDetail,
-  type FundsFlowPlan,
+import type {
+  AxelarChain,
+  FlowDetail,
+  FundsFlowPlan,
 } from '@agoric/portfolio-api';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import {
@@ -53,7 +53,7 @@ import type { Address } from 'abitype';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { type VowTools } from '@agoric/vow';
+import type { VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeHeapZone } from '@agoric/zone';

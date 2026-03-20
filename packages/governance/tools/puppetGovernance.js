@@ -52,7 +52,7 @@ export const setUpGovernedContract = async (
   /**
    * @type {[
    * Installation<typeof start>,
-   * Installation<any>,
+   * Installation,
    * Installation<T>,
    * ]}
    */

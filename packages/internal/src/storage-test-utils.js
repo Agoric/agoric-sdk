@@ -348,7 +348,7 @@ export const makeMockChainStorageRoot = () => {
 };
 
 /**
- * @param {ExecutionContext<unknown>} t
+ * @param {ExecutionContext} t
  * @param {MockChainStorageRoot | FakeStorageKit} storage
  * @param {({ note: string } | { node: string; owner: string }) &
  *   ({ pattern: string; replacement: string } | {}) & {

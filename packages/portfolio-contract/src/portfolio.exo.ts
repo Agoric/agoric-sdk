@@ -6,11 +6,11 @@ import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { hexToBytes } from '@noble/hashes/utils';
-import {
-  type AccountId,
-  type Caip10Record,
-  type CaipChainId,
-  type IBCConnectionInfo,
+import type {
+  AccountId,
+  Caip10Record,
+  CaipChainId,
+  IBCConnectionInfo,
 } from '@agoric/orchestration';
 import {
   coerceAccountId,
@@ -37,7 +37,7 @@ import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
-import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
+import type { Vow, VowKit, VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, X, bare } from '@endo/errors';
@@ -45,7 +45,7 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import type { Address as EVMAddress } from 'abitype';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
-import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
+import type { LocalAccount, NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
@@ -1028,7 +1028,7 @@ export const preparePortfolioKit = (
          * If a new allocation is not provided, uses the previously set target allocation.
          */
         rebalance(
-          allocations?: readonly EIP712Allocation[] | undefined,
+          allocations?: readonly EIP712Allocation[],
           depositDetails?: PermitDetails,
         ) {
           const { sourceAccountId } = this.state;

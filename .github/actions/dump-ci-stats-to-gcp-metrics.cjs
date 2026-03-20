@@ -18,7 +18,7 @@ async function sendMetricsToGCP(metricType, metricValue, labels) {
       {
         metric: {
           type: `custom.googleapis.com/github/${metricType}`,
-          labels: labels,
+          labels,
         },
         resource: {
           type: 'global',

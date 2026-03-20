@@ -91,7 +91,7 @@ export const terminateGoverned = async (
       const targetData = [boardID, instanceKitLabel];
       const logLabel = q(targetData);
       const trace = makeTracer(`terminate-governed-instance ${logLabel}`, true);
-      const contractInstanceHandle = /** @type {Instance<any>} */ (
+      const contractInstanceHandle = /** @type {Instance} */ (
         await E(board).getValue(boardID)
       );
       const instanceKit = await E(governedContractKits).get(

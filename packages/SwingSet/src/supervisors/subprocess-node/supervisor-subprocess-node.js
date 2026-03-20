@@ -39,7 +39,7 @@ workerLog(`supervisor started`);
 
 function makeNetstringReader({ fd, encoding }) {
   const input = Buffer.alloc(32 * 1024);
-  /** @type {Buffer<ArrayBufferLike>} */
+  /** @type {Buffer} */
   let buffered = Buffer.alloc(0);
   let decoded = [];
 

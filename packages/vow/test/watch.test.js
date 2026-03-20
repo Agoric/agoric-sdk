@@ -12,7 +12,7 @@ import { prepareBasicVowTools } from '../src/tools.js';
 
 /**
  * @param {Zone} zone
- * @param {ExecutionContext<unknown>} t
+ * @param {ExecutionContext} t
  */
 const prepareAckWatcher = (zone, t) => {
   return zone.exoClass('AckWatcher', undefined, packet => ({ packet }), {
@@ -33,7 +33,7 @@ const prepareAckWatcher = (zone, t) => {
 
 /**
  * @param {Zone} zone
- * @param {ExecutionContext<unknown>} t
+ * @param {ExecutionContext} t
  */
 const prepareArityCheckWatcher = (zone, t) => {
   return zone.exoClass(

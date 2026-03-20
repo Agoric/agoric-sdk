@@ -68,7 +68,7 @@ const setupReserveBootstrap = async (_t, timer, farZoeKit) => {
 /**
  * NOTE: called separately by each test so contracts don't interfere
  *
- * @param {ExecutionContext<unknown>} t
+ * @param {ExecutionContext} t
  * @param {{ committeeName: string; committeeSize: number }} electorateTerms
  * @param {ZoeManualTimer} [timer]
  */

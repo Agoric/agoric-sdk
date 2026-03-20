@@ -48,11 +48,11 @@ import type {
   EVMContractAddresses,
   GmpAddresses,
 } from './portfolio.contract.ts';
-import {
-  type LocalAccount,
-  type PortfolioInstanceContext,
-  type ProtocolDetail,
-  type TransportDetail,
+import type {
+  LocalAccount,
+  PortfolioInstanceContext,
+  ProtocolDetail,
+  TransportDetail,
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';

@@ -21,7 +21,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { denomHash } from '@agoric/orchestration';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { Vow } from '@agoric/vow';
 import type { ZCFSeat, ZcfSeatKit } from '@agoric/zoe';
 import { q } from '@endo/errors';

@@ -21,7 +21,7 @@ const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
   });
 
 const issuerKits = {
-  USDC: makeIssuerKit<'nat'>('USDC'),
+  USDC: makeIssuerKit('USDC'),
 };
 const { brand: usdcBrand } = issuerKits.USDC;
 

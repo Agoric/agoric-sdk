@@ -148,9 +148,9 @@ export {};
  * @property {GetBrands} getBrands
  * @property {GetIssuers} getIssuers
  * @property {GetTerms} getTerms
- * @property {(instance: Instance<any>) => string[]} getOfferFilter
- * @property {(instance: Instance<any>, strings: string[]) => any} setOfferFilter
- * @property {(instance: Instance<any>) => Promise<Installation>} getInstallationForInstance
+ * @property {(instance: Instance) => string[]} getOfferFilter
+ * @property {(instance: Instance, strings: string[]) => any} setOfferFilter
+ * @property {(instance: Instance) => Promise<Installation>} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
  * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation

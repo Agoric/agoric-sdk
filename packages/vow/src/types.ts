@@ -102,8 +102,8 @@ export type AsPromiseFunction<
   C extends any[] = any[],
 > = (
   specimenP: ERef<T | Vow<T>>,
-  watcher?: Watcher<T, TResult1, TResult2, C> | undefined,
-  watcherArgs?: C | undefined,
+  watcher?: Watcher<T, TResult1, TResult2, C>,
+  watcherArgs?: C,
 ) => Promise<TResult1 | TResult2>;
 
 export interface RetryableTool {
@@ -180,7 +180,7 @@ export type VowTools = {
   retriable: RetryableTool;
   watch: <T = any, TResult1 = T, TResult2 = never, C extends any[] = any[]>(
     specimenP: EVow<T>,
-    watcher?: Watcher<T, TResult1, TResult2, C> | undefined,
+    watcher?: Watcher<T, TResult1, TResult2, C>,
     ...watcherArgs: C
   ) => Vow<
     Exclude<TResult1, void> | Exclude<TResult2, void> extends never
@@ -197,11 +197,7 @@ export type VowTools = {
    */
   when: <T, TResult1 = EUnwrap<T>, TResult2 = never>(
     specimenP: T,
-    onFulfilled?:
-      | ((value: EUnwrap<T>) => TResult1 | PromiseLike<TResult1>)
-      | undefined,
-    onRejected?:
-      | ((reason: any) => TResult2 | PromiseLike<TResult2>)
-      | undefined,
+    onFulfilled?: (value: EUnwrap<T>) => TResult1 | PromiseLike<TResult1>,
+    onRejected?: (reason: any) => TResult2 | PromiseLike<TResult2>,
   ) => Promise<TResult1 | TResult2>;
 };

@@ -89,7 +89,7 @@ export function decode(data, optMaxChunkSize) {
  */
 // input is a byte pipe, output is a sequence of Buffers
 export function netstringDecoderStream(optMaxChunkSize) {
-  /** @type {Buffer<ArrayBufferLike>} */
+  /** @type {Buffer} */
   let buffered = Buffer.from('');
   /**
    * @param {Buffer} chunk

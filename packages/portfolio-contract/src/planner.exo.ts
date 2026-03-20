@@ -39,7 +39,7 @@ export const preparePlanner = (
       seat: ZCFSeat,
       offerArgs: OfferArgsFor['rebalance'],
       kit: unknown, // XXX avoid circular reference
-    ) => Vow<any>; // XXX HostForGuest???
+    ) => Vow; // XXX HostForGuest???
     zcf: ZCF;
     getPortfolio: (id: number) => PortfolioKit;
     shapes: ReturnType<typeof makeOfferArgsShapes>;

@@ -161,7 +161,7 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
   );
   /**
    * @param {Slot} slot
-   * @param {string | undefined} [iface]
+   * @param {string  } [iface]
    */
   const convertSlotToWrapper = (slot, iface) => {
     if (slot == null) {

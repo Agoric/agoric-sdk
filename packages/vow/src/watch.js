@@ -167,7 +167,7 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) => {
 
 /**
  * @param {Zone} zone
- * @param {() => VowKit<any>} makeVowKit
+ * @param {() => VowKit} makeVowKit
  * @param {(reason: any, lastValue: any) => any} [isRetryableReason]
  */
 export const prepareWatch = (

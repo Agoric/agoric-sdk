@@ -1,4 +1,4 @@
-import { type SigningSmartWalletKit } from '@agoric/client-utils';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';

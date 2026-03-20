@@ -23,7 +23,7 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
 import { configurations } from '../src/utils/deploy-config.js';
-import { type WalletFactoryTestContext } from './walletFactory.js';
+import type { WalletFactoryTestContext } from './walletFactory.js';
 
 type SmartWallet = Awaited<
   ReturnType<
