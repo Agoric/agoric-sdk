@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-// eslint-disable-next-line import/no-relative-packages -- okay for dev script
+// oxlint-disable-next-line import-js/no-extraneous-dependencies -- okay for dev script
 import { listWorkspaces } from '../packages/agoric-cli/src/lib/packageManager.js';
 
 const parent = new URL('..', import.meta.url).pathname;

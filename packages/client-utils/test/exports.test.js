@@ -1,4 +1,5 @@
 // @ts-check
+/* oxlint-disable import-js/no-extraneous-dependencies -- requiring the package itself to check exports map */
 
 import test from 'ava';
 

@@ -403,7 +403,7 @@ export const prepareResolverKit = (
         ): TxId | undefined {
           const { transactionRegistry } = this.state;
 
-          // eslint-disable-next-line no-unreachable-loop
+          // oxlint-disable-next-line eslint-js/no-unreachable-loop
           for (const txId of transactionRegistry.keys(
             keyPattern,
             valuePattern,

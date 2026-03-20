@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // @ts-nocheck XXX
-/* eslint no-labels: "off", no-extra-label: "off", no-underscore-dangle: "off" */
+/* oxlint-disable eslint/no-extra-labels, eslint/no-labels -- labels for loop control and underscore for "private" variables */
 import process from 'node:process';
 import sqlite3 from 'better-sqlite3';
 import yargsParser from 'yargs-parser';

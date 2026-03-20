@@ -12,7 +12,7 @@
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-// eslint-disable-next-line import/no-relative-packages -- one-off script
+// oxlint-disable-next-line import-js/no-extraneous-dependencies -- one-off script
 import { listWorkspaces } from '../packages/agoric-cli/src/lib/packageManager.js';
 
 let hasErrors = false;
