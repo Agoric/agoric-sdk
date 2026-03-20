@@ -265,7 +265,7 @@
     "import-js/no-import-module-exports": "error",
     "import-js/no-relative-packages": "error",
     "import-js/no-useless-path-segments": "error",
-    "import-js/order": "error",
+    "import-js/order": "off", // difficult with our prepare-test-env side effects
     // Native oxlint rules migrated from ESLint
     "array-callback-return": "error",
     "default-case-last": "error",
@@ -289,7 +289,6 @@
     "no-script-url": "error",
     "no-self-compare": "error",
     "no-template-curly-in-string": "error",
-    "no-throw-literal": "error",
     "no-useless-computed-key": "error",
     "no-useless-return": "error",
     "operator-assignment": "error",
