@@ -57,11 +57,6 @@ module.exports = {
       return undefined;
     };
 
-    const isTrackedResponseUse = node =>
-      node.object.type === 'Identifier' &&
-      node.property.type === 'Identifier' &&
-      Boolean(getTracked(node.object.name));
-
     return {
       Program() {
         scopeStack.push(new Map());
@@ -95,16 +90,21 @@ module.exports = {
       },
 
       MemberExpression(node) {
-        if (!isTrackedResponseUse(node)) {
+        if (
+          node.object.type !== 'Identifier' ||
+          node.property.type !== 'Identifier'
+        ) {
           return;
         }
 
-        const tracked = getTracked(node.object.name);
+        const responseName = node.object.name;
+        const propertyName = node.property.name;
+        const tracked = getTracked(responseName);
         if (!tracked) {
           return;
         }
 
-        if (node.property.name === 'ok') {
+        if (propertyName === 'ok') {
           tracked.checkedOk = true;
           return;
         }
@@ -113,7 +113,7 @@ module.exports = {
           context.report({
             node,
             messageId: 'fetchResponseOk',
-            data: { name: node.object.name },
+            data: { name: responseName },
           });
         }
       },
