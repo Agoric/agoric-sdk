@@ -274,8 +274,6 @@
     "func-names": "warn",
     "grouped-accessor-pairs": "error",
     "guard-for-in": "error",
-    "max-classes-per-file": "error",
-    "new-cap": "error",
     "no-array-constructor": "error",
     "no-constructor-return": "error",
     "no-extra-label": "error",
@@ -300,8 +298,8 @@
     "vars-on-top": "error",
     "yoda": "error",
     // Core ESLint rules via oxlint-plugin-eslint (eslint-js)
-    "eslint-js/camelcase": "error",
-    "eslint-js/dot-notation": "error",
+    "eslint-js/camelcase": "off", // stylistic
+    "eslint-js/dot-notation": "off", // stylistic
     "eslint-js/global-require": "error",
     "eslint-js/lines-around-directive": "error",
     "eslint-js/lines-between-class-members": "error",
@@ -318,19 +316,51 @@
     "eslint-js/no-restricted-properties": "error",
     "eslint-js/no-return-await": "error",
     "eslint-js/no-undef-init": "error",
-    "eslint-js/no-underscore-dangle": "error",
     "eslint-js/no-unreachable-loop": "error",
     "eslint-js/object-shorthand": "error",
-    "eslint-js/one-var": "error",
-    "eslint-js/spaced-comment": "error",
-    "typescript/prefer-readonly-parameter-types": "off", // we use mutable parameters for things like accumulators and builders
-    "typescript/promise-function-async": "off", // we use non-async functions that return promises, and async functions that return vows
-    "typescript/no-unnecessary-type-assertion": "off", // belt and suspenders
+    "eslint-js/one-var": "off", // stylistic
+    "typescript/await-thenable": "off", // we rely on 'await null;'
+    "typescript/no-dynamic-delete": "warn",
     "typescript/consistent-return": "off", // good but not yet
-    "typescript/strict-void-return": "off", // good but not yet
-    "typescript/no-unsafe-type-assertion": "off", // good but not yet
-    "typescript/no-unnecessary-condition": "off", // good but not yet
+    "typescript/consistent-type-exports": "off", // invalid in .js
+    "typescript/consistent-type-imports": "off", // good but not yet
+    "typescript/dot-notation": "off", // stylistic
+    "typescript/explicit-function-return-type": "off", // good but not yet
+    "typescript/explicit-module-boundary-types": "off", // good but not yet
+    "typescript/no-base-to-string": "off", // false positives
+    "typescript/no-duplicate-type-constituents": "warn",
+    "typescript/no-explicit-any": "off", // good but not yet
+    "typescript/no-extraneous-class": "off", // used only purposefully
     "typescript/no-floating-promises": "error",
+    "typescript/no-import-type-side-effects": "warn",
+    "typescript/no-invalid-void-type": "off", // false positives
+    "typescript/no-meaningless-void-operator": "off", // good but not yet
+    "typescript/no-misused-spread": "off", // false positives with our factory style
+    "typescript/no-redundant-type-constituents": "off", // false positives 
+    "typescript/no-require-imports": "off", // false positives in CommonJS files
+    "typescript/no-non-null-assertion": "off", // good but not yet
+    "typescript/no-unnecessary-condition": "off", // good but not yet
+    "typescript/no-unnecessary-template-expression": "warn",
+    "typescript/no-unnecessary-type-arguments": "warn",
+    "typescript/no-unnecessary-boolean-literal-compare": "off", // stylistic
+    "typescript/no-unnecessary-type-assertion": "off", // belt and suspenders
+    "typescript/no-unnecessary-type-conversion": "off", // belt and suspenders
+    "typescript/no-unnecessary-type-parameters": "warn",
+    "typescript/no-unsafe-type-assertion": "off", // good but not yet
+    "typescript/no-useless-default-assignment": "off", // house style has been "= undefined" for optional params
+    "typescript/non-nullable-type-assertion-style": "off", // recommends in .js which is invalid
+    "typescript/one-var": "off", // stylistic
+    "typescript/prefer-optional-chain": "off", // stylistic
+    "typescript/prefer-readonly-parameter-types": "off", // we use mutable parameters for things like accumulators and builders
+    "typescript/prefer-readonly": "off", // good but not yet
+    "typescript/prefer-regexp-exec": "off", // stylistic
+    "typescript/prefer-string-starts-ends-with": "off", // stylistic
+    "typescript/promise-function-async": "off", // we use non-async functions that return promises, and async functions that return vows
+    "typescript/require-array-sort-compare": "off", // good but not yet
+    "typescript/restrict-template-expressions": "off", // false positives
+    "typescript/strict-void-return": "off", // good but not yet
+    "typescript/unbound-method": "off", // false positives with our factory style
+    "typescript/use-unknown-in-catch-callback-variable": "off", // good but not yet
     "no-void": ["error", { "allowAsStatement": true }],
     "no-use-before-define": "off",
     "no-empty-function": "off",
