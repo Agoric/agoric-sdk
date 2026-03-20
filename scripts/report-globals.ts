@@ -53,15 +53,13 @@ const report = () => {
   const eslintOutput = fs.readFileSync('eslintOutput.txt', 'utf8');
 
   const LINE_RE = /error {2}'(\w+)' is not defined/;
-  const instances = eslintOutput
-    .split('\n')
-    .map(line => {
-      let m;
-      if ((m = line.match(LINE_RE))) {
-        return m[1];
-      }
-    })
-    .filter(Boolean);
+  const instances = eslintOutput.split('\n').flatMap(line => {
+    let m;
+    if ((m = line.match(LINE_RE))) {
+      return [m[1]];
+    }
+    return [];
+  });
 
   const counts = instances.reduce((acc, cur) => {
     acc[cur] = (acc[cur] || 0) + 1;

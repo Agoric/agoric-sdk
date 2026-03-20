@@ -60,16 +60,13 @@ async function main() {
       console.error(`Run 'scripts/gen-visualizer-data.mts' to update.`);
       process.exitCode = 1;
     }
+  } else if (htmlContent === newHtmlContent) {
+    console.log('✓ ymax-visualizer.html already up to date');
   } else {
-    // Update mode: write the file
-    if (htmlContent === newHtmlContent) {
-      console.log('✓ ymax-visualizer.html already up to date');
-    } else {
-      await fs.writeFile(HTML_PATH, newHtmlContent, 'utf8');
-      console.log(
-        `✓ Updated ymax-visualizer.html with generated Ymax machine data`,
-      );
-    }
+    await fs.writeFile(HTML_PATH, newHtmlContent, 'utf8');
+    console.log(
+      `✓ Updated ymax-visualizer.html with generated Ymax machine data`,
+    );
   }
 }
 

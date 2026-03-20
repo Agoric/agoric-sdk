@@ -257,7 +257,7 @@ Options:
   if (!hasNobleChain) return;
 
   const sdkVersion = await getNobleVersion({ pod, container });
-  if (parseInt(sdkVersion) < REQUIRED_ATLEAST_MAJOR) {
+  if (parseInt(sdkVersion, 10) < REQUIRED_ATLEAST_MAJOR) {
     console.log(
       `noble sdk version ${sdkVersion} is less than required v${REQUIRED_ATLEAST_MAJOR}`,
     );

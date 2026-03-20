@@ -52,13 +52,13 @@ const makeKeyring = async (
   ) => {
     _keys = keys;
     const wallets: Record<string, string> = {};
-    for (const i in keys) {
+    for (const [i, key] of keys.entries()) {
       const res = await e2eTools.addKey(
-        keys[i],
+        key,
         mnemonics?.[i] || generateMnemonic(),
       );
       const { address } = JSON.parse(res);
-      wallets[keys[i]] = address;
+      wallets[key] = address;
     }
     return wallets;
   };

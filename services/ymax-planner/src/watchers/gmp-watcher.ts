@@ -5,7 +5,11 @@ import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import { PendingTxCode } from '../pending-tx-manager.ts';
+import {
+  PendingTxCode,
+  TX_TIMEOUT_MS,
+  type WatcherResult,
+} from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
@@ -14,7 +18,6 @@ import {
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import type { MakeAbortController } from '../support.ts';
-import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,

@@ -14,13 +14,13 @@
 import { execSync } from 'node:child_process';
 import {
   existsSync,
+  globSync,
   lstatSync,
   mkdirSync,
   readFileSync,
   writeFileSync,
 } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
-import { globSync } from 'node:fs';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const TMP_DIR = '/tmp/lint-migration';
@@ -207,7 +207,11 @@ async function captureEslint() {
     const parsed = tryParseJSON(out);
     writeFileSync(configFile, JSON.stringify(parsed, null, 2) + '\n');
 
-    zones_out[zone.label] = { file: rep, globs: zone.globs, config: configFile };
+    zones_out[zone.label] = {
+      file: rep,
+      globs: zone.globs,
+      config: configFile,
+    };
   }
 
   const manifest: CaptureManifest = { root: ROOT, zones: zones_out };
@@ -235,11 +239,17 @@ async function captureOxlint() {
 
     console.log(`  ${label}: ${eslintEntry.file}`);
 
-    const out = run(`node_modules/.bin/oxlint --print-config ${eslintEntry.file}`);
+    const out = run(
+      `node_modules/.bin/oxlint --print-config ${eslintEntry.file}`,
+    );
     const parsed = tryParseJSON(out);
     writeFileSync(configFile, JSON.stringify(parsed, null, 2) + '\n');
 
-    zones_out[label] = { file: eslintEntry.file, globs: eslintEntry.globs, config: configFile };
+    zones_out[label] = {
+      file: eslintEntry.file,
+      globs: eslintEntry.globs,
+      config: configFile,
+    };
   }
 
   const manifest: CaptureManifest = { root: ROOT, zones: zones_out };

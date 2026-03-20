@@ -97,7 +97,7 @@ test('chain-info', async t => {
   const asset = fromEntries(await vsc.readPublished('agoricNames.vbankAsset'));
   const { [denom]: USDC } = asset;
   t.is(USDC.issuerName, 'USDC');
-  t.log('E(bank).getId(vbank.${denom}.brand):', id(USDC.brand));
+  t.log(`E(bank).getId(vbank.${denom}.brand):`, id(USDC.brand));
 });
 
 test('beneficiary-wallet', async t => {

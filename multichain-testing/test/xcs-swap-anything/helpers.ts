@@ -760,6 +760,7 @@ export const makeOsmosisSwapTools = async t => {
       await downloadXcsContracts(xcsContracts);
 
       console.log(`XCS contracts being instantiated ...`);
+      // eslint-disable-next-line guard-for-in
       for (const contract in xcsContracts) {
         const { label, instantiateArgs } = xcsContracts[contract];
         const { codeId, address } = await instantiateSingleXcsContract(

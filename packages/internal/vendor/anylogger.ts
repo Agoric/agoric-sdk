@@ -148,6 +148,7 @@ anylogger.log = (name, ...args: any[]) => {
 // adapters should change this behavior
 anylogger.ext = (logger: LogFunction) => {
   (logger as Logger).enabledFor = () => {};
+  // eslint-disable-next-line guard-for-in
   for (const method in anylogger.levels) {
     (logger as Logger)[method as LogLevel] = () => {};
   }
