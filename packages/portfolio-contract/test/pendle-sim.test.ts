@@ -28,12 +28,14 @@
  * The snapshot is the Mermaid-style line sequence that this sim produces.
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import type {
   FlowDetail,
   InstrumentId,
   MovementDesc,
-  TargetAllocation,
 } from '@agoric/portfolio-api';
+import type { AccountId } from '@agoric/orchestration';
+import type { NatAmount } from '@agoric/ertp';
 
 type SequenceDiagram = ReturnType<typeof makeSequenceDiagram>;
 type ActorViz = ReturnType<SequenceDiagram['as']>;
@@ -44,12 +46,11 @@ type Portfolio = ReturnType<typeof makePortfolio>;
 type RemoteAccount = ReturnType<typeof makeRemoteAccount>;
 type Planner = ReturnType<typeof makePlanner>;
 type UI = ReturnType<typeof makeUI>;
-type Allocation = { instrument: string; portion: bigint };
 type PortfolioId = `portfolio${bigint}`;
 type PendleInstrumentId = 'Pendle PT-aUSDC - Arbitrum';
 type InstrumentIdPt = InstrumentId | PendleInstrumentId;
 type TargetAllocationPt = Partial<Record<InstrumentIdPt, bigint>>;
-type CallBatch = readonly string[];
+type CallBatch = readonly string[]; // XXX
 type SetTargetAllocationArgs = {
   portfolio: PortfolioId;
   targetAllocation: TargetAllocationPt;
@@ -64,19 +65,17 @@ type InstrumentCatalog = readonly [
 ];
 type PublishedPendlePosition = {
   protocol: 'pendle';
-  accountId: `eip155:42161:0x${string}`;
-  totalIn: { brand: 'USDC'; value: bigint };
-  totalOut: { brand: 'USDC'; value: bigint };
+  accountId: AccountId;
+  totalIn: NatAmount;
+  totalOut: NatAmount;
 };
 type EnrichedPendlePositionView = {
   instrument: PendleInstrumentId;
   maturity: string;
   matured: boolean;
   impliedApy: string;
-  exitValue: { brand: 'USDC'; value: bigint };
+  exitValue: NatAmount;
 };
-type PositionLabel = string;
-type FlowTerminalState = 'done';
 type VstorageInstance = 'ymax0' | 'ymax1';
 type VstoragePath =
   | `published.${VstorageInstance}.portfolios.${PortfolioId}`
@@ -199,10 +198,11 @@ const makeUI = (
 // `evmIn` = EVM Ingress
 const makeEMSIngress = (
   viz: ActorViz,
-  portfolio: Portfolio,
+  getPortfolio: (id: PortfolioId) => Portfolio,
 ) =>
   harden({
     async submitSignedSetTargetAllocation(args: SetTargetAllocationArgs) {
+      const portfolio = getPortfolio(args.portfolio);
       viz.cont('portfolio', `rebalance(${viz.label(args.targetAllocation)})`);
       const flowKey = await portfolio.rebalance(args.targetAllocation);
       viz.returnedFrom('portfolio', flowKey);
@@ -210,13 +210,10 @@ const makeEMSIngress = (
     },
   });
 
-const makePlanner = (
-  viz: ActorViz,
-  _vstorage: Vstorage,
-) =>
+const makePlanner = (viz: ActorViz, _vstorage: Vstorage) =>
   harden({
     async requestPlan(
-      _portfolioId: `portfolio${bigint}`,
+      _portfolioId: PortfolioId,
       _flowDetail: FlowDetail,
     ): Promise<MovementDesc[]> {
       // TODO: visualize getting plan inputs: vstorage, balances
@@ -330,7 +327,7 @@ const makeYmaxDataService = (
       viz.cont('vstorage', `get(${portfolioPath})`);
       const portfolioUpdate = await vstorage.get(portfolioPath);
       viz.returnedFrom('vstorage', viz.label(portfolioUpdate));
-      const positionKey = 'Pendle_PT_aUSDC_Arbitrum';
+      const positionKey: PendleInstrumentId = 'Pendle PT-aUSDC - Arbitrum';
       const positionPath = vstorage.positionPath(portfolioId, positionKey);
       viz.cont('vstorage', `get(${positionPath})`);
       const position1 = (await vstorage.get(
@@ -360,19 +357,16 @@ const makeYmaxDataService = (
   });
 };
 
-const makeRemoteAccount = (
-  viz: ActorViz,
-  chainName: string,
-  portfolioId: string,
-) =>
+const makeRemoteAccount = (chainName: string, portfolioId: PortfolioId) =>
   harden({
     async multicall(_calls: CallBatch) {
-      viz.think(`note over at${chainName}: settled by resolver/watcher`);
       // TODO: visualize call to @Arbitrum, to pendle contract, etc.
-      viz.cont('portfolio', `ack`);
     },
     getChainName() {
       return chainName;
+    },
+    getAccountId() {
+      return 'eip155:42161:0xabc123';
     },
     getPortfolioId() {
       return portfolioId;
@@ -381,11 +375,12 @@ const makeRemoteAccount = (
 
 const makePortfolio = (
   viz: ActorViz,
-  portfolioId: PortfolioId,
-  remoteAccount: RemoteAccount,
+  id: bigint,
   planner: Planner,
   vstorage: Vstorage,
 ) => {
+  const portfolioId = `portfolio${id}` as const;
+  let remoteAccount!: RemoteAccount;
   let pendingSettlement = Promise.resolve();
   return harden({
     async rebalance(targetAllocation: TargetAllocationPt) {
@@ -402,24 +397,31 @@ const makePortfolio = (
       viz.think(`${flowKey} = ${props(detail)}`);
       pendingSettlement = (async () => {
         await nextTurn();
+
         viz.cont('planner', `requestPlan(${portfolioId}, ${props(detail)})`);
         const plan1 = await planner.requestPlan(portfolioId, detail);
         viz.returnedFrom('planner', viz.label(plan1));
+
         // TODO: trace swapExactTokenForPt details to their source
         const calls = ['approve(USDC)', 'swapExactTokenForPt(...)'] as const;
         viz.name(calls, 'calls');
         viz.think(`calls = ${canon(calls)}`);
-        const positionKey = 'Pendle_PT_aUSDC_Arbitrum';
-        viz.cont(
-          `at${remoteAccount.getChainName()}`,
-          `multicall(${viz.label(calls)})`,
-        );
+
+        const [step] = plan1;
+        const { dest: positionKey, amount } = step;
+        const chain = 'Arbitrum'; // XXX
+        const acctActor = `at${chain}`;
+        remoteAccount = makeRemoteAccount(chain, portfolioId);
+        viz.cont(acctActor, `multicall(${viz.label(calls)})`);
         await remoteAccount.multicall(calls);
+        viz.think(`note over at${chain}: settled by resolver/watcher`);
+        viz.returnedFrom(acctActor, `ack`);
+
         const position1 = {
           protocol: 'pendle',
-          accountId: 'eip155:42161:0xabc123',
-          totalIn: { brand: 'USDC', value: 100n },
-          totalOut: { brand: 'USDC', value: 0n },
+          accountId: remoteAccount.getAccountId(),
+          totalIn: amount,
+          totalOut: { brand: 'USDC' as never, value: 0n },
         } as const satisfies PublishedPendlePosition;
         viz.name(position1, 'position1');
         viz.think(`${viz.label(position1)} = ${canon(position1)}`);
@@ -438,42 +440,6 @@ const makePortfolio = (
     },
     async whenSettled() {
       await pendingSettlement;
-    },
-    async redeemMaturedPosition(positionLabel: string) {
-      await pendingSettlement;
-      const positionKey = 'Pendle_PT_aUSDC_Arbitrum';
-      const flowKey = 'flow43';
-      viz.cont('planner', `detectMatured(${positionLabel})`);
-      const redeemPlan1 = await planner.detectMaturity(positionLabel);
-      const redeemCalls = ['redeemPyToToken(...)'] as const;
-      viz.name(redeemCalls, 'redeemCalls');
-      viz.think(`redeemCalls = ${canon(redeemCalls)}`);
-      viz.cont(
-        `at${remoteAccount.getChainName()}`,
-        `multicall(${viz.label(redeemCalls)})`,
-      );
-      await remoteAccount.multicall(redeemCalls);
-      const position1 = {
-        protocol: 'pendle',
-        accountId: 'eip155:42161:0xabc123',
-        totalIn: { brand: 'USDC', value: 100n },
-        totalOut: { brand: 'USDC', value: 104n },
-      } as const satisfies PublishedPendlePosition;
-      viz.name(position1, 'position1');
-      viz.think(`${viz.label(position1)} = ${canon(position1)}`);
-      viz.cont(
-        'vstorage',
-        `publishPosition(${portfolioId}.positions.${positionKey}, ${viz.label(position1)})`,
-      );
-      await vstorage.publish(
-        vstorage.positionPath(portfolioId as `portfolio${bigint}`, positionKey),
-        position1,
-      );
-      viz.cont('vstorage', `setFlowStatus(${portfolioId}, ${flowKey}, done)`);
-      await vstorage.publish(
-        vstorage.flowPath(portfolioId as `portfolio${bigint}`, flowKey),
-        'done',
-      );
     },
   });
 };
@@ -507,27 +473,23 @@ const makeTrader = (viz: ActorViz, ui: UI) =>
     },
   });
 
-test('Pendle sim draft: zoomed-out Pendle journey across planner, execution, publishing, and maturity', async t => {
+test('Pendle journey across planner, execution, publishing, and maturity', async t => {
   const viz = makeSequenceDiagram();
   let theTime = Date.parse('2026-08-15T00:00:00Z');
 
   const vstorage = makeVstorage('ymax1');
   const yds = makeYmaxDataService(viz.as('yds'), vstorage, () => theTime);
-  const planner = makePlanner(viz.as('planner'), vstorage);
-  // TODO: push makeRemoteAccount down into makePortfolio
-  const remoteAccount = makeRemoteAccount(
-    viz.as('atArbitrum'),
-    'Arbitrum',
-    '123',
-  );
-  const portfolio = makePortfolio(
-    viz.as('portfolio'),
-    'portfolio123',
-    remoteAccount,
-    planner,
-    vstorage,
-  );
-  const emsIn = makeEMSIngress(viz.as('evmIn'), portfolio);
+
+  // keep portfolio closely held
+  const { emsIn, whenSettled } = (() => {
+    const planner = makePlanner(viz.as('planner'), vstorage);
+    const vizP = viz.as('portfolio');
+    const portfolio = makePortfolio(vizP, 123n, planner, vstorage);
+    const portfolios = new Map([['portfolio123', portfolio]]);
+    const { whenSettled } = portfolio;
+    const emsIn = makeEMSIngress(viz.as('evmIn'), p => portfolios.get(p)!);
+    return { emsIn, whenSettled };
+  })();
   const ui: UI = makeUI(viz.as('ui'), emsIn, yds, 'portfolio123');
   const trader = makeTrader(viz.as('trader'), ui);
 
@@ -535,7 +497,7 @@ test('Pendle sim draft: zoomed-out Pendle journey across planner, execution, pub
   t.snapshot(viz.snapshot(), 'discoverPendle');
 
   await trader.submitPendleAllocation();
-  await portfolio.whenSettled();
+  await whenSettled();
   t.snapshot(viz.snapshot(), 'submitPendleAllocation');
 
   theTime = Date.parse('2026-09-27T00:00:00Z');
