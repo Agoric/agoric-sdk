@@ -37,6 +37,13 @@ import type {
 
 type SequenceDiagram = ReturnType<typeof makeSequenceDiagram>;
 type ActorViz = ReturnType<SequenceDiagram['as']>;
+type Vstorage = ReturnType<typeof makeVstorage>;
+type EMSIngress = ReturnType<typeof makeEMSIngress>;
+type YmaxDataService = ReturnType<typeof makeYmaxDataService>;
+type Portfolio = ReturnType<typeof makePortfolio>;
+type RemoteAccount = ReturnType<typeof makeRemoteAccount>;
+type Planner = ReturnType<typeof makePlanner>;
+type UI = ReturnType<typeof makeUI>;
 type Allocation = { instrument: string; portion: bigint };
 type PortfolioId = `portfolio${bigint}`;
 type PendleInstrumentId = 'Pendle PT-aUSDC - Arbitrum';
@@ -152,8 +159,8 @@ const makeSequenceDiagram = () => {
 
 const makeUI = (
   viz: ActorViz,
-  emsIn: ReturnType<typeof makeEMSIngress>,
-  yds: ReturnType<typeof makeYmaxDataService>,
+  emsIn: EMSIngress,
+  yds: YmaxDataService,
   portfolioId: PortfolioId,
 ) =>
   harden({
@@ -192,7 +199,7 @@ const makeUI = (
 // `evmIn` = EVM Ingress
 const makeEMSIngress = (
   viz: ActorViz,
-  portfolio: ReturnType<typeof makePortfolio>,
+  portfolio: Portfolio,
 ) =>
   harden({
     async submitSignedSetTargetAllocation(args: SetTargetAllocationArgs) {
@@ -205,7 +212,7 @@ const makeEMSIngress = (
 
 const makePlanner = (
   viz: ActorViz,
-  _vstorage: ReturnType<typeof makeVstorage>,
+  _vstorage: Vstorage,
 ) =>
   harden({
     async requestPlan(
@@ -284,7 +291,7 @@ const makeVstorage = (instance: VstorageInstance) => {
 
 const makeYmaxDataService = (
   viz: ActorViz,
-  vstorage: ReturnType<typeof makeVstorage>,
+  vstorage: Vstorage,
   now: () => number,
 ) => {
   const catalog = [
@@ -375,9 +382,9 @@ const makeRemoteAccount = (
 const makePortfolio = (
   viz: ActorViz,
   portfolioId: PortfolioId,
-  remoteAccount: ReturnType<typeof makeRemoteAccount>,
-  planner: ReturnType<typeof makePlanner>,
-  vstorage: ReturnType<typeof makeVstorage>,
+  remoteAccount: RemoteAccount,
+  planner: Planner,
+  vstorage: Vstorage,
 ) => {
   let pendingSettlement = Promise.resolve();
   return harden({
@@ -471,7 +478,7 @@ const makePortfolio = (
   });
 };
 
-const makeTrader = (viz: ActorViz, ui: ReturnType<typeof makeUI>) =>
+const makeTrader = (viz: ActorViz, ui: UI) =>
   harden({
     async discoverPendle() {
       viz.start('ui', 'openPendleDiscovery()');
@@ -521,7 +528,7 @@ test('Pendle sim draft: zoomed-out Pendle journey across planner, execution, pub
     vstorage,
   );
   const emsIn = makeEMSIngress(viz.as('evmIn'), portfolio);
-  const ui = makeUI(viz.as('ui'), emsIn, yds, 'portfolio123');
+  const ui: UI = makeUI(viz.as('ui'), emsIn, yds, 'portfolio123');
   const trader = makeTrader(viz.as('trader'), ui);
 
   await trader.discoverPendle();
