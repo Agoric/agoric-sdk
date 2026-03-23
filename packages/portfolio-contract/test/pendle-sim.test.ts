@@ -467,10 +467,6 @@ const makeTrader = (viz: ActorViz, ui: UI) =>
       const positionView1 = await ui.refreshPortfolio();
       viz.returnedFrom('ui', viz.label(positionView1));
     },
-    async reviewUpdates() {
-      const positionView1 = await ui.refreshPortfolio();
-      viz.returnedFrom('ui', viz.label(positionView1));
-    },
   });
 
 test('Pendle journey across planner, execution, publishing, and maturity', async t => {
@@ -502,6 +498,6 @@ test('Pendle journey across planner, execution, publishing, and maturity', async
 
   theTime = Date.parse('2026-09-27T00:00:00Z');
 
-  await trader.reviewUpdates();
+  await trader.reviewPortfolio();
   t.snapshot(viz.snapshot(), 'reviewUpdates');
 });
