@@ -99,6 +99,7 @@ const canon = (value: unknown) =>
     : String(value);
 
 const nextTurn = () => new Promise<void>(resolve => setTimeout(resolve, 0));
+const getChainFromAccountRef = (place: `@${string}`) => place.slice(1);
 
 /**
  * Tiny recorder for Mermaid-like sequence-diagram lines.
@@ -291,6 +292,9 @@ const makeYmaxDataService = (
   vstorage: Vstorage,
   now: () => number,
 ) => {
+  // YDS is the source of the instrument catalog in this sim.
+  // cf. 0006_seed_reference_data.sql,
+  // 0023_add_morpho_protocol.sql, 0026_add_morpho_instruments.sql
   const catalog = [
     {
       instrument: 'Pendle PT-aUSDC - Arbitrum',
@@ -409,7 +413,7 @@ const makePortfolio = (
 
         const [step] = plan1;
         const { dest: positionKey, amount } = step;
-        const chain = 'Arbitrum'; // XXX
+        const chain = getChainFromAccountRef(step.src as `@${string}`);
         const acctActor = `at${chain}`;
         remoteAccount = makeRemoteAccount(chain, portfolioId);
         viz.cont(acctActor, `multicall(${viz.label(calls)})`);
@@ -498,6 +502,10 @@ test('Pendle journey across planner, execution, publishing, and maturity', async
 
   theTime = Date.parse('2026-09-27T00:00:00Z');
 
+  // The user journey says "They see a status update".
+  // We have not yet defined what "updates" are relative to.
+  // So for now, we simulate it as reviewing the portfolio
+  // and noticing matured: true.
   await trader.reviewPortfolio();
   t.snapshot(viz.snapshot(), 'reviewUpdates');
 });
