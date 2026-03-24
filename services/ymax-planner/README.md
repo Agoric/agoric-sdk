@@ -183,27 +183,25 @@ an absolute path is recommended
 
 ## External Service Dependencies
 
-The planner relies on several external services for balance queries, gas
-estimation, and event subscriptions. The diagram below shows how data flows
-between them:
-
-```
-ymax-planner
-├── Spectrum Blockchain API ── Query non-EVM token balances (Agoric USDC/USDN, Noble)
-├── Alchemy RPC (WebSocket) ── Query on-chain EVM balances directly
-│   ├── ERC-20 balanceOf ───── Aave aTokens, Compound cUSDCv3, chain USDC
-│   ├── Beefy vaults ──────── balanceOf + getPricePerFullShare (mooToken → underlying)
-│   └── ERC-4626 vaults ───── balanceOf + convertToAssets (Morpho, etc.)
-├── Axelar API ─────────────── Estimate cross-chain gas fees (GMP)
-```
+The planner relies on external services for balance queries, gas estimation, and
+event subscriptions:
+* **Alchemy RPC**: query EVM balances directly
+  * ERC-20 `balanceOf` (Aave aTokens, Compound cUSDCv3, chain-specific USDC)
+  * Beefy vaults `balanceOf` and `getPricePerFullShare` (mooToken → underlying)
+  * ERC-4626 vaults `balanceOf` and `convertToAssets` (Morpho, etc.)
+* **Spectrum Blockchain API**: query non-EVM token balances (Agoric USDC/USDN, Noble)
+* **Axelar API**: estimate cross-chain gas fees (GMP)
+* **Cosmos RPC / REST**: subscribe to chain events and query account balances/sequences (Agoric, Noble)
+* **Google Cloud Secret Manager**: retrieve wallet mnemonic for transaction signing at startup
+* **YMax Data Service**: receive settlement notifications when monitored transactions complete
 
 ### Alchemy RPC
 
 **Env var**: `ALCHEMY_API_KEY`
 
-Provides WebSocket connections to EVM chains (Ethereum, Arbitrum, Avalanche,
-Base, Optimism and their testnets). Used to query on-chain token balances by
-calling contract methods directly:
+WebSocket connections to wss://$subdomain.g.alchemy.com/v2/$ALCHEMY_API_KEY
+allow queries against EVM chains (Arbitrum, Avalanche, Base, Ethereum, Optimism,
+and their testnets) by calling contract methods directly:
 
 - **Aave / Compound**: Simple `balanceOf` — receipt tokens (aTokens, cUSDCv3)
   already represent underlying USDC value.
@@ -213,12 +211,14 @@ calling contract methods directly:
   `convertToAssets(shares)` converts to underlying value.
 - **USDC on EVM chains**: Simple `balanceOf` on the USDC token contract.
 
-### Spectrum Blockchain API (GraphQL)
+### Spectrum Blockchain API
 
-**Env var**: `GRAPHQL_ENDPOINTS` (JSON — maps API directory names to endpoint URLs)
+**Env var**: `GRAPHQL_ENDPOINTS` (endpoint URLs associated with JSON member name
+"api-spectrum-blockchain" and
+[corresponding directory](./src/graphql/api-spectrum-blockchain))
 
-Queries token balances for **non-EVM** accounts (Agoric, Noble) via the
-`getBalances` GraphQL query. Supports failover across multiple endpoints.
+Supports `getBalances` GraphQL queries to retrieve balances for **non-EVM**
+accounts (Agoric, Noble), with failover across multiple URLs.
 
 ### Axelar API
 
@@ -229,6 +229,40 @@ Passing protocol. Called during rebalance planning to account for transfer costs
 
 - Mainnet: `https://api.axelarscan.io/`
 - Testnet: `https://testnet.api.axelarscan.io/`
+
+### Cosmos RPC / REST
+
+**Env vars**: `AGORIC_NET`, `COSMOS_REST_TIMEOUT`, `COSMOS_REST_RETRIES`
+
+Connects to the Agoric (and Noble) chains for event subscriptions and account
+queries. Two transports are used:
+
+- **WebSocket RPC** (`CosmosRPCClient`): subscribes to CometBFT events
+  (`tm.event = 'NewBlock'` and vstorage change events) to drive the rebalance
+  loop. Also used to fetch block timestamps and verify chain ID at startup.
+- **HTTP REST** (`CosmosRestClient`): queries account balances
+  (`/cosmos/bank/v1beta1/balances/*`), account sequence numbers
+  (`/cosmos/auth/v1beta1/accounts/*`), and node info
+  (`/cosmos/base/tendermint/v1beta1/node_info`).
+
+### Google Cloud Secret Manager
+
+**Env vars**: `GCP_PROJECT_ID` (default `simulationlab`), `GCP_SECRET_NAME` (default `YMAX_CONTROL_MNEMONIC`), `MNEMONIC`
+
+Used once at startup to retrieve the wallet mnemonic for signing transactions.
+Fetches `projects/{projectId}/secrets/{secretName}/versions/latest` via the
+`@google-cloud/secret-manager` client. If `MNEMONIC` is set directly in the
+environment, the GCP lookup is skipped.
+
+### YMax Data Service (YDS)
+
+**Env vars**: `YDS_URL`, `YDS_API_KEY`
+
+Receives settlement notifications when monitored transactions complete. After a
+CCTP transfer, GMP transfer, or smart wallet transaction is confirmed, the
+planner POSTs the transaction ID and on-chain hash to `{YDS_URL}/flow-step-tx-hashes`
+with the `x-resolver-auth-key` header. The service is optional — if `YDS_URL`
+is not set, notifications are silently skipped.
 
 ## Architecture
 
