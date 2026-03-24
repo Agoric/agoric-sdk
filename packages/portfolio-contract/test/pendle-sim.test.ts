@@ -73,8 +73,19 @@ type EnrichedPendlePositionView = {
   instrument: PendleInstrumentId;
   maturity: string;
   matured: boolean;
-  impliedApy: string;
-  exitValue: NatAmount;
+  lockedYield: string;
+  currentMarketValue: NatAmount;
+  valueAtMaturity: NatAmount;
+  countdown: string;
+};
+type PublishedPortfolioState = {
+  targetAllocation: TargetAllocationPt;
+};
+type PortfolioDetailView = {
+  accountBalances: Record<'Arbitrum', NatAmount>;
+  unallocatedUsdc: NatAmount;
+  positionBalances: Partial<Record<PendleInstrumentId, NatAmount>>;
+  positions: Partial<Record<PendleInstrumentId, EnrichedPendlePositionView>>;
 };
 type VstorageInstance = 'ymax0' | 'ymax1';
 type VstoragePath =
@@ -100,7 +111,8 @@ const canon = (value: unknown) =>
 
 const nextTurn = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 const getChainFromAccountRef = (place: `@${string}`) => place.slice(1);
-
+const daysUntil = (nowMs: number, targetMs: number) =>
+  Math.max(0, Math.ceil((targetMs - nowMs) / (24 * 60 * 60 * 1000)));
 /**
  * Tiny recorder for Mermaid-like sequence-diagram lines.
  *
@@ -190,9 +202,9 @@ const makeUI = (
     },
     async refreshPortfolio() {
       viz.cont('yds', `getPortfolioDetail(${portfolioId})`);
-      const position1 = await yds.getPortfolioDetail(portfolioId);
-      viz.returnedFrom('yds', viz.label(position1));
-      return position1;
+      const portfolioDetail1 = await yds.getPortfolioDetail(portfolioId);
+      viz.returnedFrom('yds', viz.label(portfolioDetail1));
+      return portfolioDetail1;
     },
   });
 
@@ -329,7 +341,9 @@ const makeYmaxDataService = (
     async getPortfolioDetail(portfolioId: PortfolioId) {
       const portfolioPath = vstorage.portfolioPath(portfolioId);
       viz.cont('vstorage', `get(${portfolioPath})`);
-      const portfolioUpdate = await vstorage.get(portfolioPath);
+      const portfolioUpdate = (await vstorage.get(
+        portfolioPath,
+      )) as PublishedPortfolioState;
       viz.returnedFrom('vstorage', viz.label(portfolioUpdate));
       const positionKey: PendleInstrumentId = 'Pendle PT-aUSDC - Arbitrum';
       const positionPath = vstorage.positionPath(portfolioId, positionKey);
@@ -344,19 +358,54 @@ const makeYmaxDataService = (
       viz.think(
         `matured = now() >= ${JSON.stringify(pendleInstrument.maturity)}`,
       );
-      const exitValue =
-        position1.totalOut.value > 0n ? position1.totalOut : position1.totalIn;
+      // XXX real YDS reads remote-account balances off-chain; this sim does not
+      // yet model that query path explicitly.
+      const accountBalances = {
+        Arbitrum: {
+          brand: 'USDC' as never,
+          value: matured ? 104n : 0n,
+        },
+      } as const;
+      // XXX real YDS position balances come from latest snapshot balances,
+      // not directly from the published position record.
+      const positionBalances = {
+        [positionKey]: {
+          brand: 'USDC' as never,
+          value: matured ? 0n : position1.totalIn.value,
+        },
+      } as const;
+      const countdown = matured
+        ? 'matured'
+        : `${daysUntil(now(), maturityMs)} days`;
+      // XXX this treats the snapshot position balance as the current market
+      // value; real YDS would need live PT valuation data.
+      const currentMarketValue = {
+        brand: 'USDC' as never,
+        value: positionBalances[positionKey].value,
+      };
       // TODO look for an on-chain tx proving the PT was redeemed once maturity has passed.
       const positionView = {
         instrument: pendleInstrument.instrument,
         maturity: pendleInstrument.maturity,
         matured,
-        impliedApy: pendleInstrument.impliedApy,
-        exitValue: matured ? exitValue : position1.totalIn,
+        lockedYield: pendleInstrument.impliedApy,
+        currentMarketValue,
+        // XXX fixture value until the sim carries enough PT quantity/price
+        // data to derive maturity value mechanically.
+        valueAtMaturity: { brand: 'USDC' as never, value: 104n },
+        countdown,
       } as const satisfies EnrichedPendlePositionView;
       viz.name(positionView, 'positionView1');
       viz.think(`${viz.label(positionView)} = ${canon(positionView)}`);
-      return positionView;
+      const detail = {
+        accountBalances,
+        unallocatedUsdc: accountBalances.Arbitrum,
+        positionBalances,
+        positions: { [positionKey]: positionView },
+      } as const satisfies PortfolioDetailView;
+      viz.name(detail, 'portfolioDetail1');
+      viz.think(`${viz.label(detail)} = ${canon(detail)}`);
+      return detail;
     },
   });
 };
@@ -389,13 +438,17 @@ const makePortfolio = (
   return harden({
     async rebalance(targetAllocation: TargetAllocationPt) {
       viz.think(`setTargetAllocation(${viz.label(targetAllocation)})`);
+      const portfolioState = {
+        targetAllocation,
+      } as const satisfies PublishedPortfolioState;
       viz.cont(
         'vstorage',
         `publishTargetAllocation(${portfolioId}, ${viz.label(targetAllocation)})`,
       );
-      await vstorage.publish(vstorage.portfolioPath(portfolioId), {
-        targetAllocation,
-      });
+      await vstorage.publish(
+        vstorage.portfolioPath(portfolioId),
+        portfolioState,
+      );
       const flowKey = 'flow43' as const;
       const detail: FlowDetail = { type: 'rebalance' };
       viz.think(`${flowKey} = ${props(detail)}`);
@@ -468,8 +521,8 @@ const makeTrader = (viz: ActorViz, ui: UI) =>
       return flowKey;
     },
     async reviewPortfolio() {
-      const positionView1 = await ui.refreshPortfolio();
-      viz.returnedFrom('ui', viz.label(positionView1));
+      const portfolioDetail1 = await ui.refreshPortfolio();
+      viz.returnedFrom('ui', viz.label(portfolioDetail1));
     },
   });
 
