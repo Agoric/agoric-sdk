@@ -113,8 +113,9 @@ export const main = async (
   const spectrumChainIds = spectrumChainIdsByCluster[clusterName];
   const usdcTokensByChain = UsdcTokenIds[clusterName];
 
-  const axelarCfg =
-    clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet;
+  const axelarCfg = (
+    clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet
+  ) as typeof axelarConfig;
 
   const positionTokenAddresses = getPoolTokenAddresses(axelarCfg);
   const networkConfig = await fetchEnvNetworkConfig({

@@ -1,10 +1,6 @@
 import { Contract } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
-import type {
-  BeefyInstrumentId,
-  ERC4626InstrumentId,
-  PoolKey,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { SupportedChain } from '@agoric/portfolio-api';
 import {
@@ -13,7 +9,9 @@ import {
 } from '@agoric/portfolio-api/src/type-guards.js';
 import { Fail, q } from '@endo/errors';
 import type { EvmAddress } from '@agoric/fast-usdc';
-import { fromUniqueEntries, typedEntries } from '@agoric/internal';
+import { fromUniqueEntries, partialMap, typedEntries } from '@agoric/internal';
+import type { axelarConfig } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import type { EVMContractAddresses } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { EvmChain } from './pending-tx-manager.ts';
 import type { EvmProviders } from './support.ts';
 
@@ -30,55 +28,45 @@ import type { EvmProviders } from './support.ts';
  * balances via Alchemy
  */
 export const getPoolTokenAddresses = (
-  axelarCfg,
+  axelarCfg: typeof axelarConfig,
 ): Partial<Record<PoolKey | `@${EvmChain}`, EvmAddress>> => {
-  const isERC4626Entry = ([name, _addr]) => isERC4626InstrumentId(name);
-  const erc4626VaultEntries = typedEntries(axelarCfg).flatMap(
-    ([_chainName, { contracts }]) =>
-      typedEntries(contracts).filter(isERC4626Entry),
+  /**
+   * Select contracts from `axelarCfg` using a function that ensures uniqueness
+   * of the corresponding name (e.g., by embedding the chain name).
+   * XXX This should take `axelarCfg` as an argument and be promoted up out of
+   * getPoolTokenAddresses.
+   */
+  const pickContracts = <K extends PoolKey>(
+    keyFromContractLabel: (
+      name: keyof EVMContractAddresses,
+      chainName: EvmChain,
+    ) => K | boolean | undefined,
+  ): Partial<Record<K, EvmAddress>> => {
+    const selectedEntries = typedEntries(axelarCfg).flatMap(
+      ([chainName, chainConfig]) =>
+        partialMap(typedEntries(chainConfig.contracts), ([label, addr]) => {
+          const key = keyFromContractLabel(label, chainName);
+          return key && ([key === true ? label : key, addr] as [K, EvmAddress]);
+        }),
+    );
+    return fromUniqueEntries(selectedEntries) as Partial<Record<K, EvmAddress>>;
+  };
+  const erc4626VaultAddresses = pickContracts(isERC4626InstrumentId);
+  const beefyVaultAddresses = pickContracts(isBeefyInstrumentId);
+  const aavePoolAddresses = pickContracts(
+    (label, chainName) =>
+      label === 'aaveUSDC' && (`Aave_${chainName}` as PoolKey),
   );
-
-  const erc4626VaultAddresses: Partial<
-    Record<ERC4626InstrumentId, EvmAddress>
-  > = fromUniqueEntries(erc4626VaultEntries);
-
-  const isBeefyEntry = ([name, _addr]) => isBeefyInstrumentId(name);
-  const beefyVaultEntries = typedEntries(axelarCfg).flatMap(
-    ([_chainName, { contracts }]) =>
-      typedEntries(contracts).filter(isBeefyEntry),
+  const compoundPoolAddresses = pickContracts(
+    (label, chainName) =>
+      label === 'compound' && (`Compound_${chainName}` as PoolKey),
   );
-
-  const beefyVaultAddresses: Partial<Record<BeefyInstrumentId, EvmAddress>> =
-    fromUniqueEntries(beefyVaultEntries);
-
-  const aaveEntries = typedEntries(axelarCfg).flatMap(
-    ([chainName, { contracts }]) =>
-      typedEntries(contracts)
-        .filter(([name, _addr]) => name === 'aaveUSDC')
-        .map(
-          ([_name, addr]) =>
-            [`Aave_${chainName}`, addr] as [PoolKey, EvmAddress],
-        ),
-  );
-  const aavePoolAddresses = fromUniqueEntries(aaveEntries);
-
-  const compoundEntries = typedEntries(axelarCfg).flatMap(
-    ([chainName, { contracts }]) =>
-      typedEntries(contracts)
-        .filter(([name, _addr]) => name === 'compound')
-        .map(
-          ([_name, addr]) =>
-            [`Compound_${chainName}`, addr] as [PoolKey, EvmAddress],
-        ),
-  );
-  const compoundPoolAddresses = fromUniqueEntries(compoundEntries);
-
   const positionTokenAddresses = {
     ...erc4626VaultAddresses,
     ...beefyVaultAddresses,
     ...aavePoolAddresses,
     ...compoundPoolAddresses,
-  } as Partial<Record<string, string>>;
+  } as Partial<Record<PoolKey, EvmAddress>>;
 
   return positionTokenAddresses;
 };
