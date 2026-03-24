@@ -31,6 +31,7 @@ type PendleRewardQuote = {
   asset: PendleRewardAsset;
 };
 
+// cf GetMarketsCrossChainV2Response
 export type PendleMarketData = {
   aggregatedApy: number;
   arbApy: number;
@@ -165,11 +166,11 @@ export const makePendleAPI = (
     });
     const url = `${apiBase}/v2/sdk/${chainId}/convert?${params}`;
     const quote = (await fetch(url).then(r => {
-        if ('ok' in r && !r.ok) {
-          throw Error(`Pendle SDK ${r.status}: ${r.statusText}`);
-        }
-        return r.json();
-      })) as ConvertResponse;
+      if ('ok' in r && !r.ok) {
+        throw Error(`Pendle SDK ${r.status}: ${r.statusText}`);
+      }
+      return r.json();
+    })) as ConvertResponse;
     const route = quote.routes[0];
     if (!route) throw Error('Pendle SDK returned no routes');
     return { quote, route };
