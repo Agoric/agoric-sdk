@@ -56,7 +56,6 @@ import { setLogTarget } from '../src/logger.ts';
 import {
   createMockEnginePowers,
   makeNotImplemented,
-  makeNotImplementedAsync,
   mockEvmCtx,
 } from './mocks.ts';
 
