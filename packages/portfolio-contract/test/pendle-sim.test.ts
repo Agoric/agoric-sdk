@@ -59,10 +59,13 @@ type InstrumentCatalog = readonly [
   {
     instrument: PendleInstrumentId;
     maturity: string;
-    impliedApy: string;
     market: string;
   },
 ];
+type PendleMarketData = {
+  market: string;
+  impliedApy: string;
+};
 type PublishedPendlePosition = {
   protocol: 'pendle';
   accountId: AccountId;
@@ -113,6 +116,7 @@ const nextTurn = () => new Promise<void>(resolve => setTimeout(resolve, 0));
 const getChainFromAccountRef = (place: `@${string}`) => place.slice(1);
 const daysUntil = (nowMs: number, targetMs: number) =>
   Math.max(0, Math.ceil((targetMs - nowMs) / (24 * 60 * 60 * 1000)));
+
 /**
  * Tiny recorder for Mermaid-like sequence-diagram lines.
  *
@@ -255,6 +259,19 @@ const makePlanner = (viz: ActorViz, _vstorage: Vstorage) =>
     },
   });
 
+const makePendleBackendAPI = (viz: ActorViz) =>
+  harden({
+    async getMarketData(market: string): Promise<PendleMarketData> {
+      const marketData1 = {
+        market,
+        impliedApy: '7.2%',
+      } as const satisfies PendleMarketData;
+      viz.name(marketData1, 'marketData1');
+      viz.think(`${viz.label(marketData1)} = ${canon(marketData1)}`);
+      return marketData1;
+    },
+  });
+
 const makeVstorage = (instance: VstorageInstance) => {
   const entries = new Map<VstoragePath, unknown>();
   const waiters = new Map<VstoragePath, Array<(value: unknown) => void>>();
@@ -303,6 +320,7 @@ const makeYmaxDataService = (
   viz: ActorViz,
   vstorage: Vstorage,
   now: () => number,
+  pendleAPI: ReturnType<typeof makePendleBackendAPI>,
 ) => {
   // YDS is the source of the instrument catalog in this sim.
   // cf. 0006_seed_reference_data.sql,
@@ -311,12 +329,19 @@ const makeYmaxDataService = (
     {
       instrument: 'Pendle PT-aUSDC - Arbitrum',
       maturity: '2026-09-26',
-      impliedApy: '7.2%',
       market: '0xPendleMarket',
     },
   ] as const satisfies InstrumentCatalog;
+  let marketDataByMarket = new Map<string, PendleMarketData>();
 
   return harden({
+    async cron() {
+      const [{ market }] = catalog;
+      viz.cont('pendleApi', `getMarketData(${market})`);
+      const marketData1 = await pendleAPI.getMarketData(market);
+      viz.returnedFrom('pendleApi', viz.label(marketData1));
+      marketDataByMarket = new Map([[market, marketData1]]);
+    },
     /**
      * Simulates the YDS catalog fetch that the web UI performs via
      * `GET /instruments` on the YDS worker.
@@ -327,9 +352,17 @@ const makeYmaxDataService = (
      * the default UI path omits it.
      */
     async getInstrumentCatalog() {
-      viz.name(catalog, 'catalog1');
-      viz.think(`${viz.label(catalog)} = ${canon(catalog)}`);
-      return catalog;
+      const [entry] = catalog;
+      const marketData1 = marketDataByMarket.get(entry.market);
+      const catalog1 = [
+        {
+          ...entry,
+          impliedApy: marketData1?.impliedApy ?? 'XXX missing market data',
+        },
+      ] as const;
+      viz.name(catalog1, 'catalog1');
+      viz.think(`${viz.label(catalog1)} = ${canon(catalog1)}`);
+      return catalog1;
     },
     /**
      * Simulates the YDS portfolio-detail fetch performed by the web UI via
@@ -352,7 +385,12 @@ const makeYmaxDataService = (
         positionPath,
       )) as PublishedPendlePosition;
       viz.returnedFrom('vstorage', viz.label(position1));
-      const [pendleInstrument] = catalog;
+      const [catalogEntry] = catalog;
+      const marketData1 = marketDataByMarket.get(catalogEntry.market);
+      const pendleInstrument = {
+        ...catalogEntry,
+        impliedApy: marketData1?.impliedApy ?? 'XXX missing market data',
+      } as const;
       const maturityMs = Date.parse(`${pendleInstrument.maturity}T00:00:00Z`);
       const matured = now() >= maturityMs;
       viz.think(
@@ -531,7 +569,13 @@ test('Pendle journey across planner, execution, publishing, and maturity', async
   let theTime = Date.parse('2026-08-15T00:00:00Z');
 
   const vstorage = makeVstorage('ymax1');
-  const yds = makeYmaxDataService(viz.as('yds'), vstorage, () => theTime);
+  const pendleAPI = makePendleBackendAPI(viz.as('pendleApi'));
+  const yds = makeYmaxDataService(
+    viz.as('yds'),
+    vstorage,
+    () => theTime,
+    pendleAPI,
+  );
 
   // keep portfolio closely held
   const { emsIn, whenSettled } = (() => {
@@ -545,6 +589,9 @@ test('Pendle journey across planner, execution, publishing, and maturity', async
   })();
   const ui: UI = makeUI(viz.as('ui'), emsIn, yds, 'portfolio123');
   const trader = makeTrader(viz.as('trader'), ui);
+
+  await yds.cron();
+  t.snapshot(viz.snapshot(), 'cronRefresh');
 
   await trader.discoverPendle();
   t.snapshot(viz.snapshot(), 'discoverPendle');
