@@ -80,8 +80,8 @@ const handleDeposit = async (
     gasEstimator: GasEstimator;
     spectrumBlockchain?: SpectrumBlockchainSdk;
     spectrumChainIds?: Partial<Record<SupportedChain, string>>;
-    positionTokenAddresses?: Partial<
-      Record<InterChainAccountRef | PoolKey, string>
+    evmTokenAddresses?: Partial<
+      Record<InterChainAccountRef | PoolKey, EvmAddress>
     >;
     usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
     addressToBalanceMap?: Partial<Record<EvmAddress, bigint>>;
@@ -97,7 +97,7 @@ const handleDeposit = async (
   const currentBalances = await getCurrentBalances(status, amount.brand, {
     spectrumChainIds: powers.spectrumChainIds || {},
     usdcTokensByChain: powers.usdcTokensByChain || {},
-    positionTokenAddresses: powers.positionTokenAddresses || {},
+    evmTokenAddresses: powers.evmTokenAddresses || {},
     spectrumBlockchain: createMockSpectrumBlockchain({}),
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: createMockProviderSets({
@@ -145,11 +145,11 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
     spectrumBlockchain: createMockSpectrumBlockchain({}),
     spectrumChainIds: {},
     usdcTokensByChain: {},
-    positionTokenAddresses: {
-      Aave_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+    evmTokenAddresses: {
+      Aave_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as EvmAddress,
       Compound_Base: compoundBaseAddress,
-      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-      '@Base': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
+      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as EvmAddress,
+      '@Base': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as EvmAddress,
     },
     chainNameToChainIdMap: CaipChainIds.mainnet,
     evmProviders: createMockProviderSets({
@@ -186,7 +186,7 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
     spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 101 }),
     spectrumChainIds: { noble: 'noble-1' },
     usdcTokensByChain: { noble: 'uusdc' },
-    positionTokenAddresses: {},
+    evmTokenAddresses: {},
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
   });
@@ -247,10 +247,10 @@ test('handleDeposit works with mocked dependencies', async t => {
     spectrumChainIds: {
       noble: 'noble-1',
     },
-    positionTokenAddresses: {
+    evmTokenAddresses: {
       Aave_Arbitrum: aaveArbitrumAddress,
       Compound_Arbitrum: compoundArbitrumAddress,
-      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as EvmAddress,
     },
     usdcTokensByChain: {
       noble: 'uusdc',
@@ -381,11 +381,12 @@ test('handleDeposit handles different position types correctly', async t => {
       spectrumChainIds: {
         noble: 'noble-1',
       },
-      positionTokenAddresses: {
+      evmTokenAddresses: {
         Aave_Avalanche: aaveAvalancheAddress,
         Compound_Ethereum: compoundEthereumAddress,
-        '@Avalanche': '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
-        '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        '@Avalanche':
+          '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E' as EvmAddress,
+        '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as EvmAddress,
       },
       usdcTokensByChain: {
         noble: 'uusdc',
@@ -657,9 +658,9 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
       agoric: 'agoricdev-25',
       noble: 'grand-1',
     },
-    positionTokenAddresses: {
+    evmTokenAddresses: {
       ERC4626_vaultU2_Ethereum: erc4626Address,
-      '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+      '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as EvmAddress,
     },
     spectrumBlockchain: createMockSpectrumBlockchain({}),
     usdcTokensByChain: {

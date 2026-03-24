@@ -57,6 +57,7 @@ import type {
   SupportedChain,
 } from '@agoric/portfolio-api';
 
+import type { EvmAddress } from '@agoric/fast-usdc';
 import type { CosmosRestClient } from './cosmos-rest-client.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
@@ -175,7 +176,7 @@ export type Powers = {
   rpc: CosmosRPCClient;
   spectrumBlockchain: SpectrumBlockchainSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
-  positionTokenAddresses: Partial<Record<InstrumentId, string>>;
+  evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   cosmosRest: CosmosRestClient;
   network: NetworkSpec;
   signingSmartWalletKit: SigningSmartWalletKit;
@@ -196,7 +197,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'network'
   | 'spectrumBlockchain'
   | 'spectrumChainIds'
-  | 'positionTokenAddresses'
+  | 'evmTokenAddresses'
   | 'signingSmartWalletKit'
   | 'walletStore'
   | 'getWalletInvocationUpdate'
@@ -253,7 +254,7 @@ export const processPortfolioEvents = async (
     getWalletInvocationUpdate,
     spectrumBlockchain,
     spectrumChainIds,
-    positionTokenAddresses,
+    evmTokenAddresses,
     usdcTokensByChain,
     vstoragePathPrefixes,
     evmProviders,
@@ -281,7 +282,7 @@ export const processPortfolioEvents = async (
     cosmosRest,
     spectrumBlockchain,
     spectrumChainIds,
-    positionTokenAddresses,
+    evmTokenAddresses,
     usdcTokensByChain,
     evmProviders,
     chainNameToChainIdMap,

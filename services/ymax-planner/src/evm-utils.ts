@@ -27,7 +27,7 @@ import type { EvmProviders } from './support.ts';
  * - Compound pools
  * - USDC tokens (for USDC-based positions without a receipt token)
  *
- * These addresses are used by {@link getErc20PositionBalances} to query on-chain
+ * These addresses are used by {@link getErc20Balances} to query on-chain
  * balances via Alchemy
  */
 export const getPoolTokenAddresses = (
@@ -69,7 +69,7 @@ export const getPoolTokenAddresses = (
       label === 'usdc' && (`@${chainName}` as `@${EvmChain}`),
   );
 
-  const positionTokenAddresses = {
+  const evmTokenAddresses = {
     ...erc4626VaultAddresses,
     ...beefyVaultAddresses,
     ...aavePoolAddresses,
@@ -77,7 +77,7 @@ export const getPoolTokenAddresses = (
     ...usdcAddresses,
   } as Partial<Record<PoolKey, EvmAddress>>;
 
-  return positionTokenAddresses;
+  return evmTokenAddresses;
 };
 
 /**
@@ -124,7 +124,7 @@ const BEEFY_VAULT_DECIMALS = 10n ** 18n;
 /**
  * Fetch the ERC-20 token balance for an address using an ethers WebSocketProvider.
  */
-export const getErc20PositionBalance = async (
+export const getErc20Balance = async (
   tokenAddress: string,
   userAddress: string,
   provider: WebSocketProvider,
@@ -135,7 +135,7 @@ export const getErc20PositionBalance = async (
     const balance: bigint = await token.balanceOf(userAddress);
     return balance;
   } catch (cause) {
-    throw Error(`Failed to fetch EVM position balance`, { cause });
+    throw Error(`Failed to fetch EVM balance`, { cause });
   }
 };
 
@@ -187,48 +187,47 @@ const getERC4626VaultBalance = async (
   }
 };
 
-type PositionBalanceResult = {
+type EvmBalanceResult = {
   place: InterChainAccountRef | PoolKey;
   balance: bigint | undefined;
   error?: string;
 };
 
-export type EVMPositionQuery = {
+export type EvmBalanceQuery = {
   place: InterChainAccountRef | PoolKey;
   chainName: SupportedChain;
   address: string;
 };
 
-export type EVMPositionBalancePowers = {
+export type EvmBalancePowers = {
   /** Map from place (e.g. 'Aave_Ethereum', '@Ethereum') to its token address */
-  positionTokenAddresses: Partial<
-    Record<InterChainAccountRef | PoolKey, string>
+  evmTokenAddresses: Partial<
+    Record<InterChainAccountRef | PoolKey, EvmAddress>
   >;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
   evmProviders: EvmProviders;
 };
 
 /**
- * Fetch EVM position balances by querying receipt token contracts directly.
+ * Fetch EVM balances by querying receipt token contracts directly.
  *
  * Dispatches to protocol-specific functions:
  * - Beefy: `balanceOf` + `getPricePerFullShare()` scaling
  * - ERC4626 (Morpho, etc.): `balanceOf` + `convertToAssets()`
- * - Default (Aave, Compound): simple `balanceOf` (already underlying)
+ * - Default (Aave, Compound, EVM accounts): simple `balanceOf` (already underlying)
  */
-export const getErc20PositionBalances = async (
-  queries: EVMPositionQuery[],
-  powers: EVMPositionBalancePowers,
-): Promise<{ balances: PositionBalanceResult[] }> => {
-  const { positionTokenAddresses, chainNameToChainIdMap, evmProviders } =
-    powers;
+export const getErc20Balances = async (
+  queries: EvmBalanceQuery[],
+  powers: EvmBalancePowers,
+): Promise<{ balances: EvmBalanceResult[] }> => {
+  const { evmTokenAddresses, chainNameToChainIdMap, evmProviders } = powers;
 
   const balances = await Promise.all(
     queries.map(async ({ place, chainName, address }) => {
       await null;
       try {
         const tokenAddress =
-          positionTokenAddresses[place] ||
+          evmTokenAddresses[place] ||
           Fail`No token address configured for instrument ${q(place)}`;
 
         const chainId: CaipChainId = chainNameToChainIdMap[chainName];
@@ -247,21 +246,17 @@ export const getErc20PositionBalances = async (
             provider,
           );
         } else {
-          balance = await getErc20PositionBalance(
-            tokenAddress,
-            address,
-            provider,
-          );
+          balance = await getErc20Balance(tokenAddress, address, provider);
         }
 
-        return { place, balance } as PositionBalanceResult;
+        return { place, balance } as EvmBalanceResult;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return {
           place,
           balance: undefined,
-          error: `Could not get EVM position balance: ${message}`,
-        } as PositionBalanceResult;
+          error: `Could not get EVM balance: ${message}`,
+        } as EvmBalanceResult;
       }
     }),
   );

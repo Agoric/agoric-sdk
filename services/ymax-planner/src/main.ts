@@ -121,7 +121,7 @@ export const main = async (
     clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet
   ) as typeof axelarConfig;
 
-  const positionTokenAddresses = getPoolTokenAddresses(axelarCfg);
+  const evmTokenAddresses = getPoolTokenAddresses(axelarCfg);
   const networkConfig = await fetchEnvNetworkConfig({
     env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
     fetch,
@@ -298,7 +298,7 @@ export const main = async (
     },
     rpc,
     spectrumChainIds,
-    positionTokenAddresses,
+    evmTokenAddresses,
     spectrumBlockchain,
     cosmosRest,
     network: PROD_NETWORK,

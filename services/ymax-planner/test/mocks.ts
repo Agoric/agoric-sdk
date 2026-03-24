@@ -104,7 +104,7 @@ export const createMockEnginePowers = (): EnginePowers => ({
   rpc: {} as any,
   spectrumBlockchain: createMockSpectrumBlockchain({}),
   spectrumChainIds: {},
-  positionTokenAddresses: {},
+  evmTokenAddresses: {},
   cosmosRest: {} as any,
   network: TEST_NETWORK,
   signingSmartWalletKit: {} as any,
