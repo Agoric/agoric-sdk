@@ -5,7 +5,7 @@
 import {
   PermitTransferFromComponents,
   PermitTransferFromInternalTypeName,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 import type { Abi, AbiParameter, AbiParameterToPrimitiveType } from 'viem';
 
 /**

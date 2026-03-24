@@ -46,7 +46,7 @@ import {
   YieldProtocol,
   FlowConfigShape,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type {
   PermitDetails,
   YmaxOperationDetails,

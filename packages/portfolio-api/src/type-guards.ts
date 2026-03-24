@@ -1,7 +1,7 @@
 import type {
   BeefyInstrumentId,
   ERC4626InstrumentId,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { InstrumentId } from './instruments.js';
 import type {
   DepositFromChainRef,
