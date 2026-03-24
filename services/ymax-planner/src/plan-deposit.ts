@@ -16,7 +16,11 @@ import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
 import { objectMap, objectMetaMap, typedEntries } from '@agoric/internal';
 import type { Caip10Record, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
+import type {
+  FundsFlowPlan,
+  InterChainAccountRef,
+  SupportedChain,
+} from '@agoric/portfolio-api';
 import { ACCOUNT_DUST_EPSILON, isInstrumentId } from '@agoric/portfolio-api';
 
 import type { CosmosRestClient } from './cosmos-rest-client.js';
@@ -59,7 +63,9 @@ export type BalanceQueryPowers = {
   cosmosRest: CosmosRestClient;
   spectrumBlockchain: SpectrumBlockchainSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
-  positionTokenAddresses: Partial<Record<PoolKey | `@${EvmChain}`, string>>;
+  positionTokenAddresses: Partial<
+    Record<InterChainAccountRef | PoolKey, string>
+  >;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   evmProviders: EvmProviders;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
@@ -73,7 +79,7 @@ type AccountQueryDescriptor = {
 };
 
 type PositionQueryDescriptor = {
-  place: PoolKey | `@${EvmChain}`;
+  place: InterChainAccountRef | PoolKey;
   chainName: SupportedChain;
   protocol: PoolPlaceInfo['protocol'] | 'USDC';
   address: string;

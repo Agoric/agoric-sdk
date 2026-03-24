@@ -2,7 +2,10 @@ import { Contract } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { CaipChainId } from '@agoric/orchestration';
-import type { SupportedChain } from '@agoric/portfolio-api';
+import type {
+  InterChainAccountRef,
+  SupportedChain,
+} from '@agoric/portfolio-api';
 import {
   isBeefyInstrumentId,
   isERC4626InstrumentId,
@@ -29,14 +32,14 @@ import type { EvmProviders } from './support.ts';
  */
 export const getPoolTokenAddresses = (
   axelarCfg: typeof axelarConfig,
-): Partial<Record<PoolKey | `@${EvmChain}`, EvmAddress>> => {
+): Partial<Record<InterChainAccountRef | PoolKey, EvmAddress>> => {
   /**
    * Select contracts from `axelarCfg` using a function that ensures uniqueness
    * of the corresponding name (e.g., by embedding the chain name).
    * XXX This should take `axelarCfg` as an argument and be promoted up out of
    * getPoolTokenAddresses.
    */
-  const pickContracts = <K extends PoolKey | `@${EvmChain}`>(
+  const pickContracts = <K extends InterChainAccountRef | PoolKey>(
     keyFromContractLabel: (
       name: keyof EVMContractAddresses,
       chainName: EvmChain,
@@ -185,20 +188,22 @@ const getERC4626VaultBalance = async (
 };
 
 type PositionBalanceResult = {
-  place: PoolKey | `@${EvmChain}`;
+  place: InterChainAccountRef | PoolKey;
   balance: bigint | undefined;
   error?: string;
 };
 
 export type EVMPositionQuery = {
-  place: PoolKey | `@${EvmChain}`;
+  place: InterChainAccountRef | PoolKey;
   chainName: SupportedChain;
   address: string;
 };
 
 export type EVMPositionBalancePowers = {
   /** Map from place (e.g. 'Aave_Ethereum', '@Ethereum') to its token address */
-  positionTokenAddresses: Partial<Record<PoolKey | `@${EvmChain}`, string>>;
+  positionTokenAddresses: Partial<
+    Record<InterChainAccountRef | PoolKey, string>
+  >;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
   evmProviders: EvmProviders;
 };

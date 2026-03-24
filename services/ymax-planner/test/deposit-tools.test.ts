@@ -5,6 +5,7 @@ import {
   ACCOUNT_DUST_EPSILON,
   CaipChainIds,
   SupportedChain,
+  type InterChainAccountRef,
   type StatusFor,
 } from '@agoric/portfolio-api';
 import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
@@ -79,7 +80,9 @@ const handleDeposit = async (
     gasEstimator: GasEstimator;
     spectrumBlockchain?: SpectrumBlockchainSdk;
     spectrumChainIds?: Partial<Record<SupportedChain, string>>;
-    positionTokenAddresses?: Partial<Record<PoolKey | `@${EvmChain}`, string>>;
+    positionTokenAddresses?: Partial<
+      Record<InterChainAccountRef | PoolKey, string>
+    >;
     usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
     addressToBalanceMap?: Partial<Record<EvmAddress, bigint>>;
   },
