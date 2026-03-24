@@ -1,3 +1,7 @@
+import type {
+  BeefyInstrumentId,
+  ERC4626InstrumentId,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { InstrumentId } from './instruments.js';
 import type {
   DepositFromChainRef,
@@ -53,14 +57,15 @@ harden(isWithdrawToChainRef);
  * Is the input an ERC-4626 InstrumentId
  * (i.e., does it start with 'ERC4626_')?
  */
-export const isERC4626InstrumentId = (ref: string): boolean =>
-  ref.startsWith('ERC4626_');
+export const isERC4626InstrumentId = (
+  ref: string,
+): ref is ERC4626InstrumentId => ref.startsWith('ERC4626_');
 harden(isERC4626InstrumentId);
 
 /**
  * Is the input an Beefy InstrumentId
  * (i.e., does it start with 'Beefy_')?
  */
-export const isBeefyInstrumentId = (ref: string): boolean =>
+export const isBeefyInstrumentId = (ref: string): ref is BeefyInstrumentId =>
   ref.startsWith('Beefy_');
 harden(isBeefyInstrumentId);
