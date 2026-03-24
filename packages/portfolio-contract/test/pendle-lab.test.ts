@@ -64,6 +64,8 @@ const usdc = {
   arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
 } as const;
 
+// XXX factor the repeated RECORDING ? captureIO(...) : replayIO(...)
+// setup into t.before(...) with per-test fixture selection.
 const RECORDING = !!process.env.RECORDING;
 
 const getQuote = async () => {
