@@ -424,7 +424,6 @@ export const initializeNewUser = async (name, fund, io) => {
   const psmTrader = await addUser(name);
   await Promise.all([
     bankSend(psmTrader, `20000000ubld,${fund.value}${fund.denom}`),
-    bankSend(psmTrader, `1000000uist`, GOV1ADDR),
   ]);
 
   await waitUntilAccountFunded(
