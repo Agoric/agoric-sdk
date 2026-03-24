@@ -8,6 +8,9 @@
  *
  * Pendle: Action Swap PT V3
  * https://arbiscan.io/address/0xd8d200d9a713a1c71cf1e7f694b14e5f1d948b15
+ *
+ * For post-expiry PT redemption, the Router docs expose `redeemPyToToken`:
+ * https://docs.pendle.finance/pendle-v2/Developers/Contracts/PendleRouter/ApiReference/MiscFunctions
  */
 import type { Abi } from 'viem';
 
@@ -16,6 +19,18 @@ const swapDataComponents = [
   { name: 'extRouter', type: 'address' },
   { name: 'extCalldata', type: 'bytes' },
   { name: 'needScale', type: 'bool' },
+] as const;
+
+const tokenOutputComponents = [
+  { name: 'tokenOut', type: 'address' },
+  { name: 'minTokenOut', type: 'uint256' },
+  { name: 'tokenRedeemSy', type: 'address' },
+  { name: 'pendleSwap', type: 'address' },
+  {
+    name: 'swapData',
+    type: 'tuple',
+    components: swapDataComponents,
+  },
 ] as const;
 
 const orderComponents = [
@@ -139,17 +154,7 @@ export const pendleRouterABI = [
       { name: 'market', type: 'address' },
       { name: 'exactPtIn', type: 'uint256' },
       {
-        components: [
-          { name: 'tokenOut', type: 'address' },
-          { name: 'minTokenOut', type: 'uint256' },
-          { name: 'tokenRedeemSy', type: 'address' },
-          { name: 'pendleSwap', type: 'address' },
-          {
-            components: swapDataComponents,
-            name: 'swapData',
-            type: 'tuple',
-          },
-        ],
+        components: tokenOutputComponents,
         name: 'output',
         type: 'tuple',
       },
@@ -167,6 +172,25 @@ export const pendleRouterABI = [
     ],
     stateMutability: 'nonpayable',
     type: 'function',
+  },
+  {
+    type: 'function',
+    name: 'redeemPyToToken',
+    stateMutability: 'nonpayable',
+    inputs: [
+      { name: 'receiver', type: 'address' },
+      { name: 'YT', type: 'address' },
+      { name: 'netPyIn', type: 'uint256' },
+      {
+        name: 'output',
+        type: 'tuple',
+        components: tokenOutputComponents,
+      },
+    ],
+    outputs: [
+      { name: 'netTokenOut', type: 'uint256' },
+      { name: 'netSyInterm', type: 'uint256' },
+    ],
   },
 ] as const satisfies Abi;
 
