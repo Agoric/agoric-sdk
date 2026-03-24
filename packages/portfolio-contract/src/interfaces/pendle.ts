@@ -11,6 +11,80 @@
  */
 import type { Abi } from 'viem';
 
+const swapDataComponents = [
+  { name: 'swapType', type: 'uint8' },
+  { name: 'extRouter', type: 'address' },
+  { name: 'extCalldata', type: 'bytes' },
+  { name: 'needScale', type: 'bool' },
+] as const;
+
+const orderComponents = [
+  { name: 'salt', type: 'uint256' },
+  { name: 'expiry', type: 'uint256' },
+  { name: 'nonce', type: 'uint256' },
+  { name: 'orderType', type: 'uint8' },
+  { name: 'token', type: 'address' },
+  { name: 'YT', type: 'address' },
+  { name: 'maker', type: 'address' },
+  { name: 'receiver', type: 'address' },
+  { name: 'makingAmount', type: 'uint256' },
+  { name: 'lnImpliedRate', type: 'uint256' },
+  { name: 'failSafeRate', type: 'uint256' },
+  { name: 'permit', type: 'bytes' },
+] as const;
+
+const fillOrderParamsComponents = [
+  {
+    name: 'order',
+    type: 'tuple',
+    components: orderComponents,
+  },
+  { name: 'signature', type: 'bytes' },
+  { name: 'makingAmount', type: 'uint256' },
+] as const;
+
+const fillOrderParamsComponentsForPtToToken = [
+  {
+    components: orderComponents,
+    name: 'order',
+    type: 'tuple',
+  },
+  { name: 'signature', type: 'bytes' },
+  { name: 'makingAmount', type: 'uint256' },
+] as const;
+
+const limitOrderDataComponents = [
+  { name: 'limitRouter', type: 'address' },
+  { name: 'epsSkipMarket', type: 'uint256' },
+  {
+    name: 'normalFills',
+    type: 'tuple[]',
+    components: fillOrderParamsComponents,
+  },
+  {
+    name: 'flashFills',
+    type: 'tuple[]',
+    components: fillOrderParamsComponents,
+  },
+  { name: 'optData', type: 'bytes' },
+] as const;
+
+const limitOrderDataComponentsForPtToToken = [
+  { name: 'limitRouter', type: 'address' },
+  { name: 'epsSkipMarket', type: 'uint256' },
+  {
+    components: fillOrderParamsComponentsForPtToToken,
+    name: 'normalFills',
+    type: 'tuple[]',
+  },
+  {
+    components: fillOrderParamsComponentsForPtToToken,
+    name: 'flashFills',
+    type: 'tuple[]',
+  },
+  { name: 'optData', type: 'bytes' },
+] as const;
+
 export const pendleRouterABI = [
   {
     type: 'function',
@@ -42,75 +116,14 @@ export const pendleRouterABI = [
           {
             name: 'swapData',
             type: 'tuple',
-            components: [
-              { name: 'swapType', type: 'uint8' },
-              { name: 'extRouter', type: 'address' },
-              { name: 'extCalldata', type: 'bytes' },
-              { name: 'needScale', type: 'bool' },
-            ],
+            components: swapDataComponents,
           },
         ],
       },
       {
         name: 'limit',
         type: 'tuple',
-        components: [
-          { name: 'limitRouter', type: 'address' },
-          { name: 'epsSkipMarket', type: 'uint256' },
-          {
-            name: 'normalFills',
-            type: 'tuple[]',
-            components: [
-              {
-                name: 'order',
-                type: 'tuple',
-                components: [
-                  { name: 'salt', type: 'uint256' },
-                  { name: 'expiry', type: 'uint256' },
-                  { name: 'nonce', type: 'uint256' },
-                  { name: 'orderType', type: 'uint8' },
-                  { name: 'token', type: 'address' },
-                  { name: 'YT', type: 'address' },
-                  { name: 'maker', type: 'address' },
-                  { name: 'receiver', type: 'address' },
-                  { name: 'makingAmount', type: 'uint256' },
-                  { name: 'lnImpliedRate', type: 'uint256' },
-                  { name: 'failSafeRate', type: 'uint256' },
-                  { name: 'permit', type: 'bytes' },
-                ],
-              },
-              { name: 'signature', type: 'bytes' },
-              { name: 'makingAmount', type: 'uint256' },
-            ],
-          },
-          {
-            name: 'flashFills',
-            type: 'tuple[]',
-            components: [
-              {
-                name: 'order',
-                type: 'tuple',
-                components: [
-                  { name: 'salt', type: 'uint256' },
-                  { name: 'expiry', type: 'uint256' },
-                  { name: 'nonce', type: 'uint256' },
-                  { name: 'orderType', type: 'uint8' },
-                  { name: 'token', type: 'address' },
-                  { name: 'YT', type: 'address' },
-                  { name: 'maker', type: 'address' },
-                  { name: 'receiver', type: 'address' },
-                  { name: 'makingAmount', type: 'uint256' },
-                  { name: 'lnImpliedRate', type: 'uint256' },
-                  { name: 'failSafeRate', type: 'uint256' },
-                  { name: 'permit', type: 'bytes' },
-                ],
-              },
-              { name: 'signature', type: 'bytes' },
-              { name: 'makingAmount', type: 'uint256' },
-            ],
-          },
-          { name: 'optData', type: 'bytes' },
-        ],
+        components: limitOrderDataComponents,
       },
     ],
     outputs: [
@@ -132,12 +145,7 @@ export const pendleRouterABI = [
           { name: 'tokenRedeemSy', type: 'address' },
           { name: 'pendleSwap', type: 'address' },
           {
-            components: [
-              { name: 'swapType', type: 'uint8' },
-              { name: 'extRouter', type: 'address' },
-              { name: 'extCalldata', type: 'bytes' },
-              { name: 'needScale', type: 'bool' },
-            ],
+            components: swapDataComponents,
             name: 'swapData',
             type: 'tuple',
           },
@@ -146,63 +154,7 @@ export const pendleRouterABI = [
         type: 'tuple',
       },
       {
-        components: [
-          { name: 'limitRouter', type: 'address' },
-          { name: 'epsSkipMarket', type: 'uint256' },
-          {
-            components: [
-              {
-                components: [
-                  { name: 'salt', type: 'uint256' },
-                  { name: 'expiry', type: 'uint256' },
-                  { name: 'nonce', type: 'uint256' },
-                  { name: 'orderType', type: 'uint8' },
-                  { name: 'token', type: 'address' },
-                  { name: 'YT', type: 'address' },
-                  { name: 'maker', type: 'address' },
-                  { name: 'receiver', type: 'address' },
-                  { name: 'makingAmount', type: 'uint256' },
-                  { name: 'lnImpliedRate', type: 'uint256' },
-                  { name: 'failSafeRate', type: 'uint256' },
-                  { name: 'permit', type: 'bytes' },
-                ],
-                name: 'order',
-                type: 'tuple',
-              },
-              { name: 'signature', type: 'bytes' },
-              { name: 'makingAmount', type: 'uint256' },
-            ],
-            name: 'normalFills',
-            type: 'tuple[]',
-          },
-          {
-            components: [
-              {
-                components: [
-                  { name: 'salt', type: 'uint256' },
-                  { name: 'expiry', type: 'uint256' },
-                  { name: 'nonce', type: 'uint256' },
-                  { name: 'orderType', type: 'uint8' },
-                  { name: 'token', type: 'address' },
-                  { name: 'YT', type: 'address' },
-                  { name: 'maker', type: 'address' },
-                  { name: 'receiver', type: 'address' },
-                  { name: 'makingAmount', type: 'uint256' },
-                  { name: 'lnImpliedRate', type: 'uint256' },
-                  { name: 'failSafeRate', type: 'uint256' },
-                  { name: 'permit', type: 'bytes' },
-                ],
-                name: 'order',
-                type: 'tuple',
-              },
-              { name: 'signature', type: 'bytes' },
-              { name: 'makingAmount', type: 'uint256' },
-            ],
-            name: 'flashFills',
-            type: 'tuple[]',
-          },
-          { name: 'optData', type: 'bytes' },
-        ],
+        components: limitOrderDataComponentsForPtToToken,
         name: 'limit',
         type: 'tuple',
       },
