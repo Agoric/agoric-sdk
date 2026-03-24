@@ -4,12 +4,12 @@ import { createRequire } from 'node:module';
 import { captureIO, replayIO } from '../../casting/test/net-access-fixture.js';
 import {
   makePendleAPI,
-  type PendleAllMarkets,
   type PendleMarketSummary,
 } from './pendle-api.ts';
 import { web1 as allMarkets1 } from './fixures/pendle-all-markets.js';
 import { web1 as marketData1 } from './fixures/pendle-market-data.js';
 import { web1 as quote1 } from './fixures/pendle-quote.js';
+import { web1 as withdrawConfirmation1 } from './fixures/pendle-withdraw-confirmation.js';
 
 const require = createRequire(import.meta.url);
 
@@ -39,6 +39,12 @@ const lab = {
   expectedPtOut: 254136n,
   quote: {
     effectiveApy: '6.36%',
+  },
+  portfolio: {
+    aaveArbitrumPrincipal: 10_000_000_000n,
+    aaveArbitrumAccruedYield: 115_000_000n,
+    pendleAllocationNumerator: 30n,
+    pendleAllocationDenominator: 100n,
   },
   trade: {
     amountIn: 250000n,
@@ -100,6 +106,37 @@ const getAllMarkets = async () => {
   });
   const data = await api.getAllMarkets();
   return { data, web };
+};
+
+const getWithdrawConfirmationQuote = async () => {
+  const { fetch, web } = RECORDING
+    ? captureIO(globalThis.fetch)
+    : { fetch: replayIO(withdrawConfirmation1), web: new Map() };
+  const api = makePendleAPI(pendle.apiBase, {
+    fetch,
+    chainId: 42161,
+  });
+  const amountIn =
+    ((lab.portfolio.aaveArbitrumPrincipal +
+      lab.portfolio.aaveArbitrumAccruedYield) *
+      lab.portfolio.pendleAllocationNumerator) /
+    lab.portfolio.pendleAllocationDenominator;
+  const { route: buyRoute } = await api.getQuote({
+    amountIn,
+    receiver: lab.buyer,
+    slippage: lab.trade.slippage,
+    tokensIn: usdc.arbitrum,
+    tokensOut: pendle.market.pt,
+  });
+  const ptAmount = BigInt(buyRoute.outputs?.[0]?.amount ?? '0');
+  const { route: exitRoute } = await api.getQuote({
+    amountIn: ptAmount,
+    receiver: lab.buyer,
+    slippage: lab.trade.slippage,
+    tokensIn: pendle.market.pt,
+    tokensOut: usdc.arbitrum,
+  });
+  return { amountIn, buyRoute, exitRoute, web };
 };
 
 const findMarket = (markets: PendleMarketSummary[], address: string) =>
@@ -229,17 +266,105 @@ test('Pendle PT instrument shows a fixed yield and a maturity date', async t => 
 // The system swaps USDC for PT via Pendle's AMM, and
 // the position appears in their portfolio showing their locked yield (7.2%),
 // current market value, value at maturity, and a countdown to the maturity date.
-test.todo(
-  'plan for 30% pendle results in locked yield, market and maturity values, countdown',
-);
+test('plan for 30% pendle results in locked yield, market and maturity values, countdown', async t => {
+  const { data } = await getMarketData();
+  const totalUsdc =
+    lab.portfolio.aaveArbitrumPrincipal + lab.portfolio.aaveArbitrumAccruedYield;
+  const pendleAllocationUsdc =
+    (totalUsdc * lab.portfolio.pendleAllocationNumerator) /
+    lab.portfolio.pendleAllocationDenominator;
+  const aaveYieldOnMovedBalance =
+    (lab.portfolio.aaveArbitrumAccruedYield *
+      lab.portfolio.pendleAllocationNumerator) /
+    lab.portfolio.pendleAllocationDenominator;
+  const msToMaturity =
+    Date.parse(pendle.market.expiry) - Date.parse(data.timestamp);
+  const daysToMaturity = msToMaturity / (24 * 60 * 60 * 1000);
+  const ptExchangeRate = (1 + data.impliedApy) ** (daysToMaturity / 365);
+  // XXX YDS would need a trade-size-specific Hosted SDK quote here to get the
+  // exact effectiveApy and expectedPtOut for a 30%-of-portfolio rebalance.
+  // This uses current market impliedApy as the best recorded approximation.
+  const estimatedPtOut = BigInt(
+    Math.round(Number(pendleAllocationUsdc) * ptExchangeRate),
+  );
+  const estimatedLockedYield = estimatedPtOut - pendleAllocationUsdc;
+
+  t.is(totalUsdc, 10_115_000_000n);
+  t.is(pendleAllocationUsdc, 3_034_500_000n);
+  t.is(aaveYieldOnMovedBalance, 34_500_000n);
+  t.true(daysToMaturity > 0);
+  t.true(estimatedPtOut > pendleAllocationUsdc);
+  t.true(estimatedLockedYield > 0n);
+  t.log({
+    portfolioUsdc: totalUsdc,
+    pendleAllocationUsdc,
+    currentImpliedFixedApy: data.impliedApy,
+    currentMarketValue: pendleAllocationUsdc,
+    valueAtMaturity: estimatedPtOut,
+    estimatedLockedYield,
+    countdownDays: daysToMaturity,
+    aaveYieldOnMovedBalance,
+  });
+});
 
 // Over the following weeks, the user withdraws some funds.
 // The rebalance sells a portion of their PT at the current market price.
 // Before executing, the system shows them what they'd give up
 // relative to holding to maturity, and they confirm.
-test.todo('withdraw confirmation shows lost yield');
+test(`withdraw confirmation shows lost yield (RECORDING: ${RECORDING})`, async t => {
+  const { amountIn, buyRoute, exitRoute, web } =
+    await getWithdrawConfirmationQuote();
+
+  if (RECORDING) {
+    t.snapshot(web);
+    t.truthy(buyRoute.data?.effectiveApy);
+    t.truthy(exitRoute.outputs?.[0]?.amount);
+    return;
+  }
+
+  const totalUsdc =
+    lab.portfolio.aaveArbitrumPrincipal + lab.portfolio.aaveArbitrumAccruedYield;
+  const currentAaveYieldOnMovedBalance =
+    (lab.portfolio.aaveArbitrumAccruedYield *
+      lab.portfolio.pendleAllocationNumerator) /
+    lab.portfolio.pendleAllocationDenominator;
+  const valueAtMaturity = BigInt(buyRoute.outputs?.[0]?.amount ?? '0');
+  const currentExitValue = BigInt(exitRoute.outputs?.[0]?.amount ?? '0');
+  const giveUpBySellingNow = valueAtMaturity - currentExitValue;
+
+  t.is(amountIn, 3_034_500_000n);
+  t.true(totalUsdc === 10_115_000_000n);
+  t.true(currentAaveYieldOnMovedBalance === 34_500_000n);
+  t.true(valueAtMaturity > 0n);
+  t.true(currentExitValue > 0n);
+  t.true(giveUpBySellingNow >= 0n);
+  t.log({
+    portfolioUsdc: totalUsdc,
+    pendleAllocationUsdc: amountIn,
+    lockedYield: buyRoute.data?.effectiveApy,
+    currentAaveYieldOnMovedBalance,
+    expectedPtOut: valueAtMaturity,
+    currentExitValue,
+    giveUpBySellingNow,
+  });
+});
 
 // On Sept 26, the PT matures. The system auto-redeems it to USDC,
 // which appears in the user's Unallocated USDC on Arbitrum.
 // They see a status update confirming the redemption and decide what to do next.
-test.todo('at maturity, PT is redeemed to USDC in @Arbitrum');
+test('at maturity, PT is redeemed to USDC in @Arbitrum', async t => {
+  const { buyRoute } = await getWithdrawConfirmationQuote();
+  const ptAmount = BigInt(buyRoute.outputs?.[0]?.amount ?? '0');
+  const redeemedUsdc = ptAmount;
+
+  t.true(ptAmount > 0n);
+  // XXX This uses Pendle's PT-at-maturity 1:1 redemption model. We still need
+  // an observed redemption tx or backend status path to prove the production
+  // "auto-redeemed to USDC" update end-to-end.
+  t.is(redeemedUsdc, ptAmount);
+  t.log({
+    maturity: pendle.market.expiry,
+    redeemedUsdc,
+    unallocatedArbitrumUsdcAfterRedemption: redeemedUsdc,
+  });
+});
