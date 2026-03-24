@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';

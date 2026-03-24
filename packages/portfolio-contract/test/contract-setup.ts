@@ -58,24 +58,12 @@ const makeEvmWalletHandler = async (
   return E(seat).getOfferResult();
 };
 
-export const deploy = async (
-  t: ExecutionContext,
-  overrides: Partial<PortfolioPrivateArgs> = {},
+export const provideMakePrivateArgs = (
+  commonPrivateArgs: Awaited<
+    ReturnType<typeof setupPortfolioTest>
+  >['commonPrivateArgs'],
+  timerService: ReturnType<typeof buildZoeManualTimer>,
 ) => {
-  const common = await setupPortfolioTest(t);
-  let testJig;
-  const setJig = jig => (testJig = jig);
-  const getTestJig = () => testJig;
-  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
-  t.log('contract deployment', contractName);
-
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractExports);
-  t.is(passStyleOf(installation), 'remotable');
-
-  const { usdc, poc26, bld } = common.brands;
-  const timerService = buildZoeManualTimer();
-
   // List of all chains whose `chainInfo` is utilized by the Portfolio contract.
   // Includes both Cosmos-based and EVM-based chains (mainnet and testnet).
   const selectedChains = [
@@ -97,7 +85,7 @@ export const deploy = async (
   const makePrivateArgs = (
     privateArgOverrides: Partial<PortfolioPrivateArgs> = {},
   ): PortfolioPrivateArgs => ({
-    ...common.commonPrivateArgs,
+    ...commonPrivateArgs,
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
     walletBytecode: '0x1234',
@@ -106,6 +94,32 @@ export const deploy = async (
     chainInfo,
     ...privateArgOverrides,
   });
+
+  return makePrivateArgs;
+};
+
+export const deploy = async (
+  t: ExecutionContext,
+  overrides: Partial<PortfolioPrivateArgs> = {},
+) => {
+  const common = await setupPortfolioTest(t);
+  let testJig;
+  const setJig = jig => (testJig = jig);
+  const getTestJig = () => testJig;
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
+  t.log('contract deployment', contractName);
+
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractExports);
+  t.is(passStyleOf(installation), 'remotable');
+
+  const { usdc, poc26, bld } = common.brands;
+  const timerService = buildZoeManualTimer();
+
+  const makePrivateArgs = provideMakePrivateArgs(
+    common.commonPrivateArgs,
+    timerService,
+  );
 
   const started = await E(zoe).startInstance(
     installation,
@@ -256,8 +270,10 @@ export const makeEvmTraderKit = async (
   deployed: Awaited<ReturnType<typeof deploy>>,
   {
     privateKey = evmTrader0PrivateKey,
+    useRouter,
   }: {
     privateKey?: Hex;
+    useRouter?: boolean;
   } = {},
 ) => {
   const { common, zoe, started, timerService } = deployed;
@@ -279,6 +295,7 @@ export const makeEvmTraderKit = async (
     timerService,
     readPublished,
     when,
+    useRouter,
   });
   return { evmTrader, evmWalletHandler, evmAccount: account, readPublished };
 };

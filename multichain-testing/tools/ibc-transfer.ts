@@ -98,7 +98,7 @@ export const makeIBCTransferMsg = (
   });
   const { fee_tokens } = senderChainInfo.chain.fees ?? {};
   if (!fee_tokens || !fee_tokens.length) {
-    throw Error('no fee tokens in chain config for' + sender.chainName);
+    throw Error(`no fee tokens in chain config for ${sender.chainName}`);
   }
   if (fee_tokens.length > 1) {
     console.warn(
@@ -108,7 +108,7 @@ export const makeIBCTransferMsg = (
   const { high_gas_price, denom } = fee_tokens[0];
   if (!high_gas_price) throw Error('no high gas price in chain config');
   const fee = makeFeeObject({
-    denom: denom,
+    denom,
     gas: 197000,
     gasPrice: high_gas_price,
   });
@@ -172,7 +172,7 @@ export const makeFundAndTransfer = (
     const transferArgs = makeIBCTransferMsg(
       { denom: denomToTransfer, value: amount },
       { address: agoricAddr, chainName: 'agoric' },
-      { address: address, chainName },
+      { address, chainName },
       Date.now(),
       useChain,
     );

@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 
 import { X, Fail, makeError } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';

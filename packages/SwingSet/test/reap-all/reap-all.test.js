@@ -4,7 +4,8 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kslot, kunser } from '@agoric/kmarshal';
 
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import { makeSwingsetController } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 
 /**
  * @import {SwingSetConfig} from '../../src/types-external.js';

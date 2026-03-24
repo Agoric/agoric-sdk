@@ -1,9 +1,7 @@
 /* eslint-env node */
-// Use modules not prefixed with `node:` since some deploy scripts may
-// still be running in esm emulation
-import path from 'path';
-import { spawnSync } from 'child_process';
-import { createRequire } from 'module';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 
 import { Fail, q } from '@endo/errors';
 

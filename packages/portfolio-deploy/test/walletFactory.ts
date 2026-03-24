@@ -8,6 +8,7 @@ import {
   makeSwingsetTestKit,
 } from '@aglocal/boot/tools/supports.js';
 import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
+import type { PortfolioPublishedPathTypes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 
 // XXX same as fast-usdc-deploy/test/walletFactory.ts and
 // XXX same as packages/boot/test/bootstrapTests/walletFactory.ts
@@ -16,10 +17,11 @@ export const makeWalletFactoryContext = async (
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
   opts = {},
 ) => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    configSpecifier,
-    ...opts,
-  });
+  const swingsetTestKit =
+    await makeSwingsetTestKit<PortfolioPublishedPathTypes>(t.log, undefined, {
+      configSpecifier,
+      ...opts,
+    });
 
   const { runUtils, storage } = swingsetTestKit;
   console.timeLog('DefaultTestContext', 'swingsetTestKit');

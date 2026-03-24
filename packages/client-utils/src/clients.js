@@ -2,11 +2,11 @@
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
-import { agoric } from './codegen/index.js';
+import { createRPCQueryClient } from './codegen/agoric/rpc.query.js';
 import { pickEndpoint } from './rpc.js';
 
 /**
- * @typedef {Awaited<ReturnType<typeof agoric.ClientFactory.createRPCQueryClient>>} AgoricQueryClient
+ * @typedef {Awaited<ReturnType<typeof createRPCQueryClient>>} AgoricQueryClient
  */
 
 /**
@@ -14,6 +14,6 @@ import { pickEndpoint } from './rpc.js';
  * @returns {Promise<AgoricQueryClient>}
  */
 export const makeAgoricQueryClient = config =>
-  agoric.ClientFactory.createRPCQueryClient({
+  createRPCQueryClient({
     rpcEndpoint: pickEndpoint(config),
   });

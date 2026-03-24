@@ -1,7 +1,10 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
-import { MsgUpdateParams, MsgUpdateParamsResponse } from './tx.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
+import {
+  MsgUpdateParams,
+  MsgUpdateParamsResponse,
+} from '@agoric/cosmic-proto/codegen/cosmos/consensus/v1/tx.js';
 /** Msg defines the consensus Msg service. */
 export interface Msg {
   /**
@@ -13,8 +16,8 @@ export interface Msg {
   updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.updateParams = this.updateParams.bind(this);
   }
@@ -30,3 +33,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

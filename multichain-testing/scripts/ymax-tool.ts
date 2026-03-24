@@ -97,6 +97,7 @@ Options:
   --positions             JSON of opening positions (e.g. '{"USDN":6000,"Aave":4000}')
   --target-allocation     JSON of target allocation (e.g. '{"USDN":6000,"Aave_Arbitrum":4000}')
   --evm <chainId>         Use an EVM wallet and deposit from the given chain (e.g. 'Ethereum')
+  --evm-router <chainId>  Use an EVM router wallet and deposit from the given chain (e.g. 'Ethereum')
   --contract=[ymax0]      Contract key in agoricNames.instance ('ymax0' or 'ymax1'), used for
                           portfolios and invitations
   --description=[planner] For use with --redeem ('planner', 'resolver', or 'evmWalletHandler',
@@ -121,7 +122,7 @@ Operations:
   --redeem                  Redeem invitation per --description
   --submit-for <id>         Submit (empty) plan for portfolio <id>
   --open                    [default operation] Open a new portfolio per --positions and
-                            --target-allocation. Uses an EVM wallet if --evm
+                            --target-allocation. Uses an EVM wallet if --evm or --evm-router
 
 Environment variables:
   AGORIC_NET: Network specifier per https://github.com/Agoric/agoric-sdk/blob/master/docs/env.md ,
@@ -129,10 +130,11 @@ Environment variables:
               "$subdomain,$chainId" or "$fqdn,$chainId" for submitting to $subdomain.rpc.agoric.net
               or $fqdn
   MNEMONIC:   The private key used to sign transactions (needed for all operations except
-              --checkStorage and --buildEthOverrides). For --evm, this is the EVM wallet mnemonic.
+              --checkStorage and --buildEthOverrides). For --evm / --evm-router, this is
+              the EVM wallet mnemonic.
   MNEMONIC_EVM_MESSAGE_HANDLER:
               The private key used to sign transactions from the EVM wallet handler
-              (needed for --evm, act as override for --redeem of evmWalletHandler).
+              (needed for --evm / --evm-router, act as override for --redeem of evmWalletHandler).
 `.trim();
 
 const parseToolArgs = (argv: string[]) =>
@@ -144,6 +146,7 @@ const parseToolArgs = (argv: string[]) =>
       'exit-success': { type: 'boolean', default: false },
       'target-allocation': { type: 'string' },
       evm: { type: 'string', default: '' },
+      'evm-router': { type: 'string', default: '' },
       redeem: { type: 'boolean', default: false },
       contract: { type: 'string', default: 'ymax0' },
       description: { type: 'string', default: 'planner' },
@@ -311,21 +314,29 @@ const openPositionsEVM = async ({
   when,
   axelarChainConfig,
   axelarChain,
+  useRouter = false,
   id = `open-${new Date(when).toISOString()}`,
 }: {
   sig: SigningSmartWalletKit;
   evmAccount: HDAccount;
   axelarChainConfig: AxelarChainConfig;
   axelarChain: AxelarChain;
+  useRouter?: boolean;
   when: number;
   contract?: string;
   id?: string;
   targetAllocation: TargetAllocation;
 }) => {
-  const spender = axelarChainConfig.contracts.depositFactory;
+  // TODO: support router
+
+  const spender = useRouter
+    ? axelarChainConfig.contracts.remoteAccountRouter
+    : axelarChainConfig.contracts.depositFactory;
 
   if (!spender || spender.length <= 2) {
-    throw Error(`missing depositFactory contract for ${axelarChain}`);
+    throw Error(
+      `missing ${useRouter ? 'router' : 'depositFactory'} contract for ${axelarChain}`,
+    );
   }
 
   const deadline = BigInt(when) / 1000n + 3600n;
@@ -354,7 +365,7 @@ const openPositionsEVM = async ({
   const openPortfolioMessage = getPermitWitnessTransferFromData(
     {
       permitted: deposit,
-      spender: axelarChainConfig.contracts.depositFactory,
+      spender,
       nonce,
       deadline,
     },
@@ -594,8 +605,9 @@ const main = async (
   let { MNEMONIC } = env;
   if (!MNEMONIC) throw Error(`MNEMONIC not set`);
 
+  const evmChain = values['evm-router'] || values.evm;
   let evmAccount: HDAccount | null = null;
-  if (values.evm) {
+  if (evmChain) {
     evmAccount = mnemonicToAccount(MNEMONIC);
 
     MNEMONIC = env.MNEMONIC_EVM_MESSAGE_HANDLER;
@@ -790,27 +802,29 @@ const main = async (
     : undefined;
   console.debug({ positionData, targetAllocation });
   try {
-    if (values.evm) {
+    if (evmChain) {
       const { AGORIC_NET: net } = env;
       if (net !== 'main' && net !== 'devnet') {
         throw Error(`unsupported/unknown net: ${net}`);
       }
       const { axelarConfig } = getNetworkConfig(net);
 
-      if (!(values.evm in axelarConfig)) {
-        throw Error(`unknown/unsupported evm chain: ${values.evm}`);
+      if (!(evmChain in axelarConfig)) {
+        throw Error(`unknown/unsupported evm chain: ${evmChain}`);
       }
 
-      const axelarChain = values.evm as AxelarChain;
-      const axelarChainConfig = axelarConfig[axelarChain];
+      const axelarChain = evmChain as AxelarChain;
+      const axelarChainConfig = axelarConfig[evmChain as AxelarChain];
 
       if (!targetAllocation) {
-        throw Error(`--target-allocation is required with --evm`);
+        throw Error(
+          `--target-allocation is required with --evm / --evm-router`,
+        );
       }
 
       if (Object.keys(positionData).length !== 0) {
         throw Error(
-          `--positions not supported with --evm, use --target-allocation`,
+          `--positions not supported with --evm / --evm-router, use --target-allocation`,
         );
       }
 
@@ -821,6 +835,7 @@ const main = async (
         when: now(),
         axelarChainConfig,
         axelarChain,
+        useRouter: !!values['evm-router'],
       });
       trace('opened', opened);
     } else {

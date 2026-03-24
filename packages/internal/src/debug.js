@@ -1,5 +1,3 @@
-// @jessie-check
-
 // See https://github.com/Agoric/agoric-sdk/issues/11844
 // See https://github.com/Agoric/agoric-sdk/issues/11845
 let debugInstance = 1;

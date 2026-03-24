@@ -1,3 +1,4 @@
+/* eslint-disable no-plusplus */
 import test from 'ava';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
@@ -131,6 +132,7 @@ test('handlePendingTx aborts GMP watcher in live mode when signal is aborted', a
   t.deepEqual(logs, [
     `[${txId}] handling ${TxType.GMP} tx`,
     `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Subscribed with subId=mock-subscription-id for contract=${contractAddress}`,
     '[TEST] Aborting signal',
   ]);
 

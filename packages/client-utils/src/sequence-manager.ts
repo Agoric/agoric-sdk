@@ -1,4 +1,4 @@
-import type { BaseAccount } from './codegen/cosmos/auth/v1beta1/auth.js';
+import type { BaseAccount } from '@agoric/cosmic-proto/codegen/cosmos/auth/v1beta1/auth.js';
 
 /**
  * @alpha

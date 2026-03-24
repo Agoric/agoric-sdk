@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { M } from '@agoric/store';

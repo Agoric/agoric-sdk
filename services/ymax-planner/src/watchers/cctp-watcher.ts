@@ -1,4 +1,4 @@
-import type { Filter, WebSocketProvider, Log } from 'ethers';
+import type { Filter, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
@@ -6,6 +6,7 @@ import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
+  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import {
@@ -39,7 +40,7 @@ const TRANSFER_SIGNATURE = id('Transfer(address,address,uint256)');
 
 type CctpWatch = {
   usdcAddress: `0x${string}`;
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   toAddress: `0x${string}`;
   expectedAmount: bigint;
   log?: (...args: unknown[]) => void;

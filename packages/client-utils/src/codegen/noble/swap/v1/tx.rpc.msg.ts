@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgSwap,
   MsgSwapResponse,
@@ -16,7 +16,7 @@ import {
   MsgUnpauseByAlgorithmResponse,
   MsgUnpauseByPoolIds,
   MsgUnpauseByPoolIdsResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/noble/swap/v1/tx.js';
 export interface Msg {
   /** Swap allows a user to swap one type of token for another, using multiple routes. */
   swap(request: MsgSwap): Promise<MsgSwapResponse>;
@@ -46,8 +46,8 @@ export interface Msg {
   ): Promise<MsgUnpauseByPoolIdsResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.swap = this.swap.bind(this);
     this.withdrawProtocolFees = this.withdrawProtocolFees.bind(this);
@@ -141,3 +141,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

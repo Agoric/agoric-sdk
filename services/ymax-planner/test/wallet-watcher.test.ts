@@ -2,10 +2,13 @@ import test from 'ava';
 import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
 import { objectMap } from '@endo/patterns';
 import type { WebSocketProvider } from 'ethers';
-import { createMockPendingTxOpts } from './mocks.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import { createMockPendingTxOpts } from './mocks.ts';
+import {
+  handlePendingTx,
+  type EvmRpcProviders,
+} from '../src/pending-tx-manager.ts';
 import {
   SMART_WALLET_CREATED_SIGNATURE,
   parseSmartWalletCreatedLog,
@@ -254,6 +257,7 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
     `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
     `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] Address mismatch for txHash=0x123abc: sourceAddress=agoric1test expectedWallet=${wrongWalletAddrChecksummed}`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${correctTxHash} block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
@@ -355,6 +359,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
   const ctxWithFetch = harden({
     ...opts,
     evmProviders: newEvmProviders,
+    retryProviders: newEvmProviders as EvmRpcProviders,
     fetch: async () => ({}) as Response,
   });
 
@@ -371,7 +376,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
   t.true(
     logs.some(l =>
       l.includes(
-        `[${txId}] ❌ REVERTED (25 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock} - transaction failed`,
+        `[${txId}] ❌ REVERTED (240 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock} - transaction failed`,
       ),
     ),
   );

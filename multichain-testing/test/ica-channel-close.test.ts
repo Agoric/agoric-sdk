@@ -269,7 +269,7 @@ const channelCloseInitScenario = test.macro({
       parseLocalAddress(localAddress);
 
     const dst = {
-      chainId: chainInfo['agoric'].chainId,
+      chainId: chainInfo.agoric.chainId,
       channelID: lChannelID,
       portID: lPortID,
       connectionID: lConnectionID,
@@ -324,7 +324,7 @@ const channelCloseInitScenario = test.macro({
       if (!transferChannel) throw Error('Transfer channel not found.');
 
       const dstTransferChannel = {
-        chainId: chainInfo['agoric'].chainId,
+        chainId: chainInfo.agoric.chainId,
         channelID: transferChannel.counterparty.channel_id as IBCChannelID,
         portID: 'transfer',
         connectionID: lConnectionID,

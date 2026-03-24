@@ -13,7 +13,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:types": "yarn run -T tsc",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "keywords": [],
   "author": "Agoric",
@@ -59,7 +59,6 @@
     "viem": "^2.31.0"
   },
   "devDependencies": {
-    "@aglocal/fast-usdc-deploy": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/governance": "workspace:*",
     "@agoric/store": "workspace:*",

@@ -1,5 +1,5 @@
 // @ts-check
-import process from 'process';
+import process from 'node:process';
 import {
   Far,
   getInterfaceOf,

@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { initEmpty, makeExo } from '@agoric/store';
 import { prepareExoClass } from '@agoric/vat-data';
 import { Fail } from '@endo/errors';

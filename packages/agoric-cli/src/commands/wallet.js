@@ -13,9 +13,9 @@ import {
   fetchEnvNetworkConfig,
   makeAgoricNames,
 } from '@agoric/client-utils';
-import { execFileSync } from 'child_process';
-import fs from 'fs';
-import util from 'util';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import util from 'node:util';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {

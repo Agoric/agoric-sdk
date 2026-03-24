@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- doesn't see type usage in JSDoc */
+/* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
 import {
   type AccountId,
   type Bech32Address,
+  type CaipChainId,
   type CosmosChainAddress,
   type TrafficEntry,
 } from '@agoric/orchestration';
@@ -10,6 +11,7 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
+import type { Address as EVMAddress } from 'abitype';
 import type {
   AxelarChain,
   SupportedChain,
@@ -190,10 +192,59 @@ export type TrafficReport = {
 export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
 
+export type PortfolioRemoteAccountCommonStates =
+  | 'provisioning'
+  | 'active'
+  | 'failed';
+
+export type PortfolioGenericRemoteAccountState =
+  | {
+      chainId: CaipChainId;
+      address: string;
+      state: PortfolioRemoteAccountCommonStates;
+    }
+  | {
+      state: 'provisioning' | 'unknown';
+    };
+
+export type PortfolioEVMRemoteAccountState = {
+  chainId: `eip155:${number | bigint | string}`;
+  address: EVMAddress;
+} & (
+  | {
+      state: PortfolioRemoteAccountCommonStates;
+      // router is not present for legacy accounts
+      router?: EVMAddress;
+    }
+  | {
+      state: 'transferring';
+      router: EVMAddress;
+      fromRouter: EVMAddress;
+    }
+);
+
+export type PortfolioCosmosRemoteAccountState = {
+  chainId: `cosmos:${string}`;
+  address: Bech32Address;
+  state: PortfolioRemoteAccountCommonStates;
+};
+
+export type PortfolioRemoteAccountState =
+  | PortfolioEVMRemoteAccountState
+  | PortfolioCosmosRemoteAccountState
+  | PortfolioGenericRemoteAccountState;
+
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
-    depositFactoryAddresses?: Record<AxelarChain, AccountId>;
+    depositFactoryAddresses?: Partial<Record<AxelarChain, AccountId>>;
+    evmRemoteAccountConfig?: {
+      remoteAccountImplementationAddresses: Partial<
+        Record<AxelarChain, AccountId>
+      >;
+      factoryAddresses: Partial<Record<AxelarChain, AccountId>>;
+      currentRouterAddresses: Partial<Record<AxelarChain, AccountId>>;
+    };
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;
@@ -203,8 +254,20 @@ export type StatusFor = {
   };
   portfolio: {
     positionKeys: InstrumentId[];
+    // accountIdByChain and accountsPending deprecated
+    // in favor of accountStateByChain
     accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
     accountsPending?: SupportedChain[];
+    accountStateByChain?: {
+      [evmChain in AxelarChain]?: PortfolioEVMRemoteAccountState;
+    } & {
+      [cosmosChain in 'agoric' | 'noble']?: PortfolioCosmosRemoteAccountState;
+    } & {
+      [genericChain in Exclude<
+        SupportedChain,
+        AxelarChain | 'agoric' | 'noble'
+      >]?: PortfolioGenericRemoteAccountState;
+    };
     depositAddress?: Bech32Address;
     /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;
@@ -233,6 +296,30 @@ export type StatusFor = {
   flow: FlowStatus & FlowDetail;
   flowSteps: FlowStep[];
   flowOrder: FundsFlowPlan['order'];
+};
+
+/**
+ * Published vstorage values produced by the portfolio contract.
+ */
+export type PortfolioPublishedPathTypes = {
+  ymax0: StatusFor['contract'];
+  ymax1: StatusFor['contract'];
+  'ymax0.portfolios': StatusFor['portfolios'];
+  'ymax1.portfolios': StatusFor['portfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}`]: StatusFor['portfolio'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.positions.${string}`]: StatusFor['position'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`]: StatusFor['pendingTx'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`]: StatusFor['flow'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`]: StatusFor['flowSteps'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}.portfolio`]: StatusFor['evmWalletPortfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}`]: StatusFor['evmWallet'];
 };
 
 /**

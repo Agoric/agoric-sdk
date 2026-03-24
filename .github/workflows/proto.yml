@@ -17,8 +17,6 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
       - uses: technote-space/get-diff-action@v4
         with:
           PATTERNS: |
@@ -33,8 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
       - uses: technote-space/get-diff-action@v4
         with:
           PATTERNS: |
@@ -70,11 +66,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: '1.24'
       - name: check protobuf definitions are up-to-date
         run: |
           cd packages/cosmic-proto

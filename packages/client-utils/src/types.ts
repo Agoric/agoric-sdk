@@ -1,7 +1,10 @@
 // @file types for the client-utils package
 // NB: this doesn't follow best practices for TS in JS because this package will likely soon be written in TS
 
-import type { SmartWalletPublishedPathValue } from '@agoric/smart-wallet/src/types.js';
+import type {
+  SmartWalletPublishedPathTypes,
+  SmartWalletPublishedPathValue,
+} from '@agoric/smart-wallet/src/types.js';
 import type { AgoricNamesPublishedPathTypes } from '@agoric/vats/src/types.js';
 import type { Marshal } from '@endo/marshal';
 import type { MinimalNetworkConfig } from './network-config.js';
@@ -26,9 +29,9 @@ export type CorePublishedPathTypes = AgoricNamesPublishedPathTypes;
 export type CoreTypedPublished<P extends string> =
   P extends keyof CorePublishedPathTypes
     ? CorePublishedPathTypes[P]
-    : SmartWalletPublishedPathValue<P> extends never
-      ? unknown
-      : SmartWalletPublishedPathValue<P>;
+    : P extends keyof SmartWalletPublishedPathTypes
+      ? SmartWalletPublishedPathValue<P>
+      : never;
 
 /**
  * Utility type for the value that results from unmarshalling the latest value
@@ -36,8 +39,8 @@ export type CoreTypedPublished<P extends string> =
  */
 export type TypedPublishedFor<
   P extends string,
-  Ext extends PublishedPathTypes = Record<never, never>,
-> = P extends keyof Ext ? Ext[P] : CoreTypedPublished<P>;
+  Ext extends PublishedPathTypes,
+> = P extends keyof Ext ? Exclude<Ext[P], undefined> : CoreTypedPublished<P>;
 
 type IdMapLike = {
   convertSlotToVal: (boardId: string, iface?: string) => unknown;

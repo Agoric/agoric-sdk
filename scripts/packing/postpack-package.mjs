@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable @jessie.js/safe-await-separator */
 /**
  * @file Unified postpack script for all packages.
  *

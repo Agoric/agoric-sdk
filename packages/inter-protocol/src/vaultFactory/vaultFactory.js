@@ -1,5 +1,3 @@
-// @jessie-check
-
 // The vaultFactory owns a number of VaultManagers and a mint for Minted.
 //
 // addVaultType is a closely held method that adds a brand new collateral type.

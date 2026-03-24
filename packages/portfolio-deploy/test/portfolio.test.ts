@@ -481,9 +481,7 @@ test.serial('restart contract', async t => {
   // XXX There is got to be a cleaner way to do this
   const getPortfolioCount = () => {
     try {
-      const portfolioData = t.context.readPublished('ymax0.portfolios') as {
-        addPortfolio: string;
-      };
+      const portfolioData = t.context.readPublished('ymax0.portfolios');
       const match = portfolioData.addPortfolio.match(/^portfolio(\d+)$/);
       return parseInt(match![1], 10) + 1;
     } catch (e) {
@@ -687,7 +685,7 @@ test.serial('invite planner', async t => {
   t.pass();
 });
 
-test.serial('invite evm handler; test open portfolio', async t => {
+test.serial('invite evm handler', async t => {
   const {
     agoricNamesRemotes,
     refreshAgoricNamesRemotes,
@@ -731,70 +729,98 @@ test.serial('invite evm handler; test open portfolio', async t => {
     saveResult: { name: 'evmWalletHandler' },
   });
 
-  t.log('open portfolio');
-  // TODO: get from context, ambient random
-  const userPrivateKey = generatePrivateKey();
-  const userAccount = privateKeyToAccount(userPrivateKey);
+  t.pass();
+});
 
-  const deadline = CURRENT_TIME + 3600n;
-  // not a secure nonce, but sufficient for test purposes
-  const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+const evmOpen = test.macro(
+  async (t, spender: 'remoteAccountRouter' | 'depositFactory') => {
+    const wfd = t.context.walletFactoryDriver;
 
-  const deposit: TokenPermissions = {
-    token: axelarConfig.Arbitrum.contracts.usdc,
-    amount: 1_000n * 1_000_000n,
-  };
+    const evmHandlerAddr = 'agoric1evmhandler';
+    const evmHandlerWallet = await wfd.provideSmartWallet(evmHandlerAddr);
 
-  const allocations: TargetAllocation[] = [
-    { instrument: 'Aave_Arbitrum', portion: 6000n },
-    { instrument: 'Compound_Arbitrum', portion: 4000n },
-  ];
+    t.log('open portfolio', { spender });
+    // TODO: get from context, ambient random
+    const userPrivateKey = generatePrivateKey();
+    const userAccount = privateKeyToAccount(userPrivateKey);
 
-  const witness = getYmaxWitness('OpenPortfolio', { allocations });
+    const deadline = CURRENT_TIME + 3600n;
+    // not a secure nonce, but sufficient for test purposes
+    const nonce = BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
 
-  const openPortfolioMessage = getPermitWitnessTransferFromData(
-    {
-      permitted: deposit,
-      // This is the address of the owned deposit factory contract
-      spender: axelarConfig.Arbitrum.contracts.depositFactory,
+    const deposit: TokenPermissions = {
+      token: axelarConfig.Arbitrum.contracts.usdc,
+      amount: 1_000n * 1_000_000n,
+    };
+
+    const allocations: TargetAllocation[] = [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ];
+
+    const witness = getYmaxWitness('OpenPortfolio', { allocations });
+
+    const spenderAddress = axelarConfig.Arbitrum.contracts[spender];
+    if (!spenderAddress || spenderAddress.length <= 2) {
+      t.log(`No address configured for spender ${spender}`);
+      t.pass();
+      return;
+    }
+
+    const openPortfolioMessage = getPermitWitnessTransferFromData(
+      {
+        permitted: deposit,
+        spender: spenderAddress,
+        nonce,
+        deadline,
+      },
+      axelarConfig.Arbitrum.contracts.permit2,
+      BigInt(axelarConfig.Arbitrum.chainInfo.reference),
+      witness,
+    );
+
+    const signature = await userAccount.signTypedData(openPortfolioMessage);
+
+    t.log('signed message', { ...openPortfolioMessage, signature });
+
+    await evmHandlerWallet.invokeEntry({
+      id: Date.now().toString(),
+      targetName: 'evmWalletHandler',
+      method: 'handleMessage',
+      args: [{ ...openPortfolioMessage, signature } as CopyRecord],
+    });
+
+    const walletUpdate = t.context.readPublished(
+      `ymax0.evmWallets.${userAccount.address}`,
+    );
+    t.like(walletUpdate, {
+      updated: 'messageUpdate',
       nonce,
       deadline,
-    },
-    axelarConfig.Arbitrum.contracts.permit2,
-    BigInt(axelarConfig.Arbitrum.chainInfo.reference),
-    witness,
-  );
+      status: 'ok',
+    });
 
-  const signature = await userAccount.signTypedData(openPortfolioMessage);
+    // @ts-expect-error t.like doesn't narrow sufficiently
+    const portfolio = walletUpdate.result as `portfolio${number}`;
 
-  t.log('signed message', { ...openPortfolioMessage, signature });
+    const portfolios = t.context.readPublished(
+      `ymax0.evmWallets.${userAccount.address}.portfolio`,
+    );
 
-  await evmHandlerWallet.invokeEntry({
-    id: Date.now().toString(),
-    targetName: 'evmWalletHandler',
-    method: 'handleMessage',
-    args: [{ ...openPortfolioMessage, signature } as CopyRecord],
-  });
+    t.true(portfolios.some(p => p.endsWith(portfolio)));
+  },
+);
 
-  const walletUpdate = t.context.readPublished(
-    `ymax0.evmWallets.${userAccount.address}`,
-  );
-  t.like(walletUpdate, {
-    updated: 'messageUpdate',
-    nonce,
-    deadline,
-    status: 'ok',
-  });
-
-  // @ts-expect-error t.like doesn't narrow sufficiently
-  const portfolio = walletUpdate.result as `portfolio${number}`;
-
-  const portfolios = t.context.readPublished(
-    `ymax0.evmWallets.${userAccount.address}.portfolio`,
-  ) as string[];
-
-  t.true(portfolios.some(p => p.endsWith(portfolio)));
-});
+test.serial(
+  'open portfolio from evm with depositFactory',
+  evmOpen,
+  'depositFactory',
+);
+test.serial(
+  'open portfolio from evm with remoteAccountRouter',
+  evmOpen,
+  'remoteAccountRouter',
+);
 
 test.serial(
   'CCTP settlement with old invitation doesnt work with new contract instance',
@@ -948,9 +974,7 @@ test.serial(
 
     const getPortfolioCount = () => {
       try {
-        const portfolioData = t.context.readPublished('ymax0.portfolios') as {
-          addPortfolio: string;
-        };
+        const portfolioData = t.context.readPublished('ymax0.portfolios');
         const match = portfolioData.addPortfolio.match(/^portfolio(\d+)$/);
         return parseInt(match![1], 10) + 1;
       } catch {

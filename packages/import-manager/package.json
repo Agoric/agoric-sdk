@@ -14,7 +14,7 @@
     "test:xs": "exit 0",
     "lint": "yarn lint:eslint",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "repository": {
     "type": "git",

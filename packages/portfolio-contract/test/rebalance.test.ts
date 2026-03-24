@@ -22,7 +22,6 @@ import { gasEstimator } from './mocks.js';
 import { readableSteps } from './supports.js';
 import type { MockMovementDesc } from './supports.js';
 
-// eslint-disable-next-line no-nested-ternary
 const strcmp = (a: string, b: string) => (a > b ? 1 : a < b ? -1 : 0);
 const compareFlowEdges = (a: FlowEdge, b: FlowEdge) =>
   strcmp(a.src.toLowerCase(), b.src.toLowerCase()) ||

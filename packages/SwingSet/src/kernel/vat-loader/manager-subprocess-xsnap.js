@@ -28,7 +28,6 @@ import {
  * @import {SnapshotInfo} from '@agoric/swing-store';
  */
 
-// eslint-disable-next-line no-unused-vars
 function parentLog(_first, ..._args) {
   // console.error(`--parent: ${_first}`, ..._args);
 }

@@ -1,16 +1,15 @@
 #! /usr/bin/env node
 // @ts-check
-// @jessie-check
 
 // This file functions as both an importable module and a standalone script.
 import './helpers/maybe-unsafe-lockdown.js';
 
-import os from 'os';
-import process from 'process';
-import { Transform } from 'stream';
-import fsPower from 'fs';
-import fsPromisesPower from 'fs/promises';
-import pathPower from 'path';
+import os from 'node:os';
+import process from 'node:process';
+import { Transform } from 'node:stream';
+import fsPower from 'node:fs';
+import fsPromisesPower from 'node:fs/promises';
+import pathPower from 'node:path';
 
 import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';

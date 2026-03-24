@@ -12,9 +12,9 @@ import type { SigningStargateClient } from '@cosmjs/stargate';
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { toUtf8 } from '@cosmjs/encoding';
 import { $ } from 'execa';
-import { writeFileSync } from 'fs';
-import fs from 'fs/promises';
-import path from 'path';
+import { writeFileSync } from 'node:fs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
@@ -449,7 +449,7 @@ export const makeOsmosisSwapTools = async t => {
           {
             operation: 'set',
             chain_name: name,
-            prefix: prefix,
+            prefix,
           },
         ],
       },

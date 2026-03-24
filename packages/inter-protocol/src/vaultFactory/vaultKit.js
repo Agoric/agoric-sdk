@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { makeTracer } from '@agoric/internal';
 import { prepareVaultHolder } from './vaultHolder.js';
 

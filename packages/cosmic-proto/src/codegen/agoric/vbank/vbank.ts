@@ -4,7 +4,12 @@ import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
-/** The module governance/configuration parameters. */
+/**
+ * The module governance/configuration parameters.
+ * @name Params
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.Params
+ */
 export interface Params {
   /**
    * reward_epoch_duration_blocks is the length of a reward epoch, in blocks.
@@ -35,14 +40,24 @@ export interface ParamsProtoMsg {
   typeUrl: '/agoric.vbank.Params';
   value: Uint8Array;
 }
-/** The module governance/configuration parameters. */
+/**
+ * The module governance/configuration parameters.
+ * @name ParamsSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.Params
+ */
 export interface ParamsSDKType {
   reward_epoch_duration_blocks: bigint;
   per_epoch_reward_fraction: string;
   reward_smoothing_blocks: bigint;
   allowed_monitoring_accounts: string[];
 }
-/** The current state of the module. */
+/**
+ * The current state of the module.
+ * @name State
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.State
+ */
 export interface State {
   /**
    * rewardPool is the current balance of rewards in the module account.
@@ -55,7 +70,9 @@ export interface State {
    * fee collector module on every block.
    */
   rewardBlockAmount: Coin[];
-  /** last_sequence is a sequence number for communicating with the VM. */
+  /**
+   * last_sequence is a sequence number for communicating with the VM.
+   */
   lastSequence: bigint;
   lastRewardDistributionBlock: bigint;
 }
@@ -63,7 +80,12 @@ export interface StateProtoMsg {
   typeUrl: '/agoric.vbank.State';
   value: Uint8Array;
 }
-/** The current state of the module. */
+/**
+ * The current state of the module.
+ * @name StateSDKType
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.State
+ */
 export interface StateSDKType {
   reward_pool: CoinSDKType[];
   reward_block_amount: CoinSDKType[];
@@ -78,8 +100,38 @@ function createBaseParams(): Params {
     allowedMonitoringAccounts: [],
   };
 }
+/**
+ * The module governance/configuration parameters.
+ * @name Params
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.Params
+ */
 export const Params = {
   typeUrl: '/agoric.vbank.Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.rewardEpochDurationBlocks === 'bigint' &&
+          typeof o.perEpochRewardFraction === 'string' &&
+          typeof o.rewardSmoothingBlocks === 'bigint' &&
+          Array.isArray(o.allowedMonitoringAccounts) &&
+          (!o.allowedMonitoringAccounts.length ||
+            typeof o.allowedMonitoringAccounts[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.reward_epoch_duration_blocks === 'bigint' &&
+          typeof o.per_epoch_reward_fraction === 'string' &&
+          typeof o.reward_smoothing_blocks === 'bigint' &&
+          Array.isArray(o.allowed_monitoring_accounts) &&
+          (!o.allowed_monitoring_accounts.length ||
+            typeof o.allowed_monitoring_accounts[0] === 'string')))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -209,8 +261,39 @@ function createBaseState(): State {
     lastRewardDistributionBlock: BigInt(0),
   };
 }
+/**
+ * The current state of the module.
+ * @name State
+ * @package agoric.vbank
+ * @see proto type: agoric.vbank.State
+ */
 export const State = {
   typeUrl: '/agoric.vbank.State' as const,
+  is(o: any): o is State {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.rewardPool) &&
+          (!o.rewardPool.length || Coin.is(o.rewardPool[0])) &&
+          Array.isArray(o.rewardBlockAmount) &&
+          (!o.rewardBlockAmount.length || Coin.is(o.rewardBlockAmount[0])) &&
+          typeof o.lastSequence === 'bigint' &&
+          typeof o.lastRewardDistributionBlock === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is StateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === State.typeUrl ||
+        (Array.isArray(o.reward_pool) &&
+          (!o.reward_pool.length || Coin.isSDK(o.reward_pool[0])) &&
+          Array.isArray(o.reward_block_amount) &&
+          (!o.reward_block_amount.length ||
+            Coin.isSDK(o.reward_block_amount[0])) &&
+          typeof o.last_sequence === 'bigint' &&
+          typeof o.last_reward_distribution_block === 'bigint'))
+    );
+  },
   encode(
     message: State,
     writer: BinaryWriter = BinaryWriter.create(),

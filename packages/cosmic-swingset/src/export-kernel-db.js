@@ -1,15 +1,14 @@
 #! /usr/bin/env node
 // @ts-check
-// @jessie-check
 
 // This file functions as both an importable module and a standalone script.
 import './helpers/maybe-unsafe-lockdown.js';
 
-import os from 'os';
-import process from 'process';
-import fsPower from 'fs/promises';
-import pathPower from 'path';
-import { fileURLToPath } from 'url';
+import os from 'node:os';
+import process from 'node:process';
+import fsPower from 'node:fs/promises';
+import pathPower from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { Fail, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';

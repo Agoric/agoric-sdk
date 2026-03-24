@@ -9,8 +9,8 @@ import {
   Duration,
   type DurationSDKType,
 } from '../../../google/protobuf/duration.js';
-import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /** VoteOption enumerates the valid vote options for a given governance proposal. */
 export enum VoteOption {
@@ -144,18 +144,32 @@ export function proposalStatusToJSON(object: ProposalStatus): string {
       return 'UNRECOGNIZED';
   }
 }
-/** WeightedVoteOption defines a unit of vote for vote split. */
+/**
+ * WeightedVoteOption defines a unit of vote for vote split.
+ * @name WeightedVoteOption
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.WeightedVoteOption
+ */
 export interface WeightedVoteOption {
-  /** option defines the valid vote options, it must not contain duplicate vote options. */
+  /**
+   * option defines the valid vote options, it must not contain duplicate vote options.
+   */
   option: VoteOption;
-  /** weight is the vote weight associated with the vote option. */
+  /**
+   * weight is the vote weight associated with the vote option.
+   */
   weight: string;
 }
 export interface WeightedVoteOptionProtoMsg {
   typeUrl: '/cosmos.gov.v1.WeightedVoteOption';
   value: Uint8Array;
 }
-/** WeightedVoteOption defines a unit of vote for vote split. */
+/**
+ * WeightedVoteOption defines a unit of vote for vote split.
+ * @name WeightedVoteOptionSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.WeightedVoteOption
+ */
 export interface WeightedVoteOptionSDKType {
   option: VoteOption;
   weight: string;
@@ -163,13 +177,22 @@ export interface WeightedVoteOptionSDKType {
 /**
  * Deposit defines an amount deposited by an account address to an active
  * proposal.
+ * @name Deposit
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Deposit
  */
 export interface Deposit {
-  /** proposal_id defines the unique id of the proposal. */
+  /**
+   * proposal_id defines the unique id of the proposal.
+   */
   proposalId: bigint;
-  /** depositor defines the deposit addresses from the proposals. */
+  /**
+   * depositor defines the deposit addresses from the proposals.
+   */
   depositor: string;
-  /** amount to be deposited by depositor. */
+  /**
+   * amount to be deposited by depositor.
+   */
   amount: Coin[];
 }
 export interface DepositProtoMsg {
@@ -179,19 +202,33 @@ export interface DepositProtoMsg {
 /**
  * Deposit defines an amount deposited by an account address to an active
  * proposal.
+ * @name DepositSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Deposit
  */
 export interface DepositSDKType {
   proposal_id: bigint;
   depositor: string;
   amount: CoinSDKType[];
 }
-/** Proposal defines the core field members of a governance proposal. */
+/**
+ * Proposal defines the core field members of a governance proposal.
+ * @name Proposal
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Proposal
+ */
 export interface Proposal {
-  /** id defines the unique id of the proposal. */
+  /**
+   * id defines the unique id of the proposal.
+   */
   id: bigint;
-  /** messages are the arbitrary messages to be executed if the proposal passes. */
+  /**
+   * messages are the arbitrary messages to be executed if the proposal passes.
+   */
   messages: Any[];
-  /** status defines the proposal status. */
+  /**
+   * status defines the proposal status.
+   */
   status: ProposalStatus;
   /**
    * final_tally_result is the final tally result of the proposal. When
@@ -199,15 +236,25 @@ export interface Proposal {
    * proposal's voting period has ended.
    */
   finalTallyResult?: TallyResult;
-  /** submit_time is the time of proposal submission. */
+  /**
+   * submit_time is the time of proposal submission.
+   */
   submitTime?: Timestamp;
-  /** deposit_end_time is the end time for deposition. */
+  /**
+   * deposit_end_time is the end time for deposition.
+   */
   depositEndTime?: Timestamp;
-  /** total_deposit is the total deposit on the proposal. */
+  /**
+   * total_deposit is the total deposit on the proposal.
+   */
   totalDeposit: Coin[];
-  /** voting_start_time is the starting time to vote on a proposal. */
+  /**
+   * voting_start_time is the starting time to vote on a proposal.
+   */
   votingStartTime?: Timestamp;
-  /** voting_end_time is the end time of voting on a proposal. */
+  /**
+   * voting_end_time is the end time of voting on a proposal.
+   */
   votingEndTime?: Timestamp;
   /**
    * metadata is any arbitrary metadata attached to the proposal.
@@ -250,7 +297,12 @@ export interface ProposalProtoMsg {
   typeUrl: '/cosmos.gov.v1.Proposal';
   value: Uint8Array;
 }
-/** Proposal defines the core field members of a governance proposal. */
+/**
+ * Proposal defines the core field members of a governance proposal.
+ * @name ProposalSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Proposal
+ */
 export interface ProposalSDKType {
   id: bigint;
   messages: AnySDKType[];
@@ -268,22 +320,40 @@ export interface ProposalSDKType {
   expedited: boolean;
   failed_reason: string;
 }
-/** TallyResult defines a standard tally for a governance proposal. */
+/**
+ * TallyResult defines a standard tally for a governance proposal.
+ * @name TallyResult
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.TallyResult
+ */
 export interface TallyResult {
-  /** yes_count is the number of yes votes on a proposal. */
+  /**
+   * yes_count is the number of yes votes on a proposal.
+   */
   yesCount: string;
-  /** abstain_count is the number of abstain votes on a proposal. */
+  /**
+   * abstain_count is the number of abstain votes on a proposal.
+   */
   abstainCount: string;
-  /** no_count is the number of no votes on a proposal. */
+  /**
+   * no_count is the number of no votes on a proposal.
+   */
   noCount: string;
-  /** no_with_veto_count is the number of no with veto votes on a proposal. */
+  /**
+   * no_with_veto_count is the number of no with veto votes on a proposal.
+   */
   noWithVetoCount: string;
 }
 export interface TallyResultProtoMsg {
   typeUrl: '/cosmos.gov.v1.TallyResult';
   value: Uint8Array;
 }
-/** TallyResult defines a standard tally for a governance proposal. */
+/**
+ * TallyResult defines a standard tally for a governance proposal.
+ * @name TallyResultSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.TallyResult
+ */
 export interface TallyResultSDKType {
   yes_count: string;
   abstain_count: string;
@@ -293,13 +363,22 @@ export interface TallyResultSDKType {
 /**
  * Vote defines a vote on a governance proposal.
  * A Vote consists of a proposal ID, the voter, and the vote option.
+ * @name Vote
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Vote
  */
 export interface Vote {
-  /** proposal_id defines the unique id of the proposal. */
+  /**
+   * proposal_id defines the unique id of the proposal.
+   */
   proposalId: bigint;
-  /** voter is the voter address of the proposal. */
+  /**
+   * voter is the voter address of the proposal.
+   */
   voter: string;
-  /** options is the weighted vote options. */
+  /**
+   * options is the weighted vote options.
+   */
   options: WeightedVoteOption[];
   /**
    * metadata is any arbitrary metadata attached to the vote.
@@ -314,6 +393,9 @@ export interface VoteProtoMsg {
 /**
  * Vote defines a vote on a governance proposal.
  * A Vote consists of a proposal ID, the voter, and the vote option.
+ * @name VoteSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Vote
  */
 export interface VoteSDKType {
   proposal_id: bigint;
@@ -321,10 +403,17 @@ export interface VoteSDKType {
   options: WeightedVoteOptionSDKType[];
   metadata: string;
 }
-/** DepositParams defines the params for deposits on governance proposals. */
-/** @deprecated */
+/**
+ * DepositParams defines the params for deposits on governance proposals.
+ * @name DepositParams
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.DepositParams
+ * @deprecated
+ */
 export interface DepositParams {
-  /** Minimum deposit for a proposal to enter voting period. */
+  /**
+   * Minimum deposit for a proposal to enter voting period.
+   */
   minDeposit: Coin[];
   /**
    * Maximum period for Atom holders to deposit on a proposal. Initial value: 2
@@ -336,36 +425,60 @@ export interface DepositParamsProtoMsg {
   typeUrl: '/cosmos.gov.v1.DepositParams';
   value: Uint8Array;
 }
-/** DepositParams defines the params for deposits on governance proposals. */
-/** @deprecated */
+/**
+ * DepositParams defines the params for deposits on governance proposals.
+ * @name DepositParamsSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.DepositParams
+ * @deprecated
+ */
 export interface DepositParamsSDKType {
   min_deposit: CoinSDKType[];
   max_deposit_period?: DurationSDKType;
 }
-/** VotingParams defines the params for voting on governance proposals. */
-/** @deprecated */
+/**
+ * VotingParams defines the params for voting on governance proposals.
+ * @name VotingParams
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.VotingParams
+ * @deprecated
+ */
 export interface VotingParams {
-  /** Duration of the voting period. */
+  /**
+   * Duration of the voting period.
+   */
   votingPeriod?: Duration;
 }
 export interface VotingParamsProtoMsg {
   typeUrl: '/cosmos.gov.v1.VotingParams';
   value: Uint8Array;
 }
-/** VotingParams defines the params for voting on governance proposals. */
-/** @deprecated */
+/**
+ * VotingParams defines the params for voting on governance proposals.
+ * @name VotingParamsSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.VotingParams
+ * @deprecated
+ */
 export interface VotingParamsSDKType {
   voting_period?: DurationSDKType;
 }
-/** TallyParams defines the params for tallying votes on governance proposals. */
-/** @deprecated */
+/**
+ * TallyParams defines the params for tallying votes on governance proposals.
+ * @name TallyParams
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.TallyParams
+ * @deprecated
+ */
 export interface TallyParams {
   /**
    * Minimum percentage of total stake needed to vote for a result to be
    * considered valid.
    */
   quorum: string;
-  /** Minimum proportion of Yes votes for proposal to pass. Default value: 0.5. */
+  /**
+   * Minimum proportion of Yes votes for proposal to pass. Default value: 0.5.
+   */
   threshold: string;
   /**
    * Minimum value of Veto votes to Total votes ratio for proposal to be
@@ -377,8 +490,13 @@ export interface TallyParamsProtoMsg {
   typeUrl: '/cosmos.gov.v1.TallyParams';
   value: Uint8Array;
 }
-/** TallyParams defines the params for tallying votes on governance proposals. */
-/** @deprecated */
+/**
+ * TallyParams defines the params for tallying votes on governance proposals.
+ * @name TallyParamsSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.TallyParams
+ * @deprecated
+ */
 export interface TallyParamsSDKType {
   quorum: string;
   threshold: string;
@@ -388,30 +506,41 @@ export interface TallyParamsSDKType {
  * Params defines the parameters for the x/gov module.
  *
  * Since: cosmos-sdk 0.47
+ * @name Params
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Params
  */
 export interface Params {
-  /** Minimum deposit for a proposal to enter voting period. */
+  /**
+   * Minimum deposit for a proposal to enter voting period.
+   */
   minDeposit: Coin[];
   /**
    * Maximum period for Atom holders to deposit on a proposal. Initial value: 2
    * months.
    */
   maxDepositPeriod?: Duration;
-  /** Duration of the voting period. */
+  /**
+   * Duration of the voting period.
+   */
   votingPeriod?: Duration;
   /**
    * Minimum percentage of total stake needed to vote for a result to be
    *  considered valid.
    */
   quorum: string;
-  /** Minimum proportion of Yes votes for proposal to pass. Default value: 0.5. */
+  /**
+   * Minimum proportion of Yes votes for proposal to pass. Default value: 0.5.
+   */
   threshold: string;
   /**
    * Minimum value of Veto votes to Total votes ratio for proposal to be
    *  vetoed. Default value: 1/3.
    */
   vetoThreshold: string;
-  /** The ratio representing the proportion of the deposit value that must be paid at proposal submission. */
+  /**
+   * The ratio representing the proportion of the deposit value that must be paid at proposal submission.
+   */
   minInitialDepositRatio: string;
   /**
    * The cancel ratio which will not be returned back to the depositors when a proposal is cancelled.
@@ -438,13 +567,21 @@ export interface Params {
    * Since: cosmos-sdk 0.50
    */
   expeditedThreshold: string;
-  /** Minimum expedited deposit for a proposal to enter voting period. */
+  /**
+   * Minimum expedited deposit for a proposal to enter voting period.
+   */
   expeditedMinDeposit: Coin[];
-  /** burn deposits if a proposal does not meet quorum */
+  /**
+   * burn deposits if a proposal does not meet quorum
+   */
   burnVoteQuorum: boolean;
-  /** burn deposits if the proposal does not enter voting period */
+  /**
+   * burn deposits if the proposal does not enter voting period
+   */
   burnProposalDepositPrevote: boolean;
-  /** burn deposits if quorum with vote type no_veto is met */
+  /**
+   * burn deposits if quorum with vote type no_veto is met
+   */
   burnVoteVeto: boolean;
   /**
    * The ratio representing the proportion of the deposit value minimum that must be met when making a deposit.
@@ -463,6 +600,9 @@ export interface ParamsProtoMsg {
  * Params defines the parameters for the x/gov module.
  *
  * Since: cosmos-sdk 0.47
+ * @name ParamsSDKType
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Params
  */
 export interface ParamsSDKType {
   min_deposit: CoinSDKType[];
@@ -488,8 +628,29 @@ function createBaseWeightedVoteOption(): WeightedVoteOption {
     weight: '',
   };
 }
+/**
+ * WeightedVoteOption defines a unit of vote for vote split.
+ * @name WeightedVoteOption
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.WeightedVoteOption
+ */
 export const WeightedVoteOption = {
   typeUrl: '/cosmos.gov.v1.WeightedVoteOption' as const,
+  aminoType: 'cosmos-sdk/v1/WeightedVoteOption' as const,
+  is(o: any): o is WeightedVoteOption {
+    return (
+      o &&
+      (o.$typeUrl === WeightedVoteOption.typeUrl ||
+        (isSet(o.option) && typeof o.weight === 'string'))
+    );
+  },
+  isSDK(o: any): o is WeightedVoteOptionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === WeightedVoteOption.typeUrl ||
+        (isSet(o.option) && typeof o.weight === 'string'))
+    );
+  },
   encode(
     message: WeightedVoteOption,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -565,8 +726,36 @@ function createBaseDeposit(): Deposit {
     amount: [],
   };
 }
+/**
+ * Deposit defines an amount deposited by an account address to an active
+ * proposal.
+ * @name Deposit
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Deposit
+ */
 export const Deposit = {
   typeUrl: '/cosmos.gov.v1.Deposit' as const,
+  aminoType: 'cosmos-sdk/v1/Deposit' as const,
+  is(o: any): o is Deposit {
+    return (
+      o &&
+      (o.$typeUrl === Deposit.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.depositor === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.is(o.amount[0]))))
+    );
+  },
+  isSDK(o: any): o is DepositSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Deposit.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.depositor === 'string' &&
+          Array.isArray(o.amount) &&
+          (!o.amount.length || Coin.isSDK(o.amount[0]))))
+    );
+  },
   encode(
     message: Deposit,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -671,8 +860,51 @@ function createBaseProposal(): Proposal {
     failedReason: '',
   };
 }
+/**
+ * Proposal defines the core field members of a governance proposal.
+ * @name Proposal
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Proposal
+ */
 export const Proposal = {
   typeUrl: '/cosmos.gov.v1.Proposal' as const,
+  aminoType: 'cosmos-sdk/v1/Proposal' as const,
+  is(o: any): o is Proposal {
+    return (
+      o &&
+      (o.$typeUrl === Proposal.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          Array.isArray(o.messages) &&
+          (!o.messages.length || Any.is(o.messages[0])) &&
+          isSet(o.status) &&
+          Array.isArray(o.totalDeposit) &&
+          (!o.totalDeposit.length || Coin.is(o.totalDeposit[0])) &&
+          typeof o.metadata === 'string' &&
+          typeof o.title === 'string' &&
+          typeof o.summary === 'string' &&
+          typeof o.proposer === 'string' &&
+          typeof o.expedited === 'boolean' &&
+          typeof o.failedReason === 'string'))
+    );
+  },
+  isSDK(o: any): o is ProposalSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Proposal.typeUrl ||
+        (typeof o.id === 'bigint' &&
+          Array.isArray(o.messages) &&
+          (!o.messages.length || Any.isSDK(o.messages[0])) &&
+          isSet(o.status) &&
+          Array.isArray(o.total_deposit) &&
+          (!o.total_deposit.length || Coin.isSDK(o.total_deposit[0])) &&
+          typeof o.metadata === 'string' &&
+          typeof o.title === 'string' &&
+          typeof o.summary === 'string' &&
+          typeof o.proposer === 'string' &&
+          typeof o.expedited === 'boolean' &&
+          typeof o.failed_reason === 'string'))
+    );
+  },
   encode(
     message: Proposal,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -935,8 +1167,35 @@ function createBaseTallyResult(): TallyResult {
     noWithVetoCount: '',
   };
 }
+/**
+ * TallyResult defines a standard tally for a governance proposal.
+ * @name TallyResult
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.TallyResult
+ */
 export const TallyResult = {
   typeUrl: '/cosmos.gov.v1.TallyResult' as const,
+  aminoType: 'cosmos-sdk/v1/TallyResult' as const,
+  is(o: any): o is TallyResult {
+    return (
+      o &&
+      (o.$typeUrl === TallyResult.typeUrl ||
+        (typeof o.yesCount === 'string' &&
+          typeof o.abstainCount === 'string' &&
+          typeof o.noCount === 'string' &&
+          typeof o.noWithVetoCount === 'string'))
+    );
+  },
+  isSDK(o: any): o is TallyResultSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TallyResult.typeUrl ||
+        (typeof o.yes_count === 'string' &&
+          typeof o.abstain_count === 'string' &&
+          typeof o.no_count === 'string' &&
+          typeof o.no_with_veto_count === 'string'))
+    );
+  },
   encode(
     message: TallyResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1033,8 +1292,38 @@ function createBaseVote(): Vote {
     metadata: '',
   };
 }
+/**
+ * Vote defines a vote on a governance proposal.
+ * A Vote consists of a proposal ID, the voter, and the vote option.
+ * @name Vote
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Vote
+ */
 export const Vote = {
   typeUrl: '/cosmos.gov.v1.Vote' as const,
+  aminoType: 'cosmos-sdk/v1/Vote' as const,
+  is(o: any): o is Vote {
+    return (
+      o &&
+      (o.$typeUrl === Vote.typeUrl ||
+        (typeof o.proposalId === 'bigint' &&
+          typeof o.voter === 'string' &&
+          Array.isArray(o.options) &&
+          (!o.options.length || WeightedVoteOption.is(o.options[0])) &&
+          typeof o.metadata === 'string'))
+    );
+  },
+  isSDK(o: any): o is VoteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Vote.typeUrl ||
+        (typeof o.proposal_id === 'bigint' &&
+          typeof o.voter === 'string' &&
+          Array.isArray(o.options) &&
+          (!o.options.length || WeightedVoteOption.isSDK(o.options[0])) &&
+          typeof o.metadata === 'string'))
+    );
+  },
   encode(
     message: Vote,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1140,8 +1429,32 @@ function createBaseDepositParams(): DepositParams {
     maxDepositPeriod: undefined,
   };
 }
+/**
+ * DepositParams defines the params for deposits on governance proposals.
+ * @name DepositParams
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.DepositParams
+ * @deprecated
+ */
 export const DepositParams = {
   typeUrl: '/cosmos.gov.v1.DepositParams' as const,
+  aminoType: 'cosmos-sdk/v1/DepositParams' as const,
+  is(o: any): o is DepositParams {
+    return (
+      o &&
+      (o.$typeUrl === DepositParams.typeUrl ||
+        (Array.isArray(o.minDeposit) &&
+          (!o.minDeposit.length || Coin.is(o.minDeposit[0]))))
+    );
+  },
+  isSDK(o: any): o is DepositParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DepositParams.typeUrl ||
+        (Array.isArray(o.min_deposit) &&
+          (!o.min_deposit.length || Coin.isSDK(o.min_deposit[0]))))
+    );
+  },
   encode(
     message: DepositParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1230,8 +1543,22 @@ function createBaseVotingParams(): VotingParams {
     votingPeriod: undefined,
   };
 }
+/**
+ * VotingParams defines the params for voting on governance proposals.
+ * @name VotingParams
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.VotingParams
+ * @deprecated
+ */
 export const VotingParams = {
   typeUrl: '/cosmos.gov.v1.VotingParams' as const,
+  aminoType: 'cosmos-sdk/v1/VotingParams' as const,
+  is(o: any): o is VotingParams {
+    return o && o.$typeUrl === VotingParams.typeUrl;
+  },
+  isSDK(o: any): o is VotingParamsSDKType {
+    return o && o.$typeUrl === VotingParams.typeUrl;
+  },
   encode(
     message: VotingParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1302,8 +1629,34 @@ function createBaseTallyParams(): TallyParams {
     vetoThreshold: '',
   };
 }
+/**
+ * TallyParams defines the params for tallying votes on governance proposals.
+ * @name TallyParams
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.TallyParams
+ * @deprecated
+ */
 export const TallyParams = {
   typeUrl: '/cosmos.gov.v1.TallyParams' as const,
+  aminoType: 'cosmos-sdk/v1/TallyParams' as const,
+  is(o: any): o is TallyParams {
+    return (
+      o &&
+      (o.$typeUrl === TallyParams.typeUrl ||
+        (typeof o.quorum === 'string' &&
+          typeof o.threshold === 'string' &&
+          typeof o.vetoThreshold === 'string'))
+    );
+  },
+  isSDK(o: any): o is TallyParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TallyParams.typeUrl ||
+        (typeof o.quorum === 'string' &&
+          typeof o.threshold === 'string' &&
+          typeof o.veto_threshold === 'string'))
+    );
+  },
   encode(
     message: TallyParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1400,8 +1753,61 @@ function createBaseParams(): Params {
     minDepositRatio: '',
   };
 }
+/**
+ * Params defines the parameters for the x/gov module.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name Params
+ * @package cosmos.gov.v1
+ * @see proto type: cosmos.gov.v1.Params
+ */
 export const Params = {
   typeUrl: '/cosmos.gov.v1.Params' as const,
+  aminoType: 'cosmos-sdk/v1/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.minDeposit) &&
+          (!o.minDeposit.length || Coin.is(o.minDeposit[0])) &&
+          typeof o.quorum === 'string' &&
+          typeof o.threshold === 'string' &&
+          typeof o.vetoThreshold === 'string' &&
+          typeof o.minInitialDepositRatio === 'string' &&
+          typeof o.proposalCancelRatio === 'string' &&
+          typeof o.proposalCancelDest === 'string' &&
+          typeof o.expeditedThreshold === 'string' &&
+          Array.isArray(o.expeditedMinDeposit) &&
+          (!o.expeditedMinDeposit.length ||
+            Coin.is(o.expeditedMinDeposit[0])) &&
+          typeof o.burnVoteQuorum === 'boolean' &&
+          typeof o.burnProposalDepositPrevote === 'boolean' &&
+          typeof o.burnVoteVeto === 'boolean' &&
+          typeof o.minDepositRatio === 'string'))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.min_deposit) &&
+          (!o.min_deposit.length || Coin.isSDK(o.min_deposit[0])) &&
+          typeof o.quorum === 'string' &&
+          typeof o.threshold === 'string' &&
+          typeof o.veto_threshold === 'string' &&
+          typeof o.min_initial_deposit_ratio === 'string' &&
+          typeof o.proposal_cancel_ratio === 'string' &&
+          typeof o.proposal_cancel_dest === 'string' &&
+          typeof o.expedited_threshold === 'string' &&
+          Array.isArray(o.expedited_min_deposit) &&
+          (!o.expedited_min_deposit.length ||
+            Coin.isSDK(o.expedited_min_deposit[0])) &&
+          typeof o.burn_vote_quorum === 'boolean' &&
+          typeof o.burn_proposal_deposit_prevote === 'boolean' &&
+          typeof o.burn_vote_veto === 'boolean' &&
+          typeof o.min_deposit_ratio === 'string'))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

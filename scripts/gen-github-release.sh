@@ -164,7 +164,7 @@ Make sure that the environment running the agd service has the same Node.js vers
 cd agoric-sdk
 git fetch --all
 git checkout $TAG
-git clean -xdf && git submodule foreach --recursive git clean -xdf
+git clean -xdf
 ./bin/agd build
 # (start the agd service)
 ```

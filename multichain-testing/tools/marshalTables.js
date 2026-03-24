@@ -56,6 +56,7 @@ const makeTranslationTable = (makeSlot, makeVal) => {
     slotToVal.set(slot, val);
     return val;
   };
+
   // eslint-disable-next-line no-undef
   return harden({ convertValToSlot, convertSlotToVal });
 };

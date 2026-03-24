@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 /* eslint-disable no-plusplus */
-/* eslint-disable @jessie.js/safe-await-separator */
 /**
  * @file Verify package export specifiers resolve for consumers.
  *
@@ -24,17 +23,13 @@ import spawn from 'nano-spawn';
 // Set of package names to skip verification.
 // Private packages are skipped automatically.
 const unsupportedPackages = new Set([
-  '@agoric/cosmic-swingset', // its tools has some entrypoints that fail
   '@agoric/create-dapp', // whole thing is an entrypoint
-  '@agoric/governance', // its tools has some entrypoints that fail
   '@agoric/internal', // Ava issue with ava-force-exit.mjs
   '@agoric/orchestration', // its vendor dir has some failing dynamic requires
   '@agoric/solo', // its main.js fails on some Endo issue
   '@agoric/xsnap', // moddable/data files not true JS
   '@agoric/spawner', // ReferenceError: Compartment is not defined
-  '@agoric/swingset-vat', // its tools has some Ava issues
   '@agoric/wallet', // nested package weirdness
-  '@agoric/zoe', // its tools has some Ava issues
 ]);
 
 // In CI, 1s was too fast for fast-usdc's cli.js import with @endo/init
@@ -107,6 +102,10 @@ const normalizeExportPath = exportPath => {
   return exportPath;
 };
 
+// Tools aren't part of the public API and may have side effects, so we ignore them for this check.
+const isToolsPath = relPath =>
+  relPath === 'tools' || relPath.startsWith('tools/');
+
 const toPosixPath = p => p.split(path.sep).join('/');
 
 const isObject = value =>
@@ -132,7 +131,6 @@ const exportTargetPatterns = exportValue => {
       return;
     }
     if (Array.isArray(value)) {
-      // eslint-disable-next-line github/array-foreach
       value.forEach(addValue);
       return;
     }
@@ -281,6 +279,7 @@ const collectFileSpecifiers = async (pkgDir, pkgJson) => {
   const specifiers = new Set();
   for (const relPath of allowed) {
     if (!isJsModuleFile(relPath)) continue;
+    if (isToolsPath(relPath)) continue;
     specifiers.add(`${pkgName}/${relPath}`);
   }
 
@@ -306,6 +305,7 @@ const expandPatternSpecifiers = async ({
   const errors = [];
   const keyPattern = normalizeExportPath(exportKey);
   if (!keyPattern) return { specifiers, errors };
+  if (isToolsPath(keyPattern)) return { specifiers, errors };
 
   const keyStarCount = countStars(keyPattern);
   const targets = exportTargetPatterns(exportValue);
@@ -349,6 +349,7 @@ const expandPatternSpecifiers = async ({
       if (!match) continue;
       const parts = match.slice(1);
       const subpath = applyStars(keyPattern, parts);
+      if (isToolsPath(subpath)) continue;
       const specifier = subpath === '' ? pkgName : `${pkgName}/${subpath}`;
       specifiers.add(specifier);
     }
@@ -417,7 +418,7 @@ const collectExportSpecifiers = async (pkgDir, pkgJson) => {
       specifiers.add(pkgName);
     } else {
       const subpath = normalizeExportPath(exportKey);
-      if (subpath) {
+      if (subpath && !isToolsPath(subpath)) {
         specifiers.add(`${pkgName}/${subpath}`);
       }
     }

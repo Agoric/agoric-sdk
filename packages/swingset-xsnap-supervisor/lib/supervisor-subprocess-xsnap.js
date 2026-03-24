@@ -30,7 +30,6 @@ import {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-// eslint-disable-next-line no-unused-vars
 function workerLog(_first, ..._args) {
   // console.log(`---worker: ${_first}`, ..._args);
 }

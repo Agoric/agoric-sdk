@@ -1,5 +1,3 @@
-// @jessie-check
-
 import {
   makeRatioFromAmounts,
   multiplyRatios,

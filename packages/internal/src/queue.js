@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**

@@ -99,3 +99,9 @@ export type SmartWalletPublishedPathValue<P extends string> =
     : P extends `wallet.${string}`
       ? UpdateRecord
       : never;
+
+export type SmartWalletPublishedPathTypes = {
+  [P in
+    | `wallet.${string}`
+    | `wallet.${string}.current`]?: SmartWalletPublishedPathValue<P>;
+};

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- fails to notice the @see uses */
+/* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { JsonSafe } from '@agoric/cosmic-proto';
 import type { Brand, Issuer } from '@agoric/ertp';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';

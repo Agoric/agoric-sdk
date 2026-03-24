@@ -10,7 +10,6 @@ import { assert, Fail, X } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import {
-  makeTracer,
   naturalCompare,
   objectMap,
   partialMap,
@@ -66,9 +65,6 @@ const bigIntExtremes = (first: bigint, ...rest: bigint[]) => {
  */
 const bigIntMax = (first: bigint, ...rest: bigint[]): bigint =>
   bigIntExtremes(first, ...rest).max;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const trace = makeTracer('solve');
 
 /** The count of minor units per major unit (e.g., uusdc per USDC) */
 const UNIT_SCALE = 1e6;

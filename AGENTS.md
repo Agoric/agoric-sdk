@@ -16,7 +16,10 @@ per https://agents.md/
 - `yarn run -T tsc --noEmit --incremental`: Fast typecheck within a package; do this after changes.
     - Watch mode for type errors in active workspaces: run `yarn run -T tsc --noEmit --incremental --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
 - `yarn typecheck-quick` to do a fast typecheck over the whole repo (4-7 seconds)
-- `yarn format`: Format code via Prettier; `yarn lint:format` to check only.
+- `yarn format`: Format code via dprint; `yarn lint:format` to check only.
+- Git hooks: installed by `scripts/install-git-hooks.sh`.
+  - Install or refresh hooks with `yarn hooks:install`.
+  - Pre-commit runs `scripts/git-hooks/pre-commit-dprint.sh`, which formats only staged JS/TS files with the pinned local binary `./node_modules/.bin/dprint` and re-stages them.
 - `./scripts/env-doctor.sh`: Verify toolchain (Node, Go, compiler) versions.
 - Example, single package: `cd packages/eventual-send && yarn test`.
 - Packing/debugging workflow:
@@ -27,7 +30,7 @@ per https://agents.md/
 
 ## Coding Style & Naming Conventions
 - ESM by default; JS and TypeScript both used. Target Node ^20.9 or ^22.11.
-- Prettier enforced with single quotes; 2-space indentation.
+- dprint enforced (Prettier-compatible options include single quotes and trailing commas).
 - ESLint configured via `eslint.config.mjs` (includes AVA, TypeScript, JSDoc, and repository-specific rules).
 - Package names: publishable packages use `@agoric/*`; private/local packages use `@aglocal/*` (verify with `yarn lint:package-names`).
 - `@aglocal` packages are private and never published; `@agoric` packages are published and may only depend on published packages, so `@agoric` packages must never import `@aglocal` packages.
@@ -41,6 +44,14 @@ per https://agents.md/
 - Framework: AVA. Test files follow `**/test/**/*.test.*` within each package.
 - Run all: `yarn test`. Per-package: `yarn test` from that package directory.
 - Coverage: in a package, run `yarn test:c8` and open `coverage/html/index.html` after `yarn c8 report --reporter=html-spa` if needed.
+
+## Async-Flow Model Notes
+- Async-flow runs each invocation as an activation with durable lifecycle states: `Running`, `Sleeping`, `Replaying`, `Failed`, `Done`.
+- Upgrade-safe behavior depends on deterministic replay of prior host interactions; divergence during replay or invalid interactions can move an activation to `Failed`.
+- `Done` means the activation outcome is settled and replay bookkeeping is dropped; logic that assumes continued activation state after completion is erroneous. Once the async-flow is done, any promises not yet settled will never see their reactions run. That's because the vow settling on the host side no longer translates into a settlement of the guest promise.
+- Interleaving changes can also break replay: adding an `await` inside an async helper, or calling one without awaiting it immediately, can move later effects into a different turn and reorder them relative to the caller.
+- For `*.flows.*` modules, keep replay behavior in mind and prefer code that is explicit about lifecycle boundaries and awaited dependencies.
+- When reviewing `*.flows.*` modules, read `packages/async-flow/docs/async-flow-states.md`.
 
 ## A3P Container & Proposal Build Notes
 - A3P tests run inside a Docker container built from an agoric-sdk checkout, so the container can access the full repo filesystem, not just published npm packages.

@@ -3,7 +3,10 @@
  * @see {@link makeEvmAbiCallBatch} for creating contract call batches
  */
 import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
-import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+} from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { assert } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import type {
@@ -16,7 +19,9 @@ import type {
   Hex,
 } from 'viem';
 
-type AbiContractArgs<
+export const AbiSend = Symbol('send');
+
+export type AbiContractArgs<
   TAbi extends Abi,
   Name extends ContractFunctionName<TAbi, AbiStateMutability>,
 > =
@@ -28,10 +33,10 @@ type AbiContractArgs<
     ? ContractFunctionArgs<TAbi, AbiStateMutability, Name>
     : readonly unknown[];
 
-type AbiContract<TAbi extends Abi> = {
+export type AbiContract<TAbi extends Abi, R = void> = {
   [Name in ContractFunctionName<TAbi, AbiStateMutability>]: (
     ...args: AbiContractArgs<TAbi, Name>
-  ) => void;
+  ) => R;
 };
 
 type GmpBuilder = {
@@ -40,6 +45,58 @@ type GmpBuilder = {
     abi: TAbi,
   ) => AbiContract<TAbi>;
   getPayload: () => ByteArray;
+};
+
+// Phantom tag to preserve ABI inference through intersections.
+declare const abiTag: unique symbol;
+export type AbiTagged<TAbi extends Abi> = { readonly [abiTag]?: TAbi };
+
+/**
+ * Build a proxy from a contract ABI whose method returns the ABI encoded call data.
+ */
+export const makeEvmContract = <TAbi extends Abi>(
+  abi: TAbi,
+): AbiContract<TAbi, Hex> &
+  AbiTagged<TAbi> &
+  (Extract<TAbi[number], { type: 'receive' }> extends never
+    ? {} // eslint-disable-line @typescript-eslint/no-empty-object-type
+    : { [AbiSend]: () => Hex }) => {
+  const stubs: Record<string | symbol, (...args: readonly unknown[]) => Hex> =
+    {};
+  for (const item of abi) {
+    switch (item.type) {
+      case 'receive': {
+        const send = (...args: readonly unknown[]): Hex => {
+          if (args.length > 0) {
+            throw new Error('Receive function does not accept arguments');
+          }
+          return '0x';
+        };
+        stubs[AbiSend] = send;
+        break;
+      }
+      case 'function': {
+        // XXX: add and use prepareEncodeFunctionData to vendored viem
+        const fn = (...args: readonly unknown[]) => {
+          // @ts-expect-error generic
+          return encodeFunctionData({ abi, functionName: item.name, args });
+        };
+        if (stubs[item.name]) {
+          // `encodeFunctionData` support overloads in most cases, but we need to
+          // test disambiguation when the signature has the same number of
+          // parameters (but different types).
+          assert.fail(
+            `ABI overload for ${item.name} requires disambiguation (not supported)`,
+          );
+        }
+        stubs[item.name] = fn;
+        break;
+      }
+      default:
+        continue;
+    }
+  }
+  return harden(stubs) as any;
 };
 
 /**

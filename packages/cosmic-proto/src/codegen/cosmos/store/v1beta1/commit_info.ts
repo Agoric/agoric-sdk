@@ -11,6 +11,9 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * CommitInfo defines commit information used by the multi-store when committing
  * a version/height.
+ * @name CommitInfo
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.CommitInfo
  */
 export interface CommitInfo {
   version: bigint;
@@ -24,6 +27,9 @@ export interface CommitInfoProtoMsg {
 /**
  * CommitInfo defines commit information used by the multi-store when committing
  * a version/height.
+ * @name CommitInfoSDKType
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.CommitInfo
  */
 export interface CommitInfoSDKType {
   version: bigint;
@@ -33,6 +39,9 @@ export interface CommitInfoSDKType {
 /**
  * StoreInfo defines store-specific commit information. It contains a reference
  * between a store name and the commit ID.
+ * @name StoreInfo
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.StoreInfo
  */
 export interface StoreInfo {
   name: string;
@@ -45,6 +54,9 @@ export interface StoreInfoProtoMsg {
 /**
  * StoreInfo defines store-specific commit information. It contains a reference
  * between a store name and the commit ID.
+ * @name StoreInfoSDKType
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.StoreInfo
  */
 export interface StoreInfoSDKType {
   name: string;
@@ -53,6 +65,9 @@ export interface StoreInfoSDKType {
 /**
  * CommitID defines the commitment information when a specific store is
  * committed.
+ * @name CommitID
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.CommitID
  */
 export interface CommitID {
   version: bigint;
@@ -65,6 +80,9 @@ export interface CommitIDProtoMsg {
 /**
  * CommitID defines the commitment information when a specific store is
  * committed.
+ * @name CommitIDSDKType
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.CommitID
  */
 export interface CommitIDSDKType {
   version: bigint;
@@ -77,8 +95,36 @@ function createBaseCommitInfo(): CommitInfo {
     timestamp: Timestamp.fromPartial({}),
   };
 }
+/**
+ * CommitInfo defines commit information used by the multi-store when committing
+ * a version/height.
+ * @name CommitInfo
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.CommitInfo
+ */
 export const CommitInfo = {
   typeUrl: '/cosmos.store.v1beta1.CommitInfo' as const,
+  aminoType: 'cosmos-sdk/CommitInfo' as const,
+  is(o: any): o is CommitInfo {
+    return (
+      o &&
+      (o.$typeUrl === CommitInfo.typeUrl ||
+        (typeof o.version === 'bigint' &&
+          Array.isArray(o.storeInfos) &&
+          (!o.storeInfos.length || StoreInfo.is(o.storeInfos[0])) &&
+          Timestamp.is(o.timestamp)))
+    );
+  },
+  isSDK(o: any): o is CommitInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommitInfo.typeUrl ||
+        (typeof o.version === 'bigint' &&
+          Array.isArray(o.store_infos) &&
+          (!o.store_infos.length || StoreInfo.isSDK(o.store_infos[0])) &&
+          Timestamp.isSDK(o.timestamp)))
+    );
+  },
   encode(
     message: CommitInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -179,8 +225,30 @@ function createBaseStoreInfo(): StoreInfo {
     commitId: CommitID.fromPartial({}),
   };
 }
+/**
+ * StoreInfo defines store-specific commit information. It contains a reference
+ * between a store name and the commit ID.
+ * @name StoreInfo
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.StoreInfo
+ */
 export const StoreInfo = {
   typeUrl: '/cosmos.store.v1beta1.StoreInfo' as const,
+  aminoType: 'cosmos-sdk/StoreInfo' as const,
+  is(o: any): o is StoreInfo {
+    return (
+      o &&
+      (o.$typeUrl === StoreInfo.typeUrl ||
+        (typeof o.name === 'string' && CommitID.is(o.commitId)))
+    );
+  },
+  isSDK(o: any): o is StoreInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StoreInfo.typeUrl ||
+        (typeof o.name === 'string' && CommitID.isSDK(o.commit_id)))
+    );
+  },
   encode(
     message: StoreInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -259,8 +327,32 @@ function createBaseCommitID(): CommitID {
     hash: new Uint8Array(),
   };
 }
+/**
+ * CommitID defines the commitment information when a specific store is
+ * committed.
+ * @name CommitID
+ * @package cosmos.store.v1beta1
+ * @see proto type: cosmos.store.v1beta1.CommitID
+ */
 export const CommitID = {
   typeUrl: '/cosmos.store.v1beta1.CommitID' as const,
+  aminoType: 'cosmos-sdk/CommitID' as const,
+  is(o: any): o is CommitID {
+    return (
+      o &&
+      (o.$typeUrl === CommitID.typeUrl ||
+        (typeof o.version === 'bigint' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string')))
+    );
+  },
+  isSDK(o: any): o is CommitIDSDKType {
+    return (
+      o &&
+      (o.$typeUrl === CommitID.typeUrl ||
+        (typeof o.version === 'bigint' &&
+          (o.hash instanceof Uint8Array || typeof o.hash === 'string')))
+    );
+  },
   encode(
     message: CommitID,
     writer: BinaryWriter = BinaryWriter.create(),

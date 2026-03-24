@@ -1,4 +1,5 @@
-import { EventEmitter } from 'events';
+/* eslint-disable no-plusplus */
+import { EventEmitter } from 'node:events';
 import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 
@@ -24,11 +25,15 @@ import type { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import type { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
-import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
+import type {
+  HandlePendingTxOpts,
+  EvmRpcProviders,
+} from '../src/pending-tx-manager.ts';
 import { prepareAbortController } from '../src/support.ts';
 import type { YdsNotifier } from '../src/yds-notifier.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { ERC20_BALANCE_ABI } from '../src/evm-utils.ts';
+import type { makeEvmRpc } from '../src/evm-scanner.ts';
 
 const PENDING_TX_PATH_PREFIX = 'published.ymax1';
 
@@ -343,7 +348,7 @@ export const createMockProvider = (
 
       throw Error(`Unrecognized function selector in mock call: ${selector}`);
     },
-    waitForTransaction: async function (
+    async waitForTransaction(
       this: any,
       txHash: string,
       confirmations?: number,
@@ -369,7 +374,12 @@ export const createMockProvider = (
   return mockProvider as unknown as WebSocketProvider;
 };
 
-export const createMockEvmProviders = ({
+/**
+ * Create mock EVM providers and matching retry providers that share the same
+ * underlying instances (so websocket events emitted on evmProviders are
+ * visible to retryProviders).
+ */
+export const createMockProviderSets = ({
   latestBlock = 1000,
   events,
   addressToBalanceMap = {},
@@ -377,22 +387,38 @@ export const createMockEvmProviders = ({
   latestBlock?: number;
   events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[];
   addressToBalanceMap?: Partial<Record<EvmAddress, bigint>>;
-}): Record<CaipChainId, WebSocketProvider> => ({
-  'eip155:1': createMockProvider(latestBlock, events, addressToBalanceMap),
-  'eip155:42161': createMockProvider(latestBlock, events, addressToBalanceMap),
-  'eip155:421614': createMockProvider(latestBlock, events, addressToBalanceMap),
-  'eip155:8453': createMockProvider(latestBlock, events, addressToBalanceMap),
-  'eip155:11155111': createMockProvider(
-    latestBlock,
-    events,
-    addressToBalanceMap,
-  ),
-  'eip155:43113': createMockProvider(latestBlock, events, addressToBalanceMap),
-});
+}) => {
+  const chainIds: CaipChainId[] = [
+    'eip155:1',
+    'eip155:42161',
+    'eip155:421614',
+    'eip155:8453',
+    'eip155:11155111',
+    'eip155:43113',
+  ];
+  const evmProviders = {} as Record<CaipChainId, WebSocketProvider>;
+  const retryProviders = {} as EvmRpcProviders;
+  for (const chainId of chainIds) {
+    const provider = createMockProvider(
+      latestBlock,
+      events,
+      addressToBalanceMap,
+    );
+    evmProviders[chainId] = provider;
+    // Mock providers already satisfy the EvmRpc shape.
+    retryProviders[chainId] = provider as unknown as ReturnType<
+      typeof makeEvmRpc
+    >;
+  }
+  return { evmProviders, retryProviders };
+};
+
+const defaultMockProviders = createMockProviderSets({});
 
 export const mockEvmCtx = {
   usdcAddresses: {},
-  evmProviders: createMockEvmProviders({}),
+  evmProviders: defaultMockProviders.evmProviders,
+  retryProviders: defaultMockProviders.retryProviders,
   kvStore: makeKVStoreFromMap(new Map()),
   setTimeout: globalThis.setTimeout,
   makeAbortController,
@@ -402,31 +428,56 @@ export const mockEvmCtx = {
   } as unknown as YdsNotifier,
 };
 
+const mockWalletRecord = {
+  offerToUsedInvitation: [
+    [
+      'resolver-offer-1',
+      {
+        value: [
+          {
+            description: 'resolver',
+            instance: 'mock-instance',
+            installation: 'mock-installation',
+          },
+        ],
+      },
+    ],
+  ],
+  liveOffers: [],
+  purses: [],
+};
+
+/** CapData encoding of the mock wallet record (no slots needed). */
+const mockWalletCapData = JSON.stringify({
+  body: JSON.stringify(mockWalletRecord),
+  slots: [],
+});
+
+/** StreamCell wrapping the CapData-encoded wallet record. */
+const mockStreamCell = JSON.stringify({
+  blockHeight: '100',
+  values: [mockWalletCapData],
+});
+
 export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   const executedOffers: OfferSpec[] = [];
 
   return {
     address: 'agoric1mockplanner123456789abcdefghijklmnopqrstuvwxyz',
 
+    marshaller: {
+      fromCapData: (capData: { body: string; slots: string[] }) =>
+        JSON.parse(capData.body),
+    },
+
     query: {
-      getCurrentWalletRecord: async () => ({
-        offerToUsedInvitation: [
-          [
-            'resolver-offer-1',
-            {
-              value: [
-                {
-                  description: 'resolver',
-                  instance: 'mock-instance',
-                  installation: 'mock-installation',
-                },
-              ],
-            },
-          ],
-        ],
-        liveOffers: [],
-        purses: [],
-      }),
+      getCurrentWalletRecord: async () => mockWalletRecord,
+      vstorage: {
+        readStorageMeta: async () => ({
+          result: { value: mockStreamCell },
+          blockHeight: 100n,
+        }),
+      },
     },
 
     executeOffer: async (offerSpec: OfferSpec) => {
@@ -468,7 +519,7 @@ export const createMockCosmosRestClient = (
   let callCount = 0;
   const balanceResponses = config.balanceResponses ?? DEFAULT_BALANCE_RESPONSES;
   const initialAccount = config.initialAccount ?? DEFAULT_ACCOUNT;
-  let mockAccount = initialAccount;
+  const mockAccount = initialAccount;
 
   return {
     getAccountBalance: async (_chainKey, _address, denom) => {
@@ -503,30 +554,37 @@ export const createMockCosmosRestClient = (
 export const createMockPendingTxOpts = (
   latestBlock = 1000,
   events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],
-): HandlePendingTxOpts => ({
-  cosmosRest: {} as unknown as CosmosRestClient,
-  cosmosRpc: {} as unknown as CosmosRPCClient,
-  evmProviders: createMockEvmProviders({ latestBlock, events }),
-  fetch: async () => ({ ok: true, json: async () => ({}) }) as Response,
-  setTimeout: globalThis.setTimeout,
-  marshaller: boardSlottingMarshaller(),
-  signingSmartWalletKit: createMockSigningSmartWalletKit(),
-  ydsNotifier: {
-    notifySettlement: async () => true,
-  } as unknown as YdsNotifier,
-  usdcAddresses: {
-    'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
-    'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
-  },
-  vstoragePathPrefixes: {
-    portfoliosPathPrefix: 'IGNORED',
-    pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
-  },
-  kvStore: makeKVStoreFromMap(new Map()),
-  makeAbortController,
-  axelarApiUrl: mockAxelarApiAddress,
-  pendingTxAbortControllers: new Map(),
-});
+): HandlePendingTxOpts => {
+  const { evmProviders, retryProviders } = createMockProviderSets({
+    latestBlock,
+    events,
+  });
+  return {
+    cosmosRest: {} as unknown as CosmosRestClient,
+    cosmosRpc: {} as unknown as CosmosRPCClient,
+    evmProviders,
+    retryProviders,
+    fetch: async () => ({ ok: true, json: async () => ({}) }) as Response,
+    setTimeout: globalThis.setTimeout,
+    marshaller: boardSlottingMarshaller(),
+    signingSmartWalletKit: createMockSigningSmartWalletKit(),
+    ydsNotifier: {
+      notifySettlement: async () => true,
+    } as unknown as YdsNotifier,
+    usdcAddresses: {
+      'eip155:1': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // Ethereum
+      'eip155:42161': '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // Arbitrum
+    },
+    vstoragePathPrefixes: {
+      portfoliosPathPrefix: 'IGNORED',
+      pendingTxPathPrefix: PENDING_TX_PATH_PREFIX,
+    },
+    kvStore: makeKVStoreFromMap(new Map()),
+    makeAbortController,
+    axelarApiUrl: mockAxelarApiAddress,
+    pendingTxAbortControllers: new Map(),
+  };
+};
 
 export const createMockPendingTxEvent = (
   txId: string,

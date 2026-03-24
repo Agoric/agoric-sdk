@@ -1,4 +1,3 @@
-// @jessie-check
 /* eslint-disable @agoric/group-jsdoc-imports -- due to conflicting `start` values */
 
 import { AmountMath } from '@agoric/ertp';

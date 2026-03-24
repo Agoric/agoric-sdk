@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 
 import { Fail } from '@endo/errors';
 import { Far, isPassable } from '@endo/pass-style';

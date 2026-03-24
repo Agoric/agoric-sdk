@@ -2,15 +2,15 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import anyTest from 'ava';
-import { spawn as ambientSpawn } from 'child_process';
-import { promises as fsPromises } from 'fs';
+import { spawn as ambientSpawn } from 'node:child_process';
+import { promises as fsPromises } from 'node:fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import path from 'path';
+import path from 'node:path';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
-import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 /**
  * @import {TestFn} from 'ava';
@@ -67,15 +67,13 @@ const makeTestContext = async () => {
   const dirname = path.dirname(pathname);
   const pathResolve = (...ps) => path.join(dirname, ...ps);
 
-  const cacheDir = pathResolve('..', 'bundles');
-  const bundleCache = await provideBundleCache(cacheDir, {}, s => import(s));
+  const bundleCache = await unsafeSharedBundleCache;
 
   const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
 
   return {
     bundleCache,
-    cacheDir,
     pathResolve,
     basename: path.basename,
     runViz,
@@ -130,8 +128,7 @@ const checkBundle = async (t, sourceSpec, seen, name, configSpec) => {
     seen.add(targetName);
 
     t.log(configSpec, ': check bundle:', name, basename(sourceSpec));
-    await bundleCache.load(sourceSpec, targetName, noLog);
-    const meta = await bundleCache.validate(targetName);
+    const meta = await bundleCache.validateOrAdd(sourceSpec, targetName, noLog);
     t.truthy(meta, name);
 
     for (const item of meta.contents) {

@@ -1,5 +1,5 @@
 env:
-  GOLANG_VERSION: '1.22'
+  GOLANG_VERSION: '1.24'
   LOADGEN_REPO_NAME: 'testnet-load-generator'
   ORG_NAME: 'Agoric'
   ENABLE_GETTING_STARTED: '' # Known issues with getting started tests, so disable them.
@@ -152,7 +152,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
           path: ./agoric-sdk
       - run: sudo packages/deployment/scripts/install-deps.sh
         working-directory: ./agoric-sdk

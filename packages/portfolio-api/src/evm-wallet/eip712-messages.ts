@@ -43,10 +43,8 @@ const YmaxStandaloneDomainBase = {
   name: YMAX_DOMAIN_NAME,
   version: YMAX_DOMAIN_VERSION,
 } as const satisfies TypedDataDomain;
-export type YmaxSharedDomain = typeof YmaxStandaloneDomainBase & {
+export type YmaxFullDomain = typeof YmaxStandaloneDomainBase & {
   chainId: bigint;
-};
-export type YmaxStandaloneDomain = YmaxSharedDomain & {
   verifyingContract: Address;
 };
 
@@ -232,7 +230,7 @@ export const getYmaxWitness = <T extends OperationTypeNames>(
 export const getYmaxStandaloneDomain = (
   chainId: bigint | number,
   verifyingContract: Address,
-): YmaxStandaloneDomain => ({
+): YmaxFullDomain => ({
   ...YmaxStandaloneDomainBase,
   chainId: BigInt(chainId),
   verifyingContract,
@@ -244,7 +242,7 @@ export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
   chainId: bigint | number,
   verifyingContract: Address,
 ): TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
-  domain: YmaxStandaloneDomain;
+  domain: YmaxFullDomain;
 } => {
   const types = getYmaxStandaloneTypes(operation);
 
@@ -254,7 +252,7 @@ export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
     primaryType: operation,
     message: data as TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
   } as TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
-    domain: YmaxStandaloneDomain;
+    domain: YmaxFullDomain;
   };
 };
 
@@ -280,18 +278,9 @@ export type YmaxPermitBatchWitnessTransferFromData<
   >
 >;
 
-export function validateYmaxDomain(
+export function validateYmaxDomainBase(
   domain: TypedDataDomain,
-  validContractAddresses?: undefined,
-): asserts domain is typeof YmaxStandaloneDomainBase;
-export function validateYmaxDomain(
-  domain: TypedDataDomain,
-  validContractAddresses: Record<number | string, Address>,
-): asserts domain is YmaxStandaloneDomain;
-export function validateYmaxDomain(
-  domain: TypedDataDomain,
-  validContractAddresses?: Record<number | string, Address>,
-) {
+): asserts domain is typeof YmaxStandaloneDomainBase {
   if (domain.name !== YMAX_DOMAIN_NAME) {
     throw new Error(
       `Invalid Ymax domain name: ${domain.name} (expected ${YMAX_DOMAIN_NAME})`,
@@ -302,6 +291,16 @@ export function validateYmaxDomain(
       `Invalid Ymax domain version: ${domain.version} (expected ${YMAX_DOMAIN_VERSION})`,
     );
   }
+}
+
+export function validateYmaxDomain(
+  domain: TypedDataDomain,
+  validContractAddresses?: Record<number | string, Address> | undefined,
+): asserts domain is YmaxFullDomain {
+  const baseDomain = domain;
+  validateYmaxDomainBase(baseDomain);
+
+  typeof domain.chainId === 'bigint' || Fail`Chain ID expected to be a BigInt`;
 
   if (validContractAddresses) {
     const chainIdStr = String(domain.chainId);
@@ -313,6 +312,9 @@ export function validateYmaxDomain(
       Fail`Invalid verifying contract for chain ID ${q(domain.chainId)}: ${q(
         domain.verifyingContract,
       )} (expected ${q(validContractAddresses[chainIdStr])})`;
+  } else {
+    (domain.chainId !== undefined && domain.verifyingContract !== undefined) ||
+      Fail`Ymax domain must include chainId and verifyingContract`;
   }
 
   // XXX: check no extra fields?
@@ -343,7 +345,7 @@ export const splitWitnessFieldType = <T extends OperationTypeNames>(
     version,
   } satisfies TypedDataDomain;
 
-  validateYmaxDomain(domain);
+  validateYmaxDomainBase(domain);
   validateYmaxOperationTypeName<T>(operation);
 
   return {

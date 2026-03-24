@@ -96,6 +96,11 @@ export function pausedTypeToJSON(object: PausedType): string {
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name Reward
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Reward
+ */
 export interface Reward {
   index: bigint;
   total: string;
@@ -105,11 +110,21 @@ export interface RewardProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.Reward';
   value: Uint8Array;
 }
+/**
+ * @name RewardSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Reward
+ */
 export interface RewardSDKType {
   index: bigint;
   total: string;
   rewards: string;
 }
+/**
+ * @name Position
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Position
+ */
 export interface Position {
   principal: string;
   index: bigint;
@@ -120,12 +135,22 @@ export interface PositionProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.Position';
   value: Uint8Array;
 }
+/**
+ * @name PositionSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Position
+ */
 export interface PositionSDKType {
   principal: string;
   index: bigint;
   amount: string;
   time: TimestampSDKType;
 }
+/**
+ * @name PositionRewards
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionRewards
+ */
 export interface PositionRewards {
   amount: string;
   pendingRewards: string;
@@ -134,10 +159,20 @@ export interface PositionRewardsProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.PositionRewards';
   value: Uint8Array;
 }
+/**
+ * @name PositionRewardsSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionRewards
+ */
 export interface PositionRewardsSDKType {
   amount: string;
   pending_rewards: string;
 }
+/**
+ * @name PositionEntry
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionEntry
+ */
 export interface PositionEntry {
   address: Uint8Array;
   vault: VaultType;
@@ -150,6 +185,11 @@ export interface PositionEntryProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.PositionEntry';
   value: Uint8Array;
 }
+/**
+ * @name PositionEntrySDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionEntry
+ */
 export interface PositionEntrySDKType {
   address: Uint8Array;
   vault: VaultType;
@@ -158,6 +198,11 @@ export interface PositionEntrySDKType {
   amount: string;
   time: TimestampSDKType;
 }
+/**
+ * @name Stats
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Stats
+ */
 export interface Stats {
   flexibleTotalPrincipal: string;
   flexibleTotalUsers: bigint;
@@ -169,6 +214,11 @@ export interface StatsProtoMsg {
   typeUrl: '/noble.dollar.vaults.v1.Stats';
   value: Uint8Array;
 }
+/**
+ * @name StatsSDKType
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Stats
+ */
 export interface StatsSDKType {
   flexible_total_principal: string;
   flexible_total_users: bigint;
@@ -183,8 +233,31 @@ function createBaseReward(): Reward {
     rewards: '',
   };
 }
+/**
+ * @name Reward
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Reward
+ */
 export const Reward = {
   typeUrl: '/noble.dollar.vaults.v1.Reward' as const,
+  is(o: any): o is Reward {
+    return (
+      o &&
+      (o.$typeUrl === Reward.typeUrl ||
+        (typeof o.index === 'bigint' &&
+          typeof o.total === 'string' &&
+          typeof o.rewards === 'string'))
+    );
+  },
+  isSDK(o: any): o is RewardSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Reward.typeUrl ||
+        (typeof o.index === 'bigint' &&
+          typeof o.total === 'string' &&
+          typeof o.rewards === 'string'))
+    );
+  },
   encode(
     message: Reward,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -270,8 +343,33 @@ function createBasePosition(): Position {
     time: Timestamp.fromPartial({}),
   };
 }
+/**
+ * @name Position
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Position
+ */
 export const Position = {
   typeUrl: '/noble.dollar.vaults.v1.Position' as const,
+  is(o: any): o is Position {
+    return (
+      o &&
+      (o.$typeUrl === Position.typeUrl ||
+        (typeof o.principal === 'string' &&
+          typeof o.index === 'bigint' &&
+          typeof o.amount === 'string' &&
+          Timestamp.is(o.time)))
+    );
+  },
+  isSDK(o: any): o is PositionSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Position.typeUrl ||
+        (typeof o.principal === 'string' &&
+          typeof o.index === 'bigint' &&
+          typeof o.amount === 'string' &&
+          Timestamp.isSDK(o.time)))
+    );
+  },
   encode(
     message: Position,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -368,8 +466,27 @@ function createBasePositionRewards(): PositionRewards {
     pendingRewards: '',
   };
 }
+/**
+ * @name PositionRewards
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionRewards
+ */
 export const PositionRewards = {
   typeUrl: '/noble.dollar.vaults.v1.PositionRewards' as const,
+  is(o: any): o is PositionRewards {
+    return (
+      o &&
+      (o.$typeUrl === PositionRewards.typeUrl ||
+        (typeof o.amount === 'string' && typeof o.pendingRewards === 'string'))
+    );
+  },
+  isSDK(o: any): o is PositionRewardsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PositionRewards.typeUrl ||
+        (typeof o.amount === 'string' && typeof o.pending_rewards === 'string'))
+    );
+  },
   encode(
     message: PositionRewards,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -447,8 +564,37 @@ function createBasePositionEntry(): PositionEntry {
     time: Timestamp.fromPartial({}),
   };
 }
+/**
+ * @name PositionEntry
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.PositionEntry
+ */
 export const PositionEntry = {
   typeUrl: '/noble.dollar.vaults.v1.PositionEntry' as const,
+  is(o: any): o is PositionEntry {
+    return (
+      o &&
+      (o.$typeUrl === PositionEntry.typeUrl ||
+        ((o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          isSet(o.vault) &&
+          typeof o.principal === 'string' &&
+          typeof o.index === 'bigint' &&
+          typeof o.amount === 'string' &&
+          Timestamp.is(o.time)))
+    );
+  },
+  isSDK(o: any): o is PositionEntrySDKType {
+    return (
+      o &&
+      (o.$typeUrl === PositionEntry.typeUrl ||
+        ((o.address instanceof Uint8Array || typeof o.address === 'string') &&
+          isSet(o.vault) &&
+          typeof o.principal === 'string' &&
+          typeof o.index === 'bigint' &&
+          typeof o.amount === 'string' &&
+          Timestamp.isSDK(o.time)))
+    );
+  },
   encode(
     message: PositionEntry,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -571,8 +717,35 @@ function createBaseStats(): Stats {
     stakedTotalUsers: BigInt(0),
   };
 }
+/**
+ * @name Stats
+ * @package noble.dollar.vaults.v1
+ * @see proto type: noble.dollar.vaults.v1.Stats
+ */
 export const Stats = {
   typeUrl: '/noble.dollar.vaults.v1.Stats' as const,
+  is(o: any): o is Stats {
+    return (
+      o &&
+      (o.$typeUrl === Stats.typeUrl ||
+        (typeof o.flexibleTotalPrincipal === 'string' &&
+          typeof o.flexibleTotalUsers === 'bigint' &&
+          typeof o.flexibleTotalDistributedRewardsPrincipal === 'string' &&
+          typeof o.stakedTotalPrincipal === 'string' &&
+          typeof o.stakedTotalUsers === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is StatsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Stats.typeUrl ||
+        (typeof o.flexible_total_principal === 'string' &&
+          typeof o.flexible_total_users === 'bigint' &&
+          typeof o.flexible_total_distributed_rewards_principal === 'string' &&
+          typeof o.staked_total_principal === 'string' &&
+          typeof o.staked_total_users === 'bigint'))
+    );
+  },
   encode(
     message: Stats,
     writer: BinaryWriter = BinaryWriter.create(),

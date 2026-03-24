@@ -1,5 +1,7 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import { AmountMath } from '@agoric/ertp';
+import type { Amount } from '@agoric/ertp/src/types.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
   commonSetup,
@@ -7,9 +9,7 @@ import {
   chainConfig,
 } from './support.js';
 import { createWallet } from '../tools/wallet.js';
-import { AmountMath } from '@agoric/ertp';
 import { makeQueryClient } from '../tools/query.js';
-import type { Amount } from '@agoric/ertp/src/types.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 

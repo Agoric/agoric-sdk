@@ -79,7 +79,7 @@ test.serial('terminate existing instance', async t => {
 
 test.serial('invoke ymaxControl showing no instance', async t => {
   // TODO test this invokation id?
-  const id = 'getCreatorFacet.1';
+  // const id = 'getCreatorFacet.1';
 
   await t.throwsAsync(ymaxControl.overwrite('creatorFacet').getCreatorFacet(), {
     message: /no StartedInstanceKit/,

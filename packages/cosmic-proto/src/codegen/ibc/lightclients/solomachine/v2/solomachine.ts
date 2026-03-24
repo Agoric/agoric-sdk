@@ -109,11 +109,18 @@ export function dataTypeToJSON(object: DataType): string {
 /**
  * ClientState defines a solo machine client that tracks the current consensus
  * state and if the client is frozen.
+ * @name ClientState
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ClientState
  */
 export interface ClientState {
-  /** latest sequence of the client state */
+  /**
+   * latest sequence of the client state
+   */
   sequence: bigint;
-  /** frozen sequence of the solo machine */
+  /**
+   * frozen sequence of the solo machine
+   */
   isFrozen: boolean;
   consensusState?: ConsensusState;
   /**
@@ -129,6 +136,9 @@ export interface ClientStateProtoMsg {
 /**
  * ClientState defines a solo machine client that tracks the current consensus
  * state and if the client is frozen.
+ * @name ClientStateSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ClientState
  */
 export interface ClientStateSDKType {
   sequence: bigint;
@@ -140,9 +150,14 @@ export interface ClientStateSDKType {
  * ConsensusState defines a solo machine consensus state. The sequence of a
  * consensus state is contained in the "height" key used in storing the
  * consensus state.
+ * @name ConsensusState
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConsensusState
  */
 export interface ConsensusState {
-  /** public key of the solo machine */
+  /**
+   * public key of the solo machine
+   */
   publicKey?: Any;
   /**
    * diversifier allows the same public key to be re-used across different solo
@@ -160,15 +175,25 @@ export interface ConsensusStateProtoMsg {
  * ConsensusState defines a solo machine consensus state. The sequence of a
  * consensus state is contained in the "height" key used in storing the
  * consensus state.
+ * @name ConsensusStateSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConsensusState
  */
 export interface ConsensusStateSDKType {
   public_key?: AnySDKType;
   diversifier: string;
   timestamp: bigint;
 }
-/** Header defines a solo machine consensus header */
+/**
+ * Header defines a solo machine consensus header
+ * @name Header
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.Header
+ */
 export interface Header {
-  /** sequence to update solo machine public key at */
+  /**
+   * sequence to update solo machine public key at
+   */
   sequence: bigint;
   timestamp: bigint;
   signature: Uint8Array;
@@ -179,7 +204,12 @@ export interface HeaderProtoMsg {
   typeUrl: '/ibc.lightclients.solomachine.v2.Header';
   value: Uint8Array;
 }
-/** Header defines a solo machine consensus header */
+/**
+ * Header defines a solo machine consensus header
+ * @name HeaderSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.Header
+ */
 export interface HeaderSDKType {
   sequence: bigint;
   timestamp: bigint;
@@ -190,6 +220,9 @@ export interface HeaderSDKType {
 /**
  * Misbehaviour defines misbehaviour for a solo machine which consists
  * of a sequence and two signatures over different messages at that sequence.
+ * @name Misbehaviour
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.Misbehaviour
  */
 export interface Misbehaviour {
   clientId: string;
@@ -204,6 +237,9 @@ export interface MisbehaviourProtoMsg {
 /**
  * Misbehaviour defines misbehaviour for a solo machine which consists
  * of a sequence and two signatures over different messages at that sequence.
+ * @name MisbehaviourSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.Misbehaviour
  */
 export interface MisbehaviourSDKType {
   client_id: string;
@@ -214,6 +250,9 @@ export interface MisbehaviourSDKType {
 /**
  * SignatureAndData contains a signature and the data signed over to create that
  * signature.
+ * @name SignatureAndData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.SignatureAndData
  */
 export interface SignatureAndData {
   signature: Uint8Array;
@@ -228,6 +267,9 @@ export interface SignatureAndDataProtoMsg {
 /**
  * SignatureAndData contains a signature and the data signed over to create that
  * signature.
+ * @name SignatureAndDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.SignatureAndData
  */
 export interface SignatureAndDataSDKType {
   signature: Uint8Array;
@@ -238,6 +280,9 @@ export interface SignatureAndDataSDKType {
 /**
  * TimestampedSignatureData contains the signature data and the timestamp of the
  * signature.
+ * @name TimestampedSignatureData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.TimestampedSignatureData
  */
 export interface TimestampedSignatureData {
   signatureData: Uint8Array;
@@ -250,26 +295,43 @@ export interface TimestampedSignatureDataProtoMsg {
 /**
  * TimestampedSignatureData contains the signature data and the timestamp of the
  * signature.
+ * @name TimestampedSignatureDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.TimestampedSignatureData
  */
 export interface TimestampedSignatureDataSDKType {
   signature_data: Uint8Array;
   timestamp: bigint;
 }
-/** SignBytes defines the signed bytes used for signature verification. */
+/**
+ * SignBytes defines the signed bytes used for signature verification.
+ * @name SignBytes
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.SignBytes
+ */
 export interface SignBytes {
   sequence: bigint;
   timestamp: bigint;
   diversifier: string;
-  /** type of the data used */
+  /**
+   * type of the data used
+   */
   dataType: DataType;
-  /** marshaled data */
+  /**
+   * marshaled data
+   */
   data: Uint8Array;
 }
 export interface SignBytesProtoMsg {
   typeUrl: '/ibc.lightclients.solomachine.v2.SignBytes';
   value: Uint8Array;
 }
-/** SignBytes defines the signed bytes used for signature verification. */
+/**
+ * SignBytes defines the signed bytes used for signature verification.
+ * @name SignBytesSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.SignBytes
+ */
 export interface SignBytesSDKType {
   sequence: bigint;
   timestamp: bigint;
@@ -277,23 +339,42 @@ export interface SignBytesSDKType {
   data_type: DataType;
   data: Uint8Array;
 }
-/** HeaderData returns the SignBytes data for update verification. */
+/**
+ * HeaderData returns the SignBytes data for update verification.
+ * @name HeaderData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.HeaderData
+ */
 export interface HeaderData {
-  /** header public key */
+  /**
+   * header public key
+   */
   newPubKey?: Any;
-  /** header diversifier */
+  /**
+   * header diversifier
+   */
   newDiversifier: string;
 }
 export interface HeaderDataProtoMsg {
   typeUrl: '/ibc.lightclients.solomachine.v2.HeaderData';
   value: Uint8Array;
 }
-/** HeaderData returns the SignBytes data for update verification. */
+/**
+ * HeaderData returns the SignBytes data for update verification.
+ * @name HeaderDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.HeaderData
+ */
 export interface HeaderDataSDKType {
   new_pub_key?: AnySDKType;
   new_diversifier: string;
 }
-/** ClientStateData returns the SignBytes data for client state verification. */
+/**
+ * ClientStateData returns the SignBytes data for client state verification.
+ * @name ClientStateData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ClientStateData
+ */
 export interface ClientStateData {
   path: Uint8Array;
   clientState?: Any;
@@ -302,7 +383,12 @@ export interface ClientStateDataProtoMsg {
   typeUrl: '/ibc.lightclients.solomachine.v2.ClientStateData';
   value: Uint8Array;
 }
-/** ClientStateData returns the SignBytes data for client state verification. */
+/**
+ * ClientStateData returns the SignBytes data for client state verification.
+ * @name ClientStateDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ClientStateData
+ */
 export interface ClientStateDataSDKType {
   path: Uint8Array;
   client_state?: AnySDKType;
@@ -310,6 +396,9 @@ export interface ClientStateDataSDKType {
 /**
  * ConsensusStateData returns the SignBytes data for consensus state
  * verification.
+ * @name ConsensusStateData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConsensusStateData
  */
 export interface ConsensusStateData {
   path: Uint8Array;
@@ -322,6 +411,9 @@ export interface ConsensusStateDataProtoMsg {
 /**
  * ConsensusStateData returns the SignBytes data for consensus state
  * verification.
+ * @name ConsensusStateDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConsensusStateData
  */
 export interface ConsensusStateDataSDKType {
   path: Uint8Array;
@@ -330,6 +422,9 @@ export interface ConsensusStateDataSDKType {
 /**
  * ConnectionStateData returns the SignBytes data for connection state
  * verification.
+ * @name ConnectionStateData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConnectionStateData
  */
 export interface ConnectionStateData {
   path: Uint8Array;
@@ -342,6 +437,9 @@ export interface ConnectionStateDataProtoMsg {
 /**
  * ConnectionStateData returns the SignBytes data for connection state
  * verification.
+ * @name ConnectionStateDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConnectionStateData
  */
 export interface ConnectionStateDataSDKType {
   path: Uint8Array;
@@ -350,6 +448,9 @@ export interface ConnectionStateDataSDKType {
 /**
  * ChannelStateData returns the SignBytes data for channel state
  * verification.
+ * @name ChannelStateData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ChannelStateData
  */
 export interface ChannelStateData {
   path: Uint8Array;
@@ -362,6 +463,9 @@ export interface ChannelStateDataProtoMsg {
 /**
  * ChannelStateData returns the SignBytes data for channel state
  * verification.
+ * @name ChannelStateDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ChannelStateData
  */
 export interface ChannelStateDataSDKType {
   path: Uint8Array;
@@ -370,6 +474,9 @@ export interface ChannelStateDataSDKType {
 /**
  * PacketCommitmentData returns the SignBytes data for packet commitment
  * verification.
+ * @name PacketCommitmentData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketCommitmentData
  */
 export interface PacketCommitmentData {
   path: Uint8Array;
@@ -382,6 +489,9 @@ export interface PacketCommitmentDataProtoMsg {
 /**
  * PacketCommitmentData returns the SignBytes data for packet commitment
  * verification.
+ * @name PacketCommitmentDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketCommitmentData
  */
 export interface PacketCommitmentDataSDKType {
   path: Uint8Array;
@@ -390,6 +500,9 @@ export interface PacketCommitmentDataSDKType {
 /**
  * PacketAcknowledgementData returns the SignBytes data for acknowledgement
  * verification.
+ * @name PacketAcknowledgementData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketAcknowledgementData
  */
 export interface PacketAcknowledgementData {
   path: Uint8Array;
@@ -402,6 +515,9 @@ export interface PacketAcknowledgementDataProtoMsg {
 /**
  * PacketAcknowledgementData returns the SignBytes data for acknowledgement
  * verification.
+ * @name PacketAcknowledgementDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketAcknowledgementData
  */
 export interface PacketAcknowledgementDataSDKType {
   path: Uint8Array;
@@ -410,6 +526,9 @@ export interface PacketAcknowledgementDataSDKType {
 /**
  * PacketReceiptAbsenceData returns the SignBytes data for
  * packet receipt absence verification.
+ * @name PacketReceiptAbsenceData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketReceiptAbsenceData
  */
 export interface PacketReceiptAbsenceData {
   path: Uint8Array;
@@ -421,6 +540,9 @@ export interface PacketReceiptAbsenceDataProtoMsg {
 /**
  * PacketReceiptAbsenceData returns the SignBytes data for
  * packet receipt absence verification.
+ * @name PacketReceiptAbsenceDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketReceiptAbsenceData
  */
 export interface PacketReceiptAbsenceDataSDKType {
   path: Uint8Array;
@@ -428,6 +550,9 @@ export interface PacketReceiptAbsenceDataSDKType {
 /**
  * NextSequenceRecvData returns the SignBytes data for verification of the next
  * sequence to be received.
+ * @name NextSequenceRecvData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.NextSequenceRecvData
  */
 export interface NextSequenceRecvData {
   path: Uint8Array;
@@ -440,6 +565,9 @@ export interface NextSequenceRecvDataProtoMsg {
 /**
  * NextSequenceRecvData returns the SignBytes data for verification of the next
  * sequence to be received.
+ * @name NextSequenceRecvDataSDKType
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.NextSequenceRecvData
  */
 export interface NextSequenceRecvDataSDKType {
   path: Uint8Array;
@@ -453,8 +581,34 @@ function createBaseClientState(): ClientState {
     allowUpdateAfterProposal: false,
   };
 }
+/**
+ * ClientState defines a solo machine client that tracks the current consensus
+ * state and if the client is frozen.
+ * @name ClientState
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ClientState
+ */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.solomachine.v2.ClientState' as const,
+  aminoType: 'cosmos-sdk/ClientState' as const,
+  is(o: any): o is ClientState {
+    return (
+      o &&
+      (o.$typeUrl === ClientState.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.isFrozen === 'boolean' &&
+          typeof o.allowUpdateAfterProposal === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ClientStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientState.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.is_frozen === 'boolean' &&
+          typeof o.allow_update_after_proposal === 'boolean'))
+    );
+  },
   encode(
     message: ClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -567,8 +721,31 @@ function createBaseConsensusState(): ConsensusState {
     timestamp: BigInt(0),
   };
 }
+/**
+ * ConsensusState defines a solo machine consensus state. The sequence of a
+ * consensus state is contained in the "height" key used in storing the
+ * consensus state.
+ * @name ConsensusState
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConsensusState
+ */
 export const ConsensusState = {
   typeUrl: '/ibc.lightclients.solomachine.v2.ConsensusState' as const,
+  aminoType: 'cosmos-sdk/ConsensusState' as const,
+  is(o: any): o is ConsensusState {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusState.typeUrl ||
+        (typeof o.diversifier === 'string' && typeof o.timestamp === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ConsensusStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusState.typeUrl ||
+        (typeof o.diversifier === 'string' && typeof o.timestamp === 'bigint'))
+    );
+  },
   encode(
     message: ConsensusState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -666,8 +843,37 @@ function createBaseHeader(): Header {
     newDiversifier: '',
   };
 }
+/**
+ * Header defines a solo machine consensus header
+ * @name Header
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.Header
+ */
 export const Header = {
   typeUrl: '/ibc.lightclients.solomachine.v2.Header' as const,
+  aminoType: 'cosmos-sdk/Header' as const,
+  is(o: any): o is Header {
+    return (
+      o &&
+      (o.$typeUrl === Header.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.timestamp === 'bigint' &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          typeof o.newDiversifier === 'string'))
+    );
+  },
+  isSDK(o: any): o is HeaderSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Header.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.timestamp === 'bigint' &&
+          (o.signature instanceof Uint8Array ||
+            typeof o.signature === 'string') &&
+          typeof o.new_diversifier === 'string'))
+    );
+  },
   encode(
     message: Header,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -795,8 +1001,30 @@ function createBaseMisbehaviour(): Misbehaviour {
     signatureTwo: undefined,
   };
 }
+/**
+ * Misbehaviour defines misbehaviour for a solo machine which consists
+ * of a sequence and two signatures over different messages at that sequence.
+ * @name Misbehaviour
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.Misbehaviour
+ */
 export const Misbehaviour = {
   typeUrl: '/ibc.lightclients.solomachine.v2.Misbehaviour' as const,
+  aminoType: 'cosmos-sdk/Misbehaviour' as const,
+  is(o: any): o is Misbehaviour {
+    return (
+      o &&
+      (o.$typeUrl === Misbehaviour.typeUrl ||
+        (typeof o.clientId === 'string' && typeof o.sequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MisbehaviourSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Misbehaviour.typeUrl ||
+        (typeof o.client_id === 'string' && typeof o.sequence === 'bigint'))
+    );
+  },
   encode(
     message: Misbehaviour,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -921,8 +1149,38 @@ function createBaseSignatureAndData(): SignatureAndData {
     timestamp: BigInt(0),
   };
 }
+/**
+ * SignatureAndData contains a signature and the data signed over to create that
+ * signature.
+ * @name SignatureAndData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.SignatureAndData
+ */
 export const SignatureAndData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.SignatureAndData' as const,
+  aminoType: 'cosmos-sdk/SignatureAndData' as const,
+  is(o: any): o is SignatureAndData {
+    return (
+      o &&
+      (o.$typeUrl === SignatureAndData.typeUrl ||
+        ((o.signature instanceof Uint8Array ||
+          typeof o.signature === 'string') &&
+          isSet(o.dataType) &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.timestamp === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is SignatureAndDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SignatureAndData.typeUrl ||
+        ((o.signature instanceof Uint8Array ||
+          typeof o.signature === 'string') &&
+          isSet(o.data_type) &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.timestamp === 'bigint'))
+    );
+  },
   encode(
     message: SignatureAndData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1028,8 +1286,34 @@ function createBaseTimestampedSignatureData(): TimestampedSignatureData {
     timestamp: BigInt(0),
   };
 }
+/**
+ * TimestampedSignatureData contains the signature data and the timestamp of the
+ * signature.
+ * @name TimestampedSignatureData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.TimestampedSignatureData
+ */
 export const TimestampedSignatureData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.TimestampedSignatureData' as const,
+  aminoType: 'cosmos-sdk/TimestampedSignatureData' as const,
+  is(o: any): o is TimestampedSignatureData {
+    return (
+      o &&
+      (o.$typeUrl === TimestampedSignatureData.typeUrl ||
+        ((o.signatureData instanceof Uint8Array ||
+          typeof o.signatureData === 'string') &&
+          typeof o.timestamp === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is TimestampedSignatureDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TimestampedSignatureData.typeUrl ||
+        ((o.signature_data instanceof Uint8Array ||
+          typeof o.signature_data === 'string') &&
+          typeof o.timestamp === 'bigint'))
+    );
+  },
   encode(
     message: TimestampedSignatureData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1127,8 +1411,37 @@ function createBaseSignBytes(): SignBytes {
     data: new Uint8Array(),
   };
 }
+/**
+ * SignBytes defines the signed bytes used for signature verification.
+ * @name SignBytes
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.SignBytes
+ */
 export const SignBytes = {
   typeUrl: '/ibc.lightclients.solomachine.v2.SignBytes' as const,
+  aminoType: 'cosmos-sdk/SignBytes' as const,
+  is(o: any): o is SignBytes {
+    return (
+      o &&
+      (o.$typeUrl === SignBytes.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.timestamp === 'bigint' &&
+          typeof o.diversifier === 'string' &&
+          isSet(o.dataType) &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is SignBytesSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SignBytes.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.timestamp === 'bigint' &&
+          typeof o.diversifier === 'string' &&
+          isSet(o.data_type) &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: SignBytes,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1245,8 +1558,29 @@ function createBaseHeaderData(): HeaderData {
     newDiversifier: '',
   };
 }
+/**
+ * HeaderData returns the SignBytes data for update verification.
+ * @name HeaderData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.HeaderData
+ */
 export const HeaderData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.HeaderData' as const,
+  aminoType: 'cosmos-sdk/HeaderData' as const,
+  is(o: any): o is HeaderData {
+    return (
+      o &&
+      (o.$typeUrl === HeaderData.typeUrl ||
+        typeof o.newDiversifier === 'string')
+    );
+  },
+  isSDK(o: any): o is HeaderDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HeaderData.typeUrl ||
+        typeof o.new_diversifier === 'string')
+    );
+  },
   encode(
     message: HeaderData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1328,8 +1662,31 @@ function createBaseClientStateData(): ClientStateData {
     clientState: undefined,
   };
 }
+/**
+ * ClientStateData returns the SignBytes data for client state verification.
+ * @name ClientStateData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ClientStateData
+ */
 export const ClientStateData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.ClientStateData' as const,
+  aminoType: 'cosmos-sdk/ClientStateData' as const,
+  is(o: any): o is ClientStateData {
+    return (
+      o &&
+      (o.$typeUrl === ClientStateData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
+  isSDK(o: any): o is ClientStateDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientStateData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
   encode(
     message: ClientStateData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1413,8 +1770,32 @@ function createBaseConsensusStateData(): ConsensusStateData {
     consensusState: undefined,
   };
 }
+/**
+ * ConsensusStateData returns the SignBytes data for consensus state
+ * verification.
+ * @name ConsensusStateData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConsensusStateData
+ */
 export const ConsensusStateData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.ConsensusStateData' as const,
+  aminoType: 'cosmos-sdk/ConsensusStateData' as const,
+  is(o: any): o is ConsensusStateData {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusStateData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
+  isSDK(o: any): o is ConsensusStateDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusStateData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
   encode(
     message: ConsensusStateData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1501,8 +1882,32 @@ function createBaseConnectionStateData(): ConnectionStateData {
     connection: undefined,
   };
 }
+/**
+ * ConnectionStateData returns the SignBytes data for connection state
+ * verification.
+ * @name ConnectionStateData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ConnectionStateData
+ */
 export const ConnectionStateData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.ConnectionStateData' as const,
+  aminoType: 'cosmos-sdk/ConnectionStateData' as const,
+  is(o: any): o is ConnectionStateData {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionStateData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
+  isSDK(o: any): o is ConnectionStateDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConnectionStateData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
   encode(
     message: ConnectionStateData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1592,8 +1997,32 @@ function createBaseChannelStateData(): ChannelStateData {
     channel: undefined,
   };
 }
+/**
+ * ChannelStateData returns the SignBytes data for channel state
+ * verification.
+ * @name ChannelStateData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.ChannelStateData
+ */
 export const ChannelStateData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.ChannelStateData' as const,
+  aminoType: 'cosmos-sdk/ChannelStateData' as const,
+  is(o: any): o is ChannelStateData {
+    return (
+      o &&
+      (o.$typeUrl === ChannelStateData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
+  isSDK(o: any): o is ChannelStateDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ChannelStateData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
   encode(
     message: ChannelStateData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1677,8 +2106,34 @@ function createBasePacketCommitmentData(): PacketCommitmentData {
     commitment: new Uint8Array(),
   };
 }
+/**
+ * PacketCommitmentData returns the SignBytes data for packet commitment
+ * verification.
+ * @name PacketCommitmentData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketCommitmentData
+ */
 export const PacketCommitmentData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.PacketCommitmentData' as const,
+  aminoType: 'cosmos-sdk/PacketCommitmentData' as const,
+  is(o: any): o is PacketCommitmentData {
+    return (
+      o &&
+      (o.$typeUrl === PacketCommitmentData.typeUrl ||
+        ((o.path instanceof Uint8Array || typeof o.path === 'string') &&
+          (o.commitment instanceof Uint8Array ||
+            typeof o.commitment === 'string')))
+    );
+  },
+  isSDK(o: any): o is PacketCommitmentDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PacketCommitmentData.typeUrl ||
+        ((o.path instanceof Uint8Array || typeof o.path === 'string') &&
+          (o.commitment instanceof Uint8Array ||
+            typeof o.commitment === 'string')))
+    );
+  },
   encode(
     message: PacketCommitmentData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1764,9 +2219,35 @@ function createBasePacketAcknowledgementData(): PacketAcknowledgementData {
     acknowledgement: new Uint8Array(),
   };
 }
+/**
+ * PacketAcknowledgementData returns the SignBytes data for acknowledgement
+ * verification.
+ * @name PacketAcknowledgementData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketAcknowledgementData
+ */
 export const PacketAcknowledgementData = {
   typeUrl:
     '/ibc.lightclients.solomachine.v2.PacketAcknowledgementData' as const,
+  aminoType: 'cosmos-sdk/PacketAcknowledgementData' as const,
+  is(o: any): o is PacketAcknowledgementData {
+    return (
+      o &&
+      (o.$typeUrl === PacketAcknowledgementData.typeUrl ||
+        ((o.path instanceof Uint8Array || typeof o.path === 'string') &&
+          (o.acknowledgement instanceof Uint8Array ||
+            typeof o.acknowledgement === 'string')))
+    );
+  },
+  isSDK(o: any): o is PacketAcknowledgementDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PacketAcknowledgementData.typeUrl ||
+        ((o.path instanceof Uint8Array || typeof o.path === 'string') &&
+          (o.acknowledgement instanceof Uint8Array ||
+            typeof o.acknowledgement === 'string')))
+    );
+  },
   encode(
     message: PacketAcknowledgementData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1859,8 +2340,32 @@ function createBasePacketReceiptAbsenceData(): PacketReceiptAbsenceData {
     path: new Uint8Array(),
   };
 }
+/**
+ * PacketReceiptAbsenceData returns the SignBytes data for
+ * packet receipt absence verification.
+ * @name PacketReceiptAbsenceData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.PacketReceiptAbsenceData
+ */
 export const PacketReceiptAbsenceData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.PacketReceiptAbsenceData' as const,
+  aminoType: 'cosmos-sdk/PacketReceiptAbsenceData' as const,
+  is(o: any): o is PacketReceiptAbsenceData {
+    return (
+      o &&
+      (o.$typeUrl === PacketReceiptAbsenceData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
+  isSDK(o: any): o is PacketReceiptAbsenceDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PacketReceiptAbsenceData.typeUrl ||
+        o.path instanceof Uint8Array ||
+        typeof o.path === 'string')
+    );
+  },
   encode(
     message: PacketReceiptAbsenceData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1938,8 +2443,32 @@ function createBaseNextSequenceRecvData(): NextSequenceRecvData {
     nextSeqRecv: BigInt(0),
   };
 }
+/**
+ * NextSequenceRecvData returns the SignBytes data for verification of the next
+ * sequence to be received.
+ * @name NextSequenceRecvData
+ * @package ibc.lightclients.solomachine.v2
+ * @see proto type: ibc.lightclients.solomachine.v2.NextSequenceRecvData
+ */
 export const NextSequenceRecvData = {
   typeUrl: '/ibc.lightclients.solomachine.v2.NextSequenceRecvData' as const,
+  aminoType: 'cosmos-sdk/NextSequenceRecvData' as const,
+  is(o: any): o is NextSequenceRecvData {
+    return (
+      o &&
+      (o.$typeUrl === NextSequenceRecvData.typeUrl ||
+        ((o.path instanceof Uint8Array || typeof o.path === 'string') &&
+          typeof o.nextSeqRecv === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is NextSequenceRecvDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === NextSequenceRecvData.typeUrl ||
+        ((o.path instanceof Uint8Array || typeof o.path === 'string') &&
+          typeof o.next_seq_recv === 'bigint'))
+    );
+  },
   encode(
     message: NextSequenceRecvData,
     writer: BinaryWriter = BinaryWriter.create(),

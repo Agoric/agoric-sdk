@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import type { Filter, WebSocketProvider } from 'ethers';
+import type { Filter } from 'ethers';
 import type { WebSocket } from 'ws';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
@@ -10,6 +10,7 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
+  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import type { MakeAbortController } from '../support.ts';
@@ -34,7 +35,7 @@ const MULTICALL_STATUS_SIGNATURE = ethers.id(
 );
 
 type WatchGmp = {
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   contractAddress: `0x${string}`;
   txId: TxId;
   expectedSourceAddress: string;
@@ -157,7 +158,13 @@ export const watchGmp = ({
 
         const tx = msg.params?.result?.transaction;
         const removed = msg.params?.result?.removed;
-        if (!tx) return;
+        if (!tx) {
+          log(
+            `Subscription message missing transaction data`,
+            msg.params?.result,
+          );
+          return;
+        }
 
         // Ignore transactions that have been removed from canonical chain (reorged)
         if (removed === true) {
@@ -169,10 +176,22 @@ export const watchGmp = ({
 
         const txHash = tx.hash;
         const txData = tx.input;
-        if (!txHash || !txData) return;
+        if (!txHash || !txData) {
+          log(`Subscription message missing txHash or input data`);
+          return;
+        }
 
         const executeData = extractGmpExecuteData(txData);
-        if (!executeData || executeData.txId !== txId) return;
+        if (!executeData) {
+          log(`Calldata did not match Axelar execute ABI for txHash=${txHash}`);
+          return;
+        }
+        if (executeData.txId !== txId) {
+          log(
+            `Matched different txId: expected=${txId} got=${executeData.txId} txHash=${txHash}`,
+          );
+          return;
+        }
 
         if (executeData.sourceAddress !== expectedSourceAddress) {
           log(
@@ -250,6 +269,7 @@ export const watchGmp = ({
           hashesOnly: false,
         },
       ]);
+      log(`Subscribed with subId=${subId} for contract=${contractAddress}`);
     };
 
     if (ws.readyState === 1) {

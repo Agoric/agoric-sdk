@@ -1,12 +1,11 @@
 #! /usr/bin/env node
 /* eslint-env node */
-// @jessie-check
 
 // check-validator - Find if there is a validator that matches the current ag-chain-cosmos
 // Michael FIG <mfig@agoric.com>, 2021-06-25
 const oper = process.argv[2];
 
-const { spawnSync } = require('child_process');
+const { spawnSync } = require('node:child_process');
 
 console.log('Fetching current validators matching', oper || 'ALL');
 const ret = spawnSync('agd', ['query', 'staking', 'validators', '-ojson'], {

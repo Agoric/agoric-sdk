@@ -1,5 +1,5 @@
 // this file is loaded by the controller, in the start compartment
-import { spawn } from 'child_process';
+import { spawn } from 'node:child_process';
 import { makePromiseKit } from '@endo/promise-kit';
 import { NonNullish } from '../errors.js';
 import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
@@ -18,7 +18,6 @@ import {
 // toChild, fromChild } pair of Streams which accept/emit hardened Arrays of
 // JSON-serializable data.
 
-// eslint-disable-next-line no-unused-vars
 function parentLog(_first, ..._args) {
   // console.error(`--parent: ${_first}`, ..._args);
 }

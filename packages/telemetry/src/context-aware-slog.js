@@ -67,7 +67,7 @@ const SLOG_TYPES = {
       FINISH: 'cosmic-swingset-end-block-finish',
       START: 'cosmic-swingset-end-block-start',
     },
-    // eslint-disable-next-line no-restricted-syntax
+
     RUN: {
       FINISH: 'cosmic-swingset-run-finish',
       START: 'cosmic-swingset-run-start',
@@ -227,7 +227,7 @@ export const makeContextualSlogProcessor = (
 
         break;
       }
-      // eslint-disable-next-line no-restricted-syntax
+
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.START: {
         if (!finalBody.runNum) {
           assert(!triggerContext);
@@ -353,7 +353,7 @@ export const makeContextualSlogProcessor = (
         blockContext = null;
         break;
       }
-      // eslint-disable-next-line no-restricted-syntax
+
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.FINISH: {
         assert(!!triggerContext);
         persistContext(

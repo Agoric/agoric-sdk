@@ -1,4 +1,3 @@
-// no jessie-check because this code runs only in Node for testing
 /* eslint-env node */
 
 import { Fail } from '@endo/errors';

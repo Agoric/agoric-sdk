@@ -1,5 +1,3 @@
-// @jessie-check
-
 /**
  * @import {DefineKindOptions} from '@agoric/swingset-liveslots';
  * @import {MapStore} from '@agoric/swingset-liveslots';

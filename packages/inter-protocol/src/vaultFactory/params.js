@@ -1,5 +1,3 @@
-// @jessie-check
-
 /// <reference path="./types.js" />
 
 import {

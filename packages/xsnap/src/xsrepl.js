@@ -4,11 +4,11 @@
 
 import '@endo/init';
 
-import * as childProcess from 'child_process';
-import fs from 'fs';
+import * as childProcess from 'node:child_process';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
-import * as os from 'os';
-import * as readline from 'readline';
+import * as os from 'node:os';
+import * as readline from 'node:readline';
 import { makePromiseKit } from '@endo/promise-kit';
 import { xsnap } from './xsnap.js';
 

@@ -45,7 +45,7 @@
     "osmojs": "^16.15.0",
     "starshipjs": "^3.3.0",
     "ts-blank-space": "^0.4.4",
-    "typescript": "~5.8.2",
+    "typescript": "~6.0.1-rc",
     "viem": "^2.43.4"
   },
   "resolutions": {

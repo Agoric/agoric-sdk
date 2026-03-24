@@ -6,7 +6,11 @@ import {
   defaultAgoricNetworkSpecForCluster,
   type SecretManager,
 } from '../src/config.ts';
-import { createEVMContext } from '../src/support.ts';
+import {
+  createEVMContext,
+  getConfirmationsRequired,
+  getRevertConfirmationsRequired,
+} from '../src/support.ts';
 
 const { entries, keys } = Object;
 
@@ -180,6 +184,58 @@ test('loadConfig rejects invalid contract instance', async t => {
   await t.throwsAsync(() => callLoadConfig({ CONTRACT_INSTANCE: 'ymax2' }), {
     message: /CONTRACT_INSTANCE must be 'ymax0' or 'ymax1'/,
   });
+});
+
+// --- Unit tests for getRevertConfirmationsRequired ---
+
+test('getRevertConfirmationsRequired exceeds normal confirmations', t => {
+  // All chains should have revert confirmations >= normal confirmations
+  const chainIds = [
+    'eip155:1', // Ethereum (12s blocks)
+    'eip155:42161', // Arbitrum (0.3s blocks)
+    'eip155:43114', // Avalanche (2s blocks)
+    'eip155:8453', // Base (2.5s blocks)
+    'eip155:10', // Optimism (2s blocks)
+  ] as const;
+
+  for (const chainId of chainIds) {
+    const normal = getConfirmationsRequired(chainId);
+    const revert = getRevertConfirmationsRequired(chainId);
+    t.true(
+      revert > normal,
+      `${chainId}: revert (${revert}) should exceed normal (${normal})`,
+    );
+  }
+});
+
+test('getRevertConfirmationsRequired scales with block time', t => {
+  // Faster chains need more confirmations to cover the same wall-clock time
+  const arbitrum = getRevertConfirmationsRequired('eip155:42161'); // 0.3s blocks
+  const ethereum = getRevertConfirmationsRequired('eip155:1'); // 12s blocks
+
+  t.true(
+    arbitrum > ethereum,
+    `Arbitrum (${arbitrum}) should need more confirmations than Ethereum (${ethereum})`,
+  );
+});
+
+test('getRevertConfirmationsRequired computes expected values', t => {
+  // 10 min = 600_000ms; ceil(600_000 / blockTimeMs)
+  const expected: Record<string, number> = {
+    'eip155:1': 50, // ceil(600_000 / 12_000)
+    'eip155:42161': 2000, // ceil(600_000 / 300)
+    'eip155:43114': 300, // ceil(600_000 / 2_000)
+    'eip155:8453': 240, // ceil(600_000 / 2_500)
+    'eip155:10': 300, // ceil(600_000 / 2_000)
+  };
+
+  for (const [chainId, expectedConfs] of Object.entries(expected)) {
+    t.is(
+      getRevertConfirmationsRequired(chainId as any),
+      expectedConfs,
+      `${chainId}: expected ${expectedConfs} revert confirmations`,
+    );
+  }
 });
 
 // --- Unit tests for createEVMContext ---

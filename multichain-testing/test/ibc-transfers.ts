@@ -1,14 +1,14 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import { execFileSync } from 'node:child_process';
 import type { TestFn, ExecutionContext } from 'ava';
+import type { CosmosChainAddress, ForwardInfo } from '@agoric/orchestration';
+import { objectMap } from '@endo/patterns';
 import { commonSetup, type SetupContext } from './support.js';
 import { createWallet, generateMnemonic } from '../tools/wallet.js';
 import { makeQueryClient } from '../tools/query.js';
 import { makeAgd, type Agd } from '../tools/chaind-lib.js';
 import starshipChainInfo from '../starship-chain-info.js';
-import type { CosmosChainAddress, ForwardInfo } from '@agoric/orchestration';
 import { sleep } from '../tools/sleep.js';
-import { objectMap } from '@endo/patterns';
 
 const test = anyTest as TestFn<SetupContext>;
 
@@ -94,7 +94,7 @@ const setupSourceWallet = async (
 
   const chaind = makeAgd({ execFileSync }).withOpts({
     keyringBackend: 'test',
-    chainName: chainName,
+    chainName,
     broadcastMode: 'sync',
   });
   try {

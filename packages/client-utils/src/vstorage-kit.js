@@ -97,7 +97,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
 };
 
 /**
- * @template {PublishedPathTypes} [Ext={}]
+ * @template {PublishedPathTypes} [Ext=Record<never, never>]
  * @param {object} config
  * @param {VStorage} config.vstorage
  * @param {MinimalNetworkConfig} config.networkConfig
@@ -172,7 +172,7 @@ export const makeVstorageKitFromVstorage = ({
 harden(makeVstorageKitFromVstorage);
 
 /**
- * @template {PublishedPathTypes} [Ext={}]
+ * @template {PublishedPathTypes} [Ext=Record<never, never>]
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} networkConfig
  * @returns {VstorageKit<Ext>}

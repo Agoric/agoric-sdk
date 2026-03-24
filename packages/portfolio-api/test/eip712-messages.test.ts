@@ -237,23 +237,23 @@ test('validateYmaxDomain throws for invalid version', t => {
   });
 });
 
-test('validateYmaxDomain passes without verifyingContract when no validContractAddresses provided', t => {
+test('validateYmaxDomain throws without verifyingContract', t => {
   const domain = {
     name: 'Ymax',
     version: '1',
     chainId: 42161n,
   };
 
-  t.notThrows(() => validateYmaxDomain(domain));
+  t.throws(() => validateYmaxDomain(domain));
 });
 
-test('validateYmaxDomain passes without chainId when no validContractAddresses provided', t => {
+test('validateYmaxDomain throws without chainId', t => {
   const domain = {
     name: 'Ymax',
     version: '1',
   };
 
-  t.notThrows(() => validateYmaxDomain(domain));
+  t.throws(() => validateYmaxDomain(domain));
 });
 
 test('validateYmaxDomain validates contract addresses', t => {
@@ -268,6 +268,19 @@ test('validateYmaxDomain validates contract addresses', t => {
   };
 
   t.notThrows(() => validateYmaxDomain(domain, validAddresses));
+});
+
+test('validateYmaxDomain throws for non bigint chain ID', t => {
+  const domain = {
+    name: 'Ymax',
+    version: '1',
+    chainId: 1,
+    verifyingContract: MOCK_CONTRACT_ADDRESS,
+  };
+
+  t.throws(() => validateYmaxDomain(domain), {
+    message: /chain ID/i,
+  });
 });
 
 test('validateYmaxDomain throws for unknown chain ID', t => {

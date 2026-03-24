@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 
 /**

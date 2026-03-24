@@ -1,6 +1,9 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
+import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
+import type { Pool } from 'osmojs/osmosis/gamm/v1beta1/balancerPool.js';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeDoOffer } from '../../tools/e2e-tools.js';
 import { commonSetup } from '../support.js';
 import { makeQueryClient } from '../../tools/query.js';
@@ -9,7 +12,6 @@ import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
 } from '../../tools/ibc-transfer.js';
-import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import {
   makeOsmosisSwapTools,
   type Prefix,
@@ -19,8 +21,6 @@ import {
   type SwapParty,
   makeWaitUntilIbcTransfer,
 } from './helpers.js';
-import type { Pool } from 'osmojs/osmosis/gamm/v1beta1/balancerPool.js';
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const test = anyTest as TestFn<SetupOsmosisContextWithCommon>;
 
@@ -71,7 +71,7 @@ test.before(async t => {
 
   await startContract(contractName, contractBuilder, commonBuilderOpts);
 
-  //@ts-expect-error missing swap tools
+  // @ts-expect-error missing swap tools
   t.context = { ...common, wallets };
   const swapTools = await makeOsmosisSwapTools(t);
   t.context = { ...t.context, ...swapTools };

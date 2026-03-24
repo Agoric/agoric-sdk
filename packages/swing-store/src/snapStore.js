@@ -1,8 +1,12 @@
 // @ts-check
-import { createHash } from 'crypto';
-import { finished as finishedCallback, PassThrough, Readable } from 'stream';
-import { promisify } from 'util';
-import { createGzip, createGunzip } from 'zlib';
+import { createHash } from 'node:crypto';
+import {
+  finished as finishedCallback,
+  PassThrough,
+  Readable,
+} from 'node:stream';
+import { promisify } from 'node:util';
+import { createGzip, createGunzip } from 'node:zlib';
 import { Fail, q } from '@endo/errors';
 import { withDeferredCleanup } from '@agoric/internal';
 import { buffer } from './util.js';

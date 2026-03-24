@@ -25,8 +25,8 @@ for (
   try {
     const fileStats = fs.statSync(dotEnvPath);
     if (fileStats && !fileStats.isDirectory()) dotEnvPaths.push(dotEnvPath);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-empty
-  } catch (_err) {}
+    // eslint-disable-next-line no-empty
+  } catch {}
   const packageJsonPath = pathlib.join(dirname, 'package.json');
   if (fs.statSync(packageJsonPath, { throwIfNoEntry: false })) break;
 }

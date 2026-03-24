@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { makeMap } from 'jessie.js';
 import { X } from '@endo/errors';
 import { E } from '@endo/far';

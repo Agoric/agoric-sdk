@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { q, Fail, annotateError, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@endo/patterns';

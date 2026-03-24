@@ -1,4 +1,5 @@
-/* eslint-disable @jessie.js/safe-await-separator */
+/* eslint-disable no-plusplus */
+/* eslint-disable default-case */
 import test from 'ava';
 import type { ExecutionContext } from 'ava';
 
@@ -15,9 +16,9 @@ import {
   makeSmartWalletKitFromVstorageKit,
   makeVstorageKitFromVstorage,
   reflectWalletStore,
+  boardSlottingMarshaller,
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
-import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { partialMap, typedEntries } from '@agoric/internal';
 import type { RecordFromTuple } from '@agoric/internal';
 import { compareByCodePoints } from '@agoric/internal/src/kv-store.js';
@@ -75,8 +76,8 @@ type FakeVstorageKitConfig = {
  * auto-wrapping contents in a StreamCell.
  */
 const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
-  let { blockHeight = 100n, marshaller = boardSlottingMarshaller<string>() } =
-    config;
+  let { blockHeight = 100n } = config;
+  const { marshaller = boardSlottingMarshaller<string>() } = config;
   const serialize = (value: PassableObj) =>
     JSON.stringify(marshaller.toCapData(value));
   const vstorageStrings = new Map<string, string | string[]>();
@@ -110,7 +111,7 @@ const fakeVstorageKit = (config: FakeVstorageKitConfig = {}) => {
    * Any inbound data will be hardened.
    * NB: Ancestor paths are not automatically created or deleted.
    */
-  const updateVstorage = (path, method, data?) => {
+  const updateVstorage: UpdateVstorage = (path, method, data?) => {
     if (method === 'delete' || method === 'set') {
       vstorageStrings.delete(path);
       vstorageObjects.delete(path);

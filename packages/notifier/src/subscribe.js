@@ -52,7 +52,7 @@ const reconnectAsNeeded = async (getter, seed = []) => {
             err,
             X`Attempting to recover from disconnection: ${disconnection}`,
           );
-        } catch (_err) {
+        } catch {
           // noop
         }
       }

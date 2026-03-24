@@ -1126,7 +1126,6 @@ export const makeVirtualObjectManager = (
         if (isDurable) {
           insistDurableCapdata(vrm, prop, valueCD, true);
         }
-        // eslint-disable-next-line github/array-foreach
         valueCD.slots.forEach(vrm.addReachableVref);
         defineProperty(capdatas, prop, {
           value: valueCD,

@@ -239,7 +239,7 @@ export const makeFakeStorageKit = (
               try {
                 streamCell = JSON.parse(oldVal);
                 assert(isStreamCell(streamCell));
-              } catch (_err) {
+              } catch {
                 streamCell = undefined;
               }
               // StreamCells reset at block boundaries.

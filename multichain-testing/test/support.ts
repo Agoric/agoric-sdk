@@ -1,5 +1,5 @@
 import type { ExecutionContext } from 'ava';
-import { dirname, join } from 'path';
+import { dirname, join } from 'node:path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
@@ -7,6 +7,8 @@ import {
   withChainCapabilities,
   type CosmosChainInfo,
 } from '@agoric/orchestration';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import { withCosmosChainId } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import {
@@ -21,9 +23,7 @@ import { makeRelayer } from '../tools/relayer-tools.js';
 import { makeNobleTools } from '../tools/noble-tools.js';
 import { makeAssetInfo } from '../tools/asset-info.js';
 import starshipChainInfo from '../starship-chain-info.js';
-import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { makeFaucetTools } from '../tools/faucet-tools.js';
-import { withCosmosChainId } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -77,7 +77,7 @@ export const commonSetup = async (
   t: ExecutionContext,
   {
     relayerType = process.env.RELAYER_TYPE,
-    config = `../config${relayerType ? '.' + relayerType : ''}.yaml`,
+    config = `../config${relayerType ? `.${relayerType}` : ''}.yaml`,
   } = {},
 ) => {
   let useChain: MultichainRegistry['useChain'];

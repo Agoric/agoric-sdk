@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 /**
  * @file Pure JavaScript utility functions that are compatible with but not
  *   dependent upon a hardened environment.

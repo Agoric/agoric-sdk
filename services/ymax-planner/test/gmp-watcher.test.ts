@@ -67,6 +67,7 @@ test('handlePendingTx processes GMP transaction successfully', async t => {
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Subscribed with subId=mock-subscription-id for contract=${contractAddress}`,
     `[${txId}] ✅ SUCCESS: txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
   ]);
@@ -129,6 +130,7 @@ test('handlePendingTx logs a time out on a GMP transaction with no matching even
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching transaction status for txId: ${txId} at contract: ${contractAddress}`,
+    `[${txId}] Subscribed with subId=mock-subscription-id for contract=${contractAddress}`,
     `[${txId}] [GMP_TX_NOT_FOUND] ✗ No transaction status found for txId ${txId} within 0.01 minutes`,
     `[${txId}] ✅ SUCCESS: txId=${txId} txHash=0x123abc block=18500000`,
     `[${txId}] GMP tx resolved`,
@@ -187,9 +189,9 @@ test('handlePendingTx detects legitimate failure from ContractCallFailed revert'
     // Set up provider.call to throw ContractCallFailed error
     provider.call = async () => {
       const error: any = new Error('execution reverted');
-      error.data =
-        CONTRACT_CALL_FAILED_ERROR +
-        '0000000000000000000000000000000000000000000000000000000000000001';
+      error.data = `${
+        CONTRACT_CALL_FAILED_ERROR
+      }0000000000000000000000000000000000000000000000000000000000000001`;
       throw error;
     };
 

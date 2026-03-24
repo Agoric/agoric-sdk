@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 
 import { keyMirror } from './keyMirror.js';
 

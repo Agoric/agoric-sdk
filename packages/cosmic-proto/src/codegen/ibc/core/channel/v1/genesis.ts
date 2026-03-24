@@ -10,7 +10,12 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** GenesisState defines the ibc channel submodule's genesis state. */
+/**
+ * GenesisState defines the ibc channel submodule's genesis state.
+ * @name GenesisState
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.GenesisState
+ */
 export interface GenesisState {
   channels: IdentifiedChannel[];
   acknowledgements: PacketState[];
@@ -19,7 +24,9 @@ export interface GenesisState {
   sendSequences: PacketSequence[];
   recvSequences: PacketSequence[];
   ackSequences: PacketSequence[];
-  /** the sequence for the next generated channel identifier */
+  /**
+   * the sequence for the next generated channel identifier
+   */
   nextChannelSequence: bigint;
   params: Params;
 }
@@ -27,7 +34,12 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.core.channel.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the ibc channel submodule's genesis state. */
+/**
+ * GenesisState defines the ibc channel submodule's genesis state.
+ * @name GenesisStateSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   channels: IdentifiedChannelSDKType[];
   acknowledgements: PacketStateSDKType[];
@@ -42,6 +54,9 @@ export interface GenesisStateSDKType {
 /**
  * PacketSequence defines the genesis type necessary to retrieve and store
  * next send and receive sequences.
+ * @name PacketSequence
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketSequence
  */
 export interface PacketSequence {
   portId: string;
@@ -55,6 +70,9 @@ export interface PacketSequenceProtoMsg {
 /**
  * PacketSequence defines the genesis type necessary to retrieve and store
  * next send and receive sequences.
+ * @name PacketSequenceSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketSequence
  */
 export interface PacketSequenceSDKType {
   port_id: string;
@@ -74,8 +92,64 @@ function createBaseGenesisState(): GenesisState {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * GenesisState defines the ibc channel submodule's genesis state.
+ * @name GenesisState
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/ibc.core.channel.v1.GenesisState' as const,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.channels) &&
+          (!o.channels.length || IdentifiedChannel.is(o.channels[0])) &&
+          Array.isArray(o.acknowledgements) &&
+          (!o.acknowledgements.length ||
+            PacketState.is(o.acknowledgements[0])) &&
+          Array.isArray(o.commitments) &&
+          (!o.commitments.length || PacketState.is(o.commitments[0])) &&
+          Array.isArray(o.receipts) &&
+          (!o.receipts.length || PacketState.is(o.receipts[0])) &&
+          Array.isArray(o.sendSequences) &&
+          (!o.sendSequences.length || PacketSequence.is(o.sendSequences[0])) &&
+          Array.isArray(o.recvSequences) &&
+          (!o.recvSequences.length || PacketSequence.is(o.recvSequences[0])) &&
+          Array.isArray(o.ackSequences) &&
+          (!o.ackSequences.length || PacketSequence.is(o.ackSequences[0])) &&
+          typeof o.nextChannelSequence === 'bigint' &&
+          Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (Array.isArray(o.channels) &&
+          (!o.channels.length || IdentifiedChannel.isSDK(o.channels[0])) &&
+          Array.isArray(o.acknowledgements) &&
+          (!o.acknowledgements.length ||
+            PacketState.isSDK(o.acknowledgements[0])) &&
+          Array.isArray(o.commitments) &&
+          (!o.commitments.length || PacketState.isSDK(o.commitments[0])) &&
+          Array.isArray(o.receipts) &&
+          (!o.receipts.length || PacketState.isSDK(o.receipts[0])) &&
+          Array.isArray(o.send_sequences) &&
+          (!o.send_sequences.length ||
+            PacketSequence.isSDK(o.send_sequences[0])) &&
+          Array.isArray(o.recv_sequences) &&
+          (!o.recv_sequences.length ||
+            PacketSequence.isSDK(o.recv_sequences[0])) &&
+          Array.isArray(o.ack_sequences) &&
+          (!o.ack_sequences.length ||
+            PacketSequence.isSDK(o.ack_sequences[0])) &&
+          typeof o.next_channel_sequence === 'bigint' &&
+          Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -296,8 +370,34 @@ function createBasePacketSequence(): PacketSequence {
     sequence: BigInt(0),
   };
 }
+/**
+ * PacketSequence defines the genesis type necessary to retrieve and store
+ * next send and receive sequences.
+ * @name PacketSequence
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketSequence
+ */
 export const PacketSequence = {
   typeUrl: '/ibc.core.channel.v1.PacketSequence' as const,
+  aminoType: 'cosmos-sdk/PacketSequence' as const,
+  is(o: any): o is PacketSequence {
+    return (
+      o &&
+      (o.$typeUrl === PacketSequence.typeUrl ||
+        (typeof o.portId === 'string' &&
+          typeof o.channelId === 'string' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is PacketSequenceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PacketSequence.typeUrl ||
+        (typeof o.port_id === 'string' &&
+          typeof o.channel_id === 'string' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
   encode(
     message: PacketSequence,
     writer: BinaryWriter = BinaryWriter.create(),

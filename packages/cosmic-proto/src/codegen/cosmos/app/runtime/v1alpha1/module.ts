@@ -2,9 +2,16 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Module is the config object for the runtime module. */
+/**
+ * Module is the config object for the runtime module.
+ * @name Module
+ * @package cosmos.app.runtime.v1alpha1
+ * @see proto type: cosmos.app.runtime.v1alpha1.Module
+ */
 export interface Module {
-  /** app_name is the name of the app. */
+  /**
+   * app_name is the name of the app.
+   */
   appName: string;
   /**
    * begin_blockers specifies the module names of begin blockers
@@ -58,7 +65,12 @@ export interface ModuleProtoMsg {
   typeUrl: '/cosmos.app.runtime.v1alpha1.Module';
   value: Uint8Array;
 }
-/** Module is the config object for the runtime module. */
+/**
+ * Module is the config object for the runtime module.
+ * @name ModuleSDKType
+ * @package cosmos.app.runtime.v1alpha1
+ * @see proto type: cosmos.app.runtime.v1alpha1.Module
+ */
 export interface ModuleSDKType {
   app_name: string;
   begin_blockers: string[];
@@ -73,11 +85,18 @@ export interface ModuleSDKType {
 /**
  * StoreKeyConfig may be supplied to override the default module store key, which
  * is the module name.
+ * @name StoreKeyConfig
+ * @package cosmos.app.runtime.v1alpha1
+ * @see proto type: cosmos.app.runtime.v1alpha1.StoreKeyConfig
  */
 export interface StoreKeyConfig {
-  /** name of the module to override the store key of */
+  /**
+   * name of the module to override the store key of
+   */
   moduleName: string;
-  /** the kv store key to use instead of the module name. */
+  /**
+   * the kv store key to use instead of the module name.
+   */
   kvStoreKey: string;
 }
 export interface StoreKeyConfigProtoMsg {
@@ -87,6 +106,9 @@ export interface StoreKeyConfigProtoMsg {
 /**
  * StoreKeyConfig may be supplied to override the default module store key, which
  * is the module name.
+ * @name StoreKeyConfigSDKType
+ * @package cosmos.app.runtime.v1alpha1
+ * @see proto type: cosmos.app.runtime.v1alpha1.StoreKeyConfig
  */
 export interface StoreKeyConfigSDKType {
   module_name: string;
@@ -105,8 +127,69 @@ function createBaseModule(): Module {
     prepareCheckStaters: [],
   };
 }
+/**
+ * Module is the config object for the runtime module.
+ * @name Module
+ * @package cosmos.app.runtime.v1alpha1
+ * @see proto type: cosmos.app.runtime.v1alpha1.Module
+ */
 export const Module = {
   typeUrl: '/cosmos.app.runtime.v1alpha1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (typeof o.appName === 'string' &&
+          Array.isArray(o.beginBlockers) &&
+          (!o.beginBlockers.length || typeof o.beginBlockers[0] === 'string') &&
+          Array.isArray(o.endBlockers) &&
+          (!o.endBlockers.length || typeof o.endBlockers[0] === 'string') &&
+          Array.isArray(o.initGenesis) &&
+          (!o.initGenesis.length || typeof o.initGenesis[0] === 'string') &&
+          Array.isArray(o.exportGenesis) &&
+          (!o.exportGenesis.length || typeof o.exportGenesis[0] === 'string') &&
+          Array.isArray(o.overrideStoreKeys) &&
+          (!o.overrideStoreKeys.length ||
+            StoreKeyConfig.is(o.overrideStoreKeys[0])) &&
+          Array.isArray(o.orderMigrations) &&
+          (!o.orderMigrations.length ||
+            typeof o.orderMigrations[0] === 'string') &&
+          Array.isArray(o.precommiters) &&
+          (!o.precommiters.length || typeof o.precommiters[0] === 'string') &&
+          Array.isArray(o.prepareCheckStaters) &&
+          (!o.prepareCheckStaters.length ||
+            typeof o.prepareCheckStaters[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (typeof o.app_name === 'string' &&
+          Array.isArray(o.begin_blockers) &&
+          (!o.begin_blockers.length ||
+            typeof o.begin_blockers[0] === 'string') &&
+          Array.isArray(o.end_blockers) &&
+          (!o.end_blockers.length || typeof o.end_blockers[0] === 'string') &&
+          Array.isArray(o.init_genesis) &&
+          (!o.init_genesis.length || typeof o.init_genesis[0] === 'string') &&
+          Array.isArray(o.export_genesis) &&
+          (!o.export_genesis.length ||
+            typeof o.export_genesis[0] === 'string') &&
+          Array.isArray(o.override_store_keys) &&
+          (!o.override_store_keys.length ||
+            StoreKeyConfig.isSDK(o.override_store_keys[0])) &&
+          Array.isArray(o.order_migrations) &&
+          (!o.order_migrations.length ||
+            typeof o.order_migrations[0] === 'string') &&
+          Array.isArray(o.precommiters) &&
+          (!o.precommiters.length || typeof o.precommiters[0] === 'string') &&
+          Array.isArray(o.prepare_check_staters) &&
+          (!o.prepare_check_staters.length ||
+            typeof o.prepare_check_staters[0] === 'string')))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -293,8 +376,31 @@ function createBaseStoreKeyConfig(): StoreKeyConfig {
     kvStoreKey: '',
   };
 }
+/**
+ * StoreKeyConfig may be supplied to override the default module store key, which
+ * is the module name.
+ * @name StoreKeyConfig
+ * @package cosmos.app.runtime.v1alpha1
+ * @see proto type: cosmos.app.runtime.v1alpha1.StoreKeyConfig
+ */
 export const StoreKeyConfig = {
   typeUrl: '/cosmos.app.runtime.v1alpha1.StoreKeyConfig' as const,
+  aminoType: 'cosmos-sdk/StoreKeyConfig' as const,
+  is(o: any): o is StoreKeyConfig {
+    return (
+      o &&
+      (o.$typeUrl === StoreKeyConfig.typeUrl ||
+        (typeof o.moduleName === 'string' && typeof o.kvStoreKey === 'string'))
+    );
+  },
+  isSDK(o: any): o is StoreKeyConfigSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StoreKeyConfig.typeUrl ||
+        (typeof o.module_name === 'string' &&
+          typeof o.kv_store_key === 'string'))
+    );
+  },
   encode(
     message: StoreKeyConfig,
     writer: BinaryWriter = BinaryWriter.create(),

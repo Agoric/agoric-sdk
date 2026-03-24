@@ -1,10 +1,10 @@
 /* eslint-env node */
 /* global globalThis */
 import { Command } from 'commander';
-import { existsSync, mkdirSync, readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-import { homedir } from 'os';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { homedir } from 'node:os';
 import {
   readFile as readAsync,
   writeFile as writeAsync,

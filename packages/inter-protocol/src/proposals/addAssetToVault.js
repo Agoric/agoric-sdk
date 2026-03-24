@@ -1,4 +1,3 @@
-// @jessie-check
 // @ts-check
 
 import { AmountMath, AssetKind } from '@agoric/ertp';
@@ -253,7 +252,7 @@ export const registerScaledPriceAuthority = async (powers, { options }) => {
 
   // publish into agoricNames so that others can await its presence.
   // This must stay after registerPriceAuthority above so it's evidence of registration.
-  // eslint-disable-next-line no-restricted-syntax -- computed property
+
   produceInstance[label].resolve(spaKit.instance);
 };
 
@@ -298,10 +297,10 @@ export const addAssetToVault = async (
   );
 
   // don't add the collateral offering to vaultFactory until its price feed is available
-  // eslint-disable-next-line no-restricted-syntax -- allow this computed property
+
   await consumeInstance[oracleBrandFeedName(oracleBrand, 'USD')];
   // await also the negotiable brand
-  // eslint-disable-next-line no-restricted-syntax -- allow this computed property
+
   await consumeInstance[scaledPriceFeedName(issuerName)];
 
   const stable = await stableP;

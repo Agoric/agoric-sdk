@@ -1,7 +1,7 @@
 // @ts-nocheck
 /* eslint-disable */
 import '@endo/init';
-import process from 'process';
+import process from 'node:process';
 import { openSwingStore } from '@agoric/swing-store';
 
 const log = console.log;

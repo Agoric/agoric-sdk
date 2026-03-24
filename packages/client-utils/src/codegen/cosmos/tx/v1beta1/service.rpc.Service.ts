@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   SimulateRequest,
@@ -21,7 +21,7 @@ import {
   TxEncodeAminoResponse,
   TxDecodeAminoRequest,
   TxDecodeAminoResponse,
-} from './service.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/tx/v1beta1/service.js';
 /** Service defines a gRPC service for interacting with transactions. */
 export interface Service {
   /** Simulate simulates executing a transaction for estimating gas usage. */
@@ -66,8 +66,8 @@ export interface Service {
   txDecodeAmino(request: TxDecodeAminoRequest): Promise<TxDecodeAminoResponse>;
 }
 export class ServiceClientImpl implements Service {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.simulate = this.simulate.bind(this);
     this.getTx = this.getTx.bind(this);

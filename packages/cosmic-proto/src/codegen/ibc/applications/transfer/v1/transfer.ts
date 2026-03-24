@@ -5,6 +5,9 @@ import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * DenomTrace contains the base denomination for ICS20 fungible tokens and the
  * source tracing information path.
+ * @name DenomTrace
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.DenomTrace
  */
 export interface DenomTrace {
   /**
@@ -12,7 +15,9 @@ export interface DenomTrace {
    * source of the fungible token.
    */
   path: string;
-  /** base denomination of the relayed fungible token. */
+  /**
+   * base denomination of the relayed fungible token.
+   */
   baseDenom: string;
 }
 export interface DenomTraceProtoMsg {
@@ -22,6 +27,9 @@ export interface DenomTraceProtoMsg {
 /**
  * DenomTrace contains the base denomination for ICS20 fungible tokens and the
  * source tracing information path.
+ * @name DenomTraceSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.DenomTrace
  */
 export interface DenomTraceSDKType {
   path: string;
@@ -32,6 +40,9 @@ export interface DenomTraceSDKType {
  * NOTE: To prevent a single token from being transferred, set the
  * TransfersEnabled parameter to true and then set the bank module's SendEnabled
  * parameter for the denomination to false.
+ * @name Params
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Params
  */
 export interface Params {
   /**
@@ -54,6 +65,9 @@ export interface ParamsProtoMsg {
  * NOTE: To prevent a single token from being transferred, set the
  * TransfersEnabled parameter to true and then set the bank module's SendEnabled
  * parameter for the denomination to false.
+ * @name ParamsSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Params
  */
 export interface ParamsSDKType {
   send_enabled: boolean;
@@ -65,8 +79,30 @@ function createBaseDenomTrace(): DenomTrace {
     baseDenom: '',
   };
 }
+/**
+ * DenomTrace contains the base denomination for ICS20 fungible tokens and the
+ * source tracing information path.
+ * @name DenomTrace
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.DenomTrace
+ */
 export const DenomTrace = {
   typeUrl: '/ibc.applications.transfer.v1.DenomTrace' as const,
+  aminoType: 'cosmos-sdk/DenomTrace' as const,
+  is(o: any): o is DenomTrace {
+    return (
+      o &&
+      (o.$typeUrl === DenomTrace.typeUrl ||
+        (typeof o.path === 'string' && typeof o.baseDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is DenomTraceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === DenomTrace.typeUrl ||
+        (typeof o.path === 'string' && typeof o.base_denom === 'string'))
+    );
+  },
   encode(
     message: DenomTrace,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -137,8 +173,34 @@ function createBaseParams(): Params {
     receiveEnabled: false,
   };
 }
+/**
+ * Params defines the set of IBC transfer parameters.
+ * NOTE: To prevent a single token from being transferred, set the
+ * TransfersEnabled parameter to true and then set the bank module's SendEnabled
+ * parameter for the denomination to false.
+ * @name Params
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.Params
+ */
 export const Params = {
   typeUrl: '/ibc.applications.transfer.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.sendEnabled === 'boolean' &&
+          typeof o.receiveEnabled === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.send_enabled === 'boolean' &&
+          typeof o.receive_enabled === 'boolean'))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -1,4 +1,3 @@
-// @jessie-check
 // @ts-check
 
 import { M } from '@endo/patterns';

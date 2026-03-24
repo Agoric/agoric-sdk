@@ -19,7 +19,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:types": "yarn run -T tsc",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
@@ -88,9 +88,17 @@
     "example": "examples"
   },
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "workerThreads": false,
     "files": [
       "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
     ],
     "require": [
       "@agoric/internal/src/ava-force-exit.mjs",

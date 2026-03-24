@@ -3,8 +3,8 @@
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 
-import fs from 'fs/promises';
-import os from 'os';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 
 import { makeInstall } from './install.js';
 import { makeOfferAndFindInvitationAmount } from './offer.js';
@@ -70,6 +70,9 @@ export const makeHelpers = async (homePromise, endowments) => {
     publishBundle,
     pathResolve,
     cacheDir = pathResolve(os.homedir(), '.agoric/cache'),
+    onWriteCoreEval,
+    writeFile,
+    log,
   } = endowments;
 
   // Internal-to-this-function lazy dependencies.
@@ -156,6 +159,9 @@ export const makeHelpers = async (homePromise, endowments) => {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,
         getBundlerMaker: helpers.getBundlerMaker,
+        ...(onWriteCoreEval && { onWriteCoreEval }),
+        ...(log && { log }),
+        ...(writeFile && { writeFile }),
       });
     },
     /** @deprecated use writeCoreEval */
@@ -163,6 +169,9 @@ export const makeHelpers = async (homePromise, endowments) => {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,
         getBundlerMaker: helpers.getBundlerMaker,
+        ...(onWriteCoreEval && { onWriteCoreEval }),
+        ...(log && { log }),
+        ...(writeFile && { writeFile }),
       });
     },
   });

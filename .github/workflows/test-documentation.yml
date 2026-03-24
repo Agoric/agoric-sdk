@@ -19,7 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
           path: ./agoric-sdk
       - uses: ./agoric-sdk/.github/actions/restore-node
         with:

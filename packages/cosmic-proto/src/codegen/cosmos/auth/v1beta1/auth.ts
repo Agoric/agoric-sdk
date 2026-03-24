@@ -9,6 +9,9 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
  * BaseAccount defines a base account type. It contains all the necessary fields
  * for basic account functionality. Any custom account type should extend this
  * type for additional functionality (e.g. vesting).
+ * @name BaseAccount
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.BaseAccount
  */
 export interface BaseAccount {
   $typeUrl?: '/cosmos.auth.v1beta1.BaseAccount';
@@ -25,6 +28,9 @@ export interface BaseAccountProtoMsg {
  * BaseAccount defines a base account type. It contains all the necessary fields
  * for basic account functionality. Any custom account type should extend this
  * type for additional functionality (e.g. vesting).
+ * @name BaseAccountSDKType
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.BaseAccount
  */
 export interface BaseAccountSDKType {
   $typeUrl?: '/cosmos.auth.v1beta1.BaseAccount';
@@ -33,7 +39,12 @@ export interface BaseAccountSDKType {
   account_number: bigint;
   sequence: bigint;
 }
-/** ModuleAccount defines an account for modules that holds coins on a pool. */
+/**
+ * ModuleAccount defines an account for modules that holds coins on a pool.
+ * @name ModuleAccount
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleAccount
+ */
 export interface ModuleAccount {
   $typeUrl?: '/cosmos.auth.v1beta1.ModuleAccount';
   baseAccount?: BaseAccount;
@@ -44,7 +55,12 @@ export interface ModuleAccountProtoMsg {
   typeUrl: '/cosmos.auth.v1beta1.ModuleAccount';
   value: Uint8Array;
 }
-/** ModuleAccount defines an account for modules that holds coins on a pool. */
+/**
+ * ModuleAccount defines an account for modules that holds coins on a pool.
+ * @name ModuleAccountSDKType
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleAccount
+ */
 export interface ModuleAccountSDKType {
   $typeUrl?: '/cosmos.auth.v1beta1.ModuleAccount';
   base_account?: BaseAccountSDKType;
@@ -55,9 +71,14 @@ export interface ModuleAccountSDKType {
  * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
  *
  * Since: cosmos-sdk 0.47
+ * @name ModuleCredential
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleCredential
  */
 export interface ModuleCredential {
-  /** module_name is the name of the module used for address derivation (passed into address.Module). */
+  /**
+   * module_name is the name of the module used for address derivation (passed into address.Module).
+   */
   moduleName: string;
   /**
    * derivation_keys is for deriving a module account address (passed into address.Module)
@@ -73,12 +94,20 @@ export interface ModuleCredentialProtoMsg {
  * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
  *
  * Since: cosmos-sdk 0.47
+ * @name ModuleCredentialSDKType
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleCredential
  */
 export interface ModuleCredentialSDKType {
   module_name: string;
   derivation_keys: Uint8Array[];
 }
-/** Params defines the parameters for the auth module. */
+/**
+ * Params defines the parameters for the auth module.
+ * @name Params
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.Params
+ */
 export interface Params {
   maxMemoCharacters: bigint;
   txSigLimit: bigint;
@@ -90,7 +119,12 @@ export interface ParamsProtoMsg {
   typeUrl: '/cosmos.auth.v1beta1.Params';
   value: Uint8Array;
 }
-/** Params defines the parameters for the auth module. */
+/**
+ * Params defines the parameters for the auth module.
+ * @name ParamsSDKType
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.Params
+ */
 export interface ParamsSDKType {
   max_memo_characters: bigint;
   tx_sig_limit: bigint;
@@ -107,8 +141,35 @@ function createBaseBaseAccount(): BaseAccount {
     sequence: BigInt(0),
   };
 }
+/**
+ * BaseAccount defines a base account type. It contains all the necessary fields
+ * for basic account functionality. Any custom account type should extend this
+ * type for additional functionality (e.g. vesting).
+ * @name BaseAccount
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.BaseAccount
+ */
 export const BaseAccount = {
   typeUrl: '/cosmos.auth.v1beta1.BaseAccount' as const,
+  aminoType: 'cosmos-sdk/BaseAccount' as const,
+  is(o: any): o is BaseAccount {
+    return (
+      o &&
+      (o.$typeUrl === BaseAccount.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.accountNumber === 'bigint' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is BaseAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BaseAccount.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.account_number === 'bigint' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
   encode(
     message: BaseAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -215,8 +276,33 @@ function createBaseModuleAccount(): ModuleAccount {
     permissions: [],
   };
 }
+/**
+ * ModuleAccount defines an account for modules that holds coins on a pool.
+ * @name ModuleAccount
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleAccount
+ */
 export const ModuleAccount = {
   typeUrl: '/cosmos.auth.v1beta1.ModuleAccount' as const,
+  aminoType: 'cosmos-sdk/ModuleAccount' as const,
+  is(o: any): o is ModuleAccount {
+    return (
+      o &&
+      (o.$typeUrl === ModuleAccount.typeUrl ||
+        (typeof o.name === 'string' &&
+          Array.isArray(o.permissions) &&
+          (!o.permissions.length || typeof o.permissions[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ModuleAccount.typeUrl ||
+        (typeof o.name === 'string' &&
+          Array.isArray(o.permissions) &&
+          (!o.permissions.length || typeof o.permissions[0] === 'string')))
+    );
+  },
   encode(
     message: ModuleAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -313,8 +399,39 @@ function createBaseModuleCredential(): ModuleCredential {
     derivationKeys: [],
   };
 }
+/**
+ * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
+ *
+ * Since: cosmos-sdk 0.47
+ * @name ModuleCredential
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.ModuleCredential
+ */
 export const ModuleCredential = {
   typeUrl: '/cosmos.auth.v1beta1.ModuleCredential' as const,
+  aminoType: 'cosmos-sdk/GroupAccountCredential' as const,
+  is(o: any): o is ModuleCredential {
+    return (
+      o &&
+      (o.$typeUrl === ModuleCredential.typeUrl ||
+        (typeof o.moduleName === 'string' &&
+          Array.isArray(o.derivationKeys) &&
+          (!o.derivationKeys.length ||
+            o.derivationKeys[0] instanceof Uint8Array ||
+            typeof o.derivationKeys[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleCredentialSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ModuleCredential.typeUrl ||
+        (typeof o.module_name === 'string' &&
+          Array.isArray(o.derivation_keys) &&
+          (!o.derivation_keys.length ||
+            o.derivation_keys[0] instanceof Uint8Array ||
+            typeof o.derivation_keys[0] === 'string')))
+    );
+  },
   encode(
     message: ModuleCredential,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -396,8 +513,37 @@ function createBaseParams(): Params {
     sigVerifyCostSecp256k1: BigInt(0),
   };
 }
+/**
+ * Params defines the parameters for the auth module.
+ * @name Params
+ * @package cosmos.auth.v1beta1
+ * @see proto type: cosmos.auth.v1beta1.Params
+ */
 export const Params = {
   typeUrl: '/cosmos.auth.v1beta1.Params' as const,
+  aminoType: 'cosmos-sdk/x/auth/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.maxMemoCharacters === 'bigint' &&
+          typeof o.txSigLimit === 'bigint' &&
+          typeof o.txSizeCostPerByte === 'bigint' &&
+          typeof o.sigVerifyCostEd25519 === 'bigint' &&
+          typeof o.sigVerifyCostSecp256k1 === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (typeof o.max_memo_characters === 'bigint' &&
+          typeof o.tx_sig_limit === 'bigint' &&
+          typeof o.tx_size_cost_per_byte === 'bigint' &&
+          typeof o.sig_verify_cost_ed25519 === 'bigint' &&
+          typeof o.sig_verify_cost_secp256k1 === 'bigint'))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

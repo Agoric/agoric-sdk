@@ -57,7 +57,6 @@ const results = [];
 for (const [index, { name, category }] of offFlags.entries()) {
   const label = `[${index + 1}/${offFlags.length}] ${name} (${category})`;
   console.log(label);
-  // eslint-disable-next-line no-await-in-loop
   const result = await countErrorsForFlag(configPath, name);
   results.push({ ...result, category });
 }

@@ -1,7 +1,7 @@
 /* eslint-env node */
 import { KERNEL_STATS_METRICS } from '@agoric/internal/src/metrics.js';
-import { spawnSync } from 'child_process';
-import fs from 'fs';
+import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
 
 const AUTOBENCH_METRICS_URL = process.env.AUTOBENCH_METRICS_URL;
 

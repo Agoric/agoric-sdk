@@ -1,6 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive, RemotableObject } from '@endo/pass-style';
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in JSDoc
 import type { mustMatch as endoMustMatch, Pattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';

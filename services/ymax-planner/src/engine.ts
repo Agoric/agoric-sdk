@@ -123,6 +123,7 @@ type PendingTxRecord = { blockHeight: bigint; tx: PendingTx };
 const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
   TxType.CCTP_TO_EVM,
   TxType.GMP,
+  TxType.ROUTED_GMP,
   TxType.MAKE_ACCOUNT,
 ];
 
@@ -553,6 +554,13 @@ export const processPendingTxEvents = async (
 
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
+
+      // Skip if a watcher is already running for this txId.
+      if (pendingTxAbortControllers.has(txId)) {
+        log(`Watcher already active for ${txId}, skipping`);
+        continue;
+      }
+
       log('New pending tx', tx);
 
       const abortController = provideLazyMap(
@@ -881,14 +889,18 @@ export const startEngine = async (
         compareBigints(a.eventRecord.blockHeight, b.eventRecord.blockHeight) ||
         naturalCompare(a.path, b.path),
     );
-    await processPortfolioEvents(
-      portfolioEvents,
-      respHeight,
-      portfoliosMemory,
-      processPortfolioPowers,
-    );
-
-    await processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers);
+    // Process concurrently: pending tx watchers must subscribe to EVM events
+    // ASAP to avoid missing transactions that settle while portfolio
+    // processing (balance queries, planning, tx submission) is in progress.
+    await Promise.all([
+      processPortfolioEvents(
+        portfolioEvents,
+        respHeight,
+        portfoliosMemory,
+        processPortfolioPowers,
+      ),
+      processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
+    ]);
 
     console.log(
       inspectForStdout({

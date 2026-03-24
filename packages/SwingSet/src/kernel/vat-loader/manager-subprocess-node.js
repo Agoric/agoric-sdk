@@ -13,7 +13,6 @@ import { makeManagerKit } from './manager-helper.js';
 // start a "Worker" (Node's tool for starting new threads) and load a bundle
 // into it
 
-// eslint-disable-next-line no-unused-vars
 function parentLog(_first, ..._args) {
   // console.error(`--parent: ${_first}`, ..._args);
 }

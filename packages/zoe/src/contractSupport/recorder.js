@@ -1,11 +1,7 @@
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import {
-  makeFakeMarshaller,
-  makeFakeStorage,
-} from '@agoric/notifier/tools/testSupports.js';
 import { mustMatch } from '@agoric/store';
-import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
+import { M, prepareExoClass } from '@agoric/vat-data';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
@@ -242,18 +238,6 @@ export const prepareRecorderKitMakers = (baggage, marshaller) => {
     makeRecorder,
     makeRecorderKit,
     makeERecorderKit,
-  };
-};
-
-/**
- * For use in tests
- */
-export const prepareMockRecorderKitMakers = () => {
-  const baggage = makeScalarBigMapStore('mock recorder baggage');
-  const marshaller = makeFakeMarshaller();
-  return {
-    ...prepareRecorderKitMakers(baggage, marshaller),
-    storageNode: makeFakeStorage('mock recorder storage'),
   };
 };
 

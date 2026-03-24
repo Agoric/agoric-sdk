@@ -40,7 +40,7 @@ import {
   mockEvmCtx,
   mockGasEstimator,
   createMockSpectrumBlockchain,
-  createMockEvmProviders,
+  createMockProviderSets,
 } from './mocks.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { EvmAddress } from '@agoric/fast-usdc';
@@ -72,7 +72,7 @@ const makeMovementDesc = (src: string, dest: string, value: bigint) => {
 const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
   amount: NatAmount,
-  feeBrand: Brand<'nat'>,
+  feeTokenBrand: Brand<'nat'>,
   powers: {
     readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
     cosmosRest?: CosmosRestClient;
@@ -97,9 +97,9 @@ const handleDeposit = async (
     positionTokenAddresses: powers.positionTokenAddresses || {},
     spectrumBlockchain: createMockSpectrumBlockchain({}),
     chainNameToChainIdMap: CaipChainIds.testnet,
-    evmProviders: createMockEvmProviders({
+    evmProviders: createMockProviderSets({
       addressToBalanceMap: powers.addressToBalanceMap || {},
-    }),
+    }).evmProviders,
     cosmosRest: powers.cosmosRest || ({} as unknown as CosmosRestClient),
     ...powers,
   });
@@ -109,7 +109,7 @@ const handleDeposit = async (
     currentBalances,
     targetAllocation,
     network,
-    feeBrand,
+    feeBrand: feeTokenBrand,
     gasEstimator: powers.gasEstimator,
   });
   return { policyVersion, rebalanceCount, plan };
@@ -150,11 +150,11 @@ test('getNonDustBalances filters balances at or below the dust epsilon', async t
       Compound_Base: compoundBaseAddress,
     },
     chainNameToChainIdMap: CaipChainIds.mainnet,
-    evmProviders: createMockEvmProviders({
+    evmProviders: createMockProviderSets({
       addressToBalanceMap: {
         [compoundBaseAddress]: compoundBaseBalance,
       },
-    }),
+    }).evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
@@ -669,11 +669,11 @@ test('getNonDustBalances works for erc4626 vaults', async t => {
       noble: 'uusdc',
     },
     chainNameToChainIdMap: CaipChainIds.testnet,
-    evmProviders: createMockEvmProviders({
+    evmProviders: createMockProviderSets({
       addressToBalanceMap: {
         [erc4626Address]: erc4626Balance,
       },
-    }),
+    }).evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['ERC4626_vaultU2_Ethereum']);

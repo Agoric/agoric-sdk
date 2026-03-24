@@ -1,144 +1,139 @@
 #!/usr/bin/env node
 /* eslint-env node */
-const { execSync, spawnSync } = require('node:child_process');
+const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const process = require('node:process');
-const telescope = require('@cosmology/telescope').default;
+const fsp = require('node:fs/promises');
+const telescope = require('@hyperweb/telescope').default;
 const rimraf = require('rimraf').rimrafSync;
+const {
+  getBaseTelescopeOptions,
+} = require('../../cosmic-proto/tools/telescope-options.cjs');
+const {
+  detectGnuSed,
+  fixRpcTypeImports,
+  fixTypeImportForVerbatim,
+} = require('../../cosmic-proto/tools/telescope-cleanup.cjs');
 
 const protoDirs = [path.join(__dirname, '/../../cosmic-proto/proto')];
 const outPath = path.join(__dirname, '../src/codegen');
 rimraf(outPath);
 
+const isRpcFile = fileName =>
+  fileName.includes('.rpc.') || /^(rpc\.query|rpc\.tx)\.ts$/.test(fileName);
+
 /**
- * Make the JsonSafe type import compatible with TS verbatimImportSyntax
+ * Rewrite non-RPC relative imports in generated RPC modules to cosmic-proto.
  *
  * @param {string} directory
- * @param {boolean} gnuSed
+ * @returns {Promise<string[]>}
  */
-function fixTypeImport(directory, gnuSed) {
-  const fullPath = path.resolve(directory);
-  const command = `
-    find ${fullPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
-    -e 's/import { JsonSafe/import {type JsonSafe/g' \
-    -e 's/import { Rpc/import {type Rpc/g' \
-    -e 's/ HttpEndpoint }/ type HttpEndpoint }/g' \
-    -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
-  `;
+const rewriteRpcImportsToCosmicProto = async directory => {
+  /** @type {string[]} */
+  const changed = [];
 
-  execSync(command, { stdio: 'inherit' });
-}
+  /**
+   * @param {string} dirPath
+   */
+  const walk = async dirPath => {
+    const entries = await fsp.readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        // eslint-disable-next-line no-await-in-loop
+        await walk(fullPath);
+        continue;
+      }
+      if (!entry.isFile() || !isRpcFile(entry.name)) {
+        continue;
+      }
+
+      // eslint-disable-next-line no-await-in-loop
+      const source = await fsp.readFile(fullPath, 'utf8');
+      const next = source.replaceAll(
+        /((?:from\s+['"]|import\(\s*['"]))(\.{1,2}\/[^'"]+)(['"]\s*\)?)/g,
+        (match, start, specifier, end) => {
+          if (
+            specifier.includes('.rpc.') ||
+            /^\.\/rpc\.(query|tx)\.js$/.test(specifier)
+          ) {
+            return match;
+          }
+          const resolved = path.resolve(path.dirname(fullPath), specifier);
+          const modulePath = path
+            .relative(directory, resolved)
+            .replaceAll('\\', '/');
+          return `${start}@agoric/cosmic-proto/codegen/${modulePath}${end}`;
+        },
+      );
+      if (next !== source) {
+        // eslint-disable-next-line no-await-in-loop
+        await fsp.writeFile(fullPath, next);
+        changed.push(fullPath);
+      }
+    }
+  };
+
+  await walk(directory);
+  return changed;
+};
+
+/**
+ * Remove all generated non-RPC modules from client-utils.
+ *
+ * @param {string} directory
+ * @returns {Promise<string[]>}
+ */
+const pruneNonRpcGeneratedModules = async directory => {
+  /** @type {string[]} */
+  const removed = [];
+
+  /**
+   * @param {string} dirPath
+   */
+  const walk = async dirPath => {
+    const entries = await fsp.readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        // eslint-disable-next-line no-await-in-loop
+        await walk(fullPath);
+        continue;
+      }
+      if (
+        !entry.isFile() ||
+        !entry.name.endsWith('.ts') ||
+        isRpcFile(entry.name)
+      ) {
+        continue;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await fsp.unlink(fullPath);
+      removed.push(fullPath);
+    }
+  };
+
+  await walk(directory);
+  return removed;
+};
+
+const options = getBaseTelescopeOptions();
+options.rpcClients = { ...options.rpcClients, enabled: true };
+options.stargateClients = { enabled: true };
 
 // XXX copied from cosmic-proto's codegen
 telescope({
   protoDirs,
   outPath,
-  options: {
-    // for ESM compatibility
-    restoreImportExtension: '.js',
-    tsDisable: {
-      // FIXME types aren't resolving correctly
-      disableAll: true,
-      files: [
-        'cosmos/authz/v1beta1/tx.amino.ts',
-        'cosmos/staking/v1beta1/tx.amino.ts',
-      ],
-      patterns: ['**/*amino.ts', '**/*registry.ts'],
-    },
-    interfaces: {
-      enabled: false,
-      useUnionTypes: false,
-    },
-    prototypes: {
-      includePackageVar: false,
-      excluded: {
-        packages: [
-          'ibc.applications.fee.v1', // issue with parsing protos (LCD routes with nested objects in params)
-
-          'cosmos.app.v1alpha1',
-          'cosmos.app.v1beta1',
-          'cosmos.base.kv.v1beta1',
-          'cosmos.base.reflection.v1beta1',
-          'cosmos.base.snapshots.v1beta1',
-          'cosmos.base.store.v1beta1',
-          'cosmos.base.tendermint.v1beta1',
-          'cosmos.crisis.v1beta1',
-          'cosmos.evidence.v1beta1',
-          'cosmos.genutil.v1beta1',
-
-          'cosmos.autocli.v1',
-
-          'cosmos.msg.v1',
-          'cosmos.nft.v1beta1',
-          'cosmos.capability.v1beta1',
-          'cosmos.orm.v1alpha1',
-          'cosmos.orm.v1',
-          'cosmos.slashing.v1beta1',
-          'google.api',
-          'ibc.core.port.v1',
-          'ibc.core.types.v1',
-        ],
-      },
-      methods: {
-        fromJSON: true,
-        toJSON: true,
-        encode: true,
-        decode: true,
-        fromPartial: true,
-        toAmino: false,
-        fromAmino: false,
-        fromProto: true,
-        toProto: true,
-      },
-      parser: {
-        keepCase: false,
-      },
-      typingsFormat: {
-        useDeepPartial: false,
-        timestamp: 'timestamp',
-
-        // [Defaults]
-        // timestamp: 'date',
-        // duration: 'duration',
-        // num64: 'bigint',
-        // useExact: false,
-        // customTypes: {
-        //   useCosmosSDKDec: true,
-        // },
-        customTypes: {
-          base64Lib: '@endo/base64',
-          useEnhancedDecimal: true,
-        },
-      },
-    },
-    aminoEncoding: {
-      // Necessary for getSigningAgoricClient but that's future work
-      // UNTIL https://github.com/Agoric/agoric-sdk/issues/5912
-      enabled: false,
-    },
-    lcdClients: {
-      // REST APIs are deprecated?
-      enabled: false,
-    },
-    rpcClients: {
-      // Main difference from cosmic-proto
-      enabled: true,
-    },
-    stargateClients: {
-      enabled: true,
-    },
-  },
+  options,
 })
-  .then(() => {
+  .then(async () => {
     console.log('🔨 code generated by Telescope');
 
     // for all files under codegen/ replace "import { JsonSafe" with "import type { JsonSafe"
-    const gnuSed =
-      execSync(`sed --help 2>&1 | sed 2q | grep -qe '-i ' || printf gnu`, {
-        encoding: 'utf8',
-      }) === 'gnu';
-    fixTypeImport('./src/codegen', gnuSed);
+    const gnuSed = detectGnuSed();
+    fixTypeImportForVerbatim('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
     const prettierResult = spawnSync(
@@ -151,6 +146,33 @@ telescope({
     );
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
+
+    const cleanedFiles = await fixRpcTypeImports(outPath);
+    const rewrittenFiles = await rewriteRpcImportsToCosmicProto(outPath);
+    const removedFiles = await pruneNonRpcGeneratedModules(outPath);
+    const postProcessFiles = [...new Set([...cleanedFiles, ...rewrittenFiles])];
+    if (postProcessFiles.length > 0) {
+      const prettierHelpersResult = spawnSync(
+        'yarn',
+        [
+          'run',
+          '--top-level',
+          'prettier',
+          '--write',
+          ...postProcessFiles.map(file =>
+            path.relative(path.join(__dirname, '..'), file),
+          ),
+        ],
+        {
+          cwd: path.join(__dirname, '..'),
+          stdio: 'inherit',
+        },
+      );
+      assert.equal(prettierHelpersResult.status, 0);
+    }
+    console.log(
+      `🧹 rewrote RPC imports and pruned ${removedFiles.length} generated support modules`,
+    );
 
     console.log('ℹ️ `yarn build && yarn test` to test it.');
   })

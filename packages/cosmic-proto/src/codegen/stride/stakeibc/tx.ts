@@ -42,6 +42,11 @@ export function authzPermissionChangeToJSON(
       return 'UNRECOGNIZED';
   }
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBounds
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateInnerRedemptionRateBounds
+ */
 export interface MsgUpdateInnerRedemptionRateBounds {
   creator: string;
   chainId: string;
@@ -52,18 +57,38 @@ export interface MsgUpdateInnerRedemptionRateBoundsProtoMsg {
   typeUrl: '/stride.stakeibc.MsgUpdateInnerRedemptionRateBounds';
   value: Uint8Array;
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBoundsSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateInnerRedemptionRateBounds
+ */
 export interface MsgUpdateInnerRedemptionRateBoundsSDKType {
   creator: string;
   chain_id: string;
   min_inner_redemption_rate: string;
   max_inner_redemption_rate: string;
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBoundsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateInnerRedemptionRateBoundsResponse
+ */
 export interface MsgUpdateInnerRedemptionRateBoundsResponse {}
 export interface MsgUpdateInnerRedemptionRateBoundsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgUpdateInnerRedemptionRateBoundsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBoundsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateInnerRedemptionRateBoundsResponse
+ */
 export interface MsgUpdateInnerRedemptionRateBoundsResponseSDKType {}
+/**
+ * @name MsgLiquidStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLiquidStake
+ */
 export interface MsgLiquidStake {
   creator: string;
   amount: string;
@@ -73,11 +98,21 @@ export interface MsgLiquidStakeProtoMsg {
   typeUrl: '/stride.stakeibc.MsgLiquidStake';
   value: Uint8Array;
 }
+/**
+ * @name MsgLiquidStakeSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLiquidStake
+ */
 export interface MsgLiquidStakeSDKType {
   creator: string;
   amount: string;
   host_denom: string;
 }
+/**
+ * @name MsgLiquidStakeResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLiquidStakeResponse
+ */
 export interface MsgLiquidStakeResponse {
   stToken: Coin;
 }
@@ -85,9 +120,19 @@ export interface MsgLiquidStakeResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgLiquidStakeResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgLiquidStakeResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLiquidStakeResponse
+ */
 export interface MsgLiquidStakeResponseSDKType {
   st_token: CoinSDKType;
 }
+/**
+ * @name MsgLSMLiquidStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLSMLiquidStake
+ */
 export interface MsgLSMLiquidStake {
   creator: string;
   amount: string;
@@ -97,11 +142,21 @@ export interface MsgLSMLiquidStakeProtoMsg {
   typeUrl: '/stride.stakeibc.MsgLSMLiquidStake';
   value: Uint8Array;
 }
+/**
+ * @name MsgLSMLiquidStakeSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLSMLiquidStake
+ */
 export interface MsgLSMLiquidStakeSDKType {
   creator: string;
   amount: string;
   lsm_token_ibc_denom: string;
 }
+/**
+ * @name MsgLSMLiquidStakeResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLSMLiquidStakeResponse
+ */
 export interface MsgLSMLiquidStakeResponse {
   transactionComplete: boolean;
 }
@@ -109,9 +164,19 @@ export interface MsgLSMLiquidStakeResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgLSMLiquidStakeResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgLSMLiquidStakeResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLSMLiquidStakeResponse
+ */
 export interface MsgLSMLiquidStakeResponseSDKType {
   transaction_complete: boolean;
 }
+/**
+ * @name MsgClearBalance
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClearBalance
+ */
 export interface MsgClearBalance {
   creator: string;
   chainId: string;
@@ -122,18 +187,38 @@ export interface MsgClearBalanceProtoMsg {
   typeUrl: '/stride.stakeibc.MsgClearBalance';
   value: Uint8Array;
 }
+/**
+ * @name MsgClearBalanceSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClearBalance
+ */
 export interface MsgClearBalanceSDKType {
   creator: string;
   chain_id: string;
   amount: string;
   channel: string;
 }
+/**
+ * @name MsgClearBalanceResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClearBalanceResponse
+ */
 export interface MsgClearBalanceResponse {}
 export interface MsgClearBalanceResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgClearBalanceResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgClearBalanceResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClearBalanceResponse
+ */
 export interface MsgClearBalanceResponseSDKType {}
+/**
+ * @name MsgRedeemStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRedeemStake
+ */
 export interface MsgRedeemStake {
   creator: string;
   amount: string;
@@ -144,19 +229,39 @@ export interface MsgRedeemStakeProtoMsg {
   typeUrl: '/stride.stakeibc.MsgRedeemStake';
   value: Uint8Array;
 }
+/**
+ * @name MsgRedeemStakeSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRedeemStake
+ */
 export interface MsgRedeemStakeSDKType {
   creator: string;
   amount: string;
   host_zone: string;
   receiver: string;
 }
+/**
+ * @name MsgRedeemStakeResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRedeemStakeResponse
+ */
 export interface MsgRedeemStakeResponse {}
 export interface MsgRedeemStakeResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgRedeemStakeResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgRedeemStakeResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRedeemStakeResponse
+ */
 export interface MsgRedeemStakeResponseSDKType {}
-/** next: 15 */
+/**
+ * next: 15
+ * @name MsgRegisterHostZone
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRegisterHostZone
+ */
 export interface MsgRegisterHostZone {
   connectionId: string;
   bech32prefix: string;
@@ -175,7 +280,12 @@ export interface MsgRegisterHostZoneProtoMsg {
   typeUrl: '/stride.stakeibc.MsgRegisterHostZone';
   value: Uint8Array;
 }
-/** next: 15 */
+/**
+ * next: 15
+ * @name MsgRegisterHostZoneSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRegisterHostZone
+ */
 export interface MsgRegisterHostZoneSDKType {
   connection_id: string;
   bech32prefix: string;
@@ -190,15 +300,32 @@ export interface MsgRegisterHostZoneSDKType {
   community_pool_treasury_address: string;
   max_messages_per_ica_tx: bigint;
 }
+/**
+ * @name MsgRegisterHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRegisterHostZoneResponse
+ */
 export interface MsgRegisterHostZoneResponse {}
 export interface MsgRegisterHostZoneResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgRegisterHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgRegisterHostZoneResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRegisterHostZoneResponse
+ */
 export interface MsgRegisterHostZoneResponseSDKType {}
+/**
+ * @name MsgClaimUndelegatedTokens
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClaimUndelegatedTokens
+ */
 export interface MsgClaimUndelegatedTokens {
   creator: string;
-  /** UserUnbondingRecords are keyed on {chain_id}.{epoch}.{receiver} */
+  /**
+   * UserUnbondingRecords are keyed on {chain_id}.{epoch}.{receiver}
+   */
   hostZoneId: string;
   epoch: bigint;
   receiver: string;
@@ -207,18 +334,38 @@ export interface MsgClaimUndelegatedTokensProtoMsg {
   typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokens';
   value: Uint8Array;
 }
+/**
+ * @name MsgClaimUndelegatedTokensSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClaimUndelegatedTokens
+ */
 export interface MsgClaimUndelegatedTokensSDKType {
   creator: string;
   host_zone_id: string;
   epoch: bigint;
   receiver: string;
 }
+/**
+ * @name MsgClaimUndelegatedTokensResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClaimUndelegatedTokensResponse
+ */
 export interface MsgClaimUndelegatedTokensResponse {}
 export interface MsgClaimUndelegatedTokensResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokensResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgClaimUndelegatedTokensResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClaimUndelegatedTokensResponse
+ */
 export interface MsgClaimUndelegatedTokensResponseSDKType {}
+/**
+ * @name MsgRebalanceValidators
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRebalanceValidators
+ */
 export interface MsgRebalanceValidators {
   creator: string;
   hostZone: string;
@@ -228,17 +375,37 @@ export interface MsgRebalanceValidatorsProtoMsg {
   typeUrl: '/stride.stakeibc.MsgRebalanceValidators';
   value: Uint8Array;
 }
+/**
+ * @name MsgRebalanceValidatorsSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRebalanceValidators
+ */
 export interface MsgRebalanceValidatorsSDKType {
   creator: string;
   host_zone: string;
   num_rebalance: bigint;
 }
+/**
+ * @name MsgRebalanceValidatorsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRebalanceValidatorsResponse
+ */
 export interface MsgRebalanceValidatorsResponse {}
 export interface MsgRebalanceValidatorsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgRebalanceValidatorsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgRebalanceValidatorsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRebalanceValidatorsResponse
+ */
 export interface MsgRebalanceValidatorsResponseSDKType {}
+/**
+ * @name MsgAddValidators
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgAddValidators
+ */
 export interface MsgAddValidators {
   creator: string;
   hostZone: string;
@@ -248,17 +415,37 @@ export interface MsgAddValidatorsProtoMsg {
   typeUrl: '/stride.stakeibc.MsgAddValidators';
   value: Uint8Array;
 }
+/**
+ * @name MsgAddValidatorsSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgAddValidators
+ */
 export interface MsgAddValidatorsSDKType {
   creator: string;
   host_zone: string;
   validators: ValidatorSDKType[];
 }
+/**
+ * @name MsgAddValidatorsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgAddValidatorsResponse
+ */
 export interface MsgAddValidatorsResponse {}
 export interface MsgAddValidatorsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgAddValidatorsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgAddValidatorsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgAddValidatorsResponse
+ */
 export interface MsgAddValidatorsResponseSDKType {}
+/**
+ * @name ValidatorWeight
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorWeight
+ */
 export interface ValidatorWeight {
   address: string;
   weight: bigint;
@@ -267,10 +454,20 @@ export interface ValidatorWeightProtoMsg {
   typeUrl: '/stride.stakeibc.ValidatorWeight';
   value: Uint8Array;
 }
+/**
+ * @name ValidatorWeightSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorWeight
+ */
 export interface ValidatorWeightSDKType {
   address: string;
   weight: bigint;
 }
+/**
+ * @name MsgChangeValidatorWeights
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgChangeValidatorWeights
+ */
 export interface MsgChangeValidatorWeights {
   creator: string;
   hostZone: string;
@@ -280,17 +477,37 @@ export interface MsgChangeValidatorWeightsProtoMsg {
   typeUrl: '/stride.stakeibc.MsgChangeValidatorWeights';
   value: Uint8Array;
 }
+/**
+ * @name MsgChangeValidatorWeightsSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgChangeValidatorWeights
+ */
 export interface MsgChangeValidatorWeightsSDKType {
   creator: string;
   host_zone: string;
   validator_weights: ValidatorWeightSDKType[];
 }
+/**
+ * @name MsgChangeValidatorWeightsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgChangeValidatorWeightsResponse
+ */
 export interface MsgChangeValidatorWeightsResponse {}
 export interface MsgChangeValidatorWeightsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgChangeValidatorWeightsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgChangeValidatorWeightsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgChangeValidatorWeightsResponse
+ */
 export interface MsgChangeValidatorWeightsResponseSDKType {}
+/**
+ * @name MsgDeleteValidator
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteValidator
+ */
 export interface MsgDeleteValidator {
   creator: string;
   hostZone: string;
@@ -300,17 +517,37 @@ export interface MsgDeleteValidatorProtoMsg {
   typeUrl: '/stride.stakeibc.MsgDeleteValidator';
   value: Uint8Array;
 }
+/**
+ * @name MsgDeleteValidatorSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteValidator
+ */
 export interface MsgDeleteValidatorSDKType {
   creator: string;
   host_zone: string;
   val_addr: string;
 }
+/**
+ * @name MsgDeleteValidatorResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteValidatorResponse
+ */
 export interface MsgDeleteValidatorResponse {}
 export interface MsgDeleteValidatorResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgDeleteValidatorResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgDeleteValidatorResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteValidatorResponse
+ */
 export interface MsgDeleteValidatorResponseSDKType {}
+/**
+ * @name MsgRestoreInterchainAccount
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRestoreInterchainAccount
+ */
 export interface MsgRestoreInterchainAccount {
   creator: string;
   chainId: string;
@@ -321,18 +558,38 @@ export interface MsgRestoreInterchainAccountProtoMsg {
   typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccount';
   value: Uint8Array;
 }
+/**
+ * @name MsgRestoreInterchainAccountSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRestoreInterchainAccount
+ */
 export interface MsgRestoreInterchainAccountSDKType {
   creator: string;
   chain_id: string;
   connection_id: string;
   account_owner: string;
 }
+/**
+ * @name MsgRestoreInterchainAccountResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRestoreInterchainAccountResponse
+ */
 export interface MsgRestoreInterchainAccountResponse {}
 export interface MsgRestoreInterchainAccountResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccountResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgRestoreInterchainAccountResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRestoreInterchainAccountResponse
+ */
 export interface MsgRestoreInterchainAccountResponseSDKType {}
+/**
+ * @name MsgCloseDelegationChannel
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCloseDelegationChannel
+ */
 export interface MsgCloseDelegationChannel {
   creator: string;
   chainId: string;
@@ -341,16 +598,36 @@ export interface MsgCloseDelegationChannelProtoMsg {
   typeUrl: '/stride.stakeibc.MsgCloseDelegationChannel';
   value: Uint8Array;
 }
+/**
+ * @name MsgCloseDelegationChannelSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCloseDelegationChannel
+ */
 export interface MsgCloseDelegationChannelSDKType {
   creator: string;
   chain_id: string;
 }
+/**
+ * @name MsgCloseDelegationChannelResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCloseDelegationChannelResponse
+ */
 export interface MsgCloseDelegationChannelResponse {}
 export interface MsgCloseDelegationChannelResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgCloseDelegationChannelResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgCloseDelegationChannelResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCloseDelegationChannelResponse
+ */
 export interface MsgCloseDelegationChannelResponseSDKType {}
+/**
+ * @name MsgUpdateValidatorSharesExchRate
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateValidatorSharesExchRate
+ */
 export interface MsgUpdateValidatorSharesExchRate {
   creator: string;
   chainId: string;
@@ -360,17 +637,37 @@ export interface MsgUpdateValidatorSharesExchRateProtoMsg {
   typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRate';
   value: Uint8Array;
 }
+/**
+ * @name MsgUpdateValidatorSharesExchRateSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateValidatorSharesExchRate
+ */
 export interface MsgUpdateValidatorSharesExchRateSDKType {
   creator: string;
   chain_id: string;
   valoper: string;
 }
+/**
+ * @name MsgUpdateValidatorSharesExchRateResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateValidatorSharesExchRateResponse
+ */
 export interface MsgUpdateValidatorSharesExchRateResponse {}
 export interface MsgUpdateValidatorSharesExchRateResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRateResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgUpdateValidatorSharesExchRateResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateValidatorSharesExchRateResponse
+ */
 export interface MsgUpdateValidatorSharesExchRateResponseSDKType {}
+/**
+ * @name MsgCalibrateDelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCalibrateDelegation
+ */
 export interface MsgCalibrateDelegation {
   creator: string;
   chainId: string;
@@ -380,17 +677,37 @@ export interface MsgCalibrateDelegationProtoMsg {
   typeUrl: '/stride.stakeibc.MsgCalibrateDelegation';
   value: Uint8Array;
 }
+/**
+ * @name MsgCalibrateDelegationSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCalibrateDelegation
+ */
 export interface MsgCalibrateDelegationSDKType {
   creator: string;
   chain_id: string;
   valoper: string;
 }
+/**
+ * @name MsgCalibrateDelegationResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCalibrateDelegationResponse
+ */
 export interface MsgCalibrateDelegationResponse {}
 export interface MsgCalibrateDelegationResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgCalibrateDelegationResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgCalibrateDelegationResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCalibrateDelegationResponse
+ */
 export interface MsgCalibrateDelegationResponseSDKType {}
+/**
+ * @name MsgResumeHostZone
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgResumeHostZone
+ */
 export interface MsgResumeHostZone {
   creator: string;
   chainId: string;
@@ -399,48 +716,84 @@ export interface MsgResumeHostZoneProtoMsg {
   typeUrl: '/stride.stakeibc.MsgResumeHostZone';
   value: Uint8Array;
 }
+/**
+ * @name MsgResumeHostZoneSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgResumeHostZone
+ */
 export interface MsgResumeHostZoneSDKType {
   creator: string;
   chain_id: string;
 }
+/**
+ * @name MsgResumeHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgResumeHostZoneResponse
+ */
 export interface MsgResumeHostZoneResponse {}
 export interface MsgResumeHostZoneResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgResumeHostZoneResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgResumeHostZoneResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgResumeHostZoneResponse
+ */
 export interface MsgResumeHostZoneResponseSDKType {}
-/** Creates a new trade route */
+/**
+ * Creates a new trade route
+ * @name MsgCreateTradeRoute
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCreateTradeRoute
+ */
 export interface MsgCreateTradeRoute {
   /**
    * authority is the address that controls the module (defaults to x/gov unless
    * overwritten).
    */
   authority: string;
-  /** The chain ID of the host zone */
+  /**
+   * The chain ID of the host zone
+   */
   hostChainId: string;
-  /** Connection IDs between stride and the other zones */
+  /**
+   * Connection IDs between stride and the other zones
+   */
   strideToRewardConnectionId: string;
   strideToTradeConnectionId: string;
-  /** Transfer channels between the host, reward, and trade zones */
+  /**
+   * Transfer channels between the host, reward, and trade zones
+   */
   hostToRewardTransferChannelId: string;
   rewardToTradeTransferChannelId: string;
   tradeToHostTransferChannelId: string;
-  /** ibc denom for the reward token on the host zone (e.g. ibc/usdc on dYdX) */
+  /**
+   * ibc denom for the reward token on the host zone (e.g. ibc/usdc on dYdX)
+   */
   rewardDenomOnHost: string;
-  /** native denom of reward token on the reward zone (e.g. usdc on Noble) */
+  /**
+   * native denom of reward token on the reward zone (e.g. usdc on Noble)
+   */
   rewardDenomOnReward: string;
-  /** ibc denom of the reward token on the trade zone (e.g. ibc/usdc on Osmosis) */
+  /**
+   * ibc denom of the reward token on the trade zone (e.g. ibc/usdc on Osmosis)
+   */
   rewardDenomOnTrade: string;
-  /** ibc denom of the host's token on the trade zone (e.g. ibc/dydx on Osmosis) */
+  /**
+   * ibc denom of the host's token on the trade zone (e.g. ibc/dydx on Osmosis)
+   */
   hostDenomOnTrade: string;
-  /** the host zone's native denom (e.g. dydx on dYdX) */
+  /**
+   * the host zone's native denom (e.g. dydx on dYdX)
+   */
   hostDenomOnHost: string;
   /**
    * Deprecated, the trades are now executed off-chain via authz
    *
    * The osmosis pool ID
+   * @deprecated
    */
-  /** @deprecated */
   poolId: bigint;
   /**
    * Deprecated, the trades are now executed off-chain via authz
@@ -449,8 +802,8 @@ export interface MsgCreateTradeRoute {
    * This captures both the loss from slippage and from a stale price on stride
    * "0.05" means the output from the trade can be no less than a 5% deviation
    * from the current value
+   * @deprecated
    */
-  /** @deprecated */
   maxAllowedSwapLossRate: string;
   /**
    * Deprecated, the trades are now executed off-chain via authz
@@ -476,7 +829,12 @@ export interface MsgCreateTradeRouteProtoMsg {
   typeUrl: '/stride.stakeibc.MsgCreateTradeRoute';
   value: Uint8Array;
 }
-/** Creates a new trade route */
+/**
+ * Creates a new trade route
+ * @name MsgCreateTradeRouteSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCreateTradeRoute
+ */
 export interface MsgCreateTradeRouteSDKType {
   authority: string;
   host_chain_id: string;
@@ -490,65 +848,112 @@ export interface MsgCreateTradeRouteSDKType {
   reward_denom_on_trade: string;
   host_denom_on_trade: string;
   host_denom_on_host: string;
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   pool_id: bigint;
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   max_allowed_swap_loss_rate: string;
   min_swap_amount: string;
   max_swap_amount: string;
   min_transfer_amount: string;
 }
+/**
+ * @name MsgCreateTradeRouteResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCreateTradeRouteResponse
+ */
 export interface MsgCreateTradeRouteResponse {}
 export interface MsgCreateTradeRouteResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgCreateTradeRouteResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgCreateTradeRouteResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCreateTradeRouteResponse
+ */
 export interface MsgCreateTradeRouteResponseSDKType {}
-/** Deletes a trade route */
+/**
+ * Deletes a trade route
+ * @name MsgDeleteTradeRoute
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteTradeRoute
+ */
 export interface MsgDeleteTradeRoute {
   /**
    * authority is the address that controls the module (defaults to x/gov unless
    * overwritten).
    */
   authority: string;
-  /** The reward denom of the route in it's native form (e.g. usdc) */
+  /**
+   * The reward denom of the route in it's native form (e.g. usdc)
+   */
   rewardDenom: string;
-  /** The host zone's denom in it's native form (e.g. dydx) */
+  /**
+   * The host zone's denom in it's native form (e.g. dydx)
+   */
   hostDenom: string;
 }
 export interface MsgDeleteTradeRouteProtoMsg {
   typeUrl: '/stride.stakeibc.MsgDeleteTradeRoute';
   value: Uint8Array;
 }
-/** Deletes a trade route */
+/**
+ * Deletes a trade route
+ * @name MsgDeleteTradeRouteSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteTradeRoute
+ */
 export interface MsgDeleteTradeRouteSDKType {
   authority: string;
   reward_denom: string;
   host_denom: string;
 }
+/**
+ * @name MsgDeleteTradeRouteResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteTradeRouteResponse
+ */
 export interface MsgDeleteTradeRouteResponse {}
 export interface MsgDeleteTradeRouteResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgDeleteTradeRouteResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgDeleteTradeRouteResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteTradeRouteResponse
+ */
 export interface MsgDeleteTradeRouteResponseSDKType {}
-/** Updates the config of a trade route */
+/**
+ * Updates the config of a trade route
+ * @name MsgUpdateTradeRoute
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateTradeRoute
+ */
 export interface MsgUpdateTradeRoute {
   /**
    * authority is the address that controls the module (defaults to x/gov unless
    * overwritten).
    */
   authority: string;
-  /** The reward denom of the route in it's native form (e.g. usdc) */
+  /**
+   * The reward denom of the route in it's native form (e.g. usdc)
+   */
   rewardDenom: string;
-  /** The host zone's denom in it's native form (e.g. dydx) */
+  /**
+   * The host zone's denom in it's native form (e.g. dydx)
+   */
   hostDenom: string;
   /**
    * Deprecated, the trades are now executed off-chain via authz
    *
    * The osmosis pool ID
+   * @deprecated
    */
-  /** @deprecated */
   poolId: bigint;
   /**
    * Deprecated, the trades are now executed off-chain via authz
@@ -557,24 +962,24 @@ export interface MsgUpdateTradeRoute {
    * This captures both the loss from slippage and from a stale price on stride
    * "0.05" means the output from the trade can be no less than a 5% deviation
    * from the current value
+   * @deprecated
    */
-  /** @deprecated */
   maxAllowedSwapLossRate: string;
   /**
    * Deprecated, the trades are now executed off-chain via authz
    *
    * minimum amount of reward tokens to initate a swap
    * if not provided, defaults to 0
+   * @deprecated
    */
-  /** @deprecated */
   minSwapAmount: string;
   /**
    * Deprecated, the trades are now executed off-chain via authz
    *
    * maximum amount of reward tokens in a single swap
    * if not provided, defaults to 10e24
+   * @deprecated
    */
-  /** @deprecated */
   maxSwapAmount: string;
   /**
    * Minimum amount of reward token that must be accumulated before
@@ -586,42 +991,74 @@ export interface MsgUpdateTradeRouteProtoMsg {
   typeUrl: '/stride.stakeibc.MsgUpdateTradeRoute';
   value: Uint8Array;
 }
-/** Updates the config of a trade route */
+/**
+ * Updates the config of a trade route
+ * @name MsgUpdateTradeRouteSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateTradeRoute
+ */
 export interface MsgUpdateTradeRouteSDKType {
   authority: string;
   reward_denom: string;
   host_denom: string;
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   pool_id: bigint;
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   max_allowed_swap_loss_rate: string;
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   min_swap_amount: string;
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   max_swap_amount: string;
   min_transfer_amount: string;
 }
+/**
+ * @name MsgUpdateTradeRouteResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateTradeRouteResponse
+ */
 export interface MsgUpdateTradeRouteResponse {}
 export interface MsgUpdateTradeRouteResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgUpdateTradeRouteResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgUpdateTradeRouteResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateTradeRouteResponse
+ */
 export interface MsgUpdateTradeRouteResponseSDKType {}
 /**
  * Registers or updates a community pool rebate by specifying the amount liquid
  * staked
+ * @name MsgSetCommunityPoolRebate
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgSetCommunityPoolRebate
  */
 export interface MsgSetCommunityPoolRebate {
-  /** Message signer (admin only) */
+  /**
+   * Message signer (admin only)
+   */
   creator: string;
   /**
    * Chain id of the chain whose community pool has a liquid staking rebate
    * arrangement with stride
    */
   chainId: string;
-  /** Rebate percentage represented as a decimal (e.g. 0.2 for 20%) */
+  /**
+   * Rebate percentage represented as a decimal (e.g. 0.2 for 20%)
+   */
   rebateRate: string;
-  /** Number of stTokens recieved by the community pool after liquid staking */
+  /**
+   * Number of stTokens recieved by the community pool after liquid staking
+   */
   liquidStakedStTokenAmount: string;
 }
 export interface MsgSetCommunityPoolRebateProtoMsg {
@@ -631,6 +1068,9 @@ export interface MsgSetCommunityPoolRebateProtoMsg {
 /**
  * Registers or updates a community pool rebate by specifying the amount liquid
  * staked
+ * @name MsgSetCommunityPoolRebateSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgSetCommunityPoolRebate
  */
 export interface MsgSetCommunityPoolRebateSDKType {
   creator: string;
@@ -638,30 +1078,60 @@ export interface MsgSetCommunityPoolRebateSDKType {
   rebate_rate: string;
   liquid_staked_st_token_amount: string;
 }
+/**
+ * @name MsgSetCommunityPoolRebateResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgSetCommunityPoolRebateResponse
+ */
 export interface MsgSetCommunityPoolRebateResponse {}
 export interface MsgSetCommunityPoolRebateResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebateResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgSetCommunityPoolRebateResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgSetCommunityPoolRebateResponse
+ */
 export interface MsgSetCommunityPoolRebateResponseSDKType {}
-/** Grants or revokes trade permissions to a given address via authz */
+/**
+ * Grants or revokes trade permissions to a given address via authz
+ * @name MsgToggleTradeController
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgToggleTradeController
+ */
 export interface MsgToggleTradeController {
-  /** Message signer (admin only) */
+  /**
+   * Message signer (admin only)
+   */
   creator: string;
-  /** Chain ID of the trade account */
+  /**
+   * Chain ID of the trade account
+   */
   chainId: string;
-  /** Permission change (either grant or revoke) */
+  /**
+   * Permission change (either grant or revoke)
+   */
   permissionChange: AuthzPermissionChange;
-  /** Address of trade operator */
+  /**
+   * Address of trade operator
+   */
   address: string;
-  /** Option to grant/revoke the legacy osmosis swap message */
+  /**
+   * Option to grant/revoke the legacy osmosis swap message
+   */
   legacy: boolean;
 }
 export interface MsgToggleTradeControllerProtoMsg {
   typeUrl: '/stride.stakeibc.MsgToggleTradeController';
   value: Uint8Array;
 }
-/** Grants or revokes trade permissions to a given address via authz */
+/**
+ * Grants or revokes trade permissions to a given address via authz
+ * @name MsgToggleTradeControllerSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgToggleTradeController
+ */
 export interface MsgToggleTradeControllerSDKType {
   creator: string;
   chain_id: string;
@@ -669,39 +1139,73 @@ export interface MsgToggleTradeControllerSDKType {
   address: string;
   legacy: boolean;
 }
+/**
+ * @name MsgToggleTradeControllerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgToggleTradeControllerResponse
+ */
 export interface MsgToggleTradeControllerResponse {}
 export interface MsgToggleTradeControllerResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgToggleTradeControllerResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgToggleTradeControllerResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgToggleTradeControllerResponse
+ */
 export interface MsgToggleTradeControllerResponseSDKType {}
-/** Updates host zone params */
+/**
+ * Updates host zone params
+ * @name MsgUpdateHostZoneParams
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateHostZoneParams
+ */
 export interface MsgUpdateHostZoneParams {
   /**
    * authority is the address that controls the module (defaults to x/gov unless
    * overwritten).
    */
   authority: string;
-  /** Chain ID of the host zone */
+  /**
+   * Chain ID of the host zone
+   */
   chainId: string;
-  /** Max messages that can be sent in a single ICA message */
+  /**
+   * Max messages that can be sent in a single ICA message
+   */
   maxMessagesPerIcaTx: bigint;
 }
 export interface MsgUpdateHostZoneParamsProtoMsg {
   typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParams';
   value: Uint8Array;
 }
-/** Updates host zone params */
+/**
+ * Updates host zone params
+ * @name MsgUpdateHostZoneParamsSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateHostZoneParams
+ */
 export interface MsgUpdateHostZoneParamsSDKType {
   authority: string;
   chain_id: string;
   max_messages_per_ica_tx: bigint;
 }
+/**
+ * @name MsgUpdateHostZoneParamsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateHostZoneParamsResponse
+ */
 export interface MsgUpdateHostZoneParamsResponse {}
 export interface MsgUpdateHostZoneParamsResponseProtoMsg {
   typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParamsResponse';
   value: Uint8Array;
 }
+/**
+ * @name MsgUpdateHostZoneParamsResponseSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateHostZoneParamsResponse
+ */
 export interface MsgUpdateHostZoneParamsResponseSDKType {}
 function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptionRateBounds {
   return {
@@ -711,8 +1215,33 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
     maxInnerRedemptionRate: '',
   };
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBounds
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateInnerRedemptionRateBounds
+ */
 export const MsgUpdateInnerRedemptionRateBounds = {
   typeUrl: '/stride.stakeibc.MsgUpdateInnerRedemptionRateBounds' as const,
+  is(o: any): o is MsgUpdateInnerRedemptionRateBounds {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateInnerRedemptionRateBounds.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.minInnerRedemptionRate === 'string' &&
+          typeof o.maxInnerRedemptionRate === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateInnerRedemptionRateBoundsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateInnerRedemptionRateBounds.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.min_inner_redemption_rate === 'string' &&
+          typeof o.max_inner_redemption_rate === 'string'))
+    );
+  },
   encode(
     message: MsgUpdateInnerRedemptionRateBounds,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -829,9 +1358,24 @@ export const MsgUpdateInnerRedemptionRateBounds = {
 function createBaseMsgUpdateInnerRedemptionRateBoundsResponse(): MsgUpdateInnerRedemptionRateBoundsResponse {
   return {};
 }
+/**
+ * @name MsgUpdateInnerRedemptionRateBoundsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateInnerRedemptionRateBoundsResponse
+ */
 export const MsgUpdateInnerRedemptionRateBoundsResponse = {
   typeUrl:
     '/stride.stakeibc.MsgUpdateInnerRedemptionRateBoundsResponse' as const,
+  is(o: any): o is MsgUpdateInnerRedemptionRateBoundsResponse {
+    return (
+      o && o.$typeUrl === MsgUpdateInnerRedemptionRateBoundsResponse.typeUrl
+    );
+  },
+  isSDK(o: any): o is MsgUpdateInnerRedemptionRateBoundsResponseSDKType {
+    return (
+      o && o.$typeUrl === MsgUpdateInnerRedemptionRateBoundsResponse.typeUrl
+    );
+  },
   encode(
     _: MsgUpdateInnerRedemptionRateBoundsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -896,8 +1440,31 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
     hostDenom: '',
   };
 }
+/**
+ * @name MsgLiquidStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLiquidStake
+ */
 export const MsgLiquidStake = {
   typeUrl: '/stride.stakeibc.MsgLiquidStake' as const,
+  is(o: any): o is MsgLiquidStake {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.hostDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgLiquidStakeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.host_denom === 'string'))
+    );
+  },
   encode(
     message: MsgLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -976,8 +1543,24 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
     stToken: Coin.fromPartial({}),
   };
 }
+/**
+ * @name MsgLiquidStakeResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLiquidStakeResponse
+ */
 export const MsgLiquidStakeResponse = {
   typeUrl: '/stride.stakeibc.MsgLiquidStakeResponse' as const,
+  is(o: any): o is MsgLiquidStakeResponse {
+    return (
+      o && (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.is(o.stToken))
+    );
+  },
+  isSDK(o: any): o is MsgLiquidStakeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.isSDK(o.st_token))
+    );
+  },
   encode(
     message: MsgLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1053,8 +1636,31 @@ function createBaseMsgLSMLiquidStake(): MsgLSMLiquidStake {
     lsmTokenIbcDenom: '',
   };
 }
+/**
+ * @name MsgLSMLiquidStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLSMLiquidStake
+ */
 export const MsgLSMLiquidStake = {
   typeUrl: '/stride.stakeibc.MsgLSMLiquidStake' as const,
+  is(o: any): o is MsgLSMLiquidStake {
+    return (
+      o &&
+      (o.$typeUrl === MsgLSMLiquidStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.lsmTokenIbcDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgLSMLiquidStakeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLSMLiquidStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.lsm_token_ibc_denom === 'string'))
+    );
+  },
   encode(
     message: MsgLSMLiquidStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1136,8 +1742,27 @@ function createBaseMsgLSMLiquidStakeResponse(): MsgLSMLiquidStakeResponse {
     transactionComplete: false,
   };
 }
+/**
+ * @name MsgLSMLiquidStakeResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgLSMLiquidStakeResponse
+ */
 export const MsgLSMLiquidStakeResponse = {
   typeUrl: '/stride.stakeibc.MsgLSMLiquidStakeResponse' as const,
+  is(o: any): o is MsgLSMLiquidStakeResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgLSMLiquidStakeResponse.typeUrl ||
+        typeof o.transactionComplete === 'boolean')
+    );
+  },
+  isSDK(o: any): o is MsgLSMLiquidStakeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgLSMLiquidStakeResponse.typeUrl ||
+        typeof o.transaction_complete === 'boolean')
+    );
+  },
   encode(
     message: MsgLSMLiquidStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1215,8 +1840,33 @@ function createBaseMsgClearBalance(): MsgClearBalance {
     channel: '',
   };
 }
+/**
+ * @name MsgClearBalance
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClearBalance
+ */
 export const MsgClearBalance = {
   typeUrl: '/stride.stakeibc.MsgClearBalance' as const,
+  is(o: any): o is MsgClearBalance {
+    return (
+      o &&
+      (o.$typeUrl === MsgClearBalance.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.channel === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgClearBalanceSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgClearBalance.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.channel === 'string'))
+    );
+  },
   encode(
     message: MsgClearBalance,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1302,8 +1952,19 @@ export const MsgClearBalance = {
 function createBaseMsgClearBalanceResponse(): MsgClearBalanceResponse {
   return {};
 }
+/**
+ * @name MsgClearBalanceResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClearBalanceResponse
+ */
 export const MsgClearBalanceResponse = {
   typeUrl: '/stride.stakeibc.MsgClearBalanceResponse' as const,
+  is(o: any): o is MsgClearBalanceResponse {
+    return o && o.$typeUrl === MsgClearBalanceResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgClearBalanceResponseSDKType {
+    return o && o.$typeUrl === MsgClearBalanceResponse.typeUrl;
+  },
   encode(
     _: MsgClearBalanceResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1364,8 +2025,33 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
     receiver: '',
   };
 }
+/**
+ * @name MsgRedeemStake
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRedeemStake
+ */
 export const MsgRedeemStake = {
   typeUrl: '/stride.stakeibc.MsgRedeemStake' as const,
+  is(o: any): o is MsgRedeemStake {
+    return (
+      o &&
+      (o.$typeUrl === MsgRedeemStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.hostZone === 'string' &&
+          typeof o.receiver === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgRedeemStakeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRedeemStake.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.host_zone === 'string' &&
+          typeof o.receiver === 'string'))
+    );
+  },
   encode(
     message: MsgRedeemStake,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1451,8 +2137,19 @@ export const MsgRedeemStake = {
 function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
   return {};
 }
+/**
+ * @name MsgRedeemStakeResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRedeemStakeResponse
+ */
 export const MsgRedeemStakeResponse = {
   typeUrl: '/stride.stakeibc.MsgRedeemStakeResponse' as const,
+  is(o: any): o is MsgRedeemStakeResponse {
+    return o && o.$typeUrl === MsgRedeemStakeResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRedeemStakeResponseSDKType {
+    return o && o.$typeUrl === MsgRedeemStakeResponse.typeUrl;
+  },
   encode(
     _: MsgRedeemStakeResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1519,8 +2216,50 @@ function createBaseMsgRegisterHostZone(): MsgRegisterHostZone {
     maxMessagesPerIcaTx: BigInt(0),
   };
 }
+/**
+ * next: 15
+ * @name MsgRegisterHostZone
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRegisterHostZone
+ */
 export const MsgRegisterHostZone = {
   typeUrl: '/stride.stakeibc.MsgRegisterHostZone' as const,
+  is(o: any): o is MsgRegisterHostZone {
+    return (
+      o &&
+      (o.$typeUrl === MsgRegisterHostZone.typeUrl ||
+        (typeof o.connectionId === 'string' &&
+          typeof o.bech32prefix === 'string' &&
+          typeof o.hostDenom === 'string' &&
+          typeof o.ibcDenom === 'string' &&
+          typeof o.creator === 'string' &&
+          typeof o.transferChannelId === 'string' &&
+          typeof o.unbondingPeriod === 'bigint' &&
+          typeof o.minRedemptionRate === 'string' &&
+          typeof o.maxRedemptionRate === 'string' &&
+          typeof o.lsmLiquidStakeEnabled === 'boolean' &&
+          typeof o.communityPoolTreasuryAddress === 'string' &&
+          typeof o.maxMessagesPerIcaTx === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MsgRegisterHostZoneSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRegisterHostZone.typeUrl ||
+        (typeof o.connection_id === 'string' &&
+          typeof o.bech32prefix === 'string' &&
+          typeof o.host_denom === 'string' &&
+          typeof o.ibc_denom === 'string' &&
+          typeof o.creator === 'string' &&
+          typeof o.transfer_channel_id === 'string' &&
+          typeof o.unbonding_period === 'bigint' &&
+          typeof o.min_redemption_rate === 'string' &&
+          typeof o.max_redemption_rate === 'string' &&
+          typeof o.lsm_liquid_stake_enabled === 'boolean' &&
+          typeof o.community_pool_treasury_address === 'string' &&
+          typeof o.max_messages_per_ica_tx === 'bigint'))
+    );
+  },
   encode(
     message: MsgRegisterHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1728,8 +2467,19 @@ export const MsgRegisterHostZone = {
 function createBaseMsgRegisterHostZoneResponse(): MsgRegisterHostZoneResponse {
   return {};
 }
+/**
+ * @name MsgRegisterHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRegisterHostZoneResponse
+ */
 export const MsgRegisterHostZoneResponse = {
   typeUrl: '/stride.stakeibc.MsgRegisterHostZoneResponse' as const,
+  is(o: any): o is MsgRegisterHostZoneResponse {
+    return o && o.$typeUrl === MsgRegisterHostZoneResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRegisterHostZoneResponseSDKType {
+    return o && o.$typeUrl === MsgRegisterHostZoneResponse.typeUrl;
+  },
   encode(
     _: MsgRegisterHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1794,8 +2544,33 @@ function createBaseMsgClaimUndelegatedTokens(): MsgClaimUndelegatedTokens {
     receiver: '',
   };
 }
+/**
+ * @name MsgClaimUndelegatedTokens
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClaimUndelegatedTokens
+ */
 export const MsgClaimUndelegatedTokens = {
   typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokens' as const,
+  is(o: any): o is MsgClaimUndelegatedTokens {
+    return (
+      o &&
+      (o.$typeUrl === MsgClaimUndelegatedTokens.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZoneId === 'string' &&
+          typeof o.epoch === 'bigint' &&
+          typeof o.receiver === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgClaimUndelegatedTokensSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgClaimUndelegatedTokens.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone_id === 'string' &&
+          typeof o.epoch === 'bigint' &&
+          typeof o.receiver === 'string'))
+    );
+  },
   encode(
     message: MsgClaimUndelegatedTokens,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1896,8 +2671,19 @@ export const MsgClaimUndelegatedTokens = {
 function createBaseMsgClaimUndelegatedTokensResponse(): MsgClaimUndelegatedTokensResponse {
   return {};
 }
+/**
+ * @name MsgClaimUndelegatedTokensResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgClaimUndelegatedTokensResponse
+ */
 export const MsgClaimUndelegatedTokensResponse = {
   typeUrl: '/stride.stakeibc.MsgClaimUndelegatedTokensResponse' as const,
+  is(o: any): o is MsgClaimUndelegatedTokensResponse {
+    return o && o.$typeUrl === MsgClaimUndelegatedTokensResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgClaimUndelegatedTokensResponseSDKType {
+    return o && o.$typeUrl === MsgClaimUndelegatedTokensResponse.typeUrl;
+  },
   encode(
     _: MsgClaimUndelegatedTokensResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1961,8 +2747,31 @@ function createBaseMsgRebalanceValidators(): MsgRebalanceValidators {
     numRebalance: BigInt(0),
   };
 }
+/**
+ * @name MsgRebalanceValidators
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRebalanceValidators
+ */
 export const MsgRebalanceValidators = {
   typeUrl: '/stride.stakeibc.MsgRebalanceValidators' as const,
+  is(o: any): o is MsgRebalanceValidators {
+    return (
+      o &&
+      (o.$typeUrl === MsgRebalanceValidators.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZone === 'string' &&
+          typeof o.numRebalance === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MsgRebalanceValidatorsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRebalanceValidators.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone === 'string' &&
+          typeof o.num_rebalance === 'bigint'))
+    );
+  },
   encode(
     message: MsgRebalanceValidators,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2050,8 +2859,19 @@ export const MsgRebalanceValidators = {
 function createBaseMsgRebalanceValidatorsResponse(): MsgRebalanceValidatorsResponse {
   return {};
 }
+/**
+ * @name MsgRebalanceValidatorsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRebalanceValidatorsResponse
+ */
 export const MsgRebalanceValidatorsResponse = {
   typeUrl: '/stride.stakeibc.MsgRebalanceValidatorsResponse' as const,
+  is(o: any): o is MsgRebalanceValidatorsResponse {
+    return o && o.$typeUrl === MsgRebalanceValidatorsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRebalanceValidatorsResponseSDKType {
+    return o && o.$typeUrl === MsgRebalanceValidatorsResponse.typeUrl;
+  },
   encode(
     _: MsgRebalanceValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2115,8 +2935,33 @@ function createBaseMsgAddValidators(): MsgAddValidators {
     validators: [],
   };
 }
+/**
+ * @name MsgAddValidators
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgAddValidators
+ */
 export const MsgAddValidators = {
   typeUrl: '/stride.stakeibc.MsgAddValidators' as const,
+  is(o: any): o is MsgAddValidators {
+    return (
+      o &&
+      (o.$typeUrl === MsgAddValidators.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZone === 'string' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.is(o.validators[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgAddValidatorsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgAddValidators.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone === 'string' &&
+          Array.isArray(o.validators) &&
+          (!o.validators.length || Validator.isSDK(o.validators[0]))))
+    );
+  },
   encode(
     message: MsgAddValidators,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2202,8 +3047,19 @@ export const MsgAddValidators = {
 function createBaseMsgAddValidatorsResponse(): MsgAddValidatorsResponse {
   return {};
 }
+/**
+ * @name MsgAddValidatorsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgAddValidatorsResponse
+ */
 export const MsgAddValidatorsResponse = {
   typeUrl: '/stride.stakeibc.MsgAddValidatorsResponse' as const,
+  is(o: any): o is MsgAddValidatorsResponse {
+    return o && o.$typeUrl === MsgAddValidatorsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgAddValidatorsResponseSDKType {
+    return o && o.$typeUrl === MsgAddValidatorsResponse.typeUrl;
+  },
   encode(
     _: MsgAddValidatorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2262,8 +3118,27 @@ function createBaseValidatorWeight(): ValidatorWeight {
     weight: BigInt(0),
   };
 }
+/**
+ * @name ValidatorWeight
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.ValidatorWeight
+ */
 export const ValidatorWeight = {
   typeUrl: '/stride.stakeibc.ValidatorWeight' as const,
+  is(o: any): o is ValidatorWeight {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorWeight.typeUrl ||
+        (typeof o.address === 'string' && typeof o.weight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is ValidatorWeightSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorWeight.typeUrl ||
+        (typeof o.address === 'string' && typeof o.weight === 'bigint'))
+    );
+  },
   encode(
     message: ValidatorWeight,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2341,8 +3216,35 @@ function createBaseMsgChangeValidatorWeights(): MsgChangeValidatorWeights {
     validatorWeights: [],
   };
 }
+/**
+ * @name MsgChangeValidatorWeights
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgChangeValidatorWeights
+ */
 export const MsgChangeValidatorWeights = {
   typeUrl: '/stride.stakeibc.MsgChangeValidatorWeights' as const,
+  is(o: any): o is MsgChangeValidatorWeights {
+    return (
+      o &&
+      (o.$typeUrl === MsgChangeValidatorWeights.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZone === 'string' &&
+          Array.isArray(o.validatorWeights) &&
+          (!o.validatorWeights.length ||
+            ValidatorWeight.is(o.validatorWeights[0]))))
+    );
+  },
+  isSDK(o: any): o is MsgChangeValidatorWeightsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgChangeValidatorWeights.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone === 'string' &&
+          Array.isArray(o.validator_weights) &&
+          (!o.validator_weights.length ||
+            ValidatorWeight.isSDK(o.validator_weights[0]))))
+    );
+  },
   encode(
     message: MsgChangeValidatorWeights,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2441,8 +3343,19 @@ export const MsgChangeValidatorWeights = {
 function createBaseMsgChangeValidatorWeightsResponse(): MsgChangeValidatorWeightsResponse {
   return {};
 }
+/**
+ * @name MsgChangeValidatorWeightsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgChangeValidatorWeightsResponse
+ */
 export const MsgChangeValidatorWeightsResponse = {
   typeUrl: '/stride.stakeibc.MsgChangeValidatorWeightsResponse' as const,
+  is(o: any): o is MsgChangeValidatorWeightsResponse {
+    return o && o.$typeUrl === MsgChangeValidatorWeightsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgChangeValidatorWeightsResponseSDKType {
+    return o && o.$typeUrl === MsgChangeValidatorWeightsResponse.typeUrl;
+  },
   encode(
     _: MsgChangeValidatorWeightsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2506,8 +3419,31 @@ function createBaseMsgDeleteValidator(): MsgDeleteValidator {
     valAddr: '',
   };
 }
+/**
+ * @name MsgDeleteValidator
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteValidator
+ */
 export const MsgDeleteValidator = {
   typeUrl: '/stride.stakeibc.MsgDeleteValidator' as const,
+  is(o: any): o is MsgDeleteValidator {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteValidator.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.hostZone === 'string' &&
+          typeof o.valAddr === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgDeleteValidatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteValidator.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.host_zone === 'string' &&
+          typeof o.val_addr === 'string'))
+    );
+  },
   encode(
     message: MsgDeleteValidator,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2587,8 +3523,19 @@ export const MsgDeleteValidator = {
 function createBaseMsgDeleteValidatorResponse(): MsgDeleteValidatorResponse {
   return {};
 }
+/**
+ * @name MsgDeleteValidatorResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteValidatorResponse
+ */
 export const MsgDeleteValidatorResponse = {
   typeUrl: '/stride.stakeibc.MsgDeleteValidatorResponse' as const,
+  is(o: any): o is MsgDeleteValidatorResponse {
+    return o && o.$typeUrl === MsgDeleteValidatorResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgDeleteValidatorResponseSDKType {
+    return o && o.$typeUrl === MsgDeleteValidatorResponse.typeUrl;
+  },
   encode(
     _: MsgDeleteValidatorResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2651,8 +3598,33 @@ function createBaseMsgRestoreInterchainAccount(): MsgRestoreInterchainAccount {
     accountOwner: '',
   };
 }
+/**
+ * @name MsgRestoreInterchainAccount
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRestoreInterchainAccount
+ */
 export const MsgRestoreInterchainAccount = {
   typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccount' as const,
+  is(o: any): o is MsgRestoreInterchainAccount {
+    return (
+      o &&
+      (o.$typeUrl === MsgRestoreInterchainAccount.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.connectionId === 'string' &&
+          typeof o.accountOwner === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgRestoreInterchainAccountSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRestoreInterchainAccount.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.connection_id === 'string' &&
+          typeof o.account_owner === 'string'))
+    );
+  },
   encode(
     message: MsgRestoreInterchainAccount,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2755,8 +3727,19 @@ export const MsgRestoreInterchainAccount = {
 function createBaseMsgRestoreInterchainAccountResponse(): MsgRestoreInterchainAccountResponse {
   return {};
 }
+/**
+ * @name MsgRestoreInterchainAccountResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgRestoreInterchainAccountResponse
+ */
 export const MsgRestoreInterchainAccountResponse = {
   typeUrl: '/stride.stakeibc.MsgRestoreInterchainAccountResponse' as const,
+  is(o: any): o is MsgRestoreInterchainAccountResponse {
+    return o && o.$typeUrl === MsgRestoreInterchainAccountResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRestoreInterchainAccountResponseSDKType {
+    return o && o.$typeUrl === MsgRestoreInterchainAccountResponse.typeUrl;
+  },
   encode(
     _: MsgRestoreInterchainAccountResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2819,8 +3802,27 @@ function createBaseMsgCloseDelegationChannel(): MsgCloseDelegationChannel {
     chainId: '',
   };
 }
+/**
+ * @name MsgCloseDelegationChannel
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCloseDelegationChannel
+ */
 export const MsgCloseDelegationChannel = {
   typeUrl: '/stride.stakeibc.MsgCloseDelegationChannel' as const,
+  is(o: any): o is MsgCloseDelegationChannel {
+    return (
+      o &&
+      (o.$typeUrl === MsgCloseDelegationChannel.typeUrl ||
+        (typeof o.creator === 'string' && typeof o.chainId === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgCloseDelegationChannelSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCloseDelegationChannel.typeUrl ||
+        (typeof o.creator === 'string' && typeof o.chain_id === 'string'))
+    );
+  },
   encode(
     message: MsgCloseDelegationChannel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2899,8 +3901,19 @@ export const MsgCloseDelegationChannel = {
 function createBaseMsgCloseDelegationChannelResponse(): MsgCloseDelegationChannelResponse {
   return {};
 }
+/**
+ * @name MsgCloseDelegationChannelResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCloseDelegationChannelResponse
+ */
 export const MsgCloseDelegationChannelResponse = {
   typeUrl: '/stride.stakeibc.MsgCloseDelegationChannelResponse' as const,
+  is(o: any): o is MsgCloseDelegationChannelResponse {
+    return o && o.$typeUrl === MsgCloseDelegationChannelResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCloseDelegationChannelResponseSDKType {
+    return o && o.$typeUrl === MsgCloseDelegationChannelResponse.typeUrl;
+  },
   encode(
     _: MsgCloseDelegationChannelResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -2964,8 +3977,31 @@ function createBaseMsgUpdateValidatorSharesExchRate(): MsgUpdateValidatorSharesE
     valoper: '',
   };
 }
+/**
+ * @name MsgUpdateValidatorSharesExchRate
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateValidatorSharesExchRate
+ */
 export const MsgUpdateValidatorSharesExchRate = {
   typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRate' as const,
+  is(o: any): o is MsgUpdateValidatorSharesExchRate {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateValidatorSharesExchRate.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.valoper === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateValidatorSharesExchRateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateValidatorSharesExchRate.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.valoper === 'string'))
+    );
+  },
   encode(
     message: MsgUpdateValidatorSharesExchRate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3053,8 +4089,19 @@ export const MsgUpdateValidatorSharesExchRate = {
 function createBaseMsgUpdateValidatorSharesExchRateResponse(): MsgUpdateValidatorSharesExchRateResponse {
   return {};
 }
+/**
+ * @name MsgUpdateValidatorSharesExchRateResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateValidatorSharesExchRateResponse
+ */
 export const MsgUpdateValidatorSharesExchRateResponse = {
   typeUrl: '/stride.stakeibc.MsgUpdateValidatorSharesExchRateResponse' as const,
+  is(o: any): o is MsgUpdateValidatorSharesExchRateResponse {
+    return o && o.$typeUrl === MsgUpdateValidatorSharesExchRateResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateValidatorSharesExchRateResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateValidatorSharesExchRateResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateValidatorSharesExchRateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3118,8 +4165,31 @@ function createBaseMsgCalibrateDelegation(): MsgCalibrateDelegation {
     valoper: '',
   };
 }
+/**
+ * @name MsgCalibrateDelegation
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCalibrateDelegation
+ */
 export const MsgCalibrateDelegation = {
   typeUrl: '/stride.stakeibc.MsgCalibrateDelegation' as const,
+  is(o: any): o is MsgCalibrateDelegation {
+    return (
+      o &&
+      (o.$typeUrl === MsgCalibrateDelegation.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.valoper === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgCalibrateDelegationSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCalibrateDelegation.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.valoper === 'string'))
+    );
+  },
   encode(
     message: MsgCalibrateDelegation,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3201,8 +4271,19 @@ export const MsgCalibrateDelegation = {
 function createBaseMsgCalibrateDelegationResponse(): MsgCalibrateDelegationResponse {
   return {};
 }
+/**
+ * @name MsgCalibrateDelegationResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCalibrateDelegationResponse
+ */
 export const MsgCalibrateDelegationResponse = {
   typeUrl: '/stride.stakeibc.MsgCalibrateDelegationResponse' as const,
+  is(o: any): o is MsgCalibrateDelegationResponse {
+    return o && o.$typeUrl === MsgCalibrateDelegationResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCalibrateDelegationResponseSDKType {
+    return o && o.$typeUrl === MsgCalibrateDelegationResponse.typeUrl;
+  },
   encode(
     _: MsgCalibrateDelegationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3265,8 +4346,27 @@ function createBaseMsgResumeHostZone(): MsgResumeHostZone {
     chainId: '',
   };
 }
+/**
+ * @name MsgResumeHostZone
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgResumeHostZone
+ */
 export const MsgResumeHostZone = {
   typeUrl: '/stride.stakeibc.MsgResumeHostZone' as const,
+  is(o: any): o is MsgResumeHostZone {
+    return (
+      o &&
+      (o.$typeUrl === MsgResumeHostZone.typeUrl ||
+        (typeof o.creator === 'string' && typeof o.chainId === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgResumeHostZoneSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgResumeHostZone.typeUrl ||
+        (typeof o.creator === 'string' && typeof o.chain_id === 'string'))
+    );
+  },
   encode(
     message: MsgResumeHostZone,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3334,8 +4434,19 @@ export const MsgResumeHostZone = {
 function createBaseMsgResumeHostZoneResponse(): MsgResumeHostZoneResponse {
   return {};
 }
+/**
+ * @name MsgResumeHostZoneResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgResumeHostZoneResponse
+ */
 export const MsgResumeHostZoneResponse = {
   typeUrl: '/stride.stakeibc.MsgResumeHostZoneResponse' as const,
+  is(o: any): o is MsgResumeHostZoneResponse {
+    return o && o.$typeUrl === MsgResumeHostZoneResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgResumeHostZoneResponseSDKType {
+    return o && o.$typeUrl === MsgResumeHostZoneResponse.typeUrl;
+  },
   encode(
     _: MsgResumeHostZoneResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3411,8 +4522,61 @@ function createBaseMsgCreateTradeRoute(): MsgCreateTradeRoute {
     minTransferAmount: '',
   };
 }
+/**
+ * Creates a new trade route
+ * @name MsgCreateTradeRoute
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCreateTradeRoute
+ */
 export const MsgCreateTradeRoute = {
   typeUrl: '/stride.stakeibc.MsgCreateTradeRoute' as const,
+  aminoType: 'stride/x/stakeibc/MsgCreateTradeRoute' as const,
+  is(o: any): o is MsgCreateTradeRoute {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.hostChainId === 'string' &&
+          typeof o.strideToRewardConnectionId === 'string' &&
+          typeof o.strideToTradeConnectionId === 'string' &&
+          typeof o.hostToRewardTransferChannelId === 'string' &&
+          typeof o.rewardToTradeTransferChannelId === 'string' &&
+          typeof o.tradeToHostTransferChannelId === 'string' &&
+          typeof o.rewardDenomOnHost === 'string' &&
+          typeof o.rewardDenomOnReward === 'string' &&
+          typeof o.rewardDenomOnTrade === 'string' &&
+          typeof o.hostDenomOnTrade === 'string' &&
+          typeof o.hostDenomOnHost === 'string' &&
+          typeof o.poolId === 'bigint' &&
+          typeof o.maxAllowedSwapLossRate === 'string' &&
+          typeof o.minSwapAmount === 'string' &&
+          typeof o.maxSwapAmount === 'string' &&
+          typeof o.minTransferAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgCreateTradeRouteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.host_chain_id === 'string' &&
+          typeof o.stride_to_reward_connection_id === 'string' &&
+          typeof o.stride_to_trade_connection_id === 'string' &&
+          typeof o.host_to_reward_transfer_channel_id === 'string' &&
+          typeof o.reward_to_trade_transfer_channel_id === 'string' &&
+          typeof o.trade_to_host_transfer_channel_id === 'string' &&
+          typeof o.reward_denom_on_host === 'string' &&
+          typeof o.reward_denom_on_reward === 'string' &&
+          typeof o.reward_denom_on_trade === 'string' &&
+          typeof o.host_denom_on_trade === 'string' &&
+          typeof o.host_denom_on_host === 'string' &&
+          typeof o.pool_id === 'bigint' &&
+          typeof o.max_allowed_swap_loss_rate === 'string' &&
+          typeof o.min_swap_amount === 'string' &&
+          typeof o.max_swap_amount === 'string' &&
+          typeof o.min_transfer_amount === 'string'))
+    );
+  },
   encode(
     message: MsgCreateTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3675,8 +4839,19 @@ export const MsgCreateTradeRoute = {
 function createBaseMsgCreateTradeRouteResponse(): MsgCreateTradeRouteResponse {
   return {};
 }
+/**
+ * @name MsgCreateTradeRouteResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgCreateTradeRouteResponse
+ */
 export const MsgCreateTradeRouteResponse = {
   typeUrl: '/stride.stakeibc.MsgCreateTradeRouteResponse' as const,
+  is(o: any): o is MsgCreateTradeRouteResponse {
+    return o && o.$typeUrl === MsgCreateTradeRouteResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgCreateTradeRouteResponseSDKType {
+    return o && o.$typeUrl === MsgCreateTradeRouteResponse.typeUrl;
+  },
   encode(
     _: MsgCreateTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3740,8 +4915,33 @@ function createBaseMsgDeleteTradeRoute(): MsgDeleteTradeRoute {
     hostDenom: '',
   };
 }
+/**
+ * Deletes a trade route
+ * @name MsgDeleteTradeRoute
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteTradeRoute
+ */
 export const MsgDeleteTradeRoute = {
   typeUrl: '/stride.stakeibc.MsgDeleteTradeRoute' as const,
+  aminoType: 'stride/x/stakeibc/MsgDeleteTradeRoute' as const,
+  is(o: any): o is MsgDeleteTradeRoute {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.rewardDenom === 'string' &&
+          typeof o.hostDenom === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgDeleteTradeRouteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.reward_denom === 'string' &&
+          typeof o.host_denom === 'string'))
+    );
+  },
   encode(
     message: MsgDeleteTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3822,8 +5022,19 @@ export const MsgDeleteTradeRoute = {
 function createBaseMsgDeleteTradeRouteResponse(): MsgDeleteTradeRouteResponse {
   return {};
 }
+/**
+ * @name MsgDeleteTradeRouteResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgDeleteTradeRouteResponse
+ */
 export const MsgDeleteTradeRouteResponse = {
   typeUrl: '/stride.stakeibc.MsgDeleteTradeRouteResponse' as const,
+  is(o: any): o is MsgDeleteTradeRouteResponse {
+    return o && o.$typeUrl === MsgDeleteTradeRouteResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgDeleteTradeRouteResponseSDKType {
+    return o && o.$typeUrl === MsgDeleteTradeRouteResponse.typeUrl;
+  },
   encode(
     _: MsgDeleteTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -3892,8 +5103,43 @@ function createBaseMsgUpdateTradeRoute(): MsgUpdateTradeRoute {
     minTransferAmount: '',
   };
 }
+/**
+ * Updates the config of a trade route
+ * @name MsgUpdateTradeRoute
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateTradeRoute
+ */
 export const MsgUpdateTradeRoute = {
   typeUrl: '/stride.stakeibc.MsgUpdateTradeRoute' as const,
+  aminoType: 'stride/x/stakeibc/MsgUpdateTradeRoute' as const,
+  is(o: any): o is MsgUpdateTradeRoute {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.rewardDenom === 'string' &&
+          typeof o.hostDenom === 'string' &&
+          typeof o.poolId === 'bigint' &&
+          typeof o.maxAllowedSwapLossRate === 'string' &&
+          typeof o.minSwapAmount === 'string' &&
+          typeof o.maxSwapAmount === 'string' &&
+          typeof o.minTransferAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateTradeRouteSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateTradeRoute.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.reward_denom === 'string' &&
+          typeof o.host_denom === 'string' &&
+          typeof o.pool_id === 'bigint' &&
+          typeof o.max_allowed_swap_loss_rate === 'string' &&
+          typeof o.min_swap_amount === 'string' &&
+          typeof o.max_swap_amount === 'string' &&
+          typeof o.min_transfer_amount === 'string'))
+    );
+  },
   encode(
     message: MsgUpdateTradeRoute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4037,8 +5283,19 @@ export const MsgUpdateTradeRoute = {
 function createBaseMsgUpdateTradeRouteResponse(): MsgUpdateTradeRouteResponse {
   return {};
 }
+/**
+ * @name MsgUpdateTradeRouteResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateTradeRouteResponse
+ */
 export const MsgUpdateTradeRouteResponse = {
   typeUrl: '/stride.stakeibc.MsgUpdateTradeRouteResponse' as const,
+  is(o: any): o is MsgUpdateTradeRouteResponse {
+    return o && o.$typeUrl === MsgUpdateTradeRouteResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateTradeRouteResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateTradeRouteResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateTradeRouteResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4103,8 +5360,36 @@ function createBaseMsgSetCommunityPoolRebate(): MsgSetCommunityPoolRebate {
     liquidStakedStTokenAmount: '',
   };
 }
+/**
+ * Registers or updates a community pool rebate by specifying the amount liquid
+ * staked
+ * @name MsgSetCommunityPoolRebate
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgSetCommunityPoolRebate
+ */
 export const MsgSetCommunityPoolRebate = {
   typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebate' as const,
+  aminoType: 'stride/x/stakeibc/MsgSetCommunityPoolRebate' as const,
+  is(o: any): o is MsgSetCommunityPoolRebate {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetCommunityPoolRebate.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.rebateRate === 'string' &&
+          typeof o.liquidStakedStTokenAmount === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgSetCommunityPoolRebateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSetCommunityPoolRebate.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.rebate_rate === 'string' &&
+          typeof o.liquid_staked_st_token_amount === 'string'))
+    );
+  },
   encode(
     message: MsgSetCommunityPoolRebate,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4209,8 +5494,19 @@ export const MsgSetCommunityPoolRebate = {
 function createBaseMsgSetCommunityPoolRebateResponse(): MsgSetCommunityPoolRebateResponse {
   return {};
 }
+/**
+ * @name MsgSetCommunityPoolRebateResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgSetCommunityPoolRebateResponse
+ */
 export const MsgSetCommunityPoolRebateResponse = {
   typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebateResponse' as const,
+  is(o: any): o is MsgSetCommunityPoolRebateResponse {
+    return o && o.$typeUrl === MsgSetCommunityPoolRebateResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSetCommunityPoolRebateResponseSDKType {
+    return o && o.$typeUrl === MsgSetCommunityPoolRebateResponse.typeUrl;
+  },
   encode(
     _: MsgSetCommunityPoolRebateResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4276,8 +5572,37 @@ function createBaseMsgToggleTradeController(): MsgToggleTradeController {
     legacy: false,
   };
 }
+/**
+ * Grants or revokes trade permissions to a given address via authz
+ * @name MsgToggleTradeController
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgToggleTradeController
+ */
 export const MsgToggleTradeController = {
   typeUrl: '/stride.stakeibc.MsgToggleTradeController' as const,
+  aminoType: 'stride/x/stakeibc/MsgToggleTradeController' as const,
+  is(o: any): o is MsgToggleTradeController {
+    return (
+      o &&
+      (o.$typeUrl === MsgToggleTradeController.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chainId === 'string' &&
+          isSet(o.permissionChange) &&
+          typeof o.address === 'string' &&
+          typeof o.legacy === 'boolean'))
+    );
+  },
+  isSDK(o: any): o is MsgToggleTradeControllerSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgToggleTradeController.typeUrl ||
+        (typeof o.creator === 'string' &&
+          typeof o.chain_id === 'string' &&
+          isSet(o.permission_change) &&
+          typeof o.address === 'string' &&
+          typeof o.legacy === 'boolean'))
+    );
+  },
   encode(
     message: MsgToggleTradeController,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4388,8 +5713,19 @@ export const MsgToggleTradeController = {
 function createBaseMsgToggleTradeControllerResponse(): MsgToggleTradeControllerResponse {
   return {};
 }
+/**
+ * @name MsgToggleTradeControllerResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgToggleTradeControllerResponse
+ */
 export const MsgToggleTradeControllerResponse = {
   typeUrl: '/stride.stakeibc.MsgToggleTradeControllerResponse' as const,
+  is(o: any): o is MsgToggleTradeControllerResponse {
+    return o && o.$typeUrl === MsgToggleTradeControllerResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgToggleTradeControllerResponseSDKType {
+    return o && o.$typeUrl === MsgToggleTradeControllerResponse.typeUrl;
+  },
   encode(
     _: MsgToggleTradeControllerResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4453,8 +5789,33 @@ function createBaseMsgUpdateHostZoneParams(): MsgUpdateHostZoneParams {
     maxMessagesPerIcaTx: BigInt(0),
   };
 }
+/**
+ * Updates host zone params
+ * @name MsgUpdateHostZoneParams
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateHostZoneParams
+ */
 export const MsgUpdateHostZoneParams = {
   typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParams' as const,
+  aminoType: 'stride/x/stakeibc/MsgUpdateHostZoneParams' as const,
+  is(o: any): o is MsgUpdateHostZoneParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateHostZoneParams.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.chainId === 'string' &&
+          typeof o.maxMessagesPerIcaTx === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateHostZoneParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateHostZoneParams.typeUrl ||
+        (typeof o.authority === 'string' &&
+          typeof o.chain_id === 'string' &&
+          typeof o.max_messages_per_ica_tx === 'bigint'))
+    );
+  },
   encode(
     message: MsgUpdateHostZoneParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -4549,8 +5910,19 @@ export const MsgUpdateHostZoneParams = {
 function createBaseMsgUpdateHostZoneParamsResponse(): MsgUpdateHostZoneParamsResponse {
   return {};
 }
+/**
+ * @name MsgUpdateHostZoneParamsResponse
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.MsgUpdateHostZoneParamsResponse
+ */
 export const MsgUpdateHostZoneParamsResponse = {
   typeUrl: '/stride.stakeibc.MsgUpdateHostZoneParamsResponse' as const,
+  is(o: any): o is MsgUpdateHostZoneParamsResponse {
+    return o && o.$typeUrl === MsgUpdateHostZoneParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateHostZoneParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateHostZoneParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateHostZoneParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

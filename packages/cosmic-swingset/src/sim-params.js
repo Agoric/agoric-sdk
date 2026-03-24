@@ -1,4 +1,3 @@
-// @jessie-check
 // @ts-check
 
 import { Fail } from '@endo/errors';

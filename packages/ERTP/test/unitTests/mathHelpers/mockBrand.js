@@ -6,7 +6,6 @@ import { AssetKind } from '../../../src/index.js';
 /** @type {Brand<'nat'>} */
 // @ts-expect-error FIXME losing PASS_STYLE
 export const mockNatBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
   isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
   getAmountShape: () => ({}),
@@ -18,7 +17,6 @@ export const mockNatBrand = Far('brand', {
 /** @type {Brand<'set'>} */
 // @ts-expect-error FIXME losing PASS_STYLE
 export const mockSetBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
   isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
   getAmountShape: () => ({}),
@@ -30,7 +28,6 @@ export const mockSetBrand = Far('brand', {
 /** @type {Brand<'copySet'>} */
 // @ts-expect-error FIXME losing PASS_STYLE
 export const mockCopySetBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
   isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
   getAmountShape: () => ({}),
@@ -42,7 +39,6 @@ export const mockCopySetBrand = Far('brand', {
 /** @type {Brand<'copyBag'>} */
 // @ts-expect-error FIXME losing PASS_STYLE
 export const mockCopyBagBrand = Far('brand', {
-  // eslint-disable-next-line no-unused-vars
   isMyIssuer: async _allegedIssuer => false,
   getAllegedName: () => 'mock',
   getAmountShape: () => ({}),

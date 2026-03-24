@@ -54,7 +54,6 @@ runs:
     - uses: actions/checkout@v4
       with:
         clean: false
-        submodules: 'true'
         persist-credentials: false
         path: ${{ inputs.path }}
 
