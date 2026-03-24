@@ -2,14 +2,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { captureIO, replayIO } from '../../casting/test/net-access-fixture.js';
-import {
-  makePendleAPI,
-  type PendleMarketSummary,
-} from './pendle-api.ts';
 import { web1 as allMarkets1 } from './fixures/pendle-all-markets.js';
 import { web1 as marketData1 } from './fixures/pendle-market-data.js';
 import { web1 as quote1 } from './fixures/pendle-quote.js';
 import { web1 as withdrawConfirmation1 } from './fixures/pendle-withdraw-confirmation.js';
+import { makePendleAPI, type PendleMarketSummary } from './pendle-api.ts';
 
 const require = createRequire(import.meta.url);
 
@@ -235,8 +232,7 @@ test('Pendle PT instrument shows a fixed yield and a maturity date', async t => 
   const { data } = await getAllMarkets();
   const accountingAsset = `42161-${usdc.arbitrum.toLowerCase()}`;
   const futureMarkets = data.markets.filter(
-    entry =>
-      entry.expiry > '2026-01-01T00:00:00.000Z',
+    entry => entry.expiry > '2026-01-01T00:00:00.000Z',
   );
   const activeMarkets = futureMarkets.filter(
     entry => entry.details.impliedApy > 0,
@@ -271,7 +267,8 @@ test('Pendle PT instrument shows a fixed yield and a maturity date', async t => 
 test('plan for 30% pendle results in locked yield, market and maturity values, countdown', async t => {
   const { data } = await getMarketData();
   const totalUsdc =
-    lab.portfolio.aaveArbitrumPrincipal + lab.portfolio.aaveArbitrumAccruedYield;
+    lab.portfolio.aaveArbitrumPrincipal +
+    lab.portfolio.aaveArbitrumAccruedYield;
   const pendleAllocationUsdc =
     (totalUsdc * lab.portfolio.pendleAllocationNumerator) /
     lab.portfolio.pendleAllocationDenominator;
@@ -325,7 +322,8 @@ test(`withdraw confirmation shows lost yield (RECORDING: ${RECORDING})`, async t
   }
 
   const totalUsdc =
-    lab.portfolio.aaveArbitrumPrincipal + lab.portfolio.aaveArbitrumAccruedYield;
+    lab.portfolio.aaveArbitrumPrincipal +
+    lab.portfolio.aaveArbitrumAccruedYield;
   const currentAaveYieldOnMovedBalance =
     (lab.portfolio.aaveArbitrumAccruedYield *
       lab.portfolio.pendleAllocationNumerator) /
