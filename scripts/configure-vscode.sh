@@ -20,7 +20,7 @@ cat > .vscode/settings.json.new << \EOF || die "Could not write settings.json"
 {
   // Automatically format with Prettier on save
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.defaultFormatter": "dprint.dprint",
 
   "typescript.preferences.importModuleSpecifierEnding": "js",
   "typescript.tsdk": "node_modules/typescript/lib",
@@ -83,7 +83,15 @@ cat > .vscode/launch.json.new << \EOF || die "Could not write launch.json"
 }
 EOF
 
-for file in .vscode/launch.json .vscode/settings.json; do
+cat > .vscode/extensions.json.new << \EOF || die "Could not write extensions.json"
+{
+    "recommendations": [
+        "dprint.dprint"
+    ]
+}
+EOF
+
+for file in .vscode/extensions.json .vscode/launch.json .vscode/settings.json; do
   printf "\nComparing %s\n" $file
   if test -f $file; then
     if git diff --no-index --quiet --exit-code $file $file.new; then
