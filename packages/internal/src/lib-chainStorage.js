@@ -22,10 +22,13 @@ import * as cb from './callback.js';
 /**
  * Defined by vstorageStoreKey in vstorage.go
  *
+ * The backend provides all properties but for mock data flexibility we allow
+ * some to be optional in the JS typedef.
+ *
  * @typedef VStorageKey
  * @property {string} storeName
  * @property {string} storeSubkey
- * @property {string} dataPrefixBytes
+ * @property {string} [dataPrefixBytes]
  * @property {string} [noDataValue]
  */
 
@@ -67,7 +70,18 @@ export const StreamCellShape = harden({
 const ChainStorageNodeI = M.interface('StorageNode', {
   setValue: M.callWhen(M.string()).returns(),
   getPath: M.call().returns(M.string()),
-  getStoreKey: M.callWhen().returns(M.record()),
+  getStoreKey: M.callWhen().returns(
+    M.splitRecord(
+      {
+        storeName: M.string(),
+        storeSubkey: M.string(),
+      },
+      {
+        dataPrefixBytes: M.string(),
+        noDataValue: M.string(),
+      },
+    ),
+  ),
   makeChildNode: M.call(M.string())
     .optional(M.splitRecord({}, { sequence: M.boolean() }, {}))
     .returns(M.remotable('StorageNode')),
