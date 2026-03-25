@@ -101,6 +101,12 @@ jobs:
       # XXX running tsc in every package is slow and redundant.
       - run: yarn typecheck-all
 
+      # multichain-testing is a standalone yarn project (not a workspace), so
+      # the root lint:eslint and typecheck-all don't cover it.
+      - name: lint multichain-testing
+        run: yarn install && yarn lint && yarn ava test/imports.test.ts
+        working-directory: multichain-testing
+
   # A second job for what's not covered in primary
   lint-rest:
     runs-on: ubuntu-latest

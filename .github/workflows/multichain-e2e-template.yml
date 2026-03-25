@@ -85,11 +85,6 @@ jobs:
         run: yarn install
         working-directory: ./agoric-sdk/multichain-testing
 
-      - name: Lint @agoric/multichain-testing
-        # include testing imports to check package patches
-        run: yarn lint && yarn ava test/imports.test.ts
-        working-directory: ./agoric-sdk/multichain-testing
-
       - name: docker build (sdk)
         # Produces local ghcr.io/agoric/agoric-sdk:dev used in Kind.
         run: |
