@@ -225,6 +225,8 @@ jobs:
     runs-on: 'depot-ubuntu-22.04-16'
     timeout-minutes: 60
     permissions:
+      # id-token: Depot OIDC auth; actions: proposal test digest cache
+      actions: write
       contents: read
       id-token: write
 
@@ -357,9 +359,39 @@ jobs:
         run: yarn build:submissions && yarn build:synthetic-chain
         working-directory: agoric-sdk/a3p-integration
 
+      - name: restore proposal test cache
+        id: proposal-cache
+        uses: actions/cache/restore@v4
+        with:
+          # GitHub Actions cache scoping: a branch can restore from itself,
+          # its base branch, or the default branch (master). This means:
+          #   - master digests are available to all PR branches
+          #   - a PR branch's own digests persist across pushes
+          #   - digests from unrelated PR branches are NOT shared
+          # So a proposal that passed on master is never re-tested. A proposal
+          # that passed on another PR branch may re-test until it passes on
+          # master. This is acceptable since master runs on every merge.
+          #
+          # restore-keys prefix match finds the most recent cache entry.
+          # Each run saves under a unique key (cache keys are immutable).
+          path: /tmp/proposal-test-passed-digests
+          key: proposal-test-digests-${{ github.run_id }}
+          restore-keys: |
+            proposal-test-digests-
+
       - name: run proposals tests
-        run: yarn test
+        run: scripts/test-with-cache.sh /tmp/proposal-test-passed-digests
         working-directory: agoric-sdk/a3p-integration
+
+      - name: save proposal test cache
+        if: always()
+        # Save even on failure — each digest is only written after its test
+        # passes, so the cache file always contains only valid results.
+        # Cache entries auto-expire after 7 days of no access (GitHub policy).
+        uses: actions/cache/save@v4
+        with:
+          path: /tmp/proposal-test-passed-digests
+          key: proposal-test-digests-${{ github.run_id }}
 
       - name: copy a3p-integration
         if: always()
