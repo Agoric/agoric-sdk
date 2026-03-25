@@ -65,8 +65,8 @@ export interface GenesisStateSDKType {
   next_client_sequence: bigint;
 }
 /**
- * GenesisMetadata defines the genesis type for metadata that clients may return
- * with ExportMetadata
+ * GenesisMetadata defines the genesis type for metadata that will be used
+ * to export all client store keys that are not client or consensus states.
  * @name GenesisMetadata
  * @package ibc.core.client.v1
  * @see proto type: ibc.core.client.v1.GenesisMetadata
@@ -86,8 +86,8 @@ export interface GenesisMetadataProtoMsg {
   value: Uint8Array;
 }
 /**
- * GenesisMetadata defines the genesis type for metadata that clients may return
- * with ExportMetadata
+ * GenesisMetadata defines the genesis type for metadata that will be used
+ * to export all client store keys that are not client or consensus states.
  * @name GenesisMetadataSDKType
  * @package ibc.core.client.v1
  * @see proto type: ibc.core.client.v1.GenesisMetadata
@@ -338,8 +338,8 @@ function createBaseGenesisMetadata(): GenesisMetadata {
   };
 }
 /**
- * GenesisMetadata defines the genesis type for metadata that clients may return
- * with ExportMetadata
+ * GenesisMetadata defines the genesis type for metadata that will be used
+ * to export all client store keys that are not client or consensus states.
  * @name GenesisMetadata
  * @package ibc.core.client.v1
  * @see proto type: ibc.core.client.v1.GenesisMetadata

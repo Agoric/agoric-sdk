@@ -8,7 +8,9 @@ import (
 
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 
-	chanTypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/protoadapt"
@@ -18,6 +20,7 @@ import (
 const RouterKey = ModuleName // this was defined in your key.go file
 
 var _ sdk.Msg = &MsgSendPacket{}
+var _ ibcexported.PacketI = (*Packet)(nil)
 
 // Replacing msg.GetSigners() but before we can adopt AddressString.
 // https://github.com/cosmos/cosmos-sdk/issues/20077#issuecomment-2062601533
@@ -39,10 +42,29 @@ func DefineCustomGetSigners(options *signing.Options) {
 	)
 }
 
+func (p Packet) ValidateBasic() error {
+	channelPacket := agtypes.CopyToChannelPacket(p);
+	return channelPacket.ValidateBasic()
+}
+
 // NewMsgSendPacket returns a new send request
-func NewMsgSendPacket(packet chanTypes.Packet, sender sdk.AccAddress) *MsgSendPacket {
+func NewMsgSendPacket(packet ibcexported.PacketI, sender sdk.AccAddress) *MsgSendPacket {
+	timeoutHeight := clienttypes.MustParseHeight(packet.GetTimeoutHeight().String())
+	localPacket := Packet{
+		Sequence:       packet.GetSequence(),
+		SourcePort:     packet.GetSourcePort(),
+		SourceChannel:  packet.GetSourceChannel(),
+		DestinationPort: packet.GetDestPort(),
+		DestinationChannel: packet.GetDestChannel(),
+		Data:           packet.GetData(),
+		TimeoutHeight: Height{
+			RevisionNumber: timeoutHeight.RevisionNumber,
+			RevisionHeight: timeoutHeight.RevisionHeight,
+		},
+		TimeoutTimestamp: packet.GetTimeoutTimestamp(),
+	}
 	return &MsgSendPacket{
-		Packet: packet,
+		Packet: localPacket,
 		Sender: sender,
 	}
 }
@@ -67,4 +89,39 @@ func (msg MsgSendPacket) GetSigners() []sdk.AccAddress {
 // Type implements sdk.Msg
 func (msg MsgSendPacket) Type() string {
 	return "sendpacket"
+}
+
+func (p Packet) GetSequence() uint64 {
+	return p.Sequence
+}
+
+func (p Packet) GetSourcePort() string {
+	return p.SourcePort
+}
+
+func (p Packet) GetSourceChannel() string {
+	return p.SourceChannel
+}
+
+func (p Packet) GetDestPort() string {
+	return p.DestinationPort
+}
+
+func (p Packet) GetDestChannel() string {
+	return p.DestinationChannel
+}
+
+func (p Packet) GetData() []byte {
+	return p.Data
+}
+
+func (p Packet) GetTimeoutHeight() ibcexported.Height {
+	return clienttypes.Height{
+		RevisionNumber: p.TimeoutHeight.RevisionNumber,
+		RevisionHeight: p.TimeoutHeight.RevisionHeight,
+	}
+}
+
+func (p Packet) GetTimeoutTimestamp() uint64 {
+	return p.TimeoutTimestamp
 }

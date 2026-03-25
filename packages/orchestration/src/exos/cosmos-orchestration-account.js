@@ -891,7 +891,14 @@ export const prepareCosmosOrchestrationAccountKit = (
         ) {
           const { chainAddress } = this.state;
           const { holder } = this.facets;
-          const { timeoutHeight, memo, ...restOpts } = opts;
+          const {
+            // Strip out the timeout information and memo from the executeOpts,
+            // since they're used in the MsgTransfer.
+            timeoutHeight,
+            timeoutTimestamp: _,
+            memo,
+            ...executeOpts
+          } = opts;
           const results = holder.executeTxProto3(
             [
               Any.toJSON(
@@ -907,10 +914,10 @@ export const prepareCosmosOrchestrationAccountKit = (
                 }),
               ),
             ],
-            restOpts,
+            executeOpts,
           );
 
-          const { progressTracker } = restOpts;
+          const { progressTracker } = executeOpts;
           if (progressTracker) {
             const priorReport = progressTracker.getCurrentProgressReport();
             const { traffic, slice: trafficSlice } = addTrafficEntries(

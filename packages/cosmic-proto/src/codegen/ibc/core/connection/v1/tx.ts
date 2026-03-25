@@ -84,6 +84,7 @@ export interface MsgConnectionOpenTry {
    */
   previousConnectionId: string;
   /**
+   * Deprecated: this field is unused.
    * @deprecated
    */
   clientState?: Any;
@@ -92,27 +93,28 @@ export interface MsgConnectionOpenTry {
   counterpartyVersions: Version[];
   proofHeight: Height;
   /**
-   * proof of the initialization the connection on Chain A: `UNITIALIZED ->
+   * proof of the initialization the connection on Chain A: `UNINITIALIZED ->
    * INIT`
    */
   proofInit: Uint8Array;
   /**
-   * proof of client state included in message
+   * Deprecated: this field is unused.
    * @deprecated
    */
   proofClient: Uint8Array;
   /**
-   * proof of client consensus state
+   * Deprecated: this field is unused.
    * @deprecated
    */
   proofConsensus: Uint8Array;
   /**
+   * Deprecated: this field is unused.
    * @deprecated
    */
   consensusHeight: Height;
   signer: string;
   /**
-   * optional proof data for host state machines that are unable to introspect their own consensus state
+   * Deprecated: this field is unused.
    * @deprecated
    */
   hostConsensusStateProof: Uint8Array;
@@ -191,32 +193,34 @@ export interface MsgConnectionOpenAck {
   counterpartyConnectionId: string;
   version?: Version;
   /**
+   * Deprecated: this field is unused.
    * @deprecated
    */
   clientState?: Any;
   proofHeight: Height;
   /**
-   * proof of the initialization the connection on Chain B: `UNITIALIZED ->
+   * proof of the initialization the connection on Chain B: `UNINITIALIZED ->
    * TRYOPEN`
    */
   proofTry: Uint8Array;
   /**
-   * proof of client state included in message
+   * Deprecated: this field is unused.
    * @deprecated
    */
   proofClient: Uint8Array;
   /**
-   * proof of client consensus state
+   * Deprecated: this field is unused.
    * @deprecated
    */
   proofConsensus: Uint8Array;
   /**
+   * Deprecated: this field is unused.
    * @deprecated
    */
   consensusHeight: Height;
   signer: string;
   /**
-   * optional proof data for host state machines that are unable to introspect their own consensus state
+   * Deprecated: this field is unused.
    * @deprecated
    */
   hostConsensusStateProof: Uint8Array;

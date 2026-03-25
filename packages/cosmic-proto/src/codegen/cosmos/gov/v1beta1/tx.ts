@@ -30,12 +30,6 @@ import {
   CancelSoftwareUpgradeProposal,
   type CancelSoftwareUpgradeProposalSDKType,
 } from '../../upgrade/v1beta1/upgrade.js';
-import {
-  ClientUpdateProposal,
-  type ClientUpdateProposalSDKType,
-  UpgradeProposal,
-  type UpgradeProposalSDKType,
-} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { GlobalDecoderRegistry } from '../../../registry.js';
 import { isSet } from '../../../helpers.js';
@@ -59,8 +53,6 @@ export interface MsgSubmitProposal {
     | ParameterChangeProposal
     | SoftwareUpgradeProposal
     | CancelSoftwareUpgradeProposal
-    | ClientUpdateProposal
-    | UpgradeProposal
     | Any
     | undefined;
   /**
@@ -92,8 +84,6 @@ export interface MsgSubmitProposalSDKType {
     | ParameterChangeProposalSDKType
     | SoftwareUpgradeProposalSDKType
     | CancelSoftwareUpgradeProposalSDKType
-    | ClientUpdateProposalSDKType
-    | UpgradeProposalSDKType
     | AnySDKType
     | undefined;
   initial_deposit: CoinSDKType[];
@@ -179,8 +169,6 @@ export interface MsgVoteResponseProtoMsg {
 export interface MsgVoteResponseSDKType {}
 /**
  * MsgVoteWeighted defines a message to cast a vote.
- *
- * Since: cosmos-sdk 0.43
  * @name MsgVoteWeighted
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.MsgVoteWeighted
@@ -205,8 +193,6 @@ export interface MsgVoteWeightedProtoMsg {
 }
 /**
  * MsgVoteWeighted defines a message to cast a vote.
- *
- * Since: cosmos-sdk 0.43
  * @name MsgVoteWeightedSDKType
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.MsgVoteWeighted
@@ -218,8 +204,6 @@ export interface MsgVoteWeightedSDKType {
 }
 /**
  * MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
- *
- * Since: cosmos-sdk 0.43
  * @name MsgVoteWeightedResponse
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.MsgVoteWeightedResponse
@@ -231,8 +215,6 @@ export interface MsgVoteWeightedResponseProtoMsg {
 }
 /**
  * MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
- *
- * Since: cosmos-sdk 0.43
  * @name MsgVoteWeightedResponseSDKType
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.MsgVoteWeightedResponse
@@ -705,8 +687,6 @@ function createBaseMsgVoteWeighted(): MsgVoteWeighted {
 }
 /**
  * MsgVoteWeighted defines a message to cast a vote.
- *
- * Since: cosmos-sdk 0.43
  * @name MsgVoteWeighted
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.MsgVoteWeighted
@@ -829,8 +809,6 @@ function createBaseMsgVoteWeightedResponse(): MsgVoteWeightedResponse {
 }
 /**
  * MsgVoteWeightedResponse defines the Msg/VoteWeighted response type.
- *
- * Since: cosmos-sdk 0.43
  * @name MsgVoteWeightedResponse
  * @package cosmos.gov.v1beta1
  * @see proto type: cosmos.gov.v1beta1.MsgVoteWeightedResponse

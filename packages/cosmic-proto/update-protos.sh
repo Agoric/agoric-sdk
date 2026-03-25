@@ -10,7 +10,7 @@ cd "$AG_SDK"/golang/cosmos
 SKIP_MOD_VERIFY=1 make go.sum
 go mod download
 COSMOS_SDK=$(go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)
-IBC_GO=$(go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v8)
+IBC_GO=$(go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v10)
 
 # update proto files in this package
 cd "$AG_SDK"/packages/cosmic-proto

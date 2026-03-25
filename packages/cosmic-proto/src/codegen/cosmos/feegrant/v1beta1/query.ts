@@ -123,8 +123,6 @@ export interface QueryAllowancesResponseSDKType {
 }
 /**
  * QueryAllowancesByGranterRequest is the request type for the Query/AllowancesByGranter RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryAllowancesByGranterRequest
  * @package cosmos.feegrant.v1beta1
  * @see proto type: cosmos.feegrant.v1beta1.QueryAllowancesByGranterRequest
@@ -142,8 +140,6 @@ export interface QueryAllowancesByGranterRequestProtoMsg {
 }
 /**
  * QueryAllowancesByGranterRequest is the request type for the Query/AllowancesByGranter RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryAllowancesByGranterRequestSDKType
  * @package cosmos.feegrant.v1beta1
  * @see proto type: cosmos.feegrant.v1beta1.QueryAllowancesByGranterRequest
@@ -154,8 +150,6 @@ export interface QueryAllowancesByGranterRequestSDKType {
 }
 /**
  * QueryAllowancesByGranterResponse is the response type for the Query/AllowancesByGranter RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryAllowancesByGranterResponse
  * @package cosmos.feegrant.v1beta1
  * @see proto type: cosmos.feegrant.v1beta1.QueryAllowancesByGranterResponse
@@ -176,8 +170,6 @@ export interface QueryAllowancesByGranterResponseProtoMsg {
 }
 /**
  * QueryAllowancesByGranterResponse is the response type for the Query/AllowancesByGranter RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryAllowancesByGranterResponseSDKType
  * @package cosmos.feegrant.v1beta1
  * @see proto type: cosmos.feegrant.v1beta1.QueryAllowancesByGranterResponse
@@ -608,8 +600,6 @@ function createBaseQueryAllowancesByGranterRequest(): QueryAllowancesByGranterRe
 }
 /**
  * QueryAllowancesByGranterRequest is the request type for the Query/AllowancesByGranter RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryAllowancesByGranterRequest
  * @package cosmos.feegrant.v1beta1
  * @see proto type: cosmos.feegrant.v1beta1.QueryAllowancesByGranterRequest
@@ -722,8 +712,6 @@ function createBaseQueryAllowancesByGranterResponse(): QueryAllowancesByGranterR
 }
 /**
  * QueryAllowancesByGranterResponse is the response type for the Query/AllowancesByGranter RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryAllowancesByGranterResponse
  * @package cosmos.feegrant.v1beta1
  * @see proto type: cosmos.feegrant.v1beta1.QueryAllowancesByGranterResponse

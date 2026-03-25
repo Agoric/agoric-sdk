@@ -105,8 +105,6 @@ export interface MsgMultiSendResponseProtoMsg {
 export interface MsgMultiSendResponseSDKType {}
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgUpdateParams
@@ -129,8 +127,6 @@ export interface MsgUpdateParamsProtoMsg {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsSDKType
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgUpdateParams
@@ -142,8 +138,6 @@ export interface MsgUpdateParamsSDKType {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgUpdateParamsResponse
@@ -156,8 +150,6 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponseSDKType
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgUpdateParamsResponse
@@ -169,8 +161,6 @@ export interface MsgUpdateParamsResponseSDKType {}
  * Only entries to add/update/delete need to be included.
  * Existing SendEnabled entries that are not included in this
  * message are left unchanged.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgSetSendEnabled
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgSetSendEnabled
@@ -202,8 +192,6 @@ export interface MsgSetSendEnabledProtoMsg {
  * Only entries to add/update/delete need to be included.
  * Existing SendEnabled entries that are not included in this
  * message are left unchanged.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgSetSendEnabledSDKType
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgSetSendEnabled
@@ -215,8 +203,6 @@ export interface MsgSetSendEnabledSDKType {
 }
 /**
  * MsgSetSendEnabledResponse defines the Msg/SetSendEnabled response type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgSetSendEnabledResponse
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgSetSendEnabledResponse
@@ -228,8 +214,6 @@ export interface MsgSetSendEnabledResponseProtoMsg {
 }
 /**
  * MsgSetSendEnabledResponse defines the Msg/SetSendEnabled response type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgSetSendEnabledResponseSDKType
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgSetSendEnabledResponse
@@ -601,8 +585,6 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgUpdateParams
@@ -698,8 +680,6 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgUpdateParamsResponse
@@ -778,8 +758,6 @@ function createBaseMsgSetSendEnabled(): MsgSetSendEnabled {
  * Only entries to add/update/delete need to be included.
  * Existing SendEnabled entries that are not included in this
  * message are left unchanged.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgSetSendEnabled
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgSetSendEnabled
@@ -903,8 +881,6 @@ function createBaseMsgSetSendEnabledResponse(): MsgSetSendEnabledResponse {
 }
 /**
  * MsgSetSendEnabledResponse defines the Msg/SetSendEnabled response type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgSetSendEnabledResponse
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.MsgSetSendEnabledResponse
