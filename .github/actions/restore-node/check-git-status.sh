@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Set verbose execution
+set -x
+
 # Navigate to the specified directory
 cd "$1" || exit $?
 
@@ -8,7 +11,7 @@ ignore_dirty_yarn_lock=$2 || exit $?
 
 # Check for unexpected changes
 # Fail if git status detects changes
-changes=$(git status . --porcelain)
+changes=$(git status --porcelain)
 
 if [ "$ignore_dirty_yarn_lock" = true ]; then
   # When integration is requested with a specific Endo branch, ignore changes:
@@ -19,7 +22,7 @@ if [ "$ignore_dirty_yarn_lock" = true ]; then
 fi
 
 if [ -n "$changes" ]; then
-  git status .
-  echo "Unexpected dirty git status in Agoric SDK path $1"
+  git status
+  echo "Unexpected dirty git status in Agoric SDK path"
   exit 1
 fi

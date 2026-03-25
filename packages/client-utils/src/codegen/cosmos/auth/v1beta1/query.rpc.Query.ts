@@ -31,17 +31,27 @@ export interface Query {
    *
    * When called from another module, this query might consume a high amount of
    * gas if the pagination field is incorrectly set.
+   *
+   * Since: cosmos-sdk 0.43
    */
   accounts(request?: QueryAccountsRequest): Promise<QueryAccountsResponse>;
   /** Account returns account details based on address. */
   account(request: QueryAccountRequest): Promise<QueryAccountResponse>;
-  /** AccountAddressByID returns account address based on account number. */
+  /**
+   * AccountAddressByID returns account address based on account number.
+   *
+   * Since: cosmos-sdk 0.46.2
+   */
   accountAddressByID(
     request: QueryAccountAddressByIDRequest,
   ): Promise<QueryAccountAddressByIDResponse>;
   /** Params queries all parameters. */
   params(request?: QueryParamsRequest): Promise<QueryParamsResponse>;
-  /** ModuleAccounts returns all the existing module accounts. */
+  /**
+   * ModuleAccounts returns all the existing module accounts.
+   *
+   * Since: cosmos-sdk 0.46
+   */
   moduleAccounts(
     request?: QueryModuleAccountsRequest,
   ): Promise<QueryModuleAccountsResponse>;
@@ -49,17 +59,33 @@ export interface Query {
   moduleAccountByName(
     request: QueryModuleAccountByNameRequest,
   ): Promise<QueryModuleAccountByNameResponse>;
-  /** Bech32Prefix queries bech32Prefix */
+  /**
+   * Bech32Prefix queries bech32Prefix
+   *
+   * Since: cosmos-sdk 0.46
+   */
   bech32Prefix(request?: Bech32PrefixRequest): Promise<Bech32PrefixResponse>;
-  /** AddressBytesToString converts Account Address bytes to string */
+  /**
+   * AddressBytesToString converts Account Address bytes to string
+   *
+   * Since: cosmos-sdk 0.46
+   */
   addressBytesToString(
     request: AddressBytesToStringRequest,
   ): Promise<AddressBytesToStringResponse>;
-  /** AddressStringToBytes converts Address string to bytes */
+  /**
+   * AddressStringToBytes converts Address string to bytes
+   *
+   * Since: cosmos-sdk 0.46
+   */
   addressStringToBytes(
     request: AddressStringToBytesRequest,
   ): Promise<AddressStringToBytesResponse>;
-  /** AccountInfo queries account info which is common to all account types. */
+  /**
+   * AccountInfo queries account info which is common to all account types.
+   *
+   * Since: cosmos-sdk 0.47
+   */
   accountInfo(
     request: QueryAccountInfoRequest,
   ): Promise<QueryAccountInfoResponse>;

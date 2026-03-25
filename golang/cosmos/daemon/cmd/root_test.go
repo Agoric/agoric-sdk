@@ -87,7 +87,6 @@ func TestCLIFlags(t *testing.T) {
 
 		"grpc.address":           "",
 		"grpc.enable":            "",
-		"grpc.historical-grpc-address-block-range": "",
 		"grpc.max-recv-msg-size": "",
 		"grpc.max-send-msg-size": "",
 

@@ -163,6 +163,8 @@ export interface GetTxsEventRequest {
   /**
    * query defines the transaction event query that is proxied to Tendermint's
    * TxSearch RPC method. The query must be valid.
+   *
+   * Since cosmos-sdk 0.50
    */
   query: string;
 }
@@ -310,6 +312,8 @@ export interface SimulateRequest {
   tx?: Tx;
   /**
    * tx_bytes is the raw transaction.
+   *
+   * Since: cosmos-sdk 0.43
    */
   txBytes: Uint8Array;
 }
@@ -423,6 +427,8 @@ export interface GetTxResponseSDKType {
 /**
  * GetBlockWithTxsRequest is the request type for the Service.GetBlockWithTxs
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.45.2
  * @name GetBlockWithTxsRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.GetBlockWithTxsRequest
@@ -444,6 +450,8 @@ export interface GetBlockWithTxsRequestProtoMsg {
 /**
  * GetBlockWithTxsRequest is the request type for the Service.GetBlockWithTxs
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.45.2
  * @name GetBlockWithTxsRequestSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.GetBlockWithTxsRequest
@@ -455,6 +463,8 @@ export interface GetBlockWithTxsRequestSDKType {
 /**
  * GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs
  * method.
+ *
+ * Since: cosmos-sdk 0.45.2
  * @name GetBlockWithTxsResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.GetBlockWithTxsResponse
@@ -478,6 +488,8 @@ export interface GetBlockWithTxsResponseProtoMsg {
 /**
  * GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs
  * method.
+ *
+ * Since: cosmos-sdk 0.45.2
  * @name GetBlockWithTxsResponseSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.GetBlockWithTxsResponse
@@ -491,6 +503,8 @@ export interface GetBlockWithTxsResponseSDKType {
 /**
  * TxDecodeRequest is the request type for the Service.TxDecode
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeRequest
@@ -508,6 +522,8 @@ export interface TxDecodeRequestProtoMsg {
 /**
  * TxDecodeRequest is the request type for the Service.TxDecode
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeRequestSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeRequest
@@ -518,6 +534,8 @@ export interface TxDecodeRequestSDKType {
 /**
  * TxDecodeResponse is the response type for the
  * Service.TxDecode method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeResponse
@@ -535,6 +553,8 @@ export interface TxDecodeResponseProtoMsg {
 /**
  * TxDecodeResponse is the response type for the
  * Service.TxDecode method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeResponseSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeResponse
@@ -545,6 +565,8 @@ export interface TxDecodeResponseSDKType {
 /**
  * TxEncodeRequest is the request type for the Service.TxEncode
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeRequest
@@ -562,6 +584,8 @@ export interface TxEncodeRequestProtoMsg {
 /**
  * TxEncodeRequest is the request type for the Service.TxEncode
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeRequestSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeRequest
@@ -572,6 +596,8 @@ export interface TxEncodeRequestSDKType {
 /**
  * TxEncodeResponse is the response type for the
  * Service.TxEncode method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeResponse
@@ -589,6 +615,8 @@ export interface TxEncodeResponseProtoMsg {
 /**
  * TxEncodeResponse is the response type for the
  * Service.TxEncode method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeResponseSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeResponse
@@ -599,6 +627,8 @@ export interface TxEncodeResponseSDKType {
 /**
  * TxEncodeAminoRequest is the request type for the Service.TxEncodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeAminoRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeAminoRequest
@@ -613,6 +643,8 @@ export interface TxEncodeAminoRequestProtoMsg {
 /**
  * TxEncodeAminoRequest is the request type for the Service.TxEncodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeAminoRequestSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeAminoRequest
@@ -623,6 +655,8 @@ export interface TxEncodeAminoRequestSDKType {
 /**
  * TxEncodeAminoResponse is the response type for the Service.TxEncodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeAminoResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeAminoResponse
@@ -637,6 +671,8 @@ export interface TxEncodeAminoResponseProtoMsg {
 /**
  * TxEncodeAminoResponse is the response type for the Service.TxEncodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeAminoResponseSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeAminoResponse
@@ -647,6 +683,8 @@ export interface TxEncodeAminoResponseSDKType {
 /**
  * TxDecodeAminoRequest is the request type for the Service.TxDecodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeAminoRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeAminoRequest
@@ -661,6 +699,8 @@ export interface TxDecodeAminoRequestProtoMsg {
 /**
  * TxDecodeAminoRequest is the request type for the Service.TxDecodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeAminoRequestSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeAminoRequest
@@ -671,6 +711,8 @@ export interface TxDecodeAminoRequestSDKType {
 /**
  * TxDecodeAminoResponse is the response type for the Service.TxDecodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeAminoResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeAminoResponse
@@ -685,6 +727,8 @@ export interface TxDecodeAminoResponseProtoMsg {
 /**
  * TxDecodeAminoResponse is the response type for the Service.TxDecodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeAminoResponseSDKType
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeAminoResponse
@@ -1598,6 +1642,8 @@ function createBaseGetBlockWithTxsRequest(): GetBlockWithTxsRequest {
 /**
  * GetBlockWithTxsRequest is the request type for the Service.GetBlockWithTxs
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.45.2
  * @name GetBlockWithTxsRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.GetBlockWithTxsRequest
@@ -1713,6 +1759,8 @@ function createBaseGetBlockWithTxsResponse(): GetBlockWithTxsResponse {
 /**
  * GetBlockWithTxsResponse is the response type for the Service.GetBlockWithTxs
  * method.
+ *
+ * Since: cosmos-sdk 0.45.2
  * @name GetBlockWithTxsResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.GetBlockWithTxsResponse
@@ -1862,6 +1910,8 @@ function createBaseTxDecodeRequest(): TxDecodeRequest {
 /**
  * TxDecodeRequest is the request type for the Service.TxDecode
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeRequest
@@ -1953,6 +2003,8 @@ function createBaseTxDecodeResponse(): TxDecodeResponse {
 /**
  * TxDecodeResponse is the response type for the
  * Service.TxDecode method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeResponse
@@ -2033,6 +2085,8 @@ function createBaseTxEncodeRequest(): TxEncodeRequest {
 /**
  * TxEncodeRequest is the request type for the Service.TxEncode
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeRequest
@@ -2113,6 +2167,8 @@ function createBaseTxEncodeResponse(): TxEncodeResponse {
 /**
  * TxEncodeResponse is the response type for the
  * Service.TxEncode method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeResponse
@@ -2204,6 +2260,8 @@ function createBaseTxEncodeAminoRequest(): TxEncodeAminoRequest {
 /**
  * TxEncodeAminoRequest is the request type for the Service.TxEncodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeAminoRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeAminoRequest
@@ -2291,6 +2349,8 @@ function createBaseTxEncodeAminoResponse(): TxEncodeAminoResponse {
 /**
  * TxEncodeAminoResponse is the response type for the Service.TxEncodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxEncodeAminoResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxEncodeAminoResponse
@@ -2387,6 +2447,8 @@ function createBaseTxDecodeAminoRequest(): TxDecodeAminoRequest {
 /**
  * TxDecodeAminoRequest is the request type for the Service.TxDecodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeAminoRequest
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeAminoRequest
@@ -2483,6 +2545,8 @@ function createBaseTxDecodeAminoResponse(): TxDecodeAminoResponse {
 /**
  * TxDecodeAminoResponse is the response type for the Service.TxDecodeAmino
  * RPC method.
+ *
+ * Since: cosmos-sdk 0.47
  * @name TxDecodeAminoResponse
  * @package cosmos.tx.v1beta1
  * @see proto type: cosmos.tx.v1beta1.TxDecodeAminoResponse

@@ -153,8 +153,10 @@ test('typeUrlToGrpcPath', t => {
     '/cosmos.staking.v1beta1.Query/DelegatorDelegations',
   );
   t.is(
-    typeUrlToGrpcPath(ibc.applications.transfer.v1.QueryDenomRequest.typeUrl),
-    '/ibc.applications.transfer.v1.Query/Denom',
+    typeUrlToGrpcPath(
+      ibc.applications.transfer.v1.QueryDenomTraceRequest.typeUrl,
+    ),
+    '/ibc.applications.transfer.v1.Query/DenomTrace',
   );
   t.is(
     typeUrlToGrpcPath(icq.v1.QueryParamsRequest.typeUrl),

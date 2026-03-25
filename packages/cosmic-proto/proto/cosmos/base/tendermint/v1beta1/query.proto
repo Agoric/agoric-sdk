@@ -49,9 +49,10 @@ service Service {
   // ABCIQuery defines a query handler that supports ABCI queries directly to the
   // application, bypassing Tendermint completely. The ABCI query must contain
   // a valid and supported path, including app, custom, p2p, and store.
+  //
+  // Since: cosmos-sdk 0.46
   rpc ABCIQuery(ABCIQueryRequest) returns (ABCIQueryResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
-    option (google.api.http).get          = "/cosmos/base/tendermint/v1beta1/abci_query";
+    option (google.api.http).get = "/cosmos/base/tendermint/v1beta1/abci_query";
   }
 }
 
@@ -104,7 +105,8 @@ message GetBlockByHeightResponse {
   // Deprecated: please use `sdk_block` instead
   .tendermint.types.Block block = 2;
 
-  Block sdk_block = 3 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+  // Since: cosmos-sdk 0.47
+  Block sdk_block = 3;
 }
 
 // GetLatestBlockRequest is the request type for the Query/GetLatestBlock RPC method.
@@ -117,7 +119,8 @@ message GetLatestBlockResponse {
   // Deprecated: please use `sdk_block` instead
   .tendermint.types.Block block = 2;
 
-  Block sdk_block = 3 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+  // Since: cosmos-sdk 0.47
+  Block sdk_block = 3;
 }
 
 // GetSyncingRequest is the request type for the Query/GetSyncing RPC method.
@@ -139,14 +142,15 @@ message GetNodeInfoResponse {
 
 // VersionInfo is the type for the GetNodeInfoResponse message.
 message VersionInfo {
-  string          name               = 1;
-  string          app_name           = 2;
-  string          version            = 3;
-  string          git_commit         = 4;
-  string          build_tags         = 5;
-  string          go_version         = 6;
-  repeated Module build_deps         = 7;
-  string          cosmos_sdk_version = 8 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.43"];
+  string          name       = 1;
+  string          app_name   = 2;
+  string          version    = 3;
+  string          git_commit = 4;
+  string          build_tags = 5;
+  string          go_version = 6;
+  repeated Module build_deps = 7;
+  // Since: cosmos-sdk 0.43
+  string cosmos_sdk_version = 8;
 }
 
 // Module is the type for VersionInfo

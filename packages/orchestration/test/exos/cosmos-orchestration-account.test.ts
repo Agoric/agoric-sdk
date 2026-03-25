@@ -8,7 +8,7 @@ import {
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import {
   MsgSend as MsgSendType,
-  MsgSendResponse as MsgSendResponseType,
+  MsgSendResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import { type Coin as CoinType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import {
@@ -36,7 +36,7 @@ import {
 import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
   MsgTransfer as MsgTransferType,
-  MsgTransferResponse as MsgTransferResponseType,
+  MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -72,12 +72,9 @@ import { protoMsgMocks } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 import { leftPadEthAddressTo32Bytes } from '../../src/utils/address.js';
-import { makeTxPacket } from '../../src/utils/packet.js';
 
 const MsgSend = CodecHelper(MsgSendType);
-const MsgSendResponse = CodecHelper(MsgSendResponseType);
 const MsgTransfer = CodecHelper(MsgTransferType);
-const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
 const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
 const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
 const QueryDelegationRequest = CodecHelper(QueryDelegationRequestType);
@@ -258,12 +255,9 @@ test('transfer', async t => {
     ...defaultIbcTransfer,
     timeoutTimestamp: 300000000000n,
   };
-
   const buildMocks = () => {
-    const toTransferTxPacket = (
-      msg: Partial<MsgTransferType>,
-      codec = MsgTransfer,
-    ) => buildTxPacketString([codec.toProtoMsg(msg)]);
+    const toTransferTxPacket = (msg: Partial<MsgTransferType>) =>
+      buildTxPacketString([MsgTransfer.toProtoMsg(msg)]);
 
     const basicTransfer = toTransferTxPacket(basicIbcTransfer);
     const customTimeoutHeight = toTransferTxPacket({
@@ -1080,12 +1074,9 @@ test('executeEncodedTx', async t => {
   const decodedRes = MsgDelegateResponse.decode(decodeBase64(res));
   t.deepEqual(decodedRes, {}, 'MsgDelegate returns MsgDelegateResponse');
 
-  // Delegate 100 ubld from cosmos1test to cosmosvaloper1test observed in console, timeoutHeight: 6n
-  const delegateMsgPacket = btoa(
-    makeTxPacket([delegateMsgSuccess], { timeoutHeight: 6n }),
-  );
   t.context.mocks.ibcBridge.addMockAck(
-    delegateMsgPacket,
+    // Delegate 100 ubld from cosmos1test to cosmosvaloper1test observed in console, timeoutHeight: 6n
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xVS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpNEtDMk52YzIxdmN6RjBaWE4wRWhKamIzTnRiM04yWVd4dmNHVnlNWFJsYzNRYUN3b0ZkV0YwYjIwU0FqRXdHQVk9IiwibWVtbyI6IiJ9',
     protoMsgMocks.delegate.ack,
   );
   t.is(

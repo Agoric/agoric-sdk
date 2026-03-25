@@ -257,8 +257,9 @@ export const makeFakeIBCBridge = (
                 `sendPacket acking err because no mock ack for b64 data key: '${obj.packet.data}'`,
               );
               try {
-                const parsed = JSON.parse(base64ToBytes(obj.packet.data));
-                const decoded = decodeProtobufBase64(parsed.data);
+                const decoded = decodeProtobufBase64(
+                  JSON.parse(base64ToBytes(obj.packet.data)).data,
+                );
                 trace(
                   'Fix the source of this request or define a ack mapping for it:',
                   inspect(decoded, { depth: null }),

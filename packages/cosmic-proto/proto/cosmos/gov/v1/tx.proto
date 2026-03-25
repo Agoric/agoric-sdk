@@ -1,3 +1,4 @@
+// Since: cosmos-sdk 0.46
 syntax = "proto3";
 package cosmos.gov.v1;
 
@@ -17,41 +18,31 @@ service Msg {
   option (cosmos.msg.v1.service) = true;
 
   // SubmitProposal defines a method to create new proposal given the messages.
-  rpc SubmitProposal(MsgSubmitProposal) returns (MsgSubmitProposalResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
-  };
+  rpc SubmitProposal(MsgSubmitProposal) returns (MsgSubmitProposalResponse);
 
   // ExecLegacyContent defines a Msg to be in included in a MsgSubmitProposal
   // to execute a legacy content-based proposal.
-  rpc ExecLegacyContent(MsgExecLegacyContent) returns (MsgExecLegacyContentResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
-  };
+  rpc ExecLegacyContent(MsgExecLegacyContent) returns (MsgExecLegacyContentResponse);
 
   // Vote defines a method to add a vote on a specific proposal.
-  rpc Vote(MsgVote) returns (MsgVoteResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
-  };
+  rpc Vote(MsgVote) returns (MsgVoteResponse);
 
   // VoteWeighted defines a method to add a weighted vote on a specific proposal.
-  rpc VoteWeighted(MsgVoteWeighted) returns (MsgVoteWeightedResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
-  };
+  rpc VoteWeighted(MsgVoteWeighted) returns (MsgVoteWeightedResponse);
 
   // Deposit defines a method to add deposit on a specific proposal.
-  rpc Deposit(MsgDeposit) returns (MsgDepositResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
-  };
+  rpc Deposit(MsgDeposit) returns (MsgDepositResponse);
 
   // UpdateParams defines a governance operation for updating the x/gov module
   // parameters. The authority is defined in the keeper.
-  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.47";
-  };
+  //
+  // Since: cosmos-sdk 0.47
+  rpc UpdateParams(MsgUpdateParams) returns (MsgUpdateParamsResponse);
 
   // CancelProposal defines a method to cancel governance proposal
-  rpc CancelProposal(MsgCancelProposal) returns (MsgCancelProposalResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.50";
-  };
+  //
+  // Since: cosmos-sdk 0.50
+  rpc CancelProposal(MsgCancelProposal) returns (MsgCancelProposalResponse);
 }
 
 // MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
@@ -78,13 +69,19 @@ message MsgSubmitProposal {
   string metadata = 4;
 
   // title is the title of the proposal.
-  string title = 5 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+  //
+  // Since: cosmos-sdk 0.47
+  string title = 5;
 
   // summary is the summary of the proposal
-  string summary = 6 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
+  //
+  // Since: cosmos-sdk 0.47
+  string summary = 6;
 
   // expedited defines if the proposal is expedited or not
-  bool expedited = 7 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.50"];
+  //
+  // Since: cosmos-sdk 0.50
+  bool expedited = 7;
 }
 
 // MsgSubmitProposalResponse defines the Msg/SubmitProposal response type.
@@ -169,10 +166,11 @@ message MsgDeposit {
 message MsgDepositResponse {}
 
 // MsgUpdateParams is the Msg/UpdateParams request type.
+//
+// Since: cosmos-sdk 0.47
 message MsgUpdateParams {
-  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
-  option (cosmos.msg.v1.signer)          = "authority";
-  option (amino.name)                    = "cosmos-sdk/x/gov/v1/MsgUpdateParams";
+  option (cosmos.msg.v1.signer) = "authority";
+  option (amino.name)           = "cosmos-sdk/x/gov/v1/MsgUpdateParams";
 
   // authority is the address that controls the module (defaults to x/gov unless overwritten).
   string authority = 1 [(cosmos_proto.scalar) = "cosmos.AddressString"];
@@ -185,14 +183,15 @@ message MsgUpdateParams {
 
 // MsgUpdateParamsResponse defines the response structure for executing a
 // MsgUpdateParams message.
-message MsgUpdateParamsResponse {
-  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.47";
-}
+//
+// Since: cosmos-sdk 0.47
+message MsgUpdateParamsResponse {}
 
 // MsgCancelProposal is the Msg/CancelProposal request type.
+//
+// Since: cosmos-sdk 0.50
 message MsgCancelProposal {
-  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.50";
-  option (cosmos.msg.v1.signer)          = "proposer";
+  option (cosmos.msg.v1.signer) = "proposer";
 
   // proposal_id defines the unique id of the proposal.
   uint64 proposal_id = 1 [(gogoproto.jsontag) = "proposal_id"];
@@ -202,8 +201,9 @@ message MsgCancelProposal {
 
 // MsgCancelProposalResponse defines the response structure for executing a
 // MsgCancelProposal message.
+//
+// Since: cosmos-sdk 0.50
 message MsgCancelProposalResponse {
-  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.50";
   // proposal_id defines the unique id of the proposal.
   uint64 proposal_id = 1 [(gogoproto.jsontag) = "proposal_id"];
   // canceled_time is the time when proposal is canceled.

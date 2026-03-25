@@ -45,6 +45,8 @@ export interface Msg {
   /**
    * CancelUnbondingDelegation defines a method for performing canceling the unbonding delegation
    * and delegate back to previous validator.
+   *
+   * Since: cosmos-sdk 0.46
    */
   cancelUnbondingDelegation(
     request: MsgCancelUnbondingDelegation,
@@ -52,6 +54,7 @@ export interface Msg {
   /**
    * UpdateParams defines an operation for updating the x/staking module
    * parameters.
+   * Since: cosmos-sdk 0.47
    */
   updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
 }

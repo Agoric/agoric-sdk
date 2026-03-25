@@ -4,6 +4,8 @@ import {
   type IdentifiedChannelSDKType,
   PacketState,
   type PacketStateSDKType,
+  Params,
+  type ParamsSDKType,
 } from './channel.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
@@ -26,6 +28,7 @@ export interface GenesisState {
    * the sequence for the next generated channel identifier
    */
   nextChannelSequence: bigint;
+  params: Params;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.core.channel.v1.GenesisState';
@@ -46,6 +49,7 @@ export interface GenesisStateSDKType {
   recv_sequences: PacketSequenceSDKType[];
   ack_sequences: PacketSequenceSDKType[];
   next_channel_sequence: bigint;
+  params: ParamsSDKType;
 }
 /**
  * PacketSequence defines the genesis type necessary to retrieve and store
@@ -85,6 +89,7 @@ function createBaseGenesisState(): GenesisState {
     recvSequences: [],
     ackSequences: [],
     nextChannelSequence: BigInt(0),
+    params: Params.fromPartial({}),
   };
 }
 /**
@@ -115,7 +120,8 @@ export const GenesisState = {
           (!o.recvSequences.length || PacketSequence.is(o.recvSequences[0])) &&
           Array.isArray(o.ackSequences) &&
           (!o.ackSequences.length || PacketSequence.is(o.ackSequences[0])) &&
-          typeof o.nextChannelSequence === 'bigint'))
+          typeof o.nextChannelSequence === 'bigint' &&
+          Params.is(o.params)))
     );
   },
   isSDK(o: any): o is GenesisStateSDKType {
@@ -140,7 +146,8 @@ export const GenesisState = {
           Array.isArray(o.ack_sequences) &&
           (!o.ack_sequences.length ||
             PacketSequence.isSDK(o.ack_sequences[0])) &&
-          typeof o.next_channel_sequence === 'bigint'))
+          typeof o.next_channel_sequence === 'bigint' &&
+          Params.isSDK(o.params)))
     );
   },
   encode(
@@ -170,6 +177,9 @@ export const GenesisState = {
     }
     if (message.nextChannelSequence !== BigInt(0)) {
       writer.uint32(64).uint64(message.nextChannelSequence);
+    }
+    if (message.params !== undefined) {
+      Params.encode(message.params, writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -215,6 +225,9 @@ export const GenesisState = {
         case 8:
           message.nextChannelSequence = reader.uint64();
           break;
+        case 9:
+          message.params = Params.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -248,6 +261,7 @@ export const GenesisState = {
       nextChannelSequence: isSet(object.nextChannelSequence)
         ? BigInt(object.nextChannelSequence.toString())
         : BigInt(0),
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
@@ -305,6 +319,8 @@ export const GenesisState = {
       (obj.nextChannelSequence = (
         message.nextChannelSequence || BigInt(0)
       ).toString());
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
     return obj;
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
@@ -328,6 +344,10 @@ export const GenesisState = {
       object.nextChannelSequence !== null
         ? BigInt(object.nextChannelSequence.toString())
         : BigInt(0);
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {

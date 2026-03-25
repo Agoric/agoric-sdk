@@ -216,9 +216,9 @@ runs:
       uses: pyTooling/Actions/with-post-step@v1.0.7
       with:
         main: |
-          bash -x "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
+          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
         post: |
-          bash -x "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
+          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
       env:
         SRC: ${{ inputs.path }}
         IGNORE_DIRTY_YARN_LOCK: ${{ steps.endo-branch.outputs.result != 'NOPE' }}

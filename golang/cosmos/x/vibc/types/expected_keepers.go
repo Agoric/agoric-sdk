@@ -4,9 +4,10 @@ import (
 	context "context"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	channel "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	capability "github.com/cosmos/ibc-go/modules/capability/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channel "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 )
 
 type BankKeeper interface {
@@ -19,26 +20,38 @@ type ChannelKeeper interface {
 	GetChannel(ctx sdk.Context, srcPort, srcChan string) (channel channel.Channel, found bool)
 	SendPacket(
 		ctx sdk.Context,
+		channelCap *capability.Capability,
 		sourcePort string,
 		sourceChannel string,
 		timeoutHeight clienttypes.Height,
 		timeoutTimestamp uint64,
 		data []byte,
 	) (uint64, error)
-	WriteAcknowledgement(ctx sdk.Context, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
+	WriteAcknowledgement(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI, acknowledgement ibcexported.Acknowledgement) error
 	ChanOpenInit(ctx sdk.Context, order channel.Order, connectionHops []string, portID string,
-		counterparty channel.Counterparty, version string) (string, error)
+		portCap *capability.Capability, counterparty channel.Counterparty, version string) (string, *capability.Capability, error)
 	WriteOpenInitChannel(ctx sdk.Context, portID, channelID string, order channel.Order,
 		connectionHops []string, counterparty channel.Counterparty, version string)
 	WriteOpenTryChannel(ctx sdk.Context, portID, channelID string, order channel.Order,
 		connectionHops []string, counterparty channel.Counterparty, version string)
 	WriteOpenAckChannel(ctx sdk.Context, portID, channelID, counterpartyVersion, counterpartyChannelID string)
-	ChanCloseInit(ctx sdk.Context, portID, channelID string) error
-	TimeoutExecuted(ctx sdk.Context, packet channel.Packet) error
+	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capability.Capability) error
+	TimeoutExecuted(ctx sdk.Context, channelCap *capability.Capability, packet ibcexported.PacketI) error
 }
 
 // ClientKeeper defines the expected IBC client keeper
 type ClientKeeper interface {
 	GetParams(ctx sdk.Context) clienttypes.Params
 	SetParams(ctx sdk.Context, params clienttypes.Params)
+}
+
+// PortKeeper defines the expected IBC port keeper
+type PortKeeper interface {
+	BindPort(ctx sdk.Context, portID string) *capability.Capability
+}
+
+// ScopedKeeper defines the expected scoped capability keeper
+type ScopedKeeper interface {
+	ClaimCapability(ctx sdk.Context, cap *capability.Capability, name string) error
+	GetCapability(ctx sdk.Context, name string) (*capability.Capability, bool)
 }

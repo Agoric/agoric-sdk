@@ -38,11 +38,6 @@ const CosmosResponse = CodecHelper(CosmosResponseType);
  */
 export function makeTxPacket(msgs, opts) {
   const messages = msgs.map(Any.fromJSON);
-  if (opts?.unordered) {
-    opts?.timeoutTimestamp ||
-      Fail`unordered packets must have a timeout timestamp`;
-  }
-
   const bytes = TxBody.toProto({
     messages,
     ...opts,

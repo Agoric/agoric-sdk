@@ -3,7 +3,11 @@ import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { isSet } from '../../../helpers.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** AuthorizationType defines the type of staking module authorization type */
+/**
+ * AuthorizationType defines the type of staking module authorization type
+ *
+ * Since: cosmos-sdk 0.43
+ */
 export enum AuthorizationType {
   /** AUTHORIZATION_TYPE_UNSPECIFIED - AUTHORIZATION_TYPE_UNSPECIFIED specifies an unknown authorization type */
   AUTHORIZATION_TYPE_UNSPECIFIED = 0,
@@ -60,6 +64,8 @@ export function authorizationTypeToJSON(object: AuthorizationType): string {
 }
 /**
  * StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+ *
+ * Since: cosmos-sdk 0.43
  * @name StakeAuthorization
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.StakeAuthorization
@@ -91,6 +97,8 @@ export interface StakeAuthorizationProtoMsg {
 }
 /**
  * StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+ *
+ * Since: cosmos-sdk 0.43
  * @name StakeAuthorizationSDKType
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.StakeAuthorization
@@ -135,6 +143,8 @@ function createBaseStakeAuthorization(): StakeAuthorization {
 }
 /**
  * StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+ *
+ * Since: cosmos-sdk 0.43
  * @name StakeAuthorization
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.StakeAuthorization

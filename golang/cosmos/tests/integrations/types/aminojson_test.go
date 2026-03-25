@@ -33,8 +33,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/params/types/proposal"
 	"github.com/cosmos/cosmos-sdk/x/slashing"
 	"github.com/cosmos/cosmos-sdk/x/staking"
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/txconfig"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
@@ -98,27 +98,11 @@ func TestAminoJSON_LegacyParity(t *testing.T) {
 	paramsChangeGovMsg, err := govv1beta1.NewMsgSubmitProposal(paramsChangeProposal, coins, addr1)
 	require.NoError(t, err)
 
-
 	ibcPacket := channeltypes.NewPacket(
 		[]byte("data"),
 		987654321098765432,
 		"port-src", "channel-13",
 		"port-dst", "channel-42",
-		// clienttypes.Height{} does not always produce {"revision_number":0,"revision_height":0} when marshaled to JSON.
-		//
-		// Clue in cosmos/third_party/proto/ibc/core/client/v1/client.proto:
-		// // Please note that json tags for generated Go code are overridden to explicitly exclude the omitempty jsontag.
-		// // This enforces the Go json marshaller to always emit zero values for both revision_number and revision_height.
-		// message Height {
-		//   option (gogoproto.goproto_getters)  = false;
-		//   option (gogoproto.goproto_stringer) = false;
-		//
-		//   // the revision that the client is currently on
-		//   uint64 revision_number = 1 [(gogoproto.jsontag) = "revision_number"];
-		//   // the height within the given revision
-		//   uint64 revision_height = 2 [(gogoproto.jsontag) = "revision_height"];
-		// }
-		// clienttypes.Height{RevisionNumber: 1, RevisionHeight: 2}, // workaround to get tests to pass
 		clienttypes.Height{},
 		123456789012345678,
 	)

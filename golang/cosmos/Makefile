@@ -91,7 +91,6 @@ endif
 ###############################################################################
 
 BUF_CMD = go tool buf
-
 proto-all: proto-format proto-lint proto-gen
 
 proto-gen:

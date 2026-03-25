@@ -641,10 +641,14 @@ export interface MsgSubmitProposal {
   exec: Exec;
   /**
    * title is the title of the proposal.
+   *
+   * Since: cosmos-sdk 0.47
    */
   title: string;
   /**
    * summary is the summary of the proposal.
+   *
+   * Since: cosmos-sdk 0.47
    */
   summary: string;
 }

@@ -52,9 +52,7 @@ export interface MsgCreateClientSDKType {
  * @package ibc.core.client.v1
  * @see proto type: ibc.core.client.v1.MsgCreateClientResponse
  */
-export interface MsgCreateClientResponse {
-  clientId: string;
-}
+export interface MsgCreateClientResponse {}
 export interface MsgCreateClientResponseProtoMsg {
   typeUrl: '/ibc.core.client.v1.MsgCreateClientResponse';
   value: Uint8Array;
@@ -65,9 +63,7 @@ export interface MsgCreateClientResponseProtoMsg {
  * @package ibc.core.client.v1
  * @see proto type: ibc.core.client.v1.MsgCreateClientResponse
  */
-export interface MsgCreateClientResponseSDKType {
-  client_id: string;
-}
+export interface MsgCreateClientResponseSDKType {}
 /**
  * MsgUpdateClient defines an sdk.Msg to update a IBC client state using
  * the given client message.
@@ -416,54 +412,6 @@ export interface MsgUpdateParamsResponseProtoMsg {
  * @see proto type: ibc.core.client.v1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponseSDKType {}
-/**
- * MsgDeleteClientCreator defines a message to delete the client creator of a client
- * @name MsgDeleteClientCreator
- * @package ibc.core.client.v1
- * @see proto type: ibc.core.client.v1.MsgDeleteClientCreator
- */
-export interface MsgDeleteClientCreator {
-  /**
-   * client identifier
-   */
-  clientId: string;
-  /**
-   * signer address
-   */
-  signer: string;
-}
-export interface MsgDeleteClientCreatorProtoMsg {
-  typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreator';
-  value: Uint8Array;
-}
-/**
- * MsgDeleteClientCreator defines a message to delete the client creator of a client
- * @name MsgDeleteClientCreatorSDKType
- * @package ibc.core.client.v1
- * @see proto type: ibc.core.client.v1.MsgDeleteClientCreator
- */
-export interface MsgDeleteClientCreatorSDKType {
-  client_id: string;
-  signer: string;
-}
-/**
- * MsgDeleteClientCreatorResponse defines the Msg/DeleteClientCreator response type.
- * @name MsgDeleteClientCreatorResponse
- * @package ibc.core.client.v1
- * @see proto type: ibc.core.client.v1.MsgDeleteClientCreatorResponse
- */
-export interface MsgDeleteClientCreatorResponse {}
-export interface MsgDeleteClientCreatorResponseProtoMsg {
-  typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreatorResponse';
-  value: Uint8Array;
-}
-/**
- * MsgDeleteClientCreatorResponse defines the Msg/DeleteClientCreator response type.
- * @name MsgDeleteClientCreatorResponseSDKType
- * @package ibc.core.client.v1
- * @see proto type: ibc.core.client.v1.MsgDeleteClientCreatorResponse
- */
-export interface MsgDeleteClientCreatorResponseSDKType {}
 function createBaseMsgCreateClient(): MsgCreateClient {
   return {
     clientState: undefined,
@@ -582,9 +530,7 @@ export const MsgCreateClient = {
   },
 };
 function createBaseMsgCreateClientResponse(): MsgCreateClientResponse {
-  return {
-    clientId: '',
-  };
+  return {};
 }
 /**
  * MsgCreateClientResponse defines the Msg/CreateClient response type.
@@ -596,26 +542,15 @@ export const MsgCreateClientResponse = {
   typeUrl: '/ibc.core.client.v1.MsgCreateClientResponse' as const,
   aminoType: 'cosmos-sdk/MsgCreateClientResponse' as const,
   is(o: any): o is MsgCreateClientResponse {
-    return (
-      o &&
-      (o.$typeUrl === MsgCreateClientResponse.typeUrl ||
-        typeof o.clientId === 'string')
-    );
+    return o && o.$typeUrl === MsgCreateClientResponse.typeUrl;
   },
   isSDK(o: any): o is MsgCreateClientResponseSDKType {
-    return (
-      o &&
-      (o.$typeUrl === MsgCreateClientResponse.typeUrl ||
-        typeof o.client_id === 'string')
-    );
+    return o && o.$typeUrl === MsgCreateClientResponse.typeUrl;
   },
   encode(
-    message: MsgCreateClientResponse,
+    _: MsgCreateClientResponse,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
-    if (message.clientId !== '') {
-      writer.uint32(10).string(message.clientId);
-    }
     return writer;
   },
   decode(
@@ -629,9 +564,6 @@ export const MsgCreateClientResponse = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 1:
-          message.clientId = reader.string();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -639,21 +571,15 @@ export const MsgCreateClientResponse = {
     }
     return message;
   },
-  fromJSON(object: any): MsgCreateClientResponse {
-    return {
-      clientId: isSet(object.clientId) ? String(object.clientId) : '',
-    };
+  fromJSON(_: any): MsgCreateClientResponse {
+    return {};
   },
-  toJSON(message: MsgCreateClientResponse): JsonSafe<MsgCreateClientResponse> {
+  toJSON(_: MsgCreateClientResponse): JsonSafe<MsgCreateClientResponse> {
     const obj: any = {};
-    message.clientId !== undefined && (obj.clientId = message.clientId);
     return obj;
   },
-  fromPartial(
-    object: Partial<MsgCreateClientResponse>,
-  ): MsgCreateClientResponse {
+  fromPartial(_: Partial<MsgCreateClientResponse>): MsgCreateClientResponse {
     const message = createBaseMsgCreateClientResponse();
-    message.clientId = object.clientId ?? '';
     return message;
   },
   fromProtoMsg(
@@ -1835,178 +1761,6 @@ export const MsgUpdateParamsResponse = {
     return {
       typeUrl: '/ibc.core.client.v1.MsgUpdateParamsResponse',
       value: MsgUpdateParamsResponse.encode(message).finish(),
-    };
-  },
-};
-function createBaseMsgDeleteClientCreator(): MsgDeleteClientCreator {
-  return {
-    clientId: '',
-    signer: '',
-  };
-}
-/**
- * MsgDeleteClientCreator defines a message to delete the client creator of a client
- * @name MsgDeleteClientCreator
- * @package ibc.core.client.v1
- * @see proto type: ibc.core.client.v1.MsgDeleteClientCreator
- */
-export const MsgDeleteClientCreator = {
-  typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreator' as const,
-  aminoType: 'cosmos-sdk/MsgDeleteClientCreator' as const,
-  is(o: any): o is MsgDeleteClientCreator {
-    return (
-      o &&
-      (o.$typeUrl === MsgDeleteClientCreator.typeUrl ||
-        (typeof o.clientId === 'string' && typeof o.signer === 'string'))
-    );
-  },
-  isSDK(o: any): o is MsgDeleteClientCreatorSDKType {
-    return (
-      o &&
-      (o.$typeUrl === MsgDeleteClientCreator.typeUrl ||
-        (typeof o.client_id === 'string' && typeof o.signer === 'string'))
-    );
-  },
-  encode(
-    message: MsgDeleteClientCreator,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.clientId !== '') {
-      writer.uint32(10).string(message.clientId);
-    }
-    if (message.signer !== '') {
-      writer.uint32(18).string(message.signer);
-    }
-    return writer;
-  },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgDeleteClientCreator {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgDeleteClientCreator();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.clientId = reader.string();
-          break;
-        case 2:
-          message.signer = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(object: any): MsgDeleteClientCreator {
-    return {
-      clientId: isSet(object.clientId) ? String(object.clientId) : '',
-      signer: isSet(object.signer) ? String(object.signer) : '',
-    };
-  },
-  toJSON(message: MsgDeleteClientCreator): JsonSafe<MsgDeleteClientCreator> {
-    const obj: any = {};
-    message.clientId !== undefined && (obj.clientId = message.clientId);
-    message.signer !== undefined && (obj.signer = message.signer);
-    return obj;
-  },
-  fromPartial(object: Partial<MsgDeleteClientCreator>): MsgDeleteClientCreator {
-    const message = createBaseMsgDeleteClientCreator();
-    message.clientId = object.clientId ?? '';
-    message.signer = object.signer ?? '';
-    return message;
-  },
-  fromProtoMsg(
-    message: MsgDeleteClientCreatorProtoMsg,
-  ): MsgDeleteClientCreator {
-    return MsgDeleteClientCreator.decode(message.value);
-  },
-  toProto(message: MsgDeleteClientCreator): Uint8Array {
-    return MsgDeleteClientCreator.encode(message).finish();
-  },
-  toProtoMsg(message: MsgDeleteClientCreator): MsgDeleteClientCreatorProtoMsg {
-    return {
-      typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreator',
-      value: MsgDeleteClientCreator.encode(message).finish(),
-    };
-  },
-};
-function createBaseMsgDeleteClientCreatorResponse(): MsgDeleteClientCreatorResponse {
-  return {};
-}
-/**
- * MsgDeleteClientCreatorResponse defines the Msg/DeleteClientCreator response type.
- * @name MsgDeleteClientCreatorResponse
- * @package ibc.core.client.v1
- * @see proto type: ibc.core.client.v1.MsgDeleteClientCreatorResponse
- */
-export const MsgDeleteClientCreatorResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreatorResponse' as const,
-  aminoType: 'cosmos-sdk/MsgDeleteClientCreatorResponse' as const,
-  is(o: any): o is MsgDeleteClientCreatorResponse {
-    return o && o.$typeUrl === MsgDeleteClientCreatorResponse.typeUrl;
-  },
-  isSDK(o: any): o is MsgDeleteClientCreatorResponseSDKType {
-    return o && o.$typeUrl === MsgDeleteClientCreatorResponse.typeUrl;
-  },
-  encode(
-    _: MsgDeleteClientCreatorResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    return writer;
-  },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): MsgDeleteClientCreatorResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseMsgDeleteClientCreatorResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(_: any): MsgDeleteClientCreatorResponse {
-    return {};
-  },
-  toJSON(
-    _: MsgDeleteClientCreatorResponse,
-  ): JsonSafe<MsgDeleteClientCreatorResponse> {
-    const obj: any = {};
-    return obj;
-  },
-  fromPartial(
-    _: Partial<MsgDeleteClientCreatorResponse>,
-  ): MsgDeleteClientCreatorResponse {
-    const message = createBaseMsgDeleteClientCreatorResponse();
-    return message;
-  },
-  fromProtoMsg(
-    message: MsgDeleteClientCreatorResponseProtoMsg,
-  ): MsgDeleteClientCreatorResponse {
-    return MsgDeleteClientCreatorResponse.decode(message.value);
-  },
-  toProto(message: MsgDeleteClientCreatorResponse): Uint8Array {
-    return MsgDeleteClientCreatorResponse.encode(message).finish();
-  },
-  toProtoMsg(
-    message: MsgDeleteClientCreatorResponse,
-  ): MsgDeleteClientCreatorResponseProtoMsg {
-    return {
-      typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreatorResponse',
-      value: MsgDeleteClientCreatorResponse.encode(message).finish(),
     };
   },
 };

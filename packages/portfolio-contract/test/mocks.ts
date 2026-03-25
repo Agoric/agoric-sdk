@@ -1,21 +1,20 @@
 import type { Hex } from 'viem';
 import type { HostInterface } from '@agoric/async-flow';
-import { CodecHelper } from '@agoric/cosmic-proto';
 import {
-  MsgDepositForBurn as MsgDepositForBurnType,
-  MsgDepositForBurnResponse as MsgDepositForBurnResponseType,
+  MsgDepositForBurn,
+  MsgDepositForBurnResponse,
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
-  MsgTransfer as MsgTransferType,
-  MsgTransferResponse as MsgTransferResponseType,
+  MsgTransfer,
+  MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import {
-  MsgLock as MsgLockType,
-  MsgLockResponse as MsgLockResponseType,
+  MsgLock,
+  MsgLockResponse,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import {
-  MsgSwap as MsgSwapType,
-  MsgSwapResponse as MsgSwapResponseType,
+  MsgSwap,
+  MsgSwapResponse,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Brand, Issuer, NatAmount, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
@@ -38,15 +37,6 @@ import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
-
-const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
-const MsgDepositForBurnResponse = CodecHelper(MsgDepositForBurnResponseType);
-const MsgTransfer = CodecHelper(MsgTransferType);
-const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
-const MsgLock = CodecHelper(MsgLockType);
-const MsgLockResponse = CodecHelper(MsgLockResponseType);
-const MsgSwap = CodecHelper(MsgSwapType);
-const MsgSwapResponse = CodecHelper(MsgSwapResponseType);
 
 /** address of orch LCA for portfolio0, after contract/fee LCA */
 export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
@@ -410,26 +400,28 @@ export const explored = [
   {
     txhash: '50D671D1D56CF5041CBE7C3483EF461765196ECD7D7571CCEF0A612B46FC7A3B',
     messages: [
-      MsgSwap.toProtoMsg({
+      {
+        '@type': '/noble.swap.v1.MsgSwap',
         signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
         amount: { denom: 'uusdc', amount: '111000000' },
         // routes: [{ pool_id: '0', denom_to: 'uusdn' }],
         routes: [{ poolId: 0n, denomTo: 'uusdn' }],
         min: { denom: 'uusdn', amount: '110858936' },
-      }),
+      } satisfies MsgSwap & { '@type': string },
     ],
   },
   {
     txhash: 'BD97D42915C9185B11B14FEDC2EF6BCE0677E6720472DC6E1B51CCD504534237',
     messages: [
-      MsgLock.toProtoMsg({
+      {
+        '@type': '/noble.dollar.vaults.v1.MsgLock',
         signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
         vault: 1, // 'STAKED',
         amount: '110818936',
-      }),
+      } satisfies MsgLock & { '@type': string },
     ],
   },
-] as const;
+];
 harden(explored);
 
 export const gmpAddresses: GmpAddresses = harden({

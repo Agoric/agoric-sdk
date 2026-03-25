@@ -18,8 +18,16 @@ import {
   type HeightSDKType,
   IdentifiedClientState,
   type IdentifiedClientStateSDKType,
+  Params,
+  type ParamsSDKType,
 } from '../../client/v1/client.js';
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
+import {
+  ErrorReceipt,
+  type ErrorReceiptSDKType,
+  Upgrade,
+  type UpgradeSDKType,
+} from './upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
@@ -1026,6 +1034,161 @@ export interface QueryNextSequenceSendResponseSDKType {
   next_sequence_send: bigint;
   proof: Uint8Array;
   proof_height: HeightSDKType;
+}
+/**
+ * QueryUpgradeErrorRequest is the request type for the Query/QueryUpgradeError RPC method
+ * @name QueryUpgradeErrorRequest
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeErrorRequest
+ */
+export interface QueryUpgradeErrorRequest {
+  portId: string;
+  channelId: string;
+}
+export interface QueryUpgradeErrorRequestProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryUpgradeErrorRequest is the request type for the Query/QueryUpgradeError RPC method
+ * @name QueryUpgradeErrorRequestSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeErrorRequest
+ */
+export interface QueryUpgradeErrorRequestSDKType {
+  port_id: string;
+  channel_id: string;
+}
+/**
+ * QueryUpgradeErrorResponse is the response type for the Query/QueryUpgradeError RPC method
+ * @name QueryUpgradeErrorResponse
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeErrorResponse
+ */
+export interface QueryUpgradeErrorResponse {
+  errorReceipt: ErrorReceipt;
+  /**
+   * merkle proof of existence
+   */
+  proof: Uint8Array;
+  /**
+   * height at which the proof was retrieved
+   */
+  proofHeight: Height;
+}
+export interface QueryUpgradeErrorResponseProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryUpgradeErrorResponse is the response type for the Query/QueryUpgradeError RPC method
+ * @name QueryUpgradeErrorResponseSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeErrorResponse
+ */
+export interface QueryUpgradeErrorResponseSDKType {
+  error_receipt: ErrorReceiptSDKType;
+  proof: Uint8Array;
+  proof_height: HeightSDKType;
+}
+/**
+ * QueryUpgradeRequest is the request type for the QueryUpgradeRequest RPC method
+ * @name QueryUpgradeRequest
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeRequest
+ */
+export interface QueryUpgradeRequest {
+  portId: string;
+  channelId: string;
+}
+export interface QueryUpgradeRequestProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryUpgradeRequest is the request type for the QueryUpgradeRequest RPC method
+ * @name QueryUpgradeRequestSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeRequest
+ */
+export interface QueryUpgradeRequestSDKType {
+  port_id: string;
+  channel_id: string;
+}
+/**
+ * QueryUpgradeResponse is the response type for the QueryUpgradeResponse RPC method
+ * @name QueryUpgradeResponse
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeResponse
+ */
+export interface QueryUpgradeResponse {
+  upgrade: Upgrade;
+  /**
+   * merkle proof of existence
+   */
+  proof: Uint8Array;
+  /**
+   * height at which the proof was retrieved
+   */
+  proofHeight: Height;
+}
+export interface QueryUpgradeResponseProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryUpgradeResponse is the response type for the QueryUpgradeResponse RPC method
+ * @name QueryUpgradeResponseSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeResponse
+ */
+export interface QueryUpgradeResponseSDKType {
+  upgrade: UpgradeSDKType;
+  proof: Uint8Array;
+  proof_height: HeightSDKType;
+}
+/**
+ * QueryChannelParamsRequest is the request type for the Query/ChannelParams RPC method.
+ * @name QueryChannelParamsRequest
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryChannelParamsRequest
+ */
+export interface QueryChannelParamsRequest {}
+export interface QueryChannelParamsRequestProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryChannelParamsRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryChannelParamsRequest is the request type for the Query/ChannelParams RPC method.
+ * @name QueryChannelParamsRequestSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryChannelParamsRequest
+ */
+export interface QueryChannelParamsRequestSDKType {}
+/**
+ * QueryChannelParamsResponse is the response type for the Query/ChannelParams RPC method.
+ * @name QueryChannelParamsResponse
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryChannelParamsResponse
+ */
+export interface QueryChannelParamsResponse {
+  /**
+   * params defines the parameters of the module.
+   */
+  params?: Params;
+}
+export interface QueryChannelParamsResponseProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.QueryChannelParamsResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryChannelParamsResponse is the response type for the Query/ChannelParams RPC method.
+ * @name QueryChannelParamsResponseSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryChannelParamsResponse
+ */
+export interface QueryChannelParamsResponseSDKType {
+  params?: ParamsSDKType;
 }
 function createBaseQueryChannelRequest(): QueryChannelRequest {
   return {
@@ -4671,6 +4834,641 @@ export const QueryNextSequenceSendResponse = {
     return {
       typeUrl: '/ibc.core.channel.v1.QueryNextSequenceSendResponse',
       value: QueryNextSequenceSendResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryUpgradeErrorRequest(): QueryUpgradeErrorRequest {
+  return {
+    portId: '',
+    channelId: '',
+  };
+}
+/**
+ * QueryUpgradeErrorRequest is the request type for the Query/QueryUpgradeError RPC method
+ * @name QueryUpgradeErrorRequest
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeErrorRequest
+ */
+export const QueryUpgradeErrorRequest = {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorRequest' as const,
+  aminoType: 'cosmos-sdk/QueryUpgradeErrorRequest' as const,
+  is(o: any): o is QueryUpgradeErrorRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryUpgradeErrorRequest.typeUrl ||
+        (typeof o.portId === 'string' && typeof o.channelId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryUpgradeErrorRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryUpgradeErrorRequest.typeUrl ||
+        (typeof o.port_id === 'string' && typeof o.channel_id === 'string'))
+    );
+  },
+  encode(
+    message: QueryUpgradeErrorRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.portId !== '') {
+      writer.uint32(10).string(message.portId);
+    }
+    if (message.channelId !== '') {
+      writer.uint32(18).string(message.channelId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryUpgradeErrorRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryUpgradeErrorRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.portId = reader.string();
+          break;
+        case 2:
+          message.channelId = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryUpgradeErrorRequest {
+    return {
+      portId: isSet(object.portId) ? String(object.portId) : '',
+      channelId: isSet(object.channelId) ? String(object.channelId) : '',
+    };
+  },
+  toJSON(
+    message: QueryUpgradeErrorRequest,
+  ): JsonSafe<QueryUpgradeErrorRequest> {
+    const obj: any = {};
+    message.portId !== undefined && (obj.portId = message.portId);
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryUpgradeErrorRequest>,
+  ): QueryUpgradeErrorRequest {
+    const message = createBaseQueryUpgradeErrorRequest();
+    message.portId = object.portId ?? '';
+    message.channelId = object.channelId ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryUpgradeErrorRequestProtoMsg,
+  ): QueryUpgradeErrorRequest {
+    return QueryUpgradeErrorRequest.decode(message.value);
+  },
+  toProto(message: QueryUpgradeErrorRequest): Uint8Array {
+    return QueryUpgradeErrorRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryUpgradeErrorRequest,
+  ): QueryUpgradeErrorRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorRequest',
+      value: QueryUpgradeErrorRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryUpgradeErrorResponse(): QueryUpgradeErrorResponse {
+  return {
+    errorReceipt: ErrorReceipt.fromPartial({}),
+    proof: new Uint8Array(),
+    proofHeight: Height.fromPartial({}),
+  };
+}
+/**
+ * QueryUpgradeErrorResponse is the response type for the Query/QueryUpgradeError RPC method
+ * @name QueryUpgradeErrorResponse
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeErrorResponse
+ */
+export const QueryUpgradeErrorResponse = {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorResponse' as const,
+  aminoType: 'cosmos-sdk/QueryUpgradeErrorResponse' as const,
+  is(o: any): o is QueryUpgradeErrorResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryUpgradeErrorResponse.typeUrl ||
+        (ErrorReceipt.is(o.errorReceipt) &&
+          (o.proof instanceof Uint8Array || typeof o.proof === 'string') &&
+          Height.is(o.proofHeight)))
+    );
+  },
+  isSDK(o: any): o is QueryUpgradeErrorResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryUpgradeErrorResponse.typeUrl ||
+        (ErrorReceipt.isSDK(o.error_receipt) &&
+          (o.proof instanceof Uint8Array || typeof o.proof === 'string') &&
+          Height.isSDK(o.proof_height)))
+    );
+  },
+  encode(
+    message: QueryUpgradeErrorResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.errorReceipt !== undefined) {
+      ErrorReceipt.encode(
+        message.errorReceipt,
+        writer.uint32(10).fork(),
+      ).ldelim();
+    }
+    if (message.proof.length !== 0) {
+      writer.uint32(18).bytes(message.proof);
+    }
+    if (message.proofHeight !== undefined) {
+      Height.encode(message.proofHeight, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryUpgradeErrorResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryUpgradeErrorResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.errorReceipt = ErrorReceipt.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.proof = reader.bytes();
+          break;
+        case 3:
+          message.proofHeight = Height.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryUpgradeErrorResponse {
+    return {
+      errorReceipt: isSet(object.errorReceipt)
+        ? ErrorReceipt.fromJSON(object.errorReceipt)
+        : undefined,
+      proof: isSet(object.proof)
+        ? bytesFromBase64(object.proof)
+        : new Uint8Array(),
+      proofHeight: isSet(object.proofHeight)
+        ? Height.fromJSON(object.proofHeight)
+        : undefined,
+    };
+  },
+  toJSON(
+    message: QueryUpgradeErrorResponse,
+  ): JsonSafe<QueryUpgradeErrorResponse> {
+    const obj: any = {};
+    message.errorReceipt !== undefined &&
+      (obj.errorReceipt = message.errorReceipt
+        ? ErrorReceipt.toJSON(message.errorReceipt)
+        : undefined);
+    message.proof !== undefined &&
+      (obj.proof = base64FromBytes(
+        message.proof !== undefined ? message.proof : new Uint8Array(),
+      ));
+    message.proofHeight !== undefined &&
+      (obj.proofHeight = message.proofHeight
+        ? Height.toJSON(message.proofHeight)
+        : undefined);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryUpgradeErrorResponse>,
+  ): QueryUpgradeErrorResponse {
+    const message = createBaseQueryUpgradeErrorResponse();
+    message.errorReceipt =
+      object.errorReceipt !== undefined && object.errorReceipt !== null
+        ? ErrorReceipt.fromPartial(object.errorReceipt)
+        : undefined;
+    message.proof = object.proof ?? new Uint8Array();
+    message.proofHeight =
+      object.proofHeight !== undefined && object.proofHeight !== null
+        ? Height.fromPartial(object.proofHeight)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryUpgradeErrorResponseProtoMsg,
+  ): QueryUpgradeErrorResponse {
+    return QueryUpgradeErrorResponse.decode(message.value);
+  },
+  toProto(message: QueryUpgradeErrorResponse): Uint8Array {
+    return QueryUpgradeErrorResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryUpgradeErrorResponse,
+  ): QueryUpgradeErrorResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryUpgradeErrorResponse',
+      value: QueryUpgradeErrorResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryUpgradeRequest(): QueryUpgradeRequest {
+  return {
+    portId: '',
+    channelId: '',
+  };
+}
+/**
+ * QueryUpgradeRequest is the request type for the QueryUpgradeRequest RPC method
+ * @name QueryUpgradeRequest
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeRequest
+ */
+export const QueryUpgradeRequest = {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeRequest' as const,
+  aminoType: 'cosmos-sdk/QueryUpgradeRequest' as const,
+  is(o: any): o is QueryUpgradeRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryUpgradeRequest.typeUrl ||
+        (typeof o.portId === 'string' && typeof o.channelId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryUpgradeRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryUpgradeRequest.typeUrl ||
+        (typeof o.port_id === 'string' && typeof o.channel_id === 'string'))
+    );
+  },
+  encode(
+    message: QueryUpgradeRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.portId !== '') {
+      writer.uint32(10).string(message.portId);
+    }
+    if (message.channelId !== '') {
+      writer.uint32(18).string(message.channelId);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryUpgradeRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryUpgradeRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.portId = reader.string();
+          break;
+        case 2:
+          message.channelId = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryUpgradeRequest {
+    return {
+      portId: isSet(object.portId) ? String(object.portId) : '',
+      channelId: isSet(object.channelId) ? String(object.channelId) : '',
+    };
+  },
+  toJSON(message: QueryUpgradeRequest): JsonSafe<QueryUpgradeRequest> {
+    const obj: any = {};
+    message.portId !== undefined && (obj.portId = message.portId);
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryUpgradeRequest>): QueryUpgradeRequest {
+    const message = createBaseQueryUpgradeRequest();
+    message.portId = object.portId ?? '';
+    message.channelId = object.channelId ?? '';
+    return message;
+  },
+  fromProtoMsg(message: QueryUpgradeRequestProtoMsg): QueryUpgradeRequest {
+    return QueryUpgradeRequest.decode(message.value);
+  },
+  toProto(message: QueryUpgradeRequest): Uint8Array {
+    return QueryUpgradeRequest.encode(message).finish();
+  },
+  toProtoMsg(message: QueryUpgradeRequest): QueryUpgradeRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryUpgradeRequest',
+      value: QueryUpgradeRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryUpgradeResponse(): QueryUpgradeResponse {
+  return {
+    upgrade: Upgrade.fromPartial({}),
+    proof: new Uint8Array(),
+    proofHeight: Height.fromPartial({}),
+  };
+}
+/**
+ * QueryUpgradeResponse is the response type for the QueryUpgradeResponse RPC method
+ * @name QueryUpgradeResponse
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryUpgradeResponse
+ */
+export const QueryUpgradeResponse = {
+  typeUrl: '/ibc.core.channel.v1.QueryUpgradeResponse' as const,
+  aminoType: 'cosmos-sdk/QueryUpgradeResponse' as const,
+  is(o: any): o is QueryUpgradeResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryUpgradeResponse.typeUrl ||
+        (Upgrade.is(o.upgrade) &&
+          (o.proof instanceof Uint8Array || typeof o.proof === 'string') &&
+          Height.is(o.proofHeight)))
+    );
+  },
+  isSDK(o: any): o is QueryUpgradeResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryUpgradeResponse.typeUrl ||
+        (Upgrade.isSDK(o.upgrade) &&
+          (o.proof instanceof Uint8Array || typeof o.proof === 'string') &&
+          Height.isSDK(o.proof_height)))
+    );
+  },
+  encode(
+    message: QueryUpgradeResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.upgrade !== undefined) {
+      Upgrade.encode(message.upgrade, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.proof.length !== 0) {
+      writer.uint32(18).bytes(message.proof);
+    }
+    if (message.proofHeight !== undefined) {
+      Height.encode(message.proofHeight, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryUpgradeResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryUpgradeResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.upgrade = Upgrade.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.proof = reader.bytes();
+          break;
+        case 3:
+          message.proofHeight = Height.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryUpgradeResponse {
+    return {
+      upgrade: isSet(object.upgrade)
+        ? Upgrade.fromJSON(object.upgrade)
+        : undefined,
+      proof: isSet(object.proof)
+        ? bytesFromBase64(object.proof)
+        : new Uint8Array(),
+      proofHeight: isSet(object.proofHeight)
+        ? Height.fromJSON(object.proofHeight)
+        : undefined,
+    };
+  },
+  toJSON(message: QueryUpgradeResponse): JsonSafe<QueryUpgradeResponse> {
+    const obj: any = {};
+    message.upgrade !== undefined &&
+      (obj.upgrade = message.upgrade
+        ? Upgrade.toJSON(message.upgrade)
+        : undefined);
+    message.proof !== undefined &&
+      (obj.proof = base64FromBytes(
+        message.proof !== undefined ? message.proof : new Uint8Array(),
+      ));
+    message.proofHeight !== undefined &&
+      (obj.proofHeight = message.proofHeight
+        ? Height.toJSON(message.proofHeight)
+        : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryUpgradeResponse>): QueryUpgradeResponse {
+    const message = createBaseQueryUpgradeResponse();
+    message.upgrade =
+      object.upgrade !== undefined && object.upgrade !== null
+        ? Upgrade.fromPartial(object.upgrade)
+        : undefined;
+    message.proof = object.proof ?? new Uint8Array();
+    message.proofHeight =
+      object.proofHeight !== undefined && object.proofHeight !== null
+        ? Height.fromPartial(object.proofHeight)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: QueryUpgradeResponseProtoMsg): QueryUpgradeResponse {
+    return QueryUpgradeResponse.decode(message.value);
+  },
+  toProto(message: QueryUpgradeResponse): Uint8Array {
+    return QueryUpgradeResponse.encode(message).finish();
+  },
+  toProtoMsg(message: QueryUpgradeResponse): QueryUpgradeResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryUpgradeResponse',
+      value: QueryUpgradeResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryChannelParamsRequest(): QueryChannelParamsRequest {
+  return {};
+}
+/**
+ * QueryChannelParamsRequest is the request type for the Query/ChannelParams RPC method.
+ * @name QueryChannelParamsRequest
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryChannelParamsRequest
+ */
+export const QueryChannelParamsRequest = {
+  typeUrl: '/ibc.core.channel.v1.QueryChannelParamsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryChannelParamsRequest' as const,
+  is(o: any): o is QueryChannelParamsRequest {
+    return o && o.$typeUrl === QueryChannelParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryChannelParamsRequestSDKType {
+    return o && o.$typeUrl === QueryChannelParamsRequest.typeUrl;
+  },
+  encode(
+    _: QueryChannelParamsRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryChannelParamsRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryChannelParamsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): QueryChannelParamsRequest {
+    return {};
+  },
+  toJSON(_: QueryChannelParamsRequest): JsonSafe<QueryChannelParamsRequest> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(
+    _: Partial<QueryChannelParamsRequest>,
+  ): QueryChannelParamsRequest {
+    const message = createBaseQueryChannelParamsRequest();
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryChannelParamsRequestProtoMsg,
+  ): QueryChannelParamsRequest {
+    return QueryChannelParamsRequest.decode(message.value);
+  },
+  toProto(message: QueryChannelParamsRequest): Uint8Array {
+    return QueryChannelParamsRequest.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryChannelParamsRequest,
+  ): QueryChannelParamsRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryChannelParamsRequest',
+      value: QueryChannelParamsRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryChannelParamsResponse(): QueryChannelParamsResponse {
+  return {
+    params: undefined,
+  };
+}
+/**
+ * QueryChannelParamsResponse is the response type for the Query/ChannelParams RPC method.
+ * @name QueryChannelParamsResponse
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.QueryChannelParamsResponse
+ */
+export const QueryChannelParamsResponse = {
+  typeUrl: '/ibc.core.channel.v1.QueryChannelParamsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryChannelParamsResponse' as const,
+  is(o: any): o is QueryChannelParamsResponse {
+    return o && o.$typeUrl === QueryChannelParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryChannelParamsResponseSDKType {
+    return o && o.$typeUrl === QueryChannelParamsResponse.typeUrl;
+  },
+  encode(
+    message: QueryChannelParamsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.params !== undefined) {
+      Params.encode(message.params, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryChannelParamsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryChannelParamsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.params = Params.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryChannelParamsResponse {
+    return {
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+    };
+  },
+  toJSON(
+    message: QueryChannelParamsResponse,
+  ): JsonSafe<QueryChannelParamsResponse> {
+    const obj: any = {};
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    return obj;
+  },
+  fromPartial(
+    object: Partial<QueryChannelParamsResponse>,
+  ): QueryChannelParamsResponse {
+    const message = createBaseQueryChannelParamsResponse();
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(
+    message: QueryChannelParamsResponseProtoMsg,
+  ): QueryChannelParamsResponse {
+    return QueryChannelParamsResponse.decode(message.value);
+  },
+  toProto(message: QueryChannelParamsResponse): Uint8Array {
+    return QueryChannelParamsResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: QueryChannelParamsResponse,
+  ): QueryChannelParamsResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.QueryChannelParamsResponse',
+      value: QueryChannelParamsResponse.encode(message).finish(),
     };
   },
 };

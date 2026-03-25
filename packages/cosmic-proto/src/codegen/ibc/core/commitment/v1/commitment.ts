@@ -59,6 +59,32 @@ export interface MerklePrefixSDKType {
   key_prefix: Uint8Array;
 }
 /**
+ * MerklePath is the path used to verify commitment proofs, which can be an
+ * arbitrary structured object (defined by a commitment type).
+ * MerklePath is represented from root-to-leaf
+ * @name MerklePath
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePath
+ */
+export interface MerklePath {
+  keyPath: string[];
+}
+export interface MerklePathProtoMsg {
+  typeUrl: '/ibc.core.commitment.v1.MerklePath';
+  value: Uint8Array;
+}
+/**
+ * MerklePath is the path used to verify commitment proofs, which can be an
+ * arbitrary structured object (defined by a commitment type).
+ * MerklePath is represented from root-to-leaf
+ * @name MerklePathSDKType
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePath
+ */
+export interface MerklePathSDKType {
+  key_path: string[];
+}
+/**
  * MerkleProof is a wrapper type over a chain of CommitmentProofs.
  * It demonstrates membership or non-membership for an element or set of
  * elements, verifiable in conjunction with a known commitment root. Proofs
@@ -268,6 +294,99 @@ export const MerklePrefix = {
     return {
       typeUrl: '/ibc.core.commitment.v1.MerklePrefix',
       value: MerklePrefix.encode(message).finish(),
+    };
+  },
+};
+function createBaseMerklePath(): MerklePath {
+  return {
+    keyPath: [],
+  };
+}
+/**
+ * MerklePath is the path used to verify commitment proofs, which can be an
+ * arbitrary structured object (defined by a commitment type).
+ * MerklePath is represented from root-to-leaf
+ * @name MerklePath
+ * @package ibc.core.commitment.v1
+ * @see proto type: ibc.core.commitment.v1.MerklePath
+ */
+export const MerklePath = {
+  typeUrl: '/ibc.core.commitment.v1.MerklePath' as const,
+  aminoType: 'cosmos-sdk/MerklePath' as const,
+  is(o: any): o is MerklePath {
+    return (
+      o &&
+      (o.$typeUrl === MerklePath.typeUrl ||
+        (Array.isArray(o.keyPath) &&
+          (!o.keyPath.length || typeof o.keyPath[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is MerklePathSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MerklePath.typeUrl ||
+        (Array.isArray(o.key_path) &&
+          (!o.key_path.length || typeof o.key_path[0] === 'string')))
+    );
+  },
+  encode(
+    message: MerklePath,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    for (const v of message.keyPath) {
+      writer.uint32(10).string(v!);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): MerklePath {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMerklePath();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.keyPath.push(reader.string());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MerklePath {
+    return {
+      keyPath: Array.isArray(object?.keyPath)
+        ? object.keyPath.map((e: any) => String(e))
+        : [],
+    };
+  },
+  toJSON(message: MerklePath): JsonSafe<MerklePath> {
+    const obj: any = {};
+    if (message.keyPath) {
+      obj.keyPath = message.keyPath.map(e => e);
+    } else {
+      obj.keyPath = [];
+    }
+    return obj;
+  },
+  fromPartial(object: Partial<MerklePath>): MerklePath {
+    const message = createBaseMerklePath();
+    message.keyPath = object.keyPath?.map(e => e) || [];
+    return message;
+  },
+  fromProtoMsg(message: MerklePathProtoMsg): MerklePath {
+    return MerklePath.decode(message.value);
+  },
+  toProto(message: MerklePath): Uint8Array {
+    return MerklePath.encode(message).finish();
+  },
+  toProtoMsg(message: MerklePath): MerklePathProtoMsg {
+    return {
+      typeUrl: '/ibc.core.commitment.v1.MerklePath',
+      value: MerklePath.encode(message).finish(),
     };
   },
 };

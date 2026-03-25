@@ -1,3 +1,4 @@
+// Since: cosmos-sdk 0.43
 syntax = "proto3";
 package cosmos.authz.v1beta1;
 
@@ -16,15 +17,17 @@ service Query {
   }
 
   // GranterGrants returns list of `GrantAuthorization`, granted by granter.
+  //
+  // Since: cosmos-sdk 0.46
   rpc GranterGrants(QueryGranterGrantsRequest) returns (QueryGranterGrantsResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
-    option (google.api.http).get          = "/cosmos/authz/v1beta1/grants/granter/{granter}";
+    option (google.api.http).get = "/cosmos/authz/v1beta1/grants/granter/{granter}";
   }
 
   // GranteeGrants returns a list of `GrantAuthorization` by grantee.
+  //
+  // Since: cosmos-sdk 0.46
   rpc GranteeGrants(QueryGranteeGrantsRequest) returns (QueryGranteeGrantsResponse) {
-    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
-    option (google.api.http).get          = "/cosmos/authz/v1beta1/grants/grantee/{grantee}";
+    option (google.api.http).get = "/cosmos/authz/v1beta1/grants/grantee/{grantee}";
   }
 }
 

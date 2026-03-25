@@ -32,17 +32,37 @@ export interface Service {
   broadcastTx(request: BroadcastTxRequest): Promise<BroadcastTxResponse>;
   /** GetTxsEvent fetches txs by event. */
   getTxsEvent(request: GetTxsEventRequest): Promise<GetTxsEventResponse>;
-  /** GetBlockWithTxs fetches a block with decoded txs. */
+  /**
+   * GetBlockWithTxs fetches a block with decoded txs.
+   *
+   * Since: cosmos-sdk 0.45.2
+   */
   getBlockWithTxs(
     request: GetBlockWithTxsRequest,
   ): Promise<GetBlockWithTxsResponse>;
-  /** TxDecode decodes the transaction. */
+  /**
+   * TxDecode decodes the transaction.
+   *
+   * Since: cosmos-sdk 0.47
+   */
   txDecode(request: TxDecodeRequest): Promise<TxDecodeResponse>;
-  /** TxEncode encodes the transaction. */
+  /**
+   * TxEncode encodes the transaction.
+   *
+   * Since: cosmos-sdk 0.47
+   */
   txEncode(request: TxEncodeRequest): Promise<TxEncodeResponse>;
-  /** TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes. */
+  /**
+   * TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes.
+   *
+   * Since: cosmos-sdk 0.47
+   */
   txEncodeAmino(request: TxEncodeAminoRequest): Promise<TxEncodeAminoResponse>;
-  /** TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON. */
+  /**
+   * TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON.
+   *
+   * Since: cosmos-sdk 0.47
+   */
   txDecodeAmino(request: TxDecodeAminoRequest): Promise<TxDecodeAminoResponse>;
 }
 export class ServiceClientImpl implements Service {

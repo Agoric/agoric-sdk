@@ -35,11 +35,19 @@ export interface Query {
   upgradedConsensusState(
     request: QueryUpgradedConsensusStateRequest,
   ): Promise<QueryUpgradedConsensusStateResponse>;
-  /** ModuleVersions queries the list of module versions from state. */
+  /**
+   * ModuleVersions queries the list of module versions from state.
+   *
+   * Since: cosmos-sdk 0.43
+   */
   moduleVersions(
     request: QueryModuleVersionsRequest,
   ): Promise<QueryModuleVersionsResponse>;
-  /** Returns the account with authority to conduct upgrades */
+  /**
+   * Returns the account with authority to conduct upgrades
+   *
+   * Since: cosmos-sdk 0.46
+   */
   authority(request?: QueryAuthorityRequest): Promise<QueryAuthorityResponse>;
 }
 export class QueryClientImpl implements Query {

@@ -17,12 +17,12 @@ import {
   QuerySupplyOfResponse,
   QueryParamsRequest,
   QueryParamsResponse,
-  QueryDenomsMetadataRequest,
-  QueryDenomsMetadataResponse,
   QueryDenomMetadataRequest,
   QueryDenomMetadataResponse,
   QueryDenomMetadataByQueryStringRequest,
   QueryDenomMetadataByQueryStringResponse,
+  QueryDenomsMetadataRequest,
+  QueryDenomsMetadataResponse,
   QueryDenomOwnersRequest,
   QueryDenomOwnersResponse,
   QueryDenomOwnersByQueryRequest,
@@ -49,6 +49,8 @@ export interface Query {
    *
    * When called from another module, this query might consume a high amount of
    * gas if the pagination field is incorrectly set.
+   *
+   * Since: cosmos-sdk 0.46
    */
   spendableBalances(
     request: QuerySpendableBalancesRequest,
@@ -59,6 +61,8 @@ export interface Query {
    *
    * When called from another module, this query might consume a high amount of
    * gas if the pagination field is incorrectly set.
+   *
+   * Since: cosmos-sdk 0.47
    */
   spendableBalanceByDenom(
     request: QuerySpendableBalanceByDenomRequest,
@@ -81,13 +85,6 @@ export interface Query {
   supplyOf(request: QuerySupplyOfRequest): Promise<QuerySupplyOfResponse>;
   /** Params queries the parameters of x/bank module. */
   params(request?: QueryParamsRequest): Promise<QueryParamsResponse>;
-  /**
-   * DenomsMetadata queries the client metadata for all registered coin
-   * denominations.
-   */
-  denomsMetadata(
-    request?: QueryDenomsMetadataRequest,
-  ): Promise<QueryDenomsMetadataResponse>;
   /** DenomMetadata queries the client metadata of a given coin denomination. */
   denomMetadata(
     request: QueryDenomMetadataRequest,
@@ -97,11 +94,20 @@ export interface Query {
     request: QueryDenomMetadataByQueryStringRequest,
   ): Promise<QueryDenomMetadataByQueryStringResponse>;
   /**
+   * DenomsMetadata queries the client metadata for all registered coin
+   * denominations.
+   */
+  denomsMetadata(
+    request?: QueryDenomsMetadataRequest,
+  ): Promise<QueryDenomsMetadataResponse>;
+  /**
    * DenomOwners queries for all account addresses that own a particular token
    * denomination.
    *
    * When called from another module, this query might consume a high amount of
    * gas if the pagination field is incorrectly set.
+   *
+   * Since: cosmos-sdk 0.46
    */
   denomOwners(
     request: QueryDenomOwnersRequest,
@@ -109,6 +115,8 @@ export interface Query {
   /**
    * DenomOwnersByQuery queries for all account addresses that own a particular token
    * denomination.
+   *
+   * Since: cosmos-sdk 0.50.3
    */
   denomOwnersByQuery(
     request: QueryDenomOwnersByQueryRequest,
@@ -119,6 +127,8 @@ export interface Query {
    * This query only returns denominations that have specific SendEnabled settings.
    * Any denomination that does not have a specific setting will use the default
    * params.default_send_enabled, and will not be returned by this query.
+   *
+   * Since: cosmos-sdk 0.47
    */
   sendEnabled(
     request: QuerySendEnabledRequest,
@@ -135,10 +145,10 @@ export class QueryClientImpl implements Query {
     this.totalSupply = this.totalSupply.bind(this);
     this.supplyOf = this.supplyOf.bind(this);
     this.params = this.params.bind(this);
-    this.denomsMetadata = this.denomsMetadata.bind(this);
     this.denomMetadata = this.denomMetadata.bind(this);
     this.denomMetadataByQueryString =
       this.denomMetadataByQueryString.bind(this);
+    this.denomsMetadata = this.denomsMetadata.bind(this);
     this.denomOwners = this.denomOwners.bind(this);
     this.denomOwnersByQuery = this.denomOwnersByQuery.bind(this);
     this.sendEnabled = this.sendEnabled.bind(this);
@@ -230,21 +240,6 @@ export class QueryClientImpl implements Query {
       QueryParamsResponse.decode(new BinaryReader(data)),
     );
   }
-  denomsMetadata(
-    request: QueryDenomsMetadataRequest = {
-      pagination: undefined,
-    },
-  ): Promise<QueryDenomsMetadataResponse> {
-    const data = QueryDenomsMetadataRequest.encode(request).finish();
-    const promise = this.rpc.request(
-      'cosmos.bank.v1beta1.Query',
-      'DenomsMetadata',
-      data,
-    );
-    return promise.then(data =>
-      QueryDenomsMetadataResponse.decode(new BinaryReader(data)),
-    );
-  }
   denomMetadata(
     request: QueryDenomMetadataRequest,
   ): Promise<QueryDenomMetadataResponse> {
@@ -270,6 +265,21 @@ export class QueryClientImpl implements Query {
     );
     return promise.then(data =>
       QueryDenomMetadataByQueryStringResponse.decode(new BinaryReader(data)),
+    );
+  }
+  denomsMetadata(
+    request: QueryDenomsMetadataRequest = {
+      pagination: undefined,
+    },
+  ): Promise<QueryDenomsMetadataResponse> {
+    const data = QueryDenomsMetadataRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'cosmos.bank.v1beta1.Query',
+      'DenomsMetadata',
+      data,
+    );
+    return promise.then(data =>
+      QueryDenomsMetadataResponse.decode(new BinaryReader(data)),
     );
   }
   denomOwners(
@@ -345,11 +355,6 @@ export const createRpcQueryExtension = (base: QueryClient) => {
     params(request?: QueryParamsRequest): Promise<QueryParamsResponse> {
       return queryService.params(request);
     },
-    denomsMetadata(
-      request?: QueryDenomsMetadataRequest,
-    ): Promise<QueryDenomsMetadataResponse> {
-      return queryService.denomsMetadata(request);
-    },
     denomMetadata(
       request: QueryDenomMetadataRequest,
     ): Promise<QueryDenomMetadataResponse> {
@@ -359,6 +364,11 @@ export const createRpcQueryExtension = (base: QueryClient) => {
       request: QueryDenomMetadataByQueryStringRequest,
     ): Promise<QueryDenomMetadataByQueryStringResponse> {
       return queryService.denomMetadataByQueryString(request);
+    },
+    denomsMetadata(
+      request?: QueryDenomsMetadataRequest,
+    ): Promise<QueryDenomsMetadataResponse> {
+      return queryService.denomsMetadata(request);
     },
     denomOwners(
       request: QueryDenomOwnersRequest,

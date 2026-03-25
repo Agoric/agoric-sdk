@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	abci "github.com/cometbft/cometbft/abci/types"
-	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	host "github.com/cosmos/ibc-go/v10/modules/core/24-host"
-	ibctesting "github.com/cosmos/ibc-go/v10/testing"
+	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
+	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 )
 
 // acknowledgePacketWithResult sends a MsgAcknowledgement to the channel associated with the endpoint.
@@ -44,6 +44,8 @@ func ParseAckFromFilteredEvents(events []abci.Event, filteredType string) ([]byt
 						return nil, fmt.Errorf("failed to parse hex ack: %w", err)
 					}
 					return hexAck, nil
+				case channeltypes.AttributeKeyAck: //nolint:staticcheck // DEPRECATED
+					return []byte(attr.Value), nil
 				}
 			}
 		}
@@ -72,6 +74,9 @@ func ParsePacketFromFilteredEvents(events []abci.Event, filteredType string) (ch
 						return channeltypes.Packet{}, fmt.Errorf("failed to parse hex data: %w", err)
 					}
 					packet.Data = hexData
+
+				case channeltypes.AttributeKeyData: //nolint:staticcheck // DEPRECATED
+					packet.Data = []byte(attr.Value)
 
 				case channeltypes.AttributeKeySequence:
 					seq, err := strconv.ParseUint(attr.Value, 10, 64)

@@ -1,14 +1,13 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { CodecHelper } from '@agoric/cosmic-proto';
 import {
-  MsgDepositForBurn as MsgDepositForBurnType,
-  MsgDepositForBurnResponse as MsgDepositForBurnResponseType,
+  MsgDepositForBurn,
+  MsgDepositForBurnResponse,
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
-  MsgTransfer as MsgTransferType,
-  MsgTransferResponse as MsgTransferResponseType,
+  MsgTransfer,
+  MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
@@ -39,11 +38,6 @@ import {
   purseOf,
 } from './contract-setup.ts';
 import { setupFastUsdcTest, uusdcOnAgoric } from './supports.js';
-
-const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
-const MsgDepositForBurnResponse = CodecHelper(MsgDepositForBurnResponseType);
-const MsgTransfer = CodecHelper(MsgTransferType);
-const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
 
 const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 test.before(async t => (t.context = await makeTestContext(t)));

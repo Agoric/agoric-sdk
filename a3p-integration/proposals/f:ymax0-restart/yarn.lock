@@ -5121,7 +5121,6 @@ __metadata:
   dependencies:
     "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract"
     "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy"
-    "@agoric/client-utils": "portal:./local-packages/client-utils"
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/deploy-script-support": "npm:dev"
     "@agoric/portfolio-api": "npm:dev"

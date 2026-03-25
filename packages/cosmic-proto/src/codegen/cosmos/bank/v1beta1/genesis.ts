@@ -37,6 +37,8 @@ export interface GenesisState {
   denomMetadata: Metadata[];
   /**
    * send_enabled defines the denoms where send is enabled or disabled.
+   *
+   * Since: cosmos-sdk 0.47
    */
   sendEnabled: SendEnabled[];
 }

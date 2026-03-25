@@ -84,6 +84,9 @@ export interface MsgWithdrawDelegatorRewardSDKType {
  * @see proto type: cosmos.distribution.v1beta1.MsgWithdrawDelegatorRewardResponse
  */
 export interface MsgWithdrawDelegatorRewardResponse {
+  /**
+   * Since: cosmos-sdk 0.46
+   */
   amount: Coin[];
 }
 export interface MsgWithdrawDelegatorRewardResponseProtoMsg {
@@ -132,6 +135,9 @@ export interface MsgWithdrawValidatorCommissionSDKType {
  * @see proto type: cosmos.distribution.v1beta1.MsgWithdrawValidatorCommissionResponse
  */
 export interface MsgWithdrawValidatorCommissionResponse {
+  /**
+   * Since: cosmos-sdk 0.46
+   */
   amount: Coin[];
 }
 export interface MsgWithdrawValidatorCommissionResponseProtoMsg {
@@ -194,6 +200,8 @@ export interface MsgFundCommunityPoolResponseProtoMsg {
 export interface MsgFundCommunityPoolResponseSDKType {}
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgUpdateParams
@@ -216,6 +224,8 @@ export interface MsgUpdateParamsProtoMsg {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsSDKType
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgUpdateParams
@@ -227,6 +237,8 @@ export interface MsgUpdateParamsSDKType {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgUpdateParamsResponse
@@ -239,6 +251,8 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponseSDKType
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgUpdateParamsResponse
@@ -248,6 +262,8 @@ export interface MsgUpdateParamsResponseSDKType {}
  * MsgCommunityPoolSpend defines a message for sending tokens from the community
  * pool to another account. This message is typically executed via a governance
  * proposal with the governance module being the executing authority.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgCommunityPoolSpend
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgCommunityPoolSpend
@@ -268,6 +284,8 @@ export interface MsgCommunityPoolSpendProtoMsg {
  * MsgCommunityPoolSpend defines a message for sending tokens from the community
  * pool to another account. This message is typically executed via a governance
  * proposal with the governance module being the executing authority.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgCommunityPoolSpendSDKType
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgCommunityPoolSpend
@@ -280,6 +298,8 @@ export interface MsgCommunityPoolSpendSDKType {
 /**
  * MsgCommunityPoolSpendResponse defines the response to executing a
  * MsgCommunityPoolSpend message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgCommunityPoolSpendResponse
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgCommunityPoolSpendResponse
@@ -292,6 +312,8 @@ export interface MsgCommunityPoolSpendResponseProtoMsg {
 /**
  * MsgCommunityPoolSpendResponse defines the response to executing a
  * MsgCommunityPoolSpend message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgCommunityPoolSpendResponseSDKType
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgCommunityPoolSpendResponse
@@ -300,6 +322,8 @@ export interface MsgCommunityPoolSpendResponseSDKType {}
 /**
  * DepositValidatorRewardsPool defines the request structure to provide
  * additional rewards to delegators from a specific validator.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgDepositValidatorRewardsPool
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPool
@@ -316,6 +340,8 @@ export interface MsgDepositValidatorRewardsPoolProtoMsg {
 /**
  * DepositValidatorRewardsPool defines the request structure to provide
  * additional rewards to delegators from a specific validator.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgDepositValidatorRewardsPoolSDKType
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPool
@@ -328,6 +354,8 @@ export interface MsgDepositValidatorRewardsPoolSDKType {
 /**
  * MsgDepositValidatorRewardsPoolResponse defines the response to executing a
  * MsgDepositValidatorRewardsPool message.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgDepositValidatorRewardsPoolResponse
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPoolResponse
@@ -340,6 +368,8 @@ export interface MsgDepositValidatorRewardsPoolResponseProtoMsg {
 /**
  * MsgDepositValidatorRewardsPoolResponse defines the response to executing a
  * MsgDepositValidatorRewardsPool message.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgDepositValidatorRewardsPoolResponseSDKType
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPoolResponse
@@ -1135,6 +1165,8 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgUpdateParams
@@ -1230,6 +1262,8 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgUpdateParamsResponse
@@ -1306,6 +1340,8 @@ function createBaseMsgCommunityPoolSpend(): MsgCommunityPoolSpend {
  * MsgCommunityPoolSpend defines a message for sending tokens from the community
  * pool to another account. This message is typically executed via a governance
  * proposal with the governance module being the executing authority.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgCommunityPoolSpend
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgCommunityPoolSpend
@@ -1421,6 +1457,8 @@ function createBaseMsgCommunityPoolSpendResponse(): MsgCommunityPoolSpendRespons
 /**
  * MsgCommunityPoolSpendResponse defines the response to executing a
  * MsgCommunityPoolSpend message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgCommunityPoolSpendResponse
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgCommunityPoolSpendResponse
@@ -1501,6 +1539,8 @@ function createBaseMsgDepositValidatorRewardsPool(): MsgDepositValidatorRewardsP
 /**
  * DepositValidatorRewardsPool defines the request structure to provide
  * additional rewards to delegators from a specific validator.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgDepositValidatorRewardsPool
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPool
@@ -1628,6 +1668,8 @@ function createBaseMsgDepositValidatorRewardsPoolResponse(): MsgDepositValidator
 /**
  * MsgDepositValidatorRewardsPoolResponse defines the response to executing a
  * MsgDepositValidatorRewardsPool message.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgDepositValidatorRewardsPoolResponse
  * @package cosmos.distribution.v1beta1
  * @see proto type: cosmos.distribution.v1beta1.MsgDepositValidatorRewardsPoolResponse

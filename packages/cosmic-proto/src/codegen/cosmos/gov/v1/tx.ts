@@ -35,6 +35,12 @@ import {
   CancelSoftwareUpgradeProposal,
   type CancelSoftwareUpgradeProposalSDKType,
 } from '../../upgrade/v1beta1/upgrade.js';
+import {
+  ClientUpdateProposal,
+  type ClientUpdateProposalSDKType,
+  UpgradeProposal,
+  type UpgradeProposalSDKType,
+} from '../../../ibc/core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -65,14 +71,20 @@ export interface MsgSubmitProposal {
   metadata: string;
   /**
    * title is the title of the proposal.
+   *
+   * Since: cosmos-sdk 0.47
    */
   title: string;
   /**
    * summary is the summary of the proposal
+   *
+   * Since: cosmos-sdk 0.47
    */
   summary: string;
   /**
    * expedited defines if the proposal is expedited or not
+   *
+   * Since: cosmos-sdk 0.50
    */
   expedited: boolean;
 }
@@ -140,6 +152,8 @@ export interface MsgExecLegacyContent {
     | ParameterChangeProposal
     | SoftwareUpgradeProposal
     | CancelSoftwareUpgradeProposal
+    | ClientUpdateProposal
+    | UpgradeProposal
     | Any
     | undefined;
   /**
@@ -167,6 +181,8 @@ export interface MsgExecLegacyContentSDKType {
     | ParameterChangeProposalSDKType
     | SoftwareUpgradeProposalSDKType
     | CancelSoftwareUpgradeProposalSDKType
+    | ClientUpdateProposalSDKType
+    | UpgradeProposalSDKType
     | AnySDKType
     | undefined;
   authority: string;
@@ -360,6 +376,8 @@ export interface MsgDepositResponseProtoMsg {
 export interface MsgDepositResponseSDKType {}
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgUpdateParams
@@ -382,6 +400,8 @@ export interface MsgUpdateParamsProtoMsg {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsSDKType
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgUpdateParams
@@ -393,6 +413,8 @@ export interface MsgUpdateParamsSDKType {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgUpdateParamsResponse
@@ -405,6 +427,8 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponseSDKType
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgUpdateParamsResponse
@@ -412,6 +436,8 @@ export interface MsgUpdateParamsResponseProtoMsg {
 export interface MsgUpdateParamsResponseSDKType {}
 /**
  * MsgCancelProposal is the Msg/CancelProposal request type.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgCancelProposal
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgCancelProposal
@@ -432,6 +458,8 @@ export interface MsgCancelProposalProtoMsg {
 }
 /**
  * MsgCancelProposal is the Msg/CancelProposal request type.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgCancelProposalSDKType
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgCancelProposal
@@ -443,6 +471,8 @@ export interface MsgCancelProposalSDKType {
 /**
  * MsgCancelProposalResponse defines the response structure for executing a
  * MsgCancelProposal message.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgCancelProposalResponse
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgCancelProposalResponse
@@ -468,6 +498,8 @@ export interface MsgCancelProposalResponseProtoMsg {
 /**
  * MsgCancelProposalResponse defines the response structure for executing a
  * MsgCancelProposal message.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgCancelProposalResponseSDKType
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgCancelProposalResponse
@@ -1526,6 +1558,8 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgUpdateParams
@@ -1621,6 +1655,8 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgUpdateParamsResponse
@@ -1694,6 +1730,8 @@ function createBaseMsgCancelProposal(): MsgCancelProposal {
 }
 /**
  * MsgCancelProposal is the Msg/CancelProposal request type.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgCancelProposal
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgCancelProposal
@@ -1795,6 +1833,8 @@ function createBaseMsgCancelProposalResponse(): MsgCancelProposalResponse {
 /**
  * MsgCancelProposalResponse defines the response structure for executing a
  * MsgCancelProposal message.
+ *
+ * Since: cosmos-sdk 0.50
  * @name MsgCancelProposalResponse
  * @package cosmos.gov.v1
  * @see proto type: cosmos.gov.v1.MsgCancelProposalResponse

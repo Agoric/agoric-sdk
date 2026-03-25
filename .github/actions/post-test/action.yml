@@ -20,15 +20,14 @@ runs:
   steps:
     - name: collect coverage
       shell: bash
-      if: github.repository_owner == 'agoric' && (success() || failure())
+      if: ${{ github.repository_owner == 'agoric' }} && (success() || failure())
       continue-on-error: true
       run: |
-        [ -d ./agoric-sdk ] && cd ./agoric-sdk
         ./scripts/ci/collect-testruns.sh
     - name: upload coverage prepare
       shell: bash
       id: coverage-prep
-      if: github.repository_owner == 'agoric' && (success() || failure())
+      if: ${{ github.repository_owner == 'agoric' }} && (success() || failure())
       run: |
         if [ "${{ inputs.codecov-token }}" != "" ]; then
           # delete v8 coverage jsons to reduce noise
@@ -38,14 +37,14 @@ runs:
           echo "skip=true" >> $GITHUB_OUTPUT
         fi
     - name: Upload coverage reports to Codecov
-      if: github.repository_owner == 'agoric' && steps.coverage-prep.outputs.skip == 'false' && (success() || failure())
-      uses: codecov/codecov-action@v5
+      if: ${{ github.repository_owner == 'agoric' }} && ${{ steps.coverage-prep.outputs.skip == 'false' }} && (success() || failure())
+      uses: codecov/codecov-action@v4
       continue-on-error: true
       with:
         token: ${{ inputs.codecov-token }}
     - name: Send test results to GCP
       shell: bash
-      if: inputs.gcp-credentials
+      if: ${{ inputs.gcp-credentials }}
       env:
         GCP_CREDENTIALS: ${{ inputs.gcp-credentials }}
       run: |

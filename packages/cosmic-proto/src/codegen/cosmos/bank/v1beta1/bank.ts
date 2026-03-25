@@ -207,20 +207,28 @@ export interface Metadata {
   display: string;
   /**
    * name defines the name of the token (eg: Cosmos Atom)
+   *
+   * Since: cosmos-sdk 0.43
    */
   name: string;
   /**
    * symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
    * be the same as the display.
+   *
+   * Since: cosmos-sdk 0.43
    */
   symbol: string;
   /**
    * URI to a document (on or off-chain) that contains additional information. Optional.
+   *
+   * Since: cosmos-sdk 0.46
    */
   uri: string;
   /**
    * URIHash is a sha256 hash of a document pointed by URI. It's used to verify that
    * the document didn't change. Optional.
+   *
+   * Since: cosmos-sdk 0.46
    */
   uriHash: string;
 }

@@ -19,7 +19,6 @@
     "@endo/bundle-source": "MULTICHAIN_TESTING"
   },
   "devDependencies": {
-    "@agoric/client-utils": "MULTICHAIN_TESTING",
     "@agoric/cosmic-proto": "MULTICHAIN_TESTING",
     "@agoric/fast-usdc": "MULTICHAIN_TESTING",
     "@agoric/internal": "MULTICHAIN_TESTING",

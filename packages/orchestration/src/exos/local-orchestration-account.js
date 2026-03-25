@@ -537,29 +537,24 @@ export const prepareLocalOrchestrationAccountKit = (
             )} must match the channelId ${q(transferChannel.channelId)}`,
           );
 
-          const {
-            // Strip out the fields that are already included in MsgTransfer.ß
-            timeoutHeight,
-            timeoutTimestamp: _,
-            memo: optsMemo,
-            ...packetOpts
-          } = opts || {};
-
           /** @type {string | undefined} */
-          let memo = optsMemo;
+          let memo;
+          if (opts && 'memo' in opts) {
+            memo = opts.memo;
+          }
           if (forwardInfo) {
             // pass opts.memo as forward.next, if present
             memo = JSON.stringify({
               forward: {
                 ...forwardInfo.forward,
-                ...(memo === undefined ? {} : { next: memo }),
+                next: memo,
               },
             });
           }
           const transferMsg = MsgTransfer.typedJson({
             ...transferDetails,
             sender: this.state.address.value,
-            timeoutHeight,
+            timeoutHeight: opts?.timeoutHeight,
             timeoutTimestamp,
             memo,
           });
@@ -601,7 +596,7 @@ export const prepareLocalOrchestrationAccountKit = (
           // vow that rejects unless the packet acknowledgment comes back and is
           // verified.
           return holder.sendThenWaitForAck(sender, {
-            ...packetOpts,
+            ...opts,
             trafficSlice,
           });
         },

@@ -5,6 +5,8 @@ import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.mint.v1beta1
  * @see proto type: cosmos.mint.v1beta1.MsgUpdateParams
@@ -27,6 +29,8 @@ export interface MsgUpdateParamsProtoMsg {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsSDKType
  * @package cosmos.mint.v1beta1
  * @see proto type: cosmos.mint.v1beta1.MsgUpdateParams
@@ -38,6 +42,8 @@ export interface MsgUpdateParamsSDKType {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.mint.v1beta1
  * @see proto type: cosmos.mint.v1beta1.MsgUpdateParamsResponse
@@ -50,6 +56,8 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponseSDKType
  * @package cosmos.mint.v1beta1
  * @see proto type: cosmos.mint.v1beta1.MsgUpdateParamsResponse
@@ -63,6 +71,8 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.mint.v1beta1
  * @see proto type: cosmos.mint.v1beta1.MsgUpdateParams
@@ -158,6 +168,8 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ *
+ * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.mint.v1beta1
  * @see proto type: cosmos.mint.v1beta1.MsgUpdateParamsResponse

@@ -627,10 +627,14 @@ export interface Proposal {
   messages: Any[];
   /**
    * title is the title of the proposal
+   *
+   * Since: cosmos-sdk 0.47
    */
   title: string;
   /**
    * summary is a short summary of the proposal
+   *
+   * Since: cosmos-sdk 0.47
    */
   summary: string;
 }

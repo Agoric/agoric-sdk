@@ -21,12 +21,6 @@ export interface Module {
    * authority defines the custom module authority. If not set, defaults to the governance module.
    */
   authority: string;
-  /**
-   * enable_unordered_transactions determines whether unordered transactions should be supported or not.
-   * When true, unordered transactions will be validated and processed.
-   * When false, unordered transactions will be rejected.
-   */
-  enableUnorderedTransactions: boolean;
 }
 export interface ModuleProtoMsg {
   typeUrl: '/cosmos.auth.module.v1.Module';
@@ -42,7 +36,6 @@ export interface ModuleSDKType {
   bech32_prefix: string;
   module_account_permissions: ModuleAccountPermissionSDKType[];
   authority: string;
-  enable_unordered_transactions: boolean;
 }
 /**
  * ModuleAccountPermission represents permissions for a module account.
@@ -80,7 +73,6 @@ function createBaseModule(): Module {
     bech32Prefix: '',
     moduleAccountPermissions: [],
     authority: '',
-    enableUnorderedTransactions: false,
   };
 }
 /**
@@ -100,8 +92,7 @@ export const Module = {
           Array.isArray(o.moduleAccountPermissions) &&
           (!o.moduleAccountPermissions.length ||
             ModuleAccountPermission.is(o.moduleAccountPermissions[0])) &&
-          typeof o.authority === 'string' &&
-          typeof o.enableUnorderedTransactions === 'boolean'))
+          typeof o.authority === 'string'))
     );
   },
   isSDK(o: any): o is ModuleSDKType {
@@ -112,8 +103,7 @@ export const Module = {
           Array.isArray(o.module_account_permissions) &&
           (!o.module_account_permissions.length ||
             ModuleAccountPermission.isSDK(o.module_account_permissions[0])) &&
-          typeof o.authority === 'string' &&
-          typeof o.enable_unordered_transactions === 'boolean'))
+          typeof o.authority === 'string'))
     );
   },
   encode(
@@ -128,9 +118,6 @@ export const Module = {
     }
     if (message.authority !== '') {
       writer.uint32(26).string(message.authority);
-    }
-    if (message.enableUnorderedTransactions === true) {
-      writer.uint32(32).bool(message.enableUnorderedTransactions);
     }
     return writer;
   },
@@ -153,9 +140,6 @@ export const Module = {
         case 3:
           message.authority = reader.string();
           break;
-        case 4:
-          message.enableUnorderedTransactions = reader.bool();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -174,9 +158,6 @@ export const Module = {
           )
         : [],
       authority: isSet(object.authority) ? String(object.authority) : '',
-      enableUnorderedTransactions: isSet(object.enableUnorderedTransactions)
-        ? Boolean(object.enableUnorderedTransactions)
-        : false,
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
@@ -191,8 +172,6 @@ export const Module = {
       obj.moduleAccountPermissions = [];
     }
     message.authority !== undefined && (obj.authority = message.authority);
-    message.enableUnorderedTransactions !== undefined &&
-      (obj.enableUnorderedTransactions = message.enableUnorderedTransactions);
     return obj;
   },
   fromPartial(object: Partial<Module>): Module {
@@ -203,8 +182,6 @@ export const Module = {
         ModuleAccountPermission.fromPartial(e),
       ) || [];
     message.authority = object.authority ?? '';
-    message.enableUnorderedTransactions =
-      object.enableUnorderedTransactions ?? false;
     return message;
   },
   fromProtoMsg(message: ModuleProtoMsg): Module {

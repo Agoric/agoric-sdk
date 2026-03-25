@@ -3,12 +3,15 @@ package types
 import (
 	fmt "fmt"
 
+	sdkioerrors "cosmossdk.io/errors"
 	agtypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	capability "github.com/cosmos/ibc-go/modules/capability/types"
+	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
+	host "github.com/cosmos/ibc-go/v8/modules/core/24-host"
 
-	"github.com/cosmos/ibc-go/v10/modules/core/exported"
+	"github.com/cosmos/ibc-go/v8/modules/core/exported"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -28,6 +31,7 @@ var (
 )
 
 type IBCModuleImpl interface {
+	ClaimCapability(ctx sdk.Context, channelCap *capability.Capability, path string) error
 	GetChannel(ctx sdk.Context, portID, channelID string) (channeltypes.Channel, bool)
 	PushAction(ctx sdk.Context, action vm.Action) error
 }
@@ -71,6 +75,7 @@ func (im IBCModule) OnChanOpenInit(
 	connectionHops []string,
 	portID string,
 	channelID string,
+	channelCap *capability.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
@@ -86,6 +91,11 @@ func (im IBCModule) OnChanOpenInit(
 
 	err := im.impl.PushAction(ctx, event)
 	if err != nil {
+		return "", err
+	}
+
+	// Claim channel capability passed back by IBC module
+	if err := im.impl.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
 		return "", err
 	}
 
@@ -116,6 +126,7 @@ func (im IBCModule) OnChanOpenTry(
 	connectionHops []string,
 	portID,
 	channelID string,
+	channelCap *capability.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
@@ -132,6 +143,11 @@ func (im IBCModule) OnChanOpenTry(
 	err := im.impl.PushAction(ctx, event)
 	if err != nil {
 		return "", err
+	}
+
+	// Claim channel capability passed back by IBC module
+	if err = im.impl.ClaimCapability(ctx, channelCap, host.ChannelCapabilityPath(portID, channelID)); err != nil {
+		return "", sdkioerrors.Wrap(channeltypes.ErrChannelCapabilityNotFound, err.Error())
 	}
 
 	if !event.AsyncVersions {
@@ -249,14 +265,12 @@ type ReceivePacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string            `json:"event" default:"receivePacket"`
 	Target           string            `json:"target,omitempty"`
-	ChannelVersion   string            `json:"channelVersion"`
 	Packet           agtypes.IBCPacket `json:"packet"`
 	Relayer          sdk.AccAddress    `json:"relayer"`
 }
 
 func (im IBCModule) OnRecvPacket(
 	ctx sdk.Context,
-	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
@@ -269,7 +283,6 @@ func (im IBCModule) OnRecvPacket(
 	// the same packets.
 
 	event := ReceivePacketEvent{
-		ChannelVersion: channelVersion,
 		Packet:  agtypes.CopyToIBCPacket(packet),
 		Relayer: relayer,
 	}
@@ -286,21 +299,18 @@ type AcknowledgementPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string            `json:"event" default:"acknowledgementPacket"`
 	Target           string            `json:"target,omitempty"`
-	ChannelVersion   string            `json:"channelVersion"`
 	Packet           agtypes.IBCPacket `json:"packet"`
 	Acknowledgement  []byte            `json:"acknowledgement"`
 	Relayer          sdk.AccAddress    `json:"relayer"`
 }
 
 func (im IBCModule) OnAcknowledgementPacket(
-	ctx sdk.Context,	
-	channelVersion string,
+	ctx sdk.Context,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
 	event := AcknowledgementPacketEvent{
-		ChannelVersion: channelVersion,
 		Packet:          agtypes.CopyToIBCPacket(packet),
 		Acknowledgement: acknowledgement,
 		Relayer:         relayer,
@@ -318,19 +328,16 @@ type TimeoutPacketEvent struct {
 	*vm.ActionHeader `actionType:"IBC_EVENT"`
 	Event            string            `json:"event" default:"timeoutPacket"`
 	Target           string            `json:"target,omitempty"`
-	ChannelVersion   string            `json:"channelVersion"`
 	Packet           agtypes.IBCPacket `json:"packet"`
 	Relayer          sdk.AccAddress    `json:"relayer"`
 }
 
 func (im IBCModule) OnTimeoutPacket(
 	ctx sdk.Context,
-	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
 	event := TimeoutPacketEvent{
-		ChannelVersion: channelVersion,
 		Packet:  agtypes.CopyToIBCPacket(packet),
 		Relayer: relayer,
 	}

@@ -39,9 +39,15 @@ export interface Msg {
   /**
    * UpdateParams defines a governance operation for updating the x/gov module
    * parameters. The authority is defined in the keeper.
+   *
+   * Since: cosmos-sdk 0.47
    */
   updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
-  /** CancelProposal defines a method to cancel governance proposal */
+  /**
+   * CancelProposal defines a method to cancel governance proposal
+   *
+   * Since: cosmos-sdk 0.50
+   */
   cancelProposal(
     request: MsgCancelProposal,
   ): Promise<MsgCancelProposalResponse>;

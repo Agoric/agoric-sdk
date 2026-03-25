@@ -260,7 +260,7 @@ export interface ConnectionPathsSDKType {
   paths: string[];
 }
 /**
- * Version defines the versioning scheme used to negotiate the IBC version in
+ * Version defines the versioning scheme used to negotiate the IBC verison in
  * the connection handshake.
  * @name Version
  * @package ibc.core.connection.v1
@@ -281,7 +281,7 @@ export interface VersionProtoMsg {
   value: Uint8Array;
 }
 /**
- * Version defines the versioning scheme used to negotiate the IBC version in
+ * Version defines the versioning scheme used to negotiate the IBC verison in
  * the connection handshake.
  * @name VersionSDKType
  * @package ibc.core.connection.v1
@@ -972,7 +972,7 @@ function createBaseVersion(): Version {
   };
 }
 /**
- * Version defines the versioning scheme used to negotiate the IBC version in
+ * Version defines the versioning scheme used to negotiate the IBC verison in
  * the connection handshake.
  * @name Version
  * @package ibc.core.connection.v1

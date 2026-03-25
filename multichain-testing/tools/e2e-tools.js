@@ -31,16 +31,11 @@ import { makeRetryUntilCondition } from './sleep.js';
  * @import {BundleCache} from '@agoric/swingset-vat/tools/bundleTool.js';
  * @import {execFileSync} from 'child_process';
  * @import {execFile} from 'child_process';
+ * @import {CachedBundle} from '../test/boot-tools.js';
  * @import {VstorageKit} from '@agoric/client-utils';
  * @import {FastUsdcPublishedPathTypes} from '@agoric/fast-usdc';
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {AmountKeywordRecord} from '@agoric/zoe';
- */
-
-/**
- * @typedef {unknown} CachedBundle Unused placeholder for now, but we want to
- * return something that represents the bundle we installed in case we need to
- * refer to it later.
  */
 
 const trace = makeTracer('E2ET');
@@ -555,11 +550,10 @@ export const makeE2ETools = async (
   /**
    * @param {Iterable<string>} fullPaths
    * @param {typeof console.log} progress
-   * @returns {Promise<Record<string, CachedBundle>>} Fulfilled to an unused
-   * record when all bundles are installed.
    */
   const installBundles = async (fullPaths, progress) => {
     await null;
+    // @ts-expect-error FIXME no type
     /** @type {Record<string, CachedBundle>} */
     const bundles = {};
     // for (const [name, rootModPath] of Object.entries(bundleRoots)) {

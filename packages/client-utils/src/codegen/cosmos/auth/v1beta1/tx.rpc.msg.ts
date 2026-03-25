@@ -10,6 +10,8 @@ export interface Msg {
   /**
    * UpdateParams defines a (governance) operation for updating the x/auth module
    * parameters. The authority defaults to the x/gov module account.
+   *
+   * Since: cosmos-sdk 0.47
    */
   updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
 }

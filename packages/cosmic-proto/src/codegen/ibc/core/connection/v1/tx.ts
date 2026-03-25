@@ -84,7 +84,6 @@ export interface MsgConnectionOpenTry {
    */
   previousConnectionId: string;
   /**
-   * Deprecated: this field is unused.
    * @deprecated
    */
   clientState?: Any;
@@ -93,28 +92,27 @@ export interface MsgConnectionOpenTry {
   counterpartyVersions: Version[];
   proofHeight: Height;
   /**
-   * proof of the initialization the connection on Chain A: `UNINITIALIZED ->
+   * proof of the initialization the connection on Chain A: `UNITIALIZED ->
    * INIT`
    */
   proofInit: Uint8Array;
   /**
-   * Deprecated: this field is unused.
+   * proof of client state included in message
    * @deprecated
    */
   proofClient: Uint8Array;
   /**
-   * Deprecated: this field is unused.
+   * proof of client consensus state
    * @deprecated
    */
   proofConsensus: Uint8Array;
   /**
-   * Deprecated: this field is unused.
    * @deprecated
    */
   consensusHeight: Height;
   signer: string;
   /**
-   * Deprecated: this field is unused.
+   * optional proof data for host state machines that are unable to introspect their own consensus state
    * @deprecated
    */
   hostConsensusStateProof: Uint8Array;
@@ -193,34 +191,32 @@ export interface MsgConnectionOpenAck {
   counterpartyConnectionId: string;
   version?: Version;
   /**
-   * Deprecated: this field is unused.
    * @deprecated
    */
   clientState?: Any;
   proofHeight: Height;
   /**
-   * proof of the initialization the connection on Chain B: `UNINITIALIZED ->
+   * proof of the initialization the connection on Chain B: `UNITIALIZED ->
    * TRYOPEN`
    */
   proofTry: Uint8Array;
   /**
-   * Deprecated: this field is unused.
+   * proof of client state included in message
    * @deprecated
    */
   proofClient: Uint8Array;
   /**
-   * Deprecated: this field is unused.
+   * proof of client consensus state
    * @deprecated
    */
   proofConsensus: Uint8Array;
   /**
-   * Deprecated: this field is unused.
    * @deprecated
    */
   consensusHeight: Height;
   signer: string;
   /**
-   * Deprecated: this field is unused.
+   * optional proof data for host state machines that are unable to introspect their own consensus state
    * @deprecated
    */
   hostConsensusStateProof: Uint8Array;
