@@ -29,10 +29,6 @@ set -uo pipefail
 CACHE_FILE="${1:-/tmp/proposal-test-passed-digests}"
 touch "$CACHE_FILE"
 
-# Generate Dockerfile and bake config once, so we can build test images
-# directly with `docker buildx bake` to check digests before running.
-yarn synthetic-chain prepare-build
-
 proposals=$(ls -d proposals/?:* | sed 's|proposals/[a-z]:||')
 cached=0
 tested=0
@@ -49,10 +45,13 @@ for proposal in $proposals; do
     continue
   fi
 
-  # Build the test image to obtain its digest. Uses cached layers
-  # from build:synthetic-chain so this is fast (~seconds).
-  docker buildx bake --load "test-$proposal"
-  digest=$(docker inspect --format "{{.Id}}" "$img")
+  # Compute a stable fingerprint from the image's layer diff IDs.
+  # Docker image IDs ({{.Id}}) include config timestamps and are NOT
+  # reproducible across builds even with identical inputs and cached layers.
+  # Layer diff IDs are content-addressed SHA256 hashes of each layer's
+  # filesystem diff, so they are deterministic for identical content.
+  digest=$(docker inspect --format '{{range .RootFS.Layers}}{{.}}{{end}}' "$img" \
+    | sha256sum | cut -d' ' -f1)
 
   if grep -qF "$digest" "$CACHE_FILE"; then
     echo "::notice::Cached: $proposal (image $digest already passed)"
