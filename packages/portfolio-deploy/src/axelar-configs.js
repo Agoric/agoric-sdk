@@ -421,11 +421,11 @@ const remoteAccountImplementation = harden({
     Optimism: '0xE3D59F8d02b5fd435CEe9442Ab0fbaAcA8c0a44d', // https://optimistic.etherscan.io/address/0xE3D59F8d02b5fd435CEe9442Ab0fbaAcA8c0a44d
   },
   testnet: {
-    Arbitrum: '0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C', // https://sepolia.arbiscan.io/address/0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C
-    Avalanche: '0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C', // https://testnet.snowtrace.io/address/0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C
-    Base: '0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C', // https://sepolia.basescan.org/address/0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C
-    Ethereum: '0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C', // https://sepolia.etherscan.io/address/0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C
-    Optimism: '0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C', // https://sepolia-optimism.etherscan.io/address/0x650a0da9488B4BB682B2084FDaCe1fADBF8F407C
+    Arbitrum: '0x381FD9c9960e6aa498a188cb481291EfBD4CF82a', // https://sepolia.arbiscan.io/address/0x381FD9c9960e6aa498a188cb481291EfBD4CF82a
+    Avalanche: '0x381FD9c9960e6aa498a188cb481291EfBD4CF82a', // https://testnet.snowtrace.io/address/0x381FD9c9960e6aa498a188cb481291EfBD4CF82a
+    Base: '0x381FD9c9960e6aa498a188cb481291EfBD4CF82a', // https://sepolia.basescan.org/address/0x381FD9c9960e6aa498a188cb481291EfBD4CF82a
+    Ethereum: '0x381FD9c9960e6aa498a188cb481291EfBD4CF82a', // https://sepolia.etherscan.io/address/0x381FD9c9960e6aa498a188cb481291EfBD4CF82a
+    Optimism: '0x381FD9c9960e6aa498a188cb481291EfBD4CF82a', // https://sepolia-optimism.etherscan.io/address/0x381FD9c9960e6aa498a188cb481291EfBD4CF82a
   },
 });
 
