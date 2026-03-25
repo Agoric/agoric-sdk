@@ -66,7 +66,16 @@ export const StreamCellShape = harden({
 const ChainStorageNodeI = M.interface('StorageNode', {
   setValue: M.callWhen(M.string()).returns(),
   getPath: M.call().returns(M.string()),
-  getStoreKey: M.callWhen().returns(M.record()),
+  getStoreKey: M.callWhen().returns(
+    M.splitRecord(
+      {
+        storeName: M.string(),
+        storeSubkey: M.string(),
+        dataPrefixBytes: M.string(),
+      },
+      { noDataValue: M.string() },
+    ),
+  ),
   makeChildNode: M.call(M.string())
     .optional(M.splitRecord({}, { sequence: M.boolean() }, {}))
     .returns(M.remotable('StorageNode')),
