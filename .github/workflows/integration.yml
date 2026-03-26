@@ -373,9 +373,9 @@ jobs:
           # master. This is acceptable since master runs on every merge.
           #
           # restore-keys prefix match finds the most recent cache entry.
-          # Each run saves under a unique key (cache keys are immutable).
+          # Each branch saves under a stable key (cache keys are immutable).
           path: /tmp/proposal-test-passed-digests
-          key: proposal-test-digests-${{ github.run_id }}
+          key: proposal-test-digests-${{ github.head_ref || github.ref_name }}
           restore-keys: |
             proposal-test-digests-
 
@@ -403,7 +403,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: /tmp/proposal-test-passed-digests
-          key: proposal-test-digests-${{ github.run_id }}
+          key: proposal-test-digests-${{ github.head_ref || github.ref_name }}
 
       - name: copy a3p-integration
         if: always()
