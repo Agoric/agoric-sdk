@@ -386,7 +386,7 @@ jobs:
           cache=/tmp/proposal-test-passed-digests
           if [ -s "$cache" ]; then
             echo "Restored proposal test cache:"
-            nl -ba "$cache"
+            cat "$cache"
           else
             echo "Restored proposal test cache is empty"
           fi

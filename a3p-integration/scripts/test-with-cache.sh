@@ -64,7 +64,7 @@ for proposal in $proposals; do
   if [ -n "$cache_line" ]; then
     echo "::notice::Cached: $proposal ($cache_line)"
     cached=$((cached + 1))
-    docker rmi "$img" || true
+    docker rmi "$img" >/dev/null 2>&1 || true
     continue
   fi
 
