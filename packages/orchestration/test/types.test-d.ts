@@ -393,7 +393,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   >(account.executeEncodedTx);
 
   expectType<
-    <TUS extends readonly (keyof TypeFromUrl | unknown)[]>(
+    <TUS extends readonly string[]>(
       msgs: Readonly<{ [K in keyof TUS]: AnyJson<TUS[K]> }>,
       opts?: CosmosActionOptions,
     ) => Promise<{ [K in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[K]>> }>
