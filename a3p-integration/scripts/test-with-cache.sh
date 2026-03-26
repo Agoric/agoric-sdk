@@ -44,6 +44,7 @@ run_number="${GITHUB_RUN_ID:-n/a}"
 
 for proposal in $proposals; do
   img="ghcr.io/agoric/agoric-3-proposals:test-$proposal"
+  digest=n/a
 
   # After a failure, skip remaining proposals without building.
   if [ "$failed" -gt 0 ]; then
@@ -52,28 +53,35 @@ for proposal in $proposals; do
     continue
   fi
 
-  # Compute a stable fingerprint from the image's layer diff IDs.
-  # Docker image IDs ({{.Id}}) include config timestamps and are NOT
-  # reproducible across builds even with identical inputs and cached layers.
-  # Layer diff IDs are content-addressed SHA256 hashes of each layer's
-  # filesystem diff, so they are deterministic for identical content.
-  digest=$(docker inspect --format '{{range .RootFS.Layers}}{{.}}{{end}}' "$img" \
-    | sha256sum | cut -d' ' -f1)
+  cache_line=
+  if docker image inspect "$img" >/dev/null 2>&1; then
+    # Compute a stable fingerprint from the image's layer diff IDs.
+    # Docker image IDs ({{.Id}}) include config timestamps and are NOT
+    # reproducible across builds even with identical inputs and cached layers.
+    # Layer diff IDs are content-addressed SHA256 hashes of each layer's
+    # filesystem diff, so they are deterministic for identical content.
+    digest=$(docker inspect --format '{{range .RootFS.Layers}}{{.}}{{end}}' "$img" \
+      | sha256sum | cut -d' ' -f1)
 
-  cache_line=$(grep -m1 "^$digest " "$CACHE_FILE" || true)
-  if [ -n "$cache_line" ]; then
-    echo "::notice::Cached: $proposal ($cache_line)"
-    cached=$((cached + 1))
-    docker rmi "$img" >/dev/null 2>&1 || true
-    continue
+    cache_line=$(grep -m1 "^$digest " "$CACHE_FILE" || true)
+    if [ -n "$cache_line" ]; then
+      echo "::notice::Cached: $proposal ($cache_line)"
+      cached=$((cached + 1))
+      docker rmi "$img" >/dev/null 2>&1 || true
+      continue
+    fi
   fi
 
   echo "Testing $proposal (image $digest)"
   if yarn synthetic-chain test --match "$proposal" --exact; then
-    echo "$digest package=$proposal PR#$pr_number run#$run_number" >> "$CACHE_FILE"
+    if docker image inspect "$img" >/dev/null 2>&1; then
+      digest=$(docker inspect --format '{{range .RootFS.Layers}}{{.}}{{end}}' "$img" \
+        | sha256sum | cut -d' ' -f1)
+      echo "$digest package=$proposal PR#$pr_number run#$run_number" >> "$CACHE_FILE"
+    fi
     tested=$((tested + 1))
   else
-    echo "::error::Failed: $proposal (image $digest)"
+    echo "::error::Failed: $proposal (image ${digest:-n/a})"
     failed=$((failed + 1))
   fi
 done
