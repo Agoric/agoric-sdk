@@ -24,10 +24,14 @@
 #
 # TODO: upstream this into @agoric/synthetic-chain as a built-in caching mode.
 
-set -uo pipefail
+set -euo pipefail
 
 CACHE_FILE="${1:-/tmp/proposal-test-passed-digests}"
 touch "$CACHE_FILE"
+
+# Generate Dockerfiles and bake config once so we can build proposal images
+# directly and check their digests before running tests.
+yarn synthetic-chain prepare-build
 
 proposals=$(ls -d proposals/?:* | sed 's|proposals/[a-z]:||')
 cached=0
@@ -53,32 +57,29 @@ for proposal in $proposals; do
     continue
   fi
 
-  cache_line=
-  if docker image inspect "$img" >/dev/null 2>&1; then
-    # Compute a stable fingerprint from the image's layer diff IDs.
-    # Docker image IDs ({{.Id}}) include config timestamps and are NOT
-    # reproducible across builds even with identical inputs and cached layers.
-    # Layer diff IDs are content-addressed SHA256 hashes of each layer's
-    # filesystem diff, so they are deterministic for identical content.
-    digest=$(docker inspect --format '{{range .RootFS.Layers}}{{.}}{{end}}' "$img" \
-      | sha256sum | cut -d' ' -f1)
+  # Build the proposal image first so we can compare its stable fingerprint
+  # against the cache before running the test.
+  docker buildx bake --load "test-$proposal"
 
-    cache_line=$(grep -m1 "^$digest " "$CACHE_FILE" || true)
-    if [ -n "$cache_line" ]; then
-      echo "::notice::Cached: $proposal ($cache_line)"
-      cached=$((cached + 1))
-      docker rmi "$img" >/dev/null 2>&1 || true
-      continue
-    fi
+  # Compute a stable fingerprint from the image's layer diff IDs.
+  # Docker image IDs ({{.Id}}) include config timestamps and are NOT
+  # reproducible across builds even with identical inputs and cached layers.
+  # Layer diff IDs are content-addressed SHA256 hashes of each layer's
+  # filesystem diff, so they are deterministic for identical content.
+  digest=$(docker inspect --format '{{range .RootFS.Layers}}{{.}}{{end}}' "$img" \
+    | sha256sum | cut -d' ' -f1)
+
+  cache_line=$(grep -m1 "^$digest " "$CACHE_FILE" || true)
+  if [ -n "$cache_line" ]; then
+    echo "::notice::Cached: $proposal ($cache_line)"
+    cached=$((cached + 1))
+    docker rmi "$img" >/dev/null 2>&1 || true
+    continue
   fi
 
   echo "Testing $proposal (image $digest)"
   if yarn synthetic-chain test --match "$proposal" --exact; then
-    if docker image inspect "$img" >/dev/null 2>&1; then
-      digest=$(docker inspect --format '{{range .RootFS.Layers}}{{.}}{{end}}' "$img" \
-        | sha256sum | cut -d' ' -f1)
-      echo "$digest package=$proposal PR#$pr_number run#$run_number" >> "$CACHE_FILE"
-    fi
+    echo "$digest package=$proposal PR#$pr_number run#$run_number" >> "$CACHE_FILE"
     tested=$((tested + 1))
   else
     echo "::error::Failed: $proposal (image ${digest:-n/a})"
