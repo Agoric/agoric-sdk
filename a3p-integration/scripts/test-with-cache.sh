@@ -35,6 +35,13 @@ tested=0
 failed=0
 not_reached=0
 
+pr_number=n/a
+if [ -n "${GITHUB_EVENT_PATH:-}" ] && [ -f "$GITHUB_EVENT_PATH" ]; then
+  pr_number=$(jq -r 'if has("pull_request") then .pull_request.number else "n/a" end' < "$GITHUB_EVENT_PATH")
+fi
+
+run_number="${GITHUB_RUN_ID:-n/a}"
+
 for proposal in $proposals; do
   img="ghcr.io/agoric/agoric-3-proposals:test-$proposal"
 
@@ -53,8 +60,9 @@ for proposal in $proposals; do
   digest=$(docker inspect --format '{{range .RootFS.Layers}}{{.}}{{end}}' "$img" \
     | sha256sum | cut -d' ' -f1)
 
-  if grep -qF "$digest" "$CACHE_FILE"; then
-    echo "::notice::Cached: $proposal (image $digest already passed)"
+  cache_line=$(grep -m1 "^$digest " "$CACHE_FILE" || true)
+  if [ -n "$cache_line" ]; then
+    echo "::notice::Cached: $proposal ($cache_line)"
     cached=$((cached + 1))
     docker rmi "$img" || true
     continue
@@ -62,7 +70,7 @@ for proposal in $proposals; do
 
   echo "Testing $proposal (image $digest)"
   if yarn synthetic-chain test --match "$proposal" --exact; then
-    echo "$digest $proposal" >> "$CACHE_FILE"
+    echo "$digest package=$proposal PR#$pr_number run#$run_number" >> "$CACHE_FILE"
     tested=$((tested + 1))
   else
     echo "::error::Failed: $proposal (image $digest)"

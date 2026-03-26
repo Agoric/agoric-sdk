@@ -379,6 +379,18 @@ jobs:
           restore-keys: |
             proposal-test-digests-
 
+      - name: print proposal test cache
+        run: |
+          set -o errexit
+
+          cache=/tmp/proposal-test-passed-digests
+          if [ -s "$cache" ]; then
+            echo "Restored proposal test cache:"
+            nl -ba "$cache"
+          else
+            echo "Restored proposal test cache is empty"
+          fi
+
       - name: run proposals tests
         run: scripts/test-with-cache.sh /tmp/proposal-test-passed-digests
         working-directory: agoric-sdk/a3p-integration
