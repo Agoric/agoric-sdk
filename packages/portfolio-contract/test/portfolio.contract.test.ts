@@ -1310,7 +1310,7 @@ const setupEvmRemoteAccountConfigTest = (
       fromTypedEntries(
         typedEntries(addresses).flatMap(([key, value]) => {
           const mappedValue = mapContractEntry(
-            value,
+            value as `0x${string}` | undefined,
             key as keyof EVMContractAddresses,
             chain,
           );
