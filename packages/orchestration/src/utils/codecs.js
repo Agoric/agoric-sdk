@@ -166,17 +166,17 @@ export { MsgTransferType, MsgTransferResponseType };
 const AnyRawHelper = CodecHelper(AnyType);
 const AnyToJSON = {
   /**
-   * TypeScript 6 note: constrain TU to string keys for AnyType.typeUrl compatibility.
-   * @template {string} [TU=Extract<keyof TypeFromUrl, string>]
-   * @param {Partial<Omit<AnyType, 'typeUrl'> & { typeUrl: TU }>} msg
+   * `Any.toJSON` has a template parameter matching the passed-through typeUrl
+   * property.  This is different than other codecs which produce a fixed shape.
+   * @template {string} [TU=string]
+   * @param {{ typeUrl: TU } & Omit<AnyType, 'typeUrl'>} msg
    */
   toJSON: msg => {
     const ne = AnyRawHelper.toJSON(msg);
-    return /** @type {Omit<typeof ne, 'typeUrl'> & { typeUrl: TU }} */ (ne);
+    return /** @type {{ typeUrl: TU } & Omit<typeof ne, 'typeUrl'>} */ (ne);
   },
 };
 
-/** @type {Omit<typeof AnyRawHelper, 'toJSON'> & typeof AnyToJSON} */
 export const Any = Object.freeze({
   ...AnyRawHelper,
   ...AnyToJSON,

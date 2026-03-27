@@ -39,7 +39,8 @@ const goStdout = async (args, options = {}) => {
     stdio: stdio ?? ['inherit', 'pipe', 'inherit'],
     ...restOpts,
   });
-  const stdout = `${result.stdout ?? ''}`.trim();
+  const stdout =
+    `${typeof result === 'string' ? result : result.stdout}`.trim();
   return stdout;
 };
 

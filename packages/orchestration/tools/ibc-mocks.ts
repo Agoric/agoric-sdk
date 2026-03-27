@@ -37,7 +37,8 @@ const FungibleTokenPacketData = CodecHelper(FungibleTokenPacketDataType);
 const CosmosResponse = CodecHelper(CosmosResponseType);
 const ResponseQuery = CodecHelper(ResponseQueryType);
 
-type EncoderCommon<T> = Proto3Codec<string, T>;
+type EncoderCommon<T> =
+  T extends Proto3Codec<infer TU> ? Proto3Codec<TU> : Proto3Codec<string>;
 
 const toPacket = (obj: Record<string, any>): string =>
   btoa(JSON.stringify(obj));
