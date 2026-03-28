@@ -5,6 +5,14 @@ name: Protobuf
 # - check protobuf definitions are up-to-date
 on:
   pull_request:
+    types:
+      # These are the default pull request types...
+      - opened
+      - reopened
+      - synchronize
+      # ... and these respond to label changes.
+      - labeled
+      - unlabeled
   merge_group:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
