@@ -250,7 +250,7 @@ the release process can be aborted.
   While the previous step's CI tests run, build the SDK:
   ```sh
   # Build all package generated files.
-  yarn install --force
+  yarn install
   yarn build
   ```
 
@@ -266,7 +266,7 @@ to pass and for reviewer approval.
   ```sh
   # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
   # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-  yarn lerna publish --concurrency 1 from-package
+  yarn lerna publish --concurrency 1 --verify-access from-package
   ```
 
 - [ ] Merge the release PR into the base branch.

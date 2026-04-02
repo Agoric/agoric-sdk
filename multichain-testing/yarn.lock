@@ -253,7 +253,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/eslint-config@portal:../packages/eslint-config::locator=root-workspace-0b6124%40workspace%3A."
   peerDependencies:
-    "@agoric/eslint-plugin": ^0.1.0
+    "@agoric/eslint-plugin": "workspace:^"
     "@endo/eslint-plugin": ^2.4.0
     "@jessie.js/eslint-plugin": ^0.4.2
     eslint: ^9.0.0
