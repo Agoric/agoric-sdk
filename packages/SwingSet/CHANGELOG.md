@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.33.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.33.0-u22.2...@agoric/swingset-vat@0.33.0) (2026-04-02)
+
+### Bug Fixes
+
+* **SwingSet:** Tolerate absence of a kpid from maybeFreeKrefs ([d15cbb9](https://github.com/Agoric/agoric-sdk/commit/d15cbb93a8c1e96b364de7d961909ff1199876e5))
+
 ## [0.33.0-u22.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.33.0-u22.1...@agoric/swingset-vat@0.33.0-u22.2) (2025-09-09)
 
 **Note:** Version bump only for package @agoric/swingset-vat
