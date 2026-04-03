@@ -22,12 +22,7 @@ import (
 )
 
 var upgradeNamesOfThisVersion = []string{
-	"UNRELEASED_BASIC", // no-frills
-	"UNRELEASED_A3P_INTEGRATION",
-	"UNRELEASED_main",
-	"UNRELEASED_devnet",
-	"UNRELEASED_emerynet",
-	"UNRELEASED_REAPPLY",
+	"agoric-upgrade-23",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -61,14 +56,8 @@ func isPrimaryUpgradeName(name string) bool {
 		return false
 	}
 	switch name {
-	case validUpgradeName("UNRELEASED_BASIC"),
-		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
-		validUpgradeName("UNRELEASED_main"),
-		validUpgradeName("UNRELEASED_devnet"),
-		validUpgradeName("UNRELEASED_emerynet"):
+	case validUpgradeName("agoric-upgrade-23"):
 		return true
-	case validUpgradeName("UNRELEASED_REAPPLY"):
-		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
 	}
@@ -179,13 +168,13 @@ func (app *GaiaApp) RegisterUpgradeHandlers() {
 	for _, name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			makeUnreleasedUpgradeHandler(app, name),
+			makeUpgrade23Handler(app, name),
 		)
 	}
 }
 
-// makeUnreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetypes.UpgradeHandler {
+// makeUpgrade23Handler performs standard upgrade actions plus custom actions for upgrade-23.
+func makeUpgrade23Handler(app *GaiaApp, targetUpgrade string) upgradetypes.UpgradeHandler {
 	_ = targetUpgrade
 	return func(goCtx context.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		ctx := sdk.UnwrapSDKContext(goCtx)
@@ -220,16 +209,7 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 			var terminationTargets []string
 			switch ctx.ChainID() {
 			case "agoric-mainfork-1", "agoric-3": // MAINNET
-				terminationTargets = []string{
-					// v29 "zcf-b1-4522b-ATOM-USD_price_feed"
-					"board02963:ATOM-USD_price_feed",
-					// v68 "zcf-b1-4522b-stATOM-USD_price_feed"
-					"board012113:stATOM-USD_price_feed",
-					// v98 "zcf-b1-4522b-stOSMO-USD_price_feed"
-					"board002164:stOSMO-USD_price_feed",
-					// v104 "zcf-b1-4522b-stTIA-USD_price_feed"
-					"board043173:stTIA-USD_price_feed",
-				}
+				terminationTargets = []string{}
 			}
 			if len(terminationTargets) > 0 {
 				terminationStep, err := buildProposalStepWithArgs(
