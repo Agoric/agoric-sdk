@@ -53,10 +53,9 @@ const allValues = async obj => {
   return fromEntries(zip(keys(obj), vs));
 };
 
+/** @type {(rel: string) => Promise<EndoZipBase64Bundle>} */
 const bundleRelative = rel =>
-  bundleSource(new URL(rel, import.meta.url).pathname, {
-    byteLimit: Infinity,
-  });
+  bundleSource(new URL(rel, import.meta.url).pathname);
 
 /**
  * Build the source bundles for the kernel. makeSwingsetController()

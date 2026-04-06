@@ -148,7 +148,7 @@ export const prepareRetryableTools = (outerZone, outerOptions) => {
       const retryableKit = internalMakeRetryableFlowKit(activationArgs);
       const { flow } = retryableKit;
 
-      const vow = flow.getOutcome();
+      const vow = /** @type {Vow} */ (flow.getOutcome());
       flowForOutcomeVowKey.init(toPassableCap(vow), flow);
       flow.restart();
       return retryableKit;
