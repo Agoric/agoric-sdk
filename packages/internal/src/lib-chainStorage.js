@@ -157,6 +157,11 @@ harden(assertPathSegment);
 
 /**
  * @param {Zone} zone
+ * @returns {(
+ *   messenger: Callback<(message: StorageMessage) => any>,
+ *   path: string,
+ *   options?: { sequence?: boolean },
+ * ) => StorageNode}
  */
 export const prepareChainStorageNode = zone => {
   /**
@@ -260,6 +265,7 @@ const makeHeapChainStorageNode = prepareChainStorageNode(makeHeapZone());
  * @param {boolean} [rootOptions.sequence] employ a wrapping structure that
  *   preserves each value set within a single block, and default child nodes to
  *   do the same
+ * @returns {StorageNode}
  */
 export function makeChainStorageRoot(
   handleStorageMessage,
