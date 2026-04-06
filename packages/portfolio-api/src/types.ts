@@ -204,7 +204,7 @@ export type PortfolioGenericRemoteAccountState =
       state: PortfolioRemoteAccountCommonStates;
     }
   | {
-      state: 'provisioning' | 'unknown';
+      state: 'provisioning' | 'failed' | 'unknown';
     };
 
 export type PortfolioEVMRemoteAccountState = {
