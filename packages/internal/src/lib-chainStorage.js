@@ -7,6 +7,7 @@ import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from './callback.js';
 
 /**
+ * @import {RemotableBrand} from '@endo/eventual-send';
  * @import {ERef} from '@endo/far';
  * @import {Marshal, Passable} from '@endo/marshal';
  * @import {Remote, ERemote} from './types.js';
@@ -14,6 +15,7 @@ import * as cb from './callback.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Callback} from './types.js';
  * @import {CastedPattern} from '@endo/patterns';
+ * @import {MatcherOf} from '@endo/patterns';
  */
 
 /** @typedef {Marshal<unknown>} Marshaller */
@@ -84,7 +86,11 @@ const ChainStorageNodeI = M.interface('StorageNode', {
   ),
   makeChildNode: M.call(M.string())
     .optional(M.splitRecord({}, { sequence: M.boolean() }, {}))
-    .returns(M.remotable('StorageNode')),
+    .returns(
+      /** @type {MatcherOf<'remotable', StorageNode>} */ (
+        M.remotable('StorageNode')
+      ),
+    ),
 });
 
 /**
@@ -182,7 +188,7 @@ export const prepareChainStorageNode = zone => {
    *   rather than `set` messages so the backing implementation employs a
    *   wrapping structure that preserves each value set within a single block.
    *   Child nodes default to inheriting this option from their parent.
-   * @returns {StorageNode}
+   * @returns {RemotableBrand<{}, StorageNode>}
    */
   const makeChainStorageNode = zone.exoClass(
     'ChainStorageNode',
