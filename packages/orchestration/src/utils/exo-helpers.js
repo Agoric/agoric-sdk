@@ -196,11 +196,13 @@ export const makeVowExoHelpers = ({ watch }) => {
             M.interface(
               name,
               /** @type {{ [T in M[number]]: MethodGuard }} */ (
-                Object.fromEntries(
-                  methods.map(method => [
-                    method,
-                    M.call().rest(M.any()).returns(),
-                  ]),
+                /** @type {unknown} */ (
+                  Object.fromEntries(
+                    methods.map(method => [
+                      method,
+                      M.call().rest(M.any()).returns(),
+                    ]),
+                  )
                 )
               ),
             ),

@@ -128,7 +128,12 @@ const prepareCosmosOrchestrationServiceKit = (
             remoteConnAddr,
           );
           return watch(
-            E(port).connect(remoteConnAddr, connectionKit.connectionHandler),
+            E(port).connect(
+              remoteConnAddr,
+              /** @type {Remote<ConnectionHandler>} */ (
+                /** @type {unknown} */ (connectionKit.connectionHandler)
+              ),
+            ),
             this.facets.channelOpenWatcher,
             { returnFacet: 'account', connectionKit },
           );
@@ -148,7 +153,12 @@ const prepareCosmosOrchestrationServiceKit = (
           }
           const connectionKit = makeICQConnectionKit(port);
           return watch(
-            E(port).connect(remoteConnAddr, connectionKit.connectionHandler),
+            E(port).connect(
+              remoteConnAddr,
+              /** @type {Remote<ConnectionHandler>} */ (
+                /** @type {unknown} */ (connectionKit.connectionHandler)
+              ),
+            ),
             this.facets.channelOpenWatcher,
             {
               connectionKit,
