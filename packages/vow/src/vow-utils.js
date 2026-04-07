@@ -25,24 +25,20 @@ export const VowShape = M.tagged(
 /**
  * Typed Vow shape factory. At runtime returns the fixed `VowShape` (the
  * payload pattern is ignored — Vows are opaque at runtime). At the type
- * level, the returned matcher is treated as `Vow<T>`, so guards like
+ * level, the returned value is a {@link CastedPattern} of `Vow<T>`, so
+ * guards like
  *
  *     query: M.call(...).returns(Vow$(M.arrayOf(M.record())))
  *
  * infer the method's return type as `Vow<{ ... }[]>` instead of the
- * bare `CopyTagged<'Vow', Passable>`.
- *
- * Use the explicit type parameter for the resolved value type:
- *
- *     Vow$(`/** @type {Pattern} *\/`)
- *
- * @template [T=any] resolved value type carried in the Vow
- * @param {Pattern} _resolvedShape pattern that the resolved value would match
- * @returns {Vow<T>}
+ * bare `CopyTagged<'Vow', Passable>`. Pass the desired resolved-value
+ * type as an explicit type parameter, e.g.
+ * `Vow$<JsonSafe<ResponseQuery>[]>(M.arrayOf(M.record()))`.
  */
-// @ts-expect-error VowShape is a Matcher; we deliberately retype it as Vow<T>
-// for inference purposes. The runtime check still validates VowShape.
-export const Vow$ = _resolvedShape => VowShape;
+export const Vow$ =
+  /** @type {<T = any>(_resolvedShape: Pattern) => import('@endo/patterns').CastedPattern<Vow<T>>} */ (
+    _resolvedShape => VowShape
+  );
 harden(Vow$);
 
 /**

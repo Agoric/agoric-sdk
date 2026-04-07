@@ -8,6 +8,7 @@ import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 import { ICQMsgShape, OutboundConnectionHandlerI } from '../typeGuards.js';
 
 /**
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
  * @import {Remote, Vow, VowTools} from '@agoric/vow';
@@ -22,7 +23,9 @@ export const ICQConnectionI = M.interface('ICQConnection', {
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   query: M.call(M.arrayOf(ICQMsgShape)).returns(
-    /** @type {Vow<JsonSafe<ResponseQuery>[]>} */ (Vow$(M.arrayOf(M.record()))),
+    /** @type {CastedPattern<Vow<JsonSafe<ResponseQuery>[]>>} */ (
+      Vow$(M.arrayOf(M.record()))
+    ),
   ),
 });
 
