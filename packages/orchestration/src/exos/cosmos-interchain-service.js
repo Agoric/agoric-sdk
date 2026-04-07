@@ -15,7 +15,7 @@ import { prepareICQConnectionKit } from './icq-connection-kit.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Remote} from '@agoric/internal';
- * @import {Connection, Port, PortAllocator} from '@agoric/network';
+ * @import {Connection, ConnectionHandler, Port, PortAllocator} from '@agoric/network';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
