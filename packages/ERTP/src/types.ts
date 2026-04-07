@@ -176,10 +176,10 @@ export type IssuerGetAmountOf<K extends AssetKind, M extends Key = Key> = (
  *   be interpreted as absence. If you want to express a `Pattern` that will
  *   match only `undefined`, use `M.undefined()` instead.
  */
-export type IssuerBurn = (
-  payment: ERef<Payment>,
+export type IssuerBurn<K extends AssetKind = AssetKind, M extends Key = Key> = (
+  payment: ERef<Payment<K, M>>,
   optAmountShape?: Pattern,
-) => Promise<Amount>;
+) => Promise<Amount<K, M>>;
 /**
  * Work around JSDoc union handling
  */
@@ -211,7 +211,7 @@ export type IssuerMethods<K extends AssetKind, M extends Key> = {
   makeEmptyPurse: () => Purse<K, M>;
   isLive: IssuerIsLive;
   getAmountOf: IssuerGetAmountOf<K, M>;
-  burn: IssuerBurn;
+  burn: IssuerBurn<K, M>;
 };
 /**
  * The issuer cannot
