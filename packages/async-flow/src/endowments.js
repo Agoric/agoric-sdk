@@ -232,14 +232,18 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
       case 'state': {
         const state = /** @type {Record<PropertyKey, unknown>} */ (e);
         const keys = harden(ownKeys(state));
-        const wrapped = zone.exo(tag, StateAccessorI, {
-          get(key) {
-            return state[key];
-          },
-          set(key, newValue) {
-            state[key] = newValue;
-          },
-        });
+        const wrapped =
+          // @ts-expect-error StateAccessor uses M.raw() defaults
+          zone.exo(tag, StateAccessorI, {
+            /** @param {PropertyKey} key */
+            get(key) {
+              return state[key];
+            },
+            /** @param {PropertyKey} key @param {any} newValue */
+            set(key, newValue) {
+              state[key] = newValue;
+            },
+          });
         const stateUnwrapper = makeStateUnwrapper(keys);
         // Need to replace the instance because the keys may be different
         unwrapMapSet(wrapped, stateUnwrapper);
