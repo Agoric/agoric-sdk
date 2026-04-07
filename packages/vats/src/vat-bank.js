@@ -106,7 +106,7 @@ const prepareBankPurseController = zone => {
    * @param {string} denom
    * @param {Brand<'nat'>} brand
    * @param {string} address
-   * @param {PublishKit<Amount>} balanceKit
+   * @param {PublishKit<Amount<'nat'>>} balanceKit
    * @returns {VirtualPurseController}
    */
   const makeBankPurseController = zone.exoClass(
@@ -117,7 +117,7 @@ const prepareBankPurseController = zone => {
      * @param {string} denom
      * @param {Brand<'nat'>} brand
      * @param {string} address
-     * @param {LatestTopic<Amount>} balanceTopic
+     * @param {LatestTopic<Amount<'nat'>>} balanceTopic
      */
     (bankBridge, denom, brand, address, balanceTopic) => ({
       bankBridge,
@@ -181,6 +181,7 @@ const prepareRewardPurseController = zone =>
       async pullAmount(_amount) {
         throw Error(`Cannot pull from reward distributor`);
       },
+      /** @param {Amount<'nat'>} amount */
       async pushAmount(amount) {
         const { brand, bankChannel, denom } = this.state;
         const value = AmountMath.getValue(brand, amount);
@@ -351,7 +352,9 @@ const prepareAssetSubscription = zone => {
         return pubList;
       },
       [Symbol.asyncIterator]() {
-        return subscribeEach(this.self)[Symbol.asyncIterator]();
+        return subscribeEach(
+          /** @type {EachTopic<any>} */ (/** @type {unknown} */ (this.self)),
+        )[Symbol.asyncIterator]();
       },
     },
   );
@@ -484,7 +487,7 @@ const prepareBank = (
           this.state.assetSubscriber,
         );
       },
-      /** @param {Brand} brand */
+      /** @param {Brand<'nat'>} brand */
       async getPurse(brand) {
         const {
           bankChannel,
@@ -510,7 +513,7 @@ const prepareBank = (
           }
           const addressToUpdater = denomToAddressUpdater.get(assetRecord.denom);
 
-          /** @type {PublishKit<Amount>} */
+          /** @type {PublishKit<Amount<'nat'>>} */
           const { publisher, subscriber } = makePublishKit();
           const balanceUpdater = makeBalanceUpdater(brand, publisher);
           addressToUpdater.init(address, balanceUpdater);
@@ -651,7 +654,7 @@ const prepareBankManager = (
       /**
        * @param {string} denom
        * @param {AssetIssuerKit} feeKit
-       * @returns {ERef<EOnly<DepositFacet>>}
+       * @returns {Promise<EOnly<DepositFacet>>}
        */
       getRewardDistributorDepositFacet(denom, feeKit) {
         const { bankChannel } = this.state;

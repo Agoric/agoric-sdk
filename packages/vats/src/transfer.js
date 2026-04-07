@@ -115,6 +115,7 @@ const prepareTransferInterceptor = (zone, vowTools) => {
        * A watcher for sending error acknowledgements down to the host.
        */
       nackSender: {
+        /** @param {Error} error @param {{ response: any }} _ctx */
         onRejected(error, { response }) {
           console.error(`Error sending ack:`, error);
           const rawAck = JSON.stringify({ error: error.message });

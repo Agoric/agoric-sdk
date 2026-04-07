@@ -8,7 +8,7 @@ import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
- * @import {CopyBag, CopySet} from '@endo/patterns';
+ * @import {CopyBag, CopySet, Key} from '@endo/patterns';
  * @import {Amount, AmountValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
 
@@ -244,10 +244,10 @@ export const AmountMath = {
   /**
    * Extract and return the value.
    *
-   * @template {AssetKind} K
-   * @param {Brand<K>} brand
-   * @param {Amount<K>} amount
-   * @returns {Amount<K>['value']}
+   * @template {Amount} A
+   * @param {Brand} brand
+   * @param {A} amount
+   * @returns {A['value']}
    */
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   /**
