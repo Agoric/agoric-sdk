@@ -36,13 +36,6 @@ const PathShape = M.arrayOf(KeyShape);
 /** @type {CastedPattern<Promise<any>>} */
 const PromiseShape = M.promise();
 
-// The runtime entries impl returns `[key, value]` 2-tuples (it iterates
-// a MapStore). The structural inference for `M.arrayOf(M.array())` is
-// `any[][]` (an array of any-length arrays), too loose for the
-// `[string, any][]` shape that callers expect.
-/** @type {CastedPattern<[string, any][]>} */
-const EntriesShape = M.arrayOf(M.array());
-
 // `onUpdate(fn)` accepts a NameHubUpdateHandler — a remotable with
 // `write(item)`. The bare `M.remotable()` resolves to `unknown` in the
 // guard-inferred parameter type, blocking the assignment to the
@@ -54,7 +47,9 @@ export const NameHubIKit = harden({
   nameHub: M.interface('NameHub', {
     has: M.call(KeyShape).returns(M.boolean()),
     lookup: M.call().rest(PathShape).returns(PromiseShape),
-    entries: M.call().returns(EntriesShape),
+    // entries returns `[key, value]` 2-tuples; splitArray expresses
+    // the shape so it infers as `[string, any][]`.
+    entries: M.call().returns(M.arrayOf(M.splitArray([M.string(), M.any()]))),
     values: M.call().returns(M.array()),
     keys: M.call().returns(M.arrayOf(KeyShape)),
   }),
