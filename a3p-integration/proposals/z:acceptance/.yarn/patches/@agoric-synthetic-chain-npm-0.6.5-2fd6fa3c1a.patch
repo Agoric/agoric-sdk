@@ -1,0 +1,43 @@
+diff --git a/dist/cli/cli.js b/dist/cli/cli.js
+index f66d9268f20efe54719737fb6bf4fd32cb7a31d8..78e779e313e47c9d1eaa2389d9df76e95def0fa2 100755
+--- a/dist/cli/cli.js
++++ b/dist/cli/cli.js
+@@ -638,6 +638,8 @@ var runTestImage = ({
+         "run",
+         "--env",
+         `MESSAGE_FILE_PATH=${containerFilePath}`,
++        "--publish",
++        "127.0.0.1:26657:26657",
+         "--mount",
+         `source=${messageFilePath},target=${containerFilePath},type=bind`,
+         ...removeContainerOnExit ? ["--rm"] : [],
+diff --git a/dist/lib/index.js b/dist/lib/index.js
+index a997df95eea5a9fbc9509c87dca0a5998ef7f5c0..f6f1a515e1dffa5d5995bdd665f2e7552ed27ede 100644
+--- a/dist/lib/index.js
++++ b/dist/lib/index.js
+@@ -647,7 +647,7 @@ var voteLatestProposalAndWait = async (title) => {
+             typeUrl = message.type;
+             msgTitle = message?.value?.content?.value?.title;
+           }
+-          typeUrl === "/cosmos.gov.v1.MsgExecLegacyContent" || Fail2`Unsupported proposal message type ${typeUrl}`;
++          if (typeUrl !== "/cosmos.gov.v1.MsgExecLegacyContent") return false;
+           return msgTitle === title;
+         });
+       } else {
+diff --git a/dist/upgrade-test-scripts/run_prepare.sh b/dist/upgrade-test-scripts/run_prepare.sh
+index 1307294485f8e84d803e7907e6591dcee00d79c6..a279679a48231540f6e1ff3098bf30c1f911b5f5 100755
+--- a/dist/upgrade-test-scripts/run_prepare.sh
++++ b/dist/upgrade-test-scripts/run_prepare.sh
+@@ -34,7 +34,11 @@ startAgd
+ echo "[$PROPOSAL] Agd started."
+ cd /usr/src/proposals/"$PROPOSAL/" || fail "Proposal $PROPOSAL does not exist"
+ 
+-if [ -f "prepare.sh" ]; then
++if [ -f "exec_prepare.sh" ]; then
++  # This is for proposals that take control of all the rest of the preparation process.
++  echo "[$PROPOSAL] Execing exec_prepare.sh"
++  exec ./exec_prepare.sh
++elif [ -f "prepare.sh" ]; then
+   # In case the proposal needs some chain actions to be done before the upgrade,
+   # for example to set up some state that is tested after the upgrade.
+   echo "[$PROPOSAL] Running prepare.sh"
