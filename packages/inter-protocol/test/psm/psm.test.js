@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package
+
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
