@@ -3,7 +3,6 @@ import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive, RemotableObject } from '@endo/pass-style';
 import type { CastedPattern } from '@endo/patterns';
 
-import type { CastedPattern } from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
 
 /**

@@ -1,16 +1,29 @@
 import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
 /**
- * @import {AmountValue, Ratio} from './types.js'
+ * @import {AmountValue, Brand, DepositFacet, Issuer, Mint, Payment, Purse, Ratio} from './types.js'
  * @import {CastedPattern, CopyBag, CopySet, Pattern} from '@endo/patterns';
+ * @import {Notifier} from '@agoric/notifier';
  * @import {NatValue, SetValue} from './types.js';
  */
 
+// These shapes are tagged with `CastedPattern<X>` so that Endo's
+// pattern resolution (TypeFromPattern in @endo/patterns) returns the
+// concrete remotable type X at consuming sites. The runtime check is
+// unchanged — it still validates "is a remotable" — but the static
+// type carries the developer's claim about the kind of remotable.
+/** @type {CastedPattern<Brand>} */
 export const BrandShape = M.remotable('Brand');
+/** @type {CastedPattern<Issuer>} */
 export const IssuerShape = M.remotable('Issuer');
+/** @type {CastedPattern<Payment>} */
 export const PaymentShape = M.remotable('Payment');
+/** @type {CastedPattern<Purse>} */
 export const PurseShape = M.remotable('Purse');
+/** @type {CastedPattern<DepositFacet>} */
 export const DepositFacetShape = M.remotable('DepositFacet');
+/** @type {CastedPattern<Notifier<any>>} */
 export const NotifierShape = M.remotable('Notifier');
+/** @type {CastedPattern<Mint>} */
 export const MintShape = M.remotable('Mint');
 
 /**
