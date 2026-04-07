@@ -12,6 +12,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
 
 /**
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {Zone} from '@agoric/zone';
  * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
  * @import {MyAddressNameAdmin} from './types.js';
@@ -27,10 +28,18 @@ import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);
 
+// XXX tech debt: M.promise() should already resolve to `Promise<any>`,
+// but TypeScript infers an oddly-shaped `void | RawGuardPayload | null`
+// union for its T parameter when used directly in `.returns(...)`. The
+// CastedPattern cast pins it down. Once the underlying inference is
+// fixed, callers can use `M.promise()` directly and delete this constant.
+/** @type {CastedPattern<Promise<any>>} */
+const PromiseShape = M.promise();
+
 export const NameHubIKit = harden({
   nameHub: M.interface('NameHub', {
     has: M.call(KeyShape).returns(M.boolean()),
-    lookup: M.call().rest(PathShape).returns(M.promise()),
+    lookup: M.call().rest(PathShape).returns(PromiseShape),
     entries: M.call().returns(M.arrayOf(M.array())),
     values: M.call().returns(M.array()),
     keys: M.call().returns(M.arrayOf(KeyShape)),

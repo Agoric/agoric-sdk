@@ -13,7 +13,16 @@ import { E } from '@endo/far';
  * @import {ERef} from '@agoric/vow';
  * @import {DProxy} from '@agoric/swingset-vat';
  * @import {BridgeDevice} from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
+ * @import {CastedPattern} from '@endo/patterns';
  */
+
+// XXX tech debt: M.promise() should already resolve to `Promise<any>`,
+// but TypeScript infers an oddly-shaped `void | RawGuardPayload | null`
+// union for its T parameter when used directly in `.returns(...)`. The
+// CastedPattern cast pins it down. Once the underlying inference is
+// fixed, callers can use `M.promise()` directly and delete this constant.
+/** @type {CastedPattern<Promise<any>>} */
+const PromiseShape = M.promise();
 
 /**
  * Helper to type the registered scoped bridge correctly.
@@ -35,12 +44,12 @@ export const makeScopedBridge = (bridgeManager, bridgeIdValue, handler) =>
   );
 
 export const BridgeHandlerI = M.interface('BridgeHandler', {
-  fromBridge: M.call(M.any()).returns(M.promise()),
+  fromBridge: M.call(M.any()).returns(PromiseShape),
 });
 
 export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {
-  fromBridge: M.call(M.any()).returns(M.promise()),
-  toBridge: M.call(M.any()).returns(M.promise()),
+  fromBridge: M.call(M.any()).returns(PromiseShape),
+  toBridge: M.call(M.any()).returns(PromiseShape),
   initHandler: M.call(M.remotable('BridgeHandler')).returns(),
   setHandler: M.call(M.remotable('BridgeHandler')).returns(),
 });
@@ -57,7 +66,7 @@ const BridgeManagerIKit = harden({
     inbound: M.call(M.string(), M.any()).returns(),
   }),
   privateOutbounder: M.interface('PrivateBridgeOutbounder', {
-    outbound: M.call(M.string(), M.any()).returns(M.promise()),
+    outbound: M.call(M.string(), M.any()).returns(PromiseShape),
   }),
 });
 
