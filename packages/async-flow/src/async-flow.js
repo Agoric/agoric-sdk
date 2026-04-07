@@ -508,25 +508,28 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     return harden(wrapperFunc);
   };
 
-  const adminAsyncFlow = outerZone.exo('AdminAsyncFlow', AdminAsyncFlowI, {
-    getFailures() {
-      return failures.snapshot();
-    },
-    wakeAll() {
-      // [...stuff.keys()] in order to snapshot before iterating
-      const failuresToRestart = [...failures.keys()];
-      const flowsToWake = [...eagerWakers.keys()];
-      for (const flow of failuresToRestart) {
-        flow.restart();
-      }
-      for (const flow of flowsToWake) {
-        flow.wake();
-      }
-    },
-    getFlowForOutcomeVow(outcomeVow) {
-      return flowForOutcomeVowKey.get(toPassableCap(outcomeVow));
-    },
-  });
+  const adminAsyncFlow =
+    // @ts-expect-error AdminAsyncFlow guard uses M.raw() defaults
+    outerZone.exo('AdminAsyncFlow', AdminAsyncFlowI, {
+      getFailures() {
+        return failures.snapshot();
+      },
+      wakeAll() {
+        // [...stuff.keys()] in order to snapshot before iterating
+        const failuresToRestart = [...failures.keys()];
+        const flowsToWake = [...eagerWakers.keys()];
+        for (const flow of failuresToRestart) {
+          flow.restart();
+        }
+        for (const flow of flowsToWake) {
+          flow.wake();
+        }
+      },
+      /** @param {Vow} outcomeVow */
+      getFlowForOutcomeVow(outcomeVow) {
+        return flowForOutcomeVowKey.get(toPassableCap(outcomeVow));
+      },
+    });
 
   // Cannot call this until everything is prepared, so postpone to a later
   // turn. (Ideally, we'd postpone to a later crank because prepares are
