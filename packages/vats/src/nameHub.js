@@ -36,11 +36,25 @@ const PathShape = M.arrayOf(KeyShape);
 /** @type {CastedPattern<Promise<any>>} */
 const PromiseShape = M.promise();
 
+// The runtime entries impl returns `[key, value]` 2-tuples (it iterates
+// a MapStore). The structural inference for `M.arrayOf(M.array())` is
+// `any[][]` (an array of any-length arrays), too loose for the
+// `[string, any][]` shape that callers expect.
+/** @type {CastedPattern<[string, any][]>} */
+const EntriesShape = M.arrayOf(M.array());
+
+// `onUpdate(fn)` accepts a NameHubUpdateHandler — a remotable with
+// `write(item)`. The bare `M.remotable()` resolves to `unknown` in the
+// guard-inferred parameter type, blocking the assignment to the
+// typed `updateCallback` state field.
+/** @type {CastedPattern<{ write: (item: unknown) => void }>} */
+const NameHubUpdateHandlerShape = M.remotable('NameHubUpdateHandler');
+
 export const NameHubIKit = harden({
   nameHub: M.interface('NameHub', {
     has: M.call(KeyShape).returns(M.boolean()),
     lookup: M.call().rest(PathShape).returns(PromiseShape),
-    entries: M.call().returns(M.arrayOf(M.array())),
+    entries: M.call().returns(EntriesShape),
     values: M.call().returns(M.array()),
     keys: M.call().returns(M.arrayOf(KeyShape)),
   }),
@@ -53,7 +67,7 @@ export const NameHubIKit = harden({
     set: M.call(KeyShape, M.any())
       .optional(M.remotable())
       .returns(M.undefined()),
-    onUpdate: M.call(M.remotable()).returns(M.undefined()),
+    onUpdate: M.call(NameHubUpdateHandlerShape).returns(M.undefined()),
     update: M.call(KeyShape, M.any())
       .optional(M.remotable('newAdminValue'))
       .returns(M.any()),
