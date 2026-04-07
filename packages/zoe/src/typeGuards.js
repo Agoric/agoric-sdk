@@ -23,7 +23,11 @@ export const KeywordShape = M.string();
 
 /** @type {CastedPattern<InvitationHandle>} */
 export const InvitationHandleShape = M.remotable('InvitationHandle');
-/** @type {CastedPattern<Invitation>} */
+// Invitation has two phantom type parameters (offerReturn `R` and
+// offerArgs `A`). Defaulting either to its bound (`unknown` or
+// `undefined`) makes the shape too narrow for callers whose impls have
+// specific R/A. Use `any` for both so the shape matches any invitation.
+/** @type {CastedPattern<Invitation<any, any>>} */
 export const InvitationShape = M.remotable('Invitation');
 export const InstanceHandleShape = M.remotable('InstanceHandle');
 /** @type {CastedPattern<Installation>} */
