@@ -180,7 +180,7 @@ export type VowTools = {
   retriable: RetryableTool;
   /**
    * @remarks The watcher type is decoupled from the caller's `watcherArgs`
-   * type. The watcher accepts `unknown[]` args (since its inferred guard
+   * type. The watcher accepts `any[]` args (since its inferred guard
    * signature often has `Passable[]` rest args, which would otherwise
    * propagate to the caller and reject contexts containing `Remote<T>`
    * references). The caller passes whatever args they want; the watcher

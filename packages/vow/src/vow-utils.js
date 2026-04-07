@@ -5,6 +5,7 @@ import { M, matches } from '@endo/patterns';
 
 /**
  * @import {PassableCap} from '@endo/pass-style';
+ * @import {Pattern} from '@endo/patterns';
  * @import {VowPayload, Vow, PromiseVow} from './types.js';
  * @import {MakeVowKit} from './vow.js';
  */
@@ -20,6 +21,29 @@ export const VowShape = M.tagged(
     vowV0: M.remotable('VowV0'),
   }),
 );
+
+/**
+ * Typed Vow shape factory. At runtime returns the fixed `VowShape` (the
+ * payload pattern is ignored — Vows are opaque at runtime). At the type
+ * level, the returned matcher is treated as `Vow<T>`, so guards like
+ *
+ *     query: M.call(...).returns(Vow$(M.arrayOf(M.record())))
+ *
+ * infer the method's return type as `Vow<{ ... }[]>` instead of the
+ * bare `CopyTagged<'Vow', Passable>`.
+ *
+ * Use the explicit type parameter for the resolved value type:
+ *
+ *     Vow$(`/** @type {Pattern} *\/`)
+ *
+ * @template [T=any] resolved value type carried in the Vow
+ * @param {Pattern} _resolvedShape pattern that the resolved value would match
+ * @returns {Vow<T>}
+ */
+// @ts-expect-error VowShape is a Matcher; we deliberately retype it as Vow<T>
+// for inference purposes. The runtime check still validates VowShape.
+export const Vow$ = _resolvedShape => VowShape;
+harden(Vow$);
 
 /**
  * @param {unknown} specimen

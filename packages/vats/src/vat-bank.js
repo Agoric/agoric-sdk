@@ -104,7 +104,7 @@ const prepareBankPurseController = zone => {
   /**
    * @param {BridgeChannel} bankBridge
    * @param {string} denom
-   * @param {Brand} brand
+   * @param {Brand<'nat'>} brand
    * @param {string} address
    * @param {PublishKit<Amount>} balanceKit
    * @returns {VirtualPurseController}
@@ -115,7 +115,7 @@ const prepareBankPurseController = zone => {
     /**
      * @param {BridgeChannel} bankBridge
      * @param {string} denom
-     * @param {Brand} brand
+     * @param {Brand<'nat'>} brand
      * @param {string} address
      * @param {LatestTopic<Amount>} balanceTopic
      */
@@ -132,6 +132,7 @@ const prepareBankPurseController = zone => {
         assert.equal(b, brand);
         return balanceTopic;
       },
+      /** @param {Amount<'nat'>} amt */
       async pushAmount(amt) {
         const { bankBridge, denom, address, brand } = this.state;
         const value = AmountMath.getValue(brand, amt);
@@ -143,6 +144,7 @@ const prepareBankPurseController = zone => {
         });
         await bankBridge.fromBridge(update);
       },
+      /** @param {Amount<'nat'>} amt */
       async pullAmount(amt) {
         const { bankBridge, denom, address, brand } = this.state;
         const value = AmountMath.getValue(brand, amt);
@@ -167,7 +169,7 @@ const prepareRewardPurseController = zone =>
     /**
      * @param {BridgeChannel} bankChannel
      * @param {string} denom
-     * @param {Brand} brand
+     * @param {Brand<'nat'>} brand
      */
     (bankChannel, denom, brand) => ({ bankChannel, denom, brand }),
     {

@@ -54,15 +54,12 @@ export const StreamCellShape = harden({
  * identifies children by restricted ASCII name and is associated with arbitrary
  * string-valued data for each node, defaulting to the empty string.
  *
- * @typedef {object} StorageNode
- * @property {(data: string) => Promise<void>} setValue publishes some data
- * @property {() => string} getPath the chain storage path at which the node was
- *   constructed
- * @property {() => Promise<VStorageKey>} getStoreKey DEPRECATED use getPath
- * @property {(
- *   subPath: string,
- *   options?: { sequence?: boolean },
- * ) => StorageNode} makeChildNode
+ * @typedef {import('@endo/pass-style').RemotableObject & {
+ *   setValue: (data: string) => Promise<void>;
+ *   getPath: () => string;
+ *   getStoreKey: () => Promise<VStorageKey>;
+ *   makeChildNode: (subPath: string, options?: { sequence?: boolean }) => StorageNode;
+ * }} StorageNode
  */
 
 const ChainStorageNodeI = M.interface('StorageNode', {
@@ -81,7 +78,7 @@ const ChainStorageNodeI = M.interface('StorageNode', {
   makeChildNode: M.call(M.string())
     .optional(M.splitRecord({}, { sequence: M.boolean() }, {}))
     .returns(
-      /** @type {MatcherOf<'remotable', RemotableBrand<{}, StorageNode>>} */ (
+      /** @type {MatcherOf<'remotable', StorageNode>} */ (
         M.remotable('StorageNode')
       ),
     ),
@@ -182,7 +179,7 @@ export const prepareChainStorageNode = zone => {
    *   rather than `set` messages so the backing implementation employs a
    *   wrapping structure that preserves each value set within a single block.
    *   Child nodes default to inheriting this option from their parent.
-   * @returns {RemotableBrand<{}, StorageNode>}
+   * @returns {StorageNode}
    */
   const makeChainStorageNode = zone.exoClass(
     'ChainStorageNode',
@@ -217,7 +214,7 @@ export const prepareChainStorageNode = zone => {
        * @type {(
        *   name: string,
        *   childNodeOptions?: { sequence?: boolean },
-       * ) => RemotableBrand<{}, StorageNode>}
+       * ) => StorageNode}
        */
       makeChildNode(name, childNodeOptions = {}) {
         const { sequence, path, messenger } = this.state;

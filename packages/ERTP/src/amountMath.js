@@ -244,10 +244,10 @@ export const AmountMath = {
   /**
    * Extract and return the value.
    *
-   * @template {Amount} A
-   * @param {Brand} brand
-   * @param {A} amount
-   * @returns {A['value']}
+   * @template {AssetKind} K
+   * @param {Brand<K>} brand
+   * @param {Amount<K>} amount
+   * @returns {Amount<K>['value']}
    */
   getValue: (brand, amount) => AmountMath.coerce(brand, amount).value,
   /**

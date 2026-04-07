@@ -267,7 +267,10 @@ export type AdditionalDisplayInfo = {
  * Holding a Mint carries the right to issue new digital
  *   assets. These assets all have the same kind, which is called a Brand.
  */
-export type Mint<K extends AssetKind = AssetKind, M extends Key = Key> = {
+export type Mint<
+  K extends AssetKind = AssetKind,
+  M extends Key = Key,
+> = RemotableObject & {
   /**
    * Gets the Issuer for this mint.
    */
@@ -296,7 +299,7 @@ export type DepositFacetReceive = (
   payment: Payment,
   optAmountShape?: Pattern,
 ) => Amount;
-export type DepositFacet = {
+export type DepositFacet = RemotableObject & {
   /**
    * Deposit all the contents of payment
    * into the purse that made this facet, returning the amount. If the optional

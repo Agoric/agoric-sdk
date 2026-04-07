@@ -2,7 +2,7 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
+import { Vow$, VowShape } from '@agoric/vow';
 import { NonNullish, makeTracer } from '@agoric/internal';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 import { ICQMsgShape, OutboundConnectionHandlerI } from '../typeGuards.js';
@@ -21,7 +21,9 @@ const trace = makeTracer('Orchestration:ICQConnection');
 export const ICQConnectionI = M.interface('ICQConnection', {
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
-  query: M.call(M.arrayOf(ICQMsgShape)).returns(VowShape),
+  query: M.call(M.arrayOf(ICQMsgShape)).returns(
+    /** @type {Vow<JsonSafe<ResponseQuery>[]>} */ (Vow$(M.arrayOf(M.record()))),
+  ),
 });
 
 /**
