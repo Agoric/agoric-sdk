@@ -95,12 +95,14 @@ const prepareScopedManager = zone => {
       // the holder can always attenuate the object.
       // We implement separate init and set methods to require the holder to be
       // explicit about intent.
+      /** @param {BridgeHandler} newHandler */
       initHandler(newHandler) {
         newHandler || Fail`Must provide a handler for ${this.state.bridgeId}`;
         !this.state.inboundHandler ||
           Fail`Bridge handler already initialized for ${this.state.bridgeId}`;
         this.state.inboundHandler = newHandler;
       },
+      /** @param {BridgeHandler} newHandler */
       setHandler(newHandler) {
         newHandler || Fail`Must provide a handler for ${this.state.bridgeId}`;
         this.state.inboundHandler ||
@@ -148,6 +150,10 @@ export const prepareBridgeManager = (zone, D) => {
     }),
     {
       manager: {
+        /**
+         * @param {string} bridgeId
+         * @param {BridgeHandler} [handler]
+         */
         register(bridgeId, handler) {
           !this.state.scopedManagers.has(bridgeId) ||
             Fail`Scoped bridge manager already registered for ${bridgeId}`;
