@@ -6,7 +6,9 @@ import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/cha
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
-import type { CaipChainId } from '@agoric/orchestration';
+// Inlined to avoid pulling @agoric/orchestration's source files into vats's
+// type-check graph. vats does not depend on orchestration as a package.
+type CaipChainId = `${string}:${string}`;
 import type {
   Installation,
   Instance,
