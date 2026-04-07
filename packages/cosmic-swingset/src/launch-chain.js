@@ -1090,7 +1090,8 @@ export async function launchAndShareInternals({
                 const bundle = await bundleSource(source, {
                   // Disable bundle size limits for chain initialization/upgrade
                   // bundles which may be large, but do not travel through RPC
-                  // and we still want to be legible.
+                  // and we still want to be legible (no esbuild minification
+                  // fallback). Matches initializeSwingset.js.
                   byteLimit: Infinity,
                 });
                 const { endoZipBase64Sha512: hash } = bundle;
