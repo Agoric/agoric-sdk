@@ -3,7 +3,12 @@
  * and holding portfolios for EVM accounts.
  * @see {@link prepareEVMWalletHandlerKit}
  */
-import { makeTracer, type ERemote, type Remote } from '@agoric/internal';
+import {
+  makeTracer,
+  type ERemote,
+  type Remote,
+  type TypedPattern,
+} from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
 import {
@@ -379,13 +384,13 @@ export const prepareEVMPortfolioOperationManager = (
   return harden({ handleOperation });
 };
 
-export const EIP712DataShape = M.splitRecord({
+export const EIP712DataShape: TypedPattern<EIP712Data> = M.splitRecord({
   domain: M.any(),
   types: M.record(),
   primaryType: M.string(),
   message: M.record(),
   signature: M.any(),
-});
+}) as TypedPattern<EIP712Data>;
 
 /**
  * Prepare an EVM Wallet handler kit. It holds portfolios for EVM Wallet users,

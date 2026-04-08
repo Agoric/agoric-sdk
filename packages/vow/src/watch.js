@@ -93,7 +93,6 @@ const preparePromiseWatcher = (zone, isRetryableReason, watchNextStep) => {
 
   return zone.exoClass(
     'PromiseWatcher',
-    // @ts-expect-error PromiseWatcherI uses M.raw() defaults; impl uses generic templates
     PromiseWatcherI,
     /**
      * @template [T=any]

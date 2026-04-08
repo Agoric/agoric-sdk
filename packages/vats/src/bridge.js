@@ -4,6 +4,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {BridgeId} from '@agoric/internal';
+ * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {BridgeManager} from './types.js';
  * @import {Remote} from '@agoric/internal';
  * @import {BridgeHandler} from './types.js';
@@ -16,11 +17,22 @@ import { E } from '@endo/far';
  * @import {CastedPattern} from '@endo/patterns';
  */
 
-// XXX tech debt: M.promise() should already resolve to `Promise<any>`,
-// but TypeScript infers an oddly-shaped `void | RawGuardPayload | null`
-// union for its T parameter when used directly in `.returns(...)`. The
-// CastedPattern cast pins it down. Once the underlying inference is
-// fixed, callers can use `M.promise()` directly and delete this constant.
+/**
+ * Cast of M.any() to carry BridgeMessage at the type level, so impls
+ * declaring their parameter as BridgeMessage satisfy the guard's
+ * contravariance check.  At runtime the guard still accepts any
+ * Passable; the narrowing is a static assertion that callers comply.
+ *
+ * @type {CastedPattern<BridgeMessage>}
+ */
+const BridgeMessageShape = M.any();
+
+// `BridgeManager`/`ScopedBridgeManager` typedefs in `./types.ts` declare
+// the bridge methods as returning `Promise<unknown>`, not `PromiseLike`.
+// `M.promise()` now infers as `PromiseLike<any>` (see the TFKindMap
+// comment in `@endo/patterns/src/type-from-pattern.ts`); pin it back to
+// `Promise<any>` here via a CastedPattern so the returned
+// `ScopedBridgeManager` satisfies the consumer-facing typedef.
 /** @type {CastedPattern<Promise<any>>} */
 const PromiseShape = M.promise();
 
@@ -44,7 +56,7 @@ export const makeScopedBridge = (bridgeManager, bridgeIdValue, handler) =>
   );
 
 export const BridgeHandlerI = M.interface('BridgeHandler', {
-  fromBridge: M.call(M.any()).returns(PromiseShape),
+  fromBridge: M.call(BridgeMessageShape).returns(PromiseShape),
 });
 
 export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {

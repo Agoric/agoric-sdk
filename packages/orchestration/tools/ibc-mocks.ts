@@ -70,7 +70,16 @@ export function buildTxResponseString<T extends EncoderMessage<any>[]>(
   messages: T,
 ): string {
   const msgResponses = messages.map(({ encoder, message }) => {
-    return Any.fromPartial(CodecHelper(encoder).toProtoMsg(message));
+    // Cast away `ProtoMsg<unknown>` → `ProtoMsg<string>`. TypeScript
+    // can't narrow `EncoderCommon<any>`'s inferred TU through the
+    // distributive conditional in `EncoderCommon<T>`, so `toProtoMsg`
+    // returns a `typeUrl: unknown` that `Any.fromPartial` rejects at
+    // compile time.  At runtime the typeUrl is always a string.
+    const protoMsg = CodecHelper(encoder).toProtoMsg(message) as {
+      typeUrl: string;
+      value: Uint8Array;
+    };
+    return Any.fromPartial(protoMsg);
   });
 
   const txMsgData = TxMsgData.toProto({
