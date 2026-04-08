@@ -16,6 +16,7 @@ import { prepareICQConnectionKit } from './icq-connection-kit.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Remote} from '@agoric/internal';
  * @import {IBCConnectionID, RemoteIbcAddress} from '@agoric/network/ibc';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {Connection, ConnectionHandler, Port, PortAllocator} from '@agoric/network';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Vow, VowTools} from '@agoric/vow';
@@ -95,10 +96,18 @@ const prepareCosmosOrchestrationServiceKit = (
       public: M.interface('CosmosInterchainService', {
         makeAccount: M.call(M.string(), M.string(), M.string())
           .optional(M.record())
-          .returns(Vow$(M.remotable('IcaAccountKit'))),
+          .returns(
+            /** @type {CastedPattern<Vow<IcaAccount>>} */ (
+              Vow$(M.remotable('IcaAccount'))
+            ),
+          ),
         provideICQConnection: M.call(M.string())
           .optional(M.string())
-          .returns(Vow$(M.remotable('ICQConnection'))),
+          .returns(
+            /** @type {CastedPattern<Vow<ICQConnection>>} */ (
+              Vow$(M.remotable('ICQConnection'))
+            ),
+          ),
       }),
     },
     /** @param {Partial<CosmosOrchestrationPowers>} powers */
