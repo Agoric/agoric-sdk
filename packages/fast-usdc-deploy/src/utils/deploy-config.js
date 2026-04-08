@@ -37,11 +37,19 @@ const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
  * @param {CI} ci
  */
 export const withCosmosChainId = ci =>
+  // TypeScript can't narrow the generic `CI[K]` through objectMap's
+  // callback, so the direct cast from the inferred mapped result to
+  // `{[K in keyof CI]: CI[K] & { chainId: string }}` is rejected as
+  // "may be a mistake".  Bridge through `unknown`: the runtime is
+  // sound (we spread v and add chainId), but TS needs the explicit
+  // disclaimer.
   /** @type {{[K in keyof CI]: CI[K] & { chainId: string }}} */ (
-    objectMap(ci, v => ({
-      chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
-      ...v,
-    }))
+    /** @type {unknown} */ (
+      objectMap(ci, v => ({
+        chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
+        ...v,
+      }))
+    )
   );
 
 /**
