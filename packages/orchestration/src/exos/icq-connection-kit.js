@@ -101,15 +101,23 @@ export const prepareICQConnectionKit = (zone, { watch, asVow }) =>
           return asVow(() => {
             const { connection } = this.state;
             if (!connection) throw Fail`connection not available`;
-            return watch(
-              E(connection).send(makeQueryPacket(msgs)),
-              this.facets.parseQueryPacketWatcher,
+            // Cast the watcher return through Vow<JsonSafe<ResponseQuery>[]>;
+            // the structural inference widens to include Record<string, any>
+            // from the inner ResponseQuery.toJSON call.
+            return /** @type {Vow<JsonSafe<ResponseQuery>[]>} */ (
+              watch(
+                E(connection).send(makeQueryPacket(msgs)),
+                this.facets.parseQueryPacketWatcher,
+              )
             );
           });
         },
       },
       parseQueryPacketWatcher: {
-        /** @param {string} ack packet acknowledgement string */
+        /**
+         * @param {string} ack packet acknowledgement string
+         * @returns {JsonSafe<ResponseQuery>[]}
+         */
         onFulfilled(ack) {
           return parseQueryPacket(ack);
         },
