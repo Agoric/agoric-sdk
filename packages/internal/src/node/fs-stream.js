@@ -49,9 +49,10 @@ export const fsStreamReady = stream =>
  *
  * @param {ReadStream | WriteStream | Socket} stream
  * @param {'drain' | 'ready'} eventName
+ * @param {() => void} [onCleanup] called when the event is emitted or an error occurs, after listeners are removed
  * @returns {Promise<void>}
  */
-const onceWithError = (stream, eventName) =>
+const naiveOnceWithError = (stream, eventName, onCleanup = () => {}) =>
   new Promise((resolve, reject) => {
     const onEvent = () => {
       cleanup();
@@ -65,10 +66,68 @@ const onceWithError = (stream, eventName) =>
     const cleanup = () => {
       stream.off(eventName, onEvent);
       stream.off('error', onError);
+      onCleanup();
     };
     stream.on(eventName, onEvent);
     stream.on('error', onError);
   });
+
+/**
+ * Memoize promises to prevent multiple subscriptions to the same event on the
+ * same stream.  This is necessary to prevent:
+ *
+ * (node:1224) MaxListenersExceededWarning: Possible EventEmitter memory leak
+ * detected. 11 drain listeners added to [WriteStream]. MaxListeners is 10. Use
+ * emitter.setMaxListeners() to increase limit
+ *
+ * @param {(stream: ReadStream | WriteStream | Socket,
+ *   eventName: 'drain' | 'ready', onDone?: () => void) => Promise<void>} doOnceWithError
+ * @returns {(stream: ReadStream | WriteStream | Socket,
+ *   eventName: 'drain' | 'ready') => Promise<void>}
+ */
+const makeMemoizedOnceWithError = doOnceWithError => {
+  /**
+   * @type {Map<string, WeakMap<ReadStream | WriteStream | Socket,
+   *   Promise<void>>>}
+   */
+  const promiseFromEventAndStream = new Map();
+
+  /**
+   * Wait for a stream event and reject on stream error first.
+   *
+   * @param {ReadStream | WriteStream | Socket} stream
+   * @param {'drain' | 'ready'} eventName
+   * @returns {Promise<void>}
+   */
+  const memoizedOnceWithError = (stream, eventName) => {
+    let promiseFromStream = promiseFromEventAndStream.get(eventName);
+    if (!promiseFromStream) {
+      promiseFromStream = new WeakMap();
+      promiseFromEventAndStream.set(eventName, promiseFromStream);
+    }
+    /** @type {Promise<void> | undefined} */
+    let promise = promiseFromStream.get(stream);
+    if (promise) {
+      return promise;
+    }
+    promise = doOnceWithError(stream, eventName, () =>
+      promiseFromStream.delete(stream),
+    );
+    promiseFromStream.set(stream, promise);
+    return promise;
+  };
+
+  return memoizedOnceWithError;
+};
+
+/**
+ * Wait for a stream event and reject on stream error first.
+ *
+ * @param {ReadStream | WriteStream | Socket} stream
+ * @param {'drain' | 'ready'} eventName
+ * @returns {Promise<void>}
+ */
+const onceWithError = makeMemoizedOnceWithError(naiveOnceWithError);
 
 /**
  * @param {WriteStream | Socket} stream
