@@ -59,7 +59,7 @@ export const makeVowExoHelpers = ({ watch }) => {
        * @template [T=undefined]
        * @param {Vow<unknown>} inputV
        * @param {T} [newValue]
-       * @returns {Vow<T>}
+       * @returns {Vow<import('@agoric/vow').Fulfilled<T>>}
        */
       overrideVow(inputV, newValue) {
         return watch(inputV, this.facets.overrideVowWatcher, newValue);
