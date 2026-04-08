@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u22.1...@agoric/cosmos@0.35.0) (2026-04-02)
+
+### Bug Fixes
+
+* **cosmos:** pick up cometbft patch for GHSA-hrhf-2vcr-ghch ([4e121c2](https://github.com/Agoric/agoric-sdk/commit/4e121c2c81e2dc188fd700abf4a7f88c3f096d2f))
+
 ## [0.35.0-u22.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u22.0...@agoric/cosmos@0.35.0-u22.1) (2025-09-09)
 
 ### Bug Fixes
