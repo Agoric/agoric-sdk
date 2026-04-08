@@ -28,19 +28,17 @@ import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);
 
-// XXX tech debt: M.promise() should already resolve to `Promise<any>`,
-// but TypeScript infers an oddly-shaped `void | RawGuardPayload | null`
-// union for its T parameter when used directly in `.returns(...)`. The
-// CastedPattern cast pins it down. Once the underlying inference is
-// fixed, callers can use `M.promise()` directly and delete this constant.
+// `NameHub`'s typedef in ./types.ts declares `lookup` as returning
+// `Promise<unknown>`, not `PromiseLike`.  `M.promise()` infers as
+// `PromiseLike<any>` (honest to the runtime duck-typed thenable
+// check; see `TFKindMap['promise']` in
+// `@endo/patterns/src/type-from-pattern.ts`).  Pin it back to
+// `Promise<any>` here so the returned `NameHub` satisfies the
+// consumer-facing typedef.
 /** @type {CastedPattern<Promise<any>>} */
 const PromiseShape = M.promise();
 
-// `onUpdate(fn)` accepts a NameHubUpdateHandler — a remotable with
-// `write(item)`. The bare `M.remotable()` resolves to `unknown` in the
-// guard-inferred parameter type, blocking the assignment to the
-// typed `updateCallback` state field.
-/** @type {CastedPattern<{ write: (item: unknown) => void }>} */
+/** @type {CastedPattern<NameHubUpdateHandler>} */
 const NameHubUpdateHandlerShape = M.remotable('NameHubUpdateHandler');
 
 export const NameHubIKit = harden({

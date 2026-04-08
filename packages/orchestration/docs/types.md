@@ -53,9 +53,12 @@ We chose it over `TypedPattern` because "typed" suggests verification.
 - `Vow$<T>(innerShape)` — returns `CastedPattern<Vow<T>>`, letting guards like
   `query: M.call(...).returns(Vow$<JsonSafe<ResponseQuery>[]>(M.arrayOf(M.record())))`
   flow the right return type to callers.
-- `PromiseShape` placeholders in `vats/src/nameHub.js`, `vats/src/bridge.js`.
-  **Tech debt (XXX):** `M.promise()` should already infer `Promise<any>` but
-  hits an unresolved `void | RawGuardPayload | null` union in some contexts.
+- `PromiseShape` locals in `vats/src/nameHub.js` and `vats/src/bridge.js`.
+  `M.promise()` now correctly infers as `PromiseLike<any>` (honest to the
+  runtime duck-typed thenable check), but these packages' external
+  typedefs declare their method returns as `Promise<unknown>` — the
+  `CastedPattern<Promise<any>>` cast pins the guard-derived return back
+  to the consumer-facing `Promise` shape.
 - ERTP `typeGuards.js`: `BrandShape`, `IssuerShape`, `PaymentShape`, etc. are
   cast as `CastedPattern<Brand>` / `CastedPattern<Issuer>` / ... so downstream
   guards get real types instead of bare `RemotableObject`.
@@ -191,11 +194,15 @@ M.remotable(/** @type {StorageNode} */ ('StorageNode'))
 
 or use `CastedPattern<StorageNode>` on the enclosing shape.
 
-### `M.promise()` — still rough
+### `M.promise()` → `PromiseLike<any>`
 
-Should infer `Promise<any>`. In some contexts infers
-`void | RawGuardPayload | null`. Workaround: declare a local
-`PromiseShape` cast as `CastedPattern<Promise<any>>` and leave an XXX.
+`TFKindMap['promise']` resolves to `PromiseLike<any>` rather than
+`Promise<any>`, because at runtime `M.promise()` duck-typed-checks any
+thenable.  Consumers whose *own typedefs* declare `Promise<X>` (not
+`PromiseLike<X>`) need a local `CastedPattern<Promise<any>>` cast to
+pin the guard's return back to the stricter consumer type.  See the
+`PromiseShape` locals in `vats/src/nameHub.js` and `vats/src/bridge.js`
+for the idiom.
 
 ### `Invitation<R, A>` phantom params
 
@@ -219,10 +226,12 @@ sites need narrowing.
 
 ### High value
 
-1. **Resolve `M.promise()` tech debt.** Find the root cause of the
-   `void | RawGuardPayload | null` union. Audit the `PromiseShape` casts
-   added in `vats/` and remove them once fixed. Add a regression test in
-   `endo/packages/patterns/test/types.test-d.ts`.
+1. **Widen the `Promise<X>` return types in agoric-sdk typedefs to
+   `PromiseLike<X>`** where the runtime accepts any thenable (e.g.
+   `BridgeHandler.fromBridge`, `NameHub.lookup`).  Once the typedefs
+   use `PromiseLike`, the `PromiseShape` CastedPattern locals in
+   `vats/src/nameHub.js` and `vats/src/bridge.js` can be deleted and
+   replaced with plain `M.promise()`.
 
 2. **Tighten `M.remotable()` default.** Currently `any`. Could be
    `RemotableObject & Record<PropertyKey, (...args: any[]) => any>` once
