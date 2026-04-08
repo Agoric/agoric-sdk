@@ -191,9 +191,11 @@ export type VowTools = {
     watcher?: Watcher<T, TResult1, TResult2, any[]> | undefined,
     ...watcherArgs: C
   ) => Vow<
-    Exclude<TResult1, void> | Exclude<TResult2, void> extends never
-      ? TResult1
-      : Exclude<TResult1, void> | Exclude<TResult2, void>
+    Fulfilled<
+      Exclude<TResult1, void> | Exclude<TResult2, void> extends never
+        ? TResult1
+        : Exclude<TResult1, void> | Exclude<TResult2, void>
+    >
   >;
   /**
    * Shorten `specimenP` until we achieve a final result.

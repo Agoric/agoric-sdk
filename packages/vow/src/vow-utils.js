@@ -16,11 +16,21 @@ harden(sink);
 
 export { basicE };
 
-export const VowShape = M.tagged(
-  'Vow',
-  M.splitRecord({
-    vowV0: M.remotable('VowV0'),
-  }),
+/**
+ * Runtime pattern that matches a Vow (a tagged record with a vowV0
+ * shortener). Typed as `CastedPattern<Vow>` so it carries the Vow<any>
+ * type through `@endo/patterns`' TypeFromPattern resolution when used
+ * in guards. Use {@link Vow$} to narrow the resolved value type:
+ *
+ *     query: M.call(...).returns(Vow$\<ResponseQuery[]\>(M.array()))
+ */
+export const VowShape = /** @type {CastedPattern<Vow>} */ (
+  M.tagged(
+    'Vow',
+    M.splitRecord({
+      vowV0: M.remotable('VowV0'),
+    }),
+  )
 );
 
 /**

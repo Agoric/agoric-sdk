@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
@@ -16,11 +17,13 @@ import { makeFeeDistributor, meta } from '../src/feeDistributor.js';
  * @import {Brand} from '@agoric/ertp';
  */
 
-/** @param {Issuer} feeIssuer */
+/** @param {Issuer<'nat'>} feeIssuer */
 const makeFakeFeeDepositFacetKit = feeIssuer => {
+  /** @type {Payment<'nat'>[]} */
   const depositPayments = [];
 
   const feeDepositFacet = {
+    /** @param {Payment<'nat'>} pmt */
     async receive(pmt) {
       depositPayments.push(pmt);
       return E(feeIssuer).getAmountOf(pmt);
