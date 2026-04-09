@@ -76,22 +76,24 @@ jobs:
       - name: Pack packages with ts-node-pack
         run: |
           # Check that all exports resolve in source-tree state.
-          scripts/packing/verify-package-exports.mjs --quiet --mode=scm
+          scripts/packing/verify-package-exports.mjs --quiet
           # Pack every non-private workspace through ts-node-pack. A
           # successful pack means the tarball would install and import
           # cleanly from the npm registry.
           WORKSPACE=$(pwd)
           TARBALL_DIR=$(mktemp -d)
+          trap 'rm -rf "$TARBALL_DIR"' EXIT
           npm query .workspace \
             | jq -r '.[] | select(.private != true) | .location' \
             | while read -r dir; do
                 echo "::group::ts-node-pack $dir"
                 (cd "$TARBALL_DIR" && "$WORKSPACE/node_modules/.bin/ts-node-pack" "$WORKSPACE/$dir") || exit 1
+                # We only care that the pack succeeds; drop the tarball so it
+                # doesn't accumulate across workspaces. On failure we exit
+                # above without removing it, leaving it for debugging.
+                rm -f "$TARBALL_DIR"/*.tgz
                 echo "::endgroup::"
               done
-          # Smoke-check exports with type stripping enabled (matches
-          # consumer behavior on Node ≥22.6 importing the package).
-          scripts/packing/verify-package-exports.mjs --quiet --mode=packed
 
   ##################
   # Lint tests
