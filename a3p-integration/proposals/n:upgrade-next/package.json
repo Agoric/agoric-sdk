@@ -27,7 +27,7 @@
     "agoric": "dev",
     "ava": "^6.4.1",
     "execa": "9.1.0",
-    "ts-blank-space": "^0.6.2"
+    "ts-blank-space": "^0.8.0"
   },
   "resolutions": {
     "@agoric/access-token": "portal:../../agoric-sdk/packages/access-token",
