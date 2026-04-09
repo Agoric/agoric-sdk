@@ -57,6 +57,10 @@ export type WithdrawToChainRef = `-${AxelarChain}`;
 
 export type InterChainAccountRef = `@${SupportedChain}`;
 
+export type CashInstrumentId = `USDC_${AxelarChain}`;
+
+export type YieldInstrumentId = Exclude<InstrumentId, CashInstrumentId>;
+
 /**
  * An AssetPlaceRef describes a place where funds can be, either an
  * {@link InstrumentId} (starting with an ASCII letter), a {@link SeatKeyword}
@@ -72,7 +76,7 @@ export type AssetPlaceRef =
   | DepositFromChainRef
   | WithdrawToChainRef
   | InterChainAccountRef
-  | InstrumentId;
+  | YieldInstrumentId;
 
 type Empty = Record<never, NatAmount>;
 

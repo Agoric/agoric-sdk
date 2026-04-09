@@ -24,6 +24,7 @@ import type {
   SeatKeyword,
   StatusFor,
   TargetAllocation,
+  YieldInstrumentId,
 } from '../src/types.js';
 
 declare const natAmount: NatAmount;
@@ -36,6 +37,7 @@ declare const publishedTx: PublishedTx;
 declare const yieldProtocol: YieldProtocol;
 declare const supportedChain: SupportedChain;
 declare const instrumentId: InstrumentId;
+declare const yieldInstrumentId: YieldInstrumentId;
 
 expectAssignable<SeatKeyword>('Cash');
 expectAssignable<SeatKeyword>('Deposit');
@@ -50,15 +52,19 @@ expectNotAssignable<InterChainAccountRef>('Arbitrum');
 
 expectAssignable<AssetPlaceRef>('<Deposit>');
 expectAssignable<AssetPlaceRef>('+agoric');
-expectAssignable<AssetPlaceRef>(instrumentId);
+expectAssignable<AssetPlaceRef>(yieldInstrumentId);
+expectAssignable<InstrumentId>('USDC_Base');
 expectNotAssignable<AssetPlaceRef>('Deposit');
+expectNotAssignable<AssetPlaceRef>('USDC_Base');
 
 const targetAllocation: TargetAllocation = {
   [instrumentId]: 100n,
   Aave_Base: 250n,
+  USDC_Base: 50n,
 };
 
 expectNotAssignable<TargetAllocation>({ Arbitrary: 100n });
+expectNotAssignable<TargetAllocation>({ '@Base': 100n });
 
 const emptyGive: ProposalType['openPortfolio']['give'] = {};
 const openPortfolio = {

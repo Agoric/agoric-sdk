@@ -63,7 +63,29 @@ export const InstrumentId = /** @type {const} */ ({
   ERC4626_morphoHyperithmUsdc_Arbitrum: 'ERC4626_morphoHyperithmUsdc_Arbitrum',
   ERC4626_morphoGauntletUsdcPrime_Optimism:
     'ERC4626_morphoGauntletUsdcPrime_Optimism',
+  USDC_Arbitrum: 'USDC_Arbitrum',
+  USDC_Avalanche: 'USDC_Avalanche',
+  USDC_Base: 'USDC_Base',
+  USDC_Ethereum: 'USDC_Ethereum',
+  USDC_Optimism: 'USDC_Optimism',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });
 harden(InstrumentId);
+
+/**
+ * Identifiers for parked USDC on a remote chain.
+ *
+ * These are valid portfolio instrument ids and `TargetAllocation` keys, but
+ * they are not movement-node refs and must not be treated as `AssetPlaceRef`s.
+ *
+ * @enum {(typeof USDCInstrumentId)[keyof typeof USDCInstrumentId]}
+ */
+export const USDCInstrumentId = /** @type {const} */ ({
+  USDC_Arbitrum: InstrumentId.USDC_Arbitrum,
+  USDC_Avalanche: InstrumentId.USDC_Avalanche,
+  USDC_Base: InstrumentId.USDC_Base,
+  USDC_Ethereum: InstrumentId.USDC_Ethereum,
+  USDC_Optimism: InstrumentId.USDC_Optimism,
+});
+harden(USDCInstrumentId);
