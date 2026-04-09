@@ -2488,7 +2488,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/compartment-mapper@npm:^2.0.0":
+"@endo/compartment-mapper@npm:2.0.0":
   version: 2.0.0
   resolution: "@endo/compartment-mapper@npm:2.0.0"
   dependencies:
@@ -2499,6 +2499,20 @@ __metadata:
     "@endo/zip": "npm:^1.1.0"
     ses: "npm:^1.15.0"
   checksum: 10c0/7c8ed7ea427a55456d8c008018a24b2eabceca56e2573490e54b3a456425671147a400b865be1e8b7aa764a26349578a002c52954a650d67f3e1e41e5955dddf
+  languageName: node
+  linkType: hard
+
+"@endo/compartment-mapper@patch:@endo/compartment-mapper@npm%3A2.0.0#~/.yarn/patches/@endo-compartment-mapper-npm-2.0.0-4a851a2702.patch":
+  version: 2.0.0
+  resolution: "@endo/compartment-mapper@patch:@endo/compartment-mapper@npm%3A2.0.0#~/.yarn/patches/@endo-compartment-mapper-npm-2.0.0-4a851a2702.patch::version=2.0.0&hash=8a3a65"
+  dependencies:
+    "@endo/cjs-module-analyzer": "npm:^1.0.11"
+    "@endo/module-source": "npm:^1.4.0"
+    "@endo/path-compare": "npm:^1.1.0"
+    "@endo/trampoline": "npm:^1.0.5"
+    "@endo/zip": "npm:^1.1.0"
+    ses: "npm:^1.15.0"
+  checksum: 10c0/d791273f70c1e50682fa366e778e1e68e5c8c9b3fd80cea5da13921d80f8fb5615a4701f59740ebd246709d6e413b6ddb4fbf414b4263316c478127729e7cc9d
   languageName: node
   linkType: hard
 
