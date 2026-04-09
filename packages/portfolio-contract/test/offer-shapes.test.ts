@@ -18,7 +18,10 @@ import {
   PoolKeyShapeExt,
   PortfolioStatusShapeExt,
   PositionStatusShape,
+  TargetAllocationShape,
+  TargetAllocationShapeExt,
   type StatusFor,
+  type TargetAllocation,
 } from '../src/type-guards.ts';
 import { PublishedTxShape } from '../src/resolver/types.ts';
 
@@ -575,5 +578,60 @@ test('published tx shape accepts nextTxId field', t => {
       () => mustMatch(specimen, PublishedTxShape),
       `${name} with nextTxId should match shape`,
     );
+  }
+});
+
+test('TargetAllocation accepts USDC_<Chain> cash instruments', t => {
+  const passCases = harden({
+    targetAllocationWithCashInstrument: {
+      Aave_Ethereum: 5000n,
+      USDC_Arbitrum: 5000n,
+    },
+  } satisfies Record<string, TargetAllocation>);
+
+  const extendedPassCases = harden({
+    ...passCases,
+    targetAllocationWithFutureCashInstrument: {
+      Aave_Ethereum: 5000n,
+      USDC_NewChain: 5000n,
+    },
+  });
+
+  const failCases = harden({
+    invalidCashInstrument: {
+      Aave_Ethereum: 5000n,
+      USDC_UnknownChain: 5000n,
+    },
+    legacyAccountRef: {
+      Aave_Ethereum: 5000n,
+      '@Arbitrum': 5000n,
+    },
+    depositWithFromChain: {
+      Aave_Ethereum: 5000n,
+      '+Arbitrum': 5000n,
+    },
+    withdrawWithToChain: {
+      Aave_Ethereum: 5000n,
+      '-Arbitrum': 5000n,
+    },
+  });
+
+  const { entries } = Object;
+  for (const [name, targetAllocation] of entries(passCases)) {
+    t.notThrows(
+      () => mustMatch(targetAllocation, TargetAllocationShape),
+      `pass: ${name}`,
+    );
+  }
+
+  for (const [name, targetAllocation] of entries(extendedPassCases)) {
+    t.notThrows(
+      () => mustMatch(targetAllocation, TargetAllocationShapeExt),
+      `extended pass: ${name}`,
+    );
+  }
+
+  for (const [name, targetAllocation] of entries(failCases)) {
+    t.false(matches(targetAllocation, TargetAllocationShape), `fail: ${name}`);
   }
 });

@@ -170,6 +170,7 @@ const resolveDepositPlan = async (
     },
     0n,
   );
+  const cashInstrument = `USDC_${fromChain}` as InstrumentId;
 
   const sync = [policyVersion, rebalanceCount] as const;
   const flowId = Number(flowKey.replace('flow', ''));
@@ -185,17 +186,19 @@ const resolveDepositPlan = async (
       },
       ...Object.entries(targetAllocation!).map(
         ([instrument, portion]: [InstrumentId, bigint]) =>
-          ({
-            src: `@${fromChain}`,
-            dest: instrument,
-            amount: AmountMath.make(
-              usdc.brand,
-              (portion * planDepositAmount.value) / totalAllocation,
-            ),
-            fee,
-          }) as const,
+          instrument === cashInstrument
+            ? undefined
+            : ({
+                src: `@${fromChain}`,
+                dest: instrument,
+                amount: AmountMath.make(
+                  usdc.brand,
+                  (portion * planDepositAmount.value) / totalAllocation,
+                ),
+                fee,
+              } as const),
       ),
-    ],
+    ].filter(Boolean) as FundsFlowPlan['flow'],
   };
   await E(planner1.stub).resolvePlan(pId, flowId, plan, ...sync);
 
@@ -1989,6 +1992,56 @@ testLegacyAndRouter(
         Compound: contents[`${posKey}.Compound_Arbitrum`]?.totalIn,
       };
       t.deepEqual(posBalances, expected.positions);
+    },
+  }),
+);
+
+testLegacyAndRouter(
+  test.macro({
+    title: (providedTitle = '', useRouter: boolean) =>
+      `open portfolio from Base with cash allocation to USDC_Base (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
+    async exec(t, useRouter: boolean) {
+      const powers = await setupPlanner(t, { useRouter });
+      const { evmTrader, common } = powers;
+      const { usdc } = common.brands;
+
+      const inputs = {
+        fromChain: 'Base' as const,
+        depositAmount: usdc.units(1000),
+        allocations: [{ instrument: 'USDC_Base', portion: 10000n }],
+      };
+
+      const expected = {
+        portfolioId: 0,
+        storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
+        targetAllocation: { USDC_Base: 10000n },
+      } as const;
+
+      const openResult = await doOpenWithEvmTrader(inputs, powers);
+
+      t.is(openResult.storagePath, expected.storagePath);
+      t.is(openResult.portfolioId, expected.portfolioId);
+
+      const status = await evmTrader.getPortfolioStatus();
+      const { contents } = getPortfolioInfo(
+        expected.storagePath,
+        common.bootstrap.storage,
+      );
+      const flowHistory =
+        contents[`${expected.storagePath}.flows.flow${openResult.flowNum}`];
+
+      t.truthy(
+        Array.isArray(flowHistory) &&
+          flowHistory.some(entry => entry?.state === 'done'),
+        'flow history should include a done entry',
+      );
+      t.deepEqual(status.flowsRunning, {});
+      t.truthy(status.accountIdByChain?.Base);
+      t.deepEqual(status.positionKeys, []);
+      t.deepEqual(status.targetAllocation, expected.targetAllocation);
+      const expectedSourceAccountId =
+        `eip155:${chainInfoWithCCTP[inputs.fromChain].reference}:${evmTrader.getAddress().toLowerCase()}` as const;
+      t.is(status.sourceAccountId, expectedSourceAccountId);
     },
   }),
 );

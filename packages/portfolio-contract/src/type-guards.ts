@@ -30,6 +30,7 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
+  USDCInstrumentId,
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
@@ -38,6 +39,7 @@ import {
   type ProposalType,
   type StatusFor,
   type TargetAllocation,
+  type YieldInstrumentId,
 } from '@agoric/portfolio-api';
 import type {
   ContinuingInvitationSpec,
@@ -244,13 +246,16 @@ export const PoolPlaces = {
   Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   ...BeefyPoolPlaces,
   ...ERC4626PoolPlaces,
-} as const satisfies Record<InstrumentId, PoolPlaceInfo>;
+} as const satisfies Record<
+  YieldInstrumentId,
+  PoolPlaceInfo
+>;
 harden(PoolPlaces);
 
 /**
  * Names of places where a portfolio may have a position.
  */
-export type PoolKey = InstrumentId;
+export type PoolKey = YieldInstrumentId;
 
 /** Ext for Extensible: includes PoolKeys in future upgrades */
 export type PoolKeyExt = string;
@@ -259,7 +264,7 @@ export type PoolKeyExt = string;
 export const PoolKeyShapeExt = M.string();
 
 export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
-  M.or(...keys(PoolPlaces)),
+  M.or(...keys(PoolPlaces), ...keys(USDCInstrumentId)),
   M.nat(),
 );
 
