@@ -75,13 +75,43 @@ jobs:
               TAG=other-dev
               ;;
           esac
-          # Prevent `lerna publish` from failing due to uncommitted changes.
+          # Prevent the version bump from failing due to uncommitted changes.
           git stash || true
+
+          # Bump every publishable package to a prerelease whose preid
+          # carries the short SHA. This mirrors what `lerna publish --canary`
+          # used to do, except we have to split version-bump from publish:
+          # the staging step below pre-populates each package's
+          # .ts-node-pack/ contents subdir, which lerna would otherwise
+          # tar BEFORE applying its in-memory canary version bump. Running
+          # `lerna version` first ensures the staged manifests already have
+          # the final canary version. `--canary` is a publish-only flag in
+          # lerna-lite, so we encode the SHA in --preid and use
+          # --force-publish to bump every workspace unconditionally.
+          SHA=$(git rev-parse --short=7 HEAD)
           # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-          AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON=1 \
-            yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
-            --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
-            --no-push --no-verify-access --yes
+          yarn lerna version --concurrency 1 \
+            --conventional-commits --conventional-prerelease \
+            --exact --preid="$TAG-$SHA" --force-publish \
+            --no-changelog --no-push --no-git-tag-version --yes
+
+          # See scripts/packing/stage-with-ts-node-pack.mjs for why we pack
+          # via --contents .ts-node-pack instead of letting lerna pack from
+          # the source tree.
+          node scripts/packing/stage-with-ts-node-pack.mjs
+          yarn lerna publish from-package --concurrency 1 \
+            --contents .ts-node-pack \
+            --dist-tag="$TAG" \
+            --no-verify-access --yes
+          node scripts/packing/stage-with-ts-node-pack.mjs --clean
+
+          # `lerna version --no-git-tag-version` wrote the canary bumps to the
+          # package.json files on disk and never reverts them (unlike the old
+          # `lerna publish --canary`, which reset the tree). Discard them so the
+          # job ends with a clean working tree for restore-node's post-step
+          # cleanliness check and the SHA-keyed build cache.
+          git checkout -- .
+
           # restore any stashed changes for caching
           git stash pop || true
       - name: notify on failure

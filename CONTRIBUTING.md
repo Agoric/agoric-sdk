@@ -35,6 +35,24 @@ yarn lint
 A standard Visual Studio Code configuration can be initialized or updated by
 running [`scripts/configure-vscode.sh`](scripts/configure-vscode.sh).
 
+### Packing and publishing
+
+Publishable workspaces are packed with [`ts-node-pack`](https://github.com/turadg/ts-node-pack), which stages each package into a temp directory and rewrites `.ts → .js` in code, manifests, exports, and the `files` array. The source tree is never mutated, so packages no longer carry `prepack`/`postpack` scripts.
+
+To pack a single package into a tarball:
+
+```sh
+yarn run -T ts-node-pack packages/<name>
+```
+
+The dev-canary publish workflow (`.github/workflows/after-merge.yml`) and the local Verdaccio publish flow (`scripts/registry.sh`) both pre-stage every publishable workspace into `<pkg>/.ts-node-pack/` (gitignored) and then run `lerna publish ... --contents .ts-node-pack`. To smoke-test that publish path against a local registry, run:
+
+```sh
+scripts/packing/smoketest-publishing.sh
+```
+
+See [`docs/typescript.md`](docs/typescript.md#publishing) for the full pipeline.
+
 See also notes on [Coding
 style](https://github.com/Agoric/agoric-sdk/wiki/Coding-Style),
 including [unit
