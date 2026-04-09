@@ -30,8 +30,6 @@
   "bin": "./src/cli/bin.js",
   "scripts": {
     "build": "exit 0",
-    "prepack": "yarn run -T prepack-package",
-    "postpack": "yarn run -T postpack-package",
     "test": "ava",
     "test:c8": "c8 --all $C8_OPTIONS ava",
     "test:xs": "exit 0",
