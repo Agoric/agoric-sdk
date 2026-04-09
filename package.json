@@ -99,7 +99,8 @@
     "rxjs@npm:^6.4.0": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
     "rxjs@npm:^7.5.5": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
     "@endo/far": "patch:@endo/far@npm%3A1.1.14#~/.yarn/patches/@endo-far-npm-1.1.14-ef03a62612.patch",
-    "@endo/pass-style": "patch:@endo/pass-style@npm%3A1.7.0#~/.yarn/patches/@endo-pass-style-npm-1.7.0-7dc50195b4.patch"
+    "@endo/pass-style": "patch:@endo/pass-style@npm%3A1.7.0#~/.yarn/patches/@endo-pass-style-npm-1.7.0-7dc50195b4.patch",
+    "@endo/compartment-mapper@npm:^2.0.0": "patch:@endo/compartment-mapper@npm%3A2.0.0#~/.yarn/patches/@endo-compartment-mapper-npm-2.0.0-4a851a2702.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3@10.1.0": {
