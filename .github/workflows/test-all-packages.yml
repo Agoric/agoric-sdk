@@ -67,28 +67,31 @@ jobs:
       # Releasing SDK builds all packages in this order during `lerna publish`.
       # Due to ambient types, certain build orders (from the dependency graph)
       # may break the type resolution. Run this in the PR to find out before
-      # attempting to merge to master. This takes about 1min locally and since
-      # this job is about 30s in CI doing it here doesn't add to wall wait for
-      # CI resolution.
+      # attempting to merge to master.
       #
-      # We prepack only because full pack removes the declarations, relying on
-      # ambient resolution in the repo filesystem which will not be available
-      # when the packages are pulled from npm.
-      #
-      # After that test, we postpack to avoid putting the prepack artifacts in
-      # the cache maintained by restore-node, since they are not .gitignored and
-      # thus will fail restore-node's check for a clean repo when the cache is
-      # restored.
-      - name: Pack packages without ambient type resolution
+      # ts-node-pack runs entirely against a temp staging directory and never
+      # mutates the source tree, so there's no postpack restore step needed.
+      # Each invocation also runs its own validation pass (no leftover .ts
+      # specifiers, referenced files exist) before producing the tarball.
+      - name: Pack packages with ts-node-pack
         run: |
-          # Check that all exports work before packing
+          # Check that all exports resolve in source-tree state.
           scripts/packing/verify-package-exports.mjs --quiet --mode=scm
-          # prepack must be in order to verify type dependency availability
-          yarn lerna run --reject-cycles --concurrency 1 prepack
-          # check for broken exports in the packed builds
+          # Pack every non-private workspace through ts-node-pack. A
+          # successful pack means the tarball would install and import
+          # cleanly from the npm registry.
+          WORKSPACE=$(pwd)
+          TARBALL_DIR=$(mktemp -d)
+          npm query .workspace \
+            | jq -r '.[] | select(.private != true) | .location' \
+            | while read -r dir; do
+                echo "::group::ts-node-pack $dir"
+                (cd "$TARBALL_DIR" && "$WORKSPACE/node_modules/.bin/ts-node-pack" "$WORKSPACE/$dir") || exit 1
+                echo "::endgroup::"
+              done
+          # Smoke-check exports with type stripping enabled (matches
+          # consumer behavior on Node ≥22.6 importing the package).
           scripts/packing/verify-package-exports.mjs --quiet --mode=packed
-          # postpack has to be serial to correctly restore the .js files deleted in prepack
-          yarn lerna run --reject-cycles --concurrency 1 postpack
 
   ##################
   # Lint tests
