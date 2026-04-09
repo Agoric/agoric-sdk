@@ -41,7 +41,7 @@ npm query .workspace | jq -r '.[].location' | while read -r dir; do
   rm -f "${stem}"-v*.tgz
 
   # Create the tarball.
-  yarn pack 1>&2
+  npm pack 1>&2
 
   if $cache_bust; then
     # Bust the cache!

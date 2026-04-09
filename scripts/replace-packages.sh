@@ -26,7 +26,7 @@ npm query .workspace | jq -r '.[].location' | while read -r dir; do
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
   tarball="${stem}-replace.tgz"
   rm -f "$tarball"
-  yarn pack --out "$tarball"
+  npm pack --out "$tarball"
   tar -xvf "$tarball"
 
   # Replace the destination package.
