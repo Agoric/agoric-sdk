@@ -20,6 +20,10 @@
   "exports": {
     ".": "./index.js"
   },
+  "files": [
+    "src",
+    "index.js"
+  ],
   "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",

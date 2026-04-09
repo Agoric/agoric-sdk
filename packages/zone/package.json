@@ -23,6 +23,12 @@
     "./heap.js": "./heap.js",
     "./virtual.js": "./virtual.js"
   },
+  "files": [
+    "src",
+    "durable.js",
+    "heap.js",
+    "virtual.js"
+  ],
   "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",

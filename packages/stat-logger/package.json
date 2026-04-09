@@ -4,6 +4,9 @@
   "description": "Simple library for logging and graphing performance statistics",
   "type": "module",
   "main": "src/index.js",
+  "files": [
+    "src"
+  ],
   "repository": "https://github.com/Agoric/agoric-sdk",
   "author": "Agoric",
   "license": "Apache-2.0",
