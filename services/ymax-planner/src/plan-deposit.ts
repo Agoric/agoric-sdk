@@ -46,7 +46,7 @@ import type { EvmChain } from './pending-tx-manager.ts';
 import { UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
 
-const DEFAULT_DELTA_SOFT_MIN = 1_000_000n; // 1 USDC
+const _DEFAULT_DELTA_SOFT_MIN = 1_000_000n; // 1 USDC
 
 const bigintAbs = (x: bigint) => (x < 0n ? -x : x);
 
@@ -67,7 +67,7 @@ const chainRecordsByNetwork = new WeakMap<
   Map<AssetPlaceRef, ChainSpec>
 >();
 
-const getChainData = (
+const _getChainData = (
   place: AssetPlaceRef,
   network: NetworkSpec,
 ): ChainSpec => {
@@ -316,7 +316,7 @@ const computeWeightedTargets = <
   currentAmounts: Record<C, NatAmount>,
   balanceDelta: NatValue,
   allocation: Partial<Pick<TargetAllocation, T>> = {},
-  network: NetworkSpec,
+  _network: NetworkSpec,
 ): Partial<Record<C | T, NatAmount>> => {
   const currentValues = objectMap(currentAmounts, amount => amount.value);
   const currentTotal = Object.values<NatValue>(currentValues).reduce(
