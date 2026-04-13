@@ -46,6 +46,7 @@ import type { EvmChain } from './pending-tx-manager.ts';
 import { UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
 
+// eslint-disable-next-line no-underscore-dangle
 const _DEFAULT_DELTA_SOFT_MIN = 1_000_000n; // 1 USDC
 
 const bigintAbs = (x: bigint) => (x < 0n ? -x : x);
@@ -67,6 +68,7 @@ const chainRecordsByNetwork = new WeakMap<
   Map<AssetPlaceRef, ChainSpec>
 >();
 
+// eslint-disable-next-line no-underscore-dangle
 const _getChainData = (
   place: AssetPlaceRef,
   network: NetworkSpec,
