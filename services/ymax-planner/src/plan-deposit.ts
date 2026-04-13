@@ -355,12 +355,14 @@ const computeWeightedTargets = <
       const current = getOwn(currentValues, place) ?? 0n;
       const target = (prunedTotal * weight) / sumW;
       const absDelta = bigintAbs(target - current);
-      const chainData = getChainData(place, network);
-      const { deltaSoftMin = DEFAULT_DELTA_SOFT_MIN } = chainData;
-      const suppressed = absDelta !== 0n && absDelta < deltaSoftMin;
-      if (suppressed) {
-        suppressions.push([place, Number(deltaSoftMin) / Number(absDelta)]);
-      }
+      // TODO(AGO-456): Partially restore AGO-373.
+      // const chainData = getChainData(place, network);
+      // const { deltaSoftMin = DEFAULT_DELTA_SOFT_MIN } = chainData;
+      // const suppressed = absDelta !== 0n && absDelta < deltaSoftMin;
+      // if (suppressed) {
+      //   suppressions.push([place, Number(deltaSoftMin) / Number(absDelta)]);
+      // }
+      const suppressed = isDust(absDelta);
       const resolved = suppressed ? current : target;
       draft[place] = resolved;
       remainder -= resolved;

@@ -890,6 +890,10 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
   t.snapshot(plan, 'CCTPv2 multi-source rebalance');
 });
 
+// TODO(AGO-459): These tests cover the proportional reallocation of AGO-373,
+// but AGO-459 requests different behavior (holding undeployable funds on their
+// source chain) and we're avoiding too much churn by ensuring that they only
+// get released atomically.
 {
   // Create scenarios where a 10 USDC minimum delta for Ethereum and the default
   // of 1 USDC elsewhere suppress changes until balances are scaled up.
@@ -919,7 +923,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
   const makeBalances = (scale: number) =>
     objectMap(balancesTemplate, v => makeDeposit(BigInt(v * 1e6 * scale)));
 
-  test('planRebalanceToAllocations suppresses small deltas', async t => {
+  test.failing('planRebalanceToAllocations suppresses small deltas', async t => {
     const plan = await planRebalanceToAllocations({
       ...plannerContext,
       network: expensiveEthNetwork,
@@ -931,7 +935,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
     arrayIsLike(t, plan?.flow, []);
   });
 
-  test('planDepositToAllocations suppresses small deltas', async t => {
+  test.failing('planDepositToAllocations suppresses small deltas', async t => {
     const amount = makeDeposit(scale6(0.9));
     const plan = await planDepositToAllocations({
       ...plannerContext,
@@ -947,7 +951,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
     arrayIsLike(t, plan?.flow, []);
   });
 
-  test('planRebalanceToAllocations suppresses small deltas, 10x', async t => {
+  test.failing('planRebalanceToAllocations suppresses small deltas, 10x', async t => {
     const plan = await planRebalanceToAllocations({
       ...plannerContext,
       network: expensiveEthNetwork,
@@ -971,7 +975,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
     ]);
   });
 
-  test('planDepositToAllocations suppresses small deltas, 10x', async t => {
+  test.failing('planDepositToAllocations suppresses small deltas, 10x', async t => {
     const amount = makeDeposit(scale6(9));
     const plan = await planDepositToAllocations({
       ...plannerContext,
@@ -1000,7 +1004,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
     ]);
   });
 
-  test('planRebalanceToAllocations suppresses small deltas, 100x', async t => {
+  test.failing('planRebalanceToAllocations suppresses small deltas, 100x', async t => {
     const plan = await planRebalanceToAllocations({
       ...plannerContext,
       network: expensiveEthNetwork,
@@ -1026,7 +1030,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
     ]);
   });
 
-  test('planDepositToAllocations suppresses small deltas, 100x', async t => {
+  test.failing('planDepositToAllocations suppresses small deltas, 100x', async t => {
     const amount = makeDeposit(scale6(90));
     const plan = await planDepositToAllocations({
       ...plannerContext,
@@ -1063,7 +1067,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
     ]);
   });
 
-  test('planWithdrawFromAllocations works despite small deltas (amount >= deltaSoftMin)', async t => {
+  test.failing('planWithdrawFromAllocations works despite small deltas (amount >= deltaSoftMin)', async t => {
     const amount = makeDeposit(scale6(1));
     const plan = await planWithdrawFromAllocations({
       ...plannerContext,
@@ -1083,7 +1087,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
     ]);
   });
 
-  test('planWithdrawFromAllocations works despite small deltas (amount < deltaSoftMin)', async t => {
+  test.failing('planWithdrawFromAllocations works despite small deltas (amount < deltaSoftMin)', async t => {
     const amount = makeDeposit(scale6(0.9));
     const plan = await planWithdrawFromAllocations({
       ...plannerContext,
@@ -1103,7 +1107,7 @@ test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', as
     ]);
   });
 
-  test('planWithdrawFromAllocations works despite small deltas (amount > first currentBalances entry)', async t => {
+  test.failing('planWithdrawFromAllocations works despite small deltas (amount > first currentBalances entry)', async t => {
     const plan = await planWithdrawFromAllocations({
       ...plannerContext,
       network: expensiveEthNetwork,
