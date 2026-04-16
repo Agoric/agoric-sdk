@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { assert, Fail } from '@endo/errors';
 import { assertPattern } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';

@@ -8,7 +8,7 @@ import {
   insistVatDeliveryResult,
 } from '../../lib/message.js';
 
-/// <reference path="../../types-ambient.js" />
+/// <reference path="../../types.js" />
 
 /**
  * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
@@ -17,17 +17,25 @@ import {
  * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
  * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots'
  * @import {VatManagerFactory} from '../../types-internal.js'
+ * @import {KernelKeeper} from '../state/kernelKeeper.js'
+ * @import {KernelSlog} from '../../types-external.js'
+ * @import {SnapStore} from '../../types-external.js'
+ * @import {SnapshotResult} from '../../types-external.js'
+ * @import {Tagged} from './types.js';
+ * @import {StartXSnap} from '../../controller/startXSnap.js';
+ * @import {ManagerOptions} from '../../types-internal.js';
+ * @import {WorkerResults} from './types.js';
+ * @import {SnapshotInfo} from '@agoric/swing-store';
  */
 
-// eslint-disable-next-line no-unused-vars
-function parentLog(first, ...args) {
-  // console.error(`--parent: ${first}`, ...args);
+function parentLog(_first, ..._args) {
+  // console.error(`--parent: ${_first}`, ..._args);
 }
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-/** @param { (item: import('./types.js').Tagged) => unknown } [handleUpstream] */
+/** @param { (item: Tagged) => unknown } [handleUpstream] */
 const makeRevokableHandleCommandKit = handleUpstream => {
   /**
    * @param {Uint8Array} msg
@@ -51,7 +59,7 @@ const makeRevokableHandleCommandKit = handleUpstream => {
  * @param {{
  *   kernelKeeper: KernelKeeper,
  *   kernelSlog: KernelSlog,
- *   startXSnap: import('../../controller/startXSnap.js').StartXSnap,
+ *   startXSnap: StartXSnap,
  *   testLog: (...args: unknown[]) => void,
  * }} tools
  * @returns {VatManagerFactory}
@@ -68,7 +76,7 @@ export function makeXsSubprocessFactory({
   /**
    * @param {string} vatID
    * @param {unknown} bundle
-   * @param {import('../../types-internal.js').ManagerOptions} managerOptions
+   * @param {ManagerOptions} managerOptions
    * @param {LiveSlotsOptions} liveSlotsOptions
    */
   async function createFromBundle(
@@ -96,7 +104,7 @@ export function makeXsSubprocessFactory({
 
     const mk = makeManagerKit();
 
-    /** @type { (item: import('./types.js').Tagged) => unknown } */
+    /** @type { (item: Tagged) => unknown } */
     function handleUpstream([type, ...args]) {
       parentLog(vatID, `handleUpstream`, type, args.length);
       switch (type) {
@@ -151,7 +159,7 @@ export function makeXsSubprocessFactory({
       init: snapshotInfo && { from: 'snapStore', vatID },
     });
 
-    /** @type { (item: import('./types.js').Tagged) => Promise<import('./types.js').WorkerResults> } */
+    /** @type { (item: Tagged) => Promise<WorkerResults> } */
     async function issueTagged(item) {
       parentLog(item[0], '...', item.length - 1);
       const result = await worker.issueStringCommand(JSON.stringify(item));
@@ -188,7 +196,7 @@ export function makeXsSubprocessFactory({
      */
     async function deliverToWorker(delivery) {
       parentLog(vatID, `sending delivery`, delivery);
-      /** @type { import('./types.js').WorkerResults } */
+      /** @type { WorkerResults } */
       let result;
       await null;
       try {
@@ -296,7 +304,7 @@ export function makeXsSubprocessFactory({
       ]);
       await closeP;
 
-      /** @type {Partial<import('@agoric/swing-store').SnapshotInfo>} */
+      /** @type {Partial<SnapshotInfo>} */
       const reloadSnapshotInfo = {
         snapPos,
         hash: snapshotResults.hash,

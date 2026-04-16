@@ -1,11 +1,10 @@
-// @jessie-check
-
 import {
   handleParamGovernance,
   ParamTypes,
   publicMixinAPI,
 } from '@agoric/governance';
 import { InvitationShape } from '@agoric/governance/src/typeGuards.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { M } from '@agoric/store';
 import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -18,14 +17,21 @@ import {
 } from './provisionPoolKit.js';
 
 /**
- * @import {Marshal} from '@endo/marshal';
+ * @import {Remote} from '@agoric/internal';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
  * @import {ContractMeta, Invitation, StandardTerms, ZCF} from '@agoric/zoe';
  * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ * @import {ERef} from '@endo/far';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {MetricsNotification} from './provisionPoolKit.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       poolBank: M.eref(M.remotable('bank')),
@@ -50,23 +56,24 @@ harden(meta);
  *   TODO: ERef<GovernedCreatorFacet<ProvisionCreator>>
  * @param {ZCF<ProvisionTerms>} zcf
  * @param {{
- *   poolBank: import('@endo/far').ERef<
- *     import('@agoric/vats/src/vat-bank.js').Bank
- *   >;
+ *   poolBank: ERef<Bank>;
  *   initialPoserInvitation: Invitation;
- *   storageNode: StorageNode;
- *   marshaller: Marshal<any>;
- *   metricsOverride?: import('./provisionPoolKit.js').MetricsNotification;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
+ *   metricsOverride?: MetricsNotification;
  *   governedParamOverrides?: Record<string, Amount | undefined>;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const { poolBank, metricsOverride } = privateArgs;
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
 
   // Governance

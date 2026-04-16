@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -8,6 +8,11 @@ import { GET_METHOD_NAMES } from '@endo/marshal';
 
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+
+/**
+ * @import {start as startOwnableCounter} from './ownable-counter.js';
+ * @import {Installation} from '@agoric/zoe';
+ */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -21,9 +26,12 @@ test('zoe - ownable-counter contract', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(root);
-  vatAdminState.installBundle('b1-ownable-counter', bundle);
-  /** @type {Installation<import('./ownable-counter.js').start>} */
-  const installation = await E(zoe).installBundleID('b1-ownable-counter');
+  const b1ownablecounter = vatAdminState.registerBundle(
+    'b1-ownable-counter',
+    bundle,
+  );
+  /** @type {Installation<typeof startOwnableCounter>} */
+  const installation = await E(zoe).installBundleID(b1ownablecounter);
 
   const { creatorFacet: firstCounter, publicFacet: viewCounter } = await E(
     zoe,

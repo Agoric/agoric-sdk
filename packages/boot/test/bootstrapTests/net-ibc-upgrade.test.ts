@@ -1,11 +1,20 @@
 /** @file upgrade network / IBC vat at many points in state machine */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import type { TestFn } from 'ava';
-import { createRequire } from 'module';
+import type { ExecutionContext, TestFn } from 'ava';
+import { createRequire } from 'node:module';
 
+import { typedEntries } from '@agoric/internal';
+import {
+  testInterruptedSteps,
+  type TestStep,
+} from '@agoric/internal/src/testing-utils.js';
+import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
+import type { EVProxy } from '@agoric/swingset-vat/tools/run-utils.js';
+import type { Installation, ZoeService } from '@agoric/zoe';
+import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const { entries, assign } = Object;
 
@@ -20,18 +29,24 @@ const asset = {
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
 
-  const bundleDir = 'bundles';
+  const bundleDir = sharedBundleCachePath;
   const bundleCache = await makeNodeBundleCache(
     bundleDir,
     { cacheSourceMaps: false },
     s => import(s),
   );
+  const snapshot = await loadOrCreateRunUtilsSnapshot(
+    'itest-vaults-base',
+    t.log,
+  );
   const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
     configSpecifier: PLATFORM_CONFIG,
+    snapshot,
   });
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
 
   const installation = {} as Record<string, Installation>;
+
   return { ...swingsetTestKit, bundleCache, installation };
 };
 
@@ -71,7 +86,7 @@ test.serial('test contracts are installed', async t => {
   }
 });
 
-const upgradeVats = async (t, EV, vatsToUpgrade) => {
+const upgradeVats = async (t: ExecutionContext, EV: EVProxy, vatsToUpgrade) => {
   const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
   const vatUpgradeInfo =
     await EV.vat('bootstrap').consumeItem('vatUpgradeInfo');
@@ -94,8 +109,8 @@ test.serial('upgrade at many points in network API flow', async t => {
   const portAllocator = await EV.vat('bootstrap').consumeItem('portAllocator');
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
 
-  const flow = entries({
-    startServer: async label => {
+  const allSteps: TestStep[] = typedEntries({
+    startServer: async (_opts, label) => {
       const started = await EV(zoe).startInstance(
         installation.ibcServerMock,
         {},
@@ -103,17 +118,17 @@ test.serial('upgrade at many points in network API flow', async t => {
         { portAllocator },
       );
       t.truthy(started.creatorFacet, `${label} ibcServerMock`);
-      return [label, { server: started.creatorFacet }];
+      return { server: started.creatorFacet };
     },
-    requestListening: async ([label, opts]) => {
+    requestListening: async opts => {
       await EV.sendOnly(opts.server).listen();
-      return [label, opts];
+      return opts;
     },
-    startListening: async ([label, opts]) => {
+    startListening: async opts => {
       await EV.sendOnly(opts.server).dequeue('onListen');
-      return [label, opts];
+      return opts;
     },
-    startClient: async ([label, opts]) => {
+    startClient: async (opts, label) => {
       const started = await EV(zoe).startInstance(
         installation.ibcClientMock,
         {},
@@ -121,82 +136,45 @@ test.serial('upgrade at many points in network API flow', async t => {
         { portAllocator },
       );
       t.truthy(started.creatorFacet, `${label} ibcClientMock`);
-      return [label, { ...opts, client: started.creatorFacet }];
+      return { ...opts, client: started.creatorFacet };
     },
-    getAddresses: async ([label, opts]) => {
+    getAddresses: async (opts, label) => {
       const serverAddress = await EV(opts.server).getLocalAddress();
       const clientAddress = await EV(opts.client).getLocalAddress();
       t.log(`${label} server ${serverAddress} client ${clientAddress}`);
-      return [label, { ...opts, serverAddress }];
+      return { ...opts, serverAddress };
     },
-    requestConnection: async ([label, opts]) => {
+    requestConnection: async opts => {
       await EV.sendOnly(opts.client).connect(opts.serverAddress);
-      return [label, opts];
+      return opts;
     },
-    acceptConnection: async ([label, opts]) => {
+    acceptConnection: async opts => {
       await EV.sendOnly(opts.server).dequeue('onAccept');
-      return [label, opts];
+      return opts;
     },
-    openConnection: async ([label, opts]) => {
+    openConnection: async opts => {
       await EV.sendOnly(opts.server).dequeue('onOpen');
-      return [label, opts];
+      return opts;
     },
-    sendPacket: async ([label, opts]) => {
+    sendPacket: async (opts, label) => {
       await EV.sendOnly(opts.client).send(label);
-      return [label, opts];
+      return opts;
     },
-    respond: async ([label, opts]) => {
+    respond: async opts => {
       await EV.sendOnly(opts.server).dequeue('onReceive');
-      return [label, opts];
+      return opts;
     },
-    checkAck: async ([label, opts]) => {
+    checkAck: async (opts, label) => {
       const ack = await EV(opts.client).getAck();
       t.is(ack, `got ${label}`, `${label} expected echo`);
-      return [label, { ...opts, ack }];
+      return { ...opts, ack };
     },
-    closeConnection: async ([_label, opts]) => {
+    closeConnection: async opts => {
       await EV(opts.client).close();
     },
+  } satisfies Record<string, TestStep[1]>);
+
+  await testInterruptedSteps(t, allSteps, async () => {
+    await upgradeVats(t, EV, ['ibc', 'network']);
   });
-
-  const doSteps = async (label, steps, input: unknown = undefined) => {
-    await null;
-    let result = input;
-    for (const [stepName, fn] of steps) {
-      await t.notThrowsAsync(async () => {
-        result = await fn(result);
-      }, `${label} ${stepName} must complete successfully`);
-    }
-    return result;
-  };
-
-  // Sanity check
-  await doSteps('pre-upgrade', flow, 'pre-upgrade');
-
-  // For each step, run to just before that point and pause for
-  // continuation after upgrade.
-  const pausedFlows = [] as Array<{
-    result: any;
-    remainingSteps: [string, (lastResult: any) => unknown][];
-  }>;
-  for (let i = 0; i < flow.length; i += 1) {
-    const [beforeStepName] = flow[i];
-    const result = await doSteps(
-      `pre-${beforeStepName}`,
-      flow.slice(0, i),
-      `pause-before-${beforeStepName}`,
-    );
-    pausedFlows.push({ result, remainingSteps: flow.slice(i) });
-  }
-
-  await upgradeVats(t, EV, ['ibc', 'network']);
-
-  // Verify a complete run post-upgrade.
-  await doSteps('post-upgrade', flow, 'post-upgrade');
-
-  // Verify completion of each paused flow.
-  for (const { result, remainingSteps } of pausedFlows) {
-    const [beforeStepName] = remainingSteps[0];
-    await doSteps(`resumed-${beforeStepName}`, remainingSteps, result);
-  }
 });

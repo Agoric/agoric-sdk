@@ -20,7 +20,6 @@ runs:
       with:
         path: ${{ inputs.path }}
         clean: 'false'
-        submodules: 'true'
     - uses: actions/setup-go@v5
       with:
         cache-dependency-path: ${{ inputs.path }}/golang/cosmos/go.sum

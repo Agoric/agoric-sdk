@@ -99,7 +99,8 @@ def load_genesis_keys(fn):
 def wait_for_block(height):
     while True:
         out = subprocess.check_output(["agd", "status"]).decode()
-        now = int(json.loads(out)["SyncInfo"]["latest_block_height"])
+        status = json.loads(out)
+        now = int(status.get("sync_info", status.get("SyncInfo"))["latest_block_height"])
         if now >= height:
             return
         time.sleep(1)

@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../helpers.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryClientStateRequest,
@@ -17,11 +17,15 @@ import {
   QueryClientStatusResponse,
   QueryClientParamsRequest,
   QueryClientParamsResponse,
+  QueryClientCreatorRequest,
+  QueryClientCreatorResponse,
   QueryUpgradedClientStateRequest,
   QueryUpgradedClientStateResponse,
   QueryUpgradedConsensusStateRequest,
   QueryUpgradedConsensusStateResponse,
-} from './query.js';
+  QueryVerifyMembershipRequest,
+  QueryVerifyMembershipResponse,
+} from '@agoric/cosmic-proto/codegen/ibc/core/client/v1/query.js';
 /** Query provides defines the gRPC querier service */
 export interface Query {
   /** ClientState queries an IBC light client. */
@@ -58,6 +62,10 @@ export interface Query {
   clientParams(
     request?: QueryClientParamsRequest,
   ): Promise<QueryClientParamsResponse>;
+  /** ClientCreator queries the creator of a given client. */
+  clientCreator(
+    request: QueryClientCreatorRequest,
+  ): Promise<QueryClientCreatorResponse>;
   /** UpgradedClientState queries an Upgraded IBC light client. */
   upgradedClientState(
     request?: QueryUpgradedClientStateRequest,
@@ -66,6 +74,10 @@ export interface Query {
   upgradedConsensusState(
     request?: QueryUpgradedConsensusStateRequest,
   ): Promise<QueryUpgradedConsensusStateResponse>;
+  /** VerifyMembership queries an IBC light client for proof verification of a value at a given key path. */
+  verifyMembership(
+    request: QueryVerifyMembershipRequest,
+  ): Promise<QueryVerifyMembershipResponse>;
 }
 export class QueryClientImpl implements Query {
   private readonly rpc: Rpc;
@@ -78,8 +90,10 @@ export class QueryClientImpl implements Query {
     this.consensusStateHeights = this.consensusStateHeights.bind(this);
     this.clientStatus = this.clientStatus.bind(this);
     this.clientParams = this.clientParams.bind(this);
+    this.clientCreator = this.clientCreator.bind(this);
     this.upgradedClientState = this.upgradedClientState.bind(this);
     this.upgradedConsensusState = this.upgradedConsensusState.bind(this);
+    this.verifyMembership = this.verifyMembership.bind(this);
   }
   clientState(
     request: QueryClientStateRequest,
@@ -174,6 +188,19 @@ export class QueryClientImpl implements Query {
       QueryClientParamsResponse.decode(new BinaryReader(data)),
     );
   }
+  clientCreator(
+    request: QueryClientCreatorRequest,
+  ): Promise<QueryClientCreatorResponse> {
+    const data = QueryClientCreatorRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'ibc.core.client.v1.Query',
+      'ClientCreator',
+      data,
+    );
+    return promise.then(data =>
+      QueryClientCreatorResponse.decode(new BinaryReader(data)),
+    );
+  }
   upgradedClientState(
     request: QueryUpgradedClientStateRequest = {},
   ): Promise<QueryUpgradedClientStateResponse> {
@@ -198,6 +225,19 @@ export class QueryClientImpl implements Query {
     );
     return promise.then(data =>
       QueryUpgradedConsensusStateResponse.decode(new BinaryReader(data)),
+    );
+  }
+  verifyMembership(
+    request: QueryVerifyMembershipRequest,
+  ): Promise<QueryVerifyMembershipResponse> {
+    const data = QueryVerifyMembershipRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'ibc.core.client.v1.Query',
+      'VerifyMembership',
+      data,
+    );
+    return promise.then(data =>
+      QueryVerifyMembershipResponse.decode(new BinaryReader(data)),
     );
   }
 }
@@ -240,6 +280,11 @@ export const createRpcQueryExtension = (base: QueryClient) => {
     ): Promise<QueryClientParamsResponse> {
       return queryService.clientParams(request);
     },
+    clientCreator(
+      request: QueryClientCreatorRequest,
+    ): Promise<QueryClientCreatorResponse> {
+      return queryService.clientCreator(request);
+    },
     upgradedClientState(
       request?: QueryUpgradedClientStateRequest,
     ): Promise<QueryUpgradedClientStateResponse> {
@@ -249,6 +294,11 @@ export const createRpcQueryExtension = (base: QueryClient) => {
       request?: QueryUpgradedConsensusStateRequest,
     ): Promise<QueryUpgradedConsensusStateResponse> {
       return queryService.upgradedConsensusState(request);
+    },
+    verifyMembership(
+      request: QueryVerifyMembershipRequest,
+    ): Promise<QueryVerifyMembershipResponse> {
+      return queryService.verifyMembership(request);
     },
   };
 };

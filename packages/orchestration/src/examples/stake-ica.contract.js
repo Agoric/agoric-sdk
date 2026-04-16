@@ -1,6 +1,7 @@
 /** @file Example contract that uses orchestration */
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { TimerServiceShape } from '@agoric/time';
 import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import {
@@ -11,17 +12,20 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
+import { prepareProgressTracker } from '../utils/progress.js';
 import { makeChainHub } from '../exos/chain-hub.js';
 
 const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {Remote} from '@agoric/internal';
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {CosmosChainInfo, CosmosInterchainService, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCConnectionID, NameHub} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
  * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @type {ContractMeta<typeof start>} */
@@ -58,8 +62,8 @@ harden(privateArgsShape);
  * @param {{
  *   agoricNames: Remote<NameHub>;
  *   cosmosInterchainService: CosmosInterchainService;
- *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
  *   timer: TimerService;
  * }} privateArgs
  * @param {Baggage} baggage
@@ -70,7 +74,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     agoricNames,
     cosmosInterchainService: orchestration,
-    marshaller,
+    marshaller: remoteMarshaller,
     storageNode,
     timer,
   } = privateArgs;
@@ -78,12 +82,28 @@ export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
 
   const { accountsStorageNode } = await provideAll(baggage, {
-    accountsStorageNode: () => E(storageNode).makeChildNode('accounts'),
+    accountsStorageNode: () =>
+      /** @type {ERemote<StorageNode>} */ (
+        E(storageNode).makeChildNode('accounts')
+      ),
   });
 
-  const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
+  //  withOrchestration() provides this but this contract shows how to use orchestration without that
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    baggage,
+    cachingMarshaller,
+  );
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
+
+  const makeProgressTracker = prepareProgressTracker(
+    zone.subZone('orchestration'),
+    {
+      vowTools,
+    },
+  );
 
   const chainHub = makeChainHub(
     zone.subZone('chainHub'),
@@ -95,6 +115,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     {
       chainHub,
+      makeProgressTracker,
       makeRecorderKit,
       timerService: timer,
       vowTools,
@@ -119,6 +140,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       E(account).getRemoteAddress(),
     ]);
     trace('account address', chainAddress);
+    /** @type {Remote<StorageNode>} */
     const accountNode = await E(accountsStorageNode).makeChildNode(
       chainAddress.value,
     );

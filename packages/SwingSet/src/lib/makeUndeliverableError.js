@@ -15,5 +15,7 @@ import { kunser, kser } from '@agoric/kmarshal';
 
 export function makeUndeliverableError(methargs) {
   const method = kunser(methargs)[0];
+  // Marshal has a relaxation for an error at the root of the data
+  // so this error will always serialize even if not passable
   return kser(TypeError(`data is not callable, has no method ${method}`));
 }

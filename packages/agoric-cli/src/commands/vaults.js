@@ -14,10 +14,14 @@ import { Command } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
+/**
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
+ */
+
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
- * @param {import('anylogger').Logger} logger
+ * @param {Logger} logger
  */
 export const makeVaultsCommand = logger => {
   const vaults = new Command('vaults')

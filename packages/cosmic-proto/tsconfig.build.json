@@ -6,9 +6,11 @@
     ],
     "compilerOptions": {
         "noEmit": false,
+        "rootDir": "src",
         "outDir": "dist",
         "emitDeclarationOnly": false,
         "declaration": true,
+        "declarationMap": true,
         "target": "es2022",
         "module": "NodeNext",
         "moduleResolution": "NodeNext",
@@ -18,8 +20,8 @@
         ],
         "sourceMap": true,
         "isolatedModules": true,
-        "downlevelIteration": true,
     },
+    "include": ["src"],
     "exclude": [
         "scripts",
         "test",

@@ -204,7 +204,7 @@ export const prepareRetryableTools = (outerZone, outerOptions) => {
 harden(prepareRetryableTools);
 
 /**
- * @typedef {ReturnType<prepareRetryableTools>} RetryableTools
+ * @typedef {ReturnType<typeof prepareRetryableTools>} RetryableTools
  */
 
 /**

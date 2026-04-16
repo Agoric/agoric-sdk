@@ -80,4 +80,4 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
   return makeCreatorFacet;
 };
 
-/** @typedef {ReturnType<prepareChainHubAdmin>} ChainHubAdmin */
+/** @typedef {ReturnType<typeof prepareChainHubAdmin>} ChainHubAdmin */

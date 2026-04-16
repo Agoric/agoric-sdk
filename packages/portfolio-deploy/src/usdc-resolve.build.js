@@ -11,8 +11,10 @@ import { E } from '@endo/eventual-send';
 import { makeTracer } from '@agoric/internal/src/debug.js';
 
 /**
- * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot';
+ * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
  * @import {DeployScriptFunction, CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Brand, Issuer} from '@agoric/ertp';
+ * @import {BootstrapPowers, PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('USDC-R');

@@ -280,7 +280,7 @@ test('vowTools.all handles unstorable results', async t => {
   const specimenA = Promise.resolve('i am a promise');
   const specimenB = watch(nonPassable);
 
-  const result = await when(all([specimenA, specimenB]));
+  const result = await when(all(/** @type {const} */ ([specimenA, specimenB])));
   t.is(result.length, 2);
   t.is(result[0], 'i am a promise');
   t.is(result[1], nonPassable);

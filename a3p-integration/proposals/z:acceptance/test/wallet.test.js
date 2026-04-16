@@ -7,6 +7,8 @@ import {
   retryUntilCondition,
   waitUntilAccountFunded,
 } from '@agoric/client-utils';
+import { ModuleAccount as ModuleAccountType } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import { VBankAccount } from '@agoric/internal/src/config.js';
 import {
   addUser,
@@ -22,6 +24,8 @@ import { execFileSync } from 'node:child_process';
 import { agdWalletUtils } from './test-lib/index.js';
 import { getBalances, replaceTemplateValuesInFile } from './test-lib/utils.js';
 import { bankSend, tryISTBalances } from './test-lib/psm-lib.js';
+
+const ModuleAccount = CodecHelper(ModuleAccountType);
 
 /**
  * @param {string} file
@@ -146,19 +150,11 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
 test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
   const [feeCollector, vbankReserve] = await Promise.all(
     ['fee_collector', 'vbank/reserve'].map(async name => {
-      const {
-        account: {
-          '@type': moduleAcct,
-          base_account: { address },
-        },
-      } = await agd.query(['auth', 'module-account', name]);
-
-      t.is(
-        moduleAcct,
-        '/cosmos.auth.v1beta1.ModuleAccount',
-        `${name} is a module account`,
-      );
-      return address;
+      const { account } = await agd.query(['auth', 'module-account', name]);
+      const value = ModuleAccount.fromTyped(account);
+      assert('address' in value, 'missing address in module account');
+      assert.typeof(value.address, 'string');
+      return value.address;
     }),
   );
 

@@ -19,8 +19,6 @@ jobs:
         node-version: ['node-new', 'node-old']
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version}}

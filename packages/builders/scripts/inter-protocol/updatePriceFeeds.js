@@ -1,7 +1,13 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 import { getManifestForPriceFeeds } from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
-/** @import {PriceFeedConfig} from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js'; */
+/**
+ * @import {PriceFeedConfig} from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js';
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
 
 /** @type {Record<string, PriceFeedConfig>} */
 const configurations = {
@@ -56,7 +62,7 @@ const configurations = {
 const { keys } = Object;
 const knownVariants = keys(configurations);
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   const config = opts.config || configurations[opts.variant];
   if (!config) {
@@ -65,6 +71,16 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
     throw Error(error);
   }
   const { oracleAddresses, inBrandNames, contractTerms } = config;
+  const priceAggregator = interProtocolBundleSpecs.priceAggregator;
+  const priceAggregatorPath = await buildBundlePath(
+    import.meta.url,
+    priceAggregator,
+  );
+  const scaledPriceAuthorityPath = await buildBundlePath(
+    import.meta.url,
+    '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
+    'scaledPriceAuthority',
+  );
   console.log(
     'Generating price feeds update proposal with config',
     JSON.stringify({ oracleAddresses, inBrandNames, contractTerms }),
@@ -78,15 +94,12 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
         inBrandNames,
         contractTerms,
         priceAggregatorRef: publishRef(
-          install(
-            '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
-            '../bundles/bundle-fluxAggregatorKit.js',
-          ),
+          install(priceAggregator.packagePath, priceAggregatorPath),
         ),
         scaledPARef: publishRef(
           install(
             '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
-            '../bundles/bundle-scaledPriceAuthority.js',
+            scaledPriceAuthorityPath,
           ),
         ),
       },
@@ -96,7 +109,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
 
 const Usage = `agoric run updatePriceFeeds.js ${[...knownVariants, '<json-config>'].join(' | ')}`;
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   const variantOrConfig = scriptArgs?.[0];

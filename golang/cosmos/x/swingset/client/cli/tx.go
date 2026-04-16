@@ -83,10 +83,6 @@ is an "Ack" integer.`,
 			}
 
 			msg := types.NewMsgDeliverInbound(msgs, cctx.GetFromAddress())
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
-
 			return tx.GenerateOrBroadcastTxCLI(cctx, cmd.Flags(), msg)
 		},
 	}
@@ -130,9 +126,6 @@ https://github.com/endojs/endo/tree/master/packages/bundle-source`,
 			}
 
 			msg := types.NewMsgInstallBundle(jsonIn, cctx.GetFromAddress())
-			if err := msg.ValidateBasic(); err != nil {
-				return err
-			}
 
 			compress, err := cmd.Flags().GetBool(FlagCompress)
 			if err != nil {
@@ -144,7 +137,6 @@ https://github.com/endojs/endo/tree/master/packages/bundle-source`,
 					return err
 				}
 				// re-validate to be sure
-				err = msg.ValidateBasic()
 				if err != nil {
 					return err
 				}
@@ -215,13 +207,23 @@ func GetCmdWalletAction() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			var msg sdk.Msg
+
+			// If spend is true, we create a MsgWalletSpendAction, otherwise a MsgWalletAction.
+			// This is a bit of a hack, but it allows us to use the same command for both types of actions.
+			// The MsgWalletSpendAction is a special case that allows the action to spend assets.
+			// The MsgWalletAction is a general action that does not allow spending.
 			if spend {
-				msg = types.NewMsgWalletSpendAction(owner, action)
+				m := types.NewMsgWalletSpendAction(owner, action)
+				err = m.ValidateBasic()
+				msg = m
 			} else {
-				msg = types.NewMsgWalletAction(owner, action)
+				m := types.NewMsgWalletAction(owner, action)
+				err = m.ValidateBasic()
+				msg = m
 			}
-			err = msg.ValidateBasic()
+
 			if err != nil {
 				return err
 			}
@@ -304,12 +306,12 @@ Specify at least one pair of permit.json and code.js files`,
 				return err
 			}
 
-			msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
-			if err != nil {
+			if err = content.ValidateBasic(); err != nil {
 				return err
 			}
 
-			if err = msg.ValidateBasic(); err != nil {
+			msg, err := govv1beta1.NewMsgSubmitProposal(content, deposit, from)
+			if err != nil {
 				return err
 			}
 

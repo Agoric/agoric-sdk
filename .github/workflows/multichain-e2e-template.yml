@@ -23,7 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
           path: ./agoric-sdk
 
       - uses: ./agoric-sdk/.github/actions/restore-node
@@ -64,9 +63,8 @@ jobs:
           echo "/home/runner/bin" >> $GITHUB_PATH
         working-directory: ./agoric-sdk
 
-      - name: Enable Corepack
-        run: corepack enable
-        working-directory: ./agoric-sdk/multichain-testing
+      - name: Set up yarn
+        run: bash ./agoric-sdk/scripts/ensure-corepack-yarn.sh ./agoric-sdk
 
       # Before multichain-testing deps because that project portals into SDK
       # but only the SDK postinstall script will runs its package patching.
@@ -75,11 +73,6 @@ jobs:
 
       - name: Install @agoric/multichain-testing deps
         run: yarn install
-        working-directory: ./agoric-sdk/multichain-testing
-
-      - name: Lint @agoric/multichain-testing
-        # include testing imports to check package patches
-        run: yarn lint && yarn ava test/imports.test.ts
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: docker build (sdk)

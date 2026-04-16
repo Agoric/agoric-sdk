@@ -5,6 +5,7 @@
  *   Bech32Address,} from '@agoric/orchestration';
  * @import {IBCChannelID} from '@agoric/vats';
  * @import {EVM_CHAINS} from './utils/gmp.js';
+ * @import {Abi} from 'viem';
  */
 
 // NOTE: The following 3 types are also documented in README.md located at:
@@ -64,6 +65,7 @@ harden(AxelarGMPMessageType);
  * @property {`0x${string}`} target
  * @property {string} functionSignature
  * @property {unknown[]} args
+ * @property {Abi} [abi]
  */
 
 /**

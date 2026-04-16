@@ -12,6 +12,7 @@ import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { Fail } from '@endo/errors';
 import type { TestFn } from 'ava';
+import type { ZoeService } from '@agoric/zoe';
 import {
   insistManagerType,
   makeSwingsetHarness,
@@ -21,6 +22,7 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -45,10 +47,14 @@ test.before(async t => {
   insistManagerType(defaultManagerType);
   const harness =
     defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
+  const snapshot = await loadOrCreateRunUtilsSnapshot(
+    'orchestration-base',
+    t.log,
+  );
   const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { slogFile, defaultManagerType, harness },
+    { slogFile, defaultManagerType, harness, snapshot },
   );
   t.context = { ...ctx, harness };
 });
@@ -525,7 +531,9 @@ test.serial('basic-flows - portfolio holder', async t => {
       '/ibc-hop/connection-1/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test3","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
   });
   t.is(
-    readPublished('basicFlows.agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g'),
+    readPublished(
+      'basicFlows.agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
+    ) as any,
     '',
   );
 

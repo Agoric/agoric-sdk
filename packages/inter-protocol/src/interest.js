@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
@@ -9,7 +7,12 @@ import { TimeMath } from '@agoric/time';
 /**
  * @import {Timestamp} from '@agoric/time'
  * @import {RelativeTime} from '@agoric/time'
- * @import {AdminFacet, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {AdminFacet, InvitationAmount, Keyword, ZCFMint, ZCFSeat} from '@agoric/zoe';
+ * @import {AssetKind, Ratio} from '@agoric/ertp';
+ * @import {Calculate, CalculatorKit} from './vaultFactory/types.js';
+ * @import {MintAndTransfer} from './vaultFactory/types.js';
+ * @import {NatValue} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 export const SECONDS_PER_YEAR = 60n * 60n * 24n * 365n;

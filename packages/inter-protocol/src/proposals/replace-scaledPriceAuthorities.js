@@ -4,10 +4,16 @@ import { E } from '@endo/far';
 import { startScaledPriceAuthority } from './addAssetToVault.js';
 import { scaledPriceFeedName } from './utils.js';
 
+/**
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.ts';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.ts';
+ * @import {EconomyBootstrapPowers} from './core-proposal.js';
+ */
+
 const trace = makeTracer('replaceScaledPA', true);
 
 /**
- * @param {BootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
  */
@@ -32,7 +38,7 @@ export const replaceScaledPriceAuthority = async (powers, { options }) => {
  * scaledPriceAuthorities. The existing contracts will be left behind to be
  * cleaned up later.
  *
- * @param {ChainBootstrapSpace & BootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {{ options: { scaledPARef: { bundleID: string } } }} options
  */
 export const replaceScaledPriceAuthorities = async (powers, { options }) => {

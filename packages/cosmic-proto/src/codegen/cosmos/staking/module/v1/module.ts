@@ -2,7 +2,12 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Module is the config object of the staking module. */
+/**
+ * Module is the config object of the staking module.
+ * @name Module
+ * @package cosmos.staking.module.v1
+ * @see proto type: cosmos.staking.module.v1.Module
+ */
 export interface Module {
   /**
    * hooks_order specifies the order of staking hooks and should be a list
@@ -10,26 +15,74 @@ export interface Module {
    * provided, then hooks will be applied in alphabetical order of module names.
    */
   hooksOrder: string[];
-  /** authority defines the custom module authority. If not set, defaults to the governance module. */
+  /**
+   * authority defines the custom module authority. If not set, defaults to the governance module.
+   */
   authority: string;
+  /**
+   * bech32_prefix_validator is the bech32 validator prefix for the app.
+   */
+  bech32PrefixValidator: string;
+  /**
+   * bech32_prefix_consensus is the bech32 consensus node prefix for the app.
+   */
+  bech32PrefixConsensus: string;
 }
 export interface ModuleProtoMsg {
   typeUrl: '/cosmos.staking.module.v1.Module';
   value: Uint8Array;
 }
-/** Module is the config object of the staking module. */
+/**
+ * Module is the config object of the staking module.
+ * @name ModuleSDKType
+ * @package cosmos.staking.module.v1
+ * @see proto type: cosmos.staking.module.v1.Module
+ */
 export interface ModuleSDKType {
   hooks_order: string[];
   authority: string;
+  bech32_prefix_validator: string;
+  bech32_prefix_consensus: string;
 }
 function createBaseModule(): Module {
   return {
     hooksOrder: [],
     authority: '',
+    bech32PrefixValidator: '',
+    bech32PrefixConsensus: '',
   };
 }
+/**
+ * Module is the config object of the staking module.
+ * @name Module
+ * @package cosmos.staking.module.v1
+ * @see proto type: cosmos.staking.module.v1.Module
+ */
 export const Module = {
-  typeUrl: '/cosmos.staking.module.v1.Module',
+  typeUrl: '/cosmos.staking.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Array.isArray(o.hooksOrder) &&
+          (!o.hooksOrder.length || typeof o.hooksOrder[0] === 'string') &&
+          typeof o.authority === 'string' &&
+          typeof o.bech32PrefixValidator === 'string' &&
+          typeof o.bech32PrefixConsensus === 'string'))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Array.isArray(o.hooks_order) &&
+          (!o.hooks_order.length || typeof o.hooks_order[0] === 'string') &&
+          typeof o.authority === 'string' &&
+          typeof o.bech32_prefix_validator === 'string' &&
+          typeof o.bech32_prefix_consensus === 'string'))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -39,6 +92,12 @@ export const Module = {
     }
     if (message.authority !== '') {
       writer.uint32(18).string(message.authority);
+    }
+    if (message.bech32PrefixValidator !== '') {
+      writer.uint32(26).string(message.bech32PrefixValidator);
+    }
+    if (message.bech32PrefixConsensus !== '') {
+      writer.uint32(34).string(message.bech32PrefixConsensus);
     }
     return writer;
   },
@@ -56,6 +115,12 @@ export const Module = {
         case 2:
           message.authority = reader.string();
           break;
+        case 3:
+          message.bech32PrefixValidator = reader.string();
+          break;
+        case 4:
+          message.bech32PrefixConsensus = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -69,6 +134,12 @@ export const Module = {
         ? object.hooksOrder.map((e: any) => String(e))
         : [],
       authority: isSet(object.authority) ? String(object.authority) : '',
+      bech32PrefixValidator: isSet(object.bech32PrefixValidator)
+        ? String(object.bech32PrefixValidator)
+        : '',
+      bech32PrefixConsensus: isSet(object.bech32PrefixConsensus)
+        ? String(object.bech32PrefixConsensus)
+        : '',
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
@@ -79,12 +150,18 @@ export const Module = {
       obj.hooksOrder = [];
     }
     message.authority !== undefined && (obj.authority = message.authority);
+    message.bech32PrefixValidator !== undefined &&
+      (obj.bech32PrefixValidator = message.bech32PrefixValidator);
+    message.bech32PrefixConsensus !== undefined &&
+      (obj.bech32PrefixConsensus = message.bech32PrefixConsensus);
     return obj;
   },
   fromPartial(object: Partial<Module>): Module {
     const message = createBaseModule();
     message.hooksOrder = object.hooksOrder?.map(e => e) || [];
     message.authority = object.authority ?? '';
+    message.bech32PrefixValidator = object.bech32PrefixValidator ?? '';
+    message.bech32PrefixConsensus = object.bech32PrefixConsensus ?? '';
     return message;
   },
   fromProtoMsg(message: ModuleProtoMsg): Module {

@@ -1,12 +1,18 @@
 /* global E */
-// @ts-check
-/// <reference types="@agoric/vats/src/core/core-eval-env" />
+/// <reference types="@agoric/vats/src/core/core-eval-env.js" />
 /**
  * @file Script to replace the econ governance committee in a SwingSet Core Eval
  *   (aka big hammer)
  */
 
 import { Fail } from '@endo/errors';
+
+/**
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
+ */
 
 const runConfig = {
   committeeName: 'Economic Committee',
@@ -27,12 +33,12 @@ const { values } = Object;
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
 /**
- * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
+ * @param {ERef<NameAdmin>} nameAdmin
  * @param {string[][]} paths
  */
 const reserveThenGetNamePaths = async (nameAdmin, paths) => {
   /**
-   * @param {ERef<import('@agoric/vats').NameAdmin>} nextAdmin
+   * @param {ERef<NameAdmin>} nextAdmin
    * @param {string[]} path
    */
   const nextPath = async (nextAdmin, path) => {

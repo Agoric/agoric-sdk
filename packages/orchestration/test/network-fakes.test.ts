@@ -4,8 +4,8 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
 import { makeHeapZone } from '@agoric/zone';
 import { getInterfaceOf } from '@endo/far';
 import { prepareVowTools } from '@agoric/vow';
-import { setupFakeNetwork } from './network-fakes.js';
 import { makeICAChannelAddress } from '../src/utils/address.js';
+import { setupFakeNetwork } from '../tools/network-fakes.js';
 
 const test = anyTest as TestFn<ReturnType<typeof setupFakeNetwork>>;
 

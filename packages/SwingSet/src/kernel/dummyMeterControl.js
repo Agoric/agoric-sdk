@@ -1,5 +1,9 @@
 import { assert } from '@endo/errors';
 
+/**
+ * @import {MeterControl} from '@agoric/swingset-liveslots';
+ */
+
 export function makeDummyMeterControl() {
   let meteringDisabled = 0;
 
@@ -41,7 +45,7 @@ export function makeDummyMeterControl() {
     return harden(wrapped);
   }
 
-  /** @type { import('@agoric/swingset-liveslots').MeterControl } */
+  /** @type { MeterControl } */
   const meterControl = {
     isMeteringDisabled,
     assertIsMetered,

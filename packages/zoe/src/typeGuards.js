@@ -1,5 +1,3 @@
-// @jessie-check
-
 import {
   AmountShape,
   AssetKindShape,
@@ -15,7 +13,9 @@ import { TimestampShape } from '@agoric/time';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {AfterDeadlineExitRule, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {AfterDeadlineExitRule, Installation, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {ExitRule, Invitation, InvitationHandle, WaivedExitRule} from './types-index.js';
+ * @import {InvitationDetails} from './types-index.js';
  */
 
 // keywords have an initial cap
@@ -116,7 +116,7 @@ export const isOnDemandExitRule = exit => {
 harden(isOnDemandExitRule);
 
 /**
- * @param {import('./types-index').ExitRule} exit
+ * @param {ExitRule} exit
  * @returns {exit is WaivedExitRule}
  */
 export const isWaivedExitRule = exit => {
@@ -126,7 +126,7 @@ export const isWaivedExitRule = exit => {
 harden(isWaivedExitRule);
 
 /**
- * @param {import('./types-index').ExitRule} exit
+ * @param {ExitRule} exit
  * @returns {exit is AfterDeadlineExitRule}
  */
 export const isAfterDeadlineExitRule = exit => {
@@ -135,7 +135,7 @@ export const isAfterDeadlineExitRule = exit => {
 };
 harden(isAfterDeadlineExitRule);
 
-/** @type {TypedPattern<import('./types-index').InvitationDetails>} */
+/** @type {TypedPattern<InvitationDetails>} */
 export const InvitationElementShape = M.splitRecord({
   description: M.string(),
   handle: InvitationHandleShape,

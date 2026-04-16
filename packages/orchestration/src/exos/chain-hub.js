@@ -28,6 +28,8 @@ import { caipIdFromInfo } from '../utils/chain-info.js';
  * @import {AccountId, CosmosChainAddress, ChainInfo, CaipChainId, Denom, DenomAmount, AccountIdArg} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
  * @import {Pattern} from '@endo/patterns';
+ * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {Brand} from '@agoric/ertp';
  */
 
 /** receiver address value for ibc transfers that involve PFM */
@@ -700,7 +702,7 @@ export const makeChainHub = (
     },
 
     /**
-     * Like {@see resolveAccountId} but always returns a CosmosChainAddress.
+     * Like `resolveAccountId` but always returns a CosmosChainAddress.
      *
      * @param {AccountIdArg | Bech32Address} partialId CAIP-10 account ID or a
      *   Cosmos bech32 address

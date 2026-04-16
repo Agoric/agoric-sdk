@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -54,7 +55,7 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 	defer func() {
 		if r := recover(); r != nil {
 			switch rType := r.(type) {
-			case sdk.ErrorOutOfGas:
+			case storetypes.ErrorOutOfGas:
 				err = fmt.Errorf(
 					"out of gas in location: %v; gasUsed: %d",
 					rType.Descriptor, ctx.GasMeter().GasConsumed(),
@@ -176,10 +177,10 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 			return
 		}
 		children := keeper.GetChildren(ctx, path)
-		if children.Children == nil {
+		if children == nil {
 			return "[]", nil
 		}
-		bytes, err := json.Marshal(children.Children)
+		bytes, err := json.Marshal(children)
 		if err != nil {
 			return "", err
 		}
@@ -192,8 +193,8 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 			return
 		}
 		children := keeper.GetChildren(ctx, path)
-		entries := make([]agoric.KVEntry, len(children.Children))
-		for i, child := range children.Children {
+		entries := make([]agoric.KVEntry, len(children))
+		for i, child := range children {
 			entry := keeper.GetEntry(ctx, fmt.Sprintf("%s.%s", path, child))
 			if !entry.HasValue() {
 				entries[i] = agoric.NewKVEntryWithNoValue(child)
@@ -214,8 +215,8 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 			return
 		}
 		children := keeper.GetChildren(ctx, path)
-		vals := make([]*string, len(children.Children))
-		for i, child := range children.Children {
+		vals := make([]*string, len(children))
+		for i, child := range children {
 			vals[i] = keeper.GetEntry(ctx, fmt.Sprintf("%s.%s", path, child)).Value()
 		}
 		bytes, err := json.Marshal(vals)
@@ -231,10 +232,10 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 			return
 		}
 		children := keeper.GetChildren(ctx, path)
-		if children.Children == nil {
+		if children == nil {
 			return "0", nil
 		}
-		return fmt.Sprint(len(children.Children)), nil
+		return fmt.Sprint(len(children)), nil
 	}
 
 	return "", errors.New("Unrecognized msg.Method " + msg.Method)

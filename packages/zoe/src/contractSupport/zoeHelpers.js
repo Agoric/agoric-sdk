@@ -1,15 +1,18 @@
+import { AssetKind } from '@agoric/ertp';
+import { fromUniqueEntries } from '@agoric/internal';
+import { keyEQ, mustMatch } from '@agoric/store';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { mustMatch, keyEQ } from '@agoric/store';
-import { AssetKind } from '@agoric/ertp';
-import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 
 /**
  * @import {Pattern} from '@endo/patterns';
- * @import {ContractMeta, Invitation, Proposal, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, ContractMeta, Invitation, IssuerKeywordRecord, Keyword, PaymentPKeywordRecord, Proposal, ProposalRecord, UserSeat, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {KeywordKeywordRecord, MapKeywords, Reverse, Swap, SwapExact} from './types.js';
+ * @import {Allocation} from '../contractFacet/types.ts';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;

@@ -1,12 +1,25 @@
 // @ts-check
 import { Far } from '@endo/far';
 import { heapVowE as E } from '@agoric/vow/vat.js';
-import { typedJson } from '@agoric/cosmic-proto';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { QueryAllBalancesRequest as QueryAllBalancesRequestType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+
+/**
+ * @import {LocalChain} from '../localchain.js';
+ * @import {ERemote} from '@agoric/internal';
+ * @import {TargetApp} from '../bridge-target.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ */
+
+const MsgSend = CodecHelper(MsgSendType);
+const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
 
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     localchain: import('../localchain.js').LocalChain;
+ *     localchain: LocalChain;
  *   };
  * }} powers
  * @param {object} options
@@ -17,7 +30,7 @@ export const testLocalChain = async (
   { options: { testResultPath } },
 ) => {
   console.warn('=== localchain test started (result in', testResultPath, ')!');
-  /** @type {null | ERef<StorageNode>} */
+  /** @type {null | ERemote<StorageNode>} */
   let node = await chainStorage;
   if (!node) {
     console.error('testLocalChain no chainStorage');
@@ -42,7 +55,7 @@ export const testLocalChain = async (
       receiverAddress,
     });
 
-    const queryMsg = typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+    const queryMsg = QueryAllBalancesRequest.typedJson({
       address: receiverAddress,
     });
     const balances = await E(localchain).query(queryMsg);
@@ -50,7 +63,7 @@ export const testLocalChain = async (
 
     await E(lcaReceiver)
       .executeTx([
-        typedJson('/cosmos.bank.v1beta1.MsgSend', {
+        MsgSend.typedJson({
           fromAddress: receiverAddress,
           toAddress: receiverAddress,
           amount: [{ denom: 'ucosm', amount: '1' }],
@@ -75,7 +88,7 @@ export const testLocalChain = async (
 
     const tap = Far(
       'Localchain Tap',
-      /** @type {import('../bridge-target.js').TargetApp} */ ({
+      /** @type {TargetApp} */ ({
         async receiveUpcall(obj) {
           console.info('=== localchain test tap received upcall', obj);
           await E(E(node).makeChildNode('tap')).setValue(JSON.stringify(obj));
@@ -92,7 +105,7 @@ export const testLocalChain = async (
         try {
           console.info('=== localchain test sendTo called');
           const execResult = await E(lcaSender).executeTx([
-            typedJson('/cosmos.bank.v1beta1.MsgSend', {
+            MsgSend.typedJson({
               fromAddress: senderAddress,
               toAddress,
               amount,

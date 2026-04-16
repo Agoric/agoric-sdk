@@ -1,19 +1,20 @@
 /**
  * @file offerArgs types / shapes - temporarily separate from type-guards.ts
  */
-import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
+import { assert } from '@endo/errors';
+import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
-import { M } from '@endo/patterns';
+import type { AssetPlaceRef, MovementDesc } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
 } from '@agoric/portfolio-api/src/constants.js';
+import { M } from '@endo/patterns';
 import {
   makeNatAmountShape,
   PoolPlaces,
   TargetAllocationShape,
-  type PoolKey,
   type TargetAllocation,
 } from './type-guards.ts';
 
@@ -23,14 +24,11 @@ export type SeatKeyword = 'Cash' | 'Deposit';
 export const seatKeywords: SeatKeyword[] = ['Cash', 'Deposit'];
 harden(seatKeywords);
 
-export type AssetPlaceRef =
-  | `<${SeatKeyword}>`
-  | '+agoric' // deposit LCA
-  | `@${SupportedChain}`
-  | PoolKey;
 const AssetPlaceRefShape = M.or(
   ...seatKeywords.map(kw => `<${kw}>`),
   '+agoric',
+  ...values(AxelarChain).map(c => `+${c}`),
+  ...values(AxelarChain).map(c => `-${c}`),
   ...values(SupportedChain).map(c => `@${c}`),
   ...keys(PoolPlaces),
 );
@@ -38,6 +36,53 @@ const AssetPlaceRefShape = M.or(
 // XXX NEEDSTEST: check that all SupportedChains match; no `@`s etc.
 export const accountRefPattern = /^@(?<chain>\w+)$/;
 
+/**
+ * Pattern to match WithdrawToChainRef like `-Arbitrum`.
+ * Used to identify EVM chains that are destinations for withdrawals.
+ */
+export const withdrawRefPattern = /^-(?<chain>\w+)$/;
+
+/**
+ * Pattern to match DepositFromChainRef like `+Arbitrum`.
+ * Used to identify EVM chains that are sources for deposits.
+ * Note: `+agoric` is a special case (LocalChainAccountRef).
+ */
+export const depositRefPattern = /^\+(?<chain>\w+)$/;
+
+/**
+ * Extract the chain name from a DepositFromChainRef like `+Arbitrum`.
+ * Returns undefined if the ref is not a deposit source or is `+agoric`.
+ */
+export const getDepositChainOfPlaceRef = (
+  ref: AssetPlaceRef,
+): AxelarChain | undefined => {
+  if (ref === '+agoric') return undefined;
+  const m = ref.match(depositRefPattern);
+  const chain = m?.groups?.chain;
+  if (!chain) return undefined;
+  // validation of external data is done by AssetPlaceRefShape
+  // any bad ref that reaches here is a bug
+  assert(keys(AxelarChain).includes(chain), `bad ref: ${ref}`);
+  return chain as AxelarChain;
+};
+
+/**
+ * Extract the chain name from a WithdrawToChainRef like `-Arbitrum`.
+ * Returns undefined if the ref is not a withdraw destination.
+ */
+export const getWithdrawChainOfPlaceRef = (
+  ref: AssetPlaceRef,
+): AxelarChain | undefined => {
+  const m = ref.match(withdrawRefPattern);
+  const chain = m?.groups?.chain;
+  if (!chain) return undefined;
+  // validation of external data is done by AssetPlaceRefShape
+  // any bad ref that reaches here is a bug
+  assert(keys(AxelarChain).includes(chain), `bad ref: ${ref}`);
+  return chain as AxelarChain;
+};
+
+// XXX Possible to consolidate with {@link chainOf}?
 export const getChainNameOfPlaceRef = (
   ref: AssetPlaceRef,
 ): SupportedChain | undefined => {
@@ -65,19 +110,8 @@ export const getKeywordOfPlaceRef = (
   return keyword as SeatKeyword;
 };
 
-export type MovementDesc = {
-  amount: NatAmount;
-  src: AssetPlaceRef;
-  dest: AssetPlaceRef;
-  /** for example: GMP fee */
-  fee?: NatAmount;
-  /** for example: { usdnOut: 98n } */
-  detail?: Record<string, NatValue>;
-  claim?: boolean;
-};
-
-// XXX strategy: AllocationStrategyInfo;
 export type OfferArgsFor = {
+  deposit: { flow?: MovementDesc[] };
   openPortfolio: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
   rebalance: { flow?: MovementDesc[]; targetAllocation?: TargetAllocation };
 };
@@ -95,10 +129,18 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       detail: M.recordOf(M.string(), M.nat()),
       claim: M.boolean(),
     },
-    {},
+    // Be robust in the face of additional properties
+    M.record(),
   );
 
   return {
+    deposit: M.splitRecord(
+      {},
+      {
+        flow: M.arrayOf(movementDescShape),
+      },
+      {},
+    ) as TypedPattern<OfferArgsFor['deposit']>,
     openPortfolio: M.splitRecord(
       {},
       {
@@ -116,6 +158,9 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       },
       {},
     ) as TypedPattern<OfferArgsFor['rebalance']>,
+    movementDescShape: movementDescShape as TypedPattern<MovementDesc>,
   };
 };
 harden(makeOfferArgsShapes);
+
+export type { AssetPlaceRef, MovementDesc };

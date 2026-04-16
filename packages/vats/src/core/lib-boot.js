@@ -10,6 +10,13 @@ import { makePromiseSpace } from './promise-space.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {DProxy, VatPowers} from '@agoric/swingset-vat';
+ * @import {Zone} from '@agoric/zone';
+ * @import {BridgeHandler} from '../types.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {SwingsetVats} from './types.ts';
+ * @import {SoloDevices} from './types.ts';
+ * @import {ChainDevices} from './types.ts';
  */
 
 /**
@@ -49,7 +56,7 @@ import { makePromiseSpace } from './promise-space.js';
 const setDiff = (a, b) => a.filter(x => !b.includes(x));
 
 /**
- * @param {import('@agoric/swingset-vat').VatPowers & {
+ * @param {VatPowers & {
  *   D: DProxy;
  *   logger?: typeof console.log;
  * }} vatPowers
@@ -57,7 +64,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
  * @param {BootstrapManifest} bootManifest
  * @param {Record<string, BootBehavior>} behaviors
  * @param {BootModules} modules
- * @param {import('@agoric/zone').Zone} [zone]
+ * @param {Zone} [zone]
  */
 export const makeBootstrap = (
   vatPowers,
@@ -146,7 +153,7 @@ export const makeBootstrap = (
 
     /**
      * @type {{
-     *   coreEvalBridgeHandler: Promise<import('../types.js').BridgeHandler>;
+     *   coreEvalBridgeHandler: Promise<BridgeHandler>;
      * }}
      */
     // @ts-expect-error cast

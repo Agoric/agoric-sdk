@@ -1,36 +1,41 @@
-import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { pollBlocks } from './chain.js';
-import { makeStargateClient } from './rpc.js';
+/* global globalThis */
 import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
+import {
+  getOfferResult,
+  getOfferWantsSatisfied,
+  makeWalletStateCoalescer,
+} from './smart-wallet-utils.js';
 
 /**
  * @import {EReturn} from '@endo/far';
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
+ * @import {VstorageKit} from './types.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {PublishedPathTypes} from './types.js';
+ * @import {SmartWalletPublishedPathTypes} from '@agoric/smart-wallet/src/types.js';
  */
 
 /**
- * Augment VstorageKit with addtional convenience methods for working with
- * Agoric smart wallets.
+ * Augment VstorageKit with additional convenience methods for working with
+ * Agoric smart wallets. This use of "kit" is unfortunate because it does not
+ * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
+ * vstorage tree.) It was once called WalletUtils, which is more accurate.
  *
- * @param {object} root0
- * @param {typeof globalThis.fetch} root0.fetch
- * @param {(ms: number) => Promise<void>} root0.delay
- * @param {boolean} [root0.names]
- * @param {MinimalNetworkConfig} networkConfig
+ * @template {PublishedPathTypes & SmartWalletPublishedPathTypes} [Ext=Record<never, never>]
+ * @param {VstorageKit<Ext>} vsk
+ * @param {object} [options]
+ * @param {boolean} [options.names]
+ * @alpha
  */
-export const makeSmartWalletKit = async (
-  { fetch, delay, names = true },
-  networkConfig,
+export const makeSmartWalletKitFromVstorageKit = async (
+  vsk,
+  { names = true } = {},
 ) => {
-  const vsk = makeVstorageKit({ fetch }, networkConfig);
-
-  const client = makeStargateClient(networkConfig, { fetch });
-
   const agoricNames = await (names
     ? makeAgoricNames(vsk.fromBoard, vsk.vstorage)
-    : /** @type {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} */ ({}));
+    : /** @type {AgoricNamesRemotes} */ ({}));
 
   /**
    * @param {string} from
@@ -62,32 +67,22 @@ export const makeSmartWalletKit = async (
    *
    * @param {string} from
    * @param {string|number} id
-   * @param {number|string} minHeight
+   * @param {number|string} [_minHeight] - deprecated, start polling before broadcasting the offer
    * @param {boolean} [untilNumWantsSatisfied]
    */
   const pollOffer = async (
     from,
     id,
-    minHeight,
+    _minHeight = undefined,
     untilNumWantsSatisfied = false,
   ) => {
-    const poll = pollBlocks({
-      client,
-      delay,
-      retryMessage: 'offer not in wallet at block',
-    });
-
-    const lookup = async () => {
-      const { offerStatuses } = await storedWalletState(from, minHeight);
-      const offerStatus = [...offerStatuses.values()].find(s => s.id === id);
-      if (!offerStatus) throw Error('retry');
-      harden(offerStatus);
-      if (untilNumWantsSatisfied && !('numWantsSatisfied' in offerStatus)) {
-        throw Error('retry (no numWantsSatisfied yet)');
-      }
-      return offerStatus;
-    };
-    return poll(lookup);
+    const getAddrLastUpdate = () => getLastUpdate(from);
+    // XXX ambient authority
+    const retryOpts = { setTimeout: globalThis.setTimeout };
+    const status = await (untilNumWantsSatisfied
+      ? getOfferWantsSatisfied(id, getAddrLastUpdate, retryOpts)
+      : getOfferResult(id, getAddrLastUpdate, retryOpts));
+    return status;
   };
 
   /**
@@ -110,11 +105,38 @@ export const makeSmartWalletKit = async (
     // pass along all of VstorageKit
     ...vsk,
     agoricNames,
-    networkConfig,
     getLastUpdate,
     getCurrentWalletRecord,
     storedWalletState,
     pollOffer,
   };
 };
+harden(makeSmartWalletKitFromVstorageKit);
+
+/**
+ * Augment VstorageKit with additional convenience methods for working with
+ * Agoric smart wallets. This use of "kit" is unfortunate because it does not
+ * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
+ * vstorage tree.) It was once called WalletUtils, which is more accurate.
+ *
+ * @param {object} root0
+ * @param {typeof globalThis.fetch} root0.fetch
+ * @param {(ms: number) => Promise<void>} root0.delay
+ * @param {boolean} [root0.names]
+ * @param {MinimalNetworkConfig} networkConfig
+ */
+export const makeSmartWalletKit = async (
+  {
+    fetch,
+    // unused but keep for eventually removing ambient authority
+    delay: _delay,
+    names = true,
+  },
+  networkConfig,
+) => {
+  const vsk = makeVstorageKit({ fetch }, networkConfig);
+  return makeSmartWalletKitFromVstorageKit(vsk, { names });
+};
+harden(makeSmartWalletKit);
+
 /** @typedef {EReturn<typeof makeSmartWalletKit>} SmartWalletKit */

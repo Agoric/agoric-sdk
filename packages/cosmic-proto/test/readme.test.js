@@ -7,6 +7,6 @@ import { agoric } from '../dist/codegen/agoric/bundle.js';
 
 test.failing('Composing Messages', t => {
   // @ts-expect-error
-  const { sendPacket } = agoric.vibc.MessageComposer.withTypeUrl;
-  t.truthy(sendPacket);
+  const { installBundle } = agoric.swingset.MessageComposer.withTypeUrl;
+  t.truthy(installBundle);
 });

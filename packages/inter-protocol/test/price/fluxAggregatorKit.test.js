@@ -22,9 +22,10 @@ import { topicPath } from '../supports.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {TestFn} from 'ava';
  */
 
-/** @type {import('ava').TestFn<EReturn<typeof makeContext>>} */
+/** @type {TestFn<EReturn<typeof makeContext>>} */
 const test = unknownTest;
 
 const defaultConfig = {

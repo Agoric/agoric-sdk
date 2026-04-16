@@ -1,18 +1,20 @@
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import path from 'path';
+import path from 'node:path';
 import bundleSource from '@endo/bundle-source';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
+import type { ZoeService } from '@agoric/zoe';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '../../tools/drivers.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -109,8 +111,13 @@ const PLATFORM_CONFIG = '@agoric/vm-config/decentral-main-vaults-config.json';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
+  const snapshot = await loadOrCreateRunUtilsSnapshot(
+    'main-vaults-base',
+    t.log,
+  );
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier: PLATFORM_CONFIG,
+    snapshot,
   });
 
   const { runUtils, storage, controller } = swingsetTestKit;

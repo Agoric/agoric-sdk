@@ -1,6 +1,7 @@
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/pass-style';
 import test from 'ava';
+import type { Brand } from '@agoric/ertp';
 import {
   grokRebalanceScenarios,
   importText,
@@ -106,7 +107,7 @@ test('withBrand adds fees for Compound', async t => {
   assert('flow' in offerArgs);
 
   const step =
-    offerArgs?.flow?.find(step => step.dest.startsWith('Compound')) ||
+    offerArgs?.flow?.find(({ dest }) => dest.startsWith('Compound')) ||
     assert.fail();
   t.truthy(step.fee);
 });

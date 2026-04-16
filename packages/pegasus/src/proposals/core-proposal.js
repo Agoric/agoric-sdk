@@ -5,6 +5,7 @@ import { observeIteration, subscribeEach } from '@agoric/notifier';
 
 /**
  * @import {Connection, Port, PortAllocator} from '@agoric/network';
+ * @import {NameAdmin} from '@agoric/vats';
  */
 
 export const CONTRACT_NAME = 'Pegasus';
@@ -61,7 +62,7 @@ harden(startPegasus);
 /**
  * @param {Port} port
  * @param {*} pegasus
- * @param {import('@agoric/vats').NameAdmin} pegasusConnectionsAdmin
+ * @param {NameAdmin} pegasusConnectionsAdmin
  */
 export const addPegasusTransferPort = async (
   port,

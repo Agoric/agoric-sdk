@@ -10,14 +10,6 @@ Our use of TypeScript has to accommodate both .js development in agoric-sdk (whi
 - package entrypoint(s) exports explicit types
 - use `/** @import ` comments to import types without getting the runtime module
 
-### Ambient types
-
-- `.d.ts` for modules defining ambient types
-- import types using [triple-slash reference](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-types-)
-- for packages upon which other packages expect ambient types:
-  - `exported.js` supplies ambients
-- don't use runtime imports to get types ([issue](https://github.com/Agoric/agoric-sdk/issues/6512))
-
 ## .ts modules
 
 We cannot use `.ts` files in any modules that are transitively imported into an Endo bundle. The reason is that the Endo bundler doesn't understand `.ts` syntax and we don't want it to until we have sufficient auditability of the transformation. Moreover we've tried to avoid a build step in order to import a module. (The one exception so far is `@agoric/cosmic-proto` because we codegen the types. Those modules are written in `.ts` syntax and build to `.js` by a build step that creates `dist`, which is the package export.)
@@ -68,40 +60,54 @@ One option considered is having the conditional package `"exports"` include `"ty
 
 Once we have [JSDoc export type support](https://github.com/microsoft/TypeScript/issues/48104) we'll be able instead to keep the `index.js` entrypoint and have it export the types from `.ts` files without a runtime import of the module containing them.
 
-## exported.js
+## Build
 
-The `exported.js` re-exports types into global namespace, for consumers that expect these to
-be ambient. This could be called "ambient.js" but we retain the filename for backwards compatibility.
+### The `emitDeclarationOnly` constraint
 
-The pattern is to make these two files like this at package root:
+The repo-wide `tsconfig-build-options.json` sets `emitDeclarationOnly: true`. This means `tsc` only generates `.d.ts` declaration files, not `.js` runtime files. This is intentional because:
 
-`exported.js`
+1. Most source files are `.js` with JSDoc annotations (not `.ts`)
+2. We don't use a separate `dist/` output directory to avoid requiring a build watcher during development
+3. Without `emitDeclarationOnly`, `tsc` would try to write `.js` output for `.js` input files, causing errors like:
+   ```
+   error TS5055: Cannot write file 'src/cli/bin.js' because it would overwrite input file.
+   ```
 
-```ts
-// Dummy file for .d.ts twin to declare ambients
-export {};
-```
+### When `.ts` files have runtime code
 
-`exported.d.ts`
+Some `.ts` files contain actual runtime code (functions, constants) rather than just type definitions. Examples include type guard functions, EIP-712 message helpers, etc. These files need corresponding `.js` files when published to npm.
 
-```ts
-/** @file Ambient exports until https://github.com/Agoric/agoric-sdk/issues/6512 */
-/** @see {@link /docs/typescript.md} */
-/* eslint-disable -- doesn't understand .d.ts */
-import {
-  SomeType as _SomeType,
-} from './src/types.js';
+Since `tsc` won't generate `.js` files (due to `emitDeclarationOnly`), we use `build-ts-to-js` to strip types and produce `.js` files.
 
-declare global {
-  export {
-    _SomeType as SomeType,
-  };
+### Using `build-ts-to-js`
+
+The `build-ts-to-js` script uses `ts-blank-space` to transform `.ts` files into `.js` by replacing type annotations with whitespace. This preserves line numbers (no source maps needed) and is very fast.
+
+Add it to your package's `prepack` script:
+
+```json
+{
+  "scripts": {
+    "prepack": "yarn run -T build-ts-to-js && yarn run -T tsc --build tsconfig.build.json && find src -name '*.ts' ! -name '*.d.ts' -delete",
+    "postpack": "git checkout -- '*.ts' && git clean -f '*.d.ts' '*.d.ts.map' '*.js'"
+  }
 }
 ```
 
-Why the _ prefix? Because without it TS gets confused between the
-import and export symbols. ([h/t](https://stackoverflow.com/a/66588974))
-Note one downside vs ambients is that these types will appear to be on `globalThis`.
+The script finds all `.ts` files in `src/` (excluding `.d.ts`) and generates corresponding `.js` files. During `prepack`:
+1. `build-ts-to-js` generates `.js` runtime files from `.ts` sources
+2. `tsc` generates `.d.ts` declaration files for all sources
+3. Original `.ts` source files are deleted (so only `.js` and `.d.ts` are published)
+
+The `postpack` script restores `.ts` files from git and cleans up generated files.
+
+### Why not two `tsc` passes?
+
+An alternative would be using two tsconfig files: one with `allowJs: false` to emit `.js` only for `.ts` files, and another for declarations. This was rejected because:
+
+- Requires careful management of `allowJs`/`include`/`exclude` to avoid conflicts
+- More complex to maintain and understand
+- The `build-ts-to-js` approach is simpler: one tool for `.js`, one for `.d.ts`
 
 ## Generating API docs
 

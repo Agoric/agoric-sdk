@@ -9,6 +9,11 @@ import {
 } from '@agoric/vat-data';
 import { Far, E } from '@endo/far';
 
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {MapStore, SetStore} from '@agoric/store';
+ */
+
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.
 
@@ -287,3 +292,5 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     ...serviceNetworkFunctions,
   });
 }
+
+/** @typedef {ERef<ReturnType<typeof buildRootObject>>} VattpVat */

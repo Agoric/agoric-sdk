@@ -8,6 +8,9 @@ import { makeLendInvitation } from './lend.js';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {Instance, ZCF} from '@agoric/zoe';
+ * @import {LoanTerms, PeriodNotifier} from './types.js';
  */
 
 /**

@@ -4,6 +4,10 @@ import { E } from '@endo/far';
 
 /**
  * @import {Remote} from '@agoric/internal';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {RecorderKit} from './recorder.js';
+ * @import {EventualRecorderKit} from './recorder.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export { SubscriberShape };
@@ -55,7 +59,7 @@ export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
 /**
  * @template T
  * @param {string} description
- * @param {import('./recorder.js').RecorderKit<T> | import('./recorder.js').EventualRecorderKit<T>} recorderKit
+ * @param {RecorderKit<T> | EventualRecorderKit<T>} recorderKit
  * @returns {PublicTopic<T>}
  */
 export const makeRecorderTopic = (description, recorderKit) => {

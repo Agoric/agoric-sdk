@@ -10,13 +10,19 @@ import {
 
 /**
  * @import {Brand, Issuer} from '@agoric/ertp';
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils.js'
  * @import {Board} from '@agoric/vats'
+ * @import {Installation} from '@agoric/zoe';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from '@aglocal/fast-usdc-contract/src/fast-usdc.contract.ts'
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers, PromiseSpaceOf, StartedInstanceKitWithLabel} from '@agoric/vats/src/core/types.js';
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({
@@ -35,9 +41,10 @@ const contractName = 'fastUsdc';
  *
  * @param {string} path
  * @param {{
- *   chainStorage: ERef<StorageNode>;
- *   board: ERef<Board>;
+ *   chainStorage: ERemote<StorageNode>;
+ *   board: ERemote<Board>;
  * }} io
+ * @returns {Promise<{storageNode: Remote<StorageNode>; marshaller: Remote<Marshaller>}>}
  */
 const makePublishingStorageKit = async (path, { chainStorage, board }) => {
   const storageNode = await E(chainStorage).makeChildNode(path);
@@ -58,11 +65,7 @@ const POOL_METRICS = 'poolMetrics';
  *   brand: PromiseSpaceOf<{ FastLP: Brand }>;
  * }} FastUSDCCorePowers
  *
- * @typedef {StartedInstanceKitWithLabel & {
- *   publicFacet: StartedInstanceKit<FastUsdcSF>['publicFacet'];
- *   creatorFacet: StartedInstanceKit<FastUsdcSF>['creatorFacet'];
- *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
- * }} FastUSDCKit
+ * @typedef {StartedInstanceKitWithLabel<FastUsdcSF> & { privateArgs: StartParams<FastUsdcSF>['privateArgs'] }} FastUSDCKit
  */
 
 /**
@@ -126,6 +129,7 @@ export const startFastUSDC = async (
       chainStorage,
     },
   );
+  /** @type {Remote<StorageNode>} */
   const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
 
   const privateArgs = await deeplyFulfilledObject(

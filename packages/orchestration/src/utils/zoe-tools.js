@@ -30,6 +30,10 @@ const { assign, keys, values } = Object;
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {LocalAccountMethods} from '../types.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
+ * @import {AmountKeywordRecord} from '@agoric/zoe';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {Payment} from '@agoric/ertp';
  */
 
 /**
@@ -160,13 +164,15 @@ export const makeZoeTools = (zcf, { when, allVows, allSettled, asVow }) => {
         await when(allVows(returnPaymentVs));
         throw makeError(`One or more withdrawals failed ${q(errors)}`);
       }
+
       // successfully withdrew payments from srcLocalAccount, deposit to recipientSeat
+      const fulfilledWithdrawals =
+        /** @type {PromiseFulfilledResult<Payment>[]} */ (settledWithdrawals);
       const paymentKwr = harden(
         keys(amounts).reduce(
           (acc, kw, i) =>
             assign(acc, {
-              [kw]: /** @type {{ value: Amount }[]} */ (settledWithdrawals)[i]
-                .value,
+              [kw]: fulfilledWithdrawals[i].value,
             }),
           {},
         ),

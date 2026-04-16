@@ -5,11 +5,14 @@ import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParams
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.MsgUpdateParams
  */
 export interface MsgUpdateParams {
-  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  /**
+   * authority is the address that controls the module (defaults to x/gov unless overwritten).
+   */
   authority: string;
   /**
    * params defines the x/mint parameters to update.
@@ -24,8 +27,9 @@ export interface MsgUpdateParamsProtoMsg {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParamsSDKType
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.MsgUpdateParams
  */
 export interface MsgUpdateParamsSDKType {
   authority: string;
@@ -34,8 +38,9 @@ export interface MsgUpdateParamsSDKType {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParamsResponse
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponse {}
 export interface MsgUpdateParamsResponseProtoMsg {
@@ -45,8 +50,9 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
+ * @name MsgUpdateParamsResponseSDKType
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponseSDKType {}
 function createBaseMsgUpdateParams(): MsgUpdateParams {
@@ -55,8 +61,29 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
     params: Params.fromPartial({}),
   };
 }
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ * @name MsgUpdateParams
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.MsgUpdateParams
+ */
 export const MsgUpdateParams = {
-  typeUrl: '/cosmos.mint.v1beta1.MsgUpdateParams',
+  typeUrl: '/cosmos.mint.v1beta1.MsgUpdateParams' as const,
+  aminoType: 'cosmos-sdk/x/mint/MsgUpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.authority === 'string' && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.authority === 'string' && Params.isSDK(o.params)))
+    );
+  },
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -128,8 +155,22 @@ export const MsgUpdateParams = {
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
+/**
+ * MsgUpdateParamsResponse defines the response structure for executing a
+ * MsgUpdateParams message.
+ * @name MsgUpdateParamsResponse
+ * @package cosmos.mint.v1beta1
+ * @see proto type: cosmos.mint.v1beta1.MsgUpdateParamsResponse
+ */
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/cosmos.mint.v1beta1.MsgUpdateParamsResponse',
+  typeUrl: '/cosmos.mint.v1beta1.MsgUpdateParamsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

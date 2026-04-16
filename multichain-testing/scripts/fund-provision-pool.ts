@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-/* eslint-env node */
+
 import '@endo/init';
 import { execa } from 'execa';
 import assert from 'node:assert/strict';
@@ -46,6 +46,7 @@ async function fundProvisionPool(args: {
     delay: ms => new Promise(resolve => setTimeout(resolve, ms)),
   });
 
+  await null;
   try {
     await waitForBlock(1);
     // Execute the bank send transaction
@@ -69,7 +70,7 @@ async function fundProvisionPool(args: {
     ]);
     const resultData = JSON.parse(txResult);
     if (resultData.code !== 0) {
-      throw new Error(`Transaction failed: ${resultData['raw_log']}`);
+      throw new Error(`Transaction failed: ${resultData.raw_log}`);
     }
 
     // Query the balance to confirm

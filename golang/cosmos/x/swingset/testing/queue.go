@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
 	vstoragetesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/testing"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -13,7 +14,8 @@ import (
 func GetActionQueueRecords(t *testing.T, ctx sdk.Context, swingsetKeeper keeper.Keeper) ([]string, error) {
 	vstorageKeeper := keeper.GetVstorageKeeper(t, swingsetKeeper)
 	actionQueueName := keeper.StoragePathActionQueue
-	return vstoragetesting.GetQueueItems(ctx, vstorageKeeper, actionQueueName)
+	// TODO: fix this type assertion vstorage needs interface needs to be updated
+	return vstoragetesting.GetQueueItems(ctx, vstorageKeeper.(vstorage.Keeper), actionQueueName)
 }
 
 // ResetActionQueue resets the action queue.
@@ -21,5 +23,6 @@ func GetActionQueueRecords(t *testing.T, ctx sdk.Context, swingsetKeeper keeper.
 func ResetActionQueue(t *testing.T, ctx sdk.Context, swingsetKeeper keeper.Keeper) error {
 	vstorageKeeper := keeper.GetVstorageKeeper(t, swingsetKeeper)
 	actionQueueName := keeper.StoragePathActionQueue
-	return vstoragetesting.ResetQueue(ctx, vstorageKeeper, actionQueueName)
+	// TODO: fix this type assertion vstorage needs interface needs to be updated
+	return vstoragetesting.ResetQueue(ctx, vstorageKeeper.(vstorage.Keeper), actionQueueName)
 }

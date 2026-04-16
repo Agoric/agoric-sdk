@@ -18,15 +18,14 @@ import type {
   TransactionRecord,
 } from '@agoric/fast-usdc/src/types.js';
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
-import type {
-  Marshaller,
-  StorageNode,
-} from '@agoric/internal/src/lib-chainStorage.js';
+import type { ERemote } from '@agoric/internal';
+import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { MapStore, SetStore } from '@agoric/store';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
-import { E, type ERef } from '@endo/far';
+import { E } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { M } from '@endo/patterns';
 import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
@@ -37,7 +36,7 @@ import { makeSettlementMatcher } from '../utils/settlement-matcher.ts';
 
 interface StatusManagerPowers {
   log?: LogFn;
-  marshaller: ERef<Marshaller>;
+  marshaller: ERemote<EMarshaller>;
   routeHealth: RouteHealth;
 }
 
@@ -56,7 +55,7 @@ export const stateShape = harden({
  */
 export const prepareStatusManager = (
   zone: Zone,
-  txnsNode: ERef<StorageNode>,
+  txnsNode: ERemote<StorageNode>,
   { marshaller, routeHealth }: StatusManagerPowers,
 ) => {
   /**

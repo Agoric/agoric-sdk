@@ -3,14 +3,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { decodeBase64 } from '@endo/base64';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { matches } from '@endo/patterns';
-import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import { CodecHelper, toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import {
   MsgDelegate,
-  MsgDelegateResponse,
+  MsgDelegateResponse as MsgDelegateResponseType,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -21,6 +21,8 @@ import { CosmosChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
 import { buildChannelCloseConfirmEvent } from '../tools/ibc-mocks.js';
 import { commonSetup } from './supports.js';
+
+const MsgDelegateResponse = CodecHelper(MsgDelegateResponseType);
 
 const CHAIN_ID = 'cosmoshub-99';
 const HOST_CONNECTION_ID = 'connection-0';
@@ -174,10 +176,7 @@ test.serial('makeAccount returns an IcaAccountKit', async t => {
   );
 
   const delegateResp = await E(account).executeEncodedTx([delegateMsg]);
-  t.deepEqual(
-    tryDecodeResponse(delegateResp, MsgDelegateResponse.fromProtoMsg),
-    {},
-  );
+  t.deepEqual(tryDecodeResponse(delegateResp, MsgDelegateResponse), {});
 
   await t.throwsAsync(
     E(account).reactivate(),

@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
@@ -29,8 +29,8 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   // pack the contract
   const bundle = await bundleSource(contractRoot);
   // install the contract
-  vatAdminState.installBundle('b1-zcftester', bundle);
-  const installation = await E(zoe).installBundleID('b1-zcftester');
+  const b1zcftester = vatAdminState.registerBundle('b1-zcftester', bundle);
+  const installation = await E(zoe).installBundleID(b1zcftester);
 
   // Alice creates an instance
   const issuerKeywordRecord = harden({

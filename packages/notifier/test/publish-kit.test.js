@@ -7,9 +7,9 @@ import { q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   buildKernelBundles,
-  initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
+import { initializeTestSwingset as initializeSwingset } from '@agoric/swingset-vat/tools/test-swingset.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/kmarshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
@@ -24,6 +24,7 @@ import { invertPromiseSettlement } from './iterable-testing-tools.js';
 /**
  * @import {makePublishKit as MakePublishKit} from '../src/index.js';
  * @import {PublicationRecord} from '../src/types.js';
+ * @import {Bundle, SwingSetConfig} from '@agoric/swingset-vat/src/types-external.js';
  */
 
 const { ownKeys } = Reflect;
@@ -83,7 +84,6 @@ const assertCells = (t, label, cells, publishCount, expected, options = {}) => {
   } else {
     const { tail: _tail, ...props } = firstCell;
     // We need an element and an index here, which for..of does not give us in one go
-    // eslint-disable-next-line github/array-foreach
     cells.slice(1).forEach((cell, i) => {
       t.like(cell, props, `${label} cell ${i + 1} must match cell 0`);
     });
@@ -252,10 +252,9 @@ test('durable publish kit upgrade trauma (full-vat integration)', async t => {
   };
   const { kernelStorage } = initSwingStore();
   const { kernel: kernelBundle, ...kernelBundles } = await buildKernelBundles();
-  const initOpts =
-    /** @type {{kernelBundles: Record<string, import('@agoric/swingset-vat/src/types-external.js').Bundle>}} */ ({
-      kernelBundles,
-    });
+  const initOpts = /** @type {{kernelBundles: Record<string, Bundle>}} */ ({
+    kernelBundles,
+  });
   const runtimeOpts = { kernelBundle };
   await initializeSwingset(config, [], kernelStorage, initOpts);
   const c = await makeSwingsetController(kernelStorage, {}, runtimeOpts);

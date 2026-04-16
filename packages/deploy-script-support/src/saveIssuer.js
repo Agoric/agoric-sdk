@@ -4,12 +4,14 @@ import { E } from '@endo/far';
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Amount, Brand, Issuer, Payment} from '@agoric/ertp';
+ * @import {IssuerManager} from './startInstance.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
  * @param {ERef<any>} walletAdmin - an internal type of the
  * wallet, not defined here
- * @param {ERef<import('./startInstance.js').IssuerManager>} issuerManager
+ * @param {ERef<IssuerManager>} issuerManager
  */
 export const makeSaveIssuer = (walletAdmin, issuerManager) => {
   /**

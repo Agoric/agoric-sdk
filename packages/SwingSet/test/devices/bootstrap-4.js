@@ -6,7 +6,7 @@ import { extractMessage } from '../vat-util.js';
 // identifier, we must bypass liveslots, which would otherwise protect us
 // against the vat-fatal mistake
 
-export default function setup(syscall, state, _helpers, vatPowers) {
+export default function setup(syscall, _state, _helpers, vatPowers) {
   const { callNow } = syscall;
   const { testLog } = vatPowers;
   let d0;

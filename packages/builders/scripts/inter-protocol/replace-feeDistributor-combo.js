@@ -2,6 +2,11 @@ import { parseScriptArgs, makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForReplaceFeeDistributor } from '@agoric/inter-protocol/src/proposals/replace-fee-distributor.js';
 import { SECONDS_PER_HOUR } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
 const configurations = {
   A3P_INTEGRATION: {
     params: {
@@ -44,7 +49,7 @@ const configurations = {
 const { keys } = Object;
 const knownVariants = keys(configurations);
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   const config = opts.config || configurations[opts.variant];
   console.log('feeDist OPTS', opts, config);
@@ -70,7 +75,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const name = 'replace-feeDistributor-combo';
   const opts = parseScriptArgs(endowments, name, knownVariants);

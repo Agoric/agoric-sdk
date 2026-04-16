@@ -52,24 +52,6 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
 
-// TODO move this out of testing. To inter-protocol?
-// "vaults" is an Inter thing, but vstorage shape is a full chain (client) thing
-// Maybe a plugin architecture where the truth is in inter-protocol and the
-// client-lib rolls up the exports of many packages?
-/**
- * @param {string} addr
- * @param {WalletUtils} walletUtils
- * @returns {Promise<string[]>}
- */
-export const listVaults = async (addr, { getCurrentWalletRecord }) => {
-  const current = await getCurrentWalletRecord(addr);
-  const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
-    ([_offerId, pathmap]) => pathmap.vault,
-  );
-
-  return vaultStoragePaths;
-};
-
 /**
  * @param {{setTimeout: typeof setTimeout}} io
  */

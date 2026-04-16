@@ -3,7 +3,7 @@ import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 /**
  * Get bundle ID of a bundle
  *
- * See @agoric/swingset-vat/docs/bundles.md
+ * See \@agoric/swingset-vat/docs/bundles.md
  *
  * @param {{ endoZipBase64Sha512: string }} bundle
  *

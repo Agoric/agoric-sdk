@@ -19,7 +19,8 @@ import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
- * @import {Chain, CosmosChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
+ * @import {Chain, CosmosChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, OrchestrationOptions} from '../types.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
@@ -95,11 +96,12 @@ const prepareLocalChainFacadeKit = (
     },
     {
       public: {
+        /** @type {HostOf<Chain['getChainInfo']>} */
         getChainInfo() {
           return watch(this.state.localChainInfo);
         },
 
-        /** @returns {Vow<LocalOrchestrationAccountKit['holder']>} */
+        /** @type {HostOf<Chain['makeAccount']>} */
         makeAccount() {
           const lcaP = E(localchain).makeAccount();
           return watch(

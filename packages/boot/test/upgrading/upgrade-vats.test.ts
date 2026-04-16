@@ -1,12 +1,15 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { BridgeId, deepCopyJsonable } from '@agoric/internal';
-import { buildVatController } from '@agoric/swingset-vat';
+import { buildVatController, type SwingSetConfig } from '@agoric/swingset-vat';
+import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import type { IssuerKit } from '@agoric/ertp/src/types.js';
+import type { BankVat } from '@agoric/vats/src/vat-bank.js';
+import type { PriceAuthorityVat } from '@agoric/vats/src/vat-priceAuthority.js';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
 
 import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
@@ -36,7 +39,7 @@ const makeScenario = async (
         ),
       },
     },
-    bundleCachePath: 'bundles',
+    bundleCachePath: sharedBundleCachePath,
     ...kernelConfigOverrides,
   };
 
@@ -243,7 +246,7 @@ test('upgrade vat-bank', async t => {
                 return '1000';
               }
               default:
-                Fail`unexpected call to bank handler ${obj}`;
+                throw Fail`unexpected call to bank handler ${obj}`;
             }
           },
         },

@@ -1,8 +1,8 @@
 // @ts-nocheck
-import fs from 'fs';
-import zlib from 'zlib';
-import readline from 'readline';
-import process from 'process';
+import fs from 'node:fs';
+import zlib from 'node:zlib';
+import readline from 'node:readline';
+import process from 'node:process';
 
 async function run() {
   const args = process.argv.slice(2);

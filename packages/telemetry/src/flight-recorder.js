@@ -9,6 +9,7 @@ import { serializeSlogObj } from './serialize-slog-obj.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {MakeSlogSender} from './index.js';
  */
 
 export const DEFAULT_CBUF_SIZE = 100 * 1024 * 1024;
@@ -311,7 +312,7 @@ export const makeSlogSenderFromBuffer = ({ fileHandle, writeCircBuf }) => {
 /**
  * Loaded dynamically by makeSlogSender()
  *
- * @type {import('./index.js').MakeSlogSender}
+ * @type {MakeSlogSender}
  */
 export const makeSlogSender = async opts => {
   const { fileHandle, writeCircBuf } = await makeSimpleCircularBuffer(opts);

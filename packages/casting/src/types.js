@@ -1,10 +1,11 @@
-// @jessie-check
-
 // Ensure this is a module.
 export {};
 
 /**
  * @import {Notifier, Subscription} from '@agoric/notifier';
+ * @import {Marshal} from '@endo/marshal';
+ * @import {FarRef} from '@endo/far';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -52,7 +53,7 @@ export {};
  */
 
 /**
- * @typedef {Pick<import('@endo/marshal').Marshal<unknown>, 'fromCapData' | 'unserialize'>} Unserializer
+ * @typedef {Pick<Marshal<unknown>, 'fromCapData' | 'unserialize'>} Unserializer
  */
 
 /**
@@ -62,10 +63,10 @@ export {};
 
 /**
  * @typedef {object} FollowerOptions
- * @property {null | import('@endo/far').FarRef<Unserializer>} [unserializer]
+ * @property {null | FarRef<Unserializer>} [unserializer]
  * @property {(text: string) => any} [decode]
  * @property {'strict'|'optimistic'|'none'} [proof]
- * @property {import('@endo/far').FarRef<Crasher>} [crasher]
+ * @property {FarRef<Crasher>} [crasher]
  */
 
 /**

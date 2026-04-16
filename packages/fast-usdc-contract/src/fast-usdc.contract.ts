@@ -29,7 +29,7 @@ import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Fail, quote } from '@endo/errors';
-import { E, type ERef } from '@endo/far';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import type { HostInterface } from '@agoric/async-flow';
@@ -39,11 +39,12 @@ import type {
   FastUsdcTerms,
   FeeConfig,
 } from '@agoric/fast-usdc/src/types.js';
-import type { Remote } from '@agoric/internal';
+import type { ERemote, Remote } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import { type EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { prepareAdvancer } from './exos/advancer.ts';
@@ -83,8 +84,8 @@ export const meta = {
 harden(meta);
 
 const publishFeeConfig = (
-  node: Remote<StorageNode>,
-  marshaller: ERef<Marshaller>,
+  node: ERemote<StorageNode>,
+  marshaller: ERemote<EMarshaller>,
   feeConfig: FeeConfig,
 ) => {
   const feeNode = E(node).makeChildNode(FEE_NODE);
@@ -94,7 +95,7 @@ const publishFeeConfig = (
 };
 
 const publishAddresses = (
-  contractNode: Remote<StorageNode>,
+  contractNode: ERemote<StorageNode>,
   addresses: ContractRecord,
 ) => {
   return E(contractNode).setValue(JSON.stringify(addresses));
@@ -106,8 +107,8 @@ export const contract = async (
     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
     chainInfo: Record<string, ChainHubChainInfo>;
     feeConfig: FeeConfig;
-    marshaller: Marshaller;
-    storageNode: StorageNode;
+    marshaller: Remote<Marshaller>;
+    storageNode: Remote<StorageNode>;
     poolMetricsNode: Remote<StorageNode>;
   },
   zone: Zone,
@@ -118,10 +119,12 @@ export const contract = async (
   assert('USDC' in terms.brands, 'no USDC brand');
   assert('usdcDenom' in terms, 'no usdcDenom');
 
-  const { feeConfig, marshaller, storageNode } = privateArgs;
+  const { feeConfig, storageNode } = privateArgs;
+
+  const { cachingMarshaller } = tools;
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
-    marshaller,
+    cachingMarshaller,
   );
 
   const routeHealth = makeRouteHealth(MAX_ROUTE_FAILURES);
@@ -129,7 +132,7 @@ export const contract = async (
   const statusManager = prepareStatusManager(
     zone,
     E(storageNode).makeChildNode(TXNS_NODE),
-    { marshaller, routeHealth },
+    { marshaller: cachingMarshaller, routeHealth },
   );
 
   const { USDC } = terms.brands;
@@ -402,7 +405,7 @@ export const contract = async (
   // So we use zone.exoClassKit above to define the liquidity pool kind
   // and pass the shareMint into the maker / init function.
 
-  publishFeeConfig(storageNode, marshaller, feeConfig);
+  publishFeeConfig(storageNode, cachingMarshaller, feeConfig);
 
   const shareMint = await provideSingleton(
     zone.mapStore('mint'),

@@ -10,6 +10,15 @@ import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeCastingSpec } from './casting-spec.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
+/**
+ * @import {Follower} from './types.js';
+ * @import {ValueFollowerElement} from './types.js';
+ * @import {LeaderOrMaker} from './types.js';
+ * @import {FollowerOptions} from './types.js';
+ * @import {QueryClient} from '@cosmjs/stargate';
+ * @import {StreamCell} from './types.js';
+ */
+
 // A lot of cosmjs classes end up hardened through instances shared by this
 // package so preemptively harden them all.
 // However we cannot directly harden a module namespace object (exotic behavior
@@ -23,7 +32,7 @@ const { QueryClient } = stargateStar;
 const { Tendermint34Client } = tendermint34;
 const textDecoder = new TextDecoder();
 
-/** @template T @typedef {import('./types.js').Follower<import('./types.js').ValueFollowerElement<T>>} ValueFollower */
+/** @template T @typedef {Follower<ValueFollowerElement<T>>} ValueFollower */
 
 // Copied from https://github.com/cosmos/cosmjs/pull/1328/files until release
 /**
@@ -102,8 +111,8 @@ const proofs = ['strict', 'none', 'optimistic'];
 /**
  * @template T
  * @param {any} sourceP
- * @param {import('./types.js').LeaderOrMaker} [leaderOrMaker]
- * @param {import('./types.js').FollowerOptions} [options]
+ * @param {LeaderOrMaker} [leaderOrMaker]
+ * @param {FollowerOptions} [options]
  * @returns {ValueFollower<T>}
  */
 export const makeCosmjsFollower = (
@@ -151,7 +160,7 @@ export const makeCosmjsFollower = (
     return clientP;
   };
 
-  /** @type {Map<string, import('@cosmjs/stargate').QueryClient>} */
+  /** @type {Map<string, QueryClient>} */
   const endpointToQueryClient = new Map();
 
   /**
@@ -342,7 +351,7 @@ export const makeCosmjsFollower = (
    * @param {any} data
    * @param {number} blockHeight
    * @param {number} currentBlockHeight
-   * @returns {Promise<import('./types.js').ValueFollowerElement<T>>}
+   * @returns {Promise<ValueFollowerElement<T>>}
    */
   const followerElementFromStreamCellValue = async (
     data,
@@ -362,7 +371,7 @@ export const makeCosmjsFollower = (
   };
 
   /**
-   * @param {import('./types.js').StreamCell<T>} streamCell
+   * @param {StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
    * @yields {ValueFollowerElement<T>}
    */
@@ -378,7 +387,7 @@ export const makeCosmjsFollower = (
   harden(allValuesFromCell);
 
   /**
-   * @param {import('./types.js').StreamCell<T>} streamCell
+   * @param {StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
    * @yields {ValueFollowerElement<T>}
    */
@@ -394,7 +403,7 @@ export const makeCosmjsFollower = (
   harden(reverseValuesFromCell);
 
   /**
-   * @param {import('./types.js').StreamCell<T>} streamCell
+   * @param {StreamCell<T>} streamCell
    * @param {number} currentBlockHeight
    * @yields {ValueFollowerElement<T>}
    */

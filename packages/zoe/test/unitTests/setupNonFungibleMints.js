@@ -2,6 +2,13 @@ import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
 
+/**
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {SetValue} from '@agoric/ertp';
+ */
+
 const setupNonFungible = () => {
   const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);
   const rpgBundle = makeIssuerKit('MMORPG Items', AssetKind.SET);

@@ -6,9 +6,11 @@
     ],
     "compilerOptions": {
         "noEmit": false,
+        "rootDir": "src",
         "outDir": "dist",
         "emitDeclarationOnly": false,
         "declaration": true,
+        "declarationMap": true,
         "target": "es2022",
         "module": "es2022",
         "moduleResolution": "bundler",
@@ -18,8 +20,8 @@
         ],
         "sourceMap": true,
         "isolatedModules": true,
-        "downlevelIteration": true,
     },
+    "include": ["src"],
     "exclude": [
         "test",
     ]

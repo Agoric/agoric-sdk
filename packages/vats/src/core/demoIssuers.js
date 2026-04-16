@@ -11,7 +11,16 @@ import {
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
-/** @import {FeeMintAccess, Installation} from '@agoric/zoe' */
+/**
+ * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe'
+ * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {MintsVat} from '../vat-mints.js';
+ * @import {BootstrapSpace} from './types.ts';
+ */
 
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;
@@ -60,7 +69,7 @@ const separators = whole => {
   // ack: https://stackoverflow.com/a/45950572/7963, https://regex101.com/
   const revStr = s => s.split('').reverse().join('');
   const lohi = revStr(`${whole}`);
-  const s = lohi.replace(/(?=\d{4})(\d{3})/g, (m, p1) => `${p1}${sep}`);
+  const s = lohi.replace(/(?=\d{4})(\d{3})/g, (_m, p1) => `${p1}${sep}`);
   return revStr(s);
 };
 
@@ -465,7 +474,7 @@ export const poolRates = (issuerName, record, kits, central) => {
 };
 
 /**
- * @param {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers & {
- *     consume: { mints };
- *   }} powers
+ * @param {EconomyBootstrapPowers & {
+ *   consume: { mints };
+ * }} powers
  */

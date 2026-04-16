@@ -3,8 +3,8 @@ package swingset
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
+	"cosmossdk.io/core/appmodule"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -16,19 +16,27 @@ import (
 	cdctypes "github.com/cosmos/cosmos-sdk/codec/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
 
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // type check to ensure the interface is properly implemented
 var (
-	_ module.AppModule      = AppModule{}
-	_ module.AppModuleBasic = AppModuleBasic{}
+	_ module.AppModule          = AppModule{}
+	_ module.AppModuleBasic     = AppModuleBasic{}
+	_ appmodule.HasBeginBlocker = AppModule{}
+	_ appmodule.HasEndBlocker   = AppModule{}
+	_ module.HasGenesis         = AppModule{}
 )
 
 // app module Basics object
 type AppModuleBasic struct {
 }
+
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType is a marker function just indicates that this is a one-per-module type.
+func (am AppModule) IsOnePerModuleType() {}
 
 func (AppModuleBasic) Name() string {
 	return ModuleName
@@ -128,26 +136,17 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 func (AppModule) ConsensusVersion() uint64 { return 2 }
 
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(goCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
 	am.ensureControllerInited(ctx)
 
-	err := BeginBlock(ctx, req, am.keeper)
-	if err != nil {
-		fmt.Println("BeginBlock error:", err)
-	}
+	return BeginBlock(ctx, am.keeper)
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
-	valUpdate, err := EndBlock(ctx, req, am.keeper)
-	if err != nil {
-		fmt.Println("EndBlock error:", err)
-	}
-	if valUpdate != nil {
-		return valUpdate
-	}
-
-	// Prevent Cosmos SDK internal errors.
-	return []abci.ValidatorUpdate{}
+func (am AppModule) EndBlock(goCtx context.Context) error {
+	ctx := sdk.UnwrapSDKContext(goCtx)
+	_, err := EndBlock(ctx, am.keeper)
+	return err
 }
 
 func (am *AppModule) checkSwingStoreExportSetup() {
@@ -156,7 +155,7 @@ func (am *AppModule) checkSwingStoreExportSetup() {
 	}
 }
 
-func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) []abci.ValidatorUpdate {
+func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.RawMessage) {
 	var genesisState types.GenesisState
 	cdc.MustUnmarshalJSON(data, &genesisState)
 	am.checkSwingStoreExportSetup()
@@ -164,7 +163,6 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 	if bootstrapNeeded {
 		am.setBootstrapNeeded()
 	}
-	return []abci.ValidatorUpdate{}
 }
 
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {

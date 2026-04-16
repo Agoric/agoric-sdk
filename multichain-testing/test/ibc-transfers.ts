@@ -1,14 +1,14 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import { execFileSync } from 'node:child_process';
 import type { TestFn, ExecutionContext } from 'ava';
+import type { CosmosChainAddress, ForwardInfo } from '@agoric/orchestration';
+import { objectMap } from '@endo/patterns';
 import { commonSetup, type SetupContext } from './support.js';
 import { createWallet, generateMnemonic } from '../tools/wallet.js';
 import { makeQueryClient } from '../tools/query.js';
 import { makeAgd, type Agd } from '../tools/chaind-lib.js';
 import starshipChainInfo from '../starship-chain-info.js';
-import type { CosmosChainAddress, ForwardInfo } from '@agoric/orchestration';
 import { sleep } from '../tools/sleep.js';
-import { objectMap } from '@endo/patterns';
 
 const test = anyTest as TestFn<SetupContext>;
 
@@ -78,7 +78,7 @@ const fundRemote = async (
   );
   const { balances } = await retryUntilCondition(
     () => queryClient.queryBalances(acctAddr),
-    ({ balances }) => !!balances.find(x => x.denom.startsWith('ibc/')),
+    result => !!result.balances.find(x => x.denom.startsWith('ibc/')),
     `${acctAddr} received bld from agoric`,
   );
 
@@ -94,7 +94,7 @@ const setupSourceWallet = async (
 
   const chaind = makeAgd({ execFileSync }).withOpts({
     keyringBackend: 'test',
-    chainName: chainName,
+    chainName,
     broadcastMode: 'sync',
   });
   try {
@@ -127,6 +127,7 @@ const setupSourceWallet = async (
 
 type QueryRes = { total_count: string; txs: object[] };
 const queryPackets = async (binaries: Record<string, Agd>) => {
+  await null;
   const results: Record<string, { recvs: QueryRes; acks: QueryRes }> = {};
   for (const [name, chaind] of Object.entries(binaries)) {
     const recvs = await chaind.queryTxsByEvents(txEventQuery.msgReceivePacket);

@@ -1,4 +1,4 @@
-// @jessie-check
+/* eslint-disable @agoric/group-jsdoc-imports -- due to conflicting `start` values */
 
 import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
@@ -6,22 +6,29 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Stable } from '@agoric/internal/src/tokens.js';
-import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 
 /**
  * @import {GovernorCreatorFacet, GovernanceFacetKit, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {AdminFacet} from '@agoric/zoe';
+ * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
+ * @import {AdminFacet, Instance} from '@agoric/zoe';
+ * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {WellKnownSpaces} from '@agoric/vats/src/core/types.js';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
+ * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
+ * @import {PeriodicFeeCollector} from '../feeDistributor.js';
  */
 
-// Duplicated from vaultFactory/types-ambient.js to solve a CI problem.
+// Duplicated from vaultFactory/types.js to solve a CI problem.
 // Not worth refactoring to DRY because vaultFactory is going away.
 /**
  * @typedef {object} InterestTiming
- * @property {import('@agoric/time').RelativeTime} chargingPeriod in seconds
- * @property {import('@agoric/time').RelativeTime} recordingPeriod in seconds
+ * @property {RelativeTime} chargingPeriod in seconds
+ * @property {RelativeTime} recordingPeriod in seconds
  */
 
 const trace = makeTracer('RunEconBehaviors', true);
@@ -37,22 +44,22 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 /**
  * @typedef {object} PSMKit
  * @property {string} label
- * @property {Instance<import('../psm/psm.js').start>} psm
+ * @property {Instance<typeof import('../psm/psm.js').start>} psm
  * @property {Instance<
- *   import('../../../governance/src/contractGovernor.js').start
+ *   typeof import('../../../governance/src/contractGovernor.js').start
  * >} psmGovernor
  * @property {Awaited<
  *   ReturnType<
  *     Awaited<
- *       ReturnType<import('../psm/psm.js')['start']>
+ *       ReturnType<typeof import('../psm/psm.js').start>
  *     >['creatorFacet']['getLimitedCreatorFacet']
  *   >
  * >} psmCreatorFacet
- * @property {GovernorCreatorFacet<import('../../src/psm/psm.js')['start']>} psmGovernorCreatorFacet
+ * @property {GovernorCreatorFacet<
+ *   typeof import('../../src/psm/psm.js').start
+ * >} psmGovernorCreatorFacet
  * @property {AdminFacet} psmAdminFacet
  */
-
-/** @typedef {GovernanceFacetKit<import('../auction/auctioneer.js').start>} AuctioneerKit */
 
 /**
  * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
@@ -60,35 +67,30 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *
  * @typedef {PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult;
- *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
+ *   economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet;
  *   feeDistributorKit: StartedInstanceKit<
  *     typeof import('../feeDistributor.js').start
  *   >;
- *   periodicFeeCollectors: MapStore<
- *     number,
- *     import('../feeDistributor.js').PeriodicFeeCollector
- *   >;
+ *   periodicFeeCollectors: MapStore<number, PeriodicFeeCollector>;
  *   psmKit: MapStore<Brand, PSMKit>;
  *   anchorBalancePayments: MapStore<Brand, Payment<'nat'>>;
  *   econCharterKit: EconCharterStartResult;
  *   reserveKit: GovernanceFacetKit<
- *     import('../reserve/assetReserve.js')['start']
+ *     typeof import('../reserve/assetReserve.js').start
  *   >;
  *   vaultFactoryKit: GovernanceFacetKit<VFStart>;
- *   auctioneerKit: AuctioneerKit;
- *   newAuctioneerKit: AuctioneerKit | undefined;
  *   minInitialDebt: NatValue;
  * }>} EconomyBootstrapSpace
  */
 
 /**
  * @typedef {StartedInstanceKit<
- *   import('../econCommitteeCharter.js')['start']
+ *   typeof import('../econCommitteeCharter.js').start
  * >} EconCharterStartResult
  */
 /**
  * @typedef {StartedInstanceKit<
- *   import('@agoric/governance/src/committee.js')['start']
+ *   typeof import('@agoric/governance/src/committee.js').start
  * >} CommitteeStartResult
  */
 
@@ -231,7 +233,6 @@ export const setupVaultFactoryArguments = async (
     feeMintAccess: feeMintAccessP,
     economicCommitteeCreatorFacet: electorateCreatorFacet,
     reserveKit,
-    auctioneerKit,
   } = consume;
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
@@ -245,14 +246,12 @@ export const setupVaultFactoryArguments = async (
     initialShortfallInvitation,
     shortfallInvitationAmount,
     feeMintAccess,
-    auctioneerInstance,
   ] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     shortfallInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(shortfallInvitationP),
     feeMintAccessP,
-    E.get(auctioneerKit).instance,
   ]);
 
   const reservePublicFacet = await E.get(reserveKit).publicFacet;
@@ -272,7 +271,6 @@ export const setupVaultFactoryArguments = async (
   });
 
   const vaultFactoryPrivateArgs = {
-    auctioneerInstance,
     feeMintAccess,
     initialPoserInvitation,
     initialShortfallInvitation,
@@ -478,7 +476,6 @@ export const startRewardDistributor = async ({
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,
     { Fee: centralIssuer },
-    // @ts-expect-error XXX
     feeDistributorTerms,
     undefined,
     'feeDistributor',
@@ -525,130 +522,3 @@ export const startRewardDistributor = async ({
   );
 };
 harden(startRewardDistributor);
-
-/**
- * @param {EconomyBootstrapPowers} powers
- * @param {object} config
- * @param {any} [config.auctionParams]
- */
-export const startAuctioneer = async (
-  {
-    consume: {
-      zoe,
-      board,
-      chainTimerService,
-      priceAuthority,
-      chainStorage,
-      economicCommitteeCreatorFacet: electorateCreatorFacet,
-    },
-    produce: { auctioneerKit },
-    instance: {
-      produce: { auctioneer: auctionInstance },
-      consume: { reserve: reserveInstance },
-    },
-    installation: {
-      consume: {
-        auctioneer: auctionInstallation,
-        contractGovernor: contractGovernorInstallation,
-      },
-    },
-    issuer: {
-      consume: { [Stable.symbol]: stableIssuerP },
-    },
-  },
-  {
-    auctionParams = {
-      StartFrequency: 1n * SECONDS_PER_HOUR,
-      ClockStep: 3n * SECONDS_PER_MINUTE,
-      StartingRate: 10500n,
-      LowestRate: 6500n,
-      DiscountStep: 500n,
-      AuctionStartDelay: 2n,
-      PriceLockPeriod: SECONDS_PER_HOUR / 2n,
-    },
-  } = {},
-) => {
-  trace('startAuctioneer');
-  const STORAGE_PATH = 'auction';
-
-  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
-
-  const [initialPoserInvitation, electorateInvitationAmount, stableIssuer] =
-    await Promise.all([
-      poserInvitationP,
-      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-      stableIssuerP,
-    ]);
-
-  const timerBrand = await E(chainTimerService).getTimerBrand();
-
-  const storageNode = await makeStorageNodeChild(chainStorage, STORAGE_PATH);
-  const marshaller = await E(board).getReadonlyMarshaller();
-
-  const reservePublicFacet = await E(zoe).getPublicFacet(reserveInstance);
-
-  const auctionTerms = makeGovernedATerms(
-    { storageNode, marshaller },
-    chainTimerService,
-    priceAuthority,
-    reservePublicFacet,
-    {
-      ...auctionParams,
-      ElectorateInvitationAmount: electorateInvitationAmount,
-      TimerBrand: timerBrand,
-    },
-  );
-
-  const governorTerms = await deeplyFulfilledObject(
-    harden({
-      timer: chainTimerService,
-      governedContractInstallation: auctionInstallation,
-      governed: {
-        terms: auctionTerms,
-        issuerKeywordRecord: { Bid: stableIssuer },
-        storageNode,
-        marshaller,
-        label: 'auctioneer',
-      },
-    }),
-  );
-
-  /** @type {GovernorStartedInstallationKit<typeof auctionInstallation>} */
-  const governorStartResult = await E(zoe).startInstance(
-    contractGovernorInstallation,
-    undefined,
-    governorTerms,
-    harden({
-      electorateCreatorFacet,
-      governed: {
-        initialPoserInvitation,
-        storageNode,
-        marshaller,
-      },
-    }),
-    'auctioneer.governor',
-  );
-
-  const [governedInstance, governedCreatorFacet, governedPublicFacet] =
-    await Promise.all([
-      E(governorStartResult.creatorFacet).getInstance(),
-      E(governorStartResult.creatorFacet).getCreatorFacet(),
-      E(governorStartResult.creatorFacet).getPublicFacet(),
-    ]);
-
-  auctioneerKit.resolve(
-    harden({
-      label: 'auctioneer',
-      creatorFacet: governedCreatorFacet,
-      adminFacet: governorStartResult.adminFacet,
-      publicFacet: governedPublicFacet,
-      instance: governedInstance,
-
-      governor: governorStartResult.instance,
-      governorCreatorFacet: governorStartResult.creatorFacet,
-      governorAdminFacet: governorStartResult.adminFacet,
-    }),
-  );
-
-  auctionInstance.resolve(governedInstance);
-};

@@ -7,6 +7,7 @@
  */
 
 import '@endo/init/pre.js';
+import './anylogger-legacy.js';
 
 // Now do lockdown.
 import '@endo/init';

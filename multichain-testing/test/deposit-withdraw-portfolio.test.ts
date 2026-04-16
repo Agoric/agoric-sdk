@@ -65,8 +65,8 @@ const portfolioAccountScenario = test.macro({
 
     const { offerToPublicSubscriberPaths } = await retryUntilCondition(
       () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
-      ({ offerToPublicSubscriberPaths }) =>
-        Object.fromEntries(offerToPublicSubscriberPaths)[
+      result =>
+        Object.fromEntries(result.offerToPublicSubscriberPaths)[
           makePortfolioAcctOfferId
         ],
       'Portfolio account creation offer result is in vstorage',

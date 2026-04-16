@@ -1,8 +1,7 @@
-// @jessie-check
-
 import { prepareIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -15,10 +14,23 @@ const trace = makeTracer('FluxAgg', false);
 /**
  * @import {Baggage} from '@agoric/vat-data'
  * @import {TimerService} from '@agoric/time'
+ * @import {Remote} from '@agoric/internal';
+ * @import {ChainlinkConfig} from './fluxAggregatorKit.js';
+ * @import {PrioritySendersManager} from '@agoric/internal/src/priority-senders.js';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {QuoteKit} from './roundsManager.js';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {ContractMeta, ZCF} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       storageNode: StorageNodeShape,
@@ -45,7 +57,7 @@ harden(meta);
  * feeds](https://blog.chain.link/levels-of-data-aggregation-in-chainlink-price-feeds/).
  *
  * @param {ZCF<
- *   import('./fluxAggregatorKit.js').ChainlinkConfig & {
+ *   ChainlinkConfig & {
  *     timer: TimerService;
  *     brandIn: Brand<'nat'>;
  *     brandOut: Brand<'nat'>;
@@ -54,11 +66,11 @@ harden(meta);
  *   }
  * >} zcf
  * @param {{
- *   highPrioritySendersManager?: import('@agoric/internal/src/priority-senders.js').PrioritySendersManager;
+ *   highPrioritySendersManager?: PrioritySendersManager;
  *   initialPoserInvitation: Invitation;
- *   marshaller: ERef<Marshaller>;
- *   namesByAddressAdmin: ERef<import('@agoric/vats').NameAdmin>;
- *   storageNode: StorageNode;
+ *   marshaller: Remote<Marshaller>;
+ *   namesByAddressAdmin: ERef<NameAdmin>;
+ *   storageNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -66,7 +78,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   trace('prepare with baggage keys', [...baggage.keys()]);
 
   // xxx uses contract baggage as issuerBagage, assumes one issuer in this contract
-  /** @type {import('./roundsManager.js').QuoteKit} */
+  /** @type {QuoteKit} */
   // @ts-expect-error cast
   const quoteIssuerKit = prepareIssuerKit(
     baggage,
@@ -80,7 +92,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     highPrioritySendersManager,
     initialPoserInvitation,
-    marshaller,
+    marshaller: remoteMarshaller,
     namesByAddressAdmin,
     storageNode,
   } = privateArgs;
@@ -89,11 +101,13 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   trace('awaited args');
 
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const makeDurablePublishKit = prepareDurablePublishKit(
     baggage,
     'Price Aggregator publish kit',
   );
-  const makeRecorder = prepareRecorder(baggage, marshaller);
+  const makeRecorder = prepareRecorder(baggage, cachingMarshaller);
 
   const makeFluxAggregatorKit = await prepareFluxAggregatorKit(
     baggage,
@@ -120,7 +134,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       // No governed parameters. Governance just for API methods.
     },
     storageNode,
-    marshaller,
+    cachingMarshaller,
   );
 
   trace('got makeDurableGovernorFacet', makeDurableGovernorFacet);

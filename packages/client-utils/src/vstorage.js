@@ -10,10 +10,19 @@ import {
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 
 /**
- * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {StreamCell} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
+ */
+
+/**
+ * @typedef {{
+ *   code?: number;
+ *   codespace?: string;
+ *   height?: string | number;
+ *   log?: string;
+ *   value?: string;
+ * }} AbciQueryResponse
  */
 
 const kindToRpc = /** @type {const} */ ({
@@ -56,6 +65,12 @@ export const makeAbciQuery = (
 };
 
 /**
+ * @typedef {{ blockHeight?: bigint, log?: string }} QueryMetaResponseBase
+ * @typedef {QueryMetaResponseBase & { result: QueryChildrenResponse }} QueryChildrenMetaResponse
+ * @typedef {QueryMetaResponseBase & { result: QueryDataResponse }} QueryDataMetaResponse
+ */
+
+/**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config
@@ -80,14 +95,20 @@ export const makeVStorage = ({ fetch }, config) => {
   };
 
   /**
+   * Make a vstorage Children or Data query, returning the decoded result along
+   * with response metadata derived from fields documented at
+   * https://docs.cometbft.com/v0.38/spec/abci/abci++_methods#query (for
+   * successful responses, `log` and `height` [as `blockHeight`], and for error
+   * responses, `codespace` and `code`).
+   *
    * @template {'children' | 'data'} T
    * @param {string} [path]
    * @param {object} [opts]
    * @param {T} [opts.kind]
    * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
-   * @returns {Promise<T extends 'children' ? QueryChildrenResponse :QueryDataResponse >}
+   * @returns {Promise<T extends 'children' ? QueryChildrenMetaResponse : QueryDataMetaResponse>}
    */
-  const readStorage = async (
+  const readStorageMeta = async (
     path = 'published',
     { kind = /** @type {T} */ ('children'), height = 0 } = {},
   ) => {
@@ -118,11 +139,36 @@ export const makeVStorage = ({ fetch }, config) => {
     }
 
     const { value: b64Value } = response;
+    if (typeof b64Value !== 'string') {
+      throw Error(`missing value reading ${kind} of ${path}`);
+    }
+    const result = codec.response.decode(decodeBase64(b64Value));
+    /** @type {QueryMetaResponseBase} */
+    const metaResponseBase = {
+      blockHeight:
+        response.height === undefined ? undefined : BigInt(response.height),
+      log: response.log,
+    };
     // @ts-expect-error cast
-    return codec.response.decode(decodeBase64(b64Value));
+    return { ...metaResponseBase, result };
+  };
+
+  /**
+   * @template {'children' | 'data'} T
+   * @param {string} [path]
+   * @param {object} [opts]
+   * @param {T} [opts.kind]
+   * @param {number | bigint} [opts.height] 0 is the same as omitting height and implies the highest block
+   * @returns {Promise<T extends 'children' ? QueryChildrenResponse : QueryDataResponse>}
+   */
+  const readStorage = async (path = 'published', opts = {}) => {
+    const respWithMetadata = await readStorageMeta(path, opts);
+    // @ts-expect-error cast
+    return respWithMetadata.result;
   };
 
   const vstorage = {
+    readStorageMeta,
     readStorage,
     /**
      *

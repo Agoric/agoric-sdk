@@ -3,7 +3,12 @@
 import assert from 'node:assert';
 import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
 
-/**Add commentMore actions
+/**
+ * @import {execFileSync} from 'child_process';
+ */
+
+/**
+ * Add commentMore actions
  * @typedef {{ event: string, condition?: '=', value: string }} EventQuery
  */
 
@@ -26,7 +31,7 @@ const chainToBinary = {
  * @param {string} chainName
  * @returns {string[]} - e.g. ['exec', '-i', 'agoriclocal-genesis-0', '-c', 'validator', '--tty=false', '--', 'agd']
  */
-const binaryArgs = (chainName = 'agoric') => [
+const makeCliArgs = (chainName = 'agoric') => [
   'exec',
   '-i',
   `${chainName}local-genesis-0`,
@@ -85,12 +90,22 @@ export const makeAgd = ({ execFileSync }) => {
     const exec = (
       args,
       opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] },
-    ) => execFileSync(kubectlBinary, [...binaryArgs(chainName), ...args], opts);
+    ) => {
+      let cliArgs = makeCliArgs(chainName);
+      const shouldBeInteractive = opts.stdio[0] !== 'ignore';
+      if (!shouldBeInteractive) {
+        cliArgs = cliArgs.filter(
+          arg => !['-i', '--stdin'].some(a => arg.startsWith(a)),
+        );
+      }
+
+      return execFileSync(kubectlBinary, [...cliArgs, ...args], opts);
+    };
 
     const outJson = toCLIOptions({ output: 'json' });
 
     /** @type {Record<string, any> | undefined} */
-    let version;
+    let versionMemo;
 
     /** @type {((ev: EventQuery | EventQuery[]) => string[]) | undefined} */
     let buildEventQueryArgs;
@@ -98,13 +113,13 @@ export const makeAgd = ({ execFileSync }) => {
     const ro = freeze({
       status: async () => JSON.parse(exec([...nodeArgs, 'status'])),
       version: async () => {
-        if (version) {
-          return version;
+        if (versionMemo) {
+          return versionMemo;
         }
 
         // This hack (2>&1) is because some appds write version to stderr!
         // TODO: Instead figure out reading version from chain's RPC endpoint instead of stderr (https://github.com/Agoric/agoric-sdk/issues/11496).
-        const kubectlArgs = binaryArgs(chainName);
+        const kubectlArgs = makeCliArgs(chainName);
         const appd = kubectlArgs.pop();
         const args = [
           `/bin/sh`,
@@ -122,8 +137,8 @@ export const makeAgd = ({ execFileSync }) => {
 
         try {
           assert(lastLine, 'no last line');
-          version = JSON.parse(lastLine);
-          return version;
+          versionMemo = JSON.parse(lastLine);
+          return versionMemo;
         } catch (e) {
           console.error(chainName, 'version failed:', e);
           console.info('output:', out);
@@ -209,12 +224,12 @@ export const makeAgd = ({ execFileSync }) => {
           encoding: 'utf-8',
           stdio: ['ignore', 'pipe', 'pipe'],
         });
-
         try {
           return JSON.parse(out);
         } catch (e) {
           console.error(e);
           console.info('output:', out);
+          throw e;
         }
       },
     });
@@ -275,6 +290,7 @@ export const makeAgd = ({ execFileSync }) => {
         } catch (e) {
           console.error(e);
           console.info('output:', out);
+          throw e;
         }
       },
       ...ro,
@@ -290,7 +306,7 @@ export const makeAgd = ({ execFileSync }) => {
           return execFileSync(
             kubectlBinary,
             [
-              ...binaryArgs(chainName),
+              ...makeCliArgs(chainName),
               ...keyringArgs,
               'keys',
               'add',
@@ -309,7 +325,7 @@ export const makeAgd = ({ execFileSync }) => {
           return execFileSync(
             kubectlBinary,
             [
-              ...binaryArgs(chainName),
+              ...makeCliArgs(chainName),
               'keys',
               'show',
               name,
@@ -343,7 +359,10 @@ export const makeAgd = ({ execFileSync }) => {
 
 /** @typedef {ReturnType<typeof makeAgd>} Agd */
 
-/** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
+/**
+ * @param {{ execFileSync: typeof execFileSync, log: typeof console.log }} powers
+ * @param {{ podName?: string, containerName?: string, destDir?: string }} options
+ */
 export const makeCopyFiles = (
   { execFileSync, log },
   {
@@ -357,22 +376,21 @@ export const makeCopyFiles = (
     // Create the destination directory if it doesn't exist
     execFileSync(
       kubectlBinary,
-      `exec -i ${podName} -c ${containerName} -- mkdir -p ${destDir}`.split(
-        ' ',
-      ),
+      // prettier-ignore
+      ['exec', '-i', podName, '-c', containerName, '--', 'mkdir', '-p', destDir],
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
     for (const path of paths) {
       execFileSync(
         kubectlBinary,
-        `cp ${path} ${podName}:${destDir}/ -c ${containerName}`.split(' '),
+        ['cp', path, `${podName}:${destDir}/`, '-c', containerName],
         { stdio: ['ignore', 'pipe', 'pipe'] },
       );
       log(`Copied ${path} to ${destDir} in pod ${podName}`);
     }
     const lsOutput = execFileSync(
       kubectlBinary,
-      `exec -i ${podName} -c ${containerName}  -- ls ${destDir}`.split(' '),
+      ['exec', '-i', podName, '-c', containerName, '--', 'ls', '-l', destDir],
       { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf-8' },
     );
     log(`ls ${destDir}:\n${lsOutput}`);

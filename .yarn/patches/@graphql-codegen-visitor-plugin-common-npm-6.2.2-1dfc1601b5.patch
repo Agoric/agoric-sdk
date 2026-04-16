@@ -1,0 +1,200 @@
+diff --git a/cjs/client-side-base-visitor.js b/cjs/client-side-base-visitor.js
+index 42e50f507ef4feb4f156db7192c6b9be9c7524c6..d55feace207507dc5c330517dcf69fbdf95f6d9c 100644
+--- a/cjs/client-side-base-visitor.js
++++ b/cjs/client-side-base-visitor.js
+@@ -22,7 +22,7 @@ var DocumentMode;
+     DocumentMode["external"] = "external";
+     DocumentMode["string"] = "string";
+ })(DocumentMode || (exports.DocumentMode = DocumentMode = {}));
+-const EXTENSIONS_TO_REMOVE = ['.ts', '.tsx', '.js', '.jsx'];
++const EXTENSIONS_TO_REMOVE = [];
+ class ClientSideBaseVisitor extends base_visitor_js_1.BaseVisitor {
+     _schema;
+     _collectedOperations = [];
+@@ -112,9 +112,12 @@ class ClientSideBaseVisitor extends base_visitor_js_1.BaseVisitor {
+         const includeNestedFragments = this.config.documentMode === DocumentMode.documentNode || this.config.documentMode === DocumentMode.string;
+         const fragmentNames = this._extractFragments(node, includeNestedFragments);
+         const fragments = this._transformFragments(fragmentNames);
++        // Re-escape escaped values in GraphQL syntax.
++        const docLiteralContents = (0, graphql_1.print)(node).split('\\').join('\\\\');
++        const fragmentsLiteralContents = this._includeFragments(fragments);
+         const doc = this._prepareDocument(`
+-    ${(0, graphql_1.print)(node).split('\\').join('\\\\') /* Re-escape escaped values in GraphQL syntax */}
+-    ${this._includeFragments(fragments)}`);
++    ${docLiteralContents}
++    ${fragmentsLiteralContents}`);
+         if (this.config.documentMode === DocumentMode.documentNode) {
+             let gqlObj = (0, graphql_tag_1.default)([doc]);
+             if (this.config.optimizeDocumentNode) {
+@@ -158,9 +161,13 @@ class ClientSideBaseVisitor extends base_visitor_js_1.BaseVisitor {
+             return `{${metaString}"kind":"${graphql_1.Kind.DOCUMENT}","definitions":${jsonStringify(definitions)}}`;
+         }
+         if (this.config.documentMode === DocumentMode.string) {
++            const optimizedDoc = this.config.optimizeDocumentNode
++              ? (0, graphql_1.print)((0, optimize_1.optimizeDocumentNode)((0, graphql_tag_1.default)([doc])))
++              : doc;
++            const escapedLiteralContents = (0, utils_js_1.asTemplateLiteral)(optimizedDoc).slice(1, -1);
+             if (node.kind === graphql_1.Kind.FRAGMENT_DEFINITION) {
+                 const meta = this._getGraphQLCodegenMetadata(node, (0, graphql_tag_1.default)([doc]).definitions);
+-                return `new TypedDocumentString(\`${doc}\`, ${JSON.stringify({ fragmentName: node.name.value, ...meta })})`;
++                return `new TypedDocumentString(\`${escapedLiteralContents}\`, ${JSON.stringify({ fragmentName: node.name.value, ...meta })})`;
+             }
+             if (this._onExecutableDocumentNode && node.kind === graphql_1.Kind.OPERATION_DEFINITION) {
+                 const meta = this._getGraphQLCodegenMetadata(node, (0, graphql_tag_1.default)([doc]).definitions);
+@@ -168,13 +175,20 @@ class ClientSideBaseVisitor extends base_visitor_js_1.BaseVisitor {
+                     if (this._omitDefinitions === true) {
+                         return `{${`"__meta__":${JSON.stringify(meta)},`.slice(0, -1)}}`;
+                     }
+-                    return `new TypedDocumentString(\`${doc}\`, ${JSON.stringify(meta)})`;
++                    return `new TypedDocumentString(\`${escapedLiteralContents}\`, ${JSON.stringify(meta)})`;
+                 }
+             }
+-            return `new TypedDocumentString(\`${doc}\`)`;
++            return `new TypedDocumentString(\`${escapedLiteralContents}\`)`;
+         }
++        const optimizedDocPrefix = this.config.optimizeDocumentNode
++          ? (0, graphql_1.print)((0, optimize_1.optimizeDocumentNode)((0, graphql_tag_1.default)([docLiteralContents])))
++          : docLiteralContents;
++        const escapedLiteralContentsPrefix = (0, utils_js_1.asTemplateLiteral)(optimizedDocPrefix).slice(1, -1);
++        const escapedDoc = this._prepareDocument(`
++    ${escapedLiteralContentsPrefix}
++    ${fragmentsLiteralContents}`);
+         const gqlImport = this._parseImport(this.config.gqlImport || 'graphql-tag');
+-        return (gqlImport.propName || 'gql') + '`' + doc + '`';
++        return (gqlImport.propName || 'gql') + '`' + escapedDoc + '`';
+     }
+     _getGraphQLCodegenMetadata(node, definitions) {
+         let meta;
+diff --git a/cjs/utils.js b/cjs/utils.js
+index a9fc2074f8fdcd9090588571eec7cf40d335b602..01df2b0e88728310549577ad327ef4dc31f064ae 100644
+--- a/cjs/utils.js
++++ b/cjs/utils.js
+@@ -1,6 +1,6 @@
+ "use strict";
+ Object.defineProperty(exports, "__esModule", { value: true });
+-exports.getFieldNames = exports.getFieldNodeNameValue = exports.REQUIRE_FIELDS_TYPE = exports.OMIT_TYPE = exports.DeclarationBlock = exports.getConfigValue = void 0;
++exports.getFieldNames = exports.getFieldNodeNameValue = exports.REQUIRE_FIELDS_TYPE = exports.OMIT_TYPE = exports.DeclarationBlock = exports.getConfigValue = exports.asTemplateLiteral = void 0;
+ exports.quoteIfNeeded = quoteIfNeeded;
+ exports.block = block;
+ exports.wrapWithSingleQuotes = wrapWithSingleQuotes;
+@@ -29,6 +29,8 @@ exports.unique = unique;
+ const graphql_1 = require("graphql");
+ const mappers_js_1 = require("./mappers.js");
+ const scalars_js_1 = require("./scalars.js");
++const asTemplateLiteral = str => '`' + str.replace(/[`$\\]/g, '\\$&') + '`';
++exports.asTemplateLiteral = asTemplateLiteral;
+ const getConfigValue = (value, defaultValue) => {
+     if (value === null || value === undefined) {
+         return defaultValue;
+diff --git a/esm/client-side-base-visitor.js b/esm/client-side-base-visitor.js
+index 8541f60fc546d668c663881f3aca3e0f417df64a..514dbe41153c1577959bca5f07124cc25a4da508 100644
+--- a/esm/client-side-base-visitor.js
++++ b/esm/client-side-base-visitor.js
+@@ -7,7 +7,7 @@ import { DepGraph } from 'dependency-graph';
+ import { Kind, print, } from 'graphql';
+ import gqlTag from 'graphql-tag';
+ import { BaseVisitor } from './base-visitor.js';
+-import { buildScalarsFromConfig, unique, flatten, getConfigValue, groupBy } from './utils.js';
++import { asTemplateLiteral, buildScalarsFromConfig, unique, flatten, getConfigValue, groupBy } from './utils.js';
+ import { generateFragmentImportStatement } from './imports.js';
+ gqlTag.enableExperimentalFragmentVariables();
+ export var DocumentMode;
+@@ -18,7 +18,7 @@ export var DocumentMode;
+     DocumentMode["external"] = "external";
+     DocumentMode["string"] = "string";
+ })(DocumentMode || (DocumentMode = {}));
+-const EXTENSIONS_TO_REMOVE = ['.ts', '.tsx', '.js', '.jsx'];
++const EXTENSIONS_TO_REMOVE = [];
+ export class ClientSideBaseVisitor extends BaseVisitor {
+     _schema;
+     _collectedOperations = [];
+@@ -108,9 +108,12 @@ export class ClientSideBaseVisitor extends BaseVisitor {
+         const includeNestedFragments = this.config.documentMode === DocumentMode.documentNode || this.config.documentMode === DocumentMode.string;
+         const fragmentNames = this._extractFragments(node, includeNestedFragments);
+         const fragments = this._transformFragments(fragmentNames);
++        // Re-escape escaped values in GraphQL syntax.
++        const docLiteralContents = print(node).split('\\').join('\\\\');
++        const fragmentsLiteralContents = this._includeFragments(fragments);
+         const doc = this._prepareDocument(`
+-    ${print(node).split('\\').join('\\\\') /* Re-escape escaped values in GraphQL syntax */}
+-    ${this._includeFragments(fragments)}`);
++    ${docLiteralContents}
++    ${fragmentsLiteralContents}`);
+         if (this.config.documentMode === DocumentMode.documentNode) {
+             let gqlObj = gqlTag([doc]);
+             if (this.config.optimizeDocumentNode) {
+@@ -154,9 +157,13 @@ export class ClientSideBaseVisitor extends BaseVisitor {
+             return `{${metaString}"kind":"${Kind.DOCUMENT}","definitions":${jsonStringify(definitions)}}`;
+         }
+         if (this.config.documentMode === DocumentMode.string) {
++            const optimizedDoc = this.config.optimizeDocumentNode
++              ? print(optimizeDocumentNode(gqlTag([doc])))
++              : doc;
++            const escapedLiteralContents = asTemplateLiteral(optimizedDoc).slice(1, -1);
+             if (node.kind === Kind.FRAGMENT_DEFINITION) {
+                 const meta = this._getGraphQLCodegenMetadata(node, gqlTag([doc]).definitions);
+-                return `new TypedDocumentString(\`${doc}\`, ${JSON.stringify({ fragmentName: node.name.value, ...meta })})`;
++                return `new TypedDocumentString(\`${escapedLiteralContents}\`, ${JSON.stringify({ fragmentName: node.name.value, ...meta })})`;
+             }
+             if (this._onExecutableDocumentNode && node.kind === Kind.OPERATION_DEFINITION) {
+                 const meta = this._getGraphQLCodegenMetadata(node, gqlTag([doc]).definitions);
+@@ -164,13 +171,20 @@ export class ClientSideBaseVisitor extends BaseVisitor {
+                     if (this._omitDefinitions === true) {
+                         return `{${`"__meta__":${JSON.stringify(meta)},`.slice(0, -1)}}`;
+                     }
+-                    return `new TypedDocumentString(\`${doc}\`, ${JSON.stringify(meta)})`;
++                    return `new TypedDocumentString(\`${escapedLiteralContents}\`, ${JSON.stringify(meta)})`;
+                 }
+             }
+-            return `new TypedDocumentString(\`${doc}\`)`;
++            return `new TypedDocumentString(\`${escapedLiteralContents}\`)`;
+         }
++        const optimizedDocPrefix = this.config.optimizeDocumentNode
++          ? print(optimizeDocumentNode(gqlTag([docLiteralContents])))
++          : docLiteralContents;
++        const escapedLiteralContentsPrefix = asTemplateLiteral(optimizedDocPrefix).slice(1, -1);
++        const escapedDoc = this._prepareDocument(`
++    ${escapedLiteralContentsPrefix}
++    ${fragmentsLiteralContents}`);
+         const gqlImport = this._parseImport(this.config.gqlImport || 'graphql-tag');
+-        return (gqlImport.propName || 'gql') + '`' + doc + '`';
++        return (gqlImport.propName || 'gql') + '`' + escapedDoc + '`';
+     }
+     _getGraphQLCodegenMetadata(node, definitions) {
+         let meta;
+diff --git a/esm/utils.js b/esm/utils.js
+index d363794e5779bb4e76ae0edfe8c978b24f5f7395..ca9544c1d0b245c8b6fa57daf6a35c5a16a9b73d 100644
+--- a/esm/utils.js
++++ b/esm/utils.js
+@@ -1,6 +1,7 @@
+ import { isAbstractType, isInputObjectType, isListType, isNonNullType, isObjectType, isScalarType, Kind, } from 'graphql';
+ import { parseMapper } from './mappers.js';
+ import { DEFAULT_SCALARS } from './scalars.js';
++export const asTemplateLiteral = str => '`' + str.replace(/[`$\\]/g, '\\$&') + '`';
+ export const getConfigValue = (value, defaultValue) => {
+     if (value === null || value === undefined) {
+         return defaultValue;
+diff --git a/typings/utils.d.cts b/typings/utils.d.cts
+index e2bb1a4a7854bbc714ccab2609841587ac261ad5..7a2aa10308f8895d50e1aba805e0d3f137136c9e 100644
+--- a/typings/utils.d.cts
++++ b/typings/utils.d.cts
+@@ -1,6 +1,7 @@
+ import { FieldNode, FragmentSpreadNode, GraphQLInputObjectType, GraphQLNamedType, GraphQLObjectType, GraphQLOutputType, GraphQLSchema, InlineFragmentNode, NamedTypeNode, NameNode, SelectionNode, SelectionSetNode, StringValueNode, TypeNode, DirectiveNode } from 'graphql';
+ import { RawConfig } from './base-visitor.cjs';
+ import { NormalizedScalarsMap, ParsedScalarsMap, ScalarsMap, FragmentDirectives, LoadedFragment } from './types.cjs';
++export declare const asTemplateLiteral: (str: string) => string;
+ export declare const getConfigValue: <T = any>(value: T, defaultValue: T) => T;
+ export declare function quoteIfNeeded(array: string[], joinWith?: string): string;
+ export declare function block(array: any): string;
+diff --git a/typings/utils.d.ts b/typings/utils.d.ts
+index f743d230405c81339d59ccd6dcebc04e32ca522b..86644bb8a4443af52147b66c2f57a8cc5e96085b 100644
+--- a/typings/utils.d.ts
++++ b/typings/utils.d.ts
+@@ -1,6 +1,7 @@
+ import { FieldNode, FragmentSpreadNode, GraphQLInputObjectType, GraphQLNamedType, GraphQLObjectType, GraphQLOutputType, GraphQLSchema, InlineFragmentNode, NamedTypeNode, NameNode, SelectionNode, SelectionSetNode, StringValueNode, TypeNode, DirectiveNode } from 'graphql';
+ import { RawConfig } from './base-visitor.js';
+ import { NormalizedScalarsMap, ParsedScalarsMap, ScalarsMap, FragmentDirectives, LoadedFragment } from './types.js';
++export declare const asTemplateLiteral: (str: string) => string;
+ export declare const getConfigValue: <T = any>(value: T, defaultValue: T) => T;
+ export declare function quoteIfNeeded(array: string[], joinWith?: string): string;
+ export declare function block(array: any): string;

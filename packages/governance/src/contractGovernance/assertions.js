@@ -4,6 +4,10 @@ import { assertIsRatio } from '@agoric/ertp/src/ratio.js';
 import { mustMatch } from '@agoric/store';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
 
+/**
+ * @import {Brand} from '@agoric/ertp';
+ */
+
 const makeLooksLikeBrand = name => {
   /** @param {Brand} brand */
   return brand => {

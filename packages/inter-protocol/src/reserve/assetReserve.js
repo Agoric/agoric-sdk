@@ -1,7 +1,6 @@
-// @jessie-check
-
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   prepareRecorderKitMakers,
   provideAll,
@@ -9,9 +8,17 @@ import {
 import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data'
  * @import {EReturn} from '@endo/far';
  * @import {ContractOf} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {Allocation, ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ * @import {Allocation, ContractMeta, FeeMintAccess, Invitation, ZCF} from '@agoric/zoe';
+ * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ * @import {GovernedCreatorFacet} from '@agoric/governance/src/types.js';
+ * @import {GovernedPublicFacet} from '@agoric/governance/src/types.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('AR', true);
@@ -29,8 +36,6 @@ harden(meta);
  * }} ShortfallReportingFacet
  */
 
-/** @import {Baggage} from '@agoric/vat-data' */
-
 /**
  * Asset Reserve holds onto assets for the Inter Protocol, and can dispense it
  * for various purposes under governance control.
@@ -46,8 +51,8 @@ harden(meta);
  * @param {{
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
- *   marshaller: ERef<Marshaller>;
- *   storageNode: ERef<StorageNode>;
+ *   marshaller: ERemote<Marshaller>;
+ *   storageNode: ERemote<StorageNode>;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -58,9 +63,12 @@ export const start = async (zcf, privateArgs, baggage) => {
   // accessed via the `state` object. The latter means updates are made directly
   // to state and don't require reference to baggage.
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
 
   const storageNode = await privateArgs.storageNode;
@@ -87,7 +95,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.initialPoserInvitation,
     {},
     privateArgs.storageNode,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
 
   const { governorFacet } = makeDurableGovernorFacet(

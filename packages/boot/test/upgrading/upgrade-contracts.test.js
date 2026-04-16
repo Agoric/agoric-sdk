@@ -8,7 +8,12 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { buildVatController } from '@agoric/swingset-vat';
 
 /**
- * @type {import('ava').TestFn<{}>}
+ * @import {TestFn} from 'ava';
+ * @import {SwingSetConfig} from '@agoric/swingset-vat';
+ */
+
+/**
+ * @type {TestFn<{}>}
  */
 const test = anyTest;
 

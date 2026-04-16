@@ -12,3 +12,6 @@ logs/
 *-pool-config.json
 wasm-artifacts/
 xcs-contracts-info.json
+
+# task marker temp files
+,*

@@ -1,6 +1,3 @@
-// @jessie-check
-/// <reference types="@agoric/internal/exported" />
-
 export * from './amountMath.js';
 export * from './issuerKit.js';
 export * from './typeGuards.js';

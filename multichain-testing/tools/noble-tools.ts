@@ -2,12 +2,24 @@ import type { IBCChannelID } from '@agoric/vats';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 import type { NobleAddress } from '@agoric/fast-usdc';
 import type { ExecSyncOptions } from 'node:child_process';
+import { emulateBroadcastModeBlock } from './bblock.ts';
 
 const kubectlBinary = 'kubectl';
 const noblePod = 'noblelocal-genesis-0';
 const nobleBinary = 'nobled';
 
-const makeKubeArgs = () => {
+const makeKubeArgs = (args: string[]) => {
+  const cmd = nobleBinary;
+  let cmdArgs: string[];
+  if (args.some(arg => arg === '--broadcast-mode=block')) {
+    const script = emulateBroadcastModeBlock(
+      cmd,
+      args.filter(arg => arg !== '--broadcast-mode=block'),
+    );
+    cmdArgs = ['/bin/bash', '-c', script];
+  } else {
+    cmdArgs = [cmd, ...args];
+  }
   return [
     'exec',
     '-i',
@@ -16,7 +28,7 @@ const makeKubeArgs = () => {
     'validator',
     '--tty=false',
     '--',
-    nobleBinary,
+    ...cmdArgs,
   ];
 };
 
@@ -35,8 +47,7 @@ export const makeNobleTools = (
       encoding: 'utf-8' as const,
       stdio: ['ignore', 'pipe', 'pipe'],
     },
-  ) =>
-    execFileSync(kubectlBinary, [...makeKubeArgs(), ...args], opts) as string;
+  ) => execFileSync(kubectlBinary, makeKubeArgs(args), opts) as string;
 
   const registerForwardingAcct = (
     channelId: IBCChannelID,
@@ -52,9 +63,7 @@ export const makeNobleTools = (
         address,
         '--from=genesis',
         '-y',
-        // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
-        '--broadcast-mode',
-        'block',
+        '--broadcast-mode=block',
       ]),
     );
   };
@@ -75,9 +84,7 @@ export const makeNobleTools = (
         denomAmount,
         '--from=faucet',
         '-y',
-        // FIXME removed in cosmos-sdk https://github.com/Agoric/agoric-sdk/issues/9016
-        '--broadcast-mode',
-        'block',
+        '--broadcast-mode=block',
       ]),
     );
   };

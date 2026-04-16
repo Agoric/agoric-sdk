@@ -1,6 +1,11 @@
-import { getLockdownBundleSHA256, getLockdownBundle } from '@agoric/xsnap-lockdown';
-import { getSupervisorBundleSHA256, getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
-
+import {
+  getLockdownBundleSHA256,
+  getLockdownBundle,
+} from '@agoric/xsnap-lockdown';
+import {
+  getSupervisorBundleSHA256,
+  getSupervisorBundle,
+} from '@agoric/swingset-xsnap-supervisor';
 
 export const makeXsnapBundleData = harden(() => {
   return harden({
@@ -22,7 +27,7 @@ export const makeXsnapBundleData = harden(() => {
 
 /**
  * @param {import('@agoric/swing-store').BundleStore} bundleStore
- * @param {ReturnType<makeXsnapBundleData>} bundleData
+ * @param {ReturnType<typeof makeXsnapBundleData>} bundleData
  * @returns {BundleHandler}
  */
 export const makeWorkerBundleHandler = harden((bundleStore, bundleData) => {
@@ -56,4 +61,3 @@ export const makeWorkerBundleHandler = harden((bundleStore, bundleData) => {
     },
   });
 });
-

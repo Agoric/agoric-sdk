@@ -1,7 +1,7 @@
 /* eslint-env node */
 // @ts-check
 
-import path from 'path';
+import path from 'node:path';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 
@@ -9,7 +9,11 @@ import { parseLocatedJson } from './json.js';
 
 import { makeBundlePublisher, makeCosmosBundlePublisher } from './publish.js';
 
-const publishMain = async (progname, rawArgs, powers, opts) => {
+/**
+ * @import {CosmosConnectionSpec} from './publish.js';
+ */
+
+const publishMain = async (_progname, rawArgs, powers, opts) => {
   const { fs } = powers;
 
   const { node: rpcAddress, home: homeDirectory, chainID = 'agoric' } = opts;
@@ -23,7 +27,7 @@ const publishMain = async (progname, rawArgs, powers, opts) => {
     );
   }
 
-  /** @type {import('./publish.js').CosmosConnectionSpec} */
+  /** @type {CosmosConnectionSpec} */
   const connectionSpec = {
     type: 'chain-cosmos-sdk',
     rpcAddresses: [rpcAddress],

@@ -7,17 +7,19 @@ import { AssetKind } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { produceAttenuatedDeposit } from './attenuated-deposit.core.js';
-
-export { produceAttenuatedDeposit };
 
 const { Fail } = assert;
 
 const trace = makeTracer('PoC-CE', true);
 
 /**
+ * @import {ERemote} from '@agoric/internal';
  * @import {Board} from '@agoric/vats';
- * @import {AttenuatedDepositPowers} from './attenuated-deposit.core.js';
+ * @import {AttenuatedDepositPowers} from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const PoCInfo = /** @type {const} */ ({
@@ -35,7 +37,7 @@ const marshalData = makeMarshal(_val => Fail`data only`);
 /**
  * Make a storage node for auxiliary data for a value on the board.
  *
- * @param {ERef<StorageNode>} chainStorage
+ * @param {ERemote<StorageNode>} chainStorage
  * @param {string} boardId
  */
 const makeBoardAuxNode = async (chainStorage, boardId) => {
@@ -46,8 +48,8 @@ const makeBoardAuxNode = async (chainStorage, boardId) => {
 /**
  * see `publishAgoricBrandsDisplayInfo` {@link @agoric/smart-wallet/proposals/upgrade-walletFactory-proposal.js}
  *
- * @param {ERef<StorageNode>} chainStorage
- * @param {ERef<Board>} board
+ * @param {ERemote<StorageNode>} chainStorage
+ * @param {ERemote<Board>} board
  * @param {Brand<'nat'>} brand
  */
 const publishBrandInfo = async (chainStorage, board, brand) => {
@@ -151,8 +153,8 @@ export const createPoCAsset = async (
 
   // publish brand info / boardAux for offer legibility
   await publishBrandInfo(
-    // @ts-expect-error 'Promise<StorageNode | null>' is not assignable to
-    // parameter of type 'ERef<StorageNode>'
+    // @ts-expect-error 'Promise<Remote<StorageNode> | null>' is not assignable to
+    // parameter of type 'ERemote<StorageNode>'
     chainStorage,
     board,
     brand,
@@ -189,10 +191,6 @@ export const getManifestCall = (_powers, options) => {
         installation: {
           consume: { mintHolder: true },
         },
-      },
-      [produceAttenuatedDeposit.name]: {
-        consume: { namesByAddress: true, namesByAddressAdmin: true },
-        produce: { getDepositFacet: true },
       },
     },
     options,

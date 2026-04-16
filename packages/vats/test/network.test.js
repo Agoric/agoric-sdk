@@ -16,6 +16,7 @@ import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js
 import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
 
 import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
+import { encodeIbcEndpoint } from '../tools/ibc-utils.js';
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {
@@ -144,7 +145,12 @@ test('network - ibc', async t => {
 
     t.log('Connecting to a Remote Port');
     const [hopName, portName, version] = ['connection-11', 'port-98', 'bar'];
-    const remoteEndpoint = `/ibc-hop/${hopName}/ibc-port/${portName}/unordered/${version}`;
+    const remoteEndpoint = encodeIbcEndpoint({
+      hops: [hopName],
+      portID: portName,
+      order: 'unordered',
+      version,
+    });
     const cP = E(p).connect(remoteEndpoint);
 
     const ev2 = await events.next();

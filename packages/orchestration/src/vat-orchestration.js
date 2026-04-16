@@ -6,6 +6,7 @@ import { prepareCosmosInterchainService } from './exos/cosmos-interchain-service
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {CosmosOrchestrationPowers} from './exos/cosmos-interchain-service.js';
+ * @import {DProxy, VatPowers} from '@agoric/swingset-vat';
  */
 
 /**
@@ -13,11 +14,11 @@ import { prepareCosmosInterchainService } from './exos/cosmos-interchain-service
  *
  * @param {VatPowers & {
  *   D: DProxy;
- * }} vatPowers
- * @param {never} vatParameters
+ * }} _vatPowers
+ * @param {never} _vatParameters
  * @param {Baggage} baggage
  */
-export const buildRootObject = (vatPowers, vatParameters, baggage) => {
+export const buildRootObject = (_vatPowers, _vatParameters, baggage) => {
   const zone = makeDurableZone(baggage);
   const vowTools = prepareSwingsetVowTools(zone.subZone('VowTools'));
   const makeCosmosInterchainService = prepareCosmosInterchainService(

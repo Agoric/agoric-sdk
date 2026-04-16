@@ -8,11 +8,19 @@
  */
 
 /**
+ * @import {PriceAggregatorContract} from './priceAggregator.js';
+ * @import {Invitation} from '../types-index.js';
+ * @import {AmountKeywordRecord, Instance} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ */
+
+/**
  * @typedef {{} | string} OracleKey
  */
 
 /**
- * @typedef {Pick<import("./priceAggregator").PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
+ * @typedef {Pick<PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
  */
 
 /**

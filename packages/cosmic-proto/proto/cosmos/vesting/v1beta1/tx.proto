@@ -1,12 +1,12 @@
 syntax = "proto3";
 package cosmos.vesting.v1beta1;
 
-import "gogoproto/gogo.proto";
-import "cosmos/base/v1beta1/coin.proto";
-import "cosmos_proto/cosmos.proto";
-import "cosmos/vesting/v1beta1/vesting.proto";
-import "cosmos/msg/v1/msg.proto";
 import "amino/amino.proto";
+import "cosmos/base/v1beta1/coin.proto";
+import "cosmos/msg/v1/msg.proto";
+import "cosmos/vesting/v1beta1/vesting.proto";
+import "cosmos_proto/cosmos.proto";
+import "gogoproto/gogo.proto";
 
 option go_package = "github.com/cosmos/cosmos-sdk/x/auth/vesting/types";
 
@@ -19,14 +19,14 @@ service Msg {
   rpc CreateVestingAccount(MsgCreateVestingAccount) returns (MsgCreateVestingAccountResponse);
   // CreatePermanentLockedAccount defines a method that enables creating a permanent
   // locked account.
-  //
-  // Since: cosmos-sdk 0.46
-  rpc CreatePermanentLockedAccount(MsgCreatePermanentLockedAccount) returns (MsgCreatePermanentLockedAccountResponse);
+  rpc CreatePermanentLockedAccount(MsgCreatePermanentLockedAccount) returns (MsgCreatePermanentLockedAccountResponse) {
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
+  };
   // CreatePeriodicVestingAccount defines a method that enables creating a
   // periodic vesting account.
-  //
-  // Since: cosmos-sdk 0.46
-  rpc CreatePeriodicVestingAccount(MsgCreatePeriodicVestingAccount) returns (MsgCreatePeriodicVestingAccountResponse);
+  rpc CreatePeriodicVestingAccount(MsgCreatePeriodicVestingAccount) returns (MsgCreatePeriodicVestingAccountResponse) {
+    option (cosmos_proto.method_added_in) = "cosmos-sdk 0.46";
+  };
   // CreateClawbackVestingAccount defines a method that enables creating a
   // vesting account that is subject to clawback.
   rpc CreateClawbackVestingAccount(MsgCreateClawbackVestingAccount) returns (MsgCreateClawbackVestingAccountResponse);
@@ -49,6 +49,7 @@ message MsgCreateVestingAccount {
   repeated cosmos.base.v1beta1.Coin amount = 3 [
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
 
@@ -62,34 +63,33 @@ message MsgCreateVestingAccountResponse {}
 
 // MsgCreatePermanentLockedAccount defines a message that enables creating a permanent
 // locked account.
-//
-// Since: cosmos-sdk 0.46
 message MsgCreatePermanentLockedAccount {
-  option (cosmos.msg.v1.signer) = "from_address";
-  option (amino.name)           = "cosmos-sdk/MsgCreatePermLockedAccount";
-  option (gogoproto.equal)      = true;
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  option (cosmos.msg.v1.signer)          = "from_address";
+  option (amino.name)                    = "cosmos-sdk/MsgCreatePermLockedAccount";
+  option (gogoproto.equal)               = true;
 
   string   from_address                    = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
   string   to_address                      = 2 [(gogoproto.moretags) = "yaml:\"to_address\""];
   repeated cosmos.base.v1beta1.Coin amount = 3 [
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
 }
 
 // MsgCreatePermanentLockedAccountResponse defines the Msg/CreatePermanentLockedAccount response type.
-//
-// Since: cosmos-sdk 0.46
-message MsgCreatePermanentLockedAccountResponse {}
+message MsgCreatePermanentLockedAccountResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
 
 // MsgCreateVestingAccount defines a message that enables creating a vesting
 // account.
-//
-// Since: cosmos-sdk 0.46
 message MsgCreatePeriodicVestingAccount {
-  option (cosmos.msg.v1.signer) = "from_address";
-  option (amino.name)           = "cosmos-sdk/MsgCreatePeriodicVestingAccount";
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+  option (cosmos.msg.v1.signer)          = "from_address";
+  option (amino.name)                    = "cosmos-sdk/MsgCreatePeriodVestAccount";
 
   option (gogoproto.equal) = false;
 
@@ -104,15 +104,17 @@ message MsgCreatePeriodicVestingAccount {
   bool merge = 5;
 }
 
-// MsgCreateVestingAccountResponse defines the Msg/CreatePeriodicVestingAccount
+// MsgCreatePeriodicVestingAccountResponse defines the Msg/CreatePeriodicVestingAccount
 // response type.
-//
-// Since: cosmos-sdk 0.46
-message MsgCreatePeriodicVestingAccountResponse {}
+message MsgCreatePeriodicVestingAccountResponse {
+  option (cosmos_proto.message_added_in) = "cosmos-sdk 0.46";
+}
 
 // MsgCreateClawbackVestingAccount defines a message that enables creating a ClawbackVestingAccount.
 message MsgCreateClawbackVestingAccount {
-  option (gogoproto.equal) = false;
+  option (cosmos.msg.v1.signer) = "from_address";
+  option (amino.name)           = "cosmos-sdk/MsgCreateClawbackVestingAccount";
+  option (gogoproto.equal)      = false;
 
   // Address of the account providing the funds, which must also sign the request.
   string from_address = 1 [(gogoproto.moretags) = "yaml:\"from_address\""];
@@ -135,6 +137,8 @@ message MsgCreateClawbackVestingAccountResponse {}
 
 // MsgClawback defines a message that removes unvested tokens from a ClawbackVestingAccount.
 message MsgClawback {
+  option (cosmos.msg.v1.signer) = "funder_address";
+  option (amino.name)           = "cosmos-sdk/MsgClawback";
   // funder_address is the address which funded the account
   string funder_address = 1;
   // address is the address of the ClawbackVestingAccount to claw back from.
@@ -153,6 +157,8 @@ message MsgClawbackResponse {}
 // some vested assets have been transferred out of the account. Currently only applies to
 // ClawbackVesting accounts.
 message MsgReturnGrants {
+  option (cosmos.msg.v1.signer) = "address";
+  option (amino.name)           = "cosmos-sdk/MsgReturnGrants";
   // address is the address of the grantee account returning the grant.
   string address = 1;
 }

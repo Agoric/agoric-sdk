@@ -12,12 +12,14 @@ import (
 
 // Parameter keys
 var (
-	ParamStoreKeyBeansPerUnit       = []byte("beans_per_unit")
-	ParamStoreKeyBootstrapVatConfig = []byte("bootstrap_vat_config")
-	ParamStoreKeyFeeUnitPrice       = []byte("fee_unit_price")
-	ParamStoreKeyPowerFlagFees      = []byte("power_flag_fees")
-	ParamStoreKeyQueueMax           = []byte("queue_max")
-	ParamStoreKeyVatCleanupBudget   = []byte("vat_cleanup_budget")
+	ParamStoreKeyBeansPerUnit                     = []byte("beans_per_unit")
+	ParamStoreKeyBootstrapVatConfig               = []byte("bootstrap_vat_config")
+	ParamStoreKeyFeeUnitPrice                     = []byte("fee_unit_price")
+	ParamStoreKeyPowerFlagFees                    = []byte("power_flag_fees")
+	ParamStoreKeyQueueMax                         = []byte("queue_max")
+	ParamStoreKeyVatCleanupBudget                 = []byte("vat_cleanup_budget")
+	ParamStoreKeyBundleUncompressedSizeLimitBytes = []byte("bundle_uncompressed_size_limit_bytes")
+	ParamStoreKeyChunkSizeLimitBytes              = []byte("chunk_size_limit_bytes")
 )
 
 func NewStringBeans(key string, beans sdkmath.Uint) StringBeans {
@@ -49,12 +51,14 @@ func ParamKeyTable() paramtypes.KeyTable {
 // DefaultParams returns default swingset parameters
 func DefaultParams() Params {
 	return Params{
-		BeansPerUnit:       DefaultBeansPerUnit(),
-		BootstrapVatConfig: DefaultBootstrapVatConfig,
-		FeeUnitPrice:       DefaultFeeUnitPrice,
-		PowerFlagFees:      DefaultPowerFlagFees,
-		QueueMax:           DefaultQueueMax,
-		VatCleanupBudget:   DefaultVatCleanupBudget,
+		BeansPerUnit:                     DefaultBeansPerUnit(),
+		BootstrapVatConfig:               DefaultBootstrapVatConfig,
+		FeeUnitPrice:                     DefaultFeeUnitPrice,
+		PowerFlagFees:                    DefaultPowerFlagFees,
+		QueueMax:                         DefaultQueueMax,
+		VatCleanupBudget:                 DefaultVatCleanupBudget,
+		BundleUncompressedSizeLimitBytes: DefaultBundleUncompressedSizeLimitBytes,
+		ChunkSizeLimitBytes:              DefaultChunkSizeLimitBytes,
 	}
 }
 
@@ -72,6 +76,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyPowerFlagFees, &p.PowerFlagFees, validatePowerFlagFees),
 		paramtypes.NewParamSetPair(ParamStoreKeyQueueMax, &p.QueueMax, validateQueueMax),
 		paramtypes.NewParamSetPair(ParamStoreKeyVatCleanupBudget, &p.VatCleanupBudget, validateVatCleanupBudget),
+		paramtypes.NewParamSetPair(ParamStoreKeyBundleUncompressedSizeLimitBytes, &p.BundleUncompressedSizeLimitBytes, validateBundleUncompressedSizeLimitBytes),
+		paramtypes.NewParamSetPair(ParamStoreKeyChunkSizeLimitBytes, &p.ChunkSizeLimitBytes, validateChunkSizeLimitBytes),
 	}
 }
 
@@ -93,6 +99,12 @@ func (p Params) ValidateBasic() error {
 		return err
 	}
 	if err := validateVatCleanupBudget(p.VatCleanupBudget); err != nil {
+		return err
+	}
+	if err := validateBundleUncompressedSizeLimitBytes(p.BundleUncompressedSizeLimitBytes); err != nil {
+		return err
+	}
+	if err := validateChunkSizeLimitBytes(p.ChunkSizeLimitBytes); err != nil {
 		return err
 	}
 
@@ -189,10 +201,33 @@ func validateVatCleanupBudget(i interface{}) error {
 	return nil
 }
 
+func validateBundleUncompressedSizeLimitBytes(i interface{}) error {
+	if value, ok := i.(int64); !ok {
+		return fmt.Errorf("bundle_uncompressed_size_limit_bytes must be int64, got %#v", i)
+	} else if value <= 0 {
+		return fmt.Errorf("bundle_uncompressed_size_limit_bytes must be positive (>0), got %d", value)
+	}
+	return nil
+}
+
+func validateChunkSizeLimitBytes(i interface{}) error {
+	if value, ok := i.(int64); !ok {
+		return fmt.Errorf("chunk_size_limit_bytes must be int64, got %#v", i)
+	} else if value <= 0 {
+		return fmt.Errorf("chunk_size_limit_bytes must be positive (>0), got %d", value)
+	}
+	return nil
+}
+
 // UpdateParams appends any missing params, configuring them to their defaults,
-// then returning the updated params or an error. Existing params are not
+// then returning the updated params or an error.
+// Existing params are not
 // modified, regardless of their value, and they are not removed if they no
 // longer appear in the defaults.
+// UpdateParams appends missing entries and fills defaults. Note that
+// InstallationDeadlineBlocks and InstallationDeadlineSeconds treat 0 as
+// "unset" and will be replaced with DefaultInstallationDeadlineBlocks and
+// DefaultInstallationDeadlineSeconds, respectively.
 func UpdateParams(params Params) (Params, error) {
 	newBpu, err := appendMissingDefaults(params.BeansPerUnit, DefaultBeansPerUnit())
 	if err != nil {
@@ -215,6 +250,21 @@ func UpdateParams(params Params) (Params, error) {
 	params.PowerFlagFees = newPff
 	params.QueueMax = newQm
 	params.VatCleanupBudget = newVcb
+
+	// 0 is treated as unset for these fields.
+	if params.InstallationDeadlineBlocks == 0 {
+		params.InstallationDeadlineBlocks = DefaultInstallationDeadlineBlocks
+	}
+	if params.InstallationDeadlineSeconds == 0 {
+		params.InstallationDeadlineSeconds = DefaultInstallationDeadlineSeconds
+	}
+	if params.BundleUncompressedSizeLimitBytes == 0 {
+		params.BundleUncompressedSizeLimitBytes = DefaultBundleUncompressedSizeLimitBytes
+	}
+	if params.ChunkSizeLimitBytes == 0 {
+		params.ChunkSizeLimitBytes = DefaultChunkSizeLimitBytes
+	}
+
 	return params, nil
 }
 

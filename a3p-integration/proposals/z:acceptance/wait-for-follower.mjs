@@ -1,6 +1,11 @@
 /* eslint-env node */
 
-import { watch, readFileSync } from 'fs';
+import { watch, readFileSync } from 'node:fs';
+
+/**
+ * @import {FSWatcher} from 'fs';
+ * @import {WatchEventType} from 'fs';
+ */
 
 const FILE_ENCODING = 'utf-8';
 const FILE_PATH = process.env.MESSAGE_FILE_PATH;
@@ -24,7 +29,7 @@ const watchSharedFile = filePath => {
   return /** @type {Promise<string>} */ (
     new Promise((resolve, reject) => {
       /**
-       * @type {import('fs').FSWatcher}
+       * @type {FSWatcher}
        */
       let watcher;
       /**
@@ -33,7 +38,7 @@ const watchSharedFile = filePath => {
       let error;
 
       /**
-       * @param {import('fs').WatchEventType} eventType
+       * @param {WatchEventType} eventType
        */
       const listener = eventType => {
         try {

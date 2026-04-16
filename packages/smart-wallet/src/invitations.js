@@ -5,6 +5,17 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { shape } from './typeGuards.js';
 
+/**
+ * @import {OfferId} from './offers.js';
+ * @import {Invitation, InvitationDetails, ZoeService} from '@agoric/zoe';
+ * @import {NameHub} from '@agoric/vats';
+ * @import {InvitationMakers} from './types.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Purse} from '@agoric/ertp';
+ */
+
 // A safety limit
 const MAX_PIPE_LENGTH = 2;
 
@@ -31,7 +42,7 @@ const MAX_PIPE_LENGTH = 2;
  *
  * @typedef {{
  *   source: 'contract';
- *   instance: Instance;
+ *   instance: Instance<any>;
  *   publicInvitationMaker: string;
  *   invitationArgs?: any[];
  * }} ContractInvitationSpec
@@ -39,7 +50,7 @@ const MAX_PIPE_LENGTH = 2;
  *
  * @typedef {{
  *   source: 'purse';
- *   instance: Instance;
+ *   instance: Instance<any>;
  *   description: string;
  * }} PurseInvitationSpec
  *   the invitation is already in your Zoe "invitation" purse so we need to query
@@ -50,7 +61,7 @@ const MAX_PIPE_LENGTH = 2;
  *
  * @typedef {{
  *   source: 'continuing';
- *   previousOffer: import('./offers.js').OfferId;
+ *   previousOffer: OfferId;
  *   invitationMakerName: string;
  *   invitationArgs?: any[];
  * }} ContinuingInvitationSpec
@@ -59,18 +70,15 @@ const MAX_PIPE_LENGTH = 2;
  */
 
 /**
- * @typedef {Pick<
- *   import('@agoric/zoe').InvitationDetails,
- *   'description' | 'instance'
- * >} InvitationsPurseQuery
+ * @typedef {Pick<InvitationDetails, 'description' | 'instance'>} InvitationsPurseQuery
  */
 
 /**
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<import('@agoric/vats').NameHub>} agoricNames
+ * @param {ERef<NameHub>} agoricNames
  * @param {Brand<'set'>} invitationBrand
- * @param {Purse<'set', import('@agoric/zoe').InvitationDetails>} invitationsPurse
- * @param {(fromOfferId: string) => import('./types.js').InvitationMakers} getInvitationContinuation
+ * @param {Purse<'set', InvitationDetails>} invitationsPurse
+ * @param {(fromOfferId: string) => InvitationMakers} getInvitationContinuation
  */
 export const makeInvitationsHelper = (
   zoe,

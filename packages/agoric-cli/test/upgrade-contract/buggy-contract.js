@@ -2,6 +2,12 @@ import { AmountMath } from '@agoric/ertp';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 /**
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {MapStore} from '@agoric/store';
+ * @import {OfferHandler} from '@agoric/zoe';
+ */
+
+/**
  * @param {ZCF} zcf
  * @param {*} _privateArgs
  * @param {MapStore<any, any>} baggage

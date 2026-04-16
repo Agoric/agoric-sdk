@@ -19,9 +19,12 @@ import { makeQuorumCounter } from './quorumCounter.js';
 import { breakTie } from './breakTie.js';
 
 /**
+ * @import {Handle} from '@agoric/zoe';
  * @import {MapStore} from '@agoric/swingset-liveslots';
+ * @import {Publisher} from '@agoric/notifier';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';
+ * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
 const validateQuestionSpec = questionSpec => {

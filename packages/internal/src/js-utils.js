@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 /**
  * @file Pure JavaScript utility functions that are compatible with but not
  *   dependent upon a hardened environment.
@@ -13,7 +12,10 @@ export const TRUE = /** @type {const} */ (true);
 /**
  * @typedef {<O extends Record<string, unknown>>(
  *   obj: O,
- * ) => { [K in keyof O]: K extends string ? [K, O[K]] : never }[keyof O][]} TypedEntries
+ * ) => Exclude<
+ *   { [K in keyof O]: K extends string ? [K, O[K]] : never }[keyof O],
+ *   undefined
+ * >[]} TypedEntries
  */
 export const typedEntries = /** @type {TypedEntries} */ (Object.entries);
 
@@ -173,13 +175,32 @@ export const objectMapMutable = (obj, mapper) => {
 };
 
 /**
+ * Map the elements of an array to new values, skipping elements for which the
+ * mapping results in either `undefined` or `false`.
+ *
+ * @template T
+ * @template U
+ * @param {T[]} arr
+ * @param {(value: T, index: number, arr: T[]) => U | undefined | false} mapOrDrop
+ * @returns {U[]}
+ */
+export const partialMap = (arr, mapOrDrop) =>
+  arr.reduce((results, el, i, arrArg) => {
+    const result = mapOrDrop(el, i, arrArg);
+    if (result !== undefined && result !== false) {
+      results.push(result);
+    }
+    return results;
+  }, /** @type {U[]} */ ([]));
+
+/**
  * Return the value from `map` associated with `key`. If there is not yet such a
  * value, get one from `makeValue(key)` and update `map` before returning the
  * new value.
  *
  * @template K
  * @template V
- * @param {K extends WeakKey ? WeakMap<K, V> : Map<K, V>} map
+ * @param {[K] extends [WeakKey] ? WeakMap<K, V> : Map<K, V>} map
  * @param {K} key
  * @param {(key: K) => V} makeValue
  * @returns {V}

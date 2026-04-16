@@ -36,6 +36,26 @@ export const protoMsgMocks = {
     msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xVS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpNEtDMk52YzIxdmN6RjBaWE4wRWhKamIzTnRiM04yWVd4dmNHVnlNWFJsYzNRYUN3b0ZkV0YwYjIwU0FqRXciLCJtZW1vIjoiIn0=',
     ack: responses.delegate,
   },
+  // MsgDelegate 10uatom from cosmos1test1 to cosmosvaloper1test
+  delegate1: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xZS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpOEtER052YzIxdmN6RjBaWE4wTVJJU1kyOXpiVzl6ZG1Gc2IzQmxjakYwWlhOMEdnc0tCWFZoZEc5dEVnSXhNQT09IiwibWVtbyI6IiJ9',
+    ack: responses.delegate,
+  },
+  // MsgDelegate 10uatom from cosmos1test2 to cosmosvaloper1test
+  delegate2: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xZS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpOEtER052YzIxdmN6RjBaWE4wTWhJU1kyOXpiVzl6ZG1Gc2IzQmxjakYwWlhOMEdnc0tCWFZoZEc5dEVnSXhNQT09IiwibWVtbyI6IiJ9',
+    ack: responses.delegate,
+  },
+  // MsgDelegate 10uatom from cosmos1test3 to cosmosvaloper1test
+  delegate3: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xZS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpOEtER052YzIxdmN6RjBaWE4wTXhJU1kyOXpiVzl6ZG1Gc2IzQmxjakYwWlhOMEdnc0tCWFZoZEc5dEVnSXhNQT09IiwibWVtbyI6IiJ9',
+    ack: responses.delegate,
+  },
+  // MsgDelegate 10uatom from cosmos1test4 to cosmosvaloper1test
+  delegate4: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xZS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpOEtER052YzIxdmN6RjBaWE4wTkJJU1kyOXpiVzl6ZG1Gc2IzQmxjakYwWlhOMEdnc0tCWFZoZEc5dEVnSXhNQT09IiwibWVtbyI6IiJ9',
+    ack: responses.delegate,
+  },
   // QueryBalanceRequest (/cosmos.bank.v1beta1.Query/Balance) of uatom for cosmos1test
   queryBalance: {
     msg: 'eyJkYXRhIjoiQ2pvS0ZBb0xZMjl6Ylc5ek1YUmxjM1FTQlhWaGRHOXRFaUl2WTI5emJXOXpMbUpoYm1zdWRqRmlaWFJoTVM1UmRXVnllUzlDWVd4aGJtTmwiLCJtZW1vIjoiIn0=',

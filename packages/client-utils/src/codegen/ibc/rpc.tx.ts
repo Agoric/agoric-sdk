@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { type Rpc } from '../helpers.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
 export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
   cosmos: {
     auth: {
@@ -17,9 +17,24 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
         await import('../cosmos/bank/v1beta1/tx.rpc.msg.js')
       ).MsgClientImpl(rpc),
     },
+    benchmark: {
+      v1: new (
+        await import('../cosmos/benchmark/v1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
+    circuit: {
+      v1: new (
+        await import('../cosmos/circuit/v1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
     consensus: {
       v1: new (
         await import('../cosmos/consensus/v1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
+    counter: {
+      v1: new (
+        await import('../cosmos/counter/v1/tx.rpc.msg.js')
       ).MsgClientImpl(rpc),
     },
     distribution: {
@@ -50,6 +65,11 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
         await import('../cosmos/mint/v1beta1/tx.rpc.msg.js')
       ).MsgClientImpl(rpc),
     },
+    protocolpool: {
+      v1: new (
+        await import('../cosmos/protocolpool/v1/tx.rpc.msg.js')
+      ).MsgClientImpl(rpc),
+    },
     staking: {
       v1beta1: new (
         await import('../cosmos/staking/v1beta1/tx.rpc.msg.js')
@@ -71,16 +91,12 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
       interchain_accounts: {
         controller: {
           v1: new (
-            await import(
-              './applications/interchain_accounts/controller/v1/tx.rpc.msg.js'
-            )
+            await import('./applications/interchain_accounts/controller/v1/tx.rpc.msg.js')
           ).MsgClientImpl(rpc),
         },
         host: {
           v1: new (
-            await import(
-              './applications/interchain_accounts/host/v1/tx.rpc.msg.js'
-            )
+            await import('./applications/interchain_accounts/host/v1/tx.rpc.msg.js')
           ).MsgClientImpl(rpc),
         },
       },
@@ -95,15 +111,28 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
         v1: new (await import('./core/channel/v1/tx.rpc.msg.js')).MsgClientImpl(
           rpc,
         ),
+        v2: new (await import('./core/channel/v2/tx.rpc.msg.js')).MsgClientImpl(
+          rpc,
+        ),
       },
       client: {
         v1: new (await import('./core/client/v1/tx.rpc.msg.js')).MsgClientImpl(
+          rpc,
+        ),
+        v2: new (await import('./core/client/v2/tx.rpc.msg.js')).MsgClientImpl(
           rpc,
         ),
       },
       connection: {
         v1: new (
           await import('./core/connection/v1/tx.rpc.msg.js')
+        ).MsgClientImpl(rpc),
+      },
+    },
+    lightclients: {
+      wasm: {
+        v1: new (
+          await import('./lightclients/wasm/v1/tx.rpc.msg.js')
         ).MsgClientImpl(rpc),
       },
     },

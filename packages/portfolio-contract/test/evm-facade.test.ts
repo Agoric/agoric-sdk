@@ -1,0 +1,130 @@
+/**
+ * @file Tests for EVM call batch facade helpers.
+ */
+import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
+import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { hexToBytes } from '@noble/hashes/utils';
+import { type Abi } from 'viem';
+import {
+  makeEvmAbiCallBatch,
+  makeGmpBuilder,
+  makeEvmContract,
+} from '../src/evm-facade.ts';
+import { depositFactoryABI } from '../src/interfaces/orch-factory.ts';
+import { depositFactoryCreateAndDepositInputs } from '../src/utils/evm-orch-factory.ts';
+import { contractWithCallMetadata } from '../src/utils/evm-orch-router.ts';
+
+const erc20Abi = [
+  {
+    type: 'function',
+    name: 'approve',
+    inputs: [
+      { name: 'spender', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: 'success', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'transfer',
+    inputs: [
+      { name: 'to', type: 'address' },
+      { name: 'amount', type: 'uint256' },
+    ],
+    outputs: [{ name: 'success', type: 'bool' }],
+    stateMutability: 'nonpayable',
+  },
+] as const satisfies Abi;
+
+test('makeEvmAbiCallBatch records ERC20 calls with ABI info', t => {
+  const tokenAddress = '0x00000000000000000000000000000000000000a0';
+  const spender = '0x00000000000000000000000000000000000000b0';
+  const recipient = '0x00000000000000000000000000000000000000c0';
+
+  const batch = makeEvmAbiCallBatch();
+  const token = batch.makeContract(tokenAddress, erc20Abi);
+
+  token.approve(spender, 123n);
+  token.transfer(recipient, 456n);
+
+  const calls = batch.finish();
+  t.deepEqual(calls, [
+    {
+      target: tokenAddress,
+      functionSignature: 'approve(address,uint256)',
+      args: [spender, 123n],
+      abi: [erc20Abi[0]],
+    },
+    {
+      target: tokenAddress,
+      functionSignature: 'transfer(address,uint256)',
+      args: [recipient, 456n],
+      abi: [erc20Abi[1]],
+    },
+  ]);
+});
+
+test('makeEvmContract is equivalent to makeEvmAbiCallBatch and encodes calls', t => {
+  const tokenAddress = '0x00000000000000000000000000000000000000a0';
+  const spender = '0x00000000000000000000000000000000000000b0';
+  const recipient = '0x00000000000000000000000000000000000000c0';
+
+  const batch = makeEvmAbiCallBatch();
+  const token = batch.makeContract(tokenAddress, erc20Abi);
+
+  token.approve(spender, 123n);
+  token.transfer(recipient, 456n);
+
+  const expectedCalls = batch
+    .finish()
+    .map(callData => constructContractCall(callData))
+    .map(call => ({ ...call, value: 0n, gasLimit: 0n })); // Router calls include value and gasLimit fields
+
+  const erc20Contract = makeEvmContract(erc20Abi);
+  const token2 = contractWithCallMetadata(erc20Contract, tokenAddress);
+  const calls = [
+    token2.approve(spender, 123n),
+    token2.transfer(recipient, 456n),
+  ];
+
+  t.deepEqual(calls, expectedCalls);
+
+  t.snapshot(calls, 'ContractCalls');
+});
+
+test('makeGmpBuilder encodes createAndDeposit payload', t => {
+  const destinationAddress = '0x00000000000000000000000000000000000000d0';
+  const gmp = makeGmpBuilder();
+  const factory = gmp.makeContract(destinationAddress, depositFactoryABI);
+
+  const payloadArgs = {
+    lcaOwner: 'agoric1owner',
+    tokenOwner: '0x00000000000000000000000000000000000000e1',
+    permit: {
+      permitted: {
+        token: '0x00000000000000000000000000000000000000e2',
+        amount: 123n,
+      },
+      nonce: 9n,
+      deadline: 456n,
+    },
+    witness:
+      '0x0000000000000000000000000000000000000000000000000000000000000000',
+    witnessTypeString: 'OpenPortfolioWitness',
+    signature: '0x1234',
+    expectedWalletAddress: '0x00000000000000000000000000000000000000e3',
+  } as const;
+
+  factory.createAndDeposit(payloadArgs);
+  const result = gmp.getPayload();
+
+  const expectedHex = encodeAbiParameters(
+    depositFactoryCreateAndDepositInputs,
+    [payloadArgs],
+  );
+  const expectedPayload = hexToBytes(expectedHex.slice(2));
+
+  t.deepEqual(result, expectedPayload);
+});

@@ -27,7 +27,7 @@ jobs:
         uses: actions/setup-node@v4
 
       - name: Set up yarn
-        run: corepack enable
+        run: bash scripts/ensure-corepack-yarn.sh
 
       - name: Install GCP Monitoring/Metrics Client
         run: yarn add @google-cloud/monitoring

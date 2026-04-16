@@ -3,12 +3,18 @@ import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { getInterfaceOf, E } from '@endo/far';
 
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js';
+ * @import {start} from '@agoric/inter-protocol/src/feeDistributor.js';
+ * @import {StartedInstanceKit} from '@agoric/vats/src/core/types.js';
+ */
+
 const trace = makeTracer('ReplaceFeeDistributer', true);
 
 /**
  * Start the reward distributor.
  *
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  * @param {{
  *   options: {
  *     keywordShares: Record<string, bigint>;
@@ -76,9 +82,7 @@ export const replaceFeeDistributor = async (
     });
 
   /**
-   * @type {StartedInstanceKit<
-   *   typeof import('@agoric/inter-protocol/src/feeDistributor.js').start
-   * >}
+   * @type {StartedInstanceKit<typeof start>}
    */
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,

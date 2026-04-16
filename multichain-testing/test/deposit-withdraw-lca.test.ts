@@ -62,8 +62,10 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
   // Wait for the orchAccount to be created
   const { offerToPublicSubscriberPaths } = await retryUntilCondition(
     () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
-    ({ offerToPublicSubscriberPaths }) =>
-      Object.fromEntries(offerToPublicSubscriberPaths)[makeAccountOfferId],
+    result =>
+      Object.fromEntries(result.offerToPublicSubscriberPaths)[
+        makeAccountOfferId
+      ],
     'makeAccount offer result is in vstorage',
   );
 
@@ -179,8 +181,10 @@ test('Attempt to withdraw more than available balance', async t => {
   // Wait for the orchAccount to be created
   const { offerToPublicSubscriberPaths } = await retryUntilCondition(
     () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
-    ({ offerToPublicSubscriberPaths }) =>
-      Object.fromEntries(offerToPublicSubscriberPaths)[makeAccountOfferId],
+    result =>
+      Object.fromEntries(result.offerToPublicSubscriberPaths)[
+        makeAccountOfferId
+      ],
     `${makeAccountOfferId} offer result is in vstorage`,
   );
 

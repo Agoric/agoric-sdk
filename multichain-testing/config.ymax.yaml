@@ -9,6 +9,8 @@ chains:
     env:
       - name: DEBUG
         value: SwingSet:vat,SwingSet:ls
+      # - name: SNAPSHOT_URL
+      #   value: https://storage.googleapis.com/agoric-snapshots-public/starship-agoric/agoric-snapshot.tar.gz
     genesis:
       app_state:
         staking:
@@ -34,7 +36,8 @@ chains:
       memory: 4Gi
   - id: noblelocal
     name: noble
-    image: ghcr.io/agoric/noble:v10.0.0
+    image: ghcr.io/agoric-labs/starship/noble:v10.1.2
+    #image: ghcr.io/agoric-labs/starship/noble:v11.1.0
     numValidators: 1
     balances:
       # USDN whale
@@ -70,10 +73,16 @@ chains:
 relayers:
   - name: agoric-noble
     type: hermes
+    # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
+    image: ghcr.io/hyperweb-io/starship/hermes:1.13.1
     replicas: 1
     chains:
       - agoriclocal
       - noblelocal
+    config:
+      mode:
+        clients:
+          misbehaviour: false
 
 explorer:
   enabled: false

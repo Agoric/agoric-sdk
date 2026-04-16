@@ -5,7 +5,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import { start as startPriceContract } from '@agoric/smart-wallet/test/wallet-fun.contract.js';
 import type { IssuerKeywordRecord } from '@agoric/zoe';
-import type { Installation } from '@agoric/zoe/src/zoeService/utils';
+import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import bundleSource from '@endo/bundle-source';
 import type { ExecutionContext, TestFn } from 'ava';
 import { createRequire } from 'node:module';
@@ -13,13 +13,18 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext as TC,
 } from './walletFactory.ts';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
 const test = anyTest as TestFn<TC>;
 
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(t);
+  const snapshot = await loadOrCreateRunUtilsSnapshot(
+    'main-vaults-base',
+    t.log,
+  );
+  t.context = await makeWalletFactoryContext(t, undefined, { snapshot });
 });
 test.after.always(t => {
   return t.context.shutdown && t.context.shutdown();

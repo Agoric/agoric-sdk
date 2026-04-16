@@ -8,11 +8,14 @@ import * as cb from './callback.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {PassableCap} from '@endo/marshal';
- * @import {TypedPattern} from './types.js';
+ * @import {Marshal, Passable} from '@endo/marshal';
+ * @import {Remote, ERemote, TypedPattern} from './types.js';
+ * @import {EMarshaller} from './marshal/wrap-marshaller.js';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {Callback} from './types.js';
  */
 
-/** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
+/** @typedef {Marshal<unknown>} Marshaller */
 /** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**
@@ -28,7 +31,8 @@ import * as cb from './callback.js';
 /**
  * @template [T=unknown]
  * @typedef StreamCell
- * @property {string} blockHeight decimal representation of a natural number
+ * @property {string} blockHeight corresponding with the write of `values`
+ *   (decimal representation of a natural number)
  * @property {T[]} values
  */
 
@@ -143,17 +147,15 @@ harden(assertPathSegment);
  */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareChainStorageNode = zone => {
   /**
    * Create a storage node for a given backing storage interface and path.
    *
-   * @param {import('./types.js').Callback<
-   *   (message: StorageMessage) => any
-   * >} messenger
-   *   a callback for sending a storageMessage object to the storage
-   *   implementation (cf. golang/cosmos/x/vstorage/vstorage.go)
+   * @param {Callback<(message: StorageMessage) => any>} messenger a callback
+   *   for sending a storageMessage object to the storage implementation (cf.
+   *   golang/cosmos/x/vstorage/vstorage.go)
    * @param {string} path
    * @param {object} [options]
    * @param {boolean} [options.sequence] set values with `append` messages
@@ -166,9 +168,7 @@ export const prepareChainStorageNode = zone => {
     'ChainStorageNode',
     ChainStorageNodeI,
     /**
-     * @param {import('./types.js').Callback<
-     *   (message: StorageMessage) => any
-     * >} messenger
+     * @param {Callback<(message: StorageMessage) => any>} messenger
      * @param {string} path
      * @param {object} [options]
      * @param {boolean} [options.sequence]
@@ -281,9 +281,9 @@ const makeNullStorageNode = () => {
  * falling back to an inert object with the correct interface (but incomplete
  * behavior) when that is unavailable.
  *
- * @param {ERef<StorageNode?>} storageNodeRef
+ * @param {ERef<Remote<StorageNode> | null>} storageNodeRef
  * @param {string} childName
- * @returns {Promise<StorageNode>}
+ * @returns {Promise<Remote<StorageNode>>}
  */
 export async function makeStorageNodeChild(storageNodeRef, childName) {
   const existingStorageNode = await storageNodeRef;
@@ -294,9 +294,9 @@ harden(makeStorageNodeChild);
 
 // TODO find a better module for this
 /**
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
- * @returns {(value: PassableCap) => Promise<void>}
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<EMarshaller>} marshaller
+ * @returns {(value: Passable) => Promise<void>}
  */
 export const makeSerializeToStorage = (storageNode, marshaller) => {
   return async value => {

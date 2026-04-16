@@ -5,7 +5,7 @@ import { TimeMath } from '@agoric/time';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {EReturn} from '@endo/far';
- * @import {IBCMsgTransferOptions} from '../cosmos-api';
+ * @import {IBCMsgTransferOptions} from '../cosmos-api.js';
  * @import {MsgTransfer} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
  */
 

@@ -1,6 +1,12 @@
 import { Fail } from '@endo/errors';
 import { makeWorkerOptions } from './workerOptions.js';
 
+/**
+ * @import {RecordedVatOptions} from '../types-internal.js';
+ * @import {StaticVatOptions} from '../types-external.js';
+ * @import {InternalDynamicVatOptions} from '../types-internal.js';
+ */
+
 export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
   const record = async (vatID, source, options) => {
     const {
@@ -39,7 +45,7 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       bundleHandler,
       nodeOptions,
     );
-    /** @type { import('../types-internal.js').RecordedVatOptions } */
+    /** @type { RecordedVatOptions } */
     const vatOptions = harden({
       workerOptions,
       name,
@@ -63,7 +69,7 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
    *
    * @param {string} vatID
    * @param {*} source
-   * @param {import('../types-external.js').StaticVatOptions} staticOptions
+   * @param {StaticVatOptions} staticOptions
    * @returns {Promise<void>}
    */
   const recordStatic = (vatID, source, staticOptions) => {
@@ -78,7 +84,7 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
    *
    * @param {string} vatID
    * @param {*} source
-   * @param {import('../types-internal.js').InternalDynamicVatOptions} dynamicOptions
+   * @param {InternalDynamicVatOptions} dynamicOptions
    * @returns {Promise<void>}
    */
   const recordDynamic = (vatID, source, dynamicOptions) => {

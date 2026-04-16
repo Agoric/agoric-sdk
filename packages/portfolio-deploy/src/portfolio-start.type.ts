@@ -1,4 +1,5 @@
-import { start } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { Issuer } from '@agoric/ertp';
+import { start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import type { CorePowersG } from './orch.start.types.js';
 import {
   name as contractName,

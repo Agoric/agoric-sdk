@@ -1,20 +1,23 @@
 //@ts-nocheck
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
-import {
-  Plan,
-  type PlanSDKType,
-} from '../../../../cosmos/upgrade/v1beta1/upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * IdentifiedClientState defines a client state with an additional client
  * identifier field.
+ * @name IdentifiedClientState
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedClientState
  */
 export interface IdentifiedClientState {
-  /** client identifier */
+  /**
+   * client identifier
+   */
   clientId: string;
-  /** client state */
+  /**
+   * client state
+   */
   clientState?: Any;
 }
 export interface IdentifiedClientStateProtoMsg {
@@ -24,6 +27,9 @@ export interface IdentifiedClientStateProtoMsg {
 /**
  * IdentifiedClientState defines a client state with an additional client
  * identifier field.
+ * @name IdentifiedClientStateSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedClientState
  */
 export interface IdentifiedClientStateSDKType {
   client_id: string;
@@ -32,11 +38,18 @@ export interface IdentifiedClientStateSDKType {
 /**
  * ConsensusStateWithHeight defines a consensus state with an additional height
  * field.
+ * @name ConsensusStateWithHeight
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ConsensusStateWithHeight
  */
 export interface ConsensusStateWithHeight {
-  /** consensus state height */
+  /**
+   * consensus state height
+   */
   height: Height;
-  /** consensus state */
+  /**
+   * consensus state
+   */
   consensusState?: Any;
 }
 export interface ConsensusStateWithHeightProtoMsg {
@@ -46,6 +59,9 @@ export interface ConsensusStateWithHeightProtoMsg {
 /**
  * ConsensusStateWithHeight defines a consensus state with an additional height
  * field.
+ * @name ConsensusStateWithHeightSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ConsensusStateWithHeight
  */
 export interface ConsensusStateWithHeightSDKType {
   height: HeightSDKType;
@@ -54,11 +70,18 @@ export interface ConsensusStateWithHeightSDKType {
 /**
  * ClientConsensusStates defines all the stored consensus states for a given
  * client.
+ * @name ClientConsensusStates
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientConsensusStates
  */
 export interface ClientConsensusStates {
-  /** client identifier */
+  /**
+   * client identifier
+   */
   clientId: string;
-  /** consensus states and their heights associated with the client */
+  /**
+   * consensus states and their heights associated with the client
+   */
   consensusStates: ConsensusStateWithHeight[];
 }
 export interface ClientConsensusStatesProtoMsg {
@@ -68,81 +91,13 @@ export interface ClientConsensusStatesProtoMsg {
 /**
  * ClientConsensusStates defines all the stored consensus states for a given
  * client.
+ * @name ClientConsensusStatesSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientConsensusStates
  */
 export interface ClientConsensusStatesSDKType {
   client_id: string;
   consensus_states: ConsensusStateWithHeightSDKType[];
-}
-/**
- * ClientUpdateProposal is a governance proposal. If it passes, the substitute
- * client's latest consensus state is copied over to the subject client. The proposal
- * handler may fail if the subject and the substitute do not match in client and
- * chain parameters (with exception to latest height, frozen height, and chain-id).
- */
-export interface ClientUpdateProposal {
-  $typeUrl?: '/ibc.core.client.v1.ClientUpdateProposal';
-  /** the title of the update proposal */
-  title: string;
-  /** the description of the proposal */
-  description: string;
-  /** the client identifier for the client to be updated if the proposal passes */
-  subjectClientId: string;
-  /**
-   * the substitute client identifier for the client standing in for the subject
-   * client
-   */
-  substituteClientId: string;
-}
-export interface ClientUpdateProposalProtoMsg {
-  typeUrl: '/ibc.core.client.v1.ClientUpdateProposal';
-  value: Uint8Array;
-}
-/**
- * ClientUpdateProposal is a governance proposal. If it passes, the substitute
- * client's latest consensus state is copied over to the subject client. The proposal
- * handler may fail if the subject and the substitute do not match in client and
- * chain parameters (with exception to latest height, frozen height, and chain-id).
- */
-export interface ClientUpdateProposalSDKType {
-  $typeUrl?: '/ibc.core.client.v1.ClientUpdateProposal';
-  title: string;
-  description: string;
-  subject_client_id: string;
-  substitute_client_id: string;
-}
-/**
- * UpgradeProposal is a gov Content type for initiating an IBC breaking
- * upgrade.
- */
-export interface UpgradeProposal {
-  $typeUrl?: '/ibc.core.client.v1.UpgradeProposal';
-  title: string;
-  description: string;
-  plan: Plan;
-  /**
-   * An UpgradedClientState must be provided to perform an IBC breaking upgrade.
-   * This will make the chain commit to the correct upgraded (self) client state
-   * before the upgrade occurs, so that connecting chains can verify that the
-   * new upgraded client is valid by verifying a proof on the previous version
-   * of the chain. This will allow IBC connections to persist smoothly across
-   * planned chain upgrades
-   */
-  upgradedClientState?: Any;
-}
-export interface UpgradeProposalProtoMsg {
-  typeUrl: '/ibc.core.client.v1.UpgradeProposal';
-  value: Uint8Array;
-}
-/**
- * UpgradeProposal is a gov Content type for initiating an IBC breaking
- * upgrade.
- */
-export interface UpgradeProposalSDKType {
-  $typeUrl?: '/ibc.core.client.v1.UpgradeProposal';
-  title: string;
-  description: string;
-  plan: PlanSDKType;
-  upgraded_client_state?: AnySDKType;
 }
 /**
  * Height is a monotonically increasing data type
@@ -155,11 +110,21 @@ export interface UpgradeProposalSDKType {
  * breaking changes In these cases, the RevisionNumber is incremented so that
  * height continues to be monitonically increasing even as the RevisionHeight
  * gets reset
+ *
+ * Please note that json tags for generated Go code are overridden to explicitly exclude the omitempty jsontag.
+ * This enforces the Go json marshaller to always emit zero values for both revision_number and revision_height.
+ * @name Height
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Height
  */
 export interface Height {
-  /** the revision that the client is currently on */
+  /**
+   * the revision that the client is currently on
+   */
   revisionNumber: bigint;
-  /** the height within the given revision */
+  /**
+   * the height within the given revision
+   */
   revisionHeight: bigint;
 }
 export interface HeightProtoMsg {
@@ -177,12 +142,23 @@ export interface HeightProtoMsg {
  * breaking changes In these cases, the RevisionNumber is incremented so that
  * height continues to be monitonically increasing even as the RevisionHeight
  * gets reset
+ *
+ * Please note that json tags for generated Go code are overridden to explicitly exclude the omitempty jsontag.
+ * This enforces the Go json marshaller to always emit zero values for both revision_number and revision_height.
+ * @name HeightSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Height
  */
 export interface HeightSDKType {
   revision_number: bigint;
   revision_height: bigint;
 }
-/** Params defines the set of IBC light client parameters. */
+/**
+ * Params defines the set of IBC light client parameters.
+ * @name Params
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Params
+ */
 export interface Params {
   /**
    * allowed_clients defines the list of allowed client state types which can be created
@@ -195,7 +171,12 @@ export interface ParamsProtoMsg {
   typeUrl: '/ibc.core.client.v1.Params';
   value: Uint8Array;
 }
-/** Params defines the set of IBC light client parameters. */
+/**
+ * Params defines the set of IBC light client parameters.
+ * @name ParamsSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Params
+ */
 export interface ParamsSDKType {
   allowed_clients: string[];
 }
@@ -205,8 +186,30 @@ function createBaseIdentifiedClientState(): IdentifiedClientState {
     clientState: undefined,
   };
 }
+/**
+ * IdentifiedClientState defines a client state with an additional client
+ * identifier field.
+ * @name IdentifiedClientState
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.IdentifiedClientState
+ */
 export const IdentifiedClientState = {
-  typeUrl: '/ibc.core.client.v1.IdentifiedClientState',
+  typeUrl: '/ibc.core.client.v1.IdentifiedClientState' as const,
+  aminoType: 'cosmos-sdk/IdentifiedClientState' as const,
+  is(o: any): o is IdentifiedClientState {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedClientState.typeUrl ||
+        typeof o.clientId === 'string')
+    );
+  },
+  isSDK(o: any): o is IdentifiedClientStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedClientState.typeUrl ||
+        typeof o.client_id === 'string')
+    );
+  },
   encode(
     message: IdentifiedClientState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -288,8 +291,29 @@ function createBaseConsensusStateWithHeight(): ConsensusStateWithHeight {
     consensusState: undefined,
   };
 }
+/**
+ * ConsensusStateWithHeight defines a consensus state with an additional height
+ * field.
+ * @name ConsensusStateWithHeight
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ConsensusStateWithHeight
+ */
 export const ConsensusStateWithHeight = {
-  typeUrl: '/ibc.core.client.v1.ConsensusStateWithHeight',
+  typeUrl: '/ibc.core.client.v1.ConsensusStateWithHeight' as const,
+  aminoType: 'cosmos-sdk/ConsensusStateWithHeight' as const,
+  is(o: any): o is ConsensusStateWithHeight {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusStateWithHeight.typeUrl || Height.is(o.height))
+    );
+  },
+  isSDK(o: any): o is ConsensusStateWithHeightSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ConsensusStateWithHeight.typeUrl ||
+        Height.isSDK(o.height))
+    );
+  },
   encode(
     message: ConsensusStateWithHeight,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -383,8 +407,36 @@ function createBaseClientConsensusStates(): ClientConsensusStates {
     consensusStates: [],
   };
 }
+/**
+ * ClientConsensusStates defines all the stored consensus states for a given
+ * client.
+ * @name ClientConsensusStates
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.ClientConsensusStates
+ */
 export const ClientConsensusStates = {
-  typeUrl: '/ibc.core.client.v1.ClientConsensusStates',
+  typeUrl: '/ibc.core.client.v1.ClientConsensusStates' as const,
+  aminoType: 'cosmos-sdk/ClientConsensusStates' as const,
+  is(o: any): o is ClientConsensusStates {
+    return (
+      o &&
+      (o.$typeUrl === ClientConsensusStates.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          Array.isArray(o.consensusStates) &&
+          (!o.consensusStates.length ||
+            ConsensusStateWithHeight.is(o.consensusStates[0]))))
+    );
+  },
+  isSDK(o: any): o is ClientConsensusStatesSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ClientConsensusStates.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          Array.isArray(o.consensus_states) &&
+          (!o.consensus_states.length ||
+            ConsensusStateWithHeight.isSDK(o.consensus_states[0]))))
+    );
+  },
   encode(
     message: ClientConsensusStates,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -467,227 +519,49 @@ export const ClientConsensusStates = {
     };
   },
 };
-function createBaseClientUpdateProposal(): ClientUpdateProposal {
-  return {
-    $typeUrl: '/ibc.core.client.v1.ClientUpdateProposal',
-    title: '',
-    description: '',
-    subjectClientId: '',
-    substituteClientId: '',
-  };
-}
-export const ClientUpdateProposal = {
-  typeUrl: '/ibc.core.client.v1.ClientUpdateProposal',
-  encode(
-    message: ClientUpdateProposal,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.title !== '') {
-      writer.uint32(10).string(message.title);
-    }
-    if (message.description !== '') {
-      writer.uint32(18).string(message.description);
-    }
-    if (message.subjectClientId !== '') {
-      writer.uint32(26).string(message.subjectClientId);
-    }
-    if (message.substituteClientId !== '') {
-      writer.uint32(34).string(message.substituteClientId);
-    }
-    return writer;
-  },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): ClientUpdateProposal {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseClientUpdateProposal();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.title = reader.string();
-          break;
-        case 2:
-          message.description = reader.string();
-          break;
-        case 3:
-          message.subjectClientId = reader.string();
-          break;
-        case 4:
-          message.substituteClientId = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(object: any): ClientUpdateProposal {
-    return {
-      title: isSet(object.title) ? String(object.title) : '',
-      description: isSet(object.description) ? String(object.description) : '',
-      subjectClientId: isSet(object.subjectClientId)
-        ? String(object.subjectClientId)
-        : '',
-      substituteClientId: isSet(object.substituteClientId)
-        ? String(object.substituteClientId)
-        : '',
-    };
-  },
-  toJSON(message: ClientUpdateProposal): JsonSafe<ClientUpdateProposal> {
-    const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined &&
-      (obj.description = message.description);
-    message.subjectClientId !== undefined &&
-      (obj.subjectClientId = message.subjectClientId);
-    message.substituteClientId !== undefined &&
-      (obj.substituteClientId = message.substituteClientId);
-    return obj;
-  },
-  fromPartial(object: Partial<ClientUpdateProposal>): ClientUpdateProposal {
-    const message = createBaseClientUpdateProposal();
-    message.title = object.title ?? '';
-    message.description = object.description ?? '';
-    message.subjectClientId = object.subjectClientId ?? '';
-    message.substituteClientId = object.substituteClientId ?? '';
-    return message;
-  },
-  fromProtoMsg(message: ClientUpdateProposalProtoMsg): ClientUpdateProposal {
-    return ClientUpdateProposal.decode(message.value);
-  },
-  toProto(message: ClientUpdateProposal): Uint8Array {
-    return ClientUpdateProposal.encode(message).finish();
-  },
-  toProtoMsg(message: ClientUpdateProposal): ClientUpdateProposalProtoMsg {
-    return {
-      typeUrl: '/ibc.core.client.v1.ClientUpdateProposal',
-      value: ClientUpdateProposal.encode(message).finish(),
-    };
-  },
-};
-function createBaseUpgradeProposal(): UpgradeProposal {
-  return {
-    $typeUrl: '/ibc.core.client.v1.UpgradeProposal',
-    title: '',
-    description: '',
-    plan: Plan.fromPartial({}),
-    upgradedClientState: undefined,
-  };
-}
-export const UpgradeProposal = {
-  typeUrl: '/ibc.core.client.v1.UpgradeProposal',
-  encode(
-    message: UpgradeProposal,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.title !== '') {
-      writer.uint32(10).string(message.title);
-    }
-    if (message.description !== '') {
-      writer.uint32(18).string(message.description);
-    }
-    if (message.plan !== undefined) {
-      Plan.encode(message.plan, writer.uint32(26).fork()).ldelim();
-    }
-    if (message.upgradedClientState !== undefined) {
-      Any.encode(
-        message.upgradedClientState,
-        writer.uint32(34).fork(),
-      ).ldelim();
-    }
-    return writer;
-  },
-  decode(input: BinaryReader | Uint8Array, length?: number): UpgradeProposal {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpgradeProposal();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.title = reader.string();
-          break;
-        case 2:
-          message.description = reader.string();
-          break;
-        case 3:
-          message.plan = Plan.decode(reader, reader.uint32());
-          break;
-        case 4:
-          message.upgradedClientState = Any.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(object: any): UpgradeProposal {
-    return {
-      title: isSet(object.title) ? String(object.title) : '',
-      description: isSet(object.description) ? String(object.description) : '',
-      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
-      upgradedClientState: isSet(object.upgradedClientState)
-        ? Any.fromJSON(object.upgradedClientState)
-        : undefined,
-    };
-  },
-  toJSON(message: UpgradeProposal): JsonSafe<UpgradeProposal> {
-    const obj: any = {};
-    message.title !== undefined && (obj.title = message.title);
-    message.description !== undefined &&
-      (obj.description = message.description);
-    message.plan !== undefined &&
-      (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
-    message.upgradedClientState !== undefined &&
-      (obj.upgradedClientState = message.upgradedClientState
-        ? Any.toJSON(message.upgradedClientState)
-        : undefined);
-    return obj;
-  },
-  fromPartial(object: Partial<UpgradeProposal>): UpgradeProposal {
-    const message = createBaseUpgradeProposal();
-    message.title = object.title ?? '';
-    message.description = object.description ?? '';
-    message.plan =
-      object.plan !== undefined && object.plan !== null
-        ? Plan.fromPartial(object.plan)
-        : undefined;
-    message.upgradedClientState =
-      object.upgradedClientState !== undefined &&
-      object.upgradedClientState !== null
-        ? Any.fromPartial(object.upgradedClientState)
-        : undefined;
-    return message;
-  },
-  fromProtoMsg(message: UpgradeProposalProtoMsg): UpgradeProposal {
-    return UpgradeProposal.decode(message.value);
-  },
-  toProto(message: UpgradeProposal): Uint8Array {
-    return UpgradeProposal.encode(message).finish();
-  },
-  toProtoMsg(message: UpgradeProposal): UpgradeProposalProtoMsg {
-    return {
-      typeUrl: '/ibc.core.client.v1.UpgradeProposal',
-      value: UpgradeProposal.encode(message).finish(),
-    };
-  },
-};
 function createBaseHeight(): Height {
   return {
     revisionNumber: BigInt(0),
     revisionHeight: BigInt(0),
   };
 }
+/**
+ * Height is a monotonically increasing data type
+ * that can be compared against another Height for the purposes of updating and
+ * freezing clients
+ *
+ * Normally the RevisionHeight is incremented at each height while keeping
+ * RevisionNumber the same. However some consensus algorithms may choose to
+ * reset the height in certain conditions e.g. hard forks, state-machine
+ * breaking changes In these cases, the RevisionNumber is incremented so that
+ * height continues to be monitonically increasing even as the RevisionHeight
+ * gets reset
+ *
+ * Please note that json tags for generated Go code are overridden to explicitly exclude the omitempty jsontag.
+ * This enforces the Go json marshaller to always emit zero values for both revision_number and revision_height.
+ * @name Height
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Height
+ */
 export const Height = {
-  typeUrl: '/ibc.core.client.v1.Height',
+  typeUrl: '/ibc.core.client.v1.Height' as const,
+  aminoType: 'cosmos-sdk/Height' as const,
+  is(o: any): o is Height {
+    return (
+      o &&
+      (o.$typeUrl === Height.typeUrl ||
+        (typeof o.revisionNumber === 'bigint' &&
+          typeof o.revisionHeight === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is HeightSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Height.typeUrl ||
+        (typeof o.revision_number === 'bigint' &&
+          typeof o.revision_height === 'bigint'))
+    );
+  },
   encode(
     message: Height,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -769,8 +643,33 @@ function createBaseParams(): Params {
     allowedClients: [],
   };
 }
+/**
+ * Params defines the set of IBC light client parameters.
+ * @name Params
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.Params
+ */
 export const Params = {
-  typeUrl: '/ibc.core.client.v1.Params',
+  typeUrl: '/ibc.core.client.v1.Params' as const,
+  aminoType: 'cosmos-sdk/Params' as const,
+  is(o: any): o is Params {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.allowedClients) &&
+          (!o.allowedClients.length ||
+            typeof o.allowedClients[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Params.typeUrl ||
+        (Array.isArray(o.allowed_clients) &&
+          (!o.allowed_clients.length ||
+            typeof o.allowed_clients[0] === 'string')))
+    );
+  },
   encode(
     message: Params,
     writer: BinaryWriter = BinaryWriter.create(),

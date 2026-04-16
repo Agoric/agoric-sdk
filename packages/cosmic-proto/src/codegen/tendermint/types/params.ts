@@ -9,12 +9,16 @@ import { type JsonSafe } from '../../json-safe.js';
 /**
  * ConsensusParams contains consensus critical parameters that determine the
  * validity of blocks.
+ * @name ConsensusParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ConsensusParams
  */
 export interface ConsensusParams {
-  block: BlockParams;
-  evidence: EvidenceParams;
-  validator: ValidatorParams;
-  version: VersionParams;
+  block?: BlockParams;
+  evidence?: EvidenceParams;
+  validator?: ValidatorParams;
+  version?: VersionParams;
+  abci?: ABCIParams;
 }
 export interface ConsensusParamsProtoMsg {
   typeUrl: '/tendermint.types.ConsensusParams';
@@ -23,14 +27,23 @@ export interface ConsensusParamsProtoMsg {
 /**
  * ConsensusParams contains consensus critical parameters that determine the
  * validity of blocks.
+ * @name ConsensusParamsSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ConsensusParams
  */
 export interface ConsensusParamsSDKType {
-  block: BlockParamsSDKType;
-  evidence: EvidenceParamsSDKType;
-  validator: ValidatorParamsSDKType;
-  version: VersionParamsSDKType;
+  block?: BlockParamsSDKType;
+  evidence?: EvidenceParamsSDKType;
+  validator?: ValidatorParamsSDKType;
+  version?: VersionParamsSDKType;
+  abci?: ABCIParamsSDKType;
 }
-/** BlockParams contains limits on the block size. */
+/**
+ * BlockParams contains limits on the block size.
+ * @name BlockParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockParams
+ */
 export interface BlockParams {
   /**
    * Max block size, in bytes.
@@ -42,25 +55,27 @@ export interface BlockParams {
    * Note: must be greater or equal to -1
    */
   maxGas: bigint;
-  /**
-   * Minimum time increment between consecutive blocks (in milliseconds) If the
-   * block header timestamp is ahead of the system clock, decrease this value.
-   *
-   * Not exposed to the application.
-   */
-  timeIotaMs: bigint;
 }
 export interface BlockParamsProtoMsg {
   typeUrl: '/tendermint.types.BlockParams';
   value: Uint8Array;
 }
-/** BlockParams contains limits on the block size. */
+/**
+ * BlockParams contains limits on the block size.
+ * @name BlockParamsSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockParams
+ */
 export interface BlockParamsSDKType {
   max_bytes: bigint;
   max_gas: bigint;
-  time_iota_ms: bigint;
 }
-/** EvidenceParams determine how we handle evidence of malfeasance. */
+/**
+ * EvidenceParams determine how we handle evidence of malfeasance.
+ * @name EvidenceParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.EvidenceParams
+ */
 export interface EvidenceParams {
   /**
    * Max age of evidence, in blocks.
@@ -88,7 +103,12 @@ export interface EvidenceParamsProtoMsg {
   typeUrl: '/tendermint.types.EvidenceParams';
   value: Uint8Array;
 }
-/** EvidenceParams determine how we handle evidence of malfeasance. */
+/**
+ * EvidenceParams determine how we handle evidence of malfeasance.
+ * @name EvidenceParamsSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.EvidenceParams
+ */
 export interface EvidenceParamsSDKType {
   max_age_num_blocks: bigint;
   max_age_duration: DurationSDKType;
@@ -97,6 +117,9 @@ export interface EvidenceParamsSDKType {
 /**
  * ValidatorParams restrict the public key types validators can use.
  * NOTE: uses ABCI pubkey naming, not Amino names.
+ * @name ValidatorParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ValidatorParams
  */
 export interface ValidatorParams {
   pubKeyTypes: string[];
@@ -108,26 +131,42 @@ export interface ValidatorParamsProtoMsg {
 /**
  * ValidatorParams restrict the public key types validators can use.
  * NOTE: uses ABCI pubkey naming, not Amino names.
+ * @name ValidatorParamsSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ValidatorParams
  */
 export interface ValidatorParamsSDKType {
   pub_key_types: string[];
 }
-/** VersionParams contains the ABCI application version. */
+/**
+ * VersionParams contains the ABCI application version.
+ * @name VersionParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.VersionParams
+ */
 export interface VersionParams {
-  appVersion: bigint;
+  app: bigint;
 }
 export interface VersionParamsProtoMsg {
   typeUrl: '/tendermint.types.VersionParams';
   value: Uint8Array;
 }
-/** VersionParams contains the ABCI application version. */
+/**
+ * VersionParams contains the ABCI application version.
+ * @name VersionParamsSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.VersionParams
+ */
 export interface VersionParamsSDKType {
-  app_version: bigint;
+  app: bigint;
 }
 /**
  * HashedParams is a subset of ConsensusParams.
  *
  * It is hashed into the Header.ConsensusHash.
+ * @name HashedParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.HashedParams
  */
 export interface HashedParams {
   blockMaxBytes: bigint;
@@ -141,21 +180,71 @@ export interface HashedParamsProtoMsg {
  * HashedParams is a subset of ConsensusParams.
  *
  * It is hashed into the Header.ConsensusHash.
+ * @name HashedParamsSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.HashedParams
  */
 export interface HashedParamsSDKType {
   block_max_bytes: bigint;
   block_max_gas: bigint;
 }
+/**
+ * ABCIParams configure functionality specific to the Application Blockchain Interface.
+ * @name ABCIParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ABCIParams
+ */
+export interface ABCIParams {
+  /**
+   * vote_extensions_enable_height configures the first height during which
+   * vote extensions will be enabled. During this specified height, and for all
+   * subsequent heights, precommit messages that do not contain valid extension data
+   * will be considered invalid. Prior to this height, vote extensions will not
+   * be used or accepted by validators on the network.
+   *
+   * Once enabled, vote extensions will be created by the application in ExtendVote,
+   * passed to the application for validation in VerifyVoteExtension and given
+   * to the application to use when proposing a block during PrepareProposal.
+   */
+  voteExtensionsEnableHeight: bigint;
+}
+export interface ABCIParamsProtoMsg {
+  typeUrl: '/tendermint.types.ABCIParams';
+  value: Uint8Array;
+}
+/**
+ * ABCIParams configure functionality specific to the Application Blockchain Interface.
+ * @name ABCIParamsSDKType
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ABCIParams
+ */
+export interface ABCIParamsSDKType {
+  vote_extensions_enable_height: bigint;
+}
 function createBaseConsensusParams(): ConsensusParams {
   return {
-    block: BlockParams.fromPartial({}),
-    evidence: EvidenceParams.fromPartial({}),
-    validator: ValidatorParams.fromPartial({}),
-    version: VersionParams.fromPartial({}),
+    block: undefined,
+    evidence: undefined,
+    validator: undefined,
+    version: undefined,
+    abci: undefined,
   };
 }
+/**
+ * ConsensusParams contains consensus critical parameters that determine the
+ * validity of blocks.
+ * @name ConsensusParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ConsensusParams
+ */
 export const ConsensusParams = {
-  typeUrl: '/tendermint.types.ConsensusParams',
+  typeUrl: '/tendermint.types.ConsensusParams' as const,
+  is(o: any): o is ConsensusParams {
+    return o && o.$typeUrl === ConsensusParams.typeUrl;
+  },
+  isSDK(o: any): o is ConsensusParamsSDKType {
+    return o && o.$typeUrl === ConsensusParams.typeUrl;
+  },
   encode(
     message: ConsensusParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -177,6 +266,9 @@ export const ConsensusParams = {
     }
     if (message.version !== undefined) {
       VersionParams.encode(message.version, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.abci !== undefined) {
+      ABCIParams.encode(message.abci, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -200,6 +292,9 @@ export const ConsensusParams = {
         case 4:
           message.version = VersionParams.decode(reader, reader.uint32());
           break;
+        case 5:
+          message.abci = ABCIParams.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -221,6 +316,7 @@ export const ConsensusParams = {
       version: isSet(object.version)
         ? VersionParams.fromJSON(object.version)
         : undefined,
+      abci: isSet(object.abci) ? ABCIParams.fromJSON(object.abci) : undefined,
     };
   },
   toJSON(message: ConsensusParams): JsonSafe<ConsensusParams> {
@@ -241,6 +337,8 @@ export const ConsensusParams = {
       (obj.version = message.version
         ? VersionParams.toJSON(message.version)
         : undefined);
+    message.abci !== undefined &&
+      (obj.abci = message.abci ? ABCIParams.toJSON(message.abci) : undefined);
     return obj;
   },
   fromPartial(object: Partial<ConsensusParams>): ConsensusParams {
@@ -261,6 +359,10 @@ export const ConsensusParams = {
       object.version !== undefined && object.version !== null
         ? VersionParams.fromPartial(object.version)
         : undefined;
+    message.abci =
+      object.abci !== undefined && object.abci !== null
+        ? ABCIParams.fromPartial(object.abci)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: ConsensusParamsProtoMsg): ConsensusParams {
@@ -280,11 +382,30 @@ function createBaseBlockParams(): BlockParams {
   return {
     maxBytes: BigInt(0),
     maxGas: BigInt(0),
-    timeIotaMs: BigInt(0),
   };
 }
+/**
+ * BlockParams contains limits on the block size.
+ * @name BlockParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.BlockParams
+ */
 export const BlockParams = {
-  typeUrl: '/tendermint.types.BlockParams',
+  typeUrl: '/tendermint.types.BlockParams' as const,
+  is(o: any): o is BlockParams {
+    return (
+      o &&
+      (o.$typeUrl === BlockParams.typeUrl ||
+        (typeof o.maxBytes === 'bigint' && typeof o.maxGas === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is BlockParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === BlockParams.typeUrl ||
+        (typeof o.max_bytes === 'bigint' && typeof o.max_gas === 'bigint'))
+    );
+  },
   encode(
     message: BlockParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -294,9 +415,6 @@ export const BlockParams = {
     }
     if (message.maxGas !== BigInt(0)) {
       writer.uint32(16).int64(message.maxGas);
-    }
-    if (message.timeIotaMs !== BigInt(0)) {
-      writer.uint32(24).int64(message.timeIotaMs);
     }
     return writer;
   },
@@ -314,9 +432,6 @@ export const BlockParams = {
         case 2:
           message.maxGas = reader.int64();
           break;
-        case 3:
-          message.timeIotaMs = reader.int64();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -332,9 +447,6 @@ export const BlockParams = {
       maxGas: isSet(object.maxGas)
         ? BigInt(object.maxGas.toString())
         : BigInt(0),
-      timeIotaMs: isSet(object.timeIotaMs)
-        ? BigInt(object.timeIotaMs.toString())
-        : BigInt(0),
     };
   },
   toJSON(message: BlockParams): JsonSafe<BlockParams> {
@@ -343,8 +455,6 @@ export const BlockParams = {
       (obj.maxBytes = (message.maxBytes || BigInt(0)).toString());
     message.maxGas !== undefined &&
       (obj.maxGas = (message.maxGas || BigInt(0)).toString());
-    message.timeIotaMs !== undefined &&
-      (obj.timeIotaMs = (message.timeIotaMs || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<BlockParams>): BlockParams {
@@ -356,10 +466,6 @@ export const BlockParams = {
     message.maxGas =
       object.maxGas !== undefined && object.maxGas !== null
         ? BigInt(object.maxGas.toString())
-        : BigInt(0);
-    message.timeIotaMs =
-      object.timeIotaMs !== undefined && object.timeIotaMs !== null
-        ? BigInt(object.timeIotaMs.toString())
         : BigInt(0);
     return message;
   },
@@ -383,8 +489,32 @@ function createBaseEvidenceParams(): EvidenceParams {
     maxBytes: BigInt(0),
   };
 }
+/**
+ * EvidenceParams determine how we handle evidence of malfeasance.
+ * @name EvidenceParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.EvidenceParams
+ */
 export const EvidenceParams = {
-  typeUrl: '/tendermint.types.EvidenceParams',
+  typeUrl: '/tendermint.types.EvidenceParams' as const,
+  is(o: any): o is EvidenceParams {
+    return (
+      o &&
+      (o.$typeUrl === EvidenceParams.typeUrl ||
+        (typeof o.maxAgeNumBlocks === 'bigint' &&
+          Duration.is(o.maxAgeDuration) &&
+          typeof o.maxBytes === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is EvidenceParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === EvidenceParams.typeUrl ||
+        (typeof o.max_age_num_blocks === 'bigint' &&
+          Duration.isSDK(o.max_age_duration) &&
+          typeof o.max_bytes === 'bigint'))
+    );
+  },
   encode(
     message: EvidenceParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -486,8 +616,31 @@ function createBaseValidatorParams(): ValidatorParams {
     pubKeyTypes: [],
   };
 }
+/**
+ * ValidatorParams restrict the public key types validators can use.
+ * NOTE: uses ABCI pubkey naming, not Amino names.
+ * @name ValidatorParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ValidatorParams
+ */
 export const ValidatorParams = {
-  typeUrl: '/tendermint.types.ValidatorParams',
+  typeUrl: '/tendermint.types.ValidatorParams' as const,
+  is(o: any): o is ValidatorParams {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorParams.typeUrl ||
+        (Array.isArray(o.pubKeyTypes) &&
+          (!o.pubKeyTypes.length || typeof o.pubKeyTypes[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ValidatorParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ValidatorParams.typeUrl ||
+        (Array.isArray(o.pub_key_types) &&
+          (!o.pub_key_types.length || typeof o.pub_key_types[0] === 'string')))
+    );
+  },
   encode(
     message: ValidatorParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -551,17 +704,33 @@ export const ValidatorParams = {
 };
 function createBaseVersionParams(): VersionParams {
   return {
-    appVersion: BigInt(0),
+    app: BigInt(0),
   };
 }
+/**
+ * VersionParams contains the ABCI application version.
+ * @name VersionParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.VersionParams
+ */
 export const VersionParams = {
-  typeUrl: '/tendermint.types.VersionParams',
+  typeUrl: '/tendermint.types.VersionParams' as const,
+  is(o: any): o is VersionParams {
+    return (
+      o && (o.$typeUrl === VersionParams.typeUrl || typeof o.app === 'bigint')
+    );
+  },
+  isSDK(o: any): o is VersionParamsSDKType {
+    return (
+      o && (o.$typeUrl === VersionParams.typeUrl || typeof o.app === 'bigint')
+    );
+  },
   encode(
     message: VersionParams,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
-    if (message.appVersion !== BigInt(0)) {
-      writer.uint32(8).uint64(message.appVersion);
+    if (message.app !== BigInt(0)) {
+      writer.uint32(8).uint64(message.app);
     }
     return writer;
   },
@@ -574,7 +743,7 @@ export const VersionParams = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.appVersion = reader.uint64();
+          message.app = reader.uint64();
           break;
         default:
           reader.skipType(tag & 7);
@@ -585,22 +754,20 @@ export const VersionParams = {
   },
   fromJSON(object: any): VersionParams {
     return {
-      appVersion: isSet(object.appVersion)
-        ? BigInt(object.appVersion.toString())
-        : BigInt(0),
+      app: isSet(object.app) ? BigInt(object.app.toString()) : BigInt(0),
     };
   },
   toJSON(message: VersionParams): JsonSafe<VersionParams> {
     const obj: any = {};
-    message.appVersion !== undefined &&
-      (obj.appVersion = (message.appVersion || BigInt(0)).toString());
+    message.app !== undefined &&
+      (obj.app = (message.app || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<VersionParams>): VersionParams {
     const message = createBaseVersionParams();
-    message.appVersion =
-      object.appVersion !== undefined && object.appVersion !== null
-        ? BigInt(object.appVersion.toString())
+    message.app =
+      object.app !== undefined && object.app !== null
+        ? BigInt(object.app.toString())
         : BigInt(0);
     return message;
   },
@@ -623,8 +790,32 @@ function createBaseHashedParams(): HashedParams {
     blockMaxGas: BigInt(0),
   };
 }
+/**
+ * HashedParams is a subset of ConsensusParams.
+ *
+ * It is hashed into the Header.ConsensusHash.
+ * @name HashedParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.HashedParams
+ */
 export const HashedParams = {
-  typeUrl: '/tendermint.types.HashedParams',
+  typeUrl: '/tendermint.types.HashedParams' as const,
+  is(o: any): o is HashedParams {
+    return (
+      o &&
+      (o.$typeUrl === HashedParams.typeUrl ||
+        (typeof o.blockMaxBytes === 'bigint' &&
+          typeof o.blockMaxGas === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is HashedParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === HashedParams.typeUrl ||
+        (typeof o.block_max_bytes === 'bigint' &&
+          typeof o.block_max_gas === 'bigint'))
+    );
+  },
   encode(
     message: HashedParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -698,6 +889,97 @@ export const HashedParams = {
     return {
       typeUrl: '/tendermint.types.HashedParams',
       value: HashedParams.encode(message).finish(),
+    };
+  },
+};
+function createBaseABCIParams(): ABCIParams {
+  return {
+    voteExtensionsEnableHeight: BigInt(0),
+  };
+}
+/**
+ * ABCIParams configure functionality specific to the Application Blockchain Interface.
+ * @name ABCIParams
+ * @package tendermint.types
+ * @see proto type: tendermint.types.ABCIParams
+ */
+export const ABCIParams = {
+  typeUrl: '/tendermint.types.ABCIParams' as const,
+  is(o: any): o is ABCIParams {
+    return (
+      o &&
+      (o.$typeUrl === ABCIParams.typeUrl ||
+        typeof o.voteExtensionsEnableHeight === 'bigint')
+    );
+  },
+  isSDK(o: any): o is ABCIParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ABCIParams.typeUrl ||
+        typeof o.vote_extensions_enable_height === 'bigint')
+    );
+  },
+  encode(
+    message: ABCIParams,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.voteExtensionsEnableHeight !== BigInt(0)) {
+      writer.uint32(8).int64(message.voteExtensionsEnableHeight);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): ABCIParams {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseABCIParams();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.voteExtensionsEnableHeight = reader.int64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): ABCIParams {
+    return {
+      voteExtensionsEnableHeight: isSet(object.voteExtensionsEnableHeight)
+        ? BigInt(object.voteExtensionsEnableHeight.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(message: ABCIParams): JsonSafe<ABCIParams> {
+    const obj: any = {};
+    message.voteExtensionsEnableHeight !== undefined &&
+      (obj.voteExtensionsEnableHeight = (
+        message.voteExtensionsEnableHeight || BigInt(0)
+      ).toString());
+    return obj;
+  },
+  fromPartial(object: Partial<ABCIParams>): ABCIParams {
+    const message = createBaseABCIParams();
+    message.voteExtensionsEnableHeight =
+      object.voteExtensionsEnableHeight !== undefined &&
+      object.voteExtensionsEnableHeight !== null
+        ? BigInt(object.voteExtensionsEnableHeight.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(message: ABCIParamsProtoMsg): ABCIParams {
+    return ABCIParams.decode(message.value);
+  },
+  toProto(message: ABCIParams): Uint8Array {
+    return ABCIParams.encode(message).finish();
+  },
+  toProtoMsg(message: ABCIParams): ABCIParamsProtoMsg {
+    return {
+      typeUrl: '/tendermint.types.ABCIParams',
+      value: ABCIParams.encode(message).finish(),
     };
   },
 };

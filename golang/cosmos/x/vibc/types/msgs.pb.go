@@ -7,10 +7,11 @@ import (
 	context "context"
 	fmt "fmt"
 	github_com_cosmos_cosmos_sdk_types "github.com/cosmos/cosmos-sdk/types"
+	_ "github.com/cosmos/cosmos-sdk/types/msgservice"
+	_ "github.com/cosmos/cosmos-sdk/types/tx/amino"
 	_ "github.com/cosmos/gogoproto/gogoproto"
 	grpc1 "github.com/cosmos/gogoproto/grpc"
 	proto "github.com/cosmos/gogoproto/proto"
-	types "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -32,7 +33,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // MsgSendPacket is an SDK message for sending an outgoing IBC packet
 type MsgSendPacket struct {
-	Packet types.Packet                                  `protobuf:"bytes,1,opt,name=packet,proto3" json:"packet" yaml:"packet"`
+	Packet Packet                                        `protobuf:"bytes,1,opt,name=packet,proto3" json:"packet" yaml:"packet"`
 	Sender github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,2,opt,name=sender,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"submitter" yaml:"submitter"`
 }
 
@@ -69,11 +70,11 @@ func (m *MsgSendPacket) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSendPacket proto.InternalMessageInfo
 
-func (m *MsgSendPacket) GetPacket() types.Packet {
+func (m *MsgSendPacket) GetPacket() Packet {
 	if m != nil {
 		return m.Packet
 	}
-	return types.Packet{}
+	return Packet{}
 }
 
 func (m *MsgSendPacket) GetSender() github_com_cosmos_cosmos_sdk_types.AccAddress {
@@ -120,38 +121,159 @@ func (m *MsgSendPacketResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_MsgSendPacketResponse proto.InternalMessageInfo
 
+// Packet defines a type that carries data across different chains through IBC.
+// The fields in the Packet correspond to the fields in the IBC packet
+// definition in ibc/core/channel/v1/channel.proto, but with amino and gogoproto
+// options to ensure compatibility with the Cosmos SDK's Protobuf code
+// generation and JSON encoding.  See ibc/core/channel/v1/channel.proto for more
+// details on the semantics of each field in the Packet.
+type Packet struct {
+	// number corresponds to the order of sends and receives, where a Packet
+	// with an earlier sequence number must be sent and received before a Packet
+	// with a later sequence number.
+	Sequence uint64 `protobuf:"varint,1,opt,name=sequence,proto3" json:"sequence,omitempty"`
+	// identifies the port on the sending chain.
+	SourcePort string `protobuf:"bytes,2,opt,name=source_port,json=sourcePort,proto3" json:"source_port,omitempty"`
+	// identifies the channel end on the sending chain.
+	SourceChannel string `protobuf:"bytes,3,opt,name=source_channel,json=sourceChannel,proto3" json:"source_channel,omitempty"`
+	// identifies the port on the receiving chain.
+	DestinationPort string `protobuf:"bytes,4,opt,name=destination_port,json=destinationPort,proto3" json:"destination_port,omitempty"`
+	// identifies the channel end on the receiving chain.
+	DestinationChannel string `protobuf:"bytes,5,opt,name=destination_channel,json=destinationChannel,proto3" json:"destination_channel,omitempty"`
+	// actual opaque bytes transferred directly to the application module
+	Data []byte `protobuf:"bytes,6,opt,name=data,proto3" json:"data,omitempty"`
+	// block height after which the packet times out
+	TimeoutHeight Height `protobuf:"bytes,7,opt,name=timeout_height,json=timeoutHeight,proto3" json:"timeout_height"`
+	// block timestamp (in nanoseconds) after which the packet times out
+	TimeoutTimestamp uint64 `protobuf:"varint,8,opt,name=timeout_timestamp,json=timeoutTimestamp,proto3" json:"timeout_timestamp,omitempty"`
+}
+
+func (m *Packet) Reset()         { *m = Packet{} }
+func (m *Packet) String() string { return proto.CompactTextString(m) }
+func (*Packet) ProtoMessage()    {}
+func (*Packet) Descriptor() ([]byte, []int) {
+	return fileDescriptor_78e9bb7be62a4c00, []int{2}
+}
+func (m *Packet) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Packet) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Packet.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Packet) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Packet.Merge(m, src)
+}
+func (m *Packet) XXX_Size() int {
+	return m.Size()
+}
+func (m *Packet) XXX_DiscardUnknown() {
+	xxx_messageInfo_Packet.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Packet proto.InternalMessageInfo
+
+// Height is a local type that enforces amino and gogoproto compatibility for
+// the Height type used in IBC.  See ibc/core/client/v1/client.proto for more
+// details on the Height type.
+type Height struct {
+	// the revision that the client is currently on
+	RevisionNumber uint64 `protobuf:"varint,1,opt,name=revision_number,json=revisionNumber,proto3" json:"revision_number"`
+	// the height within the given revision
+	RevisionHeight uint64 `protobuf:"varint,2,opt,name=revision_height,json=revisionHeight,proto3" json:"revision_height"`
+}
+
+func (m *Height) Reset()         { *m = Height{} }
+func (m *Height) String() string { return proto.CompactTextString(m) }
+func (*Height) ProtoMessage()    {}
+func (*Height) Descriptor() ([]byte, []int) {
+	return fileDescriptor_78e9bb7be62a4c00, []int{3}
+}
+func (m *Height) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Height) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Height.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Height) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Height.Merge(m, src)
+}
+func (m *Height) XXX_Size() int {
+	return m.Size()
+}
+func (m *Height) XXX_DiscardUnknown() {
+	xxx_messageInfo_Height.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Height proto.InternalMessageInfo
+
 func init() {
 	proto.RegisterType((*MsgSendPacket)(nil), "agoric.vibc.MsgSendPacket")
 	proto.RegisterType((*MsgSendPacketResponse)(nil), "agoric.vibc.MsgSendPacketResponse")
+	proto.RegisterType((*Packet)(nil), "agoric.vibc.Packet")
+	proto.RegisterType((*Height)(nil), "agoric.vibc.Height")
 }
 
 func init() { proto.RegisterFile("agoric/vibc/msgs.proto", fileDescriptor_78e9bb7be62a4c00) }
 
 var fileDescriptor_78e9bb7be62a4c00 = []byte{
-	// 354 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0xbf, 0x6e, 0xea, 0x30,
-	0x14, 0xc6, 0x93, 0x7b, 0xaf, 0x90, 0xae, 0xb9, 0x48, 0x57, 0x51, 0xff, 0xa0, 0x54, 0x8a, 0x69,
-	0x26, 0x16, 0x6c, 0x41, 0x87, 0x4a, 0x6c, 0x30, 0x17, 0xa9, 0x0d, 0x9d, 0xba, 0x25, 0x8e, 0x65,
-	0x52, 0x48, 0x1c, 0xe5, 0x04, 0x54, 0xde, 0xa2, 0x8f, 0xd0, 0xc7, 0x61, 0x64, 0x6b, 0xa7, 0xa8,
-	0x82, 0xa5, 0x62, 0x64, 0xec, 0x54, 0x25, 0x4e, 0x2a, 0x18, 0x3a, 0xf9, 0xf8, 0x3b, 0xe7, 0x3b,
-	0xd6, 0xcf, 0x1f, 0x3a, 0x73, 0x85, 0x4c, 0x02, 0x46, 0x17, 0x81, 0xc7, 0x68, 0x08, 0x02, 0x48,
-	0x9c, 0xc8, 0x54, 0x1a, 0x75, 0xa5, 0x93, 0x5c, 0x37, 0x4f, 0x84, 0x14, 0xb2, 0xd0, 0x69, 0x5e,
-	0xa9, 0x11, 0xf3, 0x32, 0xb7, 0x30, 0x99, 0x70, 0xca, 0x26, 0x6e, 0x14, 0xf1, 0x19, 0x5d, 0x74,
-	0xab, 0x52, 0x8d, 0xd8, 0xaf, 0x3a, 0x6a, 0x8c, 0x40, 0x8c, 0x79, 0xe4, 0xdf, 0xba, 0x6c, 0xca,
-	0x53, 0xe3, 0x1e, 0xd5, 0xe2, 0xa2, 0x6a, 0xea, 0x2d, 0xbd, 0x5d, 0xef, 0x5d, 0x90, 0xc0, 0x63,
-	0x24, 0xdf, 0x42, 0x2a, 0xeb, 0xa2, 0x4b, 0xd4, 0xf0, 0x10, 0xaf, 0x32, 0xac, 0xed, 0x32, 0x5c,
-	0x5a, 0xf6, 0x19, 0x6e, 0x2c, 0xdd, 0x70, 0xd6, 0xb7, 0xd5, 0xdd, 0x76, 0xca, 0x86, 0xf1, 0x88,
-	0x6a, 0xc0, 0x23, 0x9f, 0x27, 0xcd, 0x5f, 0x2d, 0xbd, 0xfd, 0x6f, 0xe8, 0xec, 0x32, 0xfc, 0x17,
-	0xe6, 0x5e, 0x18, 0xa4, 0x29, 0x4f, 0xf6, 0x19, 0xfe, 0xaf, 0x7c, 0xdf, 0x92, 0xfd, 0x99, 0xe1,
-	0x8e, 0x08, 0xd2, 0xc9, 0xdc, 0x23, 0x4c, 0x86, 0x94, 0x49, 0x08, 0x25, 0x94, 0x47, 0x07, 0xfc,
-	0x29, 0x4d, 0x97, 0x31, 0x07, 0x32, 0x60, 0x6c, 0xe0, 0xfb, 0x09, 0x07, 0x70, 0xca, 0x17, 0xfa,
-	0x7f, 0x3e, 0x5e, 0xb0, 0x66, 0x9f, 0xa3, 0xd3, 0x23, 0x30, 0x87, 0x43, 0x2c, 0x23, 0xe0, 0xbd,
-	0x31, 0xfa, 0x3d, 0x02, 0x61, 0xdc, 0x20, 0x74, 0x40, 0x6d, 0x92, 0x83, 0xef, 0x24, 0x47, 0x46,
-	0xd3, 0xfe, 0xb9, 0x57, 0x2d, 0x1d, 0xde, 0xad, 0x36, 0x96, 0xbe, 0xde, 0x58, 0xfa, 0xfb, 0xc6,
-	0xd2, 0x9f, 0xb7, 0x96, 0xb6, 0xde, 0x5a, 0xda, 0xdb, 0xd6, 0xd2, 0x1e, 0xae, 0x0f, 0x20, 0x06,
-	0x2a, 0x4a, 0xb5, 0xae, 0x80, 0x10, 0x72, 0xe6, 0x46, 0xa2, 0xa2, 0x7b, 0x52, 0x29, 0x17, 0x64,
-	0x5e, 0xad, 0x48, 0xe8, 0xea, 0x2b, 0x00, 0x00, 0xff, 0xff, 0x45, 0x01, 0xfd, 0x45, 0x01, 0x02,
-	0x00, 0x00,
+	// 613 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x54, 0xbf, 0x6f, 0xd3, 0x4e,
+	0x14, 0xb7, 0xd3, 0xd4, 0xdf, 0xf6, 0xf2, 0xcd, 0x8f, 0xba, 0x40, 0x2d, 0x0f, 0x76, 0x65, 0x09,
+	0xa9, 0x04, 0xd5, 0x16, 0x65, 0x40, 0xca, 0x44, 0xc2, 0xc2, 0xd0, 0xa2, 0x62, 0x98, 0xba, 0x44,
+	0x17, 0xfb, 0xe4, 0x58, 0x8d, 0x7d, 0xc6, 0x77, 0x8e, 0xc8, 0xc6, 0x82, 0x84, 0x60, 0x61, 0x60,
+	0x62, 0xaa, 0x98, 0x18, 0xf3, 0x67, 0x74, 0x2c, 0x1b, 0x93, 0x85, 0x92, 0x21, 0x28, 0x63, 0x47,
+	0x26, 0xe4, 0x3b, 0xbb, 0x75, 0xaa, 0xb2, 0xf8, 0xde, 0x7d, 0x3e, 0xef, 0x3e, 0xf7, 0xde, 0xbb,
+	0xf7, 0x0c, 0xee, 0x41, 0x0f, 0xc7, 0xbe, 0x63, 0x8d, 0xfd, 0x81, 0x63, 0x05, 0xc4, 0x23, 0x66,
+	0x14, 0x63, 0x8a, 0xe5, 0x1a, 0xc7, 0xcd, 0x0c, 0x57, 0xb7, 0x60, 0xe0, 0x87, 0xd8, 0x62, 0x5f,
+	0xce, 0xab, 0x77, 0x3c, 0xec, 0x61, 0x66, 0x5a, 0x99, 0x95, 0xa3, 0x3b, 0x0e, 0x26, 0x01, 0x26,
+	0x99, 0x90, 0x35, 0x7e, 0x94, 0x2d, 0x9c, 0x30, 0xde, 0x57, 0x40, 0xfd, 0x88, 0x78, 0xaf, 0x50,
+	0xe8, 0x1e, 0x43, 0xe7, 0x14, 0x51, 0xf9, 0x10, 0x48, 0x11, 0xb3, 0x14, 0x71, 0x57, 0xdc, 0xab,
+	0x1d, 0x6c, 0x9b, 0xa5, 0x1b, 0x4d, 0xee, 0xd4, 0xd3, 0xcf, 0x53, 0x5d, 0x58, 0xa6, 0x7a, 0xee,
+	0x7a, 0x99, 0xea, 0xf5, 0x09, 0x0c, 0x46, 0x1d, 0x83, 0xef, 0x0d, 0x3b, 0x27, 0xe4, 0x4f, 0x22,
+	0x90, 0x08, 0x0a, 0x5d, 0x14, 0x2b, 0x95, 0x5d, 0x71, 0xef, 0xff, 0x1e, 0x59, 0xa6, 0xfa, 0x26,
+	0x49, 0x06, 0x81, 0x4f, 0x29, 0x8a, 0x2f, 0x53, 0xbd, 0xc5, 0x0f, 0x5e, 0x41, 0xc6, 0x9f, 0x54,
+	0xdf, 0xf7, 0x7c, 0x3a, 0x4c, 0x06, 0xa6, 0x83, 0x03, 0x2b, 0x8f, 0x9c, 0x2f, 0xfb, 0xc4, 0x3d,
+	0xb5, 0xe8, 0x24, 0x42, 0xc4, 0xec, 0x3a, 0x4e, 0xd7, 0x75, 0x63, 0x44, 0xc8, 0xd7, 0xc5, 0xb4,
+	0xdd, 0x18, 0x21, 0x0f, 0x3a, 0x93, 0x3e, 0xe4, 0xd0, 0xb7, 0xc5, 0xb4, 0x7d, 0x7d, 0x8b, 0x9d,
+	0x87, 0xd0, 0x51, 0x7e, 0x9f, 0xe9, 0xc2, 0xc7, 0xc5, 0xb4, 0xdd, 0x64, 0x65, 0xbd, 0xce, 0xda,
+	0xd8, 0x01, 0x77, 0x57, 0xca, 0x60, 0x23, 0x12, 0xe1, 0x90, 0x20, 0xe3, 0x47, 0x05, 0x48, 0x79,
+	0x65, 0x54, 0xb0, 0x41, 0xd0, 0x9b, 0x04, 0x85, 0x0e, 0x62, 0xb5, 0xa9, 0xda, 0x57, 0x7b, 0x59,
+	0x07, 0x35, 0x82, 0x93, 0xd8, 0x41, 0xfd, 0x08, 0xc7, 0x94, 0xe5, 0xba, 0x69, 0x03, 0x0e, 0x1d,
+	0xe3, 0x98, 0xca, 0xf7, 0x41, 0x23, 0x77, 0x70, 0x86, 0x30, 0x0c, 0xd1, 0x48, 0x59, 0x63, 0x3e,
+	0x75, 0x8e, 0x3e, 0xe3, 0xa0, 0xfc, 0x00, 0xb4, 0x5c, 0x44, 0xa8, 0x1f, 0x42, 0xea, 0xe3, 0x90,
+	0x8b, 0x55, 0x99, 0x63, 0xb3, 0x84, 0x33, 0x45, 0x0b, 0x6c, 0x97, 0x5d, 0x0b, 0xd9, 0x75, 0xe6,
+	0x2d, 0x97, 0xa8, 0x42, 0x5b, 0x06, 0x55, 0x17, 0x52, 0xa8, 0x48, 0xd9, 0x43, 0xd8, 0xcc, 0x96,
+	0x9f, 0x82, 0x06, 0xf5, 0x03, 0x84, 0x13, 0xda, 0x1f, 0x22, 0xdf, 0x1b, 0x52, 0xe5, 0xbf, 0x5b,
+	0x5e, 0xfd, 0x39, 0xa3, 0x7a, 0xd5, 0xec, 0xd5, 0xed, 0x7a, 0x7e, 0x80, 0x83, 0xf2, 0x43, 0xb0,
+	0x55, 0x28, 0x64, 0x2b, 0xa1, 0x30, 0x88, 0x94, 0x0d, 0x56, 0x9e, 0x56, 0x4e, 0xbc, 0x2e, 0xf0,
+	0x4e, 0xf5, 0xc3, 0x99, 0x2e, 0x18, 0x5f, 0x44, 0x20, 0xe5, 0xa7, 0xbb, 0xa0, 0x19, 0xa3, 0xb1,
+	0x4f, 0xb2, 0x0c, 0xc2, 0x24, 0x18, 0xa0, 0x98, 0x97, 0xb6, 0xa7, 0x2c, 0x53, 0xfd, 0x26, 0xf5,
+	0x7d, 0x31, 0x6d, 0x8b, 0x76, 0xa3, 0x40, 0x5f, 0x30, 0x70, 0x45, 0x22, 0xcf, 0xa1, 0x72, 0x8b,
+	0x04, 0xa7, 0x6e, 0x48, 0xf0, 0x28, 0x78, 0x58, 0x07, 0x27, 0x60, 0xed, 0x88, 0x78, 0xf2, 0x21,
+	0x00, 0xa5, 0x71, 0x50, 0x57, 0x0a, 0xb1, 0xd2, 0x23, 0xaa, 0xf1, 0x6f, 0xae, 0xe8, 0x1f, 0x75,
+	0xfd, 0x5d, 0x76, 0x63, 0xef, 0xe5, 0xf9, 0x4c, 0x13, 0x2f, 0x66, 0x9a, 0xf8, 0x6b, 0xa6, 0x89,
+	0x9f, 0xe7, 0x9a, 0x70, 0x31, 0xd7, 0x84, 0x9f, 0x73, 0x4d, 0x38, 0x79, 0x52, 0xea, 0xf5, 0x2e,
+	0x9f, 0x79, 0xae, 0xca, 0x7a, 0xdd, 0xc3, 0x23, 0x18, 0x7a, 0xc5, 0x10, 0xbc, 0xe5, 0xbf, 0x03,
+	0x36, 0x00, 0x03, 0x89, 0x4d, 0xf0, 0xe3, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0xbd, 0x67, 0x21,
+	0x23, 0x2a, 0x04, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -300,6 +422,117 @@ func (m *MsgSendPacketResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *Packet) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Packet) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Packet) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.TimeoutTimestamp != 0 {
+		i = encodeVarintMsgs(dAtA, i, uint64(m.TimeoutTimestamp))
+		i--
+		dAtA[i] = 0x40
+	}
+	{
+		size, err := m.TimeoutHeight.MarshalToSizedBuffer(dAtA[:i])
+		if err != nil {
+			return 0, err
+		}
+		i -= size
+		i = encodeVarintMsgs(dAtA, i, uint64(size))
+	}
+	i--
+	dAtA[i] = 0x3a
+	if len(m.Data) > 0 {
+		i -= len(m.Data)
+		copy(dAtA[i:], m.Data)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.Data)))
+		i--
+		dAtA[i] = 0x32
+	}
+	if len(m.DestinationChannel) > 0 {
+		i -= len(m.DestinationChannel)
+		copy(dAtA[i:], m.DestinationChannel)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.DestinationChannel)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.DestinationPort) > 0 {
+		i -= len(m.DestinationPort)
+		copy(dAtA[i:], m.DestinationPort)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.DestinationPort)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.SourceChannel) > 0 {
+		i -= len(m.SourceChannel)
+		copy(dAtA[i:], m.SourceChannel)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.SourceChannel)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.SourcePort) > 0 {
+		i -= len(m.SourcePort)
+		copy(dAtA[i:], m.SourcePort)
+		i = encodeVarintMsgs(dAtA, i, uint64(len(m.SourcePort)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Sequence != 0 {
+		i = encodeVarintMsgs(dAtA, i, uint64(m.Sequence))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Height) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Height) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Height) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.RevisionHeight != 0 {
+		i = encodeVarintMsgs(dAtA, i, uint64(m.RevisionHeight))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.RevisionNumber != 0 {
+		i = encodeVarintMsgs(dAtA, i, uint64(m.RevisionNumber))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintMsgs(dAtA []byte, offset int, v uint64) int {
 	offset -= sovMsgs(v)
 	base := offset
@@ -332,6 +565,58 @@ func (m *MsgSendPacketResponse) Size() (n int) {
 	}
 	var l int
 	_ = l
+	return n
+}
+
+func (m *Packet) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Sequence != 0 {
+		n += 1 + sovMsgs(uint64(m.Sequence))
+	}
+	l = len(m.SourcePort)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	l = len(m.SourceChannel)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	l = len(m.DestinationPort)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	l = len(m.DestinationChannel)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	l = len(m.Data)
+	if l > 0 {
+		n += 1 + l + sovMsgs(uint64(l))
+	}
+	l = m.TimeoutHeight.Size()
+	n += 1 + l + sovMsgs(uint64(l))
+	if m.TimeoutTimestamp != 0 {
+		n += 1 + sovMsgs(uint64(m.TimeoutTimestamp))
+	}
+	return n
+}
+
+func (m *Height) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RevisionNumber != 0 {
+		n += 1 + sovMsgs(uint64(m.RevisionNumber))
+	}
+	if m.RevisionHeight != 0 {
+		n += 1 + sovMsgs(uint64(m.RevisionHeight))
+	}
 	return n
 }
 
@@ -487,6 +772,377 @@ func (m *MsgSendPacketResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: MsgSendPacketResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Packet) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Packet: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Packet: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Sequence", wireType)
+			}
+			m.Sequence = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Sequence |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourcePort", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourcePort = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SourceChannel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.SourceChannel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestinationPort", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DestinationPort = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DestinationChannel", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DestinationChannel = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 6:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Data", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Data = append(m.Data[:0], dAtA[iNdEx:postIndex]...)
+			if m.Data == nil {
+				m.Data = []byte{}
+			}
+			iNdEx = postIndex
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutHeight", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if err := m.TimeoutHeight.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 8:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TimeoutTimestamp", wireType)
+			}
+			m.TimeoutTimestamp = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TimeoutTimestamp |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMsgs(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
+				return ErrInvalidLengthMsgs
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Height) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMsgs
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Height: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Height: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RevisionNumber", wireType)
+			}
+			m.RevisionNumber = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RevisionNumber |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RevisionHeight", wireType)
+			}
+			m.RevisionHeight = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMsgs
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RevisionHeight |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMsgs(dAtA[iNdEx:])

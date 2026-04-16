@@ -1,11 +1,10 @@
 package ante
 
 import (
-	"github.com/armon/go-metrics"
-
 	"github.com/cosmos/cosmos-sdk/telemetry"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
+	"github.com/hashicorp/go-metrics"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingtypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"

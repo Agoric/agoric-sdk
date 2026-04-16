@@ -1,0 +1,42 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  GMP contract call payload encoded with optional claim + withdraw calls
+end note
+initiated --> gmp_pending: GMP message sent to Axelar with withdraw payload
+initiated --> failed: GMP submission failed
+state gmp_pending
+note right of gmp_pending
+  GMP message in transit via Axelar to EVM chain (sent as IBC packet to Axelar gateway)
+end note
+gmp_pending --> contract_call_pending: Axelar delivered payload to EVM smart wallet
+gmp_pending --> gmp_failed: GMP delivery failed
+gmp_pending --> gmp_failed: IBC packet to Axelar timed out
+gmp_pending --> gmp_failed: Axelar gateway returned IBC acknowledgement error
+state contract_call_pending
+note right of contract_call_pending
+  Smart wallet executing multicall (optional claim + withdraw)
+end note
+contract_call_pending --> completed: Withdraw succeeded, USDC in smart wallet
+contract_call_pending --> contract_failed: Contract calls reverted
+state completed
+note right of completed
+  Withdraw complete, USDC available in EVM wallet for subsequent CCTP
+end note
+completed --> [*]
+state gmp_failed
+note right of gmp_failed
+  Axelar GMP failed
+end note
+gmp_failed --> [*]
+state contract_failed
+note right of contract_failed
+  EVM contract calls reverted
+end note
+contract_failed --> [*]
+state failed
+note right of failed
+  Withdraw operation failed
+end note
+failed --> [*]

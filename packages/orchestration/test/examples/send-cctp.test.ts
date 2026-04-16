@@ -1,6 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { MsgDepositForBurn } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
@@ -8,6 +9,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import type { Installation } from '@agoric/zoe';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,
@@ -18,6 +20,8 @@ import type { DenomDetail } from '../../src/types.js';
 import { denomHash } from '../../src/utils/denomHash.js';
 import { parseOutgoingTxPacket } from '../../tools/ibc-mocks.js';
 import { commonSetup } from '../supports.js';
+
+const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
 
 const contractName = 'sendAnywhere';
 type StartFn = typeof contractExports.start;

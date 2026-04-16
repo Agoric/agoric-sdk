@@ -15,6 +15,7 @@ const trace = makeTracer('AutoStakeItTap');
  * @import {CosmosChainAddress, CosmosValidatorAddress, Denom, OrchestrationAccount, StakingAccountActions} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -57,9 +58,7 @@ const prepareStakingTapKit = (zone, { watch }) => {
         ),
       }),
       transferWatcher: M.interface('TransferWatcher', {
-        onFulfilled: M.call(M.undefined())
-          .optional(M.bigint())
-          .returns(VowShape),
+        onFulfilled: M.call(M.any()).optional(M.bigint()).returns(VowShape),
       }),
     },
     /** @param {StakingTapState} initialState */
@@ -112,7 +111,7 @@ const prepareStakingTapKit = (zone, { watch }) => {
       },
       transferWatcher: {
         /**
-         * @param {void} _result
+         * @param {any} _result
          * @param {bigint} value the qty of uatom to delegate
          */
         onFulfilled(_result, value) {

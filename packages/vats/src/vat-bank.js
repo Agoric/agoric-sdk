@@ -25,8 +25,19 @@ import {
  * @import {Amount, DisplayInfo, Issuer, IssuerKit, Payment} from '@agoric/ertp';
  * @import {Guarded} from '@endo/exo';
  * @import {RemotableObject} from '@endo/pass-style';
+ * @import {EachTopic, IterableEachTopic, LatestTopic, PublicationRecord, PublishKit, Publisher} from '@agoric/notifier';
  * @import {BridgeMessage, BridgeBigInt} from '@agoric/cosmic-swingset/src/types.js';
  * @import {VirtualPurse} from './virtual-purse.js';
+ * @import {ScopedBridgeManager} from './types.js';
+ * @import {Zone} from '@agoric/zone';
+ * @import {AtomicProvider} from '@agoric/store/src/stores/store-utils.js';
+ * @import {NameHubKit} from './types.js';
+ * @import {EOnly} from '@endo/far';
+ * @import {Brand, DepositFacet, Mint, Purse} from '@agoric/ertp/src/types.js';
+ * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
+ * @import {NameAdmin} from './types.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
@@ -50,13 +61,13 @@ const BalanceUpdaterI = M.interface('BalanceUpdater', {
 
 /**
  * @typedef {Pick<
- *   import('./types.js').ScopedBridgeManager<'bank'>,
+ *   ScopedBridgeManager<'bank'>,
  *   'getBridgeId' | 'fromBridge' | 'toBridge'
  * >} BridgeChannel
  */
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @returns {(brand: Brand, publisher: Publisher<Amount>) => BalanceUpdater}
  */
 const prepareBalanceUpdater = zone =>
@@ -88,7 +99,7 @@ const prepareBalanceUpdater = zone =>
     },
   );
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareBankPurseController = zone => {
   /**
    * @param {BridgeChannel} bankBridge
@@ -148,7 +159,7 @@ const prepareBankPurseController = zone => {
   return makeBankPurseController;
 };
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareRewardPurseController = zone =>
   zone.exoClass(
     'RewardPurseController',
@@ -180,7 +191,7 @@ const prepareRewardPurseController = zone =>
     },
   );
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareBankChannelHandler = zone =>
   zone.exoClass(
     'BankChannelHandler',
@@ -292,7 +303,7 @@ const makeHistoricalTopic = (historyValues, futureSubscriber, skipValue) => {
  */
 const fullAssetPubLists = new WeakMap();
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareAssetSubscription = zone => {
   const assetSubscriptionCache = zone.weakMapStore('assetSubscriptionCache');
 
@@ -408,11 +419,11 @@ export const BankI = M.interface('Bank', {
 });
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {object} makers
- * @param {ReturnType<prepareAssetSubscription>} makers.provideAssetSubscription
- * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
- * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
+ * @param {ReturnType<typeof prepareAssetSubscription>} makers.provideAssetSubscription
+ * @param {ReturnType<typeof prepareDurablePublishKit>} makers.makePublishKit
+ * @param {ReturnType<typeof prepareVirtualPurse>} makers.makeVirtualPurse
  */
 const prepareBank = (
   zone,
@@ -428,10 +439,7 @@ const prepareBank = (
   /** @type {MapStore<string, VirtualPurse>} */
   const addressDenomToPurse = zone.mapStore('addressDenomToPurse');
   /**
-   * @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<
-   *     string,
-   *     VirtualPurse
-   *   >}
+   * @type {AtomicProvider<string, VirtualPurse>}
    */
   const purseProvider = makeAtomicProvider(addressDenomToPurse);
 
@@ -560,13 +568,13 @@ const BankManagerI = M.interface('BankManager', {
 });
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {object} makers
- * @param {ReturnType<prepareAssetSubscription>} makers.provideAssetSubscription
- * @param {ReturnType<prepareBank>} makers.makeBank
- * @param {ReturnType<prepareDurablePublishKit>} makers.makePublishKit
- * @param {ReturnType<prepareRewardPurseController>} makers.makeRewardPurseController
- * @param {ReturnType<prepareVirtualPurse>} makers.makeVirtualPurse
+ * @param {ReturnType<typeof prepareAssetSubscription>} makers.provideAssetSubscription
+ * @param {ReturnType<typeof prepareBank>} makers.makeBank
+ * @param {ReturnType<typeof prepareDurablePublishKit>} makers.makePublishKit
+ * @param {ReturnType<typeof prepareRewardPurseController>} makers.makeRewardPurseController
+ * @param {ReturnType<typeof prepareVirtualPurse>} makers.makeVirtualPurse
  */
 const prepareBankManager = (
   zone,
@@ -587,7 +595,7 @@ const prepareBankManager = (
      * @param {object} args
      * @param {BridgeChannel} [args.bankChannel]
      * @param {MapStore<string, MapStore<string, BalanceUpdater>>} args.denomToAddressUpdater
-     * @param {Pick<import('./types.js').NameHubKit['nameAdmin'], 'update'>} [args.nameAdmin]
+     * @param {Pick<NameHubKit['nameAdmin'], 'update'>} [args.nameAdmin]
      */
     ({ bankChannel, denomToAddressUpdater, nameAdmin }) => {
       /** @type {MapStore<Brand, AssetRecord>} */
@@ -641,11 +649,7 @@ const prepareBankManager = (
       /**
        * @param {string} denom
        * @param {AssetIssuerKit} feeKit
-       * @returns {ERef<
-       *   import('@endo/far').EOnly<
-       *     import('@agoric/ertp/src/types.js').DepositFacet
-       *   >
-       * >}
+       * @returns {ERef<EOnly<DepositFacet>>}
        */
       getRewardDistributorDepositFacet(denom, feeKit) {
         const { bankChannel } = this.state;
@@ -828,7 +832,7 @@ const prepareFromBaggage = baggage => {
   const makeRewardPurseController = prepareRewardPurseController(rootZone);
   const makeBankChannelHandler = prepareBankChannelHandler(rootZone);
 
-  /** @type {import('@agoric/internal/src/callback.js').MakeAttenuator<BridgeChannel>} */
+  /** @type {MakeAttenuator<BridgeChannel>} */
   const makeBridgeChannelAttenuator = prepareGuardedAttenuator(
     rootZone.subZone('attenuators'),
     BridgeChannelI,
@@ -868,13 +872,11 @@ export function buildRootObject(_vatPowers, _args, baggage) {
 
   return Far('bankMaker', {
     /**
-     * @param {ERef<
-     *   import('./types.js').ScopedBridgeManager<'bank'> | undefined
-     * >} [bankBridgeManagerP]
+     * @param {ERef<ScopedBridgeManager<'bank'> | undefined>} [bankBridgeManagerP]
      *   a bridge manager for the "remote" bank (such as on cosmos-sdk). If not
      *   supplied (such as on sim-chain), we just use local purses.
-     * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdminP]
-     *   update facet of a NameAdmin; see addAsset() for detail.
+     * @param {ERef<{ update: NameAdmin['update'] }>} [nameAdminP] update facet
+     *   of a NameAdmin; see addAsset() for detail.
      */
     async makeBankManager(
       bankBridgeManagerP = undefined,
@@ -918,3 +920,5 @@ export function buildRootObject(_vatPowers, _args, baggage) {
     },
   });
 }
+
+/** @typedef {ReturnType<typeof buildRootObject>} BankVat */

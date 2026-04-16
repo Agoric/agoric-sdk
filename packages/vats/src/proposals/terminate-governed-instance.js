@@ -7,14 +7,19 @@
  *       agoric run /path/to/$0 <$instanceHandleBoardID:$instanceKitLabel>...
  */
 
-/// <reference types="@agoric/vats/src/core/types-ambient"/>
-
 /* eslint-disable import/no-extraneous-dependencies */
 // dynamic import { makeHelpers } from '@agoric/deploy-script-support';
 // dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
 import { E, passStyleOf } from '@endo/far';
 import { makeTracer } from '@agoric/internal/src/debug.js';
 import { isAbandonedError } from '@agoric/internal/src/upgrade-api.js';
+
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ */
 
 const USAGE = `Usage: agoric run /path/to/terminate-governed-instance.js \\
   <$instanceHandleBoardID:$instanceKitLabel>...`;
@@ -86,9 +91,10 @@ export const terminateGoverned = async (
       const targetData = [boardID, instanceKitLabel];
       const logLabel = q(targetData);
       const trace = makeTracer(`terminate-governed-instance ${logLabel}`, true);
-      const contractInstanceHandle = await E(board).getValue(boardID);
+      const contractInstanceHandle = /** @type {Instance<any>} */ (
+        await E(board).getValue(boardID)
+      );
       const instanceKit = await E(governedContractKits).get(
-        // @ts-expect-error TS2345 Property '[tag]' is missing
         contractInstanceHandle,
       );
       trace('alleged governed contract instance kit', instanceKit);
@@ -208,7 +214,7 @@ export const getManifest = (_powers, targetSpecifiers) => {
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (_utils, targetSpecifiers) => {
   parseTargets(targetSpecifiers);
 
@@ -222,7 +228,7 @@ export const defaultProposalBuilder = async (_utils, targetSpecifiers) => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   parseTargets(scriptArgs, makeUsageError);

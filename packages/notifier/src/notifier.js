@@ -9,6 +9,7 @@ import { subscribeLatest } from './subscribe.js';
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {LatestTopic, Notifier, NotifierRecord, PublishKit, Subscriber, UpdateRecord} from './types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

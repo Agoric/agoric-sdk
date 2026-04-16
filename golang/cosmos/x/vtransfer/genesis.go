@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -23,9 +22,8 @@ func DefaultGenesisState() *types.GenesisState {
 	return &types.GenesisState{}
 }
 
-func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) []abci.ValidatorUpdate {
+func InitGenesis(ctx sdk.Context, keeper Keeper, data *types.GenesisState) {
 	keeper.SetWatchedAddresses(ctx, data.GetWatchedAddresses())
-	return []abci.ValidatorUpdate{}
 }
 
 func ExportGenesis(ctx sdk.Context, k Keeper) *types.GenesisState {

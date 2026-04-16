@@ -1,16 +1,8 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
-import type { AnyJson } from '@agoric/cosmic-proto';
+import type { AnyJson, MessageBody } from '@agoric/cosmic-proto';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
-import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
-import {
-  MsgBeginRedelegateResponse,
-  MsgDelegate,
-  MsgDelegateResponse,
-  MsgUndelegateResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
@@ -36,24 +28,27 @@ import type {
 } from '../src/types.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
+import { prepareProgressTracker } from '../src/utils/progress.js';
 
-/**
- * @param {unknown} response
- * @param {(msg: any) => Any} toProtoMsg
- * @returns {string}
- */
-const encodeTxResponse = (response, toProtoMsg) => {
-  const protoMsg = toProtoMsg(response);
+import {
+  Any,
+  MsgDelegate,
+  responseCodecForTypeUrl,
+} from '../src/utils/codecs.js';
+
+const encodeTxResponse = <TU extends keyof typeof responseCodecForTypeUrl>(
+  response: Partial<MessageBody<TU>>,
+  requestTypeUrl: TU,
+): string => {
+  const responseCodec = responseCodecForTypeUrl[requestTypeUrl];
+  const protoMsg = responseCodec.toProtoMsg(response);
   const any1 = Any.fromPartial(protoMsg);
   const any2 = Any.fromPartial({ value: Any.encode(any1).finish() });
   const ackStr = encodeBase64(Any.encode(any2).finish());
   return ackStr;
 };
 
-const trivialDelegateResponse = encodeTxResponse(
-  {},
-  MsgDelegateResponse.toProtoMsg,
-);
+const trivialDelegateResponse = encodeTxResponse({}, MsgDelegate.typeUrl);
 
 test('MsgDelegateResponse trivial response', t => {
   t.is(
@@ -99,7 +94,7 @@ const DAYf = Number(DAY);
 
 const time = {
   parse: (dateString: string) =>
-    BigInt(Date.parse(dateString) / 1000) as TimestampValue,
+    (BigInt(Date.parse(dateString)) / 1_000n) as TimestampValue,
 
   format: (ts: TimestampRecord) =>
     new Date(Number(ts.absValue) * 1000).toISOString(),
@@ -115,25 +110,25 @@ const makeScenario = () => {
     addr = 'agoric1234' as Bech32Address,
     delegations = {} as Record<string, Coin>,
   ) => {
-    const calls = [] as Array<{ msgs: AnyJson[] }>;
+    const calls = [] as Array<{ msgs: readonly AnyJson[] }>;
 
     const simulate = {
-      '/cosmos.staking.v1beta1.MsgDelegate': _m => {
-        const response = MsgDelegateResponse.fromPartial({});
-        return encodeTxResponse(response, MsgDelegateResponse.toProtoMsg);
+      '/cosmos.staking.v1beta1.MsgDelegate': (_m, typeUrl) => {
+        const response = {};
+        return encodeTxResponse(response, typeUrl);
       },
 
-      '/cosmos.staking.v1beta1.MsgBeginRedelegate': _m => {
-        const response = MsgBeginRedelegateResponse.fromPartial({
+      '/cosmos.staking.v1beta1.MsgBeginRedelegate': (_m, typeUrl) => {
+        const response = {
           completionTime: dateToTimestamp(new Date('2025-12-17T03:24:00Z')),
-        });
-        return encodeTxResponse(
-          response,
-          MsgBeginRedelegateResponse.toProtoMsg,
-        );
+        };
+        return encodeTxResponse(response, typeUrl);
       },
 
-      '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward': m => {
+      '/cosmos.distribution.v1beta1.MsgWithdrawDelegatorReward': (
+        m,
+        typeUrl,
+      ) => {
         console.log('simulate withdraw', m);
         const rewards = Object.values(delegations).map(({ denom, amount }) => ({
           denom,
@@ -141,20 +136,17 @@ const makeScenario = () => {
         }));
         const response = {
           amount: rewards,
-        } as MsgWithdrawDelegatorRewardResponse;
+        };
 
-        return encodeTxResponse(
-          response,
-          MsgWithdrawDelegatorRewardResponse.toProtoMsg,
-        );
+        return encodeTxResponse(response, typeUrl);
       },
 
-      '/cosmos.staking.v1beta1.MsgUndelegate': _m => {
+      '/cosmos.staking.v1beta1.MsgUndelegate': (_m, typeUrl) => {
         const { completionTime } = configStaking;
-        const response = MsgUndelegateResponse.fromPartial({
+        const response = {
           completionTime: dateToTimestamp(new Date(completionTime)),
-        });
-        return encodeTxResponse(response, MsgUndelegateResponse.toProtoMsg);
+        };
+        return encodeTxResponse(response, typeUrl);
       },
     };
 
@@ -165,6 +157,7 @@ const makeScenario = () => {
     });
 
     const account: IcaAccount = Far('MockAccount', {
+      makeProgressTracker: () => makeProgressTracker(),
       getAddress: () => chainAddress,
       executeEncodedTx: async msgs => {
         assert.equal(msgs.length, 1);
@@ -173,7 +166,7 @@ const makeScenario = () => {
         assert(doMessage, `unknown ${typeUrl}`);
         await null;
         calls.push({ msgs });
-        return doMessage(msgs[0]);
+        return doMessage(msgs[0], typeUrl);
       },
       executeTx: () => Fail`mock`,
       deactivate: () => Fail`mock`,
@@ -213,6 +206,8 @@ const makeScenario = () => {
 
   const baggage = makeScalarBigMapStore('b1') as Baggage;
   const zone = makeDurableZone(baggage);
+  // withOrchestration() provides a cachingMarshaller but this this doesn't use that
+  // helper and doesn't need to exercise caching.
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
@@ -223,6 +218,12 @@ const makeScenario = () => {
   });
 
   const vowTools = prepareVowTools(zone.subZone('VowTools'));
+  const makeProgressTracker = prepareProgressTracker(
+    zone.subZone('ProgressTracker'),
+    {
+      vowTools,
+    },
+  );
 
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 
@@ -241,6 +242,7 @@ const makeScenario = () => {
   return {
     baggage,
     zone,
+    makeProgressTracker,
     makeRecorderKit,
     ...mockAccount(undefined, delegations),
     storageNode: rootNode,
@@ -257,6 +259,7 @@ test('makeAccount() writes to storage', async t => {
   const s = makeScenario();
   const { account, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -267,6 +270,7 @@ test('makeAccount() writes to storage', async t => {
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -305,6 +309,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -315,6 +320,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -349,6 +355,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -360,6 +367,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -391,7 +399,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
     const seat = E(zoe).offer(toDelegate);
     const result = await E(seat).getOfferResult();
 
-    t.deepEqual(result, undefined);
+    t.deepEqual(result, {});
     const msg = {
       typeUrl: '/cosmos.staking.v1beta1.MsgDelegate',
       value: 'CgphZ29yaWMxMjM0EhFhZ29yaWMxdmFsb3BlcjIzNBoMCgV1YXRvbRIDMjAw',
@@ -425,7 +433,10 @@ test(`delegate; redelegate using invitationMakers`, async t => {
     const seat = E(zoe).offer(toRedelegate);
     const result = await E(seat).getOfferResult();
 
-    t.deepEqual(result, undefined);
+    t.deepEqual(result, { completionTime: { nanos: 0, seconds: 1765941840n } });
+    // const seconds = result?.completionTime?.seconds;
+    // t.like(result, { completionTime: { nanos: 0, seconds } });
+    // t.assert(typeof seconds === 'bigint');
     const msg = {
       typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegate',
       value:
@@ -439,6 +450,7 @@ test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -450,6 +462,7 @@ test(`withdraw rewards using invitationMakers`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -487,6 +500,7 @@ test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    makeProgressTracker,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -498,6 +512,7 @@ test(`undelegate waits for unbonding period`, async t => {
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub,
+    makeProgressTracker,
     makeRecorderKit,
     timerService: timer,
     vowTools,

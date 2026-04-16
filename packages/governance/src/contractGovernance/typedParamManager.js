@@ -5,9 +5,11 @@ import { CONTRACT_ELECTORATE } from './governParam.js';
 import { makeParamManagerBuilder } from './paramManager.js';
 
 /**
- * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
+ * @import {ContractMeta, Installation, Instance, Invitation, Keyword, ZCF} from '@agoric/zoe';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, GovernanceSubscriptionState, GovernanceTerms, ParamManagerBase, ParamStateRecord, ParamValueForType, UpdateParams} from '../types.js';
  * @import {ParamType} from '../constants.js';
+ * @import {StoredPublisherKit} from '@agoric/notifier';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**
@@ -82,7 +84,7 @@ const isAsync = {
 /**
  * @see makeParamManagerSync
  * @template {Record<Keyword, AsyncSpecTuple | SyncSpecTuple>} T
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {T} spec
  * @param {ZCF} zcf
  * @returns {TypedParamManager<{[K in keyof T]: T[K][0]}>}
@@ -117,7 +119,7 @@ harden(makeParamManager);
  *
  * @see makeParamManager
  * @template {Record<Keyword, SyncSpecTuple>} T
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {T} spec
  * @returns {TypedParamManager<{[K in keyof T]: T[K][0]}>}
  */
@@ -138,7 +140,7 @@ harden(makeParamManagerSync);
 /**
  * @template {Record<string, Invitation> & {Electorate: Invitation}} I Private invitation values
  * @template {ParamTypesMap} M Map of types of custom governed terms
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap

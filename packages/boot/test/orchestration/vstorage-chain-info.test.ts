@@ -9,7 +9,7 @@ import {
   defaultMarshaller,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
-import type { TestFn } from 'ava';
+import type { ExecutionContext, TestFn } from 'ava';
 import {
   insistManagerType,
   makeSwingsetHarness,
@@ -19,11 +19,22 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 
-const test: TestFn<
-  WalletFactoryTestContext & {
-    harness?: ReturnType<typeof makeSwingsetHarness>;
-  }
-> = anyTest;
+type ChainInfoState = {
+  bootReady: Promise<void>;
+  configVerified: Promise<void>;
+  revisedReady: Promise<void>;
+};
+
+type ChainInfoContext = {
+  harness?: ReturnType<typeof makeSwingsetHarness>;
+  state: ChainInfoState;
+  markConfigVerified: (error?: unknown) => void;
+  makeBootContext: (
+    t: ExecutionContext<unknown>,
+  ) => Promise<WalletFactoryTestContext>;
+};
+
+const test: TestFn<ChainInfoContext> = anyTest;
 
 const ATOM_DENOM = 'uatom';
 
@@ -33,27 +44,70 @@ const {
 } = process.env;
 
 test.before(async t => {
-  insistManagerType(defaultManagerType);
-  const harness =
-    defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
-  const ctx = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
-    { slogFile, defaultManagerType, harness },
-  );
-  t.context = { ...ctx, harness };
+  const managerType = defaultManagerType;
+  insistManagerType(managerType);
+
+  const harness = managerType === 'xsnap' ? makeSwingsetHarness() : undefined;
+
+  let settleConfigVerified = (_error?: unknown) => {};
+  const configVerified = new Promise<void>((resolve, reject) => {
+    let settled = false;
+    settleConfigVerified = error => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (error) {
+        reject(error);
+      } else {
+        resolve();
+      }
+    };
+  });
+
+  const makeBootContext = (t0: ExecutionContext<unknown>) =>
+    makeWalletFactoryContext(
+      t0,
+      '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
+      {
+        slogFile,
+        defaultManagerType: managerType,
+        harness,
+      },
+    );
+
+  t.context = {
+    harness,
+    state: {
+      bootReady: Promise.resolve(),
+      configVerified,
+      revisedReady: configVerified,
+    },
+    markConfigVerified: settleConfigVerified,
+    makeBootContext,
+  };
 });
-test.after.always(t => t.context.shutdown?.());
 
 /**
  * Test the config itself. Part of this suite so we don't have to start up another swingset.
  */
-test.serial('config', async t => {
+test('config', async t => {
+  await t.context.state.bootReady;
+  let ctx: WalletFactoryTestContext | undefined;
+  t.teardown(() => t.context.markConfigVerified());
+  try {
+    ctx = await t.context.makeBootContext(t);
+  } catch (error) {
+    t.context.markConfigVerified(error);
+    throw error;
+  }
+  t.teardown(async () => ctx.shutdown());
+
   const {
     storage,
     readPublished,
     runUtils: { EV },
-  } = t.context;
+  } = ctx;
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
@@ -112,24 +166,22 @@ test.serial('config', async t => {
   }
 });
 
-// XXX rely on .serial to be in sequence, and keep this one last
-test.serial('revise chain info', async t => {
+test('revise chain info', async t => {
+  await t.context.state.revisedReady;
+  const ctx = await t.context.makeBootContext(t);
+  t.teardown(async () => ctx.shutdown());
+
   const {
     buildProposal,
     evalProposal,
     runUtils: { EV },
-  } = t.context;
+  } = ctx;
 
-  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-
-  await t.throwsAsync(EV(agoricNames).lookup('chain', 'hot'), {
-    message: '"nameKey" not found: "hot"',
-  });
-
-  // Revise chain info in agoricNames with the fixture in this script
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/append-chain-info.js'),
   );
+
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
   const hotchain = await EV(agoricNames).lookup('chain', 'hot');
   t.deepEqual(hotchain, {

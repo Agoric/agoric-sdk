@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -20,8 +20,11 @@ test('plural invitation details', async t => {
 
   // Pack the contract.
   const bundle = await bundleSource(root);
-  vatAdminState.installBundle('a1-two-invitations', bundle);
-  const installation = await E(zoe).installBundleID('a1-two-invitations');
+  const a1twoinvitations = vatAdminState.registerBundle(
+    'a1-two-invitations',
+    bundle,
+  );
+  const installation = await E(zoe).installBundleID(a1twoinvitations);
 
   const { creatorFacet: twoInvitations } = await E(zoe).startInstance(
     installation,

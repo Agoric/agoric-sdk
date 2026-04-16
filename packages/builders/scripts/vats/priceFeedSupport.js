@@ -1,13 +1,19 @@
 /* global process */
 
+import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 import { DEFAULT_CONTRACT_TERMS } from '../inter-protocol/price-feed-core.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
+
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
 
 const { Fail } = assert;
 
 /**
  * modified copy of ../inter-protocol/price-feed-core.js
  *
- * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
+ * @type {CoreEvalBuilder}
  */
 export const strictPriceFeedProposalBuilder = async (
   { publishRef, install },
@@ -30,6 +36,12 @@ export const strictPriceFeedProposalBuilder = async (
   Array.isArray(IN_BRAND_LOOKUP) ||
     Fail`IN_BRAND_NAME array is required; got ${IN_BRAND_LOOKUP}`;
 
+  const priceAggregator = interProtocolBundleSpecs.priceAggregator;
+  const priceAggregatorPath = await buildBundlePath(
+    import.meta.url,
+    priceAggregator,
+  );
+
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/price-feed-proposal.js',
     getManifestCall: [
@@ -43,10 +55,7 @@ export const strictPriceFeedProposalBuilder = async (
         OUT_BRAND_DECIMALS: 4,
         OUT_BRAND_NAME: 'USD',
         priceAggregatorRef: publishRef(
-          install(
-            '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
-            '../bundles/bundle-fluxAggregatorKit.js',
-          ),
+          install(priceAggregator.packagePath, priceAggregatorPath),
         ),
       },
     ],
@@ -55,7 +64,7 @@ export const strictPriceFeedProposalBuilder = async (
 
 /**
  * @deprecated use `strictPriceFeedProposalBuilder` and specify arguments instead
- * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
+ * @type {CoreEvalBuilder}
  */
 export const deprecatedPriceFeedProposalBuilder = async (powers, options) => {
   console.warn(
@@ -85,6 +94,6 @@ export const deprecatedPriceFeedProposalBuilder = async (powers, options) => {
 
 /**
  * @deprecated use `strictPriceFeedProposalBuilder` and specify arguments instead
- * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
+ * @type {CoreEvalBuilder}
  */
 export const priceFeedProposalBuilder = deprecatedPriceFeedProposalBuilder;

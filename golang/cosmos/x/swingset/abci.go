@@ -32,7 +32,7 @@ type afterCommitBlockAction struct {
 	*vm.ActionHeader `actionType:"AFTER_COMMIT_BLOCK"`
 }
 
-func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) error {
+func BeginBlock(ctx sdk.Context, keeper Keeper) error {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyBeginBlocker)
 
 	action := beginBlockAction{
@@ -53,7 +53,7 @@ func BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock, keeper Keeper) erro
 var endBlockHeight int64
 var endBlockTime int64
 
-func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.ValidatorUpdate, error) {
+func EndBlock(ctx sdk.Context, keeper Keeper) ([]abci.ValidatorUpdate, error) {
 	defer telemetry.ModuleMeasureSince(types.ModuleName, time.Now(), telemetry.MetricKeyEndBlocker)
 
 	action := endBlockAction{}
@@ -64,6 +64,11 @@ func EndBlock(ctx sdk.Context, req abci.RequestEndBlock, keeper Keeper) ([]abci.
 		// NOTE: A failed END_BLOCK means that the SwingSet state is inconsistent.
 		// Panic here, in the hopes that a replay from scratch will fix the problem.
 		panic(err)
+	}
+
+	// Remove expired bundle installs.
+	if err := keeper.PruneExpiredBundleInstalls(ctx); err != nil {
+		return nil, err
 	}
 
 	// Save our EndBlock status.

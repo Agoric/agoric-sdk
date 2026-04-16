@@ -155,4 +155,4 @@ export const makeAgd = ({ execFileSync, log = console.log }) => {
   return make();
 };
 
-/** @typedef {ReturnType<makeAgd>} Agd */
+/** @typedef {ReturnType<typeof makeAgd>} Agd */

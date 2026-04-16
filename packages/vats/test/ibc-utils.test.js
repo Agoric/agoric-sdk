@@ -4,17 +4,21 @@ import {
   localAddrToPortID,
 } from '../tools/ibc-utils.js';
 
+/**
+ * @import {LocalIbcAddress} from '../tools/ibc-utils.js';
+ */
+
 test('decodeRemoteIbcAddress', t => {
   /** @type {[string, any][]} */
   const cases = [
     [
-      '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
+      '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"something\\x2fwith\\x2fescaped\\x2fslashes","encoding":"proto3","txType":"sdk_multi_msg"}',
       {
         hops: ['connection-0'],
         order: 'ORDERED',
         rPortID: 'icahost',
         version:
-          '{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
+          '{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"something/with/escaped/slashes","encoding":"proto3","txType":"sdk_multi_msg"}',
       },
     ],
   ];
@@ -24,13 +28,13 @@ test('decodeRemoteIbcAddress', t => {
 });
 
 test('localAddrToPortID', t => {
-  /** @type {[import('../tools/ibc-utils.js').LocalIbcAddress, string][]} */
+  /** @type {[LocalIbcAddress, string][]} */
   const good = [['/ibc-port/my-cool-port-name', 'my-cool-port-name']];
   for (const [raw, parsed] of good) {
     t.deepEqual(localAddrToPortID(raw), parsed);
   }
 
-  /** @type {[import('../tools/ibc-utils.js').LocalIbcAddress, string][]} */
+  /** @type {[LocalIbcAddress, string][]} */
   const bad = [
     [
       '/ibc-port/',

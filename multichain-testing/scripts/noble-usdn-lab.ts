@@ -21,7 +21,11 @@
  */
 import '@endo/init';
 
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { MsgLock as MsgLockType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { StdFee } from '@cosmjs/amino';
 import { stringToPath } from '@cosmjs/crypto';
 import {
@@ -32,12 +36,14 @@ import {
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { $ } from 'execa';
 import { ConfigContext, useChain, useRegistry } from 'starshipjs';
-import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
-import { makeQueryClient } from '../tools/query.ts';
-import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
-import { MsgSwap } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import { MsgLock } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import starshipChainInfo from '../starship-chain-info.js';
+import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
+import { registerNobleForwardingAddress } from '../tools/noble-aux.ts';
+import { makeQueryClient } from '../tools/query.ts';
+
+const MsgTransfer = CodecHelper(MsgTransferType);
+const MsgSwap = CodecHelper(MsgSwapType);
+const MsgLock = CodecHelper(MsgLockType);
 
 const [poolId, denom, denomTo] = [0, 'uusdc' as const, 'uusdn' as const]; // cf. .flows.ts
 
@@ -61,13 +67,44 @@ const keyring1 = {
 } as const;
 type Who = keyof typeof keyring1;
 
-const configs = {
+export const configs = {
   starship: {
     ...starshipChainInfo,
     noble: {
       ...starshipChainInfo.noble,
       rpc: 'http://localhost:26654',
       api: 'http://localhost:1314',
+    },
+  },
+  main: {
+    noble: {
+      rpc: 'https://noble-rpc.polkachu.com:443',
+      api: 'https://noble-api.polkachu.com:443',
+      chainId: 'noble-1',
+      explorer: 'https://www.mintscan.io/noble',
+    },
+    agoric: {
+      rpc: 'https://main.rpc.agoric.net:443',
+      connections: {
+        'noble-1': {
+          id: 'connection-72',
+          client_id: '07-tendermint-77',
+          counterparty: {
+            client_id: '07-tendermint-32',
+            connection_id: 'connection-38',
+          },
+          state: 3,
+          transferChannel: {
+            channelId: 'channel-62',
+            portId: 'transfer',
+            counterPartyChannelId: 'channel-21',
+            counterPartyPortId: 'transfer',
+            ordering: 0,
+            state: 3,
+            version: 'ics20-1',
+          },
+        },
+      },
     },
   },
   testnet: {
@@ -79,6 +116,7 @@ const configs = {
       explorer: 'https://www.mintscan.io/noble-testnet',
     },
     agoric: {
+      rpc: 'https://devnet.rpc.agoric.net:443',
       connections: {
         'grand-1': {
           client_id: '07-tendermint-13',
@@ -120,9 +158,9 @@ const signArgsFor = (from: Who, config: typeof configs.testnet.noble) =>
   ].flat();
 
 const parseTx = stdout => {
-  const { code, raw_log, txhash } = JSON.parse(stdout);
+  const { code, raw_log: log, txhash } = JSON.parse(stdout);
   if (code !== 0) {
-    throw Error(raw_log);
+    throw Error(log);
   }
   return txhash;
 };
@@ -310,7 +348,8 @@ const main = async ({
   configFile = 'config.ymax.yaml',
   connectWithSigner = SigningStargateClient.connectWithSigner,
 } = {}) => {
-  if (env.NET !== 'testnet') {
+  await null;
+  if ((env.NET || 'starship') === 'starship') {
     const fetcher = await useRegistry(configFile);
     await ConfigContext.init(configFile, fetcher);
   }
@@ -318,6 +357,19 @@ const main = async ({
   const $v = $({ verbose: 'short' });
 
   const config = configs[env.NET || 'starship'];
+
+  if (env.MKFWD) {
+    const { MNEMONIC = keyring1.trader1.mnemonic } = env;
+    const tx = await registerNobleForwardingAddress({
+      MNEMONIC,
+      connectWithSigner,
+      config: configs[env.NET || 'testnet'],
+      dest: env.MKFWD,
+    });
+    console.log(tx);
+    return;
+  }
+
   if (env.FAUCET) {
     if (env.NET === 'testnet') {
       throw Error(`use ${configs.testnet.noble.faucet}`);
@@ -338,6 +390,7 @@ const main = async ({
   }
   if (env.POOL) {
     throw Error('does not work; needs to use authority exec');
+    // eslint-disable-next-line no-unreachable
     const { stdout } = await createPool($v, config);
     console.log(JSON.parse(stdout));
   }

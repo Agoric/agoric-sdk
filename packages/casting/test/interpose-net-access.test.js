@@ -17,9 +17,10 @@ import { captureIO, replayIO, web1, web2 } from './net-access-fixture.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {TestFn} from 'ava';
  */
 
-/** @type {import('ava').TestFn<EReturn<typeof makeTestContext>>} */
+/** @type {TestFn<EReturn<typeof makeTestContext>>} */
 const test = /** @type {any} */ (anyTest);
 
 const RECORDING = false;

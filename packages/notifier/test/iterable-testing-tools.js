@@ -4,7 +4,7 @@ import { observeIteration, observeIterator } from '../src/index.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {BaseNotifier, ForkableAsyncIterator, IterationObserver, Notifier, StoredFacet, Subscription} from '../src/types.js';
+ * @import {BaseNotifier, ForkableAsyncIterator, IterationObserver, Notifier, Subscription} from '../src/types.js';
  * @import {PromiseKit} from '@endo/promise-kit';
  */
 

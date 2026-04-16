@@ -5,9 +5,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	transfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
 )
 
 func TestKeeper_ParseRequestTypeURL(t *testing.T) {
@@ -39,11 +41,17 @@ func TestKeeper_ParseRequestTypeURL(t *testing.T) {
 	}
 }
 
+type MsgTransfer struct {
+	transfertypes.MsgTransfer
+	Encoding2 string
+}
+
 func TestKeeper_DeserializeTxMessages(t *testing.T) {
 	encodingConfig := params.MakeEncodingConfig()
-	cdc := encodingConfig.Marshaler
+	cdc := encodingConfig.Codec
 
 	banktypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
+	transfertypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
 	keeper := NewKeeper(cdc, nil, nil, nil, nil)
 
@@ -51,7 +59,17 @@ func TestKeeper_DeserializeTxMessages(t *testing.T) {
 		&banktypes.MsgSend{
 			FromAddress: "cosmos1abc",
 			ToAddress:   "cosmos1xyz",
-			Amount:      sdk.NewCoins(sdk.NewCoin("stake", sdk.NewInt(100))),
+			Amount:      sdk.NewCoins(sdk.NewCoin("stake", sdkmath.NewInt(100))),
+		},
+	}
+
+	expectedMsgTransfer := []sdk.Msg{
+		&transfertypes.MsgTransfer{
+			Sender:   "cosmos1abc",
+			Receiver: "cosmos1xyz",
+			Token:    sdk.NewCoin("stake", sdkmath.NewInt(100)),
+			SourcePort: "transfer",
+			SourceChannel: "channel-0",
 		},
 	}
 
@@ -59,25 +77,37 @@ func TestKeeper_DeserializeTxMessages(t *testing.T) {
 		name     string
 		json     string
 		expected []sdk.Msg
-		wantErr  bool
+		expectedError  string
 	}{
 		{
 			name:     "camelCase keys",
 			json:     `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","fromAddress":"cosmos1abc","toAddress":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
 			expected: expectedMsgSend,
-			wantErr:  false,
 		},
 		{
 			name:     "snake_case keys",
 			json:     `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","from_address":"cosmos1abc","to_address":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
 			expected: expectedMsgSend,
-			wantErr:  false,
 		},
 		{
 			name:     "misspelled key",
 			json:     `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","from_addresss":"cosmos1abc","to_address":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
-			expected: expectedMsgSend,
-			wantErr:  true,
+			expectedError:  `can't unmarshal Any nested proto *types.MsgSend: unknown field "from_addresss" in types.MsgSend`,
+		},
+		{
+			name:    "base transfer",
+			json:     `{"messages":[{"@type":"/ibc.applications.transfer.v1.MsgTransfer","source_port":"transfer","source_channel":"channel-0","token":{"denom":"stake","amount":"100"},"sender":"cosmos1abc","receiver":"cosmos1xyz","timeout_height":{}}]}]`,
+			expected: expectedMsgTransfer,
+		},
+		{
+			name:     "transfer with empty encoding2",
+			json:     `{"messages":[{"@type":"/ibc.applications.transfer.v1.MsgTransfer","source_port":"transfer","source_channel":"channel-0","token":{"denom":"stake","amount":"100"},"sender":"cosmos1abc","receiver":"cosmos1xyz","timeout_height":{},"encoding2":""}]}]`,
+			expectedError:  `can't unmarshal Any nested proto *types.MsgTransfer: unknown field "encoding2" in types.MsgTransfer`,
+		},
+		{
+			name:     "transfer with filled encoding2",
+			json:     `{"messages":[{"@type":"/ibc.applications.transfer.v1.MsgTransfer","source_port":"transfer","source_channel":"channel-0","token":{"denom":"stake","amount":"100"},"sender":"cosmos1abc","receiver":"cosmos1xyz","timeout_height":{},"encoding2":"some encoding2"}]}]`,
+			expectedError:  `can't unmarshal Any nested proto *types.MsgTransfer: unknown field "encoding2" in types.MsgTransfer`,
 		},
 	}
 
@@ -85,11 +115,12 @@ func TestKeeper_DeserializeTxMessages(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			msgs, err := keeper.DeserializeTxMessages([]byte(tc.json))
 
-			if tc.wantErr {
-				require.Error(t, err)
-			} else {
+			if tc.expectedError == "" {
 				require.NoError(t, err)
 				require.Equal(t, tc.expected, msgs)
+			} else {
+				require.Error(t, err)
+				require.Equal(t, tc.expectedError, err.Error())
 			}
 		})
 	}

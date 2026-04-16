@@ -1,9 +1,11 @@
+import { encodeRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import { fromBech32, fromHex } from '@cosmjs/encoding';
 import { Fail, q } from '@endo/errors';
 import bs58 from 'bs58';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {Address as EvmAddress} from 'viem';
  * @import {Bech32Address, CosmosChainAddress, CaipChainId} from '../types.js';
  * @import {AccountId, AccountIdArg, Caip10Record} from '../orchestration-api.js';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -45,7 +47,12 @@ export const makeICAChannelAddress = (
     encoding,
     txType,
   });
-  return `/ibc-hop/${controllerConnectionId}/ibc-port/icahost/${ordering}/${connString}`;
+  return encodeRemoteIbcAddress(
+    [controllerConnectionId],
+    'icahost',
+    ordering,
+    connString,
+  );
 };
 harden(makeICAChannelAddress);
 
@@ -61,7 +68,12 @@ export const makeICQChannelAddress = (
   version = DEFAULT_ICQ_VERSION,
 ) => {
   controllerConnectionId || Fail`controllerConnectionId is required`;
-  return `/ibc-hop/${controllerConnectionId}/ibc-port/icqhost/unordered/${version}`;
+  return encodeRemoteIbcAddress(
+    [controllerConnectionId],
+    'icqhost',
+    'unordered',
+    version,
+  );
 };
 harden(makeICQChannelAddress);
 
@@ -105,6 +117,16 @@ export const getBech32Prefix = address => {
   if (split === 0) return Fail`Missing prefix for ${q(address)}`;
   return address.slice(0, split);
 };
+
+/**
+ * Compare two EVM addresses for equality, case-insensitive.
+ *
+ * @param {EvmAddress} a
+ * @param {EvmAddress | undefined} b
+ * @returns {boolean}
+ */
+export const sameEvmAddress = (a, b) => a.toLowerCase() === b?.toLowerCase();
+harden(sameEvmAddress);
 
 /**
  * Coerce an AccountIdArg into a plain AccountId. The latter is now preferred so

@@ -6,13 +6,22 @@ import {
   type EvidenceParamsSDKType,
   ValidatorParams,
   type ValidatorParamsSDKType,
+  ABCIParams,
+  type ABCIParamsSDKType,
 } from '../../../tendermint/types/params.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** MsgUpdateParams is the Msg/UpdateParams request type. */
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ * @name MsgUpdateParams
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParams
+ */
 export interface MsgUpdateParams {
-  /** authority is the address that controls the module (defaults to x/gov unless overwritten). */
+  /**
+   * authority is the address that controls the module (defaults to x/gov unless overwritten).
+   */
   authority: string;
   /**
    * params defines the x/consensus parameters to update.
@@ -24,21 +33,31 @@ export interface MsgUpdateParams {
   block?: BlockParams;
   evidence?: EvidenceParams;
   validator?: ValidatorParams;
+  abci?: ABCIParams;
 }
 export interface MsgUpdateParamsProtoMsg {
   typeUrl: '/cosmos.consensus.v1.MsgUpdateParams';
   value: Uint8Array;
 }
-/** MsgUpdateParams is the Msg/UpdateParams request type. */
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ * @name MsgUpdateParamsSDKType
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParams
+ */
 export interface MsgUpdateParamsSDKType {
   authority: string;
   block?: BlockParamsSDKType;
   evidence?: EvidenceParamsSDKType;
   validator?: ValidatorParamsSDKType;
+  abci?: ABCIParamsSDKType;
 }
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ * @name MsgUpdateParamsResponse
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponse {}
 export interface MsgUpdateParamsResponseProtoMsg {
@@ -48,6 +67,9 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
+ * @name MsgUpdateParamsResponseSDKType
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParamsResponse
  */
 export interface MsgUpdateParamsResponseSDKType {}
 function createBaseMsgUpdateParams(): MsgUpdateParams {
@@ -56,10 +78,32 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
     block: undefined,
     evidence: undefined,
     validator: undefined,
+    abci: undefined,
   };
 }
+/**
+ * MsgUpdateParams is the Msg/UpdateParams request type.
+ * @name MsgUpdateParams
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParams
+ */
 export const MsgUpdateParams = {
-  typeUrl: '/cosmos.consensus.v1.MsgUpdateParams',
+  typeUrl: '/cosmos.consensus.v1.MsgUpdateParams' as const,
+  aminoType: 'cosmos-sdk/x/consensus/MsgUpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        typeof o.authority === 'string')
+    );
+  },
   encode(
     message: MsgUpdateParams,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -81,6 +125,9 @@ export const MsgUpdateParams = {
         message.validator,
         writer.uint32(34).fork(),
       ).ldelim();
+    }
+    if (message.abci !== undefined) {
+      ABCIParams.encode(message.abci, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -104,6 +151,9 @@ export const MsgUpdateParams = {
         case 4:
           message.validator = ValidatorParams.decode(reader, reader.uint32());
           break;
+        case 5:
+          message.abci = ABCIParams.decode(reader, reader.uint32());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -123,6 +173,7 @@ export const MsgUpdateParams = {
       validator: isSet(object.validator)
         ? ValidatorParams.fromJSON(object.validator)
         : undefined,
+      abci: isSet(object.abci) ? ABCIParams.fromJSON(object.abci) : undefined,
     };
   },
   toJSON(message: MsgUpdateParams): JsonSafe<MsgUpdateParams> {
@@ -140,6 +191,8 @@ export const MsgUpdateParams = {
       (obj.validator = message.validator
         ? ValidatorParams.toJSON(message.validator)
         : undefined);
+    message.abci !== undefined &&
+      (obj.abci = message.abci ? ABCIParams.toJSON(message.abci) : undefined);
     return obj;
   },
   fromPartial(object: Partial<MsgUpdateParams>): MsgUpdateParams {
@@ -156,6 +209,10 @@ export const MsgUpdateParams = {
     message.validator =
       object.validator !== undefined && object.validator !== null
         ? ValidatorParams.fromPartial(object.validator)
+        : undefined;
+    message.abci =
+      object.abci !== undefined && object.abci !== null
+        ? ABCIParams.fromPartial(object.abci)
         : undefined;
     return message;
   },
@@ -175,8 +232,22 @@ export const MsgUpdateParams = {
 function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
   return {};
 }
+/**
+ * MsgUpdateParamsResponse defines the response structure for executing a
+ * MsgUpdateParams message.
+ * @name MsgUpdateParamsResponse
+ * @package cosmos.consensus.v1
+ * @see proto type: cosmos.consensus.v1.MsgUpdateParamsResponse
+ */
 export const MsgUpdateParamsResponse = {
-  typeUrl: '/cosmos.consensus.v1.MsgUpdateParamsResponse',
+  typeUrl: '/cosmos.consensus.v1.MsgUpdateParamsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

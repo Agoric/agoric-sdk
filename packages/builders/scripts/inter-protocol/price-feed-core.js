@@ -1,5 +1,11 @@
 /* eslint-env node */
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
+
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
 
 export const DEFAULT_CONTRACT_TERMS = {
   POLL_INTERVAL: 30n,
@@ -11,7 +17,7 @@ export const DEFAULT_CONTRACT_TERMS = {
   maxSubmissionValue: 2n ** 256n,
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options = {},
@@ -41,6 +47,12 @@ export const defaultProposalBuilder = async (
     assert(OUT_BRAND_NAME);
   }
 
+  const priceAggregator = interProtocolBundleSpecs.priceAggregator;
+  const priceAggregatorPath = await buildBundlePath(
+    import.meta.url,
+    priceAggregator,
+  );
+
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/price-feed-proposal.js',
     getManifestCall: [
@@ -57,10 +69,7 @@ export const defaultProposalBuilder = async (
         brandInRef: brandIn && publishRef(brandIn),
         brandOutRef: brandOut && publishRef(brandOut),
         priceAggregatorRef: publishRef(
-          install(
-            '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
-            '../bundles/bundle-fluxAggregatorKit.js',
-          ),
+          install(priceAggregator.packagePath, priceAggregatorPath),
         ),
       },
     ],

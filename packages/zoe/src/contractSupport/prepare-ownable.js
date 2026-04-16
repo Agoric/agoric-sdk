@@ -1,6 +1,12 @@
-import { M } from '@endo/patterns';
 import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
+import { M } from '@endo/patterns';
 import { OfferHandlerI } from '../typeGuards.js';
+
+/**
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {Invitation} from '../types-index.js';
+ */
 
 const TransferProposalShape = M.splitRecord({
   give: {},
@@ -23,7 +29,7 @@ const TransferProposalShape = M.splitRecord({
  * allowlist of method names.
  *
  * @template {(string | symbol)[]} MN Method names
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {ZCF['makeInvitation']} makeInvitation
  *   A function with the same behavior as `zcf.makeInvitation`.
  *   A contract will normally just extract it from its own zcf using the

@@ -6,12 +6,13 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 
 	sdkioerrors "cosmossdk.io/errors"
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 )
 
 // NewHandler returns a handler for "swingset" type messages.
-func NewHandler(k Keeper) sdk.Handler {
+func NewHandler(k Keeper) baseapp.MsgServiceHandler {
 	msgServer := keeper.NewMsgServerImpl(k)
 
 	return func(ctx sdk.Context, msg sdk.Msg) (*sdk.Result, error) {

@@ -151,6 +151,8 @@ test('makeAgoricNamesRemotesFromFakeStorage', t => {
   t.deepEqual(Object.keys(agoricNamesRemotes), [
     'brand',
     'instance',
+    'installation',
+    'issuer',
     'reverse',
     'vbankAsset',
   ]);

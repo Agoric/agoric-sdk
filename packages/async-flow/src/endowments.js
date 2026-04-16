@@ -262,5 +262,5 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
 harden(prepareEndowmentTools);
 
 /**
- * @typedef {ReturnType<prepareEndowmentTools>} EndowmentTools
+ * @typedef {ReturnType<typeof prepareEndowmentTools>} EndowmentTools
  */

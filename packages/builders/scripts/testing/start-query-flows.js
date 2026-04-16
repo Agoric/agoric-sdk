@@ -12,6 +12,11 @@ import { parseChainHubOpts } from '../orchestration/helpers.js';
 /**
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {QueryFlowsSF as StartFn} from '@agoric/orchestration/src/fixtures/query-flows.contract.js';
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {StartUpgradableOpts} from '@agoric/vats/src/core/types.js';
  */
 
 const contractName = 'queryFlows';
@@ -118,7 +123,7 @@ export const getManifestForContract = (
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   options,
@@ -142,7 +147,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the modules can work in CoreEval environment
   const { makeHelpers } = await import('@agoric/deploy-script-support');

@@ -1,0 +1,131 @@
+diff --git a/src/encodePassable.d.ts b/src/encodePassable.d.ts
+index 7fe258fb23463446bf9abc4a5fc4dd47cbd55f98..10a42ffc3d9ed0b85b2349aeb9b405cb08b6567a 100644
+--- a/src/encodePassable.d.ts
++++ b/src/encodePassable.d.ts
+@@ -24,13 +24,13 @@ export function isEncodedRemotable(encoded: any): boolean;
+  */
+ export const passStylePrefixes: Record<PassStyle, string>;
+ export type EncodeOptions = {
+-    encodeRemotable?: ((remotable: Remotable, encodeRecur: (p: Passable) => string) => string) | undefined;
++    encodeRemotable?: ((remotable: RemotableObject, encodeRecur: (p: Passable) => string) => string) | undefined;
+     encodePromise?: ((promise: Promise<any>, encodeRecur: (p: Passable) => string) => string) | undefined;
+     encodeError?: ((error: Error, encodeRecur: (p: Passable) => string) => string) | undefined;
+     format?: "legacyOrdered" | "compactOrdered" | undefined;
+ };
+ export type DecodeOptions = {
+-    decodeRemotable?: ((encodedRemotable: string, decodeRecur: (e: string) => Passable) => Remotable) | undefined;
++    decodeRemotable?: ((encodedRemotable: string, decodeRecur: (e: string) => Passable) => RemotableObject) | undefined;
+     decodePromise?: ((encodedPromise: string, decodeRecur: (e: string) => Passable) => Promise<any>) | undefined;
+     decodeError?: ((encodedError: string, decodeRecur: (e: string) => Passable) => Error) | undefined;
+ };
+@@ -43,5 +43,5 @@ export type PassableKit = {
+ import type { Passable } from '@endo/pass-style';
+ import type { CopyRecord } from '@endo/pass-style';
+ import type { PassStyle } from '@endo/pass-style';
+-import type { RemotableObject as Remotable } from '@endo/pass-style';
++import type { RemotableObject } from '@endo/pass-style';
+ //# sourceMappingURL=encodePassable.d.ts.map
+\ No newline at end of file
+diff --git a/src/encodePassable.d.ts.map b/src/encodePassable.d.ts.map
+index 2e2b56b42af345d3ca683d19ed8f1f04253cd457..109112ad5fed364757e6fa1e57dfa614fa501791 100644
+--- a/src/encodePassable.d.ts.map
++++ b/src/encodePassable.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"encodePassable.d.ts","sourceRoot":"","sources":["encodePassable.js"],"names":[],"mappings":"AA4CO,4BAJiB,CAAC,SAAZ,QAAU,UACZ,WAAW,CAAC,CAAC,GACX,MAAM,EAAE,CAQ+C;AAY7D,6BALiB,CAAC,SAAZ,QAAU,UACZ,WAAW,CAAC,CAAC,SACb,MAAM,EAAE,GACN,CAAC,EAAE,CAGyB;AAYlC,2BAJI,OAAO,QACP,MAAM,GACJ,MAAM,CAQlB;AAsqBM,0CAHI,aAAa,GAAG,aAAa,GAC3B,WAAW,CA8EvB;AAOM,mDAHI,aAAa,GACX,WAAW,CAAC,gBAAgB,CAAC,CAKzC;AAOM,mDAHI,aAAa,GACX,WAAW,CAAC,gBAAgB,CAAC,CAKzC;AAGM,0DAA+D;AAKtE;;;;;;;;;;;;;;;;GAgBG;AACH,gCAhBU,MAAM,CAAC,SAAS,EAAE,MAAM,CAAC,CAkCjC;;mCAzVc,SAAS,eACP,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,KACjC,MAAM;0DAGI,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,KACjC,MAAM;2BAEF,KAAK,eACC,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,KACjC,MAAM;;;;0CAgGS,MAAM,eACX,CAAC,CAAC,EAAE,MAAM,KAAK,QAAQ,KACjC,SAAS;sCAEI,MAAM,eACT,CAAC,CAAC,EAAE,MAAM,KAAK,QAAQ;kCAGtB,MAAM,eACP,CAAC,CAAC,EAAE,MAAM,KAAK,QAAQ,KACjC,KAAK;;;oBAkFC,UAAU,sBAvLb,CAAC,GAAG,EAAE,MAAM,KAAK,MAAM,eACvB,CAAC,GAAG,EAAE,OAAO,EAAE,EAAE,WAAW,EAAE,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,KAAK,MAAM,WAChE,QAAQ,CAAC,aAAa,CAAC,GAAG;QAAC,cAAc,CAAC,EAAE,CAAC,OAAO,EAAE,MAAM,EAAE,KAAK,EAAE,MAAM,KAAK,IAAI,CAAA;KAAC,KACnF,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,CAoLK;oBAC3B,UAAU,sBAvEb,CAAC,OAAO,EAAE,MAAM,KAAK,MAAM,eAC3B,CAAC,OAAO,EAAE,MAAM,EAAE,WAAW,EAAE,CAAC,CAAC,EAAE,MAAM,KAAK,QAAQ,EAAE,IAAI,CAAC,EAAE,MAAM,KAAK,OAAO,EAAE,WACnF,QAAQ,CAAC,aAAa,CAAC,KACrB,CAAC,OAAO,EAAE,MAAM,EAAE,IAAI,CAAC,EAAE,MAAM,KAAK,QAAQ,CAoEhB;;8BApuBkD,kBAAkB;gCAAlB,kBAAkB;+BAAlB,kBAAkB;kDAAlB,kBAAkB"}
+\ No newline at end of file
++{"version":3,"file":"encodePassable.d.ts","sourceRoot":"","sources":["encodePassable.js"],"names":[],"mappings":"AA4CO,4BAJiB,CAAC,SAAZ,QAAU,UACZ,WAAW,CAAC,CAAC,GACX,MAAM,EAAE,CAQ+C;AAY7D,6BALiB,CAAC,SAAZ,QAAU,UACZ,WAAW,CAAC,CAAC,SACb,MAAM,EAAE,GACN,CAAC,EAAE,CAGyB;AAYlC,2BAJI,OAAO,QACP,MAAM,GACJ,MAAM,CAQlB;AAsqBM,0CAHI,aAAa,GAAG,aAAa,GAC3B,WAAW,CA8EvB;AAOM,mDAHI,aAAa,GACX,WAAW,CAAC,gBAAgB,CAAC,CAKzC;AAOM,mDAHI,aAAa,GACX,WAAW,CAAC,gBAAgB,CAAC,CAKzC;AAGM,0DAA+D;AAKtE;;;;;;;;;;;;;;;;GAgBG;AACH,gCAhBU,MAAM,CAAC,SAAS,EAAE,MAAM,CAAC,CAkCjC;;mCAzVc,eAAe,eACb,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,KACjC,MAAM;0DAGI,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,KACjC,MAAM;2BAEF,KAAK,eACC,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,KACjC,MAAM;;;;0CAgGS,MAAM,eACX,CAAC,CAAC,EAAE,MAAM,KAAK,QAAQ,KACjC,eAAe;sCAEF,MAAM,eACT,CAAC,CAAC,EAAE,MAAM,KAAK,QAAQ;kCAGtB,MAAM,eACP,CAAC,CAAC,EAAE,MAAM,KAAK,QAAQ,KACjC,KAAK;;;oBAkFC,UAAU,sBAvLb,CAAC,GAAG,EAAE,MAAM,KAAK,MAAM,eACvB,CAAC,GAAG,EAAE,OAAO,EAAE,EAAE,WAAW,EAAE,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,KAAK,MAAM,WAChE,QAAQ,CAAC,aAAa,CAAC,GAAG;QAAC,cAAc,CAAC,EAAE,CAAC,OAAO,EAAE,MAAM,EAAE,KAAK,EAAE,MAAM,KAAK,IAAI,CAAA;KAAC,KACnF,CAAC,CAAC,EAAE,QAAQ,KAAK,MAAM,CAoLK;oBAC3B,UAAU,sBAvEb,CAAC,OAAO,EAAE,MAAM,KAAK,MAAM,eAC3B,CAAC,OAAO,EAAE,MAAM,EAAE,WAAW,EAAE,CAAC,CAAC,EAAE,MAAM,KAAK,QAAQ,EAAE,IAAI,CAAC,EAAE,MAAM,KAAK,OAAO,EAAE,WACnF,QAAQ,CAAC,aAAa,CAAC,KACrB,CAAC,OAAO,EAAE,MAAM,EAAE,IAAI,CAAC,EAAE,MAAM,KAAK,QAAQ,CAoEhB;;8BApuBqC,kBAAkB;gCAAlB,kBAAkB;+BAAlB,kBAAkB;qCAAlB,kBAAkB"}
+\ No newline at end of file
+diff --git a/src/encodePassable.js b/src/encodePassable.js
+index eb511aa375b07a88f4239efae3a9cff3418e0169..e1d1f90946673588dd1e1f25260e3b265e6abb9e 100644
+--- a/src/encodePassable.js
++++ b/src/encodePassable.js
+@@ -10,7 +10,7 @@ import {
+ } from '@endo/pass-style';
+ 
+ /**
+- * @import {CopyRecord, PassStyle, Passable, RemotableObject as Remotable, ByteArray} from '@endo/pass-style'
++ * @import {CopyRecord, PassStyle, Passable, RemotableObject, ByteArray} from '@endo/pass-style'
+  */
+ 
+ import { b, q, Fail } from '@endo/errors';
+@@ -551,7 +551,7 @@ const makeEncodeError = (unsafeEncodeError, verifyEncoding) => {
+ /**
+  * @typedef {object} EncodeOptions
+  * @property {(
+- *   remotable: Remotable,
++ *   remotable: RemotableObject,
+  *   encodeRecur: (p: Passable) => string,
+  * ) => string} [encodeRemotable]
+  * @property {(
+@@ -659,7 +659,7 @@ const makeInnerEncode = (encodeStringSuffix, encodeArray, options) => {
+  * @property {(
+  *   encodedRemotable: string,
+  *   decodeRecur: (e: string) => Passable
+- * ) => Remotable} [decodeRemotable]
++ * ) => RemotableObject} [decodeRemotable]
+  * @property {(
+  *   encodedPromise: string,
+  *   decodeRecur: (e: string) => Passable
+diff --git a/src/encodeToSmallcaps.d.ts b/src/encodeToSmallcaps.d.ts
+index 760a95d63d87b893b37cd795633fd96c4f49f1ee..d7b13671dea59cb8a3eba24e7b12e9832aabfa0c 100644
+--- a/src/encodeToSmallcaps.d.ts
++++ b/src/encodeToSmallcaps.d.ts
+@@ -3,14 +3,15 @@ export function makeDecodeFromSmallcaps(decodeOptions?: DecodeFromSmallcapsOptio
+ export type SmallcapsEncoding = any;
+ export type SmallcapsEncodingUnion = any;
+ export type EncodeToSmallcapsOptions = {
+-    encodeRemotableToSmallcaps?: ((remotable: <T extends {}, I extends import("@endo/pass-style").InterfaceSpec>(iface?: I, props?: undefined, remotable?: T) => T & import("@endo/pass-style").RemotableObject<I> & import("@endo/eventual-send").RemotableBrand<{}, T>, encodeRecur: (p: Passable) => SmallcapsEncoding) => SmallcapsEncoding) | undefined;
++    encodeRemotableToSmallcaps?: ((remotable: RemotableObject, encodeRecur: (p: Passable) => SmallcapsEncoding) => SmallcapsEncoding) | undefined;
+     encodePromiseToSmallcaps?: ((promise: Promise<any>, encodeRecur: (p: Passable) => SmallcapsEncoding) => SmallcapsEncoding) | undefined;
+     encodeErrorToSmallcaps?: ((error: Error, encodeRecur: (p: Passable) => SmallcapsEncoding) => SmallcapsEncoding) | undefined;
+ };
+ export type DecodeFromSmallcapsOptions = {
+-    decodeRemotableFromSmallcaps?: ((encodedRemotable: SmallcapsEncoding, decodeRecur: (e: SmallcapsEncoding) => Passable) => <T extends {}, I extends import("@endo/pass-style").InterfaceSpec>(iface?: I, props?: undefined, remotable?: T) => T & import("@endo/pass-style").RemotableObject<I> & import("@endo/eventual-send").RemotableBrand<{}, T>) | undefined;
++    decodeRemotableFromSmallcaps?: ((encodedRemotable: SmallcapsEncoding, decodeRecur: (e: SmallcapsEncoding) => Passable) => RemotableObject) | undefined;
+     decodePromiseFromSmallcaps?: ((encodedPromise: SmallcapsEncoding, decodeRecur: (e: SmallcapsEncoding) => Passable) => Promise<any>) | undefined;
+     decodeErrorFromSmallcaps?: ((encodedError: SmallcapsEncoding, decodeRecur: (e: SmallcapsEncoding) => Passable) => Error) | undefined;
+ };
+ import type { Passable } from '@endo/pass-style';
++import type { RemotableObject } from '@endo/pass-style';
+ //# sourceMappingURL=encodeToSmallcaps.d.ts.map
+\ No newline at end of file
+diff --git a/src/encodeToSmallcaps.d.ts.map b/src/encodeToSmallcaps.d.ts.map
+index 2017267c104564ca2df5f930fd1ddf0e444ff663..8df9e995fc9616e995a855ef79f425f56ca22655 100644
+--- a/src/encodeToSmallcaps.d.ts.map
++++ b/src/encodeToSmallcaps.d.ts.map
+@@ -1 +1 @@
+-{"version":3,"file":"encodeToSmallcaps.d.ts","sourceRoot":"","sources":["encodeToSmallcaps.js"],"names":[],"mappings":"AAqHO,sDANI,wBAAwB,GAItB,CAAC,QAAQ,EAAE,QAAQ,KAAK,iBAAiB,CAoLrD;AA8BM,wDAHI,0BAA0B,GACxB,CAAC,OAAO,EAAE,iBAAiB,KAAK,QAAQ,CAqJpD;gCAlca,GAAG;qCACH,GAAG;;uRAmEC,CAAC,CAAC,EAAE,QAAQ,KAAK,iBAAiB,KAC5C,iBAAiB;qEAGP,CAAC,CAAC,EAAE,QAAQ,KAAK,iBAAiB,KAC5C,iBAAiB;sCAEb,KAAK,eACC,CAAC,CAAC,EAAE,QAAQ,KAAK,iBAAiB,KAC5C,iBAAiB;;;uDA0MF,iBAAiB,eACtB,CAAC,CAAC,EAAE,iBAAiB,KAAK,QAAQ;mDAG/B,iBAAiB,eACpB,CAAC,CAAC,EAAE,iBAAiB,KAAK,QAAQ;+CAGjC,iBAAiB,eAClB,CAAC,CAAC,EAAE,iBAAiB,KAAK,QAAQ,KAC5C,KAAK;;8BAnS0B,kBAAkB"}
+\ No newline at end of file
++{"version":3,"file":"encodeToSmallcaps.d.ts","sourceRoot":"","sources":["encodeToSmallcaps.js"],"names":[],"mappings":"AAqHO,sDANI,wBAAwB,GAItB,CAAC,QAAQ,EAAE,QAAQ,KAAK,iBAAiB,CAoLrD;AA8BM,wDAHI,0BAA0B,GACxB,CAAC,OAAO,EAAE,iBAAiB,KAAK,QAAQ,CAqJpD;gCAlca,GAAG;qCACH,GAAG;;8CAkED,eAAe,eACb,CAAC,CAAC,EAAE,QAAQ,KAAK,iBAAiB,KAC5C,iBAAiB;qEAGP,CAAC,CAAC,EAAE,QAAQ,KAAK,iBAAiB,KAC5C,iBAAiB;sCAEb,KAAK,eACC,CAAC,CAAC,EAAE,QAAQ,KAAK,iBAAiB,KAC5C,iBAAiB;;;uDA0MF,iBAAiB,eACtB,CAAC,CAAC,EAAE,iBAAiB,KAAK,QAAQ,KAC5C,eAAe;mDAEF,iBAAiB,eACpB,CAAC,CAAC,EAAE,iBAAiB,KAAK,QAAQ;+CAGjC,iBAAiB,eAClB,CAAC,CAAC,EAAE,iBAAiB,KAAK,QAAQ,KAC5C,KAAK;;8BAnSgC,kBAAkB;qCAAlB,kBAAkB"}
+\ No newline at end of file
+diff --git a/src/encodeToSmallcaps.js b/src/encodeToSmallcaps.js
+index 5de9dd02a380c6cb6b90eea26b9ee6d150a11d4e..e0e07b4a57eb8286867ecffbdde7ee6c9c642cc6 100644
+--- a/src/encodeToSmallcaps.js
++++ b/src/encodeToSmallcaps.js
+@@ -18,7 +18,7 @@ import {
+ } from '@endo/pass-style';
+ import { X, Fail, q } from '@endo/errors';
+ 
+-/** @import {Passable, Remotable} from '@endo/pass-style' */
++/** @import {Passable, RemotableObject} from '@endo/pass-style' */
+ // FIXME define actual types
+ /** @typedef {any} SmallcapsEncoding */
+ /** @typedef {any} SmallcapsEncodingUnion */
+@@ -87,7 +87,7 @@ const startsSpecial = encodedStr => {
+ /**
+  * @typedef {object} EncodeToSmallcapsOptions
+  * @property {(
+- *   remotable: Remotable,
++ *   remotable: RemotableObject,
+  *   encodeRecur: (p: Passable) => SmallcapsEncoding
+  * ) => SmallcapsEncoding} [encodeRemotableToSmallcaps]
+  * @property {(
+@@ -301,7 +301,7 @@ harden(makeEncodeToSmallcaps);
+  * @property {(
+  *   encodedRemotable: SmallcapsEncoding,
+  *   decodeRecur: (e :SmallcapsEncoding) => Passable
+- * ) => Remotable} [decodeRemotableFromSmallcaps]
++ * ) => RemotableObject} [decodeRemotableFromSmallcaps]
+  * @property {(
+  *   encodedPromise: SmallcapsEncoding,
+  *   decodeRecur: (e :SmallcapsEncoding) => Passable

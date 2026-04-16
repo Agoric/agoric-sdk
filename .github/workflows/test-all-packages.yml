@@ -7,6 +7,12 @@ on:
   merge_group:
   push:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      boot_snapshot_cache_version:
+        description: Boot snapshot cache version override for manual reruns
+        required: false
+        default: '3'
   schedule:
     # We start a little earlier to give our build cache time to populate.
     - cron: '47 5 * * *'
@@ -19,6 +25,7 @@ env:
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
   TEST_COLLECT: 'tee -a _testoutput.txt'
+  BOOT_SNAPSHOT_CACHE_VERSION: ${{ inputs.boot_snapshot_cache_version || '3' }}
 
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
@@ -27,7 +34,6 @@ defaults:
   run:
     shell: bash
 
-# set ESM_DISABLE_CACHE=true (will be JSON parsed)
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -36,8 +42,6 @@ jobs:
         node-version: ['node-new', 'node-old']
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -77,8 +81,14 @@ jobs:
       # restored.
       - name: Pack packages without ambient type resolution
         run: |
+          # Check that all exports work before packing
+          scripts/packing/verify-package-exports.mjs --quiet --mode=scm
+          # prepack must be in order to verify type dependency availability
           yarn lerna run --reject-cycles --concurrency 1 prepack
-          yarn lerna run postpack
+          # check for broken exports in the packed builds
+          scripts/packing/verify-package-exports.mjs --quiet --mode=packed
+          # postpack has to be serial to correctly restore the .js files deleted in prepack
+          yarn lerna run --reject-cycles --concurrency 1 postpack
 
   ##################
   # Lint tests
@@ -92,9 +102,17 @@ jobs:
         with:
           node-version: 'node-new'
 
-      # eslint and tsc
+      # Run ESLint once from the repo root so type-aware project state can be reused.
+      - run: yarn lint:eslint --quiet
+
       # XXX running tsc in every package is slow and redundant.
-      - run: yarn lint:packages
+      - run: yarn typecheck-all
+
+      # multichain-testing is a standalone yarn project (not a workspace), so
+      # the root lint:eslint and typecheck-all don't cover it.
+      - name: lint multichain-testing
+        run: yarn install && yarn lint && yarn ava test/imports.test.ts
+        working-directory: multichain-testing
 
   # A second job for what's not covered in primary
   lint-rest:
@@ -111,15 +129,26 @@ jobs:
 
       - run: yarn lint:package-names
 
+      - run: yarn constraints
+
+      - name: enforce tools-scope import boundaries
+        run: yarn lint:tools-scope-imports
+
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
       # master merge check
       - name: Lint a3p-integration
-        run: yarn install && yarn lint && yarn doctor
+        # FIXME restore `yarn lint` once client-utils in NPM is compatible with HEAD
+        # (after this change merges to master and the `dev` version is published)
+        run: yarn install && yarn doctor
         working-directory: a3p-integration
       - name: build A3P submissions
         run: yarn run build:submissions
         working-directory: a3p-integration
+
+      # run the typecheck-quick that local dev can rely on for fast feedback
+      - name: typecheck-quick
+        run: yarn typecheck-quick
 
       # Attempt the doc generation to catch build errors before
       # landing on master
@@ -157,7 +186,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16core # avoid exit 129
     strategy:
       matrix:
         engine: ['node-new', 'node-old', 'xs']
@@ -166,7 +195,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -206,9 +234,6 @@ jobs:
       - name: yarn test (portfolio-api)
         if: (success() || failure())
         run: cd packages/portfolio-api && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (portfolio-contract)
-        if: (success() || failure())
-        run: cd packages/portfolio-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (portfolio-deploy)
         if: (success() || failure())
         run: cd packages/portfolio-deploy && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -241,7 +266,7 @@ jobs:
         run: cd packages/xsnap && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (ymax-planner)
         if: (success() || failure())
-        run: cd packages/ymax-planner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+        run: cd services/ymax-planner && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -258,6 +283,28 @@ jobs:
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
+  # Verify that running `yarn codegen` in any package that defines it
+  # does not produce changes. Only runs on pull requests.
+  test-codegen:
+    if: github.event_name == 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+
+      # Some codegen (e.g., cosmic-proto) depends on Go toolchain
+      - uses: ./.github/actions/restore-golang
+        with:
+          go-version: '1.24'
+
+      - name: Verify codegen idempotence
+        shell: bash
+        run: scripts/verify-codegen-idempotence.mjs
+
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
@@ -271,7 +318,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -345,6 +391,9 @@ jobs:
       - name: yarn test (eslint-config)
         if: (success() || failure())
         run: cd packages/eslint-config && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (eslint-plugin)
+        if: (success() || failure())
+        run: cd packages/eslint-plugin && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (vat-data)
         if: (success() || failure())
         run: cd packages/vat-data && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -404,7 +453,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -443,7 +491,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -452,6 +499,44 @@ jobs:
       - name: yarn test (governance)
         if: (success() || failure())
         run: cd packages/governance && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: notify on failure
+        if: failure() && github.event_name != 'pull_request'
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
+        with:
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
+
+  test-portfolio-contract:
+    # BEGIN-TEST-BOILERPLATE
+    timeout-minutes: 40
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # test:xs is noop in portfolio-contract/package.json
+        engine: ['node-new', 'node-old']
+    steps:
+      - name: set vars
+        id: vars
+        run: |
+          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: ${{ matrix.engine }}
+      # END-TEST-BOILERPLATE
+      - name: yarn test (portfolio-contract)
+        if: (success() || failure())
+        run: cd packages/portfolio-contract && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -482,7 +567,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -511,7 +595,7 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-16core # avoid exit 129
     strategy:
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
@@ -521,7 +605,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
 
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -530,7 +613,7 @@ jobs:
       # END-TEST-BOILERPLATE
       - uses: ./.github/actions/restore-golang
         with:
-          go-version: '1.22'
+          go-version: '1.24'
       - name: yarn test (cosmic-swingset)
         if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -564,7 +647,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
@@ -592,7 +674,7 @@ jobs:
   test-boot:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 40
-    needs: build
+    needs: [build]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -605,7 +687,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
           echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
 
@@ -614,9 +695,81 @@ jobs:
         with:
           node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
+      - name: Clear regenerated snapshot markers
+        run: rm -rf packages/boot/test/cache/runutils/.ci-regenerated
+      - name: Compute boot snapshot cache keys
+        id: boot-snapshot-keys
+        run: |
+          snapshot_keys="$(cd packages/boot && node --import ts-blank-space/register ./test/tools/create-runutils-snapshot.ts --cache-keys)"
+          SNAPSHOT_KEYS="$snapshot_keys" BOOT_SNAPSHOT_CACHE_VERSION="$BOOT_SNAPSHOT_CACHE_VERSION" node <<'EOF' >> "$GITHUB_OUTPUT"
+          const keys = JSON.parse(process.env.SNAPSHOT_KEYS);
+          const version = process.env.BOOT_SNAPSHOT_CACHE_VERSION;
+          for (const [name, fingerprint] of Object.entries(keys)) {
+            const outputName = name.replaceAll('-', '_');
+            console.log(
+              `${outputName}=boot-runutils-snapshot-${name}-${version}-${fingerprint}`,
+            );
+          }
+          EOF
+      - name: Restore demo-base snapshot cache
+        id: demo_base_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/test/cache/runutils/demo-base
+          key: ${{ steps.boot-snapshot-keys.outputs.demo_base }}
+          restore-keys: |
+            boot-runutils-snapshot-demo-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
+      - name: Restore main-vaults-base snapshot cache
+        id: main_vaults_base_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/test/cache/runutils/main-vaults-base
+          key: ${{ steps.boot-snapshot-keys.outputs.main_vaults_base }}
+          restore-keys: |
+            boot-runutils-snapshot-main-vaults-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
+      - name: Restore itest-vaults-base snapshot cache
+        id: itest_vaults_base_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/test/cache/runutils/itest-vaults-base
+          key: ${{ steps.boot-snapshot-keys.outputs.itest_vaults_base }}
+          restore-keys: |
+            boot-runutils-snapshot-itest-vaults-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
+      - name: Restore orchestration-base snapshot cache
+        id: orchestration_base_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/test/cache/runutils/orchestration-base
+          key: ${{ steps.boot-snapshot-keys.outputs.orchestration_base }}
+          restore-keys: |
+            boot-runutils-snapshot-orchestration-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
       - name: yarn test (boot)
         if: (success() || failure())
         run: cd packages/boot && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Save demo-base snapshot cache
+        if: always() && steps.demo_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/demo-base') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/test/cache/runutils/demo-base
+          key: ${{ steps.boot-snapshot-keys.outputs.demo_base }}
+      - name: Save main-vaults-base snapshot cache
+        if: always() && steps.main_vaults_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/main-vaults-base') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/test/cache/runutils/main-vaults-base
+          key: ${{ steps.boot-snapshot-keys.outputs.main_vaults_base }}
+      - name: Save itest-vaults-base snapshot cache
+        if: always() && steps.itest_vaults_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/itest-vaults-base') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/test/cache/runutils/itest-vaults-base
+          key: ${{ steps.boot-snapshot-keys.outputs.itest_vaults_base }}
+      - name: Save orchestration-base snapshot cache
+        if: always() && steps.orchestration_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/orchestration-base') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/test/cache/runutils/orchestration-base
+          key: ${{ steps.boot-snapshot-keys.outputs.orchestration_base }}
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
@@ -649,7 +802,6 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
           echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
 
@@ -698,7 +850,6 @@ jobs:
         # XXX test:xs-unit is deprecated branch protection still expects it
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -739,7 +890,6 @@ jobs:
         # END-TEST-BOILERPLATE
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}" >> $GITHUB_OUTPUT
-          echo "GH_ENGINE=${{ matrix.engine }}" >> $GITHUB_ENV
         # BEGIN-TEST-BOILERPLATE
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node

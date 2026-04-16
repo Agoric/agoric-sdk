@@ -1,50 +1,92 @@
 //@ts-nocheck
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
+import {
+  Plan,
+  type PlanSDKType,
+} from '../../../../cosmos/upgrade/v1beta1/upgrade.js';
+import { Params, type ParamsSDKType } from './client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
-/** MsgCreateClient defines a message to create an IBC client */
+/**
+ * MsgCreateClient defines a message to create an IBC client
+ * @name MsgCreateClient
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgCreateClient
+ */
 export interface MsgCreateClient {
-  /** light client state */
+  /**
+   * light client state
+   */
   clientState?: Any;
   /**
    * consensus state associated with the client that corresponds to a given
    * height.
    */
   consensusState?: Any;
-  /** signer address */
+  /**
+   * signer address
+   */
   signer: string;
 }
 export interface MsgCreateClientProtoMsg {
   typeUrl: '/ibc.core.client.v1.MsgCreateClient';
   value: Uint8Array;
 }
-/** MsgCreateClient defines a message to create an IBC client */
+/**
+ * MsgCreateClient defines a message to create an IBC client
+ * @name MsgCreateClientSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgCreateClient
+ */
 export interface MsgCreateClientSDKType {
   client_state?: AnySDKType;
   consensus_state?: AnySDKType;
   signer: string;
 }
-/** MsgCreateClientResponse defines the Msg/CreateClient response type. */
-export interface MsgCreateClientResponse {}
+/**
+ * MsgCreateClientResponse defines the Msg/CreateClient response type.
+ * @name MsgCreateClientResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgCreateClientResponse
+ */
+export interface MsgCreateClientResponse {
+  clientId: string;
+}
 export interface MsgCreateClientResponseProtoMsg {
   typeUrl: '/ibc.core.client.v1.MsgCreateClientResponse';
   value: Uint8Array;
 }
-/** MsgCreateClientResponse defines the Msg/CreateClient response type. */
-export interface MsgCreateClientResponseSDKType {}
+/**
+ * MsgCreateClientResponse defines the Msg/CreateClient response type.
+ * @name MsgCreateClientResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgCreateClientResponse
+ */
+export interface MsgCreateClientResponseSDKType {
+  client_id: string;
+}
 /**
  * MsgUpdateClient defines an sdk.Msg to update a IBC client state using
  * the given client message.
+ * @name MsgUpdateClient
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateClient
  */
 export interface MsgUpdateClient {
-  /** client unique identifier */
+  /**
+   * client unique identifier
+   */
   clientId: string;
-  /** client message to update the light client */
+  /**
+   * client message to update the light client
+   */
   clientMessage?: Any;
-  /** signer address */
+  /**
+   * signer address
+   */
   signer: string;
 }
 export interface MsgUpdateClientProtoMsg {
@@ -54,39 +96,65 @@ export interface MsgUpdateClientProtoMsg {
 /**
  * MsgUpdateClient defines an sdk.Msg to update a IBC client state using
  * the given client message.
+ * @name MsgUpdateClientSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateClient
  */
 export interface MsgUpdateClientSDKType {
   client_id: string;
   client_message?: AnySDKType;
   signer: string;
 }
-/** MsgUpdateClientResponse defines the Msg/UpdateClient response type. */
+/**
+ * MsgUpdateClientResponse defines the Msg/UpdateClient response type.
+ * @name MsgUpdateClientResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateClientResponse
+ */
 export interface MsgUpdateClientResponse {}
 export interface MsgUpdateClientResponseProtoMsg {
   typeUrl: '/ibc.core.client.v1.MsgUpdateClientResponse';
   value: Uint8Array;
 }
-/** MsgUpdateClientResponse defines the Msg/UpdateClient response type. */
+/**
+ * MsgUpdateClientResponse defines the Msg/UpdateClient response type.
+ * @name MsgUpdateClientResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateClientResponse
+ */
 export interface MsgUpdateClientResponseSDKType {}
 /**
  * MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
  * state
+ * @name MsgUpgradeClient
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpgradeClient
  */
 export interface MsgUpgradeClient {
-  /** client unique identifier */
+  /**
+   * client unique identifier
+   */
   clientId: string;
-  /** upgraded client state */
+  /**
+   * upgraded client state
+   */
   clientState?: Any;
   /**
    * upgraded consensus state, only contains enough information to serve as a
    * basis of trust in update logic
    */
   consensusState?: Any;
-  /** proof that old chain committed to new client */
+  /**
+   * proof that old chain committed to new client
+   */
   proofUpgradeClient: Uint8Array;
-  /** proof that old chain committed to new consensus state */
+  /**
+   * proof that old chain committed to new consensus state
+   */
   proofUpgradeConsensusState: Uint8Array;
-  /** signer address */
+  /**
+   * signer address
+   */
   signer: string;
 }
 export interface MsgUpgradeClientProtoMsg {
@@ -96,6 +164,9 @@ export interface MsgUpgradeClientProtoMsg {
 /**
  * MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
  * state
+ * @name MsgUpgradeClientSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpgradeClient
  */
 export interface MsgUpgradeClientSDKType {
   client_id: string;
@@ -105,28 +176,45 @@ export interface MsgUpgradeClientSDKType {
   proof_upgrade_consensus_state: Uint8Array;
   signer: string;
 }
-/** MsgUpgradeClientResponse defines the Msg/UpgradeClient response type. */
+/**
+ * MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
+ * @name MsgUpgradeClientResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpgradeClientResponse
+ */
 export interface MsgUpgradeClientResponse {}
 export interface MsgUpgradeClientResponseProtoMsg {
   typeUrl: '/ibc.core.client.v1.MsgUpgradeClientResponse';
   value: Uint8Array;
 }
-/** MsgUpgradeClientResponse defines the Msg/UpgradeClient response type. */
+/**
+ * MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
+ * @name MsgUpgradeClientResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpgradeClientResponse
+ */
 export interface MsgUpgradeClientResponseSDKType {}
 /**
  * MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
  * light client misbehaviour.
- * Warning: DEPRECATED
+ * This message has been deprecated. Use MsgUpdateClient instead.
+ * @name MsgSubmitMisbehaviour
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgSubmitMisbehaviour
+ * @deprecated
  */
 export interface MsgSubmitMisbehaviour {
-  /** client unique identifier */
-  /** @deprecated */
+  /**
+   * client unique identifier
+   */
   clientId: string;
-  /** misbehaviour used for freezing the light client */
-  /** @deprecated */
+  /**
+   * misbehaviour used for freezing the light client
+   */
   misbehaviour?: Any;
-  /** signer address */
-  /** @deprecated */
+  /**
+   * signer address
+   */
   signer: string;
 }
 export interface MsgSubmitMisbehaviourProtoMsg {
@@ -136,19 +224,23 @@ export interface MsgSubmitMisbehaviourProtoMsg {
 /**
  * MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
  * light client misbehaviour.
- * Warning: DEPRECATED
+ * This message has been deprecated. Use MsgUpdateClient instead.
+ * @name MsgSubmitMisbehaviourSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgSubmitMisbehaviour
+ * @deprecated
  */
 export interface MsgSubmitMisbehaviourSDKType {
-  /** @deprecated */
   client_id: string;
-  /** @deprecated */
   misbehaviour?: AnySDKType;
-  /** @deprecated */
   signer: string;
 }
 /**
  * MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
  * type.
+ * @name MsgSubmitMisbehaviourResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgSubmitMisbehaviourResponse
  */
 export interface MsgSubmitMisbehaviourResponse {}
 export interface MsgSubmitMisbehaviourResponseProtoMsg {
@@ -158,8 +250,220 @@ export interface MsgSubmitMisbehaviourResponseProtoMsg {
 /**
  * MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
  * type.
+ * @name MsgSubmitMisbehaviourResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgSubmitMisbehaviourResponse
  */
 export interface MsgSubmitMisbehaviourResponseSDKType {}
+/**
+ * MsgRecoverClient defines the message used to recover a frozen or expired client.
+ * @name MsgRecoverClient
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgRecoverClient
+ */
+export interface MsgRecoverClient {
+  /**
+   * the client identifier for the client to be updated if the proposal passes
+   */
+  subjectClientId: string;
+  /**
+   * the substitute client identifier for the client which will replace the subject
+   * client
+   */
+  substituteClientId: string;
+  /**
+   * signer address
+   */
+  signer: string;
+}
+export interface MsgRecoverClientProtoMsg {
+  typeUrl: '/ibc.core.client.v1.MsgRecoverClient';
+  value: Uint8Array;
+}
+/**
+ * MsgRecoverClient defines the message used to recover a frozen or expired client.
+ * @name MsgRecoverClientSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgRecoverClient
+ */
+export interface MsgRecoverClientSDKType {
+  subject_client_id: string;
+  substitute_client_id: string;
+  signer: string;
+}
+/**
+ * MsgRecoverClientResponse defines the Msg/RecoverClient response type.
+ * @name MsgRecoverClientResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgRecoverClientResponse
+ */
+export interface MsgRecoverClientResponse {}
+export interface MsgRecoverClientResponseProtoMsg {
+  typeUrl: '/ibc.core.client.v1.MsgRecoverClientResponse';
+  value: Uint8Array;
+}
+/**
+ * MsgRecoverClientResponse defines the Msg/RecoverClient response type.
+ * @name MsgRecoverClientResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgRecoverClientResponse
+ */
+export interface MsgRecoverClientResponseSDKType {}
+/**
+ * MsgIBCSoftwareUpgrade defines the message used to schedule an upgrade of an IBC client using a v1 governance proposal
+ * @name MsgIBCSoftwareUpgrade
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgIBCSoftwareUpgrade
+ */
+export interface MsgIBCSoftwareUpgrade {
+  plan: Plan;
+  /**
+   * An UpgradedClientState must be provided to perform an IBC breaking upgrade.
+   * This will make the chain commit to the correct upgraded (self) client state
+   * before the upgrade occurs, so that connecting chains can verify that the
+   * new upgraded client is valid by verifying a proof on the previous version
+   * of the chain. This will allow IBC connections to persist smoothly across
+   * planned chain upgrades. Correspondingly, the UpgradedClientState field has been
+   * deprecated in the Cosmos SDK to allow for this logic to exist solely in
+   * the 02-client module.
+   */
+  upgradedClientState?: Any;
+  /**
+   * signer address
+   */
+  signer: string;
+}
+export interface MsgIBCSoftwareUpgradeProtoMsg {
+  typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgrade';
+  value: Uint8Array;
+}
+/**
+ * MsgIBCSoftwareUpgrade defines the message used to schedule an upgrade of an IBC client using a v1 governance proposal
+ * @name MsgIBCSoftwareUpgradeSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgIBCSoftwareUpgrade
+ */
+export interface MsgIBCSoftwareUpgradeSDKType {
+  plan: PlanSDKType;
+  upgraded_client_state?: AnySDKType;
+  signer: string;
+}
+/**
+ * MsgIBCSoftwareUpgradeResponse defines the Msg/IBCSoftwareUpgrade response type.
+ * @name MsgIBCSoftwareUpgradeResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgIBCSoftwareUpgradeResponse
+ */
+export interface MsgIBCSoftwareUpgradeResponse {}
+export interface MsgIBCSoftwareUpgradeResponseProtoMsg {
+  typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgradeResponse';
+  value: Uint8Array;
+}
+/**
+ * MsgIBCSoftwareUpgradeResponse defines the Msg/IBCSoftwareUpgrade response type.
+ * @name MsgIBCSoftwareUpgradeResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgIBCSoftwareUpgradeResponse
+ */
+export interface MsgIBCSoftwareUpgradeResponseSDKType {}
+/**
+ * MsgUpdateParams defines the sdk.Msg type to update the client parameters.
+ * @name MsgUpdateParams
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateParams
+ */
+export interface MsgUpdateParams {
+  /**
+   * signer address
+   */
+  signer: string;
+  /**
+   * params defines the client parameters to update.
+   *
+   * NOTE: All parameters must be supplied.
+   */
+  params: Params;
+}
+export interface MsgUpdateParamsProtoMsg {
+  typeUrl: '/ibc.core.client.v1.MsgUpdateParams';
+  value: Uint8Array;
+}
+/**
+ * MsgUpdateParams defines the sdk.Msg type to update the client parameters.
+ * @name MsgUpdateParamsSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateParams
+ */
+export interface MsgUpdateParamsSDKType {
+  signer: string;
+  params: ParamsSDKType;
+}
+/**
+ * MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+ * @name MsgUpdateParamsResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateParamsResponse
+ */
+export interface MsgUpdateParamsResponse {}
+export interface MsgUpdateParamsResponseProtoMsg {
+  typeUrl: '/ibc.core.client.v1.MsgUpdateParamsResponse';
+  value: Uint8Array;
+}
+/**
+ * MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+ * @name MsgUpdateParamsResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateParamsResponse
+ */
+export interface MsgUpdateParamsResponseSDKType {}
+/**
+ * MsgDeleteClientCreator defines a message to delete the client creator of a client
+ * @name MsgDeleteClientCreator
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgDeleteClientCreator
+ */
+export interface MsgDeleteClientCreator {
+  /**
+   * client identifier
+   */
+  clientId: string;
+  /**
+   * signer address
+   */
+  signer: string;
+}
+export interface MsgDeleteClientCreatorProtoMsg {
+  typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreator';
+  value: Uint8Array;
+}
+/**
+ * MsgDeleteClientCreator defines a message to delete the client creator of a client
+ * @name MsgDeleteClientCreatorSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgDeleteClientCreator
+ */
+export interface MsgDeleteClientCreatorSDKType {
+  client_id: string;
+  signer: string;
+}
+/**
+ * MsgDeleteClientCreatorResponse defines the Msg/DeleteClientCreator response type.
+ * @name MsgDeleteClientCreatorResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgDeleteClientCreatorResponse
+ */
+export interface MsgDeleteClientCreatorResponse {}
+export interface MsgDeleteClientCreatorResponseProtoMsg {
+  typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreatorResponse';
+  value: Uint8Array;
+}
+/**
+ * MsgDeleteClientCreatorResponse defines the Msg/DeleteClientCreator response type.
+ * @name MsgDeleteClientCreatorResponseSDKType
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgDeleteClientCreatorResponse
+ */
+export interface MsgDeleteClientCreatorResponseSDKType {}
 function createBaseMsgCreateClient(): MsgCreateClient {
   return {
     clientState: undefined,
@@ -167,8 +471,27 @@ function createBaseMsgCreateClient(): MsgCreateClient {
     signer: '',
   };
 }
+/**
+ * MsgCreateClient defines a message to create an IBC client
+ * @name MsgCreateClient
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgCreateClient
+ */
 export const MsgCreateClient = {
-  typeUrl: '/ibc.core.client.v1.MsgCreateClient',
+  typeUrl: '/ibc.core.client.v1.MsgCreateClient' as const,
+  aminoType: 'cosmos-sdk/MsgCreateClient' as const,
+  is(o: any): o is MsgCreateClient {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateClient.typeUrl || typeof o.signer === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgCreateClientSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateClient.typeUrl || typeof o.signer === 'string')
+    );
+  },
   encode(
     message: MsgCreateClient,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -259,14 +582,40 @@ export const MsgCreateClient = {
   },
 };
 function createBaseMsgCreateClientResponse(): MsgCreateClientResponse {
-  return {};
+  return {
+    clientId: '',
+  };
 }
+/**
+ * MsgCreateClientResponse defines the Msg/CreateClient response type.
+ * @name MsgCreateClientResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgCreateClientResponse
+ */
 export const MsgCreateClientResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgCreateClientResponse',
+  typeUrl: '/ibc.core.client.v1.MsgCreateClientResponse' as const,
+  aminoType: 'cosmos-sdk/MsgCreateClientResponse' as const,
+  is(o: any): o is MsgCreateClientResponse {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateClientResponse.typeUrl ||
+        typeof o.clientId === 'string')
+    );
+  },
+  isSDK(o: any): o is MsgCreateClientResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgCreateClientResponse.typeUrl ||
+        typeof o.client_id === 'string')
+    );
+  },
   encode(
-    _: MsgCreateClientResponse,
+    message: MsgCreateClientResponse,
     writer: BinaryWriter = BinaryWriter.create(),
   ): BinaryWriter {
+    if (message.clientId !== '') {
+      writer.uint32(10).string(message.clientId);
+    }
     return writer;
   },
   decode(
@@ -280,6 +629,9 @@ export const MsgCreateClientResponse = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1:
+          message.clientId = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -287,15 +639,21 @@ export const MsgCreateClientResponse = {
     }
     return message;
   },
-  fromJSON(_: any): MsgCreateClientResponse {
-    return {};
+  fromJSON(object: any): MsgCreateClientResponse {
+    return {
+      clientId: isSet(object.clientId) ? String(object.clientId) : '',
+    };
   },
-  toJSON(_: MsgCreateClientResponse): JsonSafe<MsgCreateClientResponse> {
+  toJSON(message: MsgCreateClientResponse): JsonSafe<MsgCreateClientResponse> {
     const obj: any = {};
+    message.clientId !== undefined && (obj.clientId = message.clientId);
     return obj;
   },
-  fromPartial(_: Partial<MsgCreateClientResponse>): MsgCreateClientResponse {
+  fromPartial(
+    object: Partial<MsgCreateClientResponse>,
+  ): MsgCreateClientResponse {
     const message = createBaseMsgCreateClientResponse();
+    message.clientId = object.clientId ?? '';
     return message;
   },
   fromProtoMsg(
@@ -322,8 +680,30 @@ function createBaseMsgUpdateClient(): MsgUpdateClient {
     signer: '',
   };
 }
+/**
+ * MsgUpdateClient defines an sdk.Msg to update a IBC client state using
+ * the given client message.
+ * @name MsgUpdateClient
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateClient
+ */
 export const MsgUpdateClient = {
-  typeUrl: '/ibc.core.client.v1.MsgUpdateClient',
+  typeUrl: '/ibc.core.client.v1.MsgUpdateClient' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateClient' as const,
+  is(o: any): o is MsgUpdateClient {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateClient.typeUrl ||
+        (typeof o.clientId === 'string' && typeof o.signer === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateClientSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateClient.typeUrl ||
+        (typeof o.client_id === 'string' && typeof o.signer === 'string'))
+    );
+  },
   encode(
     message: MsgUpdateClient,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -408,8 +788,21 @@ export const MsgUpdateClient = {
 function createBaseMsgUpdateClientResponse(): MsgUpdateClientResponse {
   return {};
 }
+/**
+ * MsgUpdateClientResponse defines the Msg/UpdateClient response type.
+ * @name MsgUpdateClientResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateClientResponse
+ */
 export const MsgUpdateClientResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgUpdateClientResponse',
+  typeUrl: '/ibc.core.client.v1.MsgUpdateClientResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateClientResponse' as const,
+  is(o: any): o is MsgUpdateClientResponse {
+    return o && o.$typeUrl === MsgUpdateClientResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateClientResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateClientResponse.typeUrl;
+  },
   encode(
     _: MsgUpdateClientResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -472,8 +865,40 @@ function createBaseMsgUpgradeClient(): MsgUpgradeClient {
     signer: '',
   };
 }
+/**
+ * MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
+ * state
+ * @name MsgUpgradeClient
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpgradeClient
+ */
 export const MsgUpgradeClient = {
-  typeUrl: '/ibc.core.client.v1.MsgUpgradeClient',
+  typeUrl: '/ibc.core.client.v1.MsgUpgradeClient' as const,
+  aminoType: 'cosmos-sdk/MsgUpgradeClient' as const,
+  is(o: any): o is MsgUpgradeClient {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpgradeClient.typeUrl ||
+        (typeof o.clientId === 'string' &&
+          (o.proofUpgradeClient instanceof Uint8Array ||
+            typeof o.proofUpgradeClient === 'string') &&
+          (o.proofUpgradeConsensusState instanceof Uint8Array ||
+            typeof o.proofUpgradeConsensusState === 'string') &&
+          typeof o.signer === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgUpgradeClientSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpgradeClient.typeUrl ||
+        (typeof o.client_id === 'string' &&
+          (o.proof_upgrade_client instanceof Uint8Array ||
+            typeof o.proof_upgrade_client === 'string') &&
+          (o.proof_upgrade_consensus_state instanceof Uint8Array ||
+            typeof o.proof_upgrade_consensus_state === 'string') &&
+          typeof o.signer === 'string'))
+    );
+  },
   encode(
     message: MsgUpgradeClient,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -608,8 +1033,21 @@ export const MsgUpgradeClient = {
 function createBaseMsgUpgradeClientResponse(): MsgUpgradeClientResponse {
   return {};
 }
+/**
+ * MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
+ * @name MsgUpgradeClientResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpgradeClientResponse
+ */
 export const MsgUpgradeClientResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgUpgradeClientResponse',
+  typeUrl: '/ibc.core.client.v1.MsgUpgradeClientResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpgradeClientResponse' as const,
+  is(o: any): o is MsgUpgradeClientResponse {
+    return o && o.$typeUrl === MsgUpgradeClientResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpgradeClientResponseSDKType {
+    return o && o.$typeUrl === MsgUpgradeClientResponse.typeUrl;
+  },
   encode(
     _: MsgUpgradeClientResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -669,8 +1107,32 @@ function createBaseMsgSubmitMisbehaviour(): MsgSubmitMisbehaviour {
     signer: '',
   };
 }
+/**
+ * MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
+ * light client misbehaviour.
+ * This message has been deprecated. Use MsgUpdateClient instead.
+ * @name MsgSubmitMisbehaviour
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgSubmitMisbehaviour
+ * @deprecated
+ */
 export const MsgSubmitMisbehaviour = {
-  typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviour',
+  typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviour' as const,
+  aminoType: 'cosmos-sdk/MsgSubmitMisbehaviour' as const,
+  is(o: any): o is MsgSubmitMisbehaviour {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitMisbehaviour.typeUrl ||
+        (typeof o.clientId === 'string' && typeof o.signer === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgSubmitMisbehaviourSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgSubmitMisbehaviour.typeUrl ||
+        (typeof o.client_id === 'string' && typeof o.signer === 'string'))
+    );
+  },
   encode(
     message: MsgSubmitMisbehaviour,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -758,8 +1220,22 @@ export const MsgSubmitMisbehaviour = {
 function createBaseMsgSubmitMisbehaviourResponse(): MsgSubmitMisbehaviourResponse {
   return {};
 }
+/**
+ * MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
+ * type.
+ * @name MsgSubmitMisbehaviourResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgSubmitMisbehaviourResponse
+ */
 export const MsgSubmitMisbehaviourResponse = {
-  typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviourResponse',
+  typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviourResponse' as const,
+  aminoType: 'cosmos-sdk/MsgSubmitMisbehaviourResponse' as const,
+  is(o: any): o is MsgSubmitMisbehaviourResponse {
+    return o && o.$typeUrl === MsgSubmitMisbehaviourResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgSubmitMisbehaviourResponseSDKType {
+    return o && o.$typeUrl === MsgSubmitMisbehaviourResponse.typeUrl;
+  },
   encode(
     _: MsgSubmitMisbehaviourResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -813,6 +1289,724 @@ export const MsgSubmitMisbehaviourResponse = {
     return {
       typeUrl: '/ibc.core.client.v1.MsgSubmitMisbehaviourResponse',
       value: MsgSubmitMisbehaviourResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgRecoverClient(): MsgRecoverClient {
+  return {
+    subjectClientId: '',
+    substituteClientId: '',
+    signer: '',
+  };
+}
+/**
+ * MsgRecoverClient defines the message used to recover a frozen or expired client.
+ * @name MsgRecoverClient
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgRecoverClient
+ */
+export const MsgRecoverClient = {
+  typeUrl: '/ibc.core.client.v1.MsgRecoverClient' as const,
+  aminoType: 'cosmos-sdk/MsgRecoverClient' as const,
+  is(o: any): o is MsgRecoverClient {
+    return (
+      o &&
+      (o.$typeUrl === MsgRecoverClient.typeUrl ||
+        (typeof o.subjectClientId === 'string' &&
+          typeof o.substituteClientId === 'string' &&
+          typeof o.signer === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgRecoverClientSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgRecoverClient.typeUrl ||
+        (typeof o.subject_client_id === 'string' &&
+          typeof o.substitute_client_id === 'string' &&
+          typeof o.signer === 'string'))
+    );
+  },
+  encode(
+    message: MsgRecoverClient,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.subjectClientId !== '') {
+      writer.uint32(10).string(message.subjectClientId);
+    }
+    if (message.substituteClientId !== '') {
+      writer.uint32(18).string(message.substituteClientId);
+    }
+    if (message.signer !== '') {
+      writer.uint32(26).string(message.signer);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgRecoverClient {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgRecoverClient();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.subjectClientId = reader.string();
+          break;
+        case 2:
+          message.substituteClientId = reader.string();
+          break;
+        case 3:
+          message.signer = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgRecoverClient {
+    return {
+      subjectClientId: isSet(object.subjectClientId)
+        ? String(object.subjectClientId)
+        : '',
+      substituteClientId: isSet(object.substituteClientId)
+        ? String(object.substituteClientId)
+        : '',
+      signer: isSet(object.signer) ? String(object.signer) : '',
+    };
+  },
+  toJSON(message: MsgRecoverClient): JsonSafe<MsgRecoverClient> {
+    const obj: any = {};
+    message.subjectClientId !== undefined &&
+      (obj.subjectClientId = message.subjectClientId);
+    message.substituteClientId !== undefined &&
+      (obj.substituteClientId = message.substituteClientId);
+    message.signer !== undefined && (obj.signer = message.signer);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgRecoverClient>): MsgRecoverClient {
+    const message = createBaseMsgRecoverClient();
+    message.subjectClientId = object.subjectClientId ?? '';
+    message.substituteClientId = object.substituteClientId ?? '';
+    message.signer = object.signer ?? '';
+    return message;
+  },
+  fromProtoMsg(message: MsgRecoverClientProtoMsg): MsgRecoverClient {
+    return MsgRecoverClient.decode(message.value);
+  },
+  toProto(message: MsgRecoverClient): Uint8Array {
+    return MsgRecoverClient.encode(message).finish();
+  },
+  toProtoMsg(message: MsgRecoverClient): MsgRecoverClientProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.MsgRecoverClient',
+      value: MsgRecoverClient.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgRecoverClientResponse(): MsgRecoverClientResponse {
+  return {};
+}
+/**
+ * MsgRecoverClientResponse defines the Msg/RecoverClient response type.
+ * @name MsgRecoverClientResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgRecoverClientResponse
+ */
+export const MsgRecoverClientResponse = {
+  typeUrl: '/ibc.core.client.v1.MsgRecoverClientResponse' as const,
+  aminoType: 'cosmos-sdk/MsgRecoverClientResponse' as const,
+  is(o: any): o is MsgRecoverClientResponse {
+    return o && o.$typeUrl === MsgRecoverClientResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgRecoverClientResponseSDKType {
+    return o && o.$typeUrl === MsgRecoverClientResponse.typeUrl;
+  },
+  encode(
+    _: MsgRecoverClientResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgRecoverClientResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgRecoverClientResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): MsgRecoverClientResponse {
+    return {};
+  },
+  toJSON(_: MsgRecoverClientResponse): JsonSafe<MsgRecoverClientResponse> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(_: Partial<MsgRecoverClientResponse>): MsgRecoverClientResponse {
+    const message = createBaseMsgRecoverClientResponse();
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgRecoverClientResponseProtoMsg,
+  ): MsgRecoverClientResponse {
+    return MsgRecoverClientResponse.decode(message.value);
+  },
+  toProto(message: MsgRecoverClientResponse): Uint8Array {
+    return MsgRecoverClientResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: MsgRecoverClientResponse,
+  ): MsgRecoverClientResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.MsgRecoverClientResponse',
+      value: MsgRecoverClientResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgIBCSoftwareUpgrade(): MsgIBCSoftwareUpgrade {
+  return {
+    plan: Plan.fromPartial({}),
+    upgradedClientState: undefined,
+    signer: '',
+  };
+}
+/**
+ * MsgIBCSoftwareUpgrade defines the message used to schedule an upgrade of an IBC client using a v1 governance proposal
+ * @name MsgIBCSoftwareUpgrade
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgIBCSoftwareUpgrade
+ */
+export const MsgIBCSoftwareUpgrade = {
+  typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgrade' as const,
+  aminoType: 'cosmos-sdk/MsgIBCSoftwareUpgrade' as const,
+  is(o: any): o is MsgIBCSoftwareUpgrade {
+    return (
+      o &&
+      (o.$typeUrl === MsgIBCSoftwareUpgrade.typeUrl ||
+        (Plan.is(o.plan) && typeof o.signer === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgIBCSoftwareUpgradeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgIBCSoftwareUpgrade.typeUrl ||
+        (Plan.isSDK(o.plan) && typeof o.signer === 'string'))
+    );
+  },
+  encode(
+    message: MsgIBCSoftwareUpgrade,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.plan !== undefined) {
+      Plan.encode(message.plan, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.upgradedClientState !== undefined) {
+      Any.encode(
+        message.upgradedClientState,
+        writer.uint32(18).fork(),
+      ).ldelim();
+    }
+    if (message.signer !== '') {
+      writer.uint32(26).string(message.signer);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgIBCSoftwareUpgrade {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgIBCSoftwareUpgrade();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.plan = Plan.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.upgradedClientState = Any.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.signer = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgIBCSoftwareUpgrade {
+    return {
+      plan: isSet(object.plan) ? Plan.fromJSON(object.plan) : undefined,
+      upgradedClientState: isSet(object.upgradedClientState)
+        ? Any.fromJSON(object.upgradedClientState)
+        : undefined,
+      signer: isSet(object.signer) ? String(object.signer) : '',
+    };
+  },
+  toJSON(message: MsgIBCSoftwareUpgrade): JsonSafe<MsgIBCSoftwareUpgrade> {
+    const obj: any = {};
+    message.plan !== undefined &&
+      (obj.plan = message.plan ? Plan.toJSON(message.plan) : undefined);
+    message.upgradedClientState !== undefined &&
+      (obj.upgradedClientState = message.upgradedClientState
+        ? Any.toJSON(message.upgradedClientState)
+        : undefined);
+    message.signer !== undefined && (obj.signer = message.signer);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgIBCSoftwareUpgrade>): MsgIBCSoftwareUpgrade {
+    const message = createBaseMsgIBCSoftwareUpgrade();
+    message.plan =
+      object.plan !== undefined && object.plan !== null
+        ? Plan.fromPartial(object.plan)
+        : undefined;
+    message.upgradedClientState =
+      object.upgradedClientState !== undefined &&
+      object.upgradedClientState !== null
+        ? Any.fromPartial(object.upgradedClientState)
+        : undefined;
+    message.signer = object.signer ?? '';
+    return message;
+  },
+  fromProtoMsg(message: MsgIBCSoftwareUpgradeProtoMsg): MsgIBCSoftwareUpgrade {
+    return MsgIBCSoftwareUpgrade.decode(message.value);
+  },
+  toProto(message: MsgIBCSoftwareUpgrade): Uint8Array {
+    return MsgIBCSoftwareUpgrade.encode(message).finish();
+  },
+  toProtoMsg(message: MsgIBCSoftwareUpgrade): MsgIBCSoftwareUpgradeProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgrade',
+      value: MsgIBCSoftwareUpgrade.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgIBCSoftwareUpgradeResponse(): MsgIBCSoftwareUpgradeResponse {
+  return {};
+}
+/**
+ * MsgIBCSoftwareUpgradeResponse defines the Msg/IBCSoftwareUpgrade response type.
+ * @name MsgIBCSoftwareUpgradeResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgIBCSoftwareUpgradeResponse
+ */
+export const MsgIBCSoftwareUpgradeResponse = {
+  typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgradeResponse' as const,
+  aminoType: 'cosmos-sdk/MsgIBCSoftwareUpgradeResponse' as const,
+  is(o: any): o is MsgIBCSoftwareUpgradeResponse {
+    return o && o.$typeUrl === MsgIBCSoftwareUpgradeResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgIBCSoftwareUpgradeResponseSDKType {
+    return o && o.$typeUrl === MsgIBCSoftwareUpgradeResponse.typeUrl;
+  },
+  encode(
+    _: MsgIBCSoftwareUpgradeResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgIBCSoftwareUpgradeResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgIBCSoftwareUpgradeResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): MsgIBCSoftwareUpgradeResponse {
+    return {};
+  },
+  toJSON(
+    _: MsgIBCSoftwareUpgradeResponse,
+  ): JsonSafe<MsgIBCSoftwareUpgradeResponse> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(
+    _: Partial<MsgIBCSoftwareUpgradeResponse>,
+  ): MsgIBCSoftwareUpgradeResponse {
+    const message = createBaseMsgIBCSoftwareUpgradeResponse();
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgIBCSoftwareUpgradeResponseProtoMsg,
+  ): MsgIBCSoftwareUpgradeResponse {
+    return MsgIBCSoftwareUpgradeResponse.decode(message.value);
+  },
+  toProto(message: MsgIBCSoftwareUpgradeResponse): Uint8Array {
+    return MsgIBCSoftwareUpgradeResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: MsgIBCSoftwareUpgradeResponse,
+  ): MsgIBCSoftwareUpgradeResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgradeResponse',
+      value: MsgIBCSoftwareUpgradeResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgUpdateParams(): MsgUpdateParams {
+  return {
+    signer: '',
+    params: Params.fromPartial({}),
+  };
+}
+/**
+ * MsgUpdateParams defines the sdk.Msg type to update the client parameters.
+ * @name MsgUpdateParams
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateParams
+ */
+export const MsgUpdateParams = {
+  typeUrl: '/ibc.core.client.v1.MsgUpdateParams' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
+  is(o: any): o is MsgUpdateParams {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.signer === 'string' && Params.is(o.params)))
+    );
+  },
+  isSDK(o: any): o is MsgUpdateParamsSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgUpdateParams.typeUrl ||
+        (typeof o.signer === 'string' && Params.isSDK(o.params)))
+    );
+  },
+  encode(
+    message: MsgUpdateParams,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.signer !== '') {
+      writer.uint32(10).string(message.signer);
+    }
+    if (message.params !== undefined) {
+      Params.encode(message.params, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): MsgUpdateParams {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgUpdateParams();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.signer = reader.string();
+          break;
+        case 2:
+          message.params = Params.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgUpdateParams {
+    return {
+      signer: isSet(object.signer) ? String(object.signer) : '',
+      params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
+    };
+  },
+  toJSON(message: MsgUpdateParams): JsonSafe<MsgUpdateParams> {
+    const obj: any = {};
+    message.signer !== undefined && (obj.signer = message.signer);
+    message.params !== undefined &&
+      (obj.params = message.params ? Params.toJSON(message.params) : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgUpdateParams>): MsgUpdateParams {
+    const message = createBaseMsgUpdateParams();
+    message.signer = object.signer ?? '';
+    message.params =
+      object.params !== undefined && object.params !== null
+        ? Params.fromPartial(object.params)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: MsgUpdateParamsProtoMsg): MsgUpdateParams {
+    return MsgUpdateParams.decode(message.value);
+  },
+  toProto(message: MsgUpdateParams): Uint8Array {
+    return MsgUpdateParams.encode(message).finish();
+  },
+  toProtoMsg(message: MsgUpdateParams): MsgUpdateParamsProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.MsgUpdateParams',
+      value: MsgUpdateParams.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
+  return {};
+}
+/**
+ * MsgUpdateParamsResponse defines the MsgUpdateParams response type.
+ * @name MsgUpdateParamsResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgUpdateParamsResponse
+ */
+export const MsgUpdateParamsResponse = {
+  typeUrl: '/ibc.core.client.v1.MsgUpdateParamsResponse' as const,
+  aminoType: 'cosmos-sdk/MsgUpdateParamsResponse' as const,
+  is(o: any): o is MsgUpdateParamsResponse {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgUpdateParamsResponseSDKType {
+    return o && o.$typeUrl === MsgUpdateParamsResponse.typeUrl;
+  },
+  encode(
+    _: MsgUpdateParamsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgUpdateParamsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgUpdateParamsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): MsgUpdateParamsResponse {
+    return {};
+  },
+  toJSON(_: MsgUpdateParamsResponse): JsonSafe<MsgUpdateParamsResponse> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(_: Partial<MsgUpdateParamsResponse>): MsgUpdateParamsResponse {
+    const message = createBaseMsgUpdateParamsResponse();
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgUpdateParamsResponseProtoMsg,
+  ): MsgUpdateParamsResponse {
+    return MsgUpdateParamsResponse.decode(message.value);
+  },
+  toProto(message: MsgUpdateParamsResponse): Uint8Array {
+    return MsgUpdateParamsResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: MsgUpdateParamsResponse,
+  ): MsgUpdateParamsResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.MsgUpdateParamsResponse',
+      value: MsgUpdateParamsResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgDeleteClientCreator(): MsgDeleteClientCreator {
+  return {
+    clientId: '',
+    signer: '',
+  };
+}
+/**
+ * MsgDeleteClientCreator defines a message to delete the client creator of a client
+ * @name MsgDeleteClientCreator
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgDeleteClientCreator
+ */
+export const MsgDeleteClientCreator = {
+  typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreator' as const,
+  aminoType: 'cosmos-sdk/MsgDeleteClientCreator' as const,
+  is(o: any): o is MsgDeleteClientCreator {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteClientCreator.typeUrl ||
+        (typeof o.clientId === 'string' && typeof o.signer === 'string'))
+    );
+  },
+  isSDK(o: any): o is MsgDeleteClientCreatorSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgDeleteClientCreator.typeUrl ||
+        (typeof o.client_id === 'string' && typeof o.signer === 'string'))
+    );
+  },
+  encode(
+    message: MsgDeleteClientCreator,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.clientId !== '') {
+      writer.uint32(10).string(message.clientId);
+    }
+    if (message.signer !== '') {
+      writer.uint32(18).string(message.signer);
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgDeleteClientCreator {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgDeleteClientCreator();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.clientId = reader.string();
+          break;
+        case 2:
+          message.signer = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): MsgDeleteClientCreator {
+    return {
+      clientId: isSet(object.clientId) ? String(object.clientId) : '',
+      signer: isSet(object.signer) ? String(object.signer) : '',
+    };
+  },
+  toJSON(message: MsgDeleteClientCreator): JsonSafe<MsgDeleteClientCreator> {
+    const obj: any = {};
+    message.clientId !== undefined && (obj.clientId = message.clientId);
+    message.signer !== undefined && (obj.signer = message.signer);
+    return obj;
+  },
+  fromPartial(object: Partial<MsgDeleteClientCreator>): MsgDeleteClientCreator {
+    const message = createBaseMsgDeleteClientCreator();
+    message.clientId = object.clientId ?? '';
+    message.signer = object.signer ?? '';
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgDeleteClientCreatorProtoMsg,
+  ): MsgDeleteClientCreator {
+    return MsgDeleteClientCreator.decode(message.value);
+  },
+  toProto(message: MsgDeleteClientCreator): Uint8Array {
+    return MsgDeleteClientCreator.encode(message).finish();
+  },
+  toProtoMsg(message: MsgDeleteClientCreator): MsgDeleteClientCreatorProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreator',
+      value: MsgDeleteClientCreator.encode(message).finish(),
+    };
+  },
+};
+function createBaseMsgDeleteClientCreatorResponse(): MsgDeleteClientCreatorResponse {
+  return {};
+}
+/**
+ * MsgDeleteClientCreatorResponse defines the Msg/DeleteClientCreator response type.
+ * @name MsgDeleteClientCreatorResponse
+ * @package ibc.core.client.v1
+ * @see proto type: ibc.core.client.v1.MsgDeleteClientCreatorResponse
+ */
+export const MsgDeleteClientCreatorResponse = {
+  typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreatorResponse' as const,
+  aminoType: 'cosmos-sdk/MsgDeleteClientCreatorResponse' as const,
+  is(o: any): o is MsgDeleteClientCreatorResponse {
+    return o && o.$typeUrl === MsgDeleteClientCreatorResponse.typeUrl;
+  },
+  isSDK(o: any): o is MsgDeleteClientCreatorResponseSDKType {
+    return o && o.$typeUrl === MsgDeleteClientCreatorResponse.typeUrl;
+  },
+  encode(
+    _: MsgDeleteClientCreatorResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): MsgDeleteClientCreatorResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMsgDeleteClientCreatorResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(_: any): MsgDeleteClientCreatorResponse {
+    return {};
+  },
+  toJSON(
+    _: MsgDeleteClientCreatorResponse,
+  ): JsonSafe<MsgDeleteClientCreatorResponse> {
+    const obj: any = {};
+    return obj;
+  },
+  fromPartial(
+    _: Partial<MsgDeleteClientCreatorResponse>,
+  ): MsgDeleteClientCreatorResponse {
+    const message = createBaseMsgDeleteClientCreatorResponse();
+    return message;
+  },
+  fromProtoMsg(
+    message: MsgDeleteClientCreatorResponseProtoMsg,
+  ): MsgDeleteClientCreatorResponse {
+    return MsgDeleteClientCreatorResponse.decode(message.value);
+  },
+  toProto(message: MsgDeleteClientCreatorResponse): Uint8Array {
+    return MsgDeleteClientCreatorResponse.encode(message).finish();
+  },
+  toProtoMsg(
+    message: MsgDeleteClientCreatorResponse,
+  ): MsgDeleteClientCreatorResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.core.client.v1.MsgDeleteClientCreatorResponse',
+      value: MsgDeleteClientCreatorResponse.encode(message).finish(),
     };
   },
 };

@@ -9,6 +9,10 @@ import { passStyleOf } from '@endo/pass-style';
 import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
 import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
+/**
+ * @import {Simplify} from '@agoric/internal';
+ */
+
 const { WeakMap, WeakSet } = globalThis;
 
 /** @typedef {ReturnType<typeof makeFakeVirtualStuff>} FakeVomKit */
@@ -46,7 +50,7 @@ globalThis.VatData = harden({
 globalThis[PassStyleOfEndowmentSymbol] = passStyleOf;
 
 /**
- * @typedef {import("@agoric/internal").Simplify<
+ * @typedef {Simplify<
  *   Omit<NonNullable<Parameters<typeof makeFakeVirtualStuff>[0]>, 'WeakMap' | 'WeakSet'> &
  *   { fakeVomKit: FakeVomKit; fakeStore: Map<string, string> }
  * >} ReincarnateOptions

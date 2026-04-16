@@ -1,5 +1,3 @@
-// @jessie-check
-
 /**
  * @file calculations specific to the Vault Factory contract See also
  *   ../interest-math.js
@@ -16,7 +14,11 @@ import {
 import { priceFrom } from '../auction/util.js';
 import { addSubtract } from '../contractSupport.js';
 
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ */
 
 /**
  * Calculate the minimum collateralization given the liquidation margin and the

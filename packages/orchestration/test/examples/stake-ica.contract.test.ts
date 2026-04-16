@@ -9,7 +9,7 @@ import { type StakeIcaTerms } from '../../src/examples/stake-ica.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type { DenomAmount } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
-import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
+import { UNBOND_PERIOD_SECONDS } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 
 import * as contractExports from '../../src/examples/stake-ica.contract.js';
@@ -129,9 +129,9 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     value: 10n,
   };
   const delegationResult = await E(account).delegate(validatorAddr, delegation);
-  t.is(delegationResult, undefined, 'delegation returns void');
+  t.deepEqual(delegationResult, {}, 'delegation returns an empty object');
 
-  const undelegatationP = E(account).undelegate([
+  const undelegationP = E(account).undelegate([
     {
       amount: delegation,
       validator: validatorAddr,
@@ -140,14 +140,14 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
   const completionTime = UNBOND_PERIOD_SECONDS + maxClockSkew;
   const notTooSoon = Promise.race([
     timer.wakeAt(completionTime - 1n).then(() => true),
-    undelegatationP,
+    undelegationP,
   ]);
   timer.advanceTo(completionTime, 'end of unbonding period');
   t.true(await notTooSoon, "undelegate doesn't resolve before completion_time");
-  t.is(
-    await undelegatationP,
+  t.deepEqual(
+    await undelegationP,
     undefined,
-    'undelegation returns void after completion_time',
+    'undelegation returns undefined after completion_time',
   );
 
   const redelegation = await E(account).redelegate(
@@ -159,7 +159,11 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     },
     { denom: 'uatom', value: 10n },
   );
-  t.is(redelegation, undefined, 'redelegation returns void');
+  t.deepEqual(
+    redelegation,
+    { completionTime: { nanos: 0, seconds: 5n } },
+    'redelegation returns expected completionTime',
+  );
 
   const expectedRewards: DenomAmount = { value: 1n, denom: 'uatom' };
   const rewards = await E(account).withdrawReward(validatorAddr);

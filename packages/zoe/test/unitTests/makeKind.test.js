@@ -1,9 +1,6 @@
-import {
-  test,
-  VatData,
-} from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 
@@ -15,12 +12,16 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const root = `${dirname}/../minimalMakeKindContract.js`;
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore some resolutions don't expect this on global
+const VatData = global.VatData;
+
 test('defineKind non-swingset', async t => {
   const bundle = await bundleSource(root);
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
   const zoe = makeZoeForTest(fakeVatAdmin);
-  vatAdminState.installBundle('b1-minimal', bundle);
-  const installation = await E(zoe).installBundleID('b1-minimal');
+  const b1minimal = vatAdminState.registerBundle('b1-minimal', bundle);
+  const installation = await E(zoe).installBundleID(b1minimal);
   t.notThrows(() => VatData.defineKind('x', () => {}, {}));
   t.notThrows(() => VatData.defineKindMulti('x', () => {}, { x: {}, y: {} }));
   t.notThrows(() => VatData.makeKindHandle('tag'));

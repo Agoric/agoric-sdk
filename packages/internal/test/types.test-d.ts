@@ -1,8 +1,26 @@
 import { expectNotType, expectType } from 'tsd';
 import { E, type ERef } from '@endo/far';
 import { attenuate } from '../src/ses-utils.js';
-import type { Permit, Remote } from '../src/types.js';
+import type { Permit, RecordFromTuple, Remote } from '../src/types.js';
 import type { StorageNode } from '../src/lib-chainStorage.js';
+import { keyMirror } from '../src/keyMirror.js';
+
+{
+  const makeCoin = (denom: string, amount: bigint) => ({ denom, amount });
+  const coin = makeCoin('foo', 42n);
+  const manualCoin = { denom: 'bar', amount: 100n };
+
+  type Coin = RecordFromTuple<Parameters<typeof makeCoin>, ['denom', 'amount']>;
+  expectType<Coin>(coin);
+  expectType<Coin>(manualCoin);
+
+  type MisnamedCoin = RecordFromTuple<
+    Parameters<typeof makeCoin>,
+    ['denom', 'value']
+  >;
+  expectNotType<MisnamedCoin>(coin);
+  expectNotType<MisnamedCoin>(manualCoin);
+}
 
 {
   const obj = {
@@ -46,4 +64,14 @@ const remoteStorageNode: Remote<StorageNode> = null as any;
   // @ts-expect-error cannot call remote methods directly
   storageNode.getPath();
   expectType<Promise<string>>(E(storageNode).getPath());
+}
+
+{
+  const Bogus = keyMirror({ foo: null, bar: null, baz: 'baz' });
+  expectType<{ foo: 'foo'; bar: 'bar'; baz: 'baz' }>(Bogus);
+  // @ts-expect-error Cannot assign to 'bar' because it is a read-only property.
+  Bogus.bar = 'bar';
+
+  // @ts-expect-error Property 'absent' does not exist on type '{ foo: "foo"; bar: "bar"; baz: "baz"; }'.
+  Bogus.absent;
 }

@@ -11,6 +11,11 @@ import {
   SECONDS_PER_YEAR,
 } from '../src/interest.js';
 
+/**
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ */
+
 const ONE_DAY = 60n * 60n * 24n;
 const ONE_MONTH = ONE_DAY * 30n;
 const ONE_YEAR = ONE_MONTH * 12n;

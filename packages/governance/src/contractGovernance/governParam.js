@@ -14,6 +14,9 @@ import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 /**
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
  * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {Passable} from '@endo/marshal';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -42,7 +45,7 @@ const makeParamChangePositions = changes => {
  * the question described by questionSpec.
  *
  * @param {{ parameterName: string, paramPath: unknown}} paramSpec
- * @param {QuestionSpec<ParamChangeIssue<unknown>>} questionSpec
+ * @param {QuestionSpec<ParamChangeIssue>} questionSpec
  */
 const assertBallotConcernsParam = (paramSpec, questionSpec) => {
   mustMatch(questionSpec, ParamChangesQuestionDetailsShape);
@@ -58,7 +61,7 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
 /**
  * @param {() => ERef<ParamManagerRetriever>} paramManagerRetrieverAccessor
  * @param {Instance} contractInstance
- * @param {import('@agoric/time').TimerService} timer
+ * @param {TimerService} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ParamGovernor}
  */
@@ -79,7 +82,7 @@ const setupParamGovernance = (
   ) => {
     const paramManagerRetriever = paramManagerRetrieverAccessor();
     const paramMgr = await E(paramManagerRetriever).get(paramSpec.paramPath);
-    /** @type {import('@endo/marshal').Passable} */
+    /** @type {Passable} */
     const changePs = {};
     for (const name of Object.keys(paramSpec.changes)) {
       const proposedValue = E(paramMgr).getVisibleValue(
@@ -92,7 +95,7 @@ const setupParamGovernance = (
 
     const { positive, negative } = makeParamChangePositions(changes);
 
-    /** @type {ParamChangeIssue<unknown>} */
+    /** @type {ParamChangeIssue} */
     const issue = harden({
       spec: {
         paramPath: paramSpec.paramPath,

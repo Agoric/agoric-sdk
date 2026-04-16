@@ -2,17 +2,17 @@
 
 /* global WeakRef FinalizationRegistry */
 
-import fs from 'fs';
+import fs from 'node:fs';
 import '@agoric/internal/src/install-ses-debug.js';
 
-import zlib from 'zlib';
-import readline from 'readline';
-import process from 'process';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { createHash } from 'crypto';
-import { Readable, finished as finishedCallback } from 'stream';
-import { performance } from 'perf_hooks';
+import zlib from 'node:zlib';
+import readline from 'node:readline';
+import process from 'node:process';
+import { spawn } from 'node:child_process';
+import { promisify } from 'node:util';
+import { createHash } from 'node:crypto';
+import { Readable, finished as finishedCallback } from 'node:stream';
+import { performance } from 'node:perf_hooks';
 import { tmpName, dirSync as tmpDirSync } from 'tmp';
 import sqlite3 from 'better-sqlite3';
 import yargsParser from 'yargs-parser';
@@ -32,6 +32,16 @@ import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 
 /**
  * @import {SnapStore} from '@agoric/swing-store';
+ * @import {ManagerType} from '../src/types-external.js';
+ * @import {VatManagerFactory} from '../src/types-internal.js';
+ * @import {KernelKeeper} from '../src/types-external.js';
+ * @import {VatKeeper} from '../src/types-external.js';
+ * @import {BundleHandler} from '../src/controller/bundle-handler.js';
+ * @import {KernelSlog} from '../src/types-external.js';
+ * @import {VatPowers} from '../src/types-external.js';
+ * @import {VatManager} from '../src/types-internal.js';
+ * @import {Bundle} from '../src/types-external.js';
+ * @import {ManagerOptions} from '../src/types-internal.js';
  */
 
 const finished = promisify(finishedCallback);
@@ -154,12 +164,12 @@ function makeSnapStoreIO() {
 // relative timings:
 // 3.8s v8-false, 27.5s v8-gc
 // 10.8s xs-no-gc, 15s xs-gc
-/** @type {import('../src/types-external.js').ManagerType} */
+/** @type {ManagerType} */
 const worker = 'xs-worker';
 
 async function replay(transcriptFile) {
   let vatID; // we learn this from the first line of the transcript
-  /** @type {import('../src/types-internal.js').VatManagerFactory} */
+  /** @type {VatManagerFactory} */
   let factory;
 
   let loadSnapshotID = null;
@@ -170,20 +180,17 @@ async function replay(transcriptFile) {
 
   const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
 
-  const fakeKernelKeeper =
-    /** @type {import('../src/types-external.js').KernelKeeper} */ ({
-      provideVatKeeper: _vatID =>
-        /** @type {import('../src/types-external.js').VatKeeper} */ (
-          /** @type {Partial<import('../src/types-external.js').VatKeeper>} */ ({
-            addToTranscript: () => {},
-            getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
-          })
-        ),
-      getRelaxDurabilityRules: () => false,
-    });
+  const fakeKernelKeeper = /** @type {KernelKeeper} */ ({
+    provideVatKeeper: _vatID =>
+      /** @type {Partial<VatKeeper>} */ ({
+        addToTranscript: () => {},
+        getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
+      }),
+    getRelaxDurabilityRules: () => false,
+  });
 
   let bundleIDs;
-  /** @type {import('../src/controller/bundle-handler.js').BundleHandler} */
+  /** @type {BundleHandler} */
   const bundleHandler = harden({
     getCurrentBundleIDs: async () => {
       return bundleIDs || ['lockdown-bundle', 'supervisor-bundle'];
@@ -195,14 +202,13 @@ async function replay(transcriptFile) {
     },
   });
 
-  const kernelSlog =
-    /** @type {import('../src/types-external.js').KernelSlog} */ (
-      /** @type {Partial<import('../src/types-external.js').KernelSlog>} */ ({
-        write() {},
-        delivery: () => () => undefined,
-        syscall: () => () => undefined,
-      })
-    );
+  const kernelSlog = /** @type {KernelSlog} */ (
+    /** @type {Partial<KernelSlog>} */ ({
+      write() {},
+      delivery: () => () => undefined,
+      syscall: () => () => undefined,
+    })
+  );
 
   if (argv.ignoreSnapshotHashDifference && !argv.useCustomSnapStore) {
     console.warn(
@@ -269,15 +275,14 @@ async function replay(transcriptFile) {
     gcAndFinalize: makeGcAndFinalize(engineGC),
     meterControl,
   });
-  const allVatPowers =
-    /** @type {import('../src/types-external.js').VatPowers} */ (
-      /** @type {Partial<import('../src/types-external.js').VatPowers>} */ ({
-        testLog,
-      })
-    );
+  const allVatPowers = /** @type {VatPowers} */ (
+    /** @type {Partial<VatPowers>} */ ({
+      testLog,
+    })
+  );
   /**
    * @typedef {{
-   *  manager: import('../src/types-internal.js').VatManager;
+   *  manager: VatManager;
    *  xsnapPID: number | undefined;
    *  deliveryTimeTotal: number;
    *  deliveryTimeSinceLastSnapshot: number;
@@ -294,7 +299,7 @@ async function replay(transcriptFile) {
 
   await null;
   if (worker === 'xs-worker') {
-    /** @type {import('../src/types-external.js').Bundle[] | undefined} */
+    /** @type {Bundle[] | undefined} */
     let overrideBundles;
     if (argv.useSdkBundles) {
       overrideBundles = await Promise.all([
@@ -428,18 +433,17 @@ async function replay(transcriptFile) {
     workers.push(workerData);
     updateWorkersSynced();
     const currentBundleIDs = await bundleHandler.getCurrentBundleIDs();
-    const managerOptions =
-      /** @type {import('../src/types-internal.js').ManagerOptions} */ (
-        /** @type {Partial<import('../src/types-internal.js').ManagerOptions>} */ ({
-          sourcedConsole: console,
-          vatParameters,
-          useTranscript: true,
-          workerOptions: {
-            type: worker === 'xs-worker' ? 'xsnap' : worker,
-            bundleIDs: currentBundleIDs,
-          },
-        })
-      );
+    const managerOptions = /** @type {ManagerOptions} */ (
+      /** @type {Partial<ManagerOptions>} */ ({
+        sourcedConsole: console,
+        vatParameters,
+        useTranscript: true,
+        workerOptions: {
+          type: worker === 'xs-worker' ? 'xsnap' : worker,
+          bundleIDs: currentBundleIDs,
+        },
+      })
+    );
     if (!vatSourceBundle && !loadSnapshotID) {
       vatSourceBundle = await bundleHandler.getBundle(vatSourceBundleID);
     }
@@ -585,7 +589,7 @@ async function replay(transcriptFile) {
     },
   );
 
-  /** @type {import('stream').Readable} */
+  /** @type {Readable} */
   let transcriptF = fs.createReadStream(transcriptFile);
   if (transcriptFile.endsWith('.gz')) {
     transcriptF = transcriptF.pipe(zlib.createGunzip());

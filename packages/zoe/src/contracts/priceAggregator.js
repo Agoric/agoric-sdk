@@ -1,6 +1,7 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import {
   makeNotifierKit,
   makeStoredPublishKit,
@@ -29,10 +30,25 @@ import {
 } from '../contractSupport/index.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {LegacyMap} from '@agoric/store'
+ * @import {Notifier, UpdateRecord} from '@agoric/notifier';
  * @import {ContractOf} from '../zoeService/utils.js';
  * @import {PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
- * @import {Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Instance, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {TimerService} from '@agoric/time';
+ * @import {Timestamp} from '@agoric/time';
+ * @import {TimerWaker} from '@agoric/time';
+ * @import {TimestampRecord} from '@agoric/time';
+ * @import {OracleContract} from './oracle.js';
+ * @import {Amount, Brand, Ratio} from '@agoric/ertp';
+ * @import {OracleKey} from './priceAggregatorTypes.js';
+ * @import {OracleAdmin} from './priceAggregatorTypes.js';
+ * @import {OracleQuery} from './priceAggregatorTypes.js';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /** @typedef {bigint | number | string} ParsableNumber */
@@ -53,16 +69,16 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  * is a stub until we complete what is now in `fluxAggregatorKit.js`.
  *
  * @param {ZCF<{
- * timer: import('@agoric/time').TimerService,
+ * timer: TimerService,
  * POLL_INTERVAL: bigint,
  * brandIn: Brand<'nat'>,
  * brandOut: Brand<'nat'>,
  * unitAmountIn: Amount<'nat'>,
  * }>} zcf
  * @param {{
- * marshaller: Marshaller,
+ * marshaller: Remote<Marshaller>,
  * quoteMint?: ERef<Mint<'set', PriceDescription>>,
- * storageNode: ERef<StorageNode>,
+ * storageNode: Remote<StorageNode>,
  * }} privateArgs
  */
 const start = async (zcf, privateArgs) => {
@@ -76,8 +92,10 @@ const start = async (zcf, privateArgs) => {
   assertAllDefined({ brandIn, brandOut, POLL_INTERVAL, timer, unitAmountIn });
 
   assert(privateArgs, 'Missing privateArgs in priceAggregator start');
-  const { marshaller, storageNode } = privateArgs;
-  assertAllDefined({ marshaller, storageNode });
+  const { marshaller: remoteMarshaller, storageNode } = privateArgs;
+  assertAllDefined({ remoteMarshaller, storageNode });
+
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
 
   /** @type {ERef<Mint<'set', PriceDescription>>} */
   const quoteMint =
@@ -117,14 +135,14 @@ const start = async (zcf, privateArgs) => {
   // For publishing priceAuthority values to off-chain storage
   const { publisher, subscriber } = makeStoredPublishKit(
     storageNode,
-    marshaller,
+    cachingMarshaller,
   );
 
   const zoe = zcf.getZoeService();
 
   /**
    * @typedef {object} OracleRecord
-   * @property {(timestamp: import('@agoric/time').Timestamp) => Promise<void>} [querier]
+   * @property {(timestamp: Timestamp) => Promise<void>} [querier]
    * @property {Ratio} lastSample
    * @property {OracleKey} oracleKey
    */
@@ -141,7 +159,7 @@ const start = async (zcf, privateArgs) => {
 
   // Wake every POLL_INTERVAL and run the queriers.
   const repeaterP = E(timer).makeRepeater(0n, POLL_INTERVAL);
-  /** @type {import('@agoric/time').TimerWaker} */
+  /** @type {TimerWaker} */
   const waker = Far('waker', {
     async wake(timestamp) {
       // Run all the queriers.
@@ -163,7 +181,7 @@ const start = async (zcf, privateArgs) => {
   /**
    * @param {object} param0
    * @param {Ratio} [param0.overridePrice]
-   * @param {import('@agoric/time').TimestampRecord} [param0.timestamp]
+   * @param {TimestampRecord} [param0.timestamp]
    */
   const makeCreateQuote = ({ overridePrice, timestamp } = {}) =>
     /**
@@ -258,7 +276,7 @@ const start = async (zcf, privateArgs) => {
     );
 
   /**
-   * @param {import('@agoric/time').Timestamp} timestamp
+   * @param {Timestamp} timestamp
    */
   const updateQuote = async timestamp => {
     timestamp = TimeMath.coerceTimestampRecord(timestamp, timerBrand);
@@ -438,7 +456,7 @@ const start = async (zcf, privateArgs) => {
      * directly to manage the price submissions as well as to terminate the
      * relationship.
      *
-     * @param {Instance | string} [oracleKey]
+     * @param {Instance<unknown> | string} [oracleKey]
      */
     makeOracleInvitation: async oracleKey => {
       /**
@@ -507,7 +525,7 @@ const start = async (zcf, privateArgs) => {
       await updateQuote(deletedNow);
     },
     /**
-     * @param {Instance | string} [oracleInstance]
+     * @param {Instance<unknown> | string} [oracleInstance]
      * @param {OracleQuery} [query]
      * @returns {Promise<OracleAdmin<Price>>}
      */
@@ -588,17 +606,16 @@ const start = async (zcf, privateArgs) => {
 
       // Obtain the oracle's publicFacet.
       assert(oracleInstance);
-      const oracle =
-        /** @type {import('./oracle.js').OracleContract['publicFacet']} */ (
-          await E(zoe).getPublicFacet(oracleInstance)
-        );
+      const oracle = /** @type {OracleContract['publicFacet']} */ (
+        await E(zoe).getPublicFacet(oracleInstance)
+      );
       assert(records.has(record), 'Oracle record is already deleted');
 
-      /** @type {import('@agoric/time').Timestamp} */
+      /** @type {Timestamp} */
       let lastWakeTimestamp = 0n;
 
       /**
-       * @param {import('@agoric/time').Timestamp} timestamp
+       * @param {Timestamp} timestamp
        */
       record.querier = async timestamp => {
         // Submit the query.

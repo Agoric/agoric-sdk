@@ -1,7 +1,7 @@
 // @ts-check
-import { createHash } from 'crypto';
-import { Readable } from 'stream';
-import { Buffer } from 'buffer';
+import { createHash } from 'node:crypto';
+import { Readable } from 'node:stream';
+import { Buffer } from 'node:buffer';
 import { Fail, q } from '@endo/errors';
 import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { checkBundle } from '@endo/check-bundle/lite.js';
@@ -15,8 +15,8 @@ import { createSHA256 } from './hasher.js';
  * @typedef { EndoZipBase64Bundle | GetExportBundle | NestedEvaluateBundle } Bundle
  */
 /**
- * @typedef { import('./exporter.js').SwingStoreExporter } SwingStoreExporter
- * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
+ * @import {SwingStoreExporter} from './exporter.js';
+ * @import {ArtifactMode} from './internal.js';
  *
  * @typedef {{
  *   addBundle: (bundleID: string, bundle: Bundle) => void;

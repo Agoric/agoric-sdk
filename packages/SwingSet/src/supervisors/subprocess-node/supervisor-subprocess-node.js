@@ -3,9 +3,9 @@
 // this file is loaded at the start of a new subprocess
 import '@endo/init';
 
-import anylogger from 'anylogger';
-import fs from 'fs';
-import { Buffer } from 'buffer';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
+import fs from 'node:fs';
+import { Buffer } from 'node:buffer';
 import process from 'node:process';
 
 import { assert, X, Fail } from '@endo/errors';
@@ -27,9 +27,12 @@ import {
   makeVatConsole,
 } from '../supervisor-helper.js';
 
-// eslint-disable-next-line no-unused-vars
-function workerLog(first, ...args) {
-  // console.error(`---worker: ${first}`, ...args);
+/**
+ * @import {Bundle} from '../../types-external.js';
+ */
+
+function workerLog(_first, ..._args) {
+  // console.error(`---worker: ${_first}`, ..._args);
 }
 
 workerLog(`supervisor started`);

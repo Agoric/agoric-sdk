@@ -6,7 +6,7 @@ import { NonNullish } from '@agoric/internal';
 import {
   boardSlottingMarshaller,
   unmarshalFromVstorage,
-} from '@agoric/internal/src/marshal.js';
+} from '@agoric/internal/src/marshal/board-client-utils.js';
 import {
   slotToRemotable,
   type FakeStorageKit,
@@ -28,11 +28,37 @@ import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { TimerService } from '@agoric/time';
 import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
 import { type AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
-import type { InvitationDetails } from '@agoric/zoe';
+import type { Instance, InvitationDetails } from '@agoric/zoe';
 import type { Marshal } from '@endo/marshal';
+import type { ERef } from '@agoric/vow';
+import type { BankManager } from '@agoric/vats/src/vat-bank.js';
 import type { SwingsetTestKit } from './supports.js';
 
 type Marshaller = Omit<Marshal<string | null>, 'serialize' | 'unserialize'>;
+
+const isBootProfileEnabled = () => {
+  const value = process.env.AGORIC_BOOT_TEST_PROFILE;
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized !== '0' && normalized !== 'false' && normalized !== 'off';
+};
+
+const profileBootStep = async <T>(
+  label: string,
+  op: () => Promise<T>,
+): Promise<T> => {
+  const start = performance.now();
+  try {
+    // eslint-disable-next-line @jessie.js/safe-await-separator
+    return await op();
+  } finally {
+    if (isBootProfileEnabled()) {
+      console.warn(`${label}=${(performance.now() - start).toFixed(1)}ms`);
+    }
+  }
+};
 
 // XXX SwingsetTestKit would simplify this
 export const makeWalletFactoryDriver = async (
@@ -51,7 +77,7 @@ export const makeWalletFactoryDriver = async (
     'namesByAddressAdmin',
   );
 
-  const marshaller = boardSlottingMarshaller(slotToRemotable);
+  const marshaller: Marshaller = boardSlottingMarshaller(slotToRemotable);
 
   const makeWalletDriver = (
     walletAddress: string,
@@ -144,12 +170,21 @@ export const makeWalletFactoryDriver = async (
       walletAddress: string,
       myMarshaller?: Marshaller,
     ): Promise<ReturnType<typeof makeWalletDriver>> {
-      const bank = await EV(bankManager).getBankForAddress(walletAddress);
-      return EV(walletFactoryStartResult.creatorFacet)
-        .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
-        .then(([walletPresence, isNew]) =>
-          makeWalletDriver(walletAddress, walletPresence, isNew, myMarshaller),
-        );
+      const bank = await profileBootStep(
+        `walletFactoryDriver.getBankForAddress.${walletAddress}`,
+        () => EV(bankManager).getBankForAddress(walletAddress),
+      );
+      return profileBootStep(
+        `walletFactoryDriver.provideSmartWallet.${walletAddress}`,
+        () =>
+          EV(walletFactoryStartResult.creatorFacet).provideSmartWallet(
+            walletAddress,
+            bank,
+            namesByAddressAdmin,
+          ),
+      ).then(([walletPresence, isNew]) =>
+        makeWalletDriver(walletAddress, walletPresence, isNew, myMarshaller),
+      );
     },
   };
 };
@@ -248,12 +283,15 @@ export const makeGovernanceDriver = async (
     ),
   );
 
-  const findInvitation = (wallet, descriptionSubstr) => {
-    return wallet
-      .getCurrentWalletRecord()
-      .purses[0].balance.value.find(v =>
-        v.description.startsWith(descriptionSubstr),
-      );
+  const findInvitation = (
+    wallet: SmartWalletDriver,
+    descriptionSubstr: string,
+  ) => {
+    const invitationBalance = wallet.getCurrentWalletRecord().purses[0]
+      .balance as Amount<'set', InvitationDetails>;
+    return invitationBalance.value.find(v =>
+      v.description.startsWith(descriptionSubstr),
+    );
   };
 
   const ecMembers = smartWallets.map(w => ({

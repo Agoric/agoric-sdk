@@ -28,10 +28,22 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {EReturn} from '@endo/far';
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';
+ * @import {ERemote, Remote} from '@agoric/internal';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ZCF} from '@agoric/zoe';
  * @import {ERef} from '@endo/far'
  * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
+ * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {start as psmStart} from '@agoric/inter-protocol/src/psm/psm.js';
+ * @import {NameAdmin} from '@agoric/vats';
+ * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
+ * @import {Zone} from '@agoric/zone';
+ * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {BridgeHandler} from '@agoric/vats';
+ * @import {AssetDescriptor} from '@agoric/vats/src/vat-bank.js';
  */
 
 const trace = makeTracer('ProvPool');
@@ -43,7 +55,13 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
 // XXX when inferred, error TS2742: cannot be named without a reference to '../../../node_modules/@endo/exo/src/get-interface.js'. This is likely not portable. A type annotation is necessary.
 /**
  * @typedef {{
- *   machine: any;
+ *   machine: {
+ *     addRevivableAddresses: (oldAddresses: string[]) => void;
+ *     getWalletReviver: () => ERef<any>;
+ *     setReferences: (erefs: ProvisionPoolKitReferences) => Promise<void>;
+ *     makeHandler: () => ERef<BridgeHandler>;
+ *     initPSM: (brand: Brand, instance: Instance<typeof psmStart>) => void;
+ *   };
  *   helper: any;
  *   forHandler: any;
  *   public: any;
@@ -51,18 +69,14 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  */
 
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils.js').Instance<
- *   import('@agoric/inter-protocol/src/psm/psm.js').start
- * >} PsmInstance
+ * @typedef {Instance<typeof psmStart>} PsmInstance
  */
 
 /**
  * @typedef {object} ProvisionPoolKitReferences
  * @property {ERef<BankManager>} bankManager
- * @property {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
- * @property {ERef<
- *   import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult['creatorFacet']
- * >} walletFactory
+ * @property {ERef<NameAdmin>} namesByAddressAdmin
+ * @property {ERef<WalletFactoryStartResult['creatorFacet']>} walletFactory
  */
 
 /**
@@ -79,7 +93,7 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  * Given attenuated access to the funding purse, handle requests to provision
  * smart wallets.
  *
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  */
 export const prepareBridgeProvisionTool = zone =>
   zone.exoClass(
@@ -89,12 +103,8 @@ export const prepareBridgeProvisionTool = zone =>
     }),
     /**
      * @param {ERef<BankManager>} bankManager
-     * @param {ERef<
-     *   EReturn<
-     *     import('@agoric/smart-wallet/src/walletFactory.js').start
-     *   >['creatorFacet']
-     * >} walletFactory
-     * @param {ERef<import('@agoric/vats').NameAdmin>} namesByAddressAdmin
+     * @param {ERef<EReturn<StartWalletFactory>['creatorFacet']>} walletFactory
+     * @param {ERef<NameAdmin>} namesByAddressAdmin
      * @param {ProvisionPoolKit['forHandler']} forHandler
      */
     (bankManager, walletFactory, namesByAddressAdmin, forHandler) => ({
@@ -136,11 +146,11 @@ export const prepareBridgeProvisionTool = zone =>
   );
 
 /**
- * @param {import('@agoric/zone').Zone} zone
+ * @param {Zone} zone
  * @param {{
- *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
+ *   makeRecorderKit: MakeRecorderKit;
  *   params: any;
- *   poolBank: import('@endo/far').ERef<Bank>;
+ *   poolBank: ERef<Bank>;
  *   zcf: ZCF;
  *   makeBridgeProvisionTool: ReturnType<typeof prepareBridgeProvisionTool>;
  * }} powers
@@ -197,10 +207,10 @@ export const prepareProvisionPoolKit = (
      * @param {object} opts
      * @param {Purse<'nat'>} [opts.fundPurse]
      * @param {Brand<'nat'>} opts.poolBrand
-     * @param {StorageNode} opts.metricsNode
+     * @param {Remote<StorageNode>} opts.metricsNode
      */
     ({ fundPurse, poolBrand, metricsNode }) => {
-      /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').RecorderKit<MetricsNotification>} */
+      /** @type {RecorderKit<MetricsNotification>} */
       const metricsRecorderKit = makeRecorderKit(metricsNode);
 
       /** @type {MapStore<ERef<Brand>, PsmInstance>} */
@@ -255,7 +265,7 @@ export const prepareProvisionPoolKit = (
           const refs = await deeplyFulfilledObject(obj);
           Object.assign(this.state, refs);
         },
-        /** @returns {import('@agoric/vats').BridgeHandler} */
+        /** @returns {BridgeHandler} */
         makeHandler() {
           const { bankManager, namesByAddressAdmin, walletFactory } =
             this.state;
@@ -401,7 +411,7 @@ export const prepareProvisionPoolKit = (
           const { facets } = this;
           const { helper } = facets;
 
-          /** @param {import('@agoric/vats/src/vat-bank.js').AssetDescriptor} desc */
+          /** @param {AssetDescriptor} desc */
           const repairDesc = desc => {
             if (desc.issuerName.match(FIRST_UPPER_KEYWORD)) {
               trace(`Saving Issuer ${desc.issuerName}`);
@@ -589,11 +599,12 @@ export const prepareProvisionPoolKit = (
    *
    * @param {object} opts
    * @param {Brand<'nat'>} opts.poolBrand
-   * @param {ERef<StorageNode>} opts.storageNode
+   * @param {ERemote<StorageNode>} opts.storageNode
    * @returns {Promise<ProvisionPoolKit>}
    */
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {
     const fundPurse = await getFundingPurseForBrand(poolBrand);
+    /** @type {Remote<StorageNode>} */
     const metricsNode = await E(storageNode).makeChildNode('metrics');
 
     return makeProvisionPoolKitInternal({

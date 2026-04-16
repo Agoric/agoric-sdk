@@ -8,6 +8,7 @@ import { denomHash } from '../utils/denomHash.js';
  * @import {MakeStakingTap} from './auto-stake-it-tap-kit.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
  * @import {ChainHub} from '../exos/chain-hub.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
  */
 
 /**

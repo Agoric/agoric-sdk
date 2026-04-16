@@ -1,21 +1,23 @@
+import type { Hex } from 'viem';
 import type { HostInterface } from '@agoric/async-flow';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import {
-  MsgDepositForBurn,
-  MsgDepositForBurnResponse,
+  MsgDepositForBurn as MsgDepositForBurnType,
+  MsgDepositForBurnResponse as MsgDepositForBurnResponseType,
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
-  MsgTransfer,
-  MsgTransferResponse,
+  MsgTransfer as MsgTransferType,
+  MsgTransferResponse as MsgTransferResponseType,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import {
-  MsgLock,
-  MsgLockResponse,
+  MsgLock as MsgLockType,
+  MsgLockResponse as MsgLockResponseType,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import {
-  MsgSwap,
-  MsgSwapResponse,
+  MsgSwap as MsgSwapType,
+  MsgSwapResponse as MsgSwapResponseType,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
-import type { Brand, Issuer, Payment } from '@agoric/ertp';
+import type { Brand, Issuer, NatAmount, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import type { FeeConfig, LogFn } from '@agoric/fast-usdc/src/types.js';
 import type {
@@ -27,16 +29,35 @@ import { leftPadEthAddressTo32Bytes } from '@agoric/orchestration/src/utils/addr
 import {
   buildTxPacketString,
   buildTxResponseString,
-} from '@agoric/orchestration/tools/ibc-mocks.ts';
+} from '@agoric/orchestration/tools/ibc-mocks.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 
-export const localAccount0 = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht';
+const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
+const MsgDepositForBurnResponse = CodecHelper(MsgDepositForBurnResponseType);
+const MsgTransfer = CodecHelper(MsgTransferType);
+const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
+const MsgLock = CodecHelper(MsgLockType);
+const MsgLockResponse = CodecHelper(MsgLockResponseType);
+const MsgSwap = CodecHelper(MsgSwapType);
+const MsgSwapResponse = CodecHelper(MsgSwapResponseType);
+
+/** address of orch LCA for portfolio0, after contract/fee LCA */
+export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
+
+/** Private key for EVM address 0x3F4AE329c7FB2d39C7a0d786df25c32a45691f88 */
+export const evmTrader0PrivateKey =
+  '0x59c6995e998f97a5a0044966f094538c5f68e0c4e42e20b1e6f8a9a4f9f3d0b0' as Hex;
+
+/** Private key for EVM address 0x86F960bcCABc12306aEf894AdF52c5a146f47B90 */
+export const evmTrader1PrivateKey =
+  '0x8b3a350cf5c34c9194ca3a545d6fcf38e6f2d5d63f8f87be0c1e98e4b8c8f6d1' as Hex;
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -158,7 +179,7 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
   });
 
 export const makeUSDNIBCTraffic = (
-  signer = 'cosmos1test',
+  signer = 'noble1test',
   money = `${3_333.33 * 1000000}`,
   { denom = 'uusdc', denomTo = 'uusdn' } = {},
 ) => ({
@@ -206,7 +227,7 @@ export const makeUSDNIBCTraffic = (
         sourceChannel: 'channel-21',
         token: { denom: 'uusdc', amount: money },
         sender: signer,
-        receiver: 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
+        receiver: portfolio0lcaOrch,
         timeoutHeight: { revisionHeight: 0n, revisionNumber: 0n },
         timeoutTimestamp: 300000000000n,
         memo: '',
@@ -217,16 +238,18 @@ export const makeUSDNIBCTraffic = (
 });
 
 export const makeCCTPTraffic = (
-  from = 'cosmos1test',
+  from = 'noble1test',
   money = `${3_333.33 * 1000000}`,
-  dest = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
+  // This default matches the predicted addresss computed during tests
+  dest = '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
+  destinationDomain = 3,
 ) => ({
   depositForBurn: {
     msg: buildTxPacketString([
       MsgDepositForBurn.toProtoMsg({
         amount: money,
         burnToken: 'uusdc',
-        destinationDomain: 3,
+        destinationDomain,
         from,
         mintRecipient: leftPadEthAddressTo32Bytes(dest),
       }),
@@ -263,108 +286,154 @@ const testnetTokenMessenger = (rows =>
   ['OP Sepolia', 2, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
   ['Arbitrum Sepolia', 3, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
   ['Base Sepolia', 6, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
-  ['Polygon PoS Amoy', 7, '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5'],
   ['Unichain Sepolia', 10, '0x8ed94B8dAd2Dc5453862ea5e316A8e71AAed9782'],
 ] as [string, number, `0x${string}`][]);
 
-export const contractsMock: EVMContractAddressesMap = {
+export const contractsMock = {
   Avalanche: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    gateway: '0xC249632c2D40b9001FE907806902f63038B737Ab',
+    gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+  },
+  Ethereum: {
+    aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
+    factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
+    aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+    compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_morphoGauntletUsdc_Ethereum:
+      '0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0',
+    Beefy_morphoSmokehouseUsdc_Ethereum:
+      '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
+    walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
   Optimism: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessenger['OP Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
+    walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
   Arbitrum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    gateway: '0xe1cE95479C84e9809269227C7F8524aE051Ae77a',
+    gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_compoundUsdc_Arbitrum: '0xb9A27ba529634017b12e3cbbbFFb6dB7908a8C8B',
+    Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
+    Beefy_morphoGauntletUsdc_Ethereum:
+      '0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0',
+    Beefy_morphoSmokehouseUsdc_Ethereum:
+      '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
+    Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    ERC4626_vaultU2_Ethereum: '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
+    walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
-  Polygon: {
+  Base: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
+    gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
-    tokenMessenger: testnetTokenMessenger['Polygon PoS Amoy'].Address,
+    permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessenger['Base Sepolia'].Address,
     aaveUSDC: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
+    Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
-} as const;
+} as const satisfies EVMContractAddressesMap;
 
 export const axelarIdsMock: AxelarId = {
   Avalanche: 'Avalanche',
   Optimism: 'optimism',
   Arbitrum: 'arbitrum',
-  Polygon: 'Polygon',
+  Ethereum: 'ethereum-sepolia',
+  Base: 'base-sepolia',
 } as const;
-
-/**
- * Use Arbitrum or any other EVM chain whose Axelar chain ID (`axelarId`) differs
- * from the chain name. For example, Arbitrum's `axelarId` is "arbitrum", while
- * Ethereum’s is "Ethereum" (case-sensitive). The challenge is that if a mismatch
- * occurs, it may go undetected since the `axelarId` is passed via the IBC memo
- * and not validated automatically.
- *
- * To ensure proper testing, it's best to use a chain where the `chainName` and
- * `axelarId` are not identical. This increases the likelihood of catching issues
- * with misconfigured or incorrectly passed `axelarId` values.
- *
- * To see the `axelarId` for a given chain, refer to:
- * @see {@link https://github.com/axelarnetwork/axelarjs-sdk/blob/f84c8a21ad9685091002e24cac7001ed1cdac774/src/chains/supported-chains-list.ts | supported-chains-list.ts}
- */
-export const evmNamingDistinction = {
-  destinationEVMChain: 'Arbitrum' as AxelarChain,
-  sourceChain: 'arbitrum',
-};
 
 /** from https://www.mintscan.io/noble explorer */
 export const explored = [
   {
     txhash: '50D671D1D56CF5041CBE7C3483EF461765196ECD7D7571CCEF0A612B46FC7A3B',
     messages: [
-      {
-        '@type': '/noble.swap.v1.MsgSwap',
+      MsgSwap.toProtoMsg({
         signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
         amount: { denom: 'uusdc', amount: '111000000' },
         // routes: [{ pool_id: '0', denom_to: 'uusdn' }],
         routes: [{ poolId: 0n, denomTo: 'uusdn' }],
         min: { denom: 'uusdn', amount: '110858936' },
-      } satisfies MsgSwap & { '@type': string },
+      }),
     ],
   },
   {
     txhash: 'BD97D42915C9185B11B14FEDC2EF6BCE0677E6720472DC6E1B51CCD504534237',
     messages: [
-      {
-        '@type': '/noble.dollar.vaults.v1.MsgLock',
+      MsgLock.toProtoMsg({
         signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
         vault: 1, // 'STAKED',
         amount: '110818936',
-      } satisfies MsgLock & { '@type': string },
+      }),
     ],
   },
-];
+] as const;
 harden(explored);
 
 export const gmpAddresses: GmpAddresses = harden({
@@ -372,3 +441,20 @@ export const gmpAddresses: GmpAddresses = harden({
     'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
   AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
 });
+
+export const gasEstimator = {
+  getWalletEstimate: async () => 10_000_000n,
+  getFactoryContractEstimate: async () => 10_000_000n,
+  getReturnFeeEstimate: async () => 200_000_000_000_000n,
+};
+
+/** plan for deposit to USDN */
+export const planUSDNDeposit = (amount: NatAmount): FundsFlowPlan => {
+  const detail = { usdnOut: (amount.value * 999n) / 1000n - 1n };
+  const flow: FundsFlowPlan['flow'] = [
+    { amount, dest: '@agoric', src: '<Deposit>' },
+    { amount, dest: '@noble', src: '@agoric' },
+    { amount, dest: 'USDN', detail, src: '@noble' },
+  ];
+  return { flow, order: undefined };
+};

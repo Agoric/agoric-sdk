@@ -23,10 +23,10 @@
  * this file and the accompanying `yarn docs:update-functions-path`.
  */
 
-const fsp = require('fs').promises;
-const path = require('path');
-const zlib = require('zlib');
-const process = require('process');
+const fsp = require('node:fs').promises;
+const path = require('node:path');
+const zlib = require('node:zlib');
+const process = require('node:process');
 
 const config = {
   oldDirName: 'functions',
@@ -133,7 +133,7 @@ async function updateDataFile(filePath, windowKey) {
  * Updates files in a directory
  * @param {string} dir - Directory to update
  * @param {string} fileExtension - File extension to process
- * @param {Function} updateFunction - Function to update file content
+ * @param {(content: string) => string} updateFunction - Function to update file content
  */
 async function updateFiles(dir, fileExtension, updateFunction) {
   const files = await fsp.readdir(dir);

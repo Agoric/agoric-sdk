@@ -1,6 +1,4 @@
-// @jessie-check
-
-/// <reference path="./types-ambient.js" />
+/// <reference path="./types.js" />
 
 import {
   CONTRACT_ELECTORATE,
@@ -16,8 +14,20 @@ import { makeTracer } from '@agoric/internal/src/index.js';
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 /**
+ * @import {ERemote, Remote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {MapStore} from '@agoric/store';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ * @import {ParamTypesMapFromRecord} from '@agoric/governance/src/contractGovernance/typedParamManager.js';
+ * @import {StoredPublisherKit} from '@agoric/notifier';
+ * @import {TimerService} from '@agoric/time';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Amount, Brand, Ratio} from '@agoric/ertp';
+ * @import {AssetReservePublicFacet} from '../reserve/assetReserve.js';
+ * @import {InterestTiming, VaultManagerParamValues} from './types.js';
+ * @import {GovernanceSubscriptionState} from '@agoric/governance/src/types.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export const CHARGING_PERIOD_KEY = 'ChargingPeriod';
@@ -84,17 +94,19 @@ const makeVaultDirectorParams = (
 harden(makeVaultDirectorParams);
 
 /**
- * @typedef {import('@agoric/governance/src/contractGovernance/typedParamManager.js').ParamTypesMapFromRecord<
- *     ReturnType<typeof makeVaultDirectorParams>
- *   >} VaultDirectorParams
+ * @typedef {ParamTypesMapFromRecord<
+ *   ReturnType<typeof makeVaultDirectorParams>
+ * >} VaultDirectorParams
  */
 
-/** @type {(liquidationMargin: Ratio) => Ratio} */
+/**
+ * @type {(liquidationMargin: Ratio) => Ratio}
+ */
 const zeroRatio = liquidationMargin =>
   subtractRatios(liquidationMargin, liquidationMargin);
 
 /**
- * @param {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
+ * @param {StoredPublisherKit<GovernanceSubscriptionState>} publisherKit
  * @param {VaultManagerParamValues} initial
  */
 export const makeVaultParamManager = (
@@ -138,7 +150,7 @@ export const vaultParamPattern = M.splitRecord(
  *   minInitialDebt: Amount<'nat'>;
  *   bootstrapPaymentValue: bigint;
  *   priceAuthority: ERef<PriceAuthority>;
- *   timer: ERef<import('@agoric/time').TimerService>;
+ *   timer: ERef<TimerService>;
  *   reservePublicFacet: AssetReservePublicFacet;
  *   interestTiming: InterestTiming;
  *   shortfallInvitationAmount: Amount<'set'>;
@@ -180,8 +192,8 @@ harden(makeGovernedTerms);
  *
  * NB: changes from initial values will be lost upon restart
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {Baggage} baggage
+ * @param {ERemote<EMarshaller>} marshaller
  * @param {Record<string, VaultManagerParamOverrides>} managerParamOverrides
  */
 export const provideVaultParamManagers = (
@@ -196,7 +208,10 @@ export const provideVaultParamManagers = (
   /**
    * @type {MapStore<
    *   Brand,
-   *   { storageNode: StorageNode; initialParamValues: VaultManagerParamValues }
+   *   {
+   *     storageNode: Remote<StorageNode>;
+   *     initialParamValues: VaultManagerParamValues;
+   *   }
    * >}
    */
   const managerArgs = provideDurableMapStore(
@@ -204,6 +219,12 @@ export const provideVaultParamManagers = (
     'vault param manager parts',
   );
 
+  /**
+   * @param {Brand} brand
+   * @param {object} args
+   * @param {Remote<StorageNode>} args.storageNode
+   * @param {VaultManagerParamValues} args.initialParamValues
+   */
   const makeManager = (brand, { storageNode, initialParamValues }) => {
     const manager = makeVaultParamManager(
       makeStoredPublisherKit(storageNode, marshaller, 'governance'),
@@ -231,7 +252,7 @@ export const provideVaultParamManagers = (
   return {
     /**
      * @param {Brand} brand
-     * @param {StorageNode} storageNode
+     * @param {Remote<StorageNode>} storageNode
      * @param {VaultManagerParamValues} initialParamValues
      */
     addParamManager(brand, storageNode, initialParamValues) {

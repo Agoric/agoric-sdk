@@ -4,6 +4,14 @@ import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
 
 /**
+ * @import {Denom} from './types.js';
+ * @import {DepositAddress} from './types.js';
+ * @import {Bytes} from '@agoric/network';
+ * @import {PacketParts} from './types.js';
+ * @import {TransferProtocol} from './types.js';
+ */
+
+/**
  * @typedef {object} ICS20TransferPacket Packet shape defined at:
  * https://github.com/cosmos/ibc/tree/HEAD/spec/app/ics-020-fungible-token-transfer#data-structures
  * @property {string} amount The extent of the amount

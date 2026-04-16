@@ -3,24 +3,24 @@ import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
 import { WalletName } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import centralSupplyBundle from '@agoric/vats/bundles/bundle-centralSupply.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
+import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
   makeFakeBankKit,
   makeFakeBankManagerKit,
 } from '@agoric/vats/tools/bank-utils.js';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { E, Far } from '@endo/far';
-import path from 'path';
 import { makeHeapZone } from '@agoric/zone';
 import { prepareBridgeProvisionTool } from '../src/provisionPoolKit.js';
+import { interProtocolBundleSpecs } from '../source-spec-registry.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
@@ -32,13 +32,14 @@ import {
  * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js'
  * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
+ * @import {TestFn} from 'ava';
+ * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
+ * @import {start} from '../src/provisionPool.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Purse} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
-
-const pathname = new URL(import.meta.url).pathname;
-const dirname = path.dirname(pathname);
-
-const psmRoot = `${dirname}/../src/psm/psm.js`;
-const policyRoot = `${dirname}/../src/provisionPool.js`;
 
 const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
@@ -47,13 +48,19 @@ const WantMintedFeeBP = 1n;
 const GiveMintedFeeBP = 3n;
 const MINT_LIMIT = scale6(20_000_000);
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = unknownTest;
 
 const makeTestContext = async () => {
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
-  const psmBundle = await bundleCache.load(psmRoot, 'psm');
-  const policyBundle = await bundleCache.load(policyRoot, 'provisionPool');
+  const bundleCache = await unsafeSharedBundleCache;
+  const { psmBundle, provisionPoolBundle: policyBundle } =
+    await bundleCache.loadRegistry(interProtocolBundleSpecs);
+  const { committeeBundle } = await bundleCache.loadRegistry(
+    governanceSourceSpecRegistry,
+  );
+  const { centralSupplyBundle } = await bundleCache.loadRegistry(
+    vatsSourceSpecRegistry,
+  );
   const { zoe, feeMintAccessP } = await setUpZoeForTest();
 
   const mintedIssuer = await E(zoe).getFeeIssuer();
@@ -64,7 +71,7 @@ const makeTestContext = async () => {
   const committeeInstall = await E(zoe).install(committeeBundle);
   const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<import('../src/provisionPool.js')['start']>} */
+  /** @type {Installation<typeof start>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
@@ -324,7 +331,7 @@ const makeWalletFactoryKitForAddresses = async addresses => {
   };
 
   const done = new Set();
-  /** @type {import('@agoric/vats/src/core/startWalletFactory.js').WalletFactoryStartResult['creatorFacet']} */
+  /** @type {WalletFactoryStartResult['creatorFacet']} */
   const walletFactory = Far('mock walletFactory', {
     provideSmartWallet: async (addr, _b, nameAdmin) => {
       const wallet = wallets.get(addr);
@@ -583,6 +590,9 @@ test('provisionPool publishes metricsOverride promptly', async t => {
   );
 
   const metrics = E(facets.publicFacet).getMetrics();
+
+  // Without this the test seems sensitive to the number of turn the start operation takes
+  await eventLoopIteration();
 
   const {
     head: { value: initialMetrics },

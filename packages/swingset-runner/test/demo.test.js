@@ -1,8 +1,8 @@
 import test from 'ava';
-import { spawn } from 'child_process';
-import fs from 'fs';
-import path from 'path';
-import url from 'url';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 
 const dirname = url.fileURLToPath(new URL('.', import.meta.url));
 

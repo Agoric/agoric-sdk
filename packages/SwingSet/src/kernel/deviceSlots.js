@@ -8,6 +8,12 @@ import {
 } from '../lib/parseVatSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 
+/**
+ * @import {SwingSetCapData} from '../types-external.js';
+ * @import {DeviceInvocationResult} from '../types-external.js';
+ * @import {DeviceInvocationResultOk} from '../types-external.js';
+ */
+
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
 export function makeDeviceSlots(

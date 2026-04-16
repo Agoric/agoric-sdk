@@ -14,13 +14,23 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { scale6, withAmountUtils } from '../../supports.js';
+
+const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
 /**
- * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe';
+ * @import {MetricsNotification, PsmPublicFacet} from '../../../src/psm/psm.js';
+ * @import {start as startPeppetGovernor} from '@agoric/governance/tools/puppetContractGovernor.js';
+ * @import {PuppetContractGovernorKit} from '@agoric/governance/tools/puppetContractGovernor.js';
+ * @import {Subscriber, UpdateRecord} from '@agoric/notifier';
+ * @import {StartParams} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {start} from '@agoric/governance/src/committee.js';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 const trace = makeTracer('BootPSMUpg');
@@ -32,7 +42,7 @@ const anchor = withAmountUtils(makeIssuerKit('bucks'));
 const firstGive = anchor.units(21);
 const secondGive = anchor.units(3);
 
-/** @import {start as PsmSF} from '../../../src/psm/psm.js' */
+/** @import {start as startPsm} from '../../../src/psm/psm.js' */
 
 export const buildRootObject = async () => {
   const storageKit = makeFakeStorageKit('psmUpgradeTest');
@@ -53,15 +63,11 @@ export const buildRootObject = async () => {
   let psmPublicFacet;
 
   /**
-   * @type {Subscriber<
-   *   import('../../../src/psm/psm.js').MetricsNotification
-   * >}
+   * @type {Subscriber<MetricsNotification>}
    */
   let metrics;
   /**
-   * @type {UpdateRecord<
-   *   import('../../../src/psm/psm.js').MetricsNotification
-   * >}
+   * @type {UpdateRecord<MetricsNotification>}
    */
   let metricsRecord;
 
@@ -74,23 +80,19 @@ export const buildRootObject = async () => {
   // for startInstance
   /**
    * @type {{
-   *   committee?: Installation<
-   *     import('@agoric/governance/src/committee.js')['start']
-   *   >;
-   *   psmV1?: Installation<PsmSF>;
-   *   puppetContractGovernor?: Installation<
-   *     import('@agoric/governance/tools/puppetContractGovernor.js').start
-   *   >;
+   *   committee?: Installation<typeof start>;
+   *   psmV1?: Installation<typeof startPsm>;
+   *   puppetContractGovernor?: Installation<typeof startPeppetGovernor>;
    * }}
    */
   const installations = {};
 
-  /** @type {import('@agoric/governance/tools/puppetContractGovernor.js').PuppetContractGovernorKit<PsmSF>} */
+  /** @type {PuppetContractGovernorKit<typeof startPsm>} */
   let governorFacets;
 
   /**
    * @type {Omit<
-   *   import('@agoric/zoe/src/zoeService/utils.js').StartParams<PsmSF>['terms'],
+   *   StartParams<typeof startPsm>['terms'],
    *   'issuers' | 'brands'
    * >}
    */
@@ -223,7 +225,6 @@ export const buildRootObject = async () => {
       governorFacets = await E(zoeService).startInstance(
         NonNullish(installations.puppetContractGovernor),
         undefined,
-        // @ts-expect-error XXX timer
         governorTerms,
         {
           governed: {

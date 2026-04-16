@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* global globalThis VatData */
 /* set up globalThis.handleCommand for running test scripts
 

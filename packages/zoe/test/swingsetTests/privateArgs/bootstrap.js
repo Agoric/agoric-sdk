@@ -3,6 +3,7 @@ import { Far } from '@endo/marshal';
 
 /**
  * @import {ZoeService} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export function buildRootObject(vatPowers) {

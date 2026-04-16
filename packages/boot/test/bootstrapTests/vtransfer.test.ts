@@ -7,11 +7,15 @@ import type { TransferMiddleware } from '@agoric/vats/src/transfer.js';
 import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
 import { BridgeId } from '@agoric/internal';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import type { ERef } from '@agoric/vow';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const makeDefaultTestContext = async t => {
+  const snapshot = await loadOrCreateRunUtilsSnapshot('demo-base', t.log);
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
+    snapshot,
   });
   return swingsetTestKit;
 };

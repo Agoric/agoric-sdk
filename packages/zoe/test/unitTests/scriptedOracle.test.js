@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { assert } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
@@ -16,6 +16,10 @@ import buildManualTimer from '../../tools/manualTimer.js';
 import { setup } from './setupBasicMints.js';
 import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
+
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
 
 // This test shows how to set up a fake oracle and use it in a contract.
 
@@ -33,7 +37,7 @@ const bountyContractPath = `${dirname}/bounty.js`;
  * @property {Issuer} moolaIssuer
  * @property {(value: AmountValue) => Amount} moola
  *
- * @typedef {import('ava').ExecutionContext<TestContext>} ExecutionContext
+ * @typedef {ExecutionContext<TestContext>} ExecutionContext
  */
 
 test.before(
@@ -49,10 +53,16 @@ test.before(
 
     // Install the contracts on Zoe, getting installations. We use these
     // installations to instantiate the contracts.
-    vatAdminState.installBundle('b1-oracle', oracleContractBundle);
-    const oracleInstallation = await E(zoe).installBundleID('b1-oracle');
-    vatAdminState.installBundle('b1-bounty', bountyContractBundle);
-    const bountyInstallation = await E(zoe).installBundleID('b1-bounty');
+    const b1oracle = vatAdminState.registerBundle(
+      'b1-oracle',
+      oracleContractBundle,
+    );
+    const oracleInstallation = await E(zoe).installBundleID(b1oracle);
+    const b1bounty = vatAdminState.registerBundle(
+      'b1-bounty',
+      bountyContractBundle,
+    );
+    const bountyInstallation = await E(zoe).installBundleID(b1bounty);
     const { moolaIssuer, moolaMint, moola } = setup();
 
     ot.context.zoe = zoe;

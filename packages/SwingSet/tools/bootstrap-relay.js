@@ -2,30 +2,45 @@
  * @file Source code for a bootstrap vat that runs blockchain behaviors (such as
  *   bridge vat integration) and exposes reflective methods for use in testing.
  *
- * TODO: Build from ./vat-puppet.js makeReflectionMethods
- * and share code with packages/vats/tools/vat-reflective-chain-bootstrap.js
+ * TODO: Share code with packages/vats/tools/bootstrap-chain-reflective.js
  * (which basically extends this for better [mock] blockchain integration).
  */
 
 import { Fail, q } from '@endo/errors';
-import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { buildManualTimer } from './manual-timer.js';
+import { makeReflectionMethods } from './vat-puppet.js';
 
-export const buildRootObject = () => {
-  const timer = buildManualTimer();
+/** @import { CreateVatResults } from '../src/types-external.js' */
+
+/**
+ * @typedef {{ root: object; incarnationNumber?: number }} VatRecord
+ * @typedef {VatRecord & CreateVatResults & { bundleCap: unknown }} DynamicVatRecord
+ */
+
+export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
+  const manualTimer = buildManualTimer();
+
+  // Captured/populated by bootstrap.
   let vatAdmin;
-  const vatData = new Map();
   const devicesByName = new Map();
-  const callLogsByRemotable = new Map();
+  /** @type {Map<string, VatRecord | DynamicVatRecord>} */
+  const vatRecords = new Map();
+
+  const reflectionMethods = makeReflectionMethods(
+    vatPowers,
+    baggage,
+    bootstrapParameters,
+  );
 
   return Far('root', {
+    ...reflectionMethods,
+
     bootstrap: async (vats, devices) => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
       for (const [name, root] of Object.entries(vats)) {
         if (name !== 'vatAdmin') {
-          vatData.set(name, { root });
+          vatRecords.set(name, { root });
         }
       }
       for (const [name, device] of Object.entries(devices)) {
@@ -33,78 +48,81 @@ export const buildRootObject = () => {
       }
     },
 
-    getDevice: async deviceName => devicesByName.get(deviceName),
+    getDevice: deviceName => devicesByName.get(deviceName),
 
-    getVatAdmin: async () => vatAdmin,
+    /** @todo Reconcile with packages/vats/tools/bootstrap-chain-reflective.js */
+    getTimer: () => manualTimer,
 
-    getTimer: async () => timer,
+    getVatAdmin: () => vatAdmin,
 
-    getVatRoot: async vatName => {
-      const vat = vatData.get(vatName) || Fail`unknown vat name: ${q(vatName)}`;
+    getVatAdminNode: vatName => {
+      const vat =
+        vatRecords.get(vatName) || Fail`unknown vat name: ${q(vatName)}`;
+      const { adminNode } = /** @type {DynamicVatRecord} */ (vat);
+      return adminNode;
+    },
+
+    getVatRoot: vatName => {
+      const vat =
+        vatRecords.get(vatName) || Fail`unknown vat name: ${q(vatName)}`;
       const { root } = vat;
       return root;
     },
 
+    /**
+     * @todo Reconcile with packages/vats/tools/bootstrap-chain-reflective.js
+     * @param {object} details
+     * @param {string} details.name name by which the new vat can be referenced
+     * @param {string} [details.bundleCapName] defaults to name
+     * @param {Record<string, unknown>} [details.vatParameters]
+     * @param {{ vatParameters?: object } & Record<string, unknown>} [vatOptions] for specifying more than vatParameters
+     * @returns {Promise<DynamicVatRecord['root']>} root object of the new vat
+     */
     createVat: async (
-      { name, bundleCapName, vatParameters = {} },
-      options = {},
+      { name, bundleCapName = name, vatParameters = undefined },
+      vatOptions = {},
     ) => {
-      const bcap = await E(vatAdmin).getNamedBundleCap(bundleCapName);
-      const vatOptions = { ...options, vatParameters };
-      const { adminNode, root } = await E(vatAdmin).createVat(bcap, vatOptions);
-      vatData.set(name, { adminNode, root });
+      if (Object.hasOwn(vatOptions, 'vatParameters') && vatParameters) {
+        Fail`Conflicting specification of vatParameters`;
+      }
+      const bundleCap = await E(vatAdmin).getNamedBundleCap(bundleCapName);
+      const { root, adminNode } = await E(vatAdmin).createVat(bundleCap, {
+        vatParameters: vatParameters || {},
+        ...vatOptions,
+      });
+      vatRecords.set(name, { root, adminNode, bundleCap });
       return root;
     },
 
-    upgradeVat: async ({ name, bundleCapName, vatParameters = {} }) => {
-      const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
-      const bcap = await E(vatAdmin).getNamedBundleCap(bundleCapName);
-      const options = { vatParameters };
-      const incarnationNumber = await E(vat.adminNode).upgrade(bcap, options);
-      vat.incarnationNumber = incarnationNumber;
-      return incarnationNumber;
-    },
-
     /**
-     * Derives a remotable from an object by mapping each object property into a method that returns the value.
-     *
-     * @param {string} label
-     * @param {Record<string, any>} returnValues
+     * @todo Reconcile with packages/vats/tools/bootstrap-chain-reflective.js
+     * @param {object} details
+     * @param {string} details.name name of the vat to upgrade
+     * @param {string} [details.bundleCapName] defaults to the current vat bundle
+     * @param {Record<string, unknown>} [details.vatParameters]
+     * @param {{ vatParameters?: object } & Record<string, unknown>} [vatOptions] for specifying more than vatParameters
+     * @returns {Promise<{ incarnationNumber: number }>} the resulting incarnation number
      */
-    makeRemotable: (label, returnValues) => {
-      const callLogs = [];
-      const makeGetterFunction = (value, name) => {
-        const getValue = (...args) => {
-          callLogs.push([name, ...args]);
-          return value;
-        };
-        return getValue;
-      };
-      // `objectMap` hardens its result, but...
-      const methods = objectMap(returnValues, makeGetterFunction);
-      // ... `Far` requires its methods argument not to be hardened.
-      const remotable = Far(label, { ...methods });
-      callLogsByRemotable.set(remotable, callLogs);
-      return remotable;
-    },
-
-    makePromiseKit: () => {
-      const { promise, ...resolverMethods } = makePromiseKit();
-      const resolver = Far('resolver', resolverMethods);
-      return harden({ promise, resolver });
-    },
-
-    /**
-     * Returns a copy of a remotable's logs.
-     *
-     * @param {object} remotable
-     */
-    getLogForRemotable: remotable => {
-      const logs =
-        callLogsByRemotable.get(remotable) ||
-        Fail`logs not found for ${q(remotable)}`;
-      // Return a copy so that the original remains mutable.
-      return harden([...logs]);
+    upgradeVat: async (
+      { name, bundleCapName = undefined, vatParameters = undefined },
+      vatOptions = {},
+    ) => {
+      if (Object.hasOwn(vatOptions, 'vatParameters') && vatParameters) {
+        Fail`Conflicting specification of vatParameters`;
+      }
+      const vatRecord =
+        /** @type {DynamicVatRecord} */ (vatRecords.get(name)) ||
+        Fail`unknown vat name: ${q(name)}`;
+      const bundleCap = await (bundleCapName
+        ? E(vatAdmin).getNamedBundleCap(bundleCapName)
+        : vatRecord.bundleCap);
+      const options = { vatParameters: vatParameters || {}, ...vatOptions };
+      const { incarnationNumber } = await E(vatRecord.adminNode).upgrade(
+        bundleCap,
+        options,
+      );
+      vatRecord.incarnationNumber = incarnationNumber;
+      return { incarnationNumber };
     },
 
     awaitVatObject: async (presence, path = []) => {

@@ -10,43 +10,46 @@
  *
  * @see type-guards.ts for the authoritative interface specification
  */
-import { type VstorageKit } from '@agoric/client-utils';
-import {
-  AmountMath,
-  type Amount,
-  type Brand,
-  type NatAmount,
-  type NatValue,
-} from '@agoric/ertp';
-import { NonNullish } from '@agoric/internal';
+import { AmountMath, type NatAmount } from '@agoric/ertp';
+import type { VstorageKit } from '@agoric/client-utils';
+import type { ChainInfo } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
+import {
+  getPermitWitnessTransferFromData,
+  type TokenPermissions,
+} from '@agoric/orchestration/src/utils/permit2.js';
+import type { VowTools } from '@agoric/vow';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
-import { Fail } from '@endo/errors';
-import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import type {
-  AxelarChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
 import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
-import type {
-  AssetPlaceRef,
-  MovementDesc,
-} from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
   makePositionPath,
   portfolioIdOfPath,
   type OfferArgsFor,
-  type PortfolioContinuingInvitationMaker,
-  type PortfolioInvitationMaker,
   type ProposalType,
+  type PortfolioPublishedPathTypes,
   type StatusFor,
   type PoolKey,
-  type TargetAllocation,
-  PoolPlaces,
+  type EVMContractAddressesMap,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
+import type {
+  PortfolioPublicInvitationMaker,
+  PortfolioContinuingInvitationMaker,
+  AxelarChain,
+} from '@agoric/portfolio-api';
+import {
+  getYmaxStandaloneOperationData,
+  getYmaxWitness,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { TimerService } from '@agoric/time';
+import type { ERemote } from '@agoric/internal';
+import { E } from '@endo/far';
+import type { TypedDataDefinition } from 'viem';
+import type { PrivateKeyAccount } from 'viem/accounts';
+import type { EVMWalletMessageHandler } from '../src/evm-wallet-handler.exo.ts';
 
 const { fromEntries } = Object;
 
@@ -54,7 +57,7 @@ assert.equal(ROOT_STORAGE_PATH, 'orchtest');
 const stripRoot = (path: string) => path.replace(/^orchtest\./, '');
 
 export const makePortfolioQuery = (
-  readPublished: VstorageKit['readPublished'],
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
   portfolioKey: `${string}.portfolios.portfolio${number}`,
 ) => {
   const self = harden({
@@ -88,7 +91,7 @@ export const makePortfolioQuery = (
  * @param wallet - WalletTool for executing offers (analogous to wallet connection in web UIs)
  * @param instance - Portfolio contract instance (obtained via chainStorageWatcher in web UIs)
  * @param readPublished - Function to read vstorage data (analogous to chainStorageWatcher)
- * @returns Trader object with methods for portfolio operations
+ * returns Trader object with methods for portfolio operations
  *
  * @example
  * // In a web client, similar patterns would use:
@@ -98,7 +101,7 @@ export const makePortfolioQuery = (
 export const makeTrader = (
   wallet: WalletTool,
   instance: Instance<typeof start>,
-  readPublished: VstorageKit['readPublished'] = () =>
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'] = () =>
     assert.fail('no vstorage access'),
 ) => {
   let nonce = 0;
@@ -120,14 +123,14 @@ export const makeTrader = (
      * This is the entry point to the portfolio management system.
      */
     async openPortfolio(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       give: ProposalType['openPortfolio']['give'],
       offerArgs: OfferArgsFor['openPortfolio'] = {},
     ) {
       if (portfolioPath !== undefined) throw Error('already opened');
       if (openId) throw Error('already opening');
 
-      const publicInvitationMaker: PortfolioInvitationMaker =
+      const publicInvitationMaker: PortfolioPublicInvitationMaker =
         'makeOpenPortfolioInvitation';
 
       const invitationSpec = {
@@ -135,7 +138,6 @@ export const makeTrader = (
         instance,
         publicInvitationMaker,
       };
-      t.log('I ask the portfolio manager to allocate', give);
       const proposal = { give: { Access, ...give } };
       openId = `openP-${(nonce += 1)}`;
       const doneP = wallet.executePublicOffer({
@@ -163,7 +165,7 @@ export const makeTrader = (
      * This enables ongoing portfolio management after initial creation.
      */
     async rebalance(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       proposal: ProposalType['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
@@ -183,6 +185,58 @@ export const makeTrader = (
         proposal,
         offerArgs,
       });
+    },
+    async simpleRebalance(
+      _t: ExecutionContext,
+      proposal: ProposalType['rebalance'],
+      offerArgs: OfferArgsFor['rebalance'],
+    ) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker =
+        'SimpleRebalance';
+      const id = `simpleRebalance-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      return wallet.executeContinuingOffer({
+        id,
+        invitationSpec,
+        proposal,
+        offerArgs,
+      });
+    },
+    async withdraw(_t: ExecutionContext, Cash: NatAmount) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker =
+        'Withdraw';
+      const id = `Withdraw-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      const proposal: ProposalType['withdraw'] = { give: {}, want: { Cash } };
+      return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
+    },
+    async deposit(_t: ExecutionContext, Deposit: NatAmount) {
+      if (!openId) throw Error('not open');
+      const invitationMakerName: PortfolioContinuingInvitationMaker = 'Deposit';
+      const id = `Deposit-${(nonce += 1)}`;
+      const invitationSpec: InvitationSpec = {
+        source: 'continuing' as const,
+        invitationMakerName,
+        previousOffer: openId,
+      };
+
+      const proposal: ProposalType['deposit'] = {
+        give: { Deposit },
+        want: {},
+      };
+      return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
     getPortfolioId: () => portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
     getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
@@ -208,174 +262,253 @@ export const makeTrader = (
         ),
       );
       return fromEntries(
-        positionStatuses.map(info => [info.protocol, info.netTransfers]),
+        positionStatuses.map(info => [
+          info.protocol,
+          AmountMath.subtract(info.totalIn, info.totalOut),
+        ]),
       );
     },
   });
   return self;
 };
 
-const { entries, values } = Object;
-const { add, make } = AmountMath;
-const amountSum = <A extends Amount>(amounts: A[]) =>
-  amounts.reduce((acc, v) => add(acc, v));
-
-export const makePortfolioSteps = <
-  G extends Partial<Record<YieldProtocol, NatAmount>>,
->(
-  goal: G,
-  opts: {
-    /** XXX assume same chain for Aave and Compound */
-    evm?: AxelarChain;
-    feeBrand?: Brand<'nat'>;
-    fees?: Record<keyof G, { Account: NatAmount; Call: NatAmount }>;
-    detail?: { usdnOut: NatValue };
-  } = {},
-) => {
-  values(goal).length > 0 || Fail`empty goal`;
-  const { USDN: _1, ...evmGoal } = goal;
-  const {
-    evm = 'Arbitrum',
-    feeBrand,
-    fees = objectMap(evmGoal, _ => ({
-      Account: make(NonNullish(feeBrand), 150n),
-      Call: make(NonNullish(feeBrand), 100n),
-    })),
-    detail = 'USDN' in goal
-      ? { usdnOut: ((goal.USDN?.value || 0n) * 99n) / 100n }
-      : undefined,
-  } = opts;
-  const steps: MovementDesc[] = [];
-
-  const Deposit = amountSum(values(goal));
-  const GmpFee =
-    values(fees).length > 0
-      ? amountSum(
-          values(fees)
-            .map(f => [f.Account, f.Call])
-            .flat(),
-        )
-      : undefined;
-  const give = { Deposit, ...(GmpFee ? { GmpFee } : {}) };
-  steps.push({ src: '<Deposit>', dest: '@agoric', amount: Deposit });
-  steps.push({ src: '@agoric', dest: '@noble', amount: Deposit });
-  for (const [p, amount] of entries(goal)) {
-    switch (p) {
-      case 'USDN':
-        steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
-        break;
-      case 'Aave':
-      case 'Compound':
-        // XXX optimize: combine noble->evm steps
-        steps.push({
-          src: '@noble',
-          dest: `@${evm}`,
-          amount,
-          fee: fees[p].Account,
-        });
-        steps.push({
-          src: `@${evm}`,
-          dest: `${p}_${evm}`,
-          amount,
-          fee: fees[p].Call,
-        });
-        break;
-      default:
-        throw Error('unreachable');
-    }
-  }
-
-  return harden({ give, steps });
+type EvmTraderConfig = {
+  evmWalletHandler: ERemote<EVMWalletMessageHandler>;
+  account: PrivateKeyAccount;
+  contractsByChain: EVMContractAddressesMap;
+  chainInfoByName: Record<AxelarChain, ChainInfo<'eip155'>>;
+  timerService: ERemote<TimerService>;
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
+  when: VowTools['when'];
+  useRouter?: boolean;
+  useVerifiedSigner?: boolean;
 };
 
-/**
- * Compute a breakdown of `deposit` into amounts
- * to send to positions so that the resulting position balances are as close
- * to targetAllocation as possible.
- */
-export const planDepositTransfers = (
-  deposit: NatAmount,
-  currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
-  targetAllocation: TargetAllocation,
-): Partial<Record<PoolKey, NatAmount>> => {
-  const { brand } = deposit;
-  const depositValue = deposit.value;
+export const makeEvmTrader = ({
+  evmWalletHandler,
+  account,
+  contractsByChain,
+  chainInfoByName,
+  timerService,
+  readPublished,
+  when,
+  useRouter = false,
+  useVerifiedSigner = false,
+}: EvmTraderConfig) => {
+  let nonce = 0n;
+  let portfolioPath: string | undefined;
+  let portfolioId: number | undefined;
 
-  // Calculate total current value across all positions
-  const totalCurrent = Object.values(currentBalances).reduce(
-    (sum, amount) => sum + (amount?.value || 0n),
-    0n,
-  );
+  const getDeadline = async () => {
+    const { absValue } = await E(timerService).getCurrentTimestamp();
+    return absValue + 3600n;
+  };
 
-  // Total value after deposit
-  const totalAfterDeposit = totalCurrent + depositValue;
+  const submitMessage = async (message: TypedDataDefinition) => {
+    // arbitrary signature for "verified signer" simulating what a smart account may use
+    const signature = await (useVerifiedSigner
+      ? '0x533487000ACC0047000516447083'
+      : account.signTypedData(message));
+    const verifiedSigner = useVerifiedSigner ? account.address : undefined;
+    const vow = await E(evmWalletHandler).handleMessage({
+      ...message,
+      signature,
+      verifiedSigner,
+    } as any);
+    await when(vow);
+  };
 
-  // Calculate target amounts for each position
-  const transfers: Partial<Record<PoolKey, NatAmount>> = {};
+  // FIXME: bare `evmWallets.*` paths are inconsistent with the `ymax0|ymax1`
+  // published root contract; switch to rooted paths.
+  const getWalletPortfolios = async () =>
+    readPublished(`evmWallets.${account.address}.portfolio`) as Promise<
+      StatusFor['evmWalletPortfolios']
+    >;
 
-  for (const [poolKey, targetPercent] of Object.entries(targetAllocation)) {
-    const currentAmount = currentBalances[poolKey as PoolKey]?.value || 0n;
-    const targetAmount = (totalAfterDeposit * BigInt(targetPercent)) / 100n;
-    const transferAmount = targetAmount - currentAmount;
+  // FIXME: bare `evmWallets.*` paths are inconsistent with the `ymax0|ymax1`
+  // published root contract; switch to rooted paths.
+  const getWalletStatus = async () =>
+    readPublished(`evmWallets.${account.address}`) as Promise<
+      StatusFor['evmWallet']
+    >;
 
-    if (transferAmount > 0n) {
-      transfers[poolKey as PoolKey] = make(brand, transferAmount);
+  const getMessageResult = async (
+    expectedNonce: bigint,
+    expectedDeadline: bigint,
+  ) => {
+    const status = await getWalletStatus();
+    status.updated === 'messageUpdate' ||
+      assert.fail(`unexpected wallet update: ${status.updated}`);
+    status.nonce === expectedNonce ||
+      assert.fail(`nonce mismatch: ${status.nonce} vs ${expectedNonce}`);
+    status.deadline === expectedDeadline ||
+      assert.fail(
+        `deadline mismatch: ${status.deadline} vs ${expectedDeadline}`,
+      );
+    if (status.status === 'error') {
+      assert.fail(`message failed: ${status.error}`);
+    } else if (status.status !== 'ok') {
+      assert.fail(`unexpected status: ${status.status}`);
     }
-  }
+    return status.result;
+  };
 
-  // Ensure we don't exceed the deposit amount
-  const totalTransfers = Object.values(transfers).reduce(
-    (sum, amount) => sum + (amount?.value || 0n),
-    0n,
-  );
+  const updatePortfolioPath = async (expectedId: number) => {
+    const paths = await getWalletPortfolios();
+    const expectedSuffix = `portfolio${expectedId}`;
+    const match = paths.find(path => path.endsWith(expectedSuffix));
+    match || assert.fail('portfolio path not found in wallet portfolios');
+    portfolioPath = match;
+    portfolioId = expectedId;
+    return portfolioPath;
+  };
 
-  if (totalTransfers > depositValue) {
-    // Scale down proportionally if we exceed the deposit
-    for (const [poolKey, amount] of Object.entries(transfers)) {
-      if (amount) {
-        transfers[poolKey as PoolKey] = make(
-          brand,
-          (amount.value * depositValue) / totalTransfers,
-        );
-      }
-    }
-  }
+  const getChainConfig = (chain: AxelarChain) => {
+    const chainInfo = chainInfoByName[chain];
+    chainInfo || assert.fail(`missing chainInfo for ${chain}`);
+    const contracts = contractsByChain[chain];
+    contracts || assert.fail(`missing contracts for ${chain}`);
+    return {
+      chainId: BigInt(chainInfo.reference),
+      usdcToken: contracts.usdc,
+      contractRepresentative: useRouter
+        ? contracts.remoteAccountRouter
+        : contracts.depositFactory,
+      permit2Address: contracts.permit2,
+    };
+  };
 
-  return transfers;
-};
+  const self = harden({
+    getAddress: () => account.address,
+    forChain: (chain: AxelarChain, verifyingContract?: `0x${string}`) => {
+      const { chainId, usdcToken, contractRepresentative, permit2Address } =
+        getChainConfig(chain);
+      const standaloneVerifyingContract =
+        verifyingContract ?? contractRepresentative;
+      assert(standaloneVerifyingContract, 'missing verifying contract');
+      return harden({
+        async openPortfolio(
+          allocations: TargetAllocation[],
+          depositAmount: bigint,
+        ) {
+          assert(contractRepresentative, 'missing contract representative');
+          const witness = getYmaxWitness('OpenPortfolio', { allocations });
+          const deadline = await getDeadline();
+          const permitMessage = getPermitWitnessTransferFromData(
+            {
+              permitted: {
+                token: usdcToken,
+                amount: depositAmount,
+              },
+              spender: contractRepresentative,
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            permit2Address,
+            chainId,
+            witness,
+          );
 
-export const planTransfer = (
-  dest: PoolKey,
-  amount: NatAmount,
-): MovementDesc[] => {
-  const { protocol: p, chainName: evm } = PoolPlaces[dest];
-  const steps: MovementDesc[] = [];
-
-  switch (p) {
-    case 'USDN':
-      const detail = { usdnOut: ((amount.value || 0n) * 99n) / 100n };
-      console.warn('TODO: client should query exchange rate');
-      steps.push({ src: '@noble', dest: 'USDNVault', amount, detail });
-      break;
-    case 'Aave':
-    case 'Compound':
-      // XXX optimize: combine noble->evm steps
-      steps.push({
-        src: '@noble',
-        dest: `@${evm}`,
-        amount,
-        // XXXfee: fees[p].Account,
+          const expectedNonce = nonce;
+          await submitMessage(permitMessage);
+          const result = (await getMessageResult(
+            expectedNonce,
+            deadline,
+          )) as string;
+          const parsedId = Number(result.replace(/^portfolio/, ''));
+          Number.isInteger(parsedId) ||
+            assert.fail('invalid portfolio id result');
+          const storagePath = await updatePortfolioPath(parsedId);
+          return harden({ storagePath, portfolioId: parsedId });
+        },
+        async deposit(depositAmount: bigint, spender = contractRepresentative) {
+          assert(spender, 'missing spender');
+          const currentPortfolioId = self.getPortfolioId();
+          const witness = getYmaxWitness('Deposit', {
+            portfolio: BigInt(currentPortfolioId),
+          });
+          const deadline = await getDeadline();
+          const permitMessage = getPermitWitnessTransferFromData(
+            {
+              permitted: {
+                token: usdcToken,
+                amount: depositAmount,
+              },
+              spender,
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            permit2Address,
+            chainId,
+            witness,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(permitMessage);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async withdraw(withdrawDetails: TokenPermissions) {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              withdraw: withdrawDetails,
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Withdraw',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async rebalance() {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Rebalance',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async setTargetAllocation(allocations: TargetAllocation[]) {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              allocations,
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'SetTargetAllocation',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
       });
-      console.warn('TODO: fees');
-      steps.push({
-        src: `@${evm}`,
-        dest: `${p}_${evm}`,
-        amount,
-        // TODO fee: fees[p].Call,
-      });
-      break;
-    default:
-      throw Error('unreachable');
-  }
-  return harden(steps);
+    },
+    getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
+    getPortfolioId: () =>
+      portfolioId ?? portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
+    getPortfolioStatus: () =>
+      readPublished(stripRoot(self.getPortfolioPath())) as Promise<
+        StatusFor['portfolio']
+      >,
+  });
+
+  return self;
 };

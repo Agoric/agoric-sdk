@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-nocheck XXX
 /* eslint no-labels: "off", no-extra-label: "off", no-underscore-dangle: "off" */
-import process from 'process';
+import process from 'node:process';
 import sqlite3 from 'better-sqlite3';
 import yargsParser from 'yargs-parser';
 import '@endo/init/debug.js';
@@ -9,6 +9,12 @@ import { makeStandinPromise, krefOf } from '@agoric/kmarshal';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M, matches, mustMatch } from '@endo/patterns';
+
+/**
+ * @import {Matcher} from '@endo/patterns';
+ * @import {Pattern} from '@endo/patterns';
+ * @import {Statement} from 'better-sqlite3';
+ */
 
 const EX_USAGE = 64;
 const {
@@ -69,8 +75,8 @@ const makeSyscallShape = type =>
   M.splitRecord({ type, vatID: M.string(), ksc_json: M.string() });
 /**
  * @param {PropertyKey} methodName
- * @param {unknown[] | import('@endo/patterns').Matcher} argsShape
- * @returns {import('@endo/patterns').Pattern}
+ * @param {unknown[] | Matcher} argsShape
+ * @returns {Pattern}
  */
 const makeMethargsShape = (methodName, argsShape = M.arrayOf(M.any())) =>
   harden([methodName, argsShape]);
@@ -157,7 +163,7 @@ const decodeResolveSyscall = syscall => {
  * In either case, it also returns a reverse-sorted `krefHistory` and a
  * forward-sorted `syscalls` list representing the trace.
  *
- * @param {import('better-sqlite3').Statement<[kpid: string]>} getSyscallsForKref
+ * @param {Statement<[kpid: string]>} getSyscallsForKref
  * @param {string} kref
  * @returns {SyscallTraceFailure | SyscallTraceSuccess}
  */
@@ -290,7 +296,7 @@ const methargsZoeSeatMethodShape = harden([
  * Searches for and decodes the syscall.send whose result corresponds with a provided kpid,
  * or explains failure to do so.
  *
- * @param {import('better-sqlite3').Statement<[kpid: string]>} getSyscallsForKref
+ * @param {Statement<[kpid: string]>} getSyscallsForKref
  * @param {string} kpid
  * @returns {{failure: string, kpidSyscalls: unknown[]} | ReturnType<decodeSendSyscall>}
  */

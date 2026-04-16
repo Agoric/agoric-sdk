@@ -7,6 +7,11 @@ import { TimeMath } from '@agoric/time';
 
 import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';
 
+/**
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {Timestamp} from '@agoric/time';
+ */
+
 const timerBrand = Far('fake timer brand', {
   isMyTimerService: () => true,
   isMyClock: () => true,

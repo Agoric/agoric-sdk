@@ -1,11 +1,20 @@
 /* eslint-env node */
 import { makeHelpers } from '@agoric/deploy-script-support';
 
+import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 import { getManifestForAddAssetToVault } from '@agoric/inter-protocol/src/proposals/addAssetToVault.js';
 import { getManifestForPsm } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {InterchainAssetOptions} from '@agoric/inter-protocol/src/proposals/addAssetToVault.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   {
@@ -15,7 +24,7 @@ export const defaultProposalBuilder = async (
   } = {},
   { env = process.env } = {},
 ) => {
-  /** @type {import('@agoric/inter-protocol/src/proposals/addAssetToVault.js').InterchainAssetOptions} */
+  /** @type {InterchainAssetOptions} */
   const {
     issuerBoardId = env.INTERCHAIN_ISSUER_BOARD_ID,
     denom = env.INTERCHAIN_DENOM,
@@ -32,6 +41,11 @@ export const defaultProposalBuilder = async (
   }
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
+  const scaledPriceAuthorityPath = await buildBundlePath(
+    import.meta.url,
+    '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
+    'scaledPriceAuthority',
+  );
 
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/addAssetToVault.js',
@@ -53,7 +67,7 @@ export const defaultProposalBuilder = async (
         scaledPriceAuthorityRef: publishRef(
           install(
             '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
-            '../bundles/bundle-scaledPriceAuthority.js',
+            scaledPriceAuthorityPath,
             { persist: true },
           ),
         ),
@@ -62,7 +76,7 @@ export const defaultProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const psmProposalBuilder = async (
   { publishRef, install: install0, wrapInstall },
   { anchorOptions = /** @type {object} */ ({}) } = {},
@@ -73,6 +87,10 @@ export const psmProposalBuilder = async (
   assert(denom, 'ANCHOR_DENOM is required');
 
   const install = wrapInstall ? wrapInstall(install0) : install0;
+  const psm = interProtocolBundleSpecs.psm;
+  const mintHolder = vatsSourceSpecRegistry.mintHolder;
+  const psmPath = await buildBundlePath(import.meta.url, psm);
+  const mintHolderPath = await buildBundlePath(import.meta.url, mintHolder);
 
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/startPSM.js',
@@ -85,17 +103,9 @@ export const psmProposalBuilder = async (
           decimalPlaces,
         },
         installKeys: {
-          psm: publishRef(
-            install(
-              '@agoric/inter-protocol/src/psm/psm.js',
-              '../bundles/bundle-psm.js',
-            ),
-          ),
+          psm: publishRef(install(psm.packagePath, psmPath)),
           mintHolder: publishRef(
-            install(
-              '@agoric/vats/src/mintHolder.js',
-              '../../vats/bundles/bundle-mintHolder.js',
-            ),
+            install(mintHolder.packagePath, mintHolderPath),
           ),
         },
       },
@@ -103,7 +113,7 @@ export const psmProposalBuilder = async (
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 

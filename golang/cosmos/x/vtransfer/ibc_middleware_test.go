@@ -10,12 +10,12 @@ import (
 	"testing"
 	"text/template"
 
+	"cosmossdk.io/log"
+	"cosmossdk.io/store"
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	dbm "github.com/cometbft/cometbft-db"
-	"github.com/cometbft/cometbft/libs/log"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/codec"
-	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/cosmos/cosmos-sdk/testutil/sims"
 	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/iancoleman/orderedmap"
@@ -26,16 +26,17 @@ import (
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	sdkmath "cosmossdk.io/math"
+	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
-	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v7/packetforward/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v7/modules/apps/transfer/types"
-	channeltypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
-	ibcexported "github.com/cosmos/ibc-go/v7/modules/core/exported"
-	ibctesting "github.com/cosmos/ibc-go/v7/testing"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v10/packetforward/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibctesting "github.com/cosmos/ibc-go/v10/testing"
 )
 
 const (
@@ -83,6 +84,7 @@ func (s *IntegrationTestSuite) cacheEndpoint(a, b int, endpoint *ibctesting.Endp
 	amap := s.endpoints[a]
 	if amap == nil {
 		amap = make(map[int]*ibctesting.Endpoint)
+		s.endpoints[a] = amap
 	}
 	amap[b] = endpoint
 }
@@ -106,7 +108,7 @@ func (s *IntegrationTestSuite) nextChannelOffset(instance int) int {
 	return offset
 }
 
-func SetupAgoricTestingApp(instance int) TestingAppMaker {
+func SetupAgoricTestingApp(t *testing.T, instance int) ibctesting.AppCreator {
 	return func() (ibctesting.TestingApp, map[string]json.RawMessage) {
 		db := dbm.NewMemDB()
 		mockController := func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
@@ -122,9 +124,9 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 			jsonReply = `true`
 			return jsonReply, nil
 		}
-		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.TestingLogger(), db, nil,
+		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.NewTestLogger(t), db, nil,
 			true, sims.EmptyAppOptions{}, interBlockCacheOpt())
-		genesisState := app.NewDefaultGenesisState()
+		genesisState := app.NewDefaultGenesisState(appd.AppCodec(), appd.BasicModuleManager)
 
 		t := template.Must(template.New("").Parse(`
 		{
@@ -146,7 +148,7 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 						"connections": [],
 						"next_connection_sequence": "{{.nextConnectionSequence}}",
 						"params": {
-								"max_expected_time_per_block": "30000000000"
+							"max_expected_time_per_block": "30000000000"
 						}
 				},
 				"channel_genesis": {
@@ -184,14 +186,14 @@ func (s *IntegrationTestSuite) SetupTest() {
 
 	chains := make(map[string]*ibctesting.TestChain)
 	for i := 0; i < 3; i++ {
-		ibctesting.DefaultTestingAppInit = SetupAgoricTestingApp(i)
+		ibctesting.DefaultTestingAppInit = SetupAgoricTestingApp(s.T(), i)
 
 		chainID := ibctesting.GetChainID(i)
 		chain := ibctesting.NewTestChain(s.T(), s.coordinator, chainID)
 
 		balance := banktypes.Balance{
 			Address: chain.SenderAccount.GetAddress().String(),
-			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100000000000000))),
+			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(100000000000000))),
 		}
 
 		// create application and override files in the IBC test chain
@@ -207,14 +209,10 @@ func (s *IntegrationTestSuite) SetupTest() {
 		)
 
 		chain.App = app
-		chain.QueryServer = app.GetIBCKeeper()
 		chain.TxConfig = app.GetTxConfig()
 		chain.Codec = app.AppCodec()
-		chain.CurrentHeader = tmproto.Header{
-			ChainID: chainID,
-			Height:  1,
-			Time:    s.coordinator.CurrentTime.UTC(),
-		}
+		chain.ProposedHeader.Height = 1
+		chain.ProposedHeader.Time = chain.Coordinator.CurrentTime.UTC()
 
 		s.coordinator.CommitBlock(chain)
 
@@ -250,13 +248,7 @@ func (s *IntegrationTestSuite) NewTransferPath(endpointAChainIdx, endpointBChain
 	endpointAChain := s.coordinator.GetChain(ibctesting.GetChainID(endpointAChainIdx))
 	endpointBChain := s.coordinator.GetChain(ibctesting.GetChainID(endpointBChainIdx))
 
-	chAOffset := s.nextChannelOffset(endpointAChainIdx)
-	chBOffset := s.nextChannelOffset(endpointBChainIdx)
 	path := ibctesting.NewPath(endpointAChain, endpointBChain)
-	_, _, channelASeq := computeSequences(endpointAChainIdx)
-	_, _, channelBSeq := computeSequences(endpointBChainIdx)
-	path.EndpointA.ChannelID = fmt.Sprintf("channel-%d", channelASeq+chAOffset)
-	path.EndpointB.ChannelID = fmt.Sprintf("channel-%d", channelBSeq+chBOffset)
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointA.ChannelConfig.Version = "ics20-1"
@@ -267,14 +259,17 @@ func (s *IntegrationTestSuite) NewTransferPath(endpointAChainIdx, endpointBChain
 		s.coordinator.SetupConnections(path)
 		s.cacheEndpoint(endpointAChainIdx, endpointBChainIdx, path.EndpointA)
 		s.cacheEndpoint(endpointBChainIdx, endpointAChainIdx, path.EndpointB)
-	} else {
-		path.EndpointA.ClientID = endpoint.ClientID
-		path.EndpointA.ConnectionID = endpoint.ConnectionID
-
-		path.EndpointB.ClientID = endpoint.Counterparty.ClientID
-		path.EndpointB.ConnectionID = endpoint.Counterparty.ConnectionID
+		s.coordinator.CreateTransferChannels(path)
+		endpoint = s.getEndpoint(endpointAChainIdx, endpointBChainIdx)
 	}
-	s.coordinator.CreateChannels(path)
+
+	path.EndpointA.ClientID = endpoint.ClientID
+	path.EndpointA.ConnectionID = endpoint.ConnectionID
+	path.EndpointA.ChannelID = endpoint.ChannelID
+
+	path.EndpointB.ClientID = endpoint.Counterparty.ClientID
+	path.EndpointB.ConnectionID = endpoint.Counterparty.ConnectionID
+	path.EndpointB.ChannelID = endpoint.Counterparty.ChannelID
 
 	s.coordinator.CommitBlock(endpointAChain, endpointBChain)
 
@@ -353,7 +348,7 @@ func (s *IntegrationTestSuite) TransferFromEndpoint(
 	src *ibctesting.Endpoint,
 	data ibctransfertypes.FungibleTokenPacketData,
 ) error {
-	tokenAmt, ok := sdk.NewIntFromString(data.Amount)
+	tokenAmt, ok := sdkmath.NewIntFromString(data.Amount)
 	s.Require().True(ok)
 
 	timeoutHeight := src.Counterparty.Chain.GetTimeoutHeight()
@@ -403,24 +398,20 @@ func (s *IntegrationTestSuite) overrideSendPacketData(cdc codec.Codec, data []by
 		return nil, err
 	}
 
-	if !bytes.Equal(data, bz) {
-		newBz, err := cdc.MarshalJSON(&newFtpd)
-		if err != nil {
-			return nil, err
-		}
-		return newBz, nil
+	if !bytes.Equal(bz, data) {
+		return bz, nil
 	}
 
-	return nil, fmt.Errorf("failed to find a way to permute packet data: %s", string(data))
+	return cdc.MarshalJSON(&newFtpd)
 }
 
 func (s *IntegrationTestSuite) mintToAddress(chain *ibctesting.TestChain, addr sdk.AccAddress, denom, amount string) {
 	app := s.GetApp(chain)
-	tokenAmt, ok := sdk.NewIntFromString(amount)
+	tokenAmt, ok := sdkmath.NewIntFromString(amount)
 	s.Require().True(ok)
 	intAmt, err := strconv.ParseInt(amount, 10, 64)
 	s.Require().NoError(err)
-	coins := sdk.NewCoins(sdk.NewCoin(denom, tokenAmt.Mul(sdk.NewInt(intAmt))))
+	coins := sdk.NewCoins(sdk.NewCoin(denom, tokenAmt.Mul(sdkmath.NewInt(intAmt))))
 	err = app.BankKeeper.MintCoins(chain.GetContext(), ibctransfertypes.ModuleName, coins)
 	s.Require().NoError(err)
 	err = app.BankKeeper.SendCoinsFromModuleToAccount(chain.GetContext(), ibctransfertypes.ModuleName, addr, coins)
@@ -462,7 +453,6 @@ func (s *IntegrationTestSuite) TestHops() {
 
 	for hops := 1; hops <= 2; hops += 1 {
 		for _, tc := range testCases {
-			tc := tc
 			name := fmt.Sprintf("%s_%dHop", tc.name, hops)
 			s.Run(name, func() {
 				_, _, baseSenderAddr := testdata.KeyTestPubAddr()
@@ -577,13 +567,13 @@ func (s *IntegrationTestSuite) TestHops() {
 				err = s.TransferFromEndpoint(sendContext, paths[0].EndpointA, transferData)
 				s.Require().NoError(err)
 
-				sendPacket, err := ParsePacketFromEvents(sendContext.EventManager().Events())
+				sendPacket, err := ParsePacketFromEvents(sendContext.EventManager().ABCIEvents())
 				s.Require().NoError(err)
 
 				s.coordinator.CommitBlock(s.chainA)
 
 				// Relay the packet through the intermediaries to the final destination.
-				var packetRes *sdk.Result
+				var packetRes *abci.ExecTxResult
 				var writeAcknowledgementHeight, writeAcknowledgementTime int64
 				for pathIdx := 0; pathIdx < hops; pathIdx += 1 {
 					nextPath := paths[pathIdx]
@@ -591,8 +581,8 @@ func (s *IntegrationTestSuite) TestHops() {
 					s.Require().NoError(err)
 					s.coordinator.CommitBlock(nextPath.EndpointB.Chain)
 
-					writeAcknowledgementHeight = nextPath.EndpointB.Chain.CurrentHeader.Height
-					writeAcknowledgementTime = nextPath.EndpointB.Chain.CurrentHeader.Time.Unix()
+					writeAcknowledgementHeight = nextPath.EndpointB.Chain.GetContext().BlockHeight()
+					writeAcknowledgementTime = nextPath.EndpointB.Chain.GetContext().BlockTime().Unix()
 
 					packetRes, err = nextPath.EndpointB.RecvPacketWithResult(sendPacket)
 					s.Require().NoError(err)
@@ -611,7 +601,8 @@ func (s *IntegrationTestSuite) TestHops() {
 					}
 
 					// The PFM should have received the packet and advertised a send toward the last path.
-					sendPacket, err = ParsePacketFromEvents(packetRes.GetEvents())
+
+					sendPacket, err = ParsePacketFromEvents(packetRes.Events)
 					s.Require().NoError(err)
 				}
 
@@ -621,10 +612,10 @@ func (s *IntegrationTestSuite) TestHops() {
 				expectedAck := channeltypes.NewResultAcknowledgement([]byte{1})
 
 				{
-					var events sdk.Events
+					var events []abci.Event
 					var ackData []byte
 					if packetRes != nil {
-						events = packetRes.GetEvents()
+						events = packetRes.Events
 						ackData, err = ParseAckFromEvents(events)
 					}
 					if tc.receiverIsTarget {
@@ -636,7 +627,7 @@ func (s *IntegrationTestSuite) TestHops() {
 						err = s.GetApp(s.chainB).VtransferKeeper.ReceiveWriteAcknowledgement(vmAckContext, sendPacket, expectedAck)
 						s.Require().NoError(err)
 
-						events = vmAckContext.EventManager().Events()
+						events = vmAckContext.EventManager().ABCIEvents()
 						ackData, err = ParseAckFromEvents(events)
 					}
 
@@ -685,10 +676,10 @@ func (s *IntegrationTestSuite) TestHops() {
 					ackRes, err := acknowledgePacketWithResult(priorPath.EndpointA, ackedPacket, ack.Acknowledgement())
 					s.Require().NoError(err)
 
-					ackedPacket, err = ParsePacketFromFilteredEvents(ackRes.GetEvents(), channeltypes.EventTypeWriteAck)
+					ackedPacket, err = ParsePacketFromFilteredEvents(ackRes.Events, channeltypes.EventTypeWriteAck)
 					s.Require().NoError(err)
 
-					ackData, err := ParseAckFromEvents(ackRes.GetEvents())
+					ackData, err := ParseAckFromEvents(ackRes.Events)
 					s.Require().NoError(err)
 					ack = vibctypes.NewRawAcknowledgement(ackData)
 
@@ -699,8 +690,8 @@ func (s *IntegrationTestSuite) TestHops() {
 				err = paths[0].EndpointA.UpdateClient()
 				s.Require().NoError(err)
 
-				acknowledgementHeight := s.chainA.CurrentHeader.Height
-				acknowledgementTime := s.chainA.CurrentHeader.Time.Unix()
+				acknowledgementHeight := s.chainA.GetContext().BlockHeight()
+				acknowledgementTime := s.chainA.GetContext().BlockTime().Unix()
 
 				// Prove the initial packet's acknowledgement.
 				ackRes, err := acknowledgePacketWithResult(paths[0].EndpointA, ackedPacket, ack.Acknowledgement())
@@ -712,24 +703,23 @@ func (s *IntegrationTestSuite) TestHops() {
 				// Verify the resulting events.
 				gotEvents := 0
 				expectedEvents := 2
-				for _, event := range ackRes.GetEvents() {
+				for _, event := range ackRes.Events {
 					if event.Type == ibctransfertypes.EventTypePacket {
 						gotEvents += 1
-						if gotEvents == 2 && len(event.Attributes) == 1 {
+						if gotEvents == 2 && len(event.Attributes) == 2 {
 							// We get a trailing event with a single "success" attribute.
 							s.Require().Equal(ibctransfertypes.AttributeKeyAckSuccess, string(event.Attributes[0].Key))
 							s.Require().Equal("\x01", string(event.Attributes[0].Value))
+							s.Require().Equal("msg_index", string(event.Attributes[1].Key))
+							s.Require().Equal("0", string(event.Attributes[1].Value))
 							continue
 						}
 						expectedAttrs := 6
 						gotAttrs := 0
 						for _, attr := range event.Attributes {
 							switch string(attr.Key) {
-							case "module":
-								s.Require().Equal(ibctransfertypes.ModuleName, string(attr.Value))
-								gotAttrs += 1
-							case ibctransfertypes.AttributeKeyAckSuccess:
-								s.Require().Equal("\x01", string(attr.Value))
+							case ibctransfertypes.AttributeKeyAck:
+								s.Require().Equal("result:\"\\001\" ", string(attr.Value))
 								gotAttrs += 1
 							case ibctransfertypes.AttributeKeyMemo:
 								s.Require().Equal(transferData.Memo, string(attr.Value))
@@ -737,7 +727,7 @@ func (s *IntegrationTestSuite) TestHops() {
 							case ibctransfertypes.AttributeKeyReceiver:
 								s.Require().Equal(transferData.Receiver, string(attr.Value))
 								gotAttrs += 1
-							case "sender": // ibctransfertypes.AttributeKeySender:
+							case ibctransfertypes.AttributeKeySender:
 								s.Require().Equal(transferData.Sender, string(attr.Value))
 								gotAttrs += 1
 							case ibctransfertypes.AttributeKeyDenom:
@@ -770,6 +760,7 @@ func (s *IntegrationTestSuite) TestHops() {
 									BlockTime:   acknowledgementTime,
 								},
 								Event:           "acknowledgementPacket",
+								ChannelVersion:	 paths[0].EndpointA.ChannelConfig.Version,
 								Target:          baseSender,
 								Packet:          types.CopyToIBCPacket(expectedPacket),
 								Acknowledgement: ack.Acknowledgement(),
@@ -793,7 +784,7 @@ func (s *IntegrationTestSuite) TestHops() {
 				res, err := s.GetApp(s.chainB).BankKeeper.AllBalances(s.chainB.GetContext(), req)
 				s.Require().NoError(err)
 
-				amt, ok := sdk.NewIntFromString(transferData.Amount)
+				amt, ok := sdkmath.NewIntFromString(transferData.Amount)
 				s.Require().True(ok)
 
 				// Decode the denom trace to get the denom hash.
@@ -805,7 +796,7 @@ func (s *IntegrationTestSuite) TestHops() {
 				receivedDenom := `ibc/` + hashRes.Hash
 
 				coins := sdk.NewCoins(sdk.NewCoin(receivedDenom, amt))
-				s.Require().True(coins.IsEqual(res.Balances))
+				s.Require().True(coins.Equal(res.Balances))
 			})
 		}
 	}

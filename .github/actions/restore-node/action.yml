@@ -30,10 +30,6 @@ outputs:
 runs:
   using: composite
   steps:
-    - name: set default environment variables
-      shell: bash
-      run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
-
     - id: set-node-version
       name: Set correct node version
       shell: bash
@@ -58,7 +54,6 @@ runs:
     - uses: actions/checkout@v4
       with:
         clean: false
-        submodules: 'true'
         persist-credentials: false
         path: ${{ inputs.path }}
 
@@ -144,7 +139,7 @@ runs:
     - shell: bash
       run: |
         set -ex
-        corepack enable
+        "${{ inputs.path }}/scripts/ensure-corepack-yarn.sh" "${{ inputs.path }}"
         mkdir -p "$(yarn config get cacheFolder)"
 
     - uses: actions/setup-node@v4
@@ -221,9 +216,9 @@ runs:
       uses: pyTooling/Actions/with-post-step@v1.0.7
       with:
         main: |
-          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
+          bash -x "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
         post: |
-          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
+          bash -x "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
       env:
         SRC: ${{ inputs.path }}
         IGNORE_DIRTY_YARN_LOCK: ${{ steps.endo-branch.outputs.result != 'NOPE' }}

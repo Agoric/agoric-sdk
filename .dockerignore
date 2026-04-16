@@ -13,9 +13,14 @@ packages/stat-logger
 **/deployment.json
 **/vars.tf
 **/*.log
+
+# Ignore build artifacts
 **/dist
 **/build
 **/bundles
+# copying these without the dist dir misinforms the `tsc` builder
+**/*.tsbuildinfo
+
 **/__pycache__
 **/*.egg-info
 **/swingset-kernel-state
@@ -36,3 +41,7 @@ packages/xsnap/build.config.env
 # `@@AGORIC_DOCKER_SUBMODULES@@`
 packages/xsnap/moddable
 packages/xsnap/xsnap-native
+
+# XXX override for ymax-planner build which needs `dist`
+# The /services hierarchy should not be included in agoric-sdk builds anyway
+!**/ymax-planner/dist

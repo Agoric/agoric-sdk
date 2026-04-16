@@ -12,6 +12,10 @@ import { Far } from '@endo/marshal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeParamManagerBuilder, ParamTypes } from '../../src/index.js';
 
+/**
+ * @import {Installation} from '@agoric/zoe';
+ */
+
 test('two parameters', t => {
   const drachmaKit = makeIssuerKit('drachma');
 

@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryProposalRequest,
@@ -19,7 +19,7 @@ import {
   QueryDepositsResponse,
   QueryTallyResultRequest,
   QueryTallyResultResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/gov/v1beta1/query.js';
 /** Query defines the gRPC querier service for gov module */
 export interface Query {
   /** Proposal queries proposal details based on ProposalID. */
@@ -32,7 +32,7 @@ export interface Query {
   votes(request: QueryVotesRequest): Promise<QueryVotesResponse>;
   /** Params queries all parameters of the gov module. */
   params(request: QueryParamsRequest): Promise<QueryParamsResponse>;
-  /** Deposit queries single deposit information based proposalID, depositAddr. */
+  /** Deposit queries single deposit information based on proposalID, depositor address. */
   deposit(request: QueryDepositRequest): Promise<QueryDepositResponse>;
   /** Deposits queries all deposits of a single proposal. */
   deposits(request: QueryDepositsRequest): Promise<QueryDepositsResponse>;

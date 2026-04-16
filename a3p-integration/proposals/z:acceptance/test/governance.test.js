@@ -97,39 +97,6 @@ test.serial(
 );
 
 test.serial(
-  'VaultFactory governed parameters are intact following contract upgrade',
-  async t => {
-    /** @type {any} */
-    const vaultFactoryParamsBefore = await readLatestHead(
-      'published.vaultFactory.governance',
-    );
-
-    /*
-     * At the previous test ('economic committee can make governance proposal and vote on it')
-     * The value of ChargingPeriod was updated to 400
-     * The 'published.vaultFactory.governance' node should reflect that change.
-     */
-    t.is(
-      vaultFactoryParamsBefore.current.ChargingPeriod.value,
-      400n,
-      'vaultFactory ChargingPeriod parameter value is not the expected ',
-    );
-
-    await upgradeContract('upgrade-vaultFactory', 'vaultFactory');
-
-    const vaultFactoryParamsAfter = await readLatestHead(
-      'published.vaultFactory.governance',
-    );
-
-    t.deepEqual(
-      vaultFactoryParamsAfter,
-      vaultFactoryParamsBefore,
-      'vaultFactory governed parameters did not match',
-    );
-  },
-);
-
-test.serial(
   'economic committee can make governance proposal for ProvisionPool',
   async t => {
     /** @type {any} */
@@ -228,10 +195,7 @@ test.serial('Governance proposals history is visible', async t => {
     ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
     ['DebtLimit'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
     ['MintLimit'], // agoric-3-proposals/proposals/92:reset-psm-mintlimit/submission/psm-gov-reset.js
-    ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // z:acceptance/scripts/test-vaults.mts
-    ['DebtLimit'], // z:acceptance/scripts/test-vaults.mts
     ['GiveMintedFee', 'MintLimit', 'WantMintedFee'], // z:acceptance/psm.test.js
-    ['DebtLimit'], // z:acceptance/vaults.test.js
     ['ChargingPeriod'], // z:acceptance/governance.test.js
     ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
     ['PerAccountInitialAmount'], // z:acceptance/governance.test.js

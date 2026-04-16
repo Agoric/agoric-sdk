@@ -16,13 +16,13 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:types": "yarn run -T tsc",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "keywords": [],
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@aglocal/boot": "^0.1.0",
+    "@aglocal/boot": "workspace:*",
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",
@@ -36,8 +36,9 @@
     "src/",
     "scripts/",
     "tools/",
-    "*.json",
-    "globals.d.ts",
-    "exported.js"
-  ]
+    "*.json"
+  ],
+  "engines": {
+    "node": "^20.9 || ^22.11"
+  }
 }

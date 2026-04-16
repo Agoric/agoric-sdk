@@ -1,13 +1,21 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { CodecHelper } from '@agoric/cosmic-proto';
 import {
-  MsgWithdrawDelegatorReward,
-  MsgWithdrawDelegatorRewardResponse,
+  MsgWithdrawDelegatorReward as MsgWithdrawDelegatorRewardType,
+  MsgWithdrawDelegatorRewardResponse as MsgWithdrawDelegatorRewardResponseType,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
-import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { MsgDelegateResponse as MsgDelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
+
+const Any = CodecHelper(AnyType);
+const MsgWithdrawDelegatorReward = CodecHelper(MsgWithdrawDelegatorRewardType);
+const MsgWithdrawDelegatorRewardResponse = CodecHelper(
+  MsgWithdrawDelegatorRewardResponseType,
+);
+const MsgDelegateResponse = CodecHelper(MsgDelegateResponseType);
 
 const test = anyTest;
 
@@ -61,16 +69,13 @@ test('tryDecodeResponse from withdraw', t => {
   const ackStr =
     'ElIKPy9jb3Ntb3MuZGlzdHJpYnV0aW9uLnYxYmV0YTEuTXNnV2l0aGR' +
     'yYXdEZWxlZ2F0b3JSZXdhcmRSZXNwb25zZRIPCg0KBnVzdGFrZRIDMjAw';
-  const msg = tryDecodeResponse(
-    ackStr,
-    MsgWithdrawDelegatorRewardResponse.fromProtoMsg,
-  );
+  const msg = tryDecodeResponse(ackStr, MsgWithdrawDelegatorRewardResponse);
   t.deepEqual(msg, { amount: [{ amount: '200', denom: 'ustake' }] });
 });
 
 test('MsgWithdrawDelegatorRewardResponse encoding', t => {
   const { delegations } = scenario1;
-  const response: MsgWithdrawDelegatorRewardResponse = {
+  const response: MsgWithdrawDelegatorRewardResponseType = {
     amount: Object.values(delegations),
   };
   const protoMsg = MsgWithdrawDelegatorRewardResponse.toProtoMsg(response);

@@ -1,7 +1,3 @@
-import binaryVoteCounterBundle from '@agoric/governance/bundles/bundle-binaryVoteCounter.js';
-import committeeBundle from '@agoric/governance/bundles/bundle-committee.js';
-import contractGovernorBundle from '@agoric/governance/bundles/bundle-contractGovernor.js';
-import puppetContractGovernorBundle from '@agoric/governance/bundles/bundle-puppetContractGovernor.js';
 import { makeTracer } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -17,10 +13,29 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+
+const bundleCache = await unsafeSharedBundleCache;
+const {
+  binaryVoteCounterBundle,
+  committeeBundle,
+  contractGovernorBundle,
+  puppetContractGovernorBundle,
+} = await bundleCache.loadRegistry(governanceSourceSpecRegistry);
 
 /**
- * @import {SourceBundle} from '@agoric/zoe';
+ * @import {FeeMintAccess, SourceBundle, ZoeService} from '@agoric/zoe';
  * @import {EconomyBootstrapPowers as Space} from '../src/proposals/econ-behaviors.js'
+ * @import {TimerService} from '@agoric/time';
+ * @import {StoredSubscriber, StoredSubscription, Subscriber, Subscription} from '@agoric/notifier';
+ * @import {start} from '@agoric/vats/src/centralSupply.js';
+ * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
+ * @import {ExecutionContext} from 'ava';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 export { makeMockChainStorageRoot };
@@ -29,17 +44,12 @@ export { makeMockChainStorageRoot };
 export const DENOM_UNIT = 1_000_000n;
 
 /**
- * @param {any} t
+ * @param {ExecutionContext} _t
  * @param {string} sourceRoot
  * @param {string} bundleName
  * @returns {Promise<SourceBundle>}
  */
-export const provideBundle = (t, sourceRoot, bundleName) => {
-  assert(
-    t.context && t.context.bundleCache,
-    'must set t.context.bundleCache in test.before()',
-  );
-  const { bundleCache } = t.context;
+export const provideBundle = (_t, sourceRoot, bundleName) => {
   return bundleCache.load(sourceRoot, bundleName);
 };
 harden(provideBundle);
@@ -57,8 +67,8 @@ export const setUpZoeForTest = async (setJig = () => {}) =>
 harden(setUpZoeForTest);
 
 /**
- * @param {any} t
- * @param {import('@agoric/time').TimerService} [optTimer]
+ * @param {ExecutionContext<any>} t
+ * @param {TimerService} [optTimer]
  */
 export const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
@@ -112,9 +122,7 @@ export const installPuppetGovernance = (zoe, produce) => {
 /**
  * @param {bigint} value
  * @param {{
- *   centralSupply: ERef<
- *     Installation<import('@agoric/vats/src/centralSupply.js').start>
- *   >;
+ *   centralSupply: ERef<Installation<typeof start>>;
  *   feeMintAccess: ERef<FeeMintAccess>;
  *   zoe: ERef<ZoeService>;
  * }} powers
@@ -139,7 +147,7 @@ export const mintRunPayment = async (
  * @param {Space} space
  * @param {Record<
  *   keyof Space['installation']['produce'],
- *   Promise<Installation>
+ *   Promise<Installation<any>>
  * >} installations
  */
 export const produceInstallations = (space, installations) => {
@@ -168,7 +176,7 @@ export const subscriptionKey = subscription => {
 
 /**
  * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
+ *   getPublicTopics: () => TopicsRecord;
  * }>} hasTopics
  * @param {string} subscriberName
  */
@@ -201,9 +209,9 @@ export const headValueLegacy = async subscription => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
+ *   getPublicTopics: () => TopicsRecord;
  * }>} hasTopics
  * @param {string} topicName
  * @param {string} path
@@ -237,13 +245,8 @@ export const assertTopicPathData = async (
  * If this proves to be a problem we can add an option to this or a related
  * utility to reset state from RPC.
  *
- * @param {ERef<
- *   Subscriber<
- *     import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord
- *   >
- * >} currents
- * @returns {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord[]}
- *   array that grows as the subscription feeds
+ * @param {ERef<Subscriber<CurrentWalletRecord>>} currents
+ * @returns {CurrentWalletRecord[]} array that grows as the subscription feeds
  */
 export const sequenceCurrents = currents => {
   const sequence = [];

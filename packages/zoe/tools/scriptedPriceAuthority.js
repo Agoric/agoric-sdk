@@ -10,9 +10,27 @@ import {
 } from '../src/contractSupport/index.js';
 
 /**
- * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Notifier} from '@agoric/notifier';
+ * @import {TimerService, RelativeTime} from '@agoric/time';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery} from '@agoric/zoe/tools/types.js';
+ * @import {Timestamp} from '@agoric/time';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
+/**
+ *
+ * @param {object} options
+ * @param {Brand<'nat'>}  options.actualBrandIn
+ * @param {Brand<'nat'>}  options.actualBrandOut
+ * @param {bigint[]}  options.priceList
+ * @param {TimerService}  options.timer
+ * @param {Amount<'nat'>}  [options.unitAmountIn]
+ * @param {RelativeTime}  options.quoteInterval
+ * @param {IssuerKit<'set', PriceDescription>}  [options.quoteIssuerKit]
+ */
 export function makeScriptedPriceAuthority(options) {
   const {
     actualBrandIn,
@@ -69,7 +87,7 @@ export function makeScriptedPriceAuthority(options) {
       );
   }
 
-  /** @type {ERef<Notifier<import('@agoric/time').Timestamp>>} */
+  /** @type {ERef<Notifier<Timestamp>>} */
   const notifier = E(timer).makeNotifier(0n, quoteInterval);
   const priceAuthorityOptions = harden({
     timer,
@@ -89,6 +107,7 @@ export function makeScriptedPriceAuthority(options) {
     updateState: t => {
       t = TimeMath.absValue(t);
       currentPrice =
+        // @ts-expect-error XXX: this does not support quoteInterval being a RelativeTimeRecord
         priceList[Number(Number(t / quoteInterval) % priceList.length)];
 
       void fireTriggers(createQuote);

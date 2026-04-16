@@ -56,8 +56,8 @@ submit-proposal: $(EVALS) $(DESCRIPTION)
 	  --yes --from=$(KEY) -b sync
 
 gov-q:
-	agd $(CHAIN_OPTS) query gov proposals --output json | \
+	agd query gov proposals --output json | \
 		jq -c '.proposals[] | [if .proposal_id == null then .id else .proposal_id end,.voting_end_time,.status]';
 
 bank-q:
-	agd $(CHAIN_OPTS) query bank balances $(ADDR)
+	agd query bank balances $(ADDR)

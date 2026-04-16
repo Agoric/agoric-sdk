@@ -13,6 +13,7 @@ on:
 env:
   REGISTRY: ghcr.io
   DOCKER_PLATFORMS: linux/amd64,linux/arm64/v8
+  GCE_ZONE: us-central1-a
 
 jobs:
   snapshot:
@@ -67,9 +68,6 @@ jobs:
         run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
       - name: Save GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Save commit hash, url of submodules to environment
-        run: |
-          node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
       - name: Build and Push ssh-node
         uses: depot/build-push-action@v1
         with:
@@ -129,14 +127,8 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           tags: '${{ steps.prefix-tags.outputs.tags }}'
-          # When changing/adding entries here, make sure to search the whole
-          # project for `@@AGORIC_DOCKER_SUBMODULES@@`
           build-args: |
             GIT_COMMIT=${{env.GIT_COMMIT}}
-            MODDABLE_COMMIT_HASH=${{env.MODDABLE_COMMIT_HASH}}
-            MODDABLE_URL=${{env.MODDABLE_URL}}
-            XSNAP_NATIVE_COMMIT_HASH=${{env.XSNAP_NATIVE_COMMIT_HASH}}
-            XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
             GIT_REVISION=${{env.GIT_REVISION}}
       - name: Build and Push setup
         uses: depot/build-push-action@v1
@@ -200,6 +192,110 @@ jobs:
           tags: '${{ steps.prefix-tags.outputs.tags }}'
           build-args: |
             TAG=${{env.SDK_TAG}}
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+
+  docker-ymax:
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    permissions:
+      # allow issuing OIDC tokens for this workflow run
+      id-token: write
+      # allow at least reading the repo contents, add other permissions if necessary
+      contents: read
+      # to push the resulting images
+      packages: write
+    needs: snapshot
+    runs-on: 'depot-ubuntu-latest'
+    outputs:
+      tag: '${{ steps.docker-tags.outputs.tags }}'
+      tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true # to set DEPOT_TOKEN for later steps
+      - run: depot configure-docker
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        # see https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+        with:
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ${{ env.REGISTRY }}
+      - name: Save BUILD_TAG
+        run: |
+          echo "BUILD_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
+      - name: Build and Push ymax-planner
+        uses: depot/build-push-action@v1
+        id: build
+        with:
+          file: services/ymax-planner/Dockerfile
+          context: ./
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/agoric/agoric-sdk:ymax-planner
+            ${{ env.REGISTRY }}/agoric/agoric-sdk:${{ env.BUILD_TAG }}
+      - name: notify on failure
+        if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
+          to: ${{ secrets.NOTIFY_EMAIL_TO }}
+          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+
+  # it only actually deploys if there is a change in the Docker digest
+  deploy-ymax0-planner:
+    needs: docker-ymax
+    if: needs.docker-ymax.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Auth to Google Cloud (SA key)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Write .env file from JSON
+        shell: bash
+        run: |
+          jq -r 'to_entries[] | "\(.key)=\(.value)"' \
+            <<< '${{ secrets.YMAX0_PLANNER_ENV }}' > .env.gcp
+
+      - name: Check if VM already has docker image digest
+        id: decide
+        shell: bash
+        env:
+          # ymax0-planner vm: https://console.cloud.google.com/compute/instancesDetail/zones/us-central1-a/instances/ymax-planner-template-20250903-125004?inv=1&invt=Ab56Cw&project=simulationlab
+          GCE_INSTANCE: ymax-planner-template-20250903-125004
+          GCE_ZONE: ${{ env.GCE_ZONE }}
+        run: |
+          TARGET="ghcr.io/agoric/agoric-sdk:ymax-planner@${{ needs.docker-ymax.outputs.digest }}"
+          .github/scripts/check_digest.sh "$GCE_INSTANCE" "$GCE_ZONE" "$TARGET"
+
+      - name: Update GCE Ymax0 container (by digest)
+        if: steps.decide.outputs.should_deploy == 'true'
+        shell: bash
+        env:
+          GCE_INSTANCE: ymax-planner-template-20250903-125004
+          GCE_ZONE: ${{ env.GCE_ZONE }}
+        run: |
+          IMAGE="ghcr.io/agoric/agoric-sdk:ymax-planner@${{ needs.docker-ymax.outputs.digest }}"
+          .github/scripts/deploy_vm.sh "$GCE_INSTANCE" "$GCE_ZONE" "$IMAGE" "./.env.gcp"
+
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status

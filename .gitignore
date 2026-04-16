@@ -11,6 +11,10 @@ lib-cov
 coverage
 coverage.txt
 
+# Codecov services
+/codecov
+/codecov.*
+
 # Profiling output
 *.heapsnapshot
 
@@ -62,10 +66,10 @@ _agstate
 .next
 build
 bundles
-bundle-*.js
 compiled
 dist
 api-docs
+*.tsbuildinfo
 
 # misc
 /.vagrant
@@ -86,4 +90,3 @@ endo-sha.txt
 .aider*
 !.aiderignore
 .claude
-

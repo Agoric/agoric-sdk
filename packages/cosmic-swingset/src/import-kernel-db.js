@@ -1,16 +1,15 @@
 #! /usr/bin/env node
 // @ts-check
-// @jessie-check
 
 // This file functions as both an importable module and a standalone script.
 import './helpers/maybe-unsafe-lockdown.js';
 
-import os from 'os';
-import process from 'process';
-import { Transform } from 'stream';
-import fsPower from 'fs';
-import fsPromisesPower from 'fs/promises';
-import pathPower from 'path';
+import os from 'node:os';
+import process from 'node:process';
+import { Transform } from 'node:stream';
+import fsPower from 'node:fs';
+import fsPromisesPower from 'node:fs/promises';
+import pathPower from 'node:path';
 
 import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
@@ -25,12 +24,20 @@ import {
 } from './export-kernel-db.js';
 
 /**
+ * @import {SwingStoreExportDataMode} from './export-kernel-db.js';
+ * @import {SwingStoreArtifactMode} from './export-kernel-db.js';
+ * @import {StateSyncManifest} from './export-kernel-db.js';
+ * @import {ImportSwingStoreOptions} from '@agoric/swing-store';
+ * @import {SwingStoreExporter} from '@agoric/swing-store';
+ */
+
+/**
  * @typedef {object} StateSyncImporterOptions
  * @property {string} stateDir the directory containing the SwingStore to export
  * @property {string} exportDir the directory where to place the exported artifacts and manifest
  * @property {number} [blockHeight] block height to check for
- * @property {import('./export-kernel-db.js').SwingStoreExportDataMode} [exportDataMode] how to handle export data
- * @property {import('./export-kernel-db.js').SwingStoreArtifactMode} [artifactMode] the level of historical artifacts to import
+ * @property {SwingStoreExportDataMode} [exportDataMode] how to handle export data
+ * @property {SwingStoreArtifactMode} [artifactMode] the level of historical artifacts to import
  */
 
 /**
@@ -54,8 +61,8 @@ export const validateImporterOptions = options => {
 
 /**
  * @param {Pick<StateSyncImporterOptions, 'artifactMode' | 'exportDataMode' >} options
- * @param {Readonly<import('./export-kernel-db.js').StateSyncManifest>} manifest
- * @returns {import('@agoric/swing-store').ImportSwingStoreOptions}
+ * @param {Readonly<StateSyncManifest>} manifest
+ * @returns {ImportSwingStoreOptions}
  */
 const checkAndGetImportSwingStoreOptions = (options, manifest) => {
   typeof manifest.blockHeight === 'number' ||
@@ -74,10 +81,10 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
 
   switch (artifactMode) {
     case 'debug':
-    // eslint-disable-next-line no-fallthrough
+    // @ts-expect-error intentional fallthrough for mode hierarchy
     case 'operational':
       if (manifest.artifactMode === 'operational') break;
-    // eslint-disable-next-line no-fallthrough
+    // @ts-expect-error intentional fallthrough for mode hierarchy
     case 'replay':
       if (manifest.artifactMode === 'replay') break;
     // eslint-disable-next-line no-fallthrough
@@ -130,7 +137,7 @@ export const performStateSyncImport = async (
   };
 
   const manifestPath = safeExportFileResolve(ExportManifestFileName);
-  /** @type {Readonly<import('./export-kernel-db.js').StateSyncManifest>} */
+  /** @type {Readonly<StateSyncManifest>} */
   const manifest = await readFile(manifestPath, { encoding: 'utf-8' }).then(
     data => JSON.parse(data),
   );
@@ -144,7 +151,7 @@ export const performStateSyncImport = async (
   const artifacts = harden(Object.fromEntries(manifest.artifacts || []));
 
   // Represent the data in `exportDir` as a SwingSetExporter object.
-  /** @type {import('@agoric/swing-store').SwingStoreExporter} */
+  /** @type {SwingStoreExporter} */
   const exporter = harden({
     getHostKV(_key) {
       return undefined;
@@ -160,7 +167,7 @@ export const performStateSyncImport = async (
         .pipe(
           new Transform({
             objectMode: true,
-            transform(data, encoding, callback) {
+            transform(data, _encoding, callback) {
               try {
                 callback(null, JSON.parse(data));
               } catch (error) {
@@ -260,10 +267,9 @@ export const main = async (
     /** @type {string} */ (processValue.getFlag('export-dir', '.')),
   );
 
-  const artifactMode =
-    /** @type {import('./export-kernel-db.js').SwingStoreArtifactMode | undefined} */ (
-      processValue.getFlag('artifact-mode')
-    );
+  const artifactMode = /** @type {SwingStoreArtifactMode | undefined} */ (
+    processValue.getFlag('artifact-mode')
+  );
   checkArtifactMode(artifactMode);
 
   const exportDataMode = processValue.getFlag('export-data-mode');

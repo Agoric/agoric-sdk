@@ -5,6 +5,7 @@ import { RelativeTimeRecordShape, TimestampRecordShape } from './typeGuards.js';
 
 /**
  * @import {RelativeTime, RelativeTimeValue, TimerBrand, TimeMathType, Timestamp, TimestampRecord, TimestampValue} from './types.js';
+ * @import {RankComparison} from '@endo/marshal';
  */
 
 /**
@@ -194,7 +195,7 @@ const modRelRel = (rel, step) =>
  * @param {Timestamp | RelativeTime} right
  * @param {bigint} v1
  * @param {bigint} v2
- * @returns {import('@endo/marshal').RankComparison}
+ * @returns {RankComparison}
  */
 const compareValues = (left, right, v1, v2) => {
   sharedTimerBrand(left, right);

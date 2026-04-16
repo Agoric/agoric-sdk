@@ -3,6 +3,15 @@ export {};
 
 /**
  * @import {NameHub} from '@agoric/vats';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {BundleSource} from '@endo/bundle-source';
+ * @import {writeFile as WriteFile} from 'node:fs/promises';
+ * @import {ERef} from '@agoric/vow';
+ * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
+ * @import {CoreEvalMaterialRecord} from './writeCoreEvalParts.js';
+ * @import {Bank} from '@agoric/vats/src/vat-bank.js';
+ * @import {Board} from '@agoric/vats';
+ * @import {NameAdmin} from '@agoric/vats';
  */
 
 // TODO move this type somewhere better
@@ -54,30 +63,33 @@ export {};
 
 /**
  * @typedef {{
- *  bundleSource: typeof import('@endo/bundle-source').default,
+ *  bundleSource: BundleSource,
  *  cacheDir: string,
  *  lookup: (...path: string[]) => unknown,
+ *  log?: typeof console.log,
  *  now: () => number,
+ *  onWriteCoreEval?: (record: CoreEvalMaterialRecord) => void | Promise<void>,
  *  pathResolve: (...path: string[]) => string,
  *  publishBundle: PublishBundleRef,
  *  scriptArgs?: string[],
+ *  writeFile?: WriteFile,
  * }} DeployScriptEndownments
  */
 
 /**
  * @typedef {{
- *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>,
+ *   scratch: ERef<ScratchPad>,
  * }} CommonHome
  */
 
-// TODO wallet as import('@agoric/wallet-backend/src/types').WalletAdmin once it's a module
+// TODO wallet as import('@agoric/wallet-backend/src/types.js').WalletAdmin once it's a module
 /**
  * @typedef {CommonHome & {
  * agoricNames: ERef<NameHub>,
- * bank: ERef<import("@agoric/vats/src/vat-bank.js").Bank>,
- * board: ERef<import("@agoric/vats").Board>,
+ * bank: ERef<Bank>,
+ * board: ERef<Board>,
  * faucet: unknown,
- * myAddressNameAdmin: ERef<import("@agoric/vats").NameAdmin>,
+ * myAddressNameAdmin: ERef<NameAdmin>,
  * namesByAddress: ERef<NameHub>,
  * wallet: any,
  * zoe: ERef<ZoeService>,

@@ -1,67 +1,88 @@
-import { makeReceiveUpCallPayload } from '@aglocal/boot/tools/axelar-supports.ts';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type { VstorageKit } from '@agoric/client-utils';
 import { makeIssuerKit } from '@agoric/ertp';
+import type { Brand, NatAmount } from '@agoric/ertp';
+import {
+  defaultMarshaller,
+  defaultSerializer,
+  type FakeStorageKit,
+} from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
   withChainCapabilities,
+  type BaseChainInfo,
   type ChainInfo,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { setupOrchestrationTest } from '@agoric/orchestration/tools/contract-tests.ts';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.ts';
+import {
+  ROOT_STORAGE_PATH,
+  setupOrchestrationTest,
+} from '@agoric/orchestration/tools/contract-tests.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { makeNameHubKit } from '@agoric/vats';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { encodeAbiParameters } from 'viem';
+import type {
+  PortfolioPublishedPathTypes,
+  StatusFor,
+} from '../src/type-guards.ts';
+import type { MovementDesc } from '../src/type-guards-steps.js';
 
-export const makeIncomingEVMEvent = ({
-  address = '0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092',
-  sourceChain,
-}: {
-  address?: `0x${string}`;
-  sourceChain: string;
-}) => {
-  const encodedAddress = encodeAbiParameters([{ type: 'address' }], [address]);
+// Use realistic flow values (e.g., millions of uUSDC) but format for
+// readability (e.g., in full USDC).
+export const USCALE = 1_000_000n;
 
-  const axelarConnections =
-    fetchedChainInfo.agoric.connections['axelar-dojo-1'];
-
-  const axelarToAgoricChannel = axelarConnections.transferChannel.channelId;
-  const agoricToAxelarChannel =
-    axelarConnections.transferChannel.counterPartyChannelId;
-
-  return makeIncomingVTransferEvent({
-    sourceChannel: axelarToAgoricChannel,
-    destinationChannel: agoricToAxelarChannel,
-    memo: JSON.stringify({
-      source_chain: sourceChain,
-      source_address: '0x19e71e7eE5c2b13eF6bd52b9E3b437bdCc7d43c8',
-      payload: makeReceiveUpCallPayload({
-        isContractCallResult: false,
-        data: [
-          {
-            success: true,
-            result: encodedAddress,
-          },
-        ],
-      }),
-      type: 1,
-    }),
-  });
+export const formatAmount = (
+  { brand, value }: NatAmount,
+  depositBrand?: Brand<'nat'>,
+) => {
+  const intPart = Number(value / USCALE);
+  const fracPart = Number(value - BigInt(intPart) * USCALE) / Number(USCALE);
+  const scaledValue = intPart + fracPart;
+  if (brand === depositBrand) return `$${scaledValue}`;
+  const prettyBrand = brand[Symbol.toStringTag].replace(/^Alleged: /, '');
+  return `${scaledValue} ${prettyBrand}`;
 };
+
+/** Like MovementDesc, but with a broader set of `src`/`dest` values. */
+export type MockMovementDesc = Omit<MovementDesc, 'src' | 'dest'> & {
+  src: string;
+  dest: string;
+};
+
+/** Map movement descriptors into human-friendly strings. */
+export const readableSteps = (
+  steps: MockMovementDesc[],
+  depositBrand?: Brand<'nat'>,
+): string[] =>
+  steps.map(step => {
+    const { src, dest, amount, fee } = step;
+    const prettyAmount = formatAmount(amount, depositBrand);
+    const feeSuffix = fee ? ` [fee ${formatAmount(fee, depositBrand)}]` : '';
+    return `${src} -> ${dest} ${prettyAmount}${feeSuffix}`;
+  });
+
+/** Map movement dependencies into human-friendly strings. */
+export const readableOrder = (
+  order: Required<FundsFlowPlan>['order'],
+): string[] =>
+  order.map(
+    ([stepIndex, prerequisiteIndexes]) =>
+      `step ${stepIndex} depends upon step(s) ${prerequisiteIndexes.join(' and ')}`,
+  );
 
 export const makeIncomingVTransferEvent = ({
   sender = makeTestAddress(),
-  sourcePort = 'transfer',
-  sourceChannel = 'channel-1',
-  destinationPort = 'transfer',
-  destinationChannel = 'channel-2',
+  sourceChannel = 'channel-1' as `channel-${number}`,
+  destinationChannel = 'channel-2' as `channel-${number}`,
   target = 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht',
   hookQuery = {},
   receiver = encodeAddressHook(target, hookQuery),
@@ -74,13 +95,64 @@ export const makeIncomingVTransferEvent = ({
     amount,
     denom,
     sender,
-    target: target,
+    target,
     receiver,
-    source_port: sourcePort,
-    source_channel: sourceChannel,
-    destination_port: destinationPort,
-    destination_channel: destinationChannel,
+    sourceChannel,
+    destinationChannel,
     memo,
+  });
+};
+
+const vstoragePendingWrites = eventLoopIteration;
+
+const getCapDataStructure = cell => {
+  const { body, slots } = JSON.parse(cell);
+  const structure = JSON.parse(body.replace(/^#/, ''));
+  return { structure, slots };
+};
+
+export const makeStorageTools = (storage: FakeStorageKit) => {
+  const readPublished = (async path => {
+    await vstoragePendingWrites();
+    return defaultMarshaller.fromCapData(
+      JSON.parse(
+        storage.getValues(`${ROOT_STORAGE_PATH}.${path}`).at(-1) || '',
+      ),
+    );
+  }) as VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
+
+  const readLegible = async (path: string) => {
+    await vstoragePendingWrites();
+    return getCapDataStructure(storage.getValues(path).at(-1));
+  };
+
+  const getDeserialized = (path: string): unknown[] => {
+    return storage.getValues(path).map(defaultSerializer.parse);
+  };
+
+  const getPortfolioStatus = async (pId: number) => {
+    await vstoragePendingWrites();
+    return getDeserialized(`published.ymax0.portfolios.portfolio${pId}`).at(
+      -1,
+    ) as StatusFor['portfolio'];
+  };
+
+  const getFlowHistory = async (pId: number, fId: number) => {
+    await vstoragePendingWrites();
+    return getDeserialized(
+      `published.ymax0.portfolios.portfolio${pId}.flows.flow${fId}`,
+    ) as StatusFor['flow'][];
+  };
+
+  const getFlowStatus = async (pId: number, fId: number) =>
+    getFlowHistory(pId, fId).then(xs => xs.at(-1));
+
+  return harden({
+    readPublished,
+    readLegible,
+    getPortfolioStatus,
+    getFlowHistory,
+    getFlowStatus,
   });
 };
 
@@ -99,9 +171,14 @@ export {
  * - https://docs.simplehash.com/reference/supported-chains-testnets (accessed on
  *   4 July 2025)
  *
- * @satisfies {Record<string, import('./orchestration-api').BaseChainInfo>}
+ *
  */
 export const axelarCCTPConfig = {
+  Ethereum: {
+    namespace: 'eip155',
+    reference: '1',
+    cctpDestinationDomain: 0,
+  },
   Avalanche: {
     namespace: 'eip155',
     reference: '43114',
@@ -117,12 +194,12 @@ export const axelarCCTPConfig = {
     reference: '42161',
     cctpDestinationDomain: 3,
   },
-  Polygon: {
+  Base: {
     namespace: 'eip155',
-    reference: '137',
-    cctpDestinationDomain: 7,
+    reference: '8453',
+    cctpDestinationDomain: 6,
   },
-};
+} satisfies Record<string, BaseChainInfo<'eip155'>>;
 
 export const chainInfoWithCCTP = {
   ...withChainCapabilities(fetchedChainInfo),

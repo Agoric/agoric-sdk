@@ -1,6 +1,6 @@
 // @ts-check
 import test from 'ava';
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 import tmp from 'tmp';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { createSHA256 } from '../src/hasher.js';
@@ -8,6 +8,10 @@ import { initSwingStore } from '../src/swingStore.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
 import { buffer } from '../src/util.js';
+
+/**
+ * @import {Bundle} from '../src/bundleStore.js';
+ */
 
 const tmpDir = makeTempDirFactory(tmp);
 
@@ -19,7 +23,7 @@ test('b0 format', t => {
   const { kernelStorage } = initSwingStore();
   const { bundleStore } = kernelStorage;
 
-  /** @type {import('../src/bundleStore.js').Bundle} */
+  /** @type {Bundle} */
   const b0A = { moduleFormat: 'nestedEvaluate', source: '1+1' };
   const idA = makeB0ID(b0A);
   bundleStore.addBundle(idA, b0A);
@@ -32,7 +36,7 @@ test('b0 format', t => {
   });
   t.falsy(bundleStore.hasBundle(idBogus));
 
-  /** @type {import('../src/bundleStore.js').Bundle} */
+  /** @type {Bundle} */
   const b0B = { moduleFormat: 'getExport', source: '1+1' };
   const idB = makeB0ID(b0B);
   t.throws(() => bundleStore.addBundle(idB, b0B), {
@@ -73,7 +77,7 @@ test('b0 export', async t => {
   });
   const { bundleStore } = kernelStorage;
 
-  /** @type {import('../src/bundleStore.js').Bundle} */
+  /** @type {Bundle} */
   const b0A = { moduleFormat: 'nestedEvaluate', source: '1+1' };
   const idA = makeB0ID(b0A);
   bundleStore.addBundle(idA, b0A);

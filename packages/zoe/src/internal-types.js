@@ -1,14 +1,19 @@
-// @jessie-check
-/// <reference types="@agoric/ertp/exported" />
+// Make this a module
+export {};
 
 /**
  * @import {RemotableObject, Passable} from '@endo/pass-style';
  * @import {Pattern} from '@endo/patterns';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {Baggage} from '@agoric/vat-data';
- * @import {IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
- * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord} from './types-index.js';
+ * @import {AdditionalDisplayInfo, Amount, AssetKind, Brand, Issuer, IssuerKit, IssuerOptionsRecord, IssuerRecord} from '@agoric/ertp';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {AmountKeywordRecord, Handle, Instance, Installation, IssuerKeywordRecord, Keyword, ProposalRecord, ZCFSeat} from '@agoric/zoe';
+ * @import {Allocation, PaymentPKeywordRecord, UserSeat, Completion, ZoeIssuerRecord, Invitation} from './types-index.js';
  * @import {InvitationHandle, BrandKeywordRecord, AnyTerms} from './types.js';
+ * @import {FeeMintAccess} from './zoeService/types.js';
+ * @import {InstanceRecord} from './zoeService/utils.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -213,7 +218,6 @@
 /**
  * @typedef {object} ZCFRoot
  * @property {StartZcf} startZcf
- * @property {RestartContract} restartContract
  */
 
 /**
@@ -231,12 +235,6 @@
  * @param {IssuerRecords} issuerStorageFromZoe
  * @param {object} [privateArgs]
  * @returns {Promise<ExecuteContractResult>}
- */
-
-/**
- * @callback RestartContract
- * @param {object} [privateArgs]
- * @returns {Promise<ExecuteUpgradeableContractResult>}
  */
 
 /**

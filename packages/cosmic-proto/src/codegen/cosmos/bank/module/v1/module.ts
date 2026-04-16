@@ -2,34 +2,88 @@
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** Module is the config object of the bank module. */
+/**
+ * Module is the config object of the bank module.
+ * @name Module
+ * @package cosmos.bank.module.v1
+ * @see proto type: cosmos.bank.module.v1.Module
+ */
 export interface Module {
   /**
-   * blocked_module_accounts configures exceptional module accounts which should be blocked from receiving funds.
-   * If left empty it defaults to the list of account names supplied in the auth module configuration as
+   * blocked_module_accounts_override configures exceptional module accounts which should be blocked from receiving
+   * funds. If left empty it defaults to the list of account names supplied in the auth module configuration as
    * module_account_permissions
    */
   blockedModuleAccountsOverride: string[];
-  /** authority defines the custom module authority. If not set, defaults to the governance module. */
+  /**
+   * authority defines the custom module authority. If not set, defaults to the governance module.
+   */
   authority: string;
+  /**
+   * restrictions_order specifies the order of send restrictions and should be
+   * a list of module names which provide a send restriction instance. If no
+   * order is provided, then restrictions will be applied in alphabetical order
+   * of module names.
+   */
+  restrictionsOrder: string[];
 }
 export interface ModuleProtoMsg {
   typeUrl: '/cosmos.bank.module.v1.Module';
   value: Uint8Array;
 }
-/** Module is the config object of the bank module. */
+/**
+ * Module is the config object of the bank module.
+ * @name ModuleSDKType
+ * @package cosmos.bank.module.v1
+ * @see proto type: cosmos.bank.module.v1.Module
+ */
 export interface ModuleSDKType {
   blocked_module_accounts_override: string[];
   authority: string;
+  restrictions_order: string[];
 }
 function createBaseModule(): Module {
   return {
     blockedModuleAccountsOverride: [],
     authority: '',
+    restrictionsOrder: [],
   };
 }
+/**
+ * Module is the config object of the bank module.
+ * @name Module
+ * @package cosmos.bank.module.v1
+ * @see proto type: cosmos.bank.module.v1.Module
+ */
 export const Module = {
-  typeUrl: '/cosmos.bank.module.v1.Module',
+  typeUrl: '/cosmos.bank.module.v1.Module' as const,
+  aminoType: 'cosmos-sdk/Module' as const,
+  is(o: any): o is Module {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Array.isArray(o.blockedModuleAccountsOverride) &&
+          (!o.blockedModuleAccountsOverride.length ||
+            typeof o.blockedModuleAccountsOverride[0] === 'string') &&
+          typeof o.authority === 'string' &&
+          Array.isArray(o.restrictionsOrder) &&
+          (!o.restrictionsOrder.length ||
+            typeof o.restrictionsOrder[0] === 'string')))
+    );
+  },
+  isSDK(o: any): o is ModuleSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Module.typeUrl ||
+        (Array.isArray(o.blocked_module_accounts_override) &&
+          (!o.blocked_module_accounts_override.length ||
+            typeof o.blocked_module_accounts_override[0] === 'string') &&
+          typeof o.authority === 'string' &&
+          Array.isArray(o.restrictions_order) &&
+          (!o.restrictions_order.length ||
+            typeof o.restrictions_order[0] === 'string')))
+    );
+  },
   encode(
     message: Module,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -39,6 +93,9 @@ export const Module = {
     }
     if (message.authority !== '') {
       writer.uint32(18).string(message.authority);
+    }
+    for (const v of message.restrictionsOrder) {
+      writer.uint32(26).string(v!);
     }
     return writer;
   },
@@ -56,6 +113,9 @@ export const Module = {
         case 2:
           message.authority = reader.string();
           break;
+        case 3:
+          message.restrictionsOrder.push(reader.string());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -71,6 +131,9 @@ export const Module = {
         ? object.blockedModuleAccountsOverride.map((e: any) => String(e))
         : [],
       authority: isSet(object.authority) ? String(object.authority) : '',
+      restrictionsOrder: Array.isArray(object?.restrictionsOrder)
+        ? object.restrictionsOrder.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: Module): JsonSafe<Module> {
@@ -82,6 +145,11 @@ export const Module = {
       obj.blockedModuleAccountsOverride = [];
     }
     message.authority !== undefined && (obj.authority = message.authority);
+    if (message.restrictionsOrder) {
+      obj.restrictionsOrder = message.restrictionsOrder.map(e => e);
+    } else {
+      obj.restrictionsOrder = [];
+    }
     return obj;
   },
   fromPartial(object: Partial<Module>): Module {
@@ -89,6 +157,7 @@ export const Module = {
     message.blockedModuleAccountsOverride =
       object.blockedModuleAccountsOverride?.map(e => e) || [];
     message.authority = object.authority ?? '';
+    message.restrictionsOrder = object.restrictionsOrder?.map(e => e) || [];
     return message;
   },
   fromProtoMsg(message: ModuleProtoMsg): Module {

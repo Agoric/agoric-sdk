@@ -362,7 +362,6 @@ export const AmountMath = {
    * @returns {A}
    */
   min: (x, y, brand = undefined) =>
-    // eslint-disable-next-line no-nested-ternary
     isGTE(x, y, brand)
       ? y
       : isGTE(y, x, brand)
@@ -378,7 +377,6 @@ export const AmountMath = {
    * @returns {A}
    */
   max: (x, y, brand = undefined) =>
-    // eslint-disable-next-line no-nested-ternary
     isGTE(x, y, brand)
       ? x
       : isGTE(y, x)

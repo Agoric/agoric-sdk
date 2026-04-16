@@ -14,11 +14,22 @@
  */
 
 /**
+ * @import {RemotableObject} from '@endo/marshal';
+ * @import {VstorageKit} from './types.js';
+ */
+
+/**
  * @typedef {object} RetryOptions
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
  * @property {boolean} [reusePromise]
  * @property {(value: unknown) => unknown} [renderResult]
+ *
+ * @typedef {object} RetryPowers
+ * @property {typeof globalThis.setTimeout} setTimeout
+ * @property {(...args: unknown[]) => void} [log]
+ *
+ * @typedef {RetryOptions & RetryPowers} RetryOptionsAndPowers mixes ocaps with configuration
  *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
@@ -31,7 +42,7 @@
  * From https://github.com/Agoric/agoric-sdk/blob/442f07c8f0af03281b52b90e90c27131eef6f331/multichain-testing/tools/sleep.ts#L10
  *
  * @param {number} ms
- * @param {{log: (message: string) => void, setTimeout: typeof global.setTimeout}} io
+ * @param {RetryPowers} io
  */
 export const sleep = (ms, { log = () => {}, setTimeout }) =>
   new Promise(resolve => {
@@ -46,7 +57,7 @@ export const sleep = (ms, { log = () => {}, setTimeout }) =>
  * @param {() => Promise<T>} operation
  * @param {(result: T) => boolean} condition
  * @param {string} message
- * @param {RetryOptions & {log?: typeof console.log, setTimeout: typeof global.setTimeout}} options
+ * @param {RetryOptionsAndPowers} options
  * @returns {Promise<T>}
  */
 export const retryUntilCondition = async (
@@ -146,7 +157,7 @@ const makeGetInstances = follow => async () => {
 /**
  *
  * @param {string} contractName
- * @param {{ log: (message: string) => void, follow: () => object, setTimeout: typeof global.setTimeout }} ambientAuthority
+ * @param {{ log: (message: string) => void, follow: () => object, setTimeout: typeof globalThis.setTimeout }} ambientAuthority
  * @param {WaitUntilOptions} options
  */
 export const waitUntilContractDeployed = (
@@ -186,7 +197,7 @@ const checkCosmosBalance = (balances, threshold) => {
 
 /**
  * @param {string} destAcct
- * @param {{ log?: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
+ * @param {{ log?: (message: string) => void, query: () => Promise<object>, setTimeout: typeof globalThis.setTimeout}} io
  * @param {{denom: string, value: number}} threshold
  * @param {WaitUntilOptions} options
  */
@@ -235,7 +246,7 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{ log?: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
+ * @param {{ log?: typeof console.log, follow: () => object, setTimeout: typeof globalThis.setTimeout }} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (
@@ -276,7 +287,7 @@ const checkForInvitation = update => {
 /**
  *
  * @param {string} addr
- * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof globalThis.setTimeout}} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilInvitationReceived = (addr, io, options) => {
@@ -313,7 +324,7 @@ const checkLiveOffers = (update, offerId) => {
 /**
  * @param {string} addr
  * @param {string} offerId
- * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof globalThis.setTimeout}} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferExited = async (addr, offerId, io, options) => {
@@ -336,18 +347,18 @@ export const waitUntilOfferExited = async (addr, offerId, io, options) => {
  * @typedef {{
  *   latestOutcome: {
  *     outcome: string;
- *     question: import('@endo/marshal').RemotableObject
+ *     question: RemotableObject
  *   },
  *   latestQuestion: {
  *     closingRule: { deadline: bigint },
- *     questionHandle: import('@endo/marshal').RemotableObject
+ *     questionHandle: RemotableObject
  *   }
  * }} ElectionResult
  */
 
 /**
  * @param {string} basePath
- * @param {import('./vstorage-kit').VstorageKit} vstorage
+ * @param {VstorageKit} vstorage
  * @returns {Promise<ElectionResult>}
  */
 const fetchLatestEcQuestion = async (basePath, vstorage) => {
@@ -400,9 +411,9 @@ const checkCommitteeElectionResult = (electionResult, expectedResult) => {
  *   deadline: bigint;
  * }} expectedResult
  * @param {{
- *   vstorage: import('./vstorage-kit').VstorageKit;
+ *   vstorage: VstorageKit;
  *   log: typeof console.log,
- *   setTimeout: typeof global.setTimeout
+ *   setTimeout: typeof globalThis.setTimeout
  * }} io
  * @param {WaitUntilOptions} options
  */

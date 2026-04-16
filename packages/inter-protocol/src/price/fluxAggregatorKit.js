@@ -20,8 +20,19 @@ import { prepareRoundsManagerKit } from './roundsManager.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern, Remote} from '@agoric/internal';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {PublishKit} from '@agoric/notifier';
+ * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {QuoteKit} from './roundsManager.js';
+ * @import {MakeRecorder} from '@agoric/zoe/src/contractSupport/recorder.js';
+ * @import {LatestRound} from './roundsManager.js';
+ * @import {OracleKit} from './priceOracleKit.js';
+ * @import {PriceRound} from './roundsManager.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('FlxAgg', true);
@@ -85,10 +96,10 @@ const priceDescriptionFromQuote = quote => quote.quoteAmount.value[0];
  *   }
  * >} zcf
  * @param {TimerService} timerPresence
- * @param {import('./roundsManager.js').QuoteKit} quoteKit
- * @param {StorageNode} storageNode
+ * @param {QuoteKit} quoteKit
+ * @param {Remote<StorageNode>} storageNode
  * @param {() => PublishKit<any>} makeDurablePublishKit
- * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorder} makeRecorder
+ * @param {MakeRecorder} makeRecorder
  */
 export const prepareFluxAggregatorKit = async (
   baggage,
@@ -154,7 +165,7 @@ export const prepareFluxAggregatorKit = async (
         makeRecorderKit(
           node,
           /**
-           * @type {TypedPattern<import('./roundsManager.js').LatestRound>}
+           * @type {TypedPattern<LatestRound>}
            */ (M.any()),
         ),
       ),
@@ -212,7 +223,11 @@ export const prepareFluxAggregatorKit = async (
     baggage,
     'fluxAggregator',
     {
-      creator: M.interface('fluxAggregator creatorFacet', {}, { sloppy: true }),
+      creator: M.interface(
+        'fluxAggregator creatorFacet',
+        {},
+        { defaultGuards: 'passable' },
+      ),
       public: M.interface('fluxAggregator publicFacet', {
         getPriceAuthority: M.call().returns(M.any()),
         getPublicTopics: M.call().returns({
@@ -222,7 +237,7 @@ export const prepareFluxAggregatorKit = async (
       }),
     },
     () => {
-      /** @type {MapStore<string, import('./priceOracleKit.js').OracleKit>} */
+      /** @type {MapStore<string, OracleKit>} */
       const oracles = makeScalarBigMapStore('oracles', {
         durable: true,
       });
@@ -255,7 +270,7 @@ export const prepareFluxAggregatorKit = async (
             seat.exit();
             const { oracle } = await facets.creator.initOracle(oracleId);
             const invitationMakers = Far('invitation makers', {
-              /** @param {import('./roundsManager.js').PriceRound} result */
+              /** @param {PriceRound} result */
               PushPrice(result) {
                 return zcf.makeInvitation(
                   /** @param {ZCFSeat} cSeat */

@@ -15,10 +15,9 @@ import { exportRootObject } from '../kernel/kernel.js';
 import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
 
 /**
- * @typedef { import('../types-external.js').SwingSetKernelConfig } SwingSetKernelConfig
- * @typedef { import('../types-external.js').SwingStoreKernelStorage } SwingStoreKernelStorage
- * @typedef { import('../types-internal.js').InternalKernelOptions } InternalKernelOptions
- * @typedef { import('../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ * @import { SwingSetKernelConfig, SwingStoreKernelStorage } from '../types-external.js'
+ * @import { InternalKernelOptions, ReapDirtThreshold } from '../types-internal.js'
+ * @import {VatID} from '../types-internal.js';
  */
 
 function makeVatRootObjectSlot() {
@@ -178,7 +177,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
   // ----------------------------------------------------------------------
 
   /**
-   * @param {import('../types-internal.js').VatID} bootstrapVatID
+   * @param {VatID} bootstrapVatID
    * @returns {string} the KPID of the bootstrap message result promise
    */
   function enqueueBootstrap(bootstrapVatID) {

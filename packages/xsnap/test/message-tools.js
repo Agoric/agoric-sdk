@@ -1,5 +1,11 @@
 const { freeze } = Object;
 
+/**
+ * @import {promises} from 'fs';
+ * @import {spawn} from 'child_process';
+ * @import {XSnapOptions} from '../src/xsnap.js';
+ */
+
 // a TextDecoder has mutable state; only export the (pure) decode function
 /** @type { TextDecoder['decode'] } */
 export const decode = (decoder => decoder.decode.bind(decoder))(
@@ -13,7 +19,7 @@ export const encode = (encoder => encoder.encode.bind(encoder))(
 
 /**
  * @param {string} url
- * @param {typeof import('fs').promises.readFile} [readFile]
+ * @param {typeof promises.readFile} [readFile]
  */
 export function loader(url, readFile = undefined) {
   /** @param {string} ref */
@@ -28,12 +34,12 @@ export function loader(url, readFile = undefined) {
 
 /**
  * @param {{
- *   spawn: typeof import('child_process').spawn,
+ *   spawn: typeof spawn,
  *   os: string,
  *   fs: import('fs'),
  *   tmpName: import('tmp')['tmpName'],
  * }} io
- * @returns {import('../src/xsnap.js').XSnapOptions & { messages: string[]}}
+ * @returns {XSnapOptions & { messages: string[]}}
  */
 export function options({ spawn, os, fs, tmpName }) {
   const messages = [];

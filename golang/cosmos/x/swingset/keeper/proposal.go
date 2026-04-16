@@ -21,6 +21,10 @@ func (k Keeper) CoreEvalProposal(ctx sdk.Context, p *types.CoreEvalProposal) err
 		Evals: p.Evals,
 	}
 
+	return k.PushAction(ctx, action)
+}
+
+func (k Keeper) PushCoreEvalAction(ctx sdk.Context, action coreEvalAction) error {
 	// While the CoreEvalProposal was originally created by a transaction, by the time it
 	// passes by governance, we no longer have its provenance information, so we need to
 	// synthesize unique context information.

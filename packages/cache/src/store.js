@@ -6,8 +6,14 @@ import { untilTrue } from '@agoric/internal';
 import { withGroundState, makeState } from './state.js';
 
 /**
+ * @import {ERemote} from '@agoric/internal'
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key, Pattern} from '@endo/patterns';
+ * @import {State} from './state.js';
+ * @import {Coordinator} from './types.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {MapStore} from '@agoric/store';
  */
 
 /**
@@ -45,9 +51,9 @@ const makeKeyToString = (sanitize = obj => obj) => {
  * @param {(obj: Passable) => Passable} sanitize Process keys and values with
  * this function before storing them
  * @param {{
- * get(key: string): import('./state.js').State;
- * set(key: string, value: import('./state.js').State): void;
- * init(key: string, value: import('./state.js').State): void;
+ * get(key: string): State;
+ * set(key: string, value: State): void;
+ * init(key: string, value: State): void;
  * }} stateStore
  * @returns {Promise<Passable>} the value of the updated state
  */
@@ -61,8 +67,8 @@ const applyCacheTransaction = async (
   /**
    * Retrieve a potential updated state from the transaction.
    *
-   * @param {import('./state.js').State} basisState
-   * @returns {Promise<import('./state.js').State | null>} the updated state, or null if no longer applicable
+   * @param {State} basisState
+   * @returns {Promise<State | null>} the updated state, or null if no longer applicable
    */
   const getUpdatedState = async basisState => {
     const { value } = basisState;
@@ -111,8 +117,8 @@ const applyCacheTransaction = async (
 };
 
 /**
- * @param {MapStore<string, import('./state.js').State>} stateStore
- * @param {ERef<Marshaller>} marshaller
+ * @param {MapStore<string, State>} stateStore
+ * @param {ERemote<EMarshaller>} marshaller
  * @returns {Promise<string>}
  */
 const stringifyStateStore = async (stateStore, marshaller) => {
@@ -130,7 +136,7 @@ const stringifyStateStore = async (stateStore, marshaller) => {
  * Make a cache coordinator backed by a MapStore.  This coordinator doesn't
  * currently enforce any cache eviction, but that would be a useful feature.
  *
- * @param {MapStore<string, import('./state.js').State>} [stateStore]
+ * @param {MapStore<string, State>} [stateStore]
  * @param {(obj: Passable) => Passable} [sanitize] Process keys and values with
  * this function before storing them. Defaults to deeplyFulfilled.
  */
@@ -142,7 +148,7 @@ export const makeScalarStoreCoordinator = (
 
   const defaultStateStore = withGroundState(stateStore);
 
-  /** @type {import('./types.js').Coordinator} */
+  /** @type {Coordinator} */
   const coord = Far('store cache coordinator', {
     getRecentValue: async key => {
       const keyStr = await serializePassable(key);
@@ -175,9 +181,9 @@ export const makeScalarStoreCoordinator = (
 /**
  * Don't write any marshalled value that's older than what's already pushed
  *
- * @param {MapStore<string, import('./state.js').State>} stateStore
- * @param {ERef<Marshaller>} marshaller
- * @param {ERef<StorageNode>} storageNode
+ * @param {MapStore<string, State>} stateStore
+ * @param {ERemote<EMarshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
  * @returns {<T>(storedValue: T) => Promise<T>}
  */
 const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
@@ -205,8 +211,8 @@ const makeLastWinsUpdater = (stateStore, marshaller, storageNode) => {
  * Make a cache coordinator backed by a MapStore.  This coordinator doesn't
  * currently enforce any cache eviction, but that would be a useful feature.
  *
- * @param {ERef<StorageNode>} storageNode
- * @param {ERef<Marshaller>} marshaller
+ * @param {ERemote<StorageNode>} storageNode
+ * @param {ERemote<EMarshaller>} marshaller
  */
 export const makeChainStorageCoordinator = (storageNode, marshaller) => {
   const stateStore = makeScalarBigMapStore('stateKey');
@@ -222,7 +228,7 @@ export const makeChainStorageCoordinator = (storageNode, marshaller) => {
     storageNode,
   );
 
-  /** @type {import('./types.js').Coordinator} */
+  /** @type {Coordinator} */
   const coord = Far('store cache coordinator', {
     getRecentValue: async key => {
       const keyStr = await serializePassable(key);

@@ -1,5 +1,7 @@
 {
   "extends": "../../tsconfig.json",
+  "compilerOptions": {
+  },
   "exclude": [
     "tsup.config.ts",
     "src/stubs/",

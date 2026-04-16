@@ -24,10 +24,20 @@ import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
 
 /**
- * @typedef {{
- *   (n: 'board'): BoardVat;
- *   (n: 'mint'): MintsVat;
- * }} LoadVat
+ * @import {UserPaymentRecord} from '../src/core/demoIssuers.js';
+ * @import {MyAddressNameAdmin} from '../src/types.js';
+ * @import {BoardVat} from '../src/vat-board.js';
+ * @import {MintsVat} from '../src/vat-mints.js';
+ * @import {BootstrapPowers} from '../src/core/types.ts';
+ * @import {DemoFaucetPowers} from '../src/core/types.ts';
+ * @import {Producer} from '../src/core/types.ts';
+ * @import {VatLoader} from '../src/core/types.ts';
+ * @import {WellKnownVats} from '../src/core/types.ts';
+ * @import {BootstrapSpace} from '../src/core/types.ts';
+ */
+
+/**
+ * @typedef {VatLoader<'mints' | 'board'>} LoadVat
  */
 test('connectFaucet produces payments', async t => {
   const space = /** @type {any} */ (makePromiseSpace(t.log));
@@ -46,9 +56,10 @@ test('connectFaucet produces payments', async t => {
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 
+  const { vatAdminService } = await makePopulatedFakeVatAdmin();
   const { zoe, feeMintAccessP, vatAdminSvc } = await setUpZoeForTest({
     feeIssuerConfig,
-    vatAdminSvc: makePopulatedFakeVatAdmin().vatAdminService,
+    vatAdminSvc: vatAdminService,
   });
   produce.zoe.resolve(zoe);
   const fma = await feeMintAccessP;
@@ -136,7 +147,7 @@ test('connectFaucet produces payments', async t => {
 
   // t.deepEqual(Object.keys(userBundle), '@@todo');
 
-  /** @type {import('../src/core/demoIssuers.js').UserPaymentRecord[]} */
+  /** @type {UserPaymentRecord[]} */
   const pmts = await E(userBundle.faucet).tapFaucet();
 
   const detail = await Promise.all(
@@ -165,7 +176,7 @@ test('namesByAddressAdmin provideChild', async t => {
   const baggage = makeScalarBigMapStore('fake baggage', { durable: true });
   const provisioning = buildProvisioningRoot(undefined, undefined, baggage);
   const { namesByAddressAdmin } = await E(provisioning).getNamesByAddressKit();
-  /** @type {{ nameAdmin: import('../src/types.js').MyAddressNameAdmin }} */
+  /** @type {{ nameAdmin: MyAddressNameAdmin }} */
   // @ts-expect-error XXX why doesn't the provideChild override work?
   const { nameAdmin } = E.get(E(namesByAddressAdmin).provideChild(addr));
   t.is(await E(nameAdmin).getMyAddress(), addr);

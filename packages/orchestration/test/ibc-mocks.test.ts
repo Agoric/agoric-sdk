@@ -1,17 +1,18 @@
 import {
-  QueryBalanceRequest,
+  QueryBalanceRequest as QueryBalanceRequestType,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import { QueryDelegatorDelegationsResponse as QueryDelegatorDelegationsResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import {
-  MsgDelegate,
+  MsgDelegate as MsgDelegateType,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import {
   CosmosQuery,
-  CosmosResponse,
+  CosmosResponse as CosmosResponseType,
 } from '@agoric/cosmic-proto/icq/v1/packet.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import {
   buildMsgErrorString,
   buildMsgResponseString,
@@ -20,6 +21,13 @@ import {
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../tools/ibc-mocks.js';
+
+const MsgDelegate = CodecHelper(MsgDelegateType);
+const QueryBalanceRequest = CodecHelper(QueryBalanceRequestType);
+const CosmosResponse = CodecHelper(CosmosResponseType);
+const QueryDelegatorDelegationsResponse = CodecHelper(
+  QueryDelegatorDelegationsResponseType,
+);
 
 test('buildMsgResponseString matches observed values in e2e testing', t => {
   t.is(
@@ -67,7 +75,7 @@ test('build Tx Packet', t => {
 
   const parsed = parseOutgoingTxPacket(encoded);
   const decoded = MsgDelegate.decode(parsed.messages[0].value);
-  t.deepEqual(decoded, obj);
+  t.deepEqual(decoded, MsgDelegate.fromPartial(obj));
 });
 
 test('build Query Packet', t => {
@@ -83,7 +91,7 @@ test('build Query Packet', t => {
   const decodedRequest = QueryBalanceRequest.decode(
     decodedQuery.requests[0].data,
   );
-  t.deepEqual(decodedRequest, obj);
+  t.deepEqual(decodedRequest, QueryBalanceRequest.fromPartial(obj));
 });
 
 test('build Query Response', t => {
@@ -100,7 +108,7 @@ test('build Query Response', t => {
     ],
   };
   const encoded = buildQueryResponseString(
-    QueryDelegatorDelegationsResponse,
+    QueryDelegatorDelegationsResponseType,
     obj,
   );
   t.snapshot(encoded);
@@ -110,8 +118,8 @@ test('build Query Response', t => {
   const cosmosResponse = CosmosResponse.decode(Buffer.from(data, 'base64'));
   const decodedResponseKey = cosmosResponse.responses[0].key;
 
-  t.deepEqual(QueryDelegatorDelegationsResponse.decode(decodedResponseKey), {
-    ...obj,
-    pagination: undefined,
-  });
+  t.deepEqual(
+    QueryDelegatorDelegationsResponse.decode(decodedResponseKey),
+    QueryDelegatorDelegationsResponse.fromPartial(obj),
+  );
 });

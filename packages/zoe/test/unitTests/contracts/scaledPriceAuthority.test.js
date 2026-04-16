@@ -1,6 +1,6 @@
 import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 
@@ -14,21 +14,26 @@ import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
 
 /**
- * @import {FeeIssuerConfig, ZoeService} from '@agoric/zoe';
+ * @import {FeeIssuerConfig, Installation, ZoeService} from '@agoric/zoe';
+ * @import {prepare} from '../../../src/contracts/scaledPriceAuthority.js';
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
  */
 
 // This contract still uses 'prepare', so this test covers that case.
 /**
  * @typedef {object} TestContext
  * @property {ZoeService} zoe
- * @property {Installation<typeof import('../../../src/contracts/scaledPriceAuthority.js').prepare>} scaledPriceInstallation
+ * @property {Installation<typeof prepare>} scaledPriceInstallation
  * @property {Brand<'nat'>} atomBrand
  * @property {Brand<'nat'>} usdBrand
  * @property {IssuerKit<'nat'>} atom
  * @property {IssuerKit<'nat'>} run
  */
 
-const test = /** @type {import('ava').TestFn<TestContext>} */ (unknownTest);
+const test = /** @type {TestFn<TestContext>} */ (unknownTest);
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -48,9 +53,12 @@ test.before('setup scaled price authority', async ot => {
   // of tests, we can also send the installation to someone
   // else, and they can use it to create a new contract instance
   // using the same code.
-  vatAdminState.installBundle('b1-scaled-price-authority', scaledPriceBundle);
-  const scaledPriceInstallation = await E(zoe).installBundleID(
+  const b1scaledpriceauthority = vatAdminState.registerBundle(
     'b1-scaled-price-authority',
+    scaledPriceBundle,
+  );
+  const scaledPriceInstallation = await E(zoe).installBundleID(
+    b1scaledpriceauthority,
   );
 
   // Pick some weird decimal places.
@@ -72,7 +80,7 @@ test.before('setup scaled price authority', async ot => {
 });
 
 /**
- * @param {import('ava').ExecutionContext<TestContext>} t
+ * @param {ExecutionContext<TestContext>} t
  * @param {bigint} [initialPriceInCents]
  */
 const makeScenario = async (t, initialPriceInCents) => {

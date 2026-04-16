@@ -8,12 +8,13 @@ import (
 	"strings"
 	"unicode"
 
+	errorsmod "cosmossdk.io/errors"
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkaddress "github.com/cosmos/cosmos-sdk/types/address"
 
@@ -138,7 +139,7 @@ func (k Keeper) Query(cctx context.Context, qm types.QueryRequest) (*types.Query
 		Height: ctx.BlockHeight(),
 	}
 
-	abcires, err := handler(ctx, req)
+	abcires, err := handler(ctx, &req)
 	if err != nil {
 		return nil, err
 	}
@@ -180,9 +181,20 @@ type HasValidateBasic interface {
 func (k Keeper) authenticateTx(msgs []sdk.Msg, actualSigner string) error {
 	for _, msg := range msgs {
 		// Validate that all required signers are satisfied (i.e. they match the actual signer).
-		for _, requiredSignerAddress := range msg.GetSigners() {
-			requiredSigner := requiredSignerAddress.String()
-			if requiredSigner != actualSigner {
+
+		// obtain the message signers using the proto signer annotations
+		// the msgv2 return value is discarded as it is not used
+		requiredSigners, _, err := k.cdc.GetMsgV1Signers(msg)
+		if err != nil {
+			return errorsmod.Wrapf(err, "failed to obtain required message signers for message type %s", sdk.MsgTypeURL(msg))
+		}
+
+		for _, requiredSignerBytes := range requiredSigners {
+			requiredSigner, err := k.acctKeeper.AddressCodec().BytesToString(requiredSignerBytes)
+			if err != nil {
+				return errorsmod.Wrapf(err, "failed to convert required signer bytes to string for message type %s", sdk.MsgTypeURL(msg))
+			}
+			if actualSigner != requiredSigner {
 				err := fmt.Errorf("required signer %s does not match actual signer", requiredSigner)
 				return err
 			}

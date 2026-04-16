@@ -11,8 +11,7 @@ option go_package = "github.com/cosmos/cosmos-sdk/x/bank/types";
 
 // Params defines the parameters for the bank module.
 message Params {
-  option (amino.name)                 = "cosmos-sdk/x/bank/Params";
-  option (gogoproto.goproto_stringer) = false;
+  option (amino.name) = "cosmos-sdk/x/bank/Params";
   // Deprecated: Use of SendEnabled in params is deprecated.
   // For genesis, use the newly added send_enabled field in the genesis object.
   // Storage, lookup, and manipulation of this information is now in the keeper.
@@ -25,10 +24,9 @@ message Params {
 // SendEnabled maps coin denom to a send_enabled status (whether a denom is
 // sendable).
 message SendEnabled {
-  option (gogoproto.equal)            = true;
-  option (gogoproto.goproto_stringer) = false;
-  string denom                        = 1;
-  bool   enabled                      = 2;
+  option (gogoproto.equal) = true;
+  string denom             = 1;
+  bool   enabled           = 2;
 }
 
 // Input models transaction input.
@@ -42,6 +40,7 @@ message Input {
   repeated cosmos.base.v1beta1.Coin coins = 2 [
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
 }
@@ -55,6 +54,7 @@ message Output {
   repeated cosmos.base.v1beta1.Coin coins = 2 [
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
 }
@@ -73,6 +73,7 @@ message Supply {
   repeated cosmos.base.v1beta1.Coin total = 1 [
     (gogoproto.nullable)     = false,
     (amino.dont_omitempty)   = true,
+    (amino.encoding)         = "legacy_coins",
     (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
   ];
 }
@@ -104,21 +105,13 @@ message Metadata {
   // displayed in clients.
   string display = 4;
   // name defines the name of the token (eg: Cosmos Atom)
-  //
-  // Since: cosmos-sdk 0.43
-  string name = 5;
+  string name = 5 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.43"];
   // symbol is the token symbol usually shown on exchanges (eg: ATOM). This can
   // be the same as the display.
-  //
-  // Since: cosmos-sdk 0.43
-  string symbol = 6;
+  string symbol = 6 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.43"];
   // URI to a document (on or off-chain) that contains additional information. Optional.
-  //
-  // Since: cosmos-sdk 0.46
-  string uri = 7 [(gogoproto.customname) = "URI"];
+  string uri = 7 [(gogoproto.customname) = "URI", (cosmos_proto.field_added_in) = "cosmos-sdk 0.46"];
   // URIHash is a sha256 hash of a document pointed by URI. It's used to verify that
   // the document didn't change. Optional.
-  //
-  // Since: cosmos-sdk 0.46
-  string uri_hash = 8 [(gogoproto.customname) = "URIHash"];
+  string uri_hash = 8 [(gogoproto.customname) = "URIHash", (cosmos_proto.field_added_in) = "cosmos-sdk 0.46"];
 }

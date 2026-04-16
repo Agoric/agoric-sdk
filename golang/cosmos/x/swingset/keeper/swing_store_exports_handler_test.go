@@ -5,8 +5,8 @@ import (
 	"io"
 	"testing"
 
+	"cosmossdk.io/log"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/cometbft/cometbft/libs/log"
 )
 
 func newTestSwingStoreExportsHandler() *SwingStoreExportsHandler {

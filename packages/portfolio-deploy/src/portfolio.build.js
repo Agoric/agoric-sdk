@@ -1,6 +1,8 @@
 // import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import {
   axelarConfigTestnet,
   axelarConfig as axelarMainnetConfig,
@@ -10,9 +12,11 @@ import { toExternalConfig } from './config-marshal.js';
 import { name } from './portfolio.contract.permit.js';
 import { portfolioDeployConfigShape } from './portfolio-start.core.js';
 
+const nodeRequire = createRequire(import.meta.url);
+const asset = spec => readFile(nodeRequire.resolve(spec), 'utf8');
+
 /**
  * @import { CoreEvalBuilder, DeployScriptFunction } from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {ParseArgsConfig} from 'node:util';
  * @import {PortfolioDeployConfig} from './portfolio-start.core.js';
  */
 
@@ -20,11 +24,15 @@ const isValidAddr = addr => {
   return /^0x[a-fA-F0-9]{40}$/.test(addr);
 };
 
-/** @type {ParseArgsConfig['options'] } */
-const options = {
-  net: { type: 'string' },
-  replace: { type: 'string' },
-};
+const parseBuilderArgs = args =>
+  parseArgs({
+    args,
+    options: {
+      net: { type: 'string' },
+      replace: { type: 'string' },
+      'no-flow-config': { type: 'boolean', default: false },
+    },
+  });
 
 /**
  * @param {Parameters<CoreEvalBuilder>[0]} tools
@@ -46,22 +54,17 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
   });
 };
 
-/**
- * @typedef {{
- *   baseName: string;
- *   chainInfo: string;
- *   net?: string;
- *   peer?: string[];
- *   replace?: string;
- * }} FlagValues
- */
 /** @type {DeployScriptFunction} */ 0;
 const build = async (homeP, endowments) => {
+  await null;
   const { scriptArgs } = endowments;
-  /** @type {FlagValues} */
-  // @ts-expect-error guaranteed by options config
-  const { values: flags } = parseArgs({ args: scriptArgs, options });
+  const { values: flags } = parseBuilderArgs(scriptArgs);
   const boardId = flags.replace;
+  const defaultFlowConfig = flags['no-flow-config'] ? null : undefined;
+
+  const { bytecode: walletBytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+  );
 
   /** @type {{ mainnet: PortfolioDeployConfig, testnet: PortfolioDeployConfig }} */
   const configs = harden({
@@ -71,6 +74,8 @@ const build = async (homeP, endowments) => {
         ...gmpAddresses.mainnet,
       },
       oldBoardId: boardId || '',
+      walletBytecode,
+      defaultFlowConfig,
     },
     testnet: {
       axelarConfig: { ...axelarConfigTestnet },
@@ -78,10 +83,12 @@ const build = async (homeP, endowments) => {
         ...gmpAddresses.testnet,
       },
       oldBoardId: boardId || '',
+      walletBytecode,
+      defaultFlowConfig,
     },
   });
 
-  const isMainnet = flags.net === 'devnet';
+  const isMainnet = flags.net === 'mainnet';
   const config = configs[isMainnet ? 'mainnet' : 'testnet'];
 
   if (isMainnet) {

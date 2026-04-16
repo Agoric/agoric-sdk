@@ -4,6 +4,8 @@ import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 /**
  * @import {Amount, Brand} from '@agoric/ertp'
  * @import {AgoricNamesRemotes, BoardRemote, VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {CoalescedWalletState} from '@agoric/client-utils/src/smart-wallet-utils.js';
  */
 
 // TODO Move to packages/internal.
@@ -21,10 +23,10 @@ export const parseFiniteNumber = input => {
 /**
  * JSON.stringify replacer to handle bigint
  *
- * @param {unknown} k
+ * @param {unknown} _k
  * @param {unknown} v
  */
-export const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
+export const bigintReplacer = (_k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
 /** @type {Partial<VBankAssetDetail>} */
 // eslint-disable-next-line no-unused-vars
@@ -87,7 +89,7 @@ export const asBoardRemote = x => {
 /**
  * Summarize the balances array as user-facing informative tuples
  *
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord['purses']} purses
+ * @param {CurrentWalletRecord['purses']} purses
  * @param {VBankAssetDetail[]} assets
  */
 export const purseBalanceTuples = (purses, assets) => {
@@ -115,7 +117,7 @@ export const fmtRecordOfLines = record => {
 /**
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
- * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
+ * @param {CoalescedWalletState} state
  * @param {AgoricNamesRemotes} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
@@ -171,8 +173,8 @@ export const offerStatusTuples = (state, agoricNames) => {
 };
 
 /**
- * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} current
- * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
+ * @param {CurrentWalletRecord} current
+ * @param {CoalescedWalletState} coalesced
  * @param {AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {

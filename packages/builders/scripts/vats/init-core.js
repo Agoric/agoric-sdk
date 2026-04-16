@@ -1,31 +1,45 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
+import { smartWalletSourceSpecRegistry } from '@agoric/smart-wallet/source-spec-registry.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }) =>
-  harden({
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
+export const defaultProposalBuilder = async ({ publishRef, install }) => {
+  const provisionPool = interProtocolBundleSpecs.provisionPool;
+  const walletFactory = smartWalletSourceSpecRegistry.walletFactory;
+  const provisionPoolPath = await buildBundlePath(
+    import.meta.url,
+    provisionPool,
+  );
+  const walletFactoryPath = await buildBundlePath(
+    import.meta.url,
+    walletFactory,
+  );
+
+  return harden({
     sourceSpec: '@agoric/vats/src/core/startWalletFactory.js',
     getManifestCall: [
       'getManifestForWalletFactory',
       {
         installKeys: {
           provisionPool: publishRef(
-            install(
-              '@agoric/inter-protocol/src/provisionPool.js',
-              '../bundles/bundle-provisionPool.js',
-            ),
+            install(provisionPool.packagePath, provisionPoolPath),
           ),
           walletFactory: publishRef(
-            install(
-              '@agoric/smart-wallet/src/walletFactory.js',
-              '../../smart-wallet/bundles/bundle-walletFactory.js',
-            ),
+            install(walletFactory.packagePath, walletFactoryPath),
           ),
         },
       },
     ],
   });
+};
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('gov-vats', defaultProposalBuilder);

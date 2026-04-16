@@ -1,12 +1,30 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- fails to notice the @see uses */
+/* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { JsonSafe } from '@agoric/cosmic-proto';
+import type { Brand, Issuer } from '@agoric/ertp';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
+import type { CaipChainId } from '@agoric/orchestration';
+import type {
+  Installation,
+  Instance,
+} from '@agoric/zoe/src/zoeService/types.js';
 import type { TargetApp } from './bridge-target.js';
 import type { LocalChainAccount } from './localchain.js';
+import type { AssetInfo } from './vat-bank.js';
+
+/**
+ * Published vstorage values under the `agoricNames.` hierarchy.
+ */
+export type AgoricNamesPublishedPathTypes = {
+  'agoricNames.installation': Array<[string, Installation]>;
+  'agoricNames.instance': Array<[string, Instance]>;
+  'agoricNames.brand': Array<[string, Brand]>;
+  'agoricNames.issuer': Array<[string, Issuer]>;
+  'agoricNames.vbankAsset': Array<[string, AssetInfo]>;
+};
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>
@@ -149,6 +167,33 @@ export type IBCPacket = JsonSafe<{
   timeout_height?: PacketSDKType['timeout_height'];
   timeout_timestamp?: PacketSDKType['timeout_timestamp'];
 }>;
+
+/**
+ * The network host is the tuple type that identifies the system providing a
+ * NetworkBinding. We currently only support chain-based CAIP-2 hosts, but
+ * others may be added later.
+ */
+export type NetworkHost = readonly [readonly ['chain', CaipChainId]];
+
+/**
+ * A network binding is the protocol-specific minimal information needed to
+ * identify a specific source or destination, knowing the NetworkHost for which
+ * it has been bound.
+ */
+export interface NetworkBinding {
+  ibc: readonly [
+    readonly ['port', IBCPortID],
+    readonly ['channel', IBCChannelID],
+  ];
+}
+
+/**
+ * A network endpoint is a tuple that identifies a specific network location,
+ * including the protocol, host, and any protocol-specific binding information.
+ */
+export type NetworkEndpoint<Proto extends keyof NetworkBinding> = Readonly<
+  [Proto, ...(NetworkHost | []), ...(NetworkBinding[Proto] | [])]
+>;
 
 export type IBCCounterParty = {
   port_id: IBCPortID;

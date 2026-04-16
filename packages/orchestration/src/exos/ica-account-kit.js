@@ -6,9 +6,9 @@ import { NonNullish, makeTracer } from '@agoric/internal';
 import { VowShape } from '@agoric/vow';
 import {
   CosmosChainAddressShape,
+  LegacyExecuteEncodedTxOptionsShape,
   OutboundConnectionHandlerI,
   Proto3Shape,
-  ExecuteICATxOptsShape,
 } from '../typeGuards.js';
 import { findAddressField } from '../utils/address.js';
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
@@ -21,7 +21,7 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
- * @import {CosmosChainAddress, IcaAccount} from '../types.js';
+ * @import {CosmosActionOptions, CosmosChainAddress, IcaAccount} from '../types.js';
  */
 
 const trace = makeTracer('IcaAccountKit');
@@ -35,7 +35,7 @@ export const IcaAccountI = M.interface('IcaAccount', {
   getPort: M.call().returns(M.remotable('Port')),
   executeTx: M.call(M.arrayOf(M.record())).returns(VowShape),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
-    .optional(ExecuteICATxOptsShape)
+    .optional(LegacyExecuteEncodedTxOptionsShape)
     .returns(VowShape),
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
@@ -139,9 +139,7 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
          * typically do not affect IBC app protocols like PFM, ICA.
          *
          * @param {AnyJson[]} msgs
-         * @param {Partial<Omit<TxBody, 'messages'>> & {
-         *   sendOpts?: SendOptions;
-         * }} [opts]
+         * @param {CosmosActionOptions['txOpts'] & CosmosActionOptions} [opts]
          * @returns {Vow<string>} - base64 encoded bytes string. Can be decoded
          *   using the corresponding `Msg*Response` object.
          * @throws {Error} if packet fails to send or an error is returned
@@ -152,8 +150,13 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
             if (!connection) {
               throw Fail`Account not available or deactivated.`;
             }
-            const { sendOpts, ...txBodyOpts } = opts;
+            // Accept legacyTxOpts at the top level of opts for backward compatibility...
+            const { sendOpts, txOpts, ...legacyTxBodyOpts } = opts;
+            // ...but we override them with `opts.txOpts` if provided.
+            const txBodyOpts = { ...legacyTxBodyOpts, ...txOpts };
+
             return watch(
+              // XXX here is where we would use `sendWithMeta` to get the sequence number.
               E(connection).send(makeTxPacket(msgs, txBodyOpts), sendOpts),
               this.facets.parseTxPacketWatcher,
             );

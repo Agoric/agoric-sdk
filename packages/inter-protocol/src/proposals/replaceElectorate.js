@@ -17,7 +17,12 @@ import {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { provideRetiredInstances, reserveThenDeposit } from './utils.js';
 
-/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
+ * @import {Instance, Invitation} from '@agoric/zoe';
+ * @import {MapStore} from '@agoric/store';
+ * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
+ */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
 /** @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js'; */
 
@@ -368,6 +373,7 @@ const startNewEconCharter = async ({
   const terms = harden({
     binaryVoteCounterInstallation: counterInstall,
   });
+  /** @type {EconCharterStartResult} */
   const startResult = await E(startUpgradable)({
     label,
     installation: charterInstall,

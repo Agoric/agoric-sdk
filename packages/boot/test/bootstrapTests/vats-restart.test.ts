@@ -9,14 +9,20 @@ import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-
 import type { ScopedBridgeManager } from '@agoric/vats';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
 
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
+  const snapshot = await loadOrCreateRunUtilsSnapshot(
+    'itest-vaults-base',
+    t.log,
+  );
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier: PLATFORM_CONFIG,
+    snapshot,
   });
 
   const { runUtils, storage } = swingsetTestKit;

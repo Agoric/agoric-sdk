@@ -1,12 +1,14 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../../helpers.js';
-import { BinaryReader } from '../../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgRegisterInterchainAccount,
   MsgRegisterInterchainAccountResponse,
   MsgSendTx,
   MsgSendTxResponse,
-} from './tx.js';
+  MsgUpdateParams,
+  MsgUpdateParamsResponse,
+} from '@agoric/cosmic-proto/codegen/ibc/applications/interchain_accounts/controller/v1/tx.js';
 /** Msg defines the 27-interchain-accounts/controller Msg service. */
 export interface Msg {
   /** RegisterInterchainAccount defines a rpc handler for MsgRegisterInterchainAccount. */
@@ -15,13 +17,16 @@ export interface Msg {
   ): Promise<MsgRegisterInterchainAccountResponse>;
   /** SendTx defines a rpc handler for MsgSendTx. */
   sendTx(request: MsgSendTx): Promise<MsgSendTxResponse>;
+  /** UpdateParams defines a rpc handler for MsgUpdateParams. */
+  updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.registerInterchainAccount = this.registerInterchainAccount.bind(this);
     this.sendTx = this.sendTx.bind(this);
+    this.updateParams = this.updateParams.bind(this);
   }
   registerInterchainAccount(
     request: MsgRegisterInterchainAccount,
@@ -47,4 +52,18 @@ export class MsgClientImpl implements Msg {
       MsgSendTxResponse.decode(new BinaryReader(data)),
     );
   }
+  updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse> {
+    const data = MsgUpdateParams.encode(request).finish();
+    const promise = this.rpc.request(
+      'ibc.applications.interchain_accounts.controller.v1.Msg',
+      'UpdateParams',
+      data,
+    );
+    return promise.then(data =>
+      MsgUpdateParamsResponse.decode(new BinaryReader(data)),
+    );
+  }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

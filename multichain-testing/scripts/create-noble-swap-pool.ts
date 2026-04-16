@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-/* eslint-env node */
+
 import '@endo/init';
 import { execa } from 'execa';
 import { parseArgs } from 'node:util';
@@ -95,6 +95,7 @@ async function pollSwapPools(
 ) {
   const start = Date.now();
 
+  await null;
   while (true) {
     const swapPools = await getSwapPools({ pod, container });
     if (conditionToStopPolling(swapPools)) {
@@ -257,7 +258,7 @@ Options:
   if (!hasNobleChain) return;
 
   const sdkVersion = await getNobleVersion({ pod, container });
-  if (parseInt(sdkVersion) < REQUIRED_ATLEAST_MAJOR) {
+  if (parseInt(sdkVersion, 10) < REQUIRED_ATLEAST_MAJOR) {
     console.log(
       `noble sdk version ${sdkVersion} is less than required v${REQUIRED_ATLEAST_MAJOR}`,
     );

@@ -1,0 +1,272 @@
+import test from 'ava';
+import { WebSocketProvider } from 'ethers';
+import type { ClusterName } from '@agoric/internal';
+import {
+  loadConfig,
+  defaultAgoricNetworkSpecForCluster,
+  type SecretManager,
+} from '../src/config.ts';
+import {
+  createEVMContext,
+  getConfirmationsRequired,
+  getRevertConfirmationsRequired,
+} from '../src/support.ts';
+
+const { entries, keys } = Object;
+
+/** Acceptable values for all required environment variables. */
+const minimalEnv = {
+  MNEMONIC: 'test mnemonic phrase',
+  ALCHEMY_API_KEY: 'test1234',
+  CONTRACT_INSTANCE: 'ymax1',
+  GRAPHQL_ENDPOINTS: JSON.stringify({
+    'api-spectrum-blockchain': ['https://example.invalid/'],
+    'api-spectrum-pools': ['https://example.invalid/'],
+  }),
+  SQLITE_DB_PATH: './test-kv-store.db',
+};
+
+const makeFakeSecretManager = (mnemonic?: string) =>
+  ({
+    accessSecretVersion: async () => [
+      {
+        payload: {
+          data: mnemonic,
+        },
+      },
+    ],
+  }) as SecretManager;
+
+const callLoadConfig = (
+  envOverrides: Record<string, string | undefined> = {},
+  secretManager: SecretManager = makeFakeSecretManager(),
+) => loadConfig({ ...minimalEnv, ...envOverrides }, secretManager);
+
+test('loadConfig validates required MNEMONIC', async t => {
+  const env = { GRAPHQL_ENDPOINTS: minimalEnv.GRAPHQL_ENDPOINTS };
+  const secretManager = makeFakeSecretManager();
+
+  await t.throwsAsync(() => loadConfig(env, secretManager), {
+    message: 'GCP accessSecretVersion response missing payload data',
+  });
+});
+
+test('loadConfig accepts valid configuration', async t => {
+  const env = {
+    CLUSTER: 'testnet',
+    MNEMONIC: 'test mnemonic phrase',
+    CONTRACT_INSTANCE: 'ymax1',
+    ALCHEMY_API_KEY: 'test1234',
+    AGORIC_NET: 'devnet,myChainId',
+    COSMOS_REST_TIMEOUT: '10000',
+    COSMOS_REST_RETRIES: '5',
+    GRAPHQL_ENDPOINTS: minimalEnv.GRAPHQL_ENDPOINTS,
+    SQLITE_DB_PATH: './test-kv-store.db',
+    YDS_URL: 'https://yds.example.com',
+    YDS_API_KEY: 'test-api-key-123',
+  };
+  const secretManager = makeFakeSecretManager();
+
+  const config = await loadConfig(env, secretManager);
+
+  t.is(config.clusterName, 'testnet');
+  t.is(config.mnemonic, 'test mnemonic phrase');
+  t.is(config.alchemyApiKey, 'test1234');
+  t.is(config.cosmosRest.agoricNetworkSpec, 'devnet,myChainId');
+  t.is(config.cosmosRest.timeout, 10000);
+  t.is(config.cosmosRest.retries, 5);
+});
+
+test('loadConfig uses default values when optional fields are missing', async t => {
+  const config = await callLoadConfig();
+
+  t.is(config.clusterName, 'local');
+  t.is(config.contractInstance, 'ymax1');
+  t.is(config.mnemonic, 'test mnemonic phrase');
+  t.is(config.alchemyApiKey, 'test1234');
+  t.is(config.cosmosRest.agoricNetworkSpec, 'local');
+  t.is(config.cosmosRest.timeout, 10000);
+  t.is(config.cosmosRest.retries, 3);
+});
+
+test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
+  for (const [clusterName, defaultAgoricNetworkSpec] of Object.entries(
+    defaultAgoricNetworkSpecForCluster,
+  )) {
+    for (const agoricNetworkSpec of [undefined, 'xnet', 'xnet,forceChainId']) {
+      const config = await callLoadConfig({
+        CLUSTER: clusterName,
+        AGORIC_NET: agoricNetworkSpec,
+      });
+      t.is(config.clusterName, clusterName as any, `CLUSTER=${clusterName}`);
+      t.is(
+        config.cosmosRest.agoricNetworkSpec,
+        agoricNetworkSpec || defaultAgoricNetworkSpec,
+        `CLUSTER=${clusterName} implies AGORIC_NET`,
+      );
+    }
+  }
+});
+
+test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
+  const defaultClusterNameForAgoricNetwork = new Map<string, ClusterName>([
+    ['local', 'local'],
+    ['devnet', 'testnet'],
+    ['xnet', 'testnet'],
+    ['main', 'mainnet'],
+  ]);
+  for (const [
+    agoricNetSubdomain,
+    defaultClusterName,
+  ] of defaultClusterNameForAgoricNetwork.entries()) {
+    for (const agoricNetworkSpec of [
+      agoricNetSubdomain,
+      `${agoricNetSubdomain},forceChainId`,
+    ]) {
+      for (const clusterName of [undefined, 'mainnet']) {
+        const config = await callLoadConfig({
+          AGORIC_NET: agoricNetworkSpec,
+          CLUSTER: clusterName,
+        });
+        t.is(
+          config.cosmosRest.agoricNetworkSpec,
+          agoricNetworkSpec,
+          `AGORIC_NET=${agoricNetworkSpec}`,
+        );
+        t.is(
+          config.clusterName,
+          clusterName || (defaultClusterName as any),
+          `AGORIC_NET=${agoricNetworkSpec} implies CLUSTER`,
+        );
+      }
+    }
+  }
+});
+
+test('loadConfig validates positive integers', async t => {
+  await t.throwsAsync(() => callLoadConfig({ REQUEST_TIMEOUT: '0' }), {
+    message: /"REQUEST_TIMEOUT" must be a positive integer/,
+  });
+});
+
+test('loadConfig trims whitespace from values', async t => {
+  const config = await callLoadConfig({ AGORIC_NET: '  devnet  ' });
+
+  t.is(config.mnemonic, 'test mnemonic phrase');
+  t.is(config.alchemyApiKey, 'test1234');
+  t.is(config.cosmosRest.agoricNetworkSpec, 'devnet');
+});
+
+test('loadConfig rejects empty required values', async t => {
+  await t.throwsAsync(() => callLoadConfig({ ALCHEMY_API_KEY: '   ' }), {
+    message: '"ALCHEMY_API_KEY" is required',
+  });
+});
+
+test('loadConfig accepts ymax0 contract instance', async t => {
+  const config = await callLoadConfig({ CONTRACT_INSTANCE: 'ymax0' });
+  t.is(config.contractInstance, 'ymax0');
+});
+
+test('loadConfig accepts ymax1 contract instance', async t => {
+  const config = await callLoadConfig({ CONTRACT_INSTANCE: 'ymax1' });
+  t.is(config.contractInstance, 'ymax1');
+});
+
+test('loadConfig rejects invalid contract instance', async t => {
+  await t.throwsAsync(() => callLoadConfig({ CONTRACT_INSTANCE: 'ymax2' }), {
+    message: /CONTRACT_INSTANCE must be 'ymax0' or 'ymax1'/,
+  });
+});
+
+// --- Unit tests for getRevertConfirmationsRequired ---
+
+test('getRevertConfirmationsRequired exceeds normal confirmations', t => {
+  // All chains should have revert confirmations >= normal confirmations
+  const chainIds = [
+    'eip155:1', // Ethereum (12s blocks)
+    'eip155:42161', // Arbitrum (0.3s blocks)
+    'eip155:43114', // Avalanche (2s blocks)
+    'eip155:8453', // Base (2.5s blocks)
+    'eip155:10', // Optimism (2s blocks)
+  ] as const;
+
+  for (const chainId of chainIds) {
+    const normal = getConfirmationsRequired(chainId);
+    const revert = getRevertConfirmationsRequired(chainId);
+    t.true(
+      revert > normal,
+      `${chainId}: revert (${revert}) should exceed normal (${normal})`,
+    );
+  }
+});
+
+test('getRevertConfirmationsRequired scales with block time', t => {
+  // Faster chains need more confirmations to cover the same wall-clock time
+  const arbitrum = getRevertConfirmationsRequired('eip155:42161'); // 0.3s blocks
+  const ethereum = getRevertConfirmationsRequired('eip155:1'); // 12s blocks
+
+  t.true(
+    arbitrum > ethereum,
+    `Arbitrum (${arbitrum}) should need more confirmations than Ethereum (${ethereum})`,
+  );
+});
+
+test('getRevertConfirmationsRequired computes expected values', t => {
+  // 10 min = 600_000ms; ceil(600_000 / blockTimeMs)
+  const expected: Record<string, number> = {
+    'eip155:1': 50, // ceil(600_000 / 12_000)
+    'eip155:42161': 2000, // ceil(600_000 / 300)
+    'eip155:43114': 300, // ceil(600_000 / 2_000)
+    'eip155:8453': 240, // ceil(600_000 / 2_500)
+    'eip155:10': 300, // ceil(600_000 / 2_000)
+  };
+
+  for (const [chainId, expectedConfs] of Object.entries(expected)) {
+    t.is(
+      getRevertConfirmationsRequired(chainId as any),
+      expectedConfs,
+      `${chainId}: expected ${expectedConfs} revert confirmations`,
+    );
+  }
+});
+
+// --- Unit tests for createEVMContext ---
+// Skip this test because WebSocketProvider tries to connect immediately with invalid API key
+test.skip('createEVMContext generates valid testnet context', async t => {
+  const result = await createEVMContext({
+    clusterName: 'testnet',
+    alchemyApiKey: 'test1234',
+  });
+
+  t.truthy(result.evmProviders);
+  t.truthy(result.usdcAddresses);
+
+  // Check that evmProviders contains WebSocketProvider instances
+  const providerEntries = entries(result.evmProviders);
+  t.true(providerEntries.length > 0, 'should have at least one provider');
+
+  for (const [caipId, provider] of providerEntries) {
+    t.regex(
+      caipId,
+      /^eip155:\d+$/,
+      'CAIP ID should match eip155:chainId format',
+    );
+    t.true(
+      provider instanceof WebSocketProvider,
+      'provider should be WebSocketProvider instance',
+    );
+  }
+
+  // Check that collections have consistent CAIP IDs
+  const providerCaipIds = keys(result.evmProviders);
+  const usdcCaipIds = keys(result.usdcAddresses);
+
+  // Each provider should have corresponding USDC address and chain mapping
+  for (const caipId of providerCaipIds) {
+    t.true(
+      usdcCaipIds.includes(caipId),
+      `USDC address should exist for ${caipId}`,
+    );
+  }
+});

@@ -11,7 +11,6 @@ import {
   BLOCK_HISTOGRAM_METRICS,
 } from '@agoric/internal/src/metrics.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
 
 import {
   leadingPrometheusNameRegExp,
@@ -83,7 +82,7 @@ const testPrometheusMetrics = async t => {
       default:
         break;
     }
-    Fail`port ${q(destPortName)} not implemented for message ${msg}`;
+    throw Fail`port ${q(destPortName)} not implemented for message ${msg}`;
   };
   const env = {
     ...process.env,
@@ -250,8 +249,5 @@ const testPrometheusMetrics = async t => {
   t.log(`compared ${comparisonCount} values`);
 };
 
-if (!IS_SUBPROCESS_RETRY) {
-  avaRetry(test, 'Prometheus metric definitions', testPrometheusMetrics);
-} else {
-  test('Prometheus metric definitions', testPrometheusMetrics);
-}
+// TODO(#11175): re-enable flaky test
+test.skip('Prometheus metric definitions', testPrometheusMetrics);

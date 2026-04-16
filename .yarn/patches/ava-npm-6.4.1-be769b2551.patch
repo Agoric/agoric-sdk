@@ -1,0 +1,15 @@
+diff --git a/lib/cli.js b/lib/cli.js
+index 4e13084d47742dbb16a5882ee3f2efdebb297742..61b0601fa2b77efc3b40ef0bcc01eb6227ccf0a2 100644
+--- a/lib/cli.js
++++ b/lib/cli.js
+@@ -220,6 +220,10 @@ export default async function loadCli() { // eslint-disable-line complexity
+ 		.help();
+ 
+ 	const combined = {...conf};
++	// Agoric tweak to configure TAP output via environment variable
++	if (process.env.AGORIC_AVA_USE_TAP) {
++		combined.tap = true;
++	}
+ 
+ 	for (const flag of Object.keys(FLAGS)) {
+ 		if (flag === 'no-worker-threads' && Object.hasOwn(argv, 'worker-threads')) {

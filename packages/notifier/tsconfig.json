@@ -1,11 +1,11 @@
 // This file can contain .js-specific Typescript compiler config.
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {},
+  "compilerOptions": {
+  },
   "include": [
     "src/**/*.js",
     "subscribe.*",
-    // exclude exported.js so that stub doesn't overwrite exportd.d.ts
     "test/**/*.js",
     "tools/**/*.js",
   ],

@@ -1,7 +1,11 @@
 import { makeFsStreamWriter } from '@agoric/internal/src/node/fs-stream.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
-/** @param {import('./index.js').MakeSlogSenderOptions} opts */
+/**
+ * @import {MakeSlogSenderOptions} from './index.js';
+ */
+
+/** @param {MakeSlogSenderOptions} opts */
 export const makeSlogSender = async ({ env: { SLOGFILE } = {} } = {}) => {
   const stream = await makeFsStreamWriter(SLOGFILE);
 

@@ -1,13 +1,14 @@
+// @ts-nocheck
 /* global clearTimeout setTimeout */
-import path from 'path';
-import fs from 'fs';
-import url from 'url';
-import { execFile } from 'child_process';
+import path from 'node:path';
+import fs from 'node:fs';
+import url from 'node:url';
+import { execFile } from 'node:child_process';
 import { open as tempOpen } from 'temp';
 
 import WebSocket from 'ws';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { Fail, makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -16,6 +17,7 @@ import {
   QueryDataRequest,
   QueryDataResponse,
 } from '@agoric/cosmic-proto/vstorage/query.js';
+import { CodecHelper } from '@agoric/cosmic-proto';
 
 import { makeNotifierKit } from '@agoric/notifier';
 import {
@@ -200,18 +202,16 @@ export async function connectToChain(
 
   let goodRpcHref = rpcHrefs[0];
   const runHelper = (args, stdin = undefined) => {
-    const fullArgs = [
-      ...args,
-      `--chain-id=${chainID}`,
-      `--node=${goodRpcHref}`,
-      `--home=${helperDir}`,
-    ];
+    const fullArgs = [...args, `--node=${goodRpcHref}`, `--home=${helperDir}`];
     console.debug(HELPER, ...fullArgs);
     return new Promise(resolve => {
       const proc = execFile(
         HELPER,
         fullArgs,
-        { maxBuffer: MAX_BUFFER_SIZE },
+        {
+          maxBuffer: MAX_BUFFER_SIZE,
+          env: { ...process.env, AGD_CHAIN_ID: chainID },
+        },
         (_error, stdout, stderr) => {
           resolve({ stdout, stderr });
         },
@@ -305,7 +305,7 @@ export async function connectToChain(
       };
 
       const subscribeToTxHash = (txHash, cb) => {
-        const txQuery = `tm.event = 'Tx' and tx.hash = '${txHash}'`;
+        const txQuery = `tm.event = 'Tx' AND tx.hash = '${txHash}'`;
 
         const bufHash = decodeHex(txHash);
         const b64Hash = encodeBase64(bufHash);
@@ -328,7 +328,7 @@ export async function connectToChain(
             cb(obj.error);
             return;
           }
-          if (!obj.result) {
+          if (!obj.result || Object.keys(obj.result).length === 0) {
             return;
           }
           let txResult;
@@ -355,14 +355,16 @@ export async function connectToChain(
         // This takes care of BeginBlock/EndBlock events.
         const blockQuery = `tm.event = 'NewBlockHeader' AND storage.path = '${storagePath}'`;
         // We need a separate query for events raised by transactions.
-        const txQuery = `tm.event = 'Tx' and storage.path = '${storagePath}'`;
+        const txQuery = `tm.event = 'Tx' AND storage.path = '${storagePath}'`;
 
         // console.info('subscribeToStorage', blockQuery);
         const blockSubscriptionId = sendRPC('subscribe', { query: blockQuery });
         const txSubscriptionId = sendRPC('subscribe', { query: txQuery });
         const queryId = sendRPC('abci_query', {
           path: `/agoric.vstorage.Query/Data`,
-          data: encodeHex(QueryDataRequest.toProto({ path: storagePath })),
+          data: encodeHex(
+            CodecHelper(QueryDataRequest).toProto({ path: storagePath }),
+          ),
         });
 
         const cleanup = () => {
@@ -385,18 +387,14 @@ export async function connectToChain(
         // Query for our initial value.
         setCallback(queryId, obj => {
           // console.info(`got ${storagePath} query`, obj);
-          if (obj.result && obj.result.response && obj.result.response.value) {
+          if (obj.result?.response?.value) {
             // Decode the layers up to the actual storage value.
             const { value: b64JsonStorage, height: heightString } =
               obj.result.response;
             const buf = decodeBase64(b64JsonStorage);
             const { value: storageValue } = QueryDataResponse.decode(buf);
             guardedCb(BigInt(heightString), storageValue);
-          } else if (
-            obj.result &&
-            obj.result.response &&
-            obj.result.response.code === 6
-          ) {
+          } else if (obj.result?.response?.code === 6) {
             // No need to try again, just a missing value that our subscription
             // will pick up.
             const { height: heightString } = obj.result.response;
@@ -449,7 +447,6 @@ export async function connectToChain(
 
           // Find only the latest value in the events.
           let storageValue;
-          // eslint-disable-next-line github/array-foreach
           paths.forEach((key, i) => {
             if (key === storagePath) {
               storageValue = values[i];

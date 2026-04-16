@@ -1,7 +1,3 @@
-// @jessie-check
-/// <reference types="@agoric/governance/exported" />
-/// <reference types="@agoric/zoe/exported" />
-
 import { M, mustMatch } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
@@ -10,6 +6,14 @@ import {
   InstanceHandleShape,
 } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
+
+/**
+ * @import {MapStore, SetStore} from '@agoric/store';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {TimestampValue} from '@agoric/time';
+ * @import {ContractMeta, Installation, Instance, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {GovernorCreatorFacet} from '@agoric/governance/src/types.js';
+ */
 
 /**
  * @file This contract makes it possible for those who govern contracts to call
@@ -23,7 +27,7 @@ export const INVITATION_MAKERS_DESC = 'charter member invitation';
 /**
  * @typedef {object} ParamChangesOfferArgs
  * @property {bigint} deadline
- * @property {Instance} instance
+ * @property {Instance<unknown>} instance
  * @property {Record<string, unknown>} params
  * @property {{ paramPath: unknown }} [path] paramPath is determined by contract
  */
@@ -49,12 +53,12 @@ harden(meta);
 
 /**
  * @param {ZCF<{ binaryVoteCounterInstallation: Installation }>} zcf
- * @param {undefined} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {undefined} _privateArgs
+ * @param {Baggage} baggage
  */
-export const start = async (zcf, privateArgs, baggage) => {
+export const start = async (zcf, _privateArgs, baggage) => {
   const { binaryVoteCounterInstallation: counter } = zcf.getTerms();
-  /** @type {MapStore<Instance, GovernorCreatorFacet<any>>} */
+  /** @type {MapStore<Instance<unknown>, GovernorCreatorFacet<any>>} */
   const instanceToGovernor = provideDurableMapStore(
     baggage,
     'instanceToGovernor',
@@ -98,10 +102,10 @@ export const start = async (zcf, privateArgs, baggage) => {
   };
 
   /**
-   * @param {Instance} instance
+   * @param {Instance<unknown>} instance
    * @param {string} methodName
    * @param {string[]} methodArgs
-   * @param {import('@agoric/time').TimestampValue} deadline
+   * @param {TimestampValue} deadline
    */
   const makeApiInvocationInvitation = (
     instance,
@@ -169,7 +173,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     CharterCreatorI,
     {
       /**
-       * @param {Instance} governedInstance
+       * @param {Instance<unknown>} governedInstance
        * @param {GovernorCreatorFacet<any>} governorFacet
        * @param {string} [label] for diagnostic use only
        */

@@ -6,6 +6,10 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { buildVatController } from '@agoric/swingset-vat';
 import { psmV1BundleName } from './bootstrap-psm-upgrade.js';
 
+/**
+ * @import {SwingSetConfig} from '@agoric/swingset-vat';
+ */
+
 // so paths can be expresssed relative to this file and made absolute
 const bfile = name => new URL(name, import.meta.url).pathname;
 const resolvePathname = spec =>

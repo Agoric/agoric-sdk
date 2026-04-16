@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
 import { provideLazy } from '@agoric/store';
 import { makeNotifierKit } from '@agoric/notifier';
@@ -7,6 +5,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 /**
  * @import {Purse} from './types.js';
  * @import {NotifierRecord} from '@agoric/notifier';
+ * @import {WeakMapStore} from '@agoric/store';
  */
 
 // Note: Virtual for high cardinality, but *not* durable, and so

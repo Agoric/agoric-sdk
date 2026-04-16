@@ -2,7 +2,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/**/*.js",

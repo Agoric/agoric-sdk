@@ -1,11 +1,13 @@
-// @jessie-check
-
 /**
  * Module to improvise composite keys for orderedVaultStore until Collections
  * API supports them.
  */
 
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Amount, Ratio} from '@agoric/ertp';
+ * @import {VaultId} from './types.js';
+ */
 
 // XXX importing these that are declared to be used only for testing
 // until @agoric/store supports composite keys
@@ -23,7 +25,9 @@ const trace = makeTracer('Store', true);
 
 /** @import {PureData} from '@endo/marshal' */
 
-/** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
+/**
+ * @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey
+ */
 
 // `makeEncodePassable` has three named options:
 // `encodeRemotable`, `encodeError`, and `encodePromise`.

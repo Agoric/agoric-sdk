@@ -6,7 +6,7 @@ import {
   makeAgoricNames,
   makeVstorageKit,
 } from '@agoric/client-utils';
-import { execFileSync as execFileSyncAmbient } from 'child_process';
+import { execFileSync as execFileSyncAmbient } from 'node:child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
@@ -21,7 +21,10 @@ import {
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {GovernancePublishedPathTypes} from '@agoric/governance/src/types.js';
  * @import {VstorageKit} from '@agoric/client-utils';
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
+ * @import {Writable} from 'stream';
  */
 
 const collectValues = (val, memo) => {
@@ -34,12 +37,12 @@ const defaultKeyring = process.env.AGORIC_KEYRING_BACKEND || 'test';
 const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
- * @param {import('anylogger').Logger} _logger
+ * @param {Logger} _logger
  * @param {{
  *   env?: Record<string, string|undefined>,
  *   fetch?: typeof window.fetch,
- *   stdout?: Pick<import('stream').Writable, 'write'>,
- *   stderr?: Pick<import('stream').Writable, 'write'>,
+ *   stdout?: Pick<Writable, 'write'>,
+ *   stderr?: Pick<Writable, 'write'>,
  *   execFileSync?: typeof execFileSyncAmbient,
  *   delay?: (ms: number) => Promise<void>,
  * }} [io]
@@ -50,6 +53,8 @@ export const makeGovCommand = (_logger, io = {}) => {
     // default to conventional ambient IO facilities.
     stdout = process.stdout,
     stderr = process.stderr,
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore some resolutions don't expect this on global
     fetch = global.fetch,
     execFileSync = execFileSyncAmbient,
     delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
@@ -342,6 +347,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts, options) {
+      /** @type {VstorageKit<GovernancePublishedPathTypes>} */
       const vsk = makeVstorageKit({ fetch }, networkConfig);
       const { readPublished } = vsk;
 

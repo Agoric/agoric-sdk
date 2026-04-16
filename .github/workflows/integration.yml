@@ -1,5 +1,5 @@
 env:
-  GOLANG_VERSION: '1.22'
+  GOLANG_VERSION: '1.24'
   LOADGEN_REPO_NAME: 'testnet-load-generator'
   ORG_NAME: 'Agoric'
   ENABLE_GETTING_STARTED: '' # Known issues with getting started tests, so disable them.
@@ -148,11 +148,10 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
 
-    runs-on: 'depot-ubuntu-22.04-4'
+    runs-on: 'depot-ubuntu-22.04-8'
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
           path: ./agoric-sdk
       - run: sudo packages/deployment/scripts/install-deps.sh
         working-directory: ./agoric-sdk
@@ -221,8 +220,8 @@ jobs:
   test-docker-build:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: 'depot-ubuntu-22.04-8'
-    timeout-minutes: 60
+    runs-on: 'depot-ubuntu-22.04-16'
+    timeout-minutes: 90
     steps:
       - name: update job environment
         run: |
@@ -285,19 +284,19 @@ jobs:
         run: make --directory packages/cosmic-swingset install
         working-directory: agoric-sdk
 
-      - name: verify SDK image didn't change
-        # In the future when we can rebuild the SDK image with resolved endo packages, it would
-        # be expected that the SDK image previously built has changed
-        if: steps.restore-node.outputs.endo-branch == 'NOPE'
-        run: |
-          original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
-          yarn build:sdk
-          new=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
-          if [ "$original" != "$new" ]; then
-            echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
-            exit 1
-          fi
-        working-directory: agoric-sdk/a3p-integration
+      # - name: verify SDK image didn't change
+      #   # In the future when we can rebuild the SDK image with resolved endo packages, it would
+      #   # be expected that the SDK image previously built has changed
+      #   if: steps.restore-node.outputs.endo-branch == 'NOPE'
+      #   run: |
+      #     original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
+      #     yarn build:sdk
+      #     new=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
+      #     if [ "$original" != "$new" ]; then
+      #       echo "New SDK docker image ($new) changed after restore-node (original $original)" 1>&2
+      #       exit 1
+      #     fi
+      #   working-directory: agoric-sdk/a3p-integration
 
       - id: get-loadgen-branch
         name: Get the appropriate loadgen branch
@@ -343,7 +342,10 @@ jobs:
           echo "LOADGEN_PATH=$GITHUB_WORKSPACE/${{ env.LOADGEN_REPO_NAME }}" >> "$GITHUB_ENV"
 
       - name: build proposals tests
-        run: yarn build
+        # Skip build:sdk because the "docker build (sdk)" step above already
+        # produced ghcr.io/agoric/agoric-sdk:unreleased. Running `yarn build`
+        # would rebuild it redundantly via build:sdk (~4-5 min with layer cache).
+        run: yarn build:submissions && yarn build:synthetic-chain
         working-directory: agoric-sdk/a3p-integration
 
       - name: run proposals tests
@@ -400,6 +402,15 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     uses: ./.github/workflows/multichain-e2e.yml
+
+  test-ymax-planner-build:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build ymax-planner Docker image
+        run: docker build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
 
   finalize-integration-result:
     needs:

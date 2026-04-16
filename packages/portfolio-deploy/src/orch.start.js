@@ -5,17 +5,18 @@ import { fromExternalConfig } from './config-marshal.js';
 /**
  * @import { Issuer } from '@agoric/ertp';
  * @import { ManifestBundleRef } from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import { Remote } from '@agoric/internal';
- * @import { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+ * @import { Remote, ERemote } from '@agoric/internal';
+ * @import { Marshaller, StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
  * @import { ChainInfo, IBCConnectionInfo } from '@agoric/orchestration';
  * @import { Board, NameHub } from '@agoric/vats';
  * @import { BootstrapManifest, BootstrapManifestPermit } from '@agoric/vats/src/core/lib-boot.js';
- * @import { Installation } from '@agoric/zoe';
+ * @import { Installation, IssuerKeywordRecord } from '@agoric/zoe';
  * @import { ContractStartFunction } from '@agoric/zoe/src/zoeService/utils.js';
  * @import { ERef } from '@endo/far';
  * @import { CopyRecord } from '@endo/pass-style';
  * @import { LegibleCapData } from './config-marshal.js';
  * @import { PermitG, CorePowersG, ChainStoragePowers, MakePrivateArgs, UpgradeKit } from './orch.start.types.ts';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const { entries, fromEntries, keys } = Object;
@@ -27,13 +28,15 @@ const trace = makeTracer(`ORCH-Start`, true);
  *
  * @param {string} path
  * @param {{
- *   chainStorage: ERef<StorageNode>;
- *   board: ERef<Board>;
+ *   chainStorage: ERemote<StorageNode>;
+ *   board: ERemote<Board>;
  * }} powers
  */
 const makePublishingStorageKit = async (path, { chainStorage, board }) => {
+  /** @type {Remote<StorageNode>} */
   const storageNode = await E(chainStorage).makeChildNode(path);
 
+  /** @type {Remote<Marshaller>} */
   const marshaller = await E(board).getPublishingMarshaller();
   return { storageNode, marshaller };
 };

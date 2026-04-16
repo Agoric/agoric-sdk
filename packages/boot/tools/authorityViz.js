@@ -1,9 +1,14 @@
 #!/usr/bin/env node
 // @ts-check
 import '@endo/init';
-import process from 'process';
+import process from 'node:process';
 
 import { Fail, q } from '@endo/errors';
+
+/**
+ * @import {readFile} from 'fs/promises';
+ * @import {stdout} from 'process';
+ */
 
 const { entries, keys, values } = Object;
 
@@ -205,7 +210,7 @@ const manifest2graph = manifest => {
  * @param {string} specifier
  * @param {object} io
  * @param {Resolver} io.resolve
- * @param {typeof import('fs/promises').readFile} io.readFile
+ * @param {typeof readFile} io.readFile
  */
 const loadConfig = async (specifier, { resolve, readFile }) => {
   const fullPath = await resolve(specifier, import.meta.url).then(
@@ -220,7 +225,7 @@ const loadConfig = async (specifier, { resolve, readFile }) => {
 /**
  * @param {string[]} args
  * @param {object} io
- * @param {typeof import('process').stdout} io.stdout
+ * @param {typeof stdout} io.stdout
  * @param {typeof import('fs/promises')} io.fsp
  * @param {{
  *   resolve: Resolver;
@@ -266,7 +271,7 @@ const main = async (args, { stdout, fsp, meta }) => {
 
 const run = async () => {
   const [fsp, metaResolve] = await Promise.all([
-    import('fs/promises'),
+    import('node:fs/promises'),
     import('import-meta-resolve'),
   ]);
 

@@ -11,7 +11,7 @@ if [ -z "$SIGN_BROADCAST_OPTS" ]; then
 fi
 
 # After the param change, proposals (including install-bundle) will require BLD.
-agd tx bank send validator "$GOV1ADDR" 10000000000ubld $SIGN_BROADCAST_OPTS
+agd tx bank send validator "$GOV1ADDR" 100000000000ubld $SIGN_BROADCAST_OPTS
 
 # shellcheck disable=SC2086
 agd tx gov submit-proposal param-change drop-ist.json $SIGN_BROADCAST_OPTS

@@ -1,6 +1,10 @@
 //@ts-nocheck
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { Event, type EventSDKType } from '../../../../tendermint/abci/types.js';
+import {
+  Block,
+  type BlockSDKType,
+} from '../../../../tendermint/types/block.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
@@ -9,32 +13,55 @@ import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * TxResponse defines a structure containing relevant tx data and metadata. The
  * tags are stringified and the log is JSON decoded.
+ * @name TxResponse
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.TxResponse
  */
 export interface TxResponse {
-  /** The block height */
+  /**
+   * The block height
+   */
   height: bigint;
-  /** The transaction hash. */
+  /**
+   * The transaction hash.
+   */
   txhash: string;
-  /** Namespace for the Code */
+  /**
+   * Namespace for the Code
+   */
   codespace: string;
-  /** Response code. */
+  /**
+   * Response code.
+   */
   code: number;
-  /** Result bytes, if any. */
+  /**
+   * Result bytes, if any.
+   */
   data: string;
   /**
    * The output of the application's logger (raw string). May be
    * non-deterministic.
    */
   rawLog: string;
-  /** The output of the application's logger (typed). May be non-deterministic. */
+  /**
+   * The output of the application's logger (typed). May be non-deterministic.
+   */
   logs: ABCIMessageLog[];
-  /** Additional information. May be non-deterministic. */
+  /**
+   * Additional information. May be non-deterministic.
+   */
   info: string;
-  /** Amount of gas requested for transaction. */
+  /**
+   * Amount of gas requested for transaction.
+   */
   gasWanted: bigint;
-  /** Amount of gas consumed by transaction. */
+  /**
+   * Amount of gas consumed by transaction.
+   */
   gasUsed: bigint;
-  /** The request transaction bytes. */
+  /**
+   * The request transaction bytes.
+   */
   tx?: Any;
   /**
    * Time of the previous block. For heights > 1, it's the weighted median of
@@ -47,8 +74,6 @@ export interface TxResponse {
    * these events include those emitted by processing all the messages and those
    * emitted from the ante. Whereas Logs contains the events, with
    * additional metadata, emitted only by processing the messages.
-   *
-   * Since: cosmos-sdk 0.42.11, 0.44.5, 0.45
    */
   events: Event[];
 }
@@ -59,6 +84,9 @@ export interface TxResponseProtoMsg {
 /**
  * TxResponse defines a structure containing relevant tx data and metadata. The
  * tags are stringified and the log is JSON decoded.
+ * @name TxResponseSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.TxResponse
  */
 export interface TxResponseSDKType {
   height: bigint;
@@ -75,7 +103,12 @@ export interface TxResponseSDKType {
   timestamp: string;
   events: EventSDKType[];
 }
-/** ABCIMessageLog defines a structure containing an indexed tx ABCI message log. */
+/**
+ * ABCIMessageLog defines a structure containing an indexed tx ABCI message log.
+ * @name ABCIMessageLog
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.ABCIMessageLog
+ */
 export interface ABCIMessageLog {
   msgIndex: number;
   log: string;
@@ -89,7 +122,12 @@ export interface ABCIMessageLogProtoMsg {
   typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog';
   value: Uint8Array;
 }
-/** ABCIMessageLog defines a structure containing an indexed tx ABCI message log. */
+/**
+ * ABCIMessageLog defines a structure containing an indexed tx ABCI message log.
+ * @name ABCIMessageLogSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.ABCIMessageLog
+ */
 export interface ABCIMessageLogSDKType {
   msg_index: number;
   log: string;
@@ -98,6 +136,9 @@ export interface ABCIMessageLogSDKType {
 /**
  * StringEvent defines en Event object wrapper where all the attributes
  * contain key/value pairs that are strings instead of raw bytes.
+ * @name StringEvent
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.StringEvent
  */
 export interface StringEvent {
   type: string;
@@ -110,6 +151,9 @@ export interface StringEventProtoMsg {
 /**
  * StringEvent defines en Event object wrapper where all the attributes
  * contain key/value pairs that are strings instead of raw bytes.
+ * @name StringEventSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.StringEvent
  */
 export interface StringEventSDKType {
   type: string;
@@ -118,6 +162,9 @@ export interface StringEventSDKType {
 /**
  * Attribute defines an attribute wrapper where the key and value are
  * strings instead of raw bytes.
+ * @name Attribute
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.Attribute
  */
 export interface Attribute {
   key: string;
@@ -130,38 +177,62 @@ export interface AttributeProtoMsg {
 /**
  * Attribute defines an attribute wrapper where the key and value are
  * strings instead of raw bytes.
+ * @name AttributeSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.Attribute
  */
 export interface AttributeSDKType {
   key: string;
   value: string;
 }
-/** GasInfo defines tx execution gas context. */
+/**
+ * GasInfo defines tx execution gas context.
+ * @name GasInfo
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.GasInfo
+ */
 export interface GasInfo {
-  /** GasWanted is the maximum units of work we allow this tx to perform. */
+  /**
+   * GasWanted is the maximum units of work we allow this tx to perform.
+   */
   gasWanted: bigint;
-  /** GasUsed is the amount of gas actually consumed. */
+  /**
+   * GasUsed is the amount of gas actually consumed.
+   */
   gasUsed: bigint;
 }
 export interface GasInfoProtoMsg {
   typeUrl: '/cosmos.base.abci.v1beta1.GasInfo';
   value: Uint8Array;
 }
-/** GasInfo defines tx execution gas context. */
+/**
+ * GasInfo defines tx execution gas context.
+ * @name GasInfoSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.GasInfo
+ */
 export interface GasInfoSDKType {
   gas_wanted: bigint;
   gas_used: bigint;
 }
-/** Result is the union of ResponseFormat and ResponseCheckTx. */
+/**
+ * Result is the union of ResponseFormat and ResponseCheckTx.
+ * @name Result
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.Result
+ */
 export interface Result {
   /**
    * Data is any data returned from message or handler execution. It MUST be
    * length prefixed in order to separate data from multiple message executions.
    * Deprecated. This field is still populated, but prefer msg_response instead
    * because it also contains the Msg response typeURL.
+   * @deprecated
    */
-  /** @deprecated */
   data: Uint8Array;
-  /** Log contains the log information from message or handler execution. */
+  /**
+   * Log contains the log information from message or handler execution.
+   */
   log: string;
   /**
    * Events contains a slice of Event objects that were emitted during message
@@ -170,8 +241,6 @@ export interface Result {
   events: Event[];
   /**
    * msg_responses contains the Msg handler responses type packed in Anys.
-   *
-   * Since: cosmos-sdk 0.46
    */
   msgResponses: Any[];
 }
@@ -179,9 +248,16 @@ export interface ResultProtoMsg {
   typeUrl: '/cosmos.base.abci.v1beta1.Result';
   value: Uint8Array;
 }
-/** Result is the union of ResponseFormat and ResponseCheckTx. */
+/**
+ * Result is the union of ResponseFormat and ResponseCheckTx.
+ * @name ResultSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.Result
+ */
 export interface ResultSDKType {
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   data: Uint8Array;
   log: string;
   events: EventSDKType[];
@@ -190,6 +266,9 @@ export interface ResultSDKType {
 /**
  * SimulationResponse defines the response generated when a transaction is
  * successfully simulated.
+ * @name SimulationResponse
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SimulationResponse
  */
 export interface SimulationResponse {
   gasInfo: GasInfo;
@@ -202,6 +281,9 @@ export interface SimulationResponseProtoMsg {
 /**
  * SimulationResponse defines the response generated when a transaction is
  * successfully simulated.
+ * @name SimulationResponseSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SimulationResponse
  */
 export interface SimulationResponseSDKType {
   gas_info: GasInfoSDKType;
@@ -210,8 +292,11 @@ export interface SimulationResponseSDKType {
 /**
  * MsgData defines the data returned in a Result object during message
  * execution.
+ * @name MsgData
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.MsgData
+ * @deprecated
  */
-/** @deprecated */
 export interface MsgData {
   msgType: string;
   data: Uint8Array;
@@ -223,8 +308,11 @@ export interface MsgDataProtoMsg {
 /**
  * MsgData defines the data returned in a Result object during message
  * execution.
+ * @name MsgDataSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.MsgData
+ * @deprecated
  */
-/** @deprecated */
 export interface MsgDataSDKType {
   msg_type: string;
   data: Uint8Array;
@@ -232,15 +320,18 @@ export interface MsgDataSDKType {
 /**
  * TxMsgData defines a list of MsgData. A transaction will have a MsgData object
  * for each message.
+ * @name TxMsgData
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.TxMsgData
  */
 export interface TxMsgData {
-  /** data field is deprecated and not populated. */
-  /** @deprecated */
+  /**
+   * data field is deprecated and not populated.
+   * @deprecated
+   */
   data: MsgData[];
   /**
    * msg_responses contains the Msg handler responses packed into Anys.
-   *
-   * Since: cosmos-sdk 0.46
    */
   msgResponses: Any[];
 }
@@ -251,32 +342,59 @@ export interface TxMsgDataProtoMsg {
 /**
  * TxMsgData defines a list of MsgData. A transaction will have a MsgData object
  * for each message.
+ * @name TxMsgDataSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.TxMsgData
  */
 export interface TxMsgDataSDKType {
-  /** @deprecated */
+  /**
+   * @deprecated
+   */
   data: MsgDataSDKType[];
   msg_responses: AnySDKType[];
 }
-/** SearchTxsResult defines a structure for querying txs pageable */
+/**
+ * SearchTxsResult defines a structure for querying txs pageable
+ * @name SearchTxsResult
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SearchTxsResult
+ */
 export interface SearchTxsResult {
-  /** Count of all txs */
+  /**
+   * Count of all txs
+   */
   totalCount: bigint;
-  /** Count of txs in current page */
+  /**
+   * Count of txs in current page
+   */
   count: bigint;
-  /** Index of current page, start from 1 */
+  /**
+   * Index of current page, start from 1
+   */
   pageNumber: bigint;
-  /** Count of total pages */
+  /**
+   * Count of total pages
+   */
   pageTotal: bigint;
-  /** Max count txs per page */
+  /**
+   * Max count txs per page
+   */
   limit: bigint;
-  /** List of txs in current page */
+  /**
+   * List of txs in current page
+   */
   txs: TxResponse[];
 }
 export interface SearchTxsResultProtoMsg {
   typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult';
   value: Uint8Array;
 }
-/** SearchTxsResult defines a structure for querying txs pageable */
+/**
+ * SearchTxsResult defines a structure for querying txs pageable
+ * @name SearchTxsResultSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SearchTxsResult
+ */
 export interface SearchTxsResultSDKType {
   total_count: bigint;
   count: bigint;
@@ -284,6 +402,56 @@ export interface SearchTxsResultSDKType {
   page_total: bigint;
   limit: bigint;
   txs: TxResponseSDKType[];
+}
+/**
+ * SearchBlocksResult defines a structure for querying blocks pageable
+ * @name SearchBlocksResult
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SearchBlocksResult
+ */
+export interface SearchBlocksResult {
+  /**
+   * Count of all blocks
+   */
+  totalCount: bigint;
+  /**
+   * Count of blocks in current page
+   */
+  count: bigint;
+  /**
+   * Index of current page, start from 1
+   */
+  pageNumber: bigint;
+  /**
+   * Count of total pages
+   */
+  pageTotal: bigint;
+  /**
+   * Max count blocks per page
+   */
+  limit: bigint;
+  /**
+   * List of blocks in current page
+   */
+  blocks: Block[];
+}
+export interface SearchBlocksResultProtoMsg {
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult';
+  value: Uint8Array;
+}
+/**
+ * SearchBlocksResult defines a structure for querying blocks pageable
+ * @name SearchBlocksResultSDKType
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SearchBlocksResult
+ */
+export interface SearchBlocksResultSDKType {
+  total_count: bigint;
+  count: bigint;
+  page_number: bigint;
+  page_total: bigint;
+  limit: bigint;
+  blocks: BlockSDKType[];
 }
 function createBaseTxResponse(): TxResponse {
   return {
@@ -302,8 +470,56 @@ function createBaseTxResponse(): TxResponse {
     events: [],
   };
 }
+/**
+ * TxResponse defines a structure containing relevant tx data and metadata. The
+ * tags are stringified and the log is JSON decoded.
+ * @name TxResponse
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.TxResponse
+ */
 export const TxResponse = {
-  typeUrl: '/cosmos.base.abci.v1beta1.TxResponse',
+  typeUrl: '/cosmos.base.abci.v1beta1.TxResponse' as const,
+  aminoType: 'cosmos-sdk/TxResponse' as const,
+  is(o: any): o is TxResponse {
+    return (
+      o &&
+      (o.$typeUrl === TxResponse.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.txhash === 'string' &&
+          typeof o.codespace === 'string' &&
+          typeof o.code === 'number' &&
+          typeof o.data === 'string' &&
+          typeof o.rawLog === 'string' &&
+          Array.isArray(o.logs) &&
+          (!o.logs.length || ABCIMessageLog.is(o.logs[0])) &&
+          typeof o.info === 'string' &&
+          typeof o.gasWanted === 'bigint' &&
+          typeof o.gasUsed === 'bigint' &&
+          typeof o.timestamp === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || Event.is(o.events[0]))))
+    );
+  },
+  isSDK(o: any): o is TxResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxResponse.typeUrl ||
+        (typeof o.height === 'bigint' &&
+          typeof o.txhash === 'string' &&
+          typeof o.codespace === 'string' &&
+          typeof o.code === 'number' &&
+          typeof o.data === 'string' &&
+          typeof o.raw_log === 'string' &&
+          Array.isArray(o.logs) &&
+          (!o.logs.length || ABCIMessageLog.isSDK(o.logs[0])) &&
+          typeof o.info === 'string' &&
+          typeof o.gas_wanted === 'bigint' &&
+          typeof o.gas_used === 'bigint' &&
+          typeof o.timestamp === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || Event.isSDK(o.events[0]))))
+    );
+  },
   encode(
     message: TxResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -510,8 +726,35 @@ function createBaseABCIMessageLog(): ABCIMessageLog {
     events: [],
   };
 }
+/**
+ * ABCIMessageLog defines a structure containing an indexed tx ABCI message log.
+ * @name ABCIMessageLog
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.ABCIMessageLog
+ */
 export const ABCIMessageLog = {
-  typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog',
+  typeUrl: '/cosmos.base.abci.v1beta1.ABCIMessageLog' as const,
+  aminoType: 'cosmos-sdk/ABCIMessageLog' as const,
+  is(o: any): o is ABCIMessageLog {
+    return (
+      o &&
+      (o.$typeUrl === ABCIMessageLog.typeUrl ||
+        (typeof o.msgIndex === 'number' &&
+          typeof o.log === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || StringEvent.is(o.events[0]))))
+    );
+  },
+  isSDK(o: any): o is ABCIMessageLogSDKType {
+    return (
+      o &&
+      (o.$typeUrl === ABCIMessageLog.typeUrl ||
+        (typeof o.msg_index === 'number' &&
+          typeof o.log === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || StringEvent.isSDK(o.events[0]))))
+    );
+  },
   encode(
     message: ABCIMessageLog,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -600,8 +843,34 @@ function createBaseStringEvent(): StringEvent {
     attributes: [],
   };
 }
+/**
+ * StringEvent defines en Event object wrapper where all the attributes
+ * contain key/value pairs that are strings instead of raw bytes.
+ * @name StringEvent
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.StringEvent
+ */
 export const StringEvent = {
-  typeUrl: '/cosmos.base.abci.v1beta1.StringEvent',
+  typeUrl: '/cosmos.base.abci.v1beta1.StringEvent' as const,
+  aminoType: 'cosmos-sdk/StringEvent' as const,
+  is(o: any): o is StringEvent {
+    return (
+      o &&
+      (o.$typeUrl === StringEvent.typeUrl ||
+        (typeof o.type === 'string' &&
+          Array.isArray(o.attributes) &&
+          (!o.attributes.length || Attribute.is(o.attributes[0]))))
+    );
+  },
+  isSDK(o: any): o is StringEventSDKType {
+    return (
+      o &&
+      (o.$typeUrl === StringEvent.typeUrl ||
+        (typeof o.type === 'string' &&
+          Array.isArray(o.attributes) &&
+          (!o.attributes.length || Attribute.isSDK(o.attributes[0]))))
+    );
+  },
   encode(
     message: StringEvent,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -681,8 +950,30 @@ function createBaseAttribute(): Attribute {
     value: '',
   };
 }
+/**
+ * Attribute defines an attribute wrapper where the key and value are
+ * strings instead of raw bytes.
+ * @name Attribute
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.Attribute
+ */
 export const Attribute = {
-  typeUrl: '/cosmos.base.abci.v1beta1.Attribute',
+  typeUrl: '/cosmos.base.abci.v1beta1.Attribute' as const,
+  aminoType: 'cosmos-sdk/Attribute' as const,
+  is(o: any): o is Attribute {
+    return (
+      o &&
+      (o.$typeUrl === Attribute.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
+  isSDK(o: any): o is AttributeSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Attribute.typeUrl ||
+        (typeof o.key === 'string' && typeof o.value === 'string'))
+    );
+  },
   encode(
     message: Attribute,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -753,8 +1044,29 @@ function createBaseGasInfo(): GasInfo {
     gasUsed: BigInt(0),
   };
 }
+/**
+ * GasInfo defines tx execution gas context.
+ * @name GasInfo
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.GasInfo
+ */
 export const GasInfo = {
-  typeUrl: '/cosmos.base.abci.v1beta1.GasInfo',
+  typeUrl: '/cosmos.base.abci.v1beta1.GasInfo' as const,
+  aminoType: 'cosmos-sdk/GasInfo' as const,
+  is(o: any): o is GasInfo {
+    return (
+      o &&
+      (o.$typeUrl === GasInfo.typeUrl ||
+        (typeof o.gasWanted === 'bigint' && typeof o.gasUsed === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is GasInfoSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GasInfo.typeUrl ||
+        (typeof o.gas_wanted === 'bigint' && typeof o.gas_used === 'bigint'))
+    );
+  },
   encode(
     message: GasInfo,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -839,8 +1151,39 @@ function createBaseResult(): Result {
     msgResponses: [],
   };
 }
+/**
+ * Result is the union of ResponseFormat and ResponseCheckTx.
+ * @name Result
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.Result
+ */
 export const Result = {
-  typeUrl: '/cosmos.base.abci.v1beta1.Result',
+  typeUrl: '/cosmos.base.abci.v1beta1.Result' as const,
+  aminoType: 'cosmos-sdk/Result' as const,
+  is(o: any): o is Result {
+    return (
+      o &&
+      (o.$typeUrl === Result.typeUrl ||
+        ((o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.log === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || Event.is(o.events[0])) &&
+          Array.isArray(o.msgResponses) &&
+          (!o.msgResponses.length || Any.is(o.msgResponses[0]))))
+    );
+  },
+  isSDK(o: any): o is ResultSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Result.typeUrl ||
+        ((o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          typeof o.log === 'string' &&
+          Array.isArray(o.events) &&
+          (!o.events.length || Event.isSDK(o.events[0])) &&
+          Array.isArray(o.msg_responses) &&
+          (!o.msg_responses.length || Any.isSDK(o.msg_responses[0]))))
+    );
+  },
   encode(
     message: Result,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -949,8 +1292,27 @@ function createBaseSimulationResponse(): SimulationResponse {
     result: undefined,
   };
 }
+/**
+ * SimulationResponse defines the response generated when a transaction is
+ * successfully simulated.
+ * @name SimulationResponse
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SimulationResponse
+ */
 export const SimulationResponse = {
-  typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse',
+  typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse' as const,
+  aminoType: 'cosmos-sdk/SimulationResponse' as const,
+  is(o: any): o is SimulationResponse {
+    return (
+      o && (o.$typeUrl === SimulationResponse.typeUrl || GasInfo.is(o.gasInfo))
+    );
+  },
+  isSDK(o: any): o is SimulationResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SimulationResponse.typeUrl || GasInfo.isSDK(o.gas_info))
+    );
+  },
   encode(
     message: SimulationResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1036,8 +1398,33 @@ function createBaseMsgData(): MsgData {
     data: new Uint8Array(),
   };
 }
+/**
+ * MsgData defines the data returned in a Result object during message
+ * execution.
+ * @name MsgData
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.MsgData
+ * @deprecated
+ */
 export const MsgData = {
-  typeUrl: '/cosmos.base.abci.v1beta1.MsgData',
+  typeUrl: '/cosmos.base.abci.v1beta1.MsgData' as const,
+  aminoType: 'cosmos-sdk/MsgData' as const,
+  is(o: any): o is MsgData {
+    return (
+      o &&
+      (o.$typeUrl === MsgData.typeUrl ||
+        (typeof o.msgType === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is MsgDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === MsgData.typeUrl ||
+        (typeof o.msg_type === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: MsgData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1113,8 +1500,36 @@ function createBaseTxMsgData(): TxMsgData {
     msgResponses: [],
   };
 }
+/**
+ * TxMsgData defines a list of MsgData. A transaction will have a MsgData object
+ * for each message.
+ * @name TxMsgData
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.TxMsgData
+ */
 export const TxMsgData = {
-  typeUrl: '/cosmos.base.abci.v1beta1.TxMsgData',
+  typeUrl: '/cosmos.base.abci.v1beta1.TxMsgData' as const,
+  aminoType: 'cosmos-sdk/TxMsgData' as const,
+  is(o: any): o is TxMsgData {
+    return (
+      o &&
+      (o.$typeUrl === TxMsgData.typeUrl ||
+        (Array.isArray(o.data) &&
+          (!o.data.length || MsgData.is(o.data[0])) &&
+          Array.isArray(o.msgResponses) &&
+          (!o.msgResponses.length || Any.is(o.msgResponses[0]))))
+    );
+  },
+  isSDK(o: any): o is TxMsgDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === TxMsgData.typeUrl ||
+        (Array.isArray(o.data) &&
+          (!o.data.length || MsgData.isSDK(o.data[0])) &&
+          Array.isArray(o.msg_responses) &&
+          (!o.msg_responses.length || Any.isSDK(o.msg_responses[0]))))
+    );
+  },
   encode(
     message: TxMsgData,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1204,8 +1619,41 @@ function createBaseSearchTxsResult(): SearchTxsResult {
     txs: [],
   };
 }
+/**
+ * SearchTxsResult defines a structure for querying txs pageable
+ * @name SearchTxsResult
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SearchTxsResult
+ */
 export const SearchTxsResult = {
-  typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult',
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult' as const,
+  aminoType: 'cosmos-sdk/SearchTxsResult' as const,
+  is(o: any): o is SearchTxsResult {
+    return (
+      o &&
+      (o.$typeUrl === SearchTxsResult.typeUrl ||
+        (typeof o.totalCount === 'bigint' &&
+          typeof o.count === 'bigint' &&
+          typeof o.pageNumber === 'bigint' &&
+          typeof o.pageTotal === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          Array.isArray(o.txs) &&
+          (!o.txs.length || TxResponse.is(o.txs[0]))))
+    );
+  },
+  isSDK(o: any): o is SearchTxsResultSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SearchTxsResult.typeUrl ||
+        (typeof o.total_count === 'bigint' &&
+          typeof o.count === 'bigint' &&
+          typeof o.page_number === 'bigint' &&
+          typeof o.page_total === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          Array.isArray(o.txs) &&
+          (!o.txs.length || TxResponse.isSDK(o.txs[0]))))
+    );
+  },
   encode(
     message: SearchTxsResult,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1335,6 +1783,186 @@ export const SearchTxsResult = {
     return {
       typeUrl: '/cosmos.base.abci.v1beta1.SearchTxsResult',
       value: SearchTxsResult.encode(message).finish(),
+    };
+  },
+};
+function createBaseSearchBlocksResult(): SearchBlocksResult {
+  return {
+    totalCount: BigInt(0),
+    count: BigInt(0),
+    pageNumber: BigInt(0),
+    pageTotal: BigInt(0),
+    limit: BigInt(0),
+    blocks: [],
+  };
+}
+/**
+ * SearchBlocksResult defines a structure for querying blocks pageable
+ * @name SearchBlocksResult
+ * @package cosmos.base.abci.v1beta1
+ * @see proto type: cosmos.base.abci.v1beta1.SearchBlocksResult
+ */
+export const SearchBlocksResult = {
+  typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult' as const,
+  aminoType: 'cosmos-sdk/SearchBlocksResult' as const,
+  is(o: any): o is SearchBlocksResult {
+    return (
+      o &&
+      (o.$typeUrl === SearchBlocksResult.typeUrl ||
+        (typeof o.totalCount === 'bigint' &&
+          typeof o.count === 'bigint' &&
+          typeof o.pageNumber === 'bigint' &&
+          typeof o.pageTotal === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          Array.isArray(o.blocks) &&
+          (!o.blocks.length || Block.is(o.blocks[0]))))
+    );
+  },
+  isSDK(o: any): o is SearchBlocksResultSDKType {
+    return (
+      o &&
+      (o.$typeUrl === SearchBlocksResult.typeUrl ||
+        (typeof o.total_count === 'bigint' &&
+          typeof o.count === 'bigint' &&
+          typeof o.page_number === 'bigint' &&
+          typeof o.page_total === 'bigint' &&
+          typeof o.limit === 'bigint' &&
+          Array.isArray(o.blocks) &&
+          (!o.blocks.length || Block.isSDK(o.blocks[0]))))
+    );
+  },
+  encode(
+    message: SearchBlocksResult,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.totalCount !== BigInt(0)) {
+      writer.uint32(8).int64(message.totalCount);
+    }
+    if (message.count !== BigInt(0)) {
+      writer.uint32(16).int64(message.count);
+    }
+    if (message.pageNumber !== BigInt(0)) {
+      writer.uint32(24).int64(message.pageNumber);
+    }
+    if (message.pageTotal !== BigInt(0)) {
+      writer.uint32(32).int64(message.pageTotal);
+    }
+    if (message.limit !== BigInt(0)) {
+      writer.uint32(40).int64(message.limit);
+    }
+    for (const v of message.blocks) {
+      Block.encode(v!, writer.uint32(50).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): SearchBlocksResult {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseSearchBlocksResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.totalCount = reader.int64();
+          break;
+        case 2:
+          message.count = reader.int64();
+          break;
+        case 3:
+          message.pageNumber = reader.int64();
+          break;
+        case 4:
+          message.pageTotal = reader.int64();
+          break;
+        case 5:
+          message.limit = reader.int64();
+          break;
+        case 6:
+          message.blocks.push(Block.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): SearchBlocksResult {
+    return {
+      totalCount: isSet(object.totalCount)
+        ? BigInt(object.totalCount.toString())
+        : BigInt(0),
+      count: isSet(object.count) ? BigInt(object.count.toString()) : BigInt(0),
+      pageNumber: isSet(object.pageNumber)
+        ? BigInt(object.pageNumber.toString())
+        : BigInt(0),
+      pageTotal: isSet(object.pageTotal)
+        ? BigInt(object.pageTotal.toString())
+        : BigInt(0),
+      limit: isSet(object.limit) ? BigInt(object.limit.toString()) : BigInt(0),
+      blocks: Array.isArray(object?.blocks)
+        ? object.blocks.map((e: any) => Block.fromJSON(e))
+        : [],
+    };
+  },
+  toJSON(message: SearchBlocksResult): JsonSafe<SearchBlocksResult> {
+    const obj: any = {};
+    message.totalCount !== undefined &&
+      (obj.totalCount = (message.totalCount || BigInt(0)).toString());
+    message.count !== undefined &&
+      (obj.count = (message.count || BigInt(0)).toString());
+    message.pageNumber !== undefined &&
+      (obj.pageNumber = (message.pageNumber || BigInt(0)).toString());
+    message.pageTotal !== undefined &&
+      (obj.pageTotal = (message.pageTotal || BigInt(0)).toString());
+    message.limit !== undefined &&
+      (obj.limit = (message.limit || BigInt(0)).toString());
+    if (message.blocks) {
+      obj.blocks = message.blocks.map(e => (e ? Block.toJSON(e) : undefined));
+    } else {
+      obj.blocks = [];
+    }
+    return obj;
+  },
+  fromPartial(object: Partial<SearchBlocksResult>): SearchBlocksResult {
+    const message = createBaseSearchBlocksResult();
+    message.totalCount =
+      object.totalCount !== undefined && object.totalCount !== null
+        ? BigInt(object.totalCount.toString())
+        : BigInt(0);
+    message.count =
+      object.count !== undefined && object.count !== null
+        ? BigInt(object.count.toString())
+        : BigInt(0);
+    message.pageNumber =
+      object.pageNumber !== undefined && object.pageNumber !== null
+        ? BigInt(object.pageNumber.toString())
+        : BigInt(0);
+    message.pageTotal =
+      object.pageTotal !== undefined && object.pageTotal !== null
+        ? BigInt(object.pageTotal.toString())
+        : BigInt(0);
+    message.limit =
+      object.limit !== undefined && object.limit !== null
+        ? BigInt(object.limit.toString())
+        : BigInt(0);
+    message.blocks = object.blocks?.map(e => Block.fromPartial(e)) || [];
+    return message;
+  },
+  fromProtoMsg(message: SearchBlocksResultProtoMsg): SearchBlocksResult {
+    return SearchBlocksResult.decode(message.value);
+  },
+  toProto(message: SearchBlocksResult): Uint8Array {
+    return SearchBlocksResult.encode(message).finish();
+  },
+  toProtoMsg(message: SearchBlocksResult): SearchBlocksResultProtoMsg {
+    return {
+      typeUrl: '/cosmos.base.abci.v1beta1.SearchBlocksResult',
+      value: SearchBlocksResult.encode(message).finish(),
     };
   },
 };

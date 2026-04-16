@@ -1,8 +1,8 @@
 /* eslint-env node */
 import chalk from 'chalk';
-import { createHash } from 'crypto';
-import path from 'path';
-import { createRequire } from 'module';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import { createRequire } from 'node:module';
 
 import { Nat, isNat } from '@endo/nat';
 import { untilTrue } from '@agoric/internal';
@@ -276,7 +276,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       await rmVerbose(serverDir);
     }
 
-    /** @type {(args: string[], spawnOpts?: Parameters<typeof pspawn>[2], dockerArgs?: string[]) => ReturnType<pspawn>} */
+    /** @type {(args: string[], spawnOpts?: Parameters<typeof pspawn>[2], dockerArgs?: string[]) => ReturnType<typeof pspawn>} */
     let chainSpawn;
     if (!popts.dockerTag) {
       chainSpawn = (args, spawnOpts) =>
@@ -482,7 +482,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       await rmVerbose(serverDir);
     }
 
-    /** @type {(args: string[], spawnOpts?: Parameters<typeof pspawn>[2], dockerArgs?: string[]) => ReturnType<pspawn>} */
+    /** @type {(args: string[], spawnOpts?: Parameters<typeof pspawn>[2], dockerArgs?: string[]) => ReturnType<typeof pspawn>} */
     let soloSpawn;
     if (!popts.dockerTag) {
       soloSpawn = (args, spawnOpts) => pspawn(agSolo, args, spawnOpts);
@@ -597,7 +597,6 @@ export default async function startMain(progname, rawArgs, powers, opts) {
           'swingset',
           'egress',
           soloAddr,
-          `--chain-id=${CHAIN_ID}`,
           `--node=tcp://${rpcAddr}`,
         ]);
         if (exitStatus) {

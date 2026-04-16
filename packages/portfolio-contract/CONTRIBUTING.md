@@ -27,6 +27,12 @@ Our [unit testing conventions](https://github.com/Agoric/agoric-sdk/wiki/agoric-
 
 While [tooling to enforce consistent import ordering #7403](https://github.com/Agoric/agoric-sdk/issues/7403) is not yet in place, please use **Organize Imports** regularly.
 
+## Documentation Conventions
+
+- **File comments:** Use a 1–2 line `@file` summary. Include `@see` links only for major entry points, and keep those links intra-file (e.g., `{@link someExport}`), not external URLs.
+- **Entry-point JSDoc:** Put the meaningful docs on the exported symbols (what shows up in IDE call sites). External URLs belong here when they define the canonical ABI/spec.
+- **External design constraints:** If a module is constrained by external contracts, standards, or off-repo design docs, add a short JSDoc note with a `@see` link to the authoritative source at the relevant entry point(s).
+
 ## Commit Messages w.r.t. Last Release
 
 Note [use of Conventional Commits in agoric-sdk](https://github.com/Agoric/agoric-sdk/wiki/Conventional-Commits). In particular:
@@ -39,6 +45,10 @@ Adding a new function without wiring it all the way out to the contract interfac
 If something wonky was added to master _since the last release_, cleaning it up is perhaps a `chore` or `refactor`, but not a `fix`.
 
 Between `docs`, `test`, and `chore`, the distinction has less impact. Salt to taste.
+
+# API
+
+The portfolio product spans several packages and services. The public interfaces are documented in @agoric/portfolio-api. It also documents the states of the whole system in its `docs/ymax-machine.yaml`. When making state machine changes be sure to update that description too.
 
 ## Deployment is out of scope
 
@@ -107,3 +117,25 @@ and `.onRejected`.
 ## Offer Safety Limitations in the Orchestration SDK
 
 While support for Offer Safety in the Orchestration SDK is a goal with work-in-progress ([#10504 ERTP face on orch assets](https://github.com/Agoric/agoric-sdk/pull/10504)), currently, the use of basic orchestration features such as `acct.localTransfer(seat, ...)` moves assets out of the Zoe-managed seat before any `want:` might be satisfied.
+
+## Invitation Delivery Limitations in the Wallet Action DSL
+
+The portfolio contract includes `deliverPlannerInvitation()` which creates and delivers planner invitations via a postal service. While this violates separation of concerns by making the contract aware of delivery logistics, it's necessary due to limitations in the current wallet action DSL.
+
+### The Problem
+
+Ideally, an admin would:
+1. Call `makePlannerInvitation()` via wallet `invokeEntry`
+2. Receive the invitation as a saved result  
+3. Use standard wallet operations to deliver it via postal service
+
+However, the current wallet action DSL ([`InvokeEntryMessage`](../../smart-wallet/src/offers.js)) cannot:
+- Pass results from one invocation as arguments to another
+- Access external services not already saved in the wallet's `myStore`
+- Chain operations requiring intermediate payment handling
+
+### Current Workaround
+
+Until wallet action chaining is supported, contracts must handle their own invitation delivery, requiring them to know about postal service interfaces. This is the lesser evil compared to forcing manual coordination of multiple wallet actions with payment passing between them.
+
+See the deployment test in `packages/portfolio-deploy/test/portfolio-start.core.test.ts` for usage examples.

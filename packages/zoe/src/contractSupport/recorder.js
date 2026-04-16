@@ -1,16 +1,17 @@
-import { Fail } from '@endo/errors';
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import {
-  makeFakeMarshaller,
-  makeFakeStorage,
-} from '@agoric/notifier/tools/testSupports.js';
 import { mustMatch } from '@agoric/store';
-import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
+import { M, prepareExoClass } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';
+ * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
+ * @import {PublishKit} from '@agoric/notifier';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -27,7 +28,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @template T
- * @typedef {{ getStorageNode(): Awaited<import('@endo/far').FarRef<StorageNode>>, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
+ * @typedef {{ getStorageNode(): Remote<StorageNode>, getStoragePath(): Promise<string>, write(value: T): Promise<void>, writeFinal(value: T): Promise<void> }} Recorder
  */
 
 /**
@@ -43,8 +44,8 @@ import { E } from '@endo/eventual-send';
 /**
  * Wrap a Publisher to record all the values to chain storage.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {Baggage} baggage
+ * @param {ERemote<EMarshaller>} marshaller
  */
 export const prepareRecorder = (baggage, marshaller) => {
   const makeRecorder = prepareExoClass(
@@ -59,7 +60,7 @@ export const prepareRecorder = (baggage, marshaller) => {
     /**
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
-     * @param {Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
+     * @param {Remote<StorageNode>} storageNode
      * @param {TypedPattern<any>} [valueShape]
      */
     (
@@ -148,19 +149,13 @@ harden(prepareRecorder);
 export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
-   * @param {StorageNode | Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
+   * @param {Remote<StorageNode>} storageNode
    * @param {TypedPattern<T>} [valueShape]
    * @returns {RecorderKit<T>}
    */
   const makeRecorderKit = (storageNode, valueShape) => {
     const { subscriber, publisher } = makeDurablePublishKit();
-    const recorder = makeRecorder(
-      publisher,
-      /** @type { Awaited<import('@endo/far').FarRef<StorageNode>> } */ (
-        storageNode
-      ),
-      valueShape,
-    );
+    const recorder = makeRecorder(publisher, storageNode, valueShape);
     return harden({ subscriber, recorder });
   };
   return makeRecorderKit;
@@ -177,19 +172,14 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
 export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
-   * @param {ERef<StorageNode>} storageNodeP
+   * @param {ERemote<StorageNode>} storageNodeP
    * @param {TypedPattern<T>} [valueShape]
    * @returns {EventualRecorderKit<T>}
    */
   const makeERecorderKit = (storageNodeP, valueShape) => {
     const { publisher, subscriber } = makeDurablePublishKit();
     const recorderP = E.when(storageNodeP, storageNode =>
-      makeRecorder(
-        publisher,
-        // @ts-expect-error Casting because it's remote
-        /** @type { import('@endo/far').FarRef<StorageNode> } */ (storageNode),
-        valueShape,
-      ),
+      makeRecorder(publisher, storageNode, valueShape),
     );
     return { subscriber, recorderP };
   };
@@ -204,8 +194,8 @@ harden(defineERecorderKit);
  * this should only be used when there is no need for an EventualRecorderKit.
  * When there is, prepare the kinds separately and pass to the kit definers.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {Baggage} baggage
+ * @param {ERemote<EMarshaller>} marshaller
  */
 export const prepareRecorderKit = (baggage, marshaller) => {
   const makeDurablePublishKit = prepareDurablePublishKit(
@@ -224,8 +214,8 @@ export const prepareRecorderKit = (baggage, marshaller) => {
  * `makeRecorderKit` is suitable for making a durable `RecorderKit` which can be held in Exo state.
  * `makeERecorderKit` is for closures that must return a `subscriber` synchronously but can defer the `recorder`.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ERef<Marshaller>} marshaller
+ * @param {Baggage} baggage
+ * @param {ERemote<EMarshaller>} marshaller
  */
 export const prepareRecorderKitMakers = (baggage, marshaller) => {
   const makeDurablePublishKit = prepareDurablePublishKit(
@@ -248,18 +238,6 @@ export const prepareRecorderKitMakers = (baggage, marshaller) => {
     makeRecorder,
     makeRecorderKit,
     makeERecorderKit,
-  };
-};
-
-/**
- * For use in tests
- */
-export const prepareMockRecorderKitMakers = () => {
-  const baggage = makeScalarBigMapStore('mock recorder baggage');
-  const marshaller = makeFakeMarshaller();
-  return {
-    ...prepareRecorderKitMakers(baggage, marshaller),
-    storageNode: makeFakeStorage('mock recorder storage'),
   };
 };
 

@@ -22,12 +22,17 @@ import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative
 
-/** @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js'; */
+/**
+ * @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js';
+ * @import {TimerService} from '@agoric/time';
+ * @import {EconomyBootstrapPowers} from '../../src/proposals/econ-behaviors.js';
+ * @import {ZoeService} from '@agoric/zoe';
+ */
 
 /** @typedef {ReturnType<typeof setUpZoeForTest>} FarZoeKit */
 
 /**
- * @param {import('@agoric/time').TimerService} timer
+ * @param {TimerService} timer
  * @param {FarZoeKit} [farZoeKit]
  */
 export const setupPsmBootstrap = async (
@@ -38,10 +43,7 @@ export const setupPsmBootstrap = async (
     setUpZoeForTest());
 
   const space = /** @type {any} */ (makePromiseSpace());
-  const { produce, consume } =
-    /** @type {import('../../src/proposals/econ-behaviors.js').EconomyBootstrapPowers} */ (
-      space
-    );
+  const { produce, consume } = /** @type {EconomyBootstrapPowers} */ (space);
 
   produce.chainTimerService.resolve(timer);
   produce.zoe.resolve(wrappedZoe);
@@ -100,8 +102,8 @@ export const setupPsm = async (
   brand.produce.IST.resolve(istBrand);
   issuer.produce.IST.resolve(istIssuer);
 
-  // @ts-expect-error mock
   space.produce.provisionPoolStartResult.resolve({
+    // @ts-expect-error mock
     creatorFacet: Far('dummy', {
       initPSM: () => {
         t.log('dummy provisionPool.initPSM');

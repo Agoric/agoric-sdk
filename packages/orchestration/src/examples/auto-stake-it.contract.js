@@ -11,10 +11,12 @@ import * as flows from './auto-stake-it.flows.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '../types.js';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
@@ -25,7 +27,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
  *
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
+ *   marshaller: Remote<Marshaller>;
  *   chainInfo?: Record<string, CosmosChainInfo>;
  *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
  * }} privateArgs

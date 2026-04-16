@@ -8,7 +8,7 @@
  * makers for ongoing operations like rebalancing.
  *
  * **Proposals and Offer Args**
- * - {@link ProposalType.openPortfolio}: Initial funding with USDC, Access tokens, and protocol allocations
+ * - {@link ProposalType.openPortfolio}: Initial funding with USDC and protocol allocations
  * - {@link ProposalType.rebalance}: Add funds (give) or withdraw funds (want) from protocols
  * - {@link OfferArgsFor}: Cross-chain parameters like `destinationEVMChain` for EVM operations
  *
@@ -20,30 +20,41 @@
  *
  * For usage examples, see `makeTrader` in {@link ../test/portfolio-actors.ts}.
  */
-import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
+import type { Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
+import { stripPrefix, tryNow } from '@agoric/internal/src/ses-utils.js';
 import {
   AnyNatAmountShape,
   type AccountId,
   type Bech32Address,
 } from '@agoric/orchestration';
+import {
+  AxelarChain,
+  YieldProtocol,
+  type AssetPlaceRef,
+  type FlowDetail,
+  type InstrumentId,
+  type PortfolioPublishedPathTypes,
+  type ProposalType,
+  type StatusFor,
+  type TargetAllocation,
+} from '@agoric/portfolio-api';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import { Fail } from '@endo/errors';
+import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
-import {
-  AxelarChain,
-  YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
-import type { EVMContractAddresses, start } from './portfolio.contract.js';
-import type { PortfolioKit } from './portfolio.exo.js';
+import type { EVMContractAddresses } from './portfolio.contract.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';
 
 // #region preliminaries
 const { keys } = Object;
+
+/** no runtime validation */
+const AnyString = <_T>() => M.string();
 
 /**
  * @param brand must be a 'nat' brand, not checked
@@ -52,120 +63,194 @@ export const makeNatAmountShape = (brand: Brand<'nat'>, min?: NatValue) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
 // #endregion
 
-/**
- * Names suitable for use as `publicInvitationMaker` in {@link ContractInvitationSpec}.
- *
- * @see {@link start} for the contract implementation
- * @see {@link makeTrader.openPortfolio} for usage example
- */
-export type PortfolioPublicFacet = Awaited<
-  ReturnType<typeof start>
->['publicFacet'];
-export type PortfolioInvitationMaker = keyof PortfolioPublicFacet;
-
-/**
- * Names suitable for use as `invitationMakerName` in {@link ContinuingInvitationSpec}.
- *
- * These continuing invitation makers are returned from portfolio creation and enable
- * ongoing operations like rebalancing between yield protocols.
- *
- * @see {@link makeTrader.rebalance} for usage example
- */
-export type PortfolioContinuingInvitationMaker =
-  keyof PortfolioKit['invitationMakers'];
-
 // #region Proposal Shapes
-/**
- * Proposal shapes for portfolio operations.
- *
- * **openPortfolio**: Create portfolio with initial funding across protocols
- * **rebalance**: Add funds (give) or withdraw funds (want) from protocols
- */
-export type ProposalType = {
-  openPortfolio: {
-    give: {
-      /** required iff the contract was started with an Access issuer */
-      Access?: NatAmount;
-      Deposit?: NatAmount;
-      GmpFee?: NatAmount;
-    };
-  };
-  rebalance:
-    | { give: { Deposit?: NatAmount; GmpFee?: NatAmount }; want: {} }
-    | { want: { Cash: NatAmount }; give: { GmpFee?: NatAmount } };
-};
 
 export const makeProposalShapes = (
   usdcBrand: Brand<'nat'>,
-  feeBrand: Brand<'nat'>,
   accessBrand?: Brand<'nat'>,
 ) => {
   const $Shape = makeNatAmountShape(usdcBrand);
-  const FeeShape = makeNatAmountShape(feeBrand);
-  const accessShape = harden({
+  const openOptionalGive = harden({
+    Deposit: $Shape,
     ...(accessBrand && { Access: makeNatAmountShape(accessBrand, 1n) }),
   });
 
   const openPortfolio = M.splitRecord(
     {
-      give: M.splitRecord(
-        accessShape,
-        { Deposit: $Shape, GmpFee: FeeShape },
-        {},
-      ),
+      give: M.splitRecord({}, openOptionalGive, {}),
     },
     { want: {}, exit: M.any() },
     {},
   ) as TypedPattern<ProposalType['openPortfolio']>;
   const rebalance = M.or(
     M.splitRecord(
-      { give: M.splitRecord({}, { Deposit: $Shape, GmpFee: FeeShape }, {}) },
+      { give: M.splitRecord({}, { Deposit: $Shape }, {}) },
       { want: {}, exit: M.any() },
       {},
     ),
-    M.splitRecord(
-      { want: M.splitRecord({ Cash: $Shape }, {}, {}) },
-      { give: M.splitRecord({}, { GmpFee: FeeShape }, {}), exit: M.any() },
-      {},
-    ),
+    M.splitRecord({ want: { Cash: $Shape } }, { give: {}, exit: M.any() }, {}),
   ) as TypedPattern<ProposalType['rebalance']>;
-  return harden({ openPortfolio, rebalance });
+  const withdraw = M.splitRecord(
+    { want: { Cash: $Shape }, give: {} },
+    { exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['withdraw']>;
+  const deposit = M.splitRecord(
+    { give: { Deposit: $Shape }, want: {} },
+    { exit: M.any() },
+    {},
+  ) as TypedPattern<ProposalType['deposit']>;
+  return harden({ openPortfolio, rebalance, withdraw, deposit });
 };
 harden(makeProposalShapes);
 // #endregion
 
 // #region Offer Args
 
-type PoolPlaceInfo =
+export type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
-  | { protocol: 'Aave' | 'Compound' | 'Beefy'; chainName: AxelarChain };
+  | { protocol: YieldProtocol; chainName: AxelarChain };
 
+// XXX special handling. What's the functional difference from other places?
 export const BeefyPoolPlaces = {
   Beefy_re7_Avalanche: {
     protocol: 'Beefy',
     chainName: 'Avalanche',
   },
-} as const satisfies Record<string, PoolPlaceInfo>;
+  Beefy_morphoGauntletUsdc_Ethereum: {
+    protocol: 'Beefy',
+    chainName: 'Ethereum',
+  },
+  Beefy_morphoSmokehouseUsdc_Ethereum: {
+    protocol: 'Beefy',
+    chainName: 'Ethereum',
+  },
+  Beefy_morphoSeamlessUsdc_Base: {
+    protocol: 'Beefy',
+    chainName: 'Base',
+  },
+  Beefy_compoundUsdc_Optimism: {
+    protocol: 'Beefy',
+    chainName: 'Optimism',
+  },
+  Beefy_compoundUsdc_Arbitrum: {
+    protocol: 'Beefy',
+    chainName: 'Arbitrum',
+  },
+} as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
+
+export type BeefyInstrumentId = keyof typeof BeefyPoolPlaces;
+
+export const ERC4626PoolPlaces = {
+  ERC4626_vaultU2_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarHighYieldUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcRwa_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoSteakhouseHighYieldInstant_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarInstitutionalUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoClearstarUsdcReactor_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoAlphaUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoResolvUsdc_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcFrontier_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoHyperithmUsdcMidcurve_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoHyperithmUsdcDegen_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoGauntletUsdcCore_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
+  ERC4626_morphoSteakhousePrimeUsdc_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoSteakhouseUsdc_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoGauntletUsdcPrime_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoSeamlessUsdcVault_Base: {
+    protocol: 'ERC4626',
+    chainName: 'Base',
+  },
+  ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum: {
+    protocol: 'ERC4626',
+    chainName: 'Arbitrum',
+  },
+  ERC4626_morphoGauntletUsdcCore_Arbitrum: {
+    protocol: 'ERC4626',
+    chainName: 'Arbitrum',
+  },
+  ERC4626_morphoHyperithmUsdc_Arbitrum: {
+    protocol: 'ERC4626',
+    chainName: 'Arbitrum',
+  },
+  ERC4626_morphoGauntletUsdcPrime_Optimism: {
+    protocol: 'ERC4626',
+    chainName: 'Optimism',
+  },
+} as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
+
+export type ERC4626InstrumentId = keyof typeof ERC4626PoolPlaces;
 
 export const PoolPlaces = {
   USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
   USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
   Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
+  Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
   Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
   Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
-  Aave_Polygon: { protocol: 'Aave', chainName: 'Polygon' },
-  Compound_Avalanche: { protocol: 'Compound', chainName: 'Avalanche' },
+  Aave_Base: { protocol: 'Aave', chainName: 'Base' },
+  Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
   Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
   Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
-  Compound_Polygon: { protocol: 'Compound', chainName: 'Polygon' },
+  Compound_Base: { protocol: 'Compound', chainName: 'Base' },
   ...BeefyPoolPlaces,
-} as const satisfies Record<string, PoolPlaceInfo>;
+  ...ERC4626PoolPlaces,
+} as const satisfies Record<InstrumentId, PoolPlaceInfo>;
 harden(PoolPlaces);
 
 /**
  * Names of places where a portfolio may have a position.
  */
-export type PoolKey = keyof typeof PoolPlaces;
+export type PoolKey = InstrumentId;
 
 /** Ext for Extensible: includes PoolKeys in future upgrades */
 export type PoolKeyExt = string;
@@ -173,14 +258,8 @@ export type PoolKeyExt = string;
 /** Ext for Extensible: includes PoolKeys in future upgrades */
 export const PoolKeyShapeExt = M.string();
 
-/**
- * Target allocation mapping from PoolKey to numerator (typically in basis points).
- * Denominator is implicitly the sum of all numerators.
- */
-export type TargetAllocation = Partial<Record<PoolKey, NatValue>>;
-
 export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
-  M.or(...keys(PoolPlaces)),
+  M.or(...keys(PoolPlaces), ...keys(AxelarChain).map(c => `@${c}`)),
   M.nat(),
 );
 
@@ -205,7 +284,29 @@ export const makePortfolioPath = (id: number): [`portfolio${number}`] => [
 ];
 
 /**
- * Extracts portfolio ID from a vstorage path.
+ * Extracts portfolio ID number from a portfolio key (e.g., a vstorage path
+ * segment).
+ */
+export const portfolioIdFromKey = (portfolioKey: `portfolio${number}`) => {
+  // TODO: const strId = stripPrefix('portfolio', portfolioKey);
+  // TODO: const id = Number(strId);
+  const id = Number(portfolioKey.replace(/^portfolio/, ''));
+  isNat(id) || Fail`bad key: ${portfolioKey}`;
+  return id;
+};
+
+/**
+ * Extracts flow ID number from a flow key (e.g., a vstorage path segment).
+ */
+export const flowIdFromKey = (flowKey: `flow${number}`) => {
+  const strId = stripPrefix('flow', flowKey);
+  const id = Number(strId);
+  isNat(id) || Fail`bad key: ${flowKey}`;
+  return id;
+};
+
+/**
+ * Extracts portfolio ID number from a vstorage path.
  *
  * @param path - Either a dot-separated string or array of path segments
  * @returns Portfolio ID number
@@ -215,62 +316,43 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   const where = segments.indexOf('portfolios');
   where >= 0 || Fail`bad path: ${path}`;
   const segment = segments[where + 1];
-  const id = Number(segment.replace(/^portfolio/, ''));
-  Number.isSafeInteger(id) || Fail`bad path: ${path}`;
-  return id;
-};
-
-// XXX refactor using AssetMoveDesc
-type FlowStatus = {
-  step: number;
-  how: string;
-  src: string;
-  dest: string;
-  amount: Amount<'nat'>;
-  error?: string;
+  return tryNow(
+    () => portfolioIdFromKey(segment as any),
+    _err => Fail`bad path: ${path}`,
+  );
 };
 
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
 const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
 
-// XXX relate paths to types a la readPublished()
-export type StatusFor = {
-  portfolios: {
-    addPortfolio: `portfolio${number}`;
-  };
-  portfolio: {
-    positionKeys: PoolKeyExt[];
-    flowCount: number;
-    accountIdByChain: Record<ChainNameExt, AccountId>;
-    depositAddress?: Bech32Address;
-    targetAllocation?: TargetAllocation;
-  };
-  position: {
-    protocol: YieldProtocol;
-    accountId: AccountId;
-    netTransfers: Amount<'nat'>;
-    totalIn: Amount<'nat'>;
-    totalOut: Amount<'nat'>;
-  };
-  // XXX refactor using AssetMoveDesc
-  // XXX how many steps? step: 1, last: 3, for example
-  flow: FlowStatus | (Omit<FlowStatus, 'dest'> & { where: string }); // recovery failed
-};
+export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
+  M.splitRecord(
+    { type: 'withdraw', amount: AnyNatAmountShape },
+    { toChain: ChainNameExtShape },
+  ),
+  M.splitRecord(
+    { type: 'deposit', amount: AnyNatAmountShape },
+    { fromChain: ChainNameExtShape },
+  ),
+  { type: 'rebalance' },
+);
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(
     {
       positionKeys: M.arrayOf(PoolKeyShapeExt),
       flowCount: M.number(),
-      accountIdByChain: M.recordOf(
-        ChainNameExtShape,
-        M.string(), // XXX no runtime validation of AccountId
-      ),
+      accountIdByChain: M.recordOf(ChainNameExtShape, AnyString<AccountId>()),
+      policyVersion: M.number(),
+      rebalanceCount: M.number(),
     },
     {
-      depositAddress: M.string(), // XXX no runtime validation of Bech32Address
+      depositAddress: AnyString<Bech32Address>(),
+      nobleForwardingAddress: AnyString<Bech32Address>(),
       targetAllocation: TargetAllocationShapeExt,
+      accountsPending: M.arrayOf(ChainNameExtShape),
+      flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
     },
   );
 
@@ -291,13 +373,17 @@ export const makePositionPath = (parent: number, key: PoolKeyExt) => [
 ];
 
 export const PositionStatusShape: TypedPattern<StatusFor['position']> =
-  M.splitRecord({
-    protocol: M.or('USDN', 'Aave', 'Compound'), // YieldProtocol
-    accountId: M.string(), // AccountId
-    netTransfers: AnyNatAmountShape, // XXX constrain brand to USDC
-    totalIn: AnyNatAmountShape,
-    totalOut: AnyNatAmountShape,
-  });
+  M.splitRecord(
+    {
+      protocol: M.or(...Object.keys(YieldProtocol)), // YieldProtocol
+      accountId: AnyString<AccountId>(),
+      totalIn: AnyNatAmountShape,
+      totalOut: AnyNatAmountShape,
+    },
+    {
+      netTransfers: AnyNatAmountShape, // XXX obsolete
+    },
+  );
 
 /**
  * Creates vstorage path for flow operation logging.
@@ -315,19 +401,41 @@ export const makeFlowPath = (parent: number, id: number) => [
   `flow${id}`,
 ];
 
-export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
-  {
-    step: M.nat(),
-    how: M.string(),
-    src: M.string(),
-    dest: M.string(),
-    amount: AnyNatAmountShape,
-  },
-  {
-    where: M.string(),
-    error: M.string(),
-  },
+export const makeFlowStepsPath = (
+  parent: number,
+  id: number,
+  prop: 'steps' | 'order' = 'steps',
+) => [`portfolio${parent}`, 'flows', `flow${id}`, prop];
+
+const FlowDetailsProps = {
+  type: M.string(),
+  amount: AnyNatAmountShape,
+};
+
+export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
+  M.splitRecord(
+    { state: 'run', step: M.number(), how: M.string() },
+    { steps: M.arrayOf(M.number()), ...FlowDetailsProps },
+  ),
+  { state: 'undo', step: M.number(), how: M.string() }, // XXX Not currently used
+  M.splitRecord({ state: 'done' }, FlowDetailsProps),
+  M.splitRecord(
+    { state: 'fail', step: M.number(), how: M.string(), error: M.string() },
+    {
+      next: M.record(), // XXX recursive pattern
+      where: AnyString<AssetPlaceRef>(), // XXX obsolete
+      ...FlowDetailsProps,
+    },
+    {},
+  ),
 );
+
+export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
+  how: M.string(),
+  amount: AnyNatAmountShape,
+  src: AnyString<AssetPlaceRef>(),
+  dest: AnyString<AssetPlaceRef>(),
+});
 // #endregion
 
 // XXX deployment concern, not part of contract external interface
@@ -335,4 +443,21 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.splitRecord(
 
 export type EVMContractAddressesMap = {
   [chain in AxelarChain]: EVMContractAddresses;
+};
+
+// keep these types imported for IDE navigation
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const keepDocsTypesImported:
+  | undefined
+  | ContinuingInvitationSpec
+  | ContractInvitationSpec = undefined;
+
+// Backwards compat
+export type {
+  FlowDetail,
+  PortfolioPublishedPathTypes,
+  ProposalType,
+  StatusFor,
+  TargetAllocation,
 };

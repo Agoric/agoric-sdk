@@ -2,19 +2,26 @@ import { makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
+import {
+  finishTrafficEntries,
+  trafficTransforms,
+} from '../utils/orchestrationAccount.js';
 
 // As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
-export const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
+export const ICS20_TRANSFER_SUCCESS_BYTES = '\x01';
+export const ICS20_TRANSFER_SUCCESS_RESULT = btoa(ICS20_TRANSFER_SUCCESS_BYTES);
 
 const trace = makeTracer('IBCP');
 
 /**
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {JsonSafe, TypedJson, ResponseTo} from '@agoric/cosmic-proto';
+ * @import {Bytes} from '@agoric/network';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {IBCEvent, IBCPacket} from '@agoric/vats';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {PacketOptions} from './packet-tools.js';
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 const { Fail, bare } = assert;
@@ -60,7 +67,7 @@ export const createSequencePattern = sequence => {
 harden(createSequencePattern);
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools & { makeIBCReplyKit: MakeIBCReplyKit }} powers
  */
 export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
@@ -68,13 +75,13 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
     'IBCTransferSenderKit',
     {
       public: M.interface('IBCTransferSender', {
-        sendPacket: M.call(Vow$(M.any()), M.any()).returns(Vow$(M.record())),
+        sendPacket: M.call(Vow$(M.any()), M.record()).returns(Vow$(M.record())),
       }),
       responseWatcher: M.interface('responseWatcher', {
         onFulfilled: M.call([M.record()], M.record()).returns(M.any()),
       }),
       verifyTransferSuccess: M.interface('verifyTransferSuccess', {
-        onFulfilled: M.call(M.any()).returns(),
+        onFulfilled: M.call(M.any()).returns(M.string()),
       }),
     },
     /**
@@ -143,7 +150,24 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
             { opName: 'transfer', ...opts },
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
-          return harden({ resultV, ...rest });
+
+          const { progressTracker, trafficSlice } = opts || {};
+          if (progressTracker) {
+            const priorReport = progressTracker.getCurrentProgressReport();
+            const traffic = finishTrafficEntries(
+              priorReport.traffic,
+              trafficSlice,
+              entries =>
+                trafficTransforms.IbcTransfer.finish(entries, sequence),
+            );
+            const report = harden({
+              ...priorReport,
+              traffic,
+            });
+            progressTracker.update(report);
+          }
+
+          return harden({ ...rest, resultV });
         },
       },
       verifyTransferSuccess: {
@@ -158,7 +182,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           error === undefined || Fail`ICS20-1 transfer error ${error}`;
           result ?? Fail`Missing result in ICS20-1 transfer ack ${obj}`;
           if (result === ICS20_TRANSFER_SUCCESS_RESULT) {
-            return; // OK, transfer was successful, nothing to do
+            return ICS20_TRANSFER_SUCCESS_RESULT; // OK, transfer was successful, return the result.
           }
 
           // Function to safely base64-decode and parse JSON
@@ -176,6 +200,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
 
           ibcAck?.result === ICS20_TRANSFER_SUCCESS_RESULT ||
             Fail`ICS20-1 transfer unsuccessful with ack result: ${outerDecoded}`;
+          return ICS20_TRANSFER_SUCCESS_RESULT;
         },
       },
     },
@@ -195,7 +220,7 @@ harden(prepareIBCTransferSender);
  *
  * Returns a vow that settles when a match is found.
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 export const prepareIBCReplyKit = (zone, vowTools) => {
@@ -260,7 +285,7 @@ harden(prepareIBCReplyKit);
 /** @typedef {ReturnType<typeof prepareIBCReplyKit>} MakeIBCReplyKit */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 export const prepareIBCTools = (zone, vowTools) => {

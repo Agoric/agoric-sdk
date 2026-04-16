@@ -1,4 +1,3 @@
-import { makeWalletFactoryContext } from '@aglocal/fast-usdc-deploy/test/walletFactory.js';
 import { BridgeId } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildGMPPayload } from '@agoric/orchestration/src/utils/gmp.js';
@@ -10,6 +9,8 @@ import type { ExecutionContext, TestFn } from 'ava';
 import { encodeAbiParameters } from 'viem';
 import { makeReceiveUpCallPayload } from '../../tools/axelar-supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { makeWalletFactoryContext } from '../bootstrapTests/walletFactory.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 export type WalletFactoryDriver = Awaited<
   ReturnType<typeof makeWalletFactoryDriver>
@@ -37,9 +38,14 @@ type AxelarGmpMemo = {
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 const makeTestContext = async (t: ExecutionContext) => {
+  const snapshot = await loadOrCreateRunUtilsSnapshot(
+    'orchestration-base',
+    t.log,
+  );
   const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    { snapshot },
   );
 
   const wallet =

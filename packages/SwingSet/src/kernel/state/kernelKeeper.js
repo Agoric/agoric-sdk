@@ -36,21 +36,12 @@ import {
 const enableKernelGC = true;
 
 /**
- * @typedef { import('../../types-external.js').BundleCap } BundleCap
- * @typedef { import('../../types-external.js').BundleID } BundleID
- * @typedef { import('../../types-external.js').EndoZipBase64Bundle } EndoZipBase64Bundle
- * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
- * @typedef { import('../../types-external.js').ManagerType } ManagerType
- * @typedef { import('../../types-external.js').SnapStore } SnapStore
- * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
- * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
- * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
- * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
- * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
- * @import {PromiseRecord} from '../../types-internal.js';
- * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
- * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
+ * @import { KVStore } from '@agoric/internal/src/kv-store.js';
  * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
+ * @import { BundleCap, BundleID, EndoZipBase64Bundle, KernelSlog, ManagerType, SnapStore, TranscriptStore, VatKeeper, CleanupBudget, CleanupWork, PolicyOutputCleanupBudget } from '../../types-external.js'
+ * @import { InternalKernelOptions, ReapDirtThreshold, SwingsetPromiseRecord, RunQueueEventCleanupTerminatedVat } from '../../types-internal.js'
+ * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
+ * @import {VatKeeperPowers} from './vatKeeper.js';
  */
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
@@ -198,11 +189,6 @@ export function commaSplit(s) {
   return s.split(',');
 }
 
-export function stripPrefix(prefix, str) {
-  assert(str.startsWith(prefix), str);
-  return str.slice(prefix.length);
-}
-
 function insistMeterID(m) {
   assert.typeof(m, 'string');
   assert.equal(m[0], 'm');
@@ -226,12 +212,12 @@ export const getAllDynamicVats = getRequired => {
 const getObjectReferenceCount = (kvStore, kref) => {
   const data = kvStore.get(`${kref}.refCount`);
   if (!data) {
-    return { reachable: 0, recognizable: 0 };
+    return { exists: false, reachable: 0, recognizable: 0 };
   }
   const [reachable, recognizable] = commaSplit(data).map(Number);
   reachable <= recognizable ||
     Fail`refmismatch(get) ${kref} ${reachable},${recognizable}`;
-  return { reachable, recognizable };
+  return { exists: true, reachable, recognizable };
 };
 
 const setObjectReferenceCount = (kvStore, kref, counts) => {
@@ -253,7 +239,7 @@ const setObjectReferenceCount = (kvStore, kref, counts) => {
  * and "recognizable" counts.
  *
  * @param { (key: string) => string} getRequired
- * @param { import('@agoric/swing-store').KVStore } kvStore
+ * @param { KVStore } kvStore
  * @param {string} kref  The kernel slot whose refcount is to be incremented.
  * @param {string?} tag  Debugging note with rough source of the reference.
  * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
@@ -861,7 +847,7 @@ export default function makeKernelKeeper(
 
   /**
    * @param {string} kernelSlot
-   * @returns {PromiseRecord}
+   * @returns {SwingsetPromiseRecord}
    */
   function getKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
@@ -1243,7 +1229,7 @@ export default function makeKernelKeeper(
 
   /**
    * @param {string} vatID
-   * @returns {IterableIterator<[kpid: string, p: PromiseRecord]>}
+   * @returns {IterableIterator<[kpid: string, p: SwingsetPromiseRecord]>}
    */
   function* enumeratePromisesByDecider(vatID) {
     insistVatID(vatID);
@@ -1614,12 +1600,17 @@ export default function makeKernelKeeper(
   // leaving work for the next delivery.
 
   function processRefcounts() {
+    const lostKrefs = [];
     if (enableKernelGC) {
       const actions = new Set();
       for (const kref of maybeFreeKrefs.values()) {
         const { type } = parseKernelSlot(kref);
         if (type === 'promise') {
           const kpid = kref;
+          if (!hasKernelPromise(kpid)) {
+            lostKrefs.push(kref);
+            continue;
+          }
           const kp = getKernelPromise(kpid);
           if (kp.refCount === 0) {
             let idx = 0;
@@ -1638,7 +1629,10 @@ export default function makeKernelKeeper(
         }
 
         if (type === 'object') {
-          const { reachable, recognizable } = getObjectRefCount(kref);
+          const { exists, reachable, recognizable } = getObjectRefCount(kref);
+          if (!exists) {
+            lostKrefs.push(kref);
+          }
           if (reachable === 0) {
             // We avoid ownerOfKernelObject(), which will report
             // 'undefined' if the owner is dead (and being slowly
@@ -1706,13 +1700,14 @@ export default function makeKernelKeeper(
       addGCActions([...actions]);
     }
     maybeFreeKrefs.clear();
+    return { lostKrefs };
   }
 
   function createVatState(vatID, source, options) {
     initializeVatState(kvStore, transcriptStore, vatID, source, options);
   }
 
-  /** @type {import('./vatKeeper.js').VatKeeperPowers} */
+  /** @type {VatKeeperPowers} */
   const vatKeeperPowers = {
     transcriptStore,
     kernelSlog,

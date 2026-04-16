@@ -10,10 +10,13 @@ import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQui
 
 import { spawnRetentiveVatSequence } from './leakiness.mjs';
 
-/** @import {XSnapOptions} from '@agoric/xsnap/src/xsnap.js' */
+/**
+ * @import {XSnapOptions} from '@agoric/xsnap/src/xsnap.js'
+ * @import {ExecutionContext} from 'ava';
+ */
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {Partial<XSnapOptions>} xsnapOptions
  */
 const testRetention = async (t, xsnapOptions) => {

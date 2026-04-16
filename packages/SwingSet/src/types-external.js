@@ -5,7 +5,26 @@ export {};
  * @import {ERef} from '@endo/far';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
- * @import {SlogProps, SlogDurationProps} from './controller/controller.js';
+ * @import {SlogProps} from './controller/controller.js';
+ * @import {StartDuration} from './kernel/slogger.js';
+ * @import {CapData} from '@endo/marshal';
+ * @import {Message} from '@agoric/swingset-liveslots';
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots';
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots';
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots';
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots';
+ * @import {makeVatKeeper} from './kernel/state/vatKeeper.js';
+ * @import {KernelKeeper} from './kernel/state/kernelKeeper.js';
+ * @import {xsnap} from '@agoric/xsnap';
+ * @import { KVStore } from '@agoric/internal/src/kv-store.js';
+ * @import {SnapStore} from '@agoric/swing-store';
+ * @import {SnapshotResult} from '@agoric/swing-store';
+ * @import {TranscriptStore} from '@agoric/swing-store';
+ * @import {SwingStore} from '@agoric/swing-store';
+ * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
+ * @import {SwingStoreHostStorage} from '@agoric/swing-store';
+ * @import {Mailbox} from './devices/mailbox/mailbox.js';
+ * @import {MailboxExport} from './devices/mailbox/mailbox.js';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -20,11 +39,7 @@ export {};
 /** @typedef {<T>(target: Device<T>) => T} DProxy (approximately) */
 
 /**
- * @typedef {(extraProps?: SlogDurationProps) => void} FinishSlogDuration
- */
-
-/**
- * @typedef {import('@endo/marshal').CapData<string>} SwingSetCapData
+ * @typedef {CapData<string>} SwingSetCapData
  */
 
 // TODO move Bundle types into Endo
@@ -82,14 +97,14 @@ export {};
  */
 
 /**
- * @typedef { import('@agoric/swingset-liveslots').Message } Message
+ * @typedef { Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
  *
- * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
- * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
- * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
- * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
+ * @typedef { VatDeliveryObject } VatDeliveryObject
+ * @typedef { VatDeliveryResult } VatDeliveryResult
+ * @typedef { VatSyscallObject } VatSyscallObject
+ * @typedef { VatSyscallResult } VatSyscallResult
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
  * @typedef { [kpid: string, kp: { state: string, data: SwingSetCapData }] } KernelDeliveryOneNotify
@@ -135,20 +150,19 @@ export {};
  * @property {string} 0 Kernel slot designating the device node that is the target of
  * the invocation
  * @property {string} 1 A string naming the method to be invoked
- * @property {import('@endo/marshal').CapData<unknown>} 2 A capdata object containing the arguments to the invocation
+ * @property {CapData<unknown>} 2 A capdata object containing the arguments to the invocation
  * @typedef {[tag: 'ok', data: SwingSetCapData]} DeviceInvocationResultOk
  * @typedef {[tag: 'error', problem: string]} DeviceInvocationResultError
  * @typedef { DeviceInvocationResultOk | DeviceInvocationResultError } DeviceInvocationResult
  *
  * @typedef { { transcriptCount: number } } VatStats
- * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper.js').makeVatKeeper> } VatKeeper
- * @typedef { import('./kernel/state/kernelKeeper.js').KernelKeeper } KernelKeeper
- * @typedef { Awaited<ReturnType<typeof import('@agoric/xsnap').xsnap>> } XSnap
+ * @typedef { ReturnType<typeof makeVatKeeper> } VatKeeper
+ * @typedef { KernelKeeper } KernelKeeper
+ * @typedef { Awaited<ReturnType<typeof xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
  * @typedef { { write: (obj: SlogProps) => void,
- *              startDuration:     (labels: readonly [startLabel: string, endLabel: string],
- *                                  startProps: SlogDurationProps) => FinishSlogDuration,
+ *              startDuration:     StartDuration,
  *              provideVatSlogger: (vatID: string,
  *                                  dynamic?: boolean,
  *                                  description?: string,
@@ -159,14 +173,14 @@ export {};
  *              vatConsole: (vatID: string, origConsole: LimitedConsole) => LimitedConsole,
  *              startup: (vatID: string) => () => void,
  *              delivery: (vatID: string,
- *                         newCrankNum: BigInt, newDeliveryNum: BigInt,
+ *                         newCrankNum: bigint, newDeliveryNum: bigint,
  *                         kd: KernelDeliveryObject, vd: VatDeliveryObject,
  *                         replay?: boolean) => SlogFinishDelivery,
  *              syscall: (vatID: string,
  *                        ksc: KernelSyscallObject | undefined,
  *                        vsc: VatSyscallObject) => SlogFinishSyscall,
  *              changeCList: (vatID: string,
- *                            crankNum: BigInt,
+ *                            crankNum: bigint,
  *                            mode: 'import' | 'export' | 'drop',
  *                            kernelSlot: string,
  *                            vatSlot: string) => void,
@@ -211,7 +225,8 @@ export {};
  * @property {boolean} [includeDevDependencies] indicates that
  * `devDependencies` of the surrounding `package.json` should be accessible to
  * bundles.
- * @property {string} [bundleCachePath] if present, SwingSet will use a bundle cache at this path
+ * @property {string} [bundleCachePath] optional cache path used by wrappers
+ *   that choose to cache `sourceSpec` bundling
  * @property {SwingSetConfigDescriptor<VatConfigOptions>} vats
  * @property {SwingSetConfigDescriptor} [bundles]
  * @property {BundleFormat} [bundleFormat] the bundle source / import bundle
@@ -233,13 +248,13 @@ export {};
  * @typedef {BundleName | BundleRef | {bundleID: BundleID}} SourceOfBundle
  */
 /**
- * @typedef { import('@agoric/swing-store').KVStore } KVStore
- * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
- * @typedef { import('@agoric/swing-store').SnapshotResult } SnapshotResult
- * @typedef { import('@agoric/swing-store').TranscriptStore } TranscriptStore
- * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
- * @typedef { import('@agoric/swing-store').SwingStoreKernelStorage } SwingStoreKernelStorage
- * @typedef { import('@agoric/swing-store').SwingStoreHostStorage } SwingStoreHostStorage
+ * @typedef { KVStore } KVStore
+ * @typedef { SnapStore } SnapStore
+ * @typedef { SnapshotResult } SnapshotResult
+ * @typedef { TranscriptStore } TranscriptStore
+ * @typedef { SwingStore } SwingStore
+ * @typedef { SwingStoreKernelStorage } SwingStoreKernelStorage
+ * @typedef { SwingStoreHostStorage } SwingStoreHostStorage
  */
 
 /**
@@ -305,14 +320,15 @@ export {};
 /**
  * @typedef {object} VatWarehousePolicy
  * @property { number } [maxVatsOnline]     Limit the number of simultaneous workers
+ * @property { number } [maxPreloadVats]    Limit the number of vats preloaded at startup
  * @property { boolean } [restartWorkerOnSnapshot]     Reload worker immediately upon snapshot creation
  */
 
 /**
- * @typedef { import('./devices/mailbox/mailbox.js').Mailbox } Mailbox
+ * @typedef { Mailbox } Mailbox
  */
 /**
- * @typedef { import('./devices/mailbox/mailbox.js').MailboxExport } MailboxExport
+ * @typedef { MailboxExport } MailboxExport
  */
 
 /**

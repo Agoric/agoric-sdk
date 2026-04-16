@@ -65,7 +65,7 @@ const makeVowishStore = name => {
   });
 };
 
-/** @typedef {ReturnType<makeVowishStore>} VowishStore */
+/** @typedef {ReturnType<typeof makeVowishStore>} VowishStore */
 
 /**
  * As suggested by the name, this *mostly* represents a mathematical bijection,
@@ -203,5 +203,5 @@ export const prepareBijection = (
 harden(prepareBijection);
 
 /**
- * @typedef {ReturnType<ReturnType<prepareBijection>>} Bijection
+ * @typedef {ReturnType<ReturnType<typeof prepareBijection>>} Bijection
  */

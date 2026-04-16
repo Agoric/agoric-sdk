@@ -4,6 +4,7 @@ import { makeMarshal } from '@endo/marshal';
 
 /**
  * @import {ConvertSlotToVal} from '@endo/marshal';
+ * @import {CapData} from '@endo/marshal';
  */
 
 // Simple wrapper for serializing and unserializing marshalled values inside the
@@ -96,12 +97,14 @@ const kmarshal = makeMarshal(krefOf, kslot, {
 export const kser = value => kmarshal.serialize(harden(value));
 
 /**
- * @param {import('@endo/marshal').CapData<string>} serializedValue
+ * @param {CapData<string>} serializedValue
  * @returns {any}
  */
 export const kunser = serializedValue => kmarshal.unserialize(serializedValue);
 
 export function makeError(message) {
   assert.typeof(message, 'string');
+  // Marshal has a relaxation for an error at the root of the data
+  // so these will always serialize even if not passable
   return kser(Error(message));
 }

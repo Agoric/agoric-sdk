@@ -1,9 +1,9 @@
 // JavaScript correctness tests
 
 import test from 'ava';
-import * as proc from 'child_process';
-import fs from 'fs';
-import * as os from 'os';
+import * as proc from 'node:child_process';
+import fs from 'node:fs';
+import * as os from 'node:os';
 import { tmpName } from 'tmp';
 import { encodeBase64 } from '@endo/base64';
 import { xsnap } from '../src/xsnap.js';

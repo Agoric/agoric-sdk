@@ -10,13 +10,19 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
 test.before(async t => {
+  const snapshot = await loadOrCreateRunUtilsSnapshot(
+    'orchestration-base',
+    t.log,
+  );
   t.context = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    { snapshot },
   );
 });
 test.after.always(t => t.context.shutdown?.());

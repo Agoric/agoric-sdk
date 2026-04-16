@@ -11,6 +11,7 @@ import type { TestFn } from 'ava';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
 
+import type { ZoeService } from '@agoric/zoe';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   makeGovernanceDriver,

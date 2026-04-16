@@ -1,23 +1,47 @@
 // @ts-check
-/** global harden */
-import { makeSmartWalletKit, LOCAL_CONFIG } from '@agoric/client-utils';
+/* eslint-disable jsdoc/check-param-names */
+/* global harden */
+import {
+  LOCAL_CONFIG,
+  makeVstorageKit,
+  makeSmartWalletKitFromVstorageKit,
+} from '@agoric/client-utils';
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeTracer, toCLIOptions } from '@agoric/internal';
 import { makeAgd, makeCopyFiles } from './chaind-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { makeVStorage } from './batchQuery.js';
 import { makeRetryUntilCondition } from './sleep.js';
-import { makeTracer, toCLIOptions } from '@agoric/internal';
 
 /**
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
- *
  * @import { EnglishMnemonic } from '@cosmjs/crypto';
  * @import { RetryUntilCondition } from './sleep.js';
+ * @import {RpcClient} from '@cosmjs/tendermint-rpc';
+ * @import {Agd} from './chaind-lib.js';
+ * @import {QueryTool} from './queryKit.js';
+ * @import {LCD} from './makeHttpClient.js';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {BundleCache} from '@agoric/swingset-vat/tools/bundleTool.js';
+ * @import {execFileSync} from 'child_process';
+ * @import {execFile} from 'child_process';
+ * @import {VstorageKit} from '@agoric/client-utils';
+ * @import {FastUsdcPublishedPathTypes} from '@agoric/fast-usdc';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {AmountKeywordRecord} from '@agoric/zoe';
+ */
+
+/**
+ * @typedef {unknown} CachedBundle Unused placeholder for now, but we want to
+ * return something that represents the bundle we installed in case we need to
+ * refer to it later.
  */
 
 const trace = makeTracer('E2ET');
@@ -27,14 +51,16 @@ const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 const BLD = '000000ubld';
 
 export const txAbbr = tx => {
+  // eslint-disable-next-line camelcase
   const { txhash, code, height, gas_used } = tx;
 
+  // eslint-disable-next-line camelcase
   return { txhash, code, height, gas_used };
 };
 
 /**
  * @param {object} io
- * @param {import('@cosmjs/tendermint-rpc').RpcClient} io.rpc
+ * @param {RpcClient} io.rpc
  * @param {(ms: number, info?: unknown) => Promise<void>} io.delay
  */
 export const makeBlockTool = ({ rpc, delay }) => {
@@ -74,7 +100,6 @@ export const makeBlockTool = ({ rpc, delay }) => {
     for (
       let latestHeight = startHeight;
       latestHeight < startHeight + advance;
-
     ) {
       // Give some time for a new block
       await delay(1000, { ...info, latestHeight });
@@ -87,14 +112,14 @@ export const makeBlockTool = ({ rpc, delay }) => {
 
   return { waitForBlock };
 };
-/** @typedef {ReturnType<makeBlockTool>} BlockTool */
+/** @typedef {ReturnType<typeof makeBlockTool>} BlockTool */
 
 /**
  * @param {string} fullPath
  * @param {object} opts
  * @param {string} opts.id
- * @param {import('./chaind-lib.js').Agd} opts.agd
- * @param {import('./queryKit.js').QueryTool['follow']} opts.follow
+ * @param {Agd} opts.agd
+ * @param {QueryTool['follow']} opts.follow
  * @param {(ms: number) => Promise<void>} opts.delay
  * @param {typeof console.log} [opts.progress]
  * @param {string} [opts.chainId]
@@ -144,15 +169,15 @@ const installBundle = async (fullPath, opts) => {
  * @param {string} address
  * @param {Record<string, number | bigint>} balances
  * @param {{
- *   agd: import('./chaind-lib.js').Agd;
+ *   agd: Agd;
  *   blockTool: BlockTool;
- *   lcd: import('./makeHttpClient.js').LCD;
+ *   lcd: LCD;
  *   delay: (ms: number) => Promise<void>;
  *   retryUntilCondition: RetryUntilCondition;
  *   chainId?: string;
  *   whale?: string;
  *   progress?: typeof console.log;
- *   q?: import('./queryKit.js').QueryTool;
+ *   q?: QueryTool;
  * }} opts
  */
 const provisionSmartWalletAndMakeDriver = async (
@@ -182,7 +207,8 @@ const provisionSmartWalletAndMakeDriver = async (
    */
   const getCosmosBalances = (addr = address) =>
     lcd.getJSON(`/cosmos/bank/v1beta1/balances/${addr}`);
-  progress(`${address} before whale`, await getCosmosBalances());
+  const initialCosmosBalance = await getCosmosBalances();
+  progress(`${address} before whale`, initialCosmosBalance);
 
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
@@ -230,9 +256,9 @@ const provisionSmartWalletAndMakeDriver = async (
 
   const afterWhale = await retryUntilCondition(
     () => getCosmosBalances(),
-    ({ balances }) => {
+    ({ balances: currentBalances }) => {
       // XXX ensures there is at least some faucet but doesn't check that the balance went up
-      return balances.length >= balanceEntries.length;
+      return currentBalances.length >= balanceEntries.length;
     },
     `${address} received tokens from whale`,
   );
@@ -269,9 +295,8 @@ const provisionSmartWalletAndMakeDriver = async (
     throw err;
   }
 
-  /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
+  /** @param {BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
-    // eslint-disable-next-line no-undef
     const capData = q.toCapData(harden(bridgeAction));
     const offerBody = JSON.stringify(capData);
     const txInfo = await agd.tx(
@@ -296,7 +321,6 @@ const provisionSmartWalletAndMakeDriver = async (
     }
   }
 
-  // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['offers']} */
   const offers = Far('Offers', {
     executeOffer,
     /** @param {OfferSpec} offer */
@@ -305,7 +329,6 @@ const provisionSmartWalletAndMakeDriver = async (
     tryExit: offerId => sendAction({ method: 'tryExitOffer', offerId }),
   });
 
-  // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['deposit']} */
   const deposit = Far('DepositFacet', {
     getAddress: () => address,
     receive: async payment => {
@@ -328,7 +351,6 @@ const provisionSmartWalletAndMakeDriver = async (
     for await (const { balances: haystack } of cosmosBalanceUpdates()) {
       for (const candidate of haystack) {
         if (candidate.denom === denom) {
-          // eslint-disable-next-line no-undef
           const amt = harden({ brand, value: BigInt(candidate.amount) });
           yield amt;
         }
@@ -360,7 +382,7 @@ const provisionSmartWalletAndMakeDriver = async (
   }
 
   // @ts-expect-error FIXME no type
-  /** @type {import('../test/wallet-tools.js').MockWallet['peek']} */
+  /** @type {MockWallet['peek']} */
   const peek = Far('Peek', { purseUpdates });
 
   return { offers, deposit, peek, query: q };
@@ -370,7 +392,7 @@ const provisionSmartWalletAndMakeDriver = async (
 
 /**
  * @param {{
- *   agd: import('./chaind-lib.js').Agd;
+ *   agd: Agd;
  *   blockTool: BlockTool;
  *   validator?: string;
  *   chainId?: string;
@@ -413,6 +435,9 @@ const voteLatestProposalAndWait = async ({
     await blockTool.waitForBlock(1, { step: `voting`, on: lastProposalId })
   ) {
     info = await agd.query(['gov', 'proposal', lastProposalId]);
+    if (info.proposal) {
+      info = info.proposal;
+    }
     trace(
       `Waiting for proposal ${lastProposalId} to pass (status=${info.status})`,
     );
@@ -430,7 +455,7 @@ const voteLatestProposalAndWait = async ({
  *   description: string;
  * }} info
  * @param {{
- *   agd: import('./chaind-lib.js').Agd;
+ *   agd: Agd;
  *   blockTool: BlockTool;
  *   proposer?: string;
  *   deposit?: string;
@@ -489,10 +514,10 @@ const runCoreEval = async (
  * @deprecated use `@agoric/client-utils` instead
  *
  * @param {typeof console.log} log
- * @param {import('@agoric/swingset-vat/tools/bundleTool.js').BundleCache} bundleCache
+ * @param {BundleCache} bundleCache
  * @param {object} io
- * @param {typeof import('child_process').execFileSync} io.execFileSync
- * @param {typeof import('child_process').execFile} io.execFile
+ * @param {typeof execFileSync} io.execFileSync
+ * @param {typeof execFile} io.execFile
  * @param {typeof window.fetch} io.fetch
  * @param {typeof window.setTimeout} io.setTimeout
  * @param {string} [io.bundleDir]
@@ -534,11 +559,12 @@ export const makeE2ETools = async (
   /**
    * @param {Iterable<string>} fullPaths
    * @param {typeof console.log} progress
+   * @returns {Promise<Record<string, CachedBundle>>} Fulfilled to an unused
+   * record when all bundles are installed.
    */
   const installBundles = async (fullPaths, progress) => {
     await null;
-    // @ts-expect-error FIXME no type
-    /** @type {Record<string, import('../test/boot-tools.js').CachedBundle>} */
+    /** @type {Record<string, CachedBundle>} */
     const bundles = {};
     // for (const [name, rootModPath] of Object.entries(bundleRoots)) {
     for (const fullPath of fullPaths) {
@@ -559,7 +585,7 @@ export const makeE2ETools = async (
         installed: confirm.installed,
       });
     }
-    // eslint-disable-next-line no-undef
+
     return harden(bundles);
   };
 
@@ -569,7 +595,6 @@ export const makeE2ETools = async (
    *   title?: string;
    *   description?: string;
    *   config?: unknown;
-   * } & {
    *   behavior?: Function;
    * }} info
    */
@@ -596,17 +621,14 @@ export const makeE2ETools = async (
    */
   const vstorageClient = makeQueryKit(vstorage).query;
 
-  /** @type {import('@agoric/client-utils').SmartWalletKit} */
-  const smartWalletKit = await makeSmartWalletKit(
-    {
-      fetch,
-      delay,
-    },
-    LOCAL_CONFIG,
-  );
+  /** @type {VstorageKit<FastUsdcPublishedPathTypes>} */
+  const vstorageKit = makeVstorageKit({ fetch }, LOCAL_CONFIG);
+
+  const smartWalletKit = await makeSmartWalletKitFromVstorageKit(vstorageKit);
 
   return {
     vstorageClient,
+    vstorageKit,
     smartWalletKit,
     installBundles,
     runCoreEval: buildAndRunCoreEval,
@@ -643,7 +665,7 @@ export const makeE2ETools = async (
 /**
  * Seat-like API from wallet updates
  *
- * @param {AsyncGenerator<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>} updates
+ * @param {AsyncGenerator<UpdateRecord>} updates
  */
 export const seatLike = updates => {
   const sync = {
@@ -671,7 +693,7 @@ export const seatLike = updates => {
       throw reason;
     }
   })();
-  // eslint-disable-next-line no-undef
+
   return harden({
     getOfferResult: () => sync.result.promise,
     getPayoutAmounts: () => sync.payouts.promise,
@@ -692,4 +714,4 @@ export const makeDoOffer = wallet => {
   return doOffer;
 };
 
-/** @typedef {Awaited<ReturnType<makeE2ETools>>} E2ETools */
+/** @typedef {Awaited<ReturnType<typeof makeE2ETools>>} E2ETools */

@@ -541,7 +541,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
 harden(prepareAsyncFlowTools);
 
 /**
- * @typedef {ReturnType<prepareAsyncFlowTools>} AsyncFlowTools
+ * @typedef {ReturnType<typeof prepareAsyncFlowTools>} AsyncFlowTools
  */
 
 /**

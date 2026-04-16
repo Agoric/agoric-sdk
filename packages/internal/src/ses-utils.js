@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 /**
  * @file Utility functions that are dependent upon a hardened environment,
  *   either directly or indirectly (e.g. by @endo imports).
@@ -8,7 +7,7 @@
 import { objectMap } from '@endo/common/object-map.js';
 import { objectMetaMap } from '@endo/common/object-meta-map.js';
 import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
-import { q, Fail, makeError, annotateError, X } from '@endo/errors';
+import { q, b, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isPrimitive } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
@@ -17,10 +16,15 @@ import { makeQueue } from '@endo/stream';
 import { asyncGenerate } from 'jessie.js';
 import { logLevels } from './js-utils.js';
 
-/** @import {LimitedConsole} from './js-utils.js'; */
+/**
+ * @import {LimitedConsole} from './js-utils.js';
+ * @import {AsyncQueue} from '@endo/stream';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ */
 
 /** @import {ERef} from '@endo/far'; */
-/** @import {Primitive} from '@endo/pass-style'; */
+/** @import {RemotableBrand} from '@endo/eventual-send'; */
+/** @import {Primitive, RemotableObject} from '@endo/pass-style'; */
 /** @import {Permit, Attenuated} from './types.js'; */
 
 export { objectMap, objectMetaMap, fromUniqueEntries };
@@ -58,9 +62,11 @@ harden(makeLimitedConsole);
  * @template T
  * @typedef {T extends PromiseLike<any>
  *     ? Awaited<T>
- *     : T extends {}
- *       ? Simplify<DeeplyAwaitedObject<T>>
- *       : Awaited<T>} DeeplyAwaited
+ *     : T extends RemotableBrand<any, any> | RemotableObject
+ *       ? T
+ *       : T extends {}
+ *         ? Simplify<DeeplyAwaitedObject<T>>
+ *         : Awaited<T>} DeeplyAwaited
  */
 
 /**
@@ -89,6 +95,101 @@ const makeAggregateError =
           errors,
         });
       };
+
+/**
+ * Assert that a string has a prefix, and return the part that follows it.
+ *
+ * @param {string} prefix
+ * @param {string} str
+ * @returns {string}
+ */
+export const stripPrefix = (prefix, str) => {
+  str.startsWith(prefix) || Fail`${str} is missing prefix ${q(prefix)}`;
+  return str.slice(prefix.length);
+};
+
+/**
+ * Throw an error with an own "code" data property, supporting identification
+ * without parsing `message`. Note that such errors are not Passable and thus
+ * cannot appear inside a Passable structure, and even at top level the "code"
+ * property will be silently dropped by marshalling.
+ *
+ * @template {string} Code
+ * @param {Parameters<typeof makeError>[0]} details
+ * @param {Code} code
+ * @param {Parameters<typeof makeError>[2] & {
+ *   constructor?: Parameters<typeof makeError>[1];
+ * }} [opts]
+ */
+export const throwErrorCode = (details, code, opts) => {
+  const err = makeError(details, opts?.constructor, {
+    ...opts,
+    sanitize: false,
+  });
+  Object.defineProperty(err, 'code', { value: code, enumerable: true });
+  harden(err);
+  throw err;
+};
+
+/**
+ * Synchronusly invoke a function with the opportunity to handle any error
+ * similarly to a Promise `catch` callback (e.g., substituting a non-error
+ * returned value or throwing a possibly-new error). This is useful for (among
+ * other things) replacing generic error messages with specific ones (as in
+ * {@link tryJsonParse}).
+ *
+ * @template {(...args: any[]) => any} F
+ * @template [U=ReturnType<F>]
+ * @param {F} fn to invoke
+ * @param {(err: Error) => U} transformError callback to receive any error from
+ *   invoking `fn` and either return a substitute value or throw a potentially
+ *   new error
+ * @param {Parameters<F>} args for `fn`
+ * @returns {ReturnType<F> | U}
+ */
+export const tryNow = (fn, transformError, ...args) => {
+  try {
+    return fn(...args);
+  } catch (err) {
+    try {
+      return transformError(err);
+    } catch (newErr) {
+      // Try to associate `err` with `newErr`.
+      if (!newErr.cause) {
+        const desc = {
+          value: err,
+          configurable: true,
+          enumerable: false,
+          writable: true,
+        };
+        if (!Reflect.defineProperty(newErr, 'cause', desc)) {
+          assert.note(newErr, err.message);
+        }
+      }
+      throw newErr;
+    }
+  }
+};
+
+/**
+ * Parse JSON text, or handle an error by e.g. substituting a default value or
+ * replacing it with one bearing a non-generic message.
+ *
+ * @param {string} jsonText
+ * @param {string | ((err: Error) => unknown)} onError an error message or
+ *   callback
+ */
+export const tryJsonParse = (jsonText, onError) => {
+  const transformError =
+    typeof onError === 'function'
+      ? onError
+      : err => Fail([`${onError}: ${err.message} for input `, ''], jsonText);
+  return tryNow(() => {
+    const type = typeof jsonText;
+    type === 'string' || Fail`Input must be a string, not ${b(type)}`;
+    return JSON.parse(jsonText);
+  }, transformError);
+};
 
 /**
  * @template T
@@ -167,9 +268,7 @@ export const withDeferredCleanup = async fn => {
  * Concise way to check values are available from object literal shorthand.
  * Throws error message to specify the missing values.
  *
- * @template {Record<string, unknown>} T
- * @param {T} obj
- * @returns {asserts obj is AllDefined<T>}
+ * @type {<T extends Record<string, unknown>>(obj: T) => asserts obj is AllDefined<T>}
  * @throws if any value in the object entries is not defined
  */
 export const assertAllDefined = obj => {
@@ -320,7 +419,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
    *   (value: PromiseLike<IteratorResult<T>>) => void
    * >} QueuePayload
    */
-  /** @type {import('@endo/stream').AsyncQueue<QueuePayload>[]} */
+  /** @type {AsyncQueue<QueuePayload>[]} */
   const queues = [];
 
   /** @returns {Promise<void>} */
@@ -374,7 +473,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
   };
 
   const readers = Array.from({ length: readerCount }).map(() => {
-    /** @type {import('@endo/stream').AsyncQueue<QueuePayload>} */
+    /** @type {AsyncQueue<QueuePayload>} */
     const queue = makeQueue();
     queues.push(queue);
 
@@ -382,9 +481,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
     const reader = harden({
       async next() {
         /**
-         * @type {import('@endo/promise-kit').PromiseKit<
-         *   IteratorResult<T>
-         * >}
+         * @type {PromiseKit<IteratorResult<T>>}
          */
         const { promise, resolve } = makePromiseKit();
         queue.put({ value: resolve, done: false });
@@ -392,9 +489,7 @@ export const synchronizedTee = (sourceStream, readerCount) => {
       },
       async return() {
         /**
-         * @type {import('@endo/promise-kit').PromiseKit<
-         *   IteratorResult<T>
-         * >}
+         * @type {PromiseKit<IteratorResult<T>>}
          */
         const { promise, resolve } = makePromiseKit();
         queue.put({ value: resolve, done: true });
@@ -405,11 +500,11 @@ export const synchronizedTee = (sourceStream, readerCount) => {
         queue.put(rejection);
         return rejection;
       },
-      // eslint-disable-next-line no-restricted-globals
+
       [Symbol.asyncIterator]() {
         return reader;
       },
-      // eslint-disable-next-line no-restricted-globals
+
       async [Symbol.asyncDispose]() {
         await reader.return();
       },

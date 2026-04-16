@@ -1,6 +1,6 @@
 // @ts-check
-import { Readable } from 'stream';
-import { Buffer } from 'buffer';
+import { Readable } from 'node:stream';
+import { Buffer } from 'node:buffer';
 import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
 import { createSHA256 } from './hasher.js';
@@ -374,7 +374,7 @@ export function makeTranscriptStore(
    * transcript.${vatID}.current export record are responsibility of the caller.
    *
    * @param {string} vatID
-   * @param {ReturnType<getCurrentSpanBounds>} bounds
+   * @param {ReturnType<typeof getCurrentSpanBounds>} bounds
    * @returns {{deferredTask: Promise<void>}}
    */
   function closeSpan(vatID, bounds) {

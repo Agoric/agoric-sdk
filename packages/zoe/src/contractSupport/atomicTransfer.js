@@ -2,7 +2,7 @@ import { M } from '@agoric/store';
 import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
 
 /**
- * @import {TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {AmountKeywordRecord, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
 export const TransferPartShape = M.splitArray(

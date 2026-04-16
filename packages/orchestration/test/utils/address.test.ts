@@ -1,4 +1,4 @@
-import { validateRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
+import { decodeRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 import type { Bech32Address } from '../../src/cosmos-api.ts';
 import type { CosmosChainAddress } from '../../src/orchestration-api.ts';
@@ -103,16 +103,21 @@ test('makeICQChannelAddress', t => {
     '/ibc-hop/connection-0/ibc-port/icqhost/unordered/icq-2',
     'accepts custom version',
   );
-  t.throws(
-    () =>
-      validateRemoteIbcAddress(
-        makeICQChannelAddress('connection-0', 'ic/q-/2'),
-      ),
+  const slashyAddress = makeICQChannelAddress('connection-0', 'ic/q-/2');
+  t.is(
+    slashyAddress,
+    '/ibc-hop/connection-0/ibc-port/icqhost/unordered/ic\\x2fq-\\x2f2',
+    'makeICQChannelAddress escapes slashes in version',
+  );
+  t.deepEqual(
+    decodeRemoteIbcAddress(slashyAddress),
     {
-      message:
-        /must be '\(\/ibc-hop\/CONNECTION\)\*\/ibc-port\/PORT\/\(ordered\|unordered\)\/VERSION'/,
+      hops: ['connection-0'],
+      rPortID: 'icqhost',
+      order: 'UNORDERED',
+      version: 'ic/q-/2',
     },
-    'makeICQChannelAddress not hardened against malformed version. use `validateRemoteIbcAddress` to detect this, or expect IBC ProtocolImpl to throw',
+    'accepts custom version',
   );
 });
 

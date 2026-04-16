@@ -2,6 +2,12 @@ import { makeTracer } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ */
+
 const trace = makeTracer('PublishTestInfo');
 const { Fail } = assert;
 
@@ -61,7 +67,7 @@ export const getManifestForPublishTestInfo = () => {
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async () =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
@@ -69,7 +75,7 @@ export const defaultProposalBuilder = async () =>
     getManifestCall: ['getManifestForPublishTestInfo'],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the module can work in CoreEval environment
   const dspModule = await import('@agoric/deploy-script-support');

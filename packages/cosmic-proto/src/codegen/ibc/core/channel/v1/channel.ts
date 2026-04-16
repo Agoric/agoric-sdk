@@ -1,13 +1,13 @@
 //@ts-nocheck
 import { Height, type HeightSDKType } from '../../client/v1/client.js';
-import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
+import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { type JsonSafe } from '../../../../json-safe.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * State defines if a channel is in one of the following states:
- * CLOSED, INIT, TRYOPEN, OPEN or UNINITIALIZED.
+ * CLOSED, INIT, TRYOPEN, OPEN, or UNINITIALIZED.
  */
 export enum State {
   /** STATE_UNINITIALIZED_UNSPECIFIED - Default State */
@@ -117,20 +117,31 @@ export function orderToJSON(object: Order): string {
  * Channel defines pipeline for exactly-once packet delivery between specific
  * modules on separate blockchains, which has at least one end capable of
  * sending packets and one end capable of receiving packets.
+ * @name Channel
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Channel
  */
 export interface Channel {
-  /** current state of the channel end */
+  /**
+   * current state of the channel end
+   */
   state: State;
-  /** whether the channel is ordered or unordered */
+  /**
+   * whether the channel is ordered or unordered
+   */
   ordering: Order;
-  /** counterparty channel end */
+  /**
+   * counterparty channel end
+   */
   counterparty: Counterparty;
   /**
    * list of connection identifiers, in order, along which packets sent on
    * this channel will travel
    */
   connectionHops: string[];
-  /** opaque channel version, which is agreed upon during the handshake */
+  /**
+   * opaque channel version, which is agreed upon during the handshake
+   */
   version: string;
 }
 export interface ChannelProtoMsg {
@@ -141,6 +152,9 @@ export interface ChannelProtoMsg {
  * Channel defines pipeline for exactly-once packet delivery between specific
  * modules on separate blockchains, which has at least one end capable of
  * sending packets and one end capable of receiving packets.
+ * @name ChannelSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Channel
  */
 export interface ChannelSDKType {
   state: State;
@@ -152,24 +166,39 @@ export interface ChannelSDKType {
 /**
  * IdentifiedChannel defines a channel with additional port and channel
  * identifier fields.
+ * @name IdentifiedChannel
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.IdentifiedChannel
  */
 export interface IdentifiedChannel {
-  /** current state of the channel end */
+  /**
+   * current state of the channel end
+   */
   state: State;
-  /** whether the channel is ordered or unordered */
+  /**
+   * whether the channel is ordered or unordered
+   */
   ordering: Order;
-  /** counterparty channel end */
+  /**
+   * counterparty channel end
+   */
   counterparty: Counterparty;
   /**
    * list of connection identifiers, in order, along which packets sent on
    * this channel will travel
    */
   connectionHops: string[];
-  /** opaque channel version, which is agreed upon during the handshake */
+  /**
+   * opaque channel version, which is agreed upon during the handshake
+   */
   version: string;
-  /** port identifier */
+  /**
+   * port identifier
+   */
   portId: string;
-  /** channel identifier */
+  /**
+   * channel identifier
+   */
   channelId: string;
 }
 export interface IdentifiedChannelProtoMsg {
@@ -179,6 +208,9 @@ export interface IdentifiedChannelProtoMsg {
 /**
  * IdentifiedChannel defines a channel with additional port and channel
  * identifier fields.
+ * @name IdentifiedChannelSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.IdentifiedChannel
  */
 export interface IdentifiedChannelSDKType {
   state: State;
@@ -189,23 +221,42 @@ export interface IdentifiedChannelSDKType {
   port_id: string;
   channel_id: string;
 }
-/** Counterparty defines a channel end counterparty */
+/**
+ * Counterparty defines a channel end counterparty
+ * @name Counterparty
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Counterparty
+ */
 export interface Counterparty {
-  /** port on the counterparty chain which owns the other end of the channel. */
+  /**
+   * port on the counterparty chain which owns the other end of the channel.
+   */
   portId: string;
-  /** channel end on the counterparty chain */
+  /**
+   * channel end on the counterparty chain
+   */
   channelId: string;
 }
 export interface CounterpartyProtoMsg {
   typeUrl: '/ibc.core.channel.v1.Counterparty';
   value: Uint8Array;
 }
-/** Counterparty defines a channel end counterparty */
+/**
+ * Counterparty defines a channel end counterparty
+ * @name CounterpartySDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Counterparty
+ */
 export interface CounterpartySDKType {
   port_id: string;
   channel_id: string;
 }
-/** Packet defines a type that carries data across different chains through IBC */
+/**
+ * Packet defines a type that carries data across different chains through IBC
+ * @name Packet
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Packet
+ */
 export interface Packet {
   /**
    * number corresponds to the order of sends and receives, where a Packet
@@ -213,26 +264,45 @@ export interface Packet {
    * with a later sequence number.
    */
   sequence: bigint;
-  /** identifies the port on the sending chain. */
+  /**
+   * identifies the port on the sending chain.
+   */
   sourcePort: string;
-  /** identifies the channel end on the sending chain. */
+  /**
+   * identifies the channel end on the sending chain.
+   */
   sourceChannel: string;
-  /** identifies the port on the receiving chain. */
+  /**
+   * identifies the port on the receiving chain.
+   */
   destinationPort: string;
-  /** identifies the channel end on the receiving chain. */
+  /**
+   * identifies the channel end on the receiving chain.
+   */
   destinationChannel: string;
-  /** actual opaque bytes transferred directly to the application module */
+  /**
+   * actual opaque bytes transferred directly to the application module
+   */
   data: Uint8Array;
-  /** block height after which the packet times out */
+  /**
+   * block height after which the packet times out
+   */
   timeoutHeight: Height;
-  /** block timestamp (in nanoseconds) after which the packet times out */
+  /**
+   * block timestamp (in nanoseconds) after which the packet times out
+   */
   timeoutTimestamp: bigint;
 }
 export interface PacketProtoMsg {
   typeUrl: '/ibc.core.channel.v1.Packet';
   value: Uint8Array;
 }
-/** Packet defines a type that carries data across different chains through IBC */
+/**
+ * Packet defines a type that carries data across different chains through IBC
+ * @name PacketSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Packet
+ */
 export interface PacketSDKType {
   sequence: bigint;
   source_port: string;
@@ -248,15 +318,26 @@ export interface PacketSDKType {
  * packet commitments, acknowledgements, and receipts.
  * Caller is responsible for knowing the context necessary to interpret this
  * state as a commitment, acknowledgement, or a receipt.
+ * @name PacketState
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketState
  */
 export interface PacketState {
-  /** channel port identifier. */
+  /**
+   * channel port identifier.
+   */
   portId: string;
-  /** channel unique identifier. */
+  /**
+   * channel unique identifier.
+   */
   channelId: string;
-  /** packet sequence. */
+  /**
+   * packet sequence.
+   */
   sequence: bigint;
-  /** embedded data that represents packet state. */
+  /**
+   * embedded data that represents packet state.
+   */
   data: Uint8Array;
 }
 export interface PacketStateProtoMsg {
@@ -268,6 +349,9 @@ export interface PacketStateProtoMsg {
  * packet commitments, acknowledgements, and receipts.
  * Caller is responsible for knowing the context necessary to interpret this
  * state as a commitment, acknowledgement, or a receipt.
+ * @name PacketStateSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketState
  */
 export interface PacketStateSDKType {
   port_id: string;
@@ -276,16 +360,25 @@ export interface PacketStateSDKType {
   data: Uint8Array;
 }
 /**
- * PacketId is an identifer for a unique Packet
+ * PacketId is an identifier for a unique Packet
  * Source chains refer to packets by source port/channel
  * Destination chains refer to packets by destination port/channel
+ * @name PacketId
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketId
  */
 export interface PacketId {
-  /** channel port identifier */
+  /**
+   * channel port identifier
+   */
   portId: string;
-  /** channel unique identifier */
+  /**
+   * channel unique identifier
+   */
   channelId: string;
-  /** packet sequence */
+  /**
+   * packet sequence
+   */
   sequence: bigint;
 }
 export interface PacketIdProtoMsg {
@@ -293,9 +386,12 @@ export interface PacketIdProtoMsg {
   value: Uint8Array;
 }
 /**
- * PacketId is an identifer for a unique Packet
+ * PacketId is an identifier for a unique Packet
  * Source chains refer to packets by source port/channel
  * Destination chains refer to packets by destination port/channel
+ * @name PacketIdSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketId
  */
 export interface PacketIdSDKType {
   port_id: string;
@@ -310,6 +406,9 @@ export interface PacketIdSDKType {
  * The first byte of any message with this format will be the non-ASCII values
  * `0xaa` (result) or `0xb2` (error). Implemented as defined by ICS:
  * https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#acknowledgement-envelope
+ * @name Acknowledgement
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Acknowledgement
  */
 export interface Acknowledgement {
   result?: Uint8Array;
@@ -327,10 +426,47 @@ export interface AcknowledgementProtoMsg {
  * The first byte of any message with this format will be the non-ASCII values
  * `0xaa` (result) or `0xb2` (error). Implemented as defined by ICS:
  * https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#acknowledgement-envelope
+ * @name AcknowledgementSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Acknowledgement
  */
 export interface AcknowledgementSDKType {
   result?: Uint8Array;
   error?: string;
+}
+/**
+ * Timeout defines an execution deadline structure for 04-channel handlers.
+ * This includes packet lifecycle handlers.
+ * A valid Timeout contains either one or both of a timestamp and block height (sequence).
+ * @name Timeout
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Timeout
+ */
+export interface Timeout {
+  /**
+   * block height after which the packet times out
+   */
+  height: Height;
+  /**
+   * block timestamp (in nanoseconds) after which the packet times out
+   */
+  timestamp: bigint;
+}
+export interface TimeoutProtoMsg {
+  typeUrl: '/ibc.core.channel.v1.Timeout';
+  value: Uint8Array;
+}
+/**
+ * Timeout defines an execution deadline structure for 04-channel handlers.
+ * This includes packet lifecycle handlers.
+ * A valid Timeout contains either one or both of a timestamp and block height (sequence).
+ * @name TimeoutSDKType
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Timeout
+ */
+export interface TimeoutSDKType {
+  height: HeightSDKType;
+  timestamp: bigint;
 }
 function createBaseChannel(): Channel {
   return {
@@ -341,8 +477,43 @@ function createBaseChannel(): Channel {
     version: '',
   };
 }
+/**
+ * Channel defines pipeline for exactly-once packet delivery between specific
+ * modules on separate blockchains, which has at least one end capable of
+ * sending packets and one end capable of receiving packets.
+ * @name Channel
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Channel
+ */
 export const Channel = {
-  typeUrl: '/ibc.core.channel.v1.Channel',
+  typeUrl: '/ibc.core.channel.v1.Channel' as const,
+  aminoType: 'cosmos-sdk/Channel' as const,
+  is(o: any): o is Channel {
+    return (
+      o &&
+      (o.$typeUrl === Channel.typeUrl ||
+        (isSet(o.state) &&
+          isSet(o.ordering) &&
+          Counterparty.is(o.counterparty) &&
+          Array.isArray(o.connectionHops) &&
+          (!o.connectionHops.length ||
+            typeof o.connectionHops[0] === 'string') &&
+          typeof o.version === 'string'))
+    );
+  },
+  isSDK(o: any): o is ChannelSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Channel.typeUrl ||
+        (isSet(o.state) &&
+          isSet(o.ordering) &&
+          Counterparty.isSDK(o.counterparty) &&
+          Array.isArray(o.connection_hops) &&
+          (!o.connection_hops.length ||
+            typeof o.connection_hops[0] === 'string') &&
+          typeof o.version === 'string'))
+    );
+  },
   encode(
     message: Channel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -463,8 +634,46 @@ function createBaseIdentifiedChannel(): IdentifiedChannel {
     channelId: '',
   };
 }
+/**
+ * IdentifiedChannel defines a channel with additional port and channel
+ * identifier fields.
+ * @name IdentifiedChannel
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.IdentifiedChannel
+ */
 export const IdentifiedChannel = {
-  typeUrl: '/ibc.core.channel.v1.IdentifiedChannel',
+  typeUrl: '/ibc.core.channel.v1.IdentifiedChannel' as const,
+  aminoType: 'cosmos-sdk/IdentifiedChannel' as const,
+  is(o: any): o is IdentifiedChannel {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedChannel.typeUrl ||
+        (isSet(o.state) &&
+          isSet(o.ordering) &&
+          Counterparty.is(o.counterparty) &&
+          Array.isArray(o.connectionHops) &&
+          (!o.connectionHops.length ||
+            typeof o.connectionHops[0] === 'string') &&
+          typeof o.version === 'string' &&
+          typeof o.portId === 'string' &&
+          typeof o.channelId === 'string'))
+    );
+  },
+  isSDK(o: any): o is IdentifiedChannelSDKType {
+    return (
+      o &&
+      (o.$typeUrl === IdentifiedChannel.typeUrl ||
+        (isSet(o.state) &&
+          isSet(o.ordering) &&
+          Counterparty.isSDK(o.counterparty) &&
+          Array.isArray(o.connection_hops) &&
+          (!o.connection_hops.length ||
+            typeof o.connection_hops[0] === 'string') &&
+          typeof o.version === 'string' &&
+          typeof o.port_id === 'string' &&
+          typeof o.channel_id === 'string'))
+    );
+  },
   encode(
     message: IdentifiedChannel,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -598,8 +807,29 @@ function createBaseCounterparty(): Counterparty {
     channelId: '',
   };
 }
+/**
+ * Counterparty defines a channel end counterparty
+ * @name Counterparty
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Counterparty
+ */
 export const Counterparty = {
-  typeUrl: '/ibc.core.channel.v1.Counterparty',
+  typeUrl: '/ibc.core.channel.v1.Counterparty' as const,
+  aminoType: 'cosmos-sdk/Counterparty' as const,
+  is(o: any): o is Counterparty {
+    return (
+      o &&
+      (o.$typeUrl === Counterparty.typeUrl ||
+        (typeof o.portId === 'string' && typeof o.channelId === 'string'))
+    );
+  },
+  isSDK(o: any): o is CounterpartySDKType {
+    return (
+      o &&
+      (o.$typeUrl === Counterparty.typeUrl ||
+        (typeof o.port_id === 'string' && typeof o.channel_id === 'string'))
+    );
+  },
   encode(
     message: Counterparty,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -676,8 +906,43 @@ function createBasePacket(): Packet {
     timeoutTimestamp: BigInt(0),
   };
 }
+/**
+ * Packet defines a type that carries data across different chains through IBC
+ * @name Packet
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Packet
+ */
 export const Packet = {
-  typeUrl: '/ibc.core.channel.v1.Packet',
+  typeUrl: '/ibc.core.channel.v1.Packet' as const,
+  aminoType: 'cosmos-sdk/Packet' as const,
+  is(o: any): o is Packet {
+    return (
+      o &&
+      (o.$typeUrl === Packet.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.sourcePort === 'string' &&
+          typeof o.sourceChannel === 'string' &&
+          typeof o.destinationPort === 'string' &&
+          typeof o.destinationChannel === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          Height.is(o.timeoutHeight) &&
+          typeof o.timeoutTimestamp === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is PacketSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Packet.typeUrl ||
+        (typeof o.sequence === 'bigint' &&
+          typeof o.source_port === 'string' &&
+          typeof o.source_channel === 'string' &&
+          typeof o.destination_port === 'string' &&
+          typeof o.destination_channel === 'string' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string') &&
+          Height.isSDK(o.timeout_height) &&
+          typeof o.timeout_timestamp === 'bigint'))
+    );
+  },
   encode(
     message: Packet,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -840,8 +1105,38 @@ function createBasePacketState(): PacketState {
     data: new Uint8Array(),
   };
 }
+/**
+ * PacketState defines the generic type necessary to retrieve and store
+ * packet commitments, acknowledgements, and receipts.
+ * Caller is responsible for knowing the context necessary to interpret this
+ * state as a commitment, acknowledgement, or a receipt.
+ * @name PacketState
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketState
+ */
 export const PacketState = {
-  typeUrl: '/ibc.core.channel.v1.PacketState',
+  typeUrl: '/ibc.core.channel.v1.PacketState' as const,
+  aminoType: 'cosmos-sdk/PacketState' as const,
+  is(o: any): o is PacketState {
+    return (
+      o &&
+      (o.$typeUrl === PacketState.typeUrl ||
+        (typeof o.portId === 'string' &&
+          typeof o.channelId === 'string' &&
+          typeof o.sequence === 'bigint' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
+  isSDK(o: any): o is PacketStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PacketState.typeUrl ||
+        (typeof o.port_id === 'string' &&
+          typeof o.channel_id === 'string' &&
+          typeof o.sequence === 'bigint' &&
+          (o.data instanceof Uint8Array || typeof o.data === 'string')))
+    );
+  },
   encode(
     message: PacketState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -942,8 +1237,35 @@ function createBasePacketId(): PacketId {
     sequence: BigInt(0),
   };
 }
+/**
+ * PacketId is an identifier for a unique Packet
+ * Source chains refer to packets by source port/channel
+ * Destination chains refer to packets by destination port/channel
+ * @name PacketId
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.PacketId
+ */
 export const PacketId = {
-  typeUrl: '/ibc.core.channel.v1.PacketId',
+  typeUrl: '/ibc.core.channel.v1.PacketId' as const,
+  aminoType: 'cosmos-sdk/PacketId' as const,
+  is(o: any): o is PacketId {
+    return (
+      o &&
+      (o.$typeUrl === PacketId.typeUrl ||
+        (typeof o.portId === 'string' &&
+          typeof o.channelId === 'string' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is PacketIdSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PacketId.typeUrl ||
+        (typeof o.port_id === 'string' &&
+          typeof o.channel_id === 'string' &&
+          typeof o.sequence === 'bigint'))
+    );
+  },
   encode(
     message: PacketId,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1029,8 +1351,27 @@ function createBaseAcknowledgement(): Acknowledgement {
     error: undefined,
   };
 }
+/**
+ * Acknowledgement is the recommended acknowledgement format to be used by
+ * app-specific protocols.
+ * NOTE: The field numbers 21 and 22 were explicitly chosen to avoid accidental
+ * conflicts with other protobuf message formats used for acknowledgements.
+ * The first byte of any message with this format will be the non-ASCII values
+ * `0xaa` (result) or `0xb2` (error). Implemented as defined by ICS:
+ * https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#acknowledgement-envelope
+ * @name Acknowledgement
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Acknowledgement
+ */
 export const Acknowledgement = {
-  typeUrl: '/ibc.core.channel.v1.Acknowledgement',
+  typeUrl: '/ibc.core.channel.v1.Acknowledgement' as const,
+  aminoType: 'cosmos-sdk/Acknowledgement' as const,
+  is(o: any): o is Acknowledgement {
+    return o && o.$typeUrl === Acknowledgement.typeUrl;
+  },
+  isSDK(o: any): o is AcknowledgementSDKType {
+    return o && o.$typeUrl === Acknowledgement.typeUrl;
+  },
   encode(
     message: Acknowledgement,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1096,6 +1437,111 @@ export const Acknowledgement = {
     return {
       typeUrl: '/ibc.core.channel.v1.Acknowledgement',
       value: Acknowledgement.encode(message).finish(),
+    };
+  },
+};
+function createBaseTimeout(): Timeout {
+  return {
+    height: Height.fromPartial({}),
+    timestamp: BigInt(0),
+  };
+}
+/**
+ * Timeout defines an execution deadline structure for 04-channel handlers.
+ * This includes packet lifecycle handlers.
+ * A valid Timeout contains either one or both of a timestamp and block height (sequence).
+ * @name Timeout
+ * @package ibc.core.channel.v1
+ * @see proto type: ibc.core.channel.v1.Timeout
+ */
+export const Timeout = {
+  typeUrl: '/ibc.core.channel.v1.Timeout' as const,
+  aminoType: 'cosmos-sdk/Timeout' as const,
+  is(o: any): o is Timeout {
+    return (
+      o &&
+      (o.$typeUrl === Timeout.typeUrl ||
+        (Height.is(o.height) && typeof o.timestamp === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is TimeoutSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Timeout.typeUrl ||
+        (Height.isSDK(o.height) && typeof o.timestamp === 'bigint'))
+    );
+  },
+  encode(
+    message: Timeout,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.height !== undefined) {
+      Height.encode(message.height, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.timestamp !== BigInt(0)) {
+      writer.uint32(16).uint64(message.timestamp);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): Timeout {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTimeout();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.height = Height.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.timestamp = reader.uint64();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): Timeout {
+    return {
+      height: isSet(object.height) ? Height.fromJSON(object.height) : undefined,
+      timestamp: isSet(object.timestamp)
+        ? BigInt(object.timestamp.toString())
+        : BigInt(0),
+    };
+  },
+  toJSON(message: Timeout): JsonSafe<Timeout> {
+    const obj: any = {};
+    message.height !== undefined &&
+      (obj.height = message.height ? Height.toJSON(message.height) : undefined);
+    message.timestamp !== undefined &&
+      (obj.timestamp = (message.timestamp || BigInt(0)).toString());
+    return obj;
+  },
+  fromPartial(object: Partial<Timeout>): Timeout {
+    const message = createBaseTimeout();
+    message.height =
+      object.height !== undefined && object.height !== null
+        ? Height.fromPartial(object.height)
+        : undefined;
+    message.timestamp =
+      object.timestamp !== undefined && object.timestamp !== null
+        ? BigInt(object.timestamp.toString())
+        : BigInt(0);
+    return message;
+  },
+  fromProtoMsg(message: TimeoutProtoMsg): Timeout {
+    return Timeout.decode(message.value);
+  },
+  toProto(message: Timeout): Uint8Array {
+    return Timeout.encode(message).finish();
+  },
+  toProtoMsg(message: Timeout): TimeoutProtoMsg {
+    return {
+      typeUrl: '/ibc.core.channel.v1.Timeout',
+      value: Timeout.encode(message).finish(),
     };
   },
 };

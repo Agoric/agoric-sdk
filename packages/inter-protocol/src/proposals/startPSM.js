@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { makeMap } from 'jessie.js';
 import { X } from '@endo/errors';
 import { E } from '@endo/far';
@@ -11,7 +9,7 @@ import {
   makeHistoryReviver,
   makeBoardRemote,
   slotToBoardRemote,
-} from '@agoric/internal/src/marshal.js';
+} from '@agoric/internal/src/marshal/board-client-utils.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Stable } from '@agoric/internal/src/tokens.js';
@@ -24,7 +22,18 @@ import {
   inviteToEconCharter,
 } from './committee-proposal.js';
 
-/** @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js' */
+/**
+ * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
+ * @import {PSMKit} from './econ-behaviors.js';
+ * @import {FeeMintAccess} from '@agoric/zoe';
+ * @import {GovernanceSubscriptionState, GovernorStartedInstallationKit} from '@agoric/governance/src/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ChainStorageVatParams, WellKnownSpaces} from '@agoric/vats/src/core/types.js';
+ * @import {ERef} from '@agoric/vow';
+ */
 /** @import {MetricsNotification} from '../psm/psm.js' */
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 
@@ -249,7 +258,7 @@ export const startPSM = async (
   };
   await (oldState.metrics && restoreMetrics(oldState.metrics));
 
-  /** @type {import('./econ-behaviors.js').PSMKit} */
+  /** @type {PSMKit} */
   const newpsmKit = harden({
     label: instanceKey,
     psm,
@@ -262,7 +271,7 @@ export const startPSM = async (
   // Provide pattern with a promise.
   producepsmKit.resolve(makeScalarBigMapStore('PSM Kits', { durable: true }));
 
-  /** @type {MapStore<Brand, import('./econ-behaviors.js').PSMKit>} */
+  /** @type {MapStore<Brand, PSMKit>} */
   const psmKitMap = await psmKit;
 
   // TODO init into governedContractKits too to simplify testing

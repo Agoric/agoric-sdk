@@ -1,5 +1,6 @@
 //@ts-nocheck
-import { Tendermint34Client, type HttpEndpoint } from '@cosmjs/tendermint-rpc';
+import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
+import type { HttpEndpoint } from '@cosmjs/tendermint-rpc';
 import { QueryClient } from '@cosmjs/stargate';
 export const createRPCQueryClient = async ({
   rpcEndpoint,
@@ -32,14 +33,29 @@ export const createRPCQueryClient = async ({
           ).createRpcQueryExtension(client),
         },
       },
+      circuit: {
+        v1: (
+          await import('./circuit/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
       consensus: {
         v1: (
           await import('./consensus/v1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
+      counter: {
+        v1: (
+          await import('./counter/v1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
       distribution: {
         v1beta1: (
           await import('./distribution/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      epochs: {
+        v1beta1: (
+          await import('./epochs/v1beta1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
       feegrant: {
@@ -68,6 +84,11 @@ export const createRPCQueryClient = async ({
       params: {
         v1beta1: (
           await import('./params/v1beta1/query.rpc.Query.js')
+        ).createRpcQueryExtension(client),
+      },
+      protocolpool: {
+        v1: (
+          await import('./protocolpool/v1/query.rpc.Query.js')
         ).createRpcQueryExtension(client),
       },
       staking: {

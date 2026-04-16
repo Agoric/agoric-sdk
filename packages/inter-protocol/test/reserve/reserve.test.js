@@ -1,13 +1,21 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { reserveInitialState, subscriptionTracker } from '../metrics.js';
 import { setupReserveServices } from './setup.js';
+
+/**
+ * @import {Macro} from 'ava';
+ * @import {Assertions} from 'ava';
+ * @import {FeeMintAccess, Invitation, ZoeService} from '@agoric/zoe';
+ * @import {NatValue} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ */
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -42,7 +50,7 @@ const getRunFromFaucet = async (
 };
 
 test.before(async t => {
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
+  const bundleCache = await unsafeSharedBundleCache;
   t.context = { bundleCache };
 });
 
@@ -78,11 +86,11 @@ test('reserve add collateral', async t => {
 });
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [
  *     {
  *       makeInvitationMaker: (
- *         t: import('ava').Assertions,
+ *         t: Assertions,
  *         powers: { zoe; reserve },
  *       ) => {
  *         makeInvitation: () => Promise<Invitation>;

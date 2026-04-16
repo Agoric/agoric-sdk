@@ -2,6 +2,12 @@ import { assert, Fail } from '@endo/errors';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 
+/**
+ * @import {VatManager} from '../../types-internal.js';
+ * @import {SourceOfBundle} from '../../types-external.js';
+ * @import {RecordedVatOptions} from '../../types-internal.js';
+ */
+
 export function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0n);
 }
@@ -14,8 +20,6 @@ export function makeVatLoader(stuff) {
     makeSourcedConsole,
     kernelKeeper,
   } = stuff;
-
-  /** @import {VatManager} from '../../types-internal.js' */
 
   const allowedOptions = [
     'name',
@@ -51,7 +55,7 @@ export function makeVatLoader(stuff) {
    *    used, it must identify a bundle already known to the kernel (via the
    *    `config.bundles` table) which satisfies these constraints.
    *
-   * @param {import('../../types-internal.js').RecordedVatOptions} details.options
+   * @param {RecordedVatOptions} details.options
    *
    * @returns {Promise<VatManager>} A Promise which fires when the
    *    vat is ready for messages.

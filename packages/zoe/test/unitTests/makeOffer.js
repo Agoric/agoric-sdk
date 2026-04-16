@@ -2,8 +2,9 @@ import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /**
- * @import {PaymentPKeywordRecord, Proposal, UserSeat, ZoeService } from '@agoric/zoe';
+ * @import {PaymentPKeywordRecord, Proposal, UserSeat, ZCF, ZCFSeat, ZoeService } from '@agoric/zoe';
  * @import {Pattern} from '@endo/patterns';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

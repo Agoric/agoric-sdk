@@ -2,14 +2,17 @@ import sqlite3 from 'better-sqlite3';
 
 import { Fail, q } from '@endo/errors';
 
-import { dbFileInDirectory } from './util.js';
-import { getKeyType } from './kvStore.js';
+import { dbFileInDirectory, getKVStoreKeyType } from './util.js';
 import { makeBundleStore } from './bundleStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
 import { makeTranscriptStore } from './transcriptStore.js';
 import { assertComplete } from './assertComplete.js';
 import { validateArtifactMode } from './internal.js';
+
+/**
+ * @import {ArtifactMode} from './internal.js';
+ */
 
 /**
  * @template T
@@ -79,7 +82,7 @@ import { validateArtifactMode } from './internal.js';
 
 /**
  * @typedef { object } ExportSwingStoreOptions
- * @property { import('./internal.js').ArtifactMode } [artifactMode]  What artifacts should/must the exporter provide?
+ * @property { ArtifactMode } [artifactMode]  What artifacts should/must the exporter provide?
  */
 
 /**
@@ -129,7 +132,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
    * section
    */
   function getHostKV(key) {
-    getKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
+    getKVStoreKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
     // @ts-expect-error unknown
     return sqlKVGet.get(key);
   }
@@ -147,7 +150,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
    */
   async function* getExportData() {
     for (const { key, value } of sqlGetAllKVData.iterate()) {
-      if (getKeyType(key) === 'consensus') {
+      if (getKVStoreKeyType(key) === 'consensus') {
         yield [`kv.${key}`, value];
       }
     }

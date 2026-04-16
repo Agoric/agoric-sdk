@@ -2,11 +2,11 @@ syntax = "proto3";
 package cosmos.evidence.v1beta1;
 
 import "cosmos/base/query/v1beta1/pagination.proto";
-import "gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
 import "google/api/annotations.proto";
+import "cosmos_proto/cosmos.proto";
 
-option go_package = "github.com/cosmos/cosmos-sdk/x/evidence/types";
+option go_package = "cosmossdk.io/x/evidence/types";
 
 // Query defines the gRPC querier service.
 service Query {
@@ -25,13 +25,10 @@ service Query {
 message QueryEvidenceRequest {
   // evidence_hash defines the hash of the requested evidence.
   // Deprecated: Use hash, a HEX encoded string, instead.
-  bytes evidence_hash = 1
-      [deprecated = true, (gogoproto.casttype) = "github.com/cometbft/cometbft/libs/bytes.HexBytes"];
+  bytes evidence_hash = 1 [deprecated = true];
 
   // hash defines the evidence hash of the requested evidence.
-  //
-  // Since: cosmos-sdk 0.47
-  string hash = 2;
+  string hash = 2 [(cosmos_proto.field_added_in) = "cosmos-sdk 0.47"];
 }
 
 // QueryEvidenceResponse is the response type for the Query/Evidence RPC method.

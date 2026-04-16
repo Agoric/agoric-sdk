@@ -1,7 +1,7 @@
 // @ts-check
 /**
  * @file provides a `makeE` that can be parameterized with an `unwrap` function
- * and corresponding `import('./types.js').EUnwrap<T>`.  These will be used to
+ * and corresponding `EUnwrap<T>`.  These will be used to
  * extract the final settlement from a chain of PromiseLikes and PromiseSteps or
  * similar non-thenable pseudo-promises.
  *
@@ -21,6 +21,7 @@ import { makeMessageBreakpointTester } from './message-breakpoints.js';
 
 /**
  * @import {ERef} from '@endo/far';
+ * @import {EUnwrap} from './types.js';
  */
 
 const { assign, create } = Object;
@@ -29,7 +30,6 @@ const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
 
 /**
  * @import { HandledPromiseConstructor, RemotableBrand } from '@endo/eventual-send'
- * @import { EUnwrap } from './types.js'
  */
 /** @typedef {(...args: unknown[]) => any} Callable */
 
@@ -310,7 +310,7 @@ const makeE = (HandledPromise, powers = {}) => {
 
 export default makeE;
 
-/** @typedef {ReturnType<makeE>} EProxy */
+/** @typedef {ReturnType<typeof makeE>} EProxy */
 
 /**
  * `DataOnly<T>` means to return a record type `T2` consisting only of
@@ -322,11 +322,9 @@ export default makeE;
 
 /**
  * @template {Callable} T
- * @typedef {ReturnType<T> extends EUnwrap<ReturnType<T>>
- *     ? (...args: Parameters<T>) => Promise<ReturnType<T>>
- *     : ReturnType<T> extends Promise<EUnwrap<ReturnType<T>>>
- *       ? T
- *       : (...args: Parameters<T>) => Promise<EUnwrap<ReturnType<T>>>} ECallable
+ * @typedef {ReturnType<T> extends Promise<EUnwrap<ReturnType<T>>>
+ *     ? T
+ *     : (...args: Parameters<T>) => Promise<EUnwrap<ReturnType<T>>>} ECallable
  */
 
 /**

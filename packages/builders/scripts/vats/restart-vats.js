@@ -1,6 +1,11 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+/**
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ */
+
+/** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async () => {
   // An includelist isn't necessary because the collections are known to be complete (tested in test-vaults-upgrade.js)
   const skip = [
@@ -19,7 +24,7 @@ export const defaultProposalBuilder = async () => {
   });
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('restart-vats', defaultProposalBuilder);

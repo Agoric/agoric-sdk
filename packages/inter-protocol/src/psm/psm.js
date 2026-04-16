@@ -1,7 +1,3 @@
-// @jessie-check
-/// <reference types="@agoric/governance/exported" />
-/// <reference types="@agoric/zoe/exported" />
-
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
@@ -12,6 +8,7 @@ import {
   publicMixinAPI,
 } from '@agoric/governance';
 import { StorageNodeShape } from '@agoric/internal';
+import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicTransfer,
@@ -45,7 +42,15 @@ import { makeNatAmountShape } from '../contractSupport.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {ContractMeta, FeeMintAccess, Installation} from '@agoric/zoe';
+ * @import {TypedPattern, Remote} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data'
+ * @import {ContractMeta, FeeMintAccess, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {Ratio} from '@agoric/ertp';
+ * @import {GovernanceTerms} from '@agoric/governance/src/types.js';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**
@@ -63,12 +68,7 @@ import { makeNatAmountShape } from '../contractSupport.js';
  *   given by this contract
  */
 
-/**
- * @import {TypedPattern} from '@agoric/internal';
- * @import {Baggage} from '@agoric/vat-data'
- */
-
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
   customTermsShape: {
@@ -91,6 +91,7 @@ export const meta = {
       MintLimit: { type: ParamTypes.AMOUNT, value: AmountShape },
     },
   },
+  // @ts-expect-error splitRecord loses the property keys
   privateArgsShape: M.splitRecord(
     {
       marshaller: M.remotable('Marshaller'),
@@ -119,8 +120,8 @@ harden(meta);
  * @param {{
  *   feeMintAccess: FeeMintAccess;
  *   initialPoserInvitation: Invitation;
- *   storageNode: StorageNode;
- *   marshaller: Marshaller;
+ *   storageNode: Remote<StorageNode>;
+ *   marshaller: Remote<Marshaller>;
  * }} privateArgs
  * @param {Baggage} baggage
  */
@@ -128,9 +129,12 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { anchorBrand, anchorPerMinted } = zcf.getTerms();
   console.log('PSM Starting', anchorBrand, anchorPerMinted);
 
+  const { marshaller: remoteMarshaller } = privateArgs;
+  const cachingMarshaller = wrapRemoteMarshaller(remoteMarshaller);
+
   const { makeRecorderKit } = prepareRecorderKitMakers(
     baggage,
-    privateArgs.marshaller,
+    cachingMarshaller,
   );
 
   const { stableMint } = await provideAll(baggage, {
@@ -157,7 +161,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         WantMintedFee: ParamTypes.RATIO,
       },
       privateArgs.storageNode,
-      privateArgs.marshaller,
+      cachingMarshaller,
     );
 
   const anchorPool = provideEmptySeat(zcf, baggage, 'anchorPoolSeat');

@@ -4,6 +4,10 @@ import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { calculateCurrentDebt, reverseInterest } from '../src/interest-math.js';
 
+/**
+ * @import {Amount} from '@agoric/ertp';
+ */
+
 const brand = makeIssuerKit('foo').brand;
 
 /**
