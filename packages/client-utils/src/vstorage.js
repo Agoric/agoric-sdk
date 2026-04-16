@@ -23,6 +23,12 @@ import {
  *   log?: string;
  *   value?: string;
  * }} AbciQueryResponse
+ *
+ * @typedef {{
+ *  result: {
+ *    response: JsonSafe<AbciQueryResponse>
+ *  }
+ * }} AbciQueryResponseRaw
  */
 
 const kindToRpc = /** @type {const} */ ({
@@ -73,9 +79,21 @@ export const makeAbciQuery = (
 /**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
+ * @param {() => number} [powers.now] clock source for testability, defaults to Date.now
  * @param {MinimalNetworkConfig} config
  */
-export const makeVStorage = ({ fetch }, config) => {
+export const makeVStorage = ({ fetch, now = Date.now }, config) => {
+  /** @type {number} Index of the currently active RPC node */
+  let activeNodeIndex = 0;
+  /** @type {bigint} Highest block height observed across RPC responses */
+  let highWaterMark = 0n;
+  /** @type {number} Timestamp (ms) of the last attempt to try higher-priority nodes */
+  let lastPreferredCheckTime = now();
+
+  /** Interval (ms) before re-trying higher-priority nodes */
+  const PREFERRED_RECHECK_INTERVAL_MS = 30 * 1000;
+  const rpcAddresses = Array.from(new Set(config.rpcAddrs));
+
   /**
    * @template {'data' | 'children'} T
    * @param {string} vstoragePath
@@ -88,10 +106,90 @@ export const makeVStorage = ({ fetch }, config) => {
     vstoragePath,
     { kind = /** @type {T} */ ('children'), height = 0 } = {},
   ) => {
-    const url =
-      config.rpcAddrs[0] + makeAbciQuery(vstoragePath, { kind, height });
-    const res = await fetch(url, { keepalive: true });
-    return res.json();
+    await null;
+
+    const isLatestQuery = !height;
+    const nodeCount = rpcAddresses.length;
+
+    // Periodically reset to index 0 so higher-priority nodes are re-tried
+    let startIndex = activeNodeIndex;
+
+    if (activeNodeIndex) {
+      const currentTime = now();
+      if (
+        currentTime - lastPreferredCheckTime >=
+        PREFERRED_RECHECK_INTERVAL_MS
+      ) {
+        lastPreferredCheckTime = currentTime;
+        startIndex = 0;
+      }
+    }
+
+    /** @type {{ data: AbciQueryResponseRaw, height: bigint, nodeIndex: number } | null} */
+    let bestStaleCandidate = null;
+    /** @type {AbciQueryResponseRaw | null} */
+    let lastErrorResponse = null;
+    /** @type {Error | null} */
+    let lastNetworkError = null;
+
+    for (let i = 0; i < nodeCount; i += 1) {
+      const nodeIndex = (startIndex + i) % nodeCount;
+      const url =
+        rpcAddresses[nodeIndex] + makeAbciQuery(vstoragePath, { kind, height });
+
+      /** @type {AbciQueryResponseRaw} */
+      let data;
+      try {
+        const res = await fetch(url, { keepalive: true });
+        data = await res.json();
+      } catch (err) {
+        lastNetworkError = /** @type {Error} */ (err);
+        continue;
+      }
+
+      const response = data?.result?.response;
+
+      // Non-zero error code — try next node
+      if (response?.code !== 0) {
+        lastErrorResponse = data;
+        continue;
+      }
+
+      // For latest queries, enforce monotonicity via high-water mark
+      if (isLatestQuery && response?.height !== undefined) {
+        const responseHeight = BigInt(response.height);
+
+        if (responseHeight < highWaterMark) {
+          if (!bestStaleCandidate || responseHeight > bestStaleCandidate.height)
+            bestStaleCandidate = { data, height: responseHeight, nodeIndex };
+
+          continue;
+        }
+
+        highWaterMark = responseHeight;
+      }
+
+      // Valid response
+      if (nodeIndex !== activeNodeIndex) lastPreferredCheckTime = now();
+
+      activeNodeIndex = nodeIndex;
+      return data;
+    }
+
+    // All nodes exhausted — return best available
+    if (bestStaleCandidate) {
+      if (bestStaleCandidate.nodeIndex !== activeNodeIndex)
+        lastPreferredCheckTime = now();
+
+      activeNodeIndex = bestStaleCandidate.nodeIndex;
+      return bestStaleCandidate.data;
+    }
+
+    if (lastErrorResponse) return lastErrorResponse;
+
+    throw (
+      lastNetworkError || Error(`no RPC nodes available for ${vstoragePath}`)
+    );
   };
 
   /**
@@ -247,4 +345,5 @@ export const makeVStorage = ({ fetch }, config) => {
   };
   return vstorage;
 };
+
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
