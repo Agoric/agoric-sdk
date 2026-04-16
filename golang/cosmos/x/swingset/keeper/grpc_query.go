@@ -70,12 +70,18 @@ func (k Querier) ChunkedArtifactStatus(c context.Context, req *types.QueryChunke
 
 	msg := k.GetPendingBundleInstall(ctx, req.ChunkedArtifactId)
 	if msg == nil {
-		return nil, status.Error(codes.NotFound, "pending chunked artifact not found")
+		return nil, status.Errorf(codes.NotFound,
+			"no pending chunked artifact with id %d; it may have expired or been finalized",
+			req.ChunkedArtifactId,
+		)
 	}
 
 	can := k.GetChunkedArtifactNode(ctx, req.ChunkedArtifactId)
 	if can == nil {
-		return nil, status.Error(codes.NotFound, "pending chunked artifact node not found")
+		return nil, status.Errorf(codes.NotFound,
+			"pending chunked artifact %d exists but its tracking node is missing (possible state inconsistency)",
+			req.ChunkedArtifactId,
+		)
 	}
 
 	return &types.QueryChunkedArtifactStatusResponse{

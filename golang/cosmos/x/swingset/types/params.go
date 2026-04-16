@@ -20,6 +20,8 @@ var (
 	ParamStoreKeyVatCleanupBudget                 = []byte("vat_cleanup_budget")
 	ParamStoreKeyBundleUncompressedSizeLimitBytes = []byte("bundle_uncompressed_size_limit_bytes")
 	ParamStoreKeyChunkSizeLimitBytes              = []byte("chunk_size_limit_bytes")
+	ParamStoreKeyInstallationDeadlineSeconds      = []byte("installation_deadline_seconds")
+	ParamStoreKeyInstallationDeadlineBlocks       = []byte("installation_deadline_blocks")
 )
 
 func NewStringBeans(key string, beans sdkmath.Uint) StringBeans {
@@ -59,6 +61,8 @@ func DefaultParams() Params {
 		VatCleanupBudget:                 DefaultVatCleanupBudget,
 		BundleUncompressedSizeLimitBytes: DefaultBundleUncompressedSizeLimitBytes,
 		ChunkSizeLimitBytes:              DefaultChunkSizeLimitBytes,
+		InstallationDeadlineSeconds:      DefaultInstallationDeadlineSeconds, // 86400 (24h)
+		InstallationDeadlineBlocks:       DefaultInstallationDeadlineBlocks,  // -1 (unlimited)
 	}
 }
 
@@ -78,6 +82,8 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyVatCleanupBudget, &p.VatCleanupBudget, validateVatCleanupBudget),
 		paramtypes.NewParamSetPair(ParamStoreKeyBundleUncompressedSizeLimitBytes, &p.BundleUncompressedSizeLimitBytes, validateBundleUncompressedSizeLimitBytes),
 		paramtypes.NewParamSetPair(ParamStoreKeyChunkSizeLimitBytes, &p.ChunkSizeLimitBytes, validateChunkSizeLimitBytes),
+		paramtypes.NewParamSetPair(ParamStoreKeyInstallationDeadlineSeconds, &p.InstallationDeadlineSeconds, validateInstallationDeadlineSeconds),
+		paramtypes.NewParamSetPair(ParamStoreKeyInstallationDeadlineBlocks, &p.InstallationDeadlineBlocks, validateInstallationDeadlineBlocks),
 	}
 }
 
@@ -216,6 +222,22 @@ func validateChunkSizeLimitBytes(i interface{}) error {
 	} else if value <= 0 {
 		return fmt.Errorf("chunk_size_limit_bytes must be positive (>0), got %d", value)
 	}
+	return nil
+}
+
+func validateInstallationDeadlineSeconds(i interface{}) error {
+	if _, ok := i.(int64); !ok {
+		return fmt.Errorf("installation_deadline_seconds must be int64, got %#v", i)
+	}
+	// -1 means unlimited, 0 means expire immediately, positive is a duration.
+	return nil
+}
+
+func validateInstallationDeadlineBlocks(i interface{}) error {
+	if _, ok := i.(int64); !ok {
+		return fmt.Errorf("installation_deadline_blocks must be int64, got %#v", i)
+	}
+	// -1 means unlimited, 0 means expire immediately, positive is a block count.
 	return nil
 }
 
