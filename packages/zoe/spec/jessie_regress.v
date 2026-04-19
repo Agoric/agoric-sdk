@@ -1,6 +1,7 @@
 From Coq Require Import List String ZArith.
 Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter
-  jessie_counter_spec jessie_counter_reach jessie_module jessie_iris_lang jessie_counter_iris
+  jessie_counter_spec jessie_counter_reach jessie_connectivity
+  jessie_module jessie_iris_lang jessie_counter_iris
   jessie_counter_parse.
 
 Import ListNotations.
@@ -9,6 +10,7 @@ Import JustinExec.
 Import JessieCounterCase.
 Import JessieCounterSpec.
 Import JessieCounterReach.
+Import JessieConnectivity.
 Import JessieModule.
 Import JustinIris.
 Import JessieCounterIris.
@@ -175,6 +177,14 @@ Example exit_cap_root_reaches_only_decr_regression :
   | None => False
   end.
 Proof. exact exit_cap_root_reaches_only_decr. Qed.
+
+Example makeCounter_connectivity_smoke_object :
+  val_reaches state_after_makeCounter counter_after_makeCounter (CObj 1%nat).
+Proof. exact makeCounter_result_reaches_fresh_object. Qed.
+
+Example makeCounter_connectivity_smoke_cell :
+  val_reaches state_after_makeCounter counter_after_makeCounter (CCell 0%nat).
+Proof. exact makeCounter_result_reaches_fresh_cell. Qed.
 
 Example module_end_to_end :
   eval_module 6

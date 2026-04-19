@@ -636,6 +636,25 @@ There is now also an explicit reachability layer in `jessie_counter_reach.v`:
 
 This is not yet the full client-context bridge theorem, but it isolates the exact authority-reachability claim that such a theorem will need.
 
+There is also now a first connectivity-oriented layer in `jessie_connectivity.v`,
+aimed more directly at the Miller/Shapiro framing that "Only Connectivity Begets
+Connectivity". It introduces:
+
+- `cref`, a small reference graph of object locations, dynamic method references, and hidden counter cells
+- `edge` and `reachable`, describing how connectivity propagates through object fields and method endowments
+- `old_or_fresh`, which says a reachable reference after a primitive call is either already reachable from the arguments or freshly allocated in that step
+- `primitive_connectivity_ok`, the corresponding primitive-level connectivity discipline
+
+This file currently contains concrete checked examples for `makeCounter` showing
+that the returned object reaches:
+
+- the fresh counter object
+- the fresh increment method reference
+- the hidden counter cell through the method endowment
+
+and that these references satisfy the intended `old_or_fresh` condition for the
+fresh call from `counter_empty_state`.
+
 The underlying case-study lemmas in `jessie_counter.v` make the same story visible one step earlier, before the regression wrappers:
 
 - `invoke_entry_cap_step`

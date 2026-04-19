@@ -123,6 +123,21 @@ Module JessieCounterReach.
     | _ => False
     end.
 
+  Definition result_dyn (e : core_expr) (pid : nat) : Prop :=
+    match e with
+    | CoreVal root => reaches_dyn (State 0%nat 0%nat [] [] [] [] []) root pid
+    | _ => False
+    end.
+
+  Definition conservative_builtin (name : prim_name) : Prop :=
+    forall σ args e' σ' pid,
+      apply_prim σ (PrimBuiltin name) args = (e', σ') ->
+      (match e' with
+       | CoreVal root => reaches_dyn σ' root pid
+       | _ => False
+       end) ->
+      exists arg, In arg args /\ reaches_dyn σ arg pid.
+
   Example entry_cap_root_reaches_only_incr :
     match entry_cap_after_makeCounter with
     | Some (cap, σ) => reaches_dyn σ cap 0%nat /\ ~ reaches_dyn σ cap 1%nat
