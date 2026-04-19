@@ -35,8 +35,8 @@ Module JessiePublic.
     | Bzzt => CoreBzzt
     end.
 
-  Example public_expr_cannot_spell_locations :
-    compile (Var "counter") = CoreVar "counter".
+  Example public_expr_compiles_plain_variables :
+    compile (Var "clientRoot") = CoreVar "clientRoot".
   Proof. reflexivity. Qed.
 
   Example public_expr_uses_only_literal_values :

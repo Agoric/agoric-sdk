@@ -849,7 +849,7 @@ Module JessieStepConnectivity.
       unfold empty_state in Hdyn. simpl in Hdyn. discriminate.
   Qed.
 
-  Lemma closed_state_counter_empty_state :
+  Lemma closed_state_makeCounter_state :
     closed_state JessieCounterCase.counter_empty_state.
   Proof.
     constructor.
@@ -903,14 +903,14 @@ Module JessieStepConnectivity.
     eapply dyn_apply_no_reaches; eauto.
   Qed.
 
-  Example public_compile_counter_get_is_closed :
-    closed_expr counter_empty_state
-      (JessiePublic.compile (JessiePublic.Get (JessiePublic.Var "counter") "incr")).
+  Example public_compile_builtin_get_is_closed :
+    closed_expr empty_state
+      (JessiePublic.compile (JessiePublic.Get (JessiePublic.Var "freeze") "prototype")).
   Proof.
     apply public_compile_closed.
     intros x v Hlookup.
     eapply env_lookup_closed.
-    - exact closed_state_counter_empty_state.
+    - exact closed_state_empty_state.
     - exact Hlookup.
   Qed.
 
