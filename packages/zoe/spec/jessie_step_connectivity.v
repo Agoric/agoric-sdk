@@ -1,12 +1,13 @@
 (* Generic one-step proof infrastructure for authority connectivity. *)
 From Coq Require Import Lia List String ZArith Program.Equality.
-Require Import jessie_lang jessie_justin jessie_counter jessie_counter_reach jessie_public.
+Require Import jessie_lang jessie_lib jessie_justin jessie_counter jessie_counter_reach jessie_public.
 
 Import ListNotations.
 Open Scope string_scope.
 Open Scope Z_scope.
 
 Module JessieStepConnectivity.
+  Import JessieLib.
   Import Justin.
   Import JustinExec.
   Import JessieCounterCase.
@@ -536,68 +537,54 @@ Module JessieStepConnectivity.
     False.
   Proof. intros Happ _. discriminate Happ. Qed.
 
+  Lemma if_result_state_eq {A B : Type} (b : bool) (x y : A) (σ σ' : B) x' :
+    (if b then (x, σ) else (y, σ)) = (x', σ') ->
+    σ' = σ.
+  Proof.
+    destruct b; intro Heq; inversion Heq; reflexivity.
+  Qed.
+
   Lemma apply_prim_frame σ p args e' σ' :
     apply_prim σ p args = (e', σ') ->
     step_frame σ σ'.
   Proof.
     intros Happ.
     destruct p as [name|pid|pid]; unfold apply_prim in Happ.
-    - destruct name.
-      + destruct args as [|a args0]; simpl in Happ.
+    - unfold eval_builtin_prim in Happ.
+      destruct name.
+      + destruct args as [|a [|b args1]]; simpl in Happ.
         * inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
-        * destruct args0 as [|b args1]; simpl in Happ.
-          -- inversion Happ; subst; clear Happ.
-             constructor.
-             ++ apply freeze_shallow_preserves_store.
-             ++ apply freeze_shallow_preserves_env.
-          -- inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
-      + destruct args as [|a args0]; simpl in Happ.
+        * inversion Happ; subst; clear Happ.
+          constructor.
+          -- apply freeze_shallow_preserves_store.
+          -- apply freeze_shallow_preserves_env.
         * inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
-        * destruct args0 as [|b args1]; simpl in Happ.
-          -- inversion Happ; subst; clear Happ.
-             constructor.
-             ++ change (st_store (freeze_deep 20 σ a) = st_store σ).
-                apply freeze_deep_preserves_store.
-             ++ change (st_env (freeze_deep 20 σ a) = st_env σ).
-                apply freeze_deep_preserves_env.
-          -- inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
-      + destruct args as [|a args0]; simpl in Happ.
+      + destruct args as [|a [|b args1]]; simpl in Happ.
+        * inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
+        * inversion Happ; subst; clear Happ.
+          constructor.
+          -- change (st_store (freeze_deep 20 σ a) = st_store σ).
+             apply freeze_deep_preserves_store.
+          -- change (st_env (freeze_deep 20 σ a) = st_env σ).
+             apply freeze_deep_preserves_env.
+        * inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
+      + destruct args as [|a [|b args1]]; simpl in Happ.
         * inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-        * destruct args0 as [|b args1]; simpl in Happ.
-          -- destruct a; simpl in Happ.
-             ++ destruct l; simpl in Happ.
-                ** destruct v as [|b0|n|s|xs|fields]; simpl in Happ.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- destruct b0; inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                ** inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                ** inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-             ++ inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-             ++ inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-          -- destruct a; simpl in Happ.
-             ++ destruct l as [v|n|]; simpl in Happ.
-                ** destruct v as [|b0|n0|s0|xs0|fields0]; simpl in Happ.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- destruct b0; inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                ** inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-                ** inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-             ++ inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-             ++ inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-      + destruct args as [|a args0].
-        * simpl in Happ. inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-        * destruct args0 as [|b args1].
-          -- remember (hardenedb 20 σ a) as hb eqn:Hhard.
-             simpl in Happ.
-             destruct hb; inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-          -- simpl in Happ. inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-      + destruct args as [|a args0]; simpl in Happ;
+        * destruct a; simpl in Happ;
+            try (inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity).
+          destruct l; simpl in Happ;
+            try (inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity).
+          destruct v; simpl in Happ;
+            try (inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity).
+          destruct b; inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+        * inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+      + destruct args as [|a [|b args1]]; simpl in Happ.
+        * inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+        * assert (Hσ : σ' = σ).
+          { eapply if_result_state_eq; eauto. }
+          subst σ'. apply StepFrameSame; reflexivity.
+        * inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+      + destruct args; simpl in Happ;
           inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
     - destruct (lookup_nat_assoc pid (st_dyn_prims σ)) as [[cell|cell]|] eqn:Hdyn.
       + destruct args as [|a rest].

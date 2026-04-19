@@ -147,14 +147,7 @@ Module JustinExec.
     | VPrim x, VPrim y =>
         match x, y with
         | PrimBuiltin p1, PrimBuiltin p2 =>
-            match p1, p2 with
-            | PrimFreeze, PrimFreeze
-            | PrimHarden, PrimHarden
-            | PrimAssert, PrimAssert
-            | PrimId, PrimId
-            | PrimFail, PrimFail => true
-            | _, _ => false
-            end
+            prim_name_eqb p1 p2
         | PrimDyn n1, PrimDyn n2 => Nat.eqb n1 n2
         | PrimExt n1, PrimExt n2 => Nat.eqb n1 n2
         | _, _ => false
@@ -246,33 +239,20 @@ Module JustinExec.
   Definition apply_prim (σ : state) (p : prim_ref) (args : list val)
     : core_expr * state :=
     match p with
-    | PrimBuiltin PrimAssert =>
-        match args with
-        | [VLit (LJson (JBool true))] => (CoreVal (VLit LUndefined), σ)
-        | [VLit (LJson (JBool false))] => (CoreBzzt, σ)
-        | _ => (CoreBzzt, σ)
-        end
-    | PrimBuiltin PrimId =>
-        match args with
-        | [v] =>
-            if hardenedb 20 σ v then (CoreVal v, σ) else (CoreBzzt, σ)
-        | _ => (CoreBzzt, σ)
-        end
-    | PrimBuiltin PrimFail => (CoreBzzt, σ)
-    | PrimBuiltin PrimFreeze =>
-        match args with
-        | [v] =>
-            let σ' := freeze_shallow σ v in
-            (CoreVal v, σ')
-        | _ => (CoreBzzt, σ)
-        end
-    | PrimBuiltin PrimHarden =>
-        match args with
-        | [v] =>
-            let σ' := freeze_deep 20 σ v in
-            (CoreVal v, σ')
-        | _ => (CoreBzzt, σ)
-        end
+    | PrimBuiltin name =>
+        eval_builtin_prim
+          (VLit LUndefined)
+          freeze_shallow
+          freeze_deep
+          hardenedb
+          (fun v =>
+             match v with
+             | VLit (LJson (JBool true)) => true
+             | _ => false
+             end)
+          (fun v σ' => (CoreVal v, σ'))
+          (CoreBzzt, σ)
+          name σ args
     | PrimExt _ => (CoreBzzt, σ)
     | PrimDyn pid =>
       match lookup_nat_assoc pid (st_dyn_prims σ) with
