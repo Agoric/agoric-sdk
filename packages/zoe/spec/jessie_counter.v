@@ -10,8 +10,9 @@ Module JessieCounterCase.
   Import JustinExec.
 
   Definition counter_empty_state : state :=
-    State (st_next_loc empty_state) (st_store empty_state) (st_frozen empty_state)
-      (("makeCounter", VPrim "makeCounter") :: st_env empty_state)
+    State (st_next_loc empty_state) (st_next_prim empty_state)
+      (st_store empty_state) (st_frozen empty_state)
+      (("makeCounter", VPrim (PrimExt 0%nat)) :: st_env empty_state)
       (st_cells empty_state) (st_dyn_prims empty_state).
 
   Definition alloc_counter_cap (σ : state) (counter : val) (field : string)
@@ -37,17 +38,18 @@ Module JessieCounterCase.
   Definition alloc_exit_cap (σ : state) (counter : val) : option (val * state) :=
     alloc_counter_cap σ counter "decr".
 
-  Definition counter_apply_prim (σ : state) (name : string) (args : list val)
+  Definition counter_apply_prim (σ : state) (p : prim_ref) (args : list val)
     : core_expr * state :=
-    if String.eqb name "makeCounter" then
-      match args with
-      | [] =>
-          let '(v, σ') := alloc_counter σ in
-          (CoreLit v, σ')
-      | _ => (CoreBzzt, σ)
-      end
-    else
-      apply_prim σ name args.
+    match p with
+    | PrimExt 0%nat =>
+        match args with
+        | [] =>
+            let '(v, σ') := alloc_counter σ in
+            (CoreVal v, σ')
+        | _ => (CoreBzzt, σ)
+        end
+    | _ => apply_prim σ p args
+    end.
 
   Definition counter_step (σ : state) (e : core_expr) : option (core_expr * state) :=
     step_with counter_apply_prim σ e.
@@ -61,16 +63,16 @@ Module JessieCounterCase.
       (CoreLetIn "_" (CoreApp (CoreGet (CoreVar "counter") "incr") [])
         (CoreLetIn "n" (CoreApp (CoreGet (CoreVar "counter") "incr") [])
           (CoreApp (CoreVar "assert")
-            [CoreBinop EqStrictOp (CoreVar "n") (CoreLit (VJson (JNum 2)))]))).
+            [CoreBinop EqStrictOp (CoreVar "n") (CoreVal (VLit (LJson (JNum 2))))]))).
 
   Definition counter_after_makeCounter : val :=
-    match fst (counter_apply_prim counter_empty_state "makeCounter" []) with
-    | CoreLit v => v
-    | _ => VUndefined
+    match fst (counter_apply_prim counter_empty_state (PrimExt 0%nat) []) with
+    | CoreVal v => v
+    | _ => VLit LUndefined
     end.
 
   Definition state_after_makeCounter : state :=
-    snd (counter_apply_prim counter_empty_state "makeCounter" []).
+    snd (counter_apply_prim counter_empty_state (PrimExt 0%nat) []).
 
   Definition entry_cap_after_makeCounter : option (val * state) :=
     alloc_entry_cap state_after_makeCounter counter_after_makeCounter.
@@ -81,7 +83,7 @@ Module JessieCounterCase.
   Definition entry_client_state : option state :=
     match entry_cap_after_makeCounter with
     | Some (cap, σ) =>
-        Some (State (st_next_loc σ) (st_store σ) (st_frozen σ)
+        Some (State (st_next_loc σ) (st_next_prim σ) (st_store σ) (st_frozen σ)
           (("counter", cap) :: st_env σ) (st_cells σ) (st_dyn_prims σ))
     | None => None
     end.
@@ -89,7 +91,7 @@ Module JessieCounterCase.
   Definition exit_client_state : option state :=
     match exit_cap_after_makeCounter with
     | Some (cap, σ) =>
-        Some (State (st_next_loc σ) (st_store σ) (st_frozen σ)
+        Some (State (st_next_loc σ) (st_next_prim σ) (st_store σ) (st_frozen σ)
           (("counter", cap) :: st_env σ) (st_cells σ) (st_dyn_prims σ))
     | None => None
     end.
@@ -103,7 +105,7 @@ Module JessieCounterCase.
             match lookup_field (obj_fields obj) field with
             | Some (VPrim name) =>
                 match counter_apply_prim σ name [] with
-                | (CoreLit v, σ') => Some (v, σ')
+                | (CoreVal v, σ') => Some (v, σ')
                 | _ => None
                 end
             | _ => None
@@ -129,8 +131,8 @@ Module JessieCounterCase.
   Proof. reflexivity. Qed.
 
   Lemma lookup_dyn_store_cell σ cell n name :
-    lookup_assoc name (st_dyn_prims (store_cell σ cell n)) =
-      lookup_assoc name (st_dyn_prims σ).
+    lookup_nat_assoc name (st_dyn_prims (store_cell σ cell n)) =
+      lookup_nat_assoc name (st_dyn_prims σ).
   Proof. reflexivity. Qed.
 
   Lemma store_cell_list_overwrite cells l n1 n2 :
@@ -147,7 +149,7 @@ Module JessieCounterCase.
   Lemma store_cell_overwrite σ cell n1 n2 :
     store_cell (store_cell σ cell n1) cell n2 = store_cell σ cell n2.
   Proof.
-    destruct σ as [next store frozen env cells dyn].
+    destruct σ as [next prim store frozen env cells dyn].
     unfold store_cell. simpl.
     rewrite store_cell_list_overwrite.
     reflexivity.
@@ -180,7 +182,7 @@ Module JessieCounterCase.
     lookup_cell σ cell = Some n ->
     store_cell σ cell n = σ.
   Proof.
-    destruct σ as [next store frozen env cells dyn].
+    destruct σ as [next prim store frozen env cells dyn].
     unfold store_cell, lookup_cell. simpl.
     intros Hlookup. f_equal.
     apply store_cell_list_same. exact Hlookup.
@@ -188,36 +190,18 @@ Module JessieCounterCase.
 
   Lemma invoke_entry_cap_step σ capl cell n :
     lookup_obj σ capl =
-      Some (HeapObj [("incr", VPrim (counter_incr_name cell))]) ->
-    lookup_assoc (counter_incr_name cell) (st_dyn_prims σ) =
+      Some (HeapObj [("incr", VPrim (PrimDyn cell))]) ->
+    lookup_nat_assoc cell (st_dyn_prims σ) =
       Some (CounterIncr cell) ->
     lookup_cell σ cell = Some n ->
     invoke_cap_method σ (VLoc capl) "incr" =
-      Some (VJson (JNum (n + 1)), store_cell σ cell (n + 1)).
+      Some (VLit (LJson (JNum (n + 1))), store_cell σ cell (n + 1)).
   Proof.
     intros Hobj Hdyn Hcell.
     unfold invoke_cap_method.
     rewrite Hobj. simpl.
     unfold counter_apply_prim.
     unfold apply_prim.
-    assert (Hmk : counter_incr_name cell <> "makeCounter"). { discriminate. }
-    assert (Has : counter_incr_name cell <> "assert"). { discriminate. }
-    assert (Hid : counter_incr_name cell <> "id"). { discriminate. }
-    assert (Hfail : counter_incr_name cell <> "fail"). { discriminate. }
-    assert (Hfreeze : counter_incr_name cell <> "freeze"). { discriminate. }
-    assert (Hharden : counter_incr_name cell <> "harden"). { discriminate. }
-    pose proof ((proj2 (String.eqb_neq _ _)) Hmk) as Hmkb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Has) as Hasb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Hid) as Hidb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Hfail) as Hfailb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Hfreeze) as Hfreezeb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Hharden) as Hhardenb.
-    rewrite Hmkb.
-    rewrite Hasb.
-    rewrite Hidb.
-    rewrite Hfailb.
-    rewrite Hfreezeb.
-    rewrite Hhardenb.
     rewrite Hdyn.
     rewrite Hcell.
     reflexivity.
@@ -225,36 +209,18 @@ Module JessieCounterCase.
 
   Lemma invoke_exit_cap_step σ capl cell n :
     lookup_obj σ capl =
-      Some (HeapObj [("decr", VPrim (counter_decr_name cell))]) ->
-    lookup_assoc (counter_decr_name cell) (st_dyn_prims σ) =
+      Some (HeapObj [("decr", VPrim (PrimDyn cell))]) ->
+    lookup_nat_assoc cell (st_dyn_prims σ) =
       Some (CounterDecr cell) ->
     lookup_cell σ cell = Some n ->
     invoke_cap_method σ (VLoc capl) "decr" =
-      Some (VJson (JNum (n - 1)), store_cell σ cell (n - 1)).
+      Some (VLit (LJson (JNum (n - 1))), store_cell σ cell (n - 1)).
   Proof.
     intros Hobj Hdyn Hcell.
     unfold invoke_cap_method.
     rewrite Hobj. simpl.
     unfold counter_apply_prim.
     unfold apply_prim.
-    assert (Hmk : counter_decr_name cell <> "makeCounter"). { discriminate. }
-    assert (Has : counter_decr_name cell <> "assert"). { discriminate. }
-    assert (Hid : counter_decr_name cell <> "id"). { discriminate. }
-    assert (Hfail : counter_decr_name cell <> "fail"). { discriminate. }
-    assert (Hfreeze : counter_decr_name cell <> "freeze"). { discriminate. }
-    assert (Hharden : counter_decr_name cell <> "harden"). { discriminate. }
-    pose proof ((proj2 (String.eqb_neq _ _)) Hmk) as Hmkb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Has) as Hasb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Hid) as Hidb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Hfail) as Hfailb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Hfreeze) as Hfreezeb.
-    pose proof ((proj2 (String.eqb_neq _ _)) Hharden) as Hhardenb.
-    rewrite Hmkb.
-    rewrite Hasb.
-    rewrite Hidb.
-    rewrite Hfailb.
-    rewrite Hfreezeb.
-    rewrite Hhardenb.
     rewrite Hdyn.
     rewrite Hcell.
     reflexivity.
@@ -262,7 +228,7 @@ Module JessieCounterCase.
 
   Lemma invoke_entry_cap_other_none σ capl cell field :
     lookup_obj σ capl =
-      Some (HeapObj [("incr", VPrim (counter_incr_name cell))]) ->
+      Some (HeapObj [("incr", VPrim (PrimDyn cell))]) ->
     field <> "incr" ->
     invoke_cap_method σ (VLoc capl) field = None.
   Proof.
@@ -276,7 +242,7 @@ Module JessieCounterCase.
 
   Lemma invoke_exit_cap_other_none σ capl cell field :
     lookup_obj σ capl =
-      Some (HeapObj [("decr", VPrim (counter_decr_name cell))]) ->
+      Some (HeapObj [("decr", VPrim (PrimDyn cell))]) ->
     field <> "decr" ->
     invoke_cap_method σ (VLoc capl) field = None.
   Proof.
@@ -289,37 +255,37 @@ Module JessieCounterCase.
   Qed.
 
   Example makeCounter_allocates_hardened_object_with_methods :
-    counter_apply_prim counter_empty_state "makeCounter" [] =
-      (CoreLit (VLoc 1%nat),
-        State 2%nat
-          [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
-                            ("decr", VPrim "counter.decr.z")])]
+    counter_apply_prim counter_empty_state (PrimExt 0%nat) [] =
+      (CoreVal (VLoc 1%nat),
+        State 2%nat 2%nat
+          [(1%nat, HeapObj [("incr", VPrim (PrimDyn 0%nat));
+                            ("decr", VPrim (PrimDyn 1%nat))])]
           [1%nat]
           (st_env counter_empty_state)
           [(0%nat, 0)]
-          [("counter.incr.z", CounterIncr 0%nat);
-           ("counter.decr.z", CounterDecr 0%nat)]).
+          [(0%nat, CounterIncr 0%nat);
+           (1%nat, CounterDecr 0%nat)]).
   Proof. reflexivity. Qed.
 
   Example counter_methods_update_private_cell :
-    let σ1 := State 2%nat
-      [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
-                        ("decr", VPrim "counter.decr.z")])]
+    let σ1 := State 2%nat 2%nat
+      [(1%nat, HeapObj [("incr", VPrim (PrimDyn 0%nat));
+                        ("decr", VPrim (PrimDyn 1%nat))])]
       [1%nat]
       (st_env empty_state)
       [(0%nat, 0)]
-      [("counter.incr.z", CounterIncr 0%nat);
-       ("counter.decr.z", CounterDecr 0%nat)] in
-    apply_prim σ1 "counter.incr.z" [] =
-      (CoreLit (VJson (JNum 1)),
-        State 2%nat
-          [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
-                            ("decr", VPrim "counter.decr.z")])]
+      [(0%nat, CounterIncr 0%nat);
+       (1%nat, CounterDecr 0%nat)] in
+    apply_prim σ1 (PrimDyn 0%nat) [] =
+      (CoreVal (VLit (LJson (JNum 1))),
+        State 2%nat 2%nat
+          [(1%nat, HeapObj [("incr", VPrim (PrimDyn 0%nat));
+                            ("decr", VPrim (PrimDyn 1%nat))])]
           [1%nat]
           (st_env empty_state)
           [(0%nat, 1)]
-          [("counter.incr.z", CounterIncr 0%nat);
-           ("counter.decr.z", CounterDecr 0%nat)]).
+          [(0%nat, CounterIncr 0%nat);
+           (1%nat, CounterDecr 0%nat)]).
   Proof. reflexivity. Qed.
 
   Example forged_decr_breaks_entry_context_monotonicity :
@@ -327,7 +293,7 @@ Module JessieCounterCase.
     | Some σ =>
         lookup_cell
           (snd (counter_normalize 5 σ
-            (CoreApp (CoreLit (VPrim (counter_decr_name 0%nat))) []))) 0%nat
+            (CoreApp (CoreVal (VPrim (PrimDyn 1%nat))) []))) 0%nat
     | None => None
     end = Some (-1).
   Proof. vm_compute. reflexivity. Qed.
@@ -337,7 +303,7 @@ Module JessieCounterCase.
     | Some σ =>
         lookup_cell
           (snd (counter_normalize 5 σ
-            (CoreApp (CoreLit (VPrim (counter_incr_name 0%nat))) []))) 0%nat
+            (CoreApp (CoreVal (VPrim (PrimDyn 0%nat))) []))) 0%nat
     | None => None
     end = Some 1.
   Proof. vm_compute. reflexivity. Qed.

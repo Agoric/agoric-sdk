@@ -47,7 +47,7 @@ Module JessieParseJessie.
             end
         | None =>
             match parse_int cs with
-            | Some (n, rest) => Some (Base (Lit (VJson (JNum n))), rest)
+            | Some (n, rest) => Some (Base (Lit (LJson (JNum n))), rest)
             | None =>
                 match parse_ident cs with
                 | Some (x, rest1) =>

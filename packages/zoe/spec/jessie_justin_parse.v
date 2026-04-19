@@ -11,28 +11,28 @@ Import Justin.
 Definition parse_jstring_lit : parser expr :=
   fun cs =>
     match parse_string (skip_ws_chars cs) with
-    | Some (s, rest) => Some (Lit (VJson (JStr s)), rest)
+    | Some (s, rest) => Some (Lit (LJson (JStr s)), rest)
     | None => None
     end.
 
 Definition parse_jnumber_lit : parser expr :=
   fun cs =>
     match parse_int cs with
-    | Some (n, rest) => Some (Lit (VJson (JNum n)), rest)
+    | Some (n, rest) => Some (Lit (LJson (JNum n)), rest)
     | None => None
     end.
 
 Definition parse_jbigint_lit : parser expr :=
   fun cs =>
     match parse_nat (skip_ws_chars cs) with
-    | Some (n, "n"%char :: rest) => Some (Lit (VBigInt (Z.of_nat n)), rest)
+    | Some (n, "n"%char :: rest) => Some (Lit (LBigInt (Z.of_nat n)), rest)
     | _ => None
     end.
 
 Definition parse_undefined : parser expr :=
   fun cs =>
     match literal "undefined" (skip_ws_chars cs) with
-    | Some (_, rest) => Some (Lit VUndefined, rest)
+    | Some (_, rest) => Some (Lit LUndefined, rest)
     | None => None
     end.
 
@@ -150,13 +150,13 @@ Proof. reflexivity. Qed.
 Example parse_concrete_typeof_cond :
   parse_justin "typeof x === ""string"" ? x : undefined" =
     Some (Cond
-      (EqStrict (TypeOf (Var "x")) (Lit (VJson (JStr "string"))))
+      (EqStrict (TypeOf (Var "x")) (Lit (LJson (JStr "string"))))
       (Var "x")
-      (Lit VUndefined)).
+      (Lit LUndefined)).
 Proof. reflexivity. Qed.
 
 Example parse_concrete_bigint :
-  parse_justin "9898n" = Some (Lit (VBigInt 9898)).
+  parse_justin "9898n" = Some (Lit (LBigInt 9898)).
 Proof. reflexivity. Qed.
 
 Example parse_justin_rejects_arrow_literal :

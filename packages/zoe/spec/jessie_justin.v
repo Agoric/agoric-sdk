@@ -12,44 +12,39 @@ Module JustinExec.
     obj_fields : list (string * val)
   }.
 
-  Inductive prim_name :=
-  | PrimFreeze
-  | PrimHarden
-  | PrimAssert
-  | PrimId
-  | PrimFail.
-
-  Record prim := Prim {
-    prim_name_of : prim_name;
-    prim_arity : nat
-  }.
-
   Inductive dyn_prim :=
   | CounterIncr (cell : loc)
   | CounterDecr (cell : loc).
 
   Record state := State {
     st_next_loc : loc;
+    st_next_prim : nat;
     st_store : list (loc * heap_obj);
     st_frozen : list loc;
     st_env : list (string * val);
     st_cells : list (loc * Z);
-    st_dyn_prims : list (string * dyn_prim)
+    st_dyn_prims : list (nat * dyn_prim)
   }.
 
   Definition empty_state : state :=
-    State 0%nat [] [] [
-      ("freeze", VPrim "freeze");
-      ("harden", VPrim "harden");
-      ("assert", VPrim "assert");
-      ("id", VPrim "id");
-      ("fail", VPrim "fail")
+    State 0%nat 0%nat [] [] [
+      ("freeze", VPrim (PrimBuiltin PrimFreeze));
+      ("harden", VPrim (PrimBuiltin PrimHarden));
+      ("assert", VPrim (PrimBuiltin PrimAssert));
+      ("id", VPrim (PrimBuiltin PrimId));
+      ("fail", VPrim (PrimBuiltin PrimFail))
     ] [] [].
 
   Fixpoint lookup_assoc {A : Type} (x : string) (xs : list (string * A)) : option A :=
     match xs with
     | [] => None
     | (y, a) :: xs' => if String.eqb x y then Some a else lookup_assoc x xs'
+    end.
+
+  Fixpoint lookup_nat_assoc {A : Type} (x : nat) (xs : list (nat * A)) : option A :=
+    match xs with
+    | [] => None
+    | (y, a) :: xs' => if Nat.eqb x y then Some a else lookup_nat_assoc x xs'
     end.
 
   Fixpoint lookup_obj_list (store : list (loc * heap_obj)) (l : loc) : option heap_obj :=
@@ -82,20 +77,8 @@ Module JustinExec.
     end.
 
   Definition store_cell (σ : state) (l : loc) (n : Z) : state :=
-    State (st_next_loc σ) (st_store σ) (st_frozen σ) (st_env σ)
+    State (st_next_loc σ) (st_next_prim σ) (st_store σ) (st_frozen σ) (st_env σ)
       (store_cell_list (st_cells σ) l n) (st_dyn_prims σ).
-
-  Fixpoint nat_tag (n : nat) : string :=
-    match n with
-    | O => "z"
-    | S n' => "s" ++ nat_tag n'
-    end.
-
-  Definition counter_incr_name (l : loc) : string :=
-    "counter.incr." ++ nat_tag l.
-
-  Definition counter_decr_name (l : loc) : string :=
-    "counter.decr." ++ nat_tag l.
 
   Fixpoint lookup_field (flds : list (string * val)) (k : string) : option val :=
     match flds with
@@ -105,7 +88,7 @@ Module JustinExec.
 
   Definition mark_frozen (σ : state) (l : loc) : state :=
     if existsb (Nat.eqb l) (st_frozen σ) then σ
-    else State (st_next_loc σ) (st_store σ) (l :: st_frozen σ) (st_env σ)
+    else State (st_next_loc σ) (st_next_prim σ) (st_store σ) (l :: st_frozen σ) (st_env σ)
       (st_cells σ) (st_dyn_prims σ).
 
   Fixpoint hardenedb (fuel : nat) (σ : state) (v : val) : bool :=
@@ -113,9 +96,7 @@ Module JustinExec.
     | O => false
     | S fuel' =>
         match v with
-        | VJson _ => true
-        | VBigInt _ => true
-        | VUndefined => true
+        | VLit _ => true
         | VPrim _ => true
         | VLoc l =>
             existsb (Nat.eqb l) (st_frozen σ) &&
@@ -152,35 +133,49 @@ Module JustinExec.
 
   Definition strict_eqb (v1 v2 : val) : bool :=
     match v1, v2 with
-    | VUndefined, VUndefined => true
-    | VBigInt n1, VBigInt n2 => Z.eqb n1 n2
-    | VPrim x, VPrim y => String.eqb x y
+    | VLit LUndefined, VLit LUndefined => true
+    | VLit (LBigInt n1), VLit (LBigInt n2) => Z.eqb n1 n2
+    | VPrim x, VPrim y =>
+        match x, y with
+        | PrimBuiltin p1, PrimBuiltin p2 =>
+            match p1, p2 with
+            | PrimFreeze, PrimFreeze
+            | PrimHarden, PrimHarden
+            | PrimAssert, PrimAssert
+            | PrimId, PrimId
+            | PrimFail, PrimFail => true
+            | _, _ => false
+            end
+        | PrimDyn n1, PrimDyn n2 => Nat.eqb n1 n2
+        | PrimExt n1, PrimExt n2 => Nat.eqb n1 n2
+        | _, _ => false
+        end
     | VLoc l1, VLoc l2 => Nat.eqb l1 l2
-    | VJson JNull, VJson JNull => true
-    | VJson (JBool b1), VJson (JBool b2) => Bool.eqb b1 b2
-    | VJson (JNum n1), VJson (JNum n2) => Z.eqb n1 n2
-    | VJson (JStr s1), VJson (JStr s2) => String.eqb s1 s2
+    | VLit (LJson JNull), VLit (LJson JNull) => true
+    | VLit (LJson (JBool b1)), VLit (LJson (JBool b2)) => Bool.eqb b1 b2
+    | VLit (LJson (JNum n1)), VLit (LJson (JNum n2)) => Z.eqb n1 n2
+    | VLit (LJson (JStr s1)), VLit (LJson (JStr s2)) => String.eqb s1 s2
     | _, _ => false
     end.
 
   Definition truthy (v : val) : bool :=
     match v with
-    | VUndefined => false
-    | VBigInt n => negb (Z.eqb n 0)
-    | VJson JNull => false
-    | VJson (JBool b) => b
-    | VJson (JNum n) => negb (Z.eqb n 0)
-    | VJson (JStr s) => negb (String.eqb s "")
-    | VJson (JArr _) => true
-    | VJson (JObj _) => true
+    | VLit LUndefined => false
+    | VLit (LBigInt n) => negb (Z.eqb n 0)
+    | VLit (LJson JNull) => false
+    | VLit (LJson (JBool b)) => b
+    | VLit (LJson (JNum n)) => negb (Z.eqb n 0)
+    | VLit (LJson (JStr s)) => negb (String.eqb s "")
+    | VLit (LJson (JArr _)) => true
+    | VLit (LJson (JObj _)) => true
     | VLoc _ => true
     | VPrim _ => true
     end.
 
   Fixpoint subst (x : string) (v : val) (e : core_expr) : core_expr :=
     match e with
-    | CoreLit w => CoreLit w
-    | CoreVar y => if String.eqb x y then CoreLit v else CoreVar y
+    | CoreVal w => CoreVal w
+    | CoreVar y => if String.eqb x y then CoreVal v else CoreVar y
     | CoreAllocObj flds =>
         CoreAllocObj (map (fun kv => (fst kv, subst x v (snd kv))) flds)
     | CoreGet e1 fld => CoreGet (subst x v e1) fld
@@ -197,7 +192,7 @@ Module JustinExec.
   Fixpoint all_lit (es : list core_expr) : option (list val) :=
     match es with
     | [] => Some []
-    | CoreLit v :: es' =>
+    | CoreVal v :: es' =>
         match all_lit es' with
         | Some vs => Some (v :: vs)
         | None => None
@@ -209,7 +204,7 @@ Module JustinExec.
     : option (list (string * val)) :=
     match flds with
     | [] => Some []
-    | (k, CoreLit v) :: flds' =>
+    | (k, CoreVal v) :: flds' =>
         match all_lit_fields flds' with
         | Some vs => Some ((k, v) :: vs)
         | None => None
@@ -221,16 +216,16 @@ Module JustinExec.
     let l := st_next_loc σ in
     let obj := HeapObj flds in
     (VLoc l,
-      State (S l) ((l, obj) :: st_store σ) (st_frozen σ) (st_env σ)
+      State (S l) (st_next_prim σ) ((l, obj) :: st_store σ) (st_frozen σ) (st_env σ)
         (st_cells σ) (st_dyn_prims σ)).
 
   Definition alloc_counter (σ : state) : val * state :=
     let cell := st_next_loc σ in
     let obj := S cell in
-    let incr := counter_incr_name cell in
-    let decr := counter_decr_name cell in
-    let rec := HeapObj [("incr", VPrim incr); ("decr", VPrim decr)] in
-    let σ' := State (S obj)
+    let incr := st_next_prim σ in
+    let decr := S incr in
+    let rec := HeapObj [("incr", VPrim (PrimDyn incr)); ("decr", VPrim (PrimDyn decr))] in
+    let σ' := State (S obj) (S decr)
       ((obj, rec) :: st_store σ)
       (obj :: st_frozen σ)
       (st_env σ)
@@ -239,71 +234,73 @@ Module JustinExec.
     in
     (VLoc obj, σ').
 
-  Definition apply_prim (σ : state) (name : string) (args : list val)
+  Definition apply_prim (σ : state) (p : prim_ref) (args : list val)
     : core_expr * state :=
-    if String.eqb name "assert" then
-      match args with
-      | [VJson (JBool true)] => (CoreLit VUndefined, σ)
-      | [VJson (JBool false)] => (CoreBzzt, σ)
-      | _ => (CoreBzzt, σ)
-      end
-    else if String.eqb name "id" then
-      match args with
-      | [v] =>
-          if hardenedb 20 σ v then (CoreLit v, σ) else (CoreBzzt, σ)
-      | _ => (CoreBzzt, σ)
-      end
-    else if String.eqb name "fail" then
-      (CoreBzzt, σ)
-    else if String.eqb name "freeze" then
-      match args with
-      | [v] =>
-          let σ' := freeze_shallow σ v in
-          (CoreLit v, σ')
-      | _ => (CoreBzzt, σ)
-      end
-    else if String.eqb name "harden" then
-      match args with
-      | [v] =>
-          let σ' := freeze_deep 20 σ v in
-          (CoreLit v, σ')
-      | _ => (CoreBzzt, σ)
-      end
-    else
-      match lookup_assoc name (st_dyn_prims σ) with
+    match p with
+    | PrimBuiltin PrimAssert =>
+        match args with
+        | [VLit (LJson (JBool true))] => (CoreVal (VLit LUndefined), σ)
+        | [VLit (LJson (JBool false))] => (CoreBzzt, σ)
+        | _ => (CoreBzzt, σ)
+        end
+    | PrimBuiltin PrimId =>
+        match args with
+        | [v] =>
+            if hardenedb 20 σ v then (CoreVal v, σ) else (CoreBzzt, σ)
+        | _ => (CoreBzzt, σ)
+        end
+    | PrimBuiltin PrimFail => (CoreBzzt, σ)
+    | PrimBuiltin PrimFreeze =>
+        match args with
+        | [v] =>
+            let σ' := freeze_shallow σ v in
+            (CoreVal v, σ')
+        | _ => (CoreBzzt, σ)
+        end
+    | PrimBuiltin PrimHarden =>
+        match args with
+        | [v] =>
+            let σ' := freeze_deep 20 σ v in
+            (CoreVal v, σ')
+        | _ => (CoreBzzt, σ)
+        end
+    | PrimExt _ => (CoreBzzt, σ)
+    | PrimDyn pid =>
+      match lookup_nat_assoc pid (st_dyn_prims σ) with
       | Some (CounterIncr cell) =>
           match args, lookup_cell σ cell with
           | [], Some n =>
               let n' := n + 1 in
-              (CoreLit (VJson (JNum n')), store_cell σ cell n')
+              (CoreVal (VLit (LJson (JNum n'))), store_cell σ cell n')
           | _, _ => (CoreBzzt, σ)
           end
       | Some (CounterDecr cell) =>
           match args, lookup_cell σ cell with
           | [], Some n =>
               let n' := n - 1 in
-              (CoreLit (VJson (JNum n')), store_cell σ cell n')
+              (CoreVal (VLit (LJson (JNum n'))), store_cell σ cell n')
           | _, _ => (CoreBzzt, σ)
           end
       | None => (CoreBzzt, σ)
-      end.
+      end
+    end.
 
-  Definition prim_handler := state -> string -> list val -> core_expr * state.
+  Definition prim_handler := state -> prim_ref -> list val -> core_expr * state.
 
   Fixpoint step_with (do_prim : prim_handler) (σ : state) (e : core_expr)
     : option (core_expr * state) :=
     match e with
-    | CoreLit _ => None
+    | CoreVal _ => None
     | CoreVar x =>
         match lookup_assoc x (st_env σ) with
-        | Some v => Some (CoreLit v, σ)
+        | Some v => Some (CoreVal v, σ)
         | None => Some (CoreBzzt, σ)
         end
     | CoreAllocObj flds =>
         match all_lit_fields flds with
         | Some vs =>
             let '(v, σ') := alloc_obj σ vs in
-            Some (CoreLit v, σ')
+            Some (CoreVal v, σ')
         | None =>
             let fix step_fields flds :=
                 match flds with
@@ -313,7 +310,7 @@ Module JustinExec.
                     | Some (e1', σ') => Some (CoreAllocObj ((k, e1') :: rest), σ')
                     | None =>
                         match e1 with
-                        | CoreLit _ =>
+                        | CoreVal _ =>
                             match step_fields rest with
                             | Some (CoreAllocObj rest', σ') =>
                                 Some (CoreAllocObj ((k, e1) :: rest'), σ')
@@ -327,16 +324,16 @@ Module JustinExec.
         end
     | CoreGet e1 fld =>
         match e1 with
-        | CoreLit (VLoc l) =>
+        | CoreVal (VLoc l) =>
             match lookup_obj σ l with
             | Some obj =>
-                Some (CoreLit (match lookup_field (obj_fields obj) fld with
+                Some (CoreVal (match lookup_field (obj_fields obj) fld with
                                | Some v => v
-                               | None => VUndefined
+                               | None => VLit LUndefined
                                end), σ)
             | None => Some (CoreBzzt, σ)
             end
-        | CoreLit _ => Some (CoreBzzt, σ)
+        | CoreVal _ => Some (CoreBzzt, σ)
         | _ =>
             match step_with do_prim σ e1 with
             | Some (e1', σ') => Some (CoreGet e1' fld, σ')
@@ -345,7 +342,7 @@ Module JustinExec.
         end
     | CoreApp f args =>
         match f with
-        | CoreLit (VPrim name) =>
+        | CoreVal (VPrim name) =>
             match all_lit args with
             | Some vs => Some (do_prim σ name vs)
             | None =>
@@ -357,7 +354,7 @@ Module JustinExec.
                         | Some (e1', σ') => Some (CoreApp f (e1' :: rest), σ')
                         | None =>
                             match e1 with
-                            | CoreLit _ =>
+                            | CoreVal _ =>
                                 match step_args rest with
                                 | Some (CoreApp _ rest', σ') =>
                                     Some (CoreApp f (e1 :: rest'), σ')
@@ -369,7 +366,7 @@ Module JustinExec.
                     end
               in step_args args
             end
-        | CoreLit _ => Some (CoreBzzt, σ)
+        | CoreVal _ => Some (CoreBzzt, σ)
         | _ =>
             match step_with do_prim σ f with
             | Some (f', σ') => Some (CoreApp f' args, σ')
@@ -378,7 +375,7 @@ Module JustinExec.
         end
     | CoreLetIn x rhs body =>
         match rhs with
-        | CoreLit v => Some (subst x v body, σ)
+        | CoreVal v => Some (subst x v body, σ)
         | _ =>
             match step_with do_prim σ rhs with
             | Some (rhs', σ') => Some (CoreLetIn x rhs' body, σ')
@@ -387,7 +384,7 @@ Module JustinExec.
         end
     | CoreTypeOf e1 =>
         match e1 with
-        | CoreLit v => Some (CoreLit (VJson (JStr (typeof_val v))), σ)
+        | CoreVal v => Some (CoreVal (VLit (LJson (JStr (typeof_val v)))), σ)
         | _ =>
             match step_with do_prim σ e1 with
             | Some (e1', σ') => Some (CoreTypeOf e1', σ')
@@ -396,7 +393,7 @@ Module JustinExec.
         end
     | CoreCond e0 e1 e2 =>
         match e0 with
-        | CoreLit v => Some (if truthy v then e1 else e2, σ)
+        | CoreVal v => Some (if truthy v then e1 else e2, σ)
         | _ =>
             match step_with do_prim σ e0 with
             | Some (e0', σ') => Some (CoreCond e0' e1 e2, σ')
@@ -405,9 +402,9 @@ Module JustinExec.
         end
     | CoreBinop EqStrictOp e1 e2 =>
         match e1, e2 with
-        | CoreLit v1, CoreLit v2 =>
-            Some (CoreLit (VJson (JBool (strict_eqb v1 v2))), σ)
-        | CoreLit _, _ =>
+        | CoreVal v1, CoreVal v2 =>
+            Some (CoreVal (VLit (LJson (JBool (strict_eqb v1 v2)))), σ)
+        | CoreVal _, _ =>
             match step_with do_prim σ e2 with
             | Some (e2', σ') => Some (CoreBinop EqStrictOp e1 e2', σ')
             | None => None
@@ -420,9 +417,9 @@ Module JustinExec.
         end
     | CoreBinop AddNum e1 e2 =>
         match e1, e2 with
-        | CoreLit (VJson (JNum n1)), CoreLit (VJson (JNum n2)) =>
-            Some (CoreLit (VJson (JNum (n1 + n2))), σ)
-        | CoreLit _, _ =>
+        | CoreVal (VLit (LJson (JNum n1))), CoreVal (VLit (LJson (JNum n2))) =>
+            Some (CoreVal (VLit (LJson (JNum (n1 + n2)))), σ)
+        | CoreVal _, _ =>
             match step_with do_prim σ e2 with
             | Some (e2', σ') => Some (CoreBinop AddNum e1 e2', σ')
             | None => None
@@ -435,9 +432,9 @@ Module JustinExec.
         end
     | CoreBinop ConcatStr e1 e2 =>
         match e1, e2 with
-        | CoreLit (VJson (JStr s1)), CoreLit (VJson (JStr s2)) =>
-            Some (CoreLit (VJson (JStr (s1 ++ s2))), σ)
-        | CoreLit _, _ =>
+        | CoreVal (VLit (LJson (JStr s1))), CoreVal (VLit (LJson (JStr s2))) =>
+            Some (CoreVal (VLit (LJson (JStr (s1 ++ s2)))), σ)
+        | CoreVal _, _ =>
             match step_with do_prim σ e2 with
             | Some (e2', σ') => Some (CoreBinop ConcatStr e1 e2', σ')
             | None => None
@@ -462,7 +459,7 @@ Module JustinExec.
         match step_with do_prim σ e with
         | Some (e', σ') =>
             match e' with
-            | CoreLit _ => (e', σ')
+            | CoreVal _ => (e', σ')
             | CoreBzzt => (CoreBzzt, σ')
             | _ => normalize_with do_prim fuel' σ' e'
             end
@@ -474,74 +471,80 @@ Module JustinExec.
     step empty_state e.
 
   Example typeof_undefined_steps :
-    run1 (CoreTypeOf (CoreLit VUndefined)) =
-      Some (CoreLit (VJson (JStr "undefined")), empty_state).
+    run1 (CoreTypeOf (CoreVal (VLit LUndefined))) =
+      Some (CoreVal (VLit (LJson (JStr "undefined"))), empty_state).
   Proof. reflexivity. Qed.
 
   Example typeof_null_is_object :
-    run1 (CoreTypeOf (CoreLit (VJson JNull))) =
-      Some (CoreLit (VJson (JStr "object")), empty_state).
+    run1 (CoreTypeOf (CoreVal (VLit (LJson JNull)))) =
+      Some (CoreVal (VLit (LJson (JStr "object"))), empty_state).
   Proof. reflexivity. Qed.
 
   Example typeof_bigint_steps :
-    run1 (CoreTypeOf (CoreLit (VBigInt 12))) =
-      Some (CoreLit (VJson (JStr "bigint")), empty_state).
+    run1 (CoreTypeOf (CoreVal (VLit (LBigInt 12)))) =
+      Some (CoreVal (VLit (LJson (JStr "bigint"))), empty_state).
   Proof. reflexivity. Qed.
 
   Example cond_string_truthy :
-    run1 (CoreCond (CoreLit (VJson (JStr "x")))
-      (CoreLit (VJson (JNum 1))) (CoreLit (VJson (JNum 0)))) =
-      Some (CoreLit (VJson (JNum 1)), empty_state).
+    run1 (CoreCond (CoreVal (VLit (LJson (JStr "x"))))
+      (CoreVal (VLit (LJson (JNum 1)))) (CoreVal (VLit (LJson (JNum 0))))) =
+      Some (CoreVal (VLit (LJson (JNum 1))), empty_state).
   Proof. reflexivity. Qed.
 
   Example eq_empty_objects_allocates_distinct_locs :
     run1 (CoreBinop EqStrictOp
       (CoreAllocObj [])
       (CoreAllocObj [])) =
-      Some (CoreBinop EqStrictOp (CoreLit (VLoc 0%nat)) (CoreAllocObj []),
-        State 1%nat [(0%nat, HeapObj [])] [] (st_env empty_state)
+      Some (CoreBinop EqStrictOp (CoreVal (VLoc 0%nat)) (CoreAllocObj []),
+        State 1%nat 0%nat [(0%nat, HeapObj [])] [] (st_env empty_state)
           (st_cells empty_state) (st_dyn_prims empty_state)).
   Proof. reflexivity. Qed.
 
   Example freeze_shallow_marks_only_root :
     let σ1 := State 2%nat
+      0%nat
       [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
       [] (st_env empty_state) [] [] in
-    apply_prim σ1 "freeze" [VLoc 0%nat] =
-      (CoreLit (VLoc 0%nat),
+    apply_prim σ1 (PrimBuiltin PrimFreeze) [VLoc 0%nat] =
+      (CoreVal (VLoc 0%nat),
         State 2%nat
+          0%nat
           [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
           [0%nat] (st_env empty_state) [] []).
   Proof. reflexivity. Qed.
 
   Example harden_deep_marks_reachable_objects :
     let σ1 := State 2%nat
+      0%nat
       [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
       [] (st_env empty_state) [] [] in
-    apply_prim σ1 "harden" [VLoc 0%nat] =
-      (CoreLit (VLoc 0%nat),
+    apply_prim σ1 (PrimBuiltin PrimHarden) [VLoc 0%nat] =
+      (CoreVal (VLoc 0%nat),
         State 2%nat
+          0%nat
           [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
           [1%nat; 0%nat] (st_env empty_state) [] []).
   Proof. reflexivity. Qed.
 
   Example id_rejects_shallow_frozen_nested_object :
     let σ1 := State 2%nat
+      0%nat
       [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
       [0%nat] (st_env empty_state) [] [] in
-    apply_prim σ1 "id" [VLoc 0%nat] = (CoreBzzt, σ1).
+    apply_prim σ1 (PrimBuiltin PrimId) [VLoc 0%nat] = (CoreBzzt, σ1).
   Proof. reflexivity. Qed.
 
   Example id_accepts_hardened_nested_object :
     let σ1 := State 2%nat
+      0%nat
       [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
       [1%nat; 0%nat] (st_env empty_state) [] [] in
-    apply_prim σ1 "id" [VLoc 0%nat] = (CoreLit (VLoc 0%nat), σ1).
+    apply_prim σ1 (PrimBuiltin PrimId) [VLoc 0%nat] = (CoreVal (VLoc 0%nat), σ1).
   Proof. reflexivity. Qed.
 
   Example id_rejects_unhardened_object :
-    let σ1 := State 1%nat [(0%nat, HeapObj [])] [] (st_env empty_state) [] [] in
-    apply_prim σ1 "id" [VLoc 0%nat] = (CoreBzzt, σ1).
+    let σ1 := State 1%nat 0%nat [(0%nat, HeapObj [])] [] (st_env empty_state) [] [] in
+    apply_prim σ1 (PrimBuiltin PrimId) [VLoc 0%nat] = (CoreBzzt, σ1).
   Proof. reflexivity. Qed.
 
 End JustinExec.

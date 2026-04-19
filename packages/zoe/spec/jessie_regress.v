@@ -19,19 +19,19 @@ Proof. reflexivity. Qed.
 Example justin_surface_smoke :
   parse_justin "typeof x === ""string"" ? x : undefined" =
     Some (Cond
-      (EqStrict (TypeOf (Var "x")) (Lit (VJson (JStr "string"))))
+      (EqStrict (TypeOf (Var "x")) (Lit (LJson (JStr "string"))))
       (Var "x")
-      (Lit VUndefined)).
+      (Lit LUndefined)).
 Proof. reflexivity. Qed.
 
 Example bigint_surface_smoke :
-  parse_justin "9898n" = Some (Lit (VBigInt 9898)).
+  parse_justin "9898n" = Some (Lit (LBigInt 9898)).
 Proof. reflexivity. Qed.
 
 Example elaboration_refines_add :
   elaborates [("x", TyString)]
-    (Add (Var "x") (Lit (VJson (JStr "abc"))))
-    (CoreBinop ConcatStr (CoreVar "x") (CoreLit (VJson (JStr "abc")))).
+    (Add (Var "x") (Lit (LJson (JStr "abc"))))
+    (CoreBinop ConcatStr (CoreVar "x") (CoreVal (VLit (LJson (JStr "abc"))))).
 Proof.
   econstructor.
   - reflexivity.
@@ -39,37 +39,37 @@ Proof.
 Qed.
 
 Example exec_hardened_id :
-  let σ1 := State 1%nat [(0%nat, HeapObj [])] [0%nat] (st_env empty_state) [] [] in
-  apply_prim σ1 "id" [VLoc 0%nat] = (CoreLit (VLoc 0%nat), σ1).
+  let σ1 := State 1%nat 0%nat [(0%nat, HeapObj [])] [0%nat] (st_env empty_state) [] [] in
+  apply_prim σ1 (PrimBuiltin PrimId) [VLoc 0%nat] = (CoreVal (VLoc 0%nat), σ1).
 Proof. reflexivity. Qed.
 
 Example shallow_freeze_vs_harden_regression :
-  let σ0 := State 2%nat
+  let σ0 := State 2%nat 0%nat
     [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
     [] (st_env empty_state) [] [] in
-  apply_prim σ0 "freeze" [VLoc 0%nat] <>
-  apply_prim σ0 "harden" [VLoc 0%nat].
+  apply_prim σ0 (PrimBuiltin PrimFreeze) [VLoc 0%nat] <>
+  apply_prim σ0 (PrimBuiltin PrimHarden) [VLoc 0%nat].
 Proof. discriminate. Qed.
 
 Example typeof_null_regression :
-  run1 (CoreTypeOf (CoreLit (VJson JNull))) =
-    Some (CoreLit (VJson (JStr "object")), empty_state).
+  run1 (CoreTypeOf (CoreVal (VLit (LJson JNull)))) =
+    Some (CoreVal (VLit (LJson (JStr "object"))), empty_state).
 Proof. reflexivity. Qed.
 
 Example makeCounter_assert_works :
-  fst (counter_normalize 20 counter_empty_state makeCounter_assert_prog) = CoreLit VUndefined.
+  fst (counter_normalize 20 counter_empty_state makeCounter_assert_prog) = CoreVal (VLit LUndefined).
 Proof. reflexivity. Qed.
 
 Example makeCounter_final_cell_is_two :
   snd (counter_normalize 20 counter_empty_state makeCounter_assert_prog) =
-    State 2%nat
-      [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
-                        ("decr", VPrim "counter.decr.z")])]
+    State 2%nat 2%nat
+      [(1%nat, HeapObj [("incr", VPrim (PrimDyn 0%nat));
+                        ("decr", VPrim (PrimDyn 1%nat))])]
       [1%nat]
       (st_env counter_empty_state)
       [(0%nat, 2)]
-      [("counter.incr.z", CounterIncr 0%nat);
-       ("counter.decr.z", CounterDecr 0%nat)].
+      [(0%nat, CounterIncr 0%nat);
+       (1%nat, CounterDecr 0%nat)].
 Proof. reflexivity. Qed.
 
 Example makeCounter_surface_parse_works :
@@ -134,14 +134,14 @@ Proof. vm_compute. reflexivity. Qed.
 
 Example module_end_to_end :
   eval_module 6
-    (Module [("y", VJson (JNum 2))]
-      [ExportDecl "x" (CoreLit (VJson (JNum 1)));
+    (Module [("y", VLit (LJson (JNum 2)))]
+      [ExportDecl "x" (CoreVal (VLit (LJson (JNum 1))));
        ExportDecl "default" (CoreBinop AddNum (CoreVar "y") (CoreVar "x"))]) =
-    Some [("x", VJson (JNum 1)); ("default", VJson (JNum 3))].
+    Some [("x", VLit (LJson (JNum 1))); ("default", VLit (LJson (JNum 3)))].
 Proof. reflexivity. Qed.
 
 Example iris_to_of_val_smoke :
-  to_val (of_val (VJson (JNum 9))) = Some (VJson (JNum 9)).
+  to_val (of_val (VLit (LJson (JNum 9)))) = Some (VLit (LJson (JNum 9))).
 Proof. reflexivity. Qed.
 
 Example iris_ctx_fill_smoke :

@@ -26,7 +26,7 @@ Module JessieModule.
         match step σ e with
         | Some (e', σ') =>
             match e' with
-            | CoreLit _ => (e', σ')
+            | CoreVal _ => (e', σ')
             | CoreBzzt => (CoreBzzt, σ')
             | _ => normalize fuel' σ' e'
             end
@@ -35,7 +35,7 @@ Module JessieModule.
     end.
 
   Definition init_state (imports : list (string * val)) : state :=
-    State (st_next_loc empty_state) (st_store empty_state) (st_frozen empty_state)
+    State (st_next_loc empty_state) (st_next_prim empty_state) (st_store empty_state) (st_frozen empty_state)
       (imports ++ st_env empty_state) (st_cells empty_state) (st_dyn_prims empty_state).
 
   Fixpoint eval_decls (fuel : nat) (σ : state) (decls : list module_decl)
@@ -45,9 +45,9 @@ Module JessieModule.
     | ExportDecl name body :: decls' =>
         let '(body', σ1) := normalize fuel σ body in
         match body' with
-        | CoreLit v =>
+        | CoreVal v =>
             match eval_decls fuel
-                (State (st_next_loc σ1) (st_store σ1) (st_frozen σ1)
+                (State (st_next_loc σ1) (st_next_prim σ1) (st_store σ1) (st_frozen σ1)
                   ((name, v) :: st_env σ1) (st_cells σ1) (st_dyn_prims σ1))
                 decls' with
             | Some (outs, σ2) => Some ((name, v) :: outs, σ2)
@@ -67,23 +67,23 @@ Module JessieModule.
     Module [] [ExportDecl "default" body].
 
   Example export_literal :
-    eval_module 5 (simple_module (CoreLit (VJson (JNum 7)))) =
-      Some [("default", VJson (JNum 7))].
+    eval_module 5 (simple_module (CoreVal (VLit (LJson (JNum 7))))) =
+      Some [("default", VLit (LJson (JNum 7)))].
   Proof. reflexivity. Qed.
 
   Example import_primitive_and_apply :
     eval_module 5
-      (Module [("x", VJson (JNum 4))]
+      (Module [("x", VLit (LJson (JNum 4)))]
         [ExportDecl "default"
-          (CoreApp (CoreVar "id") [CoreLit (VJson (JNum 4))])]) =
-      Some [("default", VJson (JNum 4))].
+          (CoreApp (CoreVar "id") [CoreVal (VLit (LJson (JNum 4)))])]) =
+      Some [("default", VLit (LJson (JNum 4)))].
   Proof. reflexivity. Qed.
 
   Example module_linking_exposes_prior_exports :
     eval_module 6
-      (Module [("y", VJson (JNum 2))]
-        [ ExportDecl "x" (CoreLit (VJson (JNum 1)));
+      (Module [("y", VLit (LJson (JNum 2)))]
+        [ ExportDecl "x" (CoreVal (VLit (LJson (JNum 1))));
           ExportDecl "default" (CoreBinop AddNum (CoreVar "y") (CoreVar "x")) ]) =
-      Some [("x", VJson (JNum 1)); ("default", VJson (JNum 3))].
+      Some [("x", VLit (LJson (JNum 1))); ("default", VLit (LJson (JNum 3)))].
   Proof. reflexivity. Qed.
 End JessieModule.

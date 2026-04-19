@@ -14,8 +14,8 @@ Module JessieCounterIris.
   Example entry_cap_get_incr_atomic :
     match entry_cap_after_makeCounter with
     | Some (cap, σ) =>
-        base_step (CoreGet (CoreLit cap) "incr") σ []
-          (CoreLit (VPrim (counter_incr_name 0%nat))) σ []
+        base_step (CoreGet (CoreVal cap) "incr") σ []
+          (CoreVal (VPrim (PrimDyn 0%nat))) σ []
     | None => False
     end.
   Proof.
@@ -28,8 +28,8 @@ Module JessieCounterIris.
   Example entry_cap_get_decr_missing_atomic :
     match entry_cap_after_makeCounter with
     | Some (cap, σ) =>
-        base_step (CoreGet (CoreLit cap) "decr") σ []
-          (CoreLit VUndefined) σ []
+        base_step (CoreGet (CoreVal cap) "decr") σ []
+          (CoreVal (VLit LUndefined)) σ []
     | None => False
     end.
   Proof.
@@ -42,8 +42,8 @@ Module JessieCounterIris.
   Example entry_cap_call_incr_atomic :
     match entry_cap_after_makeCounter with
     | Some (_, σ) =>
-        base_step (CoreApp (CoreLit (VPrim (counter_incr_name 0%nat))) []) σ []
-          (CoreLit (VJson (JNum 1))) (store_cell σ 0%nat 1) []
+        base_step (CoreApp (CoreVal (VPrim (PrimDyn 0%nat))) []) σ []
+          (CoreVal (VLit (LJson (JNum 1)))) (store_cell σ 0%nat 1) []
     | None => False
     end.
   Proof.
@@ -56,8 +56,8 @@ Module JessieCounterIris.
   Example exit_cap_get_incr_missing_atomic :
     match exit_cap_after_makeCounter with
     | Some (cap, σ) =>
-        base_step (CoreGet (CoreLit cap) "incr") σ []
-          (CoreLit VUndefined) σ []
+        base_step (CoreGet (CoreVal cap) "incr") σ []
+          (CoreVal (VLit LUndefined)) σ []
     | None => False
     end.
   Proof.
@@ -70,8 +70,8 @@ Module JessieCounterIris.
   Example exit_cap_call_decr_atomic :
     match exit_cap_after_makeCounter with
     | Some (_, σ) =>
-        base_step (CoreApp (CoreLit (VPrim (counter_decr_name 0%nat))) []) σ []
-          (CoreLit (VJson (JNum (-1)))) (store_cell σ 0%nat (-1)) []
+        base_step (CoreApp (CoreVal (VPrim (PrimDyn 1%nat))) []) σ []
+          (CoreVal (VLit (LJson (JNum (-1))))) (store_cell σ 0%nat (-1)) []
     | None => False
     end.
   Proof.

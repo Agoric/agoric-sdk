@@ -127,6 +127,18 @@ Module Justin.
 
   Definition loc := nat.
 
+  Inductive prim_name :=
+  | PrimFreeze
+  | PrimHarden
+  | PrimAssert
+  | PrimId
+  | PrimFail.
+
+  Inductive prim_ref :=
+  | PrimBuiltin (name : prim_name)
+  | PrimDyn (id : nat)
+  | PrimExt (id : nat).
+
   Inductive ty :=
   | TyUnknown
   | TyNull
@@ -140,15 +152,18 @@ Module Justin.
 
   Definition refine_env := list (string * ty).
 
+  Inductive lit :=
+  | LJson (v : jval)
+  | LBigInt (n : Z)
+  | LUndefined.
+
   Inductive val :=
-  | VJson (v : jval)
-  | VBigInt (n : Z)
-  | VUndefined
+  | VLit (l : lit)
   | VLoc (l : loc)
-  | VPrim (name : string).
+  | VPrim (name : prim_ref).
 
   Inductive expr :=
-  | Lit (v : val)
+  | Lit (v : lit)
   | Var (x : string)
   | Obj (fields : list (string * expr))
   | Get (e : expr) (field : string)
@@ -165,7 +180,7 @@ Module Justin.
   | EqStrictOp.
 
   Inductive core_expr :=
-  | CoreLit (v : val)
+  | CoreVal (v : val)
   | CoreVar (x : string)
   | CoreAllocObj (fields : list (string * core_expr))
   | CoreGet (e : core_expr) (field : string)
@@ -197,25 +212,35 @@ Module Justin.
     | JObj _ => "object"
     end.
 
+  Definition typeof_lit (l : lit) : string :=
+    match l with
+    | LJson jv => typeof_json jv
+    | LBigInt _ => "bigint"
+    | LUndefined => "undefined"
+    end.
+
   Definition typeof_val (v : val) : string :=
     match v with
-    | VJson jv => typeof_json jv
-    | VBigInt _ => "bigint"
-    | VUndefined => "undefined"
+    | VLit l => typeof_lit l
     | VLoc _ => "object"
     | VPrim _ => "function"
     end.
 
+  Definition classify_lit (l : lit) : ty :=
+    match l with
+    | LJson JNull => TyNull
+    | LJson (JBool _) => TyBool
+    | LJson (JNum _) => TyNumber
+    | LJson (JStr _) => TyString
+    | LJson (JArr _) => TyObject
+    | LJson (JObj _) => TyObject
+    | LBigInt _ => TyBigInt
+    | LUndefined => TyUndefined
+    end.
+
   Definition classify_val (v : val) : ty :=
     match v with
-    | VJson JNull => TyNull
-    | VJson (JBool _) => TyBool
-    | VJson (JNum _) => TyNumber
-    | VJson (JStr _) => TyString
-    | VJson (JArr _) => TyObject
-    | VJson (JObj _) => TyObject
-    | VBigInt _ => TyBigInt
-    | VUndefined => TyUndefined
+    | VLit l => classify_lit l
     | VLoc _ => TyObject
     | VPrim _ => TyPrim
     end.
@@ -240,7 +265,7 @@ Module Justin.
 
   Inductive elaborates : refine_env -> expr -> core_expr -> Prop :=
   | ElabLit Γ v :
-      elaborates Γ (Lit v) (CoreLit v)
+      elaborates Γ (Lit v) (CoreVal (VLit v))
   | ElabVar Γ x :
       elaborates Γ (Var x) (CoreVar x)
   | ElabTypeOf Γ e e' :
@@ -273,15 +298,15 @@ Module Justin.
   Proof. reflexivity. Qed.
 
   Example classify_prim :
-    classify_val (VPrim "harden") = TyPrim.
+    classify_val (VPrim (PrimBuiltin PrimHarden)) = TyPrim.
   Proof. reflexivity. Qed.
 
   Example typeof_null_is_object :
-    typeof_val (VJson JNull) = "object".
+    typeof_val (VLit (LJson JNull)) = "object".
   Proof. reflexivity. Qed.
 
   Example classify_bigint :
-    classify_val (VBigInt 9898) = TyBigInt.
+    classify_val (VLit (LBigInt 9898)) = TyBigInt.
   Proof. reflexivity. Qed.
 
 End Justin.

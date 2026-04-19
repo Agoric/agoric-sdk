@@ -16,11 +16,11 @@ Module JustinIris.
   Definition state := JustinExec.state.
   Definition observation := unit.
 
-  Definition of_val (v : val) : expr := CoreLit v.
+  Definition of_val (v : val) : expr := CoreVal v.
 
   Definition to_val (e : expr) : option val :=
     match e with
-    | CoreLit v => Some v
+    | CoreVal v => Some v
     | _ => None
     end.
 
@@ -37,7 +37,7 @@ Module JustinIris.
       (pending : list (string * expr)).
 
   Definition val_to_field_expr (kv : string * val) : string * expr :=
-    (fst kv, CoreLit (snd kv)).
+    (fst kv, CoreVal (snd kv)).
 
   Definition fill_item (Ki : ectx_item) (e : expr) : expr :=
     match Ki with
@@ -46,10 +46,10 @@ Module JustinIris.
     | CondCtx e1 e2 => CoreCond e e1 e2
     | LetInCtx x body => CoreLetIn x e body
     | BinOpLCtx op e2 => CoreBinop op e e2
-    | BinOpRCtx op v1 => CoreBinop op (CoreLit v1) e
+    | BinOpRCtx op v1 => CoreBinop op (CoreVal v1) e
     | AppFunCtx args => CoreApp e args
     | AppArgCtx vf done pending =>
-        CoreApp (CoreLit vf) (map CoreLit done ++ e :: pending)
+        CoreApp (CoreVal vf) (map CoreVal done ++ e :: pending)
     | ObjFieldCtx done key pending =>
         CoreAllocObj
           (map val_to_field_expr done ++ (key, e) :: pending)
@@ -80,63 +80,63 @@ Module JustinIris.
     expr -> state -> list observation -> expr -> state -> list expr -> Prop :=
   | StepVar σ x v :
       lookup_assoc x (st_env σ) = Some v ->
-      base_step (CoreVar x) σ [] (CoreLit v) σ []
+      base_step (CoreVar x) σ [] (CoreVal v) σ []
   | StepVarMissing σ x :
       lookup_assoc x (st_env σ) = None ->
       base_step (CoreVar x) σ [] CoreBzzt σ []
   | StepAllocObj σ flds vs v σ' :
       all_val_fields flds = Some vs ->
       alloc_obj σ vs = (v, σ') ->
-      base_step (CoreAllocObj flds) σ [] (CoreLit v) σ' []
+      base_step (CoreAllocObj flds) σ [] (CoreVal v) σ' []
   | StepGet σ l fld obj v :
       lookup_obj σ l = Some obj ->
       v = match lookup_field (obj_fields obj) fld with
           | Some v => v
-          | None => VUndefined
+          | None => VLit LUndefined
           end ->
-      base_step (CoreGet (CoreLit (VLoc l)) fld) σ [] (CoreLit v) σ []
+      base_step (CoreGet (CoreVal (VLoc l)) fld) σ [] (CoreVal v) σ []
   | StepGetBad σ v fld :
       (forall l, v <> VLoc l) ->
-      base_step (CoreGet (CoreLit v) fld) σ [] CoreBzzt σ []
+      base_step (CoreGet (CoreVal v) fld) σ [] CoreBzzt σ []
   | StepTypeOf σ v :
-      base_step (CoreTypeOf (CoreLit v)) σ [] (CoreLit (VJson (JStr (typeof_val v)))) σ []
+      base_step (CoreTypeOf (CoreVal v)) σ [] (CoreVal (VLit (LJson (JStr (typeof_val v))))) σ []
   | StepCondTrue σ v e1 e2 :
       truthy v = true ->
-      base_step (CoreCond (CoreLit v) e1 e2) σ [] e1 σ []
+      base_step (CoreCond (CoreVal v) e1 e2) σ [] e1 σ []
   | StepCondFalse σ v e1 e2 :
       truthy v = false ->
-      base_step (CoreCond (CoreLit v) e1 e2) σ [] e2 σ []
+      base_step (CoreCond (CoreVal v) e1 e2) σ [] e2 σ []
   | StepLet σ x v body :
-      base_step (CoreLetIn x (CoreLit v) body) σ [] (subst x v body) σ []
+      base_step (CoreLetIn x (CoreVal v) body) σ [] (subst x v body) σ []
   | StepEq σ v1 v2 :
-      base_step (CoreBinop EqStrictOp (CoreLit v1) (CoreLit v2))
-        σ [] (CoreLit (VJson (JBool (strict_eqb v1 v2)))) σ []
+      base_step (CoreBinop EqStrictOp (CoreVal v1) (CoreVal v2))
+        σ [] (CoreVal (VLit (LJson (JBool (strict_eqb v1 v2))))) σ []
   | StepAddNum σ n1 n2 :
-      base_step (CoreBinop AddNum (CoreLit (VJson (JNum n1))) (CoreLit (VJson (JNum n2))))
-        σ [] (CoreLit (VJson (JNum (n1 + n2)))) σ []
+      base_step (CoreBinop AddNum (CoreVal (VLit (LJson (JNum n1)))) (CoreVal (VLit (LJson (JNum n2)))))
+        σ [] (CoreVal (VLit (LJson (JNum (n1 + n2))))) σ []
   | StepAddNumBadL σ v1 v2 :
-      (forall n, v1 <> VJson (JNum n)) ->
-      base_step (CoreBinop AddNum (CoreLit v1) (CoreLit v2)) σ [] CoreBzzt σ []
+      (forall n, v1 <> VLit (LJson (JNum n))) ->
+      base_step (CoreBinop AddNum (CoreVal v1) (CoreVal v2)) σ [] CoreBzzt σ []
   | StepAddNumBadR σ n v :
-      (forall n', v <> VJson (JNum n')) ->
-      base_step (CoreBinop AddNum (CoreLit (VJson (JNum n))) (CoreLit v)) σ [] CoreBzzt σ []
+      (forall n', v <> VLit (LJson (JNum n'))) ->
+      base_step (CoreBinop AddNum (CoreVal (VLit (LJson (JNum n)))) (CoreVal v)) σ [] CoreBzzt σ []
   | StepConcatStr σ s1 s2 :
-      base_step (CoreBinop ConcatStr (CoreLit (VJson (JStr s1))) (CoreLit (VJson (JStr s2))))
-        σ [] (CoreLit (VJson (JStr (s1 ++ s2)))) σ []
+      base_step (CoreBinop ConcatStr (CoreVal (VLit (LJson (JStr s1)))) (CoreVal (VLit (LJson (JStr s2)))))
+        σ [] (CoreVal (VLit (LJson (JStr (s1 ++ s2))))) σ []
   | StepConcatBadL σ v1 v2 :
-      (forall s, v1 <> VJson (JStr s)) ->
-      base_step (CoreBinop ConcatStr (CoreLit v1) (CoreLit v2)) σ [] CoreBzzt σ []
+      (forall s, v1 <> VLit (LJson (JStr s))) ->
+      base_step (CoreBinop ConcatStr (CoreVal v1) (CoreVal v2)) σ [] CoreBzzt σ []
   | StepConcatBadR σ s v :
-      (forall s', v <> VJson (JStr s')) ->
-      base_step (CoreBinop ConcatStr (CoreLit (VJson (JStr s))) (CoreLit v)) σ [] CoreBzzt σ []
+      (forall s', v <> VLit (LJson (JStr s'))) ->
+      base_step (CoreBinop ConcatStr (CoreVal (VLit (LJson (JStr s)))) (CoreVal v)) σ [] CoreBzzt σ []
   | StepAppPrim σ name args vs e' σ' :
       all_vals args = Some vs ->
       apply_prim σ name vs = (e', σ') ->
-      base_step (CoreApp (CoreLit (VPrim name)) args) σ [] e' σ' []
+      base_step (CoreApp (CoreVal (VPrim name)) args) σ [] e' σ' []
   | StepAppNonPrim σ v args vs :
       all_vals args = Some vs ->
       (forall name, v <> VPrim name) ->
-      base_step (CoreApp (CoreLit v) args) σ [] CoreBzzt σ [].
+      base_step (CoreApp (CoreVal v) args) σ [] CoreBzzt σ [].
 
   Lemma to_of_val v :
     to_val (of_val v) = Some v.
@@ -165,8 +165,8 @@ Module JustinIris.
   Lemma lit_prefix_expr_split done1 done2 e1 e2 pending1 pending2 :
     to_val e1 = None ->
     to_val e2 = None ->
-    (map CoreLit done1 ++ e1 :: pending1)%list =
-      (map CoreLit done2 ++ e2 :: pending2)%list ->
+    (map CoreVal done1 ++ e1 :: pending1)%list =
+      (map CoreVal done2 ++ e2 :: pending2)%list ->
     done1 = done2 /\ e1 = e2 /\ pending1 = pending2.
   Proof.
     revert done2.
@@ -202,19 +202,19 @@ Module JustinIris.
   Qed.
 
   Lemma all_vals_hole_value done e pending vs :
-    all_vals (map CoreLit done ++ e :: pending) = Some vs ->
+    all_vals (map CoreVal done ++ e :: pending) = Some vs ->
     is_Some (to_val e).
   Proof.
     revert done vs.
     induction done as [|v done IH]; intros vs Hall; simpl in Hall.
     - destruct (to_val e); simpl in Hall; [eauto|discriminate].
-    - destruct (all_vals (map CoreLit done ++ e :: pending)) eqn:Hrest;
+    - destruct (all_vals (map CoreVal done ++ e :: pending)) eqn:Hrest;
         simpl in Hall; try discriminate.
       eapply IH; eauto.
   Qed.
 
   Lemma all_vals_hole_value_step done e pending v vs :
-    match all_vals (map CoreLit done ++ e :: pending) with
+    match all_vals (map CoreVal done ++ e :: pending) with
     | Some vs' => Some (v :: vs')
     | None => None
     end = Some vs ->
@@ -223,7 +223,7 @@ Module JustinIris.
     revert done vs.
     induction done as [|v0 done IH]; intros vs Hall; simpl in Hall.
     - destruct (to_val e); simpl in Hall; [eauto|discriminate].
-    - destruct (all_vals (map CoreLit done ++ e :: pending)) eqn:Hrest;
+    - destruct (all_vals (map CoreVal done ++ e :: pending)) eqn:Hrest;
         simpl in Hall; try discriminate.
       eapply all_vals_hole_value; eauto.
   Qed.
@@ -281,8 +281,8 @@ Module JustinIris.
       try solve [inversion Hfill; subst; simpl in Hnv2; congruence].
     - inversion Hfill; subst.
       match goal with
-      | Hargs : (map CoreLit done ++ h1 :: pending)%list =
-                (map CoreLit done0 ++ h2 :: pending0)%list |- _ =>
+      | Hargs : (map CoreVal done ++ h1 :: pending)%list =
+                (map CoreVal done0 ++ h2 :: pending0)%list |- _ =>
           apply lit_prefix_expr_split in Hargs as [? [? ?]]; auto;
           subst; reflexivity
       end.
@@ -302,9 +302,9 @@ Module JustinIris.
       try solve [inversion Hstep; subst; simpl; eauto].
     - inversion Hstep; subst;
         match goal with
-        | H : all_vals (map CoreLit done ++ hole :: pending) = Some _ |- _ =>
+        | H : all_vals (map CoreVal done ++ hole :: pending) = Some _ |- _ =>
             eapply all_vals_hole_value in H; exact H
-        | H : match all_vals (map CoreLit done ++ hole :: pending) with
+        | H : match all_vals (map CoreVal done ++ hole :: pending) with
               | Some vs' => Some (_ :: vs')
               | None => None
               end = Some _ |- _ =>
@@ -343,17 +343,17 @@ Module JustinIris.
     LanguageOfEctx justin_ectx_lang.
 
   Example var_reduces :
-    base_step (CoreVar "id") empty_state [] (CoreLit (VPrim "id")) empty_state [].
+    base_step (CoreVar "id") empty_state [] (CoreVal (VPrim (PrimBuiltin PrimId))) empty_state [].
   Proof. constructor. reflexivity. Qed.
 
   Example typeof_is_atomic :
-    base_step (CoreTypeOf (CoreLit VUndefined)) empty_state []
-      (CoreLit (VJson (JStr "undefined"))) empty_state [].
+    base_step (CoreTypeOf (CoreVal (VLit LUndefined))) empty_state []
+      (CoreVal (VLit (LJson (JStr "undefined")))) empty_state [].
   Proof. constructor. Qed.
 
   Example typeof_null_is_object_atomic :
-    base_step (CoreTypeOf (CoreLit (VJson JNull))) empty_state []
-      (CoreLit (VJson (JStr "object"))) empty_state [].
+    base_step (CoreTypeOf (CoreVal (VLit (LJson JNull)))) empty_state []
+      (CoreVal (VLit (LJson (JStr "object")))) empty_state [].
   Proof. constructor. Qed.
 
   Example strict_eq_alloc_ctx :

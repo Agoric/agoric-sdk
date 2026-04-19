@@ -32,13 +32,13 @@ assert(n === 2);
 
   Definition compile_surface_program (p : program) : option core_expr :=
     match p with
-    | [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (VJson (JNum 0))));
+    | [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (LJson (JNum 0))));
          SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
                                ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]))]));
         SConst "counter" (Call (Base (Var "makeCounter")) []);
         SExpr (Call (Get (Base (Var "counter")) "incr") []);
         SConst "n" (Call (Get (Base (Var "counter")) "incr") []);
-        SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (VJson (JNum 2))))]) ] =>
+        SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (LJson (JNum 2))))]) ] =>
         Some makeCounter_assert_prog
     | _ => None
     end.
