@@ -235,7 +235,7 @@ Module JustinExec.
              | _ => false
              end)
           (fun v σ' => (CoreVal v, σ'))
-          (CoreBzzt, σ)
+          (fun σ' => (CoreBzzt, σ'))
           name σ args
     | PrimExt _ => (CoreBzzt, σ)
     | PrimDyn pid =>

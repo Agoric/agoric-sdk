@@ -1,6 +1,6 @@
 (* Generic reachability lemmas for dynamic authority in the Justin core. *)
 From Coq Require Import Lia List String ZArith.
-Require Import jessie_lang jessie_justin jessie_public.
+Require Import jessie_lang jessie_lib jessie_justin jessie_public.
 
 Import ListNotations.
 Open Scope string_scope.
@@ -8,6 +8,7 @@ Open Scope Z_scope.
 
 Module JessieReach.
   Import Justin.
+  Import JessieLib.
   Import JustinExec.
   Import JessiePublic.
 
@@ -97,121 +98,97 @@ Module JessieReach.
   Qed.
 
   Definition conservative_builtin (name : prim_name) : Prop :=
-    forall σ args root σ' pid,
-      apply_prim σ (PrimBuiltin name) args = (CoreVal root, σ') ->
-      reaches_dyn σ' root pid ->
-      exists arg, In arg args /\ reaches_dyn σ arg pid.
+    JessieLib.conservative_builtin
+      (VLit LUndefined)
+      freeze_shallow
+      freeze_deep
+      hardenedb
+      (fun v =>
+         match v with
+         | VLit (LJson (JBool true)) => true
+         | _ => false
+         end)
+      (fun v σ' => (CoreVal v, σ'))
+      (fun σ' => (CoreBzzt, σ'))
+      reaches_dyn
+      name.
 
   Lemma builtin_assert_conservative :
     conservative_builtin PrimAssert.
   Proof.
     unfold conservative_builtin.
-    intros σ args root σ' pid Happ Hreach.
-    destruct args as [|a args].
-    - cbn in Happ. inversion Happ.
-    - destruct args as [|a2 args].
-      + destruct a as [l|l|p].
-        * destruct l as [j|n|].
-          -- destruct j.
-             ++ cbn in Happ. inversion Happ.
-             ++ destruct b.
-                ** cbn in Happ. inversion Happ; subst; clear Happ.
-                   unfold reaches_dyn in Hreach.
-                   pose proof (reaches_val_from_lit _ _ _ Hreach) as Heq.
-                   discriminate Heq.
-                ** cbn in Happ. inversion Happ.
-             ++ cbn in Happ. inversion Happ.
-             ++ cbn in Happ. inversion Happ.
-             ++ cbn in Happ. inversion Happ.
-             ++ cbn in Happ. inversion Happ.
-          -- cbn in Happ. inversion Happ.
-          -- cbn in Happ. inversion Happ.
-        * cbn in Happ. inversion Happ.
-        * cbn in Happ. inversion Happ.
-      + destruct a as [l|l|p].
-        * destruct l as [j|n|].
-          -- destruct j.
-             ++ cbn in Happ. inversion Happ.
-             ++ destruct b; cbn in Happ; inversion Happ.
-             ++ cbn in Happ. inversion Happ.
-             ++ cbn in Happ. inversion Happ.
-             ++ cbn in Happ. inversion Happ.
-             ++ cbn in Happ. inversion Happ.
-          -- cbn in Happ. inversion Happ.
-          -- cbn in Happ. inversion Happ.
-        * cbn in Happ. inversion Happ.
-        * cbn in Happ. inversion Happ.
+    eapply JessieLib.builtin_assert_conservative.
+    - intros v σ v' σ' Heq. inversion Heq. auto.
+    - intros σ v σ' Hbad. discriminate Hbad.
+    - intros σ pid Hreach.
+      unfold reaches_dyn in Hreach.
+      pose proof (reaches_val_from_lit _ _ _ Hreach) as Heq.
+      discriminate Heq.
   Qed.
 
   Lemma builtin_fail_conservative :
     conservative_builtin PrimFail.
   Proof.
     unfold conservative_builtin.
-    intros σ args root σ' pid Happ _.
-    simpl in Happ.
-    discriminate.
+    eapply JessieLib.builtin_fail_conservative.
+    - intros v σ v' σ' Heq. inversion Heq. auto.
+    - intros σ v σ' Hbad. discriminate Hbad.
   Qed.
 
   Lemma builtin_freeze_conservative :
     conservative_builtin PrimFreeze.
   Proof.
     unfold conservative_builtin.
-    intros σ args root σ' pid Happ Hreach.
-    destruct args as [|a args].
-    - cbn in Happ. inversion Happ.
-    - destruct args as [|a2 args].
-      + cbn in Happ. inversion Happ; subst; clear Happ.
-        exists root. split; [left; reflexivity|].
-        eapply (reaches_dyn_same_store (freeze_shallow σ root) σ root pid).
-        * apply freeze_shallow_preserves_store.
-        * exact Hreach.
-      + cbn in Happ. inversion Happ.
+    eapply JessieLib.builtin_freeze_conservative.
+    - intros v σ v' σ' Heq. inversion Heq. auto.
+    - intros σ v σ' Hbad. discriminate Hbad.
+    - intros σ v pid Hreach.
+      eapply (reaches_dyn_same_store (freeze_shallow σ v) σ v pid).
+      + apply freeze_shallow_preserves_store.
+      + exact Hreach.
   Qed.
 
   Lemma builtin_harden_conservative :
     conservative_builtin PrimHarden.
   Proof.
     unfold conservative_builtin.
-    intros σ args root σ' pid Happ Hreach.
-    destruct args as [|a args].
-    - cbn in Happ. inversion Happ.
-    - destruct args as [|a2 args].
-      + cbn in Happ. inversion Happ; subst; clear Happ.
-        exists root. split; [left; reflexivity|].
-        eapply (reaches_dyn_same_store (freeze_deep 20 σ root) σ root pid).
-        * apply freeze_deep_preserves_store.
-        * exact Hreach.
-      + cbn in Happ. inversion Happ.
+    eapply JessieLib.builtin_harden_conservative.
+    - intros v σ v' σ' Heq. inversion Heq. auto.
+    - intros σ v σ' Hbad. discriminate Hbad.
+    - intros σ v pid Hreach.
+      eapply (reaches_dyn_same_store (freeze_deep 20 σ v) σ v pid).
+      + apply freeze_deep_preserves_store.
+      + exact Hreach.
   Qed.
 
   Lemma builtin_id_conservative :
     conservative_builtin PrimId.
   Proof.
     unfold conservative_builtin.
-    intros σ args root σ' pid Happ Hreach.
-    destruct args as [|a args].
-    - cbn in Happ. inversion Happ.
-    - destruct args as [|a2 args].
-      + change ((if hardenedb 20 σ a then (CoreVal a, σ) else (CoreBzzt, σ)) =
-                  (CoreVal root, σ')) in Happ.
-        destruct (hardenedb 20 σ a) eqn:Hhard.
-        * cbn in Happ.
-          inversion Happ; subst; clear Happ.
-          exists root. split; [left; reflexivity|exact Hreach].
-        * cbn in Happ.
-          inversion Happ.
-      + cbn in Happ. inversion Happ.
+    eapply JessieLib.builtin_id_conservative.
+    - intros v σ v' σ' Heq. inversion Heq. auto.
+    - intros σ v σ' Hbad. discriminate Hbad.
   Qed.
 
   Theorem builtin_conservative (name : prim_name) :
     conservative_builtin name.
   Proof.
-    destruct name.
-    - apply builtin_freeze_conservative.
-    - apply builtin_harden_conservative.
-    - apply builtin_assert_conservative.
-    - apply builtin_id_conservative.
-    - apply builtin_fail_conservative.
+    unfold conservative_builtin.
+    eapply JessieLib.builtin_conservative.
+    - intros v σ v' σ' Heq. inversion Heq. auto.
+    - intros σ v σ' Hbad. discriminate Hbad.
+    - intros σ pid Hreach.
+      unfold reaches_dyn in Hreach.
+      pose proof (reaches_val_from_lit _ _ _ Hreach) as Heq.
+      discriminate Heq.
+    - intros σ v pid Hreach.
+      eapply (reaches_dyn_same_store (freeze_shallow σ v) σ v pid).
+      + apply freeze_shallow_preserves_store.
+      + exact Hreach.
+    - intros σ v pid Hreach.
+      eapply (reaches_dyn_same_store (freeze_deep 20 σ v) σ v pid).
+      + apply freeze_deep_preserves_store.
+      + exact Hreach.
   Qed.
 
   Example public_compile_contains_no_dyn (e : JessiePublic.expr) :

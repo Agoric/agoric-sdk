@@ -233,7 +233,7 @@ Module JessieSurfaceExec.
                    | _ => false
                    end)
                 (fun v σ' => Some (v, σ'))
-                None
+                (fun _ => None)
                 name σ1 vs
           | Some (VClosure ρc body, σ1), Some ([], _) =>
               match exec_stmt fuel' σ1 ρc body with

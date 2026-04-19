@@ -205,52 +205,61 @@ Module JessieConnectivity.
     exact Hmark.
   Qed.
 
+  Lemma val_reaches_undefined_false σ r :
+    val_reaches σ (VLit LUndefined) r -> False.
+  Proof.
+    destruct r; cbn [val_reaches cref_of_val]; contradiction.
+  Qed.
+
+  Definition conservative_builtin (name : prim_name) : Prop :=
+    JessieLib.conservative_builtin
+      (VLit LUndefined)
+      freeze_shallow
+      freeze_deep
+      hardenedb
+      (fun v =>
+         match v with
+         | VLit (LJson (JBool true)) => true
+         | _ => false
+         end)
+      (fun v σ' => (CoreVal v, σ'))
+      (fun σ' => (CoreBzzt, σ'))
+      val_reaches
+      name.
+
+  Theorem builtin_conservative (name : prim_name) :
+    conservative_builtin name.
+  Proof.
+    unfold conservative_builtin.
+    eapply JessieLib.builtin_conservative.
+    - intros v σ v' σ' Heq. inversion Heq. auto.
+    - intros σ v σ' Hbad. discriminate Hbad.
+    - exact val_reaches_undefined_false.
+    - intros σ v r Hreach.
+      destruct (freeze_shallow_preserves_graph σ v) as [Hstore Hdyn].
+      eapply val_reaches_same_graph; eauto.
+    - intros σ v r Hreach.
+      destruct (freeze_deep_preserves_graph 20 σ v) as [Hstore Hdyn].
+      eapply val_reaches_same_graph; eauto.
+  Qed.
+
   Lemma apply_prim_connectivity p :
     primitive_connectivity_ok apply_prim p.
   Proof.
     intros σ args e' σ' r Happ Hreach.
     destruct p as [name|pid|pid]; unfold apply_prim in Happ.
-    - unfold eval_builtin_prim in Happ.
-      destruct name.
-      + destruct args as [|a args']; simpl in Happ.
-        { inversion Happ; subst; clear Happ. contradiction. }
-        destruct args' as [|b rest]; simpl in Happ.
-        2:{ inversion Happ; subst; clear Happ. contradiction. }
-        * inversion Happ; subst; clear Happ.
-          destruct (freeze_shallow_preserves_graph σ a) as [Hstore Hdyn].
-          left. exists a. split; [left; reflexivity|].
-          eapply val_reaches_same_graph; eauto.
-      + destruct args as [|a args']; simpl in Happ.
-        { inversion Happ; subst; clear Happ. contradiction. }
-        destruct args' as [|b rest]; simpl in Happ.
-        2:{ inversion Happ; subst; clear Happ. contradiction. }
-        * inversion Happ; subst; clear Happ.
-          destruct (freeze_deep_preserves_graph 20 σ a) as [Hstore Hdyn].
-          left. exists a. split; [left; reflexivity|].
-          eapply val_reaches_same_graph; eauto.
-      + destruct args as [|a args']; simpl in Happ.
-        { inversion Happ; subst; clear Happ. contradiction. }
-        destruct args' as [|b rest]; simpl in Happ.
-        2:{ inversion Happ; subst; clear Happ. contradiction. }
-        destruct (match a with
-                  | VLit (LJson (JBool true)) => true
-                  | _ => false
-                  end) eqn:Htruth.
-        * inversion Happ; subst; clear Happ.
-          destruct r; cbn [val_reaches cref_of_val] in Hreach; contradiction.
-        * inversion Happ; subst; clear Happ. contradiction.
-      + destruct args as [|a args']; simpl in Happ.
-        { inversion Happ; subst; clear Happ. contradiction. }
-        destruct args' as [|b rest]; simpl in Happ.
-        2:{ inversion Happ; subst; clear Happ. contradiction. }
-        change ((if hardenedb 20 σ a then (CoreVal a, σ) else (CoreBzzt, σ)) =
-                  (e', σ')) in Happ.
-        destruct (hardenedb 20 σ a) eqn:Hhard.
-        * cbn in Happ.
-          inversion Happ; subst; clear Happ.
-          left. exists a. split; [left; reflexivity|exact Hreach].
-        * inversion Happ; subst; clear Happ. contradiction.
-      + inversion Happ; subst; clear Happ. exfalso. cbn in Hreach. exact Hreach.
+    - destruct e' as [root|x|flds|e1 fld|f args'|x rhs body|e1|e0 e1 e2|op e1 e2|].
+      + pose proof (builtin_conservative name σ args root σ' r Happ Hreach) as [arg [Hin Harg]].
+        left. exists arg. split; assumption.
+      + contradiction.
+      + contradiction.
+      + contradiction.
+      + contradiction.
+      + contradiction.
+      + contradiction.
+      + contradiction.
+      + contradiction.
+      + contradiction.
     - destruct (lookup_nat_assoc pid (st_dyn_prims σ)) as [[cell delta]|] eqn:Hdyn.
       + destruct args as [|a rest]; simpl in Happ.
         * destruct (lookup_cell σ cell) as [n|] eqn:Hcell.
