@@ -1,5 +1,5 @@
 From Coq Require Import List String ZArith.
-Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter jessie_module jessie_iris_lang jessie_counter_parse.
+Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter jessie_module jessie_iris_lang jessie_counter_iris jessie_counter_parse.
 
 Import ListNotations.
 Import Justin.
@@ -7,6 +7,7 @@ Import JustinExec.
 Import JessieCounterCase.
 Import JessieModule.
 Import JustinIris.
+Import JessieCounterIris.
 Import JessieCounterSurface.
 Open Scope string_scope.
 Open Scope Z_scope.
