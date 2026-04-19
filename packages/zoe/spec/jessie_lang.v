@@ -122,3 +122,153 @@ Proof.
   destruct Hstep as [K e1' e2' He1 He2 Hbase].
   inversion Hbase.
 Qed.
+
+Module Justin.
+
+  Definition loc := nat.
+
+  Inductive ty :=
+  | TyUnknown
+  | TyNull
+  | TyBool
+  | TyNumber
+  | TyString
+  | TyObject
+  | TyPrim
+  | TyUndefined.
+
+  Definition refine_env := list (string * ty).
+
+  Inductive val :=
+  | VJson (v : jval)
+  | VUndefined
+  | VLoc (l : loc)
+  | VPrim (name : string).
+
+  Inductive expr :=
+  | Lit (v : val)
+  | Var (x : string)
+  | Obj (fields : list (string * expr))
+  | Get (e : expr) (field : string)
+  | App (f : expr) (args : list expr)
+  | LetIn (x : string) (rhs body : expr)
+  | TypeOf (e : expr)
+  | Cond (e0 e1 e2 : expr)
+  | EqStrict (e1 e2 : expr)
+  | Add (e1 e2 : expr).
+
+  Inductive resolved_binop :=
+  | ConcatStr
+  | AddNum
+  | EqStrictOp.
+
+  Inductive core_expr :=
+  | CoreLit (v : val)
+  | CoreVar (x : string)
+  | CoreAllocObj (fields : list (string * core_expr))
+  | CoreGet (e : core_expr) (field : string)
+  | CoreApp (f : core_expr) (args : list core_expr)
+  | CoreLetIn (x : string) (rhs body : core_expr)
+  | CoreTypeOf (e : core_expr)
+  | CoreCond (e0 e1 e2 : core_expr)
+  | CoreBinop (op : resolved_binop) (e1 e2 : core_expr)
+  | CoreBzzt.
+
+  Definition empty_env : refine_env := [].
+
+  Fixpoint lookup_ty (Γ : refine_env) (x : string) : ty :=
+    match Γ with
+    | [] => TyUnknown
+    | (y, τ) :: Γ' => if String.eqb x y then τ else lookup_ty Γ' x
+    end.
+
+  Definition bind_ty (Γ : refine_env) (x : string) (τ : ty) : refine_env :=
+    (x, τ) :: Γ.
+
+  Definition typeof_json (v : jval) : string :=
+    match v with
+    | JNull => "null"
+    | JBool _ => "boolean"
+    | JNum _ => "number"
+    | JStr _ => "string"
+    | JArr _ => "object"
+    | JObj _ => "object"
+    end.
+
+  Definition typeof_val (v : val) : string :=
+    match v with
+    | VJson jv => typeof_json jv
+    | VUndefined => "undefined"
+    | VLoc _ => "object"
+    | VPrim _ => "function"
+    end.
+
+  Definition classify_val (v : val) : ty :=
+    match v with
+    | VJson JNull => TyNull
+    | VJson (JBool _) => TyBool
+    | VJson (JNum _) => TyNumber
+    | VJson (JStr _) => TyString
+    | VJson (JArr _) => TyObject
+    | VJson (JObj _) => TyObject
+    | VUndefined => TyUndefined
+    | VLoc _ => TyObject
+    | VPrim _ => TyPrim
+    end.
+
+  Definition ty_of_typeof_tag (tag : string) : option ty :=
+    if String.eqb tag "string" then Some TyString else
+    if String.eqb tag "number" then Some TyNumber else
+    if String.eqb tag "boolean" then Some TyBool else
+    if String.eqb tag "object" then Some TyObject else
+    if String.eqb tag "function" then Some TyPrim else
+    if String.eqb tag "undefined" then Some TyUndefined else
+    if String.eqb tag "null" then Some TyNull else
+    None.
+
+  Definition refine_typeof_branch
+      (Γ : refine_env) (x tag : string) : option refine_env :=
+    match ty_of_typeof_tag tag with
+    | Some τ => Some (bind_ty Γ x τ)
+    | None => None
+    end.
+
+  Inductive elaborates : refine_env -> expr -> core_expr -> Prop :=
+  | ElabLit Γ v :
+      elaborates Γ (Lit v) (CoreLit v)
+  | ElabVar Γ x :
+      elaborates Γ (Var x) (CoreVar x)
+  | ElabTypeOf Γ e e' :
+      elaborates Γ e e' ->
+      elaborates Γ (TypeOf e) (CoreTypeOf e')
+  | ElabEqStrict Γ e1 e2 e1' e2' :
+      elaborates Γ e1 e1' ->
+      elaborates Γ e2 e2' ->
+      elaborates Γ (EqStrict e1 e2) (CoreBinop EqStrictOp e1' e2')
+  | ElabCond Γ e0 e1 e2 e0' e1' e2' :
+      elaborates Γ e0 e0' ->
+      elaborates Γ e1 e1' ->
+      elaborates Γ e2 e2' ->
+      elaborates Γ (Cond e0 e1 e2) (CoreCond e0' e1' e2')
+  | ElabAddString Γ x y y' :
+      lookup_ty Γ x = TyString ->
+      elaborates Γ y y' ->
+      elaborates Γ (Add (Var x) y) (CoreBinop ConcatStr (CoreVar x) y')
+  | ElabAddNumber Γ x y y' :
+      lookup_ty Γ x = TyNumber ->
+      elaborates Γ y y' ->
+      elaborates Γ (Add (Var x) y) (CoreBinop AddNum (CoreVar x) y').
+
+  Example lookup_ty_miss :
+    lookup_ty empty_env "x" = TyUnknown.
+  Proof. reflexivity. Qed.
+
+  Example refine_string_branch :
+    refine_typeof_branch empty_env "x" "string" = Some [("x", TyString)].
+  Proof. reflexivity. Qed.
+
+  Example classify_prim :
+    classify_val (VPrim "freeze") = TyPrim.
+  Proof. reflexivity. Qed.
+
+End Justin.
