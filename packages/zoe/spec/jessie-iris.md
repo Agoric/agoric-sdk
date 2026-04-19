@@ -588,6 +588,7 @@ Current milestone:
   - a hardened returned object with `incr` and `decr` methods
   - dynamic method primitives that close over the private cell
 - authority-splitting is now modeled concretely:
+  - case-study-specific counter machinery now lives in `jessie_counter.v` rather than `jessie_justin.v`
   - `alloc_entry_cap` derives a hardened `{ incr: counter.incr }` capability object
   - `alloc_exit_cap` derives a hardened `{ decr: counter.decr }` capability object
   - executable regressions show:

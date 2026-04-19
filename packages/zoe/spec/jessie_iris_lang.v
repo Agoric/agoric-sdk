@@ -1,6 +1,6 @@
 From Coq Require Import List String ZArith.
 From iris.program_logic Require Export ectxi_language.
-Require Import jessie_lang jessie_justin.
+Require Import jessie_lang jessie_justin jessie_counter.
 
 Import ListNotations.
 Open Scope list_scope.
@@ -10,6 +10,7 @@ Open Scope Z_scope.
 Module JustinIris.
   Import Justin.
   Import JustinExec.
+  Import JessieCounterCase.
 
   Definition expr := core_expr.
   Definition val := Justin.val.
