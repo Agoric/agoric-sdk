@@ -1,3 +1,4 @@
+(* Justin parsing definitions centered on [parse_justin] as a target for Jessica's Justin grammar: <https://github.com/agoric-labs/jessica/blob/master/lib/quasi-justin.js.ts>. *)
 From Coq Require Import Ascii List String ZArith.
 Require Import jessie_lang jessie_json jessie_parse.
 
@@ -191,6 +192,7 @@ with parse_cond (fuel : nat) : parser expr :=
         end
     end.
 
+(* [parse_justin] aims at Jessica's Justin grammar (<https://github.com/agoric-labs/jessica/blob/master/lib/quasi-justin.js.ts>), as an executable parser target rather than a normative specification. *)
 Definition parse_justin (s : string) : option expr :=
   match parse_cond (String.length s + 20)%nat (explode s) with
   | Some (e, rest) =>

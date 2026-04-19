@@ -1,4 +1,4 @@
-(* Parser for the Jessie surface layer that extends Justin/base parsing with statements and closures. *)
+(* Parser for the Jessie surface layer centered on [parse_program] as a target for Jessica's Jessie grammar: <https://github.com/agoric-labs/jessica/blob/master/lib/quasi-jessie.js.ts>. *)
 From Coq Require Import Ascii List String ZArith.
 Require Import jessie_lang jessie_json jessie_parse jessie_justin_parse.
 
@@ -243,6 +243,7 @@ Module JessieParseJessie.
         end).
   Defined.
 
+  (* [parse_program] aims at Jessica's Jessie grammar (<https://github.com/agoric-labs/jessica/blob/master/lib/quasi-jessie.js.ts>), as an executable parser target rather than a normative specification. *)
   Definition parse_program (s : string) : option program :=
     match parse_stmt_list (String.length s + 40)%nat (explode s) with
     | Some (p, rest) =>

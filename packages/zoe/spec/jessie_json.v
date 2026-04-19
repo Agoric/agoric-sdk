@@ -1,4 +1,4 @@
-(* JSON values and parsing definitions built on the generic parser helpers. *)
+(* JSON values and parsing definitions centered on [parse_json] as a target for Jessica's JSON grammar: <https://github.com/agoric-labs/jessica/blob/master/lib/quasi-json.js.ts>. *)
 From Coq Require Import Ascii List String ZArith.
 Require Import jessie_parse.
 
@@ -167,6 +167,7 @@ Proof.
         end).
 Defined.
 
+(* [parse_json] aims at Jessica's JSON grammar (<https://github.com/agoric-labs/jessica/blob/master/lib/quasi-json.js.ts>), as an executable parser target rather than a normative specification. *)
 Definition parse_json (s : string) : option jval :=
   match parse_value (String.length s + 10)%nat (explode s) with
   | Some (v, rest) =>
