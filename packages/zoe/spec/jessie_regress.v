@@ -1,11 +1,12 @@
 From Coq Require Import List String ZArith.
-Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_module jessie_iris_lang.
+Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_module jessie_iris_lang jessie_counter_parse.
 
 Import ListNotations.
 Import Justin.
 Import JustinExec.
 Import JessieModule.
 Import JustinIris.
+Import JessieCounterSurface.
 Open Scope string_scope.
 Open Scope Z_scope.
 
@@ -75,6 +76,22 @@ Example makeCounter_final_cell_is_two :
       [("counter.incr.z", CounterIncr 0%nat);
        ("counter.decr.z", CounterDecr 0%nat)].
 Proof. reflexivity. Qed.
+
+Example makeCounter_surface_parse_works :
+  parse_makeCounter_program <> None.
+Proof. vm_compute. discriminate. Qed.
+
+Example makeCounter_surface_compile_matches_core :
+  compile_surface_program
+    (match parse_makeCounter_program with Some p => p | None => [] end) =
+  Some JessieCounterSurface.makeCounter_assert_prog.
+Proof. vm_compute. reflexivity. Qed.
+
+Example makeCounter_surface_compile_matches_regression :
+  compile_surface_program
+    (match parse_makeCounter_program with Some p => p | None => [] end) =
+  Some makeCounter_assert_prog.
+Proof. vm_compute. reflexivity. Qed.
 
 Example module_end_to_end :
   eval_module 6

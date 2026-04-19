@@ -573,6 +573,14 @@ The goal is to extend the Jessie/Iris model until it supports this example direc
 Current milestone:
 
 - `makeCounter` now works up to `assert(n === 2)` in the executable core model
+- the exact surface example now parses in Coq from concrete syntax, including:
+  - `const` / `let`
+  - `() => { ... }`
+  - object literals with method fields
+  - calls like `counter.incr()`
+  - `count += 1` and `count -= 1`
+  - `assert(n === 2)`
+- the narrow surface parser compiles that source to the same `makeCounter_assert_prog` used by the executable regression
 - `makeCounter` is currently modeled as an endowed primitive that allocates:
   - a private mutable counter cell
   - a hardened returned object with `incr` and `decr` methods
