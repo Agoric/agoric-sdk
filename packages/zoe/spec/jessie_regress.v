@@ -76,8 +76,8 @@ Example makeCounter_final_cell_is_two :
       [1%nat]
       (st_env counter_empty_state)
       [(0%nat, 2)]
-      [(0%nat, CounterIncr 0%nat);
-       (1%nat, CounterDecr 0%nat)].
+      [(0%nat, DynCellDelta 0%nat 1);
+       (1%nat, DynCellDelta 0%nat (-1))].
 Proof. reflexivity. Qed.
 
 Example makeCounter_surface_parse_works :

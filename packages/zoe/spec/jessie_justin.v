@@ -15,8 +15,7 @@ Module JustinExec.
   }.
 
   Inductive dyn_prim :=
-  | CounterIncr (cell : loc)
-  | CounterDecr (cell : loc).
+  | DynCellDelta (cell : loc) (delta : Z).
 
   Record state := State {
     st_next_loc : loc;
@@ -221,21 +220,6 @@ Module JustinExec.
       State (S l) (st_next_prim σ) ((l, obj) :: st_store σ) (st_frozen σ) (st_env σ)
         (st_cells σ) (st_dyn_prims σ)).
 
-  Definition alloc_counter (σ : state) : val * state :=
-    let cell := st_next_loc σ in
-    let obj := S cell in
-    let incr := st_next_prim σ in
-    let decr := S incr in
-    let rec := HeapObj [("incr", VPrim (PrimDyn incr)); ("decr", VPrim (PrimDyn decr))] in
-    let σ' := State (S obj) (S decr)
-      ((obj, rec) :: st_store σ)
-      (obj :: st_frozen σ)
-      (st_env σ)
-      ((cell, 0) :: st_cells σ)
-      ((incr, CounterIncr cell) :: (decr, CounterDecr cell) :: st_dyn_prims σ)
-    in
-    (VLoc obj, σ').
-
   Definition apply_prim (σ : state) (p : prim_ref) (args : list val)
     : core_expr * state :=
     match p with
@@ -256,17 +240,10 @@ Module JustinExec.
     | PrimExt _ => (CoreBzzt, σ)
     | PrimDyn pid =>
       match lookup_nat_assoc pid (st_dyn_prims σ) with
-      | Some (CounterIncr cell) =>
+      | Some (DynCellDelta cell delta) =>
           match args, lookup_cell σ cell with
           | [], Some n =>
-              let n' := n + 1 in
-              (CoreVal (VLit (LJson (JNum n'))), store_cell σ cell n')
-          | _, _ => (CoreBzzt, σ)
-          end
-      | Some (CounterDecr cell) =>
-          match args, lookup_cell σ cell with
-          | [], Some n =>
-              let n' := n - 1 in
+              let n' := n + delta in
               (CoreVal (VLit (LJson (JNum n'))), store_cell σ cell n')
           | _, _ => (CoreBzzt, σ)
           end

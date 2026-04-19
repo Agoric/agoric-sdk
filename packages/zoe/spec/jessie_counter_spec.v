@@ -15,7 +15,7 @@ Module JessieCounterSpec.
     lookup_obj σ capl =
       Some (HeapObj [("incr", VPrim (PrimDyn pid))]) ->
     lookup_nat_assoc pid (st_dyn_prims σ) =
-      Some (CounterIncr cell) ->
+      Some (DynCellDelta cell 1) ->
     lookup_cell σ cell = Some n ->
     invoke_cap_trace σ (VLoc capl) trace = Some σ' ->
     Forall (fun field => field = "incr") trace /\
@@ -40,7 +40,7 @@ Module JessieCounterSpec.
         { rewrite lookup_obj_store_cell. exact Hobj. }
         assert (Hdyn' :
           lookup_nat_assoc pid (st_dyn_prims (store_cell σ cell (n + 1))) =
-            Some (CounterIncr cell)).
+            Some (DynCellDelta cell 1)).
         { rewrite lookup_dyn_store_cell. exact Hdyn. }
         destruct (IH (store_cell σ cell (n + 1)) capl pid cell (n + 1) σ'
           Hobj'
@@ -63,7 +63,7 @@ Module JessieCounterSpec.
     lookup_obj σ capl =
       Some (HeapObj [("decr", VPrim (PrimDyn pid))]) ->
     lookup_nat_assoc pid (st_dyn_prims σ) =
-      Some (CounterDecr cell) ->
+      Some (DynCellDelta cell (-1)) ->
     lookup_cell σ cell = Some n ->
     invoke_cap_trace σ (VLoc capl) trace = Some σ' ->
     Forall (fun field => field = "decr") trace /\
@@ -88,7 +88,7 @@ Module JessieCounterSpec.
         { rewrite lookup_obj_store_cell. exact Hobj. }
         assert (Hdyn' :
           lookup_nat_assoc pid (st_dyn_prims (store_cell σ cell (n - 1))) =
-            Some (CounterDecr cell)).
+            Some (DynCellDelta cell (-1))).
         { rewrite lookup_dyn_store_cell. exact Hdyn. }
         destruct (IH (store_cell σ cell (n - 1)) capl pid cell (n - 1) σ'
           Hobj'
@@ -125,7 +125,7 @@ Module JessieCounterSpec.
          [2%nat; 1%nat]
          (st_env counter_empty_state)
          [(0%nat, 0)]
-         [(0%nat, CounterIncr 0%nat); (1%nat, CounterDecr 0%nat)])
+         [(0%nat, DynCellDelta 0%nat 1); (1%nat, DynCellDelta 0%nat (-1))])
       2%nat 0%nat 0%nat 0 trace σ' eq_refl eq_refl eq_refl Htrace) as [_ Hcell].
     exact Hcell.
   Qed.
@@ -148,7 +148,7 @@ Module JessieCounterSpec.
          [2%nat; 1%nat]
          (st_env counter_empty_state)
          [(0%nat, 0)]
-         [(0%nat, CounterIncr 0%nat); (1%nat, CounterDecr 0%nat)])
+         [(0%nat, DynCellDelta 0%nat 1); (1%nat, DynCellDelta 0%nat (-1))])
       2%nat 1%nat 0%nat 0 trace σ' eq_refl eq_refl eq_refl Htrace) as [_ Hcell].
     exact Hcell.
   Qed.
@@ -201,7 +201,7 @@ Module JessieCounterSpec.
          [2%nat; 1%nat]
          (st_env counter_empty_state)
          [(0%nat, 0)]
-         [(0%nat, CounterIncr 0%nat); (1%nat, CounterDecr 0%nat)])
+         [(0%nat, DynCellDelta 0%nat 1); (1%nat, DynCellDelta 0%nat (-1))])
       2%nat 0%nat 0%nat 0 trace σ' eq_refl eq_refl eq_refl Htrace) as [Hall _].
     exact Hall.
   Qed.
@@ -224,7 +224,7 @@ Module JessieCounterSpec.
          [2%nat; 1%nat]
          (st_env counter_empty_state)
          [(0%nat, 0)]
-         [(0%nat, CounterIncr 0%nat); (1%nat, CounterDecr 0%nat)])
+         [(0%nat, DynCellDelta 0%nat 1); (1%nat, DynCellDelta 0%nat (-1))])
       2%nat 1%nat 0%nat 0 trace σ' eq_refl eq_refl eq_refl Htrace) as [Hall _].
     exact Hall.
   Qed.

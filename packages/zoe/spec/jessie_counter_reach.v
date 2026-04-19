@@ -25,10 +25,10 @@ Module JessieCounterReach.
     reaches_val σ root (VPrim (PrimDyn pid)).
 
   Definition dyn_is_entry (σ : state) (pid : nat) : Prop :=
-    exists cell, lookup_nat_assoc pid (st_dyn_prims σ) = Some (CounterIncr cell).
+    exists cell, lookup_nat_assoc pid (st_dyn_prims σ) = Some (DynCellDelta cell 1).
 
   Definition dyn_is_exit (σ : state) (pid : nat) : Prop :=
-    exists cell, lookup_nat_assoc pid (st_dyn_prims σ) = Some (CounterDecr cell).
+    exists cell, lookup_nat_assoc pid (st_dyn_prims σ) = Some (DynCellDelta cell (-1)).
 
   Lemma reaches_field_only_entry σ capl pid fld :
     lookup_obj σ capl =
@@ -83,7 +83,7 @@ Module JessieCounterReach.
          [2%nat; 1%nat]
          (st_env counter_empty_state)
          [(0%nat, 0)]
-         [(0%nat, CounterIncr 0%nat); (1%nat, CounterDecr 0%nat)])
+         [(0%nat, DynCellDelta 0%nat 1); (1%nat, DynCellDelta 0%nat (-1))])
       2%nat 0%nat _ eq_refl Hreach) as Hor.
     destruct Hor as [Hroot|Hdyn].
     - inversion Hroot.
@@ -110,7 +110,7 @@ Module JessieCounterReach.
          [2%nat; 1%nat]
          (st_env counter_empty_state)
          [(0%nat, 0)]
-         [(0%nat, CounterIncr 0%nat); (1%nat, CounterDecr 0%nat)])
+         [(0%nat, DynCellDelta 0%nat 1); (1%nat, DynCellDelta 0%nat (-1))])
       2%nat 1%nat _ eq_refl Hreach) as Hor.
     destruct Hor as [Hroot|Hdyn].
     - inversion Hroot.

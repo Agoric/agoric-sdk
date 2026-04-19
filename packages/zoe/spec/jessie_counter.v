@@ -13,6 +13,21 @@ Module JessieCounterCase.
   Definition counter_empty_state : state :=
     extend_env "makeCounter" (VPrim (PrimExt 0%nat)) empty_state.
 
+  Definition alloc_counter (σ : state) : val * state :=
+    let cell := st_next_loc σ in
+    let obj := S cell in
+    let incr := st_next_prim σ in
+    let decr := S incr in
+    let rec := HeapObj [("incr", VPrim (PrimDyn incr)); ("decr", VPrim (PrimDyn decr))] in
+    let σ' := State (S obj) (S decr)
+      ((obj, rec) :: st_store σ)
+      (obj :: st_frozen σ)
+      (st_env σ)
+      ((cell, 0) :: st_cells σ)
+      ((incr, DynCellDelta cell 1) :: (decr, DynCellDelta cell (-1)) :: st_dyn_prims σ)
+    in
+    (VLoc obj, σ').
+
   Definition alloc_counter_cap (σ : state) (counter : val) (field : string)
     : option (val * state) :=
     match counter with
@@ -188,7 +203,7 @@ Module JessieCounterCase.
     lookup_obj σ capl =
       Some (HeapObj [("incr", VPrim (PrimDyn pid))]) ->
     lookup_nat_assoc pid (st_dyn_prims σ) =
-      Some (CounterIncr cell) ->
+      Some (DynCellDelta cell 1) ->
     lookup_cell σ cell = Some n ->
     invoke_cap_method σ (VLoc capl) "incr" =
       Some (VLit (LJson (JNum (n + 1))), store_cell σ cell (n + 1)).
@@ -207,7 +222,7 @@ Module JessieCounterCase.
     lookup_obj σ capl =
       Some (HeapObj [("decr", VPrim (PrimDyn pid))]) ->
     lookup_nat_assoc pid (st_dyn_prims σ) =
-      Some (CounterDecr cell) ->
+      Some (DynCellDelta cell (-1)) ->
     lookup_cell σ cell = Some n ->
     invoke_cap_method σ (VLoc capl) "decr" =
       Some (VLit (LJson (JNum (n - 1))), store_cell σ cell (n - 1)).
@@ -259,8 +274,8 @@ Module JessieCounterCase.
           [1%nat]
           (st_env counter_empty_state)
           [(0%nat, 0)]
-          [(0%nat, CounterIncr 0%nat);
-           (1%nat, CounterDecr 0%nat)]).
+          [(0%nat, DynCellDelta 0%nat 1);
+           (1%nat, DynCellDelta 0%nat (-1))]).
   Proof. reflexivity. Qed.
 
   Example counter_methods_update_private_cell :
@@ -270,8 +285,8 @@ Module JessieCounterCase.
       [1%nat]
       (st_env empty_state)
       [(0%nat, 0)]
-      [(0%nat, CounterIncr 0%nat);
-       (1%nat, CounterDecr 0%nat)] in
+      [(0%nat, DynCellDelta 0%nat 1);
+       (1%nat, DynCellDelta 0%nat (-1))] in
     apply_prim σ1 (PrimDyn 0%nat) [] =
       (CoreVal (VLit (LJson (JNum 1))),
         State 2%nat 2%nat
@@ -280,8 +295,8 @@ Module JessieCounterCase.
           [1%nat]
           (st_env empty_state)
           [(0%nat, 1)]
-          [(0%nat, CounterIncr 0%nat);
-           (1%nat, CounterDecr 0%nat)]).
+          [(0%nat, DynCellDelta 0%nat 1);
+           (1%nat, DynCellDelta 0%nat (-1))]).
   Proof. reflexivity. Qed.
 
   Example forged_decr_breaks_entry_context_monotonicity :

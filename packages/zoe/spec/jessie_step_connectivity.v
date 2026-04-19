@@ -163,8 +163,7 @@ Module JessieStepConnectivity.
       forall pid dp,
         lookup_nat_assoc pid (st_dyn_prims σ) = Some dp ->
         match dp with
-        | CounterIncr cell => cell < st_next_loc σ
-        | CounterDecr cell => cell < st_next_loc σ
+        | DynCellDelta cell _ => cell < st_next_loc σ
         end
   }.
 
@@ -523,7 +522,7 @@ Module JessieStepConnectivity.
   Proof.
     intros Happ Hreach.
     unfold apply_prim in Happ.
-    destruct (lookup_nat_assoc pid (st_dyn_prims σ)) as [[cell|cell]|] eqn:Hdyn;
+    destruct (lookup_nat_assoc pid (st_dyn_prims σ)) as [[cell delta]|] eqn:Hdyn;
       try discriminate;
       destruct args; try discriminate;
       destruct (lookup_cell σ cell) eqn:Hcell; inversion Happ; subst; clear Happ;
@@ -586,12 +585,7 @@ Module JessieStepConnectivity.
         * inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
       + destruct args; simpl in Happ;
           inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-    - destruct (lookup_nat_assoc pid (st_dyn_prims σ)) as [[cell|cell]|] eqn:Hdyn.
-      + destruct args as [|a rest].
-        * simpl in Happ.
-          destruct (lookup_cell σ cell) eqn:Hcell;
-            inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
-        * simpl in Happ. inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+    - destruct (lookup_nat_assoc pid (st_dyn_prims σ)) as [[cell delta]|] eqn:Hdyn.
       + destruct args as [|a rest].
         * simpl in Happ.
           destruct (lookup_cell σ cell) eqn:Hcell;

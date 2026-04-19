@@ -32,8 +32,8 @@ Module JessieConnectivity.
       lookup_field (obj_fields obj) fld = Some (VPrim (PrimDyn pid)) ->
       edge σ (CObj l) (CDyn pid)
   | EdgeDynCell pid cell :
-      lookup_nat_assoc pid (st_dyn_prims σ) = Some (CounterIncr cell) \/
-      lookup_nat_assoc pid (st_dyn_prims σ) = Some (CounterDecr cell) ->
+      lookup_nat_assoc pid (st_dyn_prims σ) = Some (DynCellDelta cell 1) \/
+      lookup_nat_assoc pid (st_dyn_prims σ) = Some (DynCellDelta cell (-1)) ->
       edge σ (CDyn pid) (CCell cell).
 
   Inductive reachable (σ : state) : cref -> cref -> Prop :=
