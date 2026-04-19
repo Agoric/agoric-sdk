@@ -11,21 +11,6 @@ Module JessieCounterIris.
   Import JessieCounterCase.
   Import JustinIris.
 
-  Definition counter_after_makeCounter : val :=
-    match fst (counter_apply_prim counter_empty_state "makeCounter" []) with
-    | CoreLit v => v
-    | _ => VUndefined
-    end.
-
-  Definition state_after_makeCounter : state :=
-    snd (counter_apply_prim counter_empty_state "makeCounter" []).
-
-  Definition entry_cap_after_makeCounter : option (val * state) :=
-    alloc_entry_cap state_after_makeCounter counter_after_makeCounter.
-
-  Definition exit_cap_after_makeCounter : option (val * state) :=
-    alloc_exit_cap state_after_makeCounter counter_after_makeCounter.
-
   Example entry_cap_get_incr_atomic :
     match entry_cap_after_makeCounter with
     | Some (cap, σ) =>

@@ -1,0 +1,8 @@
+{
+  "name": "zoe",
+  "active": true,
+  "counts": [1, 2, 3],
+  "meta": {
+    "kind": "sample"
+  }
+}

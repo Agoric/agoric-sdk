@@ -288,7 +288,10 @@ Module JustinExec.
       | None => (CoreBzzt, σ)
       end.
 
-  Fixpoint step (σ : state) (e : core_expr) : option (core_expr * state) :=
+  Definition prim_handler := state -> string -> list val -> core_expr * state.
+
+  Fixpoint step_with (do_prim : prim_handler) (σ : state) (e : core_expr)
+    : option (core_expr * state) :=
     match e with
     | CoreLit _ => None
     | CoreVar x =>
@@ -306,7 +309,7 @@ Module JustinExec.
                 match flds with
                 | [] => None
                 | (k, e1) :: rest =>
-                    match step σ e1 with
+                    match step_with do_prim σ e1 with
                     | Some (e1', σ') => Some (CoreAllocObj ((k, e1') :: rest), σ')
                     | None =>
                         match e1 with
@@ -335,7 +338,7 @@ Module JustinExec.
             end
         | CoreLit _ => Some (CoreBzzt, σ)
         | _ =>
-            match step σ e1 with
+            match step_with do_prim σ e1 with
             | Some (e1', σ') => Some (CoreGet e1' fld, σ')
             | None => None
             end
@@ -344,13 +347,13 @@ Module JustinExec.
         match f with
         | CoreLit (VPrim name) =>
             match all_lit args with
-            | Some vs => Some (apply_prim σ name vs)
+            | Some vs => Some (do_prim σ name vs)
             | None =>
                 let fix step_args args :=
                     match args with
                     | [] => None
                     | e1 :: rest =>
-                        match step σ e1 with
+                        match step_with do_prim σ e1 with
                         | Some (e1', σ') => Some (CoreApp f (e1' :: rest), σ')
                         | None =>
                             match e1 with
@@ -368,7 +371,7 @@ Module JustinExec.
             end
         | CoreLit _ => Some (CoreBzzt, σ)
         | _ =>
-            match step σ f with
+            match step_with do_prim σ f with
             | Some (f', σ') => Some (CoreApp f' args, σ')
             | None => None
             end
@@ -377,7 +380,7 @@ Module JustinExec.
         match rhs with
         | CoreLit v => Some (subst x v body, σ)
         | _ =>
-            match step σ rhs with
+            match step_with do_prim σ rhs with
             | Some (rhs', σ') => Some (CoreLetIn x rhs' body, σ')
             | None => None
             end
@@ -386,7 +389,7 @@ Module JustinExec.
         match e1 with
         | CoreLit v => Some (CoreLit (VJson (JStr (typeof_val v))), σ)
         | _ =>
-            match step σ e1 with
+            match step_with do_prim σ e1 with
             | Some (e1', σ') => Some (CoreTypeOf e1', σ')
             | None => None
             end
@@ -395,7 +398,7 @@ Module JustinExec.
         match e0 with
         | CoreLit v => Some (if truthy v then e1 else e2, σ)
         | _ =>
-            match step σ e0 with
+            match step_with do_prim σ e0 with
             | Some (e0', σ') => Some (CoreCond e0' e1 e2, σ')
             | None => None
             end
@@ -405,12 +408,12 @@ Module JustinExec.
         | CoreLit v1, CoreLit v2 =>
             Some (CoreLit (VJson (JBool (strict_eqb v1 v2))), σ)
         | CoreLit _, _ =>
-            match step σ e2 with
+            match step_with do_prim σ e2 with
             | Some (e2', σ') => Some (CoreBinop EqStrictOp e1 e2', σ')
             | None => None
             end
         | _, _ =>
-            match step σ e1 with
+            match step_with do_prim σ e1 with
             | Some (e1', σ') => Some (CoreBinop EqStrictOp e1' e2, σ')
             | None => None
             end
@@ -420,12 +423,12 @@ Module JustinExec.
         | CoreLit (VJson (JNum n1)), CoreLit (VJson (JNum n2)) =>
             Some (CoreLit (VJson (JNum (n1 + n2))), σ)
         | CoreLit _, _ =>
-            match step σ e2 with
+            match step_with do_prim σ e2 with
             | Some (e2', σ') => Some (CoreBinop AddNum e1 e2', σ')
             | None => None
             end
         | _, _ =>
-            match step σ e1 with
+            match step_with do_prim σ e1 with
             | Some (e1', σ') => Some (CoreBinop AddNum e1' e2, σ')
             | None => None
             end
@@ -435,17 +438,36 @@ Module JustinExec.
         | CoreLit (VJson (JStr s1)), CoreLit (VJson (JStr s2)) =>
             Some (CoreLit (VJson (JStr (s1 ++ s2))), σ)
         | CoreLit _, _ =>
-            match step σ e2 with
+            match step_with do_prim σ e2 with
             | Some (e2', σ') => Some (CoreBinop ConcatStr e1 e2', σ')
             | None => None
             end
         | _, _ =>
-            match step σ e1 with
+            match step_with do_prim σ e1 with
             | Some (e1', σ') => Some (CoreBinop ConcatStr e1' e2, σ')
             | None => None
             end
         end
     | CoreBzzt => None
+    end.
+
+  Definition step (σ : state) (e : core_expr) : option (core_expr * state) :=
+    step_with apply_prim σ e.
+
+  Fixpoint normalize_with (do_prim : prim_handler) (fuel : nat) (σ : state) (e : core_expr)
+    : core_expr * state :=
+    match fuel with
+    | O => (CoreBzzt, σ)
+    | S fuel' =>
+        match step_with do_prim σ e with
+        | Some (e', σ') =>
+            match e' with
+            | CoreLit _ => (e', σ')
+            | CoreBzzt => (CoreBzzt, σ')
+            | _ => normalize_with do_prim fuel' σ' e'
+            end
+        | None => (e, σ)
+        end
     end.
 
   Definition run1 (e : core_expr) : option (core_expr * state) :=

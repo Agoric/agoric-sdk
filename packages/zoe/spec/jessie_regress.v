@@ -56,13 +56,6 @@ Example typeof_null_regression :
     Some (CoreLit (VJson (JStr "object")), empty_state).
 Proof. reflexivity. Qed.
 
-Definition makeCounter_assert_prog : core_expr :=
-  CoreLetIn "counter" (CoreApp (CoreVar "makeCounter") [])
-    (CoreLetIn "_" (CoreApp (CoreGet (CoreVar "counter") "incr") [])
-      (CoreLetIn "n" (CoreApp (CoreGet (CoreVar "counter") "incr") [])
-        (CoreApp (CoreVar "assert")
-          [CoreBinop EqStrictOp (CoreVar "n") (CoreLit (VJson (JNum 2)))]))).
-
 Example makeCounter_assert_works :
   fst (counter_normalize 20 counter_empty_state makeCounter_assert_prog) = CoreLit VUndefined.
 Proof. reflexivity. Qed.
@@ -86,7 +79,7 @@ Proof. vm_compute. discriminate. Qed.
 Example makeCounter_surface_compile_matches_core :
   compile_surface_program
     (match parse_makeCounter_program with Some p => p | None => [] end) =
-  Some JessieCounterSurface.makeCounter_assert_prog.
+  Some makeCounter_assert_prog.
 Proof. vm_compute. reflexivity. Qed.
 
 Example makeCounter_surface_compile_matches_regression :
@@ -94,21 +87,6 @@ Example makeCounter_surface_compile_matches_regression :
     (match parse_makeCounter_program with Some p => p | None => [] end) =
   Some makeCounter_assert_prog.
 Proof. vm_compute. reflexivity. Qed.
-
-Definition counter_after_makeCounter : val :=
-  match fst (counter_apply_prim counter_empty_state "makeCounter" []) with
-  | CoreLit v => v
-  | _ => VUndefined
-  end.
-
-Definition state_after_makeCounter : state :=
-  snd (counter_apply_prim counter_empty_state "makeCounter" []).
-
-Definition entry_cap_after_makeCounter : option (val * state) :=
-  alloc_entry_cap state_after_makeCounter counter_after_makeCounter.
-
-Definition exit_cap_after_makeCounter : option (val * state) :=
-  alloc_exit_cap state_after_makeCounter counter_after_makeCounter.
 
 Example entry_cap_split_works :
   entry_cap_after_makeCounter <> None.

@@ -1,5 +1,5 @@
 From Coq Require Import Ascii List String ZArith.
-Require Import jessie_lang jessie_parse jessie_parse_utils.
+Require Import jessie_lang jessie_parse.
 
 Import ListNotations.
 Open Scope char_scope.
