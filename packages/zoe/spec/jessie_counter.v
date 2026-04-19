@@ -78,6 +78,22 @@ Module JessieCounterCase.
   Definition exit_cap_after_makeCounter : option (val * state) :=
     alloc_exit_cap state_after_makeCounter counter_after_makeCounter.
 
+  Definition entry_client_state : option state :=
+    match entry_cap_after_makeCounter with
+    | Some (cap, σ) =>
+        Some (State (st_next_loc σ) (st_store σ) (st_frozen σ)
+          (("counter", cap) :: st_env σ) (st_cells σ) (st_dyn_prims σ))
+    | None => None
+    end.
+
+  Definition exit_client_state : option state :=
+    match exit_cap_after_makeCounter with
+    | Some (cap, σ) =>
+        Some (State (st_next_loc σ) (st_store σ) (st_frozen σ)
+          (("counter", cap) :: st_env σ) (st_cells σ) (st_dyn_prims σ))
+    | None => None
+    end.
+
   Definition invoke_cap_method (σ : state) (cap : val) (field : string)
     : option (val * state) :=
     match cap with
@@ -305,4 +321,24 @@ Module JessieCounterCase.
           [("counter.incr.z", CounterIncr 0%nat);
            ("counter.decr.z", CounterDecr 0%nat)]).
   Proof. reflexivity. Qed.
+
+  Example forged_decr_breaks_entry_context_monotonicity :
+    match entry_client_state with
+    | Some σ =>
+        lookup_cell
+          (snd (counter_normalize 5 σ
+            (CoreApp (CoreLit (VPrim (counter_decr_name 0%nat))) []))) 0%nat
+    | None => None
+    end = Some (-1).
+  Proof. vm_compute. reflexivity. Qed.
+
+  Example forged_incr_breaks_exit_context_monotonicity :
+    match exit_client_state with
+    | Some σ =>
+        lookup_cell
+          (snd (counter_normalize 5 σ
+            (CoreApp (CoreLit (VPrim (counter_incr_name 0%nat))) []))) 0%nat
+    | None => None
+    end = Some 1.
+  Proof. vm_compute. reflexivity. Qed.
 End JessieCounterCase.

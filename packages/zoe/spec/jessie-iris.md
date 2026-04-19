@@ -572,31 +572,134 @@ The goal is to extend the Jessie/Iris model until it supports this example direc
 
 Current milestone:
 
-- `makeCounter` now works up to `assert(n === 2)` in the executable core model
-- the exact surface example now parses in Coq from concrete syntax, including:
-  - `const` / `let`
-  - `() => { ... }`
-  - object literals with method fields
-  - calls like `counter.incr()`
-  - `count += 1` and `count -= 1`
-  - `assert(n === 2)`
-- the narrow surface parser compiles that source to the same `makeCounter_assert_prog` used by the executable regression
-- the Jessie surface AST is now a separate layer that embeds shared Justin expressions via `JessieSurface.Base`
-- Justin still excludes function literals and assignment; there are parser regressions asserting `parse_justin "() => undefined" = None` and `parse_justin "count += 1" = None`
-- `makeCounter` is currently modeled as an endowed primitive that allocates:
-  - a private mutable counter cell
-  - a hardened returned object with `incr` and `decr` methods
-  - dynamic method primitives that close over the private cell
-- authority-splitting is now modeled concretely:
-  - case-study-specific counter machinery now lives in `jessie_counter.v` rather than `jessie_justin.v`
-  - `alloc_entry_cap` derives a hardened `{ incr: counter.incr }` capability object
-  - `alloc_exit_cap` derives a hardened `{ decr: counter.decr }` capability object
-  - executable regressions show:
-    - the entry capability hides `decr`
-    - the exit capability hides `incr`
-    - calling the entry capability twice drives the private cell to `2`
-    - calling the exit capability twice drives the private cell to `-2`
-- the Iris language layer now has atomic `base_step` proofs for the split capabilities:
-  - entry capability lookup exposes only `incr`
-  - exit capability lookup exposes only `decr`
-  - the exposed method calls step to the expected updated cell states
+### What Is Proved About `makeCounter`
+
+The main result is a concrete authority-separation theorem for the `makeCounter` case study.
+
+From a freshly allocated counter object, the development derives two hardened capability objects:
+
+- an entry capability exposing only `incr`
+- an exit capability exposing only `decr`
+
+The key proved Coq identifiers for this result are:
+
+- `entry_cap_hides_decr`
+- `exit_cap_hides_incr`
+- `entry_cap_two_calls_reach_two`
+- `exit_cap_two_calls_reach_minus_two`
+
+These live in `jessie_regress.v`. Their content is exactly what the names suggest:
+
+- `entry_cap_hides_decr` states that if we project the entry capability out of a fresh counter and then try to invoke `"decr"` through it, the result is `None`
+- `exit_cap_hides_incr` states the symmetric fact for the exit capability
+- `entry_cap_two_calls_reach_two` states that following the trace `["incr"; "incr"]` through the entry capability leaves the hidden counter cell at `2`
+- `exit_cap_two_calls_reach_minus_two` states that following the trace `["decr"; "decr"]` through the exit capability leaves the hidden counter cell at `-2`
+
+To read one of these statements, take `entry_cap_two_calls_reach_two` as the model:
+
+- `entry_cap_after_makeCounter` computes the capability produced from a fresh counter
+- the `match ... with Some (cap, σ) => ... | None => None end` wrapper just handles the possibility that capability allocation failed
+- `invoke_cap_trace σ cap ["incr"; "incr"]` means: starting from state `σ`, call the capability twice through its exposed `"incr"` method
+- `lookup_cell σ' 0%nat` reads the private counter cell from the resulting state
+- the whole theorem ends with `= Some 2`, which is the observable authority claim: with only the entry capability, this two-call client can drive the hidden state upward to `2`
+
+This is not yet the final, quantified Iris theorem one would ultimately want, but it is already a concrete mechanized authority-separation result: the two derived objects expose different powers over the same hidden cell, and those powers behave differently in the operational model.
+
+An important limitation must be stated explicitly: this is **not yet** a theorem about arbitrary program contexts in the full current core language. The reason is that the present core syntax still allows literal `VPrim` and `VLoc` values, so a hostile context can forge the hidden original decrement authority directly.
+
+This is not just a design worry; it is exhibited by concrete Coq counterexamples:
+
+- `forged_decr_breaks_entry_context_monotonicity`
+- `forged_incr_breaks_exit_context_monotonicity`
+
+These examples show that, in the current raw core language, a client handed only the entry capability can still write a forged literal `VPrim (counter_decr_name 0)` term and drive the original counter down, and symmetrically for the exit side with forged increment authority.
+
+So the strong theorem
+
+- any program context given only the entry capability cannot make the counter go down
+
+is currently false for the unrestricted core syntax. To obtain that theorem honestly, the next step is to remove or encapsulate forgeable locations and primitive names, or to prove the theorem over a restricted client-language fragment that excludes forged literals.
+
+The underlying case-study lemmas in `jessie_counter.v` make the same story visible one step earlier, before the regression wrappers:
+
+- `invoke_entry_cap_step`
+- `invoke_exit_cap_step`
+- `invoke_entry_cap_other_none`
+- `invoke_exit_cap_other_none`
+
+These say, respectively, that a well-formed entry capability increments, a well-formed exit capability decrements, and each one rejects the other authority.
+
+### Behavior Regression
+
+The development also proves that the canonical example program runs successfully:
+
+```js
+const counter = makeCounter();
+counter.incr();
+const n = counter.incr();
+assert(n === 2);
+```
+
+The key Coq identifiers here are:
+
+- `makeCounter_assert_works`
+- `makeCounter_final_cell_is_two`
+
+These prove that normalization of the corresponding core program reaches `CoreLit VUndefined`, which is the success result of the modeled `assert`, and that the final machine state contains private counter cell value `2`.
+
+The model supporting this result treats `makeCounter` as an endowed primitive that allocates:
+
+- a private mutable counter cell
+- a hardened returned object exposing `incr` and `decr`
+- dynamic method primitives whose behavior closes over that private cell
+
+These are proofs by computation in the operational model: the examples close by `reflexivity` or `vm_compute`, because the evaluator reduces the program to the claimed result inside Coq.
+
+### What Is Proved In The Iris Layer
+
+The Iris-facing layer does not yet contain a full weakest-precondition proof of the `makeCounter` specification. In particular, it does not yet prove a general client theorem such as:
+
+- any client given only the entry capability can never decrease the counter
+- any client given only the exit capability can never increase the counter
+
+What it does prove is a smaller, but still genuine, Iris-language result: atomic `base_step` facts for the split capabilities.
+
+The relevant Coq identifiers are:
+
+- `entry_cap_get_incr_atomic`
+- `entry_cap_get_decr_missing_atomic`
+- `entry_cap_call_incr_atomic`
+- `exit_cap_get_incr_missing_atomic`
+- `exit_cap_call_decr_atomic`
+
+These facts show that:
+
+- looking up `"incr"` on the entry capability steps to the corresponding primitive
+- looking up `"decr"` on the entry capability steps to `undefined`
+- invoking the exposed entry primitive performs the expected one-step counter increment
+- looking up `"incr"` on the exit capability steps to `undefined`
+- invoking the exposed exit primitive performs the expected one-step counter decrement
+
+So the current Iris result is at the operational-interface level: it establishes that the `ectx_language` / `base_step` layer for these capability actions is correct. It is not yet the larger separation-logic proof one would usually mean by a full "Iris proof of `makeCounter`".
+
+### Surface Syntax Connection
+
+The surface-level syntax story is also in place, but it is not the main theorem. The exact `makeCounter` example text parses in Coq, including:
+
+- `const` / `let`
+- `() => { ... }`
+- object literals with method fields
+- calls like `counter.incr()`
+- `count += 1` and `count -= 1`
+- `assert(n === 2)`
+
+There is then a regression showing that the parsed surface program compiles to the intended core term `makeCounter_assert_prog`. This is what connects the concrete example text to the mechanized operational result above.
+
+### Important Boundary
+
+Justin still excludes function literals and assignment in the shared Justin parser. There are explicit regressions asserting:
+
+- `parse_justin "() => undefined" = None`
+- `parse_justin "count += 1" = None`
+
+So `makeCounter` is not being presented as a general Justin program. It currently lives in the Jessie layer, where a small surface parser and case-study compiler connect the concrete example to the executable core semantics and the current Iris-facing step facts.
