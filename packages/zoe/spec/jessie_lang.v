@@ -285,3 +285,25 @@ Module Justin.
   Proof. reflexivity. Qed.
 
 End Justin.
+
+Module JessieSurface.
+  Import Justin.
+
+  Inductive expr :=
+  | Base (e : Justin.expr)
+  | Obj (fields : list (string * expr))
+  | Get (e : expr) (field : string)
+  | Call (f : expr) (args : list expr)
+  | Arrow0 (body : stmt)
+  | AssignAdd (x : string) (delta : Z)
+  | EqStrict (e1 e2 : expr)
+  | Harden (e : expr)
+  with stmt :=
+  | SConst (x : string) (rhs : expr)
+  | SLet (x : string) (rhs : expr)
+  | SReturn (e : expr)
+  | SExpr (e : expr)
+  | SBlock (ss : list stmt).
+
+  Definition program := list stmt.
+End JessieSurface.

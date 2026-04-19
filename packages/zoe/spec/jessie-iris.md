@@ -581,6 +581,8 @@ Current milestone:
   - `count += 1` and `count -= 1`
   - `assert(n === 2)`
 - the narrow surface parser compiles that source to the same `makeCounter_assert_prog` used by the executable regression
+- the Jessie surface AST is now a separate layer that embeds shared Justin expressions via `JessieSurface.Base`
+- Justin still excludes function literals and assignment; there are parser regressions asserting `parse_justin "() => undefined" = None` and `parse_justin "count += 1" = None`
 - `makeCounter` is currently modeled as an endowed primitive that allocates:
   - a private mutable counter cell
   - a hardened returned object with `incr` and `decr` methods

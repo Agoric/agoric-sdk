@@ -9,29 +9,7 @@ Open Scope Z_scope.
 Module JessieCounterSurface.
   Import Justin.
   Import JustinExec.
-
-  Inductive expr :=
-  | EVar (x : string)
-  | ENum (n : Z)
-  | EObject (fields : list (string * expr))
-  | EGet (e : expr) (field : string)
-  | ECall (f : expr) (args : list expr)
-  | EArrow0 (body : stmt)
-  | EAssignAdd (x : string) (delta : Z)
-  | EEqStrict (e1 e2 : expr)
-  | EHarden (e : expr)
-  with stmt :=
-  | SConst (x : string) (rhs : expr)
-  | SLet (x : string) (rhs : expr)
-  | SReturn (e : expr)
-  | SExpr (e : expr)
-  | SBlock (ss : list stmt).
-
-  Scheme expr_ind' := Induction for expr Sort Prop
-  with stmt_ind' := Induction for stmt Sort Prop.
-  Combined Scheme expr_stmt_ind from expr_ind', stmt_ind'.
-
-  Definition program := list stmt.
+  Import jessie_lang.JessieSurface.
 
   Definition ws := skip_ws_chars.
 
@@ -81,11 +59,7 @@ Module JessieCounterSurface.
     fun cs =>
       match parse_ident cs with
       | Some out => Some out
-      | None =>
-          match parse_string (ws cs) with
-          | Some out => Some out
-          | None => None
-          end
+      | None => parse_string (ws cs)
       end.
 
   Fixpoint parse_expr (fuel : nat) : parser expr
@@ -104,7 +78,7 @@ Module JessieCounterSurface.
                 match parse_expr fuel' rest2 with
                 | Some (e, rest3) =>
                     match ws rest3 with
-                    | ")"%char :: rest4 => Some (EHarden e, rest4)
+                    | ")"%char :: rest4 => Some (Harden e, rest4)
                     | _ => None
                     end
                 | None => None
@@ -113,7 +87,7 @@ Module JessieCounterSurface.
             end
         | None =>
             match parse_num cs with
-            | Some (n, rest) => Some (ENum n, rest)
+            | Some (n, rest) => Some (Base (Lit (VJson (JNum n))), rest)
             | None =>
                 match parse_ident cs with
                 | Some (x, rest1) =>
@@ -121,27 +95,27 @@ Module JessieCounterSurface.
                     match rest1 with
                     | "+"%char :: "="%char :: rest2 =>
                         match parse_num rest2 with
-                        | Some (n, rest3) => Some (EAssignAdd x n, rest3)
+                        | Some (n, rest3) => Some (AssignAdd x n, rest3)
                         | None => None
                         end
                     | "-"%char :: "="%char :: rest2 =>
                         match parse_num rest2 with
-                        | Some (n, rest3) => Some (EAssignAdd x (- n), rest3)
+                        | Some (n, rest3) => Some (AssignAdd x (- n), rest3)
                         | None => None
                         end
                     | "."%char :: restd =>
                         match parse_ident restd with
                         | Some (fld, restf) =>
-                            let e1 := EGet (EVar x) fld in
+                            let e1 := Get (Base (Var x)) fld in
                             match ws restf with
                             | "("%char :: resta =>
                                 match parse_args fuel' resta with
-                                | Some (args, resta') => Some (ECall e1 args, resta')
+                                | Some (args, resta') => Some (Call e1 args, resta')
                                 | None => None
                                 end
                             | "="%char :: "="%char :: "="%char :: resteq =>
                                 match parse_expr fuel' resteq with
-                                | Some (e2, rest2) => Some (EEqStrict e1 e2, rest2)
+                                | Some (e2, rest2) => Some (EqStrict e1 e2, rest2)
                                 | None => None
                                 end
                             | _ => Some (e1, restf)
@@ -150,15 +124,15 @@ Module JessieCounterSurface.
                         end
                     | "("%char :: resta =>
                         match parse_args fuel' resta with
-                        | Some (args, resta') => Some (ECall (EVar x) args, resta')
+                        | Some (args, resta') => Some (Call (Base (Var x)) args, resta')
                         | None => None
                         end
                     | "="%char :: "="%char :: "="%char :: resteq =>
                         match parse_expr fuel' resteq with
-                        | Some (e2, rest2) => Some (EEqStrict (EVar x) e2, rest2)
+                        | Some (e2, rest2) => Some (EqStrict (Base (Var x)) e2, rest2)
                         | None => None
                         end
-                    | _ => Some (EVar x, rest1)
+                    | _ => Some (Base (Var x), rest1)
                     end
                 | None =>
                     match cs with
@@ -166,10 +140,10 @@ Module JessieCounterSurface.
                         match ws rest_after_parens with
                         | "="%char :: ">"%char :: resta =>
                             match parse_expr fuel' resta with
-                            | Some (e, restb) => Some (EArrow0 (SReturn e), restb)
+                            | Some (e, restb) => Some (Arrow0 (SReturn e), restb)
                             | None =>
                                 match parse_stmt fuel' resta with
-                                | Some (s, restb) => Some (EArrow0 s, restb)
+                                | Some (s, restb) => Some (Arrow0 s, restb)
                                 | None => None
                                 end
                             end
@@ -177,7 +151,7 @@ Module JessieCounterSurface.
                         end
                     | "{"%char :: resto =>
                         match parse_obj_fields fuel' resto with
-                        | Some (flds, rest1) => Some (EObject flds, rest1)
+                        | Some (flds, rest1) => Some (Obj flds, rest1)
                         | None => None
                         end
                     | "("%char :: restp =>
@@ -374,20 +348,19 @@ assert(n === 2);
 
   Definition compile_surface_program (p : program) : option core_expr :=
     match p with
-    | [ SConst "makeCounter" (EArrow0 (SBlock [SLet "count" (ENum 0);
-         SReturn (EHarden (EObject [("incr", EArrow0 (SReturn (EAssignAdd "count" 1)));
-                                   ("decr", EArrow0 (SReturn (EAssignAdd "count" (-1))))]))]));
-        SConst "counter" (ECall (EVar "makeCounter") []);
-        SExpr (ECall (EGet (EVar "counter") "incr") []);
-        SConst "n" (ECall (EGet (EVar "counter") "incr") []);
-        SExpr (ECall (EVar "assert") [EEqStrict (EVar "n") (ENum 2)]) ] =>
+    | [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (VJson (JNum 0))));
+         SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
+                               ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]))]));
+        SConst "counter" (Call (Base (Var "makeCounter")) []);
+        SExpr (Call (Get (Base (Var "counter")) "incr") []);
+        SConst "n" (Call (Get (Base (Var "counter")) "incr") []);
+        SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (VJson (JNum 2))))]) ] =>
         Some makeCounter_assert_prog
     | _ => None
     end.
 
   Example parse_makeCounter_source_works :
-    parse_makeCounter_program <>
-      None.
+    parse_makeCounter_program <> None.
   Proof. vm_compute. discriminate. Qed.
 
   Example compile_makeCounter_source_works :

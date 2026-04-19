@@ -188,3 +188,11 @@ Proof. reflexivity. Qed.
 Example parse_concrete_bigint :
   parse_justin "9898n" = Some (Lit (VBigInt 9898)).
 Proof. reflexivity. Qed.
+
+Example parse_justin_rejects_arrow_literal :
+  parse_justin "() => undefined" = None.
+Proof. reflexivity. Qed.
+
+Example parse_justin_rejects_assignment :
+  parse_justin "count += 1" = None.
+Proof. reflexivity. Qed.
