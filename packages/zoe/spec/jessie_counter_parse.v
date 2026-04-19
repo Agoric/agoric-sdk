@@ -1,5 +1,5 @@
 From Coq Require Import Ascii List String ZArith.
-Require Import jessie_lang jessie_parse jessie_justin.
+Require Import jessie_lang jessie_parse jessie_parse_utils jessie_justin.
 
 Import ListNotations.
 Open Scope char_scope.
@@ -16,48 +16,9 @@ Module JessieCounterSurface.
   Definition kw (s : string) : parser unit :=
     fun cs => literal s (ws cs).
 
-  Definition parse_ident : parser string :=
-    fun cs =>
-      let cs := ws cs in
-      let fix ascii_is_alpha (c : ascii) : bool :=
-          let n := nat_of_ascii c in
-          ((65 <=? n) && (n <=? 90)) || ((97 <=? n) && (n <=? 122)) || Ascii.eqb c "_"%char in
-      let fix ascii_is_alnum (c : ascii) : bool :=
-          ascii_is_alpha c ||
-          let n := nat_of_ascii c in ((48 <=? n) && (n <=? 57)) in
-      let fix take_ident (acc : list ascii) (cs : list ascii) : string * list ascii :=
-          match cs with
-          | c :: rest =>
-              if ascii_is_alnum c then take_ident (c :: acc) rest
-              else (string_of_ascii_list (rev acc), cs)
-          | [] => (string_of_ascii_list (rev acc), [])
-          end in
-      match cs with
-      | c :: rest =>
-          if ascii_is_alpha c then
-            let '(x, rest') := take_ident [c] rest in Some (x, rest')
-          else None
-      | [] => None
-      end.
-
-  Definition parse_num : parser Z :=
-    fun cs =>
-      match ws cs with
-      | "-"%char :: rest =>
-          match parse_nat rest with
-          | Some (n, rest') => Some (- Z.of_nat n, rest')
-          | None => None
-          end
-      | rest =>
-          match parse_nat rest with
-          | Some (n, rest') => Some (Z.of_nat n, rest')
-          | None => None
-          end
-      end.
-
   Definition parse_field_name : parser string :=
     fun cs =>
-      match parse_ident cs with
+      match jessie_parse_utils.parse_ident cs with
       | Some out => Some out
       | None => parse_string (ws cs)
       end.
@@ -86,25 +47,25 @@ Module JessieCounterSurface.
             | _ => None
             end
         | None =>
-            match parse_num cs with
+            match parse_int cs with
             | Some (n, rest) => Some (Base (Lit (VJson (JNum n))), rest)
             | None =>
-                match parse_ident cs with
+                match jessie_parse_utils.parse_ident cs with
                 | Some (x, rest1) =>
                     let rest1 := ws rest1 in
                     match rest1 with
                     | "+"%char :: "="%char :: rest2 =>
-                        match parse_num rest2 with
+                        match parse_int rest2 with
                         | Some (n, rest3) => Some (AssignAdd x n, rest3)
                         | None => None
                         end
                     | "-"%char :: "="%char :: rest2 =>
-                        match parse_num rest2 with
+                        match parse_int rest2 with
                         | Some (n, rest3) => Some (AssignAdd x (- n), rest3)
                         | None => None
                         end
                     | "."%char :: restd =>
-                        match parse_ident restd with
+                        match jessie_parse_utils.parse_ident restd with
                         | Some (fld, restf) =>
                             let e1 := Get (Base (Var x)) fld in
                             match ws restf with
@@ -180,7 +141,7 @@ Module JessieCounterSurface.
         | _ =>
             match kw "const" cs with
             | Some (_, rest1) =>
-                match parse_ident rest1 with
+                match jessie_parse_utils.parse_ident rest1 with
                 | Some (x, rest2) =>
                     match ws rest2 with
                     | "="%char :: rest3 =>
@@ -199,7 +160,7 @@ Module JessieCounterSurface.
             | None =>
                 match kw "let" cs with
                 | Some (_, rest1) =>
-                    match parse_ident rest1 with
+                    match jessie_parse_utils.parse_ident rest1 with
                     | Some (x, rest2) =>
                         match ws rest2 with
                         | "="%char :: rest3 =>

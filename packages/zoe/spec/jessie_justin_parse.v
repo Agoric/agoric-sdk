@@ -1,5 +1,5 @@
 From Coq Require Import Ascii List String ZArith.
-Require Import jessie_lang jessie_parse.
+Require Import jessie_lang jessie_parse jessie_parse_utils.
 
 Import ListNotations.
 Open Scope char_scope.
@@ -7,36 +7,6 @@ Open Scope string_scope.
 Open Scope Z_scope.
 
 Import Justin.
-
-Definition ascii_is_alpha (c : ascii) : bool :=
-  let n := nat_of_ascii c in
-  ((65 <=? n) && (n <=? 90)) || ((97 <=? n) && (n <=? 122)) || Ascii.eqb c "_"%char.
-
-Definition ascii_is_alnum (c : ascii) : bool :=
-  ascii_is_alpha c ||
-  let n := nat_of_ascii c in
-  ((48 <=? n) && (n <=? 57)).
-
-Fixpoint take_ident_chars (acc : list ascii) (cs : list ascii)
-    : string * list ascii :=
-  match cs with
-  | c :: rest =>
-      if ascii_is_alnum c then take_ident_chars (c :: acc) rest
-      else (string_of_ascii_list (rev acc), cs)
-  | [] => (string_of_ascii_list (rev acc), [])
-  end.
-
-Definition parse_ident : parser string :=
-  fun cs =>
-    let cs := skip_ws_chars cs in
-    match cs with
-    | c :: rest =>
-        if ascii_is_alpha c then
-          let '(name, rest') := take_ident_chars [c] rest in
-          Some (name, rest')
-        else None
-    | [] => None
-    end.
 
 Definition parse_jstring_lit : parser expr :=
   fun cs =>
@@ -47,8 +17,8 @@ Definition parse_jstring_lit : parser expr :=
 
 Definition parse_jnumber_lit : parser expr :=
   fun cs =>
-    match parse_nat (skip_ws_chars cs) with
-    | Some (n, rest) => Some (Lit (VJson (JNum (Z.of_nat n))), rest)
+    match parse_int cs with
+    | Some (n, rest) => Some (Lit (VJson (JNum n)), rest)
     | None => None
     end.
 
