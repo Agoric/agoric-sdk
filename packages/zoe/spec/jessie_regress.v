@@ -1,6 +1,6 @@
 From Coq Require Import List String ZArith.
 Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter
-  jessie_counter_spec jessie_module jessie_iris_lang jessie_counter_iris
+  jessie_counter_spec jessie_counter_reach jessie_module jessie_iris_lang jessie_counter_iris
   jessie_counter_parse.
 
 Import ListNotations.
@@ -8,6 +8,7 @@ Import Justin.
 Import JustinExec.
 Import JessieCounterCase.
 Import JessieCounterSpec.
+Import JessieCounterReach.
 Import JessieModule.
 Import JustinIris.
 Import JessieCounterIris.
@@ -160,6 +161,20 @@ Example exit_cap_three_calls_stay_nonpositive :
 Proof.
   exact (exit_cap_trace_nonpositive ["decr"; "decr"; "decr"] _ eq_refl).
 Qed.
+
+Example entry_cap_root_reaches_only_incr_regression :
+  match entry_cap_after_makeCounter with
+  | Some (cap, σ) => reaches_dyn σ cap 0%nat /\ ~ reaches_dyn σ cap 1%nat
+  | None => False
+  end.
+Proof. exact entry_cap_root_reaches_only_incr. Qed.
+
+Example exit_cap_root_reaches_only_decr_regression :
+  match exit_cap_after_makeCounter with
+  | Some (cap, σ) => reaches_dyn σ cap 1%nat /\ ~ reaches_dyn σ cap 0%nat
+  | None => False
+  end.
+Proof. exact exit_cap_root_reaches_only_decr. Qed.
 
 Example module_end_to_end :
   eval_module 6

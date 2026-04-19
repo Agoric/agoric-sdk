@@ -627,6 +627,15 @@ The older forgeability counterexamples remain historically useful:
 
 Those show why the unrestricted raw-core theorem was false before the public/client boundary was introduced. The public boundary now lives in `jessie_public.v`, and the next proof step would be to connect that public syntax to the trace theorem above.
 
+There is now also an explicit reachability layer in `jessie_counter_reach.v`:
+
+- `reaches_val` and `reaches_dyn` formalize which values and dynamic primitive references are reachable from a root capability through object fields
+- `entry_cap_reaches_only_entry_dyn` proves that anything dynamically reachable from the entry capability is increment authority
+- `exit_cap_reaches_only_exit_dyn` proves the symmetric decrement fact for the exit capability
+- `entry_cap_root_reaches_only_incr` and `exit_cap_root_reaches_only_decr` are concrete fresh-counter corollaries
+
+This is not yet the full client-context bridge theorem, but it isolates the exact authority-reachability claim that such a theorem will need.
+
 The underlying case-study lemmas in `jessie_counter.v` make the same story visible one step earlier, before the regression wrappers:
 
 - `invoke_entry_cap_step`
