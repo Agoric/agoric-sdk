@@ -1,5 +1,6 @@
+(* Executable Justin core semantics and regressions. *)
 From Coq Require Import Bool Lia List String ZArith.
-Require Import jessie_lang.
+Require Import jessie_lang jessie_lib.
 
 Import ListNotations.
 Open Scope string_scope.
@@ -7,6 +8,7 @@ Open Scope Z_scope.
 
 Module JustinExec.
   Import Justin.
+  Import JessieLib.
 
   Record heap_obj := HeapObj {
     obj_fields : list (string * val)
@@ -26,14 +28,11 @@ Module JustinExec.
     st_dyn_prims : list (nat * dyn_prim)
   }.
 
+  Definition builtin_env : list (string * val) :=
+    map (fun '(x, p) => (x, VPrim (PrimBuiltin p))) builtin_prim_names.
+
   Definition empty_state : state :=
-    State 0%nat 0%nat [] [] [
-      ("freeze", VPrim (PrimBuiltin PrimFreeze));
-      ("harden", VPrim (PrimBuiltin PrimHarden));
-      ("assert", VPrim (PrimBuiltin PrimAssert));
-      ("id", VPrim (PrimBuiltin PrimId));
-      ("fail", VPrim (PrimBuiltin PrimFail))
-    ] [] [].
+    State 0%nat 0%nat [] [] builtin_env [] [].
 
   Fixpoint lookup_assoc {A : Type} (x : string) (xs : list (string * A)) : option A :=
     match xs with

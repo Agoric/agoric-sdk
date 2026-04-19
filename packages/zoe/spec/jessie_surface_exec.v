@@ -1,5 +1,6 @@
+(* Executable surface-level evaluator and compiler path. *)
 From Coq Require Import Bool List String ZArith.
-Require Import jessie_lang jessie_justin.
+Require Import jessie_lang jessie_lib jessie_justin.
 
 Import ListNotations.
 Open Scope string_scope.
@@ -7,6 +8,7 @@ Open Scope Z_scope.
 
 Module JessieSurfaceExec.
   Import Justin.
+  Import JessieLib.
   Import JustinExec.
   Import JessieSurface.
 
@@ -42,12 +44,10 @@ Module JessieSurfaceExec.
 
   Definition empty_state : state := State 0%nat 0%nat [] [] [].
 
-  Definition initial_env : env :=
-    [("assert", BVal (VPrim PrimAssert));
-     ("harden", BVal (VPrim PrimHarden));
-     ("freeze", BVal (VPrim PrimFreeze));
-     ("id", BVal (VPrim PrimId));
-     ("fail", BVal (VPrim PrimFail))].
+  Definition builtin_env : env :=
+    map (fun '(x, p) => (x, BVal (VPrim p))) builtin_prim_names.
+
+  Definition initial_env : env := builtin_env.
 
   Fixpoint lookup_assoc {A : Type} (x : string) (xs : list (string * A)) : option A :=
     match xs with

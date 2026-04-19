@@ -1,3 +1,4 @@
+(* Parsed makeCounter fixture and compilation regression. *)
 From Coq Require Import Ascii List String ZArith.
 Require Import jessie_lang jessie_parse jessie_parse_jessie jessie_surface_exec.
 
@@ -30,7 +31,7 @@ assert(n === 2);
   Definition parse_makeCounter_program : option program :=
     parse_program makeCounter_source.
 
-  Definition makeCounter_surface_prog : program :=
+  Definition makeCounter_surface_shape : program :=
     [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (LJson (JNum 0))));
          SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
                                ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]))]));
@@ -39,17 +40,12 @@ assert(n === 2);
       SConst "n" (Call (Get (Base (Var "counter")) "incr") []);
       SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (LJson (JNum 2))))]) ].
 
+  Definition makeCounter_surface_prog : program :=
+    makeCounter_surface_shape.
+
   Definition compile_surface_program (p : program) : option program :=
     match p with
-    | [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (LJson (JNum 0))));
-         SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
-                               ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]))]));
-        SConst "counter" (Call (Base (Var "makeCounter")) []);
-        SExpr (Call (Get (Base (Var "counter")) "incr") []);
-        SConst "n" (Call (Get (Base (Var "counter")) "incr") []);
-        SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (LJson (JNum 2))))]) ] =>
-        Some makeCounter_surface_prog
-    | _ => None
+    | makeCounter_surface_shape => Some makeCounter_surface_prog
     end.
 
   Definition run_surface_program (fuel : nat) (p : program) :=
@@ -82,19 +78,9 @@ assert(n === 2);
     | None => (VLit LUndefined, empty_state)
     end) =
       State 1%nat 1%nat
-        [(0%nat, HeapObj [("incr", VClosure [("count", BCell 0%nat);
-                                             ("assert", BVal (VPrim PrimAssert));
-                                             ("harden", BVal (VPrim PrimHarden));
-                                             ("freeze", BVal (VPrim PrimFreeze));
-                                             ("id", BVal (VPrim PrimId));
-                                             ("fail", BVal (VPrim PrimFail))]
+        [(0%nat, HeapObj [("incr", VClosure (("count", BCell 0%nat) :: builtin_env)
                                    (SReturn (AssignAdd "count" 1)));
-                           ("decr", VClosure [("count", BCell 0%nat);
-                                             ("assert", BVal (VPrim PrimAssert));
-                                             ("harden", BVal (VPrim PrimHarden));
-                                             ("freeze", BVal (VPrim PrimFreeze));
-                                             ("id", BVal (VPrim PrimId));
-                                             ("fail", BVal (VPrim PrimFail))]
+                           ("decr", VClosure (("count", BCell 0%nat) :: builtin_env)
                                    (SReturn (AssignAdd "count" (-1))))])]
         [0%nat]
         [(0%nat, VLit (LJson (JNum 2)))].
