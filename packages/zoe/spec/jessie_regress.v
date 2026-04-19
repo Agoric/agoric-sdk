@@ -36,14 +36,14 @@ Proof.
 Qed.
 
 Example exec_hardened_id :
-  let σ1 := State 1%nat [(0%nat, HeapObj [])] [0%nat] (st_env empty_state) in
+  let σ1 := State 1%nat [(0%nat, HeapObj [])] [0%nat] (st_env empty_state) [] [] in
   apply_prim σ1 "id" [VLoc 0%nat] = (CoreLit (VLoc 0%nat), σ1).
 Proof. reflexivity. Qed.
 
 Example shallow_freeze_vs_harden_regression :
   let σ0 := State 2%nat
     [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
-    [] (st_env empty_state) in
+    [] (st_env empty_state) [] [] in
   apply_prim σ0 "freeze" [VLoc 0%nat] <>
   apply_prim σ0 "harden" [VLoc 0%nat].
 Proof. discriminate. Qed.
@@ -51,6 +51,29 @@ Proof. discriminate. Qed.
 Example typeof_null_regression :
   run1 (CoreTypeOf (CoreLit (VJson JNull))) =
     Some (CoreLit (VJson (JStr "object")), empty_state).
+Proof. reflexivity. Qed.
+
+Definition makeCounter_assert_prog : core_expr :=
+  CoreLetIn "counter" (CoreApp (CoreVar "makeCounter") [])
+    (CoreLetIn "_" (CoreApp (CoreGet (CoreVar "counter") "incr") [])
+      (CoreLetIn "n" (CoreApp (CoreGet (CoreVar "counter") "incr") [])
+        (CoreApp (CoreVar "assert")
+          [CoreBinop EqStrictOp (CoreVar "n") (CoreLit (VJson (JNum 2)))]))).
+
+Example makeCounter_assert_works :
+  fst (normalize 20 empty_state makeCounter_assert_prog) = CoreLit VUndefined.
+Proof. reflexivity. Qed.
+
+Example makeCounter_final_cell_is_two :
+  snd (normalize 20 empty_state makeCounter_assert_prog) =
+    State 2%nat
+      [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
+                        ("decr", VPrim "counter.decr.z")])]
+      [1%nat]
+      (st_env empty_state)
+      [(0%nat, 2)]
+      [("counter.incr.z", CounterIncr 0%nat);
+       ("counter.decr.z", CounterDecr 0%nat)].
 Proof. reflexivity. Qed.
 
 Example module_end_to_end :

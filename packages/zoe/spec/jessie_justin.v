@@ -15,6 +15,8 @@ Module JustinExec.
   Inductive prim_name :=
   | PrimFreeze
   | PrimHarden
+  | PrimMakeCounter
+  | PrimAssert
   | PrimId
   | PrimFail.
 
@@ -23,20 +25,28 @@ Module JustinExec.
     prim_arity : nat
   }.
 
+  Inductive dyn_prim :=
+  | CounterIncr (cell : loc)
+  | CounterDecr (cell : loc).
+
   Record state := State {
     st_next_loc : loc;
     st_store : list (loc * heap_obj);
     st_frozen : list loc;
-    st_env : list (string * val)
+    st_env : list (string * val);
+    st_cells : list (loc * Z);
+    st_dyn_prims : list (string * dyn_prim)
   }.
 
   Definition empty_state : state :=
     State 0%nat [] [] [
       ("freeze", VPrim "freeze");
       ("harden", VPrim "harden");
+      ("makeCounter", VPrim "makeCounter");
+      ("assert", VPrim "assert");
       ("id", VPrim "id");
       ("fail", VPrim "fail")
-    ].
+    ] [] [].
 
   Fixpoint lookup_assoc {A : Type} (x : string) (xs : list (string * A)) : option A :=
     match xs with
@@ -54,6 +64,41 @@ Module JustinExec.
   Definition lookup_obj (σ : state) (l : loc) : option heap_obj :=
     lookup_obj_list (st_store σ) l.
 
+  Fixpoint lookup_cell_list (cells : list (loc * Z)) (l : loc) : option Z :=
+    match cells with
+    | [] => None
+    | (l', n) :: rest =>
+        if Nat.eqb l l' then Some n else lookup_cell_list rest l
+    end.
+
+  Definition lookup_cell (σ : state) (l : loc) : option Z :=
+    lookup_cell_list (st_cells σ) l.
+
+  Fixpoint store_cell_list (cells : list (loc * Z)) (l : loc) (n : Z)
+    : list (loc * Z) :=
+    match cells with
+    | [] => [(l, n)]
+    | (l', n') :: rest =>
+        if Nat.eqb l l' then (l, n) :: rest
+        else (l', n') :: store_cell_list rest l n
+    end.
+
+  Definition store_cell (σ : state) (l : loc) (n : Z) : state :=
+    State (st_next_loc σ) (st_store σ) (st_frozen σ) (st_env σ)
+      (store_cell_list (st_cells σ) l n) (st_dyn_prims σ).
+
+  Fixpoint nat_tag (n : nat) : string :=
+    match n with
+    | O => "z"
+    | S n' => "s" ++ nat_tag n'
+    end.
+
+  Definition counter_incr_name (l : loc) : string :=
+    "counter.incr." ++ nat_tag l.
+
+  Definition counter_decr_name (l : loc) : string :=
+    "counter.decr." ++ nat_tag l.
+
   Fixpoint lookup_field (flds : list (string * val)) (k : string) : option val :=
     match flds with
     | [] => None
@@ -62,7 +107,8 @@ Module JustinExec.
 
   Definition mark_frozen (σ : state) (l : loc) : state :=
     if existsb (Nat.eqb l) (st_frozen σ) then σ
-    else State (st_next_loc σ) (st_store σ) (l :: st_frozen σ) (st_env σ).
+    else State (st_next_loc σ) (st_store σ) (l :: st_frozen σ) (st_env σ)
+      (st_cells σ) (st_dyn_prims σ).
 
   Fixpoint hardenedb (fuel : nat) (σ : state) (v : val) : bool :=
     match fuel with
@@ -177,11 +223,40 @@ Module JustinExec.
     let l := st_next_loc σ in
     let obj := HeapObj flds in
     (VLoc l,
-      State (S l) ((l, obj) :: st_store σ) (st_frozen σ) (st_env σ)).
+      State (S l) ((l, obj) :: st_store σ) (st_frozen σ) (st_env σ)
+        (st_cells σ) (st_dyn_prims σ)).
+
+  Definition alloc_counter (σ : state) : val * state :=
+    let cell := st_next_loc σ in
+    let obj := S cell in
+    let incr := counter_incr_name cell in
+    let decr := counter_decr_name cell in
+    let rec := HeapObj [("incr", VPrim incr); ("decr", VPrim decr)] in
+    let σ' := State (S obj)
+      ((obj, rec) :: st_store σ)
+      (obj :: st_frozen σ)
+      (st_env σ)
+      ((cell, 0) :: st_cells σ)
+      ((incr, CounterIncr cell) :: (decr, CounterDecr cell) :: st_dyn_prims σ)
+    in
+    (VLoc obj, σ').
 
   Definition apply_prim (σ : state) (name : string) (args : list val)
     : core_expr * state :=
-    if String.eqb name "id" then
+    if String.eqb name "makeCounter" then
+      match args with
+      | [] =>
+          let '(v, σ') := alloc_counter σ in
+          (CoreLit v, σ')
+      | _ => (CoreBzzt, σ)
+      end
+    else if String.eqb name "assert" then
+      match args with
+      | [VJson (JBool true)] => (CoreLit VUndefined, σ)
+      | [VJson (JBool false)] => (CoreBzzt, σ)
+      | _ => (CoreBzzt, σ)
+      end
+    else if String.eqb name "id" then
       match args with
       | [v] =>
           if hardenedb 20 σ v then (CoreLit v, σ) else (CoreBzzt, σ)
@@ -204,7 +279,23 @@ Module JustinExec.
       | _ => (CoreBzzt, σ)
       end
     else
-      (CoreBzzt, σ).
+      match lookup_assoc name (st_dyn_prims σ) with
+      | Some (CounterIncr cell) =>
+          match args, lookup_cell σ cell with
+          | [], Some n =>
+              let n' := n + 1 in
+              (CoreLit (VJson (JNum n')), store_cell σ cell n')
+          | _, _ => (CoreBzzt, σ)
+          end
+      | Some (CounterDecr cell) =>
+          match args, lookup_cell σ cell with
+          | [], Some n =>
+              let n' := n - 1 in
+              (CoreLit (VJson (JNum n')), store_cell σ cell n')
+          | _, _ => (CoreBzzt, σ)
+          end
+      | None => (CoreBzzt, σ)
+      end.
 
   Fixpoint step (σ : state) (e : core_expr) : option (core_expr * state) :=
     match e with
@@ -395,47 +486,82 @@ Module JustinExec.
       (CoreAllocObj [])
       (CoreAllocObj [])) =
       Some (CoreBinop EqStrictOp (CoreLit (VLoc 0%nat)) (CoreAllocObj []),
-        State 1%nat [(0%nat, HeapObj [])] [] (st_env empty_state)).
+        State 1%nat [(0%nat, HeapObj [])] [] (st_env empty_state)
+          (st_cells empty_state) (st_dyn_prims empty_state)).
   Proof. reflexivity. Qed.
 
   Example freeze_shallow_marks_only_root :
     let σ1 := State 2%nat
       [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
-      [] (st_env empty_state) in
+      [] (st_env empty_state) [] [] in
     apply_prim σ1 "freeze" [VLoc 0%nat] =
       (CoreLit (VLoc 0%nat),
         State 2%nat
           [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
-          [0%nat] (st_env empty_state)).
+          [0%nat] (st_env empty_state) [] []).
   Proof. reflexivity. Qed.
 
   Example harden_deep_marks_reachable_objects :
     let σ1 := State 2%nat
       [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
-      [] (st_env empty_state) in
+      [] (st_env empty_state) [] [] in
     apply_prim σ1 "harden" [VLoc 0%nat] =
       (CoreLit (VLoc 0%nat),
         State 2%nat
           [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
-          [1%nat; 0%nat] (st_env empty_state)).
+          [1%nat; 0%nat] (st_env empty_state) [] []).
   Proof. reflexivity. Qed.
 
   Example id_rejects_shallow_frozen_nested_object :
     let σ1 := State 2%nat
       [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
-      [0%nat] (st_env empty_state) in
+      [0%nat] (st_env empty_state) [] [] in
     apply_prim σ1 "id" [VLoc 0%nat] = (CoreBzzt, σ1).
   Proof. reflexivity. Qed.
 
   Example id_accepts_hardened_nested_object :
     let σ1 := State 2%nat
       [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
-      [1%nat; 0%nat] (st_env empty_state) in
+      [1%nat; 0%nat] (st_env empty_state) [] [] in
     apply_prim σ1 "id" [VLoc 0%nat] = (CoreLit (VLoc 0%nat), σ1).
   Proof. reflexivity. Qed.
 
   Example id_rejects_unhardened_object :
-    let σ1 := State 1%nat [(0%nat, HeapObj [])] [] (st_env empty_state) in
+    let σ1 := State 1%nat [(0%nat, HeapObj [])] [] (st_env empty_state) [] [] in
     apply_prim σ1 "id" [VLoc 0%nat] = (CoreBzzt, σ1).
+  Proof. reflexivity. Qed.
+
+  Example makeCounter_allocates_hardened_object_with_methods :
+    apply_prim empty_state "makeCounter" [] =
+      (CoreLit (VLoc 1%nat),
+        State 2%nat
+          [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
+                            ("decr", VPrim "counter.decr.z")])]
+          [1%nat]
+          (st_env empty_state)
+          [(0%nat, 0)]
+          [("counter.incr.z", CounterIncr 0%nat);
+           ("counter.decr.z", CounterDecr 0%nat)]).
+  Proof. reflexivity. Qed.
+
+  Example counter_methods_update_private_cell :
+    let σ1 := State 2%nat
+      [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
+                        ("decr", VPrim "counter.decr.z")])]
+      [1%nat]
+      (st_env empty_state)
+      [(0%nat, 0)]
+      [("counter.incr.z", CounterIncr 0%nat);
+       ("counter.decr.z", CounterDecr 0%nat)] in
+    apply_prim σ1 "counter.incr.z" [] =
+      (CoreLit (VJson (JNum 1)),
+        State 2%nat
+          [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
+                            ("decr", VPrim "counter.decr.z")])]
+          [1%nat]
+          (st_env empty_state)
+          [(0%nat, 1)]
+          [("counter.incr.z", CounterIncr 0%nat);
+           ("counter.decr.z", CounterDecr 0%nat)]).
   Proof. reflexivity. Qed.
 End JustinExec.

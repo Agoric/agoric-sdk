@@ -569,3 +569,12 @@ The goal is to extend the Jessie/Iris model until it supports this example direc
   no matter what `entryGuard` does, the counter can only go up
 - passing `{ decr: counter.decr }` to an `exitGuard` supports the theorem:
   no matter what `exitGuard` does, the counter can only go down
+
+Current milestone:
+
+- `makeCounter` now works up to `assert(n === 2)` in the executable core model
+- `makeCounter` is currently modeled as an endowed primitive that allocates:
+  - a private mutable counter cell
+  - a hardened returned object with `incr` and `decr` methods
+  - dynamic method primitives that close over the private cell
+- authority-splitting via passing only `{ incr: counter.incr }` or `{ decr: counter.decr }` is still pending
