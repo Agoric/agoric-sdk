@@ -516,3 +516,56 @@ DONE: typeof null === 'object' with regression test
 - Added `VBigInt` to the Justin value space, `TyBigInt` to refinement/classification, and `typeof ... = "bigint"`.
 - Added tiny Justin concrete syntax for bigint literals like `9898n`.
 - Changed `typeof null` to return `"object"` to match JavaScript/Jessie expectations, and added regression tests in the executable, Iris, and bundle layers.
+- Aligned naming with semantics:
+  - `freeze` is now shallow
+  - `harden` is now deep
+- Added regression tests distinguishing shallow `freeze` from deep `harden`.
+
+## makeCounter Goal
+
+Target a mechanized example of the form:
+
+```js
+const makeCounter = () => {
+  let count = 0;
+  return harden({
+    incr: () => (count += 1),
+    decr: () => (count -= 1),
+  });
+};
+
+const counter = makeCounter();
+counter.incr();
+const n = counter.incr();
+assert(n === 2);
+```
+
+and authority-splitting uses of the form:
+
+```js
+entryGuard.use({ incr: counter.incr });
+```
+
+with the theorem:
+
+`no matter what entryGuard does, the counter can only go up`
+
+and:
+
+```js
+exitGuard.use({ decr: counter.decr });
+```
+
+with the theorem:
+
+`no matter what exitGuard does, the counter can only go down`
+
+The goal is to extend the Jessie/Iris model until it supports this example directly, with:
+
+- `makeCounter` creates private state
+- a returned hardened object exposes `incr` and `decr` methods
+- repeated calls satisfy an `assert(n === 2)` style regression
+- passing `{ incr: counter.incr }` to an `entryGuard` supports the theorem:
+  no matter what `entryGuard` does, the counter can only go up
+- passing `{ decr: counter.decr }` to an `exitGuard` supports the theorem:
+  no matter what `exitGuard` does, the counter can only go down

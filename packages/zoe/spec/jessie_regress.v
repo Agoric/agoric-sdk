@@ -40,6 +40,14 @@ Example exec_hardened_id :
   apply_prim σ1 "id" [VLoc 0%nat] = (CoreLit (VLoc 0%nat), σ1).
 Proof. reflexivity. Qed.
 
+Example shallow_freeze_vs_harden_regression :
+  let σ0 := State 2%nat
+    [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
+    [] (st_env empty_state) in
+  apply_prim σ0 "freeze" [VLoc 0%nat] <>
+  apply_prim σ0 "harden" [VLoc 0%nat].
+Proof. discriminate. Qed.
+
 Example typeof_null_regression :
   run1 (CoreTypeOf (CoreLit (VJson JNull))) =
     Some (CoreLit (VJson (JStr "object")), empty_state).

@@ -273,7 +273,7 @@ Module Justin.
   Proof. reflexivity. Qed.
 
   Example classify_prim :
-    classify_val (VPrim "freeze") = TyPrim.
+    classify_val (VPrim "harden") = TyPrim.
   Proof. reflexivity. Qed.
 
   Example typeof_null_is_object :

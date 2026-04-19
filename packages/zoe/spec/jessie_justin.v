@@ -14,6 +14,7 @@ Module JustinExec.
 
   Inductive prim_name :=
   | PrimFreeze
+  | PrimHarden
   | PrimId
   | PrimFail.
 
@@ -30,7 +31,12 @@ Module JustinExec.
   }.
 
   Definition empty_state : state :=
-    State 0%nat [] [] [("freeze", VPrim "freeze"); ("id", VPrim "id"); ("fail", VPrim "fail")].
+    State 0%nat [] [] [
+      ("freeze", VPrim "freeze");
+      ("harden", VPrim "harden");
+      ("id", VPrim "id");
+      ("fail", VPrim "fail")
+    ].
 
   Fixpoint lookup_assoc {A : Type} (x : string) (xs : list (string * A)) : option A :=
     match xs with
@@ -92,6 +98,12 @@ Module JustinExec.
             end
         | _ => σ
         end
+    end.
+
+  Definition freeze_shallow (σ : state) (v : val) : state :=
+    match v with
+    | VLoc l => mark_frozen σ l
+    | _ => σ
     end.
 
   Definition strict_eqb (v1 v2 : val) : bool :=
@@ -178,6 +190,13 @@ Module JustinExec.
     else if String.eqb name "fail" then
       (CoreBzzt, σ)
     else if String.eqb name "freeze" then
+      match args with
+      | [v] =>
+          let σ' := freeze_shallow σ v in
+          (CoreLit v, σ')
+      | _ => (CoreBzzt, σ)
+      end
+    else if String.eqb name "harden" then
       match args with
       | [v] =>
           let σ' := freeze_deep 20 σ v in
@@ -379,11 +398,40 @@ Module JustinExec.
         State 1%nat [(0%nat, HeapObj [])] [] (st_env empty_state)).
   Proof. reflexivity. Qed.
 
-  Example freeze_marks_object_hardened :
-    let σ1 := State 1%nat [(0%nat, HeapObj [("x", VJson (JNum 3))])] [] (st_env empty_state) in
+  Example freeze_shallow_marks_only_root :
+    let σ1 := State 2%nat
+      [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
+      [] (st_env empty_state) in
     apply_prim σ1 "freeze" [VLoc 0%nat] =
       (CoreLit (VLoc 0%nat),
-        State 1%nat [(0%nat, HeapObj [("x", VJson (JNum 3))])] [0%nat] (st_env empty_state)).
+        State 2%nat
+          [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
+          [0%nat] (st_env empty_state)).
+  Proof. reflexivity. Qed.
+
+  Example harden_deep_marks_reachable_objects :
+    let σ1 := State 2%nat
+      [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
+      [] (st_env empty_state) in
+    apply_prim σ1 "harden" [VLoc 0%nat] =
+      (CoreLit (VLoc 0%nat),
+        State 2%nat
+          [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
+          [1%nat; 0%nat] (st_env empty_state)).
+  Proof. reflexivity. Qed.
+
+  Example id_rejects_shallow_frozen_nested_object :
+    let σ1 := State 2%nat
+      [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
+      [0%nat] (st_env empty_state) in
+    apply_prim σ1 "id" [VLoc 0%nat] = (CoreBzzt, σ1).
+  Proof. reflexivity. Qed.
+
+  Example id_accepts_hardened_nested_object :
+    let σ1 := State 2%nat
+      [(1%nat, HeapObj []); (0%nat, HeapObj [("child", VLoc 1%nat)])]
+      [1%nat; 0%nat] (st_env empty_state) in
+    apply_prim σ1 "id" [VLoc 0%nat] = (CoreLit (VLoc 0%nat), σ1).
   Proof. reflexivity. Qed.
 
   Example id_rejects_unhardened_object :
