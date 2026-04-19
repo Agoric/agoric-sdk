@@ -64,6 +64,7 @@ Module JustinExec.
     | S fuel' =>
         match v with
         | VJson _ => true
+        | VBigInt _ => true
         | VUndefined => true
         | VPrim _ => true
         | VLoc l =>
@@ -96,6 +97,7 @@ Module JustinExec.
   Definition strict_eqb (v1 v2 : val) : bool :=
     match v1, v2 with
     | VUndefined, VUndefined => true
+    | VBigInt n1, VBigInt n2 => Z.eqb n1 n2
     | VPrim x, VPrim y => String.eqb x y
     | VLoc l1, VLoc l2 => Nat.eqb l1 l2
     | VJson JNull, VJson JNull => true
@@ -108,6 +110,7 @@ Module JustinExec.
   Definition truthy (v : val) : bool :=
     match v with
     | VUndefined => false
+    | VBigInt n => negb (Z.eqb n 0)
     | VJson JNull => false
     | VJson (JBool b) => b
     | VJson (JNum n) => negb (Z.eqb n 0)
@@ -350,6 +353,16 @@ Module JustinExec.
   Example typeof_undefined_steps :
     run1 (CoreTypeOf (CoreLit VUndefined)) =
       Some (CoreLit (VJson (JStr "undefined")), empty_state).
+  Proof. reflexivity. Qed.
+
+  Example typeof_null_is_object :
+    run1 (CoreTypeOf (CoreLit (VJson JNull))) =
+      Some (CoreLit (VJson (JStr "object")), empty_state).
+  Proof. reflexivity. Qed.
+
+  Example typeof_bigint_steps :
+    run1 (CoreTypeOf (CoreLit (VBigInt 12))) =
+      Some (CoreLit (VJson (JStr "bigint")), empty_state).
   Proof. reflexivity. Qed.
 
   Example cond_string_truthy :

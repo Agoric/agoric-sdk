@@ -21,6 +21,10 @@ Example justin_surface_smoke :
       (Lit VUndefined)).
 Proof. reflexivity. Qed.
 
+Example bigint_surface_smoke :
+  parse_justin "9898n" = Some (Lit (VBigInt 9898)).
+Proof. reflexivity. Qed.
+
 Example elaboration_refines_add :
   elaborates [("x", TyString)]
     (Add (Var "x") (Lit (VJson (JStr "abc"))))
@@ -34,6 +38,11 @@ Qed.
 Example exec_hardened_id :
   let σ1 := State 1%nat [(0%nat, HeapObj [])] [0%nat] (st_env empty_state) in
   apply_prim σ1 "id" [VLoc 0%nat] = (CoreLit (VLoc 0%nat), σ1).
+Proof. reflexivity. Qed.
+
+Example typeof_null_regression :
+  run1 (CoreTypeOf (CoreLit (VJson JNull))) =
+    Some (CoreLit (VJson (JStr "object")), empty_state).
 Proof. reflexivity. Qed.
 
 Example module_end_to_end :

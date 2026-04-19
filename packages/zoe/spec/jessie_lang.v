@@ -132,6 +132,7 @@ Module Justin.
   | TyNull
   | TyBool
   | TyNumber
+  | TyBigInt
   | TyString
   | TyObject
   | TyPrim
@@ -141,6 +142,7 @@ Module Justin.
 
   Inductive val :=
   | VJson (v : jval)
+  | VBigInt (n : Z)
   | VUndefined
   | VLoc (l : loc)
   | VPrim (name : string).
@@ -187,7 +189,7 @@ Module Justin.
 
   Definition typeof_json (v : jval) : string :=
     match v with
-    | JNull => "null"
+    | JNull => "object"
     | JBool _ => "boolean"
     | JNum _ => "number"
     | JStr _ => "string"
@@ -198,6 +200,7 @@ Module Justin.
   Definition typeof_val (v : val) : string :=
     match v with
     | VJson jv => typeof_json jv
+    | VBigInt _ => "bigint"
     | VUndefined => "undefined"
     | VLoc _ => "object"
     | VPrim _ => "function"
@@ -211,6 +214,7 @@ Module Justin.
     | VJson (JStr _) => TyString
     | VJson (JArr _) => TyObject
     | VJson (JObj _) => TyObject
+    | VBigInt _ => TyBigInt
     | VUndefined => TyUndefined
     | VLoc _ => TyObject
     | VPrim _ => TyPrim
@@ -219,6 +223,7 @@ Module Justin.
   Definition ty_of_typeof_tag (tag : string) : option ty :=
     if String.eqb tag "string" then Some TyString else
     if String.eqb tag "number" then Some TyNumber else
+    if String.eqb tag "bigint" then Some TyBigInt else
     if String.eqb tag "boolean" then Some TyBool else
     if String.eqb tag "object" then Some TyObject else
     if String.eqb tag "function" then Some TyPrim else
@@ -269,6 +274,14 @@ Module Justin.
 
   Example classify_prim :
     classify_val (VPrim "freeze") = TyPrim.
+  Proof. reflexivity. Qed.
+
+  Example typeof_null_is_object :
+    typeof_val (VJson JNull) = "object".
+  Proof. reflexivity. Qed.
+
+  Example classify_bigint :
+    classify_val (VBigInt 9898) = TyBigInt.
   Proof. reflexivity. Qed.
 
 End Justin.

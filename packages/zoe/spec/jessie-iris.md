@@ -510,4 +510,9 @@ but do not implement them.
   - non-primitive application only goes weird after all arguments are values
   - binary operator type errors only go weird after both operands are values
 - The Iris-facing layer still models weird halting as the explicit terminal expression `CoreBzzt`; that is observable and not silent, but it is not yet packaged as a value.
-TODO: bigint
+DONE: bigint
+DONE: typeof null === 'object' with regression test
+
+- Added `VBigInt` to the Justin value space, `TyBigInt` to refinement/classification, and `typeof ... = "bigint"`.
+- Added tiny Justin concrete syntax for bigint literals like `9898n`.
+- Changed `typeof null` to return `"object"` to match JavaScript/Jessie expectations, and added regression tests in the executable, Iris, and bundle layers.

@@ -351,6 +351,11 @@ Module JustinIris.
       (CoreLit (VJson (JStr "undefined"))) empty_state [].
   Proof. constructor. Qed.
 
+  Example typeof_null_is_object_atomic :
+    base_step (CoreTypeOf (CoreLit (VJson JNull))) empty_state []
+      (CoreLit (VJson (JStr "object"))) empty_state [].
+  Proof. constructor. Qed.
+
   Example strict_eq_alloc_ctx :
     fill_item (BinOpLCtx EqStrictOp (CoreAllocObj [])) (CoreAllocObj []) =
       CoreBinop EqStrictOp (CoreAllocObj []) (CoreAllocObj []).

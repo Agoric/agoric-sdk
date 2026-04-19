@@ -52,6 +52,13 @@ Definition parse_jnumber_lit : parser expr :=
     | None => None
     end.
 
+Definition parse_jbigint_lit : parser expr :=
+  fun cs =>
+    match parse_nat (skip_ws_chars cs) with
+    | Some (n, "n"%char :: rest) => Some (Lit (VBigInt (Z.of_nat n)), rest)
+    | _ => None
+    end.
+
 Definition parse_undefined : parser expr :=
   fun cs =>
     match literal "undefined" (skip_ws_chars cs) with
@@ -98,9 +105,13 @@ Definition parse_atom : parser expr :=
                 match parse_jstring_lit cs with
                 | Some out => Some out
                 | None =>
-                    match parse_jnumber_lit cs with
+                    match parse_jbigint_lit cs with
                     | Some out => Some out
-                    | None => parse_var cs
+                    | None =>
+                        match parse_jnumber_lit cs with
+                        | Some out => Some out
+                        | None => parse_var cs
+                        end
                     end
                 end
             end
@@ -172,4 +183,8 @@ Example parse_concrete_typeof_cond :
       (EqStrict (TypeOf (Var "x")) (Lit (VJson (JStr "string"))))
       (Var "x")
       (Lit VUndefined)).
+Proof. reflexivity. Qed.
+
+Example parse_concrete_bigint :
+  parse_justin "9898n" = Some (Lit (VBigInt 9898)).
 Proof. reflexivity. Qed.
