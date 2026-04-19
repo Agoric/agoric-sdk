@@ -706,6 +706,16 @@ What is **not** yet finished is the top theorem itself. In particular:
 - the multi-step/public-client corollary therefore remains the next milestone,
   not a completed result
 
+Lab note: I also attempted a mutual theorem `step_with_frame /
+step_fields_with_frame / step_args_with_frame` to show that one evaluator step
+either preserves the authority-relevant object graph or performs a single fresh
+allocation. The statement itself still looks right, but the proof script became
+too brittle around `CoreBinop`, where Coq repeatedly renamed the local equation
+produced by the outer `match op` simplification. I backed that proof out rather
+than leave the file broken. The next pass should likely factor the `CoreBinop`
+cases into a small auxiliary lemma instead of trying to finish the whole mutual
+theorem in one script.
+
 The underlying case-study lemmas in `jessie_counter.v` make the same story visible one step earlier, before the regression wrappers:
 
 - `invoke_entry_cap_step`
