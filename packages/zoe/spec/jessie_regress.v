@@ -1,10 +1,11 @@
 From Coq Require Import List String ZArith.
-Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_module.
+Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_module jessie_iris_lang.
 
 Import ListNotations.
 Import Justin.
 Import JustinExec.
 Import JessieModule.
+Import JustinIris.
 Open Scope string_scope.
 Open Scope Z_scope.
 
@@ -41,4 +42,13 @@ Example module_end_to_end :
       [ExportDecl "x" (CoreLit (VJson (JNum 1)));
        ExportDecl "default" (CoreBinop AddNum (CoreVar "y") (CoreVar "x"))]) =
     Some [("x", VJson (JNum 1)); ("default", VJson (JNum 3))].
+Proof. reflexivity. Qed.
+
+Example iris_to_of_val_smoke :
+  to_val (of_val (VJson (JNum 9))) = Some (VJson (JNum 9)).
+Proof. reflexivity. Qed.
+
+Example iris_ctx_fill_smoke :
+  fill_item (BinOpLCtx EqStrictOp (CoreAllocObj [])) (CoreAllocObj []) =
+    CoreBinop EqStrictOp (CoreAllocObj []) (CoreAllocObj []).
 Proof. reflexivity. Qed.

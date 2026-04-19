@@ -499,3 +499,15 @@ Suggest how to extend the model to:
 
 but do not implement them.
 
+
+## Lab Notebook
+
+- Renamed `jessie-idris.md` to `jessie-iris.md` to match the actual Iris target.
+- Added working Coq artifacts for JSON syntax, Justin syntax/elaboration, executable Justin semantics, Jessie modules, and tiny concrete parsers.
+- Current focus: refactor the Justin core into an Iris `ectxi_language` with explicit context items and relational `base_step`.
+- Added `jessie_iris_lang.v`, which now compiles a Justin `ectxi_language`/`language` instance against Iris.
+- Tightened two semantic points while proving the Iris mixin:
+  - non-primitive application only goes weird after all arguments are values
+  - binary operator type errors only go weird after both operands are values
+- The Iris-facing layer still models weird halting as the explicit terminal expression `CoreBzzt`; that is observable and not silent, but it is not yet packaged as a value.
+TODO: bigint
