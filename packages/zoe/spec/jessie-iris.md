@@ -655,6 +655,50 @@ that the returned object reaches:
 and that these references satisfy the intended `old_or_fresh` condition for the
 fresh call from `counter_empty_state`.
 
+There is now also a separate evaluator-step infrastructure layer in
+`jessie_step_connectivity.v`. This does **not** yet prove the full
+one-step theorem, but it fixes the statement boundary and mechanizes the
+pieces that theorem will use:
+
+- `closed_val`, `closed_expr`, `closed_exprs`, `closed_fields`, and `closed_state`
+  define the "closed configuration" boundary. This is the formal replacement for
+  the informal statement that clients cannot forge fresh locations or dynamic
+  primitive references.
+- `expr_reaches_dyn`, `exprs_reach_dyn`, and `fields_reach_dyn` define
+  expression-level dynamic-authority reachability, separate from the
+  case-study-specific capability graph.
+- `step_frame` isolates the two state-shape changes relevant to the generic
+  Justin evaluator:
+  - either the store/environment are unchanged for purposes of authority
+    reachability, or
+  - a single fresh object is allocated by `alloc_obj`.
+- `lookup_obj_alloc_obj_other` and `reaches_dyn_old_after_alloc` are the key
+  transport lemmas saying that a closed pre-existing value cannot suddenly gain
+  new dynamic authority merely because an unrelated fresh object was allocated.
+- `all_lit_in_args`, `all_lit_field_in_fields`, `closed_fields_member`, and
+  `fields_member_reaches_dyn` are the bookkeeping lemmas needed to decompose
+  authority reachability through object literals.
+- `alloc_result_dyn_from_fields` is the main `CoreAllocObj` helper: if a dynamic
+  authority is reachable from the freshly allocated object, then it was already
+  reachable from one of the field values used to build that object.
+
+This means the development now has the right proof infrastructure for the next
+step theorem:
+
+- classify the store effect of one `step_with apply_prim` step,
+- transport authority reachability through unchanged closed values/expressions,
+- and then prove that every dynamic authority reachable from the post-step term
+  was already reachable from the pre-step closed configuration.
+
+What is **not** yet finished is the top theorem itself. In particular:
+
+- the generic `step_with` case split has not yet been carried through to a
+  closed-form theorem `step_with_preserves_dyn`
+- the public-expression closure bridge from `jessie_public.v` into these closed
+  predicates has not yet been proved
+- the multi-step/public-client corollary therefore remains the next milestone,
+  not a completed result
+
 The underlying case-study lemmas in `jessie_counter.v` make the same story visible one step earlier, before the regression wrappers:
 
 - `invoke_entry_cap_step`

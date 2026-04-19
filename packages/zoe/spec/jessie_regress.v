@@ -1,6 +1,6 @@
 From Coq Require Import List String ZArith.
 Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter
-  jessie_counter_spec jessie_counter_reach jessie_connectivity
+  jessie_counter_spec jessie_counter_reach jessie_connectivity jessie_step_connectivity
   jessie_module jessie_iris_lang jessie_counter_iris
   jessie_counter_parse.
 
@@ -11,6 +11,7 @@ Import JessieCounterCase.
 Import JessieCounterSpec.
 Import JessieCounterReach.
 Import JessieConnectivity.
+Import JessieStepConnectivity.
 Import JessieModule.
 Import JustinIris.
 Import JessieCounterIris.
