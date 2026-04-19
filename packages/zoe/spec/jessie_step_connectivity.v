@@ -206,6 +206,84 @@ Module JessieStepConnectivity.
         end
     end.
 
+  Lemma step_fields_with_apply_prim_eq σ flds :
+    step_fields_with apply_prim σ flds =
+    (fix step_fields (flds : list (string * core_expr)) :
+         option (core_expr * state) :=
+       match flds with
+       | [] => None
+       | (k, e1) :: rest =>
+           match step_with apply_prim σ e1 with
+           | Some (e1', σ') => Some (CoreAllocObj ((k, e1') :: rest), σ')
+           | None =>
+               match e1 with
+               | CoreVal _ =>
+                   match step_fields rest with
+                   | Some (CoreVal v0, σ') => Some (CoreVal v0, σ')
+                   | Some (CoreVar x, σ') => Some (CoreVar x, σ')
+                   | Some (CoreAllocObj rest', σ') =>
+                       Some (CoreAllocObj ((k, e1) :: rest'), σ')
+                   | Some (CoreGet e0 field, σ') => Some (CoreGet e0 field, σ')
+                   | Some (CoreApp f args, σ') => Some (CoreApp f args, σ')
+                   | Some (CoreLetIn x rhs body, σ') =>
+                       Some (CoreLetIn x rhs body, σ')
+                   | Some (CoreTypeOf e0, σ') => Some (CoreTypeOf e0, σ')
+                   | Some (CoreCond e0 e2 e3, σ') =>
+                       Some (CoreCond e0 e2 e3, σ')
+                   | Some (CoreBinop op e0 e2, σ') =>
+                       Some (CoreBinop op e0 e2, σ')
+                   | Some (CoreBzzt, σ') => Some (CoreBzzt, σ')
+                   | None => None
+                   end
+               | _ => None
+               end
+           end
+       end) flds.
+  Proof.
+    induction flds as [|[k e1] rest IH]; simpl; [reflexivity|].
+    destruct (step_with apply_prim σ e1) as [[e1' σ']|] eqn:?; [reflexivity|].
+    destruct e1; try reflexivity.
+    rewrite IH. reflexivity.
+  Qed.
+
+  Lemma step_args_with_apply_prim_eq σ f args :
+    step_args_with apply_prim σ f args =
+    (fix step_args (args : list core_expr) : option (core_expr * state) :=
+       match args with
+       | [] => None
+       | e1 :: rest =>
+           match step_with apply_prim σ e1 with
+           | Some (e1', σ') => Some (CoreApp f (e1' :: rest), σ')
+           | None =>
+               match e1 with
+               | CoreVal _ =>
+                   match step_args rest with
+                   | Some (CoreVal v0, σ') => Some (CoreVal v0, σ')
+                   | Some (CoreVar x, σ') => Some (CoreVar x, σ')
+                   | Some (CoreAllocObj rest', σ') => Some (CoreAllocObj rest', σ')
+                   | Some (CoreGet e0 field, σ') => Some (CoreGet e0 field, σ')
+                   | Some (CoreApp _ rest', σ') => Some (CoreApp f (e1 :: rest'), σ')
+                   | Some (CoreLetIn x rhs body, σ') =>
+                       Some (CoreLetIn x rhs body, σ')
+                   | Some (CoreTypeOf e0, σ') => Some (CoreTypeOf e0, σ')
+                   | Some (CoreCond e0 e2 e3, σ') =>
+                       Some (CoreCond e0 e2 e3, σ')
+                   | Some (CoreBinop op e0 e2, σ') =>
+                       Some (CoreBinop op e0 e2, σ')
+                   | Some (CoreBzzt, σ') => Some (CoreBzzt, σ')
+                   | None => None
+                   end
+               | _ => None
+               end
+           end
+       end) args.
+  Proof.
+    induction args as [|e1 rest IH]; simpl; [reflexivity|].
+    destruct (step_with apply_prim σ e1) as [[e1' σ']|] eqn:?; [reflexivity|].
+    destruct e1; try reflexivity.
+    rewrite IH. reflexivity.
+  Qed.
+
   Inductive step_frame (σ : state) : state -> Prop :=
   | StepFrameSame σ' :
       st_store σ' = st_store σ ->
@@ -618,7 +696,6 @@ Module JessieStepConnectivity.
     apply StepFrameSame; reflexivity.
   Qed.
 
-
   Theorem expr_reaches_frame :
     forall σ σ' e pid,
       step_frame σ σ' ->
@@ -741,6 +818,33 @@ Module JessieStepConnectivity.
       + exact (public_compile_closed σ e1 Henv).
       + exact (public_compile_closed σ e2 Henv).
     - simpl. constructor.
+  Defined.
+
+  Fixpoint public_compile_exprs_closed
+      (σ : state) (es : list JessiePublic.expr)
+      (Henv : forall x v, lookup_assoc x (st_env σ) = Some v -> closed_val σ v)
+      {struct es}
+      : closed_exprs σ (map JessiePublic.compile es).
+  Proof.
+    destruct es as [|e es'].
+    - simpl. constructor.
+    - simpl. constructor.
+      + exact (public_compile_closed σ e Henv).
+      + exact (public_compile_exprs_closed σ es' Henv).
+  Defined.
+
+  Fixpoint public_compile_fields_closed
+      (σ : state) (flds : list (string * JessiePublic.expr))
+      (Henv : forall x v, lookup_assoc x (st_env σ) = Some v -> closed_val σ v)
+      {struct flds}
+      : closed_fields σ
+          (map (fun kv => (fst kv, JessiePublic.compile (snd kv))) flds).
+  Proof.
+    destruct flds as [|[k e] rest].
+    - simpl. constructor.
+    - simpl. constructor.
+      + exact (public_compile_closed σ e Henv).
+      + exact (public_compile_fields_closed σ rest Henv).
   Defined.
 
   Lemma closed_state_empty_state :

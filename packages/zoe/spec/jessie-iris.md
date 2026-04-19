@@ -837,6 +837,48 @@ public client expression is evaluated from the entry-capability state,
 all runtime authority that becomes reachable is still increment-only,
 and symmetrically for the exit side.
 
+### Backtrack: Public-Step Theorem Shape
+
+The next proof attempt moved in a better direction, but did not land in
+this pass.
+
+The idea was to prove a theorem directly at the public boundary rather
+than over arbitrary raw `core_expr` terms:
+
+- one step from `JessiePublic.compile e` should preserve the authority
+  connectivity discipline
+- this would avoid the earlier brittle generic proof over the whole
+  evaluator
+
+This is still the right direction. The specific attempt was a mutual
+proof of a `public_step_frame` theorem together with list/field helpers
+for object fields and application arguments.
+
+What went wrong was not the semantics. The issue was proof-script
+engineering around the local recursive helper functions that appear
+inside `step_with`:
+
+- the object case uses a local `step_fields` fixpoint
+- the application case uses a local `step_args` fixpoint
+- these do not line up nicely with the separately defined
+  `step_fields_with` / `step_args_with` helpers by plain conversion in
+  the proof script
+- once those equalities are forced manually, the mutual proof again
+  becomes focus-sensitive and noisy
+
+So the tree was restored to a compiling state and the unfinished public
+step theorem was backed out cleanly.
+
+The surviving lesson is useful:
+
+- the main client-context theorem should still be proved at the public
+  boundary
+- but the next proof pass should not start with a single large mutual
+  theorem
+- instead it should first isolate explicit unfolding/equivalence lemmas
+  for the public object-field and application-argument stepping paths,
+  and then build the public theorem from those smaller pieces
+
 ### Important Boundary
 
 Justin still excludes function literals and assignment in the shared Justin parser. There are explicit regressions asserting:
