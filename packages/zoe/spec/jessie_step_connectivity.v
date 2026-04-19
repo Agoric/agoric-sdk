@@ -16,6 +16,69 @@ Module JessieStepConnectivity.
   Definition env_reaches_dyn (σ : state) (x : string) (pid : nat) : Prop :=
     exists v, lookup_assoc x (st_env σ) = Some v /\ reaches_dyn σ v pid.
 
+  Inductive expr_root (σ : state) : core_expr -> val -> Prop :=
+  | ExprRootVal v :
+      expr_root σ (CoreVal v) v
+  | ExprRootVar x v :
+      lookup_assoc x (st_env σ) = Some v ->
+      expr_root σ (CoreVar x) v
+  | ExprRootAlloc flds v :
+      fields_root σ flds v ->
+      expr_root σ (CoreAllocObj flds) v
+  | ExprRootGet e fld v :
+      expr_root σ e v ->
+      expr_root σ (CoreGet e fld) v
+  | ExprRootAppFun f args v :
+      expr_root σ f v ->
+      expr_root σ (CoreApp f args) v
+  | ExprRootAppArgs f args v :
+      exprs_root σ args v ->
+      expr_root σ (CoreApp f args) v
+  | ExprRootLetRhs x rhs body v :
+      expr_root σ rhs v ->
+      expr_root σ (CoreLetIn x rhs body) v
+  | ExprRootLetBody x rhs body v :
+      expr_root σ body v ->
+      expr_root σ (CoreLetIn x rhs body) v
+  | ExprRootTypeOf e v :
+      expr_root σ e v ->
+      expr_root σ (CoreTypeOf e) v
+  | ExprRootCond0 e0 e1 e2 v :
+      expr_root σ e0 v ->
+      expr_root σ (CoreCond e0 e1 e2) v
+  | ExprRootCond1 e0 e1 e2 v :
+      expr_root σ e1 v ->
+      expr_root σ (CoreCond e0 e1 e2) v
+  | ExprRootCond2 e0 e1 e2 v :
+      expr_root σ e2 v ->
+      expr_root σ (CoreCond e0 e1 e2) v
+  | ExprRootBinopL op e1 e2 v :
+      expr_root σ e1 v ->
+      expr_root σ (CoreBinop op e1 e2) v
+  | ExprRootBinopR op e1 e2 v :
+      expr_root σ e2 v ->
+      expr_root σ (CoreBinop op e1 e2) v
+  with exprs_root (σ : state) : list core_expr -> val -> Prop :=
+  | ExprsRootHere e es v :
+      expr_root σ e v ->
+      exprs_root σ (e :: es) v
+  | ExprsRootThere e es v :
+      exprs_root σ es v ->
+      exprs_root σ (e :: es) v
+  with fields_root (σ : state) : list (string * core_expr) -> val -> Prop :=
+  | FieldsRootHere k e flds v :
+      expr_root σ e v ->
+      fields_root σ ((k, e) :: flds) v
+  | FieldsRootThere k e flds v :
+      fields_root σ flds v ->
+      fields_root σ ((k, e) :: flds) v.
+
+  Scheme expr_root_ind' := Induction for expr_root Sort Prop
+  with exprs_root_ind' := Induction for exprs_root Sort Prop
+  with fields_root_ind' := Induction for fields_root Sort Prop.
+  Combined Scheme expr_root_mutind
+    from expr_root_ind', exprs_root_ind', fields_root_ind'.
+
   Inductive expr_reaches_dyn (σ : state) : core_expr -> nat -> Prop :=
   | ExprReachesVal v pid :
       reaches_dyn σ v pid ->
@@ -79,6 +142,105 @@ Module JessieStepConnectivity.
   with fields_reach_dyn_ind' := Induction for fields_reach_dyn Sort Prop.
   Combined Scheme expr_reaches_dyn_mutind
     from expr_reaches_dyn_ind', exprs_reach_dyn_ind', fields_reach_dyn_ind'.
+
+  Theorem expr_root_reaches_dyn :
+    forall σ e root pid,
+      expr_root σ e root ->
+      reaches_dyn σ root pid ->
+      expr_reaches_dyn σ e pid
+  with exprs_root_reach_dyn :
+    forall σ es root pid,
+      exprs_root σ es root ->
+      reaches_dyn σ root pid ->
+      exprs_reach_dyn σ es pid
+  with fields_root_reach_dyn :
+    forall σ flds root pid,
+      fields_root σ flds root ->
+      reaches_dyn σ root pid ->
+      fields_reach_dyn σ flds pid.
+  Proof.
+    - intros σ e root pid Hroot Hreach.
+      induction Hroot.
+      + apply ExprReachesVal; assumption.
+      + apply ExprReachesVar. exists v. split; assumption.
+      + apply ExprReachesAlloc. eapply fields_root_reach_dyn; eauto.
+      + apply ExprReachesGet. auto.
+      + apply ExprReachesAppFun. auto.
+      + apply ExprReachesAppArgs. eapply exprs_root_reach_dyn; eauto.
+      + apply ExprReachesLetRhs. auto.
+      + apply ExprReachesLetBody. auto.
+      + apply ExprReachesTypeOf. auto.
+      + apply ExprReachesCond0. auto.
+      + apply ExprReachesCond1. auto.
+      + apply ExprReachesCond2. auto.
+      + apply ExprReachesBinopL. auto.
+      + apply ExprReachesBinopR. auto.
+    - intros σ es root pid Hroot Hreach.
+      induction Hroot.
+      + apply ExprsReachHere. eapply expr_root_reaches_dyn; eauto.
+      + apply ExprsReachThere. auto.
+    - intros σ flds root pid Hroot Hreach.
+      induction Hroot.
+      + apply FieldsReachHere. eapply expr_root_reaches_dyn; eauto.
+      + apply FieldsReachThere. auto.
+  Qed.
+
+  Theorem expr_reaches_dyn_has_root :
+    forall σ e pid,
+      expr_reaches_dyn σ e pid ->
+      exists root, expr_root σ e root /\ reaches_dyn σ root pid
+  with exprs_reach_dyn_has_root :
+    forall σ es pid,
+      exprs_reach_dyn σ es pid ->
+      exists root, exprs_root σ es root /\ reaches_dyn σ root pid
+  with fields_reach_dyn_has_root :
+    forall σ flds pid,
+      fields_reach_dyn σ flds pid ->
+      exists root, fields_root σ flds root /\ reaches_dyn σ root pid.
+  Proof.
+    - intros σ e pid Hreach.
+      induction Hreach.
+      + exists v. split; [constructor|assumption].
+      + destruct H as [v [Hlookup Hdyn]].
+        exists v. split; [constructor; assumption|assumption].
+      + destruct (fields_reach_dyn_has_root σ flds pid H) as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct (exprs_reach_dyn_has_root σ args pid H) as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+    - intros σ es pid Hreach.
+      induction Hreach.
+      + destruct (expr_reaches_dyn_has_root σ e pid H) as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+    - intros σ flds pid Hreach.
+      induction Hreach.
+      + destruct (expr_reaches_dyn_has_root σ e pid H) as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+      + destruct IHHreach as [root [Hroot Hdyn]].
+        exists root. split; [constructor; assumption|assumption].
+  Qed.
+
 
   Fixpoint closed_val (σ : state) (v : val) : Prop :=
     match v with
