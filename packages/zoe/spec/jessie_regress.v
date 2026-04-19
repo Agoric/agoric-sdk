@@ -1,6 +1,6 @@
 (* Cross-layer regression examples spanning parsing, execution, and Iris facts. *)
 From Coq Require Import List String ZArith.
-Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter
+Require Import jessie_lang jessie_json jessie_justin_parse jessie_justin jessie_counter
   jessie_counter_spec jessie_reach jessie_counter_reach jessie_connectivity jessie_step_connectivity
   jessie_module jessie_iris_lang jessie_counter_iris jessie_surface_exec
   jessie_counter_parse.
