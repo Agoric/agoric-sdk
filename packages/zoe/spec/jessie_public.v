@@ -1,3 +1,4 @@
+(* Public client syntax that cannot forge locations or primitive references. *)
 From Coq Require Import List String.
 Require Import jessie_lang.
 

@@ -1,3 +1,4 @@
+(* Lightweight Jessie/module layer. *)
 From Coq Require Import List String.
 Require Import jessie_lang jessie_justin.
 

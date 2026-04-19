@@ -1,3 +1,4 @@
+(* Connectivity graph facts for the counter case study. *)
 From Coq Require Import List String.
 Require Import jessie_lang jessie_justin jessie_counter.
 

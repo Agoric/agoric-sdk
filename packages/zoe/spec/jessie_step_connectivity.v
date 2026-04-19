@@ -1,3 +1,4 @@
+(* Generic one-step proof infrastructure for authority connectivity. *)
 From Coq Require Import Lia List String ZArith Program.Equality.
 Require Import jessie_lang jessie_justin jessie_counter jessie_counter_reach jessie_public.
 

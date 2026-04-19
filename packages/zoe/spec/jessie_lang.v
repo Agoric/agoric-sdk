@@ -1,3 +1,4 @@
+(* Shared syntax, literals, primitive references, and surface syntax fragments. *)
 From Coq Require Import List String ZArith.
 From iris.program_logic Require Export language ectx_language.
 

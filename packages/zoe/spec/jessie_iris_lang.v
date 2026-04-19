@@ -1,3 +1,4 @@
+(* Iris ectxi_language/language instance for the Justin core. *)
 From Coq Require Import List String ZArith.
 From iris.program_logic Require Export ectxi_language.
 Require Import jessie_lang jessie_justin.

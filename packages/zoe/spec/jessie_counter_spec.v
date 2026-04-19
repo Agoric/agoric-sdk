@@ -1,3 +1,4 @@
+(* Trace-level authority theorems for the counter case study. *)
 From Coq Require Import Lia List String ZArith.
 Require Import jessie_lang jessie_justin jessie_counter.
 

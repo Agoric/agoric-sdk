@@ -1,3 +1,4 @@
+(* makeCounter case-study model and capability splitting. *)
 From Coq Require Import Bool Lia List String ZArith.
 Require Import jessie_lang jessie_justin.
 

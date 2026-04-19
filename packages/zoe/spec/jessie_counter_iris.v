@@ -1,3 +1,4 @@
+(* Atomic Iris-facing step facts for split counter capabilities. *)
 From Coq Require Import List String ZArith.
 Require Import jessie_lang jessie_justin jessie_counter jessie_iris_lang.
 
