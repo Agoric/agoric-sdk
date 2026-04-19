@@ -1,7 +1,7 @@
 From Coq Require Import List String ZArith.
 Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter
   jessie_counter_spec jessie_counter_reach jessie_connectivity jessie_step_connectivity
-  jessie_module jessie_iris_lang jessie_counter_iris
+  jessie_module jessie_iris_lang jessie_counter_iris jessie_surface_exec
   jessie_counter_parse.
 
 Import ListNotations.
@@ -86,13 +86,21 @@ Proof. vm_compute. discriminate. Qed.
 Example makeCounter_surface_compile_matches_core :
   compile_surface_program
     (match parse_makeCounter_program with Some p => p | None => [] end) =
-  Some makeCounter_assert_prog.
+  Some makeCounter_surface_prog.
 Proof. vm_compute. reflexivity. Qed.
 
 Example makeCounter_surface_compile_matches_regression :
   compile_surface_program
     (match parse_makeCounter_program with Some p => p | None => [] end) =
-  Some makeCounter_assert_prog.
+  Some makeCounter_surface_prog.
+Proof. vm_compute. reflexivity. Qed.
+
+Example makeCounter_surface_exec_works :
+  fst (match run_surface_program 40
+    (match parse_makeCounter_program with Some p => p | None => [] end) with
+  | Some res => res
+  | None => (JessieSurfaceExec.VLit LUndefined, JessieSurfaceExec.empty_state)
+  end) = JessieSurfaceExec.VLit LUndefined.
 Proof. vm_compute. reflexivity. Qed.
 
 Example entry_cap_split_works :

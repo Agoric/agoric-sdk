@@ -1,5 +1,5 @@
 From Coq Require Import Ascii List String ZArith.
-Require Import jessie_lang jessie_parse jessie_parse_jessie jessie_counter.
+Require Import jessie_lang jessie_parse jessie_parse_jessie jessie_surface_exec.
 
 Import ListNotations.
 Open Scope char_scope.
@@ -8,9 +8,9 @@ Open Scope Z_scope.
 
 Module JessieCounterSurface.
   Import Justin.
-  Import JessieCounterCase.
   Import JessieParseJessie.
   Import jessie_lang.JessieSurface.
+  Import JessieSurfaceExec.
 
   Definition makeCounter_source : string :=
     "const makeCounter = () => {
@@ -30,7 +30,16 @@ assert(n === 2);
   Definition parse_makeCounter_program : option program :=
     parse_program makeCounter_source.
 
-  Definition compile_surface_program (p : program) : option core_expr :=
+  Definition makeCounter_surface_prog : program :=
+    [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (LJson (JNum 0))));
+         SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
+                               ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]))]));
+      SConst "counter" (Call (Base (Var "makeCounter")) []);
+      SExpr (Call (Get (Base (Var "counter")) "incr") []);
+      SConst "n" (Call (Get (Base (Var "counter")) "incr") []);
+      SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (LJson (JNum 2))))]) ].
+
+  Definition compile_surface_program (p : program) : option program :=
     match p with
     | [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (LJson (JNum 0))));
          SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
@@ -39,8 +48,14 @@ assert(n === 2);
         SExpr (Call (Get (Base (Var "counter")) "incr") []);
         SConst "n" (Call (Get (Base (Var "counter")) "incr") []);
         SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (LJson (JNum 2))))]) ] =>
-        Some makeCounter_assert_prog
+        Some makeCounter_surface_prog
     | _ => None
+    end.
+
+  Definition run_surface_program (fuel : nat) (p : program) :=
+    match compile_surface_program p with
+    | Some p' => run_with_builtins fuel p'
+    | None => None
     end.
 
   Example parse_makeCounter_source_works :
@@ -49,6 +64,39 @@ assert(n === 2);
 
   Example compile_makeCounter_source_works :
     compile_surface_program (match parse_makeCounter_program with Some p => p | None => [] end) =
-      Some makeCounter_assert_prog.
+      Some makeCounter_surface_prog.
+  Proof. vm_compute. reflexivity. Qed.
+
+  Example run_makeCounter_source_works :
+    fst (match run_surface_program 40
+      (match parse_makeCounter_program with Some p => p | None => [] end) with
+    | Some res => res
+    | None => (VLit LUndefined, empty_state)
+    end) = VLit LUndefined.
+  Proof. vm_compute. reflexivity. Qed.
+
+  Example run_makeCounter_source_cell_two :
+    snd (match run_surface_program 40
+      (match parse_makeCounter_program with Some p => p | None => [] end) with
+    | Some res => res
+    | None => (VLit LUndefined, empty_state)
+    end) =
+      State 1%nat 1%nat
+        [(0%nat, HeapObj [("incr", VClosure [("count", BCell 0%nat);
+                                             ("assert", BVal (VPrim PrimAssert));
+                                             ("harden", BVal (VPrim PrimHarden));
+                                             ("freeze", BVal (VPrim PrimFreeze));
+                                             ("id", BVal (VPrim PrimId));
+                                             ("fail", BVal (VPrim PrimFail))]
+                                   (SReturn (AssignAdd "count" 1)));
+                           ("decr", VClosure [("count", BCell 0%nat);
+                                             ("assert", BVal (VPrim PrimAssert));
+                                             ("harden", BVal (VPrim PrimHarden));
+                                             ("freeze", BVal (VPrim PrimFreeze));
+                                             ("id", BVal (VPrim PrimId));
+                                             ("fail", BVal (VPrim PrimFail))]
+                                   (SReturn (AssignAdd "count" (-1))))])]
+        [0%nat]
+        [(0%nat, VLit (LJson (JNum 2)))].
   Proof. vm_compute. reflexivity. Qed.
 End JessieCounterSurface.
