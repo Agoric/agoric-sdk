@@ -1,6 +1,6 @@
-(* Connectivity graph facts for the counter case study. *)
+(* Generic connectivity graph definitions for Justin authority flow. *)
 From Coq Require Import List String.
-Require Import jessie_lang jessie_justin jessie_counter.
+Require Import jessie_lang jessie_justin.
 
 Import ListNotations.
 Open Scope string_scope.
@@ -8,7 +8,6 @@ Open Scope string_scope.
 Module JessieConnectivity.
   Import Justin.
   Import JustinExec.
-  Import JessieCounterCase.
 
   Inductive cref :=
   | CObj (l : loc)
@@ -32,8 +31,7 @@ Module JessieConnectivity.
       lookup_field (obj_fields obj) fld = Some (VPrim (PrimDyn pid)) ->
       edge σ (CObj l) (CDyn pid)
   | EdgeDynCell pid cell :
-      lookup_nat_assoc pid (st_dyn_prims σ) = Some (DynCellDelta cell 1) \/
-      lookup_nat_assoc pid (st_dyn_prims σ) = Some (DynCellDelta cell (-1)) ->
+      (exists delta, lookup_nat_assoc pid (st_dyn_prims σ) = Some (DynCellDelta cell delta)) ->
       edge σ (CDyn pid) (CCell cell).
 
   Inductive reachable (σ : state) : cref -> cref -> Prop :=
@@ -73,55 +71,4 @@ Module JessieConnectivity.
        | _ => False
       end) ->
       old_or_fresh σ σ' args r.
-
-  Example makeCounter_result_reaches_fresh_object :
-    val_reaches
-      state_after_makeCounter
-      counter_after_makeCounter
-      (CObj 1%nat).
-  Proof.
-    vm_compute. constructor.
-  Qed.
-
-  Example makeCounter_result_reaches_fresh_incr :
-    val_reaches
-      state_after_makeCounter
-      counter_after_makeCounter
-      (CDyn 0%nat).
-  Proof.
-    vm_compute.
-    econstructor 2.
-    - econstructor 2 with (fld := "incr") (pid := 0%nat).
-      + reflexivity.
-      + reflexivity.
-    - constructor.
-  Qed.
-
-  Example makeCounter_result_reaches_fresh_cell :
-    val_reaches
-      state_after_makeCounter
-      counter_after_makeCounter
-      (CCell 0%nat).
-  Proof.
-    vm_compute.
-    econstructor 2.
-    - econstructor 2 with (fld := "incr") (pid := 0%nat).
-      + reflexivity.
-      + reflexivity.
-    - econstructor 2.
-      + constructor 3.
-        left. reflexivity.
-      + constructor.
-  Qed.
-
-  Example makeCounter_fresh_refs_satisfy_old_or_fresh :
-    let σ := counter_empty_state in
-    let '(e', σ') := counter_apply_prim σ (PrimExt 0%nat) [] in
-    old_or_fresh σ σ' [] (CObj 1%nat) /\
-    old_or_fresh σ σ' [] (CDyn 0%nat) /\
-    old_or_fresh σ σ' [] (CDyn 1%nat) /\
-    old_or_fresh σ σ' [] (CCell 0%nat).
-  Proof.
-    vm_compute. repeat split; now right.
-  Qed.
 End JessieConnectivity.

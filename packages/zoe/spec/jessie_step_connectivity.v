@@ -1,6 +1,6 @@
 (* Generic one-step proof infrastructure for authority connectivity. *)
 From Coq Require Import Lia List String ZArith Program.Equality.
-Require Import jessie_lang jessie_lib jessie_justin jessie_counter jessie_counter_reach jessie_public.
+Require Import jessie_lang jessie_lib jessie_justin jessie_reach jessie_public.
 
 Import ListNotations.
 Open Scope string_scope.
@@ -10,7 +10,7 @@ Module JessieStepConnectivity.
   Import JessieLib.
   Import Justin.
   Import JustinExec.
-  Import JessieCounterReach.
+  Import JessieReach.
   Import JessiePublic.
 
   Definition env_reaches_dyn (σ : state) (x : string) (pid : nat) : Prop :=
