@@ -1,6 +1,6 @@
 (* Parser for the Jessie surface layer that extends Justin/base parsing with statements and closures. *)
 From Coq Require Import Ascii List String ZArith.
-Require Import jessie_lang jessie_json jessie_parse.
+Require Import jessie_lang jessie_json jessie_parse jessie_justin_parse.
 
 Import ListNotations.
 Open Scope char_scope.
@@ -23,6 +23,13 @@ Module JessieParseJessie.
       | None => parse_string (ws cs)
       end.
 
+  Definition parse_base_expr (fuel : nat) : parser expr :=
+    fun cs =>
+      match parse_cond fuel cs with
+      | Some (e, rest) => Some (Base e, rest)
+      | None => None
+      end.
+
   Fixpoint parse_expr (fuel : nat) : parser expr
   with parse_stmt (fuel : nat) : parser stmt
   with parse_stmt_list (fuel : nat) : parser (list stmt)
@@ -32,84 +39,64 @@ Module JessieParseJessie.
     - destruct fuel as [|fuel']; [exact parse_error|].
       refine (fun cs =>
         let cs := ws cs in
-        match parse_int cs with
-        | Some (n, rest) => Some (Base (Lit (LJson (JNum n))), rest)
-        | None =>
-            match parse_ident cs with
-            | Some (x, rest1) =>
-                let rest1 := ws rest1 in
-                match rest1 with
-                | "+"%char :: "="%char :: rest2 =>
-                    match parse_int rest2 with
-                    | Some (n, rest3) => Some (AssignAdd x n, rest3)
-                    | None => None
-                    end
-                | "-"%char :: "="%char :: rest2 =>
-                    match parse_int rest2 with
-                    | Some (n, rest3) => Some (AssignAdd x (- n), rest3)
-                    | None => None
-                    end
-                | "."%char :: restd =>
-                    match parse_ident restd with
-                    | Some (fld, restf) =>
-                        let e1 := Get (Base (Var x)) fld in
-                        match ws restf with
-                        | "("%char :: resta =>
-                            match parse_args fuel' resta with
-                            | Some (args, resta') => Some (Call e1 args, resta')
-                            | None => None
-                            end
-                        | "="%char :: "="%char :: "="%char :: resteq =>
-                            match parse_expr fuel' resteq with
-                            | Some (e2, rest2) => Some (EqStrict e1 e2, rest2)
-                            | None => None
-                            end
-                        | _ => Some (e1, restf)
-                        end
-                    | None => None
-                    end
-                | "("%char :: resta =>
-                    match parse_args fuel' resta with
-                    | Some (args, resta') => Some (Call (Base (Var x)) args, resta')
-                    | None => None
-                    end
-                | "="%char :: "="%char :: "="%char :: resteq =>
-                    match parse_expr fuel' resteq with
-                    | Some (e2, rest2) => Some (EqStrict (Base (Var x)) e2, rest2)
-                    | None => None
-                    end
-                | _ => Some (Base (Var x), rest1)
+        match parse_ident cs with
+        | Some (x, rest1) =>
+            let rest1 := ws rest1 in
+            match rest1 with
+            | "+"%char :: "="%char :: rest2 =>
+                match parse_int rest2 with
+                | Some (n, rest3) => Some (AssignAdd x n, rest3)
+                | None => None
                 end
-            | None =>
-                match cs with
-                | "("%char :: ")"%char :: rest_after_parens =>
-                    match ws rest_after_parens with
-                    | "="%char :: ">"%char :: resta =>
-                        match parse_expr fuel' resta with
-                        | Some (e, restb) => Some (Arrow0 (SReturn e), restb)
-                        | None =>
-                            match parse_stmt fuel' resta with
-                            | Some (s, restb) => Some (Arrow0 s, restb)
-                            | None => None
-                            end
+            | "-"%char :: "="%char :: rest2 =>
+                match parse_int rest2 with
+                | Some (n, rest3) => Some (AssignAdd x (- n), rest3)
+                | None => None
+                end
+            | "("%char :: resta =>
+                match parse_args fuel' resta with
+                | Some (args, resta') => Some (Call (Base (Var x)) args, resta')
+                | None => None
+                end
+            | _ =>
+                match parse_base_expr fuel' cs with
+                | Some (e, rest) => Some (e, rest)
+                | None => None
+                end
+            end
+        | None =>
+            match cs with
+            | "("%char :: ")"%char :: rest_after_parens =>
+                match ws rest_after_parens with
+                | "="%char :: ">"%char :: resta =>
+                    match parse_expr fuel' resta with
+                    | Some (e, restb) => Some (Arrow0 (SReturn e), restb)
+                    | None =>
+                        match parse_stmt fuel' resta with
+                        | Some (s, restb) => Some (Arrow0 s, restb)
+                        | None => None
                         end
-                    | _ => None
-                    end
-                | "{"%char :: resto =>
-                    match parse_obj_fields fuel' resto with
-                    | Some (flds, rest1) => Some (Obj flds, rest1)
-                    | None => None
-                    end
-                | "("%char :: restp =>
-                    match parse_expr fuel' restp with
-                    | Some (e, rest1) =>
-                        match ws rest1 with
-                        | ")"%char :: rest2 => Some (e, rest2)
-                        | _ => None
-                        end
-                    | None => None
                     end
                 | _ => None
+                end
+            | "{"%char :: resto =>
+                match parse_obj_fields fuel' resto with
+                | Some (flds, rest1) => Some (Obj flds, rest1)
+                | None => None
+                end
+            | "("%char :: restp =>
+                match parse_expr fuel' restp with
+                | Some (e, rest1) =>
+                    match ws rest1 with
+                    | ")"%char :: rest2 => Some (e, rest2)
+                    | _ => None
+                    end
+                | None => None
+                end
+            | _ =>
+                match parse_base_expr fuel' cs with
+                | Some (e, rest) => Some (e, rest)
+                | None => None
                 end
             end
         end).
@@ -291,16 +278,6 @@ Module JessieParseJessie.
       Some (Obj [("x", Base (Lit (LJson (JNum 1))))]).
   Proof. reflexivity. Qed.
 
-  Example parse_get_expr :
-    parse_expr_only "counter.incr" =
-      Some (Get (Base (Var "counter")) "incr").
-  Proof. reflexivity. Qed.
-
-  Example parse_call_expr :
-    parse_expr_only "counter.incr()" =
-      Some (Call (Get (Base (Var "counter")) "incr") []).
-  Proof. reflexivity. Qed.
-
   Example parse_arrow_expr :
     parse_expr_only "() => 1" =
       Some (Arrow0 (SReturn (Base (Lit (LJson (JNum 1)))))).
@@ -313,8 +290,8 @@ Module JessieParseJessie.
 
   Example parse_eqstrict_expr :
     parse_expr_only "counter.incr === 1" =
-      Some (EqStrict (Get (Base (Var "counter")) "incr")
-        (Base (Lit (LJson (JNum 1))))).
+      Some (Base (Justin.EqStrict (Justin.Get (Var "counter") "incr")
+        (Lit (LJson (JNum 1))))).
   Proof. reflexivity. Qed.
 
   Example parse_harden_as_call :
@@ -339,7 +316,7 @@ Module JessieParseJessie.
 
   Example parse_expr_stmt :
     parse_stmt_only "counter.incr();" =
-      Some (SExpr (Call (Get (Base (Var "counter")) "incr") [])).
+      Some (SExpr (Base (Justin.App (Justin.Get (Var "counter") "incr") []))).
   Proof. reflexivity. Qed.
 
   Example parse_block_stmt :

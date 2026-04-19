@@ -88,49 +88,111 @@ Definition parse_atom : parser expr :=
         end
     end.
 
-Definition parse_eq : parser expr :=
+Fixpoint parse_postfix_suffix (fuel : nat) (e : expr) : parser expr :=
   fun cs =>
-    match parse_atom cs with
-    | Some (e1, rest1) =>
-        let rest1 := skip_ws_chars rest1 in
-        match literal "===" rest1 with
-        | Some (_, rest2) =>
-            match parse_atom rest2 with
-            | Some (e2, rest3) => Some (EqStrict e1 e2, rest3)
+    match fuel with
+    | O => Some (e, cs)
+    | S fuel' =>
+        let cs := skip_ws_chars cs in
+        match cs with
+        | "."%char :: rest1 =>
+            match parse_ident rest1 with
+            | Some (field, rest2) => parse_postfix_suffix fuel' (Get e field) rest2
             | None => None
             end
-        | None => Some (e1, rest1)
+        | "("%char :: rest1 =>
+            match parse_args fuel' rest1 with
+            | Some (args, rest2) => parse_postfix_suffix fuel' (App e args) rest2
+            | None => None
+            end
+        | _ => Some (e, cs)
         end
-    | None => None
-    end.
-
-Definition parse_cond : parser expr :=
+    end
+with parse_args (fuel : nat) : parser (list expr) :=
   fun cs =>
-    match parse_eq cs with
-    | Some (e0, rest1) =>
-        let rest1 := skip_ws_chars rest1 in
-        match rest1 with
-        | "?"%char :: rest2 =>
-            match parse_eq rest2 with
-            | Some (e1, rest3) =>
-                let rest3 := skip_ws_chars rest3 in
-                match rest3 with
-                | ":"%char :: rest4 =>
-                    match parse_eq rest4 with
-                    | Some (e2, rest5) => Some (Cond e0 e1 e2, rest5)
+    match fuel with
+    | O => parse_error cs
+    | S fuel' =>
+        let cs := skip_ws_chars cs in
+        match cs with
+        | ")"%char :: rest => Some ([], rest)
+        | _ =>
+            match parse_cond fuel' cs with
+            | Some (e, rest1) =>
+                let rest1 := skip_ws_chars rest1 in
+                match rest1 with
+                | ","%char :: rest2 =>
+                    match parse_args fuel' rest2 with
+                    | Some (es, rest3) => Some (e :: es, rest3)
                     | None => None
                     end
+                | ")"%char :: rest2 => Some ([e], rest2)
                 | _ => None
                 end
             | None => None
             end
-        | _ => Some (e0, rest1)
         end
-    | None => None
+    end
+with parse_postfix (fuel : nat) : parser expr :=
+  fun cs =>
+    match fuel with
+    | O => parse_error cs
+    | S fuel' =>
+        match parse_atom cs with
+        | Some (e, rest) => parse_postfix_suffix fuel' e rest
+        | None => None
+        end
+    end
+with parse_eq (fuel : nat) : parser expr :=
+  fun cs =>
+    match fuel with
+    | O => parse_error cs
+    | S fuel' =>
+        match parse_postfix fuel' cs with
+        | Some (e1, rest1) =>
+            let rest1 := skip_ws_chars rest1 in
+            match literal "===" rest1 with
+            | Some (_, rest2) =>
+                match parse_postfix fuel' rest2 with
+                | Some (e2, rest3) => Some (EqStrict e1 e2, rest3)
+                | None => None
+                end
+            | None => Some (e1, rest1)
+            end
+        | None => None
+        end
+    end
+with parse_cond (fuel : nat) : parser expr :=
+  fun cs =>
+    match fuel with
+    | O => parse_error cs
+    | S fuel' =>
+        match parse_eq fuel' cs with
+        | Some (e0, rest1) =>
+            let rest1 := skip_ws_chars rest1 in
+            match rest1 with
+            | "?"%char :: rest2 =>
+                match parse_eq fuel' rest2 with
+                | Some (e1, rest3) =>
+                    let rest3 := skip_ws_chars rest3 in
+                    match rest3 with
+                    | ":"%char :: rest4 =>
+                        match parse_eq fuel' rest4 with
+                        | Some (e2, rest5) => Some (Cond e0 e1 e2, rest5)
+                        | None => None
+                        end
+                    | _ => None
+                    end
+                | None => None
+                end
+            | _ => Some (e0, rest1)
+            end
+        | None => None
+        end
     end.
 
 Definition parse_justin (s : string) : option expr :=
-  match parse_cond (explode s) with
+  match parse_cond (String.length s + 20)%nat (explode s) with
   | Some (e, rest) =>
       match skip_ws_chars rest with
       | [] => Some e
@@ -157,6 +219,14 @@ Proof. reflexivity. Qed.
 
 Example parse_concrete_bigint :
   parse_justin "9898n" = Some (Lit (LBigInt 9898)).
+Proof. reflexivity. Qed.
+
+Example parse_concrete_get :
+  parse_justin "counter.incr" = Some (Get (Var "counter") "incr").
+Proof. reflexivity. Qed.
+
+Example parse_concrete_call :
+  parse_justin "counter.incr()" = Some (App (Get (Var "counter") "incr") []).
 Proof. reflexivity. Qed.
 
 Example parse_justin_rejects_arrow_literal :
