@@ -10,7 +10,6 @@ Module JessieStepConnectivity.
   Import JessieLib.
   Import Justin.
   Import JustinExec.
-  Import JessieCounterCase.
   Import JessieCounterReach.
   Import JessiePublic.
 
@@ -847,37 +846,6 @@ Module JessieStepConnectivity.
       unfold empty_state, lookup_cell in Hcell. simpl in Hcell. discriminate.
     - intros pid dp Hdyn.
       unfold empty_state in Hdyn. simpl in Hdyn. discriminate.
-  Qed.
-
-  Lemma closed_state_makeCounter_state :
-    closed_state JessieCounterCase.counter_empty_state.
-  Proof.
-    constructor.
-    - intros l obj fld v Hobj.
-      unfold JessieCounterCase.counter_empty_state, lookup_obj in Hobj.
-      simpl in Hobj. discriminate.
-    - intros x v Hlookup.
-      unfold JessieCounterCase.counter_empty_state in Hlookup.
-      simpl in Hlookup.
-      destruct (String.eqb_spec x "makeCounter"); subst.
-      + inversion Hlookup; subst. simpl. auto.
-      + destruct (String.eqb_spec x "freeze"); subst; simpl in Hlookup.
-        * inversion Hlookup; subst. simpl. auto.
-        * destruct (String.eqb_spec x "harden"); subst; simpl in Hlookup.
-          { inversion Hlookup; subst. simpl. auto. }
-          destruct (String.eqb_spec x "assert"); subst; simpl in Hlookup.
-          { inversion Hlookup; subst. simpl. auto. }
-          destruct (String.eqb_spec x "id"); subst; simpl in Hlookup.
-          { inversion Hlookup; subst. simpl. auto. }
-          destruct (String.eqb_spec x "fail"); subst; simpl in Hlookup.
-          { inversion Hlookup; subst. simpl. auto. }
-          discriminate.
-    - intros l n Hcell.
-      unfold JessieCounterCase.counter_empty_state, lookup_cell in Hcell.
-      simpl in Hcell. discriminate.
-    - intros pid dp Hdyn.
-      unfold JessieCounterCase.counter_empty_state in Hdyn.
-      simpl in Hdyn. discriminate.
   Qed.
 
   Example builtin_freeze_reaches_only_from_arg :
