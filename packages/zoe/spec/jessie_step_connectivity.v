@@ -183,7 +183,7 @@ Module JessieStepConnectivity.
       induction Hroot.
       + apply FieldsReachHere. eapply expr_root_reaches_dyn; eauto.
       + apply FieldsReachThere. auto.
-  Qed.
+  Defined.
 
   Theorem expr_reaches_dyn_has_root :
     forall σ e pid,
@@ -239,6 +239,180 @@ Module JessieStepConnectivity.
         exists root. split; [constructor; assumption|assumption].
       + destruct IHHreach as [root [Hroot Hdyn]].
         exists root. split; [constructor; assumption|assumption].
+  Qed.
+
+  Section RootSubstLists.
+    Context (σ : state) (x : string) (v : val).
+    Context (expr_case :
+      forall e root,
+        expr_root σ (subst x v e) root ->
+        root = v \/ expr_root σ e root).
+
+    Fixpoint exprs_root_subst_source_using (es : list core_expr) (root : val)
+      : exprs_root σ (map (subst x v) es) root ->
+        root = v \/ exprs_root σ es root.
+    Proof.
+      destruct es as [|e es']; simpl.
+      - intro Hroot. inversion Hroot.
+      - intro Hroot. dependent destruction Hroot.
+        + match goal with
+          | Hsub : expr_root _ (subst _ _ e) _ |- _ =>
+              destruct (expr_case e _ Hsub) as [->|Hsrc]
+          end.
+          * now left.
+          * right. apply ExprsRootHere. exact Hsrc.
+        + destruct (exprs_root_subst_source_using es' _ ltac:(eassumption)) as [->|Hsrc].
+          * now left.
+          * right. apply ExprsRootThere. exact Hsrc.
+    Defined.
+
+    Fixpoint fields_root_subst_source_using
+        (flds : list (string * core_expr)) (root : val)
+      : fields_root σ (map (fun kv => (fst kv, subst x v (snd kv))) flds) root ->
+        root = v \/ fields_root σ flds root.
+    Proof.
+      destruct flds as [|[k e] flds']; simpl.
+      - intro Hroot. inversion Hroot.
+      - intro Hroot. dependent destruction Hroot.
+        + match goal with
+          | Hsub : expr_root _ (subst _ _ e) _ |- _ =>
+              destruct (expr_case e _ Hsub) as [->|Hsrc]
+          end.
+          * now left.
+          * right. apply FieldsRootHere. exact Hsrc.
+        + destruct (fields_root_subst_source_using flds' _ ltac:(eassumption)) as [->|Hsrc].
+          * now left.
+          * right. apply FieldsRootThere. exact Hsrc.
+    Defined.
+  End RootSubstLists.
+
+  Fixpoint expr_root_subst_source
+      (σ : state) (x : string) (v : val) (e : core_expr) (root : val)
+      {struct e}
+      : expr_root σ (subst x v e) root ->
+        root = v \/ expr_root σ e root.
+  Proof.
+    destruct e as
+        [w
+        | y
+        | flds
+        | e1 fld
+        | f args
+        | y rhs body
+        | e1
+        | e0 e1 e2
+        | op e1 e2
+        |];
+      intro Hroot; simpl in Hroot.
+    - inversion Hroot; subst. right. constructor.
+    - destruct (String.eqb x y) eqn:Heq.
+      + inversion Hroot; subst. left. reflexivity.
+      + inversion Hroot; subst. right. econstructor. eassumption.
+    - inversion Hroot; subst.
+      destruct (fields_root_subst_source_using σ x v (expr_root_subst_source σ x v) flds root
+        ltac:(eassumption)) as [->|Hsrc].
+      + now left.
+      + right. apply ExprRootAlloc. exact Hsrc.
+    - inversion Hroot; subst.
+      match goal with
+      | Hsub : expr_root _ (subst _ _ e1) _ |- _ =>
+          destruct (expr_root_subst_source σ x v e1 root Hsub) as [->|Hsrc]
+      end.
+      + now left.
+      + right. apply ExprRootGet. exact Hsrc.
+    - inversion Hroot; subst.
+      + match goal with
+        | Hsub : expr_root _ (subst _ _ f) _ |- _ =>
+            destruct (expr_root_subst_source σ x v f root Hsub) as [->|Hsrc]
+        end.
+        * now left.
+        * right. apply ExprRootAppFun. exact Hsrc.
+      + destruct (exprs_root_subst_source_using σ x v (expr_root_subst_source σ x v) args root
+          ltac:(eassumption)) as [->|Hsrc].
+        * now left.
+        * right. apply ExprRootAppArgs. exact Hsrc.
+    - inversion Hroot; subst.
+      + match goal with
+        | Hsub : expr_root _ (subst _ _ rhs) _ |- _ =>
+            destruct (expr_root_subst_source σ x v rhs root Hsub) as [->|Hsrc]
+        end.
+        * now left.
+        * right. apply ExprRootLetRhs. exact Hsrc.
+      + destruct (String.eqb x y) eqn:Heq.
+        * right. apply ExprRootLetBody. assumption.
+        * match goal with
+          | Hsub : expr_root _ (subst _ _ body) _ |- _ =>
+              destruct (expr_root_subst_source σ x v body root Hsub) as [->|Hsrc]
+          end.
+          { now left. }
+          { right. apply ExprRootLetBody. exact Hsrc. }
+    - inversion Hroot; subst.
+      match goal with
+      | Hsub : expr_root _ (subst _ _ e1) _ |- _ =>
+          destruct (expr_root_subst_source σ x v e1 root Hsub) as [->|Hsrc]
+      end.
+      + now left.
+      + right. apply ExprRootTypeOf. exact Hsrc.
+    - inversion Hroot; subst.
+      + match goal with
+        | Hsub : expr_root _ (subst _ _ e0) _ |- _ =>
+            destruct (expr_root_subst_source σ x v e0 root Hsub) as [->|Hsrc]
+        end.
+        * now left.
+        * right. apply ExprRootCond0. exact Hsrc.
+      + match goal with
+        | Hsub : expr_root _ (subst _ _ e1) _ |- _ =>
+            destruct (expr_root_subst_source σ x v e1 root Hsub) as [->|Hsrc]
+        end.
+        * now left.
+        * right. apply ExprRootCond1. exact Hsrc.
+      + match goal with
+        | Hsub : expr_root _ (subst _ _ e2) _ |- _ =>
+            destruct (expr_root_subst_source σ x v e2 root Hsub) as [->|Hsrc]
+        end.
+        * now left.
+        * right. apply ExprRootCond2. exact Hsrc.
+    - inversion Hroot; subst.
+      + match goal with
+        | Hsub : expr_root _ (subst _ _ e1) _ |- _ =>
+            destruct (expr_root_subst_source σ x v e1 root Hsub) as [->|Hsrc]
+        end.
+        * now left.
+        * right. apply ExprRootBinopL. exact Hsrc.
+      + match goal with
+        | Hsub : expr_root _ (subst _ _ e2) _ |- _ =>
+            destruct (expr_root_subst_source σ x v e2 root Hsub) as [->|Hsrc]
+        end.
+        * now left.
+        * right. apply ExprRootBinopR. exact Hsrc.
+    - inversion Hroot.
+  Defined.
+
+  Lemma exprs_root_subst_source σ x v es root :
+    exprs_root σ (map (subst x v) es) root ->
+    root = v \/ exprs_root σ es root.
+  Proof.
+    exact (exprs_root_subst_source_using σ x v (expr_root_subst_source σ x v) es root).
+  Qed.
+
+  Lemma fields_root_subst_source σ x v flds root :
+    fields_root σ (map (fun kv => (fst kv, subst x v (snd kv))) flds) root ->
+    root = v \/ fields_root σ flds root.
+  Proof.
+    exact (fields_root_subst_source_using σ x v (expr_root_subst_source σ x v) flds root).
+  Qed.
+
+  Lemma expr_reaches_dyn_subst_old σ x v e pid :
+    ~ reaches_dyn σ v pid ->
+    expr_reaches_dyn σ (subst x v e) pid ->
+    expr_reaches_dyn σ e pid.
+  Proof.
+    intros Hnotv Hreach.
+    destruct (expr_reaches_dyn_has_root σ (subst x v e) pid Hreach)
+      as [root [Hroot Hdyn]].
+    destruct (expr_root_subst_source σ x v e root Hroot) as [->|Hsrc].
+    - exfalso. exact (Hnotv Hdyn).
+    - eapply expr_root_reaches_dyn; eauto.
   Qed.
 
 
