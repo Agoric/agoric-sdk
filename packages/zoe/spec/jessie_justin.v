@@ -15,7 +15,6 @@ Module JustinExec.
   Inductive prim_name :=
   | PrimFreeze
   | PrimHarden
-  | PrimMakeCounter
   | PrimAssert
   | PrimId
   | PrimFail.
@@ -42,7 +41,6 @@ Module JustinExec.
     State 0%nat [] [] [
       ("freeze", VPrim "freeze");
       ("harden", VPrim "harden");
-      ("makeCounter", VPrim "makeCounter");
       ("assert", VPrim "assert");
       ("id", VPrim "id");
       ("fail", VPrim "fail")
@@ -243,14 +241,7 @@ Module JustinExec.
 
   Definition apply_prim (σ : state) (name : string) (args : list val)
     : core_expr * state :=
-    if String.eqb name "makeCounter" then
-      match args with
-      | [] =>
-          let '(v, σ') := alloc_counter σ in
-          (CoreLit v, σ')
-      | _ => (CoreBzzt, σ)
-      end
-    else if String.eqb name "assert" then
+    if String.eqb name "assert" then
       match args with
       | [VJson (JBool true)] => (CoreLit VUndefined, σ)
       | [VJson (JBool false)] => (CoreBzzt, σ)

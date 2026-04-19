@@ -64,16 +64,16 @@ Definition makeCounter_assert_prog : core_expr :=
           [CoreBinop EqStrictOp (CoreVar "n") (CoreLit (VJson (JNum 2)))]))).
 
 Example makeCounter_assert_works :
-  fst (normalize 20 empty_state makeCounter_assert_prog) = CoreLit VUndefined.
+  fst (counter_normalize 20 counter_empty_state makeCounter_assert_prog) = CoreLit VUndefined.
 Proof. reflexivity. Qed.
 
 Example makeCounter_final_cell_is_two :
-  snd (normalize 20 empty_state makeCounter_assert_prog) =
+  snd (counter_normalize 20 counter_empty_state makeCounter_assert_prog) =
     State 2%nat
       [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
                         ("decr", VPrim "counter.decr.z")])]
       [1%nat]
-      (st_env empty_state)
+      (st_env counter_empty_state)
       [(0%nat, 2)]
       [("counter.incr.z", CounterIncr 0%nat);
        ("counter.decr.z", CounterDecr 0%nat)].
@@ -96,13 +96,13 @@ Example makeCounter_surface_compile_matches_regression :
 Proof. vm_compute. reflexivity. Qed.
 
 Definition counter_after_makeCounter : val :=
-  match fst (apply_prim empty_state "makeCounter" []) with
+  match fst (counter_apply_prim counter_empty_state "makeCounter" []) with
   | CoreLit v => v
   | _ => VUndefined
   end.
 
 Definition state_after_makeCounter : state :=
-  snd (apply_prim empty_state "makeCounter" []).
+  snd (counter_apply_prim counter_empty_state "makeCounter" []).
 
 Definition entry_cap_after_makeCounter : option (val * state) :=
   alloc_entry_cap state_after_makeCounter counter_after_makeCounter.

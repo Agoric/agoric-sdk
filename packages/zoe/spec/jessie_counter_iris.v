@@ -12,13 +12,13 @@ Module JessieCounterIris.
   Import JustinIris.
 
   Definition counter_after_makeCounter : val :=
-    match fst (apply_prim empty_state "makeCounter" []) with
+    match fst (counter_apply_prim counter_empty_state "makeCounter" []) with
     | CoreLit v => v
     | _ => VUndefined
     end.
 
   Definition state_after_makeCounter : state :=
-    snd (apply_prim empty_state "makeCounter" []).
+    snd (counter_apply_prim counter_empty_state "makeCounter" []).
 
   Definition entry_cap_after_makeCounter : option (val * state) :=
     alloc_entry_cap state_after_makeCounter counter_after_makeCounter.

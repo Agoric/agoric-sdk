@@ -9,6 +9,11 @@ Module JessieCounterCase.
   Import Justin.
   Import JustinExec.
 
+  Definition counter_empty_state : state :=
+    State (st_next_loc empty_state) (st_store empty_state) (st_frozen empty_state)
+      (("makeCounter", VPrim "makeCounter") :: st_env empty_state)
+      (st_cells empty_state) (st_dyn_prims empty_state).
+
   Definition alloc_counter_cap (σ : state) (counter : val) (field : string)
     : option (val * state) :=
     match counter with
@@ -32,6 +37,18 @@ Module JessieCounterCase.
   Definition alloc_exit_cap (σ : state) (counter : val) : option (val * state) :=
     alloc_counter_cap σ counter "decr".
 
+  Definition counter_apply_prim (σ : state) (name : string) (args : list val)
+    : core_expr * state :=
+    if String.eqb name "makeCounter" then
+      match args with
+      | [] =>
+          let '(v, σ') := alloc_counter σ in
+          (CoreLit v, σ')
+      | _ => (CoreBzzt, σ)
+      end
+    else
+      apply_prim σ name args.
+
   Definition invoke_cap_method (σ : state) (cap : val) (field : string)
     : option (val * state) :=
     match cap with
@@ -40,7 +57,7 @@ Module JessieCounterCase.
         | Some obj =>
             match lookup_field (obj_fields obj) field with
             | Some (VPrim name) =>
-                match apply_prim σ name [] with
+                match counter_apply_prim σ name [] with
                 | (CoreLit v, σ') => Some (v, σ')
                 | _ => None
                 end
@@ -49,6 +66,182 @@ Module JessieCounterCase.
         | None => None
         end
     | _ => None
+    end.
+
+  Fixpoint counter_step (σ : state) (e : core_expr) : option (core_expr * state) :=
+    match e with
+    | CoreLit _ => None
+    | CoreVar x =>
+        match lookup_assoc x (st_env σ) with
+        | Some v => Some (CoreLit v, σ)
+        | None => Some (CoreBzzt, σ)
+        end
+    | CoreAllocObj flds =>
+        match all_lit_fields flds with
+        | Some vs =>
+            let '(v, σ') := alloc_obj σ vs in
+            Some (CoreLit v, σ')
+        | None =>
+            let fix step_fields flds :=
+                match flds with
+                | [] => None
+                | (k, e1) :: rest =>
+                    match counter_step σ e1 with
+                    | Some (e1', σ') => Some (CoreAllocObj ((k, e1') :: rest), σ')
+                    | None =>
+                        match e1 with
+                        | CoreLit _ =>
+                            match step_fields rest with
+                            | Some (CoreAllocObj rest', σ') =>
+                                Some (CoreAllocObj ((k, e1) :: rest'), σ')
+                            | other => other
+                            end
+                        | _ => None
+                        end
+                    end
+                end
+            in step_fields flds
+        end
+    | CoreGet e1 fld =>
+        match e1 with
+        | CoreLit (VLoc l) =>
+            match lookup_obj σ l with
+            | Some obj =>
+                Some (CoreLit (match lookup_field (obj_fields obj) fld with
+                               | Some v => v
+                               | None => VUndefined
+                               end), σ)
+            | None => Some (CoreBzzt, σ)
+            end
+        | CoreLit _ => Some (CoreBzzt, σ)
+        | _ =>
+            match counter_step σ e1 with
+            | Some (e1', σ') => Some (CoreGet e1' fld, σ')
+            | None => None
+            end
+        end
+    | CoreApp f args =>
+        match f with
+        | CoreLit (VPrim name) =>
+            match all_lit args with
+            | Some vs => Some (counter_apply_prim σ name vs)
+            | None =>
+                let fix step_args args :=
+                    match args with
+                    | [] => None
+                    | e1 :: rest =>
+                        match counter_step σ e1 with
+                        | Some (e1', σ') => Some (CoreApp f (e1' :: rest), σ')
+                        | None =>
+                            match e1 with
+                            | CoreLit _ =>
+                                match step_args rest with
+                                | Some (CoreApp _ rest', σ') =>
+                                    Some (CoreApp f (e1 :: rest'), σ')
+                                | other => other
+                                end
+                            | _ => None
+                            end
+                        end
+                    end
+              in step_args args
+            end
+        | CoreLit _ => Some (CoreBzzt, σ)
+        | _ =>
+            match counter_step σ f with
+            | Some (f', σ') => Some (CoreApp f' args, σ')
+            | None => None
+            end
+        end
+    | CoreLetIn x rhs body =>
+        match rhs with
+        | CoreLit v => Some (subst x v body, σ)
+        | _ =>
+            match counter_step σ rhs with
+            | Some (rhs', σ') => Some (CoreLetIn x rhs' body, σ')
+            | None => None
+            end
+        end
+    | CoreTypeOf e1 =>
+        match e1 with
+        | CoreLit v => Some (CoreLit (VJson (JStr (typeof_val v))), σ)
+        | _ =>
+            match counter_step σ e1 with
+            | Some (e1', σ') => Some (CoreTypeOf e1', σ')
+            | None => None
+            end
+        end
+    | CoreCond e0 e1 e2 =>
+        match e0 with
+        | CoreLit v => Some (if truthy v then e1 else e2, σ)
+        | _ =>
+            match counter_step σ e0 with
+            | Some (e0', σ') => Some (CoreCond e0' e1 e2, σ')
+            | None => None
+            end
+        end
+    | CoreBinop EqStrictOp e1 e2 =>
+        match e1, e2 with
+        | CoreLit v1, CoreLit v2 =>
+            Some (CoreLit (VJson (JBool (strict_eqb v1 v2))), σ)
+        | CoreLit _, _ =>
+            match counter_step σ e2 with
+            | Some (e2', σ') => Some (CoreBinop EqStrictOp e1 e2', σ')
+            | None => None
+            end
+        | _, _ =>
+            match counter_step σ e1 with
+            | Some (e1', σ') => Some (CoreBinop EqStrictOp e1' e2, σ')
+            | None => None
+            end
+        end
+    | CoreBinop AddNum e1 e2 =>
+        match e1, e2 with
+        | CoreLit (VJson (JNum n1)), CoreLit (VJson (JNum n2)) =>
+            Some (CoreLit (VJson (JNum (n1 + n2))), σ)
+        | CoreLit _, _ =>
+            match counter_step σ e2 with
+            | Some (e2', σ') => Some (CoreBinop AddNum e1 e2', σ')
+            | None => None
+            end
+        | _, _ =>
+            match counter_step σ e1 with
+            | Some (e1', σ') => Some (CoreBinop AddNum e1' e2, σ')
+            | None => None
+            end
+        end
+    | CoreBinop ConcatStr e1 e2 =>
+        match e1, e2 with
+        | CoreLit (VJson (JStr s1)), CoreLit (VJson (JStr s2)) =>
+            Some (CoreLit (VJson (JStr (s1 ++ s2))), σ)
+        | CoreLit _, _ =>
+            match counter_step σ e2 with
+            | Some (e2', σ') => Some (CoreBinop ConcatStr e1 e2', σ')
+            | None => None
+            end
+        | _, _ =>
+            match counter_step σ e1 with
+            | Some (e1', σ') => Some (CoreBinop ConcatStr e1' e2, σ')
+            | None => None
+            end
+        end
+    | CoreBzzt => None
+    end.
+
+  Fixpoint counter_normalize (fuel : nat) (σ : state) (e : core_expr)
+    : core_expr * state :=
+    match fuel with
+    | O => (CoreBzzt, σ)
+    | S fuel' =>
+        match counter_step σ e with
+        | Some (e', σ') =>
+            match e' with
+            | CoreLit _ => (e', σ')
+            | CoreBzzt => (CoreBzzt, σ')
+            | _ => counter_normalize fuel' σ' e'
+            end
+        | None => (e, σ)
+        end
     end.
 
   Fixpoint invoke_cap_trace (σ : state) (cap : val) (trace : list string)
@@ -136,6 +329,7 @@ Module JessieCounterCase.
     intros Hobj Hdyn Hcell.
     unfold invoke_cap_method.
     rewrite Hobj. simpl.
+    unfold counter_apply_prim.
     unfold apply_prim.
     assert (Hmk : counter_incr_name cell <> "makeCounter"). { discriminate. }
     assert (Has : counter_incr_name cell <> "assert"). { discriminate. }
@@ -172,6 +366,7 @@ Module JessieCounterCase.
     intros Hobj Hdyn Hcell.
     unfold invoke_cap_method.
     rewrite Hobj. simpl.
+    unfold counter_apply_prim.
     unfold apply_prim.
     assert (Hmk : counter_decr_name cell <> "makeCounter"). { discriminate. }
     assert (Has : counter_decr_name cell <> "assert"). { discriminate. }
@@ -225,13 +420,13 @@ Module JessieCounterCase.
   Qed.
 
   Example makeCounter_allocates_hardened_object_with_methods :
-    apply_prim empty_state "makeCounter" [] =
+    counter_apply_prim counter_empty_state "makeCounter" [] =
       (CoreLit (VLoc 1%nat),
         State 2%nat
           [(1%nat, HeapObj [("incr", VPrim "counter.incr.z");
                             ("decr", VPrim "counter.decr.z")])]
           [1%nat]
-          (st_env empty_state)
+          (st_env counter_empty_state)
           [(0%nat, 0)]
           [("counter.incr.z", CounterIncr 0%nat);
            ("counter.decr.z", CounterDecr 0%nat)]).
