@@ -587,4 +587,15 @@ Current milestone:
   - a private mutable counter cell
   - a hardened returned object with `incr` and `decr` methods
   - dynamic method primitives that close over the private cell
-- authority-splitting via passing only `{ incr: counter.incr }` or `{ decr: counter.decr }` is still pending
+- authority-splitting is now modeled concretely:
+  - `alloc_entry_cap` derives a hardened `{ incr: counter.incr }` capability object
+  - `alloc_exit_cap` derives a hardened `{ decr: counter.decr }` capability object
+  - executable regressions show:
+    - the entry capability hides `decr`
+    - the exit capability hides `incr`
+    - calling the entry capability twice drives the private cell to `2`
+    - calling the exit capability twice drives the private cell to `-2`
+- the Iris language layer now has atomic `base_step` proofs for the split capabilities:
+  - entry capability lookup exposes only `incr`
+  - exit capability lookup exposes only `decr`
+  - the exposed method calls step to the expected updated cell states

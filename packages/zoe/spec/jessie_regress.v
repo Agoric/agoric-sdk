@@ -93,6 +93,65 @@ Example makeCounter_surface_compile_matches_regression :
   Some makeCounter_assert_prog.
 Proof. vm_compute. reflexivity. Qed.
 
+Definition counter_after_makeCounter : val :=
+  match fst (apply_prim empty_state "makeCounter" []) with
+  | CoreLit v => v
+  | _ => VUndefined
+  end.
+
+Definition state_after_makeCounter : state :=
+  snd (apply_prim empty_state "makeCounter" []).
+
+Definition entry_cap_after_makeCounter : option (val * state) :=
+  alloc_entry_cap state_after_makeCounter counter_after_makeCounter.
+
+Definition exit_cap_after_makeCounter : option (val * state) :=
+  alloc_exit_cap state_after_makeCounter counter_after_makeCounter.
+
+Example entry_cap_split_works :
+  entry_cap_after_makeCounter <> None.
+Proof. vm_compute. discriminate. Qed.
+
+Example exit_cap_split_works :
+  exit_cap_after_makeCounter <> None.
+Proof. vm_compute. discriminate. Qed.
+
+Example entry_cap_hides_decr :
+  match entry_cap_after_makeCounter with
+  | Some (cap, σ) => invoke_cap_method σ cap "decr"
+  | None => None
+  end = None.
+Proof. vm_compute. reflexivity. Qed.
+
+Example exit_cap_hides_incr :
+  match exit_cap_after_makeCounter with
+  | Some (cap, σ) => invoke_cap_method σ cap "incr"
+  | None => None
+  end = None.
+Proof. vm_compute. reflexivity. Qed.
+
+Example entry_cap_two_calls_reach_two :
+  match entry_cap_after_makeCounter with
+  | Some (cap, σ) =>
+      match invoke_cap_trace σ cap ["incr"; "incr"] with
+      | Some σ' => lookup_cell σ' 0%nat
+      | None => None
+      end
+  | None => None
+  end = Some 2.
+Proof. vm_compute. reflexivity. Qed.
+
+Example exit_cap_two_calls_reach_minus_two :
+  match exit_cap_after_makeCounter with
+  | Some (cap, σ) =>
+      match invoke_cap_trace σ cap ["decr"; "decr"] with
+      | Some σ' => lookup_cell σ' 0%nat
+      | None => None
+      end
+  | None => None
+  end = Some (-2).
+Proof. vm_compute. reflexivity. Qed.
+
 Example module_end_to_end :
   eval_module 6
     (Module [("y", VJson (JNum 2))]

@@ -1,0 +1,33 @@
+{
+  // Automatically format with Prettier on save
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+  "typescript.preferences.importModuleSpecifierEnding": "js",
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // ESLint config
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "eslint.rules.customizations": [
+    // Leave this to Prettier itself
+    { "rule": "prettier/*", "severity": "off" },
+    // Error in CI but a common state while coding in IDE
+    { "rule": "no-unused-vars", "severity": "warn" },
+    // Imports are auto-fixed on save
+    { "rule": "import/newline-after-import", "severity": "off" },
+    { "rule": "import/order", "severity": "off" },
+  ],
+  "eslint.useESLintClass": true,
+  "eslint.packageManager": "yarn",
+
+  // Hide generated Coq artifacts from the explorer
+  "files.exclude": {
+    "**/*.aux": true,
+    "**/*.glob": true,
+    "**/*.vo": true,
+    "**/*.vok": true,
+    "**/*.vos": true
+  }
+}

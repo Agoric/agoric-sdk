@@ -79,3 +79,10 @@ _testoutput.txt
 junit.xml
 endo-sha.txt
 .aider*
+
+# Coq build artifacts
+*.aux
+*.glob
+*.vo
+*.vok
+*.vos
