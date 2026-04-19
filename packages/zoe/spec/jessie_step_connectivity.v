@@ -575,6 +575,50 @@ Module JessieStepConnectivity.
     destruct (step_args_with apply_prim σ (CoreVal (VPrim p)) rest) as [[e' σ']|] eqn:Hrest; reflexivity.
   Qed.
 
+  Lemma step_with_var_frame σ x e' σ' :
+    step_with apply_prim σ (CoreVar x) = Some (e', σ') ->
+    step_frame σ σ'.
+  Proof.
+    simpl.
+    destruct (lookup_assoc x (st_env σ));
+      intros Hstep; inversion Hstep; subst; clear Hstep;
+      apply StepFrameSame; reflexivity.
+  Qed.
+
+  Lemma step_with_eqstrict_vals_frame σ v1 v2 e' σ' :
+    step_with apply_prim σ (CoreBinop EqStrictOp (CoreVal v1) (CoreVal v2)) =
+      Some (e', σ') ->
+    step_frame σ σ'.
+  Proof.
+    intros Hstep.
+    simpl in Hstep.
+    inversion Hstep; subst; clear Hstep.
+    apply StepFrameSame; reflexivity.
+  Qed.
+
+  Lemma step_with_addnum_vals_frame σ e1 e2 e' σ' :
+    step_with apply_prim σ (CoreBinop AddNum e1 e2) = Some (e', σ') ->
+    (exists n1 n2, e1 = CoreVal (VLit (LJson (JNum n1))) /\ e2 = CoreVal (VLit (LJson (JNum n2)))) ->
+    step_frame σ σ'.
+  Proof.
+    intros Hstep (n1 & n2 & -> & ->).
+    simpl in Hstep.
+    inversion Hstep; subst; clear Hstep.
+    apply StepFrameSame; reflexivity.
+  Qed.
+
+  Lemma step_with_concatstr_vals_frame σ e1 e2 e' σ' :
+    step_with apply_prim σ (CoreBinop ConcatStr e1 e2) = Some (e', σ') ->
+    (exists s1 s2, e1 = CoreVal (VLit (LJson (JStr s1))) /\ e2 = CoreVal (VLit (LJson (JStr s2)))) ->
+    step_frame σ σ'.
+  Proof.
+    intros Hstep (s1 & s2 & -> & ->).
+    simpl in Hstep.
+    inversion Hstep; subst; clear Hstep.
+    apply StepFrameSame; reflexivity.
+  Qed.
+
+
   Theorem expr_reaches_frame :
     forall σ σ' e pid,
       step_frame σ σ' ->

@@ -716,6 +716,20 @@ than leave the file broken. The next pass should likely factor the `CoreBinop`
 cases into a small auxiliary lemma instead of trying to finish the whole mutual
 theorem in one script.
 
+Follow-up note: I started that decomposition in `jessie_step_connectivity.v`,
+but narrowed it further after the same local-fixpoint issue reappeared in the
+larger constructor lemmas. The currently checked pieces are the smallest stable
+ones:
+
+- `step_with_var_frame`
+- `step_with_eqstrict_vals_frame`
+- `step_with_addnum_vals_frame`
+- `step_with_concatstr_vals_frame`
+
+So the proof split is still the right direction; the immediate next step is to
+grow these into constructor-specific frame lemmas one case at a time, rather
+than trying to reintroduce the whole mutual theorem all at once.
+
 The underlying case-study lemmas in `jessie_counter.v` make the same story visible one step earlier, before the regression wrappers:
 
 - `invoke_entry_cap_step`
