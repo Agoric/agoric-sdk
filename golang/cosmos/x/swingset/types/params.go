@@ -107,6 +107,12 @@ func (p Params) ValidateBasic() error {
 	if err := validateVatCleanupBudget(p.VatCleanupBudget); err != nil {
 		return err
 	}
+	if err := validateInstallationDeadlineBlocks(p.InstallationDeadlineBlocks); err != nil {
+		return err
+	}
+	if err := validateInstallationDeadlineSeconds(p.InstallationDeadlineSeconds); err != nil {
+		return err
+	}
 	if err := validateBundleUncompressedSizeLimitBytes(p.BundleUncompressedSizeLimitBytes); err != nil {
 		return err
 	}
@@ -226,18 +232,30 @@ func validateChunkSizeLimitBytes(i interface{}) error {
 }
 
 func validateInstallationDeadlineSeconds(i interface{}) error {
-	if _, ok := i.(int64); !ok {
+	value, ok := i.(int64)
+	if !ok {
 		return fmt.Errorf("installation_deadline_seconds must be int64, got %#v", i)
 	}
-	// -1 means unlimited, 0 means expire immediately, positive is a duration.
+	if value < -1 {
+		return fmt.Errorf(
+			"installation_deadline_seconds must be -1 (unlimited), 0 (expire immediately), or positive, got %d",
+			value,
+		)
+	}
 	return nil
 }
 
 func validateInstallationDeadlineBlocks(i interface{}) error {
-	if _, ok := i.(int64); !ok {
+	value, ok := i.(int64)
+	if !ok {
 		return fmt.Errorf("installation_deadline_blocks must be int64, got %#v", i)
 	}
-	// -1 means unlimited, 0 means expire immediately, positive is a block count.
+	if value < -1 {
+		return fmt.Errorf(
+			"installation_deadline_blocks must be -1 (unlimited), 0 (expire immediately), or positive, got %d",
+			value,
+		)
+	}
 	return nil
 }
 
