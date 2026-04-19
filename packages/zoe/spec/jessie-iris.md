@@ -695,6 +695,38 @@ The surface-level syntax story is also in place, but it is not the main theorem.
 
 There is then a regression showing that the parsed surface program compiles to the intended core term `makeCounter_assert_prog`. This is what connects the concrete example text to the mechanized operational result above.
 
+## Public Client Boundary
+
+The development now has an explicit public client syntax in
+`jessie_public.v`. This is the intended boundary for any future
+"arbitrary client context" theorem.
+
+The important point is that `JessiePublic.expr` can compile only to
+core terms built from:
+
+- literal values
+- variables
+- object construction
+- property access
+- application
+- let-binding
+- `typeof`
+- conditionals
+- binary operators
+
+It does **not** let a client program directly construct:
+
+- `VLoc ...`
+- `VPrim ...`
+- `PrimDyn ...`
+- `PrimExt ...`
+
+So the surface-level forgeability problem has been removed from the
+public interface. What remains is the proof work: showing that when a
+public client expression is evaluated from the entry-capability state,
+all runtime authority that becomes reachable is still increment-only,
+and symmetrically for the exit side.
+
 ### Important Boundary
 
 Justin still excludes function literals and assignment in the shared Justin parser. There are explicit regressions asserting:
