@@ -505,6 +505,22 @@ Module JessieStepConnectivity.
     eapply fields_member_reaches_dyn; eauto.
   Qed.
 
+  Lemma get_result_reaches_source σ l obj fld v pid :
+    lookup_obj σ l = Some obj ->
+    lookup_field (obj_fields obj) fld = Some v ->
+    reaches_dyn σ v pid ->
+    expr_reaches_dyn σ (CoreGet (CoreVal (VLoc l)) fld) pid.
+  Proof.
+    intros Hobj Hfield Hreach.
+    apply ExprReachesGet.
+    apply ExprReachesVal.
+    unfold reaches_dyn in *.
+    econstructor 2.
+    - exact Hobj.
+    - exact Hfield.
+    - exact Hreach.
+  Qed.
+
   Lemma builtin_apply_reaches_from_arg σ name args root σ' pid :
     apply_prim σ (PrimBuiltin name) args = (CoreVal root, σ') ->
     reaches_dyn σ' root pid ->
