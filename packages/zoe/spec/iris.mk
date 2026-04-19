@@ -21,6 +21,13 @@ help:
 	@echo "  clean        Remove Coq build artifacts"
 	@echo "  env          Print shell command to load the switch env"
 	@echo ""
+	@echo "Suggested workflow:"
+	@echo '  1. make -f iris.mk ubuntu-deps'
+	@echo '  2. make -f iris.mk opam-init'
+	@echo '  3. make -f iris.mk switch'
+	@echo '  4. make -f iris.mk install'
+	@echo '  5. make -f iris.mk build'
+	@echo ""
 	@echo "Variables:"
 	@echo "  SOURCES      Space-separated .v files to compile"
 	@echo ""

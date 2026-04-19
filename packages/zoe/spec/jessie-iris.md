@@ -39,25 +39,7 @@ Per-file descriptions live as one-line comments at the top of the Coq files.
 
 ## Dev Tools
 
-`iris.mk` is the local bootstrap/build helper for the Coq development toolchain.
-
-In particular, it sets up:
-
-- Ubuntu packages for local development: `build-essential`, `m4`, `pkg-config`, `bubblewrap`, `opam`, `git`
-- an opam switch named `iris` by default
-- Coq `8.18.0`
-- `coq-iris`
-- `vsrocq-language-server` `2.3.4`
-
-Its intended workflow is:
-
-1. `make -f iris.mk ubuntu-deps`
-2. `make -f iris.mk opam-init`
-3. `make -f iris.mk switch`
-4. `make -f iris.mk install`
-5. `make -f iris.mk build`
-
-For day-to-day work, `make -f iris.mk build SOURCES="..."` is the lightweight way to recompile only the relevant `.v` files, with dependencies generated via `coqdep`.
+`iris.mk` is the local bootstrap/build helper for the Coq development toolchain. It covers the opam switch, Coq/Iris installation, the language server, and incremental `coqdep`-based builds. For the exact workflow and commands, use `make -f iris.mk help`.
 
 ### Commit Discipline
 
