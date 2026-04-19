@@ -1,5 +1,5 @@
 From Coq Require Import Lia List String ZArith Program.Equality.
-Require Import jessie_lang jessie_justin jessie_counter_reach jessie_public.
+Require Import jessie_lang jessie_justin jessie_counter jessie_counter_reach jessie_public.
 
 Import ListNotations.
 Open Scope string_scope.
@@ -8,6 +8,7 @@ Open Scope Z_scope.
 Module JessieStepConnectivity.
   Import Justin.
   Import JustinExec.
+  Import JessieCounterCase.
   Import JessieCounterReach.
   Import JessiePublic.
 
@@ -385,6 +386,110 @@ Module JessieStepConnectivity.
     assert (Hold : reaches_dyn σ v pid).
     { eapply reaches_dyn_old_after_alloc; eauto. }
     eapply fields_member_reaches_dyn; eauto.
+  Qed.
+
+  Lemma builtin_apply_reaches_from_arg σ name args root σ' pid :
+    apply_prim σ (PrimBuiltin name) args = (CoreVal root, σ') ->
+    reaches_dyn σ' root pid ->
+    exists arg, In arg args /\ reaches_dyn σ arg pid.
+  Proof.
+    intros Happ Hreach.
+    eapply builtin_conservative; eauto.
+  Qed.
+
+  Lemma dyn_apply_no_reaches σ pid args root σ' badpid :
+    apply_prim σ (PrimDyn pid) args = (CoreVal root, σ') ->
+    reaches_dyn σ' root badpid ->
+    False.
+  Proof.
+    intros Happ Hreach.
+    unfold apply_prim in Happ.
+    destruct (lookup_nat_assoc pid (st_dyn_prims σ)) as [[cell|cell]|] eqn:Hdyn;
+      try discriminate;
+      destruct args; try discriminate;
+      destruct (lookup_cell σ cell) eqn:Hcell; inversion Happ; subst; clear Happ;
+      unfold reaches_dyn in Hreach;
+      eapply reaches_val_from_lit in Hreach; discriminate.
+  Qed.
+
+  Lemma ext_apply_no_reaches σ pid args root σ' badpid :
+    apply_prim σ (PrimExt pid) args = (CoreVal root, σ') ->
+    reaches_dyn σ' root badpid ->
+    False.
+  Proof. intros Happ _. discriminate Happ. Qed.
+
+  Lemma closed_state_empty_state :
+    closed_state empty_state.
+  Proof.
+    constructor.
+    - intros l obj fld v Hobj.
+      unfold lookup_obj in Hobj. simpl in Hobj. discriminate.
+    - intros x v Hlookup.
+      unfold empty_state in Hlookup. simpl in Hlookup.
+      repeat
+        match goal with
+        | H : context [String.eqb ?a ?b] |- _ =>
+            destruct (String.eqb_spec a b); subst; simpl in H
+        end;
+      inversion Hlookup; subst; simpl; auto.
+    - intros l n Hcell.
+      unfold empty_state, lookup_cell in Hcell. simpl in Hcell. discriminate.
+    - intros pid dp Hdyn.
+      unfold empty_state in Hdyn. simpl in Hdyn. discriminate.
+  Qed.
+
+  Lemma closed_state_counter_empty_state :
+    closed_state JessieCounterCase.counter_empty_state.
+  Proof.
+    constructor.
+    - intros l obj fld v Hobj.
+      unfold JessieCounterCase.counter_empty_state, lookup_obj in Hobj.
+      simpl in Hobj. discriminate.
+    - intros x v Hlookup.
+      unfold JessieCounterCase.counter_empty_state in Hlookup.
+      simpl in Hlookup.
+      destruct (String.eqb_spec x "makeCounter"); subst.
+      + inversion Hlookup; subst. simpl. auto.
+      + destruct (String.eqb_spec x "freeze"); subst; simpl in Hlookup.
+        * inversion Hlookup; subst. simpl. auto.
+        * destruct (String.eqb_spec x "harden"); subst; simpl in Hlookup.
+          { inversion Hlookup; subst. simpl. auto. }
+          destruct (String.eqb_spec x "assert"); subst; simpl in Hlookup.
+          { inversion Hlookup; subst. simpl. auto. }
+          destruct (String.eqb_spec x "id"); subst; simpl in Hlookup.
+          { inversion Hlookup; subst. simpl. auto. }
+          destruct (String.eqb_spec x "fail"); subst; simpl in Hlookup.
+          { inversion Hlookup; subst. simpl. auto. }
+          discriminate.
+    - intros l n Hcell.
+      unfold JessieCounterCase.counter_empty_state, lookup_cell in Hcell.
+      simpl in Hcell. discriminate.
+    - intros pid dp Hdyn.
+      unfold JessieCounterCase.counter_empty_state in Hdyn.
+      simpl in Hdyn. discriminate.
+  Qed.
+
+  Example builtin_freeze_reaches_only_from_arg :
+    forall pid,
+    reaches_dyn (freeze_shallow empty_state (VLoc 0%nat)) (VLoc 0%nat) pid ->
+    exists arg, In arg [VLoc 0%nat] /\ reaches_dyn empty_state arg pid.
+  Proof.
+    intros pid Hreach.
+    eapply (builtin_apply_reaches_from_arg
+      empty_state PrimFreeze [VLoc 0%nat] (VLoc 0%nat)
+      (freeze_shallow empty_state (VLoc 0%nat)) pid).
+    - reflexivity.
+    - exact Hreach.
+  Qed.
+
+  Example dyn_apply_returns_no_dyn_reachability :
+    forall pid badpid root σ',
+      apply_prim empty_state (PrimDyn pid) [] = (CoreVal root, σ') ->
+      reaches_dyn σ' root badpid ->
+      False.
+  Proof.
+    intros pid badpid root σ' Happ Hreach.
+    eapply dyn_apply_no_reaches; eauto.
   Qed.
 
 End JessieStepConnectivity.
