@@ -1,11 +1,61 @@
-(* JSON-level parsing definitions and examples built on the generic parser helpers. *)
+(* JSON values and parsing definitions built on the generic parser helpers. *)
 From Coq Require Import Ascii List String ZArith.
-Require Import jessie_lang jessie_parse.
+Require Import jessie_parse.
 
 Import ListNotations.
 Open Scope char_scope.
 Open Scope string_scope.
 Open Scope Z_scope.
+
+Inductive jval :=
+| JNull
+| JBool (b : bool)
+| JNum (n : Z)
+| JStr (s : string)
+| JArr (xs : list jval)
+| JObj (fields : list (string * jval)).
+
+Definition parse_nat : parser nat :=
+  fun cs =>
+    match cs with
+    | c :: rest =>
+        match digit_value c with
+        | Some d =>
+            let '(n, rem) := digits_to_nat d rest in
+            Some (n, rem)
+        | None => None
+        end
+    | [] => None
+    end.
+
+Definition parse_int : parser Z :=
+  fun cs =>
+    match skip_ws_chars cs with
+    | "-"%char :: rest =>
+        match parse_nat rest with
+        | Some (n, rest') => Some (- Z.of_nat n, rest')
+        | None => None
+        end
+    | rest =>
+        match parse_nat rest with
+        | Some (n, rest') => Some (Z.of_nat n, rest')
+        | None => None
+        end
+    end.
+
+Fixpoint take_string_chars (acc : list ascii) (cs : list ascii)
+    : option (string * list ascii) :=
+  match cs with
+  | [] => None
+  | c :: rest =>
+      if Ascii.eqb c """" then
+        Some (string_of_ascii_list (rev acc), rest)
+      else
+        take_string_chars (c :: acc) rest
+  end.
+
+Definition parse_string : parser string :=
+  bind (char """") (fun _ cs => take_string_chars [] cs).
 
 Fixpoint parse_value (fuel : nat) : parser jval
 with parse_members (fuel : nat) : parser (list (string * jval))

@@ -1,18 +1,11 @@
 (* Shared syntax, literals, primitive references, and surface syntax fragments. *)
 From Coq Require Import List String ZArith.
 From iris.program_logic Require Export language ectx_language.
+Require Export jessie_json.
 
 Import ListNotations.
 Open Scope Z_scope.
 Open Scope string_scope.
-
-Inductive jval :=
-| JNull
-| JBool (b : bool)
-| JNum (n : Z)
-| JStr (s : string)
-| JArr (xs : list jval)
-| JObj (fields : list (string * jval)).
 
 Inductive json_expr :=
 | JsonLit (v : jval).

@@ -1,6 +1,6 @@
 (* Parsed makeCounter fixture and compilation regression. *)
 From Coq Require Import Ascii List String ZArith.
-Require Import jessie_lang jessie_parse jessie_parse_jessie jessie_surface_exec.
+Require Import jessie_lang jessie_parse_jessie jessie_surface_exec.
 
 Import ListNotations.
 Open Scope char_scope.
@@ -33,15 +33,22 @@ assert(n === 2);
 
   Definition makeCounter_fixture_program : program :=
     [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (LJson (JNum 0))));
-         SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
-                               ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]))]));
+         SReturn (Call (Base (Var "harden"))
+           [Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
+                 ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]])]));
       SConst "counter" (Call (Base (Var "makeCounter")) []);
       SExpr (Call (Get (Base (Var "counter")) "incr") []);
       SConst "n" (Call (Get (Base (Var "counter")) "incr") []);
       SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (LJson (JNum 2))))]) ].
 
   Definition makeCounter_surface_prog : program :=
-    makeCounter_fixture_program.
+    [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (LJson (JNum 0))));
+         SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
+                               ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]))]));
+      SConst "counter" (Call (Base (Var "makeCounter")) []);
+      SExpr (Call (Get (Base (Var "counter")) "incr") []);
+      SConst "n" (Call (Get (Base (Var "counter")) "incr") []);
+      SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (LJson (JNum 2))))]) ].
 
   Definition compile_makeCounter_fixture (p : program) : option program :=
     match p with

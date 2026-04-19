@@ -1,6 +1,5 @@
-(* Generic parser combinators and lexical helpers shared by JSON and Justin parsing. *)
-From Coq Require Import Ascii List String ZArith.
-Require Import jessie_lang.
+(* Generic parser combinators and lexical helpers shared by JSON and Jessie parsing. *)
+From Coq Require Import Ascii List String.
 
 Import ListNotations.
 Open Scope char_scope.
@@ -97,19 +96,6 @@ Fixpoint digits_to_nat (acc : nat) (cs : list ascii) : nat * list ascii :=
   | [] => (acc, [])
   end.
 
-Definition parse_nat : parser nat :=
-  fun cs =>
-    match cs with
-    | c :: rest =>
-        match digit_value c with
-        | Some d =>
-            let '(n, rem) := digits_to_nat d rest in
-            Some (n, rem)
-        | None => None
-        end
-    | [] => None
-    end.
-
 Fixpoint string_of_ascii_list (xs : list ascii) : string :=
   match xs with
   | [] => EmptyString
@@ -147,35 +133,5 @@ Definition parse_ident : parser string :=
         else None
     | [] => None
     end.
-
-Definition parse_int : parser Z :=
-  fun cs =>
-    match skip_ws_chars cs with
-    | "-"%char :: rest =>
-        match parse_nat rest with
-        | Some (n, rest') => Some (- Z.of_nat n, rest')
-        | None => None
-        end
-    | rest =>
-        match parse_nat rest with
-        | Some (n, rest') => Some (Z.of_nat n, rest')
-        | None => None
-        end
-    end.
-
-Fixpoint take_string_chars (acc : list ascii) (cs : list ascii)
-    : option (string * list ascii) :=
-  match cs with
-  | [] => None
-  | c :: rest =>
-      if Ascii.eqb c """" then
-        Some (string_of_ascii_list (rev acc), rest)
-      else
-        take_string_chars (c :: acc) rest
-  end
-.
-
-Definition parse_string : parser string :=
-  bind (char """") (fun _ cs => take_string_chars [] cs).
 
 Definition explode (s : string) : list ascii := string_chars s.
