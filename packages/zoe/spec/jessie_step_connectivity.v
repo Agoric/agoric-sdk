@@ -415,6 +415,28 @@ Module JessieStepConnectivity.
     - eapply expr_root_reaches_dyn; eauto.
   Qed.
 
+  Lemma expr_reaches_dyn_subst_sources σ x v e pid :
+    expr_reaches_dyn σ (subst x v e) pid ->
+    reaches_dyn σ v pid \/ expr_reaches_dyn σ e pid.
+  Proof.
+    intro Hreach.
+    destruct (expr_reaches_dyn_has_root σ (subst x v e) pid Hreach)
+      as [root [Hroot Hdyn]].
+    destruct (expr_root_subst_source σ x v e root Hroot) as [->|Hsrc].
+    - now left.
+    - right. eapply expr_root_reaches_dyn; eauto.
+  Qed.
+
+  Lemma let_value_step_reaches_source σ x v body pid :
+    expr_reaches_dyn σ (subst x v body) pid ->
+    expr_reaches_dyn σ (CoreLetIn x (CoreVal v) body) pid.
+  Proof.
+    intro Hreach.
+    destruct (expr_reaches_dyn_subst_sources σ x v body pid Hreach) as [Hv|Hbody].
+    - apply ExprReachesLetRhs. apply ExprReachesVal. exact Hv.
+    - apply ExprReachesLetBody. exact Hbody.
+  Qed.
+
 
   Fixpoint closed_val (σ : state) (v : val) : Prop :=
     match v with
