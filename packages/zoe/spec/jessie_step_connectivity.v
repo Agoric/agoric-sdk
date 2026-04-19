@@ -245,6 +245,45 @@ Module JessieStepConnectivity.
     - reflexivity.
   Qed.
 
+  Lemma mark_frozen_preserves_env σ l :
+    st_env (mark_frozen σ l) = st_env σ.
+  Proof.
+    unfold mark_frozen.
+    destruct (existsb (Nat.eqb l) (st_frozen σ)); reflexivity.
+  Qed.
+
+  Lemma freeze_shallow_preserves_env σ v :
+    st_env (freeze_shallow σ v) = st_env σ.
+  Proof.
+    destruct v; simpl; try reflexivity.
+    apply mark_frozen_preserves_env.
+  Qed.
+
+  Lemma freeze_deep_preserves_env fuel σ v :
+    st_env (freeze_deep fuel σ v) = st_env σ.
+  Proof.
+    revert σ v.
+    induction fuel as [|fuel IH]; intros σ v; simpl; [reflexivity|].
+    destruct v; try reflexivity.
+    remember (mark_frozen σ l) as σ1 eqn:Hσ1.
+    assert (Henv1 : st_env σ1 = st_env σ).
+    { subst σ1. apply mark_frozen_preserves_env. }
+    destruct (lookup_obj σ1 l) as [obj|] eqn:Hobj; [|exact Henv1].
+    assert (Hfold : forall flds σ0,
+      st_env (fold_left (fun σacc (kv : string * val) => freeze_deep fuel σacc (snd kv)) flds σ0) =
+      st_env σ0).
+    {
+      intros flds.
+      induction flds as [|[k w] rest IHrest]; intros σ0; simpl.
+      - reflexivity.
+      - transitivity (st_env (freeze_deep fuel σ0 w)).
+        + apply IHrest.
+        + apply IH.
+    }
+    rewrite Hfold.
+    exact Henv1.
+  Qed.
+
   Lemma env_lookup_closed σ x v :
     closed_state σ ->
     lookup_assoc x (st_env σ) = Some v ->
@@ -418,6 +457,248 @@ Module JessieStepConnectivity.
     False.
   Proof. intros Happ _. discriminate Happ. Qed.
 
+  Lemma apply_prim_frame σ p args e' σ' :
+    apply_prim σ p args = (e', σ') ->
+    step_frame σ σ'.
+  Proof.
+    intros Happ.
+    destruct p as [name|pid|pid]; unfold apply_prim in Happ.
+    - destruct name.
+      + destruct args as [|a args0]; simpl in Happ.
+        * inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
+        * destruct args0 as [|b args1]; simpl in Happ.
+          -- inversion Happ; subst; clear Happ.
+             constructor.
+             ++ apply freeze_shallow_preserves_store.
+             ++ apply freeze_shallow_preserves_env.
+          -- inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
+      + destruct args as [|a args0]; simpl in Happ.
+        * inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
+        * destruct args0 as [|b args1]; simpl in Happ.
+          -- inversion Happ; subst; clear Happ.
+             constructor.
+             ++ change (st_store (freeze_deep 20 σ a) = st_store σ).
+                apply freeze_deep_preserves_store.
+             ++ change (st_env (freeze_deep 20 σ a) = st_env σ).
+                apply freeze_deep_preserves_env.
+          -- inversion Happ; subst; clear Happ. apply StepFrameSame; reflexivity.
+      + destruct args as [|a args0]; simpl in Happ.
+        * inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+        * destruct args0 as [|b args1]; simpl in Happ.
+          -- destruct a; simpl in Happ.
+             ++ destruct l; simpl in Happ.
+                ** destruct v as [|b0|n|s|xs|fields]; simpl in Happ.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- destruct b0; inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                ** inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                ** inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+             ++ inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+             ++ inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+          -- destruct a; simpl in Happ.
+             ++ destruct l as [v|n|]; simpl in Happ.
+                ** destruct v as [|b0|n0|s0|xs0|fields0]; simpl in Happ.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- destruct b0; inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                   --- inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                ** inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+                ** inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+             ++ inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+             ++ inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+      + destruct args as [|a args0].
+        * simpl in Happ. inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+        * destruct args0 as [|b args1].
+          -- remember (hardenedb 20 σ a) as hb eqn:Hhard.
+             simpl in Happ.
+             destruct hb; inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+          -- simpl in Happ. inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+      + destruct args as [|a args0]; simpl in Happ;
+          inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+    - destruct (lookup_nat_assoc pid (st_dyn_prims σ)) as [[cell|cell]|] eqn:Hdyn.
+      + destruct args as [|a rest].
+        * simpl in Happ.
+          destruct (lookup_cell σ cell) eqn:Hcell;
+            inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+        * simpl in Happ. inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+      + destruct args as [|a rest].
+        * simpl in Happ.
+          destruct (lookup_cell σ cell) eqn:Hcell;
+            inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+        * simpl in Happ. inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+      + simpl in Happ. inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+    - inversion Happ; subst; clear Happ; apply StepFrameSame; reflexivity.
+  Qed.
+
+  Lemma step_with_alloc_obj_eq σ flds :
+    step_with apply_prim σ (CoreAllocObj flds) =
+      match all_lit_fields flds with
+      | Some vs =>
+          let '(v, σ') := alloc_obj σ vs in
+          Some (CoreVal v, σ')
+      | None => step_fields_with apply_prim σ flds
+      end.
+  Proof.
+    simpl.
+    destruct (all_lit_fields flds) as [vs|] eqn:Hall; [reflexivity|].
+    revert Hall.
+    induction flds as [|[k e1] rest IH]; intros Hall; simpl in *; try discriminate.
+    destruct (step_with apply_prim σ e1) as [[e1' σ1]|] eqn:Hstep; [reflexivity|].
+    destruct e1; try reflexivity.
+    destruct (all_lit_fields rest) as [vs'|] eqn:Hrestlit; simpl in Hall; try discriminate.
+    specialize (IH eq_refl).
+    rewrite IH.
+    destruct (step_fields_with apply_prim σ rest) as [[e' σ']|] eqn:Hrest; reflexivity.
+  Qed.
+
+  Lemma step_with_app_prim_eq σ p args :
+    step_with apply_prim σ (CoreApp (CoreVal (VPrim p)) args) =
+      match all_lit args with
+      | Some vs => Some (apply_prim σ p vs)
+      | None => step_args_with apply_prim σ (CoreVal (VPrim p)) args
+      end.
+  Proof.
+    simpl.
+    destruct (all_lit args) as [vs|] eqn:Hall; [reflexivity|].
+    revert Hall.
+    induction args as [|a rest IH]; intros Hall; simpl in *; try discriminate.
+    destruct (step_with apply_prim σ a) as [[a' σ1]|] eqn:Hstep; [reflexivity|].
+    destruct a; try reflexivity.
+    destruct (all_lit rest) as [vs'|] eqn:Hrestlit; simpl in Hall; try discriminate.
+    specialize (IH eq_refl).
+    rewrite IH.
+    destruct (step_args_with apply_prim σ (CoreVal (VPrim p)) rest) as [[e' σ']|] eqn:Hrest; reflexivity.
+  Qed.
+
+  Theorem expr_reaches_frame :
+    forall σ σ' e pid,
+      step_frame σ σ' ->
+      closed_state σ ->
+      closed_expr σ e ->
+      expr_reaches_dyn σ' e pid ->
+      expr_reaches_dyn σ e pid
+  with exprs_reach_frame :
+    forall σ σ' es pid,
+      step_frame σ σ' ->
+      closed_state σ ->
+      closed_exprs σ es ->
+      exprs_reach_dyn σ' es pid ->
+      exprs_reach_dyn σ es pid
+  with fields_reach_frame :
+    forall σ σ' flds pid,
+      step_frame σ σ' ->
+      closed_state σ ->
+      closed_fields σ flds ->
+      fields_reach_dyn σ' flds pid ->
+      fields_reach_dyn σ flds pid.
+  Proof.
+    - intros σ σ' e pid Hframe Hclosed Hce Hreach.
+      revert Hce.
+      induction Hreach; intros Hce; inversion Hce; subst.
+      + apply ExprReachesVal.
+        eapply closed_val_reaches_frame; eauto.
+      + apply ExprReachesVar.
+        destruct H as [v [Hlookup Hdyn]].
+        assert (Henv : st_env σ' = st_env σ) by (apply step_frame_env_eq; exact Hframe).
+        rewrite Henv in Hlookup.
+        exists v. split.
+        * exact Hlookup.
+        * pose proof (env_lookup_closed σ x v Hclosed Hlookup) as Hcv.
+          exact (closed_val_reaches_frame σ σ' v pid Hframe Hclosed Hcv Hdyn).
+      + apply ExprReachesAlloc.
+        eapply fields_reach_frame; eauto.
+      + apply ExprReachesGet.
+        eapply IHHreach; eauto.
+      + apply ExprReachesAppFun.
+        eapply IHHreach; eauto.
+      + apply ExprReachesAppArgs.
+        eapply exprs_reach_frame; eauto.
+      + apply ExprReachesLetRhs.
+        eapply IHHreach; eauto.
+      + apply ExprReachesLetBody.
+        eapply IHHreach; eauto.
+      + apply ExprReachesTypeOf.
+        eapply IHHreach; eauto.
+      + apply ExprReachesCond0.
+        eapply IHHreach; eauto.
+      + apply ExprReachesCond1.
+        eapply IHHreach; eauto.
+      + apply ExprReachesCond2.
+        eapply IHHreach; eauto.
+      + apply ExprReachesBinopL.
+        eapply IHHreach; eauto.
+      + apply ExprReachesBinopR.
+        eapply IHHreach; eauto.
+    - intros σ σ' es pid Hframe Hclosed Hces Hreach.
+      revert Hces.
+      induction Hreach; intros Hces; inversion Hces; subst.
+      + apply ExprsReachHere.
+        eapply expr_reaches_frame; eauto.
+      + apply ExprsReachThere.
+        eapply IHHreach; eauto.
+    - intros σ σ' flds pid Hframe Hclosed Hcfs Hreach.
+      revert Hcfs.
+      induction Hreach; intros Hcfs; inversion Hcfs; subst.
+      + apply FieldsReachHere.
+        eapply expr_reaches_frame; eauto.
+      + apply FieldsReachThere.
+        eapply IHHreach; eauto.
+  Qed.
+
+  Fixpoint public_compile_closed
+      (σ : state) (e : JessiePublic.expr)
+      (Henv : forall x v, lookup_assoc x (st_env σ) = Some v -> closed_val σ v)
+      {struct e}
+      : closed_expr σ (JessiePublic.compile e).
+  Proof.
+    destruct e as
+      [l
+      | x
+      | fields
+      | e field
+      | f args
+      | x rhs body
+      | e
+      | e0 e1 e2
+      | op e1 e2
+      |].
+    - simpl. constructor. destruct l; simpl; auto.
+    - simpl. constructor.
+    - simpl.
+      constructor.
+      induction fields as [|[k e'] rest IH].
+      + simpl. constructor.
+      + simpl. constructor.
+        * exact (public_compile_closed σ e' Henv).
+        * exact IH.
+    - simpl. constructor. exact (public_compile_closed σ e Henv).
+    - simpl.
+      constructor.
+      + exact (public_compile_closed σ f Henv).
+      + induction args as [|a rest IH].
+        * simpl. constructor.
+        * simpl. constructor.
+          -- exact (public_compile_closed σ a Henv).
+          -- exact IH.
+    - simpl. constructor.
+      + exact (public_compile_closed σ rhs Henv).
+      + exact (public_compile_closed σ body Henv).
+    - simpl. constructor. exact (public_compile_closed σ e Henv).
+    - simpl. constructor.
+      + exact (public_compile_closed σ e0 Henv).
+      + exact (public_compile_closed σ e1 Henv).
+      + exact (public_compile_closed σ e2 Henv).
+    - simpl. constructor.
+      + exact (public_compile_closed σ e1 Henv).
+      + exact (public_compile_closed σ e2 Henv).
+    - simpl. constructor.
+  Defined.
+
   Lemma closed_state_empty_state :
     closed_state empty_state.
   Proof.
@@ -490,6 +771,17 @@ Module JessieStepConnectivity.
   Proof.
     intros pid badpid root σ' Happ Hreach.
     eapply dyn_apply_no_reaches; eauto.
+  Qed.
+
+  Example public_compile_counter_get_is_closed :
+    closed_expr counter_empty_state
+      (JessiePublic.compile (JessiePublic.Get (JessiePublic.Var "counter") "incr")).
+  Proof.
+    apply public_compile_closed.
+    intros x v Hlookup.
+    eapply env_lookup_closed.
+    - exact closed_state_counter_empty_state.
+    - exact Hlookup.
   Qed.
 
 End JessieStepConnectivity.

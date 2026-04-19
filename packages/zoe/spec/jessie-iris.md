@@ -669,9 +669,16 @@ pieces that theorem will use:
   case-study-specific capability graph.
 - `step_frame` isolates the two state-shape changes relevant to the generic
   Justin evaluator:
-  - either the store/environment are unchanged for purposes of authority
+  - either the object store/environment are unchanged for purposes of authority
     reachability, or
   - a single fresh object is allocated by `alloc_obj`.
+- The attempted first proof of the generic one-step theorem revealed an
+  important boundary condition: this "frame" view is too strong if interpreted
+  as full-state equality, because dynamic counter primitives legitimately update
+  `st_cells`. That update changes numeric counter contents but does not change
+  the object graph or the dynamic-primitive graph. So the next theorem should
+  be phrased in terms of preserving reachable authority, not preserving the
+  entire state record.
 - `lookup_obj_alloc_obj_other` and `reaches_dyn_old_after_alloc` are the key
   transport lemmas saying that a closed pre-existing value cannot suddenly gain
   new dynamic authority merely because an unrelated fresh object was allocated.
