@@ -583,42 +583,49 @@ From a freshly allocated counter object, the development derives two hardened ca
 
 The key proved Coq identifiers for this result are:
 
+- `invoke_entry_cap_trace_exact`
+- `invoke_exit_cap_trace_exact`
+- `entry_cap_trace_monotone`
+- `exit_cap_trace_monotone`
+- `entry_cap_trace_fields_are_incr`
+- `exit_cap_trace_fields_are_decr`
 - `entry_cap_hides_decr`
 - `exit_cap_hides_incr`
 - `entry_cap_two_calls_reach_two`
 - `exit_cap_two_calls_reach_minus_two`
 
-These live in `jessie_regress.v`. Their content is exactly what the names suggest:
+The trace theorems live in `jessie_counter_spec.v`. The regression wrappers live in
+`jessie_regress.v`. Their content is:
 
+- `invoke_entry_cap_trace_exact` says that any successful trace through a well-formed entry capability consists only of `"incr"` calls and leaves the hidden counter at `n + length(trace)`
+- `invoke_exit_cap_trace_exact` says the symmetric fact for the exit capability, leaving the hidden counter at `n - length(trace)`
+- `entry_cap_trace_monotone` specializes that to a fresh counter and says any successful trace through the entry capability leaves the hidden cell at exactly `length(trace)`
+- `exit_cap_trace_monotone` specializes the exit side and leaves the hidden cell at exactly `- length(trace)`
+- `entry_cap_trace_fields_are_incr` says any successful entry-cap trace contains only `"incr"`
+- `exit_cap_trace_fields_are_decr` says any successful exit-cap trace contains only `"decr"`
 - `entry_cap_hides_decr` states that if we project the entry capability out of a fresh counter and then try to invoke `"decr"` through it, the result is `None`
 - `exit_cap_hides_incr` states the symmetric fact for the exit capability
 - `entry_cap_two_calls_reach_two` states that following the trace `["incr"; "incr"]` through the entry capability leaves the hidden counter cell at `2`
 - `exit_cap_two_calls_reach_minus_two` states that following the trace `["decr"; "decr"]` through the exit capability leaves the hidden counter cell at `-2`
 
-To read one of these statements, take `entry_cap_two_calls_reach_two` as the model:
+To read one of these statements, `entry_cap_trace_monotone` is the most important:
 
 - `entry_cap_after_makeCounter` computes the capability produced from a fresh counter
 - the `match ... with Some (cap, σ) => ... | None => None end` wrapper just handles the possibility that capability allocation failed
-- `invoke_cap_trace σ cap ["incr"; "incr"]` means: starting from state `σ`, call the capability twice through its exposed `"incr"` method
+- `invoke_cap_trace σ cap trace` means: starting from state `σ`, perform the whole client trace through the capability object
 - `lookup_cell σ' 0%nat` reads the private counter cell from the resulting state
-- the whole theorem ends with `= Some 2`, which is the observable authority claim: with only the entry capability, this two-call client can drive the hidden state upward to `2`
+- the whole theorem ends with `= Some (Z.of_nat (length trace))`, which says the hidden state is determined exactly by how many successful entry calls were made
 
-This is not yet the final, quantified Iris theorem one would ultimately want, but it is already a concrete mechanized authority-separation result: the two derived objects expose different powers over the same hidden cell, and those powers behave differently in the operational model.
+This is the current main white-box authority-separation result: once the counter is split into entry and exit capabilities, every successful client trace through the entry side is increment-only, and every successful client trace through the exit side is decrement-only. The proof is not by testing a few traces; it is by induction over arbitrary traces using the actual `invoke_cap_trace` code.
 
-An important limitation must be stated explicitly: this is **not yet** a theorem about arbitrary program contexts in the full current core language. The reason is that the present core syntax still allows literal `VPrim` and `VLoc` values, so a hostile context can forge the hidden original decrement authority directly.
+This is still not the final Iris theorem one would ultimately want, because it is phrased as a white-box theorem over capability traces rather than over all client contexts in the Iris language interface.
 
-This is not just a design worry; it is exhibited by concrete Coq counterexamples:
+The older forgeability counterexamples remain historically useful:
 
 - `forged_decr_breaks_entry_context_monotonicity`
 - `forged_incr_breaks_exit_context_monotonicity`
 
-These examples show that, in the current raw core language, a client handed only the entry capability can still write a forged literal `VPrim (counter_decr_name 0)` term and drive the original counter down, and symmetrically for the exit side with forged increment authority.
-
-So the strong theorem
-
-- any program context given only the entry capability cannot make the counter go down
-
-is currently false for the unrestricted core syntax. To obtain that theorem honestly, the next step is to remove or encapsulate forgeable locations and primitive names, or to prove the theorem over a restricted client-language fragment that excludes forged literals.
+Those show why the unrestricted raw-core theorem was false before the public/client boundary was introduced. The public boundary now lives in `jessie_public.v`, and the next proof step would be to connect that public syntax to the trace theorem above.
 
 The underlying case-study lemmas in `jessie_counter.v` make the same story visible one step earlier, before the regression wrappers:
 

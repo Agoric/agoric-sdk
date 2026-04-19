@@ -1,10 +1,13 @@
 From Coq Require Import List String ZArith.
-Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter jessie_module jessie_iris_lang jessie_counter_iris jessie_counter_parse.
+Require Import jessie_lang jessie_parse jessie_justin_parse jessie_justin jessie_counter
+  jessie_counter_spec jessie_module jessie_iris_lang jessie_counter_iris
+  jessie_counter_parse.
 
 Import ListNotations.
 Import Justin.
 Import JustinExec.
 Import JessieCounterCase.
+Import JessieCounterSpec.
 Import JessieModule.
 Import JustinIris.
 Import JessieCounterIris.
@@ -131,6 +134,32 @@ Example exit_cap_two_calls_reach_minus_two :
   | None => None
   end = Some (-2).
 Proof. vm_compute. reflexivity. Qed.
+
+Example entry_cap_three_calls_stay_nonnegative :
+  match entry_cap_after_makeCounter with
+  | Some (cap, σ) =>
+      match invoke_cap_trace σ cap ["incr"; "incr"; "incr"] with
+      | Some σ' => exists n, lookup_cell σ' 0%nat = Some n /\ 0 <= n
+      | None => False
+      end
+  | None => False
+  end.
+Proof.
+  exact (entry_cap_trace_nonnegative ["incr"; "incr"; "incr"] _ eq_refl).
+Qed.
+
+Example exit_cap_three_calls_stay_nonpositive :
+  match exit_cap_after_makeCounter with
+  | Some (cap, σ) =>
+      match invoke_cap_trace σ cap ["decr"; "decr"; "decr"] with
+      | Some σ' => exists n, lookup_cell σ' 0%nat = Some n /\ n <= 0
+      | None => False
+      end
+  | None => False
+  end.
+Proof.
+  exact (exit_cap_trace_nonpositive ["decr"; "decr"; "decr"] _ eq_refl).
+Qed.
 
 Example module_end_to_end :
   eval_module 6

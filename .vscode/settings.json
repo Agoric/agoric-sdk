@@ -26,6 +26,7 @@
   "files.exclude": {
     "**/*.aux": true,
     "**/*.glob": true,
+    "**/*.lia.cache": true,
     "**/*.vo": true,
     "**/*.vok": true,
     "**/*.vos": true

@@ -188,10 +188,10 @@ Module JessieCounterCase.
     apply store_cell_list_same. exact Hlookup.
   Qed.
 
-  Lemma invoke_entry_cap_step σ capl cell n :
+  Lemma invoke_entry_cap_step σ capl pid cell n :
     lookup_obj σ capl =
-      Some (HeapObj [("incr", VPrim (PrimDyn cell))]) ->
-    lookup_nat_assoc cell (st_dyn_prims σ) =
+      Some (HeapObj [("incr", VPrim (PrimDyn pid))]) ->
+    lookup_nat_assoc pid (st_dyn_prims σ) =
       Some (CounterIncr cell) ->
     lookup_cell σ cell = Some n ->
     invoke_cap_method σ (VLoc capl) "incr" =
@@ -207,10 +207,10 @@ Module JessieCounterCase.
     reflexivity.
   Qed.
 
-  Lemma invoke_exit_cap_step σ capl cell n :
+  Lemma invoke_exit_cap_step σ capl pid cell n :
     lookup_obj σ capl =
-      Some (HeapObj [("decr", VPrim (PrimDyn cell))]) ->
-    lookup_nat_assoc cell (st_dyn_prims σ) =
+      Some (HeapObj [("decr", VPrim (PrimDyn pid))]) ->
+    lookup_nat_assoc pid (st_dyn_prims σ) =
       Some (CounterDecr cell) ->
     lookup_cell σ cell = Some n ->
     invoke_cap_method σ (VLoc capl) "decr" =
@@ -226,9 +226,9 @@ Module JessieCounterCase.
     reflexivity.
   Qed.
 
-  Lemma invoke_entry_cap_other_none σ capl cell field :
+  Lemma invoke_entry_cap_other_none σ capl pid field :
     lookup_obj σ capl =
-      Some (HeapObj [("incr", VPrim (PrimDyn cell))]) ->
+      Some (HeapObj [("incr", VPrim (PrimDyn pid))]) ->
     field <> "incr" ->
     invoke_cap_method σ (VLoc capl) field = None.
   Proof.
@@ -240,9 +240,9 @@ Module JessieCounterCase.
     - reflexivity.
   Qed.
 
-  Lemma invoke_exit_cap_other_none σ capl cell field :
+  Lemma invoke_exit_cap_other_none σ capl pid field :
     lookup_obj σ capl =
-      Some (HeapObj [("decr", VPrim (PrimDyn cell))]) ->
+      Some (HeapObj [("decr", VPrim (PrimDyn pid))]) ->
     field <> "decr" ->
     invoke_cap_method σ (VLoc capl) field = None.
   Proof.
