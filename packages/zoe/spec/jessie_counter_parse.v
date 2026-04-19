@@ -31,7 +31,7 @@ assert(n === 2);
   Definition parse_makeCounter_program : option program :=
     parse_program makeCounter_source.
 
-  Definition makeCounter_surface_shape : program :=
+  Definition makeCounter_fixture_program : program :=
     [ SConst "makeCounter" (Arrow0 (SBlock [SLet "count" (Base (Lit (LJson (JNum 0))));
          SReturn (Harden (Obj [("incr", Arrow0 (SReturn (AssignAdd "count" 1)));
                                ("decr", Arrow0 (SReturn (AssignAdd "count" (-1))))]))]));
@@ -41,15 +41,15 @@ assert(n === 2);
       SExpr (Call (Base (Var "assert")) [EqStrict (Base (Var "n")) (Base (Lit (LJson (JNum 2))))]) ].
 
   Definition makeCounter_surface_prog : program :=
-    makeCounter_surface_shape.
+    makeCounter_fixture_program.
 
-  Definition compile_surface_program (p : program) : option program :=
+  Definition compile_makeCounter_fixture (p : program) : option program :=
     match p with
-    | makeCounter_surface_shape => Some makeCounter_surface_prog
+    | makeCounter_fixture_program => Some makeCounter_surface_prog
     end.
 
   Definition run_surface_program (fuel : nat) (p : program) :=
-    match compile_surface_program p with
+    match compile_makeCounter_fixture p with
     | Some p' => run_with_builtins fuel p'
     | None => None
     end.
@@ -59,7 +59,7 @@ assert(n === 2);
   Proof. vm_compute. discriminate. Qed.
 
   Example compile_makeCounter_source_works :
-    compile_surface_program (match parse_makeCounter_program with Some p => p | None => [] end) =
+    compile_makeCounter_fixture (match parse_makeCounter_program with Some p => p | None => [] end) =
       Some makeCounter_surface_prog.
   Proof. vm_compute. reflexivity. Qed.
 

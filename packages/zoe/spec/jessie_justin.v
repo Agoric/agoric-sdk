@@ -34,6 +34,16 @@ Module JustinExec.
   Definition empty_state : state :=
     State 0%nat 0%nat [] [] builtin_env [] [].
 
+  Definition with_env (σ : state) (ρ : list (string * val)) : state :=
+    State (st_next_loc σ) (st_next_prim σ) (st_store σ) (st_frozen σ) ρ
+      (st_cells σ) (st_dyn_prims σ).
+
+  Definition prepend_env (bs : list (string * val)) (σ : state) : state :=
+    with_env σ (bs ++ st_env σ).
+
+  Definition extend_env (x : string) (v : val) (σ : state) : state :=
+    with_env σ ((x, v) :: st_env σ).
+
   Fixpoint lookup_assoc {A : Type} (x : string) (xs : list (string * A)) : option A :=
     match xs with
     | [] => None

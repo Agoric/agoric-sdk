@@ -11,10 +11,7 @@ Module JessieCounterCase.
   Import JustinExec.
 
   Definition counter_empty_state : state :=
-    State (st_next_loc empty_state) (st_next_prim empty_state)
-      (st_store empty_state) (st_frozen empty_state)
-      (("makeCounter", VPrim (PrimExt 0%nat)) :: st_env empty_state)
-      (st_cells empty_state) (st_dyn_prims empty_state).
+    extend_env "makeCounter" (VPrim (PrimExt 0%nat)) empty_state.
 
   Definition alloc_counter_cap (σ : state) (counter : val) (field : string)
     : option (val * state) :=
@@ -84,16 +81,14 @@ Module JessieCounterCase.
   Definition entry_client_state : option state :=
     match entry_cap_after_makeCounter with
     | Some (cap, σ) =>
-        Some (State (st_next_loc σ) (st_next_prim σ) (st_store σ) (st_frozen σ)
-          (("counter", cap) :: st_env σ) (st_cells σ) (st_dyn_prims σ))
+        Some (extend_env "counter" cap σ)
     | None => None
     end.
 
   Definition exit_client_state : option state :=
     match exit_cap_after_makeCounter with
     | Some (cap, σ) =>
-        Some (State (st_next_loc σ) (st_next_prim σ) (st_store σ) (st_frozen σ)
-          (("counter", cap) :: st_env σ) (st_cells σ) (st_dyn_prims σ))
+        Some (extend_env "counter" cap σ)
     | None => None
     end.
 

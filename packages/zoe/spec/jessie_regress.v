@@ -85,13 +85,13 @@ Example makeCounter_surface_parse_works :
 Proof. vm_compute. discriminate. Qed.
 
 Example makeCounter_surface_compile_matches_core :
-  compile_surface_program
+  compile_makeCounter_fixture
     (match parse_makeCounter_program with Some p => p | None => [] end) =
   Some makeCounter_surface_prog.
 Proof. vm_compute. reflexivity. Qed.
 
 Example makeCounter_surface_compile_matches_regression :
-  compile_surface_program
+  compile_makeCounter_fixture
     (match parse_makeCounter_program with Some p => p | None => [] end) =
   Some makeCounter_surface_prog.
 Proof. vm_compute. reflexivity. Qed.

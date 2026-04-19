@@ -36,8 +36,7 @@ Module JessieModule.
     end.
 
   Definition init_state (imports : list (string * val)) : state :=
-    State (st_next_loc empty_state) (st_next_prim empty_state) (st_store empty_state) (st_frozen empty_state)
-      (imports ++ st_env empty_state) (st_cells empty_state) (st_dyn_prims empty_state).
+    prepend_env imports empty_state.
 
   Fixpoint eval_decls (fuel : nat) (σ : state) (decls : list module_decl)
       : option (exports * state) :=
@@ -47,10 +46,7 @@ Module JessieModule.
         let '(body', σ1) := normalize fuel σ body in
         match body' with
         | CoreVal v =>
-            match eval_decls fuel
-                (State (st_next_loc σ1) (st_next_prim σ1) (st_store σ1) (st_frozen σ1)
-                  ((name, v) :: st_env σ1) (st_cells σ1) (st_dyn_prims σ1))
-                decls' with
+            match eval_decls fuel (extend_env name v σ1) decls' with
             | Some (outs, σ2) => Some ((name, v) :: outs, σ2)
             | None => None
             end
