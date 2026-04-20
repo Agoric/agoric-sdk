@@ -142,6 +142,7 @@ export const main = async (
     clusterName,
     timeout: config.cosmosRest.timeout,
     retries: config.cosmosRest.retries,
+    agoricRestUrl: config.cosmosRest.agoricRestUrl,
   });
   const agoricChainInfo = await cosmosRest.getChainInfo('agoric');
   const agoricVersions = (agoricChainInfo as any)?.application_version;

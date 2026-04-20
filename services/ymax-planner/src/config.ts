@@ -36,6 +36,7 @@ export interface YmaxPlannerConfig {
     readonly agoricNetworkSpec: string;
     readonly timeout: number;
     readonly retries: number;
+    readonly agoricRestUrl?: string;
   };
   readonly axelar: {
     readonly apiUrl: string;
@@ -173,6 +174,8 @@ export const loadConfig = async (
   const ydsApiKey = env.YDS_API_KEY?.trim();
   !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
 
+  const agoricRestUrl = validateUrl(env, 'AGORIC_REST_URL', undefined);
+
   const config: YmaxPlannerConfig = harden({
     clusterName,
     contractInstance,
@@ -184,6 +187,7 @@ export const loadConfig = async (
       agoricNetworkSpec,
       timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', timeout),
       retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', maxRetries),
+      ...(agoricRestUrl ? { agoricRestUrl } : {}),
     },
     axelar: {
       apiUrl: axelarApiAddress,

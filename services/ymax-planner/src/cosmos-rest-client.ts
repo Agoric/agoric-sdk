@@ -20,6 +20,11 @@ interface CosmosRestClientConfig {
   clusterName: ClusterName;
   timeout?: number;
   retries?: number;
+  /**
+   * Optional override for the Agoric REST endpoint. When set, takes precedence
+   * over the `chain-registry` default.
+   */
+  agoricRestUrl?: string;
 }
 
 interface CosmosRestClientPowers {
@@ -109,6 +114,16 @@ export class CosmosRestClient {
 
     // Initialize with predefined chains
     this.chainConfigs = new Map(Object.entries(chainConfig));
+
+    if (config.agoricRestUrl) {
+      const agoric = this.chainConfigs.get('agoric');
+      if (agoric) {
+        this.chainConfigs.set('agoric', {
+          ...agoric,
+          restEndpoint: config.agoricRestUrl,
+        });
+      }
+    }
 
     // Create ky instance using provided fetch, retry, and timeout settings.
     this.http = ky.create({
