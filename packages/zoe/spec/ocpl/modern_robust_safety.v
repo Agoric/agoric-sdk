@@ -6,8 +6,10 @@ From iris.program_logic Require Export weakestpre.
 From iris.heap_lang Require Export lang primitive_laws metatheory adequacy.
 From iris.heap_lang Require Import notation.
 From iris.heap_lang.lib Require Import assert.
+From OCPL Require Import modern_heap.
 
 Module OCPLModernRobustSafety.
+  Import OCPLModernHeap.
   Open Scope expr_scope.
 
   (* TODO: keep HeapLang as the proof foundation, but add a tiny Jessie surface
@@ -35,12 +37,12 @@ Module OCPLModernRobustSafety.
 
   Section adversary.
     Context {Σ : gFunctors}.
-    Variable loc_ok : loc -> iProp Σ.
+    Context `{!LowIntegrity Σ loc}.
 
     Fixpoint advval (v : val) : iProp Σ :=
       ⌜allowed_val v = true⌝ ∗
       match v with
-      | LitV (LitLoc l) => loc_ok l
+      | LitV (LitLoc l) => low l
       | LitV _ => True
       | RecV _ _ e => advexpr e
       | PairV v1 v2 => advval v1 ∗ advval v2
@@ -150,7 +152,7 @@ Module OCPLModernRobustSafety.
 
   Section adversary_ctx.
     Context {Σ : gFunctors}.
-    Variable loc_ok : loc -> iProp Σ.
+    Context `{!LowIntegrity Σ loc}.
 
     Fixpoint advctx (C : ctx) : iProp Σ :=
       match C with
@@ -159,17 +161,17 @@ Module OCPLModernRobustSafety.
       | CFree C | CLoad C | CFork C => advctx C
       | CAppL C e2 | CBinOpL _ C e2 | CPairL C e2 | CAllocNL C e2
       | CStoreL C e2 | CXchgL C e2 | CFAAL C e2 =>
-          advctx C ∗ advexpr loc_ok e2
+          advctx C ∗ advexpr e2
       | CAppR e1 C | CBinOpR _ e1 C | CPairR e1 C | CAllocNR e1 C
       | CStoreR e1 C | CXchgR e1 C | CFAAR e1 C =>
-          advexpr loc_ok e1 ∗ advctx C
+          advexpr e1 ∗ advctx C
       | CIf C0 e1 e2 | CCase C0 e1 e2 | CCmpXchgL C0 e1 e2
       | CResolve0 C0 e1 e2 =>
-          advctx C0 ∗ advexpr loc_ok e1 ∗ advexpr loc_ok e2
+          advctx C0 ∗ advexpr e1 ∗ advexpr e2
       | CCmpXchgM e0 C1 e2 | CResolve1 e0 C1 e2 =>
-          advexpr loc_ok e0 ∗ advctx C1 ∗ advexpr loc_ok e2
+          advexpr e0 ∗ advctx C1 ∗ advexpr e2
       | CCmpXchgR e0 e1 C2 | CResolve2 e0 e1 C2 =>
-          advexpr loc_ok e0 ∗ advexpr loc_ok e1 ∗ advctx C2
+          advexpr e0 ∗ advexpr e1 ∗ advctx C2
       end.
 
     Global Instance advctx_adv : Adversarial Σ ctx := Adv advctx _.
@@ -183,21 +185,43 @@ Module OCPLModernRobustSafety.
     Context {Σ : gFunctors}.
     Context {hlc : has_lc}.
     Context `{!heapGS_gen hlc Σ}.
-    Variable loc_ok : loc -> iProp Σ.
-    Variable post_good : val -> iProp Σ.
+    Context `{!LowIntegrity Σ loc}.
+    Context `{!LowIntegrity Σ val}.
+    Context `{!LowIntegrity Σ env}.
 
     Definition verified (e : expr) : iProp Σ :=
-      □ (⌜is_closed_expr ∅ e = true⌝ ∗ WP e @ NotStuck; ⊤ {{ post_good }}).
+      □ (⌜is_closed_expr ∅ e = true⌝ ∗ WP e @ NotStuck; ⊤ {{ v, low v }}).
 
     Definition safe (C : ctx) : iProp Σ :=
-      ∀ e, advctx loc_ok C -∗ verified e -∗ WP (ctx_fill C e) @ NotStuck; ⊤ {{ post_good }}.
+      ∀ γ e, advctx C -∗ low γ -∗ verified e -∗
+        WP (subst_map γ (ctx_fill C e)) @ NotStuck; ⊤ {{ v, low v }}.
+
+    Lemma safe_alt C :
+      safe C ⊣⊢
+      ∀ γ e Φ, advctx C -∗ low γ -∗ verified e -∗
+        (∀ v, low v -∗ Φ v) -∗
+        WP (subst_map γ (ctx_fill C e)) @ NotStuck; ⊤ {{ Φ }}.
+    Proof.
+      iSplit.
+      - iIntros "Hsafe" (γ e Φ) "HC Hγ He HΦ".
+        iPoseProof ("Hsafe" $! γ e with "HC Hγ He") as "Hs".
+        iApply (wp_wand with "Hs").
+        iIntros (v) "Hv".
+        by iApply ("HΦ" with "Hv").
+      - iIntros "Halt" (γ e) "HC Hγ He".
+        iApply ("Halt" with "HC Hγ He []").
+        by iIntros (v) "Hv".
+    Qed.
 
     Lemma safe_hole :
       ⊢ safe CHole.
     Proof.
-      iIntros (e) "_ #He".
-      rewrite /verified /ctx_fill /=.
-      iDestruct "He" as "#(_ & He)".
+      iIntros (γ e) "_ #Hγ #He".
+      rewrite /verified /safe /ctx_fill /=.
+      iDestruct "He" as "#(%Hclosed & He)".
+      assert (is_closed_expr ∅ e) as Hclosed'.
+      { by rewrite Hclosed. }
+      rewrite (subst_map_is_closed_empty e γ Hclosed').
       iExact "He".
     Qed.
   End robust_safety.
