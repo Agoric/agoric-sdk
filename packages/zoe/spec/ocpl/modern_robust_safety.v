@@ -4,12 +4,12 @@ From iris.proofmode Require Import proofmode.
 From iris.base_logic.lib Require Export invariants.
 From iris.program_logic Require Export weakestpre.
 From iris.heap_lang Require Export lang primitive_laws metatheory adequacy.
-From iris.heap_lang Require Import notation.
+From iris.heap_lang Require Import notation proofmode tactics.
 From iris.heap_lang.lib Require Import assert.
-From OCPL Require Import modern_heap.
+From OCPL Require Import modern_heap modern_on_val.
 
 Module OCPLModernRobustSafety.
-  Import OCPLModernHeap.
+  Import OCPLModernHeap OCPLModernOnVal.
   Open Scope expr_scope.
 
   (* TODO: keep HeapLang as the proof foundation, but add a tiny Jessie surface
@@ -225,6 +225,10 @@ Module OCPLModernRobustSafety.
       iExact "He".
     Qed.
   End robust_safety.
+
+  (* TODO: the next port step is to reintroduce OCPL's `confined`
+     constructor lemmas here, now using `modern_on_val.v` as the underlying
+     value-elimination layer. *)
 
   Fixpoint of_ectx_item (Ki : ectx_item) (C : ctx) : ctx :=
     match Ki with

@@ -1,6 +1,7 @@
 (* Modernized OCPL-style low-integrity layer for current Iris HeapLang. *)
 From stdpp Require Import gmap.
 From iris.algebra Require Import ofe.
+From iris.bi Require Import interface derived_laws_later.
 From iris.bi.lib Require Import fixpoint_banach.
 From iris.proofmode Require Import proofmode.
 From iris.program_logic Require Export weakestpre.
@@ -37,8 +38,8 @@ Module OCPLModernHeap.
         | LitV (LitLoc l) => low l
         | LitV _ => True
         | RecV f x e =>
-            □ ▷ ∀ w, self w -∗
-              WP (subst' x w (subst' f (RecV f x e) e)) @ NotStuck; ⊤
+            □ ∀ E, ▷ ∀ w, self w -∗
+              WP (subst' x w (subst' f (RecV f x e) e)) @ MaybeStuck; E
                 {{ v', self v' }}
         | PairV v1 v2 => ▷ (self v1 ∗ self v2)
         | InjLV v | InjRV v => ▷ self v
@@ -79,8 +80,8 @@ Module OCPLModernHeap.
         | LitV (LitLoc l) => low (A := loc) l
         | LitV _ => True
         | RecV f x e =>
-          □ ▷ ∀ w, low_val w -∗
-            WP (subst' x w (subst' f (RecV f x e) e)) @ NotStuck; ⊤
+          □ ∀ E, ▷ ∀ w, low_val w -∗
+            WP (subst' x w (subst' f (RecV f x e) e)) @ MaybeStuck; E
               {{ v', low_val v' }}
       | PairV v1 v2 => ▷ (low_val v1 ∗ low_val v2)
       | InjLV v | InjRV v => ▷ low_val v
@@ -137,6 +138,158 @@ Module OCPLModernHeap.
         iExact "Hγ".
       - rewrite delete_notin; [done|].
         done.
+      Qed.
+
+    Lemma low_to_low_val_ent v :
+      low v ⊢ low_val v.
+    Proof.
+      exact (proj1 (proj1 (bi.equiv_entails _ _) (low_val_eq v))).
+    Qed.
+
+    Lemma low_val_to_low_ent v :
+      low_val v ⊢ low v.
+    Proof.
+      exact (proj2 (proj1 (bi.equiv_entails _ _) (low_val_eq v))).
+    Qed.
+
+    Lemma low_rec_elim_ent f x e :
+      low (RecV f x e) ⊢
+      □ ∀ E, ▷ ∀ w, low_val w -∗
+        WP (subst' x w (subst' f (RecV f x e) e)) @ MaybeStuck; E
+          {{ v', low_val v' }}.
+    Proof.
+      exact (proj1 (proj1 (bi.equiv_entails _ _) (low_val_unfold (RecV f x e)))).
+    Qed.
+
+    Lemma low_pair_elim_ent v1 v2 :
+      low (PairV v1 v2) ⊢ ▷ (low_val v1 ∗ low_val v2).
+    Proof.
+      exact (proj1 (proj1 (bi.equiv_entails _ _) (low_val_unfold (PairV v1 v2)))).
+    Qed.
+
+    Lemma low_pair_intro_ent v1 v2 :
+      ▷ (low_val v1 ∗ low_val v2) ⊢ low (PairV v1 v2).
+    Proof.
+      exact (proj2 (proj1 (bi.equiv_entails _ _) (low_val_unfold (PairV v1 v2)))).
+    Qed.
+
+    Lemma low_inl_elim_ent v :
+      low (InjLV v) ⊢ ▷ low_val v.
+    Proof.
+      exact (proj1 (proj1 (bi.equiv_entails _ _) (low_val_unfold (InjLV v)))).
+    Qed.
+
+    Lemma low_inl_intro_ent v :
+      ▷ low_val v ⊢ low (InjLV v).
+    Proof.
+      exact (proj2 (proj1 (bi.equiv_entails _ _) (low_val_unfold (InjLV v)))).
+    Qed.
+
+    Lemma low_inr_elim_ent v :
+      low (InjRV v) ⊢ ▷ low_val v.
+    Proof.
+      exact (proj1 (proj1 (bi.equiv_entails _ _) (low_val_unfold (InjRV v)))).
+    Qed.
+
+    Lemma low_inr_intro_ent v :
+      ▷ low_val v ⊢ low (InjRV v).
+    Proof.
+      exact (proj2 (proj1 (bi.equiv_entails _ _) (low_val_unfold (InjRV v)))).
+    Qed.
+
+    Lemma low_to_low_val v :
+      ⊢ low v -∗ low_val v.
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_to_low_val_ent v).
+    Qed.
+
+    Lemma low_val_to_low v :
+      ⊢ low_val v -∗ low v.
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_val_to_low_ent v).
+    Qed.
+
+    Lemma low_rec_elim_raw f x e :
+      ⊢ low (RecV f x e) -∗
+        □ ∀ E, ▷ ∀ w, low_val w -∗
+          WP (subst' x w (subst' f (RecV f x e) e)) @ MaybeStuck; E
+            {{ v', low_val v' }}.
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_rec_elim_ent f x e).
+    Qed.
+
+    Lemma low_pair_elim_raw v1 v2 :
+      ⊢ low (PairV v1 v2) -∗ ▷ (low_val v1 ∗ low_val v2).
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_pair_elim_ent v1 v2).
+    Qed.
+
+    Lemma low_pair_intro_raw v1 v2 :
+      ⊢ ▷ (low_val v1 ∗ low_val v2) -∗ low (PairV v1 v2).
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_pair_intro_ent v1 v2).
+    Qed.
+
+    Lemma low_inl_elim_raw v :
+      ⊢ low (InjLV v) -∗ ▷ low_val v.
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_inl_elim_ent v).
+    Qed.
+
+    Lemma low_inl_intro_raw v :
+      ⊢ ▷ low_val v -∗ low (InjLV v).
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_inl_intro_ent v).
+    Qed.
+
+    Lemma low_inr_elim_raw v :
+      ⊢ low (InjRV v) -∗ ▷ low_val v.
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_inr_elim_ent v).
+    Qed.
+
+    Lemma low_inr_intro_raw v :
+      ⊢ ▷ low_val v -∗ low (InjRV v).
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_inr_intro_ent v).
     Qed.
   End low_values.
+
+  Section proofmode.
+    Context {Σ : gFunctors}.
+    Context {hlc : has_lc}.
+    Context `{!heapGS_gen hlc Σ}.
+    Context `{!LowIntegrity Σ loc}.
+
+    Global Instance into_sep_low_pair v1 v2 :
+      IntoSep (low (PairV v1 v2)) (▷ low v1) (▷ low v2).
+    Proof.
+      rewrite /IntoSep.
+      etrans; [exact (low_pair_elim_ent v1 v2)|].
+      rewrite bi.later_sep.
+      do 2 rewrite low_val_eq.
+      done.
+    Qed.
+
+    Global Instance from_sep_low_pair v1 v2 :
+      FromSep (low (PairV v1 v2)) (▷ low v1) (▷ low v2).
+    Proof.
+      rewrite /FromSep.
+      etrans.
+      2: exact (low_pair_intro_ent v1 v2).
+      rewrite -bi.later_sep.
+      do 2 rewrite low_val_eq.
+      done.
+    Qed.
+
+  End proofmode.
 End OCPLModernHeap.
