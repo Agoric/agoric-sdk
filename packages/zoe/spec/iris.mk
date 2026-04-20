@@ -1,6 +1,6 @@
 OPAM_SWITCH ?= iris
 OCAML_VER ?= 4.14.1
-COQ_VER ?= 8.18.0
+COQ_VER ?= 8.9.1
 VSROCQ_LSP_VER ?= 2.3.4
 COQFLAGS := -Q ocpl OCPL
 DEFAULT_SOURCES := ocpl/modern_heap.v ocpl/modern_lifting.v ocpl/modern_on_val.v ocpl/modern_robust_safety.v jessie_counter_heaplang.v
@@ -9,6 +9,12 @@ VO_TARGETS := $(patsubst %.v,%.vo,$(SOURCES))
 DEPFILE := .coqdeps.d
 OPAM_ENV = eval "$$(opam env --switch=$(OPAM_SWITCH))"
 
+ifeq ($(COQ_VER),8.9.1)
+EXTRA_OPAM_PKGS ?=
+else
+EXTRA_OPAM_PKGS ?= coq-iris coq-iris-heap-lang vsrocq-language-server.$(VSROCQ_LSP_VER)
+endif
+
 .PHONY: help ubuntu-deps opam-init switch install build clean env
 
 help:
@@ -16,10 +22,14 @@ help:
 	@echo "  ubuntu-deps  Install system packages needed on Ubuntu"
 	@echo "  opam-init    Initialize opam if needed"
 	@echo "  switch       Create/select opam switch $(OPAM_SWITCH)"
-	@echo "  install      Install Coq and Iris in the switch"
+	@echo "  install      Install Coq plus EXTRA_OPAM_PKGS in the switch"
 	@echo "  build        Incrementally build Coq sources in SOURCES"
 	@echo "  clean        Remove Coq build artifacts"
 	@echo "  env          Print shell command to load the switch env"
+	@echo ""
+	@echo "Defaults:"
+	@echo "  COQ_VER=$(COQ_VER)"
+	@echo "  EXTRA_OPAM_PKGS=$(EXTRA_OPAM_PKGS)"
 
 ubuntu-deps:
 	sudo apt update
@@ -36,7 +46,7 @@ install:
 	$(OPAM_ENV) && \
 	opam repo add coq-released https://coq.inria.fr/opam/released -y && \
 	opam update && \
-	opam install -y coq.$(COQ_VER) coq-iris coq-iris-heap-lang vsrocq-language-server.$(VSROCQ_LSP_VER)
+	opam install -y coq.$(COQ_VER) $(EXTRA_OPAM_PKGS)
 
 build: $(VO_TARGETS)
 
