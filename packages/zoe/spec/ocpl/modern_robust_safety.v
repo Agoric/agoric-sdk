@@ -67,6 +67,16 @@ Module OCPLModernRobustSafety.
       | NewProph => True
       end.
 
+    Lemma advval_persistent v : Persistent (advval v)
+    with advexpr_persistent e : Persistent (advexpr e).
+    Proof.
+    - destruct v; simpl; apply _.
+    - destruct e; simpl; try apply _.
+    Qed.
+
+    Global Existing Instance advval_persistent.
+    Global Existing Instance advexpr_persistent.
+
     Global Instance advexpr_adv : Adversarial Σ expr := Adv advexpr _.
     Global Instance advval_adv : Adversarial Σ val := Adv advval _.
 

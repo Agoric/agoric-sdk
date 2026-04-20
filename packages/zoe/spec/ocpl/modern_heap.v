@@ -140,6 +140,17 @@ Module OCPLModernHeap.
         done.
       Qed.
 
+    Lemma low_env_binder_insert b v γ :
+      low v -∗ low (binder_delete b γ) -∗ low (binder_insert b v γ).
+    Proof.
+      destruct b as [|x]; simpl.
+      - iIntros "_ Hγ". iExact "Hγ".
+      - iIntros "Hv Hγ".
+        rewrite <- (insert_delete_insert γ x v).
+        iApply (low_env_insert with "Hv Hγ").
+        rewrite lookup_delete. done.
+    Qed.
+
     Lemma low_to_low_val_ent v :
       low v ⊢ low_val v.
     Proof.
@@ -159,6 +170,15 @@ Module OCPLModernHeap.
           {{ v', low_val v' }}.
     Proof.
       exact (proj1 (proj1 (bi.equiv_entails _ _) (low_val_unfold (RecV f x e)))).
+    Qed.
+
+    Lemma low_rec_intro_ent f x e :
+      (□ ∀ E, ▷ ∀ w, low_val w -∗
+        WP (subst' x w (subst' f (RecV f x e) e)) @ MaybeStuck; E
+          {{ v', low_val v' }}) ⊢
+      low (RecV f x e).
+    Proof.
+      exact (proj2 (proj1 (bi.equiv_entails _ _) (low_val_unfold (RecV f x e)))).
     Qed.
 
     Lemma low_pair_elim_ent v1 v2 :
@@ -219,6 +239,16 @@ Module OCPLModernHeap.
     Proof.
       apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
       exact (low_rec_elim_ent f x e).
+    Qed.
+
+    Lemma low_rec_intro_raw f x e :
+      ⊢ (□ ∀ E, ▷ ∀ w, low_val w -∗
+          WP (subst' x w (subst' f (RecV f x e) e)) @ MaybeStuck; E
+            {{ v', low_val v' }}) -∗
+        low (RecV f x e).
+    Proof.
+      apply bi.wand_intro_r. etrans; [apply bi.emp_sep_2|].
+      exact (low_rec_intro_ent f x e).
     Qed.
 
     Lemma low_pair_elim_raw v1 v2 :
