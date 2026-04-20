@@ -189,26 +189,26 @@ Module OCPLModernRobustSafety.
     Context `{!LowIntegrity Σ val}.
     Context `{!LowIntegrity Σ env}.
 
-    Definition verified (e : expr) : iProp Σ :=
-      □ (⌜is_closed_expr ∅ e = true⌝ ∗ WP e @ NotStuck; ⊤ {{ v, low v }}).
+    Definition verified (s : stuckness) (e : expr) : iProp Σ :=
+      □ (⌜is_closed_expr ∅ e = true⌝ ∗ WP e @ s; ⊤ {{ v, low v }}).
 
     Definition safe (C : ctx) : iProp Σ :=
-      ∀ γ e, advctx C -∗ low γ -∗ verified e -∗
-        WP (subst_map γ (ctx_fill C e)) @ NotStuck; ⊤ {{ v, low v }}.
+      ∀ γ s e, advctx C -∗ low γ -∗ verified s e -∗
+        WP (subst_map γ (ctx_fill C e)) @ s; ⊤ {{ v, low v }}.
 
     Lemma safe_alt C :
       safe C ⊣⊢
-      ∀ γ e Φ, advctx C -∗ low γ -∗ verified e -∗
+      ∀ γ s e Φ, advctx C -∗ low γ -∗ verified s e -∗
         (∀ v, low v -∗ Φ v) -∗
-        WP (subst_map γ (ctx_fill C e)) @ NotStuck; ⊤ {{ Φ }}.
+        WP (subst_map γ (ctx_fill C e)) @ s; ⊤ {{ Φ }}.
     Proof.
       iSplit.
-      - iIntros "Hsafe" (γ e Φ) "HC Hγ He HΦ".
-        iPoseProof ("Hsafe" $! γ e with "HC Hγ He") as "Hs".
+      - iIntros "Hsafe" (γ s e Φ) "HC Hγ He HΦ".
+        iPoseProof ("Hsafe" $! γ s e with "HC Hγ He") as "Hs".
         iApply (wp_wand with "Hs").
         iIntros (v) "Hv".
         by iApply ("HΦ" with "Hv").
-      - iIntros "Halt" (γ e) "HC Hγ He".
+      - iIntros "Halt" (γ s e) "HC Hγ He".
         iApply ("Halt" with "HC Hγ He []").
         by iIntros (v) "Hv".
     Qed.
@@ -216,7 +216,7 @@ Module OCPLModernRobustSafety.
     Lemma safe_hole :
       ⊢ safe CHole.
     Proof.
-      iIntros (γ e) "_ #Hγ #He".
+      iIntros (γ s e) "_ #Hγ #He".
       rewrite /verified /safe /ctx_fill /=.
       iDestruct "He" as "#(%Hclosed & He)".
       assert (is_closed_expr ∅ e) as Hclosed'.
