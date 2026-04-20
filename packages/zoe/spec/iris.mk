@@ -2,7 +2,7 @@ OPAM_SWITCH ?= iris
 OCAML_VER ?= 4.14.1
 COQ_VER ?= 8.18.0
 VSROCQ_LSP_VER ?= 2.3.4
-DEFAULT_SOURCES := jessie_lang.v jessie_counter.v
+DEFAULT_SOURCES := jessie_lang.v jessie_counter.v jessie_eval.v jessie_robust.v jessie_counter_robust.v jessie_counter_heaplang.v
 SOURCES ?= $(DEFAULT_SOURCES)
 VO_TARGETS := $(patsubst %.v,%.vo,$(SOURCES))
 DEPFILE := .coqdeps.d
@@ -35,7 +35,7 @@ install:
 	$(OPAM_ENV) && \
 	opam repo add coq-released https://coq.inria.fr/opam/released -y && \
 	opam update && \
-	opam install -y coq.$(COQ_VER) coq-iris vsrocq-language-server.$(VSROCQ_LSP_VER)
+	opam install -y coq.$(COQ_VER) coq-iris coq-iris-heap-lang vsrocq-language-server.$(VSROCQ_LSP_VER)
 
 build: $(VO_TARGETS)
 

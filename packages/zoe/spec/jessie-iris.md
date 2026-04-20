@@ -28,26 +28,104 @@ assert(n === 2);
 
 This directory has now been reset to a minimal OCPL-shaped starting point.
 
+## Dev Tools
+
+`iris.mk` is the local bootstrap/build helper for the Coq development toolchain.
+
+In particular, it sets up:
+
+- Ubuntu packages for local development: `build-essential`, `m4`, `pkg-config`, `bubblewrap`, `opam`, `git`
+- an opam switch named `iris` by default
+- Coq
+- `coq-iris`
+- `coq-iris-heap-lang`
+- `vsrocq-language-server`
+
+For day-to-day work, `make -f iris.mk build SOURCES="..."` is the lightweight way to recompile only the relevant `.v` files, with dependencies generated via `coqdep`. For the exact workflow and commands, use `make -f iris.mk help`.
+
+## Commit Discipline
+
+Use git commit messages as the running lab notebook. Keep this file for the comparatively stable design summary, checked results, and next-proof-milestone framing.
+
+Commit whenever there is a coherent thought worth preserving, whether that thought is:
+
+- a working increment
+- a clarified invariant
+- a proof decomposition
+- a concrete reason to backtrack
+
+Successful proof steps and failed-but-informative proof attempts should both leave commit-message breadcrumbs.
+
 Current Coq files:
 
 - `jessie_lang.v`
 - `jessie_counter.v`
+- `jessie_eval.v`
+- `jessie_robust.v`
+- `jessie_counter_robust.v`
+- `jessie_counter_heaplang.v`
 
 `jessie_lang.v` defines a tiny language in the style of OCPL Fig. 1, keeping
 only the constructs needed for `makeCounter`:
 
 - variables
-- numeric and unit literals
-- `λ:` / recursive functions
+- numeric literals and a temporary unit literal for nullary calls
+- `fn:` / recursive functions
 - application
 - `let:`
-- pairs with `Fst` / `Snd`
+- immutable objects with last-wins field lookup
+- `assert:`
 - `ref`, `!`, and `<-`
-- integer addition
+- integer addition, subtraction, and `>`
+- `+=` / `-=`
 
-`jessie_counter.v` defines `makeCounter` in that tiny language. The returned
-counter object is modeled as a pair `(incr, decr)`, so `cUp` is represented by
-the first projection.
+`jessie_counter.v` defines `makeCounter` in that tiny language and models
+`cUp` as `{ "incr" := c.["incr"] }`.
+
+`jessie_eval.v` gives a small fuelled executable semantics for the current
+language:
+
+- closures with lexical environments
+- mutable references/heap
+- object construction and last-wins field lookup
+- monitored `assert:` that flips a goodness bit instead of relying on stuckness
+- an executable monitor that treats plain evaluation failure as not itself bad;
+  only failed assertions count as goodness violations
+
+`jessie_robust.v` then adds the OCPL-style scaffolding we discussed:
+
+- a boolean `good_state` / `is_good`
+- adversarial expressions and contexts that exclude `assert:` and whose only
+  free variable is the exported argument placeholder
+- `attacker_body exported C`
+- a generic `robust_safety_goal` schema parameterized by an exported name, a
+  verified client builder, and a monitored evaluator
+
+`jessie_counter_robust.v` is where the counter-specific instantiation now lives:
+
+- the checked client shape
+
+  `const c = makeCounter(); const cUp = { incr: c.incr }; attacker(cUp); assert(c.incr() > 0);`
+
+- executable smoke tests showing the intended distinction:
+  - giving only `cUp` keeps the checked client good in simple cases
+  - over-sharing the full counter lets an attacker call `decr`, which flips the
+    goodness bit at the final assertion
+
+`jessie_counter_heaplang.v` is now the main strong-reuse path:
+
+- it uses the installed `coq-iris-heap-lang` package directly
+- it encodes `makeCounter`, `cUp`, and the checked client in HeapLang notation
+- it already proves the `hole` and single-`incr` client cases with Iris `wp_*`
+  tactics, rather than with the bespoke evaluator
+- it derives matching adequacy corollaries for those concrete clients
+
+The current tree therefore has two layers:
+
+- the older minimal custom-language scaffold, which is still useful for syntax
+  experiments and theorem-shape sketches
+- the direct HeapLang encoding, which is the intended foundation for the actual
+  OCPL/Iris proof of the main result
 
 The build is now:
 

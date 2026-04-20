@@ -15,7 +15,8 @@ Module JessieLang.
 
   Inductive binop :=
   | Add
-  | Sub.
+  | Sub
+  | Gt.
 
   Inductive expr :=
   | Var (x : string)
@@ -33,6 +34,7 @@ Module JessieLang.
   | Alloc (e : expr)
   | Load (e : expr)
   | Store (e1 e2 : expr)
+  | Assert (e : expr)
   | BinOp (op : binop) (e1 e2 : expr).
 
   Coercion Var : string >-> expr.
@@ -102,10 +104,14 @@ Module JessieLang.
     (in custom jexpr at level 18, left associativity).
   Notation "e1 <- e2" := (Store e1 e2)
     (in custom jexpr at level 80, right associativity).
+  Notation "'assert:' e" := (Assert e)
+    (in custom jexpr at level 20).
   Notation "e1 + e2" := (BinOp Add e1 e2)
     (in custom jexpr at level 50, left associativity).
   Notation "e1 - e2" := (BinOp Sub e1 e2)
     (in custom jexpr at level 50, left associativity).
+  Notation "e1 > e2" := (BinOp Gt e1 e2)
+    (in custom jexpr at level 70, no associativity).
   Notation "x += e" := (AssignAdd x e)
     (in custom jexpr at level 82, right associativity).
   Notation "x -= e" := (AssignSub x e)
@@ -131,10 +137,14 @@ Module JessieLang.
     (at level 19, left associativity, format "e .[ k ]") : jessie_scope.
   Notation "e1 <- e2" := (Store e1 e2)
     (at level 80, right associativity) : jessie_scope.
+  Notation "'assert:' e" := (Assert e)
+    (at level 20) : jessie_scope.
   Notation "e1 + e2" := (BinOp Add e1 e2)
     (at level 50, left associativity) : jessie_scope.
   Notation "e1 - e2" := (BinOp Sub e1 e2)
     (at level 50, left associativity) : jessie_scope.
+  Notation "e1 > e2" := (BinOp Gt e1 e2)
+    (at level 70, no associativity) : jessie_scope.
   Notation "x += e" := (AssignAdd x e)
     (at level 82, right associativity) : jessie_scope.
   Notation "x -= e" := (AssignSub x e)
@@ -166,6 +176,11 @@ Module JessieLang.
       LetIn BAnon
         (Store (Var "counter") (BinOp Sub (Load (Var "counter")) (LitNat 1)))
         (Load (Var "counter")).
+  Proof. reflexivity. Qed.
+
+  Example assert_gt_smoke :
+    (assert: (#2 > #0))%jessie =
+      Assert (BinOp Gt (LitNat 2) (LitNat 0)).
   Proof. reflexivity. Qed.
 
   Example custom_entry_fn_smoke :
