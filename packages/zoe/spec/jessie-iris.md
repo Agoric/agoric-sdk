@@ -63,6 +63,7 @@ Current Coq files:
 - `jessie_eval.v`
 - `jessie_robust.v`
 - `jessie_counter_robust.v`
+- `jessie_ocpl_heaplang.v`
 - `jessie_counter_heaplang.v`
 
 `jessie_lang.v` defines a tiny language in the style of OCPL Fig. 1, keeping
@@ -112,7 +113,16 @@ language:
   - over-sharing the full counter lets an attacker call `decr`, which flips the
     goodness bit at the final assertion
 
-`jessie_counter_heaplang.v` is now the main strong-reuse path:
+`jessie_ocpl_heaplang.v` is now the main strong-reuse bridge to OCPL:
+
+- it ports the OCPL `robust_safety.v` setup onto modern Iris HeapLang syntax
+- it defines the adversarial-value / adversarial-expression layer and the
+  single-hole context grammar for the HeapLang fragment we care about
+- it records the key modern mismatch explicitly: assertions are not a dedicated
+  AST constructor in current HeapLang, so adversaries must exclude the library
+  `assert` value rather than an `Assert` node
+
+`jessie_counter_heaplang.v` is now the counter-specific HeapLang case study:
 
 - it uses the installed `coq-iris-heap-lang` package directly
 - it encodes `makeCounter`, `cUp`, and the checked client in HeapLang notation
@@ -120,12 +130,14 @@ language:
   tactics, rather than with the bespoke evaluator
 - it derives matching adequacy corollaries for those concrete clients
 
-The current tree therefore has two layers:
+The current tree therefore has three layers:
 
 - the older minimal custom-language scaffold, which is still useful for syntax
   experiments and theorem-shape sketches
-- the direct HeapLang encoding, which is the intended foundation for the actual
-  OCPL/Iris proof of the main result
+- the OCPL-shaped HeapLang scaffold in `jessie_ocpl_heaplang.v`, which is the
+  intended reusable proof setup
+- the direct counter case study in `jessie_counter_heaplang.v`, which should
+  increasingly become just an instantiation of that setup
 
 The build is now:
 
