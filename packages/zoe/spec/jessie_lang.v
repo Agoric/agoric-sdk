@@ -1,328 +1,205 @@
-(* Shared syntax, literals, primitive references, and surface syntax fragments. *)
+(* Minimal OCPL-style syntax for the makeCounter case study. *)
 From Coq Require Import List String ZArith.
-From iris.program_logic Require Export language ectx_language.
-Require Export jessie_json.
 
 Import ListNotations.
-Open Scope Z_scope.
+
 Open Scope string_scope.
+Open Scope Z_scope.
 
-Inductive json_expr :=
-| JsonLit (v : jval).
+Module JessieLang.
+  Inductive binder :=
+  | BAnon
+  | BNamed (x : string).
 
-Definition json_val := jval.
-Definition json_state := unit.
-Definition json_observation := unit.
-Definition json_ectx := unit.
+  Coercion BNamed : string >-> binder.
 
-Definition json_of_val (v : json_val) : json_expr := JsonLit v.
-
-Definition json_to_val (e : json_expr) : option json_val :=
-  match e with
-  | JsonLit v => Some v
-  end.
-
-Definition json_empty_ectx : json_ectx := tt.
-
-Definition json_comp_ectx (_ _ : json_ectx) : json_ectx := tt.
-
-Definition json_fill (_ : json_ectx) (e : json_expr) : json_expr := e.
-
-Inductive json_base_step :
-  json_expr ->
-  json_state ->
-  list json_observation ->
-  json_expr ->
-  json_state ->
-  list json_expr ->
-  Prop :=.
-
-Lemma json_to_of_val v :
-  json_to_val (json_of_val v) = Some v.
-Proof. reflexivity. Qed.
-
-Lemma json_of_to_val e v :
-  json_to_val e = Some v -> json_of_val v = e.
-Proof.
-  destruct e as [v']; simpl.
-  intros [= <-].
-  reflexivity.
-Qed.
-
-Lemma json_fill_empty e :
-  json_fill json_empty_ectx e = e.
-Proof. reflexivity. Qed.
-
-Lemma json_fill_comp K1 K2 e :
-  json_fill K1 (json_fill K2 e) = json_fill (json_comp_ectx K1 K2) e.
-Proof. reflexivity. Qed.
-
-Global Instance json_fill_inj K :
-  Inj (=) (=) (json_fill K).
-Proof. intros e1 e2 H; exact H. Qed.
-
-Lemma json_fill_val K e :
-  is_Some (json_to_val (json_fill K e)) -> is_Some (json_to_val e).
-Proof. exact (fun H => H). Qed.
-
-Lemma json_ectx_mixin :
-  EctxLanguageMixin
-    json_of_val
-    json_to_val
-    json_empty_ectx
-    json_comp_ectx
-    json_fill
-    json_base_step.
-Proof.
-  split.
-  - exact json_to_of_val.
-  - exact json_of_to_val.
-  - intros ?????? Hstep. inversion Hstep.
-  - exact json_fill_empty.
-  - exact json_fill_comp.
-  - exact json_fill_inj.
-  - exact json_fill_val.
-  - intros K' K_redex e1' e1_redex σ1 κ e2 σ2 efs Heq Hnval Hstep.
-    inversion Hstep.
-  - intros K e σ1 κ e2 σ2 efs Hstep.
-    inversion Hstep.
-Qed.
-
-Canonical Structure json_ectx_lang : ectxLanguage :=
-  @EctxLanguage
-    json_expr
-    json_val
-    json_ectx
-    json_state
-    json_observation
-    json_of_val
-    json_to_val
-    json_empty_ectx
-    json_comp_ectx
-    json_fill
-    json_base_step
-    json_ectx_mixin.
-
-Canonical Structure json_lang := LanguageOfEctx json_ectx_lang.
-
-Lemma json_expr_is_value e :
-  exists v, json_to_val e = Some v.
-Proof. destruct e; eexists; reflexivity. Qed.
-
-Lemma json_irreducible e σ :
-  irreducible (Λ := json_lang) e σ.
-Proof.
-  intros κ e' σ' efs Hstep.
-  destruct Hstep as [K e1' e2' He1 He2 Hbase].
-  inversion Hbase.
-Qed.
-
-Module Justin.
-
-  Definition loc := nat.
-
-  Inductive prim_name :=
-  | PrimFreeze
-  | PrimHarden
-  | PrimAssert
-  | PrimId
-  | PrimFail.
-
-  Inductive prim_ref :=
-  | PrimBuiltin (name : prim_name)
-  | PrimDyn (id : nat)
-  | PrimExt (id : nat).
-
-  Inductive ty :=
-  | TyUnknown
-  | TyNull
-  | TyBool
-  | TyNumber
-  | TyBigInt
-  | TyString
-  | TyObject
-  | TyPrim
-  | TyUndefined.
-
-  Definition refine_env := list (string * ty).
-
-  Inductive lit :=
-  | LJson (v : jval)
-  | LBigInt (n : Z)
-  | LUndefined.
-
-  Inductive val :=
-  | VLit (l : lit)
-  | VLoc (l : loc)
-  | VPrim (name : prim_ref).
+  Inductive binop :=
+  | Add
+  | Sub.
 
   Inductive expr :=
-  | Lit (v : lit)
   | Var (x : string)
+  | LitNat (n : Z)
+  (* TODO: Jessie cares about two nullish values, `undefined` and `null`.
+     This temporary unit literal is only here to support HeapLang-style
+     zero-argument calls like `f #()`. Revisit once the nullish story is
+     modeled directly. *)
+  | LitUnit
+  | Rec (f x : binder) (body : expr)
+  | App (e1 e2 : expr)
+  | LetIn (x : binder) (e1 e2 : expr)
   | Obj (fields : list (string * expr))
   | Get (e : expr) (field : string)
-  | App (f : expr) (args : list expr)
-  | LetIn (x : string) (rhs body : expr)
-  | TypeOf (e : expr)
-  | Cond (e0 e1 e2 : expr)
-  | EqStrict (e1 e2 : expr)
-  | Add (e1 e2 : expr).
+  | Alloc (e : expr)
+  | Load (e : expr)
+  | Store (e1 e2 : expr)
+  | BinOp (op : binop) (e1 e2 : expr).
 
-  Inductive resolved_binop :=
-  | ConcatStr
-  | AddNum
-  | EqStrictOp.
+  Coercion Var : string >-> expr.
 
-  Inductive core_expr :=
-  | CoreVal (v : val)
-  | CoreVar (x : string)
-  | CoreAllocObj (fields : list (string * core_expr))
-  | CoreGet (e : core_expr) (field : string)
-  | CoreApp (f : core_expr) (args : list core_expr)
-  | CoreLetIn (x : string) (rhs body : core_expr)
-  | CoreTypeOf (e : core_expr)
-  | CoreCond (e0 e1 e2 : core_expr)
-  | CoreBinop (op : resolved_binop) (e1 e2 : core_expr)
-  | CoreBzzt.
+  Definition Lam (x : binder) (body : expr) : expr :=
+    Rec BAnon x body.
 
-  Definition empty_env : refine_env := [].
+  Definition Seq (e1 e2 : expr) : expr :=
+    LetIn BAnon e1 e2.
 
-  Fixpoint lookup_ty (Γ : refine_env) (x : string) : ty :=
-    match Γ with
-    | [] => TyUnknown
-    | (y, τ) :: Γ' => if String.eqb x y then τ else lookup_ty Γ' x
+  Definition AssignAdd (x rhs : expr) : expr :=
+    Seq
+      (Store x (BinOp Add (Load x) rhs))
+      (Load x).
+
+  Definition AssignSub (x rhs : expr) : expr :=
+    Seq
+      (Store x (BinOp Sub (Load x) rhs))
+      (Load x).
+
+  Definition EmptyObj : expr := Obj [].
+
+  Definition SingletonObj (k : string) (v : expr) : expr :=
+    Obj [(k, v)].
+
+  Definition DoubleObj (k1 : string) (v1 : expr) (k2 : string) (v2 : expr) : expr :=
+    Obj [(k1, v1); (k2, v2)].
+
+  Fixpoint lookup_field_last {A : Type} (k : string) (fields : list (string * A))
+    : option A :=
+    match fields with
+    | [] => None
+    | (k', v) :: fields' =>
+        match lookup_field_last k fields' with
+        | Some v' => Some v'
+        | None => if String.eqb k k' then Some v else None
+        end
     end.
 
-  Definition bind_ty (Γ : refine_env) (x : string) (τ : ty) : refine_env :=
-    (x, τ) :: Γ.
+  Declare Scope jessie_scope.
+  Delimit Scope jessie_scope with jessie.
+  Declare Custom Entry jexpr.
 
-  Definition typeof_json (v : jval) : string :=
-    match v with
-    | JNull => "object"
-    | JBool _ => "boolean"
-    | JNum _ => "number"
-    | JStr _ => "string"
-    | JArr _ => "object"
-    | JObj _ => "object"
-    end.
+  Notation "<{ e }>" := e (e custom jexpr at level 99).
+  Notation "( x )" := x (in custom jexpr, x at level 99).
+  Notation "x" := x (in custom jexpr at level 0, x constr at level 0).
+  Notation "#()" := LitUnit (in custom jexpr at level 0).
+  Notation "# n" := (LitNat n%Z) (in custom jexpr at level 8, n constr).
+  Notation "'fn:' x => e" := (Lam x e)
+    (in custom jexpr at level 200, x constr at level 1, e custom jexpr at level 200,
+     right associativity).
+  Notation "'let:' x := e1 'in' e2" := (LetIn x e1 e2)
+    (in custom jexpr at level 200, x constr at level 1,
+     e1 custom jexpr at level 200, e2 custom jexpr at level 200,
+     right associativity).
+  Notation "{ }" := EmptyObj (in custom jexpr at level 0).
+  Notation "{ k := v }" := (SingletonObj k v)
+    (in custom jexpr at level 0, k constr at level 0, v custom jexpr at level 200).
+  Notation "{ k1 := v1 ; k2 := v2 }" := (DoubleObj k1 v1 k2 v2)
+    (in custom jexpr at level 0, k1 constr at level 0, v1 custom jexpr at level 200,
+     k2 constr at level 0, v2 custom jexpr at level 200).
+  Notation "'ref' e" := (Alloc e) (in custom jexpr at level 20).
+  Notation "'!' e" := (Load e) (in custom jexpr at level 20).
+  Notation "e .[ k ]" := (Get e k)
+    (in custom jexpr at level 19, left associativity, k constr at level 0).
+  Notation "e1 e2" := (App e1 e2)
+    (in custom jexpr at level 18, left associativity).
+  Notation "e1 <- e2" := (Store e1 e2)
+    (in custom jexpr at level 80, right associativity).
+  Notation "e1 + e2" := (BinOp Add e1 e2)
+    (in custom jexpr at level 50, left associativity).
+  Notation "e1 - e2" := (BinOp Sub e1 e2)
+    (in custom jexpr at level 50, left associativity).
+  Notation "x += e" := (AssignAdd x e)
+    (in custom jexpr at level 82, right associativity).
+  Notation "x -= e" := (AssignSub x e)
+    (in custom jexpr at level 82, right associativity).
+  Notation "e1 ;; e2" := (Seq e1 e2)
+    (in custom jexpr at level 100, right associativity).
 
-  Definition typeof_lit (l : lit) : string :=
-    match l with
-    | LJson jv => typeof_json jv
-    | LBigInt _ => "bigint"
-    | LUndefined => "undefined"
-    end.
+  Notation "<>" := BAnon.
+  Notation "#()" := LitUnit : jessie_scope.
+  Notation "# n" := (LitNat n%Z) (at level 8, format "# n") : jessie_scope.
+  Notation "'fn:' x => e" := (Lam x e)
+    (at level 200, x at level 1, e at level 200,
+     right associativity) : jessie_scope.
+  Notation "'let:' x := e1 'in' e2" := (LetIn x e1 e2)
+    (at level 200, x at level 1, e1 at level 200, e2 at level 200,
+     right associativity) : jessie_scope.
+  Notation "{ }" := EmptyObj : jessie_scope.
+  Notation "'{' k := v '}'" := (SingletonObj k v) : jessie_scope.
+  Notation "'{' k1 := v1 ; k2 := v2 '}'" := (DoubleObj k1 v1 k2 v2) : jessie_scope.
+  Notation "'ref' e" := (Alloc e) (at level 20) : jessie_scope.
+  Notation "'!' e" := (Load e) (at level 20) : jessie_scope.
+  Notation "e .[ k ]" := (Get e k)
+    (at level 19, left associativity, format "e .[ k ]") : jessie_scope.
+  Notation "e1 <- e2" := (Store e1 e2)
+    (at level 80, right associativity) : jessie_scope.
+  Notation "e1 + e2" := (BinOp Add e1 e2)
+    (at level 50, left associativity) : jessie_scope.
+  Notation "e1 - e2" := (BinOp Sub e1 e2)
+    (at level 50, left associativity) : jessie_scope.
+  Notation "x += e" := (AssignAdd x e)
+    (at level 82, right associativity) : jessie_scope.
+  Notation "x -= e" := (AssignSub x e)
+    (at level 82, right associativity) : jessie_scope.
+  Notation "e1 ;; e2" := (Seq e1 e2)
+    (at level 100, right associativity) : jessie_scope.
 
-  Definition typeof_val (v : val) : string :=
-    match v with
-    | VLit l => typeof_lit l
-    | VLoc _ => "object"
-    | VPrim _ => "function"
-    end.
+  Open Scope jessie_scope.
 
-  Definition classify_lit (l : lit) : ty :=
-    match l with
-    | LJson JNull => TyNull
-    | LJson (JBool _) => TyBool
-    | LJson (JNum _) => TyNumber
-    | LJson (JStr _) => TyString
-    | LJson (JArr _) => TyObject
-    | LJson (JObj _) => TyObject
-    | LBigInt _ => TyBigInt
-    | LUndefined => TyUndefined
-    end.
-
-  Definition classify_val (v : val) : ty :=
-    match v with
-    | VLit l => classify_lit l
-    | VLoc _ => TyObject
-    | VPrim _ => TyPrim
-    end.
-
-  Definition ty_of_typeof_tag (tag : string) : option ty :=
-    if String.eqb tag "string" then Some TyString else
-    if String.eqb tag "number" then Some TyNumber else
-    if String.eqb tag "bigint" then Some TyBigInt else
-    if String.eqb tag "boolean" then Some TyBool else
-    if String.eqb tag "object" then Some TyObject else
-    if String.eqb tag "function" then Some TyPrim else
-    if String.eqb tag "undefined" then Some TyUndefined else
-    if String.eqb tag "null" then Some TyNull else
-    None.
-
-  Definition refine_typeof_branch
-      (Γ : refine_env) (x tag : string) : option refine_env :=
-    match ty_of_typeof_tag tag with
-    | Some τ => Some (bind_ty Γ x τ)
-    | None => None
-    end.
-
-  Inductive elaborates : refine_env -> expr -> core_expr -> Prop :=
-  | ElabLit Γ v :
-      elaborates Γ (Lit v) (CoreVal (VLit v))
-  | ElabVar Γ x :
-      elaborates Γ (Var x) (CoreVar x)
-  | ElabTypeOf Γ e e' :
-      elaborates Γ e e' ->
-      elaborates Γ (TypeOf e) (CoreTypeOf e')
-  | ElabEqStrict Γ e1 e2 e1' e2' :
-      elaborates Γ e1 e1' ->
-      elaborates Γ e2 e2' ->
-      elaborates Γ (EqStrict e1 e2) (CoreBinop EqStrictOp e1' e2')
-  | ElabCond Γ e0 e1 e2 e0' e1' e2' :
-      elaborates Γ e0 e0' ->
-      elaborates Γ e1 e1' ->
-      elaborates Γ e2 e2' ->
-      elaborates Γ (Cond e0 e1 e2) (CoreCond e0' e1' e2')
-  | ElabAddString Γ x y y' :
-      lookup_ty Γ x = TyString ->
-      elaborates Γ y y' ->
-      elaborates Γ (Add (Var x) y) (CoreBinop ConcatStr (CoreVar x) y')
-  | ElabAddNumber Γ x y y' :
-      lookup_ty Γ x = TyNumber ->
-      elaborates Γ y y' ->
-      elaborates Γ (Add (Var x) y) (CoreBinop AddNum (CoreVar x) y').
-
-  Example lookup_ty_miss :
-    lookup_ty empty_env "x" = TyUnknown.
+  Example notation_smoke :
+    (let: "x" := ref #2 in !"x")%jessie =
+      LetIn "x" (Alloc (LitNat 2)) (Load (Var "x")).
   Proof. reflexivity. Qed.
 
-  Example refine_string_branch :
-    refine_typeof_branch empty_env "x" "string" = Some [("x", TyString)].
+  Example fn_smoke :
+    (fn: "x" => "x" + #1)%jessie =
+      Rec BAnon "x" (BinOp Add (Var "x") (LitNat 1)).
   Proof. reflexivity. Qed.
 
-  Example classify_prim :
-    classify_val (VPrim (PrimBuiltin PrimHarden)) = TyPrim.
+  Example assign_add_smoke :
+    ("counter" += #1)%jessie =
+      LetIn BAnon
+        (Store (Var "counter") (BinOp Add (Load (Var "counter")) (LitNat 1)))
+        (Load (Var "counter")).
   Proof. reflexivity. Qed.
 
-  Example typeof_null_is_object :
-    typeof_val (VLit (LJson JNull)) = "object".
+  Example assign_sub_smoke :
+    ("counter" -= #1)%jessie =
+      LetIn BAnon
+        (Store (Var "counter") (BinOp Sub (Load (Var "counter")) (LitNat 1)))
+        (Load (Var "counter")).
   Proof. reflexivity. Qed.
 
-  Example classify_bigint :
-    classify_val (VLit (LBigInt 9898)) = TyBigInt.
+  Example custom_entry_fn_smoke :
+    <{ fn: "x" => "x" + #1 }> =
+      Rec BAnon "x" (BinOp Add (Var "x") (LitNat 1)).
   Proof. reflexivity. Qed.
 
-End Justin.
+  Example empty_object_smoke :
+    ({} )%jessie = Obj [].
+  Proof. reflexivity. Qed.
 
-Module JessieSurface.
-  Import Justin.
+  Example singleton_object_smoke :
+    ({ "incr" := #1 })%jessie = Obj [("incr", LitNat 1)].
+  Proof. reflexivity. Qed.
 
-  Inductive expr :=
-  | Base (e : Justin.expr)
-  | Obj (fields : list (string * expr))
-  | Get (e : expr) (field : string)
-  | Call (f : expr) (args : list expr)
-  | Arrow0 (body : stmt)
-  | AssignAdd (x : string) (delta : Z)
-  | EqStrict (e1 e2 : expr)
-  | Harden (e : expr)
-  with stmt :=
-  | SConst (x : string) (rhs : expr)
-  | SLet (x : string) (rhs : expr)
-  | SReturn (e : expr)
-  | SExpr (e : expr)
-  | SBlock (ss : list stmt).
+  Example double_object_smoke :
+    ({ "incr" := #1; "decr" := #0 })%jessie =
+      Obj [("incr", LitNat 1); ("decr", LitNat 0)].
+  Proof. reflexivity. Qed.
 
-  Definition program := list stmt.
-End JessieSurface.
+  Example get_smoke :
+    ({ "incr" := #1 }).["incr"]%jessie = Get (Obj [("incr", LitNat 1)]) "incr".
+  Proof. reflexivity. Qed.
+
+  Example last_field_wins_smoke :
+    lookup_field_last "incr"
+      [("incr", LitNat 1); ("decr", LitNat 0); ("incr", LitNat 2)] =
+      Some (LitNat 2).
+  Proof. reflexivity. Qed.
+
+  Example custom_entry_app_get_smoke :
+    <{ { "incr" := fn: <> => #1 }.["incr"] #() }> =
+      App
+        (Get (Obj [("incr", Lam BAnon (LitNat 1))]) "incr")
+        LitUnit.
+  Proof. reflexivity. Qed.
+End JessieLang.

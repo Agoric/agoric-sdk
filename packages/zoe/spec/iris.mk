@@ -2,8 +2,7 @@ OPAM_SWITCH ?= iris
 OCAML_VER ?= 4.14.1
 COQ_VER ?= 8.18.0
 VSROCQ_LSP_VER ?= 2.3.4
-ALL_V_SOURCES := $(sort $(wildcard *.v))
-DEFAULT_SOURCES := $(filter-out hello_bad.v,$(ALL_V_SOURCES))
+DEFAULT_SOURCES := jessie_lang.v jessie_counter.v
 SOURCES ?= $(DEFAULT_SOURCES)
 VO_TARGETS := $(patsubst %.v,%.vo,$(SOURCES))
 DEPFILE := .coqdeps.d
@@ -20,20 +19,6 @@ help:
 	@echo "  build        Incrementally build Coq sources in SOURCES"
 	@echo "  clean        Remove Coq build artifacts"
 	@echo "  env          Print shell command to load the switch env"
-	@echo ""
-	@echo "Suggested workflow:"
-	@echo '  1. make -f iris.mk ubuntu-deps'
-	@echo '  2. make -f iris.mk opam-init'
-	@echo '  3. make -f iris.mk switch'
-	@echo '  4. make -f iris.mk install'
-	@echo '  5. make -f iris.mk build'
-	@echo ""
-	@echo "Variables:"
-	@echo "  SOURCES      Space-separated .v files to compile"
-	@echo ""
-	@echo "Examples:"
-	@echo '  make -f iris.mk build'
-	@echo '  make -f iris.mk build SOURCES="jessie_lang.v jessie_justin.v"'
 
 ubuntu-deps:
 	sudo apt update
@@ -43,7 +28,6 @@ opam-init:
 	opam init --disable-sandboxing -y
 
 switch:
-	# Use system OCaml if available to avoid long compiler build
 	opam switch create $(OPAM_SWITCH) ocaml-system || opam switch set $(OPAM_SWITCH)
 	eval "$$(opam env --switch=$(OPAM_SWITCH))" && ocaml -version
 
