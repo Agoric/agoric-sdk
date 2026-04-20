@@ -8,8 +8,10 @@ import { promisify } from 'node:util';
  * @import {Socket} from 'net';
  */
 
+/** @typedef {ReadStream | WriteStream | Socket} StreamLike */
+
 /**
- * @param {ReadStream | WriteStream | Socket} stream
+ * @param {StreamLike} stream
  * @returns {Promise<void>}
  */
 export const fsStreamReady = stream =>
@@ -47,7 +49,7 @@ export const fsStreamReady = stream =>
 /**
  * Wait for a stream event and reject on stream error first.
  *
- * @param {ReadStream | WriteStream | Socket} stream
+ * @param {StreamLike} stream
  * @param {'drain' | 'ready'} eventName
  * @param {() => void} [onCleanup] called when the event is emitted or an error occurs, after listeners are removed
  * @returns {Promise<void>}
@@ -80,22 +82,21 @@ const naiveOnceWithError = (stream, eventName, onCleanup = () => {}) =>
  * detected. 11 drain listeners added to [WriteStream]. MaxListeners is 10. Use
  * emitter.setMaxListeners() to increase limit
  *
- * @param {(stream: ReadStream | WriteStream | Socket,
+ * @param {(stream: StreamLike,
  *   eventName: 'drain' | 'ready', onDone?: () => void) => Promise<void>} doOnceWithError
- * @returns {(stream: ReadStream | WriteStream | Socket,
+ * @returns {(stream: StreamLike,
  *   eventName: 'drain' | 'ready') => Promise<void>}
  */
 const makeMemoizedOnceWithError = doOnceWithError => {
   /**
-   * @type {Map<string, WeakMap<ReadStream | WriteStream | Socket,
-   *   Promise<void>>>}
+   * @type {Map<string, WeakMap<StreamLike, Promise<void>>>}
    */
   const promiseFromEventAndStream = new Map();
 
   /**
    * Wait for a stream event and reject on stream error first.
    *
-   * @param {ReadStream | WriteStream | Socket} stream
+   * @param {StreamLike} stream
    * @param {'drain' | 'ready'} eventName
    * @returns {Promise<void>}
    */
@@ -123,7 +124,7 @@ const makeMemoizedOnceWithError = doOnceWithError => {
 /**
  * Wait for a stream event and reject on stream error first.
  *
- * @param {ReadStream | WriteStream | Socket} stream
+ * @param {StreamLike} stream
  * @param {'drain' | 'ready'} eventName
  * @returns {Promise<void>}
  */
