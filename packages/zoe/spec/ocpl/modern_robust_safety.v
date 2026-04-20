@@ -21,37 +21,60 @@ Module OCPLModernRobustSafety.
   Definition allowed_val (v : val) : bool :=
     bool_decide (v ≠ assert).
 
+  Class Adversarial Σ (A : Type) := Adv {
+    adv : A -> iProp Σ;
+    #[global] adv_ne n :: Proper ((=) ==> dist n) adv
+  }.
+  Arguments Adv {_ _} _ _.
+  Arguments adv {_ _ _} _ : simpl never.
+  Instance: Params (@adv) 3 := {}.
+
+  Global Instance adv_proper `{Adversarial Σ A} :
+    Proper ((=) ==> (≡)) adv.
+  Proof. solve_proper. Qed.
+
   Section adversary.
     Context {Σ : gFunctors}.
     Variable loc_ok : loc -> iProp Σ.
 
-    Fixpoint adv_val (v : val) : iProp Σ :=
+    Fixpoint advval (v : val) : iProp Σ :=
       ⌜allowed_val v = true⌝ ∗
       match v with
       | LitV (LitLoc l) => loc_ok l
       | LitV _ => True
-      | RecV _ _ e => adv_expr e
-      | PairV v1 v2 => adv_val v1 ∗ adv_val v2
-      | InjLV v | InjRV v => adv_val v
+      | RecV _ _ e => advexpr e
+      | PairV v1 v2 => advval v1 ∗ advval v2
+      | InjLV v | InjRV v => advval v
       end
-    with adv_expr (e : expr) : iProp Σ :=
+    with advexpr (e : expr) : iProp Σ :=
       match e with
-      | Val v => adv_val v
+      | Val v => advval v
       | Var _ => True
-      | Rec _ _ e => adv_expr e
-      | App e1 e2 => adv_expr e1 ∗ adv_expr e2
-      | UnOp _ e => adv_expr e
-      | BinOp _ e1 e2 => adv_expr e1 ∗ adv_expr e2
-      | If e0 e1 e2 => adv_expr e0 ∗ adv_expr e1 ∗ adv_expr e2
-      | Pair e1 e2 => adv_expr e1 ∗ adv_expr e2
-      | Fst e | Snd e | InjL e | InjR e | Free e | Load e | Fork e => adv_expr e
-      | Case e0 e1 e2 => adv_expr e0 ∗ adv_expr e1 ∗ adv_expr e2
+      | Rec _ _ e => advexpr e
+      | App e1 e2 => advexpr e1 ∗ advexpr e2
+      | UnOp _ e => advexpr e
+      | BinOp _ e1 e2 => advexpr e1 ∗ advexpr e2
+      | If e0 e1 e2 => advexpr e0 ∗ advexpr e1 ∗ advexpr e2
+      | Pair e1 e2 => advexpr e1 ∗ advexpr e2
+      | Fst e | Snd e | InjL e | InjR e | Free e | Load e | Fork e => advexpr e
+      | Case e0 e1 e2 => advexpr e0 ∗ advexpr e1 ∗ advexpr e2
       | AllocN e1 e2 | Store e1 e2 | Xchg e1 e2 | FAA e1 e2 =>
-          adv_expr e1 ∗ adv_expr e2
+          advexpr e1 ∗ advexpr e2
       | CmpXchg e0 e1 e2 | Resolve e0 e1 e2 =>
-          adv_expr e0 ∗ adv_expr e1 ∗ adv_expr e2
+          advexpr e0 ∗ advexpr e1 ∗ advexpr e2
       | NewProph => True
       end.
+
+    Global Instance advexpr_adv : Adversarial Σ expr := Adv advexpr _.
+    Global Instance advval_adv : Adversarial Σ val := Adv advval _.
+
+    Lemma adv_expr e :
+      adv e ⊣⊢ advexpr e.
+    Proof. done. Qed.
+
+    Lemma adv_val v :
+      adv v ⊣⊢ advval v.
+    Proof. done. Qed.
   End adversary.
 
   Inductive ctx :=
@@ -129,25 +152,31 @@ Module OCPLModernRobustSafety.
     Context {Σ : gFunctors}.
     Variable loc_ok : loc -> iProp Σ.
 
-    Fixpoint adv_ctx (C : ctx) : iProp Σ :=
+    Fixpoint advctx (C : ctx) : iProp Σ :=
       match C with
       | CHole => True
       | CRec _ _ C | CUnOp _ C | CFst C | CSnd C | CInjL C | CInjR C
-      | CFree C | CLoad C | CFork C => adv_ctx C
+      | CFree C | CLoad C | CFork C => advctx C
       | CAppL C e2 | CBinOpL _ C e2 | CPairL C e2 | CAllocNL C e2
       | CStoreL C e2 | CXchgL C e2 | CFAAL C e2 =>
-          adv_ctx C ∗ adv_expr loc_ok e2
+          advctx C ∗ advexpr loc_ok e2
       | CAppR e1 C | CBinOpR _ e1 C | CPairR e1 C | CAllocNR e1 C
       | CStoreR e1 C | CXchgR e1 C | CFAAR e1 C =>
-          adv_expr loc_ok e1 ∗ adv_ctx C
+          advexpr loc_ok e1 ∗ advctx C
       | CIf C0 e1 e2 | CCase C0 e1 e2 | CCmpXchgL C0 e1 e2
       | CResolve0 C0 e1 e2 =>
-          adv_ctx C0 ∗ adv_expr loc_ok e1 ∗ adv_expr loc_ok e2
+          advctx C0 ∗ advexpr loc_ok e1 ∗ advexpr loc_ok e2
       | CCmpXchgM e0 C1 e2 | CResolve1 e0 C1 e2 =>
-          adv_expr loc_ok e0 ∗ adv_ctx C1 ∗ adv_expr loc_ok e2
+          advexpr loc_ok e0 ∗ advctx C1 ∗ advexpr loc_ok e2
       | CCmpXchgR e0 e1 C2 | CResolve2 e0 e1 C2 =>
-          adv_expr loc_ok e0 ∗ adv_expr loc_ok e1 ∗ adv_ctx C2
+          advexpr loc_ok e0 ∗ advexpr loc_ok e1 ∗ advctx C2
       end.
+
+    Global Instance advctx_adv : Adversarial Σ ctx := Adv advctx _.
+
+    Lemma adv_ctx C :
+      adv C ⊣⊢ advctx C.
+    Proof. done. Qed.
   End adversary_ctx.
 
   Section robust_safety.
@@ -161,7 +190,7 @@ Module OCPLModernRobustSafety.
       □ (⌜is_closed_expr ∅ e = true⌝ ∗ WP e @ NotStuck; ⊤ {{ post_good }}).
 
     Definition safe (C : ctx) : iProp Σ :=
-      ∀ e, adv_ctx loc_ok C -∗ verified e -∗ WP (ctx_fill C e) @ NotStuck; ⊤ {{ post_good }}.
+      ∀ e, advctx loc_ok C -∗ verified e -∗ WP (ctx_fill C e) @ NotStuck; ⊤ {{ post_good }}.
 
     Lemma safe_hole :
       ⊢ safe CHole.
