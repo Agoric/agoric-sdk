@@ -52,6 +52,63 @@ Module OCPLModernOnVal.
       by iApply (wp_on_val_app with "Hv1 Hv2").
     Qed.
 
+    Lemma low_un_op_eval op v1 v2 :
+      un_op_eval op v1 = Some v2 ->
+      low v1 -∗ low v2.
+    Proof.
+      destruct op; destruct v1; simpl; try discriminate;
+        destruct l; simpl; try discriminate;
+        intros H; inversion H; subst;
+        iIntros "_"; by rewrite !low_val_unfold /=.
+    Qed.
+
+    Lemma wp_on_val_un_op E op v :
+      ▷ low v -∗
+      WP UnOp op (Val v) @ MaybeStuck; E {{ v', low v' }}.
+    Proof.
+      iIntros "Hv".
+      destruct (un_op_eval op v) as [v'|] eqn:Heval.
+      - wp_pures.
+        by iApply (low_un_op_eval with "Hv").
+      - iApply (wp_stuck_un_op with "[]"); [done|done|done].
+    Qed.
+
+    Lemma wp_on_val_un_op_bind E op e :
+      WP e @ MaybeStuck; E {{ v, low v }} -∗
+      WP UnOp op e @ MaybeStuck; E {{ v, low v }}.
+    Proof.
+      iIntros "He".
+      wp_bind e.
+      wp_smart_apply (wp_wand with "He") as (v) "Hv".
+      by iApply (wp_on_val_un_op with "Hv").
+    Qed.
+
+    Lemma wp_any_if E v e1 e2 :
+      ▷ (WP e1 @ MaybeStuck; E {{ v, low v }} ∧
+         WP e2 @ MaybeStuck; E {{ v, low v }}) -∗
+      WP If (Val v) e1 e2 @ MaybeStuck; E {{ v, low v }}.
+    Proof.
+      iIntros "Hei".
+      destruct (decide (is_bool (Val v))) as [Hbool|Hbool].
+      - destruct (is_bool_val v Hbool) as [b ->].
+        destruct b.
+        + wp_if_true. by iDestruct "Hei" as "[Hei _]".
+        + wp_if_false. by iDestruct "Hei" as "[_ Hei]".
+      - iApply (wp_stuck_if with "[]"); [done|done|done].
+    Qed.
+
+    Lemma wp_any_if_bind E e0 e1 e2 :
+      WP e0 @ MaybeStuck; E {{ v, low v }} -∗
+      ▷ (WP e1 @ MaybeStuck; E {{ v, low v }} ∧
+         WP e2 @ MaybeStuck; E {{ v, low v }}) -∗
+      WP If e0 e1 e2 @ MaybeStuck; E {{ v, low v }}.
+    Proof.
+      iIntros "He0 Hei".
+      wp_bind e0.
+      wp_smart_apply (wp_wand with "He0") as (v) "_".
+      by iApply (wp_any_if with "Hei").
+    Qed.
+
     Lemma wp_on_val_pair E v1 v2 :
       ▷ low v1 -∗
       ▷ low v2 -∗
