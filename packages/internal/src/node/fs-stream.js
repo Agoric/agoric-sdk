@@ -48,14 +48,15 @@ export const fsStreamReady = stream =>
   });
 
 /**
- * Wait for a stream event and reject on stream error first.
+ * Subscribe fresh listeners for a single stream event and reject on stream
+ * error first.
  *
  * @param {StreamLike} stream
  * @param {EventName} eventName
  * @param {() => void} [onCleanup] called when the event is emitted or an error occurs, after listeners are removed
  * @returns {Promise<void>}
  */
-const naiveOnceWithError = (stream, eventName, onCleanup = () => {}) =>
+const subscribeOnceWithError = (stream, eventName, onCleanup = () => {}) =>
   new Promise((resolve, reject) => {
     const onEvent = () => {
       cleanup();
@@ -129,7 +130,7 @@ const makeMemoizedOnceWithError = doOnceWithError => {
  * @param {EventName} eventName
  * @returns {Promise<void>}
  */
-const onceWithError = makeMemoizedOnceWithError(naiveOnceWithError);
+const onceWithError = makeMemoizedOnceWithError(subscribeOnceWithError);
 
 /**
  * @param {WriteStream | Socket} stream
