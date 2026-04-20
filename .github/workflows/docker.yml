@@ -253,9 +253,11 @@ jobs:
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   # it only actually deploys if there is a change in the Docker digest
+  # and doesn't autodeploy for dev-upgrade branches since they are not
+  # fully qualified for release.
   deploy-ymax0-planner:
     needs: docker-ymax
-    if: needs.docker-ymax.result == 'success'
+    if: needs.docker-ymax.result == 'success' && !startsWith(github.ref, 'refs/heads/dev-upgrade-')
     runs-on: ubuntu-latest
 
     steps:
