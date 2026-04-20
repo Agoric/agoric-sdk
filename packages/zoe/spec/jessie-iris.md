@@ -121,6 +121,9 @@ language:
 - it records the key modern mismatch explicitly: assertions are not a dedicated
   AST constructor in current HeapLang, so adversaries must exclude the library
   `assert` value rather than an `Assert` node
+- TODO: add a tiny Jessie surface with `Obj` / `Get` notation and desugar it
+  to HeapLang, so we keep strong reuse while writing the case study in a
+  closer-to-Jessie syntax
 
 `jessie_counter_heaplang.v` is now the counter-specific HeapLang case study:
 

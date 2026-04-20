@@ -1,12 +1,18 @@
 (* OCPL-style adversary/context layer, adapted to modern Iris HeapLang. *)
 From Coq Require Import Bool.
 From iris.proofmode Require Import proofmode.
-From iris.heap_lang Require Export lang metatheory.
+From iris.base_logic.lib Require Export invariants.
+From iris.program_logic Require Export weakestpre.
+From iris.heap_lang Require Export lang primitive_laws metatheory adequacy.
 From iris.heap_lang Require Import notation.
 From iris.heap_lang.lib Require Import assert.
 
 Module JessieOcplHeapLang.
   Open Scope expr_scope.
+
+  (* TODO: keep HeapLang as the proof foundation, but add a tiny Jessie surface
+     language with `Obj` / `Get` that desugars into HeapLang terms. That is the
+     right way to recover JS-like object notation without giving up strong reuse. *)
 
   (* OCPL reserves assertions for verified code. In modern HeapLang, `assert: e`
      expands to application of the library value `assert`, so the adversary
@@ -143,6 +149,29 @@ Module JessieOcplHeapLang.
           adv_expr loc_ok e0 ∗ adv_expr loc_ok e1 ∗ adv_ctx C2
       end.
   End adversary_ctx.
+
+  Section robust_safety.
+    Context {Σ : gFunctors}.
+    Context {hlc : has_lc}.
+    Context `{!heapGS_gen hlc Σ}.
+    Variable loc_ok : loc -> iProp Σ.
+    Variable post_good : val -> iProp Σ.
+
+    Definition verified (e : expr) : iProp Σ :=
+      □ (⌜is_closed_expr ∅ e = true⌝ ∗ WP e @ NotStuck; ⊤ {{ post_good }}).
+
+    Definition safe (C : ctx) : iProp Σ :=
+      ∀ e, adv_ctx loc_ok C -∗ verified e -∗ WP (ctx_fill C e) @ NotStuck; ⊤ {{ post_good }}.
+
+    Lemma safe_hole :
+      ⊢ safe CHole.
+    Proof.
+      iIntros (e) "_ #He".
+      rewrite /verified /ctx_fill /=.
+      iDestruct "He" as "#(_ & He)".
+      iExact "He".
+    Qed.
+  End robust_safety.
 
   Fixpoint of_ectx_item (Ki : ectx_item) (C : ctx) : ctx :=
     match Ki with
