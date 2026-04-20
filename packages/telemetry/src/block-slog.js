@@ -6,11 +6,15 @@ import { SLOG_TYPES } from './context-aware-slog.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 /**
- * @typedef {import('./context-aware-slog.js').Slog} Slog
+ * @import {Slog} from '@agoric/telemetry/src/context-aware-slog.js';
+ * @import {MakeSlogSenderOptions} from '@agoric/telemetry/src/index.js';
+ * @import {WriteStream} from 'node:fs';
+ * @import {FileHandle} from 'node:fs/promises';
+ * @import {Gzip} from 'node:zlib';
  */
 
 /**
- * @param {import('./index.js').MakeSlogSenderOptions} options
+ * @param {MakeSlogSenderOptions} options
  */
 export const makeSlogSender = async options => {
   const { CONTEXTUAL_BLOCK_SLOGS } = options.env || {};
@@ -21,15 +25,15 @@ export const makeSlogSender = async options => {
 
   let chainedPromises = Promise.resolve();
   /**
-   * @type {import('node:fs/promises').FileHandle | null}
+   * @type {FileHandle | null}
    */
   let currentFileHandle = null;
   /**
-   * @type {import('node:fs').WriteStream | null}
+   * @type {WriteStream | null}
    */
   let currentFileStream = null;
   /**
-   * @type {import('node:zlib').Gzip | null}
+   * @type {Gzip | null}
    */
   let currentStream = null;
 
