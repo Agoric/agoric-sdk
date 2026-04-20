@@ -1,6 +1,6 @@
-OPAM_SWITCH ?= iris
 OCAML_VER ?= 4.14.1
 COQ_VER ?= 8.9.1
+OPAM_SWITCH ?= ocpl-coq-$(COQ_VER)
 VSROCQ_LSP_VER ?= 2.3.4
 COQFLAGS := -Q ocpl OCPL
 DEFAULT_SOURCES := ocpl/modern_heap.v ocpl/modern_lifting.v ocpl/modern_on_val.v ocpl/modern_robust_safety.v jessie_counter_heaplang.v
