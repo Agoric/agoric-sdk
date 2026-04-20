@@ -291,6 +291,7 @@ export const main = async (
       kvStore,
       makeAbortController,
       setTimeout,
+      now,
       axelarApiUrl: config.axelar.apiUrl,
       ydsNotifier,
       retryProviders,

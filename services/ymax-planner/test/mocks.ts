@@ -404,6 +404,7 @@ export const mockEvmCtx = {
   retryProviders: defaultMockProviders.retryProviders,
   kvStore: makeKVStoreFromMap(new Map()),
   setTimeout: globalThis.setTimeout,
+  now: Date.now,
   makeAbortController,
   axelarApiUrl: mockAxelarApiAddress,
   ydsNotifier: {
@@ -547,6 +548,7 @@ export const createMockPendingTxOpts = (
     retryProviders,
     fetch: async () => ({ ok: true, json: async () => ({}) }) as Response,
     setTimeout: globalThis.setTimeout,
+    now: Date.now,
     marshaller: boardSlottingMarshaller(),
     signingSmartWalletKit: createMockSigningSmartWalletKit(),
     ydsNotifier: {

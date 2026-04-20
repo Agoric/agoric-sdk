@@ -184,6 +184,7 @@ export const processTx = async (
         retryProviders,
         fetch,
         setTimeout,
+        now: Date.now,
         kvStore,
         makeAbortController,
         log: (...args) => console.log('[TX]', ...args),

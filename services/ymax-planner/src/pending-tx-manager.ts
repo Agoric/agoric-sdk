@@ -18,6 +18,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 import type { WebSocketProvider } from 'ethers';
 import { resolvePendingTx } from './resolver.ts';
+import { submitWithRetry } from './retry-settlement.ts';
 import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
 import type { MakeAbortController, UsdcAddresses } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
@@ -53,6 +54,7 @@ export type EvmContext = {
   signingSmartWalletKit: SigningSmartWalletKit;
   fetch: typeof fetch;
   setTimeout: typeof globalThis.setTimeout;
+  now: () => number;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
   axelarApiUrl: string;
@@ -195,13 +197,27 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
       return;
     }
 
-    transferResult.settled &&
-      (await resolvePendingTx({
-        signingSmartWalletKit: ctx.signingSmartWalletKit,
-        txId,
-        status:
-          transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED,
-      }));
+    if (transferResult.settled) {
+      await submitWithRetry(
+        `${logPrefix} CCTP settlement`,
+        () =>
+          resolvePendingTx({
+            signingSmartWalletKit: ctx.signingSmartWalletKit,
+            txId,
+            status:
+              transferResult.success !== false
+                ? TxStatus.SUCCESS
+                : TxStatus.FAILED,
+          }),
+        {
+          log,
+          setTimeout: ctx.setTimeout,
+          now: ctx.now,
+          errorCode: PendingTxCode.RESOLVER_SETTLEMENT_FAILED,
+          signal: opts.signal,
+        },
+      );
+    }
 
     if (transferResult?.txHash) {
       await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
@@ -321,13 +337,27 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
       return;
     }
 
-    transferResult.settled &&
-      (await resolvePendingTx({
-        signingSmartWalletKit: ctx.signingSmartWalletKit,
-        txId,
-        status:
-          transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED,
-      }));
+    if (transferResult.settled) {
+      await submitWithRetry(
+        `${logPrefix} GMP settlement`,
+        () =>
+          resolvePendingTx({
+            signingSmartWalletKit: ctx.signingSmartWalletKit,
+            txId,
+            status:
+              transferResult.success !== false
+                ? TxStatus.SUCCESS
+                : TxStatus.FAILED,
+          }),
+        {
+          log,
+          setTimeout: ctx.setTimeout,
+          now: ctx.now,
+          errorCode: PendingTxCode.RESOLVER_SETTLEMENT_FAILED,
+          signal: opts.signal,
+        },
+      );
+    }
 
     if (transferResult?.txHash) {
       await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
@@ -452,13 +482,27 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
       return;
     }
 
-    walletResult.settled &&
-      (await resolvePendingTx({
-        signingSmartWalletKit: ctx.signingSmartWalletKit,
-        txId,
-        status:
-          walletResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED,
-      }));
+    if (walletResult.settled) {
+      await submitWithRetry(
+        `${logPrefix} MAKE_ACCOUNT settlement`,
+        () =>
+          resolvePendingTx({
+            signingSmartWalletKit: ctx.signingSmartWalletKit,
+            txId,
+            status:
+              walletResult.success !== false
+                ? TxStatus.SUCCESS
+                : TxStatus.FAILED,
+          }),
+        {
+          log,
+          setTimeout: ctx.setTimeout,
+          now: ctx.now,
+          errorCode: PendingTxCode.RESOLVER_SETTLEMENT_FAILED,
+          signal: opts.signal,
+        },
+      );
+    }
 
     if (walletResult?.txHash) {
       await ctx.ydsNotifier?.notifySettlement(txId, walletResult.txHash);
@@ -569,13 +613,27 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
       return;
     }
 
-    transferResult.settled &&
-      (await resolvePendingTx({
-        signingSmartWalletKit: ctx.signingSmartWalletKit,
-        txId,
-        status:
-          transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED,
-      }));
+    if (transferResult.settled) {
+      await submitWithRetry(
+        `${logPrefix} ROUTED_GMP settlement`,
+        () =>
+          resolvePendingTx({
+            signingSmartWalletKit: ctx.signingSmartWalletKit,
+            txId,
+            status:
+              transferResult.success !== false
+                ? TxStatus.SUCCESS
+                : TxStatus.FAILED,
+          }),
+        {
+          log,
+          setTimeout: ctx.setTimeout,
+          now: ctx.now,
+          errorCode: PendingTxCode.RESOLVER_SETTLEMENT_FAILED,
+          signal: opts.signal,
+        },
+      );
+    }
 
     if (transferResult?.txHash) {
       await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
@@ -627,6 +685,7 @@ export const PendingTxCode = {
   ROUTED_GMP_TX_NOT_FOUND: 'ROUTED_GMP_TX_NOT_FOUND',
   WALLET_TX_NOT_FOUND: 'WALLET_TX_NOT_FOUND',
   CCTP_TX_NOT_FOUND: 'CCTP_TX_NOT_FOUND',
+  RESOLVER_SETTLEMENT_FAILED: 'RESOLVER_SETTLEMENT_FAILED',
 } as const;
 
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
