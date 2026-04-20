@@ -1,6 +1,12 @@
-OCAML_VER ?= 4.14.1
 COQ_VER ?= 8.9.1
-OPAM_SWITCH ?= ocpl-coq-$(COQ_VER)
+ifeq ($(COQ_VER),8.9.1)
+OCAML_VER ?= 4.07.1
+EXTRA_OPAM_PKGS ?=
+else
+OCAML_VER ?= 4.14.1
+EXTRA_OPAM_PKGS ?= coq-iris coq-iris-heap-lang vsrocq-language-server.$(VSROCQ_LSP_VER)
+endif
+OPAM_SWITCH ?= ocpl-coq-$(COQ_VER)-ocaml-$(OCAML_VER)
 VSROCQ_LSP_VER ?= 2.3.4
 COQFLAGS := -Q ocpl OCPL
 DEFAULT_SOURCES := ocpl/modern_heap.v ocpl/modern_lifting.v ocpl/modern_on_val.v ocpl/modern_robust_safety.v jessie_counter_heaplang.v
@@ -8,12 +14,6 @@ SOURCES ?= $(DEFAULT_SOURCES)
 VO_TARGETS := $(patsubst %.v,%.vo,$(SOURCES))
 DEPFILE := .coqdeps.d
 OPAM_ENV = eval "$$(opam env --switch=$(OPAM_SWITCH))"
-
-ifeq ($(COQ_VER),8.9.1)
-EXTRA_OPAM_PKGS ?=
-else
-EXTRA_OPAM_PKGS ?= coq-iris coq-iris-heap-lang vsrocq-language-server.$(VSROCQ_LSP_VER)
-endif
 
 .PHONY: help ubuntu-deps opam-init switch install build clean env
 
@@ -29,6 +29,8 @@ help:
 	@echo ""
 	@echo "Defaults:"
 	@echo "  COQ_VER=$(COQ_VER)"
+	@echo "  OCAML_VER=$(OCAML_VER)"
+	@echo "  OPAM_SWITCH=$(OPAM_SWITCH)"
 	@echo "  EXTRA_OPAM_PKGS=$(EXTRA_OPAM_PKGS)"
 
 ubuntu-deps:
@@ -39,7 +41,7 @@ opam-init:
 	opam init --disable-sandboxing -y
 
 switch:
-	opam switch create $(OPAM_SWITCH) ocaml-system || opam switch set $(OPAM_SWITCH)
+	opam switch create $(OPAM_SWITCH) ocaml-base-compiler.$(OCAML_VER) || opam switch set $(OPAM_SWITCH)
 	eval "$$(opam env --switch=$(OPAM_SWITCH))" && ocaml -version
 
 install:
