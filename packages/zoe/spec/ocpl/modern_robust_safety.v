@@ -212,6 +212,23 @@ Module OCPLModernRobustSafety.
       - by iApply (wp_stuck_var with "[]").
     Qed.
 
+    Lemma confined_lit lit :
+      ⊢ confined (Val (LitV lit)).
+    Proof.
+      iIntros (γ) "_ Hlit".
+      rewrite /confined /=.
+      iApply wp_value.
+      destruct lit; simpl.
+      - by rewrite low_val_unfold /=.
+      - by rewrite low_val_unfold /=.
+      - by rewrite low_val_unfold /=.
+      - by rewrite low_val_unfold /=.
+      - iDestruct "Hlit" as "[_ Hl]".
+        rewrite low_val_unfold /=.
+        iExact "Hl".
+      - by rewrite low_val_unfold /=.
+    Qed.
+
     Lemma confined_app e1 e2 :
       confined e1 ∗ confined e2 -∗ confined (App e1 e2).
     Proof.
@@ -232,6 +249,30 @@ Module OCPLModernRobustSafety.
       iPoseProof ("IHe1" $! γ with "Hγ He1") as "Hwp1".
       iPoseProof ("IHe2" $! γ with "Hγ He2") as "Hwp2".
       iApply (wp_on_val_pair_bind ⊤ (subst_map γ e1) (subst_map γ e2) with "Hwp1 Hwp2").
+    Qed.
+
+    Lemma confined_un_op op e :
+      confined e -∗ confined (UnOp op e).
+    Proof.
+      iIntros "IHe" (γ) "#Hγ He".
+      rewrite /confined /=.
+      iPoseProof ("IHe" $! γ with "Hγ He") as "Hwp".
+      iApply (wp_on_val_un_op_bind ⊤ op (subst_map γ e)).
+      iExact "Hwp".
+    Qed.
+
+    Lemma confined_if e0 e1 e2 :
+      confined e0 ∗ confined e1 ∗ confined e2 -∗ confined (If e0 e1 e2).
+    Proof.
+      iIntros "(IHe0 & IHe1 & IHe2)" (γ) "#Hγ Hif".
+      rewrite /confined /=.
+      iDestruct "Hif" as "(He0 & He1 & He2)".
+      iPoseProof ("IHe0" $! γ with "Hγ He0") as "Hwp0".
+      iPoseProof ("IHe1" $! γ with "Hγ He1") as "Hwp1".
+      iPoseProof ("IHe2" $! γ with "Hγ He2") as "Hwp2".
+      iApply (wp_any_if_bind ⊤ (subst_map γ e0) (subst_map γ e1) (subst_map γ e2) with "Hwp0").
+      iNext.
+      iSplit; done.
     Qed.
 
     Lemma confined_fst e :
@@ -274,8 +315,9 @@ Module OCPLModernRobustSafety.
       iExact "Hwp".
     Qed.
 
-    (* TODO: port upstream `confined_case` once the modern `wp_on_val_case_bind`
-       continuation pattern is nailed down for current Iris proofmode. *)
+    (* TODO: `confined_case` still needs a clean way to carry the branch
+       hypotheses through the latered continuation of `wp_on_val_case_bind`
+       under the current proofmode setup. *)
   End ftlr.
 
   Section robust_safety.
