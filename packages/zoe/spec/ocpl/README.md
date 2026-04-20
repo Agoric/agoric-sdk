@@ -9,6 +9,11 @@ from:
 - Paper: https://www.mpi-sws.org/~dreyer/papers/ocpl/paper.pdf
 - Artifact: https://www.mpi-sws.org/~dreyer/papers/ocpl/ocpl.tgz
 
+Recovered local build:
+
+- built on 2020-02-02 12:39 from upstream commit `922c0f4c`
+- local checkout path: `packages/zoe/spec/_research/ocpl-coq`
+
 Why this is here:
 
 - the Jessie counter proof is moving away from a purely syntactic
