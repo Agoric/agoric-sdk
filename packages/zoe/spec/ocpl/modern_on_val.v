@@ -30,6 +30,15 @@ Module OCPLModernOnVal.
       - iApply (wp_stuck_app_nrec with "[]"); [done|done|simpl; tauto|done].
     Qed.
 
+    Lemma wp_on_val_app_raw E v1 v2 :
+      ⊢ low v1 -∗
+        low v2 -∗
+        WP App (Val v1) (Val v2) @ MaybeStuck; E {{ v, low v }}.
+    Proof.
+      iIntros "Hv1 Hv2".
+      iApply (wp_on_val_app with "Hv1 Hv2").
+    Qed.
+
     Lemma wp_on_val_app_bind E e1 e2 :
       WP e1 @ MaybeStuck; E {{ v, low v }} -∗
       WP e2 @ MaybeStuck; E {{ v, low v }} -∗
@@ -52,6 +61,15 @@ Module OCPLModernOnVal.
       wp_pures.
       iApply low_pair_intro_raw.
       by iFrame.
+    Qed.
+
+    Lemma wp_on_val_pair_raw E v1 v2 :
+      ⊢ ▷ low v1 -∗
+        ▷ low v2 -∗
+        WP Pair (Val v1) (Val v2) @ MaybeStuck; E {{ v, low v }}.
+    Proof.
+      iIntros "Hv1 Hv2".
+      iApply (wp_on_val_pair with "Hv1 Hv2").
     Qed.
 
     Lemma wp_on_val_pair_bind E e1 e2 :
@@ -85,6 +103,14 @@ Module OCPLModernOnVal.
       - iApply (wp_stuck_fst with "[]"); [done|simpl; tauto|done].
     Qed.
 
+    Lemma wp_on_val_fst_raw E v :
+      ⊢ low v -∗
+        WP Fst (Val v) @ MaybeStuck; E {{ v', low v' }}.
+    Proof.
+      iIntros "Hv".
+      iApply (wp_on_val_fst with "Hv").
+    Qed.
+
     Lemma wp_on_val_fst_bind E e :
       WP e @ MaybeStuck; E {{ v, low v }} -∗
       WP Fst e @ MaybeStuck; E {{ v, low v }}.
@@ -113,6 +139,14 @@ Module OCPLModernOnVal.
       - iApply (wp_stuck_snd with "[]"); [done|simpl; tauto|done].
     Qed.
 
+    Lemma wp_on_val_snd_raw E v :
+      ⊢ low v -∗
+        WP Snd (Val v) @ MaybeStuck; E {{ v', low v' }}.
+    Proof.
+      iIntros "Hv".
+      iApply (wp_on_val_snd with "Hv").
+    Qed.
+
     Lemma wp_on_val_snd_bind E e :
       WP e @ MaybeStuck; E {{ v, low v }} -∗
       WP Snd e @ MaybeStuck; E {{ v, low v }}.
@@ -133,6 +167,14 @@ Module OCPLModernOnVal.
       done.
     Qed.
 
+    Lemma wp_on_val_inl_raw E v :
+      ⊢ ▷ low v -∗
+        WP InjL (Val v) @ MaybeStuck; E {{ v', low v' }}.
+    Proof.
+      iIntros "Hv".
+      iApply (wp_on_val_inl with "Hv").
+    Qed.
+
     Lemma wp_on_val_inl_bind E e :
       WP e @ MaybeStuck; E {{ v, low v }} -∗
       WP InjL e @ MaybeStuck; E {{ v, low v }}.
@@ -151,6 +193,14 @@ Module OCPLModernOnVal.
       wp_pures.
       iApply low_inr_intro_raw.
       done.
+    Qed.
+
+    Lemma wp_on_val_inr_raw E v :
+      ⊢ ▷ low v -∗
+        WP InjR (Val v) @ MaybeStuck; E {{ v', low v' }}.
+    Proof.
+      iIntros "Hv".
+      iApply (wp_on_val_inr with "Hv").
     Qed.
 
     Lemma wp_on_val_inr_bind E e :
@@ -187,6 +237,17 @@ Module OCPLModernOnVal.
         iDestruct "Hin" as "Hv".
         iDestruct ("Hk" with "Hv") as "[_ Hinr]".
         done.
+    Qed.
+
+    Lemma wp_on_val_case_raw E v e1 e2 :
+      ⊢ low v -∗
+        ▷ (∀ v0, low v0 -∗
+          WP App e1 (Val v0) @ MaybeStuck; E {{ v, low v }} ∧
+          WP App e2 (Val v0) @ MaybeStuck; E {{ v, low v }}) -∗
+        WP Case (Val v) e1 e2 @ MaybeStuck; E {{ v, low v }}.
+    Proof.
+      iIntros "Hv Hk".
+      iApply (wp_on_val_case with "Hv Hk").
     Qed.
 
     Lemma wp_on_val_case_bind E e0 e1 e2 :

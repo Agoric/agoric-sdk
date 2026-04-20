@@ -6,10 +6,10 @@ From iris.program_logic Require Export weakestpre.
 From iris.heap_lang Require Export lang primitive_laws metatheory adequacy.
 From iris.heap_lang Require Import notation proofmode tactics.
 From iris.heap_lang.lib Require Import assert.
-From OCPL Require Import modern_heap modern_on_val.
+From OCPL Require Import modern_heap modern_lifting modern_on_val.
 
 Module OCPLModernRobustSafety.
-  Import OCPLModernHeap OCPLModernOnVal.
+  Import OCPLModernHeap OCPLModernLifting OCPLModernOnVal.
   Open Scope expr_scope.
 
   (* TODO: keep HeapLang as the proof foundation, but add a tiny Jessie surface
@@ -181,13 +181,98 @@ Module OCPLModernRobustSafety.
     Proof. done. Qed.
   End adversary_ctx.
 
+  Section ftlr.
+    Context {Σ : gFunctors}.
+    Context {hlc : has_lc}.
+    Context `{!heapGS_gen hlc Σ}.
+    Context `{!LowIntegrity Σ loc}.
+
+    Definition confined (e : expr) : iProp Σ :=
+      ∀ γ, low γ -∗ advexpr e -∗
+        WP (subst_map γ e) @ MaybeStuck; ⊤ {{ v, low v }}.
+
+    Lemma confined_var x :
+      ⊢ confined (Var x).
+    Proof.
+      iIntros (γ) "Hγ _".
+      rewrite /confined /=.
+      destruct (γ !! x) as [v|] eqn:Hlookup.
+      - iApply wp_value.
+        by iApply (low_env_lookup with "Hγ").
+      - by iApply (wp_stuck_var with "[]").
+    Qed.
+
+    Lemma confined_app e1 e2 :
+      confined e1 ∗ confined e2 -∗ confined (App e1 e2).
+    Proof.
+      iIntros "[IHe1 IHe2]" (γ) "#Hγ Happ".
+      rewrite /confined /=.
+      iDestruct "Happ" as "[He1 He2]".
+      iPoseProof ("IHe1" $! γ with "Hγ He1") as "Hwp1".
+      iPoseProof ("IHe2" $! γ with "Hγ He2") as "Hwp2".
+      iApply (wp_on_val_app_bind ⊤ (subst_map γ e1) (subst_map γ e2) with "Hwp1 Hwp2").
+    Qed.
+
+    Lemma confined_pair e1 e2 :
+      confined e1 ∗ confined e2 -∗ confined (Pair e1 e2).
+    Proof.
+      iIntros "[IHe1 IHe2]" (γ) "#Hγ Hp".
+      rewrite /confined /=.
+      iDestruct "Hp" as "[He1 He2]".
+      iPoseProof ("IHe1" $! γ with "Hγ He1") as "Hwp1".
+      iPoseProof ("IHe2" $! γ with "Hγ He2") as "Hwp2".
+      iApply (wp_on_val_pair_bind ⊤ (subst_map γ e1) (subst_map γ e2) with "Hwp1 Hwp2").
+    Qed.
+
+    Lemma confined_fst e :
+      confined e -∗ confined (Fst e).
+    Proof.
+      iIntros "IHe" (γ) "#Hγ He".
+      rewrite /confined /=.
+      iPoseProof ("IHe" $! γ with "Hγ He") as "Hwp".
+      iApply (wp_on_val_fst_bind ⊤ (subst_map γ e)).
+      iExact "Hwp".
+    Qed.
+
+    Lemma confined_snd e :
+      confined e -∗ confined (Snd e).
+    Proof.
+      iIntros "IHe" (γ) "#Hγ He".
+      rewrite /confined /=.
+      iPoseProof ("IHe" $! γ with "Hγ He") as "Hwp".
+      iApply (wp_on_val_snd_bind ⊤ (subst_map γ e)).
+      iExact "Hwp".
+    Qed.
+
+    Lemma confined_inl e :
+      confined e -∗ confined (InjL e).
+    Proof.
+      iIntros "IHe" (γ) "#Hγ He".
+      rewrite /confined /=.
+      iPoseProof ("IHe" $! γ with "Hγ He") as "Hwp".
+      iApply (wp_on_val_inl_bind ⊤ (subst_map γ e)).
+      iExact "Hwp".
+    Qed.
+
+    Lemma confined_inr e :
+      confined e -∗ confined (InjR e).
+    Proof.
+      iIntros "IHe" (γ) "#Hγ He".
+      rewrite /confined /=.
+      iPoseProof ("IHe" $! γ with "Hγ He") as "Hwp".
+      iApply (wp_on_val_inr_bind ⊤ (subst_map γ e)).
+      iExact "Hwp".
+    Qed.
+
+    (* TODO: port upstream `confined_case` once the modern `wp_on_val_case_bind`
+       continuation pattern is nailed down for current Iris proofmode. *)
+  End ftlr.
+
   Section robust_safety.
     Context {Σ : gFunctors}.
     Context {hlc : has_lc}.
     Context `{!heapGS_gen hlc Σ}.
     Context `{!LowIntegrity Σ loc}.
-    Context `{!LowIntegrity Σ val}.
-    Context `{!LowIntegrity Σ env}.
 
     Definition verified (s : stuckness) (e : expr) : iProp Σ :=
       □ (⌜is_closed_expr ∅ e = true⌝ ∗ WP e @ s; ⊤ {{ v, low v }}).
