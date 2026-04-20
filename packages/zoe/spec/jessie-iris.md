@@ -1,15 +1,10 @@
 # Jessie In Iris
 
-This file is the working design note for the Jessie/Justin/Iris work in this
-directory.
+HackMD-style slide notes for the Jessie / OCPL / Iris work in this directory.
 
-The motivation is to model capability separation properties of escrow-style
-code in a logic that fits them well: Iris is a good match for "if you don't
-have the reference, you can't invoke it", for separation-of-duties examples
-such as `makeCounter`, and for the async/concurrency structure that matters for
-escrow reasoning.
+---
 
-The concrete case-study shape remains the familiar one:
+## The Problem
 
 ```js
 const makeCounter = () => {
@@ -19,131 +14,243 @@ const makeCounter = () => {
     decr: () => (count -= 1),
   });
 };
-
-const counter = makeCounter();
-counter.incr();
-const n = counter.incr();
-assert(n === 2);
 ```
 
-This directory has now been reset to a minimal OCPL-shaped starting point.
+- Goal: state and prove a separation-of-duties claim for this
+  Jessie-flavored `makeCounter` example.
+- `makeCounter()` returns two methods closing over one hidden cell.
+- The security question is about separation of duties: can one method be handed
+  out without also handing out the other?
+- This note is part of a spike on correct-by-construction Zoe2 Escrow:
+  <https://github.com/Agoric/agoric-sdk/pull/8184>
+
+> Speaker notes:
+> The opening should stay at the ocap level. The proof technology can wait
+> until the audience has the example and the claim in view.
+
+---
+
+## Separation Of Duties
+
+```js
+const c = makeCounter();
+const cUp = { incr: c.incr };
+attacker(cUp);
+assert(c.incr() > 0);
+```
+
+- `c` is the original counter object.
+- `cUp` is the restricted capability object used to separate upward authority
+  from downward authority.
+- Main claim: after any allowed attacker code runs on `cUp`, a direct call to
+  the original `c.incr()` still returns a positive number.
+- Put differently: the final assertion should still succeed even after linking
+  the verified client with attacker-controlled code.
+
+> Speaker notes:
+> This is the presentation-level theorem. Internally, the proof route is about
+> preserving absence of downward authority, but the user-facing conclusion is
+> stated on `c.incr()`, not on hidden cells or graph predicates.
+
+---
+
+## What Must Be Shown
+
+- The attacker can use the authority it was given.
+- The attacker cannot synthesize `decr` authority from `cUp`.
+- Therefore the hidden counter cell cannot be driven negative by attacker code
+  that only received `cUp`.
+- One more direct `c.incr()` call must then return something `> 0`.
+
+---
+
+## A Prior Formal Starting Point
+
+- In their 2017 work, Swasey, Garg, and Dreyer reason about object capabilities
+  using OCPL, a language and formalism built to prove robust safety properties.
+- The key pattern is the one we need here:
+  verified code linked against attacker-controlled code, with a safety
+  property that should survive the linking.
+- That makes OCPL the right prior starting point for this project.
+
+Reference:
+Swasey, Garg, Dreyer, "Robust and Compositional Verification of Object
+Capability Patterns" (OOPSLA 2017).
+<https://www.mpi-sws.org/~dreyer/papers/ocpl/paper.pdf>
+
+Upstream Coq development in this repo:
+`ocpl/upstream/theories/heap_lang/robust_safety.v`
+
+---
+
+## Iris As Proof Foundation
+
+- Iris is a Coq framework for machine-checked proofs about stateful and
+  concurrent programs.
+- It is a good fit for reasoning about hidden references, higher-order
+  functions, event-loop concurrency, and attacker-controlled linking.
+- HeapLang is the small ML-like language that ships with Iris and is used for
+  many Iris case studies, including ours.
+
+Reference:
+Krebbers, Jung, Bizjak, Jourdan, Dreyer, Birkedal,
+"The Essence of Higher-Order Concurrent Separation Logic" (ESOP 2017).
+<https://iris-project.org/pdfs/2017-esop-iris3-final.pdf>
+
+---
+
+## Adaptation Plan
+
+- reuse the OCPL robust-safety pattern rather than inventing a new one
+- port the relevant structure to modern Iris / HeapLang
+- express the counter case study as an instance of that reused setup
+
+---
+
+## Two Layers In The Current Tree
+
+1. A modernized OCPL / Iris layer
+2. A direct HeapLang counter case study
+
+> Speaker notes:
+> Layer 1 provides the reusable OCPL-style reasoning setup.
+> Layer 2 is the concrete HeapLang counter proof built on top of it.
+
+---
+
+## Layer 1: Modern OCPL In Iris
+
+`ocpl/modern_robust_safety.v` ports that earlier OCPL robust-safety structure
+onto modern Iris HeapLang.
+
+It provides:
+
+- attacker values and expressions
+- attacker contexts with one hole where verified code and attacker code are
+  linked together
+- a semantic discipline saying attacker code stays within the allowed fragment
+- the connection to the standard Iris reasoning rules for HeapLang programs
+
+The reason this port is needed is version mismatch:
+
+- the 2017 OCPL development was built against an older Iris and older HeapLang
+- current Iris uses a different library and notation surface
+- some constructs that used to be explicit syntax are now library-level code
+
+The most important example for this project is `assert`:
+
+- in the older setting, assertions could be treated as a dedicated AST form
+- in modern HeapLang, `assert:` expands to application of a library value
+- so the attacker filter has to exclude the library `assert` value rather than
+  pattern-match on an `Assert` constructor
+
+This porting work lives under:
+`ocpl/modern_heap.v`, `ocpl/modern_lifting.v`, `ocpl/modern_on_val.v`,
+`ocpl/modern_robust_safety.v`
+
+---
+
+## Layer 2: Direct HeapLang Counter Case Study
+
+`jessie_counter_heaplang.v` encodes:
+
+- `makeCounter`
+- the restricted export `cUp`
+- the checked client body
+- the overshared negative-control client
+
+This is the shortest path to the real Iris theorem, because it works directly
+with HeapLang and standard Iris proof rules.
+
+---
+
+## Current Proof Status
+
+What is in place:
+
+- the modern OCPL attacker/context machinery
+- direct HeapLang proofs for concrete attacker instances in
+  `jessie_counter_heaplang.v`
+
+What is still missing:
+
+- the main "for every allowed attacker" theorem saying that giving the attacker
+  only `cUp` still preserves the final `assert(c.incr() > 0)`
+
+> Speaker notes:
+> The hard part is no longer deciding what to prove. The hard part is proving
+> the "for every allowed attacker" claim in the modern HeapLang setting, using
+> the reused OCPL structure.
+
+---
+
+## Intended Endgame
+
+- Treat the direct HeapLang counter proof as the concrete instance.
+- Reuse the OCPL attacker/context layer as much as possible.
+- Show that the counter proof can be packaged as a robust-safety result rather
+  than as a one-off `makeCounter` proof.
+
+This should leave us with a theorem that reads naturally to an ocap audience
+while still being machine-checked in Iris/Coq.
+
+---
+
+## Future Work
+
+- Return to the broader plan of formalizing Jessie in layers, not just the
+  reduced counter core.
+- JSON grammar reference:
+  <https://github.com/agoric-labs/jessica/blob/master/lib/quasi-json.js.ts>
+- Justin grammar reference:
+  <https://github.com/agoric-labs/jessica/blob/master/lib/quasi-justin.js.ts>
+- Jessie grammar reference:
+  <https://github.com/agoric-labs/jessica/blob/master/lib/quasi-jessie.js.ts>
+- The Blockly fixture snapshot used earlier remains a useful concrete syntax
+  oracle:
+  <https://github.com/endojs/Jessie/blob/3ce32c97b6d326db2a1b400827c740336eefa786/packages/blockly-tools/test/test-data.json>
+
+---
 
 ## Dev Tools
 
-`iris.mk` is the local bootstrap/build helper for the Coq development toolchain.
+`iris.mk` is the local bootstrap and incremental-build helper.
 
-In particular, it sets up:
+- toolchain bootstrap: Ubuntu packages, opam switch, Coq, Iris, HeapLang,
+  `vsrocq-language-server`
+- active build manifest comes from `_CoqProject`
+- normal workflow entry point: `make -f iris.mk help`
+- normal incremental build: `make -f iris.mk build SOURCES="..."`
 
-- Ubuntu packages for local development: `build-essential`, `m4`, `pkg-config`, `bubblewrap`, `opam`, `git`
-- an opam switch named `iris` by default
-- Coq
-- `coq-iris`
-- `coq-iris-heap-lang`
-- `vsrocq-language-server`
+> Speaker notes:
+> The makefile is meant to be the operational source of truth. This slide is
+> only the short orientation.
 
-For day-to-day work, `make -f iris.mk build SOURCES="..."` is the lightweight way to recompile only the relevant `.v` files, with dependencies generated via `coqdep`. For the exact workflow and commands, use `make -f iris.mk help`.
+---
 
 ## Commit Discipline
 
-Use git commit messages as the running lab notebook. Keep this file for the comparatively stable design summary, checked results, and next-proof-milestone framing.
+Use git commit messages as the running lab notebook.
 
-Commit whenever there is a coherent thought worth preserving, whether that thought is:
+- This file is for the relatively stable argument and status summary.
+- Commit whenever there is a coherent thought worth preserving.
+- That includes:
+  - working increments
+  - clarified invariants
+  - proof decompositions
+  - informative backtracks
 
-- a working increment
-- a clarified invariant
-- a proof decomposition
-- a concrete reason to backtrack
+The point is to leave proof breadcrumbs in the history rather than turning this
+note into an ever-growing scratchpad.
 
-Successful proof steps and failed-but-informative proof attempts should both leave commit-message breadcrumbs.
+---
 
-Current Coq files:
+## Next Milestone
 
-- `jessie_lang.v`
-- `jessie_counter.v`
-- `jessie_eval.v`
-- `jessie_robust.v`
-- `jessie_counter_robust.v`
-- `ocpl/modern_robust_safety.v`
-- `jessie_counter_heaplang.v`
+Prove the full "for every allowed attacker" theorem in the HeapLang/OCPL line:
 
-`jessie_lang.v` defines a tiny language in the style of OCPL Fig. 1, keeping
-only the constructs needed for `makeCounter`:
+- attacker receives only `cUp`
+- attacker ranges over the allowed class of attacker contexts
+- afterwards the checked client can still establish `c.incr() > 0`
 
-- variables
-- numeric literals and a temporary unit literal for nullary calls
-- `fn:` / recursive functions
-- application
-- `let:`
-- immutable objects with last-wins field lookup
-- `assert:`
-- `ref`, `!`, and `<-`
-- integer addition, subtraction, and `>`
-- `+=` / `-=`
-
-`jessie_counter.v` defines `makeCounter` in that tiny language and models
-`cUp` as `{ "incr" := c.["incr"] }`.
-
-`jessie_eval.v` gives a small fuelled executable semantics for the current
-language:
-
-- closures with lexical environments
-- mutable references/heap
-- object construction and last-wins field lookup
-- monitored `assert:` that flips a goodness bit instead of relying on stuckness
-- an executable monitor that treats plain evaluation failure as not itself bad;
-  only failed assertions count as goodness violations
-
-`jessie_robust.v` then adds the OCPL-style scaffolding we discussed:
-
-- a boolean `good_state` / `is_good`
-- adversarial expressions and contexts that exclude `assert:` and whose only
-  free variable is the exported argument placeholder
-- `attacker_body exported C`
-- a generic `robust_safety_goal` schema parameterized by an exported name, a
-  verified client builder, and a monitored evaluator
-
-`jessie_counter_robust.v` is where the counter-specific instantiation now lives:
-
-- the checked client shape
-
-  `const c = makeCounter(); const cUp = { incr: c.incr }; attacker(cUp); assert(c.incr() > 0);`
-
-- executable smoke tests showing the intended distinction:
-  - giving only `cUp` keeps the checked client good in simple cases
-  - over-sharing the full counter lets an attacker call `decr`, which flips the
-    goodness bit at the final assertion
-
-`ocpl/modern_robust_safety.v` is now the main strong-reuse bridge to OCPL:
-
-- it ports the OCPL `robust_safety.v` setup onto modern Iris HeapLang syntax
-- it defines the adversarial-value / adversarial-expression layer and the
-  single-hole context grammar for the HeapLang fragment we care about
-- it records the key modern mismatch explicitly: assertions are not a dedicated
-  AST constructor in current HeapLang, so adversaries must exclude the library
-  `assert` value rather than an `Assert` node
-- TODO: add a tiny Jessie surface with `Obj` / `Get` notation and desugar it
-  to HeapLang, so we keep strong reuse while writing the case study in a
-  closer-to-Jessie syntax
-
-`jessie_counter_heaplang.v` is now the counter-specific HeapLang case study:
-
-- it uses the installed `coq-iris-heap-lang` package directly
-- it encodes `makeCounter`, `cUp`, and the checked client in HeapLang notation
-- it already proves the `hole` and single-`incr` client cases with Iris `wp_*`
-  tactics, rather than with the bespoke evaluator
-- it derives matching adequacy corollaries for those concrete clients
-
-The current tree therefore has three layers:
-
-- the older minimal custom-language scaffold, which is still useful for syntax
-  experiments and theorem-shape sketches
-- the OCPL-shaped HeapLang scaffold in `ocpl/modern_robust_safety.v`, which is the
-  intended reusable proof setup
-- the direct counter case study in `jessie_counter_heaplang.v`, which should
-  increasingly become just an instantiation of that setup
-
-The build is now:
-
-```bash
-make -f iris.mk build
-```
+That is the present "all contexts" target.
