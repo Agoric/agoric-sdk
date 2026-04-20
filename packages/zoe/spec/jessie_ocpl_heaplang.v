@@ -208,6 +208,168 @@ Module JessieOcplHeapLang.
 
   Definition of_ectx : list ectx_item -> ctx := fold_right of_ectx_item CHole.
 
+  Fixpoint to_ectx (C : ctx) : option (list ectx_item) :=
+    match C with
+    | CHole => Some []
+    | CAppL C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (AppLCtx v2 :: K)
+        | _, _ => None
+        end
+    | CAppR e1 C =>
+        match to_ectx C with
+        | Some K => Some (AppRCtx e1 :: K)
+        | None => None
+        end
+    | CUnOp op C =>
+        match to_ectx C with
+        | Some K => Some (UnOpCtx op :: K)
+        | None => None
+        end
+    | CBinOpL op C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (BinOpLCtx op v2 :: K)
+        | _, _ => None
+        end
+    | CBinOpR op e1 C =>
+        match to_ectx C with
+        | Some K => Some (BinOpRCtx op e1 :: K)
+        | None => None
+        end
+    | CIf C0 e1 e2 =>
+        match to_ectx C0 with
+        | Some K => Some (IfCtx e1 e2 :: K)
+        | None => None
+        end
+    | CPairL C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (PairLCtx v2 :: K)
+        | _, _ => None
+        end
+    | CPairR e1 C =>
+        match to_ectx C with
+        | Some K => Some (PairRCtx e1 :: K)
+        | None => None
+        end
+    | CFst C =>
+        match to_ectx C with
+        | Some K => Some (FstCtx :: K)
+        | None => None
+        end
+    | CSnd C =>
+        match to_ectx C with
+        | Some K => Some (SndCtx :: K)
+        | None => None
+        end
+    | CInjL C =>
+        match to_ectx C with
+        | Some K => Some (InjLCtx :: K)
+        | None => None
+        end
+    | CInjR C =>
+        match to_ectx C with
+        | Some K => Some (InjRCtx :: K)
+        | None => None
+        end
+    | CCase C0 e1 e2 =>
+        match to_ectx C0 with
+        | Some K => Some (CaseCtx e1 e2 :: K)
+        | None => None
+        end
+    | CAllocNL C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (AllocNLCtx v2 :: K)
+        | _, _ => None
+        end
+    | CAllocNR e1 C =>
+        match to_ectx C with
+        | Some K => Some (AllocNRCtx e1 :: K)
+        | None => None
+        end
+    | CFree C =>
+        match to_ectx C with
+        | Some K => Some (FreeCtx :: K)
+        | None => None
+        end
+    | CLoad C =>
+        match to_ectx C with
+        | Some K => Some (LoadCtx :: K)
+        | None => None
+        end
+    | CStoreL C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (StoreLCtx v2 :: K)
+        | _, _ => None
+        end
+    | CStoreR e1 C =>
+        match to_ectx C with
+        | Some K => Some (StoreRCtx e1 :: K)
+        | None => None
+        end
+    | CXchgL C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (XchgLCtx v2 :: K)
+        | _, _ => None
+        end
+    | CXchgR e1 C =>
+        match to_ectx C with
+        | Some K => Some (XchgRCtx e1 :: K)
+        | None => None
+        end
+    | CCmpXchgL C e1 e2 =>
+        match to_val e1, to_val e2, to_ectx C with
+        | Some v1, Some v2, Some K => Some (CmpXchgLCtx v1 v2 :: K)
+        | _, _, _ => None
+        end
+    | CCmpXchgM e0 C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (CmpXchgMCtx e0 v2 :: K)
+        | _, _ => None
+        end
+    | CCmpXchgR e0 e1 C =>
+        match to_ectx C with
+        | Some K => Some (CmpXchgRCtx e0 e1 :: K)
+        | None => None
+        end
+    | CFAAL C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (FaaLCtx v2 :: K)
+        | _, _ => None
+        end
+    | CFAAR e1 C =>
+        match to_ectx C with
+        | Some K => Some (FaaRCtx e1 :: K)
+        | None => None
+        end
+    | CFork _ => None
+    | CResolve0 C e1 e2 =>
+        match to_val e1, to_val e2, to_ectx C with
+        | Some v1, Some v2, Some K =>
+            match K with
+            | [] => None
+            | Ki :: K' => Some (ResolveLCtx Ki v1 v2 :: K')
+            end
+        | _, _, _ => None
+        end
+    | CResolve1 e0 C e2 =>
+        match to_val e2, to_ectx C with
+        | Some v2, Some K => Some (ResolveMCtx e0 v2 :: K)
+        | _, _ => None
+        end
+    | CResolve2 e0 e1 C =>
+        match to_ectx C with
+        | Some K => Some (ResolveRCtx e0 e1 :: K)
+        | None => None
+        end
+    | CRec _ _ _ => None
+    end.
+
+  Definition supported_ectx_item (Ki : ectx_item) : Prop :=
+    match Ki with
+    | ResolveLCtx _ _ _ | ResolveMCtx _ _ | ResolveRCtx _ _ => False
+    | _ => True
+    end.
+
   Example ctx_fill_hole e :
     ctx_fill CHole e = e.
   Proof. reflexivity. Qed.
@@ -222,5 +384,9 @@ Module JessieOcplHeapLang.
 
   Example of_ectx_smoke :
     ctx_fill (of_ectx [AppLCtx #(); FstCtx]) "f" = (Fst "f") #().
+  Proof. reflexivity. Qed.
+
+  Example to_ectx_smoke :
+    to_ectx (of_ectx [AppLCtx #(); FstCtx]) = Some [AppLCtx #(); FstCtx].
   Proof. reflexivity. Qed.
 End JessieOcplHeapLang.
