@@ -174,6 +174,7 @@ Environment variables:
 - `REQUEST_RETRIES`: Retry count for external requests (default "3")
 - `COSMOS_REST_TIMEOUT`: Overrides `REQUEST_TIMEOUT` for Agoric/Noble/etc. Cosmos REST APIs (optional)
 - `COSMOS_REST_RETRIES`: Overrides `REQUEST_RETRIES` for Agoric/Noble/etc. Cosmos REST APIs (optional)
+- `AGORIC_REST_URL`: Overrides the default Agoric REST endpoint (sourced from `chain-registry`) used for account-state queries (optional)
 - `GRAPHQL_ENDPOINTS`: JSON text for a Record\<dirname, url[]> object describing endpoints associated with each api-\* GraphQL API directory under [graphql](./src/graphql) (optional)
 - `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided (relative to the cwd),
 an absolute path is recommended
