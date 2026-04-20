@@ -1,0 +1,80 @@
+This is the OCPL Coq development. It's a fork of the Iris Coq
+development (started a bit before the Iris 3.0 release) supporting the
+paper
+
+	Robust and Compositional Verification of Object Capability
+	Patterns
+
+See ./Iris_README.md for compilation instructions. We've tested the
+development under Coq 8.6 (January 2017) and ssreflect 1.6.1, as well
+as a few earlier versions.
+
+To develop OCPL, we changed Iris' sample program logic to support the
+distinction between progressive and non-progressive weakest
+preconditions and Iris' sample heap language to support assertion
+expressions (i.e., so we could state robust safety). We call the
+modified heap language HLA.
+
+Our work on progress bits appears in ./theories/program_logic/; in
+particular ./theories/program_logic/weakestpre.v. For presentation
+purposes, we use Hoare triples in the paper (and, in the Coq
+development, to state many of our lemmas), but proofs always work at
+the more fundamental level of weakest preconditions.
+
+Our work on HLA appears in ./theories/heap_lang/. The most interesting
+bits are:
+
+	theories/heap_lang/lang.v
+		language definition
+
+	theories/heap_lang/on_val.v
+		the predicate transformer called `lift` in the paper
+
+	theories/heap_lang/heap.v
+		heap resources (e.g., the points-to assertion), the
+		invariant supporting robust safety, and rules for
+		working with the heap
+
+		We suppress this (pervasive) heap invariant in the
+		paper. It shows up as [heap_ctx] when verifying code.
+
+		Our heap interface is a bit richer than what we
+		describe in the paper; for example, the points-to
+		assertion supports fractional permissions and we have
+		a rule [heap_mark_low] for converting a high-integrity
+		location containing a low value into a low-integrity
+		location.
+
+	theories/heap_lang/substitution.v
+	theories/heap_lang/robust_safety.v
+		the fundamental theorem of logical relations and the
+		"internal" version of robust safety (generalizing the
+		meta-level robust safety theorem from contexts with no
+		locations to contexts with only low locations)
+
+	theories/heap_lang/adequacy.v
+		metatheory, including the robust safety theorem stated
+		in the paper
+
+As far as examples go, you will find general object capability
+patterns (OCPs) in
+
+	./theories/heap_lang/lib/sealing.v
+	./theories/heap_lang/lib/caretaker.v
+	./theories/heap_lang/lib/membrane.v
+
+and derived OCPs and client programs in
+
+	./theories/tests/sealing.v
+	./theories/tests/caretaker.v
+	./theories/tests/membrane.v
+	./theories/tests/readonly.v
+
+(These are the files in which we apply the robust safety theorem to
+whole programs and ask Coq to confirm that the result is axiom-free.)
+
+The paper mentions a few libraries:
+
+	./theories/heap_lang/lib/lock.v
+	./theories/heap_lang/lib/spin_lock.v
+	./theories/heap_lang/lib/maps.v
