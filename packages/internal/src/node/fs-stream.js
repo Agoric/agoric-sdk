@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
  */
 
 /** @typedef {ReadStream | WriteStream | Socket} StreamLike */
+/** @typedef {'drain' | 'ready'} EventName */
 
 /**
  * @param {StreamLike} stream
@@ -50,7 +51,7 @@ export const fsStreamReady = stream =>
  * Wait for a stream event and reject on stream error first.
  *
  * @param {StreamLike} stream
- * @param {'drain' | 'ready'} eventName
+ * @param {EventName} eventName
  * @param {() => void} [onCleanup] called when the event is emitted or an error occurs, after listeners are removed
  * @returns {Promise<void>}
  */
@@ -83,9 +84,9 @@ const naiveOnceWithError = (stream, eventName, onCleanup = () => {}) =>
  * emitter.setMaxListeners() to increase limit
  *
  * @param {(stream: StreamLike,
- *   eventName: 'drain' | 'ready', onDone?: () => void) => Promise<void>} doOnceWithError
+ *   eventName: EventName, onDone?: () => void) => Promise<void>} doOnceWithError
  * @returns {(stream: StreamLike,
- *   eventName: 'drain' | 'ready') => Promise<void>}
+ *   eventName: EventName) => Promise<void>}
  */
 const makeMemoizedOnceWithError = doOnceWithError => {
   /**
@@ -97,7 +98,7 @@ const makeMemoizedOnceWithError = doOnceWithError => {
    * Wait for a stream event and reject on stream error first.
    *
    * @param {StreamLike} stream
-   * @param {'drain' | 'ready'} eventName
+   * @param {EventName} eventName
    * @returns {Promise<void>}
    */
   const memoizedOnceWithError = (stream, eventName) => {
@@ -125,7 +126,7 @@ const makeMemoizedOnceWithError = doOnceWithError => {
  * Wait for a stream event and reject on stream error first.
  *
  * @param {StreamLike} stream
- * @param {'drain' | 'ready'} eventName
+ * @param {EventName} eventName
  * @returns {Promise<void>}
  */
 const onceWithError = makeMemoizedOnceWithError(naiveOnceWithError);
