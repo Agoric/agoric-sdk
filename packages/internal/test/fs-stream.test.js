@@ -81,6 +81,8 @@ const makeTestWriter = async () => {
   }
 };
 
+// These tests monkey-patch FileHandle.prototype.createWriteStream, so they must
+// run serially even though makeFsStreamWriter itself does not require it.
 test.serial(
   'makeFsStreamWriter reuses one drain waiter across concurrent writes',
   async t => {
