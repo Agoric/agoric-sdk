@@ -1,4 +1,4 @@
-(* OCPL-style adversary/context layer, adapted to modern Iris HeapLang. *)
+(* Modernized OCPL-style adversary/context layer for current Iris HeapLang. *)
 From Coq Require Import Bool.
 From iris.proofmode Require Import proofmode.
 From iris.base_logic.lib Require Export invariants.
@@ -7,7 +7,7 @@ From iris.heap_lang Require Export lang primitive_laws metatheory adequacy.
 From iris.heap_lang Require Import notation.
 From iris.heap_lang.lib Require Import assert.
 
-Module JessieOcplHeapLang.
+Module OCPLModernRobustSafety.
   Open Scope expr_scope.
 
   (* TODO: keep HeapLang as the proof foundation, but add a tiny Jessie surface
@@ -389,4 +389,4 @@ Module JessieOcplHeapLang.
   Example to_ectx_smoke :
     to_ectx (of_ectx [AppLCtx #(); FstCtx]) = Some [AppLCtx #(); FstCtx].
   Proof. reflexivity. Qed.
-End JessieOcplHeapLang.
+End OCPLModernRobustSafety.

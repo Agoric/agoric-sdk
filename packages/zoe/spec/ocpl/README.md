@@ -25,6 +25,13 @@ Vendored files:
 - [upstream/theories/heap_lang/robust_safety.v](./upstream/theories/heap_lang/robust_safety.v)
 - [upstream/theories/heap_lang/adequacy.v](./upstream/theories/heap_lang/adequacy.v)
 - [upstream/theories/tests/readonly.v](./upstream/theories/tests/readonly.v)
+- [modern_robust_safety.v](./modern_robust_safety.v)
+
+Current porting policy:
+
+- generic OCPL-to-current-Iris adaptation work lives under `ocpl/`
+- Jessie case-study files should instantiate that port, not duplicate it
+- `modern_robust_safety.v` is the current landing zone for that adaptation
 
 The most relevant ideas for Jessie are:
 
