@@ -30,10 +30,10 @@ import {
   type Denom,
   type DenomAmount,
   type DenomDetail,
-  type IBCConnectionInfo,
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FlowConfig,

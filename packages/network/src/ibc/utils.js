@@ -10,22 +10,17 @@
  *   encapsulated protocols and values separated by slashes.
  */
 
-/** @typedef {`/${string}ibc-port/${string}/${'ordered' | 'unordered'}/${string}`} RemoteIbcAddress */
-/** @typedef {`/ibc-port/${string}`} LocalIbcAddress */
-
 /**
- * @import {IBCChannelID, IBCChannelOrdering,
- *   IBCConnectionID, IBCPortID} from '../src/types.js';
- * @import {Endpoint} from '@agoric/network';
- */
-
-/**
- * @typedef {object} IBCEndpoint
- * @property {IBCConnectionID[]} hops
- * @property {IBCPortID} portID
- * @property {IBCChannelOrdering} [order]
- * @property {string} [version]
- * @property {IBCChannelID} [channelID]
+ * @import {Endpoint} from '../types.js';
+ * @import {
+ *   IBCChannelID,
+ *   IBCChannelOrdering,
+ *   IBCConnectionID,
+ *   IBCEndpoint,
+ *   IBCPortID,
+ *   LocalIbcAddress,
+ *   RemoteIbcAddress,
+ * } from './types.js';
  */
 
 export const IBC_ADDR_RE =

@@ -6,8 +6,8 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { fetchNetworkConfig } from '@agoric/client-utils';
 
 /**
- * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration'
+ * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CosmosChainInfo} from '@agoric/orchestration'
  */
 
 /** @param {string[]} strs */

@@ -12,7 +12,7 @@ import { getManifestForUpdateNobleICA } from './update-noble-ica.core.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
- * @import {IBCConnectionInfo} from '@agoric/orchestration'
+ * @import {IBCConnectionInfo} from '@agoric/network/ibc'
  * @import {Passable} from '@endo/marshal'
  */
 

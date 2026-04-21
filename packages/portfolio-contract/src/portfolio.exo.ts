@@ -10,8 +10,8 @@ import {
   type AccountId,
   type Caip10Record,
   type CaipChainId,
-  type IBCConnectionInfo,
 } from '@agoric/orchestration';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   coerceAccountId,
   parseAccountId,

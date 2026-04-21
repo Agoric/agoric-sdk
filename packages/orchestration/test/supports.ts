@@ -3,11 +3,8 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import {
-  makeNameHubKit,
-  type IBCChannelID,
-  type VTransferIBCEvent,
-} from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
+import { makeNameHubKit, type VTransferIBCEvent } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import {

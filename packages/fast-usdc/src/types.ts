@@ -10,7 +10,7 @@ import type {
   DenomDetail,
   KnownNamespace,
 } from '@agoric/orchestration';
-import type { IBCChannelID } from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
 import type { CopyRecord } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { RepayAmountKWR } from './utils/fees.js';

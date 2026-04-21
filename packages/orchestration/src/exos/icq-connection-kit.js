@@ -13,7 +13,7 @@ import { ICQMsgShape, OutboundConnectionHandlerI } from '../typeGuards.js';
  * @import {Remote, Vow, VowTools} from '@agoric/vow';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {RequestQuery, ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
- * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
+ * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/network/ibc';
  */
 
 const trace = makeTracer('Orchestration:ICQConnection');

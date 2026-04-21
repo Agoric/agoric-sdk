@@ -21,7 +21,6 @@ import type {
   CosmosChainAddress,
   Denom,
   DenomAmount,
-  IBCConnectionInfo,
   Chain,
   OrchestrationAccount,
   OrchestrationFlow,
@@ -30,6 +29,7 @@ import type {
   ProgressTracker,
   TrafficEntry,
 } from '@agoric/orchestration';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   coerceAccountId,
   parseAccountId,

@@ -59,9 +59,10 @@ const MsgSend = CodecHelper(MsgSendType);
 /**
  * @import {HostInterface, HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {IBCConnectionInfo} from '@agoric/network/ibc';
  * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions,
  *   OrchestrationAccountCommon, LocalAccountMethods, TransferRoute,
- *   AccountIdArg, Denom, IBCConnectionInfo, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
+ *   AccountIdArg, Denom, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCEvent} from '@agoric/vats';
  * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
