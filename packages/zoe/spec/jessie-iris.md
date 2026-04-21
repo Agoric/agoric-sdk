@@ -187,42 +187,17 @@ source-shaped version would keep the one-field object.
 
 ## Separation Of Duties Theorem
 
-The theorem this development is organized around is:
-
-If trusted code creates `c = makeCounter()`, derives
-`cUp = { incr: c.incr }`, and gives only `cUp` to attacker-controlled code,
-then the trusted code can still establish that a later direct call to
-`c.incr()` returns a positive number.
-
-In the Coq development, the theorem is written using Iris weakest-precondition
-notation:
-
-- `{{{ P }}} e {{{ x, RET v; Q }}}` means:
-  if the precondition `P` holds before running program `e`,
-  and `e` returns value `v`,
-  then the postcondition `Q` holds afterward.
-- `P` is the precondition.
-- `e` is the program expression being proved.
-- `x, RET v; Q` is the postcondition clause.
-- The name before the comma is the bound variable for the returned value.
-- In the common case `{{{ x, RET x; Q x }}}`, the same bound result name is
-  used both after `RET` and inside the postcondition.
-- In
-  `{{{ heap_ctx }}} checked_counter {{{ v, RET v; low v }}}`,
-  the precondition is the ambient heap context, the program is
-  `checked_counter`, and the postcondition says the returned value `v` is in
-  the class of values that OCPL treats as safe to expose to attacker-controlled
-  code.
+Recall the premise and conclusion in Jessie/JS:
 
 ```js
-const c = makeCounter();
-const cUp = { incr: c.incr };
-attacker(cUp);
+const c = makeCounter(); const cUp = { incr: c.incr }; attacker(cUp);
 assert(c.incr() > 0);
 ```
 
+In OCPL / Iris / Coq, `checked_counter` is defined as a rough HeapLang translation* of the above, and `checked_counter_safe` is the robust-safety theorem (lemma), building on `checked_counter_spec`:
+
 ```coq
-Definition checked_counter : expr := ...
+Definition checked_counter : expr :=
   let: "c" := make_counter () in
   let: "cUpIncr" := obj_get "c" incr_key in
   let: "use" := (λ: "cUpIncr",
@@ -235,10 +210,28 @@ Lemma checked_counter_spec :
   {{{ heap_ctx }}} checked_counter {{{ v, RET v; low v }}}.
 ```
 
-- `checked_counter` is the current proof-oriented client term.
-- `checked_counter_spec` is the robust-safety theorem for that client term.
-- This is the contextual theorem line that carries the separation-of-duties
-  argument.
+- `low v` means `v` is widely-shareable.
+- `{{{ P }}} e {{{ v, RET v; Q }}}` means:
+  if the precondition `P` holds before running program `e`,
+  then `e` runs safely and if it returns,
+  then the postcondition `Q` holds afterward, with `v` bound to the return value.
+- `heap_ctx` is the standard HeapLang heap invariant: the state is good, low
+  locations contain low values, and heap locations are properly tracked.
+
+```coq
+Lemma checked_counter_safe C t2 σ2 :
+  AdvCtx C →
+  rtc step ([ctx_fill C checked_counter], good_state ∅) (t2, σ2) →
+  is_good σ2.
+```
+
+ - `AdvCtx C` means `C` is arbitrary attacker-controlled code with no `assert` and no heap location literals (approx: no forgeable heap locations).
+ - `step` is an execution step. `rtc` is 0-or-more (reflexive transitive closure)
+   - from a `good_state` with empty heap to state `σ2`
+   - _`t2`, an arbitrary thread pool, is not relevant to this work._
+ - `is_good` means no assertions were tripped
+
+_translation* - the translation is currently approximate. We haven't finished proving the whole translation._
 
 > Speaker notes:
 > This is the reveal. Keep the focus on the security claim and the
