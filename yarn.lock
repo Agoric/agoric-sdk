@@ -852,6 +852,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/network@workspace:packages/network"
   dependencies:
+    "@agoric/cosmic-proto": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
