@@ -76,6 +76,14 @@
     "tsup": "^8.5.0",
     "viem": "^2.31.0"
   },
+  "peerDependencies": {
+    "@agoric/vats": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@agoric/vats": {
+      "optional": true
+    }
+  },
   "ava": {
     "extensions": {
       "js": true,
