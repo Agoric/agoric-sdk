@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 /* eslint-env node */
-import * as childProcessTop from 'child_process';
-import { fileURLToPath } from 'url';
-import fsTop from 'fs';
-import osTop from 'os';
+
+import * as childProcessTop from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import fsTop from 'node:fs';
+import osTop from 'node:os';
 
 /**
- * @import {spawn} from 'child_process';
- * @import {ChildProcess} from 'child_process';
- * @import {promises} from 'fs';
+ * @import {spawn} from 'node:child_process';
+ * @import {ChildProcess} from 'node:child_process';
+ * @import {promises} from 'node:fs';
  */
 
 const { freeze } = Object;
