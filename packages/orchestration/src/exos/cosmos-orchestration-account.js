@@ -74,7 +74,7 @@ import {
  * @import {HostOf} from '@agoric/async-flow';
  * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress,
  *   ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods,
- *   OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo,
+ *   OrchestrationAccountCommon, CosmosRewardsResponse,
  *   IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId,
  *   ChainInfo, AccountIdArg, CosmosActionOptions, IcaAccountMethods,
  *   ProgressTracker, MakeProgressTracker} from '../types.js';
