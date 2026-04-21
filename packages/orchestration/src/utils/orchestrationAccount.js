@@ -16,8 +16,8 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {IBCEndpoint} from '@agoric/vats/tools/ibc-utils.js';
- * @import {CaipChainId, IBCConnectionInfo, TrafficEntry} from '../types.js';
+ * @import {IBCEndpoint, IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CaipChainId, TrafficEntry} from '../types.js';
  */
 
 /**

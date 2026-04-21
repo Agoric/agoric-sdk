@@ -7,7 +7,7 @@ import { VowShape } from '@agoric/vow';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
-import { decodeIbcEndpoint } from '@agoric/vats/tools/ibc-utils.js';
+import { decodeIbcEndpoint } from '@agoric/network/ibc/utils.js';
 import {
   AmountArgShape,
   CoinShape,
@@ -74,7 +74,7 @@ import {
  * @import {HostOf} from '@agoric/async-flow';
  * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress,
  *   ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods,
- *   OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo,
+ *   OrchestrationAccountCommon, CosmosRewardsResponse,
  *   IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId,
  *   ChainInfo, AccountIdArg, CosmosActionOptions, IcaAccountMethods,
  *   ProgressTracker, MakeProgressTracker} from '../types.js';
@@ -90,7 +90,11 @@ import {
  * @import {AnyJson, JsonSafe, MessageBody, TypeFromUrl,
  *   ResponseTypeUrl} from '@agoric/cosmic-proto';
  * @import {Matcher} from '@endo/patterns';
- * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
+ * @import {
+ *   IBCConnectionInfo,
+ *   LocalIbcAddress,
+ *   RemoteIbcAddress,
+ * } from '@agoric/network/ibc';
  * @import {AnyType, MsgDepositForBurnType, MsgUndelegateResponseType} from '../utils/codecs.js';
  * @import {SliceDescriptor} from '../utils/orchestrationAccount.js';
  * @import {ProgressReport} from '../utils/progress.js';

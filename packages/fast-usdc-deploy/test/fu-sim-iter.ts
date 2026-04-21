@@ -20,7 +20,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
-import type { IBCChannelID } from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
 import { makePromiseKit } from '@endo/promise-kit';
 import { configurations } from '../src/utils/deploy-config.js';
 import { type WalletFactoryTestContext } from './walletFactory.js';

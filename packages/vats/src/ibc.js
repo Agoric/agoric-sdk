@@ -13,7 +13,7 @@ import {
   encodeRemoteIbcAddress,
   decodeIbcEndpoint,
   encodeIbcEndpoint,
-} from '../tools/ibc-utils.js';
+} from '@agoric/network/ibc/utils.js';
 
 const trace = makeTracer('IBC', false);
 

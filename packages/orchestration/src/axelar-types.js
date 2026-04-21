@@ -3,7 +3,7 @@
  *   CosmosChainAddress,
  *   Denom,
  *   Bech32Address,} from '@agoric/orchestration';
- * @import {IBCChannelID} from '@agoric/vats';
+ * @import {IBCChannelID} from '@agoric/network/ibc';
  * @import {EVM_CHAINS} from './utils/gmp.js';
  * @import {Abi} from 'viem';
  */

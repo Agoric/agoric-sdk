@@ -9,7 +9,8 @@ import { PendingTxStatus } from './constants.js';
 /**
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount, IBCConnectionInfo, CaipChainId} from '@agoric/orchestration';
+ * @import {IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount, CaipChainId} from '@agoric/orchestration';
  * @import {USDCProposalShapes} from './pool-share-math.js';
  * @import {CctpTxEvidence, FastUSDCConfig, FastUsdcTerms, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
  */

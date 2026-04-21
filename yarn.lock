@@ -852,6 +852,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/network@workspace:packages/network"
   dependencies:
+    "@agoric/cosmic-proto": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/store": "workspace:*"
     "@agoric/swingset-liveslots": "workspace:*"
@@ -935,6 +936,11 @@ __metadata:
     ts-blank-space: "npm:^0.6.2"
     tsup: "npm:^8.5.0"
     viem: "npm:^2.31.0"
+  peerDependencies:
+    "@agoric/vats": "workspace:*"
+  peerDependenciesMeta:
+    "@agoric/vats":
+      optional: true
   languageName: unknown
   linkType: soft
 

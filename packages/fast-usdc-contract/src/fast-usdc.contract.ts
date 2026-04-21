@@ -19,11 +19,11 @@ import {
   type Denom,
   type DenomAmount,
   type DenomDetail,
-  type IBCConnectionInfo,
   type OrchestrationAccount,
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';

@@ -406,7 +406,6 @@ __metadata:
     "@agoric/store": "workspace:*"
     "@agoric/time": "workspace:*"
     "@agoric/vat-data": "workspace:*"
-    "@agoric/vats": "workspace:*"
     "@agoric/vow": "workspace:*"
     "@agoric/zoe": "workspace:*"
     "@agoric/zone": "workspace:*"
@@ -421,6 +420,11 @@ __metadata:
     "@noble/hashes": "npm:~1.5.0"
     bech32: "npm:^2.0.0"
     bs58: "npm:^6.0.0"
+  peerDependencies:
+    "@agoric/vats": "workspace:*"
+  peerDependenciesMeta:
+    "@agoric/vats":
+      optional: true
   languageName: node
   linkType: soft
 

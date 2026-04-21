@@ -6,10 +6,10 @@ import { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/conne
 import assert from 'node:assert';
 
 /**
- * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
+ * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
  * @import {Chain, IBCInfo} from '@chain-registry/types';
  * @import {ChainRegistryClient} from '@chain-registry/client';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
+ * @import {CosmosChainInfo} from '../cosmos-api.js';
  */
 
 /**
