@@ -12,10 +12,7 @@ import {
   registerChainAssets,
   registerKnownChains,
 } from '../../src/chain-info.js';
-import type {
-  Bech32Address,
-  CosmosChainInfo,
-} from '../../src/cosmos-api.js';
+import type { Bech32Address, CosmosChainInfo } from '../../src/cosmos-api.js';
 import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
 import knownChains from '../../src/fetched-chain-info.js';
 import { assets as assetFixture } from '../assets.fixture.js';
