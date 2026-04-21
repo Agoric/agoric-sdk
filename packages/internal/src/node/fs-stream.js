@@ -3,9 +3,8 @@ import process from 'node:process';
 import { promisify } from 'node:util';
 
 /**
- * @import {ReadStream} from 'fs';
- * @import {WriteStream} from 'fs';
- * @import {Socket} from 'net';
+ * @import {ReadStream, WriteStream} from 'node:fs';
+ * @import {Socket} from 'node:net';
  */
 
 /** @typedef {ReadStream | WriteStream | Socket} StreamLike */
