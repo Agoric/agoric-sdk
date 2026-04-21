@@ -1,6 +1,7 @@
 package types
 
 import (
+	"strings"
 	"reflect"
 	"testing"
 
@@ -209,5 +210,66 @@ func TestValidateParams(t *testing.T) {
 	err = params.ValidateBasic()
 	if err != nil {
 		t.Errorf("unexpected ValidateBasic() error with empty VatCleanupBudget: %v", params.VatCleanupBudget)
+	}
+}
+
+func TestValidateInstallationDeadlineBounds(t *testing.T) {
+	const minInt64 int64 = -1 << 63
+
+	for _, tc := range []struct {
+		name          string
+		seconds       int64
+		blocks        int64
+		wantErrSubstr string
+	}{
+		{name: "both unlimited", seconds: -1, blocks: -1},
+		{name: "both immediate", seconds: 0, blocks: 0},
+		{name: "both positive", seconds: 1, blocks: 1},
+		{
+			name:          "seconds below minimum",
+			seconds:       -2,
+			blocks:        -1,
+			wantErrSubstr: "installation_deadline_seconds must be -1 (unlimited), 0 (expire immediately), or positive, got -2",
+		},
+		{
+			name:          "blocks below minimum",
+			seconds:       -1,
+			blocks:        -2,
+			wantErrSubstr: "installation_deadline_blocks must be -1 (unlimited), 0 (expire immediately), or positive, got -2",
+		},
+		{
+			name:          "seconds at int64 minimum",
+			seconds:       minInt64,
+			blocks:        -1,
+			wantErrSubstr: "installation_deadline_seconds must be -1 (unlimited), 0 (expire immediately), or positive, got -9223372036854775808",
+		},
+		{
+			name:          "blocks at int64 minimum",
+			seconds:       -1,
+			blocks:        minInt64,
+			wantErrSubstr: "installation_deadline_blocks must be -1 (unlimited), 0 (expire immediately), or positive, got -9223372036854775808",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			params := DefaultParams()
+			params.BootstrapVatConfig = "foo"
+			params.FeeUnitPrice = sdk.NewCoins(sdk.NewInt64Coin("denom", 789))
+			params.InstallationDeadlineSeconds = tc.seconds
+			params.InstallationDeadlineBlocks = tc.blocks
+
+			err := params.ValidateBasic()
+			if tc.wantErrSubstr == "" {
+				if err != nil {
+					t.Fatalf("unexpected ValidateBasic() error: %v", err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatal("expected ValidateBasic() error, got nil")
+			}
+			if !strings.Contains(err.Error(), tc.wantErrSubstr) {
+				t.Fatalf("expected error containing %q, got %q", tc.wantErrSubstr, err)
+			}
+		})
 	}
 }
