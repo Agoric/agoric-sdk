@@ -203,10 +203,14 @@ export const prepareChainStorageNode = zone => {
         const { sequence, path, messenger } = this.state;
         assertPathSegment(name);
         const mergedOptions = { sequence, ...childNodeOptions };
-        return makeChainStorageNode(
-          messenger,
-          `${path}.${name}`,
-          mergedOptions,
+        return /** @type {StorageNode} */ (
+          /** @type {unknown} */ (
+            makeChainStorageNode(
+              messenger,
+              `${path}.${name}`,
+              mergedOptions,
+            )
+          )
         );
       },
       /** @type {(value: string) => Promise<void>} */
@@ -261,7 +265,7 @@ export function makeChainStorageRoot(
 
   // Use the heapZone directly.
   const rootNode = makeHeapChainStorageNode(messenger, rootPath, rootOptions);
-  return rootNode;
+  return /** @type {StorageNode} */ (/** @type {unknown} */ (rootNode));
 }
 
 /**

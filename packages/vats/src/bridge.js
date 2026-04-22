@@ -218,6 +218,7 @@ export const prepareBridgeManager = (zone, D) => {
       // Safe now to add the kit.
       bridgeToManagerKit.init(bridgeDevice, kit);
     }
+    // @ts-expect-error FIXME in Endo
     return kit.manager;
   };
 

@@ -23,7 +23,7 @@ import { breakTie } from './breakTie.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {Publisher} from '@agoric/notifier';
  * @import {ContractMeta, Installation, Instance, Invitation, ZCF} from '@agoric/zoe';
- * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';
+ * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, MultiVoteCounterFacets, Position, VoteStatistics} from './types.js';
  * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
@@ -178,6 +178,7 @@ const makeMultiCandidateVoteCounter = (
           Fail`The number of choices exceeds the max choices.`;
 
         for (const position of chosenPositions) {
+          // @ts-expect-error FIXME in Endo
           positionIncluded(positions, position) ||
             Fail`The specified choice is not a legal position: ${position}.`;
         }
@@ -185,13 +186,16 @@ const makeMultiCandidateVoteCounter = (
         const completedBallot = harden({ chosen: chosenPositions, shares });
 
         allBallots.has(voterHandle)
-          ? allBallots.set(voterHandle, completedBallot)
-          : allBallots.init(voterHandle, completedBallot);
+          ? // @ts-expect-error FIXME in Endo
+            allBallots.set(voterHandle, completedBallot)
+          : // @ts-expect-error FIXME in Endo
+            allBallots.init(voterHandle, completedBallot);
         return completedBallot;
       },
     },
   );
 
+  // @ts-expect-error FIXME in Endo
   const publicFacet = makeExo(
     'MultiCandidateVoteCounter public',
     VoteCounterPublicI,
@@ -217,11 +221,15 @@ const makeMultiCandidateVoteCounter = (
     },
   );
 
-  return harden({
-    creatorFacet,
-    publicFacet,
-    closeFacet,
-  });
+  return /** @type {MultiVoteCounterFacets} */ (
+    /** @type {unknown} */ (
+      harden({
+        creatorFacet,
+        publicFacet,
+        closeFacet,
+      })
+    )
+  );
 };
 
 /**

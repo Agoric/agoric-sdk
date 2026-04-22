@@ -35,7 +35,7 @@ const noopFinisher = harden(() => {});
  */
 function addSlogCallbacks(slogCallbacks, unusedMsgPrefix, methods) {
   const unused = new Set(Object.keys(slogCallbacks));
-  const wrappedMethods = /** @type {Methods} */ (
+  const wrappedMethods = /** @type {Methods} */ (/** @type {unknown} */ (
     objectMap(methods, (impl, methodKey) => {
       const methodName = /** @type {keyof typeof slogCallbacks} */ (methodKey);
       unused.delete(methodName);
@@ -70,7 +70,7 @@ function addSlogCallbacks(slogCallbacks, unusedMsgPrefix, methods) {
       };
       return /** @type {typeof impl} */ (/** @type {unknown} */ (wrapped));
     })
-  );
+  ));
   if (unused.size) {
     console.warn(unusedMsgPrefix, ...[...unused.keys()].sort().map(q));
   }

@@ -65,6 +65,7 @@ const start = zcf => {
     },
   });
 
+  // @ts-expect-error FIXME in Endo
   return { publicFacet, creatorFacet };
 };
 

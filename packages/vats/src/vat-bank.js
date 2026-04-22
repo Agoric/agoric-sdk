@@ -134,6 +134,7 @@ const prepareBankPurseController = zone => {
       },
       async pushAmount(amt) {
         const { bankBridge, denom, address, brand } = this.state;
+        // @ts-expect-error FIXME in Endo
         const value = AmountMath.getValue(brand, amt);
         const update = await bankBridge.toBridge({
           type: 'VBANK_GIVE',
@@ -145,6 +146,7 @@ const prepareBankPurseController = zone => {
       },
       async pullAmount(amt) {
         const { bankBridge, denom, address, brand } = this.state;
+        // @ts-expect-error FIXME in Endo
         const value = AmountMath.getValue(brand, amt);
         const update = await bankBridge.toBridge({
           type: 'VBANK_GRAB',
@@ -181,6 +183,7 @@ const prepareRewardPurseController = zone =>
       },
       async pushAmount(amount) {
         const { brand, bankChannel, denom } = this.state;
+        // @ts-expect-error FIXME in Endo
         const value = AmountMath.getValue(brand, amount);
         await bankChannel.toBridge({
           type: 'VBANK_GIVE_TO_REWARD_DISTRIBUTOR',
@@ -193,6 +196,7 @@ const prepareRewardPurseController = zone =>
 
 /** @param {Zone} zone */
 const prepareBankChannelHandler = zone =>
+  // @ts-expect-error FIXME in Endo
   zone.exoClass(
     'BankChannelHandler',
     BridgeHandlerI,
@@ -349,6 +353,7 @@ const prepareAssetSubscription = zone => {
         return pubList;
       },
       [Symbol.asyncIterator]() {
+        // @ts-expect-error FIXME in Endo
         return subscribeEach(this.self)[Symbol.asyncIterator]();
       },
     },
@@ -588,6 +593,7 @@ const prepareBankManager = (
 ) => {
   const detachedZone = zone.detached();
 
+  // @ts-expect-error FIXME in Endo
   const makeBankManager = zone.exoClass(
     'BankManager',
     BankManagerI,

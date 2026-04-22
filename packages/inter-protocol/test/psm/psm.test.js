@@ -740,6 +740,7 @@ const makeMockBankManager = t => {
     getAssetSubscription: () => assert.fail('not impl'),
     getModuleAccountAddress: () => assert.fail('not impl'),
     getRewardDistributorDepositFacet: () =>
+      // @ts-expect-error FIXME in Endo
       Far('depositFacet', {
         receive: () => /** @type {any} */ (null),
       }),

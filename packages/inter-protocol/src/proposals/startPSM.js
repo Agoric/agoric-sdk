@@ -411,7 +411,6 @@ export const makeAnchorAsset = async (
       denom,
       keyword,
       proposedName,
-      // @ts-expect-error XXX AssetIssuerKit
       kit, // with mint
     ),
   ]);

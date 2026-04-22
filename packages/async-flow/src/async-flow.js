@@ -503,6 +503,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     return harden(wrapperFunc);
   };
 
+  // @ts-expect-error FIXME in Endo
   const adminAsyncFlow = outerZone.exo('AdminAsyncFlow', AdminAsyncFlowI, {
     getFailures() {
       return failures.snapshot();

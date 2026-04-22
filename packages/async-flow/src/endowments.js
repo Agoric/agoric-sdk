@@ -229,6 +229,7 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
       case 'state': {
         const state = /** @type {Record<PropertyKey, unknown>} */ (e);
         const keys = harden(ownKeys(state));
+        // @ts-expect-error FIXME in Endo
         const wrapped = zone.exo(tag, StateAccessorI, {
           get(key) {
             return state[key];

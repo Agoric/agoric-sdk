@@ -51,16 +51,19 @@ export const spectrumChainIdsByCluster: Readonly<
 > = {
   mainnet: {
     ...objectMap(CaipChainIds.mainnet, (chainId, chainLabel) =>
+      // @ts-expect-error FIXME in Endo
       lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
     ),
   },
   testnet: {
     ...objectMap(CaipChainIds.testnet, (chainId, chainLabel) =>
+      // @ts-expect-error FIXME in Endo
       lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
     ),
   },
   local: {
     ...objectMap(CaipChainIds.local, (chainId, chainLabel) =>
+      // @ts-expect-error FIXME in Endo
       lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
     ),
   },

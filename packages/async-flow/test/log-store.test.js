@@ -36,7 +36,7 @@ const testLogStorePlay = async (t, zone) => {
   t.is(log.getLength(), 0);
   t.throws(
     () =>
-      // @ts-expect-error testing invalid input
+      // invalid input
       log.pushEntry(['bogus']),
     {
       message:
@@ -56,9 +56,7 @@ const testLogStorePlay = async (t, zone) => {
     ['doReject', v2, 'y'],
   ]);
   // Because t.deepEqual is too tolerant
-  // @ts-expect-error data dependent typing
   t.is(toPassableCap(log.dump()[0][1]), toPassableCap(v1));
-  // @ts-expect-error data dependent typing
   t.is(toPassableCap(log.dump()[1][1]), toPassableCap(v2));
 
   t.is(log.getIndex(), 2);
@@ -103,9 +101,7 @@ const testLogStoreReplay = async (t, zone) => {
     ['doReject', v2, 'y'],
   ]);
   // Because t.deepEqual is too tolerant
-  // @ts-expect-error data dependent typing
   t.is(toPassableCap(log.dump()[0][1]), toPassableCap(v1));
-  // @ts-expect-error data dependent typing
   t.is(toPassableCap(log.dump()[1][1]), toPassableCap(v2));
 
   t.deepEqual(log.nextEntry(), ['doFulfill', v1, 'x']);

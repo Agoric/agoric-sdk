@@ -42,6 +42,7 @@ export const prepareRouter = zone => {
 
   const makeRouter = zone.exoClass(
     'Router',
+    // @ts-expect-error FIXME in Endo
     RouterI,
     () => {
       /** @type {MapStore<string, T>} */
@@ -131,6 +132,7 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
     }),
     () => {
       /** @type {Router<Protocol>} */
+      // @ts-expect-error FIXME in Endo
       const router = makeRouter();
 
       /** @type {MapStore<string, Protocol>} */

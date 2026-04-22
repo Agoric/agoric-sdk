@@ -113,9 +113,9 @@ export const prepareBijection = (
   zone,
   unwrap = (_hostWrapper, guestWrapper) => guestWrapper,
 ) => {
-  /** @type {Ephemera<Bijection, VowishStore>} */
+  /** @type {Ephemera<any, VowishStore>} */
   const g2h = makeEphemera(() => makeVowishStore('guestToHost'));
-  /** @type {Ephemera<Bijection, VowishStore>} */
+  /** @type {Ephemera<any, VowishStore>} */
   const h2g = makeEphemera(() => makeVowishStore('hostToGuest'));
 
   // Guest arguments and results are now unguarded, i.e., guarded by `M.raw()`,
@@ -134,6 +134,7 @@ export const prepareBijection = (
       const guestToHost = g2h.for(self);
       const hostToGuest = h2g.for(self);
 
+      // @ts-expect-error FIXME in Endo: Passable not assignable to PassableCap|Vow
       const gUnwrapped = unwrap(h, g);
       !hostToGuest.has(h) ||
         Fail`hostToGuest key already bound: ${h} -> ${hostToGuest.get(h)} vs ${gUnwrapped}`;
@@ -171,6 +172,7 @@ export const prepareBijection = (
       const hostToGuest = h2g.for(self);
 
       if (guestToHost.has(g)) {
+        // @ts-expect-error FIXME in Endo: Passable not assignable to PassableCap|Vow
         toPassableCap(guestToHost.get(g)) === toPassableCap(h) ||
           Fail`internal: g->h ${g} -> ${h} vs ${guestToHost.get(g)}`;
         hostToGuest.get(h) === g ||

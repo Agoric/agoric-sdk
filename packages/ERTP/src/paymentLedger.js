@@ -376,6 +376,7 @@ export const preparePaymentLedger = (
       return issuer;
     },
     mintPayment(newAmount) {
+      // @ts-expect-error FIXME losing PASS_STYLE
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
       // `rawPayment` is not associated with any recovery set, and

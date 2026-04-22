@@ -260,6 +260,7 @@ export const setupOrchestrationTest = async ({
 
   const chainInfo = harden(() => {
     const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
+    // @ts-expect-error FIXME in Endo
     const { ethereum, solana } = objectMap(cctpChainInfo, v => ({
       ...v,
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`

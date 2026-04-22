@@ -655,6 +655,7 @@ export const makeReplayMembraneForTesting = ({
     callStack.push(callIndex);
     while (log.isReplaying() && !stopped) {
       const entry = log.nextUnfilteredEntry();
+      // @ts-expect-error FIXME in Endo
       const optOutcome = interpretOne(nestDispatch, entry);
       if (unnestFlag) {
         optOutcome ||
@@ -697,6 +698,7 @@ export const makeReplayMembraneForTesting = ({
         return;
       }
       void log.nextUnfilteredEntry();
+      // @ts-expect-error FIXME in Endo
       interpretOne(topDispatch, entry);
     }
   };
