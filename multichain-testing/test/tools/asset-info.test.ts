@@ -1,4 +1,5 @@
-import test from '@endo/ses-ava/prepare-endo.js';
+import '@endo/init';
+import test from 'ava';
 import type {
   CosmosChainInfo,
   Denom,

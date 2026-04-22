@@ -1,4 +1,5 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
+import '@endo/init';
+import anyTest from 'ava';
 import type { TestFn } from 'ava';
 import type { CosmosOrchestrationAccountStorageState } from '@agoric/orchestration/src/exos/cosmos-orchestration-account.js';
 import type { IdentifiedChannelSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';

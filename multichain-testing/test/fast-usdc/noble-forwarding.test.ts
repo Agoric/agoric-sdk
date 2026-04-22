@@ -1,4 +1,5 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
+import '@endo/init';
+import anyTest from 'ava';
 
 import type { IBCConnectionInfo } from '@agoric/orchestration';
 import { assertBech32Address } from '@agoric/orchestration/src/utils/address.js';

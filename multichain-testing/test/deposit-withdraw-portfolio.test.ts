@@ -1,4 +1,5 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
+import '@endo/init';
+import anyTest from 'ava';
 import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import { makeDoOffer } from '../tools/e2e-tools.js';

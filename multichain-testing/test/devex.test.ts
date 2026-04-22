@@ -1,7 +1,8 @@
 /**
  * @file Demonstrates why not to use t.notThrowsAsync within context
  */
-import test from '@endo/ses-ava/prepare-endo.js';
+import '@endo/init';
+import test from 'ava';
 
 test.before(async t => {
   const assertTxStatusPlain = async (txHash: string, status: string) =>

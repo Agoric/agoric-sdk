@@ -1,4 +1,5 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
+import '@endo/init';
+import anyTest from 'ava';
 import { execFileSync } from 'node:child_process';
 import type { TestFn, ExecutionContext } from 'ava';
 import type { CosmosChainAddress, ForwardInfo } from '@agoric/orchestration';
