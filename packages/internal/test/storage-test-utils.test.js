@@ -21,7 +21,11 @@ test('makeFakeStorageKit', async t => {
   const rootStoreKey = await rootNode.getStoreKey();
   t.deepEqual(
     rootStoreKey,
-    { storeName: 'swingset', storeSubkey: `fake:${rootPath}`, dataPrefixBytes: '' },
+    {
+      storeName: 'swingset',
+      storeSubkey: `fake:${rootPath}`,
+      dataPrefixBytes: '',
+    },
     'root store key matches initialization input',
   );
 
@@ -94,7 +98,11 @@ test('makeFakeStorageKit', async t => {
     const storeKey = await child.getStoreKey();
     t.deepEqual(
       storeKey,
-      { storeName: 'swingset', storeSubkey: `fake:${childPath}`, dataPrefixBytes: '' },
+      {
+        storeName: 'swingset',
+        storeSubkey: `fake:${childPath}`,
+        dataPrefixBytes: '',
+      },
       'path segments are dot-separated',
     );
     await child.setValue('foo');
