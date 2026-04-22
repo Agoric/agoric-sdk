@@ -3,6 +3,9 @@ set -euo pipefail
 
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
+pid=
+trap 'test -n "$pid" && kill "$pid"; pid=' EXIT
+
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
 
@@ -26,10 +29,12 @@ echo ACCEPTANCE TESTING wallet
 yarn ava wallet.test.js
 
 if ! test -z "$MESSAGE_FILE_PATH"; then
-  echo "Waiting for 'ready' message from follower"
+  (while echo "Waiting for 'ready' message from follower"; do sleep 5; done) &
+  pid=$!
   # make sure the follower has not crashed
-  node "$DIRECTORY_PATH/wait-for-follower.mjs" '^(ready)|(exit code \d+)$' | grep --extended-regexp --silent "^ready$"
+  node "$DIRECTORY_PATH/wait-for-follower.mjs" '^(ready)|(exit code \d+)$' | tee /dev/stderr | grep --silent --extended-regexp "^ready$"
   echo "Follower is ready"
+  kill "$pid"; pid=
 fi
 
 echo ACCEPTANCE TESTING psm

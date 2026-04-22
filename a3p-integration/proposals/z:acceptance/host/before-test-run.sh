@@ -49,8 +49,7 @@ wait_for_rpc() {
   local rpc_address
   local status_code
 
-  # rpc_address="$(jq --raw-output '.rpcAddrs[0]' < "$NETWORK_CONFIG/network-config")"
-  rpc_address="127.0.0.1:26657"
+  rpc_address=${PUBLISHED_RPC_ENDPOINT:-$(jq --raw-output '.rpcAddrs[0]' < "$NETWORK_CONFIG/network-config")}
 
   echo "Waiting for rpc '$rpc_address' to respond"
 
