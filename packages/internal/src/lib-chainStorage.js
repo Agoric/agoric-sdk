@@ -205,11 +205,7 @@ export const prepareChainStorageNode = zone => {
         const mergedOptions = { sequence, ...childNodeOptions };
         return /** @type {StorageNode} */ (
           /** @type {unknown} */ (
-            makeChainStorageNode(
-              messenger,
-              `${path}.${name}`,
-              mergedOptions,
-            )
+            makeChainStorageNode(messenger, `${path}.${name}`, mergedOptions)
           )
         );
       },

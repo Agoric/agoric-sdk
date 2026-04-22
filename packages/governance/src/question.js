@@ -88,18 +88,20 @@ const buildQuestion = (questionSpec, counterInstance) => {
   const questionHandle = makeHandle('Question');
 
   // @ts-expect-error FIXME in Endo
-  return /** @type {Question} */ (makeExo('question details', QuestionI, {
-    getVoteCounter() {
-      return counterInstance;
-    },
-    getDetails() {
-      return harden({
-        ...questionSpec,
-        questionHandle,
-        counterInstance,
-      });
-    },
-  }));
+  return /** @type {Question} */ (
+    makeExo('question details', QuestionI, {
+      getVoteCounter() {
+        return counterInstance;
+      },
+      getDetails() {
+        return harden({
+          ...questionSpec,
+          questionHandle,
+          counterInstance,
+        });
+      },
+    })
+  );
 };
 
 harden(buildQuestion);
