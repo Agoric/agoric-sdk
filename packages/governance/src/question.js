@@ -87,20 +87,22 @@ const coerceQuestionSpec = ({
 const buildQuestion = (questionSpec, counterInstance) => {
   const questionHandle = makeHandle('Question');
 
-  // @ts-expect-error FIXME in Endo
   return /** @type {Question} */ (
-    makeExo('question details', QuestionI, {
-      getVoteCounter() {
-        return counterInstance;
-      },
-      getDetails() {
-        return harden({
-          ...questionSpec,
-          questionHandle,
-          counterInstance,
-        });
-      },
-    })
+    /** @type {unknown} */ (
+      // @ts-expect-error FIXME in Endo
+      makeExo('question details', QuestionI, {
+        getVoteCounter() {
+          return counterInstance;
+        },
+        getDetails() {
+          return harden({
+            ...questionSpec,
+            questionHandle,
+            counterInstance,
+          });
+        },
+      })
+    )
   );
 };
 
