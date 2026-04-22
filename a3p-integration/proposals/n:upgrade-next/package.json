@@ -64,7 +64,8 @@
     "@agoric/wallet-backend": "portal:../../agoric-sdk/packages/wallet/api",
     "@agoric/xsnap-lockdown": "portal:../../agoric-sdk/packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
-    "@agoric/zone": "portal:../../agoric-sdk/packages/zone"
+    "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
+    "agoric": "portal:../../agoric-sdk/packages/agoric-cli"
   },
   "ava": {
     "concurrency": 1,
