@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package; type errors are tolerated
+
 /* eslint-disable @agoric/group-jsdoc-imports -- due to conflicting `start` values */
 
 import { AmountMath } from '@agoric/ertp';

@@ -14,10 +14,11 @@ import { Shape } from './shapes.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Powers} from './network.js';
  * @import {MapStore} from '@agoric/store';
+ * @import {CopyTagged, Passable} from '@endo/pass-style';
  */
 
 /**
- * @template T
+ * @template {Protocol} T
  * @typedef {object} Router A delimited string router implementation
  * @property {(addr: string) => [string, T][]} getRoutes Return the match and
  *   route in order of preference
@@ -34,7 +35,7 @@ export const RouterI = M.interface('Router', {
 });
 
 /**
- * @template T
+ * @template {Passable} T
  * @param {Zone} zone
  */
 export const prepareRouter = zone => {
@@ -42,7 +43,6 @@ export const prepareRouter = zone => {
 
   const makeRouter = zone.exoClass(
     'Router',
-    // @ts-expect-error FIXME in Endo
     RouterI,
     () => {
       /** @type {MapStore<string, T>} */
@@ -132,7 +132,7 @@ export const prepareRouterProtocol = (zone, powers, E = defaultE) => {
     }),
     () => {
       /** @type {Router<Protocol>} */
-      // @ts-expect-error FIXME in Endo
+      // @ts-expect-error cast
       const router = makeRouter();
 
       /** @type {MapStore<string, Protocol>} */

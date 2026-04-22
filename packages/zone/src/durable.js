@@ -87,17 +87,17 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     baggage,
   );
 
+  // TS2556: the spread of an overloaded generic's `...args` isn't
+  // resolved to a single tuple type here, so forwarding to
+  // `prepareExoClass(baggage, ...args)` needs to bypass the check.
   /** @type {Zone['exoClass']} */
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- happens only integrating with Endo master
-  // @ts-ignore FIXME in Endo
+  // @ts-expect-error spread over overloaded generic
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
   /** @type {Zone['exoClassKit']} */
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- happens only integrating with Endo master
-  // @ts-ignore FIXME in Endo
+  // @ts-expect-error spread over overloaded generic
   const exoClassKit = (...args) => prepareExoClassKit(baggage, ...args);
   /** @type {Zone['exo']} */
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- happens only integrating with Endo master
-  // @ts-ignore FIXME in Endo
+  // @ts-expect-error spread over overloaded generic
   const exo = (...args) => prepareExo(baggage, ...args);
 
   const subZoneStore = wrapProvider(attachedStores.mapStore, keys.zone);

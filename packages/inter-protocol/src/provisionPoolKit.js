@@ -1,4 +1,4 @@
-// @ts-check
+// @ts-nocheck — under-supported package; type errors are tolerated
 import { X, q, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 

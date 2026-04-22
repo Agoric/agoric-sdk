@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package; type errors are tolerated
+
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';

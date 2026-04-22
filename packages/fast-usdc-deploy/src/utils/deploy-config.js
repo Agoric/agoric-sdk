@@ -1,7 +1,7 @@
 import { denomHash, withChainCapabilities } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
-import { objectMap } from '@endo/patterns';
+import { objectExtendEach } from '@endo/common/object-map.js';
 import { ChainPolicies, DepositForBurnEvent } from './chain-policies.js';
 
 /**
@@ -37,14 +37,12 @@ const { noble: _n, ...restCctpChainInfo } = cctpChainInfo;
  * @param {CI} ci
  */
 export const withCosmosChainId = ci =>
-  /** @type {{[K in keyof CI]: CI[K] & { chainId: string }}} */ (
-    /** @type {unknown} */ (
-      objectMap(ci, v => ({
-        chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
-        ...v,
-      }))
-    )
-  );
+  // objectExtendEach preserves the per-key type of CI[K], intersecting
+  // with the { chainId: string } extension at each key.  Plain
+  // objectMap would collapse K's correlation to a union.
+  objectExtendEach(ci, v => ({
+    chainId: `cosmosShapeCompat${v.namespace}${v.reference}`,
+  }));
 
 /**
  * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}

@@ -1,9 +1,10 @@
+// @ts-nocheck — under-supported package
+
 /**
  * @file approximately the same as the one in @agoric/vats. It's copied over to
  *   decouple the packages and because the test here is a deprecated style. It
  *   integrates multiple bundles so should move to a bootstrap-style test.
  */
-// @ts-check
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import {

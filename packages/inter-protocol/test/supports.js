@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package
+
 import { makeTracer } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

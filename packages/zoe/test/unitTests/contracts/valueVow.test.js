@@ -27,7 +27,7 @@ test.before(async t => {
   const bundleCache = await unsafeSharedBundleCache;
   const zoe = makeZoeForTest();
   const installation = await E(zoe).install(
-    await bundleCache.load(contractFile),
+    /** @type {any} */ (await bundleCache.load(contractFile)),
   );
 
   t.context = {

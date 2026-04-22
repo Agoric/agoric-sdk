@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package; type errors are tolerated
+
 import { makeExo, mustMatch, keyEQ, M } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 

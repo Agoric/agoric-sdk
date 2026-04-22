@@ -261,7 +261,7 @@ export const prepareAttenuator = (
    */
   const makeAttenuator = zone.exoClass(
     tag,
-    // @ts-expect-error FIXME in Endo
+    // @ts-expect-error optional InterfaceGuard doesn't match either overload
     interfaceGuard,
     /**
      * @param {object} opts

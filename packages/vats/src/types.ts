@@ -12,7 +12,9 @@ import type {
   IBCPortID,
 } from '@agoric/network/ibc';
 import type { Guarded } from '@endo/exo';
-import type { CaipChainId } from '@agoric/orchestration';
+// Inlined to avoid pulling @agoric/orchestration's source files into vats's
+// type-check graph. vats does not depend on orchestration as a package.
+type CaipChainId = `${string}:${string}`;
 import type {
   Installation,
   Instance,

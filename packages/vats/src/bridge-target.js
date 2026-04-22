@@ -195,6 +195,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
     }),
     {
       bridgeHandler: {
+        /** @param {{ type: string; target: any }} obj */
         async fromBridge(obj) {
           const { inboundEventType, targetToApp } = this.state;
           const { type, target: inboundTarget } = obj;

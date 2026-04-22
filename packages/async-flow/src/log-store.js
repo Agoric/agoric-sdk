@@ -174,16 +174,14 @@ export const prepareLogStore = zone => {
         const { self } = this;
         const eph = tmp.for(self);
 
-        const result = self.peekEntry();
+        const result = /** @type {LogEntry} */ (self.peekEntry());
         eph.unfilteredIndex += 1;
-        // @ts-expect-error FIXME in Endo
         if (entryIsVisible(result)) {
           eph.index += 1;
         }
         if (!self.isReplaying()) {
           eph.replayDoneKit.resolve(undefined);
         }
-        // @ts-expect-error FIXME in Endo
         return result;
       },
       /**
@@ -191,11 +189,10 @@ export const prepareLogStore = zone => {
        */
       nextEntry() {
         const { self } = this;
-        let result = self.nextUnfilteredEntry();
-        // @ts-expect-error FIXME in Endo
+        let result = /** @type {LogEntry} */ (self.nextUnfilteredEntry());
         while (!entryIsVisible(result)) {
           self.isReplaying() || Fail`Unexpected entry at log tail: ${result}`;
-          result = self.nextUnfilteredEntry();
+          result = /** @type {LogEntry} */ (self.nextUnfilteredEntry());
         }
         return result;
       },

@@ -67,6 +67,7 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
   const { makeVowKit } = vowTools;
 
   const functionUnwrapper = outerZone.exo('FunctionUnwrapper', UnwrapperI, {
+    /** @param {any} guestWrapped */
     unwrap(guestWrapped) {
       return Far('UnwrappedFunction', (...args) => guestWrapped.apply(args));
     },
@@ -77,6 +78,7 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
     UnwrapperI,
     keys => ({ keys }),
     {
+      /** @param {any} guestWrapped */
       unwrap(guestWrapped) {
         const { state } = this;
         const { keys } = state;
@@ -207,6 +209,7 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
       case 'function': {
         const f = /** @type {Callable} */ (e);
         const wrapped = zone.exo(tag, FunctionWrapperI, {
+          /** @param {any[]} args */
           apply(args) {
             return f(...args);
           },
@@ -229,15 +232,18 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
       case 'state': {
         const state = /** @type {Record<PropertyKey, unknown>} */ (e);
         const keys = harden(ownKeys(state));
-        // @ts-expect-error FIXME in Endo
-        const wrapped = zone.exo(tag, StateAccessorI, {
-          get(key) {
-            return state[key];
-          },
-          set(key, newValue) {
-            state[key] = newValue;
-          },
-        });
+        const wrapped =
+          // @ts-expect-error StateAccessor uses M.raw() defaults
+          zone.exo(tag, StateAccessorI, {
+            /** @param {PropertyKey} key */
+            get(key) {
+              return state[key];
+            },
+            /** @param {PropertyKey} key @param {any} newValue */
+            set(key, newValue) {
+              state[key] = newValue;
+            },
+          });
         const stateUnwrapper = makeStateUnwrapper(keys);
         // Need to replace the instance because the keys may be different
         unwrapMapSet(wrapped, stateUnwrapper);

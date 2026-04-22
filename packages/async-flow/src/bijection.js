@@ -134,8 +134,7 @@ export const prepareBijection = (
       const guestToHost = g2h.for(self);
       const hostToGuest = h2g.for(self);
 
-      // @ts-expect-error FIXME in Endo: Passable not assignable to PassableCap|Vow
-      const gUnwrapped = unwrap(h, g);
+      const gUnwrapped = unwrap(/** @type {any} */ (h), /** @type {any} */ (g));
       !hostToGuest.has(h) ||
         Fail`hostToGuest key already bound: ${h} -> ${hostToGuest.get(h)} vs ${gUnwrapped}`;
       guestToHost.init(gUnwrapped, h);
@@ -172,8 +171,8 @@ export const prepareBijection = (
       const hostToGuest = h2g.for(self);
 
       if (guestToHost.has(g)) {
-        // @ts-expect-error FIXME in Endo: Passable not assignable to PassableCap|Vow
-        toPassableCap(guestToHost.get(g)) === toPassableCap(h) ||
+        toPassableCap(/** @type {any} */ (guestToHost.get(g))) ===
+          toPassableCap(/** @type {any} */ (h)) ||
           Fail`internal: g->h ${g} -> ${h} vs ${guestToHost.get(g)}`;
         hostToGuest.get(h) === g ||
           Fail`internal h->g: ${h} -> ${g} vs ${hostToGuest.get(h)}`;

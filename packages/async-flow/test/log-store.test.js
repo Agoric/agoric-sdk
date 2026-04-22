@@ -34,15 +34,10 @@ const testLogStorePlay = async (t, zone) => {
 
   t.is(log.getIndex(), 0);
   t.is(log.getLength(), 0);
-  t.throws(
-    () =>
-      // invalid input
-      log.pushEntry(['bogus']),
-    {
-      message:
-        /^In "pushEntry" method of \(LogStore\): arg 0: \["bogus"\] - Must match one of/,
-    },
-  );
+  t.throws(() => log.pushEntry(/** @type {any} */ (['bogus'])), {
+    message:
+      /^In "pushEntry" method of \(LogStore\): arg 0: \["bogus"\] - Must match one of/,
+  });
   t.false(log.isReplaying());
   t.is(await log.promiseReplayDone(), undefined);
 
@@ -56,8 +51,8 @@ const testLogStorePlay = async (t, zone) => {
     ['doReject', v2, 'y'],
   ]);
   // Because t.deepEqual is too tolerant
-  t.is(toPassableCap(log.dump()[0][1]), toPassableCap(v1));
-  t.is(toPassableCap(log.dump()[1][1]), toPassableCap(v2));
+  t.is(toPassableCap(/** @type {any} */ (log.dump()[0][1])), toPassableCap(v1));
+  t.is(toPassableCap(/** @type {any} */ (log.dump()[1][1])), toPassableCap(v2));
 
   t.is(log.getIndex(), 2);
   t.is(log.getUnfilteredIndex(), gen0(2));
@@ -101,8 +96,8 @@ const testLogStoreReplay = async (t, zone) => {
     ['doReject', v2, 'y'],
   ]);
   // Because t.deepEqual is too tolerant
-  t.is(toPassableCap(log.dump()[0][1]), toPassableCap(v1));
-  t.is(toPassableCap(log.dump()[1][1]), toPassableCap(v2));
+  t.is(toPassableCap(/** @type {any} */ (log.dump()[0][1])), toPassableCap(v1));
+  t.is(toPassableCap(/** @type {any} */ (log.dump()[1][1])), toPassableCap(v2));
 
   t.deepEqual(log.nextEntry(), ['doFulfill', v1, 'x']);
   t.deepEqual(log.nextEntry(), ['doReject', v2, 'y']);

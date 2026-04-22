@@ -204,9 +204,8 @@ export const preparePaymentLedger = (
     }
   };
 
-  /** @type {(allegedAmount: Amount) => Amount} */
+  /** @type {<K extends AssetKind>(allegedAmount: Amount<K>) => Amount<K>} */
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
-  /** @type {(left: Amount, right: Amount) => boolean} */
 
   /**
    * Methods like deposit() have an optional second parameter `optAmountShape`
