@@ -192,7 +192,11 @@ export const makeFakeStorageKit = (
       switch (message.method) {
         case 'getStoreKey': {
           const [key] = message.args;
-          return { storeName: 'swingset', storeSubkey: `fake:${key}` };
+          return {
+            storeName: 'swingset',
+            storeSubkey: `fake:${key}`,
+            dataPrefixBytes: '',
+          };
         }
         case 'get': {
           const [key] = message.args;
