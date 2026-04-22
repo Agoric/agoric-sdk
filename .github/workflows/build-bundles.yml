@@ -22,18 +22,82 @@ on:
         value: ${{ jobs.build-bundle.outputs.branch }}
   workflow_dispatch:
     inputs:
+      mode:
+        description: Manual entrypoint
+        required: false
+        type: choice
+        default: build-bundles
+        options:
+          - build-bundles
+          - deploy-ymax-release
       package:
         description: Package name
-        required: true
+        required: false
         type: string
       branch:
         description: Branch name to checkout
         required: false
         type: string
         default: master
+      target:
+        description: YMax deployment target
+        required: false
+        type: choice
+        options:
+          - ymax0-devnet
+          - ymax0-main
+          - ymax1-main
+      releaseTag:
+        description: YMax release tag
+        required: false
+        type: string
+      privateArgsOverrides:
+        description: Optional JSON string to use as privateArgsOverrides
+        required: false
+        type: string
+      ymax1Planner:
+        description: Planner attestation for ymax1-main
+        required: false
+        type: choice
+        options:
+          - up
+          - down
 
 jobs:
+  plan-ymax-devnet:
+    runs-on: ubuntu-latest
+    outputs:
+      need_bundle_build: ${{ steps.plan.outputs.need_bundle_build || steps.plan_default.outputs.need_bundle_build }}
+    steps:
+      - name: Default plan
+        if: github.event_name != 'workflow_dispatch' || inputs.mode != 'deploy-ymax-release' || inputs.target != 'ymax0-devnet'
+        id: plan_default
+        run: echo 'need_bundle_build=true' >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy-ymax-release' && inputs.target == 'ymax0-devnet'
+
+      - uses: actions/setup-node@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy-ymax-release' && inputs.target == 'ymax0-devnet'
+        with:
+          node-version: '22'
+
+      - name: Plan devnet bundle build
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy-ymax-release' && inputs.target == 'ymax0-devnet'
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: bundle-only
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: node .github/scripts/plan-ymax-release.mjs
+
   build-bundle:
+    needs: [plan-ymax-devnet]
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      inputs.mode != 'deploy-ymax-release' ||
+      (inputs.target == 'ymax0-devnet' && needs.plan-ymax-devnet.outputs.need_bundle_build == 'true')
     runs-on: ubuntu-latest
     outputs:
       artifact-name: ${{ steps.outputs.outputs.artifact-name }}
@@ -45,6 +109,19 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
+
+      - name: Require package input
+        env:
+          MODE: ${{ inputs.mode }}
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          if [[ "$MODE" == "deploy-ymax-release" ]]; then
+            exit 0
+          fi
+          test -n "$PACKAGE" || {
+            echo 'package input is required when mode=build-bundles' >&2
+            exit 1
+          }
 
       - name: Clean repository
         run: git clean -xdf
@@ -63,7 +140,7 @@ jobs:
         run: yarn build
 
       - name: Build package bundle
-        working-directory: packages/${{ inputs.package }}
+        working-directory: ${{ inputs.mode == 'deploy-ymax-release' && 'packages/portfolio-deploy' || format('packages/{0}', inputs.package) }}
         run: |
           set -euo pipefail
           yarn build:bundle
@@ -73,7 +150,7 @@ jobs:
 
       - name: Extract bundle IDs
         id: extract-bundle-ids
-        working-directory: packages/${{ inputs.package }}/dist
+        working-directory: ${{ inputs.mode == 'deploy-ymax-release' && 'packages/portfolio-deploy/dist' || format('packages/{0}/dist', inputs.package) }}
         run: |
           set -euo pipefail
           bundle_ids=""
@@ -92,13 +169,16 @@ jobs:
 
       - name: Set outputs
         id: outputs
+        env:
+          ARTIFACT_NAME: ${{ inputs.mode == 'deploy-ymax-release' && 'package-artifacts-portfolio-deploy' || format('package-artifacts-{0}', inputs.package) }}
+          BRANCH: ${{ inputs.branch }}
+          BUNDLE_ID_GLOB: ${{ inputs.mode == 'deploy-ymax-release' && 'packages/portfolio-deploy/dist/*.bundleId' || format('packages/{0}/dist/*.bundleId', inputs.package) }}
         run: |
           set -euo pipefail
-          artifact_name="package-artifacts-${{ inputs.package }}"
-          echo "artifact-name=$artifact_name" >> "$GITHUB_OUTPUT"
-          echo "branch=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
+          echo "artifact-name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           shopt -s nullglob
-          bundle_id_files=(packages/${{ inputs.package }}/dist/*.bundleId)
+          bundle_id_files=($BUNDLE_ID_GLOB)
           if [[ ${#bundle_id_files[@]} -ge 1 ]]; then
             echo "bundle-id=$(cat "${bundle_id_files[0]}")" >> "$GITHUB_OUTPUT"
           else
@@ -109,4 +189,55 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.outputs.outputs.artifact-name }}
-          path: packages/${{ inputs.package }}/dist/
+          path: ${{ inputs.mode == 'deploy-ymax-release' && 'packages/portfolio-deploy/dist/' || format('packages/{0}/dist/', inputs.package) }}
+
+  validate-deploy-inputs:
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy-ymax-release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require deploy inputs
+        env:
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          test -n "$TARGET" || {
+            echo 'target input is required when mode=deploy-ymax-release' >&2
+            exit 1
+          }
+          test -n "$RELEASE_TAG" || {
+            echo 'releaseTag input is required when mode=deploy-ymax-release' >&2
+            exit 1
+          }
+
+  call-ymax-release-devnet:
+    needs: [plan-ymax-devnet, build-bundle, validate-deploy-inputs]
+    if: |
+      always() &&
+      github.event_name == 'workflow_dispatch' &&
+      inputs.mode == 'deploy-ymax-release' &&
+      inputs.target == 'ymax0-devnet' &&
+      needs.validate-deploy-inputs.result == 'success' &&
+      contains(fromJSON('["success","skipped"]'), needs.build-bundle.result)
+    uses: ./.github/workflows/deploy-ymax-release.yml
+    secrets: inherit
+    with:
+      target: ${{ inputs.target }}
+      releaseTag: ${{ inputs.releaseTag }}
+      branch: ${{ inputs.branch }}
+      artifactName: ${{ inputs.target == 'ymax0-devnet' && needs.build-bundle.outputs.artifact-name || '' }}
+      bundleId: ${{ needs.build-bundle.outputs.bundle-id }}
+      privateArgsOverrides: ${{ inputs.privateArgsOverrides }}
+      ymax1Planner: ${{ inputs.ymax1Planner }}
+
+  call-ymax-release:
+    needs: [validate-deploy-inputs]
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy-ymax-release' && inputs.target != 'ymax0-devnet'
+    uses: ./.github/workflows/deploy-ymax-release.yml
+    secrets: inherit
+    with:
+      target: ${{ inputs.target }}
+      releaseTag: ${{ inputs.releaseTag }}
+      branch: ${{ inputs.branch }}
+      artifactName: ''
+      privateArgsOverrides: ${{ inputs.privateArgsOverrides }}
+      ymax1Planner: ${{ inputs.ymax1Planner }}

@@ -5,6 +5,30 @@ name: Deploy YMax Release
 # and write release records.
 
 on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+      releaseTag:
+        required: true
+        type: string
+      branch:
+        required: false
+        type: string
+        default: master
+      artifactName:
+        required: false
+        type: string
+      bundleId:
+        required: false
+        type: string
+      privateArgsOverrides:
+        required: false
+        type: string
+      ymax1Planner:
+        required: false
+        type: string
   workflow_dispatch:
     inputs:
       target:
@@ -25,6 +49,14 @@ on:
         required: false
         type: string
         default: master
+      artifactName:
+        description: Prebuilt artifact name for ymax0-devnet bundle
+        required: false
+        type: string
+      bundleId:
+        description: Prebuilt bundle id for ymax0-devnet
+        required: false
+        type: string
       privateArgsOverrides:
         description: Optional JSON string to use as privateArgsOverrides
         required: false
@@ -49,6 +81,7 @@ jobs:
   plan:
     runs-on: ubuntu-latest
     outputs:
+      bundle_id: ${{ steps.plan.outputs.bundle_id }}
       need_bundle_build: ${{ steps.plan.outputs.need_bundle_build }}
       need_pre_upgrade: ${{ steps.plan.outputs.need_pre_upgrade }}
       need_upgrade: ${{ steps.plan.outputs.need_upgrade }}
@@ -62,6 +95,7 @@ jobs:
       - name: Plan deploy work
         id: plan
         env:
+          BUNDLE_ID: ${{ inputs.bundleId }}
           GH_TOKEN: ${{ github.token }}
           MODE: deploy
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
@@ -70,19 +104,9 @@ jobs:
           YMAX1_PLANNER: ${{ inputs.ymax1Planner }}
         run: node .github/scripts/plan-ymax-release.mjs
 
-  build-bundle:
-    needs: plan
-    if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
-    uses: ./.github/workflows/build-bundles.yml
-    with:
-      package: portfolio-deploy
-      branch: ${{ inputs.branch }}
-
   pre-upgrade:
-    needs: [plan, build-bundle]
-    if: |
-      needs.plan.outputs.need_pre_upgrade == 'true' &&
-      (inputs.target != 'ymax0-devnet' || contains(fromJSON('["success","skipped"]'), needs.build-bundle.result))
+    needs: plan
+    if: needs.plan.outputs.need_pre_upgrade == 'true'
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
@@ -101,11 +125,21 @@ jobs:
       - name: Build client-utils etc.
         run: yarn build
 
+      - name: Require devnet artifact name
+        if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
+        env:
+          ARTIFACT_NAME: ${{ inputs.artifactName }}
+        run: |
+          test -n "$ARTIFACT_NAME" || {
+            echo 'artifactName input is required for ymax0-devnet' >&2
+            exit 1
+          }
+
       - name: Download bundle artifact
         if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.build-bundle.outputs.artifact-name }}
+          name: ${{ inputs.artifactName }}
           path: packages/portfolio-deploy/dist
 
       - name: Run pre-upgrade phase
