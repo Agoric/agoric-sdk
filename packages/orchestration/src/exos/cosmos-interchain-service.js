@@ -19,7 +19,7 @@ import { prepareICQConnectionKit } from './icq-connection-kit.js';
  * @import {Connection, ConnectionHandler, Port, PortAllocator} from '@agoric/network';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {MapStore, SetStore} from '@agoric/store';
- * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
+ * @import {RemoteIbcAddress} from '@agoric/network/ibc';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {ICQConnection, IcaAccount, ICQConnectionKit, IcaAccountKit} from '../types.js';
  * @import {ICAChannelAddressOpts} from '../utils/address.js';

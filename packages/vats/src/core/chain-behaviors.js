@@ -387,7 +387,6 @@ export const makeChainStorage = async ({
     STORAGE_PATH.CUSTOM,
     { sequence: true },
   );
-  // @ts-expect-error FIXME in Endo
   chainStorageP.resolve(rootNodeP);
 };
 
@@ -426,7 +425,6 @@ export const produceHighPrioritySendersManager = async ({
    * updated with the new object, which can be done with an upgrade (regular or
    * null) with the new object in privateArgs.
    */
-  // @ts-expect-error FIXME in Endo
   const manager = makePrioritySendersManager(sendersNode);
 
   managerP.resolve(manager);

@@ -38,7 +38,6 @@ export const start = async (_zcf, privateArgs, _baggage) => {
       log('connect', remote);
       // don't return the promise.
       // We want to test a promise that lasts across cranks.
-      // @ts-expect-error FIXME in Endo
       connP = E(myPort).connect(
         remote,
 
@@ -53,7 +52,6 @@ export const start = async (_zcf, privateArgs, _baggage) => {
     getAck: () => E.when(ackP),
     close: () => E(connP).close(),
     getLocalAddress: async () => {
-      // @ts-expect-error FIXME in Endo
       return E(myPort).getLocalAddress();
     },
   });

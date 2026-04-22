@@ -12,7 +12,7 @@ import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
 import {
   defaultSerializer,
-  documentStorageSchema,
+  documentStorageSchema as rawDocumentStorageSchema,
   type makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
 import {
@@ -35,10 +35,10 @@ import {
   type TxId,
 } from '@agoric/portfolio-api';
 import type { TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { E, passStyleOf } from '@endo/far';
 import { hexToBytes } from '@noble/hashes/utils';
-import type { Macro } from 'ava';
+import type { ExecutionContext } from 'ava';
+import assert from 'node:assert/strict';
 import {
   extractEvmRemoteAccountConfig,
   makeEip155ChainIdToAxelarChain,
@@ -52,7 +52,6 @@ import type {
   TargetAllocation,
 } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
-import { plannerClientMock } from '../tools/agents-mock.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
@@ -62,24 +61,37 @@ import {
   simulateAckTransferToAxelar,
   simulateCCTPAck,
 } from './contract-setup.ts';
-import { contractsMock, makeCCTPTraffic, portfolio0lcaOrch } from './mocks.ts';
+import {
+  contractsMock,
+  evmTrader0PrivateKey,
+  evmTrader1PrivateKey,
+  makeCCTPTraffic,
+  portfolio0lcaOrch,
+} from './mocks.ts';
 import {
   chainInfoWithCCTP,
   makeIncomingVTransferEvent,
   makeStorageTools,
 } from './supports.ts';
+import { timeAsync, timeSync } from './test-timing.ts';
 import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 
 const { fromEntries, keys, values } = Object;
 
-const testLegacyAndRouter = (macro: Macro<[useRouter: boolean]>) => {
-  test(macro, false);
-  test(macro, true);
-};
+const evmTraderPrivateKeys = [
+  evmTrader0PrivateKey,
+  evmTrader1PrivateKey,
+] as const;
 
 const range = (n: number) => [...Array(n).keys()];
 
 type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
+type PortfolioStatus = StatusFor['portfolio'];
+type RunningFlows = NonNullable<PortfolioStatus['flowsRunning']>;
+type RunningFlowKey = keyof RunningFlows;
+type RunningFlowDetail = RunningFlows[RunningFlowKey];
+type EvmTraderKit = Awaited<ReturnType<typeof makeEvmTraderKit>>;
+type DirectPlannerClient = ReturnType<typeof makeDirectPlannerClient>;
 
 const pendingTxOpts = {
   pattern: `${ROOT_STORAGE_PATH}.`,
@@ -88,6 +100,30 @@ const pendingTxOpts = {
   owner: 'ymax',
   showValue: defaultSerializer.parse,
 };
+
+const snapshotTimed = (t: ExecutionContext, value: unknown, message?: string) =>
+  timeSync(t, `snapshot${message ? `:${message}` : ''}`, () =>
+    t.snapshot(value, message),
+  );
+
+const documentStorageSchemaTimed = (
+  t: ExecutionContext,
+  storage: Parameters<typeof rawDocumentStorageSchema>[1],
+  opts: Parameters<typeof rawDocumentStorageSchema>[2],
+) =>
+  timeAsync(t, 'documentStorageSchema', () =>
+    rawDocumentStorageSchema(t, storage, opts),
+  );
+
+const getRunningFlowEntries = (
+  flowsRunning: RunningFlows = {},
+): [RunningFlowKey, RunningFlowDetail][] =>
+  Object.entries(flowsRunning) as [RunningFlowKey, RunningFlowDetail][];
+
+const getTargetAllocationEntries = (
+  targetAllocation: TargetAllocation,
+): [InstrumentId, bigint][] =>
+  Object.entries(targetAllocation) as [InstrumentId, bigint][];
 
 const getFlowHistory = (
   portfolioKey: string,
@@ -129,6 +165,21 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
 const ackNFA = (utils, ix = 0) =>
   utils.transmitVTransferEvent('acknowledgementPacket', ix);
 
+const makeDirectPlannerClient = (zoe, creatorFacet) => {
+  let planner;
+  return harden({
+    redeem: async () => {
+      const invitation = await E(creatorFacet).makePlannerInvitation();
+      const seat = await E(zoe).offer(invitation);
+      planner = await E(seat).getOfferResult();
+    },
+    get stub() {
+      assert(planner);
+      return planner;
+    },
+  });
+};
+
 const resolveDepositPlan = async (
   {
     portfolioId: pId,
@@ -141,8 +192,10 @@ const resolveDepositPlan = async (
   },
   powers: Pick<
     Awaited<ReturnType<typeof setupPlanner>>,
-    'planner1' | 'evmTrader' | 'txResolver' | 'common'
-  >,
+    'planner1' | 'txResolver' | 'common'
+  > & {
+    evmTrader: EvmTraderKit['evmTrader'];
+  },
 ) => {
   const { planner1, evmTrader, txResolver, common } = powers;
   const { usdc, bld } = common.brands;
@@ -150,7 +203,7 @@ const resolveDepositPlan = async (
   const status = await evmTrader.getPortfolioStatus();
   const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
   const targetAllocation = overrideTargetAllocation ?? status.targetAllocation;
-  const [[flowKey, detail]] = Object.entries(flowsRunning);
+  const [[flowKey, detail]] = getRunningFlowEntries(flowsRunning);
   if (detail.type !== 'deposit')
     throw new Error(`Unexpected flow ${detail.type}`);
 
@@ -160,9 +213,12 @@ const resolveDepositPlan = async (
     throw new Error(`unexpected fromChain for EVM deposit: ${fromChain}`);
   }
 
-  const totalAllocation = Object.entries(targetAllocation!).reduce(
+  const totalAllocation = getTargetAllocationEntries(targetAllocation!).reduce(
     (sum, [instrument, portion]) => {
-      if (!instrument.endsWith(`_${fromChain}`))
+      if (
+        instrument !== `@${fromChain}` &&
+        !instrument.endsWith(`_${fromChain}`)
+      )
         throw new Error(
           `Test allocation instrument ${instrument} must stay on deposit chain ${fromChain}`,
         );
@@ -183,17 +239,19 @@ const resolveDepositPlan = async (
         amount: planDepositAmount,
         fee,
       },
-      ...Object.entries(targetAllocation!).map(
-        ([instrument, portion]: [InstrumentId, bigint]) =>
-          ({
-            src: `@${fromChain}`,
-            dest: instrument,
-            amount: AmountMath.make(
-              usdc.brand,
-              (portion * planDepositAmount.value) / totalAllocation,
-            ),
-            fee,
-          }) as const,
+      ...Object.entries(targetAllocation!).flatMap(
+        ([instrument, portion]: [InstrumentId | `@${AxelarChain}`, bigint]) =>
+          instrument === `@${fromChain}`
+            ? []
+            : ({
+                src: `@${fromChain}`,
+                dest: instrument,
+                amount: AmountMath.make(
+                  usdc.brand,
+                  (portion * planDepositAmount.value) / totalAllocation,
+                ),
+                fee,
+              } as const),
       ),
     ],
   };
@@ -212,38 +270,6 @@ const resolveDepositPlan = async (
   }
 
   return flowId;
-};
-
-const doOpenWithEvmTrader = async (
-  inputs: {
-    fromChain: AxelarChain;
-    depositAmount: NatAmount;
-    allocations: PermittedAllocation[];
-  },
-  powers: Pick<
-    Awaited<ReturnType<typeof setupPlanner>>,
-    'planner1' | 'evmTrader' | 'txResolver' | 'common'
-  >,
-) => {
-  const { planner1, evmTrader, common } = powers;
-  const { fromChain: evm, depositAmount, allocations } = inputs;
-
-  await planner1.redeem();
-
-  const openResult = await (async () => {
-    const result = await evmTrader
-      .forChain(evm)
-      .openPortfolio(allocations, depositAmount.value);
-    await ackNFA(common.utils);
-    return result;
-  })();
-
-  const flowNum = await resolveDepositPlan(
-    { portfolioId: openResult.portfolioId },
-    powers,
-  );
-
-  return { ...openResult, flowNum };
 };
 
 test('open portfolio with USDN position', async t => {
@@ -283,9 +309,13 @@ test('open portfolio with USDN position', async t => {
   // let vstorage settle since our mocks don't fully resolve IBC.
   await txResolver.drainPending();
   const { storage } = common.bootstrap;
-  const { contents, positionPaths } = getPortfolioInfo(storagePath, storage);
-  t.snapshot(contents, 'vstorage');
-  await documentStorageSchema(t, storage, pendingTxOpts);
+  const { contents, positionPaths } = getPortfolioInfoTimed(
+    t,
+    storagePath,
+    storage,
+  );
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
 
   t.log(
     'I can see where my money is:',
@@ -297,7 +327,7 @@ test('open portfolio with USDN position', async t => {
     `cosmos:agoric-3:${portfolio0lcaOrch}`,
     'LCA',
   );
-  t.snapshot(done.payouts, 'refund payouts');
+  snapshotTimed(t, done.payouts, 'refund payouts');
 });
 
 test('open a portfolio with Aave position', async t => {
@@ -345,10 +375,10 @@ test('open a portfolio with Aave position', async t => {
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
   const { storage } = common.bootstrap;
-  const { contents } = getPortfolioInfo(storagePath, storage);
-  t.snapshot(contents, 'vstorage');
-  await documentStorageSchema(t, storage, pendingTxOpts);
-  t.snapshot(actual.payouts, 'refund payouts');
+  const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
+  snapshotTimed(t, actual.payouts, 'refund payouts');
 });
 
 test('open a portfolio with Compound position', async t => {
@@ -397,10 +427,10 @@ test('open a portfolio with Compound position', async t => {
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
   const { storage } = common.bootstrap;
-  const { contents } = getPortfolioInfo(storagePath, storage);
-  t.snapshot(contents, 'vstorage');
-  await documentStorageSchema(t, storage, pendingTxOpts);
-  t.snapshot(actual.payouts, 'refund payouts');
+  const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
+  snapshotTimed(t, actual.payouts, 'refund payouts');
 });
 
 test('open portfolio with USDN, Aave positions', async t => {
@@ -452,15 +482,15 @@ test('open portfolio with USDN, Aave positions', async t => {
   const { storagePath } = result.publicSubscribers.portfolio;
   t.log(storagePath);
   const { storage } = common.bootstrap;
-  const { contents } = getPortfolioInfo(storagePath, storage);
-  t.snapshot(contents, 'vstorage');
-  await documentStorageSchema(t, storage, pendingTxOpts);
-  t.snapshot(done.payouts, 'refund payouts');
+  const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
+  snapshotTimed(t, done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
   delete tree.chainHub; // 'initial baggage' test captures this
   // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
-  t.snapshot(tree, 'baggage after open with positions');
+  snapshotTimed(t, tree, 'baggage after open with positions');
 });
 
 test('contract rejects unknown pool keys', async t => {
@@ -511,13 +541,13 @@ test('open portfolio with target allocations', async t => {
   const info = await trader1.getPortfolioStatus();
   t.deepEqual(info.targetAllocation, targetAllocation);
 
-  t.snapshot(info, 'portfolio');
-  t.snapshot(done.payouts, 'refund payouts');
+  snapshotTimed(t, info, 'portfolio');
+  snapshotTimed(t, done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
   delete tree.chainHub; // 'initial baggage' test captures this
   // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
-  t.snapshot(tree, 'baggage after open with target allocations');
+  snapshotTimed(t, tree, 'baggage after open with target allocations');
 });
 
 test('claim rewards on Aave position successfully', async t => {
@@ -588,11 +618,11 @@ test('claim rewards on Aave position successfully', async t => {
 
   t.log(storagePath);
   const { storage } = common.bootstrap;
-  const { contents } = getPortfolioInfo(storagePath, storage);
-  t.snapshot(contents, 'vstorage');
-  await documentStorageSchema(t, storage, pendingTxOpts);
+  const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
 
-  t.snapshot(rebalanceResult.payouts, 'rebalance payouts');
+  snapshotTimed(t, rebalanceResult.payouts, 'rebalance payouts');
 });
 
 test('USDN claim fails currently', async t => {
@@ -632,9 +662,13 @@ test('USDN claim fails currently', async t => {
   // let vstorage settle since our mocks don't fully resolve IBC.
   await txResolver.drainPending();
   const { storage } = common.bootstrap;
-  const { contents, positionPaths } = getPortfolioInfo(storagePath, storage);
-  t.snapshot(contents, 'vstorage');
-  await documentStorageSchema(t, storage, pendingTxOpts);
+  const { contents, positionPaths } = getPortfolioInfoTimed(
+    t,
+    storagePath,
+    storage,
+  );
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
 
   t.log(
     'I can see where my money is:',
@@ -667,10 +701,10 @@ test('USDN claim fails currently', async t => {
     payouts: {},
   });
 
-  const portfolioInfo = getPortfolioInfo(storagePath, storage);
+  const portfolioInfo = getPortfolioInfoTimed(t, storagePath, storage);
   const flowInfo =
     portfolioInfo.contents[`${storagePath}.flows.${rebalanceRet.result}`];
-  t.snapshot(flowInfo, 'flow info after failed claim');
+  snapshotTimed(t, flowInfo, 'flow info after failed claim');
   t.is(flowInfo.at(-1).error, 'claiming USDN is not supported');
 });
 
@@ -716,10 +750,10 @@ const beefyTestMacro = test.macro({
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
     const { storage } = common.bootstrap;
-    const { contents } = getPortfolioInfo(storagePath, storage);
-    t.snapshot(contents, 'vstorage');
-    await documentStorageSchema(t, storage, pendingTxOpts);
-    t.snapshot(actual.payouts, 'refund payouts');
+    const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+    snapshotTimed(t, contents, 'vstorage');
+    await documentStorageSchemaTimed(t, storage, pendingTxOpts);
+    snapshotTimed(t, actual.payouts, 'refund payouts');
   },
   title(providedTitle = '', vaultKey: AssetPlaceRef) {
     return `${providedTitle} ${vaultKey}`.trim();
@@ -831,10 +865,10 @@ test('Withdraw from a Beefy position (future client)', async t => {
 
   const { storagePath } = result.publicSubscribers.portfolio;
   const { storage } = common.bootstrap;
-  const { contents } = getPortfolioInfo(storagePath, storage);
-  t.snapshot(contents, 'vstorage');
-  await documentStorageSchema(t, storage, pendingTxOpts);
-  t.snapshot(withdraw.payouts, 'refund payouts');
+  const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
+  snapshotTimed(t, withdraw.payouts, 'refund payouts');
 });
 
 test('portfolios node updates for each new portfolio', async t => {
@@ -868,7 +902,7 @@ test('initial baggage', async t => {
   const { contractBaggage } = await setupTrader(t);
 
   const tree = inspectMapStore(contractBaggage);
-  t.snapshot(tree, 'contract baggage after start');
+  snapshotTimed(t, tree, 'contract baggage after start');
   // CCTP Confirmation Tests
 });
 
@@ -941,15 +975,21 @@ test.serial(
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
     const { storage } = common.bootstrap;
-    const { contents } = getPortfolioInfo(storagePath, storage);
-    t.snapshot(contents, 'vstorage');
-    await documentStorageSchema(t, storage, pendingTxOpts);
-    t.snapshot(actual.payouts, 'refund payouts');
+    const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+    snapshotTimed(t, contents, 'vstorage');
+    await documentStorageSchemaTimed(t, storage, pendingTxOpts);
+    snapshotTimed(t, actual.payouts, 'refund payouts');
   },
 );
 
 test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
-  const { trader1, common, txResolver, trader2 } = await setupTrader(t);
+  const { trader1, common, txResolver, trader2 } = await setupTrader(
+    t,
+    undefined,
+    {},
+    { traderCount: 2 },
+  );
+  assert(trader2);
   const { usdc, bld, poc26 } = common.brands;
 
   // Portfolio1 (trader2) gets a different CREATE2 address than portfolio0 (trader1)
@@ -1016,10 +1056,10 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
     t.deepEqual(payouts.Deposit, { brand: usdc.brand, value: 0n });
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
-    const { contents } = getPortfolioInfo(storagePath, storage);
-    t.snapshot(contents, storagePath);
+    const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+    snapshotTimed(t, contents, storagePath);
   }
-  await documentStorageSchema(t, storage, pendingTxOpts);
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
 });
 
 test('start deposit more to same', async t => {
@@ -1053,9 +1093,25 @@ test('start deposit more to same', async t => {
 
 const setupPlanner = async (
   t,
-  overrides: Partial<PortfolioPrivateArgs & { useRouter: boolean }> = {},
-) => {
-  const { useRouter, ...restOverrides } = overrides;
+  overrides: Partial<
+    PortfolioPrivateArgs & {
+      useRouter: boolean;
+      useVerifiedSigner: boolean;
+      includeEvmKit: boolean;
+    }
+  > = {},
+): Promise<
+  Awaited<ReturnType<typeof setupTrader>> & {
+    planner1: DirectPlannerClient;
+    readPublished: ReturnType<typeof makeStorageTools>['readPublished'];
+  } & Partial<EvmTraderKit>
+> => {
+  const {
+    useRouter,
+    useVerifiedSigner,
+    includeEvmKit = false,
+    ...restOverrides
+  } = overrides;
   const {
     common,
     zoe,
@@ -1065,31 +1121,29 @@ const setupPlanner = async (
     txResolver,
     timerService,
     contractBaggage,
-  } = await setupTrader(t, undefined, restOverrides);
+  } = await timeAsync(t, 'setupPlanner:setupTrader', () =>
+    setupTrader(t, undefined, restOverrides),
+  );
   const { storage } = common.bootstrap;
-  const { readPublished, readLegible } = makeStorageTools(storage);
-  const utils = { ...common.utils, readLegible };
-  const boot = async () => ({ ...common.bootstrap, zoe, utils });
-  const { provisionSmartWallet } = await deployWalletFactory({ boot });
-
-  const [walletPlanner] = await provisionSmartWallet('agoric1planner');
-  const toPlan = await E(started.creatorFacet).makePlannerInvitation();
-  await E(E(walletPlanner).getDepositFacet()).receive(toPlan);
-  const planner1 = plannerClientMock(walletPlanner, started.instance, () =>
-    readPublished(`wallet.agoric1planner`),
-  );
-  const { evmTrader, evmAccount } = await makeEvmTraderKit(
-    {
-      common,
-      zoe,
-      started,
-      timerService,
-      contractBaggage,
-    },
-    {
-      useRouter,
-    },
-  );
+  const { readPublished } = makeStorageTools(storage);
+  const planner1 = makeDirectPlannerClient(zoe, started.creatorFacet);
+  const evmKit = includeEvmKit
+    ? await timeAsync(t, 'setupPlanner:makeEvmTraderKit', () =>
+        makeEvmTraderKit(
+          {
+            common,
+            zoe,
+            started,
+            timerService,
+            contractBaggage,
+          },
+          {
+            useRouter,
+            useVerifiedSigner,
+          },
+        ),
+      )
+    : {};
   return {
     common,
     zoe,
@@ -1099,9 +1153,74 @@ const setupPlanner = async (
     planner1,
     readPublished,
     txResolver,
-    evmTrader,
-    evmAccount,
+    timerService,
+    contractBaggage,
+    ...evmKit,
   };
+};
+
+const setupEvmPlanner = async (
+  t,
+  overrides: Partial<PortfolioPrivateArgs & { useRouter: boolean }> = {},
+): Promise<Awaited<ReturnType<typeof setupPlanner>> & EvmTraderKit> => {
+  const powers = await setupPlanner(t, { ...overrides, includeEvmKit: true });
+  assert(powers.evmTrader);
+  assert(powers.evmAccount);
+  return powers as Awaited<ReturnType<typeof setupPlanner>> & EvmTraderKit;
+};
+
+const getPortfolioInfoTimed = (
+  t: ExecutionContext,
+  key: string,
+  storage: FakeStorage,
+) => timeSync(t, 'getPortfolioInfo', () => getPortfolioInfo(key, storage));
+
+const makeEvmPlannerPowers = async (
+  t: ExecutionContext,
+  shared: Awaited<ReturnType<typeof setupPlanner>>,
+  ix: number,
+  useRouter: boolean,
+  useVerifiedSigner: boolean,
+) => {
+  const baseLabel = useRouter ? 'routed' : 'legacy';
+  const label = useVerifiedSigner ? `${baseLabel} - smart account` : baseLabel;
+  const planner1 = makeDirectPlannerClient(
+    shared.zoe,
+    shared.started.creatorFacet,
+  );
+  const evmKit = await timeAsync(t, `makeEvmTraderKit:${label}`, () =>
+    makeEvmTraderKit(shared, {
+      useRouter,
+      useVerifiedSigner,
+      privateKey: evmTraderPrivateKeys[ix],
+    }),
+  );
+  return { label, powers: { ...shared, planner1, ...evmKit } };
+};
+
+const doOpenEvmPortfolio = async (
+  shared: Awaited<ReturnType<typeof setupPlanner>>,
+  inputs: {
+    fromChain: AxelarChain;
+    depositAmount: NatAmount;
+    allocations: PermittedAllocation[];
+  },
+  powers: Awaited<ReturnType<typeof makeEvmPlannerPowers>>['powers'],
+) => {
+  const { planner1, evmTrader } = powers;
+
+  await planner1.redeem();
+  const result = await evmTrader
+    .forChain(inputs.fromChain)
+    .openPortfolio(inputs.allocations, inputs.depositAmount.value);
+  await ackNFA(shared.common.utils, -1);
+  await eventLoopIteration();
+  const flowNum = await resolveDepositPlan(
+    { portfolioId: evmTrader.getPortfolioId() },
+    powers,
+  );
+
+  return { ...result, flowNum };
 };
 
 test('redeem, use planner invitation', async t => {
@@ -1190,13 +1309,9 @@ const setupEvmRemoteAccountConfigTest = (
     (addresses, chain) =>
       fromTypedEntries(
         typedEntries(addresses).flatMap(([key, value]) => {
-          // `value` is typed `EVMContractAddressesMap[K][string]` via
-          // the indexed access from typedEntries; TypeScript can't
-          // narrow that to `\`0x${string}\` | undefined` without the
-          // explicit cast, even though every concrete entry in the
-          // EVMContractAddressesMap union has that value shape.
           const mappedValue = mapContractEntry(
-            value as `0x${string}` | undefined,
+            // @ts-expect-error FIXME in Endo
+            value,
             key as keyof EVMContractAddresses,
             chain,
           );
@@ -1404,7 +1519,7 @@ test('withdraw using planner', async t => {
     } = await trader1.getPortfolioStatus();
     t.log('flowsRunning', flowsRunning);
     t.is(keys(flowsRunning).length, 1);
-    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const [[flowId, detail]] = getRunningFlowEntries(flowsRunning);
     const fId = Number(flowId.replace('flow', ''));
 
     // narrow the type
@@ -1527,7 +1642,7 @@ test('deposit using planner', async t => {
     } = await trader1.getPortfolioStatus();
     t.log('flowsRunning', flowsRunning);
     t.is(keys(flowsRunning).length, 1);
-    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const [[flowId, detail]] = getRunningFlowEntries(flowsRunning);
     const fId = Number(flowId.replace('flow', ''));
 
     // narrow the type
@@ -1595,7 +1710,7 @@ test('simple rebalance using planner', async t => {
     } = await trader1.getPortfolioStatus();
     t.log('flowsRunning', flowsRunning);
     t.is(keys(flowsRunning).length, 1);
-    const [[flowId, detail]] = Object.entries(flowsRunning);
+    const [[flowId, detail]] = getRunningFlowEntries(flowsRunning);
     const fId = Number(flowId.replace('flow', ''));
 
     // narrow the type
@@ -1633,28 +1748,29 @@ test('simple rebalance using planner', async t => {
   t.is(833332500n, (3333330000n * 25n) / 100n);
 });
 
-const createAndDepositTestMacro = test.macro(
-  async (
-    t,
+const makeCreateAndDepositScenarioRunner = (
+  t: ExecutionContext,
+  powers: Awaited<ReturnType<typeof setupPlanner>>,
+) => {
+  const { common, makeFundedTrader, planner1, readPublished, started } = powers;
+  const { usdc } = common.brands;
+
+  type Input = {
+    trader1: Awaited<ReturnType<typeof makeFundedTrader>>;
+    traderP: Promise<void>;
+    plannerP: Promise<void>;
+    pId: number;
+  };
+
+  let nextPortfolioId = 0;
+
+  return async (
     testOpts: {
-      deployOverrides?: Partial<PortfolioPrivateArgs>;
       restartOverrides?: Partial<PortfolioPrivateArgs>;
     } = {},
   ) => {
-    const { common, makeFundedTrader, planner1, readPublished, started } =
-      await setupPlanner(t, testOpts.deployOverrides);
-    const { usdc } = common.brands;
-
     await planner1.redeem();
 
-    type Input = {
-      trader1: Awaited<ReturnType<typeof makeFundedTrader>>;
-      traderP: Promise<void>;
-      plannerP: Promise<void>;
-      pId: number;
-    };
-
-    let nextPortfolioId = 0;
     const allSteps: TestStep[] = typedEntries({
       makeTrader1: async (opts, label) => {
         const trader1 = await makeFundedTrader();
@@ -1680,7 +1796,6 @@ const createAndDepositTestMacro = test.macro(
       resolvePlan: (opts, label) => {
         const plannerP = (async () => {
           const getStatus = async pId => {
-            // NOTE: readPublished uses eventLoopIteration() to let vstorage writes settle
             const x = await readPublished(`portfolios.portfolio${pId}`);
             return x as unknown as StatusFor['portfolio'];
           };
@@ -1696,15 +1811,12 @@ const createAndDepositTestMacro = test.macro(
             1,
             `${label} flowsRunning for ${pId}`,
           );
-          const [[flowId, detail]] = Object.entries(flowsRunning);
+          const [[flowId, detail]] = getRunningFlowEntries(flowsRunning);
           const fId = Number(flowId.replace('flow', ''));
 
-          // narrow the type
           if (detail.type !== 'deposit') throw t.fail(detail.type);
 
-          // XXX brand from vstorage isn't suitable for use in call to kit
           const amount = AmountMath.make(usdc.brand, detail.amount.value);
-
           const plan: FundsFlowPlan = {
             flow: [{ src: '<Deposit>', dest: '@agoric', amount }],
           };
@@ -1747,38 +1859,27 @@ const createAndDepositTestMacro = test.macro(
             const privateArgs = common.utils.makePrivateArgs(
               testOpts.restartOverrides,
             );
-
-            // XXX restartContract is not supported in this test environment.
-            // The interrupt hook is intentionally a no-op here; restart
-            // behavior is covered by boot tests instead.
             await E(started.adminFacet).restartContract(privateArgs);
           },
           { message: 'upgrade not faked' },
         );
       });
     await testInterruptedSteps(t, allSteps, interrupt);
-  },
-);
+  };
+};
 
-test('create portfolio and deposit using planner', createAndDepositTestMacro);
-test(
-  'create portfolio and deposit using planner (restart)',
-  createAndDepositTestMacro,
-  {
-    restartOverrides: {},
-  },
-);
-test(
-  'create portfolio and deposit using planner (upgrade)',
-  createAndDepositTestMacro,
-  {
-    deployOverrides: {
-      // Start with no config argument.
-      defaultFlowConfig: null,
-    },
-    restartOverrides: {},
-  },
-);
+test('create portfolio and deposit using planner', async t => {
+  const powers = await setupPlanner(t);
+  const runScenario = makeCreateAndDepositScenarioRunner(t, powers);
+  await runScenario();
+  await runScenario({ restartOverrides: {} });
+});
+
+test('create portfolio and deposit using planner (upgrade)', async t => {
+  const powers = await setupPlanner(t, { defaultFlowConfig: null });
+  const runScenario = makeCreateAndDepositScenarioRunner(t, powers);
+  await runScenario({ restartOverrides: {} });
+});
 
 const erc4626TestMacro = test.macro({
   async exec(t, vaultKey: AssetPlaceRef) {
@@ -1821,12 +1922,13 @@ const erc4626TestMacro = test.macro({
     t.is(keys(result.publicSubscribers).length, 1);
     const { storagePath } = result.publicSubscribers.portfolio;
     t.log(storagePath);
-    const { contents } = getPortfolioInfo(
+    const { contents } = getPortfolioInfoTimed(
+      t,
       storagePath,
       common.bootstrap.storage,
     );
-    t.snapshot(contents, 'vstorage');
-    t.snapshot(actual.payouts, 'refund payouts');
+    snapshotTimed(t, contents, 'vstorage');
+    snapshotTimed(t, actual.payouts, 'refund payouts');
   },
   title(providedTitle = '', vaultKey: AssetPlaceRef) {
     return `${providedTitle} ${vaultKey}`.trim();
@@ -1917,552 +2019,648 @@ test('Withdraw from an ERC4626 position', async t => {
   const withdraw = await withdrawP;
 
   const { storagePath } = result.publicSubscribers.portfolio;
-  const { contents } = getPortfolioInfo(storagePath, common.bootstrap.storage);
-  t.snapshot(contents, 'vstorage');
-  t.snapshot(withdraw.payouts, 'refund payouts');
+  const { contents } = getPortfolioInfoTimed(
+    t,
+    storagePath,
+    common.bootstrap.storage,
+  );
+  snapshotTimed(t, contents, 'vstorage');
+  snapshotTimed(t, withdraw.payouts, 'refund payouts');
 });
 
-testLegacyAndRouter(
-  test.macro({
-    title: (providedTitle = '', useRouter: boolean) =>
-      `open portfolio from Arbitrum, 1000 USDC deposit (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
-    async exec(t, useRouter: boolean) {
-      const powers = await setupPlanner(t, { useRouter });
-      const { evmTrader, common } = powers;
-      const { usdc } = common.brands;
+test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
+  const shared = await setupPlanner(t);
+  const { common } = shared;
+  const { usdc } = common.brands;
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ],
+  };
+  const expected = {
+    positions: { Aave: usdc.units(600), Compound: usdc.units(400) },
+  };
 
-      const inputs = {
-        fromChain: 'Arbitrum' as const,
-        depositAmount: usdc.units(1000),
-        allocations: [
-          { instrument: 'Aave_Arbitrum', portion: 6000n },
-          { instrument: 'Compound_Arbitrum', portion: 4000n },
-        ],
-      };
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader } = powers;
+    const openResult = await doOpenEvmPortfolio(shared, inputs, powers);
 
-      const expected = {
-        portfolioId: 0,
-        storagePath: `${ROOT_STORAGE_PATH}.portfolios.portfolio0`,
-        positions: { Aave: usdc.units(600), Compound: usdc.units(400) },
-      };
+    t.is(
+      openResult.storagePath,
+      evmTrader.getPortfolioPath(),
+      `${label} storage path matches`,
+    );
+    t.is(
+      openResult.portfolioId,
+      evmTrader.getPortfolioId(),
+      `${label} portfolio id matches`,
+    );
 
-      const openResult = await doOpenWithEvmTrader(inputs, powers);
+    const status = await evmTrader.getPortfolioStatus();
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    const flowHistory =
+      contents[
+        `${evmTrader.getPortfolioPath()}.flows.flow${openResult.flowNum}`
+      ];
 
-      t.is(openResult.storagePath, expected.storagePath);
-      t.is(openResult.portfolioId, expected.portfolioId);
+    t.truthy(
+      Array.isArray(flowHistory) &&
+        flowHistory.some(entry => entry?.state === 'done'),
+      `${label} flow history should include a done entry`,
+    );
+    t.deepEqual(
+      status.flowsRunning,
+      {},
+      `${label} flowsRunning should be empty after plan completes`,
+    );
+    t.truthy(
+      status.accountIdByChain?.Arbitrum,
+      `${label} has Arbitrum account`,
+    );
+    t.is(status.positionKeys.length, 2, `${label} position count`);
+    const expectedSourceAccountId =
+      `eip155:${chainInfoWithCCTP[inputs.fromChain].reference}:${evmTrader.getAddress().toLowerCase()}` as const;
+    t.is(
+      status.sourceAccountId,
+      expectedSourceAccountId,
+      `${label} sourceAccountId from vstorage`,
+    );
+    t.is(
+      contents[evmTrader.getPortfolioPath()]?.sourceAccountId,
+      expectedSourceAccountId,
+      `${label} sourceAccountId in storage contents`,
+    );
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
 
-      const status = await evmTrader.getPortfolioStatus();
+    const posKey = `${evmTrader.getPortfolioPath()}.positions`;
+    const posBalances = {
+      Aave: contents[`${posKey}.Aave_Arbitrum`]?.totalIn,
+      Compound: contents[`${posKey}.Compound_Arbitrum`]?.totalIn,
+    };
+    t.deepEqual(posBalances, expected.positions, `${label} position balances`);
+  }
+});
 
-      const { contents } = getPortfolioInfo(
-        expected.storagePath,
-        common.bootstrap.storage,
-      );
-      const flowHistory =
-        contents[`${expected.storagePath}.flows.flow${openResult.flowNum}`];
+test('evmHandler.withdraw starts a withdraw flow', async t => {
+  const shared = await setupPlanner(t);
+  const { common } = shared;
+  const { usdc } = common.brands;
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+  };
 
-      t.truthy(
-        Array.isArray(flowHistory) &&
-          flowHistory.some(entry => entry?.state === 'done'),
-        'flow history should include a done entry',
-      );
-      t.deepEqual(
-        status.flowsRunning,
-        {},
-        'flowsRunning should be empty after plan completes',
-      );
-      t.truthy(status.accountIdByChain?.Arbitrum);
-      t.is(status.positionKeys.length, 2);
-      // Verify sourceAccountId is stored in CAIP-10 format
-      const expectedSourceAccountId =
-        `eip155:${chainInfoWithCCTP[inputs.fromChain].reference}:${evmTrader.getAddress().toLowerCase()}` as const;
-      t.is(
-        status.sourceAccountId,
-        expectedSourceAccountId,
-        'sourceAccountId from vstorage',
-      );
-      t.is(
-        contents[expected.storagePath]?.sourceAccountId,
-        expectedSourceAccountId,
-        'sourceAccountId in storage contents',
-      );
-      t.snapshot(contents, 'vstorage');
-      await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = !useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader } = powers;
+    await doOpenEvmPortfolio(shared, inputs, powers);
 
-      const posKey = `${expected.storagePath}.positions`;
-      const posBalances = {
-        Aave: contents[`${posKey}.Aave_Arbitrum`]?.totalIn,
-        Compound: contents[`${posKey}.Compound_Arbitrum`]?.totalIn,
-      };
-      t.deepEqual(posBalances, expected.positions);
-    },
-  }),
-);
+    const statusBefore = await evmTrader.getPortfolioStatus();
+    t.deepEqual(
+      statusBefore.flowsRunning,
+      {},
+      `no flows running after ${label} deposit`,
+    );
+    t.truthy(statusBefore.sourceAccountId, `${label} sourceAccountId is set`);
 
-testLegacyAndRouter(
-  test.macro({
-    title: (providedTitle = '', useRouter: boolean) =>
-      `evmHandler.withdraw starts a withdraw flow (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
-    async exec(t, useRouter: boolean) {
-      const powers = await setupPlanner(t, { useRouter });
-      const { evmTrader, common } = powers;
-      const { usdc } = common.brands;
+    const withdrawDetails = {
+      token: contractsMock[inputs.fromChain].usdc,
+      amount: 500n,
+    };
+    const flowKey = await evmTrader
+      .forChain(inputs.fromChain)
+      .withdraw(withdrawDetails);
+    t.regex(flowKey, /^flow\d+$/, `${label} withdraw returns a flow key`);
 
-      const inputs = {
-        fromChain: 'Arbitrum' as const,
-        depositAmount: usdc.units(1000),
-        allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
-      };
-
-      const openResult = await doOpenWithEvmTrader(inputs, powers);
-
-      // Verify portfolio is ready
-      const statusBefore = await evmTrader.getPortfolioStatus();
-      t.deepEqual(
-        statusBefore.flowsRunning,
-        {},
-        'no flows running after deposit',
-      );
-      t.truthy(statusBefore.sourceAccountId, 'sourceAccountId is set');
-
-      // Now test the withdraw
-      const withdrawDetails = {
-        token: contractsMock[inputs.fromChain].usdc,
-        amount: 500n,
-      };
-      const flowKey = await evmTrader
-        .forChain(inputs.fromChain)
-        .withdraw(withdrawDetails);
-      t.regex(flowKey, /^flow\d+$/, 'withdraw returns a flow key');
-
-      // Check that a withdraw flow is now running
-      const statusAfter = await evmTrader.getPortfolioStatus();
-      t.like(
-        statusAfter.flowsRunning,
-        {
-          [flowKey]: {
-            type: 'withdraw',
-            amount: { value: withdrawDetails.amount },
-          },
+    const statusAfter = await evmTrader.getPortfolioStatus();
+    t.like(
+      statusAfter.flowsRunning,
+      {
+        [flowKey]: {
+          type: 'withdraw',
+          amount: { value: withdrawDetails.amount },
         },
-        'withdraw flow is running',
-      );
+      },
+      `${label} withdraw flow is running`,
+    );
 
-      // XXX should test the whole flow, not just the start
-      const { contents } = getPortfolioInfo(
-        openResult.storagePath!,
-        common.bootstrap.storage,
-      );
-      t.snapshot(contents, 'vstorage');
-      await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
-    },
-  }),
-);
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+  }
+});
 
 test.todo('evmHandler.withdraw fails if sourceAccountId not set');
 
-testLegacyAndRouter(
-  test.macro({
-    title: (providedTitle = '', useRouter: boolean) =>
-      `evmHandler.deposit (existing Arbitrum) completes a deposit flow (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
-    async exec(t, useRouter: boolean) {
-      const powers = await setupPlanner(t, { useRouter });
-      const { evmTrader, common } = powers;
-      const { usdc } = common.brands;
+test('open portfolio from Base with @Base allocation', async t => {
+  const shared = await setupPlanner(t);
+  const { common } = shared;
+  const { usdc } = common.brands;
+  const inputs = {
+    fromChain: 'Base' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: '@Base', portion: 10000n }],
+  };
+  const expected = {
+    targetAllocation: { '@Base': 10000n },
+  } as const;
 
-      const inputs = {
-        fromChain: 'Arbitrum' as const,
-        depositAmount: usdc.units(1000),
-        allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
-      };
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader } = powers;
+    const openResult = await doOpenEvmPortfolio(shared, inputs, powers);
 
-      await doOpenWithEvmTrader(inputs, powers);
+    t.is(
+      openResult.storagePath,
+      evmTrader.getPortfolioPath(),
+      `${label} storage path matches`,
+    );
+    t.is(
+      openResult.portfolioId,
+      evmTrader.getPortfolioId(),
+      `${label} portfolio id matches`,
+    );
 
-      // Verify portfolio is ready - read status AFTER flow completes to get account info
-      const statusBefore = await evmTrader.getPortfolioStatus();
-      t.deepEqual(
-        statusBefore.flowsRunning,
-        {},
-        'no flows running after deposit',
-      );
-      t.truthy(statusBefore.sourceAccountId, 'sourceAccountId is set');
-      // Get the portfolio's remote address now that accounts are published
-      const portfolioRemoteAddress = statusBefore.accountIdByChain?.[
-        inputs.fromChain
-      ]
-        ?.split(':')
-        .at(-1);
-      t.truthy(portfolioRemoteAddress, 'portfolio has a remote address on EVM');
+    const status = await evmTrader.getPortfolioStatus();
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    const flowHistory =
+      contents[
+        `${evmTrader.getPortfolioPath()}.flows.flow${openResult.flowNum}`
+      ];
 
-      // Now test the deposit via evmTrader
-      const newDepositAmount = usdc.units(500);
-      const flowKey = await evmTrader.forChain(inputs.fromChain).deposit(
+    t.truthy(
+      Array.isArray(flowHistory) &&
+        flowHistory.some(entry => entry?.state === 'done'),
+      `${label} flow history should include a done entry`,
+    );
+    t.deepEqual(
+      status.flowsRunning,
+      {},
+      `${label} flowsRunning should be empty after plan completes`,
+    );
+    t.truthy(status.accountIdByChain?.Base, `${label} has Base account`);
+    t.deepEqual(status.positionKeys, [], `${label} has no positions`);
+    t.deepEqual(
+      status.targetAllocation,
+      expected.targetAllocation,
+      `${label} target allocation matches`,
+    );
+    const expectedSourceAccountId =
+      `eip155:${chainInfoWithCCTP[inputs.fromChain].reference}:${evmTrader.getAddress().toLowerCase()}` as const;
+    t.is(
+      status.sourceAccountId,
+      expectedSourceAccountId,
+      `${label} sourceAccountId from vstorage`,
+    );
+    t.is(
+      contents[evmTrader.getPortfolioPath()]?.sourceAccountId,
+      expectedSourceAccountId,
+      `${label} sourceAccountId in storage contents`,
+    );
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+  }
+});
+
+test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t => {
+  const shared = await setupPlanner(t);
+  const { common } = shared;
+  const { usdc } = common.brands;
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+  };
+
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader } = powers;
+
+    await doOpenEvmPortfolio(shared, inputs, powers);
+
+    const statusBefore = await evmTrader.getPortfolioStatus();
+    t.deepEqual(
+      statusBefore.flowsRunning,
+      {},
+      `no flows running after ${label} deposit`,
+    );
+    t.truthy(statusBefore.sourceAccountId, `${label} sourceAccountId is set`);
+    const portfolioRemoteAddress = statusBefore.accountIdByChain?.[
+      inputs.fromChain
+    ]
+      ?.split(':')
+      .at(-1);
+    t.truthy(
+      portfolioRemoteAddress,
+      `${label} portfolio has a remote address on EVM`,
+    );
+
+    const newDepositAmount = usdc.units(500);
+    const flowKey = (await evmTrader
+      .forChain(inputs.fromChain)
+      .deposit(
         newDepositAmount.value,
-        // Using the remote account for deposit here
         portfolioRemoteAddress as `0x${string}`,
-      );
-      t.regex(flowKey, /^flow\d+$/, 'deposit returns a flow key');
+      )) as RunningFlowKey;
+    t.regex(flowKey, /^flow\d+$/, `${label} deposit returns a flow key`);
 
-      // Check that a deposit flow is now running
-      const statusAfter = await evmTrader.getPortfolioStatus();
-      const flowsRunning = statusAfter.flowsRunning ?? {};
-      t.is(keys(flowsRunning).length, 1, 'one flow running');
+    const statusAfter = await evmTrader.getPortfolioStatus();
+    const flowsRunning = statusAfter.flowsRunning ?? {};
+    t.is(keys(flowsRunning).length, 1, `${label} has one flow running`);
 
-      const [[flowId, flowDetail]] = Object.entries(flowsRunning);
-      t.is(flowId, flowKey, 'flow key matches');
-      t.is(flowDetail.type, 'deposit', 'flow is a deposit');
-      if (flowDetail.type === 'deposit') {
-        t.is(
-          flowDetail.amount.value,
-          newDepositAmount.value,
-          'deposit amount matches',
-        );
-        t.is(flowDetail.fromChain, inputs.fromChain, 'fromChain matches');
-      }
+    const [[flowId, flowDetail]] = getRunningFlowEntries(flowsRunning);
+    t.is(flowId, flowKey, `${label} flow key matches`);
+    t.is(flowDetail.type, 'deposit', `${label} flow is a deposit`);
+    if (flowDetail.type === 'deposit') {
+      t.is(
+        flowDetail.amount.value,
+        newDepositAmount.value,
+        `${label} deposit amount matches`,
+      );
+      t.is(
+        flowDetail.fromChain,
+        inputs.fromChain,
+        `${label} fromChain matches`,
+      );
+    }
 
-      const depositFlowNum = await resolveDepositPlan(
-        { portfolioId: evmTrader.getPortfolioId() },
-        powers,
-      );
-      t.is(`flow${depositFlowNum}`, flowKey, 'flow key matches');
+    const depositFlowNum = await resolveDepositPlan(
+      { portfolioId: evmTrader.getPortfolioId() },
+      powers,
+    );
+    t.is(`flow${depositFlowNum}`, flowKey, `${label} resolved flow matches`);
 
-      const statusDone = await evmTrader.getPortfolioStatus();
-      const { contents } = getPortfolioInfo(
-        evmTrader.getPortfolioPath(),
-        common.bootstrap.storage,
-      );
-      const flowHistory =
-        contents[`${evmTrader.getPortfolioPath()}.flows.flow${depositFlowNum}`];
-      t.truthy(
-        Array.isArray(flowHistory) &&
-          flowHistory.some(entry => entry?.state === 'done'),
-        'deposit flow history should include a done entry',
-      );
-      t.deepEqual(
-        statusDone.flowsRunning,
-        {},
-        'no flows running after deposit completes',
-      );
+    const statusDone = await evmTrader.getPortfolioStatus();
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    const flowHistory =
+      contents[`${evmTrader.getPortfolioPath()}.flows.flow${depositFlowNum}`];
+    t.truthy(
+      Array.isArray(flowHistory) &&
+        flowHistory.some(entry => entry?.state === 'done'),
+      `${label} deposit flow history includes a done entry`,
+    );
+    t.deepEqual(
+      statusDone.flowsRunning,
+      {},
+      `no flows running after ${label} deposit completes`,
+    );
 
-      t.snapshot(contents, 'vstorage');
-      await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
-    },
-  }),
-);
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+  }
+});
 
 // Test deposits from a NEW chain (where no account exists yet).
 // For deposits to existing portfolios, spender must be the predicted smart wallet address
 // (or depositFactory). The wallet is created via provideEVMAccount first.
 
-testLegacyAndRouter(
-  test.macro({
-    title: (providedTitle = '', useRouter: boolean) =>
-      `evmHandler.deposit (Arbitrum -> Base) completes a deposit flow (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
-    async exec(t, useRouter: boolean) {
-      const powers = await setupPlanner(t, { useRouter });
-      const { evmTrader, common } = powers;
-      const { usdc } = common.brands;
+test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t => {
+  const shared = await setupPlanner(t);
+  const { common } = shared;
+  const { usdc } = common.brands;
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+  };
 
-      // Open portfolio from Arbitrum first
-      const inputs = {
-        fromChain: 'Arbitrum' as const,
-        depositAmount: usdc.units(1000),
-        allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
-      };
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = !useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader } = powers;
+    await doOpenEvmPortfolio(shared, inputs, powers);
 
-      await doOpenWithEvmTrader(inputs, powers);
+    const statusBefore = await evmTrader.getPortfolioStatus();
+    t.truthy(
+      statusBefore.accountIdByChain?.[inputs.fromChain],
+      `${label} has Arbitrum account`,
+    );
+    t.falsy(
+      statusBefore.accountIdByChain?.Base,
+      `${label} has no Base account yet`,
+    );
 
-      // Check portfolio has account on openChain but NOT on Base
-      const statusBefore = await evmTrader.getPortfolioStatus();
-      t.truthy(
-        statusBefore.accountIdByChain?.[inputs.fromChain],
-        'has Arbitrum account',
+    const lcaAddress = statusBefore.accountIdByChain?.agoric?.split(':').at(-1);
+    t.truthy(lcaAddress, `${label} LCA address exists`);
+
+    const newChain = 'Base' as const;
+    const newChainContracts = contractsMock[newChain];
+    const predictedSpender = useRouter
+      ? predictRemoteAccountAddress({
+          owner: lcaAddress as Bech32Address,
+          factoryAddress: newChainContracts.remoteAccountFactory,
+          implementationAddress: newChainContracts.remoteAccountImplementation,
+        })
+      : predictWalletAddress({
+          owner: lcaAddress!,
+          factoryAddress: newChainContracts.factory,
+          gatewayAddress: newChainContracts.gateway,
+          gasServiceAddress: newChainContracts.gasService,
+          walletBytecode: hexToBytes('1234'),
+        });
+
+    const newDepositAmount = usdc.units(500);
+    await t.throwsAsync(
+      () =>
+        evmTrader
+          .forChain(newChain)
+          .deposit(
+            newDepositAmount.value,
+            '0x2222222222222222222222222222222222222222',
+          ),
+      { message: /does not match/ },
+      `${label} deposit rejects bad spender for new chain`,
+    );
+
+    const flowKey = (await evmTrader
+      .forChain(newChain)
+      .deposit(newDepositAmount.value, predictedSpender)) as RunningFlowKey;
+    t.regex(flowKey, /^flow\d+$/, `${label} deposit returns a flow key`);
+
+    const statusAfter = await evmTrader.getPortfolioStatus();
+    const flowsRunning = statusAfter.flowsRunning ?? {};
+    t.is(keys(flowsRunning).length, 1, `${label} has one flow running`);
+
+    const [[flowId, flowDetail]] = getRunningFlowEntries(flowsRunning);
+    t.is(flowId, flowKey, `${label} flow key matches`);
+    t.is(flowDetail.type, 'deposit', `${label} flow is a deposit`);
+    if (flowDetail.type === 'deposit') {
+      t.is(
+        flowDetail.amount.value,
+        newDepositAmount.value,
+        `${label} deposit amount matches`,
       );
-      t.falsy(statusBefore.accountIdByChain?.Base, 'no Base account yet');
-      const existingArbitrumAddress = statusBefore.accountIdByChain?.[
-        inputs.fromChain
-      ]
-        ?.split(':')
-        .at(-1);
-      t.log(`existing ${inputs.fromChain} address`, existingArbitrumAddress);
-
-      // Get the LCA address to predict the wallet address for the new chain
-      const lcaAddress = statusBefore.accountIdByChain?.agoric
-        ?.split(':')
-        .at(-1);
-      t.truthy(lcaAddress, 'LCA address exists');
-
-      // Now deposit from Base (a NEW chain for this portfolio)
-      const newChain = 'Base' as const;
-
-      // For deposits to existing portfolios, spender must be the predicted smart wallet address
-      const newChainContracts = contractsMock[newChain];
-      const predictedSpender = useRouter
-        ? predictRemoteAccountAddress({
-            owner: lcaAddress as Bech32Address,
-            factoryAddress: newChainContracts.remoteAccountFactory,
-            implementationAddress:
-              newChainContracts.remoteAccountImplementation,
-          })
-        : predictWalletAddress({
-            owner: lcaAddress!,
-            factoryAddress: newChainContracts.factory,
-            gatewayAddress: newChainContracts.gateway,
-            gasServiceAddress: newChainContracts.gasService,
-            walletBytecode: hexToBytes('1234'), // matches contract-setup.ts
-          });
-      t.log(`predicted ${newChain} factory address`, predictedSpender);
-
-      const newDepositAmount = usdc.units(500);
-      await t.throwsAsync(
-        () =>
-          evmTrader
-            .forChain(newChain)
-            .deposit(
-              newDepositAmount.value,
-              '0x2222222222222222222222222222222222222222',
-            ),
-        {
-          message: /does not match/,
-        },
-        'deposit rejects bad spender for new chain',
+      t.is(
+        flowDetail.fromChain,
+        newChain,
+        `${label} fromChain is the new chain`,
       );
+    }
 
-      const flowKey = await evmTrader
-        .forChain(newChain)
-        .deposit(newDepositAmount.value, predictedSpender);
-      t.regex(flowKey, /^flow\d+$/, 'deposit returns a flow key');
+    const depositFlowNum = await resolveDepositPlan(
+      {
+        portfolioId: evmTrader.getPortfolioId(),
+        overrideTargetAllocation: { Aave_Base: 10000n },
+        separateMakeAccount: true,
+      },
+      powers,
+    );
+    t.is(`flow${depositFlowNum}`, flowKey, `${label} flow key matches`);
 
-      // Check that a deposit flow is now running
-      const statusAfter = await evmTrader.getPortfolioStatus();
-      const flowsRunning = statusAfter.flowsRunning ?? {};
-      t.is(keys(flowsRunning).length, 1, 'one flow running');
+    const statusDone = await evmTrader.getPortfolioStatus();
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    const flowHistory =
+      contents[`${evmTrader.getPortfolioPath()}.flows.flow${depositFlowNum}`];
+    t.truthy(
+      Array.isArray(flowHistory) &&
+        flowHistory.some(entry => entry?.state === 'done'),
+      `${label} deposit flow history should include a done entry`,
+    );
+    t.deepEqual(
+      statusDone.flowsRunning,
+      {},
+      `no flows running after ${label} deposit completes`,
+    );
 
-      const [[flowId, flowDetail]] = Object.entries(flowsRunning);
-      t.is(flowId, flowKey, 'flow key matches');
-      t.is(flowDetail.type, 'deposit', 'flow is a deposit');
-      if (flowDetail.type === 'deposit') {
-        t.is(
-          flowDetail.amount.value,
-          newDepositAmount.value,
-          'deposit amount matches',
-        );
-        t.is(flowDetail.fromChain, newChain, 'fromChain is the new chain');
-      }
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+  }
+});
 
-      const depositFlowNum = await resolveDepositPlan(
-        {
-          portfolioId: evmTrader.getPortfolioId(),
-          // A correct plan matching the portfolio's actual target allocation
-          // would require moving from Base to Arbitrum, which our test mock
-          // doesn't support. We override target allocation here and take
-          // advantage that the contract does not currently validate the plan
-          // matches the target allocation.
-          // XXX: switch to a more realistic plan, or use a combined rebalance
-          // + deposit so that a simpler plan would be valid.
-          overrideTargetAllocation: { Aave_Base: 10000n },
-          separateMakeAccount: true,
-        },
-        powers,
-      );
-      t.is(`flow${depositFlowNum}`, flowKey, 'flow key matches');
+test('evmHandler.rebalance with target allocation sets allocation and starts a rebalance flow', async t => {
+  const shared = await setupPlanner(t);
+  const { common } = shared;
+  const { usdc } = common.brands;
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    initialAllocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+    rebalanceAllocations: [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ],
+  };
 
-      const statusDone = await evmTrader.getPortfolioStatus();
-      const { contents } = getPortfolioInfo(
-        evmTrader.getPortfolioPath(),
-        common.bootstrap.storage,
-      );
-      const flowHistory =
-        contents[`${evmTrader.getPortfolioPath()}.flows.flow${depositFlowNum}`];
-      t.truthy(
-        Array.isArray(flowHistory) &&
-          flowHistory.some(entry => entry?.state === 'done'),
-        'deposit flow history should include a done entry',
-      );
-      t.deepEqual(
-        statusDone.flowsRunning,
-        {},
-        'no flows running after deposit completes',
-      );
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader } = powers;
+    await doOpenEvmPortfolio(
+      shared,
+      {
+        fromChain: inputs.fromChain,
+        depositAmount: inputs.depositAmount,
+        allocations: inputs.initialAllocations,
+      },
+      powers,
+    );
 
-      t.snapshot(contents, 'vstorage');
-      await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
-    },
-  }),
-);
+    t.like(await evmTrader.getPortfolioStatus(), {
+      policyVersion: 1,
+      rebalanceCount: 1,
+    });
 
-testLegacyAndRouter(
-  test.macro({
-    title: (providedTitle = '', useRouter: boolean) =>
-      `evmHandler.rebalance with target allocation sets allocation and starts a rebalance flow (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
-    async exec(t, useRouter: boolean) {
-      const powers = await setupPlanner(t, { useRouter });
-      const { evmTrader, common, planner1 } = powers;
-      const { usdc } = common.brands;
+    const rebalanceFlowKey = await evmTrader
+      .forChain(inputs.fromChain)
+      .setTargetAllocation(inputs.rebalanceAllocations);
+    t.regex(
+      rebalanceFlowKey,
+      /^flow\d+$/,
+      `${label} rebalance returns a flow key`,
+    );
 
-      const inputs = {
-        fromChain: 'Arbitrum' as const,
-        depositAmount: usdc.units(1000),
-        initialAllocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
-        rebalanceAllocations: [
-          { instrument: 'Aave_Arbitrum', portion: 6000n },
-          { instrument: 'Compound_Arbitrum', portion: 4000n },
-        ],
-      };
-      const {
-        fromChain: evm,
-        depositAmount,
-        initialAllocations,
-        rebalanceAllocations,
-      } = inputs;
+    const statusAfter = await evmTrader.getPortfolioStatus();
 
-      await planner1.redeem();
+    t.like(statusAfter, {
+      policyVersion: 2,
+      rebalanceCount: 0,
+    });
+    t.deepEqual(
+      statusAfter.targetAllocation,
+      { Aave_Arbitrum: 6000n, Compound_Arbitrum: 4000n },
+      `${label} target allocation updated`,
+    );
+    t.like(
+      statusAfter.flowsRunning,
+      { [rebalanceFlowKey]: { type: 'rebalance' } },
+      `${label} rebalance flow running`,
+    );
 
-      const openResult = await (async () => {
-        const result = await evmTrader
-          .forChain(evm)
-          .openPortfolio(initialAllocations, depositAmount.value);
-        await ackNFA(common.utils);
-        return result;
-      })();
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+  }
+});
 
-      t.like(await evmTrader.getPortfolioStatus(), {
-        policyVersion: 1,
-        rebalanceCount: 0,
-      });
+test('evmHandler.rebalance without target allocation uses existing allocation', async t => {
+  const shared = await setupPlanner(t);
+  const { common } = shared;
+  const { usdc } = common.brands;
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ],
+  };
 
-      await resolveDepositPlan({ portfolioId: openResult.portfolioId }, powers);
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = !useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader } = powers;
+    await doOpenEvmPortfolio(shared, inputs, powers);
 
-      // Verify portfolio is ready
-      const statusBefore = await evmTrader.getPortfolioStatus();
-      t.deepEqual(
-        statusBefore.flowsRunning,
-        {},
-        'no flows running after deposit',
-      );
+    const statusBefore = await evmTrader.getPortfolioStatus();
+    t.deepEqual(
+      statusBefore.flowsRunning,
+      {},
+      `no flows running after ${label} deposit`,
+    );
+    t.like(statusBefore, {
+      policyVersion: 1,
+      rebalanceCount: 1,
+    });
 
-      t.like(await evmTrader.getPortfolioStatus(), {
-        policyVersion: 1,
-        rebalanceCount: 1,
-      });
+    const rebalanceFlowKey = await evmTrader
+      .forChain(inputs.fromChain)
+      .rebalance();
+    t.regex(
+      rebalanceFlowKey,
+      /^flow\d+$/,
+      `${label} rebalance returns a flow key`,
+    );
 
-      const rebalanceFlowKey = await evmTrader
-        .forChain(evm)
-        .setTargetAllocation(rebalanceAllocations);
-      t.regex(rebalanceFlowKey, /^flow\d+$/, 'rebalance returns a flow key');
+    const statusAfter = await evmTrader.getPortfolioStatus();
 
-      const statusAfter = await evmTrader.getPortfolioStatus();
+    t.like(statusAfter, {
+      policyVersion: 1,
+      rebalanceCount: 1,
+    });
+    t.deepEqual(
+      statusAfter.targetAllocation,
+      statusBefore.targetAllocation,
+      `${label} target allocation unchanged`,
+    );
+    t.like(
+      statusAfter.flowsRunning,
+      { [rebalanceFlowKey]: { type: 'rebalance' } },
+      `${label} rebalance flow running`,
+    );
 
-      t.like(statusAfter, {
-        policyVersion: 2,
-        rebalanceCount: 0,
-      });
-
-      // Verify the target allocation was updated
-      t.deepEqual(
-        statusAfter.targetAllocation,
-        { Aave_Arbitrum: 6000n, Compound_Arbitrum: 4000n },
-        'target allocation updated',
-      );
-
-      t.like(
-        statusAfter.flowsRunning,
-        { [rebalanceFlowKey]: { type: 'rebalance' } },
-        'rebalance flow running',
-      );
-
-      // XXX should test the whole flow, not just the start
-      const { contents } = getPortfolioInfo(
-        openResult.storagePath!,
-        common.bootstrap.storage,
-      );
-      t.snapshot(contents, 'vstorage');
-      await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
-    },
-  }),
-);
-
-testLegacyAndRouter(
-  test.macro({
-    title: (providedTitle = '', useRouter: boolean) =>
-      `evmHandler.rebalance without target allocation uses existing allocation (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
-    async exec(t, useRouter: boolean) {
-      const powers = await setupPlanner(t, { useRouter });
-      const { evmTrader, common, planner1 } = powers;
-      const { usdc } = common.brands;
-
-      const inputs = {
-        fromChain: 'Arbitrum' as const,
-        depositAmount: usdc.units(1000),
-        allocations: [
-          { instrument: 'Aave_Arbitrum', portion: 6000n },
-          { instrument: 'Compound_Arbitrum', portion: 4000n },
-        ],
-      };
-      const { fromChain: evm, depositAmount, allocations } = inputs;
-
-      await planner1.redeem();
-
-      const openResult = await (async () => {
-        const result = await evmTrader
-          .forChain(evm)
-          .openPortfolio(allocations, depositAmount.value);
-        await ackNFA(common.utils);
-        return result;
-      })();
-
-      t.like(await evmTrader.getPortfolioStatus(), {
-        policyVersion: 1,
-        rebalanceCount: 0,
-      });
-
-      await resolveDepositPlan({ portfolioId: openResult.portfolioId }, powers);
-
-      // Verify portfolio is ready
-      const statusBefore = await evmTrader.getPortfolioStatus();
-      t.deepEqual(
-        statusBefore.flowsRunning,
-        {},
-        'no flows running after deposit',
-      );
-
-      t.like(await evmTrader.getPortfolioStatus(), {
-        policyVersion: 1,
-        rebalanceCount: 1,
-      });
-
-      const rebalanceFlowKey = await evmTrader.forChain(evm).rebalance();
-      t.regex(rebalanceFlowKey, /^flow\d+$/, 'rebalance returns a flow key');
-
-      const statusAfter = await evmTrader.getPortfolioStatus();
-
-      t.like(statusAfter, {
-        policyVersion: 1,
-        rebalanceCount: 1,
-      });
-
-      // Verify the target allocation is the same
-      t.deepEqual(
-        statusAfter.targetAllocation,
-        statusBefore.targetAllocation,
-        'target allocation unchanged',
-      );
-
-      t.like(
-        statusAfter.flowsRunning,
-        { [rebalanceFlowKey]: { type: 'rebalance' } },
-        'rebalance flow running',
-      );
-
-      // XXX should test the whole flow, not just the start
-      const { contents } = getPortfolioInfo(
-        openResult.storagePath!,
-        common.bootstrap.storage,
-      );
-      t.snapshot(contents, 'vstorage');
-      await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
-    },
-  }),
-);
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+  }
+});
 
 test('open portfolio does not require Access token when Access issuer is present', async t => {
   const { common, zoe, started } = await deploy(t);
@@ -2504,7 +2702,7 @@ test('open portfolio does not require Access token when Access issuer is present
 
 test('verifies fix for p772 & p775: make-account recovery after prior failed make-account flow', async t => {
   const { common, planner1, readPublished, txResolver, evmTrader } =
-    await setupPlanner(t);
+    await setupEvmPlanner(t);
   const { usdc, bld } = common.brands;
 
   const inputs = {
@@ -2561,7 +2759,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     const status = await evmTrader.getPortfolioStatus();
     const { flowsRunning = {}, policyVersion, rebalanceCount } = status;
     const sync = [policyVersion, rebalanceCount] as const;
-    const [[flowKey, detail]] = Object.entries(flowsRunning);
+    const [[flowKey, detail]] = getRunningFlowEntries(flowsRunning);
     const flowId = Number(flowKey.replace('flow', ''));
     if (detail.type !== 'deposit') throw t.fail(detail.type);
     t.is(detail.amount.value, expectedValue);
@@ -2725,13 +2923,14 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
 
   const statusAfterFlow1 = await evmTrader.getPortfolioStatus();
 
-  const { contents: contentsAfterFlow1 } = getPortfolioInfo(
+  const { contents: contentsAfterFlow1 } = getPortfolioInfoTimed(
+    t,
     openResult.storagePath!,
     common.bootstrap.storage,
   );
 
-  t.snapshot(contentsAfterFlow1, 'after flow 1');
-  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
+  snapshotTimed(t, contentsAfterFlow1, 'after flow 1');
+  await documentStorageSchemaTimed(t, common.bootstrap.storage, pendingTxOpts);
 
   const flow1History =
     contentsAfterFlow1[`${openResult.storagePath}.flows.flow${flow1Num}`];
@@ -2931,13 +3130,14 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
 
   const statusAfterFlow2 = await evmTrader.getPortfolioStatus();
 
-  const { contents: contentsAfterFlow2 } = getPortfolioInfo(
+  const { contents: contentsAfterFlow2 } = getPortfolioInfoTimed(
+    t,
     openResult.storagePath!,
     common.bootstrap.storage,
   );
 
-  t.snapshot(contentsAfterFlow2, 'after flow 2');
-  await documentStorageSchema(t, common.bootstrap.storage, pendingTxOpts);
+  snapshotTimed(t, contentsAfterFlow2, 'after flow 2');
+  await documentStorageSchemaTimed(t, common.bootstrap.storage, pendingTxOpts);
 
   const pendingTxAfterFlow2 = await findPendingTxInfo();
   t.deepEqual(

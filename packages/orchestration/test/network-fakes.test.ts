@@ -21,16 +21,13 @@ test('echo connection', async t => {
 
   // Allocate an echo port
   const echoPort = await E(portAllocator).allocateCustomIBCPort('echo');
-  // @ts-expect-error FIXME in Endo
   t.is(await E(echoPort).getLocalAddress(), '/ibc-port/custom-echo');
 
   // Create and add an echo listener
   const { listener } = await E(networkVat).makeEchoConnectionKit();
-  // @ts-expect-error FIXME in Endo
   await E(echoPort).addListener(listener);
 
   // Connect to the echo port
-  // @ts-expect-error FIXME in Endo
   const connection = await E(echoPort).connect('/ibc-port/custom-echo');
 
   // Send and receive a message
@@ -42,7 +39,6 @@ test('echo connection', async t => {
 test('port allocator', async t => {
   const { portAllocator } = t.context;
   const customPort = await E(portAllocator).allocateCustomIBCPort('test-port');
-  // @ts-expect-error FIXME in Endo
   t.is(await E(customPort).getLocalAddress(), '/ibc-port/custom-test-port');
 });
 
@@ -51,7 +47,6 @@ test('ibc connection', async t => {
 
   // allocate ICA controller port and connect to remote chain
   const icaPort = await E(portAllocator).allocateICAControllerPort();
-  // @ts-expect-error FIXME in Endo
   const icaConnection = await E(icaPort).connect(
     makeICAChannelAddress('connection-0', 'connection-0'),
   );

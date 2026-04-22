@@ -84,11 +84,9 @@ export const start = async (_zcf, privateArgs, _baggage) => {
       Fail`expecting to dequeue ${q(expectedLabel)} but saw ${q(label)}`;
     },
     listen: async () => {
-      // @ts-expect-error FIXME in Endo
       await E(boundPort).addListener(listener);
     },
     getLocalAddress: async () => {
-      // @ts-expect-error FIXME in Endo
       return E(boundPort).getLocalAddress();
     },
   });
