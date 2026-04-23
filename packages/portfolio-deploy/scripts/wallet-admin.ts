@@ -89,7 +89,9 @@ export const main = async (
     const txHistory: DeliverTxResponse[] = [];
     const tracked = harden({
       ...ssk,
-      sendBridgeAction: async (...args: Parameters<typeof ssk.sendBridgeAction>) => {
+      sendBridgeAction: async (
+        ...args: Parameters<typeof ssk.sendBridgeAction>
+      ) => {
         const tx = await ssk.sendBridgeAction(...args);
         lastTx = tx;
         txHistory.push(tx);
