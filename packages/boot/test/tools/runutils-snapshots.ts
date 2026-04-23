@@ -4,6 +4,10 @@ import { dirname, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { buildKernelBundle as rawBuildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
+import {
+  makeSwingsetTestKit,
+  type SwingsetTestKitSnapshot,
+} from '../../tools/supports.js';
 
 /**
  * Cache the kernel bundle across invocations within a single test process so
@@ -20,10 +24,6 @@ const buildKernelBundle = async () => {
   }
   return cachedKernelBundle;
 };
-import {
-  makeSwingsetTestKit,
-  type SwingsetTestKitSnapshot,
-} from '../../tools/supports.js';
 
 const SNAPSHOT_VERSION = 1;
 const SNAPSHOT_LOCK_WAIT_MS = 15 * 60_000;
