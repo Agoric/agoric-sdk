@@ -8,6 +8,37 @@ import {
 import { URLSearchParams } from 'node:url';
 import { parseArgs } from 'node:util';
 
+const usage = `Usage:
+  packages/portfolio-deploy/scripts/ymax-upgrade-run-logs.ts [options]
+
+Options:
+  --contract <ymax0|ymax1>     Contract name (default: ymax0)
+  --network <devnet|main>      Network (default: devnet)
+  --address <bech32>           Override ymaxControl address
+  --tx-hash <hash>             Use a specific tx hash instead of latest sender tx
+  --namespace <name>           Kubernetes namespace label (default: network)
+  --pod <name>                 Pod name filter (default: validator-0 on devnet)
+  --pretty                     Print a single pretty JSON object instead of NDJSON
+  --tx-limit <n>               Recent txs to inspect from sender (default: 20)
+  --window-minutes <n>         Minutes before/after tx time for log query (default: 15)
+  --raw                        Print raw Grafana JSON instead of flattened rows
+  --help                       Show this help
+`;
+
+const options = {
+  address: { type: 'string' },
+  contract: { type: 'string', default: 'ymax0' },
+  help: { type: 'boolean', default: false, short: 'h' },
+  namespace: { type: 'string' },
+  network: { type: 'string', default: 'devnet' },
+  pod: { type: 'string' },
+  pretty: { type: 'boolean', default: false },
+  raw: { type: 'boolean', default: false },
+  'tx-hash': { type: 'string' },
+  'tx-limit': { type: 'string', default: '20' },
+  'window-minutes': { type: 'string', default: '15' },
+} as const;
+
 type Network = 'devnet' | 'main';
 
 type NetworkConfig = {
@@ -57,23 +88,6 @@ type GrafanaFrame = {
   };
 };
 
-const usage = `Usage:
-  packages/portfolio-deploy/scripts/ymax-upgrade-run-logs.ts [options]
-
-Options:
-  --contract <ymax0|ymax1>     Contract name (default: ymax0)
-  --network <devnet|main>      Network (default: devnet)
-  --address <bech32>           Override ymaxControl address
-  --tx-hash <hash>             Use a specific tx hash instead of latest sender tx
-  --namespace <name>           Kubernetes namespace label (default: network)
-  --pod <name>                 Pod name filter (default: validator-0 on devnet)
-  --pretty                     Print a single pretty JSON object instead of NDJSON
-  --tx-limit <n>               Recent txs to inspect from sender (default: 20)
-  --window-minutes <n>         Minutes before/after tx time for log query (default: 15)
-  --raw                        Print raw Grafana JSON instead of flattened rows
-  --help                       Show this help
-`;
-
 const trace = (...args: unknown[]) =>
   console.error('-- ymax-upgrade-run-logs:', ...args);
 
@@ -82,20 +96,6 @@ const LOG_CONTAINER = 'log-slog';
 const GRAFANA_URL = 'https://monitor.agoric.net';
 const DATASOURCE_UID = 'P470A85C5170C7A1D';
 const PROJECT_ID = 'simulationlab';
-
-const options = {
-  address: { type: 'string' },
-  contract: { type: 'string', default: 'ymax0' },
-  help: { type: 'boolean', default: false, short: 'h' },
-  namespace: { type: 'string' },
-  network: { type: 'string', default: 'devnet' },
-  pod: { type: 'string' },
-  pretty: { type: 'boolean', default: false },
-  raw: { type: 'boolean', default: false },
-  'tx-hash': { type: 'string' },
-  'tx-limit': { type: 'string', default: '20' },
-  'window-minutes': { type: 'string', default: '15' },
-} as const;
 
 const must = <T>(specimen: T | null | undefined, detail: string): T => {
   if (specimen === null || specimen === undefined) {
@@ -121,7 +121,10 @@ const networkConfigUrl = (network: Network) =>
 const getApiAddr = async (network: Network) => {
   trace(`fetching ${network} network config`);
   const config = await fetchJson<NetworkConfig>(networkConfigUrl(network));
-  return must(config.apiAddrs?.[0], `missing apiAddrs in ${network} network-config`);
+  return must(
+    config.apiAddrs?.[0],
+    `missing apiAddrs in ${network} network-config`,
+  );
 };
 
 const txHeight = (tx: Pick<ChainTx, 'height'>) => {
