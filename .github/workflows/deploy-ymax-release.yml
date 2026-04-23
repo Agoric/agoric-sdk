@@ -46,16 +46,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      need_bundle_build: ${{ steps.plan.outputs.need_bundle_build }}
+      need_pre_upgrade: ${{ steps.plan.outputs.need_pre_upgrade }}
+      need_upgrade: ${{ steps.plan.outputs.need_upgrade }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Plan deploy work
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: deploy
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+          YMAX1_PLANNER: ${{ inputs.ymax1Planner }}
+        run: node .github/scripts/plan-ymax-release.mjs
+
   build-bundle:
-    if: inputs.target == 'ymax0-devnet'
+    needs: plan
+    if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
     uses: ./.github/workflows/build-bundles.yml
     with:
       package: portfolio-deploy
       branch: ${{ inputs.branch }}
 
   pre-upgrade:
-    needs: [build-bundle]
-    if: ${{ inputs.target != 'ymax0-devnet' || needs.build-bundle.result == 'success' }}
+    needs: [plan, build-bundle]
+    if: |
+      needs.plan.outputs.need_pre_upgrade == 'true' &&
+      (inputs.target != 'ymax0-devnet' || contains(fromJSON('["success","skipped"]'), needs.build-bundle.result))
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
@@ -75,7 +102,7 @@ jobs:
         run: yarn build
 
       - name: Download bundle artifact
-        if: inputs.target == 'ymax0-devnet'
+        if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
         uses: actions/download-artifact@v4
         with:
           name: ${{ needs.build-bundle.outputs.artifact-name }}
@@ -97,7 +124,12 @@ jobs:
             --branch "$BRANCH"
 
   upgrade:
-    needs: pre-upgrade
+    needs: [plan, pre-upgrade]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.need_upgrade == 'true' &&
+      contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
