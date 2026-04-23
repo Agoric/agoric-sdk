@@ -11,8 +11,9 @@ import { buildKernelBundle as rawBuildKernelBundle } from '@agoric/swingset-vat/
  * per-call state that makes repeated bundling non-deterministic; caching
  * prevents that from invalidating a just-written snapshot fingerprint.
  */
-let cachedKernelBundle: Awaited<ReturnType<typeof rawBuildKernelBundle>> | null =
-  null;
+let cachedKernelBundle: Awaited<
+  ReturnType<typeof rawBuildKernelBundle>
+> | null = null;
 const buildKernelBundle = async () => {
   if (!cachedKernelBundle) {
     cachedKernelBundle = await rawBuildKernelBundle();
