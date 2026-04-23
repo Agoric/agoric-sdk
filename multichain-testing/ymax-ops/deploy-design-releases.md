@@ -1,4 +1,4 @@
-# YMax Deployment CI Design: Release-Centric Variant
+# YMax Deployment CI Design
 
 ## Overview
 
@@ -13,8 +13,6 @@ The core idea:
 - partial progress is preserved by checking the release first and skipping completed steps
 - common logic is factored into JS/TS CLIs, not YAML
 
-This is an alternative to the artifact-only design in [deploy-design.md](/home/connolly/projects/agoric-sdk/multichain-testing/ymax-ops/deploy-design.md).
-
 ## Goals
 
 - use release assets to persist workflow state and deployment evidence across reruns
@@ -28,6 +26,7 @@ This is an alternative to the artifact-only design in [deploy-design.md](/home/c
 
 - planner stop/start
 - chunked `install-bundle`
+- reproducing the old Makefile-style `privateArgsOverrides` build path
 
 ## Design Principle
 
@@ -36,6 +35,7 @@ Minimize programming in YAML.
 The workflows should be thin:
 
 - collect `workflow_dispatch` inputs
+- run a cheap planning step before any expensive build
 - select environments
 - hand control to typed JS/TS entrypoints
 - enforce approval boundaries
@@ -57,6 +57,22 @@ Where one CLI needs to invoke another command:
 
 That keeps the deployment logic testable and reviewable outside GitHub Actions syntax.
 
+The current implementation uses a small standalone planner script for the
+earliest skip/no-op decisions:
+
+- `.github/scripts/plan-ymax-release.mjs`
+- it runs before `yarn install` or `yarn build`
+- it duplicates the release-asset naming and validation rules from
+  `ymax-deploy-target.ts` so it does not depend on building `agoric-sdk`
+
+Note on `privateArgsOverrides`:
+
+- this design does not preserve the old Makefile behavior of building
+  `privateArgsOverrides` via a standalone pre-upgrade generation step
+- instead, overrides are created only as part of upgrade creation
+- for all three targets, the default is `{}` unless the workflow input
+  provides explicit JSON
+
 ## Release Model
 
 Each deployment lineage gets a tag and a GitHub release.
@@ -71,6 +87,9 @@ Release contents:
   - `ymax0-main-install.json`
   - `ymax0-main-upgrade.json`
   - `ymax1-main-upgrade.json`
+- upgrade slog assets:
+  - `TARGET-upgrade-logs.ndjson`
+  - `TARGET-upgrade-logs.norm.txt`
 
 ## CLI Structure
 
@@ -83,8 +102,11 @@ Suggested commands:
   - confirm appearance in `:bundles`
   - resolve block height and block time for the install record
 - `ymax-upgrade.ts`
-  - run upgrade via `ymax-admin`
-  - collect future block proof after upgrade
+  - run upgrade via `wallet-admin.ts`
+  - recover the tx result from the client account if `upgrade()` throws after
+    broadcast
+  - collect post-upgrade health-block proof after upgrade
+  - write the machine-readable result to a file
 - `ymax-deploy-target.ts`
   - orchestrate one target end to end
   - skip completed steps based on release assets
@@ -110,6 +132,7 @@ Each workflow receives:
 - `releaseTag`
 
 The workflow creates the tag and release if they do not already exist.
+The created release is a prerelease, not the repository "latest release".
 
 The `ymax0-main` and `ymax1-main` workflows do not create fresh releases. They consume the existing release and add new records to it.
 
@@ -147,6 +170,9 @@ Default tag name rule:
 - optional `privateArgsOverrides` JSON string
 - `branch`
   Required only when `target == "ymax0-devnet"`
+- `bundleId`
+  Used by the reusable-workflow path when `build-bundles.yml` has already built
+  `bundle-ymax0.json`
 - `ymax1Planner`
   Allowed values:
   - `up`
@@ -163,6 +189,7 @@ Workflow file:
 Trigger:
 
 - `workflow_dispatch`
+- or `workflow_call` from `build-bundles.yml`
 
 Input constraints:
 
@@ -170,6 +197,17 @@ Input constraints:
 - `branch` is required
 
 ### Step A1: Resolve Release
+
+Before any build or deploy job:
+
+- run `.github/scripts/plan-ymax-release.mjs`
+- use release assets plus workflow inputs to decide whether the run needs:
+  - bundle build
+  - pre-upgrade
+  - upgrade
+- fail early if prerequisite release state is invalid
+- skip the expensive jobs entirely when the release already proves they are
+  complete
 
 - run `ymax-deploy-target.ts` to:
   - use the provided `releaseTag`
@@ -190,6 +228,7 @@ Otherwise:
 
 - have the workflow call the reusable bundle-build job for `portfolio-deploy`
 - download the resulting bundle artifact into the checkout
+- pass through the emitted `bundleId`
 - have `ymax-deploy-target.ts` validate that local bundle and upload it as a release asset
 
 Required checks:
@@ -207,15 +246,14 @@ If the release already has `ymax0-devnet-install.json`:
   - `contract == "ymax0"`
   - `network == "devnet"`
   - `chainId == "agoricdev-25"`
-  - `bundleId` matches `bundle-ymax0.json`
   - `confirmedInBundles == true`
 - skip install
 
 Otherwise:
 
 - have `ymax-deploy-target.ts`:
-  - download `bundle-ymax0.json` from the release
-  - call `install-bundle.ts` with the local bundle path
+  - use the local workflow-provided bundle path for `ymax0-devnet`
+  - call `install-bundle.ts` with that local bundle path
 
 `install-bundle.ts`:
 
@@ -247,28 +285,7 @@ Use `@agoric/client-utils` for block polling and block metadata:
 - use that RPC client’s `block(height)` method to fetch the specific block header for the install or upgrade height
 - encode block time with `toISOString()`
 
-### Step A4: Generate `privateArgsOverrides.json`
-
-If the workflow input provides `privateArgsOverrides`:
-
-- write it to `privateArgsOverrides.json`
-
-Otherwise:
-
-- have `ymax-deploy-target.ts` invoke:
-  - `multichain-testing/scripts/ymax-admin.ts packages/portfolio-deploy/src/ymax-overrides.ts privateArgsOverrides.json`
-
-Then have `ymax-deploy-target.ts`:
-
-- compute an `xxhash64` content hash of `privateArgsOverrides.json`
-- upload it as:
-  - `TARGET-privateArgsOverrides-<xxhash64>.json`
-
-The upgrade record should include:
-
-- `privateArgsOverridesPath`
-
-### Step A5: Upgrade on Devnet
+### Step A4: Upgrade on Devnet
 
 If the release already has `ymax0-devnet-upgrade.json`:
 
@@ -278,19 +295,36 @@ If the release already has `ymax0-devnet-upgrade.json`:
   - `contract == "ymax0"`
   - `network == "devnet"`
   - `chainId == "agoricdev-25"`
-  - `bundleId` matches `bundle-ymax0.json`
   - the post-upgrade proof is present
 - skip upgrade
 
 Otherwise:
 
-- have `ymax-deploy-target.ts` call `ymax-upgrade.ts`, which:
+- have `ymax-deploy-target.ts` create the active target's
+  `privateArgsOverrides` file as a byproduct of upgrade creation:
+  - if the workflow input provides `privateArgsOverrides`, use it
+  - otherwise generate default `{}` overrides
+  - canonicalize the JSON and compute `sha256`, truncated to 12 hex chars
+  - upload:
+    - `TARGET-privateArgsOverrides-<sha256[:12]>.json`
+- then have `ymax-deploy-target.ts` call `wallet-admin.ts` on
+  `packages/portfolio-deploy/src/ymax-upgrade.ts`, which:
   - uses `YMAX_CONTROL_MNEMONIC` for `ymax0-devnet`
-  - records the upgrade result
-  - collects one or more future blocks as proof
+  - writes the machine-readable result to a file in `packages/portfolio-deploy/dist/`
+  - collects 3 post-upgrade health blocks as proof
+  - may recover the tx hash and height from the client-side account state if the
+    higher-level `upgrade()` await fails after broadcast
 
 Then have `ymax-deploy-target.ts`:
 
+- query upgrade slogs for the run
+- upload:
+  - `ymax0-devnet-upgrade-logs.ndjson`
+  - `ymax0-devnet-upgrade-logs.norm.txt`
+- parse the `CCtrl` slog lines to match:
+  - contract
+  - bundle id
+- extract the resulting `incarnationNumber`
 - write `ymax0-devnet-upgrade.json`
 - upload it as a release asset
 
@@ -304,20 +338,27 @@ Then have `ymax-deploy-target.ts`:
 - `upgradeTxHash`
 - `upgradeBlockHeight`
 - `upgradeBlockTime`
+- `incarnationNumber`
 - `privateArgsOverridesPath`
-- `futureBlocks`
+- `healthBlocks`
 
-Each `futureBlocks` entry records:
+Each `healthBlocks` entry records:
 
 - `height`
 - `hash`
 - `time`
 
-Collect `futureBlocks` from the same Tendermint RPC client:
+Collect `healthBlocks` from the same Tendermint RPC client:
 
-- fetch each future block by height with `block(height)`
+- fetch each subsequent block by height with `block(height)`
 - record `header.height`, `header.time`, and the block ID hash
-- collect 3 future blocks
+- collect 3 health blocks
+
+If the operator wants to change `privateArgsOverrides` after an upgrade record
+already exists:
+
+- do not overwrite the existing upgrade record automatically
+- remove or rename `TARGET-upgrade.json` first, then rerun
 
 ## Workflow B: `ymax0-main`
 
@@ -345,7 +386,6 @@ The release must already contain:
 
 Validation rules:
 
-- `ymax0-devnet-install.json.bundleId == "b1-" + bundle-ymax0.json.endoZipBase64Sha512`
 - `ymax0-devnet-upgrade.json.bundleId == "b1-" + bundle-ymax0.json.endoZipBase64Sha512`
 - `ymax0-devnet-install.json.confirmedInBundles == true`
 
@@ -369,14 +409,13 @@ If the release already has `ymax0-main-install.json`:
   - `contract == "ymax0"`
   - `network == "main"`
   - `chainId == "agoric-3"`
-  - `bundleId` matches `bundle-ymax0.json`
   - `confirmedInBundles == true`
 - skip install
 
 Otherwise:
 
-- have `ymax-deploy-target.ts` download `bundle-ymax0.json` from the release
-- run the same `install-bundle.ts` against mainnet with the local bundle path
+- have `ymax-deploy-target.ts` use `bundle-ymax0.json` from the release
+- run the same `install-bundle.ts` against mainnet with a local scratch copy
 - have `ymax-deploy-target.ts` write and upload `ymax0-main-install.json`
 
 `ymax0-main-install.json` records:
@@ -391,11 +430,7 @@ Otherwise:
 - `installBlockTime`
 - `confirmedInBundles`
 
-### Step B3: Generate `privateArgsOverrides.json`
-
-Same behavior as Workflow A.
-
-### Step B4: Upgrade on Mainnet
+### Step B3: Upgrade on Mainnet
 
 If the release already has `ymax0-main-upgrade.json`:
 
@@ -405,13 +440,17 @@ If the release already has `ymax0-main-upgrade.json`:
   - `contract == "ymax0"`
   - `network == "main"`
   - `chainId == "agoric-3"`
-  - `bundleId` matches `bundle-ymax0.json`
   - post-upgrade block proof is present
 - skip upgrade
 
 Otherwise:
 
-- run the same `ymax-upgrade.ts` against `ymax0-main`
+- create the active target's overrides asset as a byproduct of upgrade creation
+- run the same `wallet-admin.ts ... ymax-upgrade.ts` flow against `ymax0-main`
+- query and upload:
+  - `ymax0-main-upgrade-logs.ndjson`
+  - `ymax0-main-upgrade-logs.norm.txt`
+- extract `incarnationNumber` from the matching `CCtrl` slog lines
 - have `ymax-deploy-target.ts` write and upload `ymax0-main-upgrade.json`
 
 `ymax0-main-upgrade.json` records:
@@ -424,8 +463,9 @@ Otherwise:
 - `upgradeTxHash`
 - `upgradeBlockHeight`
 - `upgradeBlockTime`
+- `incarnationNumber`
 - `privateArgsOverridesPath`
-- `futureBlocks`
+- `healthBlocks`
 
 The approval gate applies before upgrade.
 
@@ -458,7 +498,6 @@ The release must already contain:
 
 Validation rules:
 
-- `ymax0-main-install.json.bundleId == "b1-" + bundle-ymax0.json.endoZipBase64Sha512`
 - `ymax0-main-upgrade.json.bundleId == "b1-" + bundle-ymax0.json.endoZipBase64Sha512`
 - `ymax0-main-install.json.confirmedInBundles == true`
 
@@ -468,7 +507,7 @@ If any of those checks fail:
 
 ### Approval and Authorization
 
-`ymax1-main` must meet the same process requirement as the other design:
+`ymax1-main` must meet the same process requirement as the rest of this design:
 
 - the workflow is started by one operator
 - all inputs are supplied up front
@@ -504,16 +543,15 @@ This workflow does not stop or restart the planner.
 - download the required release assets
 - validate the preconditions above
 
-### Step C2: Generate `privateArgsOverrides.json`
+### Step C2: Upgrade on Mainnet for `ymax1`
 
-For `ymax1-main`, the workflow must provide `privateArgsOverrides` explicitly.
+For `ymax1-main`, `privateArgsOverrides` behaves the same way as the other
+targets:
 
-- `ymax-deploy-target.ts` does not use `ymax-overrides.ts` for `ymax1-main`
-- if `privateArgsOverrides` is absent, fail before upgrade
-- otherwise write the provided JSON, hash it, and upload it as the
-  `privateArgsOverridesPath` asset
-
-### Step C3: Upgrade on Mainnet for `ymax1`
+- if the workflow input provides it, use that JSON
+- otherwise default to `{}`
+- write the resulting JSON, hash it, and upload it as the
+  `privateArgsOverridesPath` asset as part of upgrade creation
 
 If the release already has `ymax1-main-upgrade.json`:
 
@@ -523,7 +561,6 @@ If the release already has `ymax1-main-upgrade.json`:
   - `contract == "ymax1"`
   - `network == "main"`
   - `chainId == "agoric-3"`
-  - `bundleId` matches `bundle-ymax0.json`
   - post-upgrade block proof is present
 - skip upgrade
 
@@ -531,7 +568,11 @@ Otherwise:
 
 - require the protected-environment approval gate
 - require that `ymax1-planner` is already down
-- run the same `ymax-upgrade.ts` against `ymax1-main`
+- run the same `wallet-admin.ts ... ymax-upgrade.ts` flow against `ymax1-main`
+- query and upload:
+  - `ymax1-main-upgrade-logs.ndjson`
+  - `ymax1-main-upgrade-logs.norm.txt`
+- extract `incarnationNumber` from the matching `CCtrl` slog lines
 - have `ymax-deploy-target.ts` write and upload `ymax1-main-upgrade.json`
 
 `ymax1-main-upgrade.json` records:
@@ -544,8 +585,9 @@ Otherwise:
 - `upgradeTxHash`
 - `upgradeBlockHeight`
 - `upgradeBlockTime`
+- `incarnationNumber`
 - `privateArgsOverridesPath`
-- `futureBlocks`
+- `healthBlocks`
 
 ## DRY Structure
 
@@ -554,7 +596,7 @@ The workflows should be composed from reusable CLIs first, reusable jobs second.
 Preferred layering:
 
 1. shared library code
-2. thin JS/TS CLIs
+2. thin JS/TS CLIs and planner scripts
 3. thin GitHub workflow jobs
 
 Suggested shared library responsibilities:
@@ -574,6 +616,7 @@ Suggested CLI responsibilities:
 Suggested workflow responsibilities:
 
 - dispatch inputs
+- run the cheap planner
 - environment binding
 - approvals
 - one or a few CLI invocations
@@ -605,6 +648,16 @@ Reruns must preserve progress.
 Rule:
 
 - if the release already contains the asset proving a step completed, do not redo that step
+- if the cheap planner can prove that before any build, skip the whole expensive
+  job
+
+Current implementation detail:
+
+- existing install assets are treated as authoritative once present
+- existing upgrade assets are treated as authoritative once present
+- current reruns do not re-prove install assets against local bundle bytes
+- if an operator wants to change the lineage state, remove or rename the
+  corresponding release asset first
 
 Step-to-asset mapping:
 
@@ -619,6 +672,9 @@ Step-to-asset mapping:
 - mainnet upgrade:
   - `ymax0-main-upgrade.json`
   - `ymax1-main-upgrade.json`
+- slog evidence for each upgrade:
+  - `TARGET-upgrade-logs.ndjson`
+  - `TARGET-upgrade-logs.norm.txt`
 
 If a step asset exists but fails validation:
 
@@ -640,25 +696,36 @@ Examples:
   - rerun skips build
 - install succeeded, upgrade failed:
   - rerun skips build and install
+- an earlier run already wrote valid install or upgrade assets:
+  - the planner skips `yarn install`, `yarn build`, and the corresponding deploy
+    job entirely
 
 ## Implementation Notes
 
-- `build-bundles.yml` remains the coarse build primitive
+- `build-bundles.yml` remains the coarse build primitive and the current manual
+  entrypoint for `ymax0-devnet`
+- `deploy-ymax-release.yml` is both a reusable workflow and a manual entrypoint
 - `packages/portfolio-deploy/scripts/install-bundle.ts` remains the install primitive
-- `multichain-testing/scripts/ymax-admin.ts` plus `packages/portfolio-deploy/src/ymax-upgrade.ts` remain the upgrade primitive
-- `packages/portfolio-deploy/src/ymax-overrides.ts` remains the default overrides generator
+- `packages/portfolio-deploy/scripts/wallet-admin.ts` plus `packages/portfolio-deploy/src/ymax-upgrade.ts` remain the upgrade primitive
 - `ymax-deploy-target.ts` should absorb release management, build reuse, skip/resume logic, and release-asset validation
-- `ymax-upgrade.ts` should also collect the future-block proof after upgrade
+- `.github/scripts/plan-ymax-release.mjs` performs pre-build release checks
+  without depending on a repo build
+- `ymax-upgrade.ts` should also collect the health-block proof after upgrade and
+  write its result file
+- `ymax-deploy-target.ts` now also fetches upgrade slogs, uploads the raw and
+  normalized forms, and derives `incarnationNumber` from matching `CCtrl`
+  entries
 - new release-management and proof-collection behavior should live in JS/TS modules, not shell-heavy workflow steps
 - when one CLI invokes another tool or script, prefer `execa`
 - use `gh` for release and release-asset operations, invoked from JS/TS via `execa`
 - use GitHub Actions `concurrency`, keyed by `releaseTag`, to prevent two runs from mutating the same release at once
 - record block time from RPC block lookup by height and encode it with `toISOString()`
-- the block-proof schema is 3 future blocks, each with `height`, `hash`, and `time`
+- the health-block schema is 3 blocks after the upgrade block, each with
+  `height`, `hash`, and `time`
 - `ymax0-main` and `ymax1-main` append records to the same release created for the lineage
 - the bundle is stored as a release asset for lineage state, and `ymax0-devnet`
   currently also uses a workflow artifact as the handoff from the branch-specific
-  build job into the deploy job
+  build job into the reusable deploy workflow
 - the workflow manages release assets, not the release body
 - any human-readable release body summary is maintained manually
-- `ymax1-main` keeps the same process requirements as the other design: prior `ymax0-main`, protected-environment approval, and planner-down before upgrade
+- `ymax1-main` keeps the same process requirements described above: prior `ymax0-main`, protected-environment approval, and planner-down before upgrade
