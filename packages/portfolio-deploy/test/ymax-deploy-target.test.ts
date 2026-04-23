@@ -457,13 +457,17 @@ const fakeYmaxUpgrade = (
     return undefined;
   }
   const event = makeExecEvent(normalize, cmd, args, opts as ExecOpts);
-  const resultText = `${JSON.stringify({
-    upgradeTxHash: payload.upgradeTxHash,
-    upgradeBlockHeight: payload.upgradeBlockHeight,
-    upgradeBlockTime: payload.upgradeBlockTime,
-    bundleId: payload.bundleId,
-    healthBlocks: payload.healthBlocks,
-  }, null, 2)}\n`;
+  const resultText = `${JSON.stringify(
+    {
+      upgradeTxHash: payload.upgradeTxHash,
+      upgradeBlockHeight: payload.upgradeBlockHeight,
+      upgradeBlockTime: payload.upgradeBlockTime,
+      bundleId: payload.bundleId,
+      healthBlocks: payload.healthBlocks,
+    },
+    null,
+    2,
+  )}\n`;
   const resultFile = args[args.indexOf('--result-file') + 1];
   files.set(resultFile, resultText);
   event.stdout = '';
@@ -630,23 +634,17 @@ const clearTrace = ({
   stdoutChunks.length = 0;
 };
 
-const assertNoBundleRedownload = (
-  t: typeof test extends { (...args: infer _A): infer _R } ? any : never,
-  execs: Array<Record<string, unknown>>,
-) => {
-  t.false(
-    execs.some(
-      event =>
-        typeof event.command === 'string' &&
-        event.command.includes('gh release download') &&
-        event.command.includes('--pattern bundle-ymax0.json'),
-    ),
-  );
-};
-
 test('ymax0-devnet phase-upgrade does not require local bundle', async t => {
-  const { agoricSdk, files, releases, stdout, env, execs, normalize, execFile: baseExecFile } =
-    makeScenario();
+  const {
+    agoricSdk,
+    files,
+    releases,
+    stdout,
+    env,
+    execs,
+    normalize,
+    execFile: baseExecFile,
+  } = makeScenario();
   const execFile = async (
     cmd: string,
     args: string[],
@@ -808,7 +806,7 @@ test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t =>
 test.serial('deploy ymax0-main', async t => {
   const ctx = makeScenario();
   const releaseTag = happyPathReleaseTag;
-  const { execFile: baseExecFile, files } = ctx;
+  const { execFile: baseExecFile } = ctx;
   const execFile = async (
     cmd: string,
     args: string[],
@@ -826,11 +824,18 @@ test.serial('deploy ymax0-main', async t => {
     if (result) {
       return result;
     }
-    const logResult = fakeUpgradeLogs(ctx.execs, ctx.normalize, cmd, args, opts, {
-      contract: 'ymax0',
-      bundleId: 'b1-abc123',
-      incarnationNumber: examples.upgrade.main0.incarnationNumber,
-    });
+    const logResult = fakeUpgradeLogs(
+      ctx.execs,
+      ctx.normalize,
+      cmd,
+      args,
+      opts,
+      {
+        contract: 'ymax0',
+        bundleId: 'b1-abc123',
+        incarnationNumber: examples.upgrade.main0.incarnationNumber,
+      },
+    );
     if (logResult) {
       return logResult;
     }
@@ -1140,17 +1145,21 @@ test.serial('deploy ymax1-main', async t => {
     if (cmd.endsWith('/wallet-admin.ts')) {
       if (args[0] === './packages/portfolio-deploy/src/ymax-upgrade.ts') {
         const event = makeExecEvent(ctx.normalize, cmd, args, opts);
-        const resultText = `${JSON.stringify({
-          upgradeTxHash: 'UPMAIN1',
-          upgradeBlockHeight: 81,
-          upgradeBlockTime: '2026-04-16T12:10:00.000Z',
-          bundleId: 'b1-abc123',
-          healthBlocks: [
-            { height: 82, hash: 'h82', time: 't82' },
-            { height: 83, hash: 'h83', time: 't83' },
-            { height: 84, hash: 'h84', time: 't84' },
-          ],
-        }, null, 2)}\n`;
+        const resultText = `${JSON.stringify(
+          {
+            upgradeTxHash: 'UPMAIN1',
+            upgradeBlockHeight: 81,
+            upgradeBlockTime: '2026-04-16T12:10:00.000Z',
+            bundleId: 'b1-abc123',
+            healthBlocks: [
+              { height: 82, hash: 'h82', time: 't82' },
+              { height: 83, hash: 'h83', time: 't83' },
+              { height: 84, hash: 'h84', time: 't84' },
+            ],
+          },
+          null,
+          2,
+        )}\n`;
         const resultFile = args[args.indexOf('--result-file') + 1];
         files.set(resultFile, resultText);
         event.stdout = '';
@@ -1159,11 +1168,18 @@ test.serial('deploy ymax1-main', async t => {
       }
       throw Error(`unexpected wallet-admin args: ${args.join(' ')}`);
     }
-    const logResult = fakeUpgradeLogs(ctx.execs, ctx.normalize, cmd, args, opts, {
-      contract: 'ymax1',
-      bundleId: 'b1-abc123',
-      incarnationNumber: 60,
-    });
+    const logResult = fakeUpgradeLogs(
+      ctx.execs,
+      ctx.normalize,
+      cmd,
+      args,
+      opts,
+      {
+        contract: 'ymax1',
+        bundleId: 'b1-abc123',
+        incarnationNumber: 60,
+      },
+    );
     if (logResult) {
       return logResult;
     }
@@ -1280,7 +1296,7 @@ test('ymax1-main upgrade requires ymax0-main upgrade evidence', async t => {
 });
 
 test('phase-upgrade materializes default overrides', async t => {
-  const { agoricSdk, files, releases, stdoutChunks, stdout, normalize, ...other } =
+  const { agoricSdk, files, releases, stdout, normalize, ...other } =
     makeScenario();
   const { env, execs, execFile: baseExecFile } = other;
 
