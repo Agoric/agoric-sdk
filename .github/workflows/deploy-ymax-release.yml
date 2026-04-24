@@ -29,45 +29,6 @@ on:
       ymax1Planner:
         required: false
         type: string
-  workflow_dispatch:
-    inputs:
-      target:
-        description: Deployment target
-        required: true
-        type: choice
-        options:
-          - ymax0-devnet
-          - ymax0-main
-          - ymax1-main
-      releaseTag:
-        description: Release tag to create or use
-        required: true
-        type: string
-        default: v0.3.YYMM-betaN
-      branch:
-        description: Branch to build for ymax0-devnet
-        required: false
-        type: string
-        default: master
-      artifactName:
-        description: Prebuilt artifact name for ymax0-devnet bundle
-        required: false
-        type: string
-      bundleId:
-        description: Prebuilt bundle id for ymax0-devnet
-        required: false
-        type: string
-      privateArgsOverrides:
-        description: Optional JSON string to use as privateArgsOverrides
-        required: false
-        type: string
-      ymax1Planner:
-        description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades). Operator is responsible for actually stopping the planner.'
-        required: false
-        type: choice
-        options:
-          - up
-          - down
 
 permissions:
   actions: read

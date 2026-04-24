@@ -1,0 +1,98 @@
+name: YMax Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target
+        required: true
+        type: choice
+        options:
+          - ymax0-devnet
+          - ymax0-main
+          - ymax1-main
+      releaseTag:
+        description: Release tag to create or use
+        required: true
+        type: string
+        default: v0.3.YYMM-betaN
+      branch:
+        description: Branch to build for ymax0-devnet
+        required: false
+        type: string
+        default: master
+      privateArgsOverrides:
+        description: Optional JSON string to use as privateArgsOverrides
+        required: false
+        type: string
+      ymax1Planner:
+        description: Planner attestation for ymax1-main
+        required: false
+        type: choice
+        options:
+          - up
+          - down
+
+jobs:
+  validate-inputs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require deploy inputs
+        env:
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          test -n "$TARGET" || {
+            echo 'target input is required' >&2
+            exit 1
+          }
+          test -n "$RELEASE_TAG" || {
+            echo 'releaseTag input is required' >&2
+            exit 1
+          }
+
+  plan:
+    needs: [validate-inputs]
+    runs-on: ubuntu-latest
+    outputs:
+      need_bundle_build: ${{ steps.plan.outputs.need_bundle_build }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Plan deploy work
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: bundle-only
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: node .github/scripts/plan-ymax-release.mjs
+
+  build-devnet-bundle:
+    needs: [plan]
+    if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
+    uses: ./.github/workflows/build-bundles.yml
+    with:
+      package: portfolio-deploy
+      branch: ${{ inputs.branch }}
+
+  deploy:
+    needs: [plan, build-devnet-bundle]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      contains(fromJSON('["success","skipped"]'), needs.build-devnet-bundle.result)
+    uses: ./.github/workflows/deploy-ymax-release.yml
+    secrets: inherit
+    with:
+      target: ${{ inputs.target }}
+      releaseTag: ${{ inputs.releaseTag }}
+      branch: ${{ inputs.branch }}
+      artifactName: ${{ inputs.target == 'ymax0-devnet' && needs.build-devnet-bundle.outputs.artifact-name || '' }}
+      bundleId: ${{ needs.build-devnet-bundle.outputs.bundle-id }}
+      privateArgsOverrides: ${{ inputs.privateArgsOverrides }}
+      ymax1Planner: ${{ inputs.ymax1Planner }}
