@@ -8,7 +8,7 @@
     "@agoric/client-utils": "dev",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
-    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.6.5#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.5-2fd6fa3c1a.patch",
+    "@agoric/synthetic-chain": "^0.7.1",
     "@agoric/zoe": "dev",
     "@endo/errors": "^1.2.13",
     "@endo/init": "^1.1.12",

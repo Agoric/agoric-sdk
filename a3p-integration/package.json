@@ -17,7 +17,7 @@
     "doctor": "yarn synthetic-chain doctor"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.6.5#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.5-2fd6fa3c1a.patch"
+    "@agoric/synthetic-chain": "^0.7.1"
   },
   "devDependencies": {
     "eslint": "^8.57.1",

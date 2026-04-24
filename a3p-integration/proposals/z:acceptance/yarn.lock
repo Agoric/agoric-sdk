@@ -358,39 +358,21 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/synthetic-chain@npm:0.6.5":
-  version: 0.6.5
-  resolution: "@agoric/synthetic-chain@npm:0.6.5"
+"@agoric/synthetic-chain@npm:^0.7.1":
+  version: 0.7.1
+  resolution: "@agoric/synthetic-chain@npm:0.7.1"
   dependencies:
     "@agoric/client-utils": "npm:0.1.1-dev-c393dc4.0.c393dc4"
     "@endo/zip": "npm:^1.0.11"
-    better-sqlite3: "npm:^12.2.0"
-    chalk: "npm:^5.6.0"
+    better-sqlite3: "npm:^12.6.2"
+    chalk: "npm:^5.6.2"
     cosmjs-types: "npm:^0.10.1"
-    execa: "npm:^9.6.0"
-    glob: "npm:^11.0.3"
+    execa: "npm:^9.6.1"
+    glob: "npm:^13.0.6"
     tmp: "npm:0.2.5"
   bin:
-    synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/ec7f467577a0301c1ef82d52cd70a71ffaca30199e2a37e4463f3d3cffadacc951e8ca30bf72cddbb27ca3359f7299581f98f9b9c37e01b5199541894cd33e96
-  languageName: node
-  linkType: hard
-
-"@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.6.5#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.5-2fd6fa3c1a.patch":
-  version: 0.6.5
-  resolution: "@agoric/synthetic-chain@patch:@agoric/synthetic-chain@npm%3A0.6.5#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.5-2fd6fa3c1a.patch::version=0.6.5&hash=380c67"
-  dependencies:
-    "@agoric/client-utils": "npm:0.1.1-dev-c393dc4.0.c393dc4"
-    "@endo/zip": "npm:^1.0.11"
-    better-sqlite3: "npm:^12.2.0"
-    chalk: "npm:^5.6.0"
-    cosmjs-types: "npm:^0.10.1"
-    execa: "npm:^9.6.0"
-    glob: "npm:^11.0.3"
-    tmp: "npm:0.2.5"
-  bin:
-    synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/18a4f86cb82c76e75b52ccab69a34accadc2c5c5aeb367bfa55de9f6e3b30616cbe2308330764d1870f295321f2c7e575e32ac7776e28b97ca098615be483be5
+    synthetic-chain: dist/cli/cli.mjs
+  checksum: 10c0/933743040cb5f2b4c3b37163e801bebecdac6459effcf8f669672a92747cbdc567a1bb84368559eac39e35e9cff61cb251514b3fa61822c8bcdb69ee73a030a2
   languageName: node
   linkType: hard
 
@@ -1917,14 +1899,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^12.2.0":
-  version: 12.8.0
-  resolution: "better-sqlite3@npm:12.8.0"
+"better-sqlite3@npm:^12.6.2":
+  version: 12.9.0
+  resolution: "better-sqlite3@npm:12.9.0"
   dependencies:
     bindings: "npm:^1.5.0"
     node-gyp: "npm:latest"
     prebuild-install: "npm:^7.1.1"
-  checksum: 10c0/b31da8a8a9bd0dd77d44c11fbfc72141a18b7267aed1ee5bedd481397415ace18eb54140706f82aca8149e4102fb2a543f833761e80f9668470ed53d03958515
+  checksum: 10c0/69ee0d908fa6a5c8643872aa664686ed02476e88cb654fe37f0fef5845081430d4280c82f5d370e169c2abe7a14a85d9bc718ea720058abf4f7cd9a8dbe227f0
   languageName: node
   linkType: hard
 
@@ -2133,7 +2115,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^5.6.0":
+"chalk@npm:^5.6.2":
   version: 5.6.2
   resolution: "chalk@npm:5.6.2"
   checksum: 10c0/99a4b0f0e7991796b1e7e3f52dceb9137cae2a9dfc8fc0784a550dc4c558e15ab32ed70b14b21b52beb2679b4892b41a0aa44249bcb996f01e125d58477c6976
@@ -2924,7 +2906,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"execa@npm:^9.6.0":
+"execa@npm:^9.6.1":
   version: 9.6.1
   resolution: "execa@npm:9.6.1"
   dependencies:
@@ -3113,7 +3095,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"foreground-child@npm:^3.1.0, foreground-child@npm:^3.3.1":
+"foreground-child@npm:^3.1.0":
   version: 3.3.1
   resolution: "foreground-child@npm:3.3.1"
   dependencies:
@@ -3302,19 +3284,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^11.0.3":
-  version: 11.1.0
-  resolution: "glob@npm:11.1.0"
+"glob@npm:^13.0.6":
+  version: 13.0.6
+  resolution: "glob@npm:13.0.6"
   dependencies:
-    foreground-child: "npm:^3.3.1"
-    jackspeak: "npm:^4.1.1"
-    minimatch: "npm:^10.1.1"
-    minipass: "npm:^7.1.2"
-    package-json-from-dist: "npm:^1.0.0"
-    path-scurry: "npm:^2.0.0"
-  bin:
-    glob: dist/esm/bin.mjs
-  checksum: 10c0/1ceae07f23e316a6fa74581d9a74be6e8c2e590d2f7205034dd5c0435c53f5f7b712c2be00c3b65bf0a49294a1c6f4b98cd84c7637e29453b5aa13b79f1763a2
+    minimatch: "npm:^10.2.2"
+    minipass: "npm:^7.1.3"
+    path-scurry: "npm:^2.0.2"
+  checksum: 10c0/269c236f11a9b50357fe7a8c6aadac667e01deb5242b19c84975628f05f4438d8ee1354bb62c5d6c10f37fd59911b54d7799730633a2786660d8c69f1d18120a
   languageName: node
   linkType: hard
 
@@ -3984,15 +3961,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jackspeak@npm:^4.1.1":
-  version: 4.1.1
-  resolution: "jackspeak@npm:4.1.1"
-  dependencies:
-    "@isaacs/cliui": "npm:^8.0.2"
-  checksum: 10c0/84ec4f8e21d6514db24737d9caf65361511f75e5e424980eebca4199f400874f45e562ac20fa8aeb1dd20ca2f3f81f0788b6e9c3e64d216a5794fd6f30e0e042
-  languageName: node
-  linkType: hard
-
 "jessie.js@npm:^0.3.4":
   version: 0.3.4
   resolution: "jessie.js@npm:0.3.4"
@@ -4336,7 +4304,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimatch@npm:^10.1.1":
+"minimatch@npm:^10.2.2":
   version: 10.2.5
   resolution: "minimatch@npm:10.2.5"
   dependencies:
@@ -4441,6 +4409,13 @@ __metadata:
   version: 7.1.2
   resolution: "minipass@npm:7.1.2"
   checksum: 10c0/b0fd20bb9fb56e5fa9a8bfac539e8915ae07430a619e4b86ff71f5fc757ef3924b23b2c4230393af1eda647ed3d75739e4e0acb250a6b1eb277cf7f8fe449557
+  languageName: node
+  linkType: hard
+
+"minipass@npm:^7.1.3":
+  version: 7.1.3
+  resolution: "minipass@npm:7.1.3"
+  checksum: 10c0/539da88daca16533211ea5a9ee98dc62ff5742f531f54640dd34429e621955e91cc280a91a776026264b7f9f6735947629f920944e9c1558369e8bf22eb33fbb
   languageName: node
   linkType: hard
 
@@ -4902,13 +4877,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"path-scurry@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "path-scurry@npm:2.0.0"
+"path-scurry@npm:^2.0.2":
+  version: 2.0.2
+  resolution: "path-scurry@npm:2.0.2"
   dependencies:
     lru-cache: "npm:^11.0.0"
     minipass: "npm:^7.1.2"
-  checksum: 10c0/3da4adedaa8e7ef8d6dc4f35a0ff8f05a9b4d8365f2b28047752b62d4c1ad73eec21e37b1579ef2d075920157856a3b52ae8309c480a6f1a8bbe06ff8e52b33c
+  checksum: 10c0/b35ad37cf6557a87fd057121ce2be7695380c9138d93e87ae928609da259ea0a170fac6f3ef1eb3ece8a068e8b7f2f3adf5bb2374cf4d4a57fe484954fcc9482
   languageName: node
   linkType: hard
 
@@ -5238,7 +5213,7 @@ __metadata:
     "@agoric/inter-protocol": "npm:dev"
     "@agoric/internal": "npm:dev"
     "@agoric/store": "npm:dev"
-    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.6.5#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.5-2fd6fa3c1a.patch"
+    "@agoric/synthetic-chain": "npm:^0.7.1"
     "@agoric/zoe": "npm:dev"
     "@cosmjs/stargate": "npm:^0.36.0"
     "@cosmjs/tendermint-rpc": "npm:^0.36.0"
