@@ -16,6 +16,12 @@ const evalContractBundle = (bundle, additionalEndowments = {}) => {
     // See https://github.com/Agoric/agoric-sdk/issues/9515
     assert: globalThis.assert,
     VatData: globalThis.VatData,
+    // SES 2.0 removed Float{16,32,64}Array from child compartments
+    // (NaN side-channel). Re-endow so contract code compiled against
+    // SES 1.x keeps working.
+    Float16Array: globalThis.Float16Array,
+    Float32Array: globalThis.Float32Array,
+    Float64Array: globalThis.Float64Array,
   };
 
   const fullEndowments = Object.create(null, {
