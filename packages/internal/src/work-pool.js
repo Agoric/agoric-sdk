@@ -66,7 +66,11 @@ const makePromiseKit = () => {
  * @param {AsyncIterable<T> | Iterable<T>} source
  * @param {undefined
  *   | [capacity: number][0]
- *   | { capacity?: number; mode?: M }} config
+ *   | {
+ *       capacity?: number;
+ *       mode?: M;
+ *       rate?: { intervalMs: number; limit: number };
+ *     }} config
  * @param {(
  *   input: Awaited<T>,
  *   index?: number,
@@ -85,12 +89,29 @@ export const makeWorkPool = (
 ) => {
   // Validate arguments.
   if (isPrimitive(config)) config = { capacity: config, mode: undefined };
-  const { capacity = 10, mode = 'all' } = config;
+
+  const { capacity = 10, mode = 'all', rate } = config;
+  /** @type {number[]} */
+  const startTimes = [];
+
   if (!(capacity === Infinity || (isInteger(capacity) && capacity > 0))) {
     throw RangeError('capacity must be a positive integer');
   }
+
   if (mode !== 'all' && mode !== 'allSettled') {
     throw RangeError('mode must be "all" or "allSettled"');
+  }
+
+  if (rate !== undefined) {
+    if (!isInteger(rate.limit) || rate.limit <= 0)
+      throw RangeError(
+        `rate.limit must be a positive integer, not ${rate.limit}`,
+      );
+
+    if (!(rate.intervalMs && Number.isFinite(rate.intervalMs)))
+      throw RangeError(
+        `rate.intervalMs must be a positive finite number, not ${rate.intervalMs}`,
+      );
   }
 
   // Normalize source into an `inputs` iterator.
@@ -102,6 +123,33 @@ export const makeWorkPool = (
   let inputsExhausted = false;
   let terminated = false;
   const doneKit = /** @type {PromiseKit<boolean>} */ (makePromiseKit());
+
+  // Sliding-window rate limiter: reserve a start slot, sleeping until the
+  // window allows it. Reservations are recorded synchronously (before any
+  // await) so concurrent callers each claim a distinct future slot.
+  const reserveRateSlot = async () => {
+    await null;
+
+    if (!rate || terminated) return;
+    const now = Date.now();
+    const { intervalMs, limit } = rate;
+
+    let effectiveStart = now;
+
+    if (startTimes.length >= limit) {
+      const earliestAllowed =
+        startTimes[startTimes.length - limit] + intervalMs;
+      if (earliestAllowed > effectiveStart) effectiveStart = earliestAllowed;
+    }
+
+    startTimes.push(effectiveStart);
+
+    if (startTimes.length > limit)
+      startTimes.splice(0, startTimes.length - limit);
+
+    const waitMs = effectiveStart - now;
+    if (waitMs) await new Promise(resolve => setTimeout(resolve, waitMs));
+  };
 
   // Concurrently consume up to `capacity` inputs, pushing the result of
   // processing each into a linked chain of promises before consuming more.
@@ -141,6 +189,10 @@ export const makeWorkPool = (
             void takeMoreInput();
             return;
           }
+
+          // Throttle: wait for a rate-limit slot before invoking processInput.
+          await reserveRateSlot();
+          if (terminated) return;
 
           // Process the input, propagating errors if mode is not "allSettled".
           await null;

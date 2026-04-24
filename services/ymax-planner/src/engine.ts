@@ -801,34 +801,43 @@ export const startEngine = async (
   console.warn(`Found ${pendingTxKeys.length} pending transactions`);
 
   const initialPendingTxData: PendingTxRecord[] = [];
-  await makeWorkPool(pendingTxKeys, undefined, async (txId: TxId) => {
-    const path = `${pendingTxPathPrefix}.${txId}`;
-    await null;
-    let streamCellJson;
-    let data;
-    try {
-      const metaResponse = await readStorageMeta(query.vstorage, path, 'data', {
-        retries: 4,
-      });
-      streamCellJson = metaResponse.result.value;
-      const streamCell = parseStreamCell(streamCellJson, path);
-      const marshalledData = parseStreamCellValue(streamCell, -1, path);
-      data = marshaller.fromCapData(marshalledData);
-      if (
-        data?.status !== TxStatus.PENDING ||
-        !RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)
-      )
-        return;
-      mustMatch(harden(data), PublishedTxShape, path);
-      initialPendingTxData.push({
-        blockHeight: BigInt(streamCell.blockHeight),
-        tx: { txId, ...data },
-      });
-    } catch (err) {
-      const errLabel = `🚨 Failed to read old pending tx ${path}`;
-      console.error(errLabel, data || streamCellJson, err);
-    }
-  }).done;
+  const capacity = 10;
+
+  await makeWorkPool(
+    pendingTxKeys,
+    { capacity, rate: { intervalMs: 1000, limit: capacity } },
+    async (txId: TxId) => {
+      const path = `${pendingTxPathPrefix}.${txId}`;
+      await null;
+      let streamCellJson;
+      let data;
+      try {
+        const metaResponse = await readStorageMeta(
+          query.vstorage,
+          path,
+          'data',
+          { retries: 4 },
+        );
+        streamCellJson = metaResponse.result.value;
+        const streamCell = parseStreamCell(streamCellJson, path);
+        const marshalledData = parseStreamCellValue(streamCell, -1, path);
+        data = marshaller.fromCapData(marshalledData);
+        if (
+          data?.status !== TxStatus.PENDING ||
+          !RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)
+        )
+          return;
+        mustMatch(harden(data), PublishedTxShape, path);
+        initialPendingTxData.push({
+          blockHeight: BigInt(streamCell.blockHeight),
+          tx: { txId, ...data },
+        });
+      } catch (err) {
+        const errLabel = `🚨 Failed to read old pending tx ${path}`;
+        console.error(errLabel, data || streamCellJson, err);
+      }
+    },
+  ).done;
 
   if (initialPendingTxData.length > 0) {
     // Process initial transactions in lookback mode upon planner startup
@@ -931,4 +940,5 @@ export const startEngine = async (
   }
   Fail`⚠️ rpc.subscribeAll finished`;
 };
+
 harden(startEngine);
