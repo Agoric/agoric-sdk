@@ -51,6 +51,27 @@ jobs:
             exit 1
           }
 
+  resolve-target:
+    needs: [validate-inputs]
+    runs-on: ubuntu-latest
+    outputs:
+      environment_name: ${{ steps.resolve.outputs.environment_name }}
+    steps:
+      - name: Resolve target metadata
+        id: resolve
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          case "$TARGET" in
+            ymax0-devnet) echo 'environment_name=ymax0-devnet' >> "$GITHUB_OUTPUT" ;;
+            ymax0-main) echo 'environment_name=ymax0-mainnet' >> "$GITHUB_OUTPUT" ;;
+            ymax1-main) echo 'environment_name=ymax1-mainnet' >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "unsupported target: $TARGET" >&2
+              exit 1
+              ;;
+          esac
+
   plan:
     needs: [validate-inputs]
     runs-on: ubuntu-latest
@@ -86,9 +107,10 @@ jobs:
       branch: ${{ inputs.branch }}
 
   deploy:
-    needs: [plan, build-devnet-bundle]
+    needs: [resolve-target, plan, build-devnet-bundle]
     if: |
       always() &&
+      needs.resolve-target.result == 'success' &&
       needs.plan.result == 'success' &&
       contains(fromJSON('["success","skipped"]'), needs.build-devnet-bundle.result)
     uses: ./.github/workflows/deploy-ymax-release.yml
@@ -97,6 +119,7 @@ jobs:
       target: ${{ inputs.target }}
       releaseTag: ${{ inputs.releaseTag }}
       branch: ${{ inputs.branch }}
+      environmentName: ${{ needs.resolve-target.outputs.environment_name }}
       artifactName: ${{ inputs.target == 'ymax0-devnet' && needs.build-devnet-bundle.outputs.artifact-name || '' }}
       bundleId: ${{ needs.build-devnet-bundle.outputs.bundle-id || needs.plan.outputs.bundle_id }}
       needBundleBuild: ${{ needs.plan.outputs.need_bundle_build }}

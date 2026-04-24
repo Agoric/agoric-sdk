@@ -1,0 +1,19 @@
+name: Setup Agoric SDK Build
+description: Prepare a runner to execute agoric-sdk JS build and deployment steps.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Set up yarn and install dependencies
+      shell: bash
+      run: |
+        bash scripts/ensure-corepack-yarn.sh
+        yarn install --immutable
+
+    - name: Build project
+      shell: bash
+      run: yarn build

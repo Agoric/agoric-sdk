@@ -17,6 +17,9 @@ on:
         required: false
         type: string
         default: master
+      environmentName:
+        required: true
+        type: string
       artifactName:
         required: false
         type: string
@@ -52,21 +55,11 @@ jobs:
     if: inputs.needPreUpgrade == 'true'
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+      name: ${{ inputs.environmentName }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Set up yarn and install dependencies
-        run: |
-          bash scripts/ensure-corepack-yarn.sh
-          yarn install --immutable
-
-      - name: Build client-utils etc.
-        run: yarn build
+      - uses: ./.github/actions/setup-agoric-sdk-build
 
       - name: Require devnet artifact name
         if: inputs.target == 'ymax0-devnet' && inputs.needBundleBuild == 'true'
@@ -108,21 +101,11 @@ jobs:
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
     runs-on: ubuntu-latest
     environment:
-      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+      name: ${{ inputs.environmentName }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Set up yarn and install dependencies
-        run: |
-          bash scripts/ensure-corepack-yarn.sh
-          yarn install --immutable
-
-      - name: Build client-utils etc.
-        run: yarn build
+      - uses: ./.github/actions/setup-agoric-sdk-build
 
       - name: Require ymax1 planner down
         if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
