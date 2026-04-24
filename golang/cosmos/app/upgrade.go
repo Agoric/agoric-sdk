@@ -23,6 +23,7 @@ import (
 
 var upgradeNamesOfThisVersion = []string{
 	"agoric-upgrade-23",
+	"agoric-upgrade-23-1",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -58,6 +59,8 @@ func isPrimaryUpgradeName(name string) bool {
 	switch name {
 	case validUpgradeName("agoric-upgrade-23"):
 		return true
+	case validUpgradeName("agoric-upgrade-23-1"):
+		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
 	}
