@@ -55,7 +55,10 @@ jobs:
     needs: [validate-inputs]
     runs-on: ubuntu-latest
     outputs:
+      bundle_id: ${{ steps.plan.outputs.bundle_id }}
       need_bundle_build: ${{ steps.plan.outputs.need_bundle_build }}
+      need_pre_upgrade: ${{ steps.plan.outputs.need_pre_upgrade }}
+      need_upgrade: ${{ steps.plan.outputs.need_upgrade }}
     steps:
       - uses: actions/checkout@v4
 
@@ -67,9 +70,11 @@ jobs:
         id: plan
         env:
           GH_TOKEN: ${{ github.token }}
-          MODE: bundle-only
+          MODE: deploy
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
+          YMAX1_PLANNER: ${{ inputs.ymax1Planner }}
         run: node .github/scripts/plan-ymax-release.mjs
 
   build-devnet-bundle:
@@ -93,6 +98,9 @@ jobs:
       releaseTag: ${{ inputs.releaseTag }}
       branch: ${{ inputs.branch }}
       artifactName: ${{ inputs.target == 'ymax0-devnet' && needs.build-devnet-bundle.outputs.artifact-name || '' }}
-      bundleId: ${{ needs.build-devnet-bundle.outputs.bundle-id }}
+      bundleId: ${{ needs.build-devnet-bundle.outputs.bundle-id || needs.plan.outputs.bundle_id }}
+      needBundleBuild: ${{ needs.plan.outputs.need_bundle_build }}
+      needPreUpgrade: ${{ needs.plan.outputs.need_pre_upgrade }}
+      needUpgrade: ${{ needs.plan.outputs.need_upgrade }}
       privateArgsOverrides: ${{ inputs.privateArgsOverrides }}
       ymax1Planner: ${{ inputs.ymax1Planner }}
