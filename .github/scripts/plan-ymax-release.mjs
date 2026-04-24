@@ -8,86 +8,18 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
 import { appendFileSync } from 'node:fs';
-
-const targetInfo = {
-  'ymax0-devnet': {
-    contract: 'ymax0',
-    network: 'devnet',
-    chainId: 'agoricdev-25',
-  },
-  'ymax0-main': {
-    contract: 'ymax0',
-    network: 'main',
-    chainId: 'agoric-3',
-  },
-  'ymax1-main': {
-    contract: 'ymax1',
-    network: 'main',
-    chainId: 'agoric-3',
-  },
-};
-
-const prerequisiteTargets = {
-  'ymax0-devnet': [],
-  'ymax0-main': ['ymax0-devnet'],
-  'ymax1-main': ['ymax0-main'],
-};
+import {
+  bundleIdFromBundleText,
+  expectedOverridesAssetName,
+  prerequisiteTargets,
+  targetInfo,
+  validateInstallRecord,
+  validateUpgradeRecord,
+} from '../../packages/portfolio-deploy/src/ymax-release-policy.mjs';
 
 const toOutputName = name =>
   name.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-
-const canonicalizePrivateArgs = specimen => {
-  const overrides = specimen ? JSON.parse(specimen) : {};
-  return `${JSON.stringify(overrides, null, 2)}\n`;
-};
-
-const expectedOverridesAssetName = (target, specimen) => {
-  const text = canonicalizePrivateArgs(specimen);
-  const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
-  return `${target}-privateArgsOverrides-${digest}.json`;
-};
-
-const bundleIdFromBundleText = text => {
-  const bundle = JSON.parse(text);
-  if (!bundle.endoZipBase64Sha512) {
-    throw Error('bundle-ymax0.json missing endoZipBase64Sha512');
-  }
-  return `b1-${bundle.endoZipBase64Sha512}`;
-};
-
-const validateBaseRecord = (target, bundleId, record) => {
-  const expected = {
-    target,
-    ...targetInfo[target],
-    bundleId,
-  };
-  for (const [key, value] of Object.entries(expected)) {
-    if (record[key] !== value) {
-      throw Error(`expected ${key}=${value}, got ${String(record[key])}`);
-    }
-  }
-};
-
-const validateInstallRecord = (target, bundleId, record) => {
-  validateBaseRecord(target, bundleId, record);
-  if (record.confirmedInBundles !== true) {
-    throw Error('confirmedInBundles must be true');
-  }
-};
-
-const validateUpgradeRecord = (target, bundleId, record) => {
-  validateBaseRecord(target, bundleId, record);
-  if (
-    typeof record.incarnationNumber !== 'number' ||
-    !Array.isArray(record.healthBlocks) ||
-    record.healthBlocks.length !== 3 ||
-    !record.privateArgsOverridesPath
-  ) {
-    throw Error('invalid upgrade record');
-  }
-};
 
 const makeReleaseReader = ({ gh, releaseTag }) => {
   const release = (() => {

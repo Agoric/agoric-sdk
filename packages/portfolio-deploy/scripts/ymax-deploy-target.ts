@@ -6,12 +6,20 @@ import '@endo/init/debug.js';
 
 import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
 import { execa } from 'execa';
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import {
+  bundleIdFromBundleRecord,
+  canonicalizePrivateArgs,
+  expectedOverridesAssetName,
+  targetInfo,
+  validateBaseRecord,
+  validateInstallRecord,
+  validateUpgradeRecord,
+} from '../src/ymax-release-policy.mjs';
 
 const usage = `Usage:
   ymax-deploy-target.ts phase-pre-upgrade --target <target> --tag <tag> [--branch <branch>]
@@ -64,23 +72,7 @@ type StepTools = {
   release: ReturnType<typeof makeReleaseRW>;
 };
 
-const targetInfo = {
-  'ymax0-devnet': {
-    contract: 'ymax0',
-    network: 'devnet',
-    chainId: 'agoricdev-25',
-  },
-  'ymax0-main': {
-    contract: 'ymax0',
-    network: 'main',
-    chainId: 'agoric-3',
-  },
-  'ymax1-main': {
-    contract: 'ymax1',
-    network: 'main',
-    chainId: 'agoric-3',
-  },
-} as const satisfies Record<
+const typedTargetInfo = targetInfo as Record<
   Target,
   { contract: 'ymax0' | 'ymax1'; network: 'devnet' | 'main'; chainId: string }
 >;
@@ -125,7 +117,7 @@ const getTargetInfo = (target: string) => {
   if (!(target in targetInfo)) {
     throw Error(`unsupported target: ${target}`);
   }
-  return targetInfo[target as Target];
+  return typedTargetInfo[target as Target];
 };
 
 const writeJson = (
@@ -136,15 +128,19 @@ const writeJson = (
 const bundleIdFromBundle = async (
   bundleFile: Pick<AssetRd, 'readJSON'> | FileRd,
 ) => {
-  const bundle: {
-    endoZipBase64Sha512: string;
-  } = await bundleFile.readJSON();
-  if (!bundle.endoZipBase64Sha512) {
-    throw Error(
-      `bundle file missing endoZipBase64Sha512: ${bundleFile.toString()}`,
-    );
+  try {
+    return bundleIdFromBundleRecord(await bundleFile.readJSON());
+  } catch (problem) {
+    if (
+      problem instanceof Error &&
+      problem.message === 'bundle-ymax0.json missing endoZipBase64Sha512'
+    ) {
+      throw Error(
+        `bundle file missing endoZipBase64Sha512: ${bundleFile.toString()}`,
+      );
+    }
+    throw problem;
   }
-  return `b1-${bundle.endoZipBase64Sha512}`;
 };
 
 const makeReleaseRW = (
@@ -270,10 +266,8 @@ const createOverrides = async (
     release: ReturnType<typeof makeReleaseRW>;
   },
 ) => {
-  const overrides = privateArgs ? JSON.parse(privateArgs) : {};
-  const text = `${JSON.stringify(overrides, null, 2)}\n`;
-  const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
-  const assetName = `${target}-privateArgsOverrides-${digest}.json`;
+  const text = canonicalizePrivateArgs(privateArgs);
+  const assetName = expectedOverridesAssetName(target, privateArgs);
   const assetWr = distDir.join(assetName);
   await assetWr.writeText(text);
   const asset = release.join(assetName);
@@ -281,16 +275,6 @@ const createOverrides = async (
     await asset.copyFrom(assetWr.readOnly());
   }
   return { assetName, file: assetWr.readOnly() };
-};
-
-const expectedOverridesAssetName = (
-  target: string,
-  privateArgs: string | undefined,
-) => {
-  const overrides = privateArgs ? JSON.parse(privateArgs) : {};
-  const text = `${JSON.stringify(overrides, null, 2)}\n`;
-  const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
-  return `${target}-privateArgsOverrides-${digest}.json`;
 };
 
 const makeInstallRecord = async (
@@ -312,7 +296,7 @@ const makeInstallRecord = async (
     target,
     releaseTag,
     commit,
-    ...targetInfo[target],
+    ...typedTargetInfo[target],
     bundleId,
     installTxHash: result.txHash,
     installBlockHeight: result.blockHeight,
@@ -340,56 +324,10 @@ const makeUpgradeRecord = (
   }
   return {
     target,
-    ...targetInfo[target],
+    ...typedTargetInfo[target],
     privateArgsOverridesPath: privateArgsPath,
     ...result,
   };
-};
-
-const validateBaseRecord = (
-  target: Target,
-  bundleId: string,
-  record: BaseRecord,
-) => {
-  const expected = {
-    target,
-    ...targetInfo[target],
-    bundleId,
-  };
-  for (const [key, value] of Object.entries(expected)) {
-    if (record[key as keyof typeof expected] !== value) {
-      throw Error(
-        `expected ${key}=${value}, got ${String(record[key as keyof BaseRecord])}`,
-      );
-    }
-  }
-};
-
-const validateInstallRecord = (
-  target: Target,
-  bundleId: string,
-  record: InstallRecord,
-) => {
-  validateBaseRecord(target, bundleId, record);
-  if (record.confirmedInBundles !== true) {
-    throw Error('confirmedInBundles must be true');
-  }
-};
-
-const validateUpgradeRecord = (
-  target: Target,
-  bundleId: string,
-  record: UpgradeRecord,
-) => {
-  validateBaseRecord(target, bundleId, record);
-  if (
-    typeof record.incarnationNumber !== 'number' ||
-    !Array.isArray(record.healthBlocks) ||
-    record.healthBlocks.length !== 3 ||
-    !record.privateArgsOverridesPath
-  ) {
-    throw Error('invalid upgrade record');
-  }
 };
 
 type DecodedUpgradeLog = {
