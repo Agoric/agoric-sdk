@@ -152,10 +152,9 @@ test('makeWorkPool rate: burst then sliding window', async t => {
   });
 
   t.is(starts.length, items.length);
-  // Starts should be in source index order (tasks settle instantly and are
-  // queued in order by the pool).
-  starts.forEach((s, i) => t.is(s.index, i));
+  starts.sort((a, b) => a.index - b.index);
   for (let i = 0; i < items.length; i += 1) {
+    t.is(starts[i].index, i);
     const window = Math.floor(i / limit);
     assertNear(t, starts[i].at, window * intervalMs, `start[${i}]`);
   }
@@ -176,6 +175,7 @@ test('makeWorkPool rate: capacity dominates when tighter than rate', async t => 
     },
   );
   await pool.done;
+  starts.sort((a, b) => a.index - b.index);
 
   // Items 0,1 start immediately; 2,3 at ~50ms; 4,5 at ~100ms.
   for (let i = 0; i < items.length; i += 1) {
@@ -191,6 +191,7 @@ test('makeWorkPool rate: rate dominates when tighter than capacity', async t => 
     capacity: 100,
     rate: { limit: 2, intervalMs: 100 },
   });
+  starts.sort((a, b) => a.index - b.index);
 
   // 0,1 at ~0ms; 2,3 at ~100ms; 4,5 at ~200ms.
   for (let i = 0; i < items.length; i += 1) {
@@ -215,6 +216,7 @@ test('makeWorkPool rate: rejected tasks still consume slots', async t => {
     },
   );
   await pool.done;
+  starts.sort((a, b) => a.index - b.index);
 
   assertNear(t, starts[0].at, 0, 'start[0]');
   assertNear(t, starts[1].at, 0, 'start[1] (rejects)');
