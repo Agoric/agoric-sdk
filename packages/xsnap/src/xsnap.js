@@ -9,7 +9,6 @@ import { Fail, q } from '@endo/errors';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { makePromiseKit, racePromises } from '@endo/promise-kit';
-import { forever } from '@agoric/internal';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
 
 /**
@@ -325,7 +324,8 @@ export async function xsnap(options) {
    * @returns {Promise<RunResult<Uint8Array>>}
    */
   async function runToIdle() {
-    for await (const _ of forever) {
+    await null;
+    for (;;) {
       const iteration = await messagesFromXsnap.next(undefined);
       if (snapshotLoader) {
         const { cleanup } = snapshotLoader;
