@@ -108,7 +108,7 @@ test('pack and install xsnap', async t => {
       XSNAP_BINARY_MANIFEST_SHA256: manifestHash,
       XSNAP_CACHE_DIR: join(tmp, 'cache'),
     },
-  })`npm install`;
+  })`npm run postinstall`;
   const installedBin = join(
     tmp,
     `package/xsnap-native/xsnap/build/bin/${buildPlatform}/release/xsnap-worker`,
