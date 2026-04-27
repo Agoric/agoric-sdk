@@ -1,8 +1,8 @@
 import { WebSocketProvider, Log, toQuantity, isError } from 'ethers';
-import type { Filter, TransactionResponse } from 'ethers';
+import type { Filter, TransactionReceipt, TransactionResponse } from 'ethers';
 import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
-import { getBlockTimeMs } from './support.ts';
+import { getBlockTimeMs, prepareAbortController } from './support.ts';
 
 export type WatcherTimeoutOptions = {
   timeoutMs?: number;
@@ -73,10 +73,6 @@ export const makeEvmRpc = (
       () => provider.getTransactionReceipt(txHash),
       setTimeout,
     ),
-  waitForTransaction: (
-    ...args: Parameters<WebSocketProvider['waitForTransaction']>
-  ) =>
-    withRateLimitRetry(() => provider.waitForTransaction(...args), setTimeout),
   send: (...args: Parameters<WebSocketProvider['send']>) =>
     withRateLimitRetry(() => provider.send(...args), setTimeout),
   // Subscription pass-throughs (no retry needed)
@@ -547,4 +543,68 @@ export const waitForBlock = async (provider: EvmRpc, targetBlock: number) => {
     };
     void provider.on('block', listener);
   });
+};
+
+export const DEFAULT_CONFIRMATION_POLL_INTERVAL_MS = 5_000;
+
+export type WaitForConfirmationsOpts = {
+  provider: EvmRpc;
+  txHash: string;
+  minConfirmations: number;
+  /**
+   * If set, the wait between polls is extended to the estimated time until the
+   * remaining confirmations have accrued, avoiding pointless RPC round-trips.
+   */
+  meanBlockTimeMs?: number;
+  pollIntervalMs?: number;
+  signal?: AbortSignal;
+  setTimeout?: typeof globalThis.setTimeout;
+  log?: (...args: unknown[]) => void;
+};
+
+export const waitForConfirmations = async ({
+  provider,
+  txHash,
+  minConfirmations,
+  meanBlockTimeMs,
+  pollIntervalMs = DEFAULT_CONFIRMATION_POLL_INTERVAL_MS,
+  signal,
+  setTimeout = globalThis.setTimeout,
+  log = () => {},
+}: WaitForConfirmationsOpts): Promise<TransactionReceipt | null> => {
+  const makeAbortController = prepareAbortController({ setTimeout });
+  const racingSignals = signal ? [signal] : undefined;
+  await null;
+  let everSeenReceipt = false;
+  while (true) {
+    if (signal?.aborted) return null;
+
+    let sleepMs = pollIntervalMs;
+    const receipt = await provider.getTransactionReceipt(txHash);
+    if (receipt) {
+      everSeenReceipt = true;
+      const currentBlock = await provider.getBlockNumber();
+      const confirmationCount = currentBlock - receipt.blockNumber + 1;
+      if (confirmationCount >= minConfirmations) return receipt;
+      log(
+        `Waiting for more confirmations: txHash=${txHash} observed=${confirmationCount} of ${minConfirmations} currentBlock=${currentBlock} receiptBlock=${receipt.blockNumber}`,
+      );
+      if (meanBlockTimeMs) {
+        const confirmationsStillNeeded = minConfirmations - confirmationCount;
+        sleepMs = Math.max(
+          pollIntervalMs,
+          (confirmationsStillNeeded + 1) * meanBlockTimeMs,
+        );
+      }
+    } else if (everSeenReceipt) {
+      log(`Transaction ${txHash} receipt disappeared - likely lost in a reorg`);
+      return null;
+    }
+
+    await new Promise(resolve => {
+      const timeoutSignal = makeAbortController(sleepMs, racingSignals).signal;
+      if (timeoutSignal.aborted) return resolve(undefined);
+      timeoutSignal.addEventListener('abort', () => resolve(undefined));
+    });
+  }
 };

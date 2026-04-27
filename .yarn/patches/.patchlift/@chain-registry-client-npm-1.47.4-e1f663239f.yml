@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:78ee61dcb8bd95e43c9c85150e6c23d51e0f667c87cb2f9f37cfdd92ac23888e
+package:
+  name: "@chain-registry/client"
+  version: 1.47.4
+upstream:
+  repo: cosmology-tech/chain-registry
+  issue:
+  pr:
+status: localonly
+notes:
+createdAt: 2026-04-16T17:44:51.590Z
+updatedAt: 2026-04-16T17:44:51.590Z

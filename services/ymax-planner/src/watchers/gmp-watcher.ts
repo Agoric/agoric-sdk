@@ -234,14 +234,14 @@ export const watchGmp = ({
          * from our own wallet. Spurious executions from unauthorized parties are already
          * filtered out by the sourceAddress check above.
          */
-        const result = await handleTxRevert(
+        const result = await handleTxRevert({
           receipt,
           txHash,
-          `txId=${txId}`,
+          identifier: `txId=${txId}`,
           chainId,
-          provider,
-          log,
-        );
+          signal,
+          powers: { provider, log, setTimeout },
+        });
         if (result) {
           return finish(result);
         }
@@ -401,14 +401,14 @@ export const lookBackGmp = async ({
       log(`Found matching failed transaction`);
       const receipt = await provider.getTransactionReceipt(failedTx.hash);
       if (receipt) {
-        const result = await handleTxRevert(
+        const result = await handleTxRevert({
           receipt,
-          failedTx.hash,
-          `txId=${txId}`,
+          txHash: failedTx.hash,
+          identifier: `txId=${txId}`,
           chainId,
-          provider,
-          log,
-        );
+          signal: sharedSignal,
+          powers: { provider, log, setTimeout },
+        });
         if (result) {
           deleteTxBlockLowerBound(kvStore, txId, MULTICALL_STATUS_EVENT);
           deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);

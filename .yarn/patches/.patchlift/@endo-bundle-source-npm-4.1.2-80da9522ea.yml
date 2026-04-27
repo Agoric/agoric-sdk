@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:7a5304a83305b4eed807a80b445fb732b17f37ad365c531f12bf1204dfabbde7
+package:
+  name: "@endo/bundle-source"
+  version: 4.1.2
+upstream:
+  repo: endojs/endo
+  issue: null
+  pr: null
+status: localonly
+notes: null
+createdAt: 2026-04-16T05:02:14.698Z
+updatedAt: 2026-04-16T05:02:14.698Z

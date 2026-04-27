@@ -301,7 +301,8 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
   const avgBlockTimeMs = 2500;
 
   const latestBlock = 1_450_031;
-  mockProvider.getBlockNumber = async () => latestBlock;
+  const blockNumberBuffer = 5000;
+  mockProvider.getBlockNumber = async () => latestBlock + blockNumberBuffer;
 
   mockProvider.getBlock = async (blockNumber: number) => {
     const blocksAgo = latestBlock - blockNumber;
@@ -320,7 +321,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
         // Emit the correct block number so waitForBlock resolves deterministically
         on: (event: any, listener: Function) => {
           if (event === 'block') {
-            queueMicrotask(() => listener(latestBlock + 1));
+            queueMicrotask(() => listener(latestBlock + blockNumberBuffer + 1));
           }
         },
         // trace_filter uses provider.send()

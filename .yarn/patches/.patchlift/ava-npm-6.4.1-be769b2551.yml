@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:2ddd8eead3473264edeb035f4a5b6264ed2764d5c7c11b609d58cf8c4ed77695
+package:
+  name: ava
+  version: 6.4.1
+upstream:
+  repo: avajs/ava
+  issue:
+  pr:
+status: localonly
+notes:
+createdAt: 2026-04-16T01:56:58.074Z
+updatedAt: 2026-04-16T05:12:10.456Z

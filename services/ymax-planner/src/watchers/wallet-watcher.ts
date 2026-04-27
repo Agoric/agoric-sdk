@@ -296,14 +296,14 @@ export const watchSmartWalletTx = ({
           return finish({ settled: true, txHash, success: true });
         }
 
-        const result = await handleTxRevert(
+        const result = await handleTxRevert({
           receipt,
           txHash,
-          `expectedAddr=${expectedAddr}`,
+          identifier: `expectedAddr=${expectedAddr}`,
           chainId,
-          provider,
-          log,
-        );
+          signal,
+          powers: { provider, log, setTimeout },
+        });
         if (result) {
           return finish(result);
         }
@@ -483,14 +483,14 @@ export const lookBackSmartWalletTx = async ({
       log(`Found matching failed transaction`);
       const receipt = await provider.getTransactionReceipt(failedTx.hash);
       if (receipt) {
-        const result = await handleTxRevert(
+        const result = await handleTxRevert({
           receipt,
-          failedTx.hash,
-          `expectedAddr=${expectedAddr}`,
+          txHash: failedTx.hash,
+          identifier: `expectedAddr=${expectedAddr}`,
           chainId,
-          provider,
-          log,
-        );
+          signal: sharedSignal,
+          powers: { provider, log, setTimeout },
+        });
         if (result) {
           deleteTxBlockLowerBound(kvStore, txId);
           deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);

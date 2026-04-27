@@ -795,6 +795,7 @@ const FAILED_TX_SOURCE =
   'cosmos:agoric-3:agoric18d47rcfj0g4r7j7yvypm44kqczl4jrft6up233p9zv95p8ut49mqufghzh';
 const FAILED_TX_TIME_MS = 1700000000; // 2023-11-14T22:13:20Z
 const FAILED_TX_LATEST_BLOCK = 1_450_031;
+const BLOCK_NUMBER_BUFFER = 5000;
 
 /** Hex-encode an ASCII string (e.g. 'tx553' → '7478353533'). */
 const asciiToHex = (s: string) =>
@@ -855,7 +856,11 @@ const makeFailedTxTestContext = ({
   const opts = createMockPendingTxOpts();
   const mockProvider = opts.evmProviders[chainId] as any;
 
-  mockProvider.getBlockNumber = async () => FAILED_TX_LATEST_BLOCK;
+  // Bumped above receipt.blockNumber so the polling waitForConfirmations
+  // helper observes enough confirmations on any chain (Arbitrum needs ~2000;
+  // 5000 is a safe buffer).
+  mockProvider.getBlockNumber = async () =>
+    FAILED_TX_LATEST_BLOCK + BLOCK_NUMBER_BUFFER;
   mockProvider.getBlock = async (blockNumber: number) => {
     const blocksAgo = FAILED_TX_LATEST_BLOCK - blockNumber;
     const ts = FAILED_TX_TIME_MS - blocksAgo * avgBlockTimeMs;
@@ -872,7 +877,9 @@ const makeFailedTxTestContext = ({
         // Emit the correct block number so waitForBlock resolves deterministically
         on: (evt: any, listener: Function) => {
           if (evt === 'block') {
-            queueMicrotask(() => listener(FAILED_TX_LATEST_BLOCK + 1));
+            queueMicrotask(() =>
+              listener(FAILED_TX_LATEST_BLOCK + BLOCK_NUMBER_BUFFER + 1),
+            );
           }
         },
         getTransactionReceipt: async () => ({

@@ -254,13 +254,9 @@ test('watchOperationResult detects failed OperationResult event with finality pr
   // Re-fetch logs for finality check (handleOperationFailure)
   (provider as any).getLogs = async () => [mockLog];
 
-  // Override waitForTransaction for finality check
-  (provider as any).waitForTransaction = async () => ({
-    status: 1,
-    blockNumber,
-    blockHash: '0xblockhash',
-    transactionHash: txHash,
-  });
+  // waitForConfirmations polls getBlockNumber; return a block ≥ receipt +
+  // revert confirmations (up to ~2000 on Arbitrum).
+  (provider as any).getBlockNumber = async () => blockNumber + 5000;
 
   // Emit Alchemy mined-tx message after a short delay
   setTimeout(() => {
@@ -375,22 +371,20 @@ test('lookBackOperationResult finds failed OperationResult event with finality p
   );
 
   const provider = createMockProvider(latestBlock, [mockLog]);
-  (provider as any).getLogs = async (args: any) => {
-    if (
-      args.fromBlock <= blockNumber &&
-      (args.toBlock === undefined || args.toBlock >= blockNumber)
-    ) {
-      return [mockLog];
-    }
-    return [];
-  };
+  (provider as any).getLogs = async () => [mockLog];
 
-  (provider as any).waitForTransaction = async () => ({
-    status: 1,
-    blockNumber,
-    blockHash: '0xblockhash',
-    transactionHash: txHash,
-  });
+  // waitForConfirmations polls getTransactionReceipt + getBlockNumber;
+  // provide both with the failed-receipt data.
+  (provider as any).getTransactionReceipt = async (hash: string) => {
+    if (hash !== txHash) return null;
+    return {
+      status: 1,
+      blockNumber,
+      blockHash: '0xblockhash',
+      transactionHash: txHash,
+    };
+  };
+  (provider as any).getBlockNumber = async () => blockNumber + 5000;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
@@ -475,13 +469,7 @@ test('lookBackOperationResult phase 2 detects reverted tx via padded txId', asyn
     return null;
   };
 
-  // waitForTransaction for finality check
-  (provider as any).waitForTransaction = async () => ({
-    status: 0,
-    blockNumber: latestBlock,
-    blockHash: '0xblockhash',
-    transactionHash: revertTxHash,
-  });
+  (provider as any).getBlockNumber = async () => latestBlock + 5000;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));
@@ -536,13 +524,7 @@ test('watchOperationResult detects revert via Alchemy subscription (live mode)',
     return null;
   };
 
-  // waitForTransaction for finality check
-  (provider as any).waitForTransaction = async () => ({
-    status: 0,
-    blockNumber,
-    blockHash: '0xblockhash',
-    transactionHash: revertTxHash,
-  });
+  (provider as any).getBlockNumber = async () => blockNumber + 5000;
 
   const logMessages: string[] = [];
   const logger = (...args: any[]) => logMessages.push(args.join(' '));

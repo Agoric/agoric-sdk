@@ -20,6 +20,11 @@
       "source": "depot/skills",
       "sourceType": "github",
       "computedHash": "6c8de79b1be93caf2249b4a796534620363253761559ca9463a61bc46ead8d45"
+    },
+    "maintaining-dependency-patches": {
+      "source": "turadg/skills",
+      "sourceType": "github",
+      "computedHash": "e0cc047ae42fcefe938a5b248416fc09b0aef6b694d4cfcd79a8804fbee767f6"
     }
   }
 }

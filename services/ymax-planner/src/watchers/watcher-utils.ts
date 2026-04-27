@@ -4,7 +4,9 @@ import type { CaipChainId } from '@agoric/orchestration';
 import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
 import { decodeAbiParameters } from 'viem';
 import type { EvmRpc } from '../evm-scanner.ts';
+import { waitForConfirmations } from '../evm-scanner.ts';
 import {
+  getBlockTimeMs,
   getConfirmationsRequired,
   getRevertConfirmationsRequired,
 } from '../support.ts';
@@ -267,16 +269,41 @@ export const fetchReceiptWithRetry = async (
 const waitForFinalConfirmations = async (
   txHash: string,
   confirmations: number,
+  chainId: CaipChainId,
   provider: EvmRpc,
   log: (...args: unknown[]) => void,
+  setTimeout: typeof globalThis.setTimeout = globalThis.setTimeout,
+  signal?: AbortSignal,
 ): Promise<TransactionReceipt | null> => {
-  const receipt = await provider.waitForTransaction(txHash, confirmations);
+  const receipt = await waitForConfirmations({
+    provider,
+    txHash,
+    minConfirmations: confirmations,
+    meanBlockTimeMs: getBlockTimeMs(chainId),
+    setTimeout,
+    signal,
+    log,
+  });
   if (!receipt) {
     log(
       `Transaction ${txHash} not confirmed after waiting for ${confirmations} confirmations (possibly reorged out)`,
     );
   }
   return receipt;
+};
+
+export type HandleTxRevertOpts = {
+  receipt: TransactionReceipt;
+  txHash: string;
+  /** A string identifier for logging (e.g., "txId=tx1" or "expectedAddr=0x123"). */
+  identifier: string;
+  chainId: `${string}:${string}`;
+  signal?: AbortSignal;
+  powers: {
+    provider: EvmRpc;
+    log: (...args: unknown[]) => void;
+    setTimeout?: typeof globalThis.setTimeout;
+  };
 };
 
 /**
@@ -286,23 +313,19 @@ const waitForFinalConfirmations = async (
  * This implements the finality protection pattern:
  * - Success (status 1): Return immediately without confirmations
  * - Failure (status 0): Wait for confirmations to ensure failure is permanent
- *
- * @param receipt - The transaction receipt to handle
- * @param txHash - Transaction hash for logging
- * @param identifier - A string identifier for logging (e.g., "txId=tx1" or "expectedAddr=0x123")
- * @param chainId - Chain ID to determine confirmation requirements
- * @param provider - EVM RPC provider for waiting for confirmations
- * @param log - Logging function
- * @returns Object with settled flag, success status, and transaction hash
  */
-export const handleTxRevert = async (
-  receipt: TransactionReceipt,
-  txHash: string,
-  identifier: string,
-  chainId: `${string}:${string}`,
-  provider: EvmRpc,
-  log: (...args: unknown[]) => void,
-): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
+export const handleTxRevert = async ({
+  receipt,
+  txHash,
+  identifier,
+  chainId,
+  signal,
+  powers: { provider, log, setTimeout = globalThis.setTimeout },
+}: HandleTxRevertOpts): Promise<{
+  settled: true;
+  txHash: string;
+  success: boolean;
+} | null> => {
   await null;
   // TODO(https://github.com/Agoric/agoric-private/issues/783): also wait for confirmations on success cases — a reorg can flip
   // success → failure just as it can flip failure → success.
@@ -312,8 +335,11 @@ export const handleTxRevert = async (
   const confirmedReceipt = await waitForFinalConfirmations(
     txHash,
     confirmations,
+    chainId,
     provider,
     log,
+    setTimeout,
+    signal,
   );
   if (!confirmedReceipt) return null;
 
@@ -332,6 +358,22 @@ export const handleTxRevert = async (
   }
 };
 
+export type HandleOperationFailureOpts<T extends { success: boolean }> = {
+  eventLog: Log;
+  /** Filter to re-fetch the event after confirmations. */
+  logFilter: Filter;
+  parseEvent: (log: Log) => T;
+  /** A string identifier for logging. */
+  identifier: string;
+  chainId: CaipChainId;
+  signal?: AbortSignal;
+  powers: {
+    provider: EvmRpc;
+    log: (...args: unknown[]) => void;
+    setTimeout?: typeof globalThis.setTimeout;
+  };
+};
+
 /**
  * Handle event-level failure with finality protection.
  *
@@ -339,33 +381,31 @@ export const handleTxRevert = async (
  * business logic failed (e.g., OperationResult event with success=false).
  * We wait for confirmations and re-verify the event to ensure the failure
  * is permanent before reporting it.
- *
- * @param eventLog - The event log containing the failure
- * @param filter - Filter to re-fetch the event after confirmations
- * @param parseEvent - Function to parse the event and return its success status
- * @param identifier - A string identifier for logging
- * @param chainId - Chain ID to determine confirmation requirements
- * @param provider - WebSocket provider for waiting for confirmations
- * @param log - Logging function
- * @returns Object with settled flag, success status, and transaction hash, or null if reorged
  */
-export const handleOperationFailure = async <T extends { success: boolean }>(
-  eventLog: Log,
-  filter: Filter,
-  parseEvent: (log: Log) => T,
-  identifier: string,
-  chainId: CaipChainId,
-  provider: EvmRpc,
-  log: (...args: unknown[]) => void,
-): Promise<{ settled: true; txHash: string; success: boolean } | null> => {
+export const handleOperationFailure = async <T extends { success: boolean }>({
+  eventLog,
+  logFilter,
+  parseEvent,
+  identifier,
+  chainId,
+  signal,
+  powers: { provider, log, setTimeout = globalThis.setTimeout },
+}: HandleOperationFailureOpts<T>): Promise<{
+  settled: true;
+  txHash: string;
+  success: boolean;
+} | null> => {
   const txHash = eventLog.transactionHash;
 
   const confirmations = getConfirmationsRequired(chainId);
   const confirmedReceipt = await waitForFinalConfirmations(
     txHash,
     confirmations,
+    chainId,
     provider,
     log,
+    setTimeout,
+    signal,
   );
   if (!confirmedReceipt) return null;
 
@@ -373,7 +413,7 @@ export const handleOperationFailure = async <T extends { success: boolean }>(
 
   // Fetch logs to verify the failure is still present
   const logsInBlock = await provider.getLogs({
-    ...filter,
+    ...logFilter,
     fromBlock: finalBlock,
     toBlock: finalBlock,
   });

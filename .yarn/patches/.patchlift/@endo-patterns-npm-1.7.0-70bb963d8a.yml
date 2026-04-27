@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:9282d22a2e2d2d7115c9c28ffe1cef31ef8e9c0e27d9946ad9780bf133b1aa2a
+package:
+  name: "@endo/patterns"
+  version: 1.7.0
+upstream:
+  repo: endojs/endo
+  issue: null
+  pr: null
+status: merged
+notes: null
+createdAt: 2026-04-16T05:03:02.982Z
+updatedAt: 2026-04-16T05:03:02.982Z

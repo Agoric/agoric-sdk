@@ -318,19 +318,19 @@ export const watchOperationResult = ({
           }
 
           // Event-level failure: wait for confirmations before declaring failure
-          const filter: Filter = {
+          const logFilter: Filter = {
             address: routerAddress,
             topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
           };
-          const result = await handleOperationFailure(
-            operationResultLog,
-            filter,
-            parseOperationResultLog,
-            `expectedId=${txId}`,
+          const result = await handleOperationFailure({
+            eventLog: operationResultLog,
+            logFilter,
+            parseEvent: parseOperationResultLog,
+            identifier: `expectedId=${txId}`,
             chainId,
-            provider,
-            log,
-          );
+            signal,
+            powers: { provider, log, setTimeout },
+          });
 
           if (result) {
             return finish(result);
@@ -339,14 +339,14 @@ export const watchOperationResult = ({
         }
 
         // No OperationResult event — check for transaction revert
-        const result = await handleTxRevert(
+        const result = await handleTxRevert({
           receipt,
           txHash,
-          `txId=${txId}`,
+          identifier: `txId=${txId}`,
           chainId,
-          provider,
-          log,
-        );
+          signal,
+          powers: { provider, log, setTimeout },
+        });
         if (result) {
           return finish(result);
         }
@@ -487,15 +487,15 @@ export const lookBackOperationResult = async ({
       }
 
       // Failure case: wait for confirmations before declaring failure
-      const result = await handleOperationFailure(
-        matchingEvent,
-        baseFilter,
-        parseOperationResultLog,
-        `txId=${txId}`,
+      const result = await handleOperationFailure({
+        eventLog: matchingEvent,
+        logFilter: baseFilter,
+        parseEvent: parseOperationResultLog,
+        identifier: `txId=${txId}`,
         chainId,
-        provider,
-        log,
-      );
+        signal: sharedSignal,
+        powers: { provider, log, setTimeout },
+      });
       deleteTxBlockLowerBound(kvStore, txId);
       deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);
 
@@ -522,14 +522,14 @@ export const lookBackOperationResult = async ({
       log(`Found matching failed transaction`);
       const receipt = await provider.getTransactionReceipt(failedTx.hash);
       if (receipt) {
-        const result = await handleTxRevert(
+        const result = await handleTxRevert({
           receipt,
-          failedTx.hash,
-          `txId=${txId}`,
+          txHash: failedTx.hash,
+          identifier: `txId=${txId}`,
           chainId,
-          provider,
-          log,
-        );
+          signal: sharedSignal,
+          powers: { provider, log, setTimeout },
+        });
         if (result) {
           deleteTxBlockLowerBound(kvStore, txId);
           deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);

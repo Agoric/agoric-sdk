@@ -186,6 +186,10 @@ test('handlePendingTx detects legitimate failure from ContractCallFailed revert'
       return null;
     };
 
+    // waitForConfirmations polls getBlockNumber; return a block ≥ receipt +
+    // revert confirmations (up to ~2000 on Arbitrum; 5000 is a safe buffer).
+    provider.getBlockNumber = async () => 18500000 + 5000;
+
     // Set up provider.call to throw ContractCallFailed error
     provider.call = async () => {
       const error: any = new Error('execution reverted');

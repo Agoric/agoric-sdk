@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:e6a2421ea4a622fcb2c5e865fa10dba33f909f08740534cc826e6e7fd0ed310d
+package:
+  name: "@endo/pass-style"
+  version: 1.6.3
+upstream:
+  repo: endojs/endo
+  issue: null
+  pr: null
+status: merged
+notes: null
+createdAt: 2026-04-16T05:02:45.312Z
+updatedAt: 2026-04-16T05:02:45.312Z
