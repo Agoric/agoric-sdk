@@ -26,11 +26,16 @@ import type {
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Amount, Payment } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
-import type { TimerService } from '@agoric/time';
 import type {
   IBCChannelID,
   IBCConnectionID,
+  IBCConnectionInfo,
   IBCPortID,
+  LocalIbcAddress,
+  RemoteIbcAddress,
+} from '@agoric/network/ibc';
+import type { TimerService } from '@agoric/time';
+import type {
   NetworkBinding,
   NetworkEndpoint,
   VTransferIBCEvent,
@@ -39,10 +44,6 @@ import type {
   TargetApp,
   TargetRegistration,
 } from '@agoric/vats/src/bridge-target.js';
-import type {
-  LocalIbcAddress,
-  RemoteIbcAddress,
-} from '@agoric/vats/tools/ibc-utils.js';
 import type { PFM_RECEIVER } from './exos/chain-hub.js';
 import type {
   AccountId,
@@ -104,26 +105,7 @@ export type CosmosValidatorAddress = CosmosChainAddress & {
   value: `${string}valoper${string}`;
   encoding: 'bech32';
 };
-
-/** Represents an IBC Connection between two chains, which can contain multiple Channels. */
-export interface IBCConnectionInfo {
-  id: IBCConnectionID; // e.g. connection-0
-  client_id: string; // '07-tendermint-0'
-  state: IBCConnectionState;
-  counterparty: {
-    client_id: string;
-    connection_id: IBCConnectionID;
-  };
-  transferChannel: {
-    portId: string;
-    channelId: IBCChannelID;
-    counterPartyPortId: string;
-    counterPartyChannelId: IBCChannelID;
-    ordering: Order;
-    state: IBCChannelState;
-    version: string; // e.eg. 'ics20-1'
-  };
-}
+export type { IBCConnectionInfo } from '@agoric/network/ibc';
 
 /**
  * https://github.com/cosmos/chain-registry/blob/master/assetlist.schema.json

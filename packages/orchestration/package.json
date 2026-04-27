@@ -44,7 +44,6 @@
     "@agoric/store": "workspace:*",
     "@agoric/time": "workspace:*",
     "@agoric/vat-data": "workspace:*",
-    "@agoric/vats": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
     "@agoric/zone": "workspace:*",
@@ -62,6 +61,7 @@
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "workspace:*",
+    "@agoric/vats": "workspace:*",
     "@chain-registry/client": "^1.53.194",
     "@cosmjs/amino": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
@@ -75,6 +75,14 @@
     "ts-blank-space": "^0.6.2",
     "tsup": "^8.5.0",
     "viem": "^2.31.0"
+  },
+  "peerDependencies": {
+    "@agoric/vats": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@agoric/vats": {
+      "optional": true
+    }
   },
   "ava": {
     "extensions": {

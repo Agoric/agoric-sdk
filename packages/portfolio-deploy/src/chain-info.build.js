@@ -23,8 +23,8 @@ const sourceSpec =
  * @import {ParseArgsConfig} from 'node:util';
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
- * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
+ * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {execFileSync} from 'child_process';
  * @import {ExecFileSyncOptionsWithStringEncoding} from 'node:child_process';
  */

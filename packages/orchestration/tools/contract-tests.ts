@@ -9,11 +9,8 @@ import {
 import { setupFakeNetwork } from '@agoric/orchestration/tools/network-fakes.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import {
-  makeNameHubKit,
-  type IBCChannelID,
-  type VTransferIBCEvent,
-} from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
+import { makeNameHubKit, type VTransferIBCEvent } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import {

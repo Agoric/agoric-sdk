@@ -1,11 +1,8 @@
 import test from 'ava';
-import {
-  decodeRemoteIbcAddress,
-  localAddrToPortID,
-} from '../tools/ibc-utils.js';
+import { decodeRemoteIbcAddress, localAddrToPortID } from '../src/ibc/utils.js';
 
 /**
- * @import {LocalIbcAddress} from '../tools/ibc-utils.js';
+ * @import {LocalIbcAddress} from '../src/ibc/types.js';
  */
 
 test('decodeRemoteIbcAddress', t => {

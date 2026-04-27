@@ -26,28 +26,12 @@ export const legacySrcToToolsImports = [
     specifier: '@aglocal/boot/tools/liquidation.js',
   },
   {
-    file: 'packages/orchestration/src/exos/cosmos-orchestration-account.js',
-    specifier: '@agoric/vats/tools/ibc-utils.js',
-  },
-  {
-    file: 'packages/orchestration/src/cosmos-api.ts',
-    specifier: '@agoric/vats/tools/ibc-utils.js',
-  },
-  {
-    file: 'packages/orchestration/src/utils/address.js',
-    specifier: '@agoric/vats/tools/ibc-utils.js',
-  },
-  {
     file: 'packages/smart-wallet/src/types.ts',
     specifier: '@agoric/vats/tools/board-utils.js',
   },
   {
     file: 'packages/vats/src/core/startWalletFactory.js',
     specifier: '../../tools/board-utils.js',
-  },
-  {
-    file: 'packages/vats/src/ibc.js',
-    specifier: '../tools/ibc-utils.js',
   },
 ];
 

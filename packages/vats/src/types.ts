@@ -5,6 +5,12 @@ import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applicati
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
+import type {
+  IBCChannelID,
+  IBCChannelOrdering,
+  IBCConnectionID,
+  IBCPortID,
+} from '@agoric/network/ibc';
 import type { Guarded } from '@endo/exo';
 import type { CaipChainId } from '@agoric/orchestration';
 import type {
@@ -14,6 +20,13 @@ import type {
 import type { TargetApp } from './bridge-target.js';
 import type { LocalChainAccount } from './localchain.js';
 import type { AssetInfo } from './vat-bank.js';
+
+export type {
+  IBCChannelID,
+  IBCChannelOrdering,
+  IBCConnectionID,
+  IBCPortID,
+} from '@agoric/network/ibc';
 
 /**
  * Published vstorage values under the `agoricNames.` hierarchy.
@@ -151,11 +164,6 @@ export type BridgeManager = {
     handler?: Remote<BridgeHandler>,
   ) => ScopedBridgeManager<B>;
 };
-
-export type IBCPortID = string;
-export type IBCChannelID = `channel-${number}`;
-export type IBCConnectionID = `connection-${number}`;
-export type IBCChannelOrdering = 'ORDERED' | 'UNORDERED';
 
 export type IBCPacket = JsonSafe<{
   data: Bytes;

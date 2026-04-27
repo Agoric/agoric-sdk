@@ -19,10 +19,14 @@ import {
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
+ * @import {
+ *   IBCConnectionInfo,
+ *   LocalIbcAddress,
+ *   RemoteIbcAddress,
+ * } from '@agoric/network/ibc';
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
- * @import {CosmosChainInfo, IBCConnectionInfo, CosmosChainAddress, IcaAccount, Chain, ICQConnection, ChainInfo} from '../types.js';
+ * @import {CosmosChainInfo, CosmosChainAddress, IcaAccount, Chain, ICQConnection, ChainInfo} from '../types.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 

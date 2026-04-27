@@ -9,14 +9,16 @@ import {
   preparePortAllocator,
   prepareRouterProtocol,
 } from '@agoric/network';
-import type { Zone } from '@agoric/zone';
 import type {
   IBCChannelID,
+  IBCConnectionID,
+  IBCPortID,
+} from '@agoric/network/ibc';
+import type { Zone } from '@agoric/zone';
+import type {
   IBCMethod,
   IBCEvent,
   ScopedBridgeManagerMethods,
-  IBCConnectionID,
-  IBCPortID,
 } from '@agoric/vats';
 import {
   prepareCallbacks as prepareIBCCallbacks,

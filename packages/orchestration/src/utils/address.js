@@ -1,14 +1,13 @@
-import { encodeRemoteIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
+import { encodeRemoteIbcAddress } from '@agoric/network/ibc/utils.js';
 import { fromBech32, fromHex } from '@cosmjs/encoding';
 import { Fail, q } from '@endo/errors';
 import bs58 from 'bs58';
 
 /**
- * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {IBCConnectionID, RemoteIbcAddress} from '@agoric/network/ibc';
  * @import {Address as EvmAddress} from 'viem';
  * @import {Bech32Address, CosmosChainAddress, CaipChainId} from '../types.js';
  * @import {AccountId, AccountIdArg, Caip10Record} from '../orchestration-api.js';
- * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
 /**
