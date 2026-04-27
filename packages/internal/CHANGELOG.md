@@ -3,6 +3,112 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.2...@agoric/internal@0.5.0-u23.0) (2026-04-27)
+
+### ⚠ BREAKING CHANGES
+
+* remove internal exported.js
+* **vstorage:** Enforce path validation
+* **zone:** use fresh heap and virtual zones
+
+### Features
+
+* Add terminate-governed-instance.js proposal ([c2cb517](https://github.com/Agoric/agoric-sdk/commit/c2cb51779039ef2a5921efcc35b3b365a7b6159f)), closes [#10725](https://github.com/Agoric/agoric-sdk/issues/10725) [#10861](https://github.com/Agoric/agoric-sdk/issues/10861)
+* Add the Prometheus slog sender module and load it per OTEL_EXPORTER_PROMETHEUS_PORT ([1dc1827](https://github.com/Agoric/agoric-sdk/commit/1dc182783ce191f0ba2131cb1f7b3042f287737a)), closes [#11045](https://github.com/Agoric/agoric-sdk/issues/11045)
+* CapDataShape, StreamCellShape guards ([e60dd49](https://github.com/Agoric/agoric-sdk/commit/e60dd49fc3e9bce6fc9fd1aaf86d9d7cf52017f7))
+* checked cast with TypedMatcher ([ed14400](https://github.com/Agoric/agoric-sdk/commit/ed14400ebebf8114694ab2b291afd6d858877165))
+* consistent publishTxnRecord (record) ([dbf3934](https://github.com/Agoric/agoric-sdk/commit/dbf39340c75d9e01af2ee9ceccac327660af94a6))
+* **cosmic-swingset:** add metrics for each action type ([#10888](https://github.com/Agoric/agoric-sdk/issues/10888)) ([618553b](https://github.com/Agoric/agoric-sdk/commit/618553b8ea0ea736a1406e2c8dae4378315547e9)), closes [#10883](https://github.com/Agoric/agoric-sdk/issues/10883) [#10882](https://github.com/Agoric/agoric-sdk/issues/10882)
+* **cosmic-swingset:** implement `ENACTED_UPGRADE` blocking send ([3825c17](https://github.com/Agoric/agoric-sdk/commit/3825c171f3528cd3c4e63e8aeb3363a3e88b75fc))
+* **cosmos:** first cut at install chunking proto ([9a51b25](https://github.com/Agoric/agoric-sdk/commit/9a51b258b8b30b14c05a5d758493e330e5427b08))
+* count unhandled rejections in subprocess ([#12280](https://github.com/Agoric/agoric-sdk/issues/12280)) ([c7e390e](https://github.com/Agoric/agoric-sdk/commit/c7e390e688fc2c97956ed6716b85f9a4c518b1e6)), closes [Agoric/agoric-sdk#11028](https://github.com/Agoric/agoric-sdk/issues/11028)
+* defaultSerializer util ([19d5e03](https://github.com/Agoric/agoric-sdk/commit/19d5e03b426e74b8a19d11b425634a0a83e929a1))
+* **deploy-script-support:** Write out bundle file names in machine readable file ([68235ec](https://github.com/Agoric/agoric-sdk/commit/68235ec3fc78b9973d886e782e03048427b6f93e))
+* documentStorageSchema w FakeStorageKit ([a16e212](https://github.com/Agoric/agoric-sdk/commit/a16e212a35e1956eb6356373ad4cc4c398c4dc91))
+* elide comments in package build scripts ([2d410c7](https://github.com/Agoric/agoric-sdk/commit/2d410c7da0514d21170f11bde196ebc694141bda))
+* export types ([34c391a](https://github.com/Agoric/agoric-sdk/commit/34c391a49ded28b780f303f0a5c36d5eef8229ac))
+* getBridgeId on ScopedBridgeManager ([aec4dea](https://github.com/Agoric/agoric-sdk/commit/aec4dea4f4d6baca3ea32c33551ba00658eab31b))
+* getValues for sequence nodes ([b5698ce](https://github.com/Agoric/agoric-sdk/commit/b5698cee87068656cf6cfcbed25925d19fe025fd))
+* **internal:** add `BridgeBigInt` type and shape ([9c052a7](https://github.com/Agoric/agoric-sdk/commit/9c052a7f22bd781614f766377da670d7f3505bc6))
+* **internal:** Add `defineName` function utility ([b4ce8c7](https://github.com/Agoric/agoric-sdk/commit/b4ce8c758a93d8992707ab3e1edaa58a8f141c39))
+* **internal:** Add `makeWorkPool` utility ([899984a](https://github.com/Agoric/agoric-sdk/commit/899984aadf0734ab5c33a3c4a079fe9d648b08c0))
+* **internal:** Add `partialMap` utility ([9444d3a](https://github.com/Agoric/agoric-sdk/commit/9444d3a6ff47473b22b38b2a5b5c751471c2f434))
+* **internal:** Add `pick` utility ([88eda13](https://github.com/Agoric/agoric-sdk/commit/88eda13ababffd588e1358fc711afff8cc6e8ea5))
+* **internal:** add `src/lib-nodejs/ava-unhandled-rejection.js` ([22c3c95](https://github.com/Agoric/agoric-sdk/commit/22c3c954e683c866915d1bcb88ac50bae12b55af))
+* **internal:** Add `throwErrorCode` utility ([12ce8e5](https://github.com/Agoric/agoric-sdk/commit/12ce8e53ceddd8cea39c6d02d704591988e3e178))
+* **internal:** Add `tryNow` and `tryJsonParse` utilities ([957ffbc](https://github.com/Agoric/agoric-sdk/commit/957ffbcf80ce6579b8452e235b6482922484bca7))
+* **internal:** Add a helper type for mapping tuples (e.g. Parameters<...>) into objects ([ef8e3ef](https://github.com/Agoric/agoric-sdk/commit/ef8e3ef6ed43f7716f9d5078872c6f6bc953cfc4))
+* **internal:** Add an export of const `true` in anticipation of use for `attenuate` ([9becc37](https://github.com/Agoric/agoric-sdk/commit/9becc372d66710a357db5faf653b5cc89f45d9c9))
+* **internal:** add caches to wrapRemoteMarshaller ([5284753](https://github.com/Agoric/agoric-sdk/commit/52847532836fed8979f9e805fdafb5f62f00e237))
+* **internal:** Add helper `toCLIOptions` ([2532a4f](https://github.com/Agoric/agoric-sdk/commit/2532a4fa649e981d2cf41723187a14d5effb7f0a))
+* **internal:** Add helper `unprefixedProperties` for environment variable consumption ([878fecf](https://github.com/Agoric/agoric-sdk/commit/878fecf4f5153fa80f48a27a8b79e67943b2d199))
+* **internal:** add key mirror utility ([dbd95d3](https://github.com/Agoric/agoric-sdk/commit/dbd95d3295c2272008db36c625582c8b926aa380))
+* **internal:** Add resolveToPath helper ([4a60ab2](https://github.com/Agoric/agoric-sdk/commit/4a60ab22643d84fa8af78ced563bf28ef83703c8))
+* **internal:** Add stripPrefix ([e60ae1e](https://github.com/Agoric/agoric-sdk/commit/e60ae1eaad85a7ddc8c2203376281bf9fe9149e4))
+* **internal:** add TraceLogger type ([36304d9](https://github.com/Agoric/agoric-sdk/commit/36304d9362c9b69e7821fc92a80826e8f1aa48e5))
+* **internal:** deepMapObject ([72905fa](https://github.com/Agoric/agoric-sdk/commit/72905fa7be54d1cdb906a019408932e83a9af17e))
+* **internal:** fakeStorage.getBody() supports index other than -1 ([eda89cc](https://github.com/Agoric/agoric-sdk/commit/eda89cc7ec56b44f33f8552811c267d01bbf29b0))
+* **internal:** FakeStorageKit spy ([33193f6](https://github.com/Agoric/agoric-sdk/commit/33193f6ecdeab69d5a49fb4a235140b26f17e020))
+* **internal:** fix [#11849](https://github.com/Agoric/agoric-sdk/issues/11849) sub method traces w prefix paths ([eb85432](https://github.com/Agoric/agoric-sdk/commit/eb85432f9be23566f9da5b8bbe19264b2a45b6b5))
+* **internal:** fs stream to stdout ([b4af829](https://github.com/Agoric/agoric-sdk/commit/b4af8296e8af37eecf80449870c18546e4c8856a))
+* **internal:** Generalize naturalCompare to multi-level sorting ([27f8546](https://github.com/Agoric/agoric-sdk/commit/27f854676dc93eff84612c0d9085becb5e6f88bb))
+* **internal:** Generalize single-level `pick` utility to recursive `attenuate` ([6b36d1e](https://github.com/Agoric/agoric-sdk/commit/6b36d1e5e7e10b9fe62db96294e891978b438c35))
+* **internal:** Improve typing ([a7e642f](https://github.com/Agoric/agoric-sdk/commit/a7e642f16da42fdb9c8a0f3e39898f6ed92daa0d))
+* **internal:** Introduce deepCopyJsonable ([f875bb0](https://github.com/Agoric/agoric-sdk/commit/f875bb0923323d019396c605ea9bb4d1382f7f79))
+* **internal:** new macro for unhandled rejections ([9b84d92](https://github.com/Agoric/agoric-sdk/commit/9b84d92a66c78384fbc479c3b8b27d424a117abf))
+* **internal:** stub wrapRemoteMarshaller ([31e5149](https://github.com/Agoric/agoric-sdk/commit/31e514948adc8d72149e84693b4d509db66f4a35))
+* **internal:** trace.sub(prefixStep, subEnable = enable) logs prefix paths ([fc8f801](https://github.com/Agoric/agoric-sdk/commit/fc8f801d3b3109474f4edc1cb49f3988b8b4baa6))
+* **internal:** use bounded-size cache in wrapRemoteMarshaller ([ed5603c](https://github.com/Agoric/agoric-sdk/commit/ed5603c38e03943a574de9bb516d3c94fdb8869b))
+* **internal:** wrapRemoteMarshaller sending only slots ([3d52812](https://github.com/Agoric/agoric-sdk/commit/3d52812cb4cbdbbc2ad169e99bea1c7c0d107b02))
+* makeReadJsonFile ([a69733f](https://github.com/Agoric/agoric-sdk/commit/a69733f7c8b4917e25da56d07298d64a0b1a5fae))
+* pureDataMarshaller ([6df7f1f](https://github.com/Agoric/agoric-sdk/commit/6df7f1fa33bc0ac3f979663db97859c90af94e6c))
+* showValue option for documentStorageSchema ([07d12d4](https://github.com/Agoric/agoric-sdk/commit/07d12d489208735a8304866e3c59e9dc0cd19f13))
+* storage-test-utils report missing data ([02c111b](https://github.com/Agoric/agoric-sdk/commit/02c111b7e6a54528186e37f5408d1a41462e5526))
+* **swingset:** allow slow termination/deletion of vats ([9ac2ef0](https://github.com/Agoric/agoric-sdk/commit/9ac2ef0c188816e461869f54eb7c15abbaff6efa)), closes [#8928](https://github.com/Agoric/agoric-sdk/issues/8928)
+* **testing:** inspectMapStore ([65003a0](https://github.com/Agoric/agoric-sdk/commit/65003a0bc5ca6b8439ef72f159df0ee1b72d238d))
+* **types:** ambient exports from agoric/internal ([71d18c4](https://github.com/Agoric/agoric-sdk/commit/71d18c4221f63f1c0e7c45562b5a0a86a0b4b5c0))
+* **types:** Tagged ([80d0479](https://github.com/Agoric/agoric-sdk/commit/80d04790429765e81053d45f6f7b17fb7b06b7c6))
+* **vat-transfer:** first cut at working proposal ([2864bd5](https://github.com/Agoric/agoric-sdk/commit/2864bd5c12300c3595df9676bcfde894dbe59b29))
+* **vow:** abandoned errors are retriable ([1ac054f](https://github.com/Agoric/agoric-sdk/commit/1ac054ffcbf665b885ec55944a0652023139387f))
+* **whenable:** first cut ([793f028](https://github.com/Agoric/agoric-sdk/commit/793f028155702e613b1bdf8204af6837cfe5e8a3))
+* **zone:** use fresh heap and virtual zones ([7a1a411](https://github.com/Agoric/agoric-sdk/commit/7a1a411cf719477e29a2bedeb91794fd633989e9))
+
+### Bug Fixes
+
+* adopt `VTRANSFER_IBC_EVENT` as an action-type ([#9671](https://github.com/Agoric/agoric-sdk/issues/9671)) ([217005a](https://github.com/Agoric/agoric-sdk/commit/217005a921dcac6928c999e6bfe06330a5947ac5)), closes [#9670](https://github.com/Agoric/agoric-sdk/issues/9670)
+* **async-flow:** recursive `Host*` typing ([e4703ac](https://github.com/Agoric/agoric-sdk/commit/e4703ac3df2b432ceb20d0d4580987b1098a65c6))
+* **cosmic-swingset:** inject kernel upgrade events at a safe time ([5789fb6](https://github.com/Agoric/agoric-sdk/commit/5789fb68d316643906bc30506059a0a8c8874154))
+* **internal:** `inspectMapStore` should tolerate nullish values ([d6edeb8](https://github.com/Agoric/agoric-sdk/commit/d6edeb82edf19a1851a3c68ca43d720200c867ba))
+* **internal:** `onceWithError` subscribes once per stream+eventName ([a29fc1a](https://github.com/Agoric/agoric-sdk/commit/a29fc1a8897ec66b2e8db13f10ddcd7ca9a49fa8))
+* **internal:** better stream error handling ([1ea3f06](https://github.com/Agoric/agoric-sdk/commit/1ea3f06e705b34b50dffa069f4f469f8d9a8184e))
+* **internal:** Exempt process.stdout from being closed by makeFsStreamWriter ([117c766](https://github.com/Agoric/agoric-sdk/commit/117c766c38e70f76a683c2f070cddaa8287b7619))
+* **internal:** fix [#11846](https://github.com/Agoric/agoric-sdk/issues/11846) starting count at 1, not 2 ([6f7c800](https://github.com/Agoric/agoric-sdk/commit/6f7c80088b0c51ba816cd646410e34c0871879fd))
+* **internal:** fix [#11847](https://github.com/Agoric/agoric-sdk/issues/11847) null and undefined are normal tracer args ([6297eee](https://github.com/Agoric/agoric-sdk/commit/6297eeef8b19a157e5bdd567ff6231fba792ded0))
+* **internal:** fix [#11848](https://github.com/Agoric/agoric-sdk/issues/11848) remove debugCount ([2a20a9d](https://github.com/Agoric/agoric-sdk/commit/2a20a9d5c1b1d4fcc558489d40cd74e049aede57))
+* **internal:** fix [#11851](https://github.com/Agoric/agoric-sdk/issues/11851) harden returned tracers ([56fd384](https://github.com/Agoric/agoric-sdk/commit/56fd3846fe29862ea9e37beba8fa280bcc3d70da))
+* **internal:** isolate build-cache event sink failures ([19c806f](https://github.com/Agoric/agoric-sdk/commit/19c806f0f7bf1d6b0d00c2ce27e1f752ac1fa56e))
+* **internal:** null chain storage uses remotable messenger ([d4afab8](https://github.com/Agoric/agoric-sdk/commit/d4afab86b6a75860b10c22019449ca28035e710d))
+* **internal:** prevent writeFileAtomic temp path collisions ([7224f37](https://github.com/Agoric/agoric-sdk/commit/7224f37a6b002a76a7d6a68dd837a3bb30838e31))
+* **internal:** severe override taming for bundle-source ([877c1a1](https://github.com/Agoric/agoric-sdk/commit/877c1a13dfdf03f040d3118416e59e58240090ce))
+* **internal:** use comma to separate debugInstance ([08d18ca](https://github.com/Agoric/agoric-sdk/commit/08d18caa34d49624433df5322d158e40f882b1dd))
+* **network:** use new `ERef` and `FarRef` ([3027adf](https://github.com/Agoric/agoric-sdk/commit/3027adf8613154dec167c5fccf5f207f6d2af701))
+* **portfolio-contract:** Prevent preflightValidateNetworkPlan from masking underlying errors ([#12233](https://github.com/Agoric/agoric-sdk/issues/12233)) ([6ad0038](https://github.com/Agoric/agoric-sdk/commit/6ad0038710094d4601a4c00c0e6ff6c32a66425f))
+* Properly synchronize slog sender termination ([f83c01d](https://github.com/Agoric/agoric-sdk/commit/f83c01d89d80798e0922acdb498fcc7250560977))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** DataOnly import of Callable ([717a4c9](https://github.com/Agoric/agoric-sdk/commit/717a4c98aeadaa83897567b46d12b654b0a2cc72))
+* **types:** netstring decode ([647afb6](https://github.com/Agoric/agoric-sdk/commit/647afb6b50dd8f77f5fce3199e6e290a1d432fa7))
+* **types:** overly constrained deepMapObjectInternal ([b5fcbda](https://github.com/Agoric/agoric-sdk/commit/b5fcbda56f13041c43d08b690b46686268c28514))
+* use isPrimitive rather than deprecated isObject ([76ef9a3](https://github.com/Agoric/agoric-sdk/commit/76ef9a357ea25ccd4228320e4323d2afbaa589f0))
+* **vow:** correct the typing of `unwrap` ([40ccba1](https://github.com/Agoric/agoric-sdk/commit/40ccba14680f9acf4a68ef32751eb3ac57a4c9bd))
+* **vstorage:** Enforce path validation ([03871e8](https://github.com/Agoric/agoric-sdk/commit/03871e8429b81d8f051cef132968abf3a5590e12)), closes [#8337](https://github.com/Agoric/agoric-sdk/issues/8337)
+* **zone:** fixups before merging to 7891 ([9bbb393](https://github.com/Agoric/agoric-sdk/commit/9bbb393ac2d0af8e2a3b29adfeabf01c42d9b50e))
+* **zone:** no longer getting M from @agoric/zone ([d68bc84](https://github.com/Agoric/agoric-sdk/commit/d68bc8464b0f4df24bd63dd8f5696c6bb6458135))
+* **zone:** suggestions for [#7891](https://github.com/Agoric/agoric-sdk/issues/7891) ([e9e0e21](https://github.com/Agoric/agoric-sdk/commit/e9e0e219618449b532ea6303c58415f591b2b49f))
+
+### Miscellaneous Chores
+
+* remove internal exported.js ([42272c2](https://github.com/Agoric/agoric-sdk/commit/42272c2b4563fb74560d303e4cdc1b4df51b7da3))
+
 ## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.4.0-u22.2...@agoric/internal@0.4.0) (2026-04-02)
 
 **Note:** Version bump only for package @agoric/internal

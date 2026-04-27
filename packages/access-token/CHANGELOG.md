@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.23-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.21...@agoric/access-token@0.4.23-u23.0) (2026-04-27)
+
+### Bug Fixes
+
+* **access-token:** lock the jsonlines database ([7832114](https://github.com/Agoric/agoric-sdk/commit/78321142c0f816816bd788ba8a691c1ec9d6f5c5))
+
 ## [0.4.22](https://github.com/Agoric/agoric-sdk/compare/@agoric/access-token@0.4.22-u22.2...@agoric/access-token@0.4.22) (2026-04-02)
 
 **Note:** Version bump only for package @agoric/access-token

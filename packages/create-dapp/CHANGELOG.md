@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.3.0-u23.0 (2026-04-27)
+
+### Features
+
+* **create-dapp:** `npm create @agoric/dapp ...` uses `agoric init` ([4c7a6b2](https://github.com/Agoric/agoric-sdk/commit/4c7a6b24a9190e95d9e6706298b9ca8411f6c693))
+
+### Reverts
+
+* Revert "chore(create-dapp): bump version to 0.2.0" ([9743db8](https://github.com/Agoric/agoric-sdk/commit/9743db8e25178d7c6a860011dc4388d038010881))
+
 ## [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/create-dapp@0.2.0-u22.2...@agoric/create-dapp@0.2.0) (2026-04-02)
 
 **Note:** Version bump only for package @agoric/create-dapp

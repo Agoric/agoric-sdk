@@ -1,6 +1,6 @@
 {
   "name": "@agoric/vm-config",
-  "version": "0.2.0",
+  "version": "0.3.0-u23.0",
   "description": "Config to start an Agoric VM",
   "type": "module",
   "main": "./index.js",

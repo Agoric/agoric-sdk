@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.6.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.4.0...@agoric/eslint-config@0.6.0-u23.0) (2026-04-27)
+
+### Features
+
+* **eslint-config:** also disable `no-await-in-loop` ([8be2e86](https://github.com/Agoric/agoric-sdk/commit/8be2e86372ba9c866d7981b4c7789a834ae9e10c))
+
+### Bug Fixes
+
+* export of eslint-config.cjs ([379277e](https://github.com/Agoric/agoric-sdk/commit/379277e777f6c69c1f23ed9aa7dc04d4c25a8b8d))
+
 ## [0.5.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/eslint-config@0.5.0-u22.1...@agoric/eslint-config@0.5.0) (2026-04-02)
 
 **Note:** Version bump only for package @agoric/eslint-config

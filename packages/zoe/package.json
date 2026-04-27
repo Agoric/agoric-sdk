@@ -1,6 +1,6 @@
 {
   "name": "@agoric/zoe",
-  "version": "0.27.0",
+  "version": "0.28.0-u23.0",
   "description": "Zoe: the Smart Contract Framework for Offer Enforcement",
   "type": "module",
   "main": "./src/zoeService/zoe.js",
