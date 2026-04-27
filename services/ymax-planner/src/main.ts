@@ -15,13 +15,14 @@ import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
   makeTxSequencer,
-  makeSigningSmartWalletKit,
-  makeSmartWalletKit,
   makeSequencingSmartWallet,
   reflectWalletStore,
 } from '@agoric/client-utils';
 import type { BaseAccountSDKType } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import type {
+  MinimalNetworkConfig,
+  SigningSmartWalletKit,
+} from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import {
   deeplyFulfilledObject,
@@ -44,6 +45,8 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
+import makeSmartWalletKit from './wrappers/smart-wallet.ts';
+import makeSigningSmartWalletKit from './wrappers/signing-smart-wallet.ts';
 import {
   createEVMContext,
   prepareAbortController,
@@ -69,6 +72,25 @@ const assertChainId = async (
   actualChainId || Fail`Chain ID not found in RPC status: ${status}`;
   actualChainId === chainId ||
     Fail`Expected chain ID ${q(actualChainId)} to be ${q(chainId)}`;
+};
+
+/**
+ * Parts of the network config fetched from the chain
+ * can be overriden using env vars starting from
+ * `OVERRIDE_`
+ */
+const overrideNetworkConfigFromEnvironmentVariables = (
+  { chainName, rpcAddrs }: MinimalNetworkConfig,
+  { env }: { env: NodeJS.ProcessEnv },
+) => {
+  if (env.OVERRIDE_RPC_ADDRESS) rpcAddrs[0] = env.OVERRIDE_RPC_ADDRESS;
+  if (env.FALLBACK_RPC_ADDRESS) rpcAddrs.push(env.FALLBACK_RPC_ADDRESS);
+
+  return {
+    chainName,
+    rpcAddrs,
+    websocketUrl: env.OVERRIDE_WEBSOCKET_URL || rpcAddrs.find(Boolean)!,
+  };
 };
 
 export type SimplePowers = {
@@ -125,11 +147,12 @@ export const main = async (
   const networkConfig = await fetchEnvNetworkConfig({
     env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
     fetch,
-  });
-  const agoricRpcAddr = networkConfig.rpcAddrs[0];
+  }).then(_networkConfig =>
+    overrideNetworkConfigFromEnvironmentVariables(_networkConfig, { env }),
+  );
   console.warn('Initializing planner:', networkConfig);
 
-  const rpc = new CosmosRPCClient(agoricRpcAddr, {
+  const rpc = new CosmosRPCClient(networkConfig.websocketUrl, {
     WebSocket,
     heartbeats: generateInterval(6000),
   });
@@ -328,4 +351,5 @@ export const main = async (
     });
   });
 };
+
 harden(main);
