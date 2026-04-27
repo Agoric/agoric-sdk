@@ -67,6 +67,7 @@ import type {
   HandlePendingTxOpts,
 } from './pending-tx-manager.ts';
 import { handlePendingTx } from './pending-tx-manager.ts';
+import rateLimitedSource from './rate-limited-source.ts';
 import type { BalanceQueryPowers } from './plan-deposit.ts';
 import {
   getNonDustBalances,
@@ -184,6 +185,7 @@ export type Powers = {
     retryOpts?: RetryOptionsAndPowers,
   ) => ReturnType<typeof getInvocationUpdate>;
   now: typeof Date.now;
+  delay: (ms: number) => Promise<void>;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
@@ -802,10 +804,15 @@ export const startEngine = async (
 
   const initialPendingTxData: PendingTxRecord[] = [];
   const capacity = 10;
+  const throttledPendingTxKeys = rateLimitedSource({
+    policy: { quota: capacity, windowMs: 1000 },
+    powers: { delay: powers.delay, now: powers.now },
+    source: pendingTxKeys as Array<string>,
+  });
 
   await makeWorkPool(
-    pendingTxKeys,
-    { capacity, rate: { intervalMs: 1000, limit: capacity } },
+    throttledPendingTxKeys,
+    { capacity },
     async (txId: TxId) => {
       const path = `${pendingTxPathPrefix}.${txId}`;
       await null;
