@@ -25,6 +25,7 @@ import {
   extractDepositFactoryExecuteData,
   DEFAULT_RETRY_OPTIONS,
   FAILED_TX_SCOPE,
+  WatcherTransportError,
   type AlchemySubscriptionMessage,
   type RetryOptions,
   handleTxRevert,
@@ -158,7 +159,11 @@ export const watchSmartWalletTx = ({
       log(
         `WebSocket error during wallet watch for expectedAddr=${expectedAddr}: ${errorMsg}`,
       );
-      fail(new Error(`WebSocket connection error: ${errorMsg}`));
+      fail(
+        new WatcherTransportError(`WebSocket connection error: ${errorMsg}`, {
+          cause: e,
+        }),
+      );
     };
 
     const onWsClose = (code?: number, reason?: any) => {
@@ -167,7 +172,9 @@ export const watchSmartWalletTx = ({
         `WebSocket closed during wallet watch for expectedAddr=${expectedAddr} (code=${code}, reason=${reason})`,
       );
       fail(
-        new Error(`WebSocket closed unexpectedly: ${reason} (code=${code})`),
+        new WatcherTransportError(
+          `WebSocket closed unexpectedly: ${reason} (code=${code})`,
+        ),
       );
     };
 

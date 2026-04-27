@@ -14,6 +14,35 @@ import {
 /** Scope tag for failed-transaction lookback searches. */
 export const FAILED_TX_SCOPE = 'failedTx';
 
+/**
+ * Signals that a watcher's underlying transport (WebSocket) failed.
+ * Distinct from a transaction-level failure: the watch could not continue,
+ * so the caller may safely restart it.
+ */
+export const WatcherTransportError = class WatcherTransportError extends Error {};
+WatcherTransportError.prototype.name = 'WatcherTransportError';
+
+/**
+ * Sleep `ms` milliseconds, returning early if `signal` aborts.
+ */
+export const abortableSleep = (
+  ms: number,
+  setTimeout: typeof globalThis.setTimeout,
+  signal?: AbortSignal,
+): Promise<void> =>
+  new Promise(resolve => {
+    if (signal?.aborted) return resolve();
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener('abort', onAbort);
+  });
+
 //#region Axelar execute calldata extraction
 // AxelarExecutable entrypoint (standard)
 // See https://docs.axelar.dev/dev/general-message-passing/executable
