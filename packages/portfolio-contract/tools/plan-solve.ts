@@ -334,7 +334,7 @@ const refineModel = (
     const { id, capacity, min } = edge;
     const pickVar = `pick_${id}`;
     const flowVar = `via_${id}`;
-    if ((solution[flowVar] ?? 0) > 0) {
+    if ((solution[flowVar] ?? 0) >= FLOW_EPS) {
       cloned.binaries[pickVar] = true;
       cloned.ints[flowVar] = true;
       cloned.constraints[`through_${id}`] = {

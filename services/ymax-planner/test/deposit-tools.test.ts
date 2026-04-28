@@ -52,6 +52,7 @@ import {
   createMockProviderSets,
 } from './mocks.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import PROD_NETWORK_202604 from '../tools/network-snapshots/prod-network-2026-04.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -714,7 +715,7 @@ test('planRebalanceToAllocations regression - single source, 10x', async t => {
   t.snapshot(plan, 'raw plan');
 });
 
-test('solver regressions - AGO-496', async t => {
+test('solver regressions', async t => {
   // PoolKey names have been changed to align with TEST_NETWORK, but the numbers
   // all match.
 
@@ -800,6 +801,24 @@ test('solver regressions - AGO-496', async t => {
     makeMovementDesc('@agoric', '@noble', scale6(8250)),
     makeMovementDesc('@noble', '@Base', scale6(8250)),
     makeMovementDesc('@Base', 'Aave_Base', scale6(8250)),
+  ]);
+
+  // 2026-04-28T10:09Z
+  const ymax0Portfolio35Flow76 = await planRebalanceToAllocations({
+    ...plannerContext,
+    network: PROD_NETWORK_202604,
+    targetAllocation: {
+      '@Arbitrum': 0n,
+      '@Avalanche': 0n,
+      '@Ethereum': 0n,
+      Aave_Arbitrum: 0n,
+      Aave_Avalanche: 100n,
+      ERC4626_morphoClearstarHighYieldUsdc_Ethereum: 0n,
+    },
+    currentBalances: { '@Avalanche': makeDeposit(3900011n) },
+  });
+  assertPlanFlow(t, 'ymax0 portfolio35 flow76', ymax0Portfolio35Flow76.flow, [
+    makeMovementDesc('@Avalanche', 'Aave_Avalanche', 3900011n),
   ]);
 });
 
