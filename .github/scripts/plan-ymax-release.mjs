@@ -1,12 +1,5 @@
 #!/usr/bin/env node
-/**
- * @file plan ymax release work before any expensive build steps
- *
- * Intentionally duplicates validation and naming logic from
- * packages/portfolio-deploy/scripts/ymax-deploy-target.ts so it can run
- * before any agoric-sdk build step.
- */
-
+/** @file plan ymax release work before any expensive build steps */
 import { spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import {
