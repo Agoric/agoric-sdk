@@ -49,18 +49,7 @@ jobs:
       - name: Clean repository
         run: git clean -xdf
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Set up yarn and install dependencies
-        run: |
-          bash scripts/ensure-corepack-yarn.sh
-          yarn install --immutable
-
-      - name: Build project
-        run: yarn build
+      - uses: ./.github/actions/setup-agoric-sdk-build
 
       - name: Build package bundle
         working-directory: packages/${{ inputs.package }}
