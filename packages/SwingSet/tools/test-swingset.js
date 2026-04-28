@@ -41,7 +41,8 @@ export const initializeTestSwingset = async (
     {
       ...runtimeOptions,
       bundleFromPath: runtimeOptions.bundleFromPath || readBundleSpecFile,
-      bundleFromSourceSpec: (sourceSpec, _options) => cache.load(sourceSpec),
+      bundleFromSourceSpec: (sourceSpec, _options) =>
+        /** @type {Promise<any>} */ (cache.load(sourceSpec)),
     },
   );
   return initializeSwingsetKernel(kernelConfig, kernelStorage, runtimeOptions);

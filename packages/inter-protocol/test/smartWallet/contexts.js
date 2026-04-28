@@ -26,7 +26,7 @@ import { withAmountUtils } from '../supports.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  * @import {CommitteeElectoratePublic} from '@agoric/governance/src/types.js';
- * @import {Installation} from '@agoric/zoe';
+ * @import {Installation, SourceBundle} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';
  * @import {ChainBootstrapSpace, WellKnownSpaces} from '@agoric/vats/src/core/types.ts';
@@ -78,16 +78,18 @@ export const makeDefaultTestContext = async (_t, makeSpace) => {
   await produceStartUpgradable({ zone, consume, produce });
 
   //#region Installs
-  const { walletFactoryBundle: bundle } = await bundleCache.loadRegistry(
-    smartWalletSourceSpecRegistry,
-  );
+  const { walletFactoryBundle: rawWalletFactoryBundle } =
+    await bundleCache.loadRegistry(smartWalletSourceSpecRegistry);
+  const bundle = /** @type {SourceBundle} */ (rawWalletFactoryBundle);
   /**
    * @type {Promise<Installation<StartWalletFactory>>}
    */
   const installation = E(zoe).install(bundle);
 
-  const { contractGovernorBundle } = await bundleCache.loadRegistry(
-    governanceSourceSpecRegistry,
+  const { contractGovernorBundle: rawContractGovernorBundle } =
+    await bundleCache.loadRegistry(governanceSourceSpecRegistry);
+  const contractGovernorBundle = /** @type {SourceBundle} */ (
+    rawContractGovernorBundle
   );
 
   const contractGovernor = E(zoe).install(contractGovernorBundle);
@@ -177,9 +179,9 @@ export const makeDefaultTestContext = async (_t, makeSpace) => {
     const installAdmin = E(consume.agoricNamesAdmin).lookupAdmin(
       'installation',
     );
-    const { priceAggregatorBundle: paBundle } = await bundleCache.loadRegistry(
-      interProtocolBundleSpecs,
-    );
+    const { priceAggregatorBundle: rawPaBundle } =
+      await bundleCache.loadRegistry(interProtocolBundleSpecs);
+    const paBundle = /** @type {SourceBundle} */ (rawPaBundle);
     /**
      * @type {Promise<Installation<FluxStartFn>>}
      */

@@ -56,7 +56,6 @@ export const start = (zcf, privateArgs, baggage) => {
      * @param {Payment} pmt
      */
     async deliverPayment(addr, pmt) {
-      // @ts-expect-error XXX TS2339: Property 'self' does not exist...???
       const depositFacetP = this.self.getDepositFacet(addr);
       await E(depositFacetP).receive(pmt);
     },
@@ -78,7 +77,6 @@ export const start = (zcf, privateArgs, baggage) => {
         delivered.resolve(true);
         return prize;
       }, `deliver ${label}`);
-      // @ts-expect-error XXX TS2339: Property 'self' does not exist...???
       await this.self.deliverPayment(addr, toCollectPrize);
       await delivered.promise;
     },

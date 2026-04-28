@@ -172,9 +172,9 @@ test('vat lifecycle', async t => {
   t.teardown(() => removeCallback());
   fs.writeSync(fd, swingStore.debug.serialize());
   const bundleCache = await unsafeSharedBundleCache;
-  const bundle = await bundleCache.load(
+  const bundle = (await bundleCache.load(
     resolveToPath('@agoric/swingset-vat/tools/vat-puppet-v2.js'),
-  );
+  )) as { endoZipBase64Sha512: string };
   const bundleID = `b1-${bundle.endoZipBase64Sha512}`;
   for (const label of ['first overlay', 'second overlay']) {
     t.log(label);
@@ -199,7 +199,7 @@ test('vat lifecycle', async t => {
       `${label} swingset restart must preserve vat heap`,
     );
 
-    await overlay.kernelStorage.bundleStore.addBundle(bundleID, bundle);
+    await overlay.kernelStorage.bundleStore.addBundle(bundleID, bundle as any);
     t.is(
       await EV.vat('bootstrap').upgradeVat('puppet', bundleID),
       1,

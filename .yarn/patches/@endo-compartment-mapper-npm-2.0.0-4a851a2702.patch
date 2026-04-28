@@ -1,0 +1,50 @@
+diff --git a/src/digest.js b/src/digest.js
+index 14358421b31a421272b65cb14a19bf5ab88401af..38002d7b127ac1b47688729222f6bf197e25f2da 100644
+--- a/src/digest.js
++++ b/src/digest.js
+@@ -179,21 +179,18 @@ const translateCompartmentMap = (
+               location,
+               parser,
+               sha512,
+-              __createdBy: 'digest',
+             };
+           } else if (isExitModuleSource(source)) {
+             const { exit } = source;
+             /** @type {ExitModuleConfiguration} */
+             modules[name] = {
+               exit,
+-              __createdBy: 'digest',
+             };
+           } else if (isErrorModuleSource(source)) {
+             const { deferredError } = source;
+             /** @type {ErrorModuleConfiguration} */
+             modules[name] = {
+               deferredError,
+-              __createdBy: 'digest',
+             };
+           } else {
+             throw new TypeError(
+diff --git a/src/import-hook.js b/src/import-hook.js
+index 061ba13e9d2a350e474f0550e13162d30bb95869..3b18d0f3cb5ff2326e3efa4c8de1d334b3e86544 100644
+--- a/src/import-hook.js
++++ b/src/import-hook.js
+@@ -449,7 +449,6 @@ function* chooseModuleDescriptor(
+           retained: true,
+           module: candidateSpecifier,
+           compartment: packageLocation,
+-          __createdBy: 'import-hook',
+         };
+       }
+       /** @type {StaticModuleType} */
+diff --git a/src/link.js b/src/link.js
+index 7f0e42fb595db0975de5b3e64d05e01afdd70fd1..15158724adb521556f686759ba15d4d2a8535c61 100644
+--- a/src/link.js
++++ b/src/link.js
+@@ -209,7 +209,6 @@ const makeModuleMapHook = (
+           retained: true,
+           compartment: foreignCompartmentName,
+           module: foreignModuleSpecifier,
+-          __createdBy: 'link',
+         };
+         // actual module descriptor
+         return {

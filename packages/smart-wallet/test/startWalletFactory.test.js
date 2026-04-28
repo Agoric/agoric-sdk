@@ -10,7 +10,7 @@ import { makeMockTestSpace } from './supports.js';
  * @import {EReturn} from '@endo/far';
  * @import {TestFn} from 'ava';
  * @import {start as StartWalletFactory} from '../src/walletFactory.js';
- * @import {Installation} from '@agoric/zoe';
+ * @import {Installation, SourceBundle} from '@agoric/zoe';
  */
 
 /**
@@ -26,9 +26,9 @@ const makeTestContext = async () => {
 
   //#region Installs
   const bundleCache = await unsafeSharedBundleCache;
-  const { walletFactoryBundle: bundle } = await bundleCache.loadRegistry(
-    smartWalletSourceSpecRegistry,
-  );
+  const { walletFactoryBundle: rawWalletFactoryBundle } =
+    await bundleCache.loadRegistry(smartWalletSourceSpecRegistry);
+  const bundle = /** @type {SourceBundle} */ (rawWalletFactoryBundle);
   /** @type {Promise<Installation<StartWalletFactory>>} */
   const installation = E(zoe).install(bundle);
   //#endregion
