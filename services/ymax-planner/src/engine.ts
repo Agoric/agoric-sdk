@@ -174,6 +174,7 @@ export type Powers = {
   console?: Pick<Console, 'debug' | 'info' | 'log' | 'warn' | 'error'>;
   evmCtx: Omit<EvmContext, 'signingSmartWalletKit' | 'fetch'>;
   rpc: CosmosRPCClient;
+  setTimeout: typeof globalThis.setTimeout;
   spectrumBlockchain: SpectrumBlockchainSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
@@ -185,7 +186,6 @@ export type Powers = {
     retryOpts?: RetryOptionsAndPowers,
   ) => ReturnType<typeof getInvocationUpdate>;
   now: typeof Date.now;
-  delay: (ms: number) => Promise<void>;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
@@ -806,7 +806,7 @@ export const startEngine = async (
   const capacity = 10;
   const throttledPendingTxKeys = rateLimitedSource({
     policy: { quota: capacity, windowMs: 1000 },
-    powers: { delay: powers.delay, now: powers.now },
+    powers: { now: powers.now, setTimeout: powers.setTimeout },
     source: pendingTxKeys as Array<string>,
   });
 

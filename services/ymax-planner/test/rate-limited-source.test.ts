@@ -9,9 +9,11 @@ const makeFakeClock = () => {
     advance: (ms: number) => {
       clockNow += ms;
     },
-    delay: async (ms: number) => {
-      clockNow += ms;
-    },
+    setTimeout: ((cb: () => void, ms?: number) => {
+      clockNow += ms ?? 0;
+      cb();
+      return 0;
+    }) as typeof globalThis.setTimeout,
     now: () => clockNow,
   };
 };
@@ -42,13 +44,13 @@ test('rateLimitedSource: bursts up to quota, then waits one window', async t => 
 
 test('rateLimitedSource: an idle period grants the next item without delay', async t => {
   const clock = makeFakeClock();
-  let delayCalls = 0;
+  let setTimeoutCalls = 0;
   const powers = {
     now: clock.now,
-    delay: async (ms: number) => {
-      delayCalls += 1;
-      await clock.delay(ms);
-    },
+    setTimeout: ((cb: () => void, ms?: number) => {
+      setTimeoutCalls += 1;
+      return clock.setTimeout(cb, ms);
+    }) as typeof globalThis.setTimeout,
   };
   const iter = rateLimitedSource({
     source: [0, 1, 2],
@@ -58,16 +60,16 @@ test('rateLimitedSource: an idle period grants the next item without delay', asy
 
   t.is((await iter.next()).value, 0);
   t.is(clock.now(), 0);
-  t.is(delayCalls, 0);
+  t.is(setTimeoutCalls, 0);
 
   clock.advance(150);
   t.is((await iter.next()).value, 1);
   t.is(clock.now(), 150);
-  t.is(delayCalls, 0);
+  t.is(setTimeoutCalls, 0);
 
   t.is((await iter.next()).value, 2);
   t.is(clock.now(), 250);
-  t.is(delayCalls, 1);
+  t.is(setTimeoutCalls, 1);
 });
 
 test('rateLimitedSource: sliding window spaces by oldest in-window release', async t => {
@@ -92,15 +94,15 @@ test('rateLimitedSource: sliding window spaces by oldest in-window release', asy
   t.is(clock.now(), 150);
 });
 
-test('rateLimitedSource: empty source completes without invoking delay', async t => {
+test('rateLimitedSource: empty source completes without invoking setTimeout', async t => {
   const clock = makeFakeClock();
-  let delayCalls = 0;
+  let setTimeoutCalls = 0;
   const powers = {
     now: clock.now,
-    delay: async (ms: number) => {
-      delayCalls += 1;
-      await clock.delay(ms);
-    },
+    setTimeout: ((cb: () => void, ms?: number) => {
+      setTimeoutCalls += 1;
+      return clock.setTimeout(cb, ms);
+    }) as typeof globalThis.setTimeout,
   };
   for await (const _ of rateLimitedSource({
     source: [],
@@ -109,7 +111,7 @@ test('rateLimitedSource: empty source completes without invoking delay', async t
   })) {
     t.fail('should not emit');
   }
-  t.is(delayCalls, 0);
+  t.is(setTimeoutCalls, 0);
   t.is(clock.now(), 0);
 });
 

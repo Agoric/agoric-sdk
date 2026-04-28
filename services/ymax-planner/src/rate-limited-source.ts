@@ -20,8 +20,8 @@ type RateLimitPolicy = {
 };
 
 type RateLimitPowers = {
-  delay: (ms: number) => Promise<void>;
   now: () => number;
+  setTimeout: typeof globalThis.setTimeout;
 };
 
 const rateLimitedSource = <T>({
@@ -34,7 +34,7 @@ const rateLimitedSource = <T>({
   source: Iterable<T> | AsyncIterable<T>;
 }) => {
   const { quota, windowMs } = policy;
-  const { delay, now } = powers;
+  const { now, setTimeout } = powers;
 
   if (!(Number.isInteger(quota) && quota > 0)) {
     throw RangeError('quota must be a positive integer');
@@ -44,27 +44,28 @@ const rateLimitedSource = <T>({
     throw RangeError('windowMs must be a positive finite number');
   }
 
+  const delay = (ms: number) =>
+    new Promise<void>(resolve => setTimeout(resolve, ms));
+
   async function* generate(): AsyncGenerator<T, void, void> {
     const releases: number[] = [];
+
     for await (const item of source) {
+      const remainingCapacity = quota - releases.length;
       const t = now();
 
-      let effective = t;
+      if (remainingCapacity > 0) {
+        releases.push(t);
+      } else {
+        if (remainingCapacity !== 0) throw Error('internal: quota exceeded');
 
-      if (releases.length >= quota) {
-        const earliest = releases[releases.length - quota] + windowMs;
-        if (earliest > effective) effective = earliest;
+        const earliest = releases.shift()!;
+        const effective = Math.max(t, earliest + windowMs);
+        releases.push(effective);
+        const wait = effective - t;
+        if (wait) await delay(wait);
       }
 
-      releases.push(effective);
-
-      if (releases.length > quota) {
-        releases.splice(0, releases.length - quota);
-      }
-
-      const wait = effective - t;
-
-      if (wait) await delay(wait);
       yield item;
     }
   }
