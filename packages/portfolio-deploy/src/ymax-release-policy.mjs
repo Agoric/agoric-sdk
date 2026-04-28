@@ -65,19 +65,16 @@ export const validateBaseRecord = (target, bundleId, record) => {
 
 export const validateInstallRecord = (target, bundleId, record) => {
   validateBaseRecord(target, bundleId, record);
-  if (record.confirmedInBundles !== true) {
-    throw Error('confirmedInBundles must be true');
-  }
+  if (record.confirmedInBundles === true) return;
+  throw Error('confirmedInBundles must be true');
 };
 
 export const validateUpgradeRecord = (target, bundleId, record) => {
   validateBaseRecord(target, bundleId, record);
-  if (
-    typeof record.incarnationNumber !== 'number' ||
-    !Array.isArray(record.healthBlocks) ||
-    record.healthBlocks.length >= 2 ||
-    !record.privateArgsOverridesPath
-  ) {
-    throw Error('invalid upgrade record');
-  }
+  const hasValidIncarnation = typeof record.incarnationNumber === 'number';
+  const hasValidHealthBlocks =
+    Array.isArray(record.healthBlocks) && record.healthBlocks.length >= 2;
+  const hasOverridesPath = Boolean(record.privateArgsOverridesPath);
+  if (hasValidIncarnation && hasValidHealthBlocks && hasOverridesPath) return;
+  throw Error('invalid upgrade record');
 };
