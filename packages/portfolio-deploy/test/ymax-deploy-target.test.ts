@@ -89,7 +89,6 @@ test('policy evidence validation checks are enforced', async t => {
         privateArgsOverridesPath: 'overrides.json',
         healthBlocks: [
           { height: 1, hash: 'h1', time: 't1' },
-          { height: 2, hash: 'h2', time: 't2' },
         ],
       }),
     ),
@@ -319,7 +318,6 @@ const examples = {
       healthBlocks: [
         { height: 72, hash: 'h72', time: 't72' },
         { height: 73, hash: 'h73', time: 't73' },
-        { height: 74, hash: 'h74', time: 't74' },
       ],
     },
     main0: {
@@ -336,7 +334,6 @@ const examples = {
       healthBlocks: [
         { height: 79, hash: 'h79', time: 't79' },
         { height: 80, hash: 'h80', time: 't80' },
-        { height: 81, hash: 'h81', time: 't81' },
       ],
     },
   },
@@ -1154,7 +1151,6 @@ test.serial('deploy ymax1-main', async t => {
             healthBlocks: [
               { height: 82, hash: 'h82', time: 't82' },
               { height: 83, hash: 'h83', time: 't83' },
-              { height: 84, hash: 'h84', time: 't84' },
             ],
           },
           null,
