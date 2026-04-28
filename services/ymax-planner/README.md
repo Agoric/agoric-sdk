@@ -172,9 +172,6 @@ Environment variables:
 - `FEE_BRAND_NAME`: For identifying how to pay [Axelar Cosmos–EVM] transfer fees by matching against `issuerName` in vstorage data at path "published.agoricNames.vbankAsset" (default "BLD")
 - `REQUEST_TIMEOUT`: Milliseconds to wait for each external request (default "10000" = 10 seconds)
 - `REQUEST_RETRIES`: Retry count for external requests (default "3")
-- `COSMOS_REST_TIMEOUT`: Overrides `REQUEST_TIMEOUT` for Agoric/Noble/etc. Cosmos REST APIs (optional)
-- `COSMOS_REST_RETRIES`: Overrides `REQUEST_RETRIES` for Agoric/Noble/etc. Cosmos REST APIs (optional)
-- `AGORIC_REST_URL`: Overrides the default Agoric REST endpoint (sourced from `chain-registry`) used for account-state queries (optional)
 - `GRAPHQL_ENDPOINTS`: JSON text for a Record\<dirname, url[]> object describing endpoints associated with each api-\* GraphQL API directory under [graphql](./src/graphql) (optional)
 - `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided (relative to the cwd),
 an absolute path is recommended
@@ -192,8 +189,7 @@ event subscriptions:
   * ERC-4626 vaults `balanceOf` and `convertToAssets` (Morpho, etc.)
 * **Spectrum Blockchain API**: query non-EVM token balances (Agoric USDC/USDN, Noble)
 * **Axelar API**: estimate cross-chain gas fees (GMP)
-* **Agoric CometBFT RPC**: subscribe to chain events via WebSocket
-* **Agoric Cosmos REST**: query for account data
+* **Agoric CometBFT RPC**: subscribe to chain events and query account data
 * **Google Cloud Secret Manager**: retrieve Agoric wallet mnemonic for signing transactions
 * **YMax Data Service**: send notifications when monitored transactions settle
 
@@ -232,17 +228,16 @@ Passing protocol. Called during rebalance planning to account for transfer costs
 - Mainnet: `https://api.axelarscan.io/`
 - Testnet: `https://testnet.api.axelarscan.io/`
 
-### Agoric CometBFT RPC / Cosmos REST
+### Agoric CometBFT RPC
 
-**Env vars**: `CLUSTER`/`AGORIC_NET`, `COSMOS_REST_TIMEOUT`, `COSMOS_REST_RETRIES`
+**Env vars**: `CLUSTER`/`AGORIC_NET`
 
-Connects to an Agoric RPC node. Two transports are used:
-- **WebSocket RPC** (`CosmosRPCClient`): subscribes to CometBFT events
+Connects to an Agoric RPC node:
+- **WebSocket** (`CosmosRPCClient`): subscribes to CometBFT events
   (`/websocket` with query `tm.event = 'NewBlock'`) to drive the rebalance loop.
   Also used to fetch block timestamps and verify chain ID at startup.
-- **HTTP REST** (`CosmosRestClient`): queries for account data
-  (`/cosmos/auth/v1beta1/accounts/{address}`), which includes the sequence
-  number.
+- **`abci_query`** (`@cosmjs/stargate` `StargateClient`): queries for account
+  data (account number and sequence) over the same RPC endpoint.
 
 ### Google Cloud Secret Manager
 

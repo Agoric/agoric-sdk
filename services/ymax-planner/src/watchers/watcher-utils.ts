@@ -238,7 +238,7 @@ export const fetchReceiptWithRetry = async (
   txHash: string,
   log: (...args: unknown[]) => void,
   retryOptions: RetryOptions = DEFAULT_RETRY_OPTIONS,
-  setTimeout: typeof globalThis.setTimeout = globalThis.setTimeout,
+  setTimeout: typeof globalThis.setTimeout,
 ) => {
   const { limit, backoffLimit } = retryOptions;
   let receipt = await provider.getTransactionReceipt(txHash);
@@ -272,7 +272,7 @@ const waitForFinalConfirmations = async (
   chainId: CaipChainId,
   provider: EvmRpc,
   log: (...args: unknown[]) => void,
-  setTimeout: typeof globalThis.setTimeout = globalThis.setTimeout,
+  setTimeout: typeof globalThis.setTimeout,
   signal?: AbortSignal,
 ): Promise<TransactionReceipt | null> => {
   const receipt = await waitForConfirmations({
@@ -295,14 +295,14 @@ const waitForFinalConfirmations = async (
 export type HandleTxRevertOpts = {
   receipt: TransactionReceipt;
   txHash: string;
-  /** A string identifier for logging (e.g., "txId=tx1" or "expectedAddr=0x123"). */
-  identifier: string;
+  /** An optional string identifier for logging (e.g., "expectedAddr=0x123"). */
+  identifier?: string;
   chainId: `${string}:${string}`;
   signal?: AbortSignal;
   powers: {
     provider: EvmRpc;
     log: (...args: unknown[]) => void;
-    setTimeout?: typeof globalThis.setTimeout;
+    setTimeout: typeof globalThis.setTimeout;
   };
 };
 
@@ -320,7 +320,7 @@ export const handleTxRevert = async ({
   identifier,
   chainId,
   signal,
-  powers: { provider, log, setTimeout = globalThis.setTimeout },
+  powers: { provider, log, setTimeout },
 }: HandleTxRevertOpts): Promise<{
   settled: true;
   txHash: string;
@@ -329,7 +329,7 @@ export const handleTxRevert = async ({
   await null;
   // TODO(https://github.com/Agoric/agoric-private/issues/783): also wait for confirmations on success cases — a reorg can flip
   // success → failure just as it can flip failure → success.
-  if (receipt.status !== 0) return null;
+  if (receipt.status === 1) return null;
 
   const confirmations = getRevertConfirmationsRequired(chainId);
   const confirmedReceipt = await waitForFinalConfirmations(
@@ -344,18 +344,15 @@ export const handleTxRevert = async ({
   if (!confirmedReceipt) return null;
 
   // Re-check status after confirmations in case of reorg
-  if (confirmedReceipt.status === 0) {
-    log(
-      `❌ REVERTED (${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber} - transaction failed`,
-    );
-    return { settled: true, txHash, success: false };
-  } else {
-    // Transaction was reorged and succeeded - treat as success
-    log(
-      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
-    );
-    return { settled: true, txHash, success: true };
-  }
+  const success = confirmedReceipt.status === 1;
+  const msgPrefix = success
+    ? `✅ SUCCESS (after reorg, ${confirmations} confirmations)`
+    : `❌ REVERTED (transaction failed, ${confirmations} confirmations)`;
+  const paddedIdentifier = identifier ? ` ${identifier}` : '';
+  log(
+    `${msgPrefix}:${paddedIdentifier} txHash=${txHash} block=${confirmedReceipt.blockNumber}`,
+  );
+  return { settled: true, txHash, success };
 };
 
 export type HandleOperationFailureOpts<T extends { success: boolean }> = {
@@ -363,14 +360,12 @@ export type HandleOperationFailureOpts<T extends { success: boolean }> = {
   /** Filter to re-fetch the event after confirmations. */
   logFilter: Filter;
   parseEvent: (log: Log) => T;
-  /** A string identifier for logging. */
-  identifier: string;
   chainId: CaipChainId;
   signal?: AbortSignal;
   powers: {
     provider: EvmRpc;
     log: (...args: unknown[]) => void;
-    setTimeout?: typeof globalThis.setTimeout;
+    setTimeout: typeof globalThis.setTimeout;
   };
 };
 
@@ -386,10 +381,9 @@ export const handleOperationFailure = async <T extends { success: boolean }>({
   eventLog,
   logFilter,
   parseEvent,
-  identifier,
   chainId,
   signal,
-  powers: { provider, log, setTimeout = globalThis.setTimeout },
+  powers: { provider, log, setTimeout },
 }: HandleOperationFailureOpts<T>): Promise<{
   settled: true;
   txHash: string;
@@ -422,7 +416,7 @@ export const handleOperationFailure = async <T extends { success: boolean }>({
 
   if (!confirmedLog) {
     log(
-      `Event not found after ${confirmations} confirmations (possibly reorged or tx reverted): ${identifier} txHash=${txHash}`,
+      `Event not found after ${confirmations} confirmations (possibly reorged or tx reverted): txHash=${txHash}`,
     );
     return null;
   }
@@ -431,13 +425,11 @@ export const handleOperationFailure = async <T extends { success: boolean }>({
 
   if (confirmedParsed.success) {
     log(
-      `✅ SUCCESS (after reorg, ${confirmations} confirmations): ${identifier} txHash=${txHash}`,
+      `✅ SUCCESS (after reorg, ${confirmations} confirmations): txHash=${txHash}`,
     );
     return { settled: true, txHash, success: true };
   }
 
-  log(
-    `❌ FAILURE (${confirmations} confirmations): ${identifier} txHash=${txHash}`,
-  );
+  log(`❌ FAILURE (${confirmations} confirmations): txHash=${txHash}`);
   return { settled: true, txHash, success: false };
 };

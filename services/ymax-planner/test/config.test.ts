@@ -58,8 +58,6 @@ test('loadConfig accepts valid configuration', async t => {
     CONTRACT_INSTANCE: 'ymax1',
     ALCHEMY_API_KEY: 'test1234',
     AGORIC_NET: 'devnet,myChainId',
-    COSMOS_REST_TIMEOUT: '10000',
-    COSMOS_REST_RETRIES: '5',
     GRAPHQL_ENDPOINTS: minimalEnv.GRAPHQL_ENDPOINTS,
     SQLITE_DB_PATH: './test-kv-store.db',
     YDS_URL: 'https://yds.example.com',
@@ -72,9 +70,7 @@ test('loadConfig accepts valid configuration', async t => {
   t.is(config.clusterName, 'testnet');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
-  t.is(config.cosmosRest.agoricNetworkSpec, 'devnet,myChainId');
-  t.is(config.cosmosRest.timeout, 10000);
-  t.is(config.cosmosRest.retries, 5);
+  t.is(config.agoricNetworkSpec, 'devnet,myChainId');
 });
 
 test('loadConfig uses default values when optional fields are missing', async t => {
@@ -84,9 +80,7 @@ test('loadConfig uses default values when optional fields are missing', async t 
   t.is(config.contractInstance, 'ymax1');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
-  t.is(config.cosmosRest.agoricNetworkSpec, 'local');
-  t.is(config.cosmosRest.timeout, 10000);
-  t.is(config.cosmosRest.retries, 3);
+  t.is(config.agoricNetworkSpec, 'local');
 });
 
 test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
@@ -100,7 +94,7 @@ test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
       });
       t.is(config.clusterName, clusterName as any, `CLUSTER=${clusterName}`);
       t.is(
-        config.cosmosRest.agoricNetworkSpec,
+        config.agoricNetworkSpec,
         agoricNetworkSpec || defaultAgoricNetworkSpec,
         `CLUSTER=${clusterName} implies AGORIC_NET`,
       );
@@ -129,7 +123,7 @@ test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
           CLUSTER: clusterName,
         });
         t.is(
-          config.cosmosRest.agoricNetworkSpec,
+          config.agoricNetworkSpec,
           agoricNetworkSpec,
           `AGORIC_NET=${agoricNetworkSpec}`,
         );
@@ -154,7 +148,7 @@ test('loadConfig trims whitespace from values', async t => {
 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
-  t.is(config.cosmosRest.agoricNetworkSpec, 'devnet');
+  t.is(config.agoricNetworkSpec, 'devnet');
 });
 
 test('loadConfig rejects empty required values', async t => {

@@ -70,7 +70,7 @@ export const resolveTx = async (
   const config = await loadConfig(env);
 
   const networkConfig = await fetchEnvNetworkConfig({
-    env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
+    env: { AGORIC_NET: config.agoricNetworkSpec },
     fetch,
   });
 

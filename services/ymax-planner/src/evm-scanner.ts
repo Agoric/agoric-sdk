@@ -551,14 +551,12 @@ export type WaitForConfirmationsOpts = {
   provider: EvmRpc;
   txHash: string;
   minConfirmations: number;
-  /**
-   * If set, the wait between polls is extended to the estimated time until the
-   * remaining confirmations have accrued, avoiding pointless RPC round-trips.
-   */
-  meanBlockTimeMs?: number;
+  /** For avoiding intermediate RPC requests while awaiting confirmations. */
+  meanBlockTimeMs: number;
+  /** The minimum amount of time to wait between RPC requests. */
   pollIntervalMs?: number;
   signal?: AbortSignal;
-  setTimeout?: typeof globalThis.setTimeout;
+  setTimeout: typeof globalThis.setTimeout;
   log?: (...args: unknown[]) => void;
 };
 
@@ -569,11 +567,11 @@ export const waitForConfirmations = async ({
   meanBlockTimeMs,
   pollIntervalMs = DEFAULT_CONFIRMATION_POLL_INTERVAL_MS,
   signal,
-  setTimeout = globalThis.setTimeout,
+  setTimeout,
   log = () => {},
 }: WaitForConfirmationsOpts): Promise<TransactionReceipt | null> => {
   const makeAbortController = prepareAbortController({ setTimeout });
-  const racingSignals = signal ? [signal] : undefined;
+
   await null;
   let everSeenReceipt = false;
   while (true) {
@@ -585,24 +583,25 @@ export const waitForConfirmations = async ({
       everSeenReceipt = true;
       const currentBlock = await provider.getBlockNumber();
       const confirmationCount = currentBlock - receipt.blockNumber + 1;
-      if (confirmationCount >= minConfirmations) return receipt;
+      const confirmationsStillNeeded = minConfirmations - confirmationCount;
+      if (confirmationsStillNeeded <= 0) return receipt;
       log(
         `Waiting for more confirmations: txHash=${txHash} observed=${confirmationCount} of ${minConfirmations} currentBlock=${currentBlock} receiptBlock=${receipt.blockNumber}`,
       );
-      if (meanBlockTimeMs) {
-        const confirmationsStillNeeded = minConfirmations - confirmationCount;
-        sleepMs = Math.max(
-          pollIntervalMs,
-          (confirmationsStillNeeded + 1) * meanBlockTimeMs,
-        );
-      }
+      sleepMs = Math.max(
+        sleepMs,
+        (confirmationsStillNeeded + 1) * meanBlockTimeMs,
+      );
     } else if (everSeenReceipt) {
       log(`Transaction ${txHash} receipt disappeared - likely lost in a reorg`);
       return null;
     }
 
     await new Promise(resolve => {
-      const timeoutSignal = makeAbortController(sleepMs, racingSignals).signal;
+      const { signal: timeoutSignal } = makeAbortController(
+        sleepMs,
+        signal ? [signal] : undefined,
+      );
       if (timeoutSignal.aborted) return resolve(undefined);
       timeoutSignal.addEventListener('abort', () => resolve(undefined));
     });

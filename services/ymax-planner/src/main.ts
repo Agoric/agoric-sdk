@@ -3,12 +3,11 @@
 import timersPromises from 'node:timers/promises';
 import { inspect } from 'node:util';
 
-import { SigningStargateClient } from '@cosmjs/stargate';
+import { SigningStargateClient, StargateClient } from '@cosmjs/stargate';
 import type { GraphQLClient } from 'graphql-request';
 import * as ws from 'ws';
 
 import { Fail, q } from '@endo/errors';
-import { isPrimitive } from '@endo/pass-style';
 
 import { PROD_NETWORK } from '@aglocal/portfolio-contract/tools/network/prod-network.js';
 import {
@@ -20,13 +19,11 @@ import {
   makeSequencingSmartWallet,
   reflectWalletStore,
 } from '@agoric/client-utils';
-import type { BaseAccountSDKType } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import {
   deeplyFulfilledObject,
   objectMap,
-  objectMetaMap,
   withDeferredCleanup,
 } from '@agoric/internal';
 import {
@@ -39,7 +36,6 @@ import {
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 
 import { loadConfig } from './config.ts';
-import { CosmosRestClient } from './cosmos-rest-client.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
@@ -69,6 +65,14 @@ const assertChainId = async (
   actualChainId || Fail`Chain ID not found in RPC status: ${status}`;
   actualChainId === chainId ||
     Fail`Expected chain ID ${q(actualChainId)} to be ${q(chainId)}`;
+};
+
+const logChainAppInfo = async (
+  rpc: CosmosRPCClient,
+  log: typeof console.warn,
+) => {
+  const info = await rpc.request('abci_info', {});
+  log('Agoric chain app info:', info?.response);
 };
 
 export type SimplePowers = {
@@ -123,7 +127,7 @@ export const main = async (
 
   const evmTokenAddresses = getPoolTokenAddresses(axelarCfg);
   const networkConfig = await fetchEnvNetworkConfig({
-    env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
+    env: { AGORIC_NET: config.agoricNetworkSpec },
     fetch,
   });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
@@ -137,19 +141,9 @@ export const main = async (
   await assertChainId(rpc, networkConfig.chainName, (...logArgs) =>
     console.warn('Agoric chain status:', ...logArgs),
   );
+  await logChainAppInfo(rpc, console.warn);
 
-  const cosmosRest = new CosmosRestClient(simplePowers, {
-    clusterName,
-    timeout: config.cosmosRest.timeout,
-    retries: config.cosmosRest.retries,
-    agoricRestUrl: config.cosmosRest.agoricRestUrl,
-  });
-  const agoricChainInfo = await cosmosRest.getChainInfo('agoric');
-  const agoricVersions = (agoricChainInfo as any)?.application_version;
-  const agoricSummary = objectMetaMap(agoricVersions || {}, desc =>
-    isPrimitive(desc.value) ? desc : undefined,
-  );
-  console.warn('Agoric chain versions:', agoricVersions && agoricSummary);
+  const stargateQueryClient = await StargateClient.connect(agoricRpcAddr);
 
   const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
   const signingSmartWalletKit =
@@ -199,11 +193,13 @@ export const main = async (
       }
 
       const fetchAccount = async () => {
-        const response = await cosmosRest.getAccountSequence('agoric', address);
-        const { account_number: accountNumber, sequence } =
-          (response.account as BaseAccountSDKType) ||
-          Fail`Account not found for address ${address}`;
-        return { address, accountNumber, sequence };
+        const account = await stargateQueryClient.getAccount(address);
+        if (!account) throw Fail`Account not found for address ${address}`;
+        return {
+          address,
+          accountNumber: BigInt(account.accountNumber),
+          sequence: BigInt(account.sequence),
+        };
       };
       const txSequencer = await makeTxSequencer(fetchAccount, {
         log: makeMaybeLogger('[TxSequencer]'),
@@ -320,6 +316,9 @@ export const main = async (
   await withDeferredCleanup(async addCleanup => {
     addCleanup(async () => {
       await db.close();
+    });
+    addCleanup(async () => {
+      stargateQueryClient.disconnect();
     });
     await startEngine(powers, {
       isDryRun,

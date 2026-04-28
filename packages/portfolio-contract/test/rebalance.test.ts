@@ -626,6 +626,67 @@ testWithAllModes(
   },
 );
 
+test('infeasibility error with debug=true', async t => {
+  // @ts-expect-error fake chain names
+  const network: NetworkSpec = harden({
+    debug: true,
+    environment: 'test',
+    chains: [
+      { name: 'FakeSupply', control: 'axelar' },
+      { name: 'FakeSink', control: 'axelar' },
+    ],
+    pools: [
+      { pool: 'Aave_FakeSupply', chain: 'FakeSupply', protocol: 'Aave' },
+      { pool: 'Aave_FakeSink', chain: 'FakeSink', protocol: 'Aave' },
+    ],
+    links: [
+      {
+        src: '@FakeSupply',
+        dest: '@FakeSink',
+        transfer: 'cctpV2',
+        variableFeeBps: 0,
+        timeSec: 30,
+        min: 100_000n,
+      },
+      {
+        src: '@FakeSink',
+        dest: '@FakeSupply',
+        transfer: 'cctpV2',
+        variableFeeBps: 0,
+        timeSec: 30,
+        min: 100_000n,
+      },
+    ],
+  });
+  const current = { '+FakeSupply': token(10_000_000_000n) }; // $10k
+  const target = {
+    Aave_FakeSupply: token(9_999_990_000n),
+    // delta is too small for link
+    Aave_FakeSink: token(10000n),
+  };
+  let thrown: Error | undefined;
+  await null;
+  try {
+    await planRebalanceFlow({
+      network,
+      // @ts-expect-error fake chain names
+      current,
+      // @ts-expect-error fake chain names
+      target,
+      brand: TOK_BRAND,
+      feeBrand: FEE_BRAND,
+      gasEstimator,
+    });
+  } catch (err) {
+    thrown = err as Error;
+  }
+  t.assert(thrown);
+  t.is(
+    thrown?.message,
+    'No feasible solution: nodes=5 edges=11 | supply: pos 0 must equal neg 10000000000000000 (diff -10000000000000000) | WARN: total supply does not balance to 0 | sources=0 sinks=2 | hubs: @FakeSink, @FakeSupply | inter-hub edges: @FakeSupply->@FakeSink, @FakeSink->@FakeSupply | { feasible: false, result: 0, bounded: true, e01: { arc: "@FakeSupply->Aave_FakeSupply", pick: 0.009_999_990, via: 9_999_990_000.000_002 }, e02: { arc: "Aave_FakeSink->@FakeSink", via: 9_999_990_000.000_002 }, e10: { arc: "@FakeSink->@FakeSupply", pick: 0.009_999_990, via: 9_999_990_000.000_002 } }',
+  );
+});
+
 test('solver differentiates cheapest vs. fastest', async t => {
   const network: NetworkSpec = {
     debug: true,

@@ -169,10 +169,7 @@ export const watchOperationResult = ({
     retryOptions?: RetryOptions;
   }): Promise<WatcherResult> => {
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      resolve({ settled: false });
-      return;
-    }
+    if (signal?.aborted) return resolve({ settled: false });
 
     // The txId must be padded to match sourceAddress length
     const paddedTxId = padTxId(txId, sourceAddress);
@@ -182,26 +179,24 @@ export const watchOperationResult = ({
       `Watching for OperationResult on router ${routerAddress} with id: ${txId}`,
     );
 
-    let done = false;
-    let timeoutId: NodeJS.Timeout;
-    let subId: string | null = null;
-    const cleanups: (() => void)[] = [];
-
     const ws = provider.websocket as WebSocket;
+    let done = false;
+    let subId: string | null = null;
+    const cleanups: (() => unknown)[] = [];
+    const doCleanup = async () => {
+      // Invoke all cleanups synchronously but report errors asynchronously.
+      for (const cleanup of cleanups) {
+        const result = (async () => cleanup())();
+        void result.catch(err => log('Error during cleanup:', err));
+      }
+    };
 
-    const finish = (result: WatcherResult) => {
+    const finish = (res: WatcherResult) => {
       if (done) return;
       done = true;
 
-      if (timeoutId) clearTimeout(timeoutId);
-      resolve(result);
-
-      if (subId) {
-        void provider
-          .send('eth_unsubscribe', [subId])
-          .catch(e => log('Failed to unsubscribe:', e));
-      }
-      for (const cleanup of cleanups) cleanup();
+      resolve(res);
+      void doCleanup();
     };
 
     /**
@@ -214,36 +209,24 @@ export const watchOperationResult = ({
       if (done) return;
       done = true;
 
-      if (timeoutId) clearTimeout(timeoutId);
-
       reject(err);
-      if (subId) {
-        void provider
-          .send('eth_unsubscribe', [subId])
-          .catch(error =>
-            log('Failed to unsubscribe during error cleanup:', error),
-          );
-      }
-      for (const cleanup of cleanups) cleanup();
+      void doCleanup();
     };
 
     const onWsError = (e: any) => {
       const errorMsg = e?.message || String(e);
-      log(
-        `WebSocket error during OperationResult watch for txId=${txId}: ${errorMsg}`,
-      );
+      log(`WebSocket error during OperationResult watch: ${errorMsg}`);
       fail(new Error(`WebSocket connection error: ${errorMsg}`));
     };
 
     const onWsClose = (code?: number, reason?: any) => {
-      if (!done) {
-        log(
-          `WebSocket closed during OperationResult watch for txId=${txId} (code=${code}, reason=${reason})`,
-        );
-        fail(
-          new Error(`WebSocket closed unexpectedly: ${reason} (code=${code})`),
-        );
-      }
+      if (done) return;
+      log(
+        `WebSocket closed during OperationResult watch (code=${code}, reason=${reason})`,
+      );
+      fail(
+        new Error(`WebSocket closed unexpectedly: ${reason} (code=${code})`),
+      );
     };
 
     ws.on('error', onWsError);
@@ -259,36 +242,38 @@ export const watchOperationResult = ({
     }
 
     const messageHandler = async (data: any) => {
-      await null;
       if (done) return;
 
+      await null;
       try {
         const msg = tryJsonParse(
           data.toString(),
           'alchemy_minedTransactions subscription response',
         ) as AlchemySubscriptionMessage;
-
         if (msg.method !== 'eth_subscription') return;
 
-        const tx = msg.params?.result?.transaction;
-        const removed = msg.params?.result?.removed;
-        if (!tx) return;
-
-        if (removed === true) {
-          log(
-            `⚠️  REORG: txId=${txId} txHash=${tx.hash} was removed from chain - ignoring`,
-          );
+        const { result } = msg.params ?? {};
+        const { transaction: tx, removed } = result ?? {};
+        if (!tx) {
+          log(`Subscription message missing transaction data`, result);
+          return;
+        }
+        if (removed) {
+          log(`⚠️  REORG: txHash=${tx.hash} was removed from chain - ignoring`);
           return;
         }
 
-        const txHash = tx.hash;
-        const txData = tx.input;
-        if (!txHash || !txData) return;
+        const { hash: txHash, input: txData } = tx;
+        if (!txHash || !txData) {
+          log(`Subscription message missing txHash or input data`);
+          return;
+        }
 
         if (
           !matchesTxPayload(txData, paddedTxId, payloadHash, log, txHash, txId)
-        )
+        ) {
           return;
+        }
 
         const receipt = await fetchReceiptWithRetry(
           provider,
@@ -298,22 +283,21 @@ export const watchOperationResult = ({
           setTimeout,
         );
         if (!receipt) {
-          log(`Transaction ${txHash} not confirmed after waiting`);
+          log(`txHash=${txHash} not confirmed after waiting`);
           return;
         }
 
         // Check for OperationResult event in receipt
-        const operationResultLog = receipt.logs.find(
-          (l: any) =>
+        const matchingLog = receipt.logs.find(
+          l =>
             l.topics?.[0] === OPERATION_RESULT_SIGNATURE &&
             l.topics?.[1] === expectedIdHash,
         );
-
-        if (operationResultLog) {
-          const { success } = parseOperationResultLog(operationResultLog);
+        if (matchingLog) {
+          const { success } = parseOperationResultLog(matchingLog);
 
           if (success) {
-            log(`✅ SUCCESS: expectedId=${txId} txHash=${txHash}`);
+            log(`✅ SUCCESS: txHash=${txHash}`);
             return finish({ settled: true, txHash, success: true });
           }
 
@@ -322,45 +306,41 @@ export const watchOperationResult = ({
             address: routerAddress,
             topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
           };
-          const result = await handleOperationFailure({
-            eventLog: operationResultLog,
+          const watcherResult = await handleOperationFailure({
+            eventLog: matchingLog,
             logFilter,
             parseEvent: parseOperationResultLog,
-            identifier: `expectedId=${txId}`,
             chainId,
             signal,
             powers: { provider, log, setTimeout },
           });
 
-          if (result) {
-            return finish(result);
-          }
+          if (watcherResult) finish(watcherResult);
           return;
         }
 
         // No OperationResult event — check for transaction revert
-        const result = await handleTxRevert({
+        const watcherResult = await handleTxRevert({
           receipt,
           txHash,
-          identifier: `txId=${txId}`,
           chainId,
           signal,
           powers: { provider, log, setTimeout },
         });
-        if (result) {
-          return finish(result);
+        if (watcherResult) {
+          return finish(watcherResult);
         }
       } catch (e) {
-        log(
-          `Error processing WebSocket message for txId=${txId}:`,
-          e instanceof Error ? e.message : String(e),
-        );
+        const errorMsg = e?.message || String(e);
+        log(`Error processing WebSocket message: ${errorMsg}`);
       }
     };
 
     const subscribe = async () => {
+      // Verify liveness.
       await provider.getNetwork();
 
+      // Attach message handler before subscribing to avoid race condition
       ws.on('message', messageHandler);
       cleanups.unshift(() => ws.off('message', messageHandler));
 
@@ -372,6 +352,11 @@ export const watchOperationResult = ({
           hashesOnly: false,
         },
       ]);
+      cleanups.unshift(() =>
+        provider
+          .send('eth_unsubscribe', [subId])
+          .catch(e => log(`Failed to unsubscribe:`, e)),
+      );
       log(`Subscribed with subId=${subId} for router=${routerAddress}`);
     };
 
@@ -381,13 +366,14 @@ export const watchOperationResult = ({
       ws.once('open', () => subscribe().catch(fail));
     }
 
-    timeoutId = setTimeout(() => {
-      if (!done) {
-        log(
-          `[${PendingTxCode.ROUTED_GMP_TX_NOT_FOUND}] ✗ No matching OperationResult found within ${timeoutMs / 60000} minutes`,
-        );
-      }
+    // Intentional: does not resolve/reject; only logs on timeout
+    const timeoutId = setTimeout(() => {
+      if (done) return;
+      log(
+        `[${PendingTxCode.ROUTED_GMP_TX_NOT_FOUND}] ✗ No matching OperationResult found within ${timeoutMs / 60000} minutes`,
+      );
     }, timeoutMs);
+    cleanups.unshift(() => clearTimeout(timeoutId));
   });
 };
 
@@ -491,7 +477,6 @@ export const lookBackOperationResult = async ({
         eventLog: matchingEvent,
         logFilter: baseFilter,
         parseEvent: parseOperationResultLog,
-        identifier: `txId=${txId}`,
         chainId,
         signal: sharedSignal,
         powers: { provider, log, setTimeout },
@@ -525,7 +510,6 @@ export const lookBackOperationResult = async ({
         const result = await handleTxRevert({
           receipt,
           txHash: failedTx.hash,
-          identifier: `txId=${txId}`,
           chainId,
           signal: sharedSignal,
           powers: { provider, log, setTimeout },

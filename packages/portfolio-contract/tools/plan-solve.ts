@@ -45,7 +45,14 @@ const replaceOrInit = <K, V>(
   map.set(key, callback(old, key, exists));
 };
 
-// XXX These probably belong in @agoric/internal.
+// #region XXX These probably belong in @agoric/internal.
+const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+const alphabetizeRecord = <T extends Record<string, unknown>>(obj: T) =>
+  Object.fromEntries(
+    Object.entries(obj).sort(([k1], [k2]) => compareStrings(k1, k2)),
+  );
+
 /**
  * Return the minimum and maximum bigint value from non-empty arguments, similar
  * to `Math.min` and `Math.max` (which don't work with bigints).
@@ -59,12 +66,14 @@ const bigIntExtremes = (first: bigint, ...rest: bigint[]) => {
   }
   return { min, max };
 };
+
 /**
  * Return the maximum bigint value from non-empty arguments, similar to
  * `Math.max` (which doesn't work with bigints).
  */
 const bigIntMax = (first: bigint, ...rest: bigint[]): bigint =>
   bigIntExtremes(first, ...rest).max;
+// #endregion
 
 /** The count of minor units per major unit (e.g., uusdc per USDC) */
 const UNIT_SCALE = 1e6;
@@ -350,7 +359,7 @@ const refineModel = (
 
 /**
  * Represent a JSON-serializable object as a spacey single-line literal with
- * identifier-compatible property names unquoted.
+ * identifier-compatible property names unquoted and number digits grouped.
  */
 const prettyJsonable = (obj: unknown): string => {
   const jsonText = JSON.stringify(obj, null, 1);
@@ -360,8 +369,24 @@ const prettyJsonable = (obj: unknown): string => {
     strings.push(s);
     return '#';
   });
-  // Condense the [now guaranteed-insignificant] whitespace.
-  const singleLine = safe.replace(/\s+/g, ' ');
+  // Condense the [now guaranteed-insignificant] whitespace and insert
+  // underscores to separate digits into groups of 3.
+  const singleLine = safe
+    .replace(/\s+/g, ' ')
+    .replace(/([0-9]+)([.][0-9]+)?/g, (_x, w, f = '') => {
+      const wCount = w.length;
+      const wGroups = w.slice(wCount % 3).match(/[0-9]{3}/g) || [];
+      if (wCount % 3) wGroups.unshift(w.slice(0, wCount % 3));
+
+      const fGroups = f.match(/[0-9]{1,3}/g) || [];
+      const lastFGroup = fGroups.pop();
+      if (lastFGroup) {
+        fGroups.push(lastFGroup.padEnd(3, '0'));
+        fGroups[0] = `.${fGroups[0]}`;
+      }
+
+      return `${wGroups.join('_')}${fGroups.join('_')}`;
+    });
   // Restore the strings, stripping quotes from property names as possible.
   const pretty = singleLine.replaceAll('#', () => {
     const s = strings.shift() as string;
@@ -369,6 +394,48 @@ const prettyJsonable = (obj: unknown): string => {
     return s.replace(/^"([\p{ID_Start}$_][\p{ID_Continue}$]*)":$/u, '$1:');
   });
   return pretty;
+};
+
+/**
+ * Translate opaque variable names associated with edges (e.g., "pick_e00" and
+ * "via_e99") into ordered human-readable records like
+ * `"e00": { arc: "@agoric->@Ethereum", pick: 0.01, via: 1_000_000 }`.
+ */
+const summarizeSolution = (
+  graph: FlowGraph,
+  solution?: LpSolution,
+): null | Record<string, unknown> => {
+  if (!solution) return null;
+
+  const { base, edges } = typedEntries(solution).reduce<{
+    base: Record<string, unknown>;
+    edges: Record<string, unknown>;
+  }>(
+    (groups, [key, value]) => {
+      const keyParts = key.match(/^(.*?)_(e[0-9]+)$/);
+      if (!keyParts) {
+        groups.base[key] = value;
+      } else {
+        const [, kind, edgeId] = keyParts;
+        const edgeData = groups.edges[edgeId] as any;
+        if (!edgeData) {
+          const edge = graph.edges.find(e => e.id === edgeId);
+          const label = edge ? `${edge.src}->${edge.dest}` : '<unknown>';
+          groups.edges[edgeId] = { arc: label, [kind]: value };
+        } else {
+          const prevLastKey = Object.keys(edgeData).pop() as string;
+          edgeData[kind] = value;
+          if (kind < prevLastKey) {
+            const { arc, ...rest } = edgeData;
+            groups.edges[edgeId] = { arc, ...alphabetizeRecord(rest) };
+          }
+        }
+      }
+      return groups;
+    },
+    { base: { __proto__: null }, edges: { __proto__: null } },
+  );
+  return { ...base, ...alphabetizeRecord(edges) };
 };
 
 const solveLPModel = (
@@ -382,11 +449,11 @@ const solveLPModel = (
   // instead. If result is undefined or there are no variable values, it's truly infeasible.
   if (!(solution?.feasible || solution?.result)) {
     if (graph.debug) {
-      // Emit richer context only on demand to avoid noisy passing runs
+      // Emit richer context.
       let msg = formatInfeasibleDiagnostics(graph, model);
-      msg += ` | ${prettyJsonable(solution)}`;
+      msg += ` | ${prettyJsonable(summarizeSolution(graph, solution))}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
-      failUnsolvable(X`No feasible solution: ${msg}`);
+      failUnsolvable(`No feasible solution: ${msg}`);
     }
     failUnsolvable(X`No feasible solution: ${solution}`);
   }

@@ -37,7 +37,7 @@ import { q, Fail } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
 import type { EvmAddress } from '@agoric/fast-usdc';
-import { USDN } from '../src/cosmos-rest-client.ts';
+import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
 import {
   getNonDustBalances,
   planDepositToAllocations,
@@ -148,9 +148,10 @@ const handleDeposit = async (
 };
 
 {
-  const denom = USDN.base;
-  denom === 'uusdn' ||
-    Fail`precondition: USDN denom must be "uusdn", not ${q(denom)}`;
+  const usdn =
+    nobleAssetList.assets.find(a => a.symbol === 'USDN') || Fail`no USDN`;
+  usdn.base === 'uusdn' ||
+    Fail`precondition: USDN denom must be "uusdn", not ${q(usdn.base)}`;
 }
 
 test('getNonDustBalances filters balances at or below the dust epsilon', async t => {

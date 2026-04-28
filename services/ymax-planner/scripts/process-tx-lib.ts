@@ -83,7 +83,7 @@ export const processTx = async (
   const { clusterName } = config;
 
   const networkConfig = await fetchEnvNetworkConfig({
-    env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
+    env: { AGORIC_NET: config.agoricNetworkSpec },
     fetch,
   });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];

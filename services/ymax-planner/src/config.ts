@@ -32,12 +32,7 @@ export interface YmaxPlannerConfig {
   readonly alchemyApiKey: string;
   readonly requestLimits: Partial<RequestLimits>;
   readonly spectrumBlockchainEndpoints: string[];
-  readonly cosmosRest: {
-    readonly agoricNetworkSpec: string;
-    readonly timeout: number;
-    readonly retries: number;
-    readonly agoricRestUrl?: string;
-  };
+  readonly agoricNetworkSpec: string;
   readonly axelar: {
     readonly apiUrl: string;
     readonly chainIdMap: Record<AxelarChain, string>;
@@ -174,8 +169,6 @@ export const loadConfig = async (
   const ydsApiKey = env.YDS_API_KEY?.trim();
   !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
 
-  const agoricRestUrl = validateUrl(env, 'AGORIC_REST_URL', undefined);
-
   const config: YmaxPlannerConfig = harden({
     clusterName,
     contractInstance,
@@ -183,12 +176,7 @@ export const loadConfig = async (
     alchemyApiKey: validateRequired(env, 'ALCHEMY_API_KEY'),
     requestLimits: { timeout, maxRetries },
     spectrumBlockchainEndpoints,
-    cosmosRest: {
-      agoricNetworkSpec,
-      timeout: parsePositiveInteger(env, 'COSMOS_REST_TIMEOUT', timeout),
-      retries: parsePositiveInteger(env, 'COSMOS_REST_RETRIES', maxRetries),
-      ...(agoricRestUrl ? { agoricRestUrl } : {}),
-    },
+    agoricNetworkSpec,
     axelar: {
       apiUrl: axelarApiAddress,
       chainIdMap: axelarChainIdMap,

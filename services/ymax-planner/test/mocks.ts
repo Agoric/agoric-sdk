@@ -457,64 +457,6 @@ export const createMockSigningSmartWalletKit = (): SigningSmartWalletKit => {
   } as any;
 };
 
-type BalanceResponse = { amount: string; denom: string };
-type Account = {
-  '@type': string;
-  address: string;
-  account_number: string;
-  sequence: string;
-};
-type CosmosRestClientConfig = {
-  balanceResponses?: BalanceResponse[];
-  initialAccount?: Account;
-};
-const DEFAULT_BALANCE_RESPONSES: BalanceResponse[] = [
-  { amount: '1000000', denom: 'uusdc' },
-];
-const DEFAULT_ACCOUNT: Account = {
-  '@type': '/cosmos.auth.v1beta1.BaseAccount',
-  address: 'agoric1test',
-  account_number: '377',
-  sequence: '100',
-};
-export const createMockCosmosRestClient = (
-  config: CosmosRestClientConfig = {},
-) => {
-  let callCount = 0;
-  const balanceResponses = config.balanceResponses ?? DEFAULT_BALANCE_RESPONSES;
-  const initialAccount = config.initialAccount ?? DEFAULT_ACCOUNT;
-  const mockAccount = initialAccount;
-
-  return {
-    getAccountBalance: async (_chainKey, _address, denom) => {
-      const response =
-        balanceResponses[callCount] ||
-        balanceResponses[balanceResponses.length - 1];
-      callCount += 1;
-      return {
-        denom,
-        amount: response.amount,
-      };
-    },
-    async getAccountSequence(_chainKey: string, _address: string) {
-      callCount++;
-      return { account: mockAccount };
-    },
-
-    getCallCount() {
-      return callCount;
-    },
-
-    updateSequence(amount: string) {
-      mockAccount.sequence = amount;
-    },
-
-    getNetworkSequence() {
-      return Number(mockAccount.sequence);
-    },
-  } as any;
-};
-
 export const createMockPendingTxOpts = (
   latestBlock = 1000,
   events?: Pick<Log, 'blockNumber' | 'data' | 'topics' | 'transactionHash'>[],

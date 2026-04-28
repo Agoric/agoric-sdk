@@ -6,7 +6,12 @@ import { Fail, q } from '@endo/errors';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 import { tryNow } from '@agoric/internal/src/ses-utils.js';
-import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
+import {
+  isDepositFromChainRef,
+  isInstrumentId,
+  isInterChainAccountRef,
+  isWithdrawToChainRef,
+} from '@agoric/portfolio-api/src/type-guards.js';
 import type {
   AssetPlaceRef,
   InterChainAccountRef,
@@ -42,7 +47,7 @@ const bfs = <T>(start: T, adj: Map<T, T[]>): Set<T> => {
  * Heuristics only: checks supply balance and reachability of sinks from sources.
  *
  * Example output (when graph.debug is true):
- *   No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs present: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum
+ * `No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum`
  *
  * How to enable:
  *   - Set `debug: true` on the NetworkSpec used to build the graph.
@@ -109,7 +114,7 @@ export const diagnoseInfeasible = (
       `sources with no path to any sink (${stranded.length}): ${sample}`,
     );
   }
-  lines.push(`hubs present: ${[...hubSet].sort().join(', ')}`);
+  lines.push(`hubs: ${[...hubSet].sort().join(', ')}`);
   lines.push(
     `inter-hub edges: ${hubEdges.length ? hubEdges.join(', ') : '(none)'}`,
   );
@@ -155,8 +160,16 @@ export const preflightValidateNetworkPlan = (
     const tgt = target[k]?.value ?? 0n;
     if (cur === tgt) continue;
 
-    const placeInfo = PoolPlaces[k as PoolKey];
-    placeInfo || declared.has(k) || Fail`Unsupported position key: ${q(k)}`;
+    if (isInstrumentId(k)) {
+      const placeInfo = PoolPlaces[k as PoolKey];
+      placeInfo || declared.has(k) || Fail`Unsupported position key: ${q(k)}`;
+    } else {
+      [
+        isInterChainAccountRef,
+        isDepositFromChainRef,
+        isWithdrawToChainRef,
+      ].some(p => p(k)) || Fail`Unsupported key: ${q(k)}`;
+    }
     const chain = tryNow(
       () => chainOf(k),
       () => undefined,
