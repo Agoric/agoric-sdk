@@ -41,7 +41,8 @@ const upgradeYmax = async (tools: RunTools) => {
   const account = await makeAccount(`MNEMONIC`, {
     // allow 10min for upgrade to replay async flow logs
     broadcastTimeoutMs: 10 * 60_000,
-    broadcastPollIntervalMs: 3_000,
+    // poll about twice per 6 second block
+    broadcastPollIntervalMs: (6 * 1_000) / 2,
   });
   const net = netOfConfig(account.networkConfig);
   checkContract(contract, account.address, net);
