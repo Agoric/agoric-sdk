@@ -189,13 +189,13 @@ the release process can be aborted.
   ```sh
   # Create a release branch.
   now=`date -u +%Y%m%dT%H%M%S`
-  git checkout -b prepare-release-$now
+  git switch -c prepare-release-$now
   ```
 
 - [ ] Do a `yarn install` to generate tooling needed for the release.
   ```sh
   # yarn install to build release tools
-  yarn install --force
+  yarn install
   ```
 
 - [ ] <a id="generate-sdk-version"></a>Generate new SDK version and per-package CHANGELOG.md files.

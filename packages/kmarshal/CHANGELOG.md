@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 0.3.0-u23.0 (2026-04-27)
+
+### Features
+
+* **SwingSet:** Add a tool for classifying unsettled promises ([feb1f93](https://github.com/Agoric/agoric-sdk/commit/feb1f93c81e68c680e07bdac8c64917ad69af602)), closes [#8336](https://github.com/Agoric/agoric-sdk/issues/8336)
+
+### Bug Fixes
+
+* **SwingSet:** clarify synthetic delivery payloads must be passable ([8198f94](https://github.com/Agoric/agoric-sdk/commit/8198f94724a0a227f9dda2ccc776bcc904e1149b))
+
 ## [0.2.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/kmarshal@0.2.0-u22.1...@agoric/kmarshal@0.2.0) (2026-04-02)
 
 **Note:** Version bump only for package @agoric/kmarshal

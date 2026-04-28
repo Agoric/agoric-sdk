@@ -382,7 +382,6 @@ export async function xsnap(options) {
         throw Error(`xsnap protocol error: received unknown message <<${m}>>`);
       }
     }
-    throw Error(`unreachable, but tools don't know that`);
   }
 
   /**

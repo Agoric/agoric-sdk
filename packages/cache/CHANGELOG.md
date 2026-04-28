@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.3.2...@agoric/cache@0.5.0-u23.0) (2026-04-27)
+
+### ⚠ BREAKING CHANGES
+
+* rm store exported.js
+* remove internal exported.js
+
+### Features
+
+* **types:** ambient exports from agoric/internal ([71d18c4](https://github.com/Agoric/agoric-sdk/commit/71d18c4221f63f1c0e7c45562b5a0a86a0b4b5c0))
+
+### Miscellaneous Chores
+
+* remove internal exported.js ([42272c2](https://github.com/Agoric/agoric-sdk/commit/42272c2b4563fb74560d303e4cdc1b4df51b7da3))
+* rm store exported.js ([5e474fe](https://github.com/Agoric/agoric-sdk/commit/5e474feea8211886cf81464aa1f39cbb7d7cd250))
+
 ## [0.4.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cache@0.4.0-u22.2...@agoric/cache@0.4.0) (2026-04-02)
 
 **Note:** Version bump only for package @agoric/cache

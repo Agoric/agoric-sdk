@@ -3,6 +3,43 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.3...@agoric/deploy-script-support@0.12.0-u23.0) (2026-04-27)
+
+### ⚠ BREAKING CHANGES
+
+* remove zoe exported.js
+* **pola-io:** Remove `flags` helper
+
+### Features
+
+* **agoric-cli:** add in-process core eval proposal builder ([64d1672](https://github.com/Agoric/agoric-sdk/commit/64d16724b8a39b5e692a8f96ff15c4759389043d))
+* better diagnostic for bad proposal ([835cc27](https://github.com/Agoric/agoric-sdk/commit/835cc27bdf286c14ed1246ddb8d8db407c6303fa))
+* **deploy-script-support:** emit in-memory core eval material records ([e6e5036](https://github.com/Agoric/agoric-sdk/commit/e6e50363b73f389560754ac7ae3023c7f36334e7))
+* **deploy-script-support:** generalize `extractCoreProposalBundles` ([4ca9a0b](https://github.com/Agoric/agoric-sdk/commit/4ca9a0b5cb8152e0fb5ca38f755ddd93dab07e36))
+* **deploy-script-support:** run, install, submit ([c8748ed](https://github.com/Agoric/agoric-sdk/commit/c8748edf947cd161da91e1c8e0468e8053de2ef2))
+* **deploy-script-support:** Write out bundle file names in machine readable file ([68235ec](https://github.com/Agoric/agoric-sdk/commit/68235ec3fc78b9973d886e782e03048427b6f93e))
+* **extract-proposal:** organize proposals into steps ([74f17ee](https://github.com/Agoric/agoric-sdk/commit/74f17ee3d4796078829e3e348822efb27738a38b))
+* **pola-io:** create package ([ab3ab66](https://github.com/Agoric/agoric-sdk/commit/ab3ab666eb9f4eb45aee63452ee613296d83ed43))
+* **types:** InvitationAmount ([cdf1b7a](https://github.com/Agoric/agoric-sdk/commit/cdf1b7a6ee28293ba5d606705e24a9fee175effe))
+* **types:** no package imports for ambient types ([cc182de](https://github.com/Agoric/agoric-sdk/commit/cc182de9b8b02a81210768b2602085534aa38a75))
+* **types:** Payment for set-like carries key type ([0765625](https://github.com/Agoric/agoric-sdk/commit/0765625bad5a377ce07049ec3b63df000de86762))
+* **types:** zoeService explicit exports ([ac2ddae](https://github.com/Agoric/agoric-sdk/commit/ac2ddae4bcc2a4132e118e1f3418b9723e09d757))
+* writeCoreEval returns plan ([a0115ed](https://github.com/Agoric/agoric-sdk/commit/a0115ede1432a5fd9c5435e7ef84ea5281aa07e7))
+
+### Bug Fixes
+
+* **deploy-script-support:** runTx needs to await agd.exec ([d8bed8b](https://github.com/Agoric/agoric-sdk/commit/d8bed8b8a0dc487dd81eae1e2694e3b3f6f5e613))
+* **deploy-scripts-support:** correct bare module resolution ([ff85a7a](https://github.com/Agoric/agoric-sdk/commit/ff85a7af22119a292d3978d2a1adecf1c75a87be))
+* handle agd status sync_info ([6307e5f](https://github.com/Agoric/agoric-sdk/commit/6307e5fd8b76fa389190a83111f39b2b8d375f24))
+* **types:** problems hidden by skipLibCheck ([6a6e595](https://github.com/Agoric/agoric-sdk/commit/6a6e59549e7beeeef94bf90556ed16873c46d285))
+* upgrade for breaking changes in `@endo/bundle-source` ([e840bb2](https://github.com/Agoric/agoric-sdk/commit/e840bb2385ef38aa2a038b6f21f02cdcd2d7979b))
+* validate scriptArgs endowment ([6864614](https://github.com/Agoric/agoric-sdk/commit/68646147d3e95c68b4a90c9e37d888ef00e9d35d))
+
+### Miscellaneous Chores
+
+* **pola-io:** Remove `flags` helper ([63eb15a](https://github.com/Agoric/agoric-sdk/commit/63eb15ae9333b6b9d05dad8b1d3c900468bd2473))
+* remove zoe exported.js ([f7c5512](https://github.com/Agoric/agoric-sdk/commit/f7c55128c942e115a879a0a2cb0575e1fd9fc042))
+
 ## [0.11.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.11.0-u22.2...@agoric/deploy-script-support@0.11.0) (2026-04-02)
 
 **Note:** Version bump only for package @agoric/deploy-script-support

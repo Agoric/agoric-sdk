@@ -3,6 +3,36 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.6.2...@agoric/notifier@0.8.0-u23.0) (2026-04-27)
+
+### ⚠ BREAKING CHANGES
+
+* remove internal exported.js
+* remove notifier exported.js
+* make Network and IBC vats durable (#8721)
+
+### Features
+
+* make Network and IBC vats durable ([#8721](https://github.com/Agoric/agoric-sdk/issues/8721)) ([3d13c09](https://github.com/Agoric/agoric-sdk/commit/3d13c09363013e23726c2ac5fa299a8e5344fd8c))
+* **network:** export `SendOptionsShape` ([abafe8e](https://github.com/Agoric/agoric-sdk/commit/abafe8ecb449d8fb2c84bd4c5ad18933a64a471e))
+* **types:** ambient exports from agoric/internal ([71d18c4](https://github.com/Agoric/agoric-sdk/commit/71d18c4221f63f1c0e7c45562b5a0a86a0b4b5c0))
+* **types:** explicit exports from notifier ([0bc72a8](https://github.com/Agoric/agoric-sdk/commit/0bc72a88c7d91ff1b2f00ee5cabeb58c6315598e))
+* **types:** generic makeDurablePublishKit ([b232f79](https://github.com/Agoric/agoric-sdk/commit/b232f7932476127e9d865099f17c3b64b7c3e32e))
+
+### Bug Fixes
+
+* eliminate the `passableEncoding` hack ([87dbbda](https://github.com/Agoric/agoric-sdk/commit/87dbbda8484c6fe3fe542eb847647fd1540c11e6)), closes [#8327](https://github.com/Agoric/agoric-sdk/issues/8327)
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **types:** emit .d.ts again ([0ca5db3](https://github.com/Agoric/agoric-sdk/commit/0ca5db30c0567867fd634279c2c0b50b5101b0d4))
+* **types:** template syntax ([279b903](https://github.com/Agoric/agoric-sdk/commit/279b903a559710511d69f1614badddeab801b90d))
+* update for `[@jessie](https://github.com/jessie).js/safe-await-separator` ([94c6b3c](https://github.com/Agoric/agoric-sdk/commit/94c6b3c83a5326594f1e2886ae01d6a703a7a68f))
+* use isPrimitive rather than deprecated isObject ([76ef9a3](https://github.com/Agoric/agoric-sdk/commit/76ef9a357ea25ccd4228320e4323d2afbaa589f0))
+
+### Miscellaneous Chores
+
+* remove internal exported.js ([42272c2](https://github.com/Agoric/agoric-sdk/commit/42272c2b4563fb74560d303e4cdc1b4df51b7da3))
+* remove notifier exported.js ([489644e](https://github.com/Agoric/agoric-sdk/commit/489644e60a0159e3a282113130016c7233fa5929))
+
 ## [0.7.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/notifier@0.7.0-u22.2...@agoric/notifier@0.7.0) (2026-04-02)
 
 **Note:** Version bump only for package @agoric/notifier
