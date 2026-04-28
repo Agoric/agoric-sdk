@@ -75,7 +75,7 @@ export const validateUpgradeRecord = (target, bundleId, record) => {
   if (
     typeof record.incarnationNumber !== 'number' ||
     !Array.isArray(record.healthBlocks) ||
-    record.healthBlocks.length !== 3 ||
+    record.healthBlocks.length >= 2 ||
     !record.privateArgsOverridesPath
   ) {
     throw Error('invalid upgrade record');
