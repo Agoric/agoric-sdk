@@ -33,6 +33,7 @@ import type { SimplePowers } from '../src/main.ts';
 import { makeSQLiteKeyValueStore } from '../src/kv-store.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { makeNowISO } from '../src/utils.ts';
 import {
   parseStreamCell,
   parseStreamCellValue,
@@ -52,15 +53,16 @@ export const processTx = async (
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
-    _now = Date.now,
+    now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
+    // Default to the wall clock for debugging sent transactions.
+    makeNonce = makeNowISO(Date.now),
     AbortController = globalThis.AbortController,
     AbortSignal = globalThis.AbortSignal,
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  void _now;
   console.log(`\n🔍 Resolving transaction: ${txId}\n`);
 
   const maybeOpts = cliArgs;
@@ -184,13 +186,14 @@ export const processTx = async (
         retryProviders,
         fetch,
         setTimeout,
-        now: Date.now,
+        now,
         kvStore,
         makeAbortController,
         log: (...args) => console.log('[TX]', ...args),
         error: (...args) => console.error('[ERROR]', ...args),
         marshaller,
         signingSmartWalletKit,
+        makeNonce,
         vstoragePathPrefixes,
         axelarApiUrl: config.axelar.apiUrl,
         pendingTxAbortControllers: new Map(),

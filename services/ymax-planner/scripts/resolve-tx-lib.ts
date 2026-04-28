@@ -17,6 +17,7 @@ import { loadConfig } from '../src/config.ts';
 import { prepareAbortController } from '../src/support.ts';
 import type { SimplePowers } from '../src/main.ts';
 import { resolvePendingTx } from '../src/resolver.ts';
+import { makeNowISO } from '../src/utils.ts';
 
 const parseStatus = (statusArg: string): Omit<TxStatus, 'pending'> => {
   const normalized = statusArg.toLowerCase();
@@ -39,6 +40,8 @@ export const resolveTx = async (
     fetch = globalThis.fetch,
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
+    // Default to the wall clock for debugging sent transactions.
+    makeNonce = makeNowISO(Date.now),
     AbortController = globalThis.AbortController,
     AbortSignal = globalThis.AbortSignal,
   } = {},
@@ -85,6 +88,7 @@ export const resolveTx = async (
 
   await resolvePendingTx({
     signingSmartWalletKit,
+    makeNonce,
     txId,
     status,
     ...(status === TxStatus.FAILED ? { rejectionReason: reason } : {}),

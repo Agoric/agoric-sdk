@@ -8,6 +8,7 @@ import { readStreamCellValue } from './vstorage-utils.ts';
 
 type ResolveTxParams = {
   signingSmartWalletKit: SigningSmartWalletKit;
+  makeNonce: () => string;
   txId: TxId;
   status: Omit<TxStatus, 'pending'>;
   rejectionReason?: string;
@@ -50,6 +51,7 @@ const getInvitationMakers = async (wallet: SigningSmartWalletKit) => {
 
 export const resolvePendingTx = async ({
   signingSmartWalletKit,
+  makeNonce,
   txId,
   status,
   rejectionReason,
@@ -60,7 +62,7 @@ export const resolvePendingTx = async ({
   );
 
   const action: OfferSpec = harden({
-    id: `offer-${Date.now()}`,
+    id: `offer-${makeNonce()}`,
     invitationSpec: {
       source: 'continuing',
       previousOffer: invitationMakersOffer.id,

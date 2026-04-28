@@ -51,6 +51,7 @@ import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
+import { makeNowISO } from './utils.ts';
 
 const { fromEntries, entries } = Object;
 
@@ -82,13 +83,17 @@ export type SimplePowers = {
   makeAbortController: MakeAbortController;
 };
 
+/** `makeNonce` defaults to the wall clock for debugging sent transactions. */
+const defaultMakeNonce = makeNowISO(Date.now);
+
 export const main = async (
   cliArgs: string[],
   {
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
-    now = Date.now,
+    makeNonce = defaultMakeNonce,
+    now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
     AbortController = globalThis.AbortController,
@@ -211,7 +216,7 @@ export const main = async (
   console.warn('Signer address:', signingSmartWalletKit.address);
   const walletStore = reflectWalletStore(signingSmartWalletKit, {
     setTimeout,
-    makeNonce: () => new Date(now()).toISOString(),
+    makeNonce,
     fee: {
       // As of 2025-11, a planner transaction consumes 160_000 to 185_000 gas
       // units, so 400_000 includes a fudge factor of over 2x.
@@ -301,6 +306,7 @@ export const main = async (
     spectrumBlockchain,
     network: PROD_NETWORK,
     signingSmartWalletKit,
+    makeNonce,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;

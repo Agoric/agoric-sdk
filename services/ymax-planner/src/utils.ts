@@ -14,6 +14,11 @@ export const getOwn = <O, K extends PropertyKey>(
   // @ts-expect-error TS doesn't let `hasOwn(obj, key)` support `obj[key]`.
   hasOwn(obj, key) ? obj[key] : undefined;
 
+export const makeNowISO = (now: typeof Date.now): (() => string) => {
+  const nowISO = () => new Date(now()).toISOString();
+  return nowISO;
+};
+
 /**
  * Parse the contents of a GRAPHQL_ENDPOINTS environment variable.
  * @see {@link ../README.md}

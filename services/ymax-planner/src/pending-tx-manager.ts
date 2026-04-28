@@ -52,8 +52,11 @@ export type EvmContext = {
   evmProviders: Record<CaipChainId, WebSocketProvider>;
   retryProviders: Record<CaipChainId, EvmRpc>;
   signingSmartWalletKit: SigningSmartWalletKit;
+  /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
+  makeNonce: () => string;
   fetch: typeof fetch;
   setTimeout: typeof globalThis.setTimeout;
+  /** Prefer monotonicity (e.g., `performance.now` rather than `Date.now`). */
   now: () => number;
   kvStore: KVStore;
   makeAbortController: MakeAbortController;
@@ -84,19 +87,16 @@ type LookBackWatchOpts = {
 };
 type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
 
-export type PendingTxMonitor<
-  T extends PendingTx = PendingTx,
-  C = EvmContext,
-> = {
+export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
   watch: (
-    ctx: C,
+    ctx: EvmContext,
     tx: T,
     log: (...args: unknown[]) => void,
     opts: WatchOpts,
   ) => Promise<void>;
 };
 
-const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
+const cctpMonitor: PendingTxMonitor<CctpTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
@@ -203,6 +203,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
         () =>
           resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
+            makeNonce: ctx.makeNonce,
             txId,
             status:
               transferResult.success !== false
@@ -227,7 +228,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
   },
 };
 
-const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
+const gmpMonitor: PendingTxMonitor<GmpTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
@@ -343,6 +344,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
         () =>
           resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
+            makeNonce: ctx.makeNonce,
             txId,
             status:
               transferResult.success !== false
@@ -367,7 +369,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
   },
 };
 
-const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
+const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
@@ -488,6 +490,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
         () =>
           resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
+            makeNonce: ctx.makeNonce,
             txId,
             status:
               walletResult.success !== false
@@ -512,7 +515,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx, EvmContext> = {
   },
 };
 
-const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
+const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
@@ -619,6 +622,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx, EvmContext> = {
         () =>
           resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
+            makeNonce: ctx.makeNonce,
             txId,
             status:
               transferResult.success !== false
@@ -650,10 +654,7 @@ const ibcFromAgoricMonitor: PendingTxMonitor = {
   },
 };
 
-const MONITORS = new Map<
-  TxType,
-  PendingTxMonitor<PendingTx, EvmContext> | null
->([
+const MONITORS = new Map<TxType, PendingTxMonitor<PendingTx> | null>([
   [TxType.CCTP_TO_EVM, cctpMonitor],
   [TxType.GMP, gmpMonitor],
   [TxType.ROUTED_GMP, routedGmpMonitor],
@@ -697,7 +698,7 @@ export const handlePendingTx = async (
     timeoutMs = TX_TIMEOUT_MS,
     txTimestampMs,
     signal,
-    ...evmCtx
+    ...watchCtx
   }: HandlePendingTxOpts,
 ) => {
   await null;
@@ -722,13 +723,13 @@ export const handlePendingTx = async (
   const watchOpts: Omit<WatchOpts, 'mode'> = { timeoutMs, signal };
   try {
     if (txTimestampMs) {
-      await monitor.watch(evmCtx, tx, log, {
+      await monitor.watch(watchCtx, tx, log, {
         mode: 'lookback',
         publishTimeMs: txTimestampMs,
         ...watchOpts,
       });
     } else {
-      await monitor.watch(evmCtx, tx, log, { mode: 'live', ...watchOpts });
+      await monitor.watch(watchCtx, tx, log, { mode: 'live', ...watchOpts });
     }
   } catch (err) {
     const mode = txTimestampMs ? 'with lookback' : 'in live mode';
