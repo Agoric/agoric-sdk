@@ -1,7 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-/**
- * @file tools for smart wallet stores, e.g. ymaxControl
- */
+/** @file tools for smart wallet stores, e.g. ymaxControl */
 import '@endo/init';
 
 import {
@@ -67,7 +65,6 @@ export const main = async (
     // use generous gas limit for portfolio-contract,
     // and a gas price as observed on the RPC node we use on this network.
     fee: makeFee({ gas: 2_500_000 }),
-    maxRetries: 300,
   } as const;
 
   const makeAccount = async (
