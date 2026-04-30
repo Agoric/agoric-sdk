@@ -91,9 +91,15 @@ const makePlan = ({
   }
 
   if (!bundleId) {
-    throw Error(
-      `bundle id unavailable for ${target}; build or upload bundle-ymax0.json first`,
-    );
+    if (!needBundleBuild) {
+      throw Error(
+        `bundle id unavailable for ${target}; build or upload bundle-ymax0.json first`,
+      );
+    }
+    // bundleId is unknown until build-bundle runs; skip record validation.
+    // The downstream pre-upgrade job derives bundleId from the built file
+    // and writes the install/upgrade records itself.
+    return plan;
   }
 
   for (const priorTarget of prerequisiteTargets[target]) {
