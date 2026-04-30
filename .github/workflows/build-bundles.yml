@@ -60,25 +60,6 @@ jobs:
             yarn build:bundle-id
           fi
 
-      - name: Extract bundle IDs
-        id: extract-bundle-ids
-        working-directory: packages/${{ inputs.package }}/dist
-        run: |
-          set -euo pipefail
-          bundle_ids=""
-          for json_file in *.json; do
-            [[ "$json_file" == *meta.json ]] && continue
-            [[ -f "$json_file" ]] || continue
-            hash="$(jq -r .endoZipBase64Sha512 "$json_file")"
-            bundle_id="b1-$hash"
-            if [[ -z "$bundle_ids" ]]; then
-              bundle_ids="$bundle_id"
-            else
-              bundle_ids="$bundle_ids, $bundle_id"
-            fi
-          done
-          echo "bundle_ids=$bundle_ids" >> "$GITHUB_OUTPUT"
-
       - name: Set outputs
         id: outputs
         run: |
