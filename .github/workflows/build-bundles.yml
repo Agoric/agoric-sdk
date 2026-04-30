@@ -62,13 +62,16 @@ jobs:
 
       - name: Set outputs
         id: outputs
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BRANCH: ${{ inputs.branch }}
         run: |
           set -euo pipefail
-          artifact_name="package-artifacts-${{ inputs.package }}"
+          artifact_name="package-artifacts-$PACKAGE"
           echo "artifact-name=$artifact_name" >> "$GITHUB_OUTPUT"
-          echo "branch=${{ inputs.branch }}" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
           shopt -s nullglob
-          bundle_id_files=(packages/${{ inputs.package }}/dist/*.bundleId)
+          bundle_id_files=(packages/"$PACKAGE"/dist/*.bundleId)
           if [[ ${#bundle_id_files[@]} -ge 1 ]]; then
             echo "bundle-id=$(cat "${bundle_id_files[0]}")" >> "$GITHUB_OUTPUT"
           else
