@@ -2,6 +2,7 @@
 /** @file plan ymax release work before any expensive build steps */
 import { spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import {
   bundleIdFromBundleText,
   expectedOverridesAssetName,
@@ -193,6 +194,6 @@ export const main = async ({
   stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
 };
 
-if (import.meta.url === new URL(`file://${process.argv[1]}`).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   await main();
 }
