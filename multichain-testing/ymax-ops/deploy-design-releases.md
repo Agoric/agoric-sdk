@@ -170,9 +170,6 @@ Default tag name rule:
 - optional `privateArgsOverrides` JSON string
 - `branch`
   Required only when `target == "ymax0-devnet"`
-- `bundleId`
-  Used by the reusable-workflow path when `build-bundles.yml` has already built
-  `bundle-ymax0.json`
 - `ymax1Planner`
   Allowed values:
   - `up`
@@ -189,7 +186,8 @@ Workflow file:
 Trigger:
 
 - `workflow_dispatch`
-- or `workflow_call` from `build-bundles.yml`
+
+The workflow calls `build-bundles.yml` via `workflow_call` to produce the bundle artifact when needed.
 
 Input constraints:
 
@@ -269,6 +267,8 @@ Then have `ymax-deploy-target.ts`:
 `ymax0-devnet-install.json` records:
 
 - `target`
+- `releaseTag`
+- `commit`
 - `contract`
 - `network`
 - `chainId`
@@ -311,7 +311,7 @@ Otherwise:
   `packages/portfolio-deploy/src/ymax-upgrade.ts`, which:
   - uses `YMAX_CONTROL_MNEMONIC` for `ymax0-devnet`
   - writes the machine-readable result to a file in `packages/portfolio-deploy/dist/`
-  - collects 3 post-upgrade health blocks as proof
+  - collects 2 post-upgrade health blocks as proof
   - may recover the tx hash and height from the client-side account state if the
     higher-level `upgrade()` await fails after broadcast
 
@@ -352,7 +352,7 @@ Collect `healthBlocks` from the same Tendermint RPC client:
 
 - fetch each subsequent block by height with `block(height)`
 - record `header.height`, `header.time`, and the block ID hash
-- collect 3 health blocks
+- collect 2 post-upgrade health blocks
 
 If the operator wants to change `privateArgsOverrides` after an upgrade record
 already exists:
@@ -421,6 +421,8 @@ Otherwise:
 `ymax0-main-install.json` records:
 
 - `target`
+- `releaseTag`
+- `commit`
 - `contract`
 - `network`
 - `chainId`
@@ -704,7 +706,7 @@ Examples:
 
 - `build-bundles.yml` remains the coarse build primitive and the current manual
   entrypoint for `ymax0-devnet`
-- `deploy-ymax-release.yml` is both a reusable workflow and a manual entrypoint
+- `deploy-ymax-release.yml` is the manual entrypoint and orchestrates the deploy by calling `build-bundles.yml` as a reusable workflow
 - `packages/portfolio-deploy/scripts/install-bundle.ts` remains the install primitive
 - `packages/portfolio-deploy/scripts/wallet-admin.ts` plus `packages/portfolio-deploy/src/ymax-upgrade.ts` remain the upgrade primitive
 - `ymax-deploy-target.ts` should absorb release management, build reuse, skip/resume logic, and release-asset validation
@@ -720,7 +722,7 @@ Examples:
 - use `gh` for release and release-asset operations, invoked from JS/TS via `execa`
 - use GitHub Actions `concurrency`, keyed by `releaseTag`, to prevent two runs from mutating the same release at once
 - record block time from RPC block lookup by height and encode it with `toISOString()`
-- the health-block schema is 3 blocks after the upgrade block, each with
+- the health-block schema is 2 blocks after the upgrade block, each with
   `height`, `hash`, and `time`
 - `ymax0-main` and `ymax1-main` append records to the same release created for the lineage
 - the bundle is stored as a release asset for lineage state, and `ymax0-devnet`
