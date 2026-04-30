@@ -87,9 +87,7 @@ test('policy evidence validation checks are enforced', async t => {
       assetRdFromJSON({
         ...examples.upgrade.main0,
         privateArgsOverridesPath: 'overrides.json',
-        healthBlocks: [
-          { height: 1, hash: 'h1', time: 't1' },
-        ],
+        healthBlocks: [{ height: 1, hash: 'h1', time: 't1' }],
       }),
     ),
     { message: 'invalid upgrade record' },
