@@ -743,6 +743,14 @@ jobs:
           key: ${{ steps.boot-snapshot-keys.outputs.orchestration_base }}
           restore-keys: |
             boot-runutils-snapshot-orchestration-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
+      - name: Restore proposal-build cache
+        id: proposal_build_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/.cache/boot-proposal-build
+          key: proposal-build-${{ runner.os }}-${{ hashFiles('yarn.lock', 'packages/builders/**') }}-${{ github.sha }}
+          restore-keys: |
+            proposal-build-${{ runner.os }}-${{ hashFiles('yarn.lock', 'packages/builders/**') }}-
       - name: yarn test (boot)
         if: (success() || failure())
         run: cd packages/boot && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -770,6 +778,12 @@ jobs:
         with:
           path: packages/boot/test/cache/runutils/orchestration-base
           key: ${{ steps.boot-snapshot-keys.outputs.orchestration_base }}
+      - name: Save proposal-build cache
+        if: (success() || failure()) && steps.proposal_build_cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/.cache/boot-proposal-build
+          key: proposal-build-${{ runner.os }}-${{ hashFiles('yarn.lock', 'packages/builders/**') }}-${{ github.sha }}
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
