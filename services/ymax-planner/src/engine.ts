@@ -760,6 +760,10 @@ export const startEngine = async (
     portfolioKeysResp.result.children,
   ];
 
+  // Process newest pending transactions first so active user actions get
+  // handled before older backlog during planner restarts.
+  pendingTxKeys.sort((a: string, b: string) => naturalCompare(b, a));
+
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
     ...powers,
