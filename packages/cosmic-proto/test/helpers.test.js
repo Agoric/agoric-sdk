@@ -14,6 +14,7 @@ import {
 import { QueryAllBalancesRequest } from '../dist/codegen/cosmos/bank/v1beta1/query.js';
 import { MsgSend } from '../dist/codegen/cosmos/bank/v1beta1/tx.js';
 import { MsgTransfer as MsgTransferOrig } from '../dist/codegen/ibc/applications/transfer/v1/tx.js';
+import { QueryParamsResponse as SwingSetQueryParamsResponseOrig } from '../dist/codegen/agoric/swingset/query.js';
 
 /**
  * @import {ExecutionContext, Macro} from 'ava';
@@ -21,6 +22,9 @@ import { MsgTransfer as MsgTransferOrig } from '../dist/codegen/ibc/applications
 
 const ModuleAccount = CodecHelper(ModuleAccountType);
 const MsgTransfer = CodecHelper(MsgTransferOrig);
+const SwingSetQueryParamsResponse = CodecHelper(
+  SwingSetQueryParamsResponseOrig,
+);
 
 const mockMsgSend = {
   fromAddress: 'agoric1from',
@@ -60,6 +64,19 @@ test('MsgTransfer typedJson empty', t => {
     '@type': '/ibc.applications.transfer.v1.MsgTransfer',
     timeoutHeight: {},
     token: { amount: '0' },
+  });
+});
+
+test('generated gogoproto annotations', t => {
+  t.deepEqual(SwingSetQueryParamsResponse.typedJson({}), {
+    '@type': '/agoric.swingset.QueryParamsResponse',
+    params: {
+      beansPerUnit: [],
+      feeUnitPrice: [],
+      powerFlagFees: [],
+      queueMax: [],
+      vatCleanupBudget: [],
+    },
   });
 });
 

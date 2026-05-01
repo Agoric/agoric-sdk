@@ -1,9 +1,20 @@
 export type TypeUrl = string;
 export type ProtoFieldName = string;
 
+export interface AnnotatedCodec {
+  readonly typeUrl: TypeUrl;
+  readonly annotations?: FieldAnnotationsRecord;
+}
+
+export type AnnotatedCodecResolver = () => AnnotatedCodec;
+export type FieldTypeReference =
+  | TypeUrl
+  | AnnotatedCodec
+  | AnnotatedCodecResolver;
+
 /** Record for select annotations of the fields for a protobuf message. */
 export interface FieldAnnotationsRecord {
-  typeUrlFromField?: Record<ProtoFieldName, TypeUrl>;
+  typeUrlFromField?: Record<ProtoFieldName, FieldTypeReference>;
   'gogoproto.nullable'?: Record<ProtoFieldName, boolean>;
   'gogoproto.embed'?: Record<ProtoFieldName, string>;
   'amino.dont_omitempty'?: Record<ProtoFieldName, boolean>;
@@ -15,7 +26,7 @@ export type FieldAnnotations = Map<
   Map<ProtoFieldName, any>
 >;
 
-const annotationsFromRecord = (
+export const annotationsFromRecord = (
   record: FieldAnnotationsRecord,
 ): FieldAnnotations =>
   new Map(
@@ -25,7 +36,7 @@ const annotationsFromRecord = (
     ]),
   );
 
-const typeUrlMapFromRecord = (
+export const typeUrlMapFromRecord = (
   record: Record<TypeUrl, FieldAnnotationsRecord>,
 ): Map<TypeUrl, FieldAnnotations> =>
   new Map(
@@ -35,43 +46,59 @@ const typeUrlMapFromRecord = (
     ]),
   );
 
-/**
- * A map from typeUrl to Map<annotationId, Map<fieldName, annotationValue>> data.
- * XXX we should codegen this data rather than manually updating it.
- */
-export const defaultAnnotationsFromTypeUrl = typeUrlMapFromRecord({
-  '/ibc.applications.transfer.v1.MsgTransfer': {
-    typeUrlFromField: {
-      timeoutHeight: '/ibc.core.client.v1.Height',
-      token: '/cosmos.base.v1beta1.Coin',
-    },
-    'gogoproto.nullable': {
-      timeoutHeight: false,
-      token: false,
-    },
-  },
-  '/cosmos.auth.v1beta1.ModuleAccount': {
-    'gogoproto.embed': {
-      base_account: 'baseAccount',
-    },
-  },
-  '/cosmos.base.v1beta1.Coin': {
-    typeUrlFromField: {
-      amount: 'cosmos.Int',
-    },
-    'gogoproto.nullable': {
-      amount: false,
-    },
-    'amino.dont_omitempty': {
-      amount: true,
-    },
-  },
-  '/cosmos.tx.v1beta1.TxBody': {
-    'gogoproto.nullable': {
-      timeoutTimestamp: true,
-    },
-  },
-} as const satisfies Record<TypeUrl, FieldAnnotationsRecord>);
+export const codecFromFieldType = (
+  fieldType: FieldTypeReference | undefined,
+): AnnotatedCodec | undefined => {
+  if (typeof fieldType === 'function') {
+    return fieldType();
+  }
+  if (typeof fieldType === 'object' && fieldType !== null) {
+    return fieldType;
+  }
+  return undefined;
+};
+
+export const typeUrlFromFieldType = (
+  fieldType: FieldTypeReference | undefined,
+): TypeUrl | undefined =>
+  typeof fieldType === 'string'
+    ? fieldType
+    : codecFromFieldType(fieldType)?.typeUrl;
+
+export const annotationsFromTypeUrlForCodec = (
+  codec: AnnotatedCodec,
+  annotationsFromTypeUrl: Map<TypeUrl, FieldAnnotations> = new Map(),
+): Map<TypeUrl, FieldAnnotations> => {
+  const withCodecAnnotations = new Map(annotationsFromTypeUrl);
+  const visited = new Set<TypeUrl>();
+
+  const collect = (fieldType: FieldTypeReference | undefined) => {
+    const fieldCodec = codecFromFieldType(fieldType);
+    if (!fieldCodec || visited.has(fieldCodec.typeUrl)) {
+      return;
+    }
+    visited.add(fieldCodec.typeUrl);
+
+    const { annotations } = fieldCodec;
+    if (!annotations) {
+      return;
+    }
+    if (!withCodecAnnotations.has(fieldCodec.typeUrl)) {
+      withCodecAnnotations.set(
+        fieldCodec.typeUrl,
+        annotationsFromRecord(annotations),
+      );
+    }
+    for (const childFieldType of Object.values(
+      annotations.typeUrlFromField ?? {},
+    )) {
+      collect(childFieldType);
+    }
+  };
+
+  collect(codec);
+  return withCodecAnnotations;
+};
 
 const scalarMakersRecord = {
   'cosmos.Int': (input: any) => `${BigInt(input || 0)}`,

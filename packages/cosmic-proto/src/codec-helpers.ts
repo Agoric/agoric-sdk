@@ -3,10 +3,13 @@ import type { BinaryReader, BinaryWriter, JsonSafe } from './codegen/index.js';
 import type { MessageBody, TypedJson } from './helpers.js';
 import {
   type FieldAnnotations,
+  type FieldAnnotationsRecord,
+  type FieldTypeReference,
   type ProtoFieldName,
   type TypeUrl,
-  defaultAnnotationsFromTypeUrl,
+  annotationsFromTypeUrlForCodec,
   scalarMakersFromType,
+  typeUrlFromFieldType,
 } from './type-url-annotations.js';
 
 const { freeze } = Object;
@@ -15,15 +18,16 @@ type ChildFieldProcessor = (
   child: Record<string, unknown>,
   field: string,
   typeUrlToAnnotations: Map<TypeUrl, FieldAnnotations>,
-  valueTypeUrl: string | undefined,
+  valueType: FieldTypeReference | undefined,
 ) => void;
 
 const processChildFields = (
   process: ChildFieldProcessor,
-  typeUrl: string | undefined,
+  fieldType: FieldTypeReference | undefined,
   input: unknown,
   annotationsFromTypeUrl: Map<TypeUrl, FieldAnnotations>,
 ) => {
+  const typeUrl = typeUrlFromFieldType(fieldType);
   if (typeUrl == null || !typeUrl.startsWith('/')) {
     // Default to no elision when we don't recognize the typeUrl.
     return input;
@@ -39,18 +43,18 @@ const processChildFields = (
 
   for (const [field, originalValue] of Object.entries(child)) {
     let value = originalValue;
-    const fieldTypeUrl = typeUrlFromField?.get(field);
+    const childFieldType = typeUrlFromField?.get(field);
     if (value) {
       value = processChildFields(
         process,
-        fieldTypeUrl,
+        childFieldType,
         value,
         annotationsFromTypeUrl,
       );
     }
 
     child[field] = value;
-    process(child, field, annotationsFromTypeUrl, fieldTypeUrl);
+    process(child, field, annotationsFromTypeUrl, childFieldType);
   }
 
   freeze(child);
@@ -58,10 +62,11 @@ const processChildFields = (
 };
 
 const addNonNullablePlaceholders = (
-  typeUrl: string | undefined,
+  fieldType: FieldTypeReference | undefined,
   input: unknown,
   annotationsFromTypeUrl: Map<TypeUrl, FieldAnnotations>,
 ) => {
+  const typeUrl = typeUrlFromFieldType(fieldType);
   if (typeUrl == null) {
     return input;
   } else if (!typeUrl.startsWith('/')) {
@@ -120,8 +125,9 @@ const processGogo3PackedChildField = (
   child: Record<string, unknown>,
   field: string,
   typeUrlToAnnotations: Map<TypeUrl, FieldAnnotations>,
-  fieldTypeUrl: string | undefined,
+  fieldType: FieldTypeReference | undefined,
 ) => {
+  const fieldTypeUrl = typeUrlFromFieldType(fieldType);
   const nullableAnnotationFromField = fieldTypeUrl
     ? typeUrlToAnnotations.get(fieldTypeUrl)?.get('gogoproto.nullable')
     : undefined;
@@ -141,7 +147,7 @@ const processGogo3UndefinedChildField = (
   child: Record<string, unknown>,
   field: string,
   _typeUrlToAnnotations: Map<TypeUrl, FieldAnnotations>,
-  _fieldTypeUrl: string | undefined,
+  _fieldType: FieldTypeReference | undefined,
 ) => {
   // Undefined values should be omitted.
   const maybeEmpty = child[field];
@@ -315,6 +321,7 @@ export interface Proto3Codec<
   DP extends boolean = false,
 > {
   readonly typeUrl: TU;
+  readonly annotations?: FieldAnnotationsRecord;
   encode(message: DeepMessage<TU, DP>, writer?: BinaryWriter): BinaryWriter;
   decode(input: BinaryReader | Uint8Array, length?: number): MessageBody<TU>;
   fromJSON(object: any): MessageBody<TU>;
@@ -340,16 +347,18 @@ type DeepMessage<
  */
 export const Codec = <TU extends string = string>(
   codec: Proto3Codec<TU>,
-  annotationsFromTypeUrl: Map<
-    TypeUrl,
-    FieldAnnotations
-  > = defaultAnnotationsFromTypeUrl,
+  annotationsFromTypeUrl: Map<TypeUrl, FieldAnnotations> = new Map(),
 ): Proto3Codec<TU, true> => {
+  const codecAnnotationsFromTypeUrl = annotationsFromTypeUrlForCodec(
+    codec,
+    annotationsFromTypeUrl,
+  );
   const { gogo3FromDecoderOutput, encoderInputFromGogo3 } =
-    makeGogo3Transformations(codec, annotationsFromTypeUrl);
+    makeGogo3Transformations(codec, codecAnnotationsFromTypeUrl);
 
   const cdc: Proto3Codec<TU, true> = {
     typeUrl: codec.typeUrl,
+    annotations: codec.annotations,
     encode(message, writer) {
       return codec.encode(encoderInputFromGogo3(message), writer);
     },
@@ -401,14 +410,15 @@ export interface Proto3CodecHelper<
  */
 export const CodecHelper = <TU extends string = string>(
   codec: Proto3Codec<TU>,
-  annotationsFromTypeUrl: Map<
-    TypeUrl,
-    FieldAnnotations
-  > = defaultAnnotationsFromTypeUrl,
+  annotationsFromTypeUrl: Map<TypeUrl, FieldAnnotations> = new Map(),
 ): Proto3CodecHelper<TU> => {
-  const cdc = Codec(codec, annotationsFromTypeUrl);
+  const codecAnnotationsFromTypeUrl = annotationsFromTypeUrlForCodec(
+    codec,
+    annotationsFromTypeUrl,
+  );
+  const cdc = Codec(codec, codecAnnotationsFromTypeUrl);
   const { strippedFromDecoderOutput, packedFromGogo3 } =
-    makeGogo3Transformations(cdc, annotationsFromTypeUrl);
+    makeGogo3Transformations(cdc, codecAnnotationsFromTypeUrl);
 
   const help: Proto3CodecHelper<TU> = {
     ...cdc,
