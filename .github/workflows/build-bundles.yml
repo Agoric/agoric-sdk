@@ -1,21 +1,44 @@
 name: Build Package Bundles
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       package:
-        description: 'Package name'
         required: true
         type: string
       branch:
-        description: 'Branch name to checkout'
         required: false
         type: string
-        default: 'master'
+        default: master
+    outputs:
+      artifact-name:
+        description: Uploaded artifact name
+        value: ${{ jobs.build-bundle.outputs.artifact-name }}
+      bundle-id:
+        description: First bundle id emitted by the package, if any
+        value: ${{ jobs.build-bundle.outputs.bundle-id }}
+      branch:
+        description: Branch that was built
+        value: ${{ jobs.build-bundle.outputs.branch }}
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package name
+        required: true
+        type: string
+      branch:
+        description: Branch name to checkout
+        required: false
+        type: string
+        default: master
 
 jobs:
   build-bundle:
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.outputs.outputs.artifact-name }}
+      bundle-id: ${{ steps.outputs.outputs.bundle-id }}
+      branch: ${{ steps.outputs.outputs.branch }}
 
     steps:
       - name: Checkout repository
@@ -24,69 +47,39 @@ jobs:
           ref: ${{ inputs.branch }}
 
       - name: Clean repository
-        run: |
-          git clean -xdf
+        run: git clean -xdf
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+      - uses: ./.github/actions/setup-agoric-sdk-build
 
-      - name: Set up yarn and install dependencies
-        run: |
-          bash scripts/ensure-corepack-yarn.sh
-          yarn install
-
-      - name: Build project
-        run: yarn build
-
-      - name: Build Package bundle
-        id: build-bundle
+      - name: Build package bundle
         working-directory: packages/${{ inputs.package }}
         run: |
-          set -o pipefail
-          echo "=== Running yarn build ==="
-          yarn build
-          echo "=== Running yarn build:bundle ==="
+          set -euo pipefail
           yarn build:bundle
-          echo "Bundle build completed"
+          if jq -e '.scripts["build:bundle-id"]' package.json >/dev/null; then
+            yarn build:bundle-id
+          fi
 
-      - name: Extract bundle IDs
-        id: extract-bundle-ids
-        working-directory: packages/${{ inputs.package }}/dist
+      - name: Set outputs
+        id: outputs
+        env:
+          PACKAGE: ${{ inputs.package }}
+          BRANCH: ${{ inputs.branch }}
         run: |
-          echo "=== Extracting Bundle IDs ==="
-
-          BUNDLE_IDS=""
-
-          # Find all JSON files that are not meta.json files
-          for json_file in *.json; do
-            if [[ "$json_file" == *meta.json ]]; then
-              continue
-            fi
-
-            if [[ -f "$json_file" ]]; then
-              echo "Processing: $json_file"
-
-              # Extract hash and prepend with b1-
-              HASH=$(jq -r .endoZipBase64Sha512 "$json_file")
-              BUNDLE_ID="b1-${HASH}"
-
-              echo "  Bundle ID: $BUNDLE_ID"
-
-              # Collect bundle IDs for output
-              if [ -z "$BUNDLE_IDS" ]; then
-                BUNDLE_IDS="$BUNDLE_ID"
-              else
-                BUNDLE_IDS="$BUNDLE_IDS, $BUNDLE_ID"
-              fi
-            fi
-          done
-
-          echo "bundle_ids=$BUNDLE_IDS" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          artifact_name="package-artifacts-$PACKAGE"
+          echo "artifact-name=$artifact_name" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          shopt -s nullglob
+          bundle_id_files=(packages/"$PACKAGE"/dist/*.bundleId)
+          if [[ ${#bundle_id_files[@]} -ge 1 ]]; then
+            echo "bundle-id=$(cat "${bundle_id_files[0]}")" >> "$GITHUB_OUTPUT"
+          else
+            echo "bundle-id=" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: package-artifacts-${{ inputs.package }}-${{ github.run_number }}
+          name: ${{ steps.outputs.outputs.artifact-name }}
           path: packages/${{ inputs.package }}/dist/

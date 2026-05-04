@@ -986,10 +986,10 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const { trader1, common, txResolver, trader2 } = await setupTrader(
     t,
     undefined,
-    {},
+    undefined,
     { traderCount: 2 },
   );
-  assert(trader2);
+  assert(trader2, 'trader2 defined with traderCount=2');
   const { usdc, bld, poc26 } = common.brands;
 
   // Portfolio1 (trader2) gets a different CREATE2 address than portfolio0 (trader1)
@@ -1092,7 +1092,7 @@ test('start deposit more to same', async t => {
 });
 
 const setupPlanner = async (
-  t,
+  t: ExecutionContext,
   overrides: Partial<
     PortfolioPrivateArgs & {
       useRouter: boolean;

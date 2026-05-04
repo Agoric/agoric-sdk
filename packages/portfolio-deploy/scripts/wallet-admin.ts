@@ -1,7 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-/**
- * @file tools for smart wallet stores, e.g. ymaxControl
- */
+/** @file tools for smart wallet stores, e.g. ymaxControl */
 import '@endo/init';
 
 import {
@@ -10,9 +8,12 @@ import {
   makeSmartWalletKit,
   reflectWalletStore,
 } from '@agoric/client-utils';
-import { makeTracer } from '@agoric/internal';
 import { makeFileRW } from '@agoric/pola-io/src/file.js';
-import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
+import {
+  SigningStargateClient,
+  type DeliverTxResponse,
+  type StdFee,
+} from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import fsp from 'node:fs/promises';
@@ -22,7 +23,9 @@ import type { RunTools } from '../src/wallet-admin-types.ts';
 
 const Usage = `tool.ts MODULE ...args`;
 
-const trace = makeTracer('wallet-admin');
+// don't contaminate stdout!
+const trace = (...args) => console.error('-- wallet-admin:', ...args);
+
 type ClientUtilsConnect = Parameters<
   typeof makeSigningSmartWalletKit
 >[0]['connectWithSigner'];
@@ -62,20 +65,46 @@ export const main = async (
     // use generous gas limit for portfolio-contract,
     // and a gas price as observed on the RPC node we use on this network.
     fee: makeFee({ gas: 2_500_000 }),
-    maxRetries: 30,
   } as const;
 
-  const makeAccount = async (name: string) => {
+  const makeAccount = async (
+    name: string,
+    connectOpts: Parameters<ClientUtilsConnect>[2] = {},
+  ) => {
     trace('makeAccount', name);
     const mnemonic = env[name] || Fail`${name} not set`;
+
+    const connect: ClientUtilsConnect = (rpcAddr, signer, opts = {}) =>
+      connectWithSigner(rpcAddr, signer, { ...opts, ...connectOpts });
+
     const ssk = await makeSigningSmartWalletKit(
-      { connectWithSigner, walletUtils: walletKit },
+      { connectWithSigner: connect, walletUtils: walletKit },
       mnemonic,
     );
-    return harden({
+    let lastTx: DeliverTxResponse | undefined;
+    /** Retain a short tx history for debugging repeated submissions. */
+    const txHistory: DeliverTxResponse[] = [];
+    const tracked = harden({
       ...ssk,
+      sendBridgeAction: async (
+        ...args: Parameters<typeof ssk.sendBridgeAction>
+      ) => {
+        const tx = await ssk.sendBridgeAction(...args);
+        lastTx = tx;
+        txHistory.push(tx);
+        return tx;
+      },
+    });
+    return harden({
+      ...tracked,
       get store() {
-        return reflectWalletStore(ssk, storeOpts);
+        return reflectWalletStore(tracked, storeOpts);
+      },
+      get lastTx() {
+        return lastTx;
+      },
+      get txHistory() {
+        return [...txHistory];
       },
     });
   };
@@ -92,11 +121,16 @@ export const main = async (
     throw Error(`no default export from ${specifier}`);
   }
 
-  const cwdIO = makeFileRW(cwdPath, { fsp, path });
+  const cwdIO = makeFileRW(cwdPath, {
+    fsp,
+    path: { ...path, join: path.resolve },
+  });
   const tools = {
     E,
+    fetch,
     harden,
     scriptArgs,
+    setTimeout,
     walletKit,
     makeAccount,
     cwd: cwdIO,

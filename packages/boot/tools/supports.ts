@@ -1101,13 +1101,21 @@ export const makeSwingsetTestKit = async <
 
   const swingStore = snapshotDir
     ? await (async () => {
-        swingStoreClonePath = await fsAmbientPromises.mkdtemp(
-          join(tmpdir(), 'boot-swingset-fixture-'),
-        );
-        await fsAmbientPromises.cp(snapshotDir, swingStoreClonePath, {
+        let targetPath: string;
+        if (swingStorePath) {
+          // Caller-owned persistent location (e.g. for snapshot creation).
+          targetPath = swingStorePath;
+        } else {
+          // Anonymous clone that this kit will clean up on shutdown.
+          swingStoreClonePath = await fsAmbientPromises.mkdtemp(
+            join(tmpdir(), 'boot-swingset-snapshot-'),
+          );
+          targetPath = swingStoreClonePath;
+        }
+        await fsAmbientPromises.cp(snapshotDir, targetPath, {
           recursive: true,
         });
-        return openSwingStore(swingStoreClonePath);
+        return openSwingStore(targetPath);
       })()
     : snapshot?.swingStoreSerialized
       ? initSwingStore(null, { serialized: snapshot.swingStoreSerialized })

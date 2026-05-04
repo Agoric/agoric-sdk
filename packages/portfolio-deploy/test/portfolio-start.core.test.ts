@@ -1,6 +1,6 @@
 // Keep this import first to avoid: VatData unavailable
 // see also https://github.com/endojs/endo/issues/1467
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import * as contractExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
@@ -29,6 +29,7 @@ import { passStyleOf, type CopyRecord } from '@endo/pass-style';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
+import type { TestFn } from 'ava';
 import { produceAttenuatedDeposit } from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
 import type { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
 import { deployPostalService } from '@agoric/deploy-script-support/src/control/postal-service.core.js';
@@ -165,15 +166,21 @@ const ymaxOptions = toExternalConfig(
   portfolioDeployConfigShape,
 );
 
-test('coreEval code without swingset', async t => {
-  const { common, powers, zoe, bundleAndInstall } = await makeBootstrap(t);
+const test: TestFn<Awaited<ReturnType<typeof makeBootstrap>>> = anyTest;
+
+test.before(async t => {
+  t.context = await makeBootstrap(t);
+});
+
+test.serial('coreEval code without swingset', async t => {
+  const { common, powers, zoe, bundleAndInstall } = t.context;
   const { bootstrap, utils } = common;
   const { usdc, bld, poc26 } = common.brands;
 
   // script from agoric run does this step
   t.log('produce installation using test bundle');
   powers.installation.produce[contractName].resolve(
-    await bundleAndInstall(contractExports),
+    await bundleAndInstall(contractExports, 'b2-ymax-bundleId'),
   );
 
   t.log('invoke coreEval');
@@ -238,18 +245,12 @@ test('coreEval code without swingset', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('delegate ymax control; invite planner; submit plan', async t => {
+test.serial('delegate ymax control; invite planner; submit plan', async t => {
   const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
-    await makeBootstrap(t);
+    t.context;
 
   t.log('produce getDepositFacet');
   await produceAttenuatedDeposit(powers as any);
-
-  t.log('start ymax0 as in 101');
-  powers.installation.produce[contractName].resolve(
-    await bundleAndInstall(contractExports, 'b2-ymax-bundleId'),
-  );
-  await startPortfolio(powers, { options: ymaxOptions });
 
   t.log('terminate ymax0 as in 103');
   {
@@ -394,7 +395,7 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     offerArgs: {},
   });
 
-  await Promise.all([openP, ackNFA(common.utils)]);
+  await Promise.all([openP, ackNFA(common.utils, -1)]);
 
   t.log('invoke planner');
   await E(E(walletPl).getInvokeFacet()).invokeEntry({

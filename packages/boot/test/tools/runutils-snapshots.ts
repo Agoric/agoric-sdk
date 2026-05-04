@@ -46,6 +46,10 @@ type SnapshotMetadata = {
 type SnapshotKernelBundle = NonNullable<
   SwingsetTestKitSnapshot['kernelBundle']
 >;
+type SnapshotLockBody = {
+  pid: number;
+  createdAt: number;
+};
 type RunUtilsSnapshotSpec = {
   configSpecifier: string;
   description: string;
@@ -66,14 +70,44 @@ const snapshotSwingStorePath = (name: RunUtilsSnapshotName) =>
   `${snapshotPath(name)}/swingstore`;
 const snapshotKernelBundlePath = (name: RunUtilsSnapshotName) =>
   `${snapshotPath(name)}/kernel-bundle.json`;
-const snapshotLockPath = (name: RunUtilsSnapshotName) =>
-  `${snapshotPath(name)}.lock`;
 const regeneratedMarkerDir = `${snapshotDir}/.ci-regenerated`;
 const regeneratedMarkerPath = (name: RunUtilsSnapshotName) =>
   `${regeneratedMarkerDir}/${name}`;
 
+const isProcessAlive = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code === 'EPERM';
+  }
+};
+
+const removeStaleSnapshotLock = async (lockPath: string) => {
+  try {
+    const body = JSON.parse(
+      await fs.readFile(lockPath, 'utf-8'),
+    ) as Partial<SnapshotLockBody>;
+    if (typeof body.pid === 'number' && isProcessAlive(body.pid)) {
+      return false;
+    }
+  } catch {
+    // Unreadable or truncated lock files are treated as stale.
+  }
+  await fs.rm(lockPath, { force: true });
+  return true;
+};
+
 export const availableRunUtilsSnapshotNames = (): RunUtilsSnapshotName[] =>
   listNames().filter(isRunUtilsSnapshotName);
+
+/**
+ * Hash of the kernel bundle that would be built from the current sources,
+ * used by snapshot consumers to detect cache staleness without taking a
+ * direct dependency on `@agoric/swingset-vat`.
+ */
+export const getCurrentKernelBundleSha512 = async (): Promise<string> =>
+  (await buildKernelBundle()).endoZipBase64Sha512;
 
 const getSnapshotSpec = (name: RunUtilsSnapshotName): RunUtilsSnapshotSpec =>
   RUNUTILS_SNAPSHOT_SPECS[name];
@@ -228,53 +262,95 @@ export const loadRunUtilsSnapshot = async (
   };
 };
 
+/**
+ * Open an exclusive lock file, waiting (with timeout) if another live
+ * process holds it, and clearing it if the holder is dead.
+ */
+const acquireSnapshotLock = async (lockPath: string) => {
+  const waitStart = performance.now();
+  for (;;) {
+    try {
+      return await fs.open(lockPath, 'wx');
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'EEXIST') throw e;
+    }
+    if (await removeStaleSnapshotLock(lockPath)) continue;
+    const waitMs = performance.now() - waitStart;
+    if (waitMs > SNAPSHOT_LOCK_WAIT_MS) {
+      throw new Error(
+        `Timed out waiting ${(waitMs / 1000).toFixed(1)}s for snapshot lock ${lockPath}`,
+      );
+    }
+    await delay(100);
+  }
+};
+
+/**
+ * Load a filesystem-cached snapshot, regenerating it under an exclusive
+ * lock if loading fails. The lock file lives as a sibling to the snapshot
+ * directory (so regeneration can freely `rm -rf` the snapshot without
+ * touching the lock).
+ *
+ * @param load called to read the cached snapshot; throw to trigger regen
+ * @param create called under lock to (re)create the cached snapshot on disk
+ * @param cachePath filesystem path of the snapshot directory; lock is
+ *   placed at `${cachePath}.lock`, parent directory created if needed
+ * @param label human-readable identifier for log messages
+ */
+export const loadOrCreateCachedSnapshot = async <T>({
+  load,
+  create,
+  cachePath,
+  label,
+  log = console.log,
+}: {
+  load: () => Promise<T>;
+  create: () => Promise<unknown>;
+  cachePath: string;
+  label: string;
+  log?: (...args: unknown[]) => void;
+}): Promise<T> => {
+  // Fast path: already cached and valid.
+  try {
+    return await load();
+  } catch {
+    // fall through to locked regeneration
+  }
+
+  const lockPath = `${cachePath}.lock`;
+  await fs.mkdir(dirname(lockPath), { recursive: true });
+  const lock = await acquireSnapshotLock(lockPath);
+  try {
+    await lock.writeFile(
+      JSON.stringify({ pid: process.pid, createdAt: Date.now() }),
+    );
+    // Another process may have finished regenerating while we waited.
+    try {
+      return await load();
+    } catch {
+      log(`${label} missing or stale; regenerating at ${cachePath}`);
+      const regenStart = performance.now();
+      await create();
+      const regenMs = Math.round(performance.now() - regenStart);
+      log(
+        `${label} regenerated in ${(regenMs / 1000).toFixed(1)}s (${regenMs}ms)`,
+      );
+      return await load();
+    }
+  } finally {
+    await lock.close();
+    await fs.rm(lockPath, { force: true });
+  }
+};
+
 export const loadOrCreateRunUtilsSnapshot = async (
   name: RunUtilsSnapshotName,
   log: (...args: unknown[]) => void = console.log,
-): Promise<SwingsetTestKitSnapshot> => {
-  const lockPath = snapshotLockPath(name);
-  const waitStart = performance.now();
-  await fs.mkdir(snapshotDir, { recursive: true });
-  for (;;) {
-    try {
-      return await loadRunUtilsSnapshot(name);
-    } catch {
-      // fall through to lock acquisition and possible regeneration
-    }
-    let lock;
-    try {
-      lock = await fs.open(lockPath, 'wx');
-    } catch (e) {
-      if ((e as NodeJS.ErrnoException).code === 'EEXIST') {
-        const waitMs = performance.now() - waitStart;
-        if (waitMs > SNAPSHOT_LOCK_WAIT_MS) {
-          throw new Error(
-            `Timed out waiting ${(waitMs / 1000).toFixed(1)}s for snapshot lock ${lockPath}`,
-          );
-        }
-        await delay(100);
-        continue;
-      }
-      throw e;
-    }
-    try {
-      try {
-        return await loadRunUtilsSnapshot(name);
-      } catch {
-        log(
-          `RunUtils snapshot ${name} missing or stale; regenerating at ${snapshotPath(name)}`,
-        );
-        const regenStart = performance.now();
-        await createRunUtilsSnapshot(name, log);
-        const regenMs = Math.round(performance.now() - regenStart);
-        log(
-          `RunUtils snapshot ${name} regenerated in ${(regenMs / 1000).toFixed(1)}s (${regenMs}ms)`,
-        );
-        return loadRunUtilsSnapshot(name);
-      }
-    } finally {
-      await lock.close();
-      await fs.rm(lockPath, { force: true });
-    }
-  }
-};
+): Promise<SwingsetTestKitSnapshot> =>
+  loadOrCreateCachedSnapshot({
+    load: () => loadRunUtilsSnapshot(name),
+    create: () => createRunUtilsSnapshot(name, log),
+    cachePath: snapshotPath(name),
+    label: `RunUtils snapshot ${name}`,
+    log,
+  });

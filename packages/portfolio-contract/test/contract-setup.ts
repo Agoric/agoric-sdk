@@ -247,10 +247,10 @@ export const deploy = async (
 };
 
 export const setupTrader = async (
-  t,
+  t: ExecutionContext,
   initial = 10_000,
   overrides: Partial<PortfolioPrivateArgs> = {},
-  { traderCount = 1 }: { traderCount?: number } = {},
+  { traderCount = 1 }: { traderCount?: 1 | 2 } = {},
 ) => {
   const deployed = await deploy(t, overrides);
   const { common, zoe, started } = deployed;
@@ -276,8 +276,17 @@ export const setupTrader = async (
       await E(myWallet).deposit(bld.mint.mintPayment(bld.make(10_000n)));
       return makeTrader(myWallet, started.instance, readPublished);
     });
+
+  // Create the initial traders eagerly inside setupTrader for performance,
+  // while still returning makeFundedTrader so callers can create
+  // additional funded traders after setupTrader returns when needed.
+  // Empirically the fully deferred pattern adds ~1.6s per setup
+  // invocation — measurable in test.macro files where setup runs once
+  // per scenario (e.g. ymax-scenario.test.ts × 12 scenarios → ~19s
+  // regression).
   const trader1 = await makeFundedTrader();
-  const trader2 = traderCount > 1 ? await makeFundedTrader() : undefined;
+  const trader2 = traderCount === 2 ? await makeFundedTrader() : undefined;
+
   const { ibcBridge } = common.mocks;
   ibcBridge.setAddressPrefix('noble');
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
@@ -371,6 +380,9 @@ export const setupTrader = async (
     },
     settleTransaction: settleTx,
   });
+
+  // Ensure any pending async operations (e.g. storage updates) are flushed before returning from setup.
+  await eventLoopIteration();
 
   return {
     ...deployed,

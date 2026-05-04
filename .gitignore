@@ -86,6 +86,9 @@ _testoutput.txt
 junit.xml
 endo-sha.txt
 
+# Test perf benchmark data
+tmp/perf/
+
 # Coding agent config
 .aider*
 !.aiderignore

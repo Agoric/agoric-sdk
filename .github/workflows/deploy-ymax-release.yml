@@ -1,0 +1,149 @@
+name: Deploy YMax Release
+# Phase 1: resolve the release, build or fetch the bundle, validate prerequisites,
+# and install the bundle if needed.
+# Phase 2: generate privateArgsOverrides, run the contract upgrade,
+# and write release records.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target
+        required: true
+        type: choice
+        options:
+          - ymax0-devnet
+          - ymax0-main
+          - ymax1-main
+      releaseTag:
+        description: Release tag to create or use
+        required: true
+        type: string
+        default: v0.3.YYMM-betaN
+      branch:
+        description: Branch to build for ymax0-devnet
+        required: false
+        type: string
+        default: master
+      privateArgsOverrides:
+        description: Optional JSON string to use as privateArgsOverrides
+        required: false
+        type: string
+      ymax1Planner:
+        description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades). Operator is responsible for actually stopping the planner.'
+        required: false
+        type: choice
+        options:
+          - up
+          - down
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: deploy-ymax-release-${{ inputs.releaseTag }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      need_bundle_build: ${{ steps.plan.outputs.need_bundle_build }}
+      need_pre_upgrade: ${{ steps.plan.outputs.need_pre_upgrade }}
+      need_upgrade: ${{ steps.plan.outputs.need_upgrade }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Plan deploy work
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: deploy
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+          YMAX1_PLANNER: ${{ inputs.ymax1Planner }}
+        run: node .github/scripts/plan-ymax-release.mjs
+
+  build-bundle:
+    needs: plan
+    if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
+    uses: ./.github/workflows/build-bundles.yml
+    with:
+      package: portfolio-deploy
+      branch: ${{ inputs.branch }}
+
+  pre-upgrade:
+    needs: [plan, build-bundle]
+    if: |
+      needs.plan.outputs.need_pre_upgrade == 'true' &&
+      (inputs.target != 'ymax0-devnet' || contains(fromJSON('["success","skipped"]'), needs.build-bundle.result))
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Download bundle artifact
+        if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build-bundle.outputs.artifact-name }}
+          path: packages/portfolio-deploy/dist
+
+      - name: Run pre-upgrade phase
+        env:
+          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          BRANCH: ${{ inputs.branch }}
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+          YMAX_INSTALL_BUNDLE_MNEMONIC: ${{ secrets.YMAX_INSTALL_BUNDLE_MNEMONIC }}
+        run: |
+          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+            phase-pre-upgrade \
+            --target "$TARGET" \
+            --tag "$RELEASE_TAG" \
+            --branch "$BRANCH"
+
+  upgrade:
+    needs: [plan, pre-upgrade]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.need_upgrade == 'true' &&
+      contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Require ymax1 planner down
+        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        run: |
+          echo 'ymax1Planner must be down for ymax1-main' >&2
+          exit 1
+
+      - name: Run upgrade phase
+        env:
+          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MNEMONIC: ${{ secrets.YMAX_CONTROL_MNEMONIC }}
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+            phase-upgrade \
+            --target "$TARGET" \
+            --tag "$RELEASE_TAG"

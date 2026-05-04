@@ -15,7 +15,7 @@ import type { PortfolioPublishedPathTypes } from '@aglocal/portfolio-contract/sr
 export const makeWalletFactoryContext = async (
   t,
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
-  opts = {},
+  opts = {} as Record<string, any>,
 ) => {
   const swingsetTestKit =
     await makeSwingsetTestKit<PortfolioPublishedPathTypes>(t.log, undefined, {
