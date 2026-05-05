@@ -1345,19 +1345,25 @@ export const prepareCosmosOrchestrationAccountKit = (
               d.delegator ? d.delegator.value === chainAddress.value : true,
             ) || Fail`Some delegation record is for another delegator`;
 
+            const undelegateResponsesV =
+              /** @type {Vow<readonly MsgUndelegateResponseType[]>} */ (
+                /** @type {unknown} */ (
+                  holder.executeTxProto3(
+                    delegations.map(({ validator, amount }) =>
+                      Any.toJSON(
+                        MsgUndelegate.toProtoMsg({
+                          delegatorAddress: chainAddress.value,
+                          validatorAddress: validator.value,
+                          amount: coerceCoin(chainHub, amount),
+                        }),
+                      ),
+                    ),
+                    opts,
+                  )
+                )
+              );
             const undelegateV = watch(
-              holder.executeTxProto3(
-                delegations.map(({ validator, amount }) =>
-                  Any.toJSON(
-                    MsgUndelegate.toProtoMsg({
-                      delegatorAddress: chainAddress.value,
-                      validatorAddress: validator.value,
-                      amount: coerceCoin(chainHub, amount),
-                    }),
-                  ),
-                ),
-                opts,
-              ),
+              undelegateResponsesV,
               this.facets.decodedUndelegateWatcher,
             );
             return watch(undelegateV, this.facets.returnVoidWatcher);

@@ -52,7 +52,7 @@ import {
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 
 /**
- * @import {TypeFromUrl} from '@agoric/cosmic-proto';
+ * @import {Proto3CodecHelper, TypeFromUrl} from '@agoric/cosmic-proto';
  */
 
 export const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
@@ -177,6 +177,7 @@ const AnyToJSON = {
   },
 };
 
+/** @type {Proto3CodecHelper<typeof AnyType.typeUrl> & typeof AnyToJSON} */
 export const Any = Object.freeze({
   ...AnyRawHelper,
   ...AnyToJSON,
