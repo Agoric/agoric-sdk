@@ -1,0 +1,184 @@
+diff --git a/dist/cli/cli.js b/dist/cli/cli.js
+index d6a419172f2ff63b3214204b90b722ca7a2b86ae..fff453e48806c391332bc20640b4a6555a4f5ddb 100755
+--- a/dist/cli/cli.js
++++ b/dist/cli/cli.js
+@@ -582,7 +582,7 @@ var runDoctor = (proposals) => {
+ };
+ 
+ // src/cli/run.ts
+-import { spawnSync } from "child_process";
++import { spawn, spawnSync } from "child_process";
+ import { existsSync, realpathSync } from "fs";
+ import { resolve as resolvePath } from "path";
+ import { fileSync as createTempFile } from "tmp";
+@@ -660,6 +660,69 @@ var runTestImage = ({
+     throw new Error(`Run of ${imageName} failed`);
+   }
+ };
++var hasHostScript = (proposal) =>
++  existsSync(`${resolvePath(".")}/proposals/${proposal.path}/host/before-test-run.sh`) ||
++  existsSync(`${resolvePath(".")}/proposals/${proposal.path}/host/after-test-run.sh`);
++var runTestImageAsync = ({
++  extraDockerArgs = [],
++  proposal,
++  removeContainerOnExit = true
++}) => new Promise((resolve, reject) => {
++  const { name: messageFilePath, removeCallback: removeTempFileCallback } = createMessageFile(proposal);
++  const containerFilePath = "/root/message-file-path";
++  const { name: imageName } = imageNameForProposal(proposal, "test");
++  try {
++    executeHostScriptIfPresent(
++      { MESSAGE_FILE_PATH: messageFilePath },
++      proposal,
++      "before-test-run.sh"
++    );
++  } catch (err) {
++    removeTempFileCallback();
++    reject(err);
++    return;
++  }
++  console.log(`Running test image for proposal ${proposal.proposalName}`);
++  const child = spawn(
++    "docker",
++    [
++      "run",
++      "--env",
++      `MESSAGE_FILE_PATH=${containerFilePath}`,
++      "--mount",
++      `source=${messageFilePath},target=${containerFilePath},type=bind`,
++      ...removeContainerOnExit ? ["--rm"] : [],
++      ...propagateSlogfile(process.env),
++      ...extraDockerArgs,
++      imageName
++    ],
++    { stdio: "inherit" }
++  );
++  const finalize = (code, err) => {
++    try {
++      executeHostScriptIfPresent(
++        { MESSAGE_FILE_PATH: messageFilePath },
++        proposal,
++        "after-test-run.sh"
++      );
++    } catch (afterErr) {
++      console.error(`after-test-run.sh failed for ${proposal.proposalName}:`, afterErr);
++    }
++    removeTempFileCallback();
++    if (err) {
++      reject(err);
++    } else if (code !== 0) {
++      console.error(
++        `Run of ${imageName} failed with exit code ${code}`
++      );
++      reject(new Error(`Run of ${imageName} failed`));
++    } else {
++      resolve();
++    }
++  };
++  child.on("error", (err) => finalize(null, err));
++  child.on("exit", (code) => finalize(code, null));
++});
+ var debugTestImage = (proposal) => {
+   const { name } = imageNameForProposal(proposal, "test");
+   console.log(
+@@ -708,7 +771,8 @@ var { positionals, values } = parseArgs({
+     rebuild: { type: "boolean", default: false },
+     "no-push": { type: "boolean", default: false },
+     start: { type: "string", default: "" },
+-    stop: { type: "string", default: "" }
++    stop: { type: "string", default: "" },
++    parallel: { type: "string", default: "" }
+   },
+   allowPositionals: true
+ });
+@@ -730,6 +794,10 @@ test            - build the "test" images and run them
+   [-m <name>]   - target a particular proposal by substring match
+     [--debug]   - run containers with interactive TTY and port mapping
+   [--dry]       - print the config without building images
++  [--parallel <N>] - bake all test images sequentially (chain dependency),
++                     then run proposals without host scripts in parallel
++                     with concurrency N; proposals with host scripts (e.g.
++                     before-test-run.sh) still run sequentially after.
+ 
+ doctor          - diagnostics and quick fixes
+ `;
+@@ -824,14 +892,71 @@ switch (cmd) {
+       bakeTarget(imageNameForProposal(proposal, "test").target, values.dry);
+       debugTestImage(proposal);
+     } else {
+-      for (const proposal of range.proposalsToTest) {
+-        console.log(chalk.cyan.bold(`Testing ${proposal.proposalName}`));
+-        const image = imageNameForProposal(proposal, "test");
+-        bakeTarget(image.target, values.dry);
+-        runTestImage({ proposal });
+-        execSync3("docker system df", { stdio: "inherit" });
+-        execSync3(`docker rmi ${image.name}`, { stdio: "inherit" });
+-        execSync3("docker system df", { stdio: "inherit" });
++      const parallelN = Number(values.parallel) || 0;
++      const useParallel = parallelN > 1 && range.proposalsToTest.length > 1 && !values.dry;
++      if (useParallel) {
++        const built = [];
++        for (const proposal of range.proposalsToTest) {
++          console.log(chalk.cyan.bold(`Building test image for ${proposal.proposalName}`));
++          const image = imageNameForProposal(proposal, "test");
++          bakeTarget(image.target, values.dry);
++          built.push({ proposal, image });
++        }
++        const parallelizable = built.filter(({ proposal }) => !hasHostScript(proposal));
++        const sequential = built.filter(({ proposal }) => hasHostScript(proposal));
++        const errors = [];
++        const runOne = async ({ proposal, image }) => {
++          console.log(chalk.cyan.bold(`Testing ${proposal.proposalName}`));
++          try {
++            await runTestImageAsync({ proposal });
++          } catch (err) {
++            errors.push({ name: proposal.proposalName, err });
++          }
++          try {
++            execSync3(`docker rmi ${image.name}`, { stdio: "inherit" });
++          } catch (rmiErr) {
++            console.error(`Failed to remove ${image.name}:`, rmiErr.message);
++          }
++        };
++        if (parallelizable.length > 0) {
++          console.log(chalk.cyan.bold(
++            `Running ${parallelizable.length} test(s) in parallel (concurrency=${Math.min(parallelN, parallelizable.length)})`
++          ));
++          const queue = [...parallelizable];
++          const workers = Array.from(
++            { length: Math.min(parallelN, queue.length) },
++            async () => {
++              while (queue.length > 0) {
++                const item = queue.shift();
++                if (!item) break;
++                await runOne(item);
++              }
++            }
++          );
++          await Promise.all(workers);
++        }
++        for (const item of sequential) {
++          console.log(chalk.cyan.bold(`Running ${item.proposal.proposalName} sequentially (host scripts present)`));
++          await runOne(item);
++        }
++        if (errors.length > 0) {
++          for (const e of errors) {
++            console.error(chalk.red.bold(`FAILED: ${e.name}`), e.err && (e.err.message || e.err));
++          }
++          throw new Error(
++            `${errors.length} test(s) failed: ${errors.map((e) => e.name).join(", ")}`
++          );
++        }
++      } else {
++        for (const proposal of range.proposalsToTest) {
++          console.log(chalk.cyan.bold(`Testing ${proposal.proposalName}`));
++          const image = imageNameForProposal(proposal, "test");
++          bakeTarget(image.target, values.dry);
++          runTestImage({ proposal });
++          execSync3("docker system df", { stdio: "inherit" });
++          execSync3(`docker rmi ${image.name}`, { stdio: "inherit" });
++          execSync3("docker system df", { stdio: "inherit" });
++        }
+       }
+     }
+     break;
