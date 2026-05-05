@@ -12,7 +12,7 @@ import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
 import { AmountMath } from '@agoric/ertp';
-import type { Brand } from '@agoric/ertp';
+import type { Brand, NatAmount } from '@agoric/ertp';
 import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
@@ -384,12 +384,23 @@ export const processPortfolioEvents = async (
         case 'rebalance':
           plan = await planRebalanceToAllocations(plannerContext);
           break;
-        case 'withdraw':
+        case 'withdraw': {
+          const currentTotal = Object.values<NatAmount>(currentBalances).reduce(
+            (acc, amount) => acc + amount.value,
+            0n,
+          );
+          const { amount } = flowDetail;
           plan = await planWithdrawFromAllocations({
             ...plannerContext,
+            // Clamp withdrawals to the total current balance.
+            amount:
+              currentTotal < amount.value
+                ? AmountMath.make(amount.brand, currentTotal)
+                : amount,
             toChain: flowDetail.toChain,
           });
           break;
+        }
         default:
           console.warn(logPrefix, `⚠️  Unknown flow type ${type}`);
           return;
