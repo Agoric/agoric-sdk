@@ -1330,3 +1330,67 @@ test('@<ChainName> USDC target allocations', async t => {
     ]);
   });
 }
+
+// Blocked/suppressed sources proportionally reduce the other targets,
+// potentially even cascading into new blocked sources (e.g., A/B/C/D target
+// balances 40/20/20/20 can become 52/16/16/16 from A being withdraw-blocked at
+// current 52, and then 52/15/15/18 from the originally-a-sink D being
+// withdraw-blocked at current 18.
+test('computeWeightedTargets cascades blocked/suppressed sources', async t => {
+  const network = harden({
+    ...plannerContext.network,
+    pools: plannerContext.network.pools.map(pool => {
+      switch (pool.pool) {
+        case 'Aave_Avalanche':
+        case 'Aave_Optimism':
+          return { ...pool, blockWithdrawReason: 'LOW_LIQUIDITY' } as const;
+        case 'Aave_Base':
+          return { ...pool, blockDepositReason: 'AT_CAPACITY' } as const;
+        default:
+          return pool;
+      }
+    }),
+  });
+  const targetAllocation: TargetAllocation = {
+    Aave_Avalanche: 400n,
+    Aave_Ethereum: 200n,
+    Compound_Ethereum: 200n,
+    Aave_Optimism: 200n,
+  };
+  const currentBalances = {
+    Aave_Avalanche: makeDeposit(scale6(52)),
+    Aave_Ethereum: makeDeposit(scale6(10)),
+    Compound_Ethereum: makeDeposit(scale6(20)),
+    Aave_Optimism: makeDeposit(scale6(18)),
+  };
+  {
+    const plan = await planRebalanceToAllocations({
+      ...plannerContext,
+      network,
+      targetAllocation,
+      currentBalances,
+    });
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Compound_Ethereum', '@Ethereum', scale6(5)),
+      makeMovementDesc('@Ethereum', 'Aave_Ethereum', scale6(5)),
+    ]);
+  }
+
+  // Now replace Aave_Ethereum with the deposit-blocked Aave_Base.
+  targetAllocation.Aave_Base = targetAllocation.Aave_Ethereum;
+  delete targetAllocation.Aave_Ethereum;
+  {
+    const plan = await planRebalanceToAllocations({
+      ...plannerContext,
+      network,
+      targetAllocation,
+      currentBalances,
+    });
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Aave_Ethereum', '@Ethereum', scale6(10)),
+      makeMovementDesc('Compound_Ethereum', '@Ethereum', scale6(5)),
+    ]);
+  }
+});
