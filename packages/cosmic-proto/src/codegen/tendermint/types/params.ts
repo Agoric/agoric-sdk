@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../google/protobuf/duration.js';
 import {
   Duration,
   type DurationSDKType,
@@ -497,6 +499,12 @@ function createBaseEvidenceParams(): EvidenceParams {
  */
 export const EvidenceParams = {
   typeUrl: '/tendermint.types.EvidenceParams' as const,
+  annotations: {
+    'gogoproto.nullable': { maxAgeDuration: false },
+    typeUrlFromField: {
+      maxAgeDuration: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is EvidenceParams {
     return (
       o &&

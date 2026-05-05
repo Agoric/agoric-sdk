@@ -1,4 +1,8 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Params as __annotationCodec_2fcosmos_2edistribution_2ev1beta1_2eParams } from './distribution.js';
+import { ValidatorAccumulatedCommission as __annotationCodec_2fcosmos_2edistribution_2ev1beta1_2eValidatorAccumulatedCommission } from './distribution.js';
+import { ValidatorOutstandingRewards as __annotationCodec_2fcosmos_2edistribution_2ev1beta1_2eValidatorOutstandingRewards } from './distribution.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -655,6 +659,14 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.distribution.v1beta1.QueryParamsResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () =>
+        __annotationCodec_2fcosmos_2edistribution_2ev1beta1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
     return (
@@ -1089,6 +1101,14 @@ function createBaseQueryValidatorOutstandingRewardsResponse(): QueryValidatorOut
 export const QueryValidatorOutstandingRewardsResponse = {
   typeUrl:
     '/cosmos.distribution.v1beta1.QueryValidatorOutstandingRewardsResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { rewards: true },
+    'gogoproto.nullable': { rewards: false },
+    typeUrlFromField: {
+      rewards: () =>
+        __annotationCodec_2fcosmos_2edistribution_2ev1beta1_2eValidatorOutstandingRewards,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryValidatorOutstandingRewardsResponse' as const,
   is(o: any): o is QueryValidatorOutstandingRewardsResponse {
     return (
@@ -1299,6 +1319,14 @@ function createBaseQueryValidatorCommissionResponse(): QueryValidatorCommissionR
 export const QueryValidatorCommissionResponse = {
   typeUrl:
     '/cosmos.distribution.v1beta1.QueryValidatorCommissionResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { commission: true },
+    'gogoproto.nullable': { commission: false },
+    typeUrlFromField: {
+      commission: () =>
+        __annotationCodec_2fcosmos_2edistribution_2ev1beta1_2eValidatorAccumulatedCommission,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryValidatorCommissionResponse' as const,
   is(o: any): o is QueryValidatorCommissionResponse {
     return (

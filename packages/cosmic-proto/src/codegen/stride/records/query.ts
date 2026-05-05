@@ -1,4 +1,10 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Params as __annotationCodec_2fstride_2erecords_2eParams } from './params.js';
+import { DepositRecord as __annotationCodec_2fstride_2erecords_2eDepositRecord } from './records.js';
+import { EpochUnbondingRecord as __annotationCodec_2fstride_2erecords_2eEpochUnbondingRecord } from './records.js';
+import { LSMTokenDeposit as __annotationCodec_2fstride_2erecords_2eLSMTokenDeposit } from './records.js';
+import { UserRedemptionRecord as __annotationCodec_2fstride_2erecords_2eUserRedemptionRecord } from './records.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -564,6 +570,12 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/stride.records.QueryParamsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () => __annotationCodec_2fstride_2erecords_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryParamsResponse {
     return (
       o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
@@ -744,6 +756,12 @@ function createBaseQueryGetDepositRecordResponse(): QueryGetDepositRecordRespons
  */
 export const QueryGetDepositRecordResponse = {
   typeUrl: '/stride.records.QueryGetDepositRecordResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { depositRecord: false },
+    typeUrlFromField: {
+      depositRecord: () => __annotationCodec_2fstride_2erecords_2eDepositRecord,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetDepositRecordResponse {
     return (
       o &&
@@ -1356,6 +1374,13 @@ function createBaseQueryGetUserRedemptionRecordResponse(): QueryGetUserRedemptio
  */
 export const QueryGetUserRedemptionRecordResponse = {
   typeUrl: '/stride.records.QueryGetUserRedemptionRecordResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { userRedemptionRecord: false },
+    typeUrlFromField: {
+      userRedemptionRecord: () =>
+        __annotationCodec_2fstride_2erecords_2eUserRedemptionRecord,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetUserRedemptionRecordResponse {
     return (
       o &&
@@ -2076,6 +2101,13 @@ function createBaseQueryGetEpochUnbondingRecordResponse(): QueryGetEpochUnbondin
  */
 export const QueryGetEpochUnbondingRecordResponse = {
   typeUrl: '/stride.records.QueryGetEpochUnbondingRecordResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { epochUnbondingRecord: false },
+    typeUrlFromField: {
+      epochUnbondingRecord: () =>
+        __annotationCodec_2fstride_2erecords_2eEpochUnbondingRecord,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetEpochUnbondingRecordResponse {
     return (
       o &&
@@ -2503,6 +2535,12 @@ function createBaseQueryLSMDepositResponse(): QueryLSMDepositResponse {
  */
 export const QueryLSMDepositResponse = {
   typeUrl: '/stride.records.QueryLSMDepositResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { deposit: false },
+    typeUrlFromField: {
+      deposit: () => __annotationCodec_2fstride_2erecords_2eLSMTokenDeposit,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryLSMDepositResponse {
     return (
       o &&

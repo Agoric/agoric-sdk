@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../google/protobuf/duration.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import {
@@ -549,6 +552,11 @@ function createBaseWeightedVoteOption(): WeightedVoteOption {
  */
 export const WeightedVoteOption = {
   typeUrl: '/cosmos.gov.v1beta1.WeightedVoteOption' as const,
+  annotations: {
+    'amino.dont_omitempty': { weight: true },
+    'gogoproto.nullable': { weight: false },
+    typeUrlFromField: { weight: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/WeightedVoteOption' as const,
   is(o: any): o is WeightedVoteOption {
     return (
@@ -873,6 +881,29 @@ function createBaseProposal(): Proposal {
  */
 export const Proposal = {
   typeUrl: '/cosmos.gov.v1beta1.Proposal' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      depositEndTime: true,
+      finalTallyResult: true,
+      submitTime: true,
+      votingEndTime: true,
+      votingStartTime: true,
+    },
+    'gogoproto.nullable': {
+      depositEndTime: false,
+      finalTallyResult: false,
+      submitTime: false,
+      votingEndTime: false,
+      votingStartTime: false,
+    },
+    typeUrlFromField: {
+      depositEndTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      finalTallyResult: () => TallyResult,
+      submitTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      votingEndTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      votingStartTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Proposal' as const,
   is(o: any): o is Proposal {
     return (
@@ -1125,6 +1156,20 @@ function createBaseTallyResult(): TallyResult {
  */
 export const TallyResult = {
   typeUrl: '/cosmos.gov.v1beta1.TallyResult' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      abstain: false,
+      no: false,
+      noWithVeto: false,
+      yes: false,
+    },
+    typeUrlFromField: {
+      abstain: 'cosmos.Int',
+      no: 'cosmos.Int',
+      noWithVeto: 'cosmos.Int',
+      yes: 'cosmos.Int',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/TallyResult' as const,
   is(o: any): o is TallyResult {
     return (
@@ -1382,6 +1427,12 @@ function createBaseDepositParams(): DepositParams {
  */
 export const DepositParams = {
   typeUrl: '/cosmos.gov.v1beta1.DepositParams' as const,
+  annotations: {
+    'gogoproto.nullable': { maxDepositPeriod: false },
+    typeUrlFromField: {
+      maxDepositPeriod: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DepositParams' as const,
   is(o: any): o is DepositParams {
     return (
@@ -1497,6 +1548,12 @@ function createBaseVotingParams(): VotingParams {
  */
 export const VotingParams = {
   typeUrl: '/cosmos.gov.v1beta1.VotingParams' as const,
+  annotations: {
+    'gogoproto.nullable': { votingPeriod: false },
+    typeUrlFromField: {
+      votingPeriod: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/VotingParams' as const,
   is(o: any): o is VotingParams {
     return (
@@ -1587,6 +1644,18 @@ function createBaseTallyParams(): TallyParams {
  */
 export const TallyParams = {
   typeUrl: '/cosmos.gov.v1beta1.TallyParams' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      quorum: false,
+      threshold: false,
+      vetoThreshold: false,
+    },
+    typeUrlFromField: {
+      quorum: 'cosmos.Dec',
+      threshold: 'cosmos.Dec',
+      vetoThreshold: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/TallyParams' as const,
   is(o: any): o is TallyParams {
     return (

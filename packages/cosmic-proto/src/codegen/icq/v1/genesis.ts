@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Params as __annotationCodec_2ficq_2ev1_2eParams } from './icq.js';
 import { Params, type ParamsSDKType } from './icq.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
@@ -41,6 +43,10 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/icq.v1.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => __annotationCodec_2ficq_2ev1_2eParams },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is GenesisState {
     return (
       o &&

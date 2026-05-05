@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { EpochInfo as __annotationCodec_2fstride_2eepochs_2eEpochInfo } from './genesis.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -624,6 +626,12 @@ function createBaseQueryEpochInfoResponse(): QueryEpochInfoResponse {
  */
 export const QueryEpochInfoResponse = {
   typeUrl: '/stride.epochs.QueryEpochInfoResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { epoch: false },
+    typeUrlFromField: {
+      epoch: () => __annotationCodec_2fstride_2eepochs_2eEpochInfo,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryEpochInfoResponse {
     return (
       o &&

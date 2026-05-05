@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -1767,6 +1768,9 @@ function createBaseDepositForBurn(): DepositForBurn {
  */
 export const DepositForBurn = {
   typeUrl: '/circle.cctp.v1.DepositForBurn' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is DepositForBurn {
     return (
       o &&
@@ -1966,6 +1970,9 @@ function createBaseMintAndWithdraw(): MintAndWithdraw {
  */
 export const MintAndWithdraw = {
   typeUrl: '/circle.cctp.v1.MintAndWithdraw' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MintAndWithdraw {
     return (
       o &&
@@ -2908,6 +2915,9 @@ function createBaseSetBurnLimitPerMessage(): SetBurnLimitPerMessage {
  */
 export const SetBurnLimitPerMessage = {
   typeUrl: '/circle.cctp.v1.SetBurnLimitPerMessage' as const,
+  annotations: {
+    'gogoproto.nullable': { burnLimitPerMessage: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is SetBurnLimitPerMessage {
     return (
       o &&

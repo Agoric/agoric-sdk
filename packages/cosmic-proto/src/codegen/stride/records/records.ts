@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../cosmos/base/v1beta1/coin.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
@@ -407,6 +409,9 @@ function createBaseUserRedemptionRecord(): UserRedemptionRecord {
  */
 export const UserRedemptionRecord = {
   typeUrl: '/stride.records.UserRedemptionRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeTokenAmount: false, stTokenAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is UserRedemptionRecord {
     return (
       o &&
@@ -590,6 +595,9 @@ function createBaseDepositRecord(): DepositRecord {
  */
 export const DepositRecord = {
   typeUrl: '/stride.records.DepositRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is DepositRecord {
     return (
       o &&
@@ -785,6 +793,15 @@ function createBaseHostZoneUnbonding(): HostZoneUnbonding {
  */
 export const HostZoneUnbonding = {
   typeUrl: '/stride.records.HostZoneUnbonding' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      claimableNativeTokens: false,
+      nativeTokenAmount: false,
+      nativeTokensToUnbond: false,
+      stTokenAmount: false,
+      stTokensToBurn: false,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is HostZoneUnbonding {
     return (
       o &&
@@ -1148,6 +1165,12 @@ function createBaseLSMTokenDeposit(): LSMTokenDeposit {
  */
 export const LSMTokenDeposit = {
   typeUrl: '/stride.records.LSMTokenDeposit' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false, stToken: false },
+    typeUrlFromField: {
+      stToken: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is LSMTokenDeposit {
     return (
       o &&

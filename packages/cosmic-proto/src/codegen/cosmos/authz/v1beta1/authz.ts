@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import {
   Timestamp,
@@ -260,6 +262,12 @@ function createBaseGrant(): Grant {
  */
 export const Grant = {
   typeUrl: '/cosmos.authz.v1beta1.Grant' as const,
+  annotations: {
+    'gogoproto.nullable': { expiration: true },
+    typeUrlFromField: {
+      expiration: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Grant' as const,
   is(o: any): o is Grant {
     return o && o.$typeUrl === Grant.typeUrl;

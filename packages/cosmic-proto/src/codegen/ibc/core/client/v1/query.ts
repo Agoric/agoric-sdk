@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { MerklePath as __annotationCodec_2fibc_2ecore_2ecommitment_2ev2_2eMerklePath } from '../../commitment/v2/commitment.js';
+import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from './client.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -796,6 +799,12 @@ function createBaseQueryClientStateResponse(): QueryClientStateResponse {
  */
 export const QueryClientStateResponse = {
   typeUrl: '/ibc.core.client.v1.QueryClientStateResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryClientStateResponse' as const,
   is(o: any): o is QueryClientStateResponse {
     return (
@@ -1307,6 +1316,12 @@ function createBaseQueryConsensusStateResponse(): QueryConsensusStateResponse {
  */
 export const QueryConsensusStateResponse = {
   typeUrl: '/ibc.core.client.v1.QueryConsensusStateResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryConsensusStateResponse' as const,
   is(o: any): o is QueryConsensusStateResponse {
     return (
@@ -2830,6 +2845,14 @@ function createBaseQueryVerifyMembershipRequest(): QueryVerifyMembershipRequest 
  */
 export const QueryVerifyMembershipRequest = {
   typeUrl: '/ibc.core.client.v1.QueryVerifyMembershipRequest' as const,
+  annotations: {
+    'gogoproto.nullable': { merklePath: false, proofHeight: false },
+    typeUrlFromField: {
+      merklePath: () =>
+        __annotationCodec_2fibc_2ecore_2ecommitment_2ev2_2eMerklePath,
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryVerifyMembershipRequest' as const,
   is(o: any): o is QueryVerifyMembershipRequest {
     return (

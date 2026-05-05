@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { Event, type EventSDKType } from '../../../../tendermint/abci/types.js';
 import {
@@ -1301,6 +1302,11 @@ function createBaseSimulationResponse(): SimulationResponse {
  */
 export const SimulationResponse = {
   typeUrl: '/cosmos.base.abci.v1beta1.SimulationResponse' as const,
+  annotations: {
+    'gogoproto.embed': { gas_info: 'gasInfo' },
+    'gogoproto.nullable': { gasInfo: false },
+    typeUrlFromField: { gasInfo: () => GasInfo },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/SimulationResponse' as const,
   is(o: any): o is SimulationResponse {
     return (

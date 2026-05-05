@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
@@ -52,6 +53,9 @@ function createBaseAddressUnbonding(): AddressUnbonding {
  */
 export const AddressUnbonding = {
   typeUrl: '/stride.stakeibc.AddressUnbonding' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is AddressUnbonding {
     return (
       o &&

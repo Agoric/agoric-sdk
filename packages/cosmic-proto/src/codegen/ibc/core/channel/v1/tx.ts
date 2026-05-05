@@ -1,4 +1,8 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from '../../client/v1/client.js';
+import { Channel as __annotationCodec_2fibc_2ecore_2echannel_2ev1_2eChannel } from './channel.js';
+import { Packet as __annotationCodec_2fibc_2ecore_2echannel_2ev1_2ePacket } from './channel.js';
 import {
   Channel,
   type ChannelSDKType,
@@ -611,6 +615,12 @@ function createBaseMsgChannelOpenInit(): MsgChannelOpenInit {
  */
 export const MsgChannelOpenInit = {
   typeUrl: '/ibc.core.channel.v1.MsgChannelOpenInit' as const,
+  annotations: {
+    'gogoproto.nullable': { channel: false },
+    typeUrlFromField: {
+      channel: () => __annotationCodec_2fibc_2ecore_2echannel_2ev1_2eChannel,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgChannelOpenInit' as const,
   is(o: any): o is MsgChannelOpenInit {
     return (
@@ -839,6 +849,13 @@ function createBaseMsgChannelOpenTry(): MsgChannelOpenTry {
  */
 export const MsgChannelOpenTry = {
   typeUrl: '/ibc.core.channel.v1.MsgChannelOpenTry' as const,
+  annotations: {
+    'gogoproto.nullable': { channel: false, proofHeight: false },
+    typeUrlFromField: {
+      channel: () => __annotationCodec_2fibc_2ecore_2echannel_2ev1_2eChannel,
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgChannelOpenTry' as const,
   is(o: any): o is MsgChannelOpenTry {
     return (
@@ -1128,6 +1145,12 @@ function createBaseMsgChannelOpenAck(): MsgChannelOpenAck {
  */
 export const MsgChannelOpenAck = {
   typeUrl: '/ibc.core.channel.v1.MsgChannelOpenAck' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgChannelOpenAck' as const,
   is(o: any): o is MsgChannelOpenAck {
     return (
@@ -1375,6 +1398,12 @@ function createBaseMsgChannelOpenConfirm(): MsgChannelOpenConfirm {
  */
 export const MsgChannelOpenConfirm = {
   typeUrl: '/ibc.core.channel.v1.MsgChannelOpenConfirm' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgChannelOpenConfirm' as const,
   is(o: any): o is MsgChannelOpenConfirm {
     return (
@@ -1785,6 +1814,12 @@ function createBaseMsgChannelCloseConfirm(): MsgChannelCloseConfirm {
  */
 export const MsgChannelCloseConfirm = {
   typeUrl: '/ibc.core.channel.v1.MsgChannelCloseConfirm' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgChannelCloseConfirm' as const,
   is(o: any): o is MsgChannelCloseConfirm {
     return (
@@ -2010,6 +2045,13 @@ function createBaseMsgRecvPacket(): MsgRecvPacket {
  */
 export const MsgRecvPacket = {
   typeUrl: '/ibc.core.channel.v1.MsgRecvPacket' as const,
+  annotations: {
+    'gogoproto.nullable': { packet: false, proofHeight: false },
+    typeUrlFromField: {
+      packet: () => __annotationCodec_2fibc_2ecore_2echannel_2ev1_2ePacket,
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgRecvPacket' as const,
   is(o: any): o is MsgRecvPacket {
     return (
@@ -2236,6 +2278,13 @@ function createBaseMsgTimeout(): MsgTimeout {
  */
 export const MsgTimeout = {
   typeUrl: '/ibc.core.channel.v1.MsgTimeout' as const,
+  annotations: {
+    'gogoproto.nullable': { packet: false, proofHeight: false },
+    typeUrlFromField: {
+      packet: () => __annotationCodec_2fibc_2ecore_2echannel_2ev1_2ePacket,
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgTimeout' as const,
   is(o: any): o is MsgTimeout {
     return (
@@ -2478,6 +2527,13 @@ function createBaseMsgTimeoutOnClose(): MsgTimeoutOnClose {
  */
 export const MsgTimeoutOnClose = {
   typeUrl: '/ibc.core.channel.v1.MsgTimeoutOnClose' as const,
+  annotations: {
+    'gogoproto.nullable': { packet: false, proofHeight: false },
+    typeUrlFromField: {
+      packet: () => __annotationCodec_2fibc_2ecore_2echannel_2ev1_2ePacket,
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgTimeoutOnClose' as const,
   is(o: any): o is MsgTimeoutOnClose {
     return (
@@ -2751,6 +2807,13 @@ function createBaseMsgAcknowledgement(): MsgAcknowledgement {
  */
 export const MsgAcknowledgement = {
   typeUrl: '/ibc.core.channel.v1.MsgAcknowledgement' as const,
+  annotations: {
+    'gogoproto.nullable': { packet: false, proofHeight: false },
+    typeUrlFromField: {
+      packet: () => __annotationCodec_2fibc_2ecore_2echannel_2ev1_2ePacket,
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgAcknowledgement' as const,
   is(o: any): o is MsgAcknowledgement {
     return (

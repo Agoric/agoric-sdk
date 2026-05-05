@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../cosmos/base/v1beta1/coin.js';
 import {
   DelegationRecord,
   type DelegationRecordSDKType,
@@ -601,6 +603,9 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
  */
 export const MsgLiquidStake = {
   typeUrl: '/stride.stakedym.MsgLiquidStake' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'stakedym/MsgLiquidStake' as const,
   is(o: any): o is MsgLiquidStake {
     return (
@@ -695,6 +700,12 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
  */
 export const MsgLiquidStakeResponse = {
   typeUrl: '/stride.stakedym.MsgLiquidStakeResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { stToken: false },
+    typeUrlFromField: {
+      stToken: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgLiquidStakeResponse {
     return (
       o && (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.is(o.stToken))
@@ -788,6 +799,9 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
  */
 export const MsgRedeemStake = {
   typeUrl: '/stride.stakedym.MsgRedeemStake' as const,
+  annotations: {
+    'gogoproto.nullable': { stTokenAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'stakedym/MsgRedeemStake' as const,
   is(o: any): o is MsgRedeemStake {
     return (
@@ -883,6 +897,12 @@ function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
  */
 export const MsgRedeemStakeResponse = {
   typeUrl: '/stride.stakedym.MsgRedeemStakeResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeToken: false },
+    typeUrlFromField: {
+      nativeToken: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgRedeemStakeResponse {
     return (
       o &&
@@ -1553,6 +1573,9 @@ function createBaseMsgAdjustDelegatedBalance(): MsgAdjustDelegatedBalance {
  */
 export const MsgAdjustDelegatedBalance = {
   typeUrl: '/stride.stakedym.MsgAdjustDelegatedBalance' as const,
+  annotations: {
+    'gogoproto.nullable': { delegationOffset: false },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'stakedym/MsgAdjustDelegatedBalance' as const,
   is(o: any): o is MsgAdjustDelegatedBalance {
     return (
@@ -1749,6 +1772,16 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
  */
 export const MsgUpdateInnerRedemptionRateBounds = {
   typeUrl: '/stride.stakedym.MsgUpdateInnerRedemptionRateBounds' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      maxInnerRedemptionRate: false,
+      minInnerRedemptionRate: false,
+    },
+    typeUrlFromField: {
+      maxInnerRedemptionRate: 'cosmos.Dec',
+      minInnerRedemptionRate: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'stakedym/MsgUpdateRedemptionRateBounds' as const,
   is(o: any): o is MsgUpdateInnerRedemptionRateBounds {
     return (

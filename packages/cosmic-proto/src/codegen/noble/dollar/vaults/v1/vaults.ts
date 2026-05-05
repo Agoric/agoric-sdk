@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../../google/protobuf/timestamp.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -240,6 +242,11 @@ function createBaseReward(): Reward {
  */
 export const Reward = {
   typeUrl: '/noble.dollar.vaults.v1.Reward' as const,
+  annotations: {
+    'amino.dont_omitempty': { rewards: true, total: true },
+    'gogoproto.nullable': { rewards: false, total: false },
+    typeUrlFromField: { rewards: 'cosmos.Int', total: 'cosmos.Int' },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Reward {
     return (
       o &&
@@ -350,6 +357,15 @@ function createBasePosition(): Position {
  */
 export const Position = {
   typeUrl: '/noble.dollar.vaults.v1.Position' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true, principal: true },
+    'gogoproto.nullable': { amount: false, principal: false, time: false },
+    typeUrlFromField: {
+      amount: 'cosmos.Int',
+      principal: 'cosmos.Int',
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Position {
     return (
       o &&
@@ -473,6 +489,11 @@ function createBasePositionRewards(): PositionRewards {
  */
 export const PositionRewards = {
   typeUrl: '/noble.dollar.vaults.v1.PositionRewards' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true, pendingRewards: true },
+    'gogoproto.nullable': { amount: false, pendingRewards: false },
+    typeUrlFromField: { amount: 'cosmos.Int', pendingRewards: 'cosmos.Int' },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is PositionRewards {
     return (
       o &&
@@ -571,6 +592,15 @@ function createBasePositionEntry(): PositionEntry {
  */
 export const PositionEntry = {
   typeUrl: '/noble.dollar.vaults.v1.PositionEntry' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true, principal: true },
+    'gogoproto.nullable': { amount: false, principal: false, time: false },
+    typeUrlFromField: {
+      amount: 'cosmos.Int',
+      principal: 'cosmos.Int',
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is PositionEntry {
     return (
       o &&
@@ -724,6 +754,23 @@ function createBaseStats(): Stats {
  */
 export const Stats = {
   typeUrl: '/noble.dollar.vaults.v1.Stats' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      flexibleTotalDistributedRewardsPrincipal: true,
+      flexibleTotalPrincipal: true,
+      stakedTotalPrincipal: true,
+    },
+    'gogoproto.nullable': {
+      flexibleTotalDistributedRewardsPrincipal: false,
+      flexibleTotalPrincipal: false,
+      stakedTotalPrincipal: false,
+    },
+    typeUrlFromField: {
+      flexibleTotalDistributedRewardsPrincipal: 'cosmos.Int',
+      flexibleTotalPrincipal: 'cosmos.Int',
+      stakedTotalPrincipal: 'cosmos.Int',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Stats {
     return (
       o &&

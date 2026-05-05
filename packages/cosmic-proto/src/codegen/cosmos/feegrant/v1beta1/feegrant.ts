@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../google/protobuf/duration.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import {
   Timestamp,
@@ -319,6 +322,15 @@ function createBasePeriodicAllowance(): PeriodicAllowance {
  */
 export const PeriodicAllowance = {
   typeUrl: '/cosmos.feegrant.v1beta1.PeriodicAllowance' as const,
+  annotations: {
+    'amino.dont_omitempty': { basic: true, period: true, periodReset: true },
+    'gogoproto.nullable': { basic: false, period: false, periodReset: false },
+    typeUrlFromField: {
+      basic: () => BasicAllowance,
+      period: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+      periodReset: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/PeriodicAllowance' as const,
   is(o: any): o is PeriodicAllowance {
     return (

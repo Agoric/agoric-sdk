@@ -1,4 +1,8 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../base/v1beta1/coin.js';
+import { Metadata as __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eMetadata } from './bank.js';
+import { Params as __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eParams } from './bank.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -1977,6 +1981,13 @@ function createBaseQuerySupplyOfResponse(): QuerySupplyOfResponse {
  */
 export const QuerySupplyOfResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QuerySupplyOfResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: {
+      amount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QuerySupplyOfResponse' as const,
   is(o: any): o is QuerySupplyOfResponse {
     return (
@@ -2130,6 +2141,13 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryParamsResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () => __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
     return (
@@ -2533,6 +2551,13 @@ function createBaseQueryDenomMetadataResponse(): QueryDenomMetadataResponse {
  */
 export const QueryDenomMetadataResponse = {
   typeUrl: '/cosmos.bank.v1beta1.QueryDenomMetadataResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { metadata: true },
+    'gogoproto.nullable': { metadata: false },
+    typeUrlFromField: {
+      metadata: () => __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eMetadata,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryDenomMetadataResponse' as const,
   is(o: any): o is QueryDenomMetadataResponse {
     return (
@@ -2733,6 +2758,13 @@ function createBaseQueryDenomMetadataByQueryStringResponse(): QueryDenomMetadata
 export const QueryDenomMetadataByQueryStringResponse = {
   typeUrl:
     '/cosmos.bank.v1beta1.QueryDenomMetadataByQueryStringResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { metadata: true },
+    'gogoproto.nullable': { metadata: false },
+    typeUrlFromField: {
+      metadata: () => __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eMetadata,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryDenomMetadataByQueryStringResponse' as const,
   is(o: any): o is QueryDenomMetadataByQueryStringResponse {
     return (
@@ -2950,6 +2982,13 @@ function createBaseDenomOwner(): DenomOwner {
  */
 export const DenomOwner = {
   typeUrl: '/cosmos.bank.v1beta1.DenomOwner' as const,
+  annotations: {
+    'amino.dont_omitempty': { balance: true },
+    'gogoproto.nullable': { balance: false },
+    typeUrlFromField: {
+      balance: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DenomOwner' as const,
   is(o: any): o is DenomOwner {
     return (

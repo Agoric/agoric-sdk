@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -89,6 +90,10 @@ function createBaseContinuousFund(): ContinuousFund {
  */
 export const ContinuousFund = {
   typeUrl: '/cosmos.protocolpool.v1.ContinuousFund' as const,
+  annotations: {
+    'gogoproto.nullable': { percentage: false },
+    typeUrlFromField: { percentage: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ContinuousFund' as const,
   is(o: any): o is ContinuousFund {
     return (

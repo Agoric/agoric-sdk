@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { PublicKey as __annotationCodec_2ftendermint_2ecrypto_2ePublicKey } from '../crypto/keys.js';
 import { PublicKey, type PublicKeySDKType } from '../crypto/keys.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
@@ -269,6 +271,12 @@ function createBaseValidator(): Validator {
  */
 export const Validator = {
   typeUrl: '/tendermint.types.Validator' as const,
+  annotations: {
+    'gogoproto.nullable': { pubKey: false },
+    typeUrlFromField: {
+      pubKey: () => __annotationCodec_2ftendermint_2ecrypto_2ePublicKey,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Validator {
     return (
       o &&

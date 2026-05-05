@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Params as __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eParams } from './auth.js';
 import { Params, type ParamsSDKType } from './auth.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
@@ -69,6 +71,13 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.auth.v1beta1.MsgUpdateParams' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () => __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/auth/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (

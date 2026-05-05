@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../../type-url-annotations.js';
+import { Params as __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2econtroller_2ev1_2eParams } from '../../controller/v1/controller.js';
+import { Params as __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2ehost_2ev1_2eParams } from '../../host/v1/host.js';
 import { Params as Params1 } from '../../controller/v1/controller.js';
 import { type ParamsSDKType as Params1SDKType } from '../../controller/v1/controller.js';
 import { Params as Params2 } from '../../host/v1/host.js';
@@ -157,6 +160,16 @@ function createBaseGenesisState(): GenesisState {
 export const GenesisState = {
   typeUrl:
     '/ibc.applications.interchain_accounts.genesis.v1.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      controllerGenesisState: false,
+      hostGenesisState: false,
+    },
+    typeUrlFromField: {
+      controllerGenesisState: () => ControllerGenesisState,
+      hostGenesisState: () => HostGenesisState,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (
@@ -284,6 +297,13 @@ function createBaseControllerGenesisState(): ControllerGenesisState {
 export const ControllerGenesisState = {
   typeUrl:
     '/ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () =>
+        __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2econtroller_2ev1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ControllerGenesisState' as const,
   is(o: any): o is ControllerGenesisState {
     return (
@@ -459,6 +479,13 @@ function createBaseHostGenesisState(): HostGenesisState {
 export const HostGenesisState = {
   typeUrl:
     '/ibc.applications.interchain_accounts.genesis.v1.HostGenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () =>
+        __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2ehost_2ev1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/HostGenesisState' as const,
   is(o: any): o is HostGenesisState {
     return (

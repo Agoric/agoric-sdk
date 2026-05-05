@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Grant as __annotationCodec_2fcosmos_2eauthz_2ev1beta1_2eGrant } from './authz.js';
 import { Grant, type GrantSDKType } from './authz.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
@@ -170,6 +172,13 @@ function createBaseMsgGrant(): MsgGrant {
  */
 export const MsgGrant = {
   typeUrl: '/cosmos.authz.v1beta1.MsgGrant' as const,
+  annotations: {
+    'amino.dont_omitempty': { grant: true },
+    'gogoproto.nullable': { grant: false },
+    typeUrlFromField: {
+      grant: () => __annotationCodec_2fcosmos_2eauthz_2ev1beta1_2eGrant,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgGrant' as const,
   is(o: any): o is MsgGrant {
     return (

@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   VaultType,
   PausedType,
@@ -155,6 +156,11 @@ function createBaseMsgLock(): MsgLock {
  */
 export const MsgLock = {
   typeUrl: '/noble.dollar.vaults.v1.MsgLock' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: 'cosmos.Int' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'dollar/vaults/Lock' as const,
   is(o: any): o is MsgLock {
     return (
@@ -324,6 +330,11 @@ function createBaseMsgUnlock(): MsgUnlock {
  */
 export const MsgUnlock = {
   typeUrl: '/noble.dollar.vaults.v1.MsgUnlock' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: 'cosmos.Int' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'dollar/vaults/Unlock' as const,
   is(o: any): o is MsgUnlock {
     return (

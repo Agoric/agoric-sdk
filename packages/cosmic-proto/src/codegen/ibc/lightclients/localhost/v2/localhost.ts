@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from '../../../core/client/v1/client.js';
 import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
@@ -41,6 +43,12 @@ function createBaseClientState(): ClientState {
  */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.localhost.v2.ClientState' as const,
+  annotations: {
+    'gogoproto.nullable': { latestHeight: false },
+    typeUrlFromField: {
+      latestHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ClientState' as const,
   is(o: any): o is ClientState {
     return (

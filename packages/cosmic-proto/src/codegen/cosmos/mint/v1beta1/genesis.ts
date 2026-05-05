@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Minter as __annotationCodec_2fcosmos_2emint_2ev1beta1_2eMinter } from './mint.js';
+import { Params as __annotationCodec_2fcosmos_2emint_2ev1beta1_2eParams } from './mint.js';
 import {
   Minter,
   type MinterSDKType,
@@ -52,6 +55,14 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.mint.v1beta1.GenesisState' as const,
+  annotations: {
+    'amino.dont_omitempty': { minter: true, params: true },
+    'gogoproto.nullable': { minter: false, params: false },
+    typeUrlFromField: {
+      minter: () => __annotationCodec_2fcosmos_2emint_2ev1beta1_2eMinter,
+      params: () => __annotationCodec_2fcosmos_2emint_2ev1beta1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (

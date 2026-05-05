@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
@@ -300,6 +301,10 @@ function createBaseConsensusStateWithHeight(): ConsensusStateWithHeight {
  */
 export const ConsensusStateWithHeight = {
   typeUrl: '/ibc.core.client.v1.ConsensusStateWithHeight' as const,
+  annotations: {
+    'gogoproto.nullable': { height: false },
+    typeUrlFromField: { height: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ConsensusStateWithHeight' as const,
   is(o: any): o is ConsensusStateWithHeight {
     return (

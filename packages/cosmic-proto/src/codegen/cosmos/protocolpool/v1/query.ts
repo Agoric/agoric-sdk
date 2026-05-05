@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { ContinuousFund as __annotationCodec_2fcosmos_2eprotocolpool_2ev1_2eContinuousFund } from './types.js';
+import { Params as __annotationCodec_2fcosmos_2eprotocolpool_2ev1_2eParams } from './types.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import {
   ContinuousFund,
@@ -480,6 +483,13 @@ function createBaseQueryContinuousFundResponse(): QueryContinuousFundResponse {
  */
 export const QueryContinuousFundResponse = {
   typeUrl: '/cosmos.protocolpool.v1.QueryContinuousFundResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { continuousFund: false },
+    typeUrlFromField: {
+      continuousFund: () =>
+        __annotationCodec_2fcosmos_2eprotocolpool_2ev1_2eContinuousFund,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryContinuousFundResponse' as const,
   is(o: any): o is QueryContinuousFundResponse {
     return (
@@ -839,6 +849,12 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.protocolpool.v1.QueryParamsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () => __annotationCodec_2fcosmos_2eprotocolpool_2ev1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
     return (

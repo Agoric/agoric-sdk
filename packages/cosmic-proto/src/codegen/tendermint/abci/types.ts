@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../google/protobuf/timestamp.js';
+import { PublicKey as __annotationCodec_2ftendermint_2ecrypto_2ePublicKey } from '../crypto/keys.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -2375,6 +2378,12 @@ function createBaseRequestInitChain(): RequestInitChain {
  */
 export const RequestInitChain = {
   typeUrl: '/tendermint.abci.RequestInitChain' as const,
+  annotations: {
+    'gogoproto.nullable': { time: false },
+    typeUrlFromField: {
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestInitChain {
     return (
       o &&
@@ -3267,6 +3276,13 @@ function createBaseRequestPrepareProposal(): RequestPrepareProposal {
  */
 export const RequestPrepareProposal = {
   typeUrl: '/tendermint.abci.RequestPrepareProposal' as const,
+  annotations: {
+    'gogoproto.nullable': { localLastCommit: false, time: false },
+    typeUrlFromField: {
+      localLastCommit: () => ExtendedCommitInfo,
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestPrepareProposal {
     return (
       o &&
@@ -3510,6 +3526,13 @@ function createBaseRequestProcessProposal(): RequestProcessProposal {
  */
 export const RequestProcessProposal = {
   typeUrl: '/tendermint.abci.RequestProcessProposal' as const,
+  annotations: {
+    'gogoproto.nullable': { proposedLastCommit: false, time: false },
+    typeUrlFromField: {
+      proposedLastCommit: () => CommitInfo,
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestProcessProposal {
     return (
       o &&
@@ -3754,6 +3777,13 @@ function createBaseRequestExtendVote(): RequestExtendVote {
  */
 export const RequestExtendVote = {
   typeUrl: '/tendermint.abci.RequestExtendVote' as const,
+  annotations: {
+    'gogoproto.nullable': { proposedLastCommit: false, time: false },
+    typeUrlFromField: {
+      proposedLastCommit: () => CommitInfo,
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestExtendVote {
     return (
       o &&
@@ -4150,6 +4180,13 @@ function createBaseRequestFinalizeBlock(): RequestFinalizeBlock {
  */
 export const RequestFinalizeBlock = {
   typeUrl: '/tendermint.abci.RequestFinalizeBlock' as const,
+  annotations: {
+    'gogoproto.nullable': { decidedLastCommit: false, time: false },
+    typeUrlFromField: {
+      decidedLastCommit: () => CommitInfo,
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestFinalizeBlock {
     return (
       o &&
@@ -7409,6 +7446,10 @@ function createBaseTxResult(): TxResult {
  */
 export const TxResult = {
   typeUrl: '/tendermint.abci.TxResult' as const,
+  annotations: {
+    'gogoproto.nullable': { result: false },
+    typeUrlFromField: { result: () => ExecTxResult },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is TxResult {
     return (
       o &&
@@ -7643,6 +7684,12 @@ function createBaseValidatorUpdate(): ValidatorUpdate {
  */
 export const ValidatorUpdate = {
   typeUrl: '/tendermint.abci.ValidatorUpdate' as const,
+  annotations: {
+    'gogoproto.nullable': { pubKey: false },
+    typeUrlFromField: {
+      pubKey: () => __annotationCodec_2ftendermint_2ecrypto_2ePublicKey,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is ValidatorUpdate {
     return (
       o &&
@@ -7746,6 +7793,10 @@ function createBaseVoteInfo(): VoteInfo {
  */
 export const VoteInfo = {
   typeUrl: '/tendermint.abci.VoteInfo' as const,
+  annotations: {
+    'gogoproto.nullable': { validator: false },
+    typeUrlFromField: { validator: () => Validator },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is VoteInfo {
     return (
       o &&
@@ -7850,6 +7901,10 @@ function createBaseExtendedVoteInfo(): ExtendedVoteInfo {
  */
 export const ExtendedVoteInfo = {
   typeUrl: '/tendermint.abci.ExtendedVoteInfo' as const,
+  annotations: {
+    'gogoproto.nullable': { validator: false },
+    typeUrlFromField: { validator: () => Validator },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is ExtendedVoteInfo {
     return (
       o &&
@@ -7997,6 +8052,13 @@ function createBaseMisbehavior(): Misbehavior {
  */
 export const Misbehavior = {
   typeUrl: '/tendermint.abci.Misbehavior' as const,
+  annotations: {
+    'gogoproto.nullable': { time: false, validator: false },
+    typeUrlFromField: {
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      validator: () => Validator,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Misbehavior {
     return (
       o &&

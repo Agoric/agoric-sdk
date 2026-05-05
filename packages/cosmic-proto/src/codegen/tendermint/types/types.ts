@@ -1,4 +1,8 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../google/protobuf/timestamp.js';
+import { Proof as __annotationCodec_2ftendermint_2ecrypto_2eProof } from '../crypto/proof.js';
+import { Consensus as __annotationCodec_2ftendermint_2eversion_2eConsensus } from '../version/types.js';
 import { Proof, type ProofSDKType } from '../crypto/proof.js';
 import { Consensus, type ConsensusSDKType } from '../version/types.js';
 import {
@@ -666,6 +670,12 @@ function createBasePart(): Part {
  */
 export const Part = {
   typeUrl: '/tendermint.types.Part' as const,
+  annotations: {
+    'gogoproto.nullable': { proof: false },
+    typeUrlFromField: {
+      proof: () => __annotationCodec_2ftendermint_2ecrypto_2eProof,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Part {
     return (
       o &&
@@ -780,6 +790,10 @@ function createBaseBlockID(): BlockID {
  */
 export const BlockID = {
   typeUrl: '/tendermint.types.BlockID' as const,
+  annotations: {
+    'gogoproto.nullable': { partSetHeader: false },
+    typeUrlFromField: { partSetHeader: () => PartSetHeader },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is BlockID {
     return (
       o &&
@@ -902,6 +916,14 @@ function createBaseHeader(): Header {
  */
 export const Header = {
   typeUrl: '/tendermint.types.Header' as const,
+  annotations: {
+    'gogoproto.nullable': { lastBlockId: false, time: false, version: false },
+    typeUrlFromField: {
+      lastBlockId: () => BlockID,
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      version: () => __annotationCodec_2ftendermint_2eversion_2eConsensus,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Header {
     return (
       o &&
@@ -1335,6 +1357,13 @@ function createBaseVote(): Vote {
  */
 export const Vote = {
   typeUrl: '/tendermint.types.Vote' as const,
+  annotations: {
+    'gogoproto.nullable': { blockId: false, timestamp: false },
+    typeUrlFromField: {
+      blockId: () => BlockID,
+      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Vote {
     return (
       o &&
@@ -1575,6 +1604,10 @@ function createBaseCommit(): Commit {
  */
 export const Commit = {
   typeUrl: '/tendermint.types.Commit' as const,
+  annotations: {
+    'gogoproto.nullable': { blockId: false },
+    typeUrlFromField: { blockId: () => BlockID },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Commit {
     return (
       o &&
@@ -1718,6 +1751,12 @@ function createBaseCommitSig(): CommitSig {
  */
 export const CommitSig = {
   typeUrl: '/tendermint.types.CommitSig' as const,
+  annotations: {
+    'gogoproto.nullable': { timestamp: false },
+    typeUrlFromField: {
+      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is CommitSig {
     return (
       o &&
@@ -1860,6 +1899,10 @@ function createBaseExtendedCommit(): ExtendedCommit {
  */
 export const ExtendedCommit = {
   typeUrl: '/tendermint.types.ExtendedCommit' as const,
+  annotations: {
+    'gogoproto.nullable': { blockId: false },
+    typeUrlFromField: { blockId: () => BlockID },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is ExtendedCommit {
     return (
       o &&
@@ -2014,6 +2057,12 @@ function createBaseExtendedCommitSig(): ExtendedCommitSig {
  */
 export const ExtendedCommitSig = {
   typeUrl: '/tendermint.types.ExtendedCommitSig' as const,
+  annotations: {
+    'gogoproto.nullable': { timestamp: false },
+    typeUrlFromField: {
+      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is ExtendedCommitSig {
     return (
       o &&
@@ -2197,6 +2246,13 @@ function createBaseProposal(): Proposal {
  */
 export const Proposal = {
   typeUrl: '/tendermint.types.Proposal' as const,
+  annotations: {
+    'gogoproto.nullable': { blockId: false, timestamp: false },
+    typeUrlFromField: {
+      blockId: () => BlockID,
+      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Proposal {
     return (
       o &&
@@ -2572,6 +2628,10 @@ function createBaseBlockMeta(): BlockMeta {
  */
 export const BlockMeta = {
   typeUrl: '/tendermint.types.BlockMeta' as const,
+  annotations: {
+    'gogoproto.nullable': { blockId: false, header: false },
+    typeUrlFromField: { blockId: () => BlockID, header: () => Header },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is BlockMeta {
     return (
       o &&

@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
@@ -486,6 +487,25 @@ function createBaseHostZone(): HostZone {
  */
 export const HostZone = {
   typeUrl: '/stride.stakedym.HostZone' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      delegatedBalance: false,
+      lastRedemptionRate: false,
+      maxInnerRedemptionRate: false,
+      maxRedemptionRate: false,
+      minInnerRedemptionRate: false,
+      minRedemptionRate: false,
+      redemptionRate: false,
+    },
+    typeUrlFromField: {
+      lastRedemptionRate: 'cosmos.Dec',
+      maxInnerRedemptionRate: 'cosmos.Dec',
+      maxRedemptionRate: 'cosmos.Dec',
+      minInnerRedemptionRate: 'cosmos.Dec',
+      minRedemptionRate: 'cosmos.Dec',
+      redemptionRate: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is HostZone {
     return (
       o &&
@@ -878,6 +898,9 @@ function createBaseDelegationRecord(): DelegationRecord {
  */
 export const DelegationRecord = {
   typeUrl: '/stride.stakedym.DelegationRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is DelegationRecord {
     return (
       o &&
@@ -1008,6 +1031,9 @@ function createBaseUnbondingRecord(): UnbondingRecord {
  */
 export const UnbondingRecord = {
   typeUrl: '/stride.stakedym.UnbondingRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false, stTokenAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is UnbondingRecord {
     return (
       o &&
@@ -1188,6 +1214,9 @@ function createBaseRedemptionRecord(): RedemptionRecord {
  */
 export const RedemptionRecord = {
   typeUrl: '/stride.stakedym.RedemptionRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false, stTokenAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RedemptionRecord {
     return (
       o &&
@@ -1321,6 +1350,9 @@ function createBaseSlashRecord(): SlashRecord {
  */
 export const SlashRecord = {
   typeUrl: '/stride.stakedym.SlashRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is SlashRecord {
     return (
       o &&

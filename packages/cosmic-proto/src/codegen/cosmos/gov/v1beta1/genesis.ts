@@ -1,4 +1,8 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { DepositParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDepositParams } from './gov.js';
+import { TallyParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyParams } from './gov.js';
+import { VotingParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVotingParams } from './gov.js';
 import {
   Deposit,
   type DepositSDKType,
@@ -90,6 +94,26 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.gov.v1beta1.GenesisState' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      depositParams: true,
+      tallyParams: true,
+      votingParams: true,
+    },
+    'gogoproto.nullable': {
+      depositParams: false,
+      tallyParams: false,
+      votingParams: false,
+    },
+    typeUrlFromField: {
+      depositParams: () =>
+        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDepositParams,
+      tallyParams: () =>
+        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyParams,
+      votingParams: () =>
+        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVotingParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (

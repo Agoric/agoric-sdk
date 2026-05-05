@@ -1,4 +1,12 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Deposit as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDeposit } from './gov.js';
+import { DepositParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDepositParams } from './gov.js';
+import { Proposal as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eProposal } from './gov.js';
+import { TallyParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyParams } from './gov.js';
+import { TallyResult as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyResult } from './gov.js';
+import { Vote as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVote } from './gov.js';
+import { VotingParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVotingParams } from './gov.js';
 import {
   ProposalStatus,
   Proposal,
@@ -592,6 +600,13 @@ function createBaseQueryProposalResponse(): QueryProposalResponse {
  */
 export const QueryProposalResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryProposalResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { proposal: true },
+    'gogoproto.nullable': { proposal: false },
+    typeUrlFromField: {
+      proposal: () => __annotationCodec_2fcosmos_2egov_2ev1beta1_2eProposal,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryProposalResponse' as const,
   is(o: any): o is QueryProposalResponse {
     return (
@@ -1036,6 +1051,13 @@ function createBaseQueryVoteResponse(): QueryVoteResponse {
  */
 export const QueryVoteResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryVoteResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { vote: true },
+    'gogoproto.nullable': { vote: false },
+    typeUrlFromField: {
+      vote: () => __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVote,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryVoteResponse' as const,
   is(o: any): o is QueryVoteResponse {
     return o && (o.$typeUrl === QueryVoteResponse.typeUrl || Vote.is(o.vote));
@@ -1425,6 +1447,26 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryParamsResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      depositParams: true,
+      tallyParams: true,
+      votingParams: true,
+    },
+    'gogoproto.nullable': {
+      depositParams: false,
+      tallyParams: false,
+      votingParams: false,
+    },
+    typeUrlFromField: {
+      depositParams: () =>
+        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDepositParams,
+      tallyParams: () =>
+        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyParams,
+      votingParams: () =>
+        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVotingParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
     return (
@@ -1668,6 +1710,13 @@ function createBaseQueryDepositResponse(): QueryDepositResponse {
  */
 export const QueryDepositResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryDepositResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { deposit: true },
+    'gogoproto.nullable': { deposit: false },
+    typeUrlFromField: {
+      deposit: () => __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDeposit,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryDepositResponse' as const,
   is(o: any): o is QueryDepositResponse {
     return (
@@ -2085,6 +2134,13 @@ function createBaseQueryTallyResultResponse(): QueryTallyResultResponse {
  */
 export const QueryTallyResultResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryTallyResultResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { tally: true },
+    'gogoproto.nullable': { tally: false },
+    typeUrlFromField: {
+      tally: () => __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyResult,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryTallyResultResponse' as const,
   is(o: any): o is QueryTallyResultResponse {
     return (

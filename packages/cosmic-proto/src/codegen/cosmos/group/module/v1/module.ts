@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../../google/protobuf/duration.js';
 import {
   Duration,
   type DurationSDKType,
@@ -52,6 +54,14 @@ function createBaseModule(): Module {
  */
 export const Module = {
   typeUrl: '/cosmos.group.module.v1.Module' as const,
+  annotations: {
+    'amino.dont_omitempty': { maxExecutionPeriod: true },
+    'gogoproto.nullable': { maxExecutionPeriod: false },
+    typeUrlFromField: {
+      maxExecutionPeriod: () =>
+        __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Module' as const,
   is(o: any): o is Module {
     return (

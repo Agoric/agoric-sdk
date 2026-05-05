@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../cosmos/base/v1beta1/coin.js';
 import { Validator, type ValidatorSDKType } from './validator.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
@@ -1222,6 +1224,16 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
  */
 export const MsgUpdateInnerRedemptionRateBounds = {
   typeUrl: '/stride.stakeibc.MsgUpdateInnerRedemptionRateBounds' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      maxInnerRedemptionRate: false,
+      minInnerRedemptionRate: false,
+    },
+    typeUrlFromField: {
+      maxInnerRedemptionRate: 'cosmos.Dec',
+      minInnerRedemptionRate: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgUpdateInnerRedemptionRateBounds {
     return (
       o &&
@@ -1447,6 +1459,9 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
  */
 export const MsgLiquidStake = {
   typeUrl: '/stride.stakeibc.MsgLiquidStake' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgLiquidStake {
     return (
       o &&
@@ -1550,6 +1565,12 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
  */
 export const MsgLiquidStakeResponse = {
   typeUrl: '/stride.stakeibc.MsgLiquidStakeResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { stToken: false },
+    typeUrlFromField: {
+      stToken: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgLiquidStakeResponse {
     return (
       o && (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.is(o.stToken))
@@ -1643,6 +1664,9 @@ function createBaseMsgLSMLiquidStake(): MsgLSMLiquidStake {
  */
 export const MsgLSMLiquidStake = {
   typeUrl: '/stride.stakeibc.MsgLSMLiquidStake' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgLSMLiquidStake {
     return (
       o &&
@@ -1847,6 +1871,9 @@ function createBaseMsgClearBalance(): MsgClearBalance {
  */
 export const MsgClearBalance = {
   typeUrl: '/stride.stakeibc.MsgClearBalance' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgClearBalance {
     return (
       o &&
@@ -2032,6 +2059,9 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
  */
 export const MsgRedeemStake = {
   typeUrl: '/stride.stakeibc.MsgRedeemStake' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgRedeemStake {
     return (
       o &&
@@ -2224,6 +2254,16 @@ function createBaseMsgRegisterHostZone(): MsgRegisterHostZone {
  */
 export const MsgRegisterHostZone = {
   typeUrl: '/stride.stakeibc.MsgRegisterHostZone' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      maxRedemptionRate: false,
+      minRedemptionRate: false,
+    },
+    typeUrlFromField: {
+      maxRedemptionRate: 'cosmos.Dec',
+      minRedemptionRate: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgRegisterHostZone {
     return (
       o &&
@@ -4530,6 +4570,13 @@ function createBaseMsgCreateTradeRoute(): MsgCreateTradeRoute {
  */
 export const MsgCreateTradeRoute = {
   typeUrl: '/stride.stakeibc.MsgCreateTradeRoute' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      maxSwapAmount: false,
+      minSwapAmount: false,
+      minTransferAmount: false,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'stride/x/stakeibc/MsgCreateTradeRoute' as const,
   is(o: any): o is MsgCreateTradeRoute {
     return (
@@ -5111,6 +5158,13 @@ function createBaseMsgUpdateTradeRoute(): MsgUpdateTradeRoute {
  */
 export const MsgUpdateTradeRoute = {
   typeUrl: '/stride.stakeibc.MsgUpdateTradeRoute' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      maxSwapAmount: false,
+      minSwapAmount: false,
+      minTransferAmount: false,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'stride/x/stakeibc/MsgUpdateTradeRoute' as const,
   is(o: any): o is MsgUpdateTradeRoute {
     return (
@@ -5369,6 +5423,12 @@ function createBaseMsgSetCommunityPoolRebate(): MsgSetCommunityPoolRebate {
  */
 export const MsgSetCommunityPoolRebate = {
   typeUrl: '/stride.stakeibc.MsgSetCommunityPoolRebate' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      liquidStakedStTokenAmount: false,
+      rebateRate: false,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'stride/x/stakeibc/MsgSetCommunityPoolRebate' as const,
   is(o: any): o is MsgSetCommunityPoolRebate {
     return (

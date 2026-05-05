@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { CounterpartyInfo as __annotationCodec_2fibc_2ecore_2eclient_2ev2_2eCounterpartyInfo } from './counterparty.js';
 import {
   CounterpartyInfo,
   type CounterpartyInfoSDKType,
@@ -75,6 +77,13 @@ function createBaseGenesisCounterpartyInfo(): GenesisCounterpartyInfo {
  */
 export const GenesisCounterpartyInfo = {
   typeUrl: '/ibc.core.client.v2.GenesisCounterpartyInfo' as const,
+  annotations: {
+    'gogoproto.nullable': { counterpartyInfo: false },
+    typeUrlFromField: {
+      counterpartyInfo: () =>
+        __annotationCodec_2fibc_2ecore_2eclient_2ev2_2eCounterpartyInfo,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisCounterpartyInfo' as const,
   is(o: any): o is GenesisCounterpartyInfo {
     return (

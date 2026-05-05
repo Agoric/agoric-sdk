@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Params as __annotationCodec_2fagoric_2eswingset_2eParams } from './swingset.js';
+import { State as __annotationCodec_2fagoric_2eswingset_2eState } from './swingset.js';
 import {
   Params,
   type ParamsSDKType,
@@ -76,6 +79,13 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/agoric.swingset.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false, state: false },
+    typeUrlFromField: {
+      params: () => __annotationCodec_2fagoric_2eswingset_2eParams,
+      state: () => __annotationCodec_2fagoric_2eswingset_2eState,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is GenesisState {
     return (
       o &&

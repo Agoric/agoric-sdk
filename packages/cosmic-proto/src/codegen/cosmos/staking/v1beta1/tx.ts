@@ -1,4 +1,10 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
+import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../base/v1beta1/coin.js';
+import { CommissionRates as __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eCommissionRates } from './staking.js';
+import { Description as __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eDescription } from './staking.js';
+import { Params as __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eParams } from './staking.js';
 import {
   Description,
   type DescriptionSDKType,
@@ -407,6 +413,28 @@ function createBaseMsgCreateValidator(): MsgCreateValidator {
  */
 export const MsgCreateValidator = {
   typeUrl: '/cosmos.staking.v1beta1.MsgCreateValidator' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      commission: true,
+      description: true,
+      minSelfDelegation: true,
+      value: true,
+    },
+    'gogoproto.nullable': {
+      commission: false,
+      description: false,
+      minSelfDelegation: false,
+      value: false,
+    },
+    typeUrlFromField: {
+      commission: () =>
+        __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eCommissionRates,
+      description: () =>
+        __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eDescription,
+      minSelfDelegation: 'cosmos.Int',
+      value: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgCreateValidator' as const,
   is(o: any): o is MsgCreateValidator {
     return (
@@ -678,6 +706,14 @@ function createBaseMsgEditValidator(): MsgEditValidator {
  */
 export const MsgEditValidator = {
   typeUrl: '/cosmos.staking.v1beta1.MsgEditValidator' as const,
+  annotations: {
+    'amino.dont_omitempty': { description: true },
+    'gogoproto.nullable': { description: false },
+    typeUrlFromField: {
+      description: () =>
+        __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eDescription,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgEditValidator' as const,
   is(o: any): o is MsgEditValidator {
     return (
@@ -892,6 +928,13 @@ function createBaseMsgDelegate(): MsgDelegate {
  */
 export const MsgDelegate = {
   typeUrl: '/cosmos.staking.v1beta1.MsgDelegate' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: {
+      amount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgDelegate' as const,
   is(o: any): o is MsgDelegate {
     return (
@@ -1077,6 +1120,13 @@ function createBaseMsgBeginRedelegate(): MsgBeginRedelegate {
  */
 export const MsgBeginRedelegate = {
   typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegate' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: {
+      amount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgBeginRedelegate' as const,
   is(o: any): o is MsgBeginRedelegate {
     return (
@@ -1209,6 +1259,13 @@ function createBaseMsgBeginRedelegateResponse(): MsgBeginRedelegateResponse {
  */
 export const MsgBeginRedelegateResponse = {
   typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegateResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { completionTime: true },
+    'gogoproto.nullable': { completionTime: false },
+    typeUrlFromField: {
+      completionTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgBeginRedelegateResponse' as const,
   is(o: any): o is MsgBeginRedelegateResponse {
     return (
@@ -1317,6 +1374,13 @@ function createBaseMsgUndelegate(): MsgUndelegate {
  */
 export const MsgUndelegate = {
   typeUrl: '/cosmos.staking.v1beta1.MsgUndelegate' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: {
+      amount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUndelegate' as const,
   is(o: any): o is MsgUndelegate {
     return (
@@ -1433,6 +1497,14 @@ function createBaseMsgUndelegateResponse(): MsgUndelegateResponse {
  */
 export const MsgUndelegateResponse = {
   typeUrl: '/cosmos.staking.v1beta1.MsgUndelegateResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true, completionTime: true },
+    'gogoproto.nullable': { amount: false, completionTime: false },
+    typeUrlFromField: {
+      amount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+      completionTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUndelegateResponse' as const,
   is(o: any): o is MsgUndelegateResponse {
     return (
@@ -1546,6 +1618,13 @@ function createBaseMsgCancelUnbondingDelegation(): MsgCancelUnbondingDelegation 
  */
 export const MsgCancelUnbondingDelegation = {
   typeUrl: '/cosmos.staking.v1beta1.MsgCancelUnbondingDelegation' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: {
+      amount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgCancelUnbondingDelegation' as const,
   is(o: any): o is MsgCancelUnbondingDelegation {
     return (
@@ -1765,6 +1844,13 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.staking.v1beta1.MsgUpdateParams' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () => __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/staking/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (

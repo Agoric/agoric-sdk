@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { HostZone as __annotationCodec_2fstride_2estakedym_2eHostZone } from './stakedym.js';
 import {
   HostZone,
   type HostZoneSDKType,
@@ -305,6 +307,13 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/stride.stakedym.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { hostZone: false, params: false },
+    typeUrlFromField: {
+      hostZone: () => __annotationCodec_2fstride_2estakedym_2eHostZone,
+      params: () => Params,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is GenesisState {
     return (
       o &&

@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { ICAAccount as __annotationCodec_2fstride_2estakeibc_2eICAAccount } from './ica_account.js';
 import { ICAAccount, type ICAAccountSDKType } from './ica_account.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
@@ -199,6 +201,18 @@ function createBaseTradeConfig(): TradeConfig {
  */
 export const TradeConfig = {
   typeUrl: '/stride.stakeibc.TradeConfig' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      maxAllowedSwapLossRate: false,
+      maxSwapAmount: false,
+      minSwapAmount: false,
+      swapPrice: false,
+    },
+    typeUrlFromField: {
+      maxAllowedSwapLossRate: 'cosmos.Dec',
+      swapPrice: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is TradeConfig {
     return (
       o &&
@@ -390,6 +404,21 @@ function createBaseTradeRoute(): TradeRoute {
  */
 export const TradeRoute = {
   typeUrl: '/stride.stakeibc.TradeRoute' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      hostAccount: false,
+      minTransferAmount: false,
+      rewardAccount: false,
+      tradeAccount: false,
+      tradeConfig: false,
+    },
+    typeUrlFromField: {
+      hostAccount: () => __annotationCodec_2fstride_2estakeibc_2eICAAccount,
+      rewardAccount: () => __annotationCodec_2fstride_2estakeibc_2eICAAccount,
+      tradeAccount: () => __annotationCodec_2fstride_2estakeibc_2eICAAccount,
+      tradeConfig: () => TradeConfig,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is TradeRoute {
     return (
       o &&

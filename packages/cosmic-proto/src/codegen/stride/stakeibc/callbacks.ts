@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
+import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../cosmos/base/v1beta1/coin.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import {
   LSMTokenDeposit,
@@ -364,6 +366,9 @@ function createBaseSplitDelegation(): SplitDelegation {
  */
 export const SplitDelegation = {
   typeUrl: '/stride.stakeibc.SplitDelegation' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is SplitDelegation {
     return (
       o &&
@@ -455,6 +460,9 @@ function createBaseSplitUndelegation(): SplitUndelegation {
  */
 export const SplitUndelegation = {
   typeUrl: '/stride.stakeibc.SplitUndelegation' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeTokenAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is SplitUndelegation {
     return (
       o &&
@@ -791,6 +799,12 @@ function createBaseReinvestCallback(): ReinvestCallback {
  */
 export const ReinvestCallback = {
   typeUrl: '/stride.stakeibc.ReinvestCallback' as const,
+  annotations: {
+    'gogoproto.nullable': { reinvestAmount: false },
+    typeUrlFromField: {
+      reinvestAmount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is ReinvestCallback {
     return (
       o &&
@@ -1157,6 +1171,9 @@ function createBaseRebalancing(): Rebalancing {
  */
 export const Rebalancing = {
   typeUrl: '/stride.stakeibc.Rebalancing' as const,
+  annotations: {
+    'gogoproto.nullable': { amt: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Rebalancing {
     return (
       o &&
@@ -1685,6 +1702,9 @@ function createBaseDelegatorSharesQueryCallback(): DelegatorSharesQueryCallback 
  */
 export const DelegatorSharesQueryCallback = {
   typeUrl: '/stride.stakeibc.DelegatorSharesQueryCallback' as const,
+  annotations: {
+    'gogoproto.nullable': { initialValidatorDelegation: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is DelegatorSharesQueryCallback {
     return (
       o &&

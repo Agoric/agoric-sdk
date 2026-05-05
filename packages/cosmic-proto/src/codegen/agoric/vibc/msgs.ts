@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -166,6 +167,10 @@ function createBaseMsgSendPacket(): MsgSendPacket {
  */
 export const MsgSendPacket = {
   typeUrl: '/agoric.vibc.MsgSendPacket' as const,
+  annotations: {
+    'gogoproto.nullable': { packet: false },
+    typeUrlFromField: { packet: () => Packet },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'vibc/SendPacket' as const,
   is(o: any): o is MsgSendPacket {
     return (
@@ -346,6 +351,10 @@ function createBasePacket(): Packet {
  */
 export const Packet = {
   typeUrl: '/agoric.vibc.Packet' as const,
+  annotations: {
+    'gogoproto.nullable': { timeoutHeight: false },
+    typeUrlFromField: { timeoutHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Packet {
     return (
       o &&

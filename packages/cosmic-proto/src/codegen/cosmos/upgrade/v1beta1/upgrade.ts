@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -203,6 +205,13 @@ function createBasePlan(): Plan {
  */
 export const Plan = {
   typeUrl: '/cosmos.upgrade.v1beta1.Plan' as const,
+  annotations: {
+    'amino.dont_omitempty': { time: true },
+    'gogoproto.nullable': { time: false },
+    typeUrlFromField: {
+      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Plan' as const,
   is(o: any): o is Plan {
     return (
@@ -357,6 +366,11 @@ function createBaseSoftwareUpgradeProposal(): SoftwareUpgradeProposal {
  */
 export const SoftwareUpgradeProposal = {
   typeUrl: '/cosmos.upgrade.v1beta1.SoftwareUpgradeProposal' as const,
+  annotations: {
+    'amino.dont_omitempty': { plan: true },
+    'gogoproto.nullable': { plan: false },
+    typeUrlFromField: { plan: () => Plan },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/SoftwareUpgradeProposal' as const,
   is(o: any): o is SoftwareUpgradeProposal {
     return (

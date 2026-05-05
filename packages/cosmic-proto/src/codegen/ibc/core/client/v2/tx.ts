@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { Config as __annotationCodec_2fibc_2ecore_2eclient_2ev2_2eConfig } from './config.js';
 import { Config, type ConfigSDKType } from './config.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
@@ -353,6 +355,12 @@ function createBaseMsgUpdateClientConfig(): MsgUpdateClientConfig {
  */
 export const MsgUpdateClientConfig = {
   typeUrl: '/ibc.core.client.v2.MsgUpdateClientConfig' as const,
+  annotations: {
+    'gogoproto.nullable': { config: false },
+    typeUrlFromField: {
+      config: () => __annotationCodec_2fibc_2ecore_2eclient_2ev2_2eConfig,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateClientConfig' as const,
   is(o: any): o is MsgUpdateClientConfig {
     return (

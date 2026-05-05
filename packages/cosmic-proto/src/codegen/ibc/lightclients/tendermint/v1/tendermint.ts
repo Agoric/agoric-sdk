@@ -1,4 +1,10 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../../google/protobuf/duration.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../../google/protobuf/timestamp.js';
+import { SignedHeader as __annotationCodec_2ftendermint_2etypes_2eSignedHeader } from '../../../../tendermint/types/types.js';
+import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from '../../../core/client/v1/client.js';
+import { MerkleRoot as __annotationCodec_2fibc_2ecore_2ecommitment_2ev1_2eMerkleRoot } from '../../../core/commitment/v1/commitment.js';
 import {
   Duration,
   type DurationSDKType,
@@ -287,6 +293,24 @@ function createBaseClientState(): ClientState {
  */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.tendermint.v1.ClientState' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      frozenHeight: false,
+      latestHeight: false,
+      maxClockDrift: false,
+      trustLevel: false,
+      trustingPeriod: false,
+      unbondingPeriod: false,
+    },
+    typeUrlFromField: {
+      frozenHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+      latestHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+      maxClockDrift: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+      trustLevel: () => Fraction,
+      trustingPeriod: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+      unbondingPeriod: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ClientState' as const,
   is(o: any): o is ClientState {
     return (
@@ -562,6 +586,13 @@ function createBaseConsensusState(): ConsensusState {
  */
 export const ConsensusState = {
   typeUrl: '/ibc.lightclients.tendermint.v1.ConsensusState' as const,
+  annotations: {
+    'gogoproto.nullable': { root: false, timestamp: false },
+    typeUrlFromField: {
+      root: () => __annotationCodec_2fibc_2ecore_2ecommitment_2ev1_2eMerkleRoot,
+      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ConsensusState' as const,
   is(o: any): o is ConsensusState {
     return (
@@ -818,6 +849,15 @@ function createBaseHeader(): Header {
  */
 export const Header = {
   typeUrl: '/ibc.lightclients.tendermint.v1.Header' as const,
+  annotations: {
+    'gogoproto.embed': { signed_header: 'signedHeader' },
+    'gogoproto.nullable': { trustedHeight: false },
+    typeUrlFromField: {
+      signedHeader: () => __annotationCodec_2ftendermint_2etypes_2eSignedHeader,
+      trustedHeight: () =>
+        __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Header' as const,
   is(o: any): o is Header {
     return o && (o.$typeUrl === Header.typeUrl || Height.is(o.trustedHeight));

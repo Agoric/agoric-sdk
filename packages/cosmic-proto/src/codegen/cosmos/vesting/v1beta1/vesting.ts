@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { BaseAccount as __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eBaseAccount } from '../../auth/v1beta1/auth.js';
 import {
   BaseAccount,
   type BaseAccountSDKType,
@@ -247,6 +249,13 @@ function createBaseBaseVestingAccount(): BaseVestingAccount {
  */
 export const BaseVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.BaseVestingAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_account: 'baseAccount' },
+    typeUrlFromField: {
+      baseAccount: () =>
+        __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eBaseAccount,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/BaseVestingAccount' as const,
   is(o: any): o is BaseVestingAccount {
     return (
@@ -427,6 +436,10 @@ function createBaseContinuousVestingAccount(): ContinuousVestingAccount {
  */
 export const ContinuousVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.ContinuousVestingAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_vesting_account: 'baseVestingAccount' },
+    typeUrlFromField: { baseVestingAccount: () => BaseVestingAccount },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ContinuousVestingAccount' as const,
   is(o: any): o is ContinuousVestingAccount {
     return (
@@ -553,6 +566,10 @@ function createBaseDelayedVestingAccount(): DelayedVestingAccount {
  */
 export const DelayedVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.DelayedVestingAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_vesting_account: 'baseVestingAccount' },
+    typeUrlFromField: { baseVestingAccount: () => BaseVestingAccount },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DelayedVestingAccount' as const,
   is(o: any): o is DelayedVestingAccount {
     return o && o.$typeUrl === DelayedVestingAccount.typeUrl;
@@ -761,6 +778,10 @@ function createBasePeriodicVestingAccount(): PeriodicVestingAccount {
  */
 export const PeriodicVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.PeriodicVestingAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_vesting_account: 'baseVestingAccount' },
+    typeUrlFromField: { baseVestingAccount: () => BaseVestingAccount },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/PeriodicVestingAccount' as const,
   is(o: any): o is PeriodicVestingAccount {
     return (
@@ -903,6 +924,10 @@ function createBasePermanentLockedAccount(): PermanentLockedAccount {
  */
 export const PermanentLockedAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.PermanentLockedAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_vesting_account: 'baseVestingAccount' },
+    typeUrlFromField: { baseVestingAccount: () => BaseVestingAccount },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/PermanentLockedAccount' as const,
   is(o: any): o is PermanentLockedAccount {
     return o && o.$typeUrl === PermanentLockedAccount.typeUrl;
@@ -1005,6 +1030,10 @@ function createBaseClawbackVestingAccount(): ClawbackVestingAccount {
  */
 export const ClawbackVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.ClawbackVestingAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_vesting_account: 'baseVestingAccount' },
+    typeUrlFromField: { baseVestingAccount: () => BaseVestingAccount },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ClawbackVestingAccount' as const,
   is(o: any): o is ClawbackVestingAccount {
     return (

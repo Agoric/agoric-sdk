@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../../type-url-annotations.js';
+import { InterchainAccountPacketData as __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2ev1_2eInterchainAccountPacketData } from '../../v1/packet.js';
+import { Params as __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2econtroller_2ev1_2eParams } from './controller.js';
 import {
   Order,
   orderFromJSON,
@@ -427,6 +430,13 @@ function createBaseMsgSendTx(): MsgSendTx {
 export const MsgSendTx = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.MsgSendTx' as const,
+  annotations: {
+    'gogoproto.nullable': { packetData: false },
+    typeUrlFromField: {
+      packetData: () =>
+        __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2ev1_2eInterchainAccountPacketData,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgSendTx' as const,
   is(o: any): o is MsgSendTx {
     return (
@@ -659,6 +669,13 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 export const MsgUpdateParams = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.MsgUpdateParams' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: {
+      params: () =>
+        __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2econtroller_2ev1_2eParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (

@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { MerklePrefix as __annotationCodec_2fibc_2ecore_2ecommitment_2ev1_2eMerklePrefix } from '../../commitment/v1/commitment.js';
 import {
   MerklePrefix,
   type MerklePrefixSDKType,
@@ -338,6 +340,10 @@ function createBaseConnectionEnd(): ConnectionEnd {
  */
 export const ConnectionEnd = {
   typeUrl: '/ibc.core.connection.v1.ConnectionEnd' as const,
+  annotations: {
+    'gogoproto.nullable': { counterparty: false },
+    typeUrlFromField: { counterparty: () => Counterparty },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ConnectionEnd' as const,
   is(o: any): o is ConnectionEnd {
     return (
@@ -498,6 +504,10 @@ function createBaseIdentifiedConnection(): IdentifiedConnection {
  */
 export const IdentifiedConnection = {
   typeUrl: '/ibc.core.connection.v1.IdentifiedConnection' as const,
+  annotations: {
+    'gogoproto.nullable': { counterparty: false },
+    typeUrlFromField: { counterparty: () => Counterparty },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/IdentifiedConnection' as const,
   is(o: any): o is IdentifiedConnection {
     return (
@@ -668,6 +678,13 @@ function createBaseCounterparty(): Counterparty {
  */
 export const Counterparty = {
   typeUrl: '/ibc.core.connection.v1.Counterparty' as const,
+  annotations: {
+    'gogoproto.nullable': { prefix: false },
+    typeUrlFromField: {
+      prefix: () =>
+        __annotationCodec_2fibc_2ecore_2ecommitment_2ev1_2eMerklePrefix,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Counterparty' as const,
   is(o: any): o is Counterparty {
     return (

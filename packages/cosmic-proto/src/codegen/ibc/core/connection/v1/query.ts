@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from '../../client/v1/client.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -505,6 +507,12 @@ function createBaseQueryConnectionResponse(): QueryConnectionResponse {
  */
 export const QueryConnectionResponse = {
   typeUrl: '/ibc.core.connection.v1.QueryConnectionResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryConnectionResponse' as const,
   is(o: any): o is QueryConnectionResponse {
     return (
@@ -737,6 +745,12 @@ function createBaseQueryConnectionsResponse(): QueryConnectionsResponse {
  */
 export const QueryConnectionsResponse = {
   typeUrl: '/ibc.core.connection.v1.QueryConnectionsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { height: false },
+    typeUrlFromField: {
+      height: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryConnectionsResponse' as const,
   is(o: any): o is QueryConnectionsResponse {
     return (
@@ -979,6 +993,12 @@ function createBaseQueryClientConnectionsResponse(): QueryClientConnectionsRespo
  */
 export const QueryClientConnectionsResponse = {
   typeUrl: '/ibc.core.connection.v1.QueryClientConnectionsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryClientConnectionsResponse' as const,
   is(o: any): o is QueryClientConnectionsResponse {
     return (
@@ -1220,6 +1240,12 @@ function createBaseQueryConnectionClientStateResponse(): QueryConnectionClientSt
 export const QueryConnectionClientStateResponse = {
   typeUrl:
     '/ibc.core.connection.v1.QueryConnectionClientStateResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryConnectionClientStateResponse' as const,
   is(o: any): o is QueryConnectionClientStateResponse {
     return (
@@ -1502,6 +1528,12 @@ function createBaseQueryConnectionConsensusStateResponse(): QueryConnectionConse
 export const QueryConnectionConsensusStateResponse = {
   typeUrl:
     '/ibc.core.connection.v1.QueryConnectionConsensusStateResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: {
+      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryConnectionConsensusStateResponse' as const,
   is(o: any): o is QueryConnectionConsensusStateResponse {
     return (

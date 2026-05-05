@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -66,6 +67,9 @@ function createBaseBurnMessage(): BurnMessage {
  */
 export const BurnMessage = {
   typeUrl: '/circle.cctp.v1.BurnMessage' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is BurnMessage {
     return (
       o &&

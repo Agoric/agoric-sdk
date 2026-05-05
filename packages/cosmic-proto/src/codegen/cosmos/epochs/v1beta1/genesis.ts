@@ -1,4 +1,7 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../google/protobuf/duration.js';
+import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -135,6 +138,19 @@ function createBaseEpochInfo(): EpochInfo {
  */
 export const EpochInfo = {
   typeUrl: '/cosmos.epochs.v1beta1.EpochInfo' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      currentEpochStartTime: false,
+      duration: false,
+      startTime: false,
+    },
+    typeUrlFromField: {
+      currentEpochStartTime: () =>
+        __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      duration: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+      startTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/EpochInfo' as const,
   is(o: any): o is EpochInfo {
     return (

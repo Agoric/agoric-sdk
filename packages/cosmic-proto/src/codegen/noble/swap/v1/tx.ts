@@ -1,4 +1,6 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
+import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../../cosmos/base/v1beta1/coin.js';
 import { Coin, type CoinSDKType } from '../../../cosmos/base/v1beta1/coin.js';
 import { Route, type RouteSDKType, Swap, type SwapSDKType } from './swap.js';
 import { Algorithm, algorithmFromJSON, algorithmToJSON } from './algorithm.js';
@@ -738,6 +740,13 @@ function createBaseMsgSwap(): MsgSwap {
  */
 export const MsgSwap = {
   typeUrl: '/noble.swap.v1.MsgSwap' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false, min: false },
+    typeUrlFromField: {
+      amount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+      min: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'swap/Swap' as const,
   is(o: any): o is MsgSwap {
     return (
@@ -870,6 +879,12 @@ function createBaseMsgSwapResponse(): MsgSwapResponse {
  */
 export const MsgSwapResponse = {
   typeUrl: '/noble.swap.v1.MsgSwapResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { result: false },
+    typeUrlFromField: {
+      result: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgSwapResponse {
     return (
       o &&

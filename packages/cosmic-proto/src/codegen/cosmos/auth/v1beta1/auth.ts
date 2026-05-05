@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
@@ -280,6 +281,10 @@ function createBaseModuleAccount(): ModuleAccount {
  */
 export const ModuleAccount = {
   typeUrl: '/cosmos.auth.v1beta1.ModuleAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_account: 'baseAccount' },
+    typeUrlFromField: { baseAccount: () => BaseAccount },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ModuleAccount' as const,
   is(o: any): o is ModuleAccount {
     return (
