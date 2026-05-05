@@ -26,9 +26,6 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   dev-canary:
@@ -81,9 +78,6 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   coverage:
@@ -121,9 +115,6 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   benchmark:
@@ -148,7 +139,4 @@ jobs:
         if: failure()
         uses: ./.github/actions/notify-status
         with:
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
