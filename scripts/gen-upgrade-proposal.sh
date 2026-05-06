@@ -1,5 +1,5 @@
 #! /bin/bash
-set -ueo pipefail
+set -xueo pipefail
 # shellcheck disable=SC2016 # intentionally escape `agd tx`
 declare -r USAGE="Usage: $0"' \
   [<option>]... [--send] \
@@ -139,7 +139,7 @@ done
 # Determine target commit and (if possible) release name and known upgrade names.
 COMMIT_ID=
 RELEASE_NAME=
-UPGRADE_NAMES=()
+UPGRADE_NAMES+=()
 if [[ -z "$COMMIT_ID" && "$MODE" != local && -n "$TARGET_REF" ]]; then
   echo "Checking $GH_API/repos/$GH_REPO for $TARGET_REF..." 1>&2
   tag_name=
@@ -216,7 +216,7 @@ elif [[ -t 0 && -t 1 && -t 2 && "$UPGRADE_NAME_COUNT" -ne 1 ]]; then
     [ -n "$UPGRADE_NAME" ] || UPGRADE_NAME="$LAST_UPGRADE_NAME"
     if [ -n "$UPGRADE_NAME" ]; then
       found=$((UPGRADE_NAME_COUNT == 0))
-      for name in "${UPGRADE_NAMES[@]}"; do
+      for name in "${UPGRADE_NAMES[@]:-''}"; do
         [[ -n "$name" && "$UPGRADE_NAME" = "$name" ]] && found=1
       done
     fi
@@ -244,7 +244,7 @@ if [ -n "$RELEASE_NAME" ]; then
 fi
 
 # Determine which agd options are no-value flags.
-flags="$(agd tx gov submit-proposal software-upgrade --help 2>&1 | awk '{
+flags="$(agd tx upgrade software-upgrade --help 2>&1 | awk '{
   if (!sub(/^[[:space:]]*-/, "-")) next;
   gsub(/,|  +.*/, " ");
   if (!match($0, / [^ -]/)) printf " %s ", $0;
@@ -264,7 +264,7 @@ done
 # Initialize the agd command with mandatory arguments.
 get_chain_id="curl -sSL $NET_CONFIG_URL | jq -r .chainName"
 get_height="agoric-estimator -date '<DATE>' -rpc https://main.rpc.agoric.net:443 | tee /dev/stderr | sed -n '\$s/.* //p'"
-CMD="agd tx gov submit-proposal software-upgrade $(q "$UPGRADE_NAME") \\
+CMD="agd tx upgrade software-upgrade $(q "$UPGRADE_NAME") \\
   --upgrade-info $(q "$UPGRADE_INFO") \\
   $([ -z "${opts##* --title *}" ] || printf '%s %s' --title "$(q "$DEFAULT_TITLE")") \\
   $([ -z "${opts##* --description *}" ] || printf '%s %s' --description "$(q "$DEFAULT_DESC")") \\
