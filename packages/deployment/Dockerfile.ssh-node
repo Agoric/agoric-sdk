@@ -6,13 +6,18 @@ COPY init.sh /usr/local/bin/init
 
 RUN set -e; \
     apt-get update --allow-releaseinfo-change; \
-    apt-get install -y curl python3 vim jq less openssh-server; \
-    rm -f /etc/ssh/ssh_host_*; \
-    apt-get remove -y systemd; \
+    apt-get install -y curl python3 vim jq less; \
+    apt-get install -y systemctl systemd-standalone-sysusers systemd-standalone-tmpfiles; \
     curl -sL https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl3.py > /usr/bin/systemctl; \
-    chmod +x /usr/bin/systemctl; \
-    mkdir -p /run/systemd/system; \
+    apt-get install -y openssh-server; \
+    rm -f /etc/ssh/ssh_host_*; \
     apt-get clean; \
     apt-get autoremove -y
+
+#    echo exit 0 > /usr/sbin/policy-rc.d; \
+#    curl -sL https://raw.githubusercontent.com/gdraheim/docker-systemctl-replacement/master/files/docker/systemctl3.py > /usr/bin/systemctl; \
+#    chmod +x /usr/bin/systemctl; \
+
+RUN systemctl enable ssh
 
 CMD ["/usr/local/bin/init"]
