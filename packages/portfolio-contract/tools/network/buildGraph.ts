@@ -23,7 +23,7 @@ import type { FeeMode, LinkSpec, NetworkSpec } from './network-spec.js';
 
 /** Node supply: positive => must send out; negative => must receive */
 export interface SupplyMap {
-  [node: string]: number;
+  [place: string]: number;
 }
 
 /** Internal edge representation */
