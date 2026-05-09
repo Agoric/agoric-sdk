@@ -367,6 +367,7 @@ const computeWeightedTargets = <
           ? valueEntries.map(([p, v]) => [p, isInstrumentId(p) ? v : 0n] as PW)
           : valueEntries;
       })(typedEntries(currentValues));
+  allWeights.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   let sumW = allWeights.reduce((acc, entry) => acc + entry[1], 0n);
   sumW > 0n ||
     rejectUserInput('Total target allocation weights must be positive.');
