@@ -1,6 +1,10 @@
 // @ts-nocheck
 
-// This must run before lockdown freezes Promise.
+/**
+ * Install `Promise.withResolvers` on platforms that do not provide it yet.
+ *
+ * Import this before lockdown, since lockdown freezes `Promise`.
+ */
 if (!Promise.withResolvers) {
   Promise.withResolvers = () => {
     let resolve;

@@ -2,7 +2,7 @@
 /* global process */
 
 import '@endo/init/pre-remoting.js';
-import '../src/init/shims.js';
+import '@agoric/internal/src/shims/promise-with-resolvers.js';
 import '../src/init/lockdown.js';
 
 import { cacheStats, deleteCachedTx, inspectCache } from './cache-tool-lib.ts';
