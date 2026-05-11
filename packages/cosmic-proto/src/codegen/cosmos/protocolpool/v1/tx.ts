@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
-import { Params as __annotationCodec_2fcosmos_2eprotocolpool_2ev1_2eParams } from './types.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import {
   Timestamp,
@@ -1000,9 +998,7 @@ export const MsgCancelContinuousFundResponse = {
   typeUrl: '/cosmos.protocolpool.v1.MsgCancelContinuousFundResponse' as const,
   annotations: {
     'gogoproto.nullable': { canceledTime: false },
-    typeUrlFromField: {
-      canceledTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { canceledTime: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgCancelContinuousFundResponse' as const,
   is(o: any): o is MsgCancelContinuousFundResponse {
@@ -1135,9 +1131,7 @@ export const MsgUpdateParams = {
   typeUrl: '/cosmos.protocolpool.v1.MsgUpdateParams' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fcosmos_2eprotocolpool_2ev1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {

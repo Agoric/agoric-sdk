@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fibc_2ecore_2econnection_2ev1_2eParams } from './connection.js';
 import {
   IdentifiedConnection,
   type IdentifiedConnectionSDKType,
@@ -61,9 +60,7 @@ export const GenesisState = {
   typeUrl: '/ibc.core.connection.v1.GenesisState' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fibc_2ecore_2econnection_2ev1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {

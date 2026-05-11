@@ -345,16 +345,12 @@ type DeepMessage<
  * @param annotationsFromTypeUrl The field annotations by TypeUrl.
  * @returns A new codec that can handle partial input messages.
  */
-export const Codec = <TU extends string = string>(
+const makeCodecWithAnnotations = <TU extends string = string>(
   codec: Proto3Codec<TU>,
-  annotationsFromTypeUrl: Map<TypeUrl, FieldAnnotations> = new Map(),
+  annotationsFromTypeUrl: Map<TypeUrl, FieldAnnotations>,
 ): Proto3Codec<TU, true> => {
-  const codecAnnotationsFromTypeUrl = annotationsFromTypeUrlForCodec(
-    codec,
-    annotationsFromTypeUrl,
-  );
   const { gogo3FromDecoderOutput, encoderInputFromGogo3 } =
-    makeGogo3Transformations(codec, codecAnnotationsFromTypeUrl);
+    makeGogo3Transformations(codec, annotationsFromTypeUrl);
 
   const cdc: Proto3Codec<TU, true> = {
     typeUrl: codec.typeUrl,
@@ -388,6 +384,17 @@ export const Codec = <TU extends string = string>(
   return cdc;
 };
 
+export const Codec = <TU extends string = string>(
+  codec: Proto3Codec<TU>,
+  annotationsFromTypeUrl: Map<TypeUrl, FieldAnnotations> = new Map(),
+): Proto3Codec<TU, true> => {
+  const codecAnnotationsFromTypeUrl = annotationsFromTypeUrlForCodec(
+    codec,
+    annotationsFromTypeUrl,
+  );
+  return makeCodecWithAnnotations(codec, codecAnnotationsFromTypeUrl);
+};
+
 export interface Proto3CodecHelper<
   TU extends string = string,
 > extends Proto3Codec<TU, true> {
@@ -416,7 +423,7 @@ export const CodecHelper = <TU extends string = string>(
     codec,
     annotationsFromTypeUrl,
   );
-  const cdc = Codec(codec, codecAnnotationsFromTypeUrl);
+  const cdc = makeCodecWithAnnotations(codec, codecAnnotationsFromTypeUrl);
   const { strippedFromDecoderOutput, packedFromGogo3 } =
     makeGogo3Transformations(cdc, codecAnnotationsFromTypeUrl);
 

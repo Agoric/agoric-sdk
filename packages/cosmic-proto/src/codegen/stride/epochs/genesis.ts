@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../google/protobuf/duration.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../google/protobuf/timestamp.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -92,10 +90,9 @@ export const EpochInfo = {
       startTime: false,
     },
     typeUrlFromField: {
-      currentEpochStartTime: () =>
-        __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-      duration: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
-      startTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      currentEpochStartTime: () => Timestamp,
+      duration: () => Duration,
+      startTime: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is EpochInfo {

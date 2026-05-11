@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
-import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from '../../client/v1/client.js';
 import { Height, type HeightSDKType } from '../../client/v1/client.js';
 import { isSet } from '../../../../helpers.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
@@ -926,10 +925,7 @@ export const Packet = {
   typeUrl: '/ibc.core.channel.v1.Packet' as const,
   annotations: {
     'gogoproto.nullable': { timeoutHeight: false },
-    typeUrlFromField: {
-      timeoutHeight: () =>
-        __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
-    },
+    typeUrlFromField: { timeoutHeight: () => Height },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Packet' as const,
   is(o: any): o is Packet {
@@ -1475,9 +1471,7 @@ export const Timeout = {
   typeUrl: '/ibc.core.channel.v1.Timeout' as const,
   annotations: {
     'gogoproto.nullable': { height: false },
-    typeUrlFromField: {
-      height: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
-    },
+    typeUrlFromField: { height: () => Height },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Timeout' as const,
   is(o: any): o is Timeout {

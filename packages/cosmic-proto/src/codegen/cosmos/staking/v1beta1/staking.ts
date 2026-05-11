@@ -1,9 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../google/protobuf/duration.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
-import { Header as __annotationCodec_2ftendermint_2etypes_2eHeader } from '../../../tendermint/types/types.js';
-import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../base/v1beta1/coin.js';
 import { Header, type HeaderSDKType } from '../../../tendermint/types/types.js';
 import {
   Timestamp,
@@ -900,9 +896,7 @@ export const HistoricalInfo = {
   annotations: {
     'amino.dont_omitempty': { header: true },
     'gogoproto.nullable': { header: false },
-    typeUrlFromField: {
-      header: () => __annotationCodec_2ftendermint_2etypes_2eHeader,
-    },
+    typeUrlFromField: { header: () => Header },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/HistoricalInfo' as const,
   is(o: any): o is HistoricalInfo {
@@ -1146,7 +1140,7 @@ export const Commission = {
     'gogoproto.nullable': { commissionRates: false, updateTime: false },
     typeUrlFromField: {
       commissionRates: () => CommissionRates,
-      updateTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      updateTime: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Commission' as const,
@@ -1435,7 +1429,7 @@ export const Validator = {
       description: () => Description,
       minSelfDelegation: 'cosmos.Int',
       tokens: 'cosmos.Int',
-      unbondingTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      unbondingTime: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Validator' as const,
@@ -2502,7 +2496,7 @@ export const UnbondingDelegationEntry = {
     },
     typeUrlFromField: {
       balance: 'cosmos.Int',
-      completionTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      completionTime: () => Timestamp,
       initialBalance: 'cosmos.Int',
     },
   } as const satisfies FieldAnnotationsRecord,
@@ -2703,7 +2697,7 @@ export const RedelegationEntry = {
       sharesDst: false,
     },
     typeUrlFromField: {
-      completionTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      completionTime: () => Timestamp,
       initialBalance: 'cosmos.Int',
       sharesDst: 'cosmos.Dec',
     },
@@ -3038,7 +3032,7 @@ export const Params = {
     'gogoproto.nullable': { minCommissionRate: false, unbondingTime: false },
     typeUrlFromField: {
       minCommissionRate: 'cosmos.Dec',
-      unbondingTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+      unbondingTime: () => Duration,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/staking/Params' as const,
@@ -3207,10 +3201,7 @@ export const DelegationResponse = {
   annotations: {
     'amino.dont_omitempty': { balance: true, delegation: true },
     'gogoproto.nullable': { balance: false, delegation: false },
-    typeUrlFromField: {
-      balance: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-      delegation: () => Delegation,
-    },
+    typeUrlFromField: { balance: () => Coin, delegation: () => Delegation },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DelegationResponse' as const,
   is(o: any): o is DelegationResponse {

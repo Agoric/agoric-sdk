@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Minter as __annotationCodec_2fcosmos_2emint_2ev1beta1_2eMinter } from './mint.js';
-import { Params as __annotationCodec_2fcosmos_2emint_2ev1beta1_2eParams } from './mint.js';
 import {
   Minter,
   type MinterSDKType,
@@ -58,10 +56,7 @@ export const GenesisState = {
   annotations: {
     'amino.dont_omitempty': { minter: true, params: true },
     'gogoproto.nullable': { minter: false, params: false },
-    typeUrlFromField: {
-      minter: () => __annotationCodec_2fcosmos_2emint_2ev1beta1_2eMinter,
-      params: () => __annotationCodec_2fcosmos_2emint_2ev1beta1_2eParams,
-    },
+    typeUrlFromField: { minter: () => Minter, params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {

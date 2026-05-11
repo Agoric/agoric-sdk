@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../cosmos/base/v1beta1/coin.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import {
   LSMTokenDeposit,
@@ -801,9 +800,7 @@ export const ReinvestCallback = {
   typeUrl: '/stride.stakeibc.ReinvestCallback' as const,
   annotations: {
     'gogoproto.nullable': { reinvestAmount: false },
-    typeUrlFromField: {
-      reinvestAmount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-    },
+    typeUrlFromField: { reinvestAmount: () => Coin },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is ReinvestCallback {
     return (

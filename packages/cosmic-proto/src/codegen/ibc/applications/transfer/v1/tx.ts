@@ -1,8 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
-import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../../../cosmos/base/v1beta1/coin.js';
-import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from '../../../core/client/v1/client.js';
-import { Params as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eParams } from '../../../core/client/v1/client.js';
 import {
   Coin,
   type CoinSDKType,
@@ -192,11 +189,7 @@ export const MsgTransfer = {
   annotations: {
     'amino.dont_omitempty': { timeoutHeight: true, token: true },
     'gogoproto.nullable': { timeoutHeight: false, token: false },
-    typeUrlFromField: {
-      timeoutHeight: () =>
-        __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
-      token: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-    },
+    typeUrlFromField: { timeoutHeight: () => Height, token: () => Coin },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgTransfer' as const,
   is(o: any): o is MsgTransfer {
@@ -487,9 +480,7 @@ export const MsgUpdateParams = {
   typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {

@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -208,9 +207,7 @@ export const Plan = {
   annotations: {
     'amino.dont_omitempty': { time: true },
     'gogoproto.nullable': { time: false },
-    typeUrlFromField: {
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { time: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Plan' as const,
   is(o: any): o is Plan {

@@ -1,8 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { EpochTracker as __annotationCodec_2fstride_2estakeibc_2eEpochTracker } from './epoch_tracker.js';
-import { HostZone as __annotationCodec_2fstride_2estakeibc_2eHostZone } from './host_zone.js';
-import { Params as __annotationCodec_2fstride_2estakeibc_2eParams } from './params.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -755,9 +752,7 @@ export const QueryParamsResponse = {
   typeUrl: '/stride.stakeibc.QueryParamsResponse' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fstride_2estakeibc_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryParamsResponse {
     return (
@@ -1131,9 +1126,7 @@ export const QueryGetHostZoneResponse = {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse' as const,
   annotations: {
     'gogoproto.nullable': { hostZone: false },
-    typeUrlFromField: {
-      hostZone: () => __annotationCodec_2fstride_2estakeibc_2eHostZone,
-    },
+    typeUrlFromField: { hostZone: () => HostZone },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetHostZoneResponse {
     return (
@@ -1729,9 +1722,7 @@ export const QueryGetEpochTrackerResponse = {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse' as const,
   annotations: {
     'gogoproto.nullable': { epochTracker: false },
-    typeUrlFromField: {
-      epochTracker: () => __annotationCodec_2fstride_2estakeibc_2eEpochTracker,
-    },
+    typeUrlFromField: { epochTracker: () => EpochTracker },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetEpochTrackerResponse {
     return (

@@ -1,8 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { DepositParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDepositParams } from './gov.js';
-import { TallyParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyParams } from './gov.js';
-import { VotingParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVotingParams } from './gov.js';
 import {
   Deposit,
   type DepositSDKType,
@@ -106,12 +103,9 @@ export const GenesisState = {
       votingParams: false,
     },
     typeUrlFromField: {
-      depositParams: () =>
-        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDepositParams,
-      tallyParams: () =>
-        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyParams,
-      votingParams: () =>
-        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVotingParams,
+      depositParams: () => DepositParams,
+      tallyParams: () => TallyParams,
+      votingParams: () => VotingParams,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,

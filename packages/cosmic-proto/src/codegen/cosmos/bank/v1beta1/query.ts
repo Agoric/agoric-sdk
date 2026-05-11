@@ -1,8 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../base/v1beta1/coin.js';
-import { Metadata as __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eMetadata } from './bank.js';
-import { Params as __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eParams } from './bank.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -1984,9 +1981,7 @@ export const QuerySupplyOfResponse = {
   annotations: {
     'amino.dont_omitempty': { amount: true },
     'gogoproto.nullable': { amount: false },
-    typeUrlFromField: {
-      amount: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-    },
+    typeUrlFromField: { amount: () => Coin },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QuerySupplyOfResponse' as const,
   is(o: any): o is QuerySupplyOfResponse {
@@ -2144,9 +2139,7 @@ export const QueryParamsResponse = {
   annotations: {
     'amino.dont_omitempty': { params: true },
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
@@ -2554,9 +2547,7 @@ export const QueryDenomMetadataResponse = {
   annotations: {
     'amino.dont_omitempty': { metadata: true },
     'gogoproto.nullable': { metadata: false },
-    typeUrlFromField: {
-      metadata: () => __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eMetadata,
-    },
+    typeUrlFromField: { metadata: () => Metadata },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryDenomMetadataResponse' as const,
   is(o: any): o is QueryDenomMetadataResponse {
@@ -2761,9 +2752,7 @@ export const QueryDenomMetadataByQueryStringResponse = {
   annotations: {
     'amino.dont_omitempty': { metadata: true },
     'gogoproto.nullable': { metadata: false },
-    typeUrlFromField: {
-      metadata: () => __annotationCodec_2fcosmos_2ebank_2ev1beta1_2eMetadata,
-    },
+    typeUrlFromField: { metadata: () => Metadata },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryDenomMetadataByQueryStringResponse' as const,
   is(o: any): o is QueryDenomMetadataByQueryStringResponse {
@@ -2985,9 +2974,7 @@ export const DenomOwner = {
   annotations: {
     'amino.dont_omitempty': { balance: true },
     'gogoproto.nullable': { balance: false },
-    typeUrlFromField: {
-      balance: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-    },
+    typeUrlFromField: { balance: () => Coin },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DenomOwner' as const,
   is(o: any): o is DenomOwner {

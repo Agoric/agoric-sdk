@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../../cosmos/base/v1beta1/coin.js';
 import { Coin, type CoinSDKType } from '../../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
@@ -185,10 +184,7 @@ export const Swap = {
   typeUrl: '/noble.swap.v1.Swap' as const,
   annotations: {
     'gogoproto.nullable': { in: false, out: false },
-    typeUrlFromField: {
-      in: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-      out: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-    },
+    typeUrlFromField: { in: () => Coin, out: () => Coin },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Swap {
     return (

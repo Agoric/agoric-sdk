@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2ehost_2ev1_2eParams } from './host.js';
 import {
   Params,
   type ParamsSDKType,
@@ -139,10 +138,7 @@ export const MsgUpdateParams = {
     '/ibc.applications.interchain_accounts.host.v1.MsgUpdateParams' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () =>
-        __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2ehost_2ev1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {

@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fcosmos_2emint_2ev1beta1_2eParams } from './mint.js';
 import { Params, type ParamsSDKType } from './mint.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -224,9 +223,7 @@ export const QueryParamsResponse = {
   annotations: {
     'amino.dont_omitempty': { params: true },
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fcosmos_2emint_2ev1beta1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {

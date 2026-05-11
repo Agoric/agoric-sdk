@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
-import { MerklePath as __annotationCodec_2fibc_2ecore_2ecommitment_2ev2_2eMerklePath } from '../../commitment/v2/commitment.js';
-import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from './client.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -801,9 +799,7 @@ export const QueryClientStateResponse = {
   typeUrl: '/ibc.core.client.v1.QueryClientStateResponse' as const,
   annotations: {
     'gogoproto.nullable': { proofHeight: false },
-    typeUrlFromField: {
-      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
-    },
+    typeUrlFromField: { proofHeight: () => Height },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryClientStateResponse' as const,
   is(o: any): o is QueryClientStateResponse {
@@ -1318,9 +1314,7 @@ export const QueryConsensusStateResponse = {
   typeUrl: '/ibc.core.client.v1.QueryConsensusStateResponse' as const,
   annotations: {
     'gogoproto.nullable': { proofHeight: false },
-    typeUrlFromField: {
-      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
-    },
+    typeUrlFromField: { proofHeight: () => Height },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryConsensusStateResponse' as const,
   is(o: any): o is QueryConsensusStateResponse {
@@ -2848,9 +2842,8 @@ export const QueryVerifyMembershipRequest = {
   annotations: {
     'gogoproto.nullable': { merklePath: false, proofHeight: false },
     typeUrlFromField: {
-      merklePath: () =>
-        __annotationCodec_2fibc_2ecore_2ecommitment_2ev2_2eMerklePath,
-      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+      merklePath: () => MerklePath,
+      proofHeight: () => Height,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryVerifyMembershipRequest' as const,

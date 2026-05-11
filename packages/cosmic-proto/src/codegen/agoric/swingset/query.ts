@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fagoric_2eswingset_2eParams } from './swingset.js';
 import {
   Params,
   type ParamsSDKType,
@@ -278,9 +277,7 @@ export const QueryParamsResponse = {
   typeUrl: '/agoric.swingset.QueryParamsResponse' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fagoric_2eswingset_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryParamsResponse {
     return (

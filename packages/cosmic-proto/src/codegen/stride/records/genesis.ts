@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fstride_2erecords_2eParams } from './params.js';
 import { Params, type ParamsSDKType } from './params.js';
 import {
   UserRedemptionRecord,
@@ -73,9 +72,7 @@ export const GenesisState = {
   typeUrl: '/stride.records.GenesisState' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fstride_2erecords_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is GenesisState {
     return (

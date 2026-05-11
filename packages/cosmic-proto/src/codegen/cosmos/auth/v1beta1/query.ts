@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eParams } from './auth.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -960,9 +959,7 @@ export const QueryParamsResponse = {
   typeUrl: '/cosmos.auth.v1beta1.QueryParamsResponse' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {

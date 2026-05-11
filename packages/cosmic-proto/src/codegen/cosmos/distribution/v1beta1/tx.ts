@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fcosmos_2edistribution_2ev1beta1_2eParams } from './distribution.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { Params, type ParamsSDKType } from './distribution.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
@@ -1146,10 +1145,7 @@ export const MsgUpdateParams = {
   annotations: {
     'amino.dont_omitempty': { params: true },
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () =>
-        __annotationCodec_2fcosmos_2edistribution_2ev1beta1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/distribution/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {

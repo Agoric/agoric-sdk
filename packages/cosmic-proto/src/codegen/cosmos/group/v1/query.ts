@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { TallyResult as __annotationCodec_2fcosmos_2egroup_2ev1_2eTallyResult } from './types.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -3586,9 +3585,7 @@ export const QueryTallyResultResponse = {
   annotations: {
     'amino.dont_omitempty': { tally: true },
     'gogoproto.nullable': { tally: false },
-    typeUrlFromField: {
-      tally: () => __annotationCodec_2fcosmos_2egroup_2ev1_2eTallyResult,
-    },
+    typeUrlFromField: { tally: () => TallyResult },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryTallyResultResponse' as const,
   is(o: any): o is QueryTallyResultResponse {

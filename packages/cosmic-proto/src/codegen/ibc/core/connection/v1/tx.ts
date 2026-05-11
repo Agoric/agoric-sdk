@@ -1,8 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
-import { Height as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight } from '../../client/v1/client.js';
-import { Params as __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eParams } from '../../client/v1/client.js';
-import { Counterparty as __annotationCodec_2fibc_2ecore_2econnection_2ev1_2eCounterparty } from './connection.js';
 import {
   Counterparty,
   type CounterpartySDKType,
@@ -409,10 +406,7 @@ export const MsgConnectionOpenInit = {
   typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenInit' as const,
   annotations: {
     'gogoproto.nullable': { counterparty: false },
-    typeUrlFromField: {
-      counterparty: () =>
-        __annotationCodec_2fibc_2ecore_2econnection_2ev1_2eCounterparty,
-    },
+    typeUrlFromField: { counterparty: () => Counterparty },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgConnectionOpenInit' as const,
   is(o: any): o is MsgConnectionOpenInit {
@@ -662,11 +656,9 @@ export const MsgConnectionOpenTry = {
       proofHeight: false,
     },
     typeUrlFromField: {
-      consensusHeight: () =>
-        __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
-      counterparty: () =>
-        __annotationCodec_2fibc_2ecore_2econnection_2ev1_2eCounterparty,
-      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+      consensusHeight: () => Height,
+      counterparty: () => Counterparty,
+      proofHeight: () => Height,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgConnectionOpenTry' as const,
@@ -1067,9 +1059,8 @@ export const MsgConnectionOpenAck = {
   annotations: {
     'gogoproto.nullable': { consensusHeight: false, proofHeight: false },
     typeUrlFromField: {
-      consensusHeight: () =>
-        __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
-      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
+      consensusHeight: () => Height,
+      proofHeight: () => Height,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgConnectionOpenAck' as const,
@@ -1417,9 +1408,7 @@ export const MsgConnectionOpenConfirm = {
   typeUrl: '/ibc.core.connection.v1.MsgConnectionOpenConfirm' as const,
   annotations: {
     'gogoproto.nullable': { proofHeight: false },
-    typeUrlFromField: {
-      proofHeight: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eHeight,
-    },
+    typeUrlFromField: { proofHeight: () => Height },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgConnectionOpenConfirm' as const,
   is(o: any): o is MsgConnectionOpenConfirm {
@@ -1644,9 +1633,7 @@ export const MsgUpdateParams = {
   typeUrl: '/ibc.core.connection.v1.MsgUpdateParams' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fibc_2ecore_2eclient_2ev1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {

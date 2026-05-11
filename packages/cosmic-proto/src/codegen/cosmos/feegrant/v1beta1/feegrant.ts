@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../google/protobuf/duration.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import {
   Timestamp,
@@ -327,8 +325,8 @@ export const PeriodicAllowance = {
     'gogoproto.nullable': { basic: false, period: false, periodReset: false },
     typeUrlFromField: {
       basic: () => BasicAllowance,
-      period: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
-      periodReset: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      period: () => Duration,
+      periodReset: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/PeriodicAllowance' as const,

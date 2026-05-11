@@ -1,8 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { EvidenceList as __annotationCodec_2ftendermint_2etypes_2eEvidenceList } from './evidence.js';
-import { Data as __annotationCodec_2ftendermint_2etypes_2eData } from './types.js';
-import { Header as __annotationCodec_2ftendermint_2etypes_2eHeader } from './types.js';
 import {
   Header,
   type HeaderSDKType,
@@ -59,9 +56,9 @@ export const Block = {
   annotations: {
     'gogoproto.nullable': { data: false, evidence: false, header: false },
     typeUrlFromField: {
-      data: () => __annotationCodec_2ftendermint_2etypes_2eData,
-      evidence: () => __annotationCodec_2ftendermint_2etypes_2eEvidenceList,
-      header: () => __annotationCodec_2ftendermint_2etypes_2eHeader,
+      data: () => Data,
+      evidence: () => EvidenceList,
+      header: () => Header,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Block {

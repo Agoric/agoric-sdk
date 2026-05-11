@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../google/protobuf/duration.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -772,9 +770,7 @@ export const Member = {
   annotations: {
     'amino.dont_omitempty': { addedAt: true },
     'gogoproto.nullable': { addedAt: false },
-    typeUrlFromField: {
-      addedAt: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { addedAt: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Member' as const,
   is(o: any): o is Member {
@@ -1258,9 +1254,8 @@ export const DecisionPolicyWindows = {
     'amino.dont_omitempty': { minExecutionPeriod: true, votingPeriod: true },
     'gogoproto.nullable': { minExecutionPeriod: false, votingPeriod: false },
     typeUrlFromField: {
-      minExecutionPeriod: () =>
-        __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
-      votingPeriod: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
+      minExecutionPeriod: () => Duration,
+      votingPeriod: () => Duration,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DecisionPolicyWindows' as const,
@@ -1387,9 +1382,7 @@ export const GroupInfo = {
   annotations: {
     'amino.dont_omitempty': { createdAt: true },
     'gogoproto.nullable': { createdAt: false },
-    typeUrlFromField: {
-      createdAt: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { createdAt: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GroupInfo' as const,
   is(o: any): o is GroupInfo {
@@ -1654,9 +1647,7 @@ export const GroupPolicyInfo = {
   annotations: {
     'amino.dont_omitempty': { createdAt: true },
     'gogoproto.nullable': { createdAt: false },
-    typeUrlFromField: {
-      createdAt: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { createdAt: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GroupPolicyInfo' as const,
   is(o: any): o is GroupPolicyInfo {
@@ -1863,8 +1854,8 @@ export const Proposal = {
     },
     typeUrlFromField: {
       finalTallyResult: () => TallyResult,
-      submitTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-      votingPeriodEnd: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      submitTime: () => Timestamp,
+      votingPeriodEnd: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Proposal' as const,
@@ -2299,9 +2290,7 @@ export const Vote = {
   annotations: {
     'amino.dont_omitempty': { submitTime: true },
     'gogoproto.nullable': { submitTime: false },
-    typeUrlFromField: {
-      submitTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { submitTime: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Vote' as const,
   is(o: any): o is Vote {

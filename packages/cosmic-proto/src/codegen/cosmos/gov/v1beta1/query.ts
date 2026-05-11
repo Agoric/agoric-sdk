@@ -1,12 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Deposit as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDeposit } from './gov.js';
-import { DepositParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDepositParams } from './gov.js';
-import { Proposal as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eProposal } from './gov.js';
-import { TallyParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyParams } from './gov.js';
-import { TallyResult as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyResult } from './gov.js';
-import { Vote as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVote } from './gov.js';
-import { VotingParams as __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVotingParams } from './gov.js';
 import {
   ProposalStatus,
   Proposal,
@@ -603,9 +596,7 @@ export const QueryProposalResponse = {
   annotations: {
     'amino.dont_omitempty': { proposal: true },
     'gogoproto.nullable': { proposal: false },
-    typeUrlFromField: {
-      proposal: () => __annotationCodec_2fcosmos_2egov_2ev1beta1_2eProposal,
-    },
+    typeUrlFromField: { proposal: () => Proposal },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryProposalResponse' as const,
   is(o: any): o is QueryProposalResponse {
@@ -1054,9 +1045,7 @@ export const QueryVoteResponse = {
   annotations: {
     'amino.dont_omitempty': { vote: true },
     'gogoproto.nullable': { vote: false },
-    typeUrlFromField: {
-      vote: () => __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVote,
-    },
+    typeUrlFromField: { vote: () => Vote },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryVoteResponse' as const,
   is(o: any): o is QueryVoteResponse {
@@ -1459,12 +1448,9 @@ export const QueryParamsResponse = {
       votingParams: false,
     },
     typeUrlFromField: {
-      depositParams: () =>
-        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDepositParams,
-      tallyParams: () =>
-        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyParams,
-      votingParams: () =>
-        __annotationCodec_2fcosmos_2egov_2ev1beta1_2eVotingParams,
+      depositParams: () => DepositParams,
+      tallyParams: () => TallyParams,
+      votingParams: () => VotingParams,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
@@ -1713,9 +1699,7 @@ export const QueryDepositResponse = {
   annotations: {
     'amino.dont_omitempty': { deposit: true },
     'gogoproto.nullable': { deposit: false },
-    typeUrlFromField: {
-      deposit: () => __annotationCodec_2fcosmos_2egov_2ev1beta1_2eDeposit,
-    },
+    typeUrlFromField: { deposit: () => Deposit },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryDepositResponse' as const,
   is(o: any): o is QueryDepositResponse {
@@ -2137,9 +2121,7 @@ export const QueryTallyResultResponse = {
   annotations: {
     'amino.dont_omitempty': { tally: true },
     'gogoproto.nullable': { tally: false },
-    typeUrlFromField: {
-      tally: () => __annotationCodec_2fcosmos_2egov_2ev1beta1_2eTallyResult,
-    },
+    typeUrlFromField: { tally: () => TallyResult },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryTallyResultResponse' as const,
   is(o: any): o is QueryTallyResultResponse {

@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2econtroller_2ev1_2eParams } from '../../controller/v1/controller.js';
-import { Params as __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2ehost_2ev1_2eParams } from '../../host/v1/host.js';
 import { Params as Params1 } from '../../controller/v1/controller.js';
 import { type ParamsSDKType as Params1SDKType } from '../../controller/v1/controller.js';
 import { Params as Params2 } from '../../host/v1/host.js';
@@ -299,10 +297,7 @@ export const ControllerGenesisState = {
     '/ibc.applications.interchain_accounts.genesis.v1.ControllerGenesisState' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () =>
-        __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2econtroller_2ev1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params1 },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ControllerGenesisState' as const,
   is(o: any): o is ControllerGenesisState {
@@ -481,10 +476,7 @@ export const HostGenesisState = {
     '/ibc.applications.interchain_accounts.genesis.v1.HostGenesisState' as const,
   annotations: {
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () =>
-        __annotationCodec_2fibc_2eapplications_2einterchain_accounts_2ehost_2ev1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params2 },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/HostGenesisState' as const,
   is(o: any): o is HostGenesisState {

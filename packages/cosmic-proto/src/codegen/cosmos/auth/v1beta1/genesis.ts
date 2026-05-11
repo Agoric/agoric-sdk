@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eParams } from './auth.js';
 import { Params, type ParamsSDKType } from './auth.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
@@ -53,9 +52,7 @@ export const GenesisState = {
   annotations: {
     'amino.dont_omitempty': { params: true },
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {

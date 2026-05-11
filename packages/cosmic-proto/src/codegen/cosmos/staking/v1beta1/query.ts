@@ -1,9 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Params as __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eParams } from './staking.js';
-import { Pool as __annotationCodec_2fcosmos_2estaking_2ev1beta1_2ePool } from './staking.js';
-import { UnbondingDelegation as __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eUnbondingDelegation } from './staking.js';
-import { Validator as __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eValidator } from './staking.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -1169,10 +1165,7 @@ export const QueryValidatorResponse = {
   annotations: {
     'amino.dont_omitempty': { validator: true },
     'gogoproto.nullable': { validator: false },
-    typeUrlFromField: {
-      validator: () =>
-        __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eValidator,
-    },
+    typeUrlFromField: { validator: () => Validator },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryValidatorResponse' as const,
   is(o: any): o is QueryValidatorResponse {
@@ -2097,10 +2090,7 @@ export const QueryUnbondingDelegationResponse = {
   annotations: {
     'amino.dont_omitempty': { unbond: true },
     'gogoproto.nullable': { unbond: false },
-    typeUrlFromField: {
-      unbond: () =>
-        __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eUnbondingDelegation,
-    },
+    typeUrlFromField: { unbond: () => UnbondingDelegation },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryUnbondingDelegationResponse' as const,
   is(o: any): o is QueryUnbondingDelegationResponse {
@@ -3353,10 +3343,7 @@ export const QueryDelegatorValidatorResponse = {
   annotations: {
     'amino.dont_omitempty': { validator: true },
     'gogoproto.nullable': { validator: false },
-    typeUrlFromField: {
-      validator: () =>
-        __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eValidator,
-    },
+    typeUrlFromField: { validator: () => Validator },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryDelegatorValidatorResponse' as const,
   is(o: any): o is QueryDelegatorValidatorResponse {
@@ -3722,9 +3709,7 @@ export const QueryPoolResponse = {
   annotations: {
     'amino.dont_omitempty': { pool: true },
     'gogoproto.nullable': { pool: false },
-    typeUrlFromField: {
-      pool: () => __annotationCodec_2fcosmos_2estaking_2ev1beta1_2ePool,
-    },
+    typeUrlFromField: { pool: () => Pool },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryPoolResponse' as const,
   is(o: any): o is QueryPoolResponse {
@@ -3876,9 +3861,7 @@ export const QueryParamsResponse = {
   annotations: {
     'amino.dont_omitempty': { params: true },
     'gogoproto.nullable': { params: false },
-    typeUrlFromField: {
-      params: () => __annotationCodec_2fcosmos_2estaking_2ev1beta1_2eParams,
-    },
+    typeUrlFromField: { params: () => Params },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {

@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../cosmos/base/v1beta1/coin.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
@@ -1167,9 +1166,7 @@ export const LSMTokenDeposit = {
   typeUrl: '/stride.records.LSMTokenDeposit' as const,
   annotations: {
     'gogoproto.nullable': { amount: false, stToken: false },
-    typeUrlFromField: {
-      stToken: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-    },
+    typeUrlFromField: { stToken: () => Coin },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is LSMTokenDeposit {
     return (

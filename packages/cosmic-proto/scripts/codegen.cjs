@@ -204,6 +204,43 @@ const importPathFrom = (fromFile, toFile) => {
   return importPath.startsWith('.') ? importPath : `./${importPath}`;
 };
 
+const localRuntimeImportName = (contents, importFrom, importedName) => {
+  const importStatementPattern =
+    /import\s+(?!type\b)([\s\S]*?)\s+from\s+(['"])(.*?)\2\s*;/g;
+
+  for (const match of contents.matchAll(importStatementPattern)) {
+    const [, importSpecifiers, , source] = match;
+    if (source !== importFrom) {
+      continue;
+    }
+
+    const namedImports = importSpecifiers.match(/\{([\s\S]*)\}/);
+    if (!namedImports) {
+      continue;
+    }
+
+    for (const rawSpecifier of namedImports[1].split(',')) {
+      const specifier = rawSpecifier.trim();
+      if (!specifier || specifier.startsWith('type ')) {
+        continue;
+      }
+
+      const importName =
+        /^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/.exec(specifier);
+      if (!importName) {
+        continue;
+      }
+
+      const [, imported, local = imported] = importName;
+      if (imported === importedName) {
+        return local;
+      }
+    }
+  }
+
+  return undefined;
+};
+
 const addAnnotationImports = (contents, protoOutFile, childImports) => {
   const imports = [];
   if (!contents.includes('import type { FieldAnnotationsRecord }')) {
@@ -289,6 +326,8 @@ const addProtoAnnotations = async (
 
   const exportFromTypeUrl = new Map(exports);
   const childImports = new Map();
+  let contents = await fsp.readFile(protoOutFile, 'utf8');
+
   const getCodecRef = typeUrl => {
     const typeInfo = typeInfoFromTypeUrl.get(typeUrl);
     if (!typeInfo) {
@@ -298,16 +337,25 @@ const addProtoAnnotations = async (
       return typeInfo.exportName;
     }
 
+    const importFrom = importPathFrom(protoOutFile, typeInfo.importFile);
+    const existingImport = localRuntimeImportName(
+      contents,
+      importFrom,
+      typeInfo.exportName,
+    );
+    if (existingImport) {
+      return existingImport;
+    }
+
     const localName = importIdentifierFromTypeUrl(typeUrl);
     childImports.set(localName, {
-      importFrom: importPathFrom(protoOutFile, typeInfo.importFile),
+      importFrom,
       importedName: typeInfo.exportName,
       localName,
     });
     return localName;
   };
 
-  let contents = await fsp.readFile(protoOutFile, 'utf8');
   let didAddAnnotations = false;
   for (const [typeUrl, annotationsRecord] of annotationsEntries) {
     const exportName = exportFromTypeUrl.get(typeUrl);

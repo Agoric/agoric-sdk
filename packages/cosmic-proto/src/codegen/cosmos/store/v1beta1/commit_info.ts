@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -108,9 +107,7 @@ export const CommitInfo = {
   typeUrl: '/cosmos.store.v1beta1.CommitInfo' as const,
   annotations: {
     'gogoproto.nullable': { timestamp: false },
-    typeUrlFromField: {
-      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { timestamp: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/CommitInfo' as const,
   is(o: any): o is CommitInfo {

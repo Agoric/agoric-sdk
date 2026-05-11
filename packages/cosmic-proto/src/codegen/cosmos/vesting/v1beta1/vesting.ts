@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { BaseAccount as __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eBaseAccount } from '../../auth/v1beta1/auth.js';
 import {
   BaseAccount,
   type BaseAccountSDKType,
@@ -251,10 +250,7 @@ export const BaseVestingAccount = {
   typeUrl: '/cosmos.vesting.v1beta1.BaseVestingAccount' as const,
   annotations: {
     'gogoproto.embed': { base_account: 'baseAccount' },
-    typeUrlFromField: {
-      baseAccount: () =>
-        __annotationCodec_2fcosmos_2eauth_2ev1beta1_2eBaseAccount,
-    },
+    typeUrlFromField: { baseAccount: () => BaseAccount },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/BaseVestingAccount' as const,
   is(o: any): o is BaseVestingAccount {

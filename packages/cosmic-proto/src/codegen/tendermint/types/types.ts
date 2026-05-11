@@ -1,8 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../google/protobuf/timestamp.js';
-import { Proof as __annotationCodec_2ftendermint_2ecrypto_2eProof } from '../crypto/proof.js';
-import { Consensus as __annotationCodec_2ftendermint_2eversion_2eConsensus } from '../version/types.js';
 import { Proof, type ProofSDKType } from '../crypto/proof.js';
 import { Consensus, type ConsensusSDKType } from '../version/types.js';
 import {
@@ -672,9 +669,7 @@ export const Part = {
   typeUrl: '/tendermint.types.Part' as const,
   annotations: {
     'gogoproto.nullable': { proof: false },
-    typeUrlFromField: {
-      proof: () => __annotationCodec_2ftendermint_2ecrypto_2eProof,
-    },
+    typeUrlFromField: { proof: () => Proof },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Part {
     return (
@@ -920,8 +915,8 @@ export const Header = {
     'gogoproto.nullable': { lastBlockId: false, time: false, version: false },
     typeUrlFromField: {
       lastBlockId: () => BlockID,
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-      version: () => __annotationCodec_2ftendermint_2eversion_2eConsensus,
+      time: () => Timestamp,
+      version: () => Consensus,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Header {
@@ -1359,10 +1354,7 @@ export const Vote = {
   typeUrl: '/tendermint.types.Vote' as const,
   annotations: {
     'gogoproto.nullable': { blockId: false, timestamp: false },
-    typeUrlFromField: {
-      blockId: () => BlockID,
-      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { blockId: () => BlockID, timestamp: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Vote {
     return (
@@ -1753,9 +1745,7 @@ export const CommitSig = {
   typeUrl: '/tendermint.types.CommitSig' as const,
   annotations: {
     'gogoproto.nullable': { timestamp: false },
-    typeUrlFromField: {
-      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { timestamp: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is CommitSig {
     return (
@@ -2059,9 +2049,7 @@ export const ExtendedCommitSig = {
   typeUrl: '/tendermint.types.ExtendedCommitSig' as const,
   annotations: {
     'gogoproto.nullable': { timestamp: false },
-    typeUrlFromField: {
-      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { timestamp: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is ExtendedCommitSig {
     return (
@@ -2248,10 +2236,7 @@ export const Proposal = {
   typeUrl: '/tendermint.types.Proposal' as const,
   annotations: {
     'gogoproto.nullable': { blockId: false, timestamp: false },
-    typeUrlFromField: {
-      blockId: () => BlockID,
-      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { blockId: () => BlockID, timestamp: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Proposal {
     return (

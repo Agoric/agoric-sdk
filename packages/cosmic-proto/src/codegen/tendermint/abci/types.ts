@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../google/protobuf/timestamp.js';
-import { PublicKey as __annotationCodec_2ftendermint_2ecrypto_2ePublicKey } from '../crypto/keys.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -2380,9 +2378,7 @@ export const RequestInitChain = {
   typeUrl: '/tendermint.abci.RequestInitChain' as const,
   annotations: {
     'gogoproto.nullable': { time: false },
-    typeUrlFromField: {
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { time: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestInitChain {
     return (
@@ -3280,7 +3276,7 @@ export const RequestPrepareProposal = {
     'gogoproto.nullable': { localLastCommit: false, time: false },
     typeUrlFromField: {
       localLastCommit: () => ExtendedCommitInfo,
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      time: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestPrepareProposal {
@@ -3530,7 +3526,7 @@ export const RequestProcessProposal = {
     'gogoproto.nullable': { proposedLastCommit: false, time: false },
     typeUrlFromField: {
       proposedLastCommit: () => CommitInfo,
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      time: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestProcessProposal {
@@ -3781,7 +3777,7 @@ export const RequestExtendVote = {
     'gogoproto.nullable': { proposedLastCommit: false, time: false },
     typeUrlFromField: {
       proposedLastCommit: () => CommitInfo,
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      time: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestExtendVote {
@@ -4184,7 +4180,7 @@ export const RequestFinalizeBlock = {
     'gogoproto.nullable': { decidedLastCommit: false, time: false },
     typeUrlFromField: {
       decidedLastCommit: () => CommitInfo,
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      time: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RequestFinalizeBlock {
@@ -7686,9 +7682,7 @@ export const ValidatorUpdate = {
   typeUrl: '/tendermint.abci.ValidatorUpdate' as const,
   annotations: {
     'gogoproto.nullable': { pubKey: false },
-    typeUrlFromField: {
-      pubKey: () => __annotationCodec_2ftendermint_2ecrypto_2ePublicKey,
-    },
+    typeUrlFromField: { pubKey: () => PublicKey },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is ValidatorUpdate {
     return (
@@ -8054,10 +8048,7 @@ export const Misbehavior = {
   typeUrl: '/tendermint.abci.Misbehavior' as const,
   annotations: {
     'gogoproto.nullable': { time: false, validator: false },
-    typeUrlFromField: {
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-      validator: () => Validator,
-    },
+    typeUrlFromField: { time: () => Timestamp, validator: () => Validator },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Misbehavior {
     return (

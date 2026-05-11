@@ -1,7 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Duration as __annotationCodec_2fgoogle_2eprotobuf_2eDuration } from '../../../google/protobuf/duration.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import {
@@ -897,11 +895,11 @@ export const Proposal = {
       votingStartTime: false,
     },
     typeUrlFromField: {
-      depositEndTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      depositEndTime: () => Timestamp,
       finalTallyResult: () => TallyResult,
-      submitTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-      votingEndTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-      votingStartTime: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      submitTime: () => Timestamp,
+      votingEndTime: () => Timestamp,
+      votingStartTime: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Proposal' as const,
@@ -1429,9 +1427,7 @@ export const DepositParams = {
   typeUrl: '/cosmos.gov.v1beta1.DepositParams' as const,
   annotations: {
     'gogoproto.nullable': { maxDepositPeriod: false },
-    typeUrlFromField: {
-      maxDepositPeriod: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
-    },
+    typeUrlFromField: { maxDepositPeriod: () => Duration },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DepositParams' as const,
   is(o: any): o is DepositParams {
@@ -1550,9 +1546,7 @@ export const VotingParams = {
   typeUrl: '/cosmos.gov.v1beta1.VotingParams' as const,
   annotations: {
     'gogoproto.nullable': { votingPeriod: false },
-    typeUrlFromField: {
-      votingPeriod: () => __annotationCodec_2fgoogle_2eprotobuf_2eDuration,
-    },
+    typeUrlFromField: { votingPeriod: () => Duration },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/VotingParams' as const,
   is(o: any): o is VotingParams {

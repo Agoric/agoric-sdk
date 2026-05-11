@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { ICAAccount as __annotationCodec_2fstride_2estakeibc_2eICAAccount } from './ica_account.js';
 import { ICAAccount, type ICAAccountSDKType } from './ica_account.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
@@ -413,9 +412,9 @@ export const TradeRoute = {
       tradeConfig: false,
     },
     typeUrlFromField: {
-      hostAccount: () => __annotationCodec_2fstride_2estakeibc_2eICAAccount,
-      rewardAccount: () => __annotationCodec_2fstride_2estakeibc_2eICAAccount,
-      tradeAccount: () => __annotationCodec_2fstride_2estakeibc_2eICAAccount,
+      hostAccount: () => ICAAccount,
+      rewardAccount: () => ICAAccount,
+      tradeAccount: () => ICAAccount,
       tradeConfig: () => TradeConfig,
     },
   } as const satisfies FieldAnnotationsRecord,

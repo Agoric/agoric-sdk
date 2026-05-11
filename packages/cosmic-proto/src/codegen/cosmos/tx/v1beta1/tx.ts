@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../google/protobuf/timestamp.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import {
   Timestamp,
@@ -1213,9 +1212,7 @@ export const TxBody = {
   typeUrl: '/cosmos.tx.v1beta1.TxBody' as const,
   annotations: {
     'gogoproto.nullable': { timeoutTimestamp: true },
-    typeUrlFromField: {
-      timeoutTimestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { timeoutTimestamp: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/TxBody' as const,
   is(o: any): o is TxBody {

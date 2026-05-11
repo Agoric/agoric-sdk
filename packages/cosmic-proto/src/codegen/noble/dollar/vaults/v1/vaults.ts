@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../../../google/protobuf/timestamp.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -363,7 +362,7 @@ export const Position = {
     typeUrlFromField: {
       amount: 'cosmos.Int',
       principal: 'cosmos.Int',
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      time: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Position {
@@ -598,7 +597,7 @@ export const PositionEntry = {
     typeUrlFromField: {
       amount: 'cosmos.Int',
       principal: 'cosmos.Int',
-      time: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
+      time: () => Timestamp,
     },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is PositionEntry {

@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Coin as __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin } from '../../cosmos/base/v1beta1/coin.js';
 import {
   DelegationRecord,
   type DelegationRecordSDKType,
@@ -717,9 +716,7 @@ export const MsgLiquidStakeResponse = {
   typeUrl: '/stride.staketia.MsgLiquidStakeResponse' as const,
   annotations: {
     'gogoproto.nullable': { stToken: false },
-    typeUrlFromField: {
-      stToken: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-    },
+    typeUrlFromField: { stToken: () => Coin },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgLiquidStakeResponse {
     return (
@@ -927,9 +924,7 @@ export const MsgRedeemStakeResponse = {
   typeUrl: '/stride.staketia.MsgRedeemStakeResponse' as const,
   annotations: {
     'gogoproto.nullable': { nativeToken: false },
-    typeUrlFromField: {
-      nativeToken: () => __annotationCodec_2fcosmos_2ebase_2ev1beta1_2eCoin,
-    },
+    typeUrlFromField: { nativeToken: () => Coin },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgRedeemStakeResponse {
     return (

@@ -1,6 +1,5 @@
 //@ts-nocheck
 import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
-import { Timestamp as __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp } from '../../google/protobuf/timestamp.js';
 import {
   Vote,
   type VoteSDKType,
@@ -251,9 +250,7 @@ export const DuplicateVoteEvidence = {
   typeUrl: '/tendermint.types.DuplicateVoteEvidence' as const,
   annotations: {
     'gogoproto.nullable': { timestamp: false },
-    typeUrlFromField: {
-      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { timestamp: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is DuplicateVoteEvidence {
     return (
@@ -414,9 +411,7 @@ export const LightClientAttackEvidence = {
   typeUrl: '/tendermint.types.LightClientAttackEvidence' as const,
   annotations: {
     'gogoproto.nullable': { timestamp: false },
-    typeUrlFromField: {
-      timestamp: () => __annotationCodec_2fgoogle_2eprotobuf_2eTimestamp,
-    },
+    typeUrlFromField: { timestamp: () => Timestamp },
   } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is LightClientAttackEvidence {
     return (
