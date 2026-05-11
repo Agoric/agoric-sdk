@@ -45,7 +45,7 @@
     "ts-blank-space": "^0.6.2",
     "ts-morph": "^27.0.2",
     "type-coverage": "^2.29.7",
-    "typedoc": "^0.26.7",
+    "typedoc": "^0.28.19",
     "typedoc-plugin-markdown": "^4.2.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.59.2"
