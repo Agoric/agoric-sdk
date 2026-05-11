@@ -41,6 +41,9 @@ yarn ava oracles.test.js
 echo ACCEPTANCE TESTING governance
 yarn ava governance.test.js
 
+echo ACCEPTANCE TESTING vbank SetDenomMetaData
+yarn ava vbank-setdenommetadata.test.js
+
 echo ACCEPTANCE TESTING stake BLD
 # XXX correct misnaming
 # UNTIL https://github.com/Agoric/agoric-3-proposals/issues/212
