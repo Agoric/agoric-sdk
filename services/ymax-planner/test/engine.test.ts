@@ -61,6 +61,7 @@ import {
   createMockEnginePowers,
   makeNotImplemented,
   mockEvmCtx,
+  mockGasEstimator,
 } from './mocks.ts';
 
 // #region client-utils mocks
@@ -437,6 +438,7 @@ const fakePortfolioKit = async ({
     console: mockConsole,
     signingSmartWalletKit,
     walletStore,
+    gasEstimator: mockGasEstimator,
     isDryRun: true,
     depositBrand,
     feeBrand,
@@ -733,29 +735,35 @@ test('startFlow logs include traceId prefix', async t => {
   } = kit;
   const { consoleWrites, updateVstorage } = kit.testPowers;
 
-  const fakeWithdrawFlow = (flowId: number, amountValue: bigint) => ({
+  const fakeFlow = (
+    flowId: number,
+    type: 'deposit' | 'withdraw',
+    amountValue: bigint,
+  ) => ({
     flowCount: 1,
     flowsRunning: {
       [`flow${flowId}`]: {
-        type: 'withdraw',
+        type,
         amount: AmountMath.make(depositBrand, amountValue),
       },
     },
   });
 
   const portfolioKey = `portfolio${portfolioId}`;
+  // Depositing dust should fail.
   const portfolioStatus = harden({
     ...initialPortfolioStatus,
-    ...fakeWithdrawFlow(4, 2_000_000n),
+    ...fakeFlow(4, 'deposit', 2n),
   });
   updateVstorage(portfolioPath, 'set', { object: portfolioStatus, wrap: true });
 
   const portfolioId2 = portfolioId + 1;
   const portfolioKey2 = `portfolio${portfolioId2}`;
   const portfolioPath2 = `${portfoliosPathPrefix}.${portfolioKey2}`;
+  // Withdrawing everything should succeed.
   const portfolioStatus2 = {
     ...initialPortfolioStatus,
-    ...fakeWithdrawFlow(2, 1_000_000n),
+    ...fakeFlow(2, 'withdraw', 1_000_000n),
   };
   updateVstorage(portfolioPath2, 'set', {
     object: portfolioStatus2,
@@ -918,14 +926,72 @@ test('unsolvable flow is rejected', testRejection, {
 });
 
 // Try to withdraw $2 from a total of $1.
-test('excessive withdrawal is rejected', testRejection, {
-  portfolioAccounts: {
-    Ethereum: AmountMath.make(depositBrand, 1_000_000n),
-  },
-  flow: {
-    type: 'withdraw',
-    amount: AmountMath.make(depositBrand, 2_000_000n),
-  },
-  expectedReason: 'Insufficient funds for withdrawal.',
+test('excessive withdrawal is clamped', async t => {
+  const kit = await fakePortfolioKit({
+    accounts: { Ethereum: AmountMath.make(depositBrand, 1_000_000n) },
+  });
+
+  const {
+    blockHeight,
+    portfolioId,
+    portfolioPath,
+    initialPortfolioStatus,
+    powers,
+  } = kit;
+  const { getBridgeSends, updateVstorage } = kit.testPowers;
+
+  const flowId = 1;
+  const portfolioStatus = harden({
+    ...initialPortfolioStatus,
+    flowCount: 1,
+    flowsRunning: {
+      [`flow${flowId}`]: {
+        type: 'withdraw',
+        amount: AmountMath.make(depositBrand, 2_000_000n),
+      },
+    },
+  });
+  updateVstorage(portfolioPath, 'set', {
+    object: portfolioStatus,
+    wrap: true,
+  });
+
+  const expectedInvocation: InvokeStoreEntryAction['message'] = {
+    targetName: 'planner',
+    method: 'resolvePlan',
+    args: [
+      portfolioId,
+      flowId,
+      [
+        { src: '@Ethereum', dest: '@agoric', amount: { value: 1000000n } },
+        { src: '@agoric', dest: '<Cash>', amount: { value: 1000000n } },
+      ],
+      portfolioStatus.policyVersion,
+      portfolioStatus.rebalanceCount,
+    ],
+  };
+
+  const vstorageEventDetail = makeVstorageEventDetail(
+    blockHeight,
+    portfolioPath,
+    portfolioStatus,
+  );
+  const memory: PortfoliosMemory = { deferrals: [] };
+  await processPortfolioEvents(
+    [vstorageEventDetail],
+    blockHeight,
+    memory,
+    powers,
+  );
+  const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+  arrayIsLike(
+    t,
+    bridgeActions,
+    [{ method: 'invokeEntry' }],
+    'contract planner facet was invoked',
+  );
+  arrayIsLike(t, bridgeActions, [
+    { method: 'invokeEntry', message: expectedInvocation },
+  ]);
 });
 // #endregion processPortfolioEvents

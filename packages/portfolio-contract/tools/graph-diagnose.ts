@@ -447,12 +447,8 @@ export const formatInfeasibleDiagnostics = (
 
 /**
  * Validate solved flows for consistency.
- * Checks:
- * 1. Total supply sums to 0 (conservation)
- * 2. Each flow has sufficient supply at its source
- * 3. Hub chains end with zero balance (proper routing)
  *
- * @param graph - The rebalance graph with initial supplies
+ * @param graph - The rebalance graph with initial signed supplies
  * @param flows - Solved flows from the optimizer
  * @returns Validation result with ok flag and details
  */
@@ -467,11 +463,18 @@ export const validateSolvedFlows = (
 } => {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const supplies = typedEntries(
+    graph.supplies as { [K in AssetPlaceRef]: number },
+  );
+  const sources = new Map(supplies.filter(([_place, supply]) => supply > 0));
 
   // Check 1: Total supply sums to 0
   let totalSupply = 0;
-  for (const node of graph.nodes) {
-    totalSupply += graph.supplies[node] || 0;
+  for (const [place, supply] of supplies) {
+    totalSupply += supply;
+    if (!graph.nodes.has(place)) {
+      warnings.push(`Unknown place ${place} supplies ${supply}`);
+    }
   }
   if (totalSupply !== 0) {
     errors.push(
@@ -480,7 +483,7 @@ export const validateSolvedFlows = (
   }
 
   // Check 2: Simulate flow execution to verify supply sufficiency
-  const balances = new Map(typedEntries(graph.supplies));
+  const balances = new Map(sources);
   for (const { edge, flow } of flows) {
     const srcBalance = balances.get(edge.src) || 0;
 
@@ -498,13 +501,13 @@ export const validateSolvedFlows = (
     balances.set(edge.dest, destBalance + flow);
   }
 
-  // Check 3: Hub chains should end with 0 balance
-  for (const hub of graph.nodes) {
-    if (!isInterChainAccountRef(hub)) continue;
-    const finalBalance = balances.get(hub) || 0;
-    if (finalBalance !== 0) {
-      warnings.push(`Hub ${hub} has non-zero final balance: ${finalBalance}`);
-    }
+  // Check 3: Negative supplies should exactly consume ending balances
+  for (const [place, finalBalance] of balances) {
+    const supply = graph.supplies[place] || 0;
+    if (finalBalance > 0 ? supply === -finalBalance : supply >= 0) continue;
+    errors.push(
+      `Final balance mismatch at ${place}. ${finalBalance} should have balanced ${supply}`,
+    );
   }
 
   return {

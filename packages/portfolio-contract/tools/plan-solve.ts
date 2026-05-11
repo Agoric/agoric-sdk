@@ -54,10 +54,16 @@ const alphabetizeRecord = <T extends Record<string, unknown>>(obj: T) =>
   );
 
 /**
+ * Return the absolute value of a bigint, similar to `Math.abs` (which doesn't
+ * work with bigints).
+ */
+export const bigintAbs = (x: bigint) => (x < 0n ? -x : x);
+
+/**
  * Return the minimum and maximum bigint value from non-empty arguments, similar
  * to `Math.min` and `Math.max` (which don't work with bigints).
  */
-const bigIntExtremes = (first: bigint, ...rest: bigint[]) => {
+export const bigintExtremes = (first: bigint, ...rest: bigint[]) => {
   let min = first;
   let max = first;
   for (const arg of rest) {
@@ -68,11 +74,18 @@ const bigIntExtremes = (first: bigint, ...rest: bigint[]) => {
 };
 
 /**
+ * Return the minimum bigint value from non-empty arguments, similar to
+ * `Math.min` (which doesn't work with bigints).
+ */
+export const bigintMin = (first: bigint, ...rest: bigint[]): bigint =>
+  bigintExtremes(first, ...rest).min;
+
+/**
  * Return the maximum bigint value from non-empty arguments, similar to
  * `Math.max` (which doesn't work with bigints).
  */
-const bigIntMax = (first: bigint, ...rest: bigint[]): bigint =>
-  bigIntExtremes(first, ...rest).max;
+export const bigintMax = (first: bigint, ...rest: bigint[]): bigint =>
+  bigintExtremes(first, ...rest).max;
 // #endregion
 
 /** The count of minor units per major unit (e.g., uusdc per USDC) */
@@ -643,7 +656,7 @@ export const rebalanceMinCostFlowSteps = async (
     const padded = padFeeEstimate(estimate);
     // cf. https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
     const MINIMUM_GAS = 5_000_000n;
-    return AmountMath.make(feeBrand, bigIntMax(MINIMUM_GAS, padded));
+    return AmountMath.make(feeBrand, bigintMax(MINIMUM_GAS, padded));
   };
 
   const steps = await Promise.all(
