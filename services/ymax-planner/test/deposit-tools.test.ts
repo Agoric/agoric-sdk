@@ -1428,3 +1428,50 @@ test('computeWeightedTargets cascades blocked/suppressed sources', async t => {
     ]);
   }
 });
+
+for (const [title, usdcOverdraft] of Object.entries({
+  'planWithdrawFromAllocations works around withdraw-blocked pools': 0,
+  'planWithdrawFromAllocations clamps to withdrawable amounts': 10,
+})) {
+  // TODO(AGO-535): Both of these scenarios should withdraw 50 USDC.
+  const testFn = usdcOverdraft === 0 ? test : test.failing;
+  testFn(title, async t => {
+    const network: NetworkSpec = harden({
+      ...plannerContext.network,
+      pools: [
+        ...plannerContext.network.pools.filter(p => p.pool !== 'Aave_Base'),
+        {
+          pool: 'Aave_Base',
+          chain: 'Base',
+          protocol: 'Aave',
+          blockWithdrawReason: 'LOW_LIQUIDITY',
+        },
+      ] as NetworkSpec['pools'],
+    });
+    const currentBalances = {
+      Aave_Base: makeDeposit(scale6(50)),
+      Aave_Ethereum: makeDeposit(scale6(25)),
+      Compound_Ethereum: makeDeposit(scale6(25)),
+    };
+    const targetAllocation: TargetAllocation = {
+      Aave_Base: 50n,
+      Aave_Ethereum: 25n,
+      Compound_Ethereum: 25n,
+    };
+
+    const plan = await planWithdrawFromAllocations({
+      ...plannerContext,
+      network,
+      currentBalances,
+      targetAllocation,
+      amount: makeDeposit(scale6(50 + usdcOverdraft)),
+      toChain: 'Ethereum',
+    });
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Aave_Ethereum', '@Ethereum', scale6(25)),
+      makeMovementDesc('Compound_Ethereum', '@Ethereum', scale6(25)),
+      makeMovementDesc('@Ethereum', '-Ethereum', scale6(50)),
+    ]);
+  });
+}
