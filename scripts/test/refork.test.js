@@ -10,7 +10,7 @@ import {
   writePairedDiffOfDiffs,
 } from '../forks/refork.js';
 
-test('splitPatchIntoFileDiffs indexes per-file diffs by filename', () => {
+void test('splitPatchIntoFileDiffs indexes per-file diffs by filename', () => {
   const patch = [
     'diff --git a/alpha.txt b/alpha.txt',
     'index 1111111..2222222 100644',
@@ -42,7 +42,7 @@ test('splitPatchIntoFileDiffs indexes per-file diffs by filename', () => {
   );
 });
 
-test('splitPatchIntoFileDiffs prefers added filename and falls back from /dev/null', () => {
+void test('splitPatchIntoFileDiffs prefers added filename and falls back from /dev/null', () => {
   const patch = [
     'diff --git a/new.txt b/newer.txt',
     'similarity index 90%',
@@ -76,7 +76,7 @@ test('splitPatchIntoFileDiffs prefers added filename and falls back from /dev/nu
   );
 });
 
-test('streamPatchFileDiffs yields file diffs in input order', async () => {
+void test('streamPatchFileDiffs yields file diffs in input order', async () => {
   const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'refork-test-'));
   const patchPath = path.join(workspaceDir, 'fork-base.patch');
 
@@ -113,7 +113,7 @@ test('streamPatchFileDiffs yields file diffs in input order', async () => {
   }
 });
 
-test('writePairedDiffOfDiffs summarizes /dev/null pairs by default', async () => {
+void test('writePairedDiffOfDiffs summarizes /dev/null pairs by default', async () => {
   const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'refork-test-'));
   const forkBasePatchPath = path.join(workspaceDir, 'fork-base.patch');
   const diffMergePatchPath = path.join(workspaceDir, 'merge-fork.patch');
@@ -189,7 +189,7 @@ test('writePairedDiffOfDiffs summarizes /dev/null pairs by default', async () =>
   }
 });
 
-test('writePairedDiffOfDiffs emits full /dev/null diffs when diffDevNull is enabled', async () => {
+void test('writePairedDiffOfDiffs emits full /dev/null diffs when diffDevNull is enabled', async () => {
   const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'refork-test-'));
   const forkBasePatchPath = path.join(workspaceDir, 'fork-base.patch');
   const diffMergePatchPath = path.join(workspaceDir, 'merge-fork.patch');
@@ -230,7 +230,7 @@ test('writePairedDiffOfDiffs emits full /dev/null diffs when diffDevNull is enab
   }
 });
 
-test('writePairedDiffOfDiffs writes No diff when both patch inputs are empty', async () => {
+void test('writePairedDiffOfDiffs writes No diff when both patch inputs are empty', async () => {
   const workspaceDir = await mkdtemp(path.join(os.tmpdir(), 'refork-test-'));
   const forkBasePatchPath = path.join(workspaceDir, 'fork-base.patch');
   const diffMergePatchPath = path.join(workspaceDir, 'merge-fork.patch');
