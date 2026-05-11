@@ -3,9 +3,7 @@
   "include": [
     "contractFacet.js",
     "scripts",
-    // XXX we need both globs or tsc will ignore the .d.ts twin
-    "src/**/*.js",
-    "src/**/*.ts",
+    "src",
     "test",
     "tools",
   ],

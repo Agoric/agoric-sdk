@@ -2,9 +2,9 @@
 {
   "extends": "../../tsconfig.json",
   "include": [
-    "src/**/*.js",
     "subscribe.*",
-    "test/**/*.js",
-    "tools/**/*.js",
+    "src",
+    "test",
+    "tools",
   ],
 }

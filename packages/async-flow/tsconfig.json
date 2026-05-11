@@ -4,9 +4,7 @@
   "include": [
     "*.js",
     "scripts",
-    "src/**/*.js",
-    "test/**/*.js",
-    "src/**/*.ts",
-    "test/**/*.ts",
+    "src",
+    "test",
   ],
 }

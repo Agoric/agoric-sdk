@@ -3,10 +3,10 @@
   "extends": "../../tsconfig.json",
   "include": [
     "*.js",
-    "integration-tests/**/*.js",
-    "scripts/**/*.js",
-    "src/**/*.js",
-    "test/**/*.js",
-    "tools/**/*.js",
+    "integration-tests",
+    "scripts",
+    "src",
+    "test",
+    "tools",
   ],
 }

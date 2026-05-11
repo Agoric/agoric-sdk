@@ -3,7 +3,7 @@
   "extends": "../../tsconfig.json",
   "include": [
     "*.js",
-    "public/**/*.js",
+    "public",
     "src",
     "test",
   ],
