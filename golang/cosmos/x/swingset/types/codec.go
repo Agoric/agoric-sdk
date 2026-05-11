@@ -20,6 +20,7 @@ var (
 	// The actual codec used for serialization should be provided to x/swingset and
 	// defined at the application level.
 	ModuleAminoCdc = codec.NewAminoCodec(amino)
+	ModuleCdc 	= codec.NewProtoCodec(cdctypes.NewInterfaceRegistry())
 )
 
 func init() {
@@ -35,7 +36,8 @@ func RegisterCodec(cdc *codec.LegacyAmino) {
 	legacy.RegisterAminoMsg(cdc, &MsgWalletAction{}, ModuleName+"/WalletAction")
 	legacy.RegisterAminoMsg(cdc, &MsgWalletSpendAction{}, ModuleName+"/WalletSpendAction")
 	legacy.RegisterAminoMsg(cdc, &MsgInstallBundle{}, ModuleName+"/InstallBundle")
-	cdc.RegisterConcrete(&CoreEvalProposal{}, ModuleName+"/CoreEvalProposal", nil)
+	legacy.RegisterAminoMsg(cdc, &MsgCoreEval{}, ModuleName+"/CoreEval")
+	legacy.RegisterAminoMsg(cdc, &CoreEvalProposal{}, ModuleName+"/CoreEvalProposal")
 }
 
 // RegisterInterfaces registers the x/swingset interfaces types with the interface registry
@@ -46,6 +48,7 @@ func RegisterInterfaces(registry cdctypes.InterfaceRegistry) {
 		&MsgWalletAction{},
 		&MsgWalletSpendAction{},
 		&MsgInstallBundle{},
+		&MsgCoreEval{},
 	)
 	registry.RegisterInterface(
 		"cosmos.gov.v1beta1.Content",
