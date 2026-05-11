@@ -6,7 +6,8 @@ ROOT_DIR=$(cd -- "$SCRIPT_DIR/.." && pwd)
 
 cd "$ROOT_DIR"
 
-./scripts/ensure-corepack-yarn.sh
+# shellcheck disable=SC1091
+source ./scripts/use-devenv.sh
 
 echo "==> golang/cosmos: make proto-gen"
 yarn workspace @agoric/cosmos exec make proto-gen
@@ -16,6 +17,3 @@ yarn workspace @agoric/cosmic-proto codegen
 
 echo "==> packages/client-utils: yarn workspace @agoric/client-utils codegen"
 yarn workspace @agoric/client-utils codegen
-
-echo "==> packages/orchestration: yarn workspace @agoric/orchestration codegen"
-yarn workspace @agoric/orchestration codegen
