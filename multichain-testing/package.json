@@ -67,7 +67,7 @@
     "fs-extra": "^11.2.0",
     "osmojs": "^16.15.0",
     "ts-blank-space": "^0.4.4",
-    "typescript": "~6.0.1-rc",
+    "typescript": "~6.0.3",
     "viem": "^2.43.4"
   },
   "resolutions": {
