@@ -1,8 +1,5 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "checkJs": true,
-  },
   "include": [
     "*.js",
     "*.mjs",

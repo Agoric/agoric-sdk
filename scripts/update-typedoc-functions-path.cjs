@@ -28,6 +28,8 @@ const path = require('node:path');
 const zlib = require('node:zlib');
 const process = require('node:process');
 
+const dataUriPrefix = 'data:application/octet-stream;base64,';
+
 const config = {
   oldDirName: 'functions',
   newDirName: 'funcs',
@@ -44,46 +46,59 @@ const config = {
   ],
 };
 
-// Decodes and decompresses the TypeDoc data
-function decodeTypeDocData(encodedData) {
+function zlibAsync(operation, buffer, errorLabel) {
   return new Promise((resolve, reject) => {
-    const base64Data = encodedData.replace(
-      /^data:application\/octet-stream;base64,/,
-      '',
-    );
-    const buffer = Buffer.from(base64Data, 'base64');
-
-    zlib.gunzip(buffer, (err, decompressed) => {
+    operation(buffer, (err, data) => {
       if (err) {
-        reject(new Error(`Failed to decompress data: ${err.message}`));
+        reject(new Error(`Failed to ${errorLabel} data: ${err.message}`));
         return;
       }
-
-      try {
-        const jsonData = JSON.parse(decompressed.toString('utf-8'));
-        resolve(jsonData);
-      } catch (parseError) {
-        reject(new Error(`Failed to parse JSON: ${parseError.message}`));
-      }
+      resolve(data);
     });
   });
 }
 
+function getTypeDocDataFormat(encodedData) {
+  return encodedData.startsWith(dataUriPrefix)
+    ? 'gzip-data-uri'
+    : 'deflate-base64';
+}
+
+// Decodes and decompresses the TypeDoc data
+async function decodeTypeDocData(encodedData) {
+  const format = getTypeDocDataFormat(encodedData);
+  const base64Data =
+    format === 'gzip-data-uri'
+      ? encodedData.slice(dataUriPrefix.length)
+      : encodedData;
+  const buffer = Buffer.from(base64Data, 'base64');
+  const operation = format === 'gzip-data-uri' ? zlib.gunzip : zlib.inflate;
+  const decompressed = await zlibAsync(operation, buffer, 'decompress');
+
+  try {
+    return {
+      data: JSON.parse(decompressed.toString('utf-8')),
+      format,
+    };
+  } catch (parseError) {
+    throw new Error(`Failed to parse JSON: ${parseError.message}`);
+  }
+}
+
 // Compresses and encodes the TypeDoc data
-function encodeTypeDocData(jsonData) {
-  return new Promise((resolve, reject) => {
-    const jsonString = JSON.stringify(jsonData);
+async function encodeTypeDocData(jsonData, format) {
+  const jsonString = JSON.stringify(jsonData);
+  const operation = format === 'gzip-data-uri' ? zlib.gzip : zlib.deflate;
+  const compressed = await zlibAsync(
+    operation,
+    Buffer.from(jsonString),
+    'compress',
+  );
+  const base64Data = compressed.toString('base64');
 
-    zlib.gzip(jsonString, (err, compressed) => {
-      if (err) {
-        reject(new Error(`Failed to compress data: ${err.message}`));
-        return;
-      }
-
-      const base64Data = compressed.toString('base64');
-      resolve(`data:application/octet-stream;base64,${base64Data}`);
-    });
-  });
+  return format === 'gzip-data-uri'
+    ? `${dataUriPrefix}${base64Data}`
+    : base64Data;
 }
 
 // Recursively updates URLs in the data
@@ -117,13 +132,13 @@ async function updateDataFile(filePath, windowKey) {
   }
   const encodedData = match[1];
 
-  const decodedData = await decodeTypeDocData(encodedData);
+  const { data: decodedData, format } = await decodeTypeDocData(encodedData);
   const updatedData = updateUrls(
     decodedData,
     config.oldDirName,
     config.newDirName,
   );
-  const newEncodedData = await encodeTypeDocData(updatedData);
+  const newEncodedData = await encodeTypeDocData(updatedData, format);
   const newFileContent = `window.${windowKey} = "${newEncodedData}"`;
   await fsp.writeFile(filePath, newFileContent);
   console.log(`${windowKey} updated successfully`);
@@ -213,7 +228,17 @@ async function main() {
   }
 }
 
-main().catch(e => {
-  console.error(`Error: ${e.message}`);
-  process.exit(1);
-});
+module.exports = {
+  decodeTypeDocData,
+  encodeTypeDocData,
+  updateHtmlContentLinks,
+  updateMarkdownContentLinks,
+  updateUrls,
+};
+
+if (require.main === module) {
+  main().catch(e => {
+    console.error(`Error: ${e.message}`);
+    process.exit(1);
+  });
+}

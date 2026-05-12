@@ -45,10 +45,10 @@
     "ts-blank-space": "^0.6.2",
     "ts-morph": "^27.0.2",
     "type-coverage": "^2.29.7",
-    "typedoc": "^0.26.7",
-    "typedoc-plugin-markdown": "^4.2.1",
-    "typescript": "~6.0.1-rc",
-    "typescript-eslint": "^8.57.1"
+    "typedoc": "^0.28.19",
+    "typedoc-plugin-markdown": "^4.11.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.59.2"
   },
   "resolutions": {
     "@agoric/wallet-ui@0.1.3-solo.0": "patch:@agoric/wallet-ui@npm%3A0.1.3-solo.0#~/.yarn/patches/@agoric-wallet-ui-npm-0.1.3-solo.0-00666f4b09.patch",
