@@ -12,9 +12,6 @@
  * 2. updates generated urls in html files to reference new url path
  * 3. updates base64 encoded navigation and search data to reference new url path
  *
- * If an `md` argument is supplied - versus the optional default `html` document -
- * a different set of logic will run to update paths are links for markdown files.
- *
  * See https://github.com/TypeStrong/typedoc/issues/2111 for more solutions
  * on how to workaround this.
  *
@@ -176,27 +173,6 @@ async function updateFiles(dir, fileExtension, updateFunction) {
 }
 
 /**
- * Updates content in Markdown files
- * @param {string} content - The Markdown content to update
- * @returns {string} - The updated Markdown content
- */
-function updateMarkdownContentLinks(content) {
-  return (
-    content
-      // Update links like [text](functions/file.md)
-      .replace(
-        new RegExp(`\\[(.*?)\\]\\(${config.oldDirName}/`, 'g'),
-        `[$1](${config.newDirName}/`,
-      )
-      // Update links like [text](../functions/file.md)
-      .replace(
-        new RegExp(`\\[(.*?)\\]\\(\\.\\./${config.oldDirName}/`, 'g'),
-        `[$1](../${config.newDirName}/`,
-      )
-  );
-}
-
-/**
  * Updates content in HTML files
  * @param {string} content - The HTML content to update
  * @returns {string} - The updated HTML content
@@ -212,19 +188,9 @@ function updateHtmlContentLinks(content) {
  * Main function to run the script
  */
 async function main() {
-  const fileType = process.argv[2] || 'html';
-  await null;
-  switch (fileType) {
-    case 'html':
-      await updateFiles(config.apiDocsDir, '.html', updateHtmlContentLinks);
-      for (const dataFile of config.dataFiles) {
-        await updateDataFile(dataFile.path, dataFile.windowKey);
-      }
-      return;
-    case 'md':
-      return updateFiles(config.apiDocsDir, '.md', updateMarkdownContentLinks);
-    default:
-      throw new Error('Invalid file type. Use "html" or "md".');
+  await updateFiles(config.apiDocsDir, '.html', updateHtmlContentLinks);
+  for (const dataFile of config.dataFiles) {
+    await updateDataFile(dataFile.path, dataFile.windowKey);
   }
 }
 
@@ -232,7 +198,6 @@ module.exports = {
   decodeTypeDocData,
   encodeTypeDocData,
   updateHtmlContentLinks,
-  updateMarkdownContentLinks,
   updateUrls,
 };
 

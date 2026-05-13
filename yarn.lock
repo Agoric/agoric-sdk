@@ -1045,7 +1045,6 @@ __metadata:
     ts-morph: "npm:^27.0.2"
     type-coverage: "npm:^2.29.7"
     typedoc: "npm:^0.28.19"
-    typedoc-plugin-markdown: "npm:^4.11.0"
     typescript: "npm:~6.0.3"
     typescript-eslint: "npm:^8.59.2"
   dependenciesMeta:
@@ -18144,15 +18143,6 @@ __metadata:
     possible-typed-array-names: "npm:^1.0.0"
     reflect.getprototypeof: "npm:^1.0.6"
   checksum: 10c0/e38f2ae3779584c138a2d8adfa8ecf749f494af3cd3cdafe4e688ce51418c7d2c5c88df1bd6be2bbea099c3f7cea58c02ca02ed438119e91f162a9de23f61295
-  languageName: node
-  linkType: hard
-
-"typedoc-plugin-markdown@npm:^4.11.0":
-  version: 4.11.0
-  resolution: "typedoc-plugin-markdown@npm:4.11.0"
-  peerDependencies:
-    typedoc: 0.28.x
-  checksum: 10c0/03374acfd0b5bd5af13198c043ffc31324b097647f5ffd92959647a9a277f0ece665331ff6a650ddaefdf9ff33928e138c5483e7cddbac830eb77e69b6067803
   languageName: node
   linkType: hard
 

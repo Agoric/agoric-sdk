@@ -154,8 +154,6 @@ jobs:
       # landing on master
       - name: build API docs
         run: yarn docs
-      - name: build API docs in markdown
-        run: yarn docs:markdown-for-agoric-documentation-repo
 
   # Build the package lockfiles, and check that they are clean.
   check-lockfiles:
