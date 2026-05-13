@@ -43,6 +43,18 @@ export const PROD_NETWORK: NetworkSpec = harden({
       protocol: 'Beefy',
     },
     {
+      pool: 'ERC4626_morphoAlphaUsdcCore_Ethereum',
+      chain: 'Ethereum',
+      protocol: 'ERC4626',
+      blockDepositReason: 'AT_CAPACITY',
+    },
+    {
+      pool: 'ERC4626_morphoClearstarUsdcReactor_Ethereum',
+      chain: 'Ethereum',
+      protocol: 'ERC4626',
+      blockWithdrawReason: 'LOW_LIQUIDITY',
+    },
+    {
       pool: 'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
       chain: 'Ethereum',
       protocol: 'ERC4626',
