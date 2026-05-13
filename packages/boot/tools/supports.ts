@@ -120,18 +120,14 @@ const makeConfigCacheKey = ({
   defaultManagerType: ManagerType;
   discriminator: string;
   configOverrides: Partial<SwingSetConfig>;
-}) => {
-  const normalizedOverrides = JSON.parse(
-    JSON.stringify(configOverrides ?? {}),
-  ) as Partial<SwingSetConfig>;
-  return JSON.stringify({
+}) =>
+  JSON.stringify({
     bundleDir,
     configPath,
     defaultManagerType,
     discriminator,
-    configOverrides: normalizedOverrides,
+    configOverrides: configOverrides ?? {},
   });
-};
 
 // Releases are immutable, so we can cache them.
 // Doesn't help in CI but speeds up local development.
@@ -187,10 +183,6 @@ const keysToObject = <K extends PropertyKey, V>(
   return Object.fromEntries(keys.map((key, i) => [key, valueMaker(key, i)]));
 };
 
-/**
- * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of
- * strings.
- */
 /**
  * Compare two arrays of property keys for equality in a way that's more readable
  * in AVA test output than the default t.deepEqual().
