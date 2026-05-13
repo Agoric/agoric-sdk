@@ -820,6 +820,30 @@ test('solver regressions', async t => {
   assertPlanFlow(t, 'ymax0 portfolio35 flow76', ymax0Portfolio35Flow76.flow, [
     makeMovementDesc('@Avalanche', 'Aave_Avalanche', 3900011n),
   ]);
+
+  // 2026-05-13T17:42Z
+  const portfolio195Flow2 = await planDepositToAllocations({
+    ...plannerContext,
+    targetAllocation: {
+      Aave_Avalanche: 34n,
+      Compound_Base: 33n,
+      Compound_Optimism: 33n,
+    },
+    currentBalances: {},
+    amount: makeDeposit(1500000000n),
+    fromChain: 'Ethereum',
+  });
+  assertPlanFlow(t, 'portfolio195 flow2', portfolio195Flow2.flow, [
+    makeMovementDesc('+Ethereum', '@Ethereum', scale6(1500)),
+    makeMovementDesc('@Ethereum', '@agoric', scale6(1500)),
+    makeMovementDesc('@agoric', '@noble', scale6(1500)),
+    makeMovementDesc('@noble', '@Avalanche', scale6(510)),
+    makeMovementDesc('@noble', '@Base', scale6(495)),
+    makeMovementDesc('@noble', '@Optimism', scale6(495)),
+    makeMovementDesc('@Avalanche', 'Aave_Avalanche', scale6(510)),
+    makeMovementDesc('@Optimism', 'Compound_Optimism', scale6(495)),
+    makeMovementDesc('@Base', 'Compound_Base', scale6(495)),
+  ]);
 });
 
 test('planRebalanceToAllocations regression - multiple sources', async t => {
@@ -1214,11 +1238,11 @@ test('@<ChainName> USDC target allocations', async t => {
     // t.log(readableSteps(plan.flow, depositBrand));
     arrayIsLike(t, plan?.flow, [
       makeMovementDesc('Aave_Avalanche', '@Avalanche', scale6(209.8)),
+      makeMovementDesc('@Avalanche', '@agoric', scale6(209.8)),
       makeMovementDesc('Aave_Base', '@Base', scale6(275.5)),
-      makeMovementDesc('@Base', '@Avalanche', scale6(275.5)),
+      makeMovementDesc('@Base', '@agoric', scale6(275.5)),
       makeMovementDesc('Aave_Optimism', '@Optimism', scale6(473.5)),
       makeMovementDesc('@Optimism', '@agoric', scale6(473.5)),
-      makeMovementDesc('@Avalanche', '@agoric', scale6(485.3)),
       makeMovementDesc('@agoric', '@noble', scale6(958.8)),
       makeMovementDesc('@noble', '@Ethereum', scale6(958.8)),
       makeMovementDesc('@Ethereum', 'Aave_Ethereum', scale6(958.8)),

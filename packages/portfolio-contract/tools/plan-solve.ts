@@ -485,7 +485,7 @@ export const solveRebalance = async (
   // Then, derive a new model with minor-unit integer amount values against the
   // selected subgraph.
   // This two-step approach seems to dodge some IEEE 754 rounding issues.
-  const pickSolution = solveLPModel(model, graph, { precision: 1e-15 });
+  const pickSolution = solveLPModel(model, graph, { precision: 1e-6 });
   const refinedModel = refineModel(model, graph, pickSolution);
   const solution = solveLPModel(refinedModel, graph, { precision: 1e-3 });
 
