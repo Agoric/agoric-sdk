@@ -3251,6 +3251,38 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
   const { log } = offer;
   t.log('calls:', log.map(msg => msg._method).join(', '));
   t.snapshot(log, 'call log');
+
+  // Verify destinationCaller in the CCTPv2 depositForBurn memo
+  const memoEntries = log.filter(
+    (e: any) => e._method === 'transfer' && e.opts?.memo,
+  );
+  let verified = false;
+  for (const entry of memoEntries) {
+    let decoded;
+    try {
+      decoded = decodeFunctionCall(entry.opts!.memo, [
+        'approve(address,uint256)',
+        'depositForBurn(uint256,uint32,bytes32,address,bytes32,uint256,uint32)',
+      ]);
+    } catch {
+      continue;
+    }
+    const depositCall = decoded.calls[1];
+    if (depositCall.functionName !== 'depositForBurn') {
+      continue;
+    }
+    // destinationCaller is arg[4] in CCTPv2 depositForBurn
+    const destCaller = depositCall.args[4];
+    const expectedCaller = `0x${'0'.repeat(24)}70997970c51812dc3a010c7d01b50e0d17dc79c8`;
+    t.is(
+      destCaller.toLowerCase(),
+      expectedCaller,
+      'CCTPv2 depositForBurn destinationCaller matches managed relayer address',
+    );
+    verified = true;
+    break;
+  }
+  t.true(verified, 'found CCTPv2 depositForBurn call with destinationCaller');
   await documentStorageSchema(t, storage, docOpts);
 });
 

@@ -544,6 +544,10 @@ const mainnetTokenMessengerV2 = (rows =>
 
 /**
  * Mainnet configuration with real contract addresses
+ *
+ * FIXME: Populate cctpRelayer per-chain once PAK-354 provides managed
+ * relayer addresses. Until then, CCTPv2 falls back to ZERO_BYTES32
+ * (any caller allowed).
  * @type {EVMContractAddressesMap}
  */
 const mainnetContracts = {

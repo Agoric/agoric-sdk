@@ -445,6 +445,7 @@ export const provideEVMAccountWithPermit = (
     axelarIds,
     chainInfo,
     chainName,
+    contracts,
     feeAccount,
     gmpAddresses,
     gmpChain: gmp.chain,

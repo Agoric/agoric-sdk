@@ -56,7 +56,7 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
-import type { PoolKey } from './type-guards.ts';
+import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
   provideEVMAccount as provideEVMLegacyAccount,
@@ -78,6 +78,7 @@ export type EVMContext = {
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
   addresses: EVMContractAddresses;
+  contracts: EVMContractAddressesMap;
   gmpAddresses: GmpAddresses;
   axelarIds: AxelarId;
   poolKey?: PoolKey;
@@ -308,14 +309,18 @@ export const CCTPv2 = {
         ? FINALITY_THRESHOLD.CONFIRMED
         : FINALITY_THRESHOLD.FINALIZED;
 
+    const destAddresses = ctx.contracts[dest.chainName];
+    const destinationCaller: `0x${string}` = destAddresses.cctpRelayer
+      ? `0x${encodeHex(leftPadEthAddressTo32Bytes(destAddresses.cctpRelayer))}`
+      : ZERO_BYTES32;
+
     usdc.approve(tokenMessengerV2, amount.value);
     tm.depositForBurn(
       amount.value,
       destDomain,
       mintRecipient,
       addresses.usdc,
-      // destinationCaller: bytes32(0) = any caller allowed
-      ZERO_BYTES32,
+      destinationCaller,
       maxFee,
       minFinalityThreshold,
     );
