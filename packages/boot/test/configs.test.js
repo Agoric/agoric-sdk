@@ -38,11 +38,18 @@ const CONFIG_FILES = [
 
 const NON_UPGRADEABLE_VATS = ['pegasus', 'mints'];
 
-const makeMemoizedAsync = fn => {
+// Like `makeAtomicProvider`, but tolerates non-Passable cached values
+// (e.g. Maps from `extractCoreProposalBundles`). Rejected promises are
+// evicted so the next call retries instead of replaying the failure.
+const makeMemoizedPromise = makeFn => {
   const cache = new Map();
   return key => {
     if (!cache.has(key)) {
-      cache.set(key, fn(key));
+      const p = makeFn(key).catch(err => {
+        cache.delete(key);
+        throw err;
+      });
+      cache.set(key, p);
     }
     return cache.get(key);
   };
@@ -83,15 +90,15 @@ const makeTestContext = async () => {
   const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
 
-  const getConfigPath = makeMemoizedAsync(async configName => {
+  const getConfigPath = makeMemoizedPromise(async configName => {
     const fullPath = await importConfig(configName);
     configPaths.set(configName, fullPath);
     return fullPath;
   });
-  const getConfigText = makeMemoizedAsync(async configName =>
+  const getConfigText = makeMemoizedPromise(async configName =>
     fsPromises.readFile(await getConfigPath(configName), 'utf-8'),
   );
-  const getProdConfig = makeMemoizedAsync(async configName => {
+  const getProdConfig = makeMemoizedPromise(async configName => {
     const config = await loadSwingsetConfigFile(
       await getConfigPath(configName),
     );
@@ -100,7 +107,7 @@ const makeTestContext = async () => {
     }
     return config;
   });
-  const getProposalBundles = makeMemoizedAsync(async configName => {
+  const getProposalBundles = makeMemoizedPromise(async configName => {
     const config = await getProdConfig(configName);
     const { coreProposals } = /** @type {any} */ (config);
     const proposals = coreProposals || [];
