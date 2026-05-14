@@ -74,7 +74,7 @@ import type { GovernancePublishedPathTypes } from '@agoric/governance';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { IBCDowncallMethod, IBCMethod } from '@agoric/vats';
+import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { ERef } from '@agoric/vow';
 import type { EProxy } from '@endo/eventual-send';
@@ -120,18 +120,14 @@ const makeConfigCacheKey = ({
   defaultManagerType: ManagerType;
   discriminator: string;
   configOverrides: Partial<SwingSetConfig>;
-}) => {
-  const normalizedOverrides = JSON.parse(
-    JSON.stringify(configOverrides ?? {}),
-  ) as Partial<SwingSetConfig>;
-  return JSON.stringify({
+}) =>
+  JSON.stringify({
     bundleDir,
     configPath,
     defaultManagerType,
     discriminator,
-    configOverrides: normalizedOverrides,
+    configOverrides: configOverrides ?? {},
   });
-};
 
 // Releases are immutable, so we can cache them.
 // Doesn't help in CI but speeds up local development.
@@ -187,10 +183,6 @@ const keysToObject = <K extends PropertyKey, V>(
   return Object.fromEntries(keys.map((key, i) => [key, valueMaker(key, i)]));
 };
 
-/**
- * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of
- * strings.
- */
 /**
  * Compare two arrays of property keys for equality in a way that's more readable
  * in AVA test output than the default t.deepEqual().
@@ -1048,6 +1040,23 @@ const restoreFakeStorage = (
  * @param options.swingStorePath - Optional persistent swing-store directory path
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
+export type MakeSwingsetTestKitOptions = {
+  configSpecifier?: string;
+  label?: string | undefined;
+  storage?: FakeStorage | undefined;
+  verbose?: boolean;
+  slogFile?: string | undefined;
+  profileVats?: string[];
+  debugVats?: string[];
+  defaultManagerType?: ManagerType;
+  harness?: RunHarness | undefined;
+  proposalBuildMode?: ProposalBuildMode;
+  resolveBase?: string;
+  configOverrides?: Partial<SwingSetConfig>;
+  snapshot?: SwingsetTestKitSnapshot | undefined;
+  swingStorePath?: string | undefined;
+};
+
 export const makeSwingsetTestKit = async <
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
@@ -1071,7 +1080,7 @@ export const makeSwingsetTestKit = async <
     configOverrides = {} as Partial<SwingSetConfig>,
     snapshot = undefined as SwingsetTestKitSnapshot | undefined,
     swingStorePath = undefined as string | undefined,
-  } = {},
+  }: MakeSwingsetTestKitOptions = {},
 ) => {
   const storage = storageOpt || restoreFakeStorage(snapshot?.storageSnapshot);
   const importSpec = createRequire(resolveBase).resolve;
@@ -1456,33 +1465,47 @@ export const makeSwingsetTestKit = async <
     evals: materials.flatMap(e => e.evals),
     bundles: materials.flatMap(e => e.bundles),
   });
+  const installedProposalBundleIDs = new Set<string>();
+  let coreEvalBridgeHandlerP: Promise<BridgeHandler> | undefined;
+
+  const getProposalBundleID = (bundle: ProposalMaterials['bundles'][number]) =>
+    'endoZipBase64Sha512' in bundle
+      ? `b1-${bundle.endoZipBase64Sha512}`
+      : JSON.stringify(bundle);
 
   const evalProposal = async (proposalP: ERef<ProposalMaterials>) => {
     const { EV } = runUtils;
 
     const proposal = harden(
-      await profiler.measure(
-        'makeSwingsetTestKit.proposal.resolve',
-        () => proposalP,
+      await profiler.measure('makeSwingsetTestKit.proposal.resolve', () =>
+        Promise.resolve(proposalP),
       ),
     );
 
-    await profiler.measure(
+    const installedBundleCount = await profiler.measure(
       'makeSwingsetTestKit.proposal.installBundles',
       async () => {
-        const seenBundleHashes = new Set<string>();
+        let installed = 0;
         for (const bundle of proposal.bundles) {
-          const bundleHash = bundle.endoZipBase64Sha512 ?? bundle.endoZipBase64;
-          if (seenBundleHashes.has(bundleHash)) {
+          const bundleID = getProposalBundleID(bundle);
+          if (installedProposalBundleIDs.has(bundleID)) {
             continue;
           }
-          seenBundleHashes.add(bundleHash);
           await controller.validateAndInstallBundle(bundle);
+          installedProposalBundleIDs.add(bundleID);
+          installed += 1;
         }
+        return installed;
       },
       { bundleCount: proposal.bundles.length },
     );
-    log('installed', proposal.bundles.length, 'bundles');
+    log(
+      'installed',
+      installedBundleCount,
+      'new bundles from',
+      proposal.bundles.length,
+      'proposal bundles',
+    );
 
     log('executing proposal');
     const bridgeMessage = {
@@ -1490,9 +1513,13 @@ export const makeSwingsetTestKit = async <
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-      'coreEvalBridgeHandler',
-    );
+    if (!coreEvalBridgeHandlerP) {
+      coreEvalBridgeHandlerP = profiler.measure(
+        'makeSwingsetTestKit.proposal.getCoreEvalBridgeHandler',
+        () => EV.vat('bootstrap').consumeItem('coreEvalBridgeHandler'),
+      );
+    }
+    const coreEvalBridgeHandler = await coreEvalBridgeHandlerP;
     await profiler.measure(
       'makeSwingsetTestKit.proposal.executeCoreEval',
       () => EV(coreEvalBridgeHandler).fromBridge(bridgeMessage),
@@ -1717,17 +1744,12 @@ export const makeSwingsetHarness = ({
 };
 
 /**
- *
- * @param {string} mt
- * @returns {asserts mt is ManagerType}
- */
-/**
  * Validates that a string is a valid SwingSet manager type.
  *
  * @param mt - The manager type string to validate
  * @throws If the string is not a valid manager type
  */
-export function insistManagerType(mt) {
+export function insistManagerType(mt: string): asserts mt is ManagerType {
   assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
 }
 

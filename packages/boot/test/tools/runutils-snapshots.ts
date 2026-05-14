@@ -15,6 +15,10 @@ const SNAPSHOT_LOCK_WAIT_MS = 15 * 60_000;
 const here = dirname(fileURLToPath(import.meta.url));
 const snapshotDir = resolve(here, '../cache/runutils');
 
+let kernelBundleP: ReturnType<typeof buildKernelBundle> | undefined;
+// Bundling `kernel.js` takes ~1s; reuse the result across snapshot ops.
+const getKernelBundle = () => (kernelBundleP ??= buildKernelBundle());
+
 export const RUNUTILS_SNAPSHOT_SPECS = {
   'demo-base': {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
@@ -107,7 +111,7 @@ export const availableRunUtilsSnapshotNames = (): RunUtilsSnapshotName[] =>
  * direct dependency on `@agoric/swingset-vat`.
  */
 export const getCurrentKernelBundleSha512 = async (): Promise<string> =>
-  (await buildKernelBundle()).endoZipBase64Sha512;
+  (await getKernelBundle()).endoZipBase64Sha512;
 
 const getSnapshotSpec = (name: RunUtilsSnapshotName): RunUtilsSnapshotSpec =>
   RUNUTILS_SNAPSHOT_SPECS[name];
@@ -146,20 +150,21 @@ export const computeRunUtilsSnapshotFingerprint = async (
   hash.update(`snapshot-version:${SNAPSHOT_VERSION}\n`);
   hash.update(`snapshot-name:${name}\n`);
   const effectiveKernelBundleSha512 =
-    kernelBundleSha512 || (await buildKernelBundle()).endoZipBase64Sha512;
+    kernelBundleSha512 || (await getKernelBundle()).endoZipBase64Sha512;
   hash.update(`kernel-bundle:${effectiveKernelBundleSha512}\n`);
 
   const inputPaths = getSnapshotInputPaths(name);
-  for (const inputPath of inputPaths) {
+  const fileHashes = await Promise.all(inputPaths.map(hashFile));
+  for (const [i, inputPath] of inputPaths.entries()) {
     hash.update(`path:${inputPath}\n`);
-    hash.update(`hash:${await hashFile(inputPath)}\n`);
+    hash.update(`hash:${fileHashes[i]}\n`);
   }
 
   return hash.digest('hex');
 };
 
 export const computeRunUtilsSnapshotFingerprints = async () => {
-  const kernelBundleSha512 = (await buildKernelBundle()).endoZipBase64Sha512;
+  const kernelBundleSha512 = (await getKernelBundle()).endoZipBase64Sha512;
   const names = availableRunUtilsSnapshotNames().sort();
   return Object.fromEntries(
     await Promise.all(
@@ -187,7 +192,7 @@ export const createRunUtilsSnapshot = async (
   const spec = getSnapshotSpec(name);
   const path = snapshotPath(name);
   const swingStorePath = snapshotSwingStorePath(name);
-  const kernelBundle = await buildKernelBundle();
+  const kernelBundle = await getKernelBundle();
   const snapshotFingerprint = await computeRunUtilsSnapshotFingerprint(
     name,
     kernelBundle.endoZipBase64Sha512,
@@ -239,7 +244,7 @@ export const loadRunUtilsSnapshot = async (
       `Unsupported snapshot version ${metadata.version}, expected ${SNAPSHOT_VERSION}`,
     );
   }
-  const currentKernelBundleSha512 = (await buildKernelBundle())
+  const currentKernelBundleSha512 = (await getKernelBundle())
     .endoZipBase64Sha512;
   const expectedSnapshotFingerprint = await computeRunUtilsSnapshotFingerprint(
     name,
