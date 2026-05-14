@@ -39,7 +39,6 @@ concurrency:
 
 jobs:
   pre_check:
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.ref != 'codex/swing-store-ava-diag-flake' }}
     uses: ./.github/workflows/pre-check-integration.yml
 
   getting-started-flag:

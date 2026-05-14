@@ -46,9 +46,9 @@
       "test/**/*.test.*"
     ],
     "require": [
-      "@endo/init/debug.js",
-      "./test/ava-process-diagnostics.js"
+      "@endo/init/debug.js"
     ],
+    "workerThreads": false,
     "timeout": "2m"
   },
   "typeCoverage": {
