@@ -112,7 +112,7 @@ jobs:
           git diff -- package.json packages/swing-store/package.json | sed -n '1,220p'
 
       - name: Install dependencies
-        run: yarn install
+        run: yarn install --no-immutable
 
       - name: Build workspace
         run: yarn build
