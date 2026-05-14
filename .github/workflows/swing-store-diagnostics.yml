@@ -35,7 +35,7 @@ jobs:
             worker-threads: 'false'
     env:
       AVA_VERSION: ${{ matrix.ava-version }}
-      ITERATIONS: '10'
+      ITERATIONS: '20'
       NODE_V8_COVERAGE: coverage
       SCENARIO: ${{ matrix.scenario }}
       WORKER_THREADS: ${{ matrix.worker-threads }}
@@ -122,20 +122,22 @@ jobs:
           set +e
           trap 'echo "swing-store diag shell received SIGHUP"' HUP
           diag_module="$PWD/packages/swing-store/test/ava-process-diagnostics.js"
-          export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
 
           cd packages/swing-store || exit $?
-          ava_pkg=$(node -e "const p = require.resolve('ava/package.json'); console.log(p)")
-          ava_version=$(node -e "const p = require.resolve('ava/package.json'); console.log(require(p).version)")
-          ava_cli=$(node -e "const path = require('node:path'); const p = require.resolve('ava/package.json'); console.log(path.join(path.dirname(p), 'entrypoints/cli.mjs'))")
+          ava_cli="../../node_modules/ava/entrypoints/cli.mjs"
+          if [ ! -f "${ava_cli}" ]; then
+            echo "missing AVA CLI at ${ava_cli}"
+            exit 1
+          fi
+          ava_version=$(node "${ava_cli}" --version)
           configured_worker_threads=$(node -e "const p = require('./package.json'); console.log(Object.hasOwn(p.ava, 'workerThreads') ? String(p.ava.workerThreads) : 'default')")
+          export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
           output="_testoutput-${SCENARIO}.txt"
 
           {
             echo "scenario: ${SCENARIO}"
             echo "requested ava: ${AVA_VERSION}"
             echo "resolved ava: ${ava_version}"
-            echo "ava package: ${ava_pkg}"
             echo "ava cli: ${ava_cli}"
             echo "workerThreads config: ${configured_worker_threads}"
             echo "node: $(node -v)"
@@ -208,5 +210,4 @@ jobs:
           name: swing-store-${{ matrix.scenario }}
           path: |
             packages/swing-store/_testoutput-*.txt
-            packages/swing-store/coverage
           if-no-files-found: ignore
