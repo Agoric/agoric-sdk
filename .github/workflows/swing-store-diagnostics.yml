@@ -17,16 +17,28 @@ defaults:
 
 jobs:
   diagnostics:
-    name: swing-store (node-${{ matrix.node-version }})
+    name: ${{ matrix.scenario }}
+    timeout-minutes: 45
     runs-on: ubuntu-latest-16core
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['20', '22']
+        include:
+          - scenario: ava-6.4.1-workers
+            ava-version: '6.4.1'
+            worker-threads: default
+          - scenario: ava-6.4.0-workers
+            ava-version: '6.4.0'
+            worker-threads: default
+          - scenario: ava-6.4.1-child-process
+            ava-version: '6.4.1'
+            worker-threads: 'false'
     env:
-      AGORIC_AVA_USE_TAP: true
+      AVA_VERSION: ${{ matrix.ava-version }}
+      ITERATIONS: '10'
       NODE_V8_COVERAGE: coverage
-      TEST_COLLECT: 'tee -a _testoutput.txt'
+      SCENARIO: ${{ matrix.scenario }}
+      WORKER_THREADS: ${{ matrix.worker-threads }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,10 +46,70 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '20'
 
       - name: Enable corepack
         run: corepack enable
+
+      - name: Configure AVA experiment
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { readFileSync, writeFileSync } from 'node:fs';
+
+          const { AVA_VERSION: avaVersion, WORKER_THREADS: workerThreads } =
+            process.env;
+          const packageJsons = execFileSync(
+            'git',
+            [
+              'ls-files',
+              'package.json',
+              'packages/*/package.json',
+              'services/*/package.json',
+              'golang/*/package.json',
+            ],
+            { encoding: 'utf8' },
+          )
+            .trim()
+            .split('\n')
+            .filter(Boolean);
+
+          for (const file of packageJsons) {
+            const pkg = JSON.parse(readFileSync(file, 'utf8'));
+            let changed = false;
+
+            for (const section of ['dependencies', 'devDependencies']) {
+              if (pkg[section]?.ava) {
+                pkg[section].ava = avaVersion;
+                changed = true;
+              }
+            }
+
+            if (file === 'package.json' && pkg.resolutions) {
+              for (const key of Object.keys(pkg.resolutions)) {
+                if (key.startsWith('ava@')) {
+                  delete pkg.resolutions[key];
+                  changed = true;
+                }
+              }
+            }
+
+            if (file === 'packages/swing-store/package.json') {
+              pkg.ava ??= {};
+              if (workerThreads === 'false') {
+                pkg.ava.workerThreads = false;
+              } else {
+                delete pkg.ava.workerThreads;
+              }
+              changed = true;
+            }
+
+            if (changed) {
+              writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+            }
+          }
+          NODE
+          git diff -- package.json packages/swing-store/package.json | sed -n '1,220p'
 
       - name: Install dependencies
         run: yarn install
@@ -53,38 +125,88 @@ jobs:
           export NODE_OPTIONS="--require=$diag_module ${NODE_OPTIONS:-}"
 
           cd packages/swing-store || exit $?
-          node ../../node_modules/ava/entrypoints/cli.mjs > >(tee -a _testoutput.txt) 2>&1
-          rc=$?
+          ava_pkg=$(node -e "const p = require.resolve('ava/package.json'); console.log(p)")
+          ava_version=$(node -e "const p = require.resolve('ava/package.json'); console.log(require(p).version)")
+          ava_cli=$(node -e "const path = require('node:path'); const p = require.resolve('ava/package.json'); console.log(path.join(path.dirname(p), 'entrypoints/cli.mjs'))")
+          configured_worker_threads=$(node -e "const p = require('./package.json'); console.log(Object.hasOwn(p.ava, 'workerThreads') ? String(p.ava.workerThreads) : 'default')")
+          output="_testoutput-${SCENARIO}.txt"
 
-          if [ "$rc" -ne 0 ]; then
-            echo "::group::swing-store failure diagnostics"
-            echo "test command exit code: $rc"
-            if [ "$rc" -eq 129 ]; then
-              echo "exit 129 indicates SIGHUP"
-            fi
-            echo "NODE_OPTIONS: ${NODE_OPTIONS}"
+          {
+            echo "scenario: ${SCENARIO}"
+            echo "requested ava: ${AVA_VERSION}"
+            echo "resolved ava: ${ava_version}"
+            echo "ava package: ${ava_pkg}"
+            echo "ava cli: ${ava_cli}"
+            echo "workerThreads config: ${configured_worker_threads}"
             echo "node: $(node -v)"
             echo "yarn: $(yarn -v)"
-            echo "pwd: $(pwd)"
-            echo "--- ulimit -a ---"
-            ulimit -a || true
-            echo "--- process tree (pstree) ---"
-            pstree -pal "$$" || true
-            echo "--- process list (filtered for test processes) ---"
-            ps -eo pid,ppid,pgid,sid,stat,etime,pcpu,pmem,comm,args | grep -E '(PID|ava|node|yarn|tee)' || true
-            echo "--- last 200 lines of _testoutput.txt ---"
-            tail -n 200 _testoutput.txt || true
-            echo "::endgroup::"
-          fi
+            echo "NODE_OPTIONS: ${NODE_OPTIONS}"
+            echo "NODE_V8_COVERAGE: ${NODE_V8_COVERAGE}"
+            echo "iterations: ${ITERATIONS}"
+          } | tee "${output}"
 
-          exit "$rc"
+          rm -rf coverage
+          failures=0
+          rc129=0
+          rc139=0
+          rc_other=0
+
+          for i in $(seq 1 "${ITERATIONS}"); do
+            echo "::group::${SCENARIO} iteration ${i}" | tee -a "${output}"
+            node "${ava_cli}" --tap > >(tee -a "${output}") 2>&1
+            rc=$?
+            echo "iteration ${i} exit code: ${rc}" | tee -a "${output}"
+            echo "::endgroup::"
+
+            if [ "${rc}" -ne 0 ]; then
+              failures=$((failures + 1))
+              case "${rc}" in
+                129) rc129=$((rc129 + 1)) ;;
+                139) rc139=$((rc139 + 1)) ;;
+                *) rc_other=$((rc_other + 1)) ;;
+              esac
+
+              echo "::group::${SCENARIO} failure diagnostics iteration ${i}"
+              echo "test command exit code: ${rc}"
+              if [ "${rc}" -eq 129 ]; then
+                echo "exit 129 indicates SIGHUP"
+              fi
+              if [ "${rc}" -eq 139 ]; then
+                echo "exit 139 indicates SIGSEGV"
+              fi
+              echo "--- ulimit -a ---"
+              ulimit -a || true
+              echo "--- coverage files ---"
+              find coverage -maxdepth 1 -name '*.json' -print 2>/dev/null | wc -l || true
+              du -sh coverage 2>/dev/null || true
+              echo "--- process tree (pstree) ---"
+              pstree -pal "$$" || true
+              echo "--- process list (filtered for test processes) ---"
+              ps -eo pid,ppid,pgid,sid,stat,etime,pcpu,pmem,comm,args | grep -E '(PID|ava|node|yarn|tee)' || true
+              echo "--- last 200 lines of ${output} ---"
+              tail -n 200 "${output}" || true
+              echo "::endgroup::"
+            fi
+          done
+
+          {
+            echo "scenario summary: ${SCENARIO}"
+            echo "failures: ${failures}"
+            echo "exit129: ${rc129}"
+            echo "exit139: ${rc139}"
+            echo "exit_other: ${rc_other}"
+          } | tee -a "${output}"
+
+          if [ "${failures}" -ne 0 ]; then
+            exit 1
+          fi
 
       - name: Upload swing-store diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: swing-store-diag-node${{ matrix.node-version }}
+          name: swing-store-${{ matrix.scenario }}
           path: |
-            packages/swing-store/_testoutput.txt
+            packages/swing-store/_testoutput-*.txt
             packages/swing-store/coverage
           if-no-files-found: ignore
