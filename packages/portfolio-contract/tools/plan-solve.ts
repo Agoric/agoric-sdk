@@ -173,7 +173,7 @@ type WeightFns = {
     flowVar: FlowVar,
     pickVar: PickVar,
   ) => { primary: number[]; other: number[] };
-  setWeights: (flowVar: FlowVar, pickVar: PickVar, epsilon: number) => void;
+  setWeights: (flowVar: FlowVar, pickVar: PickVar, epsilon?: number) => void;
 };
 
 const DEFAULT_SECONDARY_WEIGHT_EPSILON = 1e-6;
@@ -185,7 +185,7 @@ const modeFns = new Map(
         primary: [flowVar.variableFeeBps, pickVar.magnifiedFlatFee],
         other: [pickVar.timeSec],
       }),
-      setWeights: (flowVar, pickVar, epsilon) => {
+      setWeights: (flowVar, pickVar, epsilon = 0) => {
         // Fees have full weight; time is weighted by epsilon.
         flowVar.weight = flowVar.variableFeeBps;
         pickVar.weight = pickVar.magnifiedFlatFee + pickVar.timeSec * epsilon;
@@ -196,7 +196,7 @@ const modeFns = new Map(
         primary: [pickVar.timeSec],
         other: [flowVar.variableFeeBps, pickVar.magnifiedFlatFee],
       }),
-      setWeights: (flowVar, pickVar, epsilon) => {
+      setWeights: (flowVar, pickVar, epsilon = 0) => {
         // Fees are weighted by epsilon; time has full weight.
         flowVar.weight = flowVar.variableFeeBps * epsilon;
         pickVar.weight = pickVar.timeSec + pickVar.magnifiedFlatFee * epsilon;
@@ -296,6 +296,9 @@ export const buildLPModel = (
   const maxExpectedFlow = Math.max(
     ...Object.values(graph.supplies).map(x => Math.abs(x) / UNIT_SCALE),
   );
+  // XXX This tiebreaker logic caused too much instability, cf. PAK-395.
+  // For now, consider *only* the primary.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const epsilonWeight =
     Number.isFinite(minPrimaryWeight) && Number.isFinite(maxSecondaryWeight)
       ? minPrimaryWeight / (maxSecondaryWeight * maxExpectedFlow * 100)
@@ -304,7 +307,7 @@ export const buildLPModel = (
     setWeights(
       flowVariables[`via_${id}`],
       pickVariables[`pick_${id}`],
-      epsilonWeight,
+      // epsilonWeight,
     );
     // No arc is free.
     pickVariables[`pick_${id}`].weight += 1;
