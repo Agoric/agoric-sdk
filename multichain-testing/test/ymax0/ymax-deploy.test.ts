@@ -2,7 +2,8 @@
  * @file check whether things are already deployed
  */
 /* global globalThis */
-import anyTest from '@endo/ses-ava/prepare-endo.js';
+import '@endo/init';
+import anyTest from 'ava';
 
 import {
   LOCAL_CONFIG,

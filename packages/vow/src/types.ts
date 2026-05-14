@@ -178,14 +178,24 @@ export type VowTools = {
    * @deprecated use `retryable`
    */
   retriable: RetryableTool;
-  watch: <T = any, TResult1 = T, TResult2 = never, C extends any[] = any[]>(
+  /**
+   * @remarks The watcher type is decoupled from the caller's `watcherArgs`
+   * type. The watcher accepts `any[]` args (since its inferred guard
+   * signature often has `Passable[]` rest args, which would otherwise
+   * propagate to the caller and reject contexts containing `Remote<T>`
+   * references). The caller passes whatever args they want; the watcher
+   * receives them at runtime as whatever its impl typed them.
+   */
+  watch: <T = any, TResult1 = T, TResult2 = never, C extends unknown[] = []>(
     specimenP: EVow<T>,
-    watcher?: Watcher<T, TResult1, TResult2, C> | undefined,
+    watcher?: Watcher<T, TResult1, TResult2, any[]> | undefined,
     ...watcherArgs: C
   ) => Vow<
-    Exclude<TResult1, void> | Exclude<TResult2, void> extends never
-      ? TResult1
-      : Exclude<TResult1, void> | Exclude<TResult2, void>
+    Fulfilled<
+      Exclude<TResult1, void> | Exclude<TResult2, void> extends never
+        ? TResult1
+        : Exclude<TResult1, void> | Exclude<TResult2, void>
+    >
   >;
   /**
    * Shorten `specimenP` until we achieve a final result.

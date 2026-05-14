@@ -1890,6 +1890,15 @@ export default function buildKernel(
           console: devConsole,
           // See https://github.com/Agoric/agoric-sdk/issues/9515
           assert: globalThis.assert,
+          // SES 2.0 strips Float{16,32,64}Array from child compartments
+          // (NaN side-channel). Released device bundles compiled against
+          // SES 1.x evaluate `new Float64Array(1)` at module top level
+          // (e.g. @endo/marshal's encodePassable). Forward the constructors
+          // from the kernel compartment so device imports keep working
+          // on chain replay.
+          Float16Array: globalThis.Float16Array,
+          Float32Array: globalThis.Float32Array,
+          Float64Array: globalThis.Float64Array,
         }),
       });
       noteStartupPhase(

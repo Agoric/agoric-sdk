@@ -9,8 +9,11 @@ import {
 import { setupFakeNetwork } from '@agoric/orchestration/tools/network-fakes.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import type { IBCChannelID } from '@agoric/network/ibc';
-import { makeNameHubKit, type VTransferIBCEvent } from '@agoric/vats';
+import {
+  makeNameHubKit,
+  type IBCChannelID,
+  type VTransferIBCEvent,
+} from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import {
@@ -28,7 +31,7 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
-import { objectMap } from '@endo/patterns';
+import { objectExtendEach } from '@endo/common/object-map.js';
 import type { ExecutionContext } from 'ava';
 import { withChainCapabilities, type ChainInfo } from '../index.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
@@ -260,8 +263,10 @@ export const setupOrchestrationTest = async ({
 
   const chainInfo = harden(() => {
     const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
-    const { ethereum, solana } = objectMap(cctpChainInfo, v => ({
-      ...v,
+    // objectExtendEach preserves the per-key type of cctpChainInfo[K],
+    // intersecting with the { chainId: string } extension at each key.
+    // Plain objectMap would collapse K's correlation to a union.
+    const { ethereum, solana } = objectExtendEach(cctpChainInfo, v => ({
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
       chainId: `${v.namespace}:${v.reference}`,
     }));

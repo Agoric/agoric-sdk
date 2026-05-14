@@ -26,10 +26,9 @@ const bootTestOrder = [
   'test/orchestration/orchestration.test.ts',
   'test/orchestration/restart-contracts.test.ts',
   'test/orchestration/axelar-gmp.test.ts',
-  'test/orchestration/contract-upgrade.test.ts',
   'test/orchestration/lca.test.ts',
   'test/bootstrapTests/vow-offer-results.test.ts',
-  'test/tools/runutils-snapshots.test.ts',
+  'test/configs.test.js',
 
   'test/bootstrapTests/vats-restart.test.ts',
   'test/bootstrapTests/net-ibc-upgrade.test.ts',
@@ -38,9 +37,10 @@ const bootTestOrder = [
   'test/orchestration/vstorage-chain-info.test.ts',
   'test/bootstrapTests/boot-snapshot.test.ts',
 
-  'test/configs.test.js',
+  'test/tools/runutils-snapshots.test.ts',
   'test/tools/create-runutils-snapshot.test.ts',
   'test/tools/proposal-extractor-cache.test.ts',
+  'test/orchestration/contract-upgrade.test.ts',
   'test/tools/ibc/mocks.test.ts',
   'test/upgrading/upgrade-vats.test.ts',
   'test/upgrading/upgrade-contracts.test.js',

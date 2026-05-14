@@ -61,6 +61,12 @@ export const bridgeCoreEval = async allPowers => {
     assert: globalThis.assert,
     Base64: globalThis.Base64, // Present only on XSnap
     URL: globalThis.URL, // Absent only on XSnap
+    // SES 2.0 removed Float{16,32,64}Array from child compartments due to
+    // NaN side-channel concerns. Re-endow them so existing core-eval bundles
+    // compiled against SES 1.x continue to work.
+    Float16Array: globalThis.Float16Array,
+    Float32Array: globalThis.Float32Array,
+    Float64Array: globalThis.Float64Array,
   };
 
   /** @param {BundleCap} bundleCap */

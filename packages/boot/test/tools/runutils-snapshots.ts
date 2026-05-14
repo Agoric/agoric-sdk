@@ -3,11 +3,27 @@ import { promises as fs } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
-import { buildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
+import { buildKernelBundle as rawBuildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
 import {
   makeSwingsetTestKit,
   type SwingsetTestKitSnapshot,
 } from '../../tools/supports.js';
+
+/**
+ * Cache the kernel bundle across invocations within a single test process so
+ * its SHA-512 is stable. `@endo/bundle-source` embeds ZIP timestamps and other
+ * per-call state that makes repeated bundling non-deterministic; caching
+ * prevents that from invalidating a just-written snapshot fingerprint.
+ */
+let cachedKernelBundle: Awaited<
+  ReturnType<typeof rawBuildKernelBundle>
+> | null = null;
+const buildKernelBundle = async () => {
+  if (!cachedKernelBundle) {
+    cachedKernelBundle = await rawBuildKernelBundle();
+  }
+  return cachedKernelBundle;
+};
 
 const SNAPSHOT_VERSION = 1;
 const SNAPSHOT_LOCK_WAIT_MS = 15 * 60_000;

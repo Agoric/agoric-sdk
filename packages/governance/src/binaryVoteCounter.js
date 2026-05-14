@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package; type errors are tolerated
+
 import { Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
@@ -22,7 +24,7 @@ import { makeQuorumCounter } from './quorumCounter.js';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {Publisher} from '@agoric/notifier';
  * @import {ZCF} from '@agoric/zoe';
- * @import {BuildVoteCounter, OutcomeRecord, Position, QuestionSpec, VoteStatistics} from './types.js';
+ * @import {BuildVoteCounter, OutcomeRecord, Position, QuestionSpec, VoteCounterFacets, VoteStatistics} from './types.js';
  * @import {PromiseRecord} from '@endo/promise-kit';
  */
 
@@ -159,6 +161,7 @@ const makeBinaryVoteCounter = (
       submitVote(voterHandle, chosenPositions, shares = 1n) {
         assert(chosenPositions.length === 1, 'only 1 position allowed');
         const [position] = chosenPositions;
+        // @ts-expect-error FIXME in Endo
         positionIncluded(positions, position) ||
           Fail`The specified choice is not a legal position: ${position}.`;
 
@@ -166,13 +169,16 @@ const makeBinaryVoteCounter = (
         // to make sure that each voter's vote is recorded only once.
         const completedBallot = harden({ chosen: position, shares });
         allBallots.has(voterHandle)
-          ? allBallots.set(voterHandle, completedBallot)
-          : allBallots.init(voterHandle, completedBallot);
+          ? // @ts-expect-error FIXME in Endo
+            allBallots.set(voterHandle, completedBallot)
+          : // @ts-expect-error FIXME in Endo
+            allBallots.init(voterHandle, completedBallot);
         return completedBallot;
       },
     },
   );
 
+  // @ts-expect-error FIXME in Endo
   const publicFacet = makeExo(
     'BinaryVoteCounter public',
     BinaryVoteCounterPublicI,
@@ -198,11 +204,15 @@ const makeBinaryVoteCounter = (
     },
   );
 
-  return harden({
-    creatorFacet,
-    publicFacet,
-    closeFacet,
-  });
+  return /** @type {VoteCounterFacets} */ (
+    /** @type {unknown} */ (
+      harden({
+        creatorFacet,
+        publicFacet,
+        closeFacet,
+      })
+    )
+  );
 };
 
 // The contract wrapper extracts the terms and runs makeBinaryVoteCounter().

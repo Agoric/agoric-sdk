@@ -1310,6 +1310,7 @@ const setupEvmRemoteAccountConfigTest = (
       fromTypedEntries(
         typedEntries(addresses).flatMap(([key, value]) => {
           const mappedValue = mapContractEntry(
+            // @ts-expect-error FIXME in Endo
             value,
             key as keyof EVMContractAddresses,
             chain,

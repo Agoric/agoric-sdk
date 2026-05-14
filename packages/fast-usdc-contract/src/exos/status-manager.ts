@@ -241,37 +241,42 @@ export const prepareStatusManager = (
     M.interface('StatusManagerI', {
       // TODO: naming scheme for transition events
       advance: M.call(CctpTxEvidenceShape).returns(),
-      advanceOutcome: M.call(M.string(), M.nat(), M.boolean())
-        .optional(M.splitRecord({ destination: M.string() }))
+      advanceOutcome: M.call(M.string<NobleAddress>(), M.nat(), M.boolean())
+        .optional(
+          /** @type {TypedPattern<{ destination: AccountId }>} */ M.splitRecord(
+            { destination: M.string() },
+          ),
+        )
         .returns(),
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
-      advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
+      advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean())
+        .optional(
+          /** @type {TypedPattern<{ destination: AccountId }>} */ M.splitRecord(
+            { destination: M.string() },
+          ),
+        )
+        .returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
-      getForwardsToRetry: M.call(M.string()).returns(
+      getForwardsToRetry: M.call(M.string<CaipChainId>()).returns(
         M.arrayOf(ForwardFailedTxShape),
       ),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
-      matchAndDequeueSettlement: M.call(M.string(), M.bigint()).returns(
-        M.arrayOf(
-          M.splitRecord({
-            txHash: EvmHashShape,
-            status: M.or(...Object.values(PendingTxStatus)),
-          }),
-        ),
-      ),
-      disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
-        M.undefined(),
-      ),
-      forwarded: M.call(EvmHashShape)
-        .optional(M.splitRecord({ destination: M.string() }))
-        .returns(),
+      matchAndDequeueSettlement: M.call(
+        M.string<NobleAddress>(),
+        M.bigint(),
+      ).returns(M.arrayOf(PendingTxShape)),
+      disbursed: M.call(
+        EvmHashShape,
+        /** @type {TypedPattern<RepayAmountKWR>} */ AmountKeywordRecordShape,
+      ).returns(M.undefined()),
+      forwarded: M.call(EvmHashShape).optional(ForwardFailedTxShape).returns(),
       forwardFailed: M.call(EvmHashShape)
         .optional(ForwardFailedTxShape)
         .returns(),
       forwarding: M.call(EvmHashShape).returns(),
       forwardSkipped: M.call(EvmHashShape).returns(),
-      lookupPending: M.call(M.string(), M.bigint()).returns(
+      lookupPending: M.call(M.string<NobleAddress>(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
     }),

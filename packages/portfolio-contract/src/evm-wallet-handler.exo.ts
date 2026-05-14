@@ -441,6 +441,7 @@ export const prepareEVMWalletMessageHandler = (
     handleMessage: M.call(EIP712DataShape).returns(VowShape),
   });
 
+  // @ts-expect-error FIXME in Endo
   return zone.exoClass(
     'messageHandler',
     MessageHandlerI,

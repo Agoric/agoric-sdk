@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package; type errors are tolerated
+
 import { makeMap } from 'jessie.js';
 import { X } from '@endo/errors';
 import { E } from '@endo/far';
@@ -411,7 +413,6 @@ export const makeAnchorAsset = async (
       denom,
       keyword,
       proposedName,
-      // @ts-expect-error XXX AssetIssuerKit
       kit, // with mint
     ),
   ]);

@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package
+
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
@@ -740,6 +742,7 @@ const makeMockBankManager = t => {
     getAssetSubscription: () => assert.fail('not impl'),
     getModuleAccountAddress: () => assert.fail('not impl'),
     getRewardDistributorDepositFacet: () =>
+      // @ts-expect-error FIXME in Endo
       Far('depositFacet', {
         receive: () => /** @type {any} */ (null),
       }),

@@ -21,8 +21,8 @@
     "@agoric/portfolio-api": "dev",
     "@agoric/synthetic-chain": "^0.6.1",
     "@endo/far": "^1.1.14",
-    "@endo/init": "^1.1.12",
-    "@endo/pass-style": "^1.6.3",
+    "@endo/init": "^1.1.13",
+    "@endo/pass-style": "^1.8.0",
     "agoric": "dev",
     "ava": "^6.4.1"
   },

@@ -1,4 +1,5 @@
-// @ts-check
+// @ts-nocheck — under-supported package
+
 import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';

@@ -49,6 +49,7 @@ export default [
       'packages/orchestration/src/vendor/',
       'packages/orchestration/src/stubs/',
       '**/*.html',
+      '**/*.md',
       '**/ava*.config.js',
       '**/.ava*.config.js',
       '**/tsup.config.ts',

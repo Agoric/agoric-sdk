@@ -104,9 +104,9 @@ const prepareBankPurseController = zone => {
   /**
    * @param {BridgeChannel} bankBridge
    * @param {string} denom
-   * @param {Brand} brand
+   * @param {Brand<'nat'>} brand
    * @param {string} address
-   * @param {PublishKit<Amount>} balanceKit
+   * @param {PublishKit<Amount<'nat'>>} balanceKit
    * @returns {VirtualPurseController}
    */
   const makeBankPurseController = zone.exoClass(
@@ -115,9 +115,9 @@ const prepareBankPurseController = zone => {
     /**
      * @param {BridgeChannel} bankBridge
      * @param {string} denom
-     * @param {Brand} brand
+     * @param {Brand<'nat'>} brand
      * @param {string} address
-     * @param {LatestTopic<Amount>} balanceTopic
+     * @param {LatestTopic<Amount<'nat'>>} balanceTopic
      */
     (bankBridge, denom, brand, address, balanceTopic) => ({
       bankBridge,
@@ -132,6 +132,7 @@ const prepareBankPurseController = zone => {
         assert.equal(b, brand);
         return balanceTopic;
       },
+      /** @param {Amount<'nat'>} amt */
       async pushAmount(amt) {
         const { bankBridge, denom, address, brand } = this.state;
         const value = AmountMath.getValue(brand, amt);
@@ -143,6 +144,7 @@ const prepareBankPurseController = zone => {
         });
         await bankBridge.fromBridge(update);
       },
+      /** @param {Amount<'nat'>} amt */
       async pullAmount(amt) {
         const { bankBridge, denom, address, brand } = this.state;
         const value = AmountMath.getValue(brand, amt);
@@ -167,7 +169,7 @@ const prepareRewardPurseController = zone =>
     /**
      * @param {BridgeChannel} bankChannel
      * @param {string} denom
-     * @param {Brand} brand
+     * @param {Brand<'nat'>} brand
      */
     (bankChannel, denom, brand) => ({ bankChannel, denom, brand }),
     {
@@ -179,6 +181,7 @@ const prepareRewardPurseController = zone =>
       async pullAmount(_amount) {
         throw Error(`Cannot pull from reward distributor`);
       },
+      /** @param {Amount<'nat'>} amount */
       async pushAmount(amount) {
         const { brand, bankChannel, denom } = this.state;
         const value = AmountMath.getValue(brand, amount);
@@ -349,7 +352,9 @@ const prepareAssetSubscription = zone => {
         return pubList;
       },
       [Symbol.asyncIterator]() {
-        return subscribeEach(this.self)[Symbol.asyncIterator]();
+        return subscribeEach(
+          /** @type {EachTopic<any>} */ (/** @type {unknown} */ (this.self)),
+        )[Symbol.asyncIterator]();
       },
     },
   );
@@ -483,6 +488,7 @@ const prepareBank = (
         );
       },
       /** @param {Brand} brand */
+      /** @param {Brand<'nat'>} brand */
       async getPurse(brand) {
         const {
           bankChannel,
@@ -508,7 +514,7 @@ const prepareBank = (
           }
           const addressToUpdater = denomToAddressUpdater.get(assetRecord.denom);
 
-          /** @type {PublishKit<Amount>} */
+          /** @type {PublishKit<Amount<'nat'>>} */
           const { publisher, subscriber } = makePublishKit();
           const balanceUpdater = makeBalanceUpdater(brand, publisher);
           addressToUpdater.init(address, balanceUpdater);
@@ -649,7 +655,7 @@ const prepareBankManager = (
       /**
        * @param {string} denom
        * @param {AssetIssuerKit} feeKit
-       * @returns {ERef<EOnly<DepositFacet>>}
+       * @returns {Promise<EOnly<DepositFacet>>}
        */
       getRewardDistributorDepositFacet(denom, feeKit) {
         const { bankChannel } = this.state;

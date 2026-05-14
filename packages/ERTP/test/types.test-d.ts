@@ -1,12 +1,25 @@
 import { Far } from '@endo/marshal';
-import type { Key } from '@endo/patterns';
+import { M } from '@endo/patterns';
+import type { Key, TypeFromMethodGuard } from '@endo/patterns';
 import { expectType } from 'tsd';
 import { AmountMath, AssetKind } from '../src/index.js';
+import {
+  BrandShape,
+  IssuerShape,
+  PaymentShape,
+  PurseShape,
+  DepositFacetShape,
+  MintShape,
+} from '../src/typeGuards.js';
 import type {
   Amount,
   AssetValueForKind,
   Brand,
+  DepositFacet,
   Issuer,
+  Mint,
+  Payment,
+  Purse,
   SetValue,
 } from '../src/types.js';
 
@@ -48,4 +61,72 @@ import type {
 {
   const issuer: Issuer = null as any;
   expectType<Key>(issuer);
+}
+
+// =============================================================================
+// Typed remotable shapes from typeGuards.js
+// =============================================================================
+// The shapes in src/typeGuards.js are annotated as
+// `MatcherOf<'remotable', X>` so that Endo's pattern resolution
+// (TFRemotable in @endo/patterns/src/type-from-pattern.ts) returns the
+// concrete X when the shape appears in a guard. Without the annotation,
+// `M.remotable('Brand')` resolves to `any`, which loses information at
+// every consuming site (e.g., a method `M.call(BrandShape)` would have
+// its first parameter inferred as `any` instead of `Brand`).
+//
+// **Trade-off**: For this to work, the typedef X must extend
+// `RemotableObject` (since `MatcherOf<Tag, T>` requires `T extends Passable`,
+// and `Passable` includes `RemotableObject` but not bare typedefs). Mint and
+// DepositFacet were previously plain typedefs and were updated to intersect
+// with `RemotableObject` for this purpose.
+
+// BrandShape: M.call(BrandShape) parameter is inferred as Brand
+{
+  const guard = M.call(BrandShape).returns(M.any());
+  type Fn = TypeFromMethodGuard<typeof guard>;
+  expectType<Brand>(null as unknown as Parameters<Fn>[0]);
+}
+
+// IssuerShape: parameter is Issuer
+{
+  const guard = M.call(IssuerShape).returns(M.any());
+  type Fn = TypeFromMethodGuard<typeof guard>;
+  expectType<Issuer>(null as unknown as Parameters<Fn>[0]);
+}
+
+// PaymentShape: parameter is Payment
+{
+  const guard = M.call(PaymentShape).returns(M.any());
+  type Fn = TypeFromMethodGuard<typeof guard>;
+  expectType<Payment>(null as unknown as Parameters<Fn>[0]);
+}
+
+// PurseShape: parameter is Purse
+{
+  const guard = M.call(PurseShape).returns(M.any());
+  type Fn = TypeFromMethodGuard<typeof guard>;
+  expectType<Purse>(null as unknown as Parameters<Fn>[0]);
+}
+
+// DepositFacetShape: parameter is DepositFacet (regression: DepositFacet
+// previously had to be intersected with RemotableObject for this to work)
+{
+  const guard = M.call(DepositFacetShape).returns(M.any());
+  type Fn = TypeFromMethodGuard<typeof guard>;
+  expectType<DepositFacet>(null as unknown as Parameters<Fn>[0]);
+}
+
+// MintShape: parameter is Mint (regression: Mint previously had to be
+// intersected with RemotableObject for this to work)
+{
+  const guard = M.call(MintShape).returns(M.any());
+  type Fn = TypeFromMethodGuard<typeof guard>;
+  expectType<Mint>(null as unknown as Parameters<Fn>[0]);
+}
+
+// Return position: M.call().returns(BrandShape) infers return as Brand
+{
+  const guard = M.call().returns(BrandShape);
+  type Fn = TypeFromMethodGuard<typeof guard>;
+  expectType<Brand>(null as unknown as ReturnType<Fn>);
 }

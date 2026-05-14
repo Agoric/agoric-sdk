@@ -189,7 +189,7 @@ async function overflowCrank(t, explosion) {
   t.log(
     'adjust the remaining computrons figure if this test fails due to platform changes and run a benchmark to check the wallclock impact',
   );
-  const cmargs = [7_500_000n, 5_000_000n]; // remaining, notifyThreshold
+  const cmargs = [15_000_000n, 10_000_000n]; // remaining, notifyThreshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const marg = kunser(c.kpResolution(kp1));

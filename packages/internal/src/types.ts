@@ -2,8 +2,12 @@
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive, RemotableObject } from '@endo/pass-style';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in JSDoc
-import type { mustMatch as endoMustMatch, Pattern } from '@endo/patterns';
+import type {
+  CastedPattern,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- used in JSDoc
+  mustMatch as _endoMustMatch,
+  Pattern,
+} from '@endo/patterns';
 import type { Callable } from './ses-utils.js';
 
 /**
@@ -123,35 +127,26 @@ export type ERemote<Primary, Local = DataOnly<Primary>> = ERef<
   Remote<Primary, Local>
 >;
 
-/*
- * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
- * explictly specify the type that the Pattern will verify through a match.
+/**
+ * @deprecated Use {@link CastedPattern} from `@endo/patterns` instead.
  *
- * TODO move all this pattern typing stuff to @endo/patterns
+ * Historical: this type was an Agoric-internal stop-gap that has now
+ * been generalized into Endo. The two are wire-compatible — both use a
+ * phantom property keyed by a string constant to carry an unchecked
+ * static type assertion through the pattern. Endo's `CastedPattern` is
+ * now the canonical name; the wording emphasizes that the assertion is
+ * a developer cast (like TypeScript `as`) rather than something the
+ * runtime verifies.
  *
- * CAVEAT: We use a constant string here to avoid exposing a `unique symbol`
- * type publicly, such as with:
- *
- * @example
- *   declare const mySymbol: unique symbol;
- *
- * Without this workaround, we've observed errors when using at least
- * `typescript@5.9.3`'s `tsc` to generate declaration files (.d.ts) for
- * consumers of modules that in turn import the declaration:
- *
- * @example
- *   error TS9006: Declaration emit for this file requires using private name
- *   'tag' from module '.../internal/src/tagged"'. An explicit
- *   type annotation may unblock declaration emit.
+ * Aliased rather than removed for backward compatibility with existing
+ * `@import {TypedPattern} from '@agoric/internal'` references.
  */
-// declare const validatedType: unique symbol;
-declare const validatedType: 'Symbol(validatedType)';
+export type TypedPattern<T> = CastedPattern<T>;
 
 /**
- * Tag a pattern with the static type it represents.
+ * @deprecated Use `CastedPattern` and infer via `TypeFromPattern`
+ * (from `@endo/patterns`) instead.
  */
-export type TypedPattern<T> = Pattern & { [validatedType]?: T };
-
 export declare type PatternType<TM extends TypedPattern<any>> =
   TM extends TypedPattern<infer T> ? T : never;
 

@@ -21,9 +21,9 @@
     "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
     "@endo/bundle-source": "^4.1.2",
-    "@endo/errors": "^1.2.13",
-    "@endo/init": "^1.1.12",
-    "@endo/marshal": "^1.8.0",
+    "@endo/errors": "^1.3.1",
+    "@endo/init": "^1.1.13",
+    "@endo/marshal": "^1.9.1",
     "agoric": "dev",
     "ava": "^6.4.1",
     "execa": "9.1.0",
@@ -64,7 +64,8 @@
     "@agoric/wallet-backend": "portal:../../agoric-sdk/packages/wallet/api",
     "@agoric/xsnap-lockdown": "portal:../../agoric-sdk/packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
-    "@agoric/zone": "portal:../../agoric-sdk/packages/zone"
+    "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
+    "agoric": "portal:../../agoric-sdk/packages/agoric-cli"
   },
   "ava": {
     "concurrency": 1,

@@ -359,6 +359,12 @@ export async function makeSwingsetController(
             ),
             URL: globalThis.Base64, // Unavailable only on XSnap
             Base64: globalThis.Base64, // Available only on XSnap
+            // SES 2.0 removed Float{16,32,64}Array from child compartments
+            // (NaN side-channel). The kernel forwards these to vat workers
+            // so released bundles compiled against SES 1.x keep working.
+            Float16Array: globalThis.Float16Array,
+            Float32Array: globalThis.Float32Array,
+            Float64Array: globalThis.Float64Array,
           },
         });
         noteStartupPhase(
