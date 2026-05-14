@@ -5,6 +5,7 @@ import {
   getControlAddress,
   isPortfolioContract,
 } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import { writeFile } from 'node:fs/promises';
 import { URLSearchParams } from 'node:url';
 import { parseArgs } from 'node:util';
 
@@ -22,6 +23,7 @@ Options:
   --tx-limit <n>               Recent txs to inspect from sender (default: 20)
   --window-minutes <n>         Minutes before/after tx time for log query (default: 15)
   --raw                        Print raw Grafana JSON instead of flattened rows
+  --save-txs <n>               Fetch last N txs from control address and save as JSON, then exit
   --help                       Show this help
 `;
 
@@ -34,6 +36,7 @@ const options = {
   pod: { type: 'string' },
   pretty: { type: 'boolean', default: false },
   raw: { type: 'boolean', default: false },
+  'save-txs': { type: 'string' },
   'tx-hash': { type: 'string' },
   'tx-limit': { type: 'string', default: '20' },
   'window-minutes': { type: 'string', default: '15' },
@@ -203,6 +206,22 @@ const buildExploreUrl = ({
   )}&orgId=1`;
 };
 
+const fetchSenderTxs = async (
+  apiAddr: string,
+  sender: string,
+  limit: number,
+): Promise<TxResponse['tx_responses']> => {
+  const params = new URLSearchParams({
+    query: `message.sender='${sender}'`,
+    order_by: 'ORDER_BY_DESC',
+    'pagination.limit': `${limit}`,
+  });
+  const response = await fetchJson<TxResponse>(
+    `${apiAddr}/cosmos/tx/v1beta1/txs?${params}`,
+  );
+  return response.tx_responses || [];
+};
+
 const getLatestSenderTx = async ({
   apiAddr,
   sender,
@@ -219,15 +238,7 @@ const getLatestSenderTx = async ({
       ? `looking for tx ${txHash.toUpperCase()} among recent txs from ${sender}`
       : `fetching latest ${limit} txs from ${sender}`,
   );
-  const params = new URLSearchParams({
-    query: `message.sender='${sender}'`,
-    order_by: 'ORDER_BY_DESC',
-    'pagination.limit': `${limit}`,
-  });
-  const response = await fetchJson<TxResponse>(
-    `${apiAddr}/cosmos/tx/v1beta1/txs?${params}`,
-  );
-  const txs = [...(response.tx_responses || [])];
+  const txs = [...((await fetchSenderTxs(apiAddr, sender, limit)) || [])];
   if (txHash) {
     const found = txs.find(tx => tx.txhash === txHash.toUpperCase());
     if (!found) {
@@ -356,6 +367,19 @@ const main = async (argv = process.argv) => {
   const pod = values.pod || defaultPodForNetwork(network);
   const address = values.address || getControlAddress(contract, network);
   const apiAddr = await getApiAddr(network);
+
+  if (values['save-txs']) {
+    const saveCount = Number.parseInt(values['save-txs'], 10);
+    if (!Number.isFinite(saveCount) || saveCount < 1) {
+      throw Error(`bad --save-txs: ${values['save-txs']}`);
+    }
+    const txs = (await fetchSenderTxs(apiAddr, address, saveCount)) || [];
+    const outPath = `${contract}-${network}-txs.json`;
+    await writeFile(outPath, `${JSON.stringify(txs, null, 2)}\n`);
+    trace(`saved ${txs.length} tx(s) to ${outPath}`);
+    return;
+  }
+
   const tx0 = await getLatestSenderTx({
     apiAddr,
     sender: address,
