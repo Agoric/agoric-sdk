@@ -173,7 +173,7 @@ const typeUrlRecordFromProto = proto => {
 const importIdentifierFromTypeUrl = typeUrl =>
   `__annotationCodec${[...typeUrl]
     .map(char =>
-      /[A-Za-z0-9_$]/.test(char) ? char : `_${char.charCodeAt(0).toString(16)}`,
+      /[A-Za-z0-9$]/.test(char) ? char : `_${char.charCodeAt(0).toString(16)}`,
     )
     .join('')}`;
 
