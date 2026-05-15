@@ -231,7 +231,7 @@
     "@endo/bundle-source": "^4.1.2",
     "@endo/import-bundle": "^1.5.2",
     "@hyperweb/telescope": "^2.2.1",
-    "ava": "^6.4.1",
+    "ava": "^7.0.0",
     "esbuild": "^0.25.2",
     "rimraf": "^5.0.0",
     "tsd": "^0.33.0",

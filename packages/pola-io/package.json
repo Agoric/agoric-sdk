@@ -18,7 +18,7 @@
     "@agoric/internal": "workspace:*"
   },
   "devDependencies": {
-    "ava": "^6.4.1"
+    "ava": "^7.0.0"
   },
   "files": [
     "src/"

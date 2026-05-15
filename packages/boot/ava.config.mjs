@@ -81,4 +81,5 @@ export default {
   require: ['@endo/init/debug.js'],
   timeout: '20m',
   sortTestFiles: byExplicitBootOrder,
+  workerThreads: false,
 };
