@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   Metadata,
   type MetadataSDKType,
@@ -68,6 +69,10 @@ function createBaseMsgSetDenomMetadata(): MsgSetDenomMetadata {
  */
 export const MsgSetDenomMetadata = {
   typeUrl: '/agoric.vbank.MsgSetDenomMetadata' as const,
+  annotations: {
+    'gogoproto.nullable': { metadata: false },
+    typeUrlFromField: { metadata: () => Metadata },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'vbank/SetDenomMetadata' as const,
   is(o: any): o is MsgSetDenomMetadata {
     return (
