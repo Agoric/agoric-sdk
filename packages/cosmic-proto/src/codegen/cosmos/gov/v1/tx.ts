@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import {
@@ -1532,6 +1533,11 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.gov.v1.MsgUpdateParams' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/gov/v1/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (
@@ -1801,6 +1807,10 @@ function createBaseMsgCancelProposalResponse(): MsgCancelProposalResponse {
  */
 export const MsgCancelProposalResponse = {
   typeUrl: '/cosmos.gov.v1.MsgCancelProposalResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { canceledTime: false },
+    typeUrlFromField: { canceledTime: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/v1/MsgCancelProposalResponse' as const,
   is(o: any): o is MsgCancelProposalResponse {
     return (

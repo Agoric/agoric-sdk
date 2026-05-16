@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -1325,6 +1326,10 @@ function createBaseQueryTotalEscrowForDenomResponse(): QueryTotalEscrowForDenomR
 export const QueryTotalEscrowForDenomResponse = {
   typeUrl:
     '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryTotalEscrowForDenomResponse' as const,
   is(o: any): o is QueryTotalEscrowForDenomResponse {
     return (

@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../../type-url-annotations.js';
 import {
   Order,
   orderFromJSON,
@@ -427,6 +428,10 @@ function createBaseMsgSendTx(): MsgSendTx {
 export const MsgSendTx = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.MsgSendTx' as const,
+  annotations: {
+    'gogoproto.nullable': { packetData: false },
+    typeUrlFromField: { packetData: () => InterchainAccountPacketData },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgSendTx' as const,
   is(o: any): o is MsgSendTx {
     return (
@@ -659,6 +664,10 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 export const MsgUpdateParams = {
   typeUrl:
     '/ibc.applications.interchain_accounts.controller.v1.MsgUpdateParams' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (

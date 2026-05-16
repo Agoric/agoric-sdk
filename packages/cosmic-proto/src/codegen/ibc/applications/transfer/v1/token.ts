@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
@@ -100,6 +101,10 @@ function createBaseToken(): Token {
  */
 export const Token = {
   typeUrl: '/ibc.applications.transfer.v1.Token' as const,
+  annotations: {
+    'gogoproto.nullable': { denom: false },
+    typeUrlFromField: { denom: () => Denom },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Token' as const,
   is(o: any): o is Token {
     return (

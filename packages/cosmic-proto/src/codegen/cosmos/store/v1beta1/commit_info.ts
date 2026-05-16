@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -104,6 +105,10 @@ function createBaseCommitInfo(): CommitInfo {
  */
 export const CommitInfo = {
   typeUrl: '/cosmos.store.v1beta1.CommitInfo' as const,
+  annotations: {
+    'gogoproto.nullable': { timestamp: false },
+    typeUrlFromField: { timestamp: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/CommitInfo' as const,
   is(o: any): o is CommitInfo {
     return (
@@ -234,6 +239,10 @@ function createBaseStoreInfo(): StoreInfo {
  */
 export const StoreInfo = {
   typeUrl: '/cosmos.store.v1beta1.StoreInfo' as const,
+  annotations: {
+    'gogoproto.nullable': { commitId: false },
+    typeUrlFromField: { commitId: () => CommitID },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/StoreInfo' as const,
   is(o: any): o is StoreInfo {
     return (

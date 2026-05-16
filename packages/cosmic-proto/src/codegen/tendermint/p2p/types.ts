@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
@@ -349,6 +350,13 @@ function createBaseDefaultNodeInfo(): DefaultNodeInfo {
  */
 export const DefaultNodeInfo = {
   typeUrl: '/tendermint.p2p.DefaultNodeInfo' as const,
+  annotations: {
+    'gogoproto.nullable': { other: false, protocolVersion: false },
+    typeUrlFromField: {
+      other: () => DefaultNodeInfoOther,
+      protocolVersion: () => ProtocolVersion,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is DefaultNodeInfo {
     return (
       o &&

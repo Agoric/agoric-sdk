@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   Timeout,
   type TimeoutSDKType,
@@ -124,6 +125,10 @@ function createBaseUpgrade(): Upgrade {
  */
 export const Upgrade = {
   typeUrl: '/ibc.core.channel.v1.Upgrade' as const,
+  annotations: {
+    'gogoproto.nullable': { fields: false, timeout: false },
+    typeUrlFromField: { fields: () => UpgradeFields, timeout: () => Timeout },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Upgrade' as const,
   is(o: any): o is Upgrade {
     return (

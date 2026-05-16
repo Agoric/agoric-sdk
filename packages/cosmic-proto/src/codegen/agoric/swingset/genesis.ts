@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   Params,
   type ParamsSDKType,
@@ -76,6 +77,10 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/agoric.swingset.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false, state: false },
+    typeUrlFromField: { params: () => Params, state: () => State },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is GenesisState {
     return (
       o &&

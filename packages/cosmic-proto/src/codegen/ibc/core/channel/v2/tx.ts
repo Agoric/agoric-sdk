@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   Payload,
   type PayloadSDKType,
@@ -511,6 +512,10 @@ function createBaseMsgRecvPacket(): MsgRecvPacket {
  */
 export const MsgRecvPacket = {
   typeUrl: '/ibc.core.channel.v2.MsgRecvPacket' as const,
+  annotations: {
+    'gogoproto.nullable': { packet: false, proofHeight: false },
+    typeUrlFromField: { packet: () => Packet, proofHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgRecvPacket' as const,
   is(o: any): o is MsgRecvPacket {
     return (
@@ -736,6 +741,10 @@ function createBaseMsgTimeout(): MsgTimeout {
  */
 export const MsgTimeout = {
   typeUrl: '/ibc.core.channel.v2.MsgTimeout' as const,
+  annotations: {
+    'gogoproto.nullable': { packet: false, proofHeight: false },
+    typeUrlFromField: { packet: () => Packet, proofHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgTimeout' as const,
   is(o: any): o is MsgTimeout {
     return (
@@ -958,6 +967,18 @@ function createBaseMsgAcknowledgement(): MsgAcknowledgement {
  */
 export const MsgAcknowledgement = {
   typeUrl: '/ibc.core.channel.v2.MsgAcknowledgement' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      acknowledgement: false,
+      packet: false,
+      proofHeight: false,
+    },
+    typeUrlFromField: {
+      acknowledgement: () => Acknowledgement,
+      packet: () => Packet,
+      proofHeight: () => Height,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgAcknowledgement' as const,
   is(o: any): o is MsgAcknowledgement {
     return (

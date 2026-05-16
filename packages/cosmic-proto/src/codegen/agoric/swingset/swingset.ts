@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
@@ -1248,6 +1249,9 @@ function createBaseStringBeans(): StringBeans {
  */
 export const StringBeans = {
   typeUrl: '/agoric.swingset.StringBeans' as const,
+  annotations: {
+    'gogoproto.nullable': { beans: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is StringBeans {
     return (
       o &&
@@ -1537,6 +1541,9 @@ function createBaseUintMapEntry(): UintMapEntry {
  */
 export const UintMapEntry = {
   typeUrl: '/agoric.swingset.UintMapEntry' as const,
+  annotations: {
+    'gogoproto.nullable': { value: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is UintMapEntry {
     return (
       o &&

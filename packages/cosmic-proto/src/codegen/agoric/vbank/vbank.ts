@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
@@ -108,6 +109,9 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/agoric.vbank.Params' as const,
+  annotations: {
+    'gogoproto.nullable': { perEpochRewardFraction: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Params {
     return (
       o &&

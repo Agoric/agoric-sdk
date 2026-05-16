@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import { Height, type HeightSDKType } from '../../client/v1/client.js';
 import { isSet } from '../../../../helpers.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
@@ -487,6 +488,10 @@ function createBaseChannel(): Channel {
  */
 export const Channel = {
   typeUrl: '/ibc.core.channel.v1.Channel' as const,
+  annotations: {
+    'gogoproto.nullable': { counterparty: false },
+    typeUrlFromField: { counterparty: () => Counterparty },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Channel' as const,
   is(o: any): o is Channel {
     return (
@@ -643,6 +648,10 @@ function createBaseIdentifiedChannel(): IdentifiedChannel {
  */
 export const IdentifiedChannel = {
   typeUrl: '/ibc.core.channel.v1.IdentifiedChannel' as const,
+  annotations: {
+    'gogoproto.nullable': { counterparty: false },
+    typeUrlFromField: { counterparty: () => Counterparty },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/IdentifiedChannel' as const,
   is(o: any): o is IdentifiedChannel {
     return (
@@ -914,6 +923,10 @@ function createBasePacket(): Packet {
  */
 export const Packet = {
   typeUrl: '/ibc.core.channel.v1.Packet' as const,
+  annotations: {
+    'gogoproto.nullable': { timeoutHeight: false },
+    typeUrlFromField: { timeoutHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Packet' as const,
   is(o: any): o is Packet {
     return (
@@ -1456,6 +1469,10 @@ function createBaseTimeout(): Timeout {
  */
 export const Timeout = {
   typeUrl: '/ibc.core.channel.v1.Timeout' as const,
+  annotations: {
+    'gogoproto.nullable': { height: false },
+    typeUrlFromField: { height: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Timeout' as const,
   is(o: any): o is Timeout {
     return (

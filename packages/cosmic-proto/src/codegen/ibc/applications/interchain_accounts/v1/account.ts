@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   BaseAccount,
   type BaseAccountSDKType,
@@ -48,6 +49,10 @@ function createBaseInterchainAccount(): InterchainAccount {
 export const InterchainAccount = {
   typeUrl:
     '/ibc.applications.interchain_accounts.v1.InterchainAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_account: 'baseAccount' },
+    typeUrlFromField: { baseAccount: () => BaseAccount },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/InterchainAccount' as const,
   is(o: any): o is InterchainAccount {
     return (

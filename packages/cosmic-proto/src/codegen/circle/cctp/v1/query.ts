@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -1228,6 +1229,10 @@ function createBaseQueryGetAttesterResponse(): QueryGetAttesterResponse {
  */
 export const QueryGetAttesterResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetAttesterResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { attester: false },
+    typeUrlFromField: { attester: () => Attester },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetAttesterResponse {
     return (
       o &&
@@ -1644,6 +1649,10 @@ function createBaseQueryGetPerMessageBurnLimitResponse(): QueryGetPerMessageBurn
  */
 export const QueryGetPerMessageBurnLimitResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetPerMessageBurnLimitResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { burnLimit: false },
+    typeUrlFromField: { burnLimit: () => PerMessageBurnLimit },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetPerMessageBurnLimitResponse {
     return (
       o &&
@@ -2049,6 +2058,10 @@ function createBaseQueryGetBurningAndMintingPausedResponse(): QueryGetBurningAnd
  */
 export const QueryGetBurningAndMintingPausedResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetBurningAndMintingPausedResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { paused: false },
+    typeUrlFromField: { paused: () => BurningAndMintingPaused },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetBurningAndMintingPausedResponse {
     return (
       o &&
@@ -2251,6 +2264,10 @@ function createBaseQueryGetSendingAndReceivingMessagesPausedResponse(): QueryGet
 export const QueryGetSendingAndReceivingMessagesPausedResponse = {
   typeUrl:
     '/circle.cctp.v1.QueryGetSendingAndReceivingMessagesPausedResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { paused: false },
+    typeUrlFromField: { paused: () => SendingAndReceivingMessagesPaused },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetSendingAndReceivingMessagesPausedResponse {
     return (
       o &&
@@ -2447,6 +2464,10 @@ function createBaseQueryGetMaxMessageBodySizeResponse(): QueryGetMaxMessageBodyS
  */
 export const QueryGetMaxMessageBodySizeResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetMaxMessageBodySizeResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: () => MaxMessageBodySize },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetMaxMessageBodySizeResponse {
     return (
       o &&
@@ -2626,6 +2647,10 @@ function createBaseQueryGetNextAvailableNonceResponse(): QueryGetNextAvailableNo
  */
 export const QueryGetNextAvailableNonceResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetNextAvailableNonceResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { nonce: false },
+    typeUrlFromField: { nonce: () => Nonce },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetNextAvailableNonceResponse {
     return (
       o &&
@@ -2798,6 +2823,10 @@ function createBaseQueryGetSignatureThresholdResponse(): QueryGetSignatureThresh
  */
 export const QueryGetSignatureThresholdResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetSignatureThresholdResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: () => SignatureThreshold },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetSignatureThresholdResponse {
     return (
       o &&
@@ -3013,6 +3042,10 @@ function createBaseQueryGetTokenPairResponse(): QueryGetTokenPairResponse {
  */
 export const QueryGetTokenPairResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetTokenPairResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { pair: false },
+    typeUrlFromField: { pair: () => TokenPair },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetTokenPairResponse {
     return (
       o &&
@@ -3441,6 +3474,10 @@ function createBaseQueryGetUsedNonceResponse(): QueryGetUsedNonceResponse {
  */
 export const QueryGetUsedNonceResponse = {
   typeUrl: '/circle.cctp.v1.QueryGetUsedNonceResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { nonce: false },
+    typeUrlFromField: { nonce: () => Nonce },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetUsedNonceResponse {
     return (
       o &&
@@ -3852,6 +3889,10 @@ function createBaseQueryRemoteTokenMessengerResponse(): QueryRemoteTokenMessenge
  */
 export const QueryRemoteTokenMessengerResponse = {
   typeUrl: '/circle.cctp.v1.QueryRemoteTokenMessengerResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { remoteTokenMessenger: false },
+    typeUrlFromField: { remoteTokenMessenger: () => RemoteTokenMessenger },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryRemoteTokenMessengerResponse {
     return (
       o &&

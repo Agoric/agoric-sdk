@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   DelegationRecord,
   type DelegationRecordSDKType,
@@ -615,6 +616,9 @@ function createBaseMsgLiquidStake(): MsgLiquidStake {
  */
 export const MsgLiquidStake = {
   typeUrl: '/stride.staketia.MsgLiquidStake' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'staketia/MsgLiquidStake' as const,
   is(o: any): o is MsgLiquidStake {
     return (
@@ -710,6 +714,10 @@ function createBaseMsgLiquidStakeResponse(): MsgLiquidStakeResponse {
  */
 export const MsgLiquidStakeResponse = {
   typeUrl: '/stride.staketia.MsgLiquidStakeResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { stToken: false },
+    typeUrlFromField: { stToken: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgLiquidStakeResponse {
     return (
       o && (o.$typeUrl === MsgLiquidStakeResponse.typeUrl || Coin.is(o.stToken))
@@ -804,6 +812,9 @@ function createBaseMsgRedeemStake(): MsgRedeemStake {
  */
 export const MsgRedeemStake = {
   typeUrl: '/stride.staketia.MsgRedeemStake' as const,
+  annotations: {
+    'gogoproto.nullable': { stTokenAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'staketia/MsgRedeemStake' as const,
   is(o: any): o is MsgRedeemStake {
     return (
@@ -911,6 +922,10 @@ function createBaseMsgRedeemStakeResponse(): MsgRedeemStakeResponse {
  */
 export const MsgRedeemStakeResponse = {
   typeUrl: '/stride.staketia.MsgRedeemStakeResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeToken: false },
+    typeUrlFromField: { nativeToken: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is MsgRedeemStakeResponse {
     return (
       o &&
@@ -1581,6 +1596,9 @@ function createBaseMsgAdjustDelegatedBalance(): MsgAdjustDelegatedBalance {
  */
 export const MsgAdjustDelegatedBalance = {
   typeUrl: '/stride.staketia.MsgAdjustDelegatedBalance' as const,
+  annotations: {
+    'gogoproto.nullable': { delegationOffset: false },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'staketia/MsgAdjustDelegatedBalance' as const,
   is(o: any): o is MsgAdjustDelegatedBalance {
     return (
@@ -1777,6 +1795,16 @@ function createBaseMsgUpdateInnerRedemptionRateBounds(): MsgUpdateInnerRedemptio
  */
 export const MsgUpdateInnerRedemptionRateBounds = {
   typeUrl: '/stride.staketia.MsgUpdateInnerRedemptionRateBounds' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      maxInnerRedemptionRate: false,
+      minInnerRedemptionRate: false,
+    },
+    typeUrlFromField: {
+      maxInnerRedemptionRate: 'cosmos.Dec',
+      minInnerRedemptionRate: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'staketia/MsgUpdateRedemptionRateBounds' as const,
   is(o: any): o is MsgUpdateInnerRedemptionRateBounds {
     return (

@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { Decimal } from '../../../decimals.js';
 import { isSet } from '../../../helpers.js';
@@ -97,6 +98,13 @@ function createBaseMinter(): Minter {
  */
 export const Minter = {
   typeUrl: '/cosmos.mint.v1beta1.Minter' as const,
+  annotations: {
+    'gogoproto.nullable': { annualProvisions: false, inflation: false },
+    typeUrlFromField: {
+      annualProvisions: 'cosmos.Dec',
+      inflation: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Minter' as const,
   is(o: any): o is Minter {
     return (
@@ -209,6 +217,26 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/cosmos.mint.v1beta1.Params' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      goalBonded: true,
+      inflationMax: true,
+      inflationMin: true,
+      inflationRateChange: true,
+    },
+    'gogoproto.nullable': {
+      goalBonded: false,
+      inflationMax: false,
+      inflationMin: false,
+      inflationRateChange: false,
+    },
+    typeUrlFromField: {
+      goalBonded: 'cosmos.Dec',
+      inflationMax: 'cosmos.Dec',
+      inflationMin: 'cosmos.Dec',
+      inflationRateChange: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/mint/Params' as const,
   is(o: any): o is Params {
     return (

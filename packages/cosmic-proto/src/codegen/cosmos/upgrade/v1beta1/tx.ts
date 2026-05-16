@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { Plan, type PlanSDKType } from './upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
@@ -108,6 +109,11 @@ function createBaseMsgSoftwareUpgrade(): MsgSoftwareUpgrade {
  */
 export const MsgSoftwareUpgrade = {
   typeUrl: '/cosmos.upgrade.v1beta1.MsgSoftwareUpgrade' as const,
+  annotations: {
+    'amino.dont_omitempty': { plan: true },
+    'gogoproto.nullable': { plan: false },
+    typeUrlFromField: { plan: () => Plan },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgSoftwareUpgrade' as const,
   is(o: any): o is MsgSoftwareUpgrade {
     return (

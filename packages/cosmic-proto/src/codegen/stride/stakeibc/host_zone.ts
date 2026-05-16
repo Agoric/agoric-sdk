@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { Validator, type ValidatorSDKType } from './validator.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
@@ -236,6 +237,12 @@ function createBaseCommunityPoolRebate(): CommunityPoolRebate {
  */
 export const CommunityPoolRebate = {
   typeUrl: '/stride.stakeibc.CommunityPoolRebate' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      liquidStakedStTokenAmount: false,
+      rebateRate: false,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is CommunityPoolRebate {
     return (
       o &&
@@ -369,6 +376,25 @@ function createBaseHostZone(): HostZone {
  */
 export const HostZone = {
   typeUrl: '/stride.stakeibc.HostZone' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      lastRedemptionRate: false,
+      maxInnerRedemptionRate: false,
+      maxRedemptionRate: false,
+      minInnerRedemptionRate: false,
+      minRedemptionRate: false,
+      redemptionRate: false,
+      totalDelegations: false,
+    },
+    typeUrlFromField: {
+      lastRedemptionRate: 'cosmos.Dec',
+      maxInnerRedemptionRate: 'cosmos.Dec',
+      maxRedemptionRate: 'cosmos.Dec',
+      minInnerRedemptionRate: 'cosmos.Dec',
+      minRedemptionRate: 'cosmos.Dec',
+      redemptionRate: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is HostZone {
     return (
       o &&

@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -766,6 +767,11 @@ function createBaseMember(): Member {
  */
 export const Member = {
   typeUrl: '/cosmos.group.v1.Member' as const,
+  annotations: {
+    'amino.dont_omitempty': { addedAt: true },
+    'gogoproto.nullable': { addedAt: false },
+    typeUrlFromField: { addedAt: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Member' as const,
   is(o: any): o is Member {
     return (
@@ -1244,6 +1250,14 @@ function createBaseDecisionPolicyWindows(): DecisionPolicyWindows {
  */
 export const DecisionPolicyWindows = {
   typeUrl: '/cosmos.group.v1.DecisionPolicyWindows' as const,
+  annotations: {
+    'amino.dont_omitempty': { minExecutionPeriod: true, votingPeriod: true },
+    'gogoproto.nullable': { minExecutionPeriod: false, votingPeriod: false },
+    typeUrlFromField: {
+      minExecutionPeriod: () => Duration,
+      votingPeriod: () => Duration,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DecisionPolicyWindows' as const,
   is(o: any): o is DecisionPolicyWindows {
     return (
@@ -1365,6 +1379,11 @@ function createBaseGroupInfo(): GroupInfo {
  */
 export const GroupInfo = {
   typeUrl: '/cosmos.group.v1.GroupInfo' as const,
+  annotations: {
+    'amino.dont_omitempty': { createdAt: true },
+    'gogoproto.nullable': { createdAt: false },
+    typeUrlFromField: { createdAt: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GroupInfo' as const,
   is(o: any): o is GroupInfo {
     return (
@@ -1625,6 +1644,11 @@ function createBaseGroupPolicyInfo(): GroupPolicyInfo {
  */
 export const GroupPolicyInfo = {
   typeUrl: '/cosmos.group.v1.GroupPolicyInfo' as const,
+  annotations: {
+    'amino.dont_omitempty': { createdAt: true },
+    'gogoproto.nullable': { createdAt: false },
+    typeUrlFromField: { createdAt: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GroupPolicyInfo' as const,
   is(o: any): o is GroupPolicyInfo {
     return (
@@ -1817,6 +1841,23 @@ function createBaseProposal(): Proposal {
  */
 export const Proposal = {
   typeUrl: '/cosmos.group.v1.Proposal' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      finalTallyResult: true,
+      submitTime: true,
+      votingPeriodEnd: true,
+    },
+    'gogoproto.nullable': {
+      finalTallyResult: false,
+      submitTime: false,
+      votingPeriodEnd: false,
+    },
+    typeUrlFromField: {
+      finalTallyResult: () => TallyResult,
+      submitTime: () => Timestamp,
+      votingPeriodEnd: () => Timestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Proposal' as const,
   is(o: any): o is Proposal {
     return (
@@ -2246,6 +2287,11 @@ function createBaseVote(): Vote {
  */
 export const Vote = {
   typeUrl: '/cosmos.group.v1.Vote' as const,
+  annotations: {
+    'amino.dont_omitempty': { submitTime: true },
+    'gogoproto.nullable': { submitTime: false },
+    typeUrlFromField: { submitTime: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Vote' as const,
   is(o: any): o is Vote {
     return (

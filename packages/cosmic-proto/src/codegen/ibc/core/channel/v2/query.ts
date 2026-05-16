@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -636,6 +637,10 @@ function createBaseQueryNextSequenceSendResponse(): QueryNextSequenceSendRespons
  */
 export const QueryNextSequenceSendResponse = {
   typeUrl: '/ibc.core.channel.v2.QueryNextSequenceSendResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: { proofHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryNextSequenceSendResponse' as const,
   is(o: any): o is QueryNextSequenceSendResponse {
     return (
@@ -885,6 +890,10 @@ function createBaseQueryPacketCommitmentResponse(): QueryPacketCommitmentRespons
  */
 export const QueryPacketCommitmentResponse = {
   typeUrl: '/ibc.core.channel.v2.QueryPacketCommitmentResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: { proofHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryPacketCommitmentResponse' as const,
   is(o: any): o is QueryPacketCommitmentResponse {
     return (
@@ -1137,6 +1146,10 @@ function createBaseQueryPacketCommitmentsResponse(): QueryPacketCommitmentsRespo
  */
 export const QueryPacketCommitmentsResponse = {
   typeUrl: '/ibc.core.channel.v2.QueryPacketCommitmentsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { height: false },
+    typeUrlFromField: { height: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryPacketCommitmentsResponse' as const,
   is(o: any): o is QueryPacketCommitmentsResponse {
     return (
@@ -1389,6 +1402,10 @@ function createBaseQueryPacketAcknowledgementResponse(): QueryPacketAcknowledgem
  */
 export const QueryPacketAcknowledgementResponse = {
   typeUrl: '/ibc.core.channel.v2.QueryPacketAcknowledgementResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: { proofHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryPacketAcknowledgementResponse' as const,
   is(o: any): o is QueryPacketAcknowledgementResponse {
     return (
@@ -1679,6 +1696,10 @@ function createBaseQueryPacketAcknowledgementsResponse(): QueryPacketAcknowledge
  */
 export const QueryPacketAcknowledgementsResponse = {
   typeUrl: '/ibc.core.channel.v2.QueryPacketAcknowledgementsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { height: false },
+    typeUrlFromField: { height: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryPacketAcknowledgementsResponse' as const,
   is(o: any): o is QueryPacketAcknowledgementsResponse {
     return (
@@ -1935,6 +1956,10 @@ function createBaseQueryPacketReceiptResponse(): QueryPacketReceiptResponse {
  */
 export const QueryPacketReceiptResponse = {
   typeUrl: '/ibc.core.channel.v2.QueryPacketReceiptResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { proofHeight: false },
+    typeUrlFromField: { proofHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryPacketReceiptResponse' as const,
   is(o: any): o is QueryPacketReceiptResponse {
     return (
@@ -2188,6 +2213,10 @@ function createBaseQueryUnreceivedPacketsResponse(): QueryUnreceivedPacketsRespo
  */
 export const QueryUnreceivedPacketsResponse = {
   typeUrl: '/ibc.core.channel.v2.QueryUnreceivedPacketsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { height: false },
+    typeUrlFromField: { height: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryUnreceivedPacketsResponse' as const,
   is(o: any): o is QueryUnreceivedPacketsResponse {
     return (
@@ -2445,6 +2474,10 @@ function createBaseQueryUnreceivedAcksResponse(): QueryUnreceivedAcksResponse {
  */
 export const QueryUnreceivedAcksResponse = {
   typeUrl: '/ibc.core.channel.v2.QueryUnreceivedAcksResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { height: false },
+    typeUrlFromField: { height: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryUnreceivedAcksResponse' as const,
   is(o: any): o is QueryUnreceivedAcksResponse {
     return (

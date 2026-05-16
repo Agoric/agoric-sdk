@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   Params,
   type ParamsSDKType,
@@ -172,6 +173,10 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/agoric.vbank.QueryParamsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryParamsResponse {
     return (
       o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
@@ -320,6 +325,10 @@ function createBaseQueryStateResponse(): QueryStateResponse {
  */
 export const QueryStateResponse = {
   typeUrl: '/agoric.vbank.QueryStateResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { state: false },
+    typeUrlFromField: { state: () => State },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryStateResponse {
     return (
       o && (o.$typeUrl === QueryStateResponse.typeUrl || State.is(o.state))

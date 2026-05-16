@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   Duration,
   type DurationSDKType,
@@ -287,6 +288,24 @@ function createBaseClientState(): ClientState {
  */
 export const ClientState = {
   typeUrl: '/ibc.lightclients.tendermint.v1.ClientState' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      frozenHeight: false,
+      latestHeight: false,
+      maxClockDrift: false,
+      trustLevel: false,
+      trustingPeriod: false,
+      unbondingPeriod: false,
+    },
+    typeUrlFromField: {
+      frozenHeight: () => Height,
+      latestHeight: () => Height,
+      maxClockDrift: () => Duration,
+      trustLevel: () => Fraction,
+      trustingPeriod: () => Duration,
+      unbondingPeriod: () => Duration,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ClientState' as const,
   is(o: any): o is ClientState {
     return (
@@ -562,6 +581,10 @@ function createBaseConsensusState(): ConsensusState {
  */
 export const ConsensusState = {
   typeUrl: '/ibc.lightclients.tendermint.v1.ConsensusState' as const,
+  annotations: {
+    'gogoproto.nullable': { root: false, timestamp: false },
+    typeUrlFromField: { root: () => MerkleRoot, timestamp: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ConsensusState' as const,
   is(o: any): o is ConsensusState {
     return (
@@ -818,6 +841,14 @@ function createBaseHeader(): Header {
  */
 export const Header = {
   typeUrl: '/ibc.lightclients.tendermint.v1.Header' as const,
+  annotations: {
+    'gogoproto.embed': { signed_header: 'signedHeader' },
+    'gogoproto.nullable': { trustedHeight: false },
+    typeUrlFromField: {
+      signedHeader: () => SignedHeader,
+      trustedHeight: () => Height,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Header' as const,
   is(o: any): o is Header {
     return o && (o.$typeUrl === Header.typeUrl || Height.is(o.trustedHeight));

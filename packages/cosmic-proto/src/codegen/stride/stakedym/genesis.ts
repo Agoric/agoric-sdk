@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   HostZone,
   type HostZoneSDKType,
@@ -305,6 +306,10 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/stride.stakedym.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { hostZone: false, params: false },
+    typeUrlFromField: { hostZone: () => HostZone, params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is GenesisState {
     return (
       o &&

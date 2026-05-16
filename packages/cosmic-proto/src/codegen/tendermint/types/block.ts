@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   Header,
   type HeaderSDKType,
@@ -52,6 +53,14 @@ function createBaseBlock(): Block {
  */
 export const Block = {
   typeUrl: '/tendermint.types.Block' as const,
+  annotations: {
+    'gogoproto.nullable': { data: false, evidence: false, header: false },
+    typeUrlFromField: {
+      data: () => Data,
+      evidence: () => EvidenceList,
+      header: () => Header,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Block {
     return (
       o &&

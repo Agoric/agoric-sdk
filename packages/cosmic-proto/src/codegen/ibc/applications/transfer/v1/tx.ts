@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   Coin,
   type CoinSDKType,
@@ -185,6 +186,11 @@ function createBaseMsgTransfer(): MsgTransfer {
  */
 export const MsgTransfer = {
   typeUrl: '/ibc.applications.transfer.v1.MsgTransfer' as const,
+  annotations: {
+    'amino.dont_omitempty': { timeoutHeight: true, token: true },
+    'gogoproto.nullable': { timeoutHeight: false, token: false },
+    typeUrlFromField: { timeoutHeight: () => Height, token: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgTransfer' as const,
   is(o: any): o is MsgTransfer {
     return (
@@ -472,6 +478,10 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (

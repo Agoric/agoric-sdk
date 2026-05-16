@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import {
   Plan,
@@ -1490,6 +1491,10 @@ function createBaseMsgIBCSoftwareUpgrade(): MsgIBCSoftwareUpgrade {
  */
 export const MsgIBCSoftwareUpgrade = {
   typeUrl: '/ibc.core.client.v1.MsgIBCSoftwareUpgrade' as const,
+  annotations: {
+    'gogoproto.nullable': { plan: false },
+    typeUrlFromField: { plan: () => Plan },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgIBCSoftwareUpgrade' as const,
   is(o: any): o is MsgIBCSoftwareUpgrade {
     return (
@@ -1685,6 +1690,10 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/ibc.core.client.v1.MsgUpdateParams' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (

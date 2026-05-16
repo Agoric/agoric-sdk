@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -3581,6 +3582,11 @@ function createBaseQueryTallyResultResponse(): QueryTallyResultResponse {
  */
 export const QueryTallyResultResponse = {
   typeUrl: '/cosmos.group.v1.QueryTallyResultResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { tally: true },
+    'gogoproto.nullable': { tally: false },
+    typeUrlFromField: { tally: () => TallyResult },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryTallyResultResponse' as const,
   is(o: any): o is QueryTallyResultResponse {
     return (

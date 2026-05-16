@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -206,6 +207,10 @@ function createBaseSnapshot(): Snapshot {
  */
 export const Snapshot = {
   typeUrl: '/cosmos.store.snapshots.v1.Snapshot' as const,
+  annotations: {
+    'gogoproto.nullable': { metadata: false },
+    typeUrlFromField: { metadata: () => Metadata },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Snapshot' as const,
   is(o: any): o is Snapshot {
     return (

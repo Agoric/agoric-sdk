@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   Vote,
   type VoteSDKType,
@@ -247,6 +248,10 @@ function createBaseDuplicateVoteEvidence(): DuplicateVoteEvidence {
  */
 export const DuplicateVoteEvidence = {
   typeUrl: '/tendermint.types.DuplicateVoteEvidence' as const,
+  annotations: {
+    'gogoproto.nullable': { timestamp: false },
+    typeUrlFromField: { timestamp: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is DuplicateVoteEvidence {
     return (
       o &&
@@ -404,6 +409,10 @@ function createBaseLightClientAttackEvidence(): LightClientAttackEvidence {
  */
 export const LightClientAttackEvidence = {
   typeUrl: '/tendermint.types.LightClientAttackEvidence' as const,
+  annotations: {
+    'gogoproto.nullable': { timestamp: false },
+    typeUrlFromField: { timestamp: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is LightClientAttackEvidence {
     return (
       o &&
