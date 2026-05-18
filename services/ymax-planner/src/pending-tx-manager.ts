@@ -20,11 +20,7 @@ import type { WebSocketProvider } from 'ethers';
 import { resolvePendingTx } from './resolver.ts';
 import { submitWithRetry } from './retry-settlement.ts';
 import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
-import {
-  prepareAbortController,
-  type MakeAbortController,
-  type UsdcAddresses,
-} from './support.ts';
+import type { MakeAbortController, UsdcAddresses } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
 import {
@@ -299,7 +295,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
             makeAbortController: ctx.makeAbortController,
           }),
         {
-          setTimeout: ctx.setTimeout,
+          makeAbortController: ctx.makeAbortController,
           signal: abortController.signal,
           log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
         },
@@ -462,7 +458,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
             txId,
           }),
         {
-          setTimeout: ctx.setTimeout,
+          makeAbortController: ctx.makeAbortController,
           signal: abortController.signal,
           log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
         },
@@ -599,7 +595,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
             signal: abortController.signal,
           }),
         {
-          setTimeout: ctx.setTimeout,
+          makeAbortController: ctx.makeAbortController,
           signal: abortController.signal,
           log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
         },
@@ -725,7 +721,7 @@ export const TRANSPORT_RETRY_INITIAL_MS = 1_000;
 export const TRANSPORT_RETRY_MAX_MS = 60_000;
 
 type TransportRetryOpts = {
-  setTimeout: typeof globalThis.setTimeout;
+  makeAbortController: MakeAbortController;
   signal?: AbortSignal;
   log?: (...args: unknown[]) => void;
   limit?: number;
@@ -736,7 +732,7 @@ type TransportRetryOpts = {
 export const watchWithRetry = async <T>(
   runWatch: () => Promise<T>,
   {
-    setTimeout,
+    makeAbortController,
     signal,
     log = () => {},
     limit = TRANSPORT_RETRY_LIMIT,
@@ -745,7 +741,6 @@ export const watchWithRetry = async <T>(
   }: TransportRetryOpts,
 ): Promise<T | undefined> => {
   await null;
-  const makeAbortController = prepareAbortController({ setTimeout });
   let attempt = 0;
   while (true) {
     try {
@@ -828,7 +823,7 @@ export const handlePendingTx = async (
 
   try {
     await watchWithRetry(runWatch, {
-      setTimeout: watchCtx.setTimeout,
+      makeAbortController: watchCtx.makeAbortController,
       signal,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     });

@@ -12,6 +12,7 @@ import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks
 import type { CaipChainId } from '@agoric/orchestration';
 import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
 import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
+import { prepareAbortController } from '../src/support.ts';
 import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
   processPendingTxEvents,
@@ -206,6 +207,10 @@ const immediateSetTimeout: typeof globalThis.setTimeout = ((
   return 0 as unknown as ReturnType<typeof globalThis.setTimeout>;
 }) as any;
 
+const immediateMakeAbortController = prepareAbortController({
+  setTimeout: immediateSetTimeout,
+});
+
 test('watchWithRetry retries on transport error then succeeds', async t => {
   let attempts = 0;
   await watchWithRetry(
@@ -213,7 +218,7 @@ test('watchWithRetry retries on transport error then succeeds', async t => {
       attempts += 1;
       if (attempts < 3) throw new WatcherTransportError('boom');
     },
-    { setTimeout: immediateSetTimeout },
+    { makeAbortController: immediateMakeAbortController },
   );
   t.is(attempts, 3);
 });
@@ -227,7 +232,7 @@ test('watchWithRetry rethrows non-transport errors immediately', async t => {
         attempts += 1;
         throw otherErr;
       },
-      { setTimeout: immediateSetTimeout },
+      { makeAbortController: immediateMakeAbortController },
     ),
     { is: otherErr },
   );
@@ -242,7 +247,7 @@ test('watchWithRetry rethrows transport error after exhausting limit', async t =
         attempts += 1;
         throw new WatcherTransportError('boom');
       },
-      { setTimeout: immediateSetTimeout, limit: 2 },
+      { makeAbortController: immediateMakeAbortController, limit: 2 },
     ),
     { instanceOf: WatcherTransportError },
   );
@@ -268,7 +273,12 @@ test('watchWithRetry exits cleanly when signal aborts during backoff', async t =
       attempts += 1;
       throw new WatcherTransportError('boom');
     },
-    { setTimeout: mockSetTimeout, signal: ac.signal },
+    {
+      makeAbortController: prepareAbortController({
+        setTimeout: mockSetTimeout,
+      }),
+      signal: ac.signal,
+    },
   );
   // Abort inside the sleep (after it starts but before it ends).
   await sleepStarted;
