@@ -20,7 +20,11 @@ import type { WebSocketProvider } from 'ethers';
 import { resolvePendingTx } from './resolver.ts';
 import { submitWithRetry } from './retry-settlement.ts';
 import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
-import type { MakeAbortController, UsdcAddresses } from './support.ts';
+import {
+  prepareAbortController,
+  type MakeAbortController,
+  type UsdcAddresses,
+} from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
 import {
@@ -741,6 +745,7 @@ export const watchWithRetry = async <T>(
   }: TransportRetryOpts,
 ): Promise<T | undefined> => {
   await null;
+  const makeAbortController = prepareAbortController({ setTimeout });
   let attempt = 0;
   while (true) {
     try {
@@ -756,7 +761,7 @@ export const watchWithRetry = async <T>(
         `⚠️  Watcher transport failure (attempt ${attempt}/${limit}), retrying in ${delay}ms`,
         err,
       );
-      await abortableSleep(delay, setTimeout, signal);
+      await abortableSleep(makeAbortController, delay, signal);
       if (signal?.aborted) return undefined;
     }
   }

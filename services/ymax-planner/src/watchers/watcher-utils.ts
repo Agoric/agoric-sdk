@@ -9,6 +9,7 @@ import {
   getBlockTimeMs,
   getConfirmationsRequired,
   getRevertConfirmationsRequired,
+  type MakeAbortController,
 } from '../support.ts';
 
 /** Scope tag for failed-transaction lookback searches. */
@@ -23,25 +24,19 @@ export const WatcherTransportError = class WatcherTransportError extends Error {
 WatcherTransportError.prototype.name = 'WatcherTransportError';
 
 /**
- * Sleep `ms` milliseconds, returning early if `signal` aborts.
+ * Sleep for `ms` milliseconds or until `signal` aborts (whichever comes first).
  */
-export const abortableSleep = (
+export const abortableSleep = async (
+  makeAbortController: MakeAbortController,
   ms: number,
-  setTimeout: typeof globalThis.setTimeout,
   signal?: AbortSignal,
-): Promise<void> =>
-  new Promise(resolve => {
-    if (signal?.aborted) return resolve();
-    const onAbort = () => {
-      clearTimeout(timer);
-      resolve();
-    };
-    const timer = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort);
-      resolve();
-    }, ms);
-    signal?.addEventListener('abort', onAbort);
-  });
+): Promise<void> => {
+  if (signal?.aborted) return;
+  const { promise, resolve } = Promise.withResolvers<void>();
+  const { signal: timeout } = makeAbortController(ms, signal ? [signal] : []);
+  timeout.addEventListener('abort', () => resolve());
+  return promise;
+};
 
 //#region Axelar execute calldata extraction
 // AxelarExecutable entrypoint (standard)

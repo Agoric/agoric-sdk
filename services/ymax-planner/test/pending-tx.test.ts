@@ -252,23 +252,29 @@ test('watchWithRetry rethrows transport error after exhausting limit', async t =
 test('watchWithRetry exits cleanly when signal aborts during backoff', async t => {
   const ac = new AbortController();
   let attempts = 0;
-  const slowTimeout: typeof globalThis.setTimeout = ((
+  let { promise: sleepStarted, resolve: startSleep } = Promise.withResolvers();
+  let endSleep: undefined | (() => void);
+  const mockSetTimeout: typeof globalThis.setTimeout = ((
     fn: (...args: any[]) => void,
     _ms: number,
   ) => {
-    const id = globalThis.setTimeout(fn, 1_000_000);
-    return id;
+    const { promise: sleepEnded, resolve } = Promise.withResolvers();
+    endSleep = resolve as any;
+    (startSleep as () => void)();
+    void sleepEnded.then(() => fn());
+    return 0;
   }) as any;
   const result = watchWithRetry(
     async () => {
       attempts += 1;
       throw new WatcherTransportError('boom');
     },
-    { setTimeout: slowTimeout, signal: ac.signal },
+    { setTimeout: mockSetTimeout, signal: ac.signal },
   );
-  // Yield so the first attempt runs and we enter the backoff sleep.
-  await new Promise(resolve => globalThis.setTimeout(resolve, 10));
+  // Enter the backoff sleep.
+  await sleepStarted;
   ac.abort();
+  endSleep!();
   await result; // resolves cleanly, does not throw
   t.is(attempts, 1);
 });
