@@ -21,7 +21,7 @@ export const FAILED_TX_SCOPE = 'failedTx';
  * so the caller may safely restart it.
  */
 export const WatcherTransportError = class WatcherTransportError extends Error {};
-WatcherTransportError.prototype.name = 'WatcherTransportError';
+WatcherTransportError.prototype.name = WatcherTransportError.name;
 
 /**
  * Sleep for `ms` milliseconds or until `signal` aborts (whichever comes first).
