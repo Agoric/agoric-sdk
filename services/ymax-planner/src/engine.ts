@@ -75,6 +75,7 @@ import {
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
+import { getResolvedTx, setResolvedTx } from './kv-store.ts';
 import { UserInputError } from './support.ts';
 import {
   encodedKeyToPath,
@@ -546,6 +547,7 @@ export const processPendingTxEvents = async (
     log = () => {},
     vstoragePathPrefixes: { pendingTxPathPrefix },
     pendingTxAbortControllers,
+    kvStore,
   } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
@@ -568,6 +570,7 @@ export const processPendingTxEvents = async (
           abortController.abort(reason);
           pendingTxAbortControllers.delete(txId);
         }
+        setResolvedTx(kvStore, txId, String(data.status));
         continue;
       }
       if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) continue;
@@ -703,6 +706,7 @@ export const startEngine = async (
     signingSmartWalletKit,
     makeNonce,
   } = powers;
+  const { kvStore } = evmCtx;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -835,6 +839,9 @@ export const startEngine = async (
     throttledPendingTxKeys,
     { capacity },
     async (txId: TxId) => {
+      // Skip if a prior run already observed this tx as resolved.
+      if (getResolvedTx(kvStore, txId) !== undefined) return;
+
       const path = `${pendingTxPathPrefix}.${txId}`;
       await null;
       let streamCellJson;
@@ -850,11 +857,12 @@ export const startEngine = async (
         const streamCell = parseStreamCell(streamCellJson, path);
         const marshalledData = parseStreamCellValue(streamCell, -1, path);
         data = marshaller.fromCapData(marshalledData);
-        if (
-          data?.status !== TxStatus.PENDING ||
-          !RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)
-        )
+        if (data?.status !== TxStatus.PENDING) {
+          // Backfill the cache so subsequent restarts skip this read.
+          if (data?.status) setResolvedTx(kvStore, txId, String(data.status));
           return;
+        }
+        if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) return;
         mustMatch(harden(data), PublishedTxShape, path);
         initialPendingTxData.push({
           blockHeight: BigInt(streamCell.blockHeight),

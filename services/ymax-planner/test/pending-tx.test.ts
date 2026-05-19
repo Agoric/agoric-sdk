@@ -19,6 +19,7 @@ import {
   processPendingTxEvents,
   processInitialPendingTransactions,
 } from '../src/engine.ts';
+import { getResolvedTx } from '../src/kv-store.ts';
 import {
   createMockPendingTxOpts,
   createMockPendingTxEvent,
@@ -172,6 +173,31 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 
   t.is(handledTxs.length, 1);
   t.is(handledTxs[0].status, 'pending');
+});
+
+test('processPendingTxEvents caches resolved-tx status when status flips to non-pending', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  const settledTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: 'success',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx99',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(settledTx))]),
+      ),
+    ),
+  ];
+
+  t.is(getResolvedTx(opts.kvStore, 'tx99'), undefined);
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getResolvedTx(opts.kvStore, 'tx99'), 'success');
 });
 
 // --- Unit tests for handlePendingTx ---
