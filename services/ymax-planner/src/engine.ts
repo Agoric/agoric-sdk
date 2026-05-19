@@ -829,19 +829,20 @@ export const startEngine = async (
 
   const initialPendingTxData: PendingTxRecord[] = [];
   const capacity = 10;
+  // Filter out cache hits up front so they don't consume rate-limiter slots
+  const pendingTxKeysToRead = (pendingTxKeys as TxId[]).filter(
+    txId => getResolvedTx(kvStore, txId) === undefined,
+  );
   const throttledPendingTxKeys = rateLimitedSource({
     policy: { quota: capacity, windowMs: 1000 },
     powers: { now: powers.now, setTimeout: powers.setTimeout },
-    source: pendingTxKeys as Array<string>,
+    source: pendingTxKeysToRead,
   });
 
   await makeWorkPool(
     throttledPendingTxKeys,
     { capacity },
     async (txId: TxId) => {
-      // Skip if a prior run already observed this tx as resolved.
-      if (getResolvedTx(kvStore, txId) !== undefined) return;
-
       const path = `${pendingTxPathPrefix}.${txId}`;
       await null;
       let streamCellJson;
