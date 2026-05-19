@@ -96,3 +96,27 @@ export const deleteTxBlockLowerBound = (
 ): void => {
   store.delete(getTxBlockLowerBoundKey(txId, scope));
 };
+
+const getResolvedTxKey = (txId: `tx${number}`) => `${txId}.resolved`;
+
+export const getResolvedTx = (
+  store: KVStore,
+  txId: `tx${number}`,
+): string | undefined => store.get(getResolvedTxKey(txId));
+
+/**
+ * Mark a tx as no longer PENDING so future startups can skip the per-tx
+ * vstorage read. The contract never moves a tx back to PENDING, so cached
+ * entries are always trustworthy.
+ */
+export const setResolvedTx = (
+  store: KVStore,
+  txId: `tx${number}`,
+  status: string,
+): void => {
+  store.set(getResolvedTxKey(txId), status);
+};
+
+export const deleteResolvedTx = (store: KVStore, txId: `tx${number}`): void => {
+  store.delete(getResolvedTxKey(txId));
+};
