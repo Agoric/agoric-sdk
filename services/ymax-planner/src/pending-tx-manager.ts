@@ -31,6 +31,10 @@ import {
   watchOperationResult,
   lookBackOperationResult,
 } from './watchers/operation-watcher.ts';
+import {
+  abortableSleep,
+  WatcherTransportError,
+} from './watchers/watcher-utils.ts';
 import type { YdsNotifier } from './yds-notifier.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
@@ -281,26 +285,33 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
         opts.signal ? [opts.signal] : undefined,
       );
 
-      const liveResultP = watchGmp({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-        kvStore: ctx.kvStore,
-        makeAbortController: ctx.makeAbortController,
-      });
+      const liveResultP = liveWatchWithRetry(
+        () =>
+          watchGmp({
+            ...watchArgs,
+            timeoutMs: opts.timeoutMs,
+            signal: abortController.signal,
+            kvStore: ctx.kvStore,
+            makeAbortController: ctx.makeAbortController,
+          }),
+        {
+          makeAbortController: ctx.makeAbortController,
+          signal: abortController.signal,
+          log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        },
+        err => log(`${logPrefix} Live watcher failed:`, err),
+      );
 
       // Attach handler to abort lookback if live mode completes first with
       // a definitive result. This handler does NOT resolve the transaction -
       // resolution happens once at the end to prevent duplicate resolutions.
-      void liveResultP
-        .then(result => {
-          if (result.settled) {
-            const reason = `${logPrefix} Live mode completed`;
-            log(reason);
-            abortController.abort(reason);
-          }
-        })
-        .catch(e => log(`${logPrefix} Live watcher failed:`, e));
+      void liveResultP.then(result => {
+        if (result.settled) {
+          const reason = `${logPrefix} Live mode completed`;
+          log(reason);
+          abortController.abort(reason);
+        }
+      });
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
@@ -438,20 +449,27 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
         opts.signal ? [opts.signal] : undefined,
       );
 
-      const liveResultP = watchSmartWalletTx({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-        txId,
+      const liveResultP = liveWatchWithRetry(
+        () =>
+          watchSmartWalletTx({
+            ...watchArgs,
+            timeoutMs: opts.timeoutMs,
+            signal: abortController.signal,
+            txId,
+          }),
+        {
+          makeAbortController: ctx.makeAbortController,
+          signal: abortController.signal,
+          log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        },
+        err => log(`${logPrefix} Live watcher failed:`, err),
+      );
+      void liveResultP.then(result => {
+        if (result.settled) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
       });
-      void liveResultP
-        .then(result => {
-          if (result.settled) {
-            log(`${logPrefix} Live mode completed`);
-            abortController.abort();
-          }
-        })
-        .catch(e => log(`${logPrefix} Live watcher failed:`, e));
 
       await null;
 
@@ -569,21 +587,28 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
         opts.signal ? [opts.signal] : undefined,
       );
 
-      const liveResultP = watchOperationResult({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-      });
+      const liveResultP = liveWatchWithRetry(
+        () =>
+          watchOperationResult({
+            ...watchArgs,
+            timeoutMs: opts.timeoutMs,
+            signal: abortController.signal,
+          }),
+        {
+          makeAbortController: ctx.makeAbortController,
+          signal: abortController.signal,
+          log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        },
+        err => log(`${logPrefix} Live watcher failed:`, err),
+      );
 
-      void liveResultP
-        .then(result => {
-          if (result.settled) {
-            const reason = `${logPrefix} Live mode completed`;
-            log(reason);
-            abortController.abort(reason);
-          }
-        })
-        .catch(e => log(`${logPrefix} Live watcher failed:`, e));
+      void liveResultP.then(result => {
+        if (result.settled) {
+          const reason = `${logPrefix} Live mode completed`;
+          log(reason);
+          abortController.abort(reason);
+        }
+      });
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
@@ -690,6 +715,72 @@ export const PendingTxCode = {
 } as const;
 
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
+
+export const TRANSPORT_RETRY_LIMIT = 5;
+export const TRANSPORT_RETRY_INITIAL_MS = 1_000;
+export const TRANSPORT_RETRY_MAX_MS = 60_000;
+
+type TransportRetryOpts = {
+  makeAbortController: MakeAbortController;
+  signal?: AbortSignal;
+  log?: (...args: unknown[]) => void;
+  limit?: number;
+  initialDelayMs?: number;
+  maxDelayMs?: number;
+};
+
+export const watchWithRetry = async <T>(
+  runWatch: () => Promise<T>,
+  {
+    makeAbortController,
+    signal,
+    log = () => {},
+    limit = TRANSPORT_RETRY_LIMIT,
+    initialDelayMs = TRANSPORT_RETRY_INITIAL_MS,
+    maxDelayMs = TRANSPORT_RETRY_MAX_MS,
+  }: TransportRetryOpts,
+): Promise<T | undefined> => {
+  await null;
+  let attempt = 0;
+  while (true) {
+    try {
+      return await runWatch();
+    } catch (err) {
+      if (signal?.aborted) return undefined;
+      if (!(err instanceof WatcherTransportError) || attempt >= limit) {
+        throw err;
+      }
+      const delay = Math.min(initialDelayMs * 2 ** attempt, maxDelayMs);
+      attempt += 1;
+      log(
+        `⚠️  Watcher transport failure (attempt ${attempt}/${limit}), retrying in ${delay}ms`,
+        err,
+      );
+      await abortableSleep(makeAbortController, delay, signal);
+      if (signal?.aborted) return undefined;
+    }
+  }
+};
+
+/**
+ * Wrap a watcher invocation with transport-failure retry, smoothing the result
+ * so the returned promise always resolves with a `WatcherResult`. Used by
+ * lookback monitors to keep the concurrent live arm restartable on transient
+ * WebSocket failures without bubbling errors out of the parent watch.
+ */
+const liveWatchWithRetry = <R extends WatcherResult>(
+  runWatch: () => Promise<R>,
+  opts: TransportRetryOpts,
+  onFailure: (err: unknown) => void,
+): Promise<R | WatcherResult> =>
+  watchWithRetry(runWatch, opts).then(
+    result => result ?? { settled: false },
+    err => {
+      onFailure(err);
+      return { settled: false };
+    },
+  );
+
 export const handlePendingTx = async (
   tx: PendingTx,
   {
@@ -721,16 +812,21 @@ export const handlePendingTx = async (
   }
 
   const watchOpts: Omit<WatchOpts, 'mode'> = { timeoutMs, signal };
+  const runWatch = () =>
+    txTimestampMs
+      ? monitor.watch(watchCtx, tx, log, {
+          mode: 'lookback',
+          publishTimeMs: txTimestampMs,
+          ...watchOpts,
+        })
+      : monitor.watch(watchCtx, tx, log, { mode: 'live', ...watchOpts });
+
   try {
-    if (txTimestampMs) {
-      await monitor.watch(watchCtx, tx, log, {
-        mode: 'lookback',
-        publishTimeMs: txTimestampMs,
-        ...watchOpts,
-      });
-    } else {
-      await monitor.watch(watchCtx, tx, log, { mode: 'live', ...watchOpts });
-    }
+    await watchWithRetry(runWatch, {
+      makeAbortController: watchCtx.makeAbortController,
+      signal,
+      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+    });
   } catch (err) {
     const mode = txTimestampMs ? 'with lookback' : 'in live mode';
     error(`🚨 Failed to process pending tx ${tx.txId} ${mode}`, err);

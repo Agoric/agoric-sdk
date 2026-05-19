@@ -2,6 +2,7 @@ import test from 'ava';
 import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { objectMap } from '@endo/patterns';
+import { makePromiseKit } from '@endo/promise-kit';
 import type { WebSocketProvider } from 'ethers';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
@@ -10,7 +11,9 @@ import type {
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
 import type { CaipChainId } from '@agoric/orchestration';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
+import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
+import { prepareAbortController } from '../src/support.ts';
 import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
   processPendingTxEvents,
@@ -196,6 +199,93 @@ test('handlePendingTx prints error for unsupported transaction type', async t =>
       `🚨 [${unsupportedTx.txId}] No monitor registered for tx type: ${unsupportedTx.type}`,
     ],
   ]);
+});
+
+const immediateSetTimeout: typeof globalThis.setTimeout = ((
+  fn: (...args: any[]) => void,
+) => {
+  void Promise.resolve().then(() => fn());
+  return 0 as unknown as ReturnType<typeof globalThis.setTimeout>;
+}) as any;
+
+const immediateMakeAbortController = prepareAbortController({
+  setTimeout: immediateSetTimeout,
+});
+
+test('watchWithRetry retries on transport error then succeeds', async t => {
+  let attempts = 0;
+  await watchWithRetry(
+    async () => {
+      attempts += 1;
+      if (attempts < 3) throw new WatcherTransportError('boom');
+    },
+    { makeAbortController: immediateMakeAbortController },
+  );
+  t.is(attempts, 3);
+});
+
+test('watchWithRetry rethrows non-transport errors immediately', async t => {
+  let attempts = 0;
+  const otherErr = new Error('not a transport failure');
+  await t.throwsAsync(
+    watchWithRetry(
+      async () => {
+        attempts += 1;
+        throw otherErr;
+      },
+      { makeAbortController: immediateMakeAbortController },
+    ),
+    { is: otherErr },
+  );
+  t.is(attempts, 1);
+});
+
+test('watchWithRetry rethrows transport error after exhausting limit', async t => {
+  let attempts = 0;
+  await t.throwsAsync(
+    watchWithRetry(
+      async () => {
+        attempts += 1;
+        throw new WatcherTransportError('boom');
+      },
+      { makeAbortController: immediateMakeAbortController, limit: 2 },
+    ),
+    { instanceOf: WatcherTransportError },
+  );
+  t.is(attempts, 3); // initial + 2 retries
+});
+
+test('watchWithRetry exits cleanly when signal aborts during backoff', async t => {
+  const ac = new AbortController();
+  let attempts = 0;
+  const { promise: sleepStarted, resolve: startSleep } = makePromiseKit();
+  const { promise: sleepEnded, resolve: endSleep } = makePromiseKit();
+  const mockSetTimeout: typeof globalThis.setTimeout = ((
+    fn: (...args: any[]) => void,
+    _ms: number,
+  ) => {
+    startSleep(null);
+    void sleepEnded.then(() => fn());
+    return 0;
+  }) as any;
+  const result = watchWithRetry(
+    async () => {
+      attempts += 1;
+      throw new WatcherTransportError('boom');
+    },
+    {
+      makeAbortController: prepareAbortController({
+        setTimeout: mockSetTimeout,
+      }),
+      signal: ac.signal,
+    },
+  );
+  // Abort inside the sleep (after it starts but before it ends).
+  await sleepStarted;
+  ac.abort();
+  endSleep(null);
+  await result; // resolves cleanly, does not throw
+  t.is(attempts, 1);
 });
 
 test('resolves a 31 min old pending CCTP transaction in lookback mode', async t => {

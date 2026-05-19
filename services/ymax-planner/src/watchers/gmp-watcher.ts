@@ -25,6 +25,7 @@ import {
   extractGmpExecuteData,
   DEFAULT_RETRY_OPTIONS,
   FAILED_TX_SCOPE,
+  WatcherTransportError,
   type AlchemySubscriptionMessage,
   type RetryOptions,
   handleTxRevert,
@@ -103,14 +104,20 @@ export const watchGmp = ({
     const onWsError = (e: any) => {
       const errorMsg = e?.message || String(e);
       log(`WebSocket error during GMP watch: ${errorMsg}`);
-      fail(new Error(`WebSocket connection error: ${errorMsg}`));
+      fail(
+        new WatcherTransportError(`WebSocket connection error: ${errorMsg}`, {
+          cause: e,
+        }),
+      );
     };
 
     const onWsClose = (code?: number, reason?: any) => {
       if (done) return;
       log(`WebSocket closed during GMP watch (code=${code}, reason=${reason})`);
       fail(
-        new Error(`WebSocket closed unexpectedly: ${reason} (code=${code})`),
+        new WatcherTransportError(
+          `WebSocket closed unexpectedly: ${reason} (code=${code})`,
+        ),
       );
     };
 

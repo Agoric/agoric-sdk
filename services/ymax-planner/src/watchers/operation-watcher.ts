@@ -27,6 +27,7 @@ import {
   handleOperationFailure,
   FAILED_TX_SCOPE,
   DEFAULT_RETRY_OPTIONS,
+  WatcherTransportError,
   type AlchemySubscriptionMessage,
   type RetryOptions,
 } from './watcher-utils.ts';
@@ -216,7 +217,11 @@ export const watchOperationResult = ({
     const onWsError = (e: any) => {
       const errorMsg = e?.message || String(e);
       log(`WebSocket error during OperationResult watch: ${errorMsg}`);
-      fail(new Error(`WebSocket connection error: ${errorMsg}`));
+      fail(
+        new WatcherTransportError(`WebSocket connection error: ${errorMsg}`, {
+          cause: e,
+        }),
+      );
     };
 
     const onWsClose = (code?: number, reason?: any) => {
@@ -225,7 +230,9 @@ export const watchOperationResult = ({
         `WebSocket closed during OperationResult watch (code=${code}, reason=${reason})`,
       );
       fail(
-        new Error(`WebSocket closed unexpectedly: ${reason} (code=${code})`),
+        new WatcherTransportError(
+          `WebSocket closed unexpectedly: ${reason} (code=${code})`,
+        ),
       );
     };
 
