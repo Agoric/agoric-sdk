@@ -10,6 +10,7 @@ import {
   mockFetch,
 } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { getResolvedTx } from '../src/kv-store.ts';
 
 const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const toAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';
@@ -78,6 +79,8 @@ test('handlePendingTx processes CCTP transaction successfully', async t => {
     `[${txId}] ✓ Amount matches! Expected: ${amount}, Received: ${amount}`,
     `[${txId}] CCTP tx resolved`,
   ]);
+
+  t.is(getResolvedTx(opts.kvStore, txId), 'success');
 });
 
 test('handlePendingTx keeps tx pending on amount mismatch until timeout and then logs it', async t => {
