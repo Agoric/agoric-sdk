@@ -2,6 +2,7 @@ import test from 'ava';
 import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { objectMap } from '@endo/patterns';
+import { makePromiseKit } from '@endo/promise-kit';
 import type { WebSocketProvider } from 'ethers';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
@@ -257,9 +258,8 @@ test('watchWithRetry rethrows transport error after exhausting limit', async t =
 test('watchWithRetry exits cleanly when signal aborts during backoff', async t => {
   const ac = new AbortController();
   let attempts = 0;
-  const { promise: sleepStarted, resolve: startSleep } =
-    Promise.withResolvers();
-  const { promise: sleepEnded, resolve: endSleep } = Promise.withResolvers();
+  const { promise: sleepStarted, resolve: startSleep } = makePromiseKit();
+  const { promise: sleepEnded, resolve: endSleep } = makePromiseKit();
   const mockSetTimeout: typeof globalThis.setTimeout = ((
     fn: (...args: any[]) => void,
     _ms: number,
