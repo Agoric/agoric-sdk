@@ -5,6 +5,7 @@ export const createRPCMsgClient = async ({ rpc }: { rpc: Rpc }) => ({
     swingset: new (await import('./swingset/msgs.rpc.msg.js')).MsgClientImpl(
       rpc,
     ),
+    vbank: new (await import('./vbank/msgs.rpc.msg.js')).MsgClientImpl(rpc),
     vibc: new (await import('./vibc/msgs.rpc.msg.js')).MsgClientImpl(rpc),
   },
   cosmos: {
