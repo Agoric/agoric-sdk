@@ -133,14 +133,17 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
     ...createMockPendingTxOpts(),
     error: (...args) => errorLog.push(args),
   });
-  if (errorLog.length !== 1) {
-    t.log(errorLog);
-  }
-  t.is(errorLog.length, 1);
-  t.regex(
-    errorLog[0].at(-1).message,
-    /\btx3\b.*Must have missing properties.*blockHeight/,
-  );
+  // tx2: malformed record (status=pending but no `type`) surfaces through
+  // mustMatch(data, PublishedTxShape, ...) — previously silently skipped.
+  // tx3: streamCell missing the required `blockHeight` field.
+  const messages = errorLog.map(args => args.at(-1).message);
+  const tx2Msg = messages.find(m => /\btx2\b/.test(m));
+  const tx3Msg = messages.find(m => /\btx3\b/.test(m));
+  t.truthy(tx2Msg, 'expected an error for tx2');
+  t.truthy(tx3Msg, 'expected an error for tx3');
+  t.regex(tx2Msg!, /Must match one of/);
+  t.regex(tx3Msg!, /Must have missing properties.*blockHeight/);
+  t.is(errorLog.length, 2);
 
   t.is(handledTxs.length, 2);
 });
