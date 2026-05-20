@@ -5,6 +5,7 @@ import '@endo/init/pre-remoting.js';
 import '../src/shims.cjs';
 import '../src/lockdown.js';
 
+import { cacheStats, deleteCachedTx, inspectCache } from './cache-tool-lib.ts';
 import { processTx } from './process-tx-lib.ts';
 import { resolveTx } from './resolve-tx-lib.ts';
 
@@ -27,6 +28,19 @@ const showUsage = () => {
   console.error('    status: "success" or "fail"');
   console.error('    reason: required when status is "fail"');
   console.error('');
+  console.error('  cache inspect <txId>');
+  console.error(
+    '    Print resolved / ignored / blockLowerBound cache state for a txId',
+  );
+  console.error('');
+  console.error('  cache delete <txId>');
+  console.error(
+    '    Remove all cache entries for a txId so the next startup re-reads it',
+  );
+  console.error('');
+  console.error('  cache stats');
+  console.error('    Show counts of cached entries grouped by status / type');
+  console.error('');
   console.error('Examples:');
   console.error('  ./scripts/tx-tool.ts scan tx233');
   console.error('  ./scripts/tx-tool.ts scan tx233 --verbose');
@@ -34,6 +48,9 @@ const showUsage = () => {
   console.error(
     '  ./scripts/tx-tool.ts settle tx400 fail "Transaction timeout"',
   );
+  console.error('  ./scripts/tx-tool.ts cache inspect tx233');
+  console.error('  ./scripts/tx-tool.ts cache delete tx233');
+  console.error('  ./scripts/tx-tool.ts cache stats');
 };
 
 const args = process.argv.slice(2);
@@ -99,6 +116,44 @@ if (command === 'scan') {
     console.error(err);
     process.exit(1);
   });
+} else if (command === 'cache') {
+  const sub = commandArgs[0];
+  const rest = commandArgs.slice(1);
+  try {
+    switch (sub) {
+      case 'inspect': {
+        rest.length === 1 ||
+          (() => {
+            console.error('Usage: ./scripts/tx-tool.ts cache inspect <txId>');
+            process.exit(1);
+          })();
+        inspectCache(rest[0], { env });
+        break;
+      }
+      case 'delete': {
+        rest.length === 1 ||
+          (() => {
+            console.error('Usage: ./scripts/tx-tool.ts cache delete <txId>');
+            process.exit(1);
+          })();
+        deleteCachedTx(rest[0], { env });
+        break;
+      }
+      case 'stats': {
+        cacheStats({ env });
+        break;
+      }
+      default: {
+        console.error(`Error: Unknown cache subcommand "${sub ?? ''}"`);
+        console.error('');
+        showUsage();
+        process.exit(1);
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    process.exit(1);
+  }
 } else {
   console.error(`Error: Unknown command "${command}"`);
   console.error('');
