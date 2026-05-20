@@ -98,7 +98,8 @@
     "rxjs@npm:^6.4.0": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
     "rxjs@npm:^7.5.5": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
     "ses@npm:^2.0.0": "patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch",
-    "ses@npm:^2.2.0": "patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch"
+    "ses@npm:^2.2.0": "patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch",
+    "@endo/init@npm:^1.1.13": "patch:@endo/init@npm%3A1.1.13#~/.yarn/patches/@endo-init-npm-1.1.13-1e5953990d.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3@12.10.0": {
@@ -112,7 +113,7 @@
     }
   },
   "engines": {
-    "node": "^22.11"
+    "node": "^22.11 || ^24.14"
   },
   "scripts": {
     "prepack-package": "scripts/packing/prepack-package.mjs",

@@ -2560,7 +2560,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/init@npm:^1.1.13":
+"@endo/init@npm:1.1.13":
   version: 1.1.13
   resolution: "@endo/init@npm:1.1.13"
   dependencies:
@@ -2570,6 +2570,19 @@ __metadata:
     "@endo/lockdown": "npm:^1.0.18"
     "@endo/promise-kit": "npm:^1.2.0"
   checksum: 10c0/26c3f026d89ae9b3269b2df068acdf4007372b0597116c9440e426aab117c1f46d4b5cf08bcb8ac8b50ec916b25cbc15c0c11f8be50f451fcd7dc269eef1f924
+  languageName: node
+  linkType: hard
+
+"@endo/init@patch:@endo/init@npm%3A1.1.13#~/.yarn/patches/@endo-init-npm-1.1.13-1e5953990d.patch":
+  version: 1.1.13
+  resolution: "@endo/init@patch:@endo/init@npm%3A1.1.13#~/.yarn/patches/@endo-init-npm-1.1.13-1e5953990d.patch::version=1.1.13&hash=b6f488"
+  dependencies:
+    "@endo/base64": "npm:^1.0.12"
+    "@endo/eventual-send": "npm:^1.4.0"
+    "@endo/harden": "npm:^1.1.0"
+    "@endo/lockdown": "npm:^1.0.18"
+    "@endo/promise-kit": "npm:^1.2.0"
+  checksum: 10c0/28c74797bdf90a51991ce9e197608ae9832adbc7dce2df7263decae779b96dccae9a6c86a38bf267e84bb6750a3575f2f7d0e6272f4a1acf5f8a17b3f94c2075
   languageName: node
   linkType: hard
 
