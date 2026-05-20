@@ -25,6 +25,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/bank"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
@@ -105,7 +106,7 @@ func initVbankFixtures(t *testing.T) VbankFixtures {
 	}
 
 	newCtx := sdk.NewContext(cms, cmtproto.Header{}, true, logger)
-	authority := authtypes.NewModuleAddress("gov")
+	authority := authtypes.NewModuleAddress(govtypes.ModuleName)
 
 	maccPerms := map[string][]string{
 		minttypes.ModuleName:         {authtypes.Minter},
