@@ -195,7 +195,7 @@ jobs:
           # NB the Dockerfile.sdk based images must match this node version
           # The node version inside ansible deployment (prepare-machine.yml)
           # should also match this node version
-          node-version: 22
+          node-version: 24
           path: ./agoric-sdk
       - name: Build cosmic-swingset dependencies
         working-directory: ./agoric-sdk

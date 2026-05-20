@@ -25,7 +25,7 @@
     "@agoric/client-utils": "dev",
     "@agoric/deploy-script-support": "dev",
     "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
-    "@agoric/synthetic-chain": "^0.7.1",
+    "@agoric/synthetic-chain": "^0.7.2",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
