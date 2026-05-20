@@ -200,6 +200,29 @@ test('processPendingTxEvents caches resolved-tx status when status flips to non-
   t.is(getResolvedTx(opts.kvStore, 'tx99'), 'success');
 });
 
+test('processPendingTxEvents does not cache `setup` status', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  const setupTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: 'setup',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx100',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(setupTx))]),
+      ),
+    ),
+  ];
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getResolvedTx(opts.kvStore, 'tx100'), undefined);
+});
+
 // --- Unit tests for handlePendingTx ---
 test('handlePendingTx prints error for unsupported transaction type', async t => {
   const mockLog = () => {};
