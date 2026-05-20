@@ -63,7 +63,8 @@ export const parseDebugEnv = (levels, options = {}) => {
   const prefixedSelector = `${selectorPrefix}:`;
 
   /** @type {string | undefined} */
-  let maxActiveLevel = debugList.length || debugValue === 'unset' ? 'log' : 'info';
+  let maxActiveLevel =
+    debugList.length || debugValue === 'unset' ? 'log' : 'info';
   for (const selector of debugList) {
     const fullSelector =
       selector === bareSelector ? `${prefixedSelector}debug` : selector;

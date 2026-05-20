@@ -21,9 +21,13 @@ test('init console pipeline expands Error logs before JSONL output', async t => 
   delete env.LOCKDOWN_OPTIONS;
   delete env.LOCKDOWN_ERROR_TAMING;
 
-  const { stdout, stderr } = await execFileP(process.execPath, ['test/init-console.fixture.mjs'], {
-    env,
-  });
+  const { stdout, stderr } = await execFileP(
+    process.execPath,
+    ['test/init-console.fixture.mjs'],
+    {
+      env,
+    },
+  );
 
   t.is(stderr, '');
 
@@ -38,17 +42,22 @@ test('init console pipeline expands Error logs before JSONL output', async t => 
   t.is(records[0].level, 30);
 
   const { msg } = records[0];
-  t.regex(msg, /^My error: \(Error#\d+\) > you like\?\nError#\d+: something\n\n/);
+  t.regex(
+    msg,
+    /^My error: \(Error#\d+\) > you like\?\nError#\d+: something\n\n/,
+  );
   t.notRegex(msg, /\bError: something\b/);
 
   // Remove the non-deterministic parts of the output so that we can snapshot
   // test the rest of it.
-  const stableRecords = records.map(({ hostname, pid, time, msg, ...rest }) => ({
-    hostname: '<hostname>',
-    ...rest,
-    msg: msg.replaceAll(/\b(at file:\/\/)[^\n]+/g, '$1<filename>'),
-    pid: '<pid>',
-    time: '<timestamp>',
-  }));
+  const stableRecords = records.map(
+    ({ hostname, pid, time, msg, ...rest }) => ({
+      hostname: '<hostname>',
+      ...rest,
+      msg: msg.replaceAll(/\b(at file:\/\/)[^\n]+/g, '$1<filename>'),
+      pid: '<pid>',
+      time: '<timestamp>',
+    }),
+  );
   t.snapshot(stableRecords, 'stabilized output should match');
 });

@@ -56,7 +56,7 @@ const installKeyGroups = {
  */
 const publishInstallGroup = async ({ publishRef, install, group, persist }) =>
   Object.fromEntries(
-    // eslint-disable-next-line @jessie.js/safe-await-separator
+     
     await Promise.all(
       Object.entries(group).map(async ([key, entry]) => {
         const bundlePath = await buildBundlePath(import.meta.url, entry);
