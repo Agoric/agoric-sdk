@@ -14,3 +14,5 @@ const (
 	GiveawayPoolName  = "vbank/giveaway"
 	ProvisionPoolName = "vbank/provision"
 )
+
+var ParamsKey = []byte("params")
