@@ -75,6 +75,12 @@ import {
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
+import {
+  getIgnoredTx,
+  getResolvedTx,
+  setIgnoredTx,
+  setResolvedTx,
+} from './kv-store.ts';
 import { UserInputError } from './support.ts';
 import {
   encodedKeyToPath,
@@ -125,6 +131,17 @@ const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
   TxType.GMP,
   TxType.ROUTED_GMP,
   TxType.MAKE_ACCOUNT,
+];
+
+/**
+ * Tx types that are settled by the contract itself, not the planner. Entries
+ * of these types are safe to permanently cache as "ignored" so subsequent
+ * startups skip the vstorage read.
+ */
+const RESOLVER_IGNORED_PENDINGTX_TYPES: TxType[] = [
+  TxType.IBC_FROM_AGORIC,
+  TxType.IBC_FROM_REMOTE,
+  TxType.CCTP_TO_AGORIC,
 ];
 
 const makeVstoragePathPrefixes = (contractInstance: string) => ({
@@ -546,6 +563,7 @@ export const processPendingTxEvents = async (
     log = () => {},
     vstoragePathPrefixes: { pendingTxPathPrefix },
     pendingTxAbortControllers,
+    kvStore,
   } = txPowers;
   for (const { path, value: cellJson } of events) {
     const errLabel = `🚨 Failed to process pending tx ${path}`;
@@ -568,9 +586,18 @@ export const processPendingTxEvents = async (
           abortController.abort(reason);
           pendingTxAbortControllers.delete(txId);
         }
+        if (
+          data.status === TxStatus.SUCCESS ||
+          data.status === TxStatus.FAILED
+        ) {
+          setResolvedTx(kvStore, txId, data.status);
+        }
         continue;
       }
-      if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) continue;
+      if (RESOLVER_IGNORED_PENDINGTX_TYPES.includes(data.type)) {
+        setIgnoredTx(kvStore, txId, data.type);
+        continue;
+      }
 
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
@@ -703,6 +730,7 @@ export const startEngine = async (
     signingSmartWalletKit,
     makeNonce,
   } = powers;
+  const { kvStore } = evmCtx;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
@@ -825,10 +853,20 @@ export const startEngine = async (
 
   const initialPendingTxData: PendingTxRecord[] = [];
   const capacity = 10;
+  // Filter out cache hits up front so they don't consume rate-limiter slots
+  const pendingTxKeysToRead = (pendingTxKeys as TxId[]).filter(
+    txId =>
+      getResolvedTx(kvStore, txId) === undefined &&
+      getIgnoredTx(kvStore, txId) === undefined,
+  );
+  const cacheHits = pendingTxKeys.length - pendingTxKeysToRead.length;
+  console.warn(
+    `pendingTx cache: ${cacheHits} hits, ${pendingTxKeysToRead.length} to read from vstorage`,
+  );
   const throttledPendingTxKeys = rateLimitedSource({
     policy: { quota: capacity, windowMs: 1000 },
     powers: { now: powers.now, setTimeout: powers.setTimeout },
-    source: pendingTxKeys as Array<string>,
+    source: pendingTxKeysToRead,
   });
 
   await makeWorkPool(
@@ -850,11 +888,20 @@ export const startEngine = async (
         const streamCell = parseStreamCell(streamCellJson, path);
         const marshalledData = parseStreamCellValue(streamCell, -1, path);
         data = marshaller.fromCapData(marshalledData);
-        if (
-          data?.status !== TxStatus.PENDING ||
-          !RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)
-        )
+        if (data?.status !== TxStatus.PENDING) {
+          // Backfill the cache so subsequent restarts skip this read.
+          if (
+            data?.status === TxStatus.SUCCESS ||
+            data?.status === TxStatus.FAILED
+          ) {
+            setResolvedTx(kvStore, txId, data.status);
+          }
           return;
+        }
+        if (RESOLVER_IGNORED_PENDINGTX_TYPES.includes(data.type)) {
+          setIgnoredTx(kvStore, txId, data.type);
+          return;
+        }
         mustMatch(harden(data), PublishedTxShape, path);
         initialPendingTxData.push({
           blockHeight: BigInt(streamCell.blockHeight),

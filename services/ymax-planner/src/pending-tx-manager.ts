@@ -17,6 +17,7 @@ import type {
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 import type { WebSocketProvider } from 'ethers';
+import { setResolvedTx } from './kv-store.ts';
 import { resolvePendingTx } from './resolver.ts';
 import { submitWithRetry } from './retry-settlement.ts';
 import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
@@ -202,17 +203,16 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
     }
 
     if (transferResult.settled) {
-      await submitWithRetry(
+      const finalStatus =
+        transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
+      const submitted = await submitWithRetry(
         `${logPrefix} CCTP settlement`,
         () =>
           resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
             makeNonce: ctx.makeNonce,
             txId,
-            status:
-              transferResult.success !== false
-                ? TxStatus.SUCCESS
-                : TxStatus.FAILED,
+            status: finalStatus,
           }),
         {
           log,
@@ -222,6 +222,9 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
           signal: opts.signal,
         },
       );
+      if (submitted !== undefined) {
+        setResolvedTx(ctx.kvStore, txId, finalStatus);
+      }
     }
 
     if (transferResult?.txHash) {
@@ -350,17 +353,16 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
     }
 
     if (transferResult.settled) {
-      await submitWithRetry(
+      const finalStatus =
+        transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
+      const submitted = await submitWithRetry(
         `${logPrefix} GMP settlement`,
         () =>
           resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
             makeNonce: ctx.makeNonce,
             txId,
-            status:
-              transferResult.success !== false
-                ? TxStatus.SUCCESS
-                : TxStatus.FAILED,
+            status: finalStatus,
           }),
         {
           log,
@@ -370,6 +372,9 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
           signal: opts.signal,
         },
       );
+      if (submitted !== undefined) {
+        setResolvedTx(ctx.kvStore, txId, finalStatus);
+      }
     }
 
     if (transferResult?.txHash) {
@@ -503,17 +508,16 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
     }
 
     if (walletResult.settled) {
-      await submitWithRetry(
+      const finalStatus =
+        walletResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
+      const submitted = await submitWithRetry(
         `${logPrefix} MAKE_ACCOUNT settlement`,
         () =>
           resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
             makeNonce: ctx.makeNonce,
             txId,
-            status:
-              walletResult.success !== false
-                ? TxStatus.SUCCESS
-                : TxStatus.FAILED,
+            status: finalStatus,
           }),
         {
           log,
@@ -523,6 +527,9 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
           signal: opts.signal,
         },
       );
+      if (submitted !== undefined) {
+        setResolvedTx(ctx.kvStore, txId, finalStatus);
+      }
     }
 
     if (walletResult?.txHash) {
@@ -642,17 +649,16 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
     }
 
     if (transferResult.settled) {
-      await submitWithRetry(
+      const finalStatus =
+        transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
+      const submitted = await submitWithRetry(
         `${logPrefix} ROUTED_GMP settlement`,
         () =>
           resolvePendingTx({
             signingSmartWalletKit: ctx.signingSmartWalletKit,
             makeNonce: ctx.makeNonce,
             txId,
-            status:
-              transferResult.success !== false
-                ? TxStatus.SUCCESS
-                : TxStatus.FAILED,
+            status: finalStatus,
           }),
         {
           log,
@@ -662,6 +668,9 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
           signal: opts.signal,
         },
       );
+      if (submitted !== undefined) {
+        setResolvedTx(ctx.kvStore, txId, finalStatus);
+      }
     }
 
     if (transferResult?.txHash) {

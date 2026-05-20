@@ -4,8 +4,11 @@
  */
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { makeKVStore } from '@agoric/internal/src/kv-store.js';
+import type { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
 import type { Database as SQLiteDatabase } from 'better-sqlite3';
 import Database from 'better-sqlite3';
+
+type ResolvedTxStatus = Exclude<TxStatus, 'pending' | 'setup'>;
 
 type SQLiteKeyValueStoreOptions = {
   trace: (...args: string[]) => void;
@@ -95,4 +98,51 @@ export const deleteTxBlockLowerBound = (
   scope?: string,
 ): void => {
   store.delete(getTxBlockLowerBoundKey(txId, scope));
+};
+
+const getResolvedTxKey = (txId: `tx${number}`) => `${txId}.resolved`;
+
+export const getResolvedTx = (
+  store: KVStore,
+  txId: `tx${number}`,
+): ResolvedTxStatus | undefined =>
+  store.get(getResolvedTxKey(txId)) as ResolvedTxStatus | undefined;
+
+/**
+ * Mark a tx as settled so future startups can skip the per-tx vstorage read.
+ * Only `success` and `failed` are terminal;
+ */
+export const setResolvedTx = (
+  store: KVStore,
+  txId: `tx${number}`,
+  status: ResolvedTxStatus,
+): void => {
+  store.set(getResolvedTxKey(txId), status);
+};
+
+export const deleteResolvedTx = (store: KVStore, txId: `tx${number}`): void => {
+  store.delete(getResolvedTxKey(txId));
+};
+
+const getIgnoredTxKey = (txId: `tx${number}`) => `${txId}.ignored`;
+
+export const getIgnoredTx = (
+  store: KVStore,
+  txId: `tx${number}`,
+): TxType | undefined => store.get(getIgnoredTxKey(txId)) as TxType | undefined;
+
+/**
+ * Mark a tx as one the planner does not act on (its `type` is not in
+ * `RESOLVER_SUPPORTED_TRANSACTIONS`).
+ */
+export const setIgnoredTx = (
+  store: KVStore,
+  txId: `tx${number}`,
+  type: TxType,
+): void => {
+  store.set(getIgnoredTxKey(txId), type);
+};
+
+export const deleteIgnoredTx = (store: KVStore, txId: `tx${number}`): void => {
+  store.delete(getIgnoredTxKey(txId));
 };
