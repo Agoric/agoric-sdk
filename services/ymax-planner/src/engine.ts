@@ -133,6 +133,17 @@ const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
   TxType.MAKE_ACCOUNT,
 ];
 
+/**
+ * Tx types that are settled by the contract itself, not the planner. Entries
+ * of these types are safe to permanently cache as "ignored" so subsequent
+ * startups skip the vstorage read.
+ */
+const RESOLVER_IGNORED_PENDINGTX_TYPES: TxType[] = [
+  TxType.IBC_FROM_AGORIC,
+  TxType.IBC_FROM_REMOTE,
+  TxType.CCTP_TO_AGORIC,
+];
+
 const makeVstoragePathPrefixes = (contractInstance: string) => ({
   portfoliosPathPrefix: `published.${contractInstance}.portfolios`,
   pendingTxPathPrefix: `published.${contractInstance}.pendingTxs`,
@@ -583,7 +594,7 @@ export const processPendingTxEvents = async (
         }
         continue;
       }
-      if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) {
+      if (RESOLVER_IGNORED_PENDINGTX_TYPES.includes(data.type)) {
         setIgnoredTx(kvStore, txId, data.type);
         continue;
       }
@@ -887,7 +898,7 @@ export const startEngine = async (
           }
           return;
         }
-        if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) {
+        if (RESOLVER_IGNORED_PENDINGTX_TYPES.includes(data.type)) {
           setIgnoredTx(kvStore, txId, data.type);
           return;
         }
