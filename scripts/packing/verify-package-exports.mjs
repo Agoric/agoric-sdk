@@ -17,6 +17,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+// eslint-disable-next-line import/no-extraneous-dependencies -- transitive via lerna-lite; only used by repo-internal scripts
 import spawn from 'nano-spawn';
 
 //#region static config
