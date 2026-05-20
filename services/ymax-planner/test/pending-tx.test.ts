@@ -19,6 +19,7 @@ import {
   processPendingTxEvents,
   processInitialPendingTransactions,
 } from '../src/engine.ts';
+import { getIgnoredTx, getResolvedTx } from '../src/kv-store.ts';
 import {
   createMockPendingTxOpts,
   createMockPendingTxEvent,
@@ -132,14 +133,17 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
     ...createMockPendingTxOpts(),
     error: (...args) => errorLog.push(args),
   });
-  if (errorLog.length !== 1) {
-    t.log(errorLog);
-  }
-  t.is(errorLog.length, 1);
-  t.regex(
-    errorLog[0].at(-1).message,
-    /\btx3\b.*Must have missing properties.*blockHeight/,
-  );
+  // tx2: malformed record (status=pending but no `type`) surfaces through
+  // mustMatch(data, PublishedTxShape, ...) — previously silently skipped.
+  // tx3: streamCell missing the required `blockHeight` field.
+  const messages = errorLog.map(args => args.at(-1).message);
+  const tx2Msg = messages.find(m => /\btx2\b/.test(m));
+  const tx3Msg = messages.find(m => /\btx3\b/.test(m));
+  t.truthy(tx2Msg, 'expected an error for tx2');
+  t.truthy(tx3Msg, 'expected an error for tx3');
+  t.regex(tx2Msg!, /Must match one of/);
+  t.regex(tx3Msg!, /Must have missing properties.*blockHeight/);
+  t.is(errorLog.length, 2);
 
   t.is(handledTxs.length, 2);
 });
@@ -172,6 +176,81 @@ test('processPendingTxEvents handles only pending transactions', async t => {
 
   t.is(handledTxs.length, 1);
   t.is(handledTxs[0].status, 'pending');
+});
+
+test('processPendingTxEvents caches resolved-tx status when status flips to non-pending', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  const settledTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: 'success',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx99',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(settledTx))]),
+      ),
+    ),
+  ];
+
+  t.is(getResolvedTx(opts.kvStore, 'tx99'), undefined);
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getResolvedTx(opts.kvStore, 'tx99'), 'success');
+});
+
+test('processPendingTxEvents caches unsupported tx types so future startups skip them', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  // IBC_FROM_AGORIC is in MONITORS but not in RESOLVER_SUPPORTED_TRANSACTIONS,
+  // so events for it should be cached as ignored and never handled.
+  const ibcTx = createMockPendingTxData({
+    type: TxType.IBC_FROM_AGORIC,
+    status: 'pending',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx101',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(ibcTx))]),
+      ),
+    ),
+  ];
+
+  t.is(getIgnoredTx(opts.kvStore, 'tx101'), undefined);
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getIgnoredTx(opts.kvStore, 'tx101'), TxType.IBC_FROM_AGORIC);
+});
+
+test('processPendingTxEvents does not cache `setup` status', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  const setupTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: 'setup',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx100',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(setupTx))]),
+      ),
+    ),
+  ];
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getResolvedTx(opts.kvStore, 'tx100'), undefined);
 });
 
 // --- Unit tests for handlePendingTx ---
