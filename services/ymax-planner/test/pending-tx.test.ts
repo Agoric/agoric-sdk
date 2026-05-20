@@ -19,7 +19,7 @@ import {
   processPendingTxEvents,
   processInitialPendingTransactions,
 } from '../src/engine.ts';
-import { getResolvedTx } from '../src/kv-store.ts';
+import { getIgnoredTx, getResolvedTx } from '../src/kv-store.ts';
 import {
   createMockPendingTxOpts,
   createMockPendingTxEvent,
@@ -198,6 +198,33 @@ test('processPendingTxEvents caches resolved-tx status when status flips to non-
 
   t.is(handledTxs.length, 0);
   t.is(getResolvedTx(opts.kvStore, 'tx99'), 'success');
+});
+
+test('processPendingTxEvents caches unsupported tx types so future startups skip them', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  // IBC_FROM_AGORIC is in MONITORS but not in RESOLVER_SUPPORTED_TRANSACTIONS,
+  // so events for it should be cached as ignored and never handled.
+  const ibcTx = createMockPendingTxData({
+    type: TxType.IBC_FROM_AGORIC,
+    status: 'pending',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx101',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(ibcTx))]),
+      ),
+    ),
+  ];
+
+  t.is(getIgnoredTx(opts.kvStore, 'tx101'), undefined);
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getIgnoredTx(opts.kvStore, 'tx101'), TxType.IBC_FROM_AGORIC);
 });
 
 test('processPendingTxEvents does not cache `setup` status', async t => {

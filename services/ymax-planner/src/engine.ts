@@ -75,7 +75,12 @@ import {
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
-import { getResolvedTx, setResolvedTx } from './kv-store.ts';
+import {
+  getIgnoredTx,
+  getResolvedTx,
+  setIgnoredTx,
+  setResolvedTx,
+} from './kv-store.ts';
 import { UserInputError } from './support.ts';
 import {
   encodedKeyToPath,
@@ -578,7 +583,10 @@ export const processPendingTxEvents = async (
         }
         continue;
       }
-      if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) continue;
+      if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) {
+        setIgnoredTx(kvStore, txId, data.type);
+        continue;
+      }
 
       mustMatch(data, PublishedTxShape, `${path} index -1`);
       const tx = { txId, ...data } as PendingTx;
@@ -836,7 +844,13 @@ export const startEngine = async (
   const capacity = 10;
   // Filter out cache hits up front so they don't consume rate-limiter slots
   const pendingTxKeysToRead = (pendingTxKeys as TxId[]).filter(
-    txId => getResolvedTx(kvStore, txId) === undefined,
+    txId =>
+      getResolvedTx(kvStore, txId) === undefined &&
+      getIgnoredTx(kvStore, txId) === undefined,
+  );
+  const cacheHits = pendingTxKeys.length - pendingTxKeysToRead.length;
+  console.warn(
+    `pendingTx cache: ${cacheHits} hits, ${pendingTxKeysToRead.length} to read from vstorage`,
   );
   const throttledPendingTxKeys = rateLimitedSource({
     policy: { quota: capacity, windowMs: 1000 },
@@ -873,7 +887,10 @@ export const startEngine = async (
           }
           return;
         }
-        if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) return;
+        if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) {
+          setIgnoredTx(kvStore, txId, data.type);
+          return;
+        }
         mustMatch(harden(data), PublishedTxShape, path);
         initialPendingTxData.push({
           blockHeight: BigInt(streamCell.blockHeight),
