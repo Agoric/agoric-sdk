@@ -1,13 +1,18 @@
 /**
- * Unit tests for `getResolvedTx`, `setResolvedTx`, `deleteResolvedTx`.
+ * Unit tests for `getResolvedTx`, `setResolvedTx`, `deleteResolvedTx`,
+ * `getIgnoredTx`, `setIgnoredTx`, `deleteIgnoredTx`.
  */
 import test from 'ava';
 
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
+import { TxType } from '@agoric/portfolio-api/src/resolver.js';
 
 import {
+  deleteIgnoredTx,
   deleteResolvedTx,
+  getIgnoredTx,
   getResolvedTx,
+  setIgnoredTx,
   setResolvedTx,
 } from '../src/kv-store.ts';
 
@@ -46,4 +51,31 @@ test('entries are keyed independently per txId', t => {
   deleteResolvedTx(store, 'tx1');
   t.is(getResolvedTx(store, 'tx1'), undefined);
   t.is(getResolvedTx(store, 'tx2'), 'failed');
+});
+
+test('getIgnoredTx returns undefined for an unknown txId', t => {
+  const store = makeKVStoreFromMap(new Map());
+  t.is(getIgnoredTx(store, 'tx1'), undefined);
+});
+
+test('setIgnoredTx then getIgnoredTx roundtrips the type', t => {
+  const store = makeKVStoreFromMap(new Map());
+  setIgnoredTx(store, 'tx1', TxType.IBC_FROM_AGORIC);
+  t.is(getIgnoredTx(store, 'tx1'), TxType.IBC_FROM_AGORIC);
+});
+
+test('deleteIgnoredTx removes the entry', t => {
+  const store = makeKVStoreFromMap(new Map());
+  setIgnoredTx(store, 'tx1', TxType.IBC_FROM_AGORIC);
+  deleteIgnoredTx(store, 'tx1');
+  t.is(getIgnoredTx(store, 'tx1'), undefined);
+});
+
+test('resolved and ignored caches are keyed independently', t => {
+  const store = makeKVStoreFromMap(new Map());
+  setResolvedTx(store, 'tx1', 'success');
+  setIgnoredTx(store, 'tx1', TxType.IBC_FROM_AGORIC);
+  // Both helpers see their own value for the same txId.
+  t.is(getResolvedTx(store, 'tx1'), 'success');
+  t.is(getIgnoredTx(store, 'tx1'), TxType.IBC_FROM_AGORIC);
 });
