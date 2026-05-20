@@ -4,7 +4,7 @@
  */
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { makeKVStore } from '@agoric/internal/src/kv-store.js';
-import type { TxStatus } from '@agoric/portfolio-api/src/resolver.js';
+import type { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
 import type { Database as SQLiteDatabase } from 'better-sqlite3';
 import Database from 'better-sqlite3';
 
@@ -122,4 +122,27 @@ export const setResolvedTx = (
 
 export const deleteResolvedTx = (store: KVStore, txId: `tx${number}`): void => {
   store.delete(getResolvedTxKey(txId));
+};
+
+const getIgnoredTxKey = (txId: `tx${number}`) => `${txId}.ignored`;
+
+export const getIgnoredTx = (
+  store: KVStore,
+  txId: `tx${number}`,
+): TxType | undefined => store.get(getIgnoredTxKey(txId)) as TxType | undefined;
+
+/**
+ * Mark a tx as one the planner does not act on (its `type` is not in
+ * `RESOLVER_SUPPORTED_TRANSACTIONS`).
+ */
+export const setIgnoredTx = (
+  store: KVStore,
+  txId: `tx${number}`,
+  type: TxType,
+): void => {
+  store.set(getIgnoredTxKey(txId), type);
+};
+
+export const deleteIgnoredTx = (store: KVStore, txId: `tx${number}`): void => {
+  store.delete(getIgnoredTxKey(txId));
 };
