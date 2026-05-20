@@ -10,6 +10,7 @@
  */
 import fs from 'node:fs';
 import path from 'node:path';
+// eslint-disable-next-line import/no-extraneous-dependencies -- transitive via lerna-lite; only used by repo-internal scripts
 import spawn from 'nano-spawn';
 
 // Package directory from INIT_CWD (set by yarn) or current directory
