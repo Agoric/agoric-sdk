@@ -8,23 +8,9 @@ import (
 	sdkmath "cosmossdk.io/math"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
-	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 )
 
 const AllowAllMonitoringAccountsPattern = "*"
-
-// Parameter keys
-var (
-	ParamStoreKeyRewardEpochDurationBlocks = []byte("reward_epoch_duration_blocks")
-	ParamStoreKeyRewardSmoothingBlocks     = []byte("reward_smoothing_blocks")
-	ParamStoreKeyPerEpochRewardFraction    = []byte("per_epoch_reward_fraction")
-	ParamStoreKeyAllowedMonitoringAccounts = []byte("allowed_monitoring_accounts")
-)
-
-// ParamKeyTable returns the parameter key table.
-func ParamKeyTable() paramtypes.KeyTable {
-	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
-}
 
 // DefaultParams returns default parameters
 func DefaultParams() Params {
@@ -86,16 +72,6 @@ func (p Params) IsAllowedMonitoringAccount(addr string) bool {
 
 	// No match found.
 	return false
-}
-
-// ParamSetPairs returns the parameter set pairs.
-func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
-	return paramtypes.ParamSetPairs{
-		paramtypes.NewParamSetPair(ParamStoreKeyRewardEpochDurationBlocks, &p.RewardEpochDurationBlocks, validateRewardEpochDurationBlocks),
-		paramtypes.NewParamSetPair(ParamStoreKeyRewardSmoothingBlocks, &p.RewardSmoothingBlocks, validateRewardSmoothingBlocks),
-		paramtypes.NewParamSetPair(ParamStoreKeyPerEpochRewardFraction, &p.PerEpochRewardFraction, validatePerEpochRewardFraction),
-		paramtypes.NewParamSetPair(ParamStoreKeyAllowedMonitoringAccounts, &p.AllowedMonitoringAccounts, validateAllowedMonitoringAccounts),
-	}
 }
 
 // ValidateBasic performs basic validation on distribution parameters.

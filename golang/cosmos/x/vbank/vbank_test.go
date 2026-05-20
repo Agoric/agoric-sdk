@@ -308,7 +308,7 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 	subspace := pk.Subspace(types.ModuleName)
 	vbankStore := runtime.NewKVStoreService(vbankStoreKey)
 	transientStore := runtime.NewTransientStoreService(paramsTStoreKey)
-	keeper := NewKeeper(cdc, vbankStore, transientStore, subspace, account, bank, "feeCollectorName", pushAction)
+	keeper := NewKeeper(cdc, vbankStore, transientStore, subspace, account, bank, "feeCollectorName", authtypes.NewModuleAddress("gov").String(), pushAction)
 
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
