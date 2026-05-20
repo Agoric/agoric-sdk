@@ -18,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 	"github.com/stretchr/testify/require"
@@ -31,7 +32,7 @@ func TestMsgUpdateParams(t *testing.T) {
 
 	params := types.DefaultParams()
 	params.AllowedMonitoringAccounts = []string{"*"}
-	_, err := server.UpdateParams(ctx, types.NewMsgUpdateParams(authtypes.NewModuleAddress("gov").String(), params))
+	_, err := server.UpdateParams(ctx, types.NewMsgUpdateParams(authtypes.NewModuleAddress(govtypes.ModuleName).String(), params))
 	require.NoError(t, err)
 	require.Equal(t, []string{"*"}, k.GetParams(ctx).AllowedMonitoringAccounts)
 }
@@ -50,7 +51,7 @@ func TestMsgUpdateParamsRejectsInvalidParams(t *testing.T) {
 
 	params := types.DefaultParams()
 	params.PerEpochRewardFraction = math.LegacyNewDec(2)
-	_, err := server.UpdateParams(ctx, types.NewMsgUpdateParams(authtypes.NewModuleAddress("gov").String(), params))
+	_, err := server.UpdateParams(ctx, types.NewMsgUpdateParams(authtypes.NewModuleAddress(govtypes.ModuleName).String(), params))
 	require.Error(t, err)
 }
 
