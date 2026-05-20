@@ -570,7 +570,12 @@ export const processPendingTxEvents = async (
           abortController.abort(reason);
           pendingTxAbortControllers.delete(txId);
         }
-        setResolvedTx(kvStore, txId, String(data.status));
+        if (
+          data.status === TxStatus.SUCCESS ||
+          data.status === TxStatus.FAILED
+        ) {
+          setResolvedTx(kvStore, txId, data.status);
+        }
         continue;
       }
       if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) continue;
@@ -860,7 +865,12 @@ export const startEngine = async (
         data = marshaller.fromCapData(marshalledData);
         if (data?.status !== TxStatus.PENDING) {
           // Backfill the cache so subsequent restarts skip this read.
-          if (data?.status) setResolvedTx(kvStore, txId, String(data.status));
+          if (
+            data?.status === TxStatus.SUCCESS ||
+            data?.status === TxStatus.FAILED
+          ) {
+            setResolvedTx(kvStore, txId, data.status);
+          }
           return;
         }
         if (!RESOLVER_SUPPORTED_TRANSACTIONS.includes(data.type)) return;

@@ -4,8 +4,11 @@
  */
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { makeKVStore } from '@agoric/internal/src/kv-store.js';
+import type { TxStatus } from '@agoric/portfolio-api/src/resolver.js';
 import type { Database as SQLiteDatabase } from 'better-sqlite3';
 import Database from 'better-sqlite3';
+
+type ResolvedTxStatus = Exclude<TxStatus, 'pending' | 'setup'>;
 
 type SQLiteKeyValueStoreOptions = {
   trace: (...args: string[]) => void;
@@ -102,17 +105,17 @@ const getResolvedTxKey = (txId: `tx${number}`) => `${txId}.resolved`;
 export const getResolvedTx = (
   store: KVStore,
   txId: `tx${number}`,
-): string | undefined => store.get(getResolvedTxKey(txId));
+): ResolvedTxStatus | undefined =>
+  store.get(getResolvedTxKey(txId)) as ResolvedTxStatus | undefined;
 
 /**
- * Mark a tx as no longer PENDING so future startups can skip the per-tx
- * vstorage read. The contract never moves a tx back to PENDING, so cached
- * entries are always trustworthy.
+ * Mark a tx as settled so future startups can skip the per-tx vstorage read.
+ * Only `success` and `failed` are terminal;
  */
 export const setResolvedTx = (
   store: KVStore,
   txId: `tx${number}`,
-  status: string,
+  status: ResolvedTxStatus,
 ): void => {
   store.set(getResolvedTxKey(txId), status);
 };
