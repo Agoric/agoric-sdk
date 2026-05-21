@@ -736,9 +736,14 @@ export const startEngine = async (
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 
-  const vbankAssets: AssetInfo[] = (
-    await query.readPublished('agoricNames.vbankAsset')
-  ).map(([_ibcDenom, asset]) => asset);
+  const vbankAssetCapData = await readStreamCellValue(
+    query.vstorage,
+    'published.agoricNames.vbankAsset',
+    { retries: 4 },
+  );
+  const vbankAssets: AssetInfo[] = marshaller
+    .fromCapData(vbankAssetCapData)
+    .map(([_ibcDenom, asset]) => asset);
   const depositAsset =
     vbankAssets.find(asset => asset.issuerName === depositBrandName) ||
     Fail`Could not find vbankAsset for ${q(depositBrandName)}`;
@@ -783,13 +788,11 @@ export const startEngine = async (
 
   // TODO(#12391): Verify consumption of paginated data.
   const [pendingTxKeysResp, portfolioKeysResp] = await Promise.all(
-    [pendingTxPathPrefix, portfoliosPathPrefix].map(async vstoragePath => {
-      const opts = { kind: 'children' } as const;
-      const resp = await query.vstorage.readStorageMeta(vstoragePath, opts);
-      typeof resp.blockHeight === 'bigint' ||
-        Fail`blockHeight ${resp.blockHeight} must be a bigint`;
-      return resp;
-    }),
+    [pendingTxPathPrefix, portfoliosPathPrefix].map(vstoragePath =>
+      readStorageMeta(query.vstorage, vstoragePath, 'children', {
+        retries: 4,
+      }),
+    ),
   );
   const initialBlockHeight = [pendingTxKeysResp, portfolioKeysResp]
     .map(r => r.blockHeight as bigint)
