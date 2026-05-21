@@ -310,8 +310,9 @@ export const CCTPv2 = {
         : FINALITY_THRESHOLD.FINALIZED;
 
     const destAddresses = ctx.contracts[dest.chainName];
-    const destinationCaller: `0x${string}` = destAddresses.cctpRelayer
-      ? `0x${encodeHex(leftPadEthAddressTo32Bytes(destAddresses.cctpRelayer))}`
+    const destinationCallerAddress = destAddresses.cctpRelayer;
+    const destinationCaller: `0x${string}` = destinationCallerAddress
+      ? `0x${encodeHex(leftPadEthAddressTo32Bytes(destinationCallerAddress))}`
       : ZERO_BYTES32;
 
     usdc.approve(tokenMessengerV2, amount.value);
@@ -327,13 +328,19 @@ export const CCTPv2 = {
 
     const calls = session.finish();
 
-    const { txId, result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP_TO_EVM,
-      `${dest.chainId}:${dest.remoteAddress}`,
-      amount.value,
-      undefined, // expectedAddr - not used for CCTP_V2
-      `${src.chainId}:${src.remoteAddress}`, // sourceAddress for domain mapping
-    );
+    const { txId, result } = ctx.resolverClient.createPendingTx({
+      type: TxType.CCTP_TO_EVM,
+      destinationAddress: `${dest.chainId}:${dest.remoteAddress}`,
+      amountValue: amount.value,
+      sourceAddress: `${src.chainId}:${src.remoteAddress}`,
+      cctpVersion: 2,
+      ...(destinationCallerAddress
+        ? {
+            destinationCaller:
+              `${dest.chainId}:${destinationCallerAddress}` as AccountId,
+          }
+        : {}),
+    });
 
     const sent = sendGMPContractCall(ctx, src, calls, ...optsArgs);
     appendTxIds(optsArgs[0]?.progressTracker, [txId]);

@@ -3273,7 +3273,10 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
     }
     // destinationCaller is arg[4] in CCTPv2 depositForBurn
     const destCaller = depositCall.args[4];
-    const expectedCaller = `0x${'0'.repeat(24)}70997970c51812dc3a010c7d01b50e0d17dc79c8`;
+    const configuredCaller = contractsMock.Optimism.cctpRelayer
+      .toLowerCase()
+      .replace(/^0x/, '');
+    const expectedCaller = `0x${'0'.repeat(24)}${configuredCaller}`;
     t.is(
       destCaller.toLowerCase(),
       expectedCaller,
@@ -3283,6 +3286,26 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
     break;
   }
   t.true(verified, 'found CCTPv2 depositForBurn call with destinationCaller');
+
+  const { remoteAddress } = kit.reader.getGMPInfo('Optimism');
+  t.is(remoteAddress, '0x817f059a7fe5b130f9a331e326f63f3edb3d8214');
+
+  const cctpV2Tx = [...storage.data.keys()]
+    .filter(k => k.includes('published.ymax0.pendingTxs.'))
+    .map(k => storage.getDeserialized(k).at(-1) as any)
+    .find(
+      tx =>
+        tx.type === 'CCTP_TO_EVM' &&
+        tx.amount === 20_000_000n &&
+        tx.sourceAddress === `eip155:8453:${remoteAddress}` &&
+        tx.destinationAddress === `eip155:10:${remoteAddress}`,
+    );
+  t.truthy(cctpV2Tx, 'found CCTPv2 pending tx metadata');
+  t.is(cctpV2Tx.cctpVersion, 2);
+  t.is(
+    cctpV2Tx.destinationCaller,
+    `eip155:10:${contractsMock.Optimism.cctpRelayer}`,
+  );
   await documentStorageSchema(t, storage, docOpts);
 });
 
