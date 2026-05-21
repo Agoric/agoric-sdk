@@ -827,10 +827,11 @@ const stepFlow = async (
     ]);
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
-    const { axelarIds, gmpAddresses } = ctx;
+    const { axelarIds, gmpAddresses, contracts } = ctx;
 
     const evmCtx: EVMContext = harden({
-      addresses: ctx.contracts[chain],
+      addresses: contracts[chain],
+      contracts,
       lca,
       gmpFee: fee,
       gmpChain: axelar,

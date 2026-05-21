@@ -202,6 +202,7 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
       gasService: M.string(),
     },
     {
+      cctpRelayer: M.string(),
       remoteAccountFactory: M.string(),
       remoteAccountRouter: M.string(),
       remoteAccountImplementation: M.string(),
@@ -260,6 +261,7 @@ export type EVMContractAddresses = {
   compoundRewardsController: `0x${string}`;
   gateway: `0x${string}`;
   gasService: `0x${string}`;
+  cctpRelayer?: `0x${string}`;
   walletHelper: `0x${string}`;
 } & Partial<BeefyContracts> &
   Partial<ERC4626Contracts>;
