@@ -1334,7 +1334,8 @@
       "tokenMessenger": "0x19330d10D9Cc8751218eaf51E8885D058642E08A",
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-      "walletHelper": "0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70"
+      "walletHelper": "0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70",
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     },
     "Avalanche": {
       "Beefy_re7_Avalanche": "0xdA640bE4588C469C9DB45D082B36913490924c08",
@@ -1354,7 +1355,8 @@
       "tokenMessenger": "0x6B25532e1060CE10cc3B0A99e5683b91BFDe6982",
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
-      "walletHelper": "0x"
+      "walletHelper": "0x",
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     },
     "Base": {
       "Beefy_morphoSeamlessUsdc_Base": "0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A",
@@ -1378,7 +1380,8 @@
       "tokenMessenger": "0x1682Ae6375C4E4A97e4B583BC394c861A46D8962",
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-      "walletHelper": "0xE0aFf709b7A6Cdf476738b86354D17bd334eB516"
+      "walletHelper": "0xE0aFf709b7A6Cdf476738b86354D17bd334eB516",
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     },
     "Ethereum": {
       "Beefy_morphoGauntletUsdc_Ethereum": "0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0",
@@ -1411,7 +1414,8 @@
       "tokenMessenger": "0xBd3fa81B58Ba92a82136038B25aDec7066af3155",
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
-      "walletHelper": "0x"
+      "walletHelper": "0x",
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     },
     "Optimism": {
       "Beefy_compoundUsdc_Optimism": "0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F",
@@ -1432,7 +1436,8 @@
       "tokenMessenger": "0x2B4069517957735bE00ceE0fadAE88a26365528f",
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
-      "walletHelper": "0x"
+      "walletHelper": "0x",
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     }
   },
   "gmpAddresses": {

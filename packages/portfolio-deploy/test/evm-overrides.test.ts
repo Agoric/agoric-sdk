@@ -234,15 +234,14 @@ test('ymax1 contract addresses match golden snapshot', async t => {
   checkContracts(t, golden, computed, instanceFields, 'ymax1');
 });
 
-// TODO(PAK-354): once managed relayer addresses are deployed, remove .failing
-test.failing('ymax0 overrides include cctpRelayer', async t => {
+test('ymax0 overrides include cctpRelayer', async t => {
   const expected: any = JSON.parse(await asset('./privateArgs-ymax0.json'));
   for (const [chain, addrs] of Object.entries(expected.contracts || {})) {
     t.truthy((addrs as any).cctpRelayer, `ymax0 ${chain} has cctpRelayer`);
   }
 });
 
-test.failing('ymax1 overrides include cctpRelayer', async t => {
+test('ymax1 overrides include cctpRelayer', async t => {
   const expected: any = JSON.parse(await asset('./privateArgs-ymax1.json'));
   for (const [chain, addrs] of Object.entries(expected.contracts || {})) {
     t.truthy((addrs as any).cctpRelayer, `ymax1 ${chain} has cctpRelayer`);

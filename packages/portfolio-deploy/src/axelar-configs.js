@@ -542,12 +542,11 @@ const mainnetTokenMessengerV2 = (rows =>
   ]),
 );
 
+const cctpRelayer = '0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f';
+
 /**
  * Mainnet configuration with real contract addresses
  *
- * FIXME: Populate cctpRelayer per-chain once PAK-354 provides managed
- * relayer addresses. Until then, CCTPv2 falls back to ZERO_BYTES32
- * (any caller allowed).
  * @type {EVMContractAddressesMap}
  */
 const mainnetContracts = {
@@ -570,9 +569,11 @@ const mainnetContracts = {
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyVaultAddresses.re7.mainnet.Avalanche,
     walletHelper: walletHelperAddresses.mainnet.Avalanche,
+    cctpRelayer,
   },
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
+    cctpRelayer,
     compound: compoundAddresses.mainnet.Ethereum,
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Ethereum,
@@ -621,6 +622,7 @@ const mainnetContracts = {
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
+    cctpRelayer,
     compound: compoundAddresses.mainnet.Optimism,
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Optimism,
@@ -645,6 +647,7 @@ const mainnetContracts = {
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
+    cctpRelayer,
     compound: compoundAddresses.mainnet.Arbitrum,
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Arbitrum,
@@ -673,6 +676,7 @@ const mainnetContracts = {
   },
   Base: {
     aavePool: aaveAddresses.mainnet.Base,
+    cctpRelayer,
     compound: compoundAddresses.mainnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.mainnet.Base,
     depositFactory: depositFactoryAddresses.mainnet.Base,
