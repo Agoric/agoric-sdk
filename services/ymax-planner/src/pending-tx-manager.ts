@@ -17,7 +17,12 @@ import type {
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 import type { WebSocketProvider } from 'ethers';
-import { setResolvedTx } from './kv-store.ts';
+import {
+  deleteDerivedOutcome,
+  getDerivedOutcome,
+  setDerivedOutcome,
+  setResolvedTx,
+} from './kv-store.ts';
 import { resolvePendingTx } from './resolver.ts';
 import { withRetriesForAlerting } from './retries.ts';
 import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
@@ -99,6 +104,57 @@ export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
     log: (...args: unknown[]) => void,
     opts: WatchOpts,
   ) => Promise<void>;
+};
+
+/**
+ * Settle a watcher's outcome on-chain and notify YDS.
+ *
+ * Persists the derived outcome to the kv store BEFORE attempting submission,
+ * so a restart during a stuck submission can skip the (expensive) watcher
+ * next time and just retry the submit. Clears the derived-outcome entry once
+ * the on-chain settlement confirms.
+ */
+export const settleWatcherResult = async (
+  ctx: EvmContext,
+  txId: TxId,
+  result: WatcherResult,
+  label: string,
+  log: (...args: unknown[]) => void,
+  signal?: AbortSignal,
+): Promise<void> => {
+  await null;
+  if (!result.settled) return;
+
+  const logPrefix = `[${txId}]`;
+  const status = result.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
+
+  setDerivedOutcome(ctx.kvStore, txId, { status, txHash: result.txHash });
+
+  const submitted = await withRetriesForAlerting(
+    `${logPrefix} ${label} settlement`,
+    () =>
+      resolvePendingTx({
+        signingSmartWalletKit: ctx.signingSmartWalletKit,
+        makeNonce: ctx.makeNonce,
+        txId,
+        status,
+      }),
+    {
+      log,
+      setTimeout: ctx.setTimeout,
+      now: ctx.now,
+      alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
+      signal,
+    },
+  );
+  if (submitted !== undefined) {
+    setResolvedTx(ctx.kvStore, txId, status);
+    deleteDerivedOutcome(ctx.kvStore, txId);
+  }
+
+  if (result.txHash) {
+    await ctx.ydsNotifier?.notifySettlement(txId, result.txHash);
+  }
 };
 
 const cctpMonitor: PendingTxMonitor<CctpTx> = {
@@ -202,34 +258,14 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       return;
     }
 
-    if (transferResult.settled) {
-      const finalStatus =
-        transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-      const submitted = await withRetriesForAlerting(
-        `${logPrefix} CCTP settlement`,
-        () =>
-          resolvePendingTx({
-            signingSmartWalletKit: ctx.signingSmartWalletKit,
-            makeNonce: ctx.makeNonce,
-            txId,
-            status: finalStatus,
-          }),
-        {
-          log,
-          setTimeout: ctx.setTimeout,
-          now: ctx.now,
-          alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
-          signal: opts.signal,
-        },
-      );
-      if (submitted !== undefined) {
-        setResolvedTx(ctx.kvStore, txId, finalStatus);
-      }
-    }
-
-    if (transferResult?.txHash) {
-      await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
-    }
+    await settleWatcherResult(
+      ctx,
+      txId,
+      transferResult,
+      'CCTP',
+      log,
+      opts.signal,
+    );
 
     log(`${logPrefix} CCTP tx resolved`);
   },
@@ -352,34 +388,14 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
       return;
     }
 
-    if (transferResult.settled) {
-      const finalStatus =
-        transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-      const submitted = await withRetriesForAlerting(
-        `${logPrefix} GMP settlement`,
-        () =>
-          resolvePendingTx({
-            signingSmartWalletKit: ctx.signingSmartWalletKit,
-            makeNonce: ctx.makeNonce,
-            txId,
-            status: finalStatus,
-          }),
-        {
-          log,
-          setTimeout: ctx.setTimeout,
-          now: ctx.now,
-          alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
-          signal: opts.signal,
-        },
-      );
-      if (submitted !== undefined) {
-        setResolvedTx(ctx.kvStore, txId, finalStatus);
-      }
-    }
-
-    if (transferResult?.txHash) {
-      await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
-    }
+    await settleWatcherResult(
+      ctx,
+      txId,
+      transferResult,
+      'GMP',
+      log,
+      opts.signal,
+    );
 
     log(`${logPrefix} GMP tx resolved`);
   },
@@ -507,34 +523,14 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
       return;
     }
 
-    if (walletResult.settled) {
-      const finalStatus =
-        walletResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-      const submitted = await withRetriesForAlerting(
-        `${logPrefix} MAKE_ACCOUNT settlement`,
-        () =>
-          resolvePendingTx({
-            signingSmartWalletKit: ctx.signingSmartWalletKit,
-            makeNonce: ctx.makeNonce,
-            txId,
-            status: finalStatus,
-          }),
-        {
-          log,
-          setTimeout: ctx.setTimeout,
-          now: ctx.now,
-          alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
-          signal: opts.signal,
-        },
-      );
-      if (submitted !== undefined) {
-        setResolvedTx(ctx.kvStore, txId, finalStatus);
-      }
-    }
-
-    if (walletResult?.txHash) {
-      await ctx.ydsNotifier?.notifySettlement(txId, walletResult.txHash);
-    }
+    await settleWatcherResult(
+      ctx,
+      txId,
+      walletResult,
+      'MAKE_ACCOUNT',
+      log,
+      opts.signal,
+    );
 
     log(`${logPrefix} MAKE_ACCOUNT tx resolved`);
   },
@@ -648,34 +644,14 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
       return;
     }
 
-    if (transferResult.settled) {
-      const finalStatus =
-        transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-      const submitted = await withRetriesForAlerting(
-        `${logPrefix} ROUTED_GMP settlement`,
-        () =>
-          resolvePendingTx({
-            signingSmartWalletKit: ctx.signingSmartWalletKit,
-            makeNonce: ctx.makeNonce,
-            txId,
-            status: finalStatus,
-          }),
-        {
-          log,
-          setTimeout: ctx.setTimeout,
-          now: ctx.now,
-          alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
-          signal: opts.signal,
-        },
-      );
-      if (submitted !== undefined) {
-        setResolvedTx(ctx.kvStore, txId, finalStatus);
-      }
-    }
-
-    if (transferResult?.txHash) {
-      await ctx.ydsNotifier?.notifySettlement(txId, transferResult.txHash);
-    }
+    await settleWatcherResult(
+      ctx,
+      txId,
+      transferResult,
+      'ROUTED_GMP',
+      log,
+      opts.signal,
+    );
 
     log(`${logPrefix} ROUTED_GMP watch completed`);
   },
@@ -803,6 +779,28 @@ export const handlePendingTx = async (
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
+
+  // Fast path: if a prior watcher derived an outcome but the on-chain
+  // submission never confirmed, skip the watcher and just retry the submit.
+  const cached = getDerivedOutcome(watchCtx.kvStore, tx.txId);
+  if (cached) {
+    log(
+      `${logPrefix} reusing cached outcome ${cached.status}; skipping watcher`,
+    );
+    await settleWatcherResult(
+      watchCtx,
+      tx.txId,
+      {
+        settled: true,
+        success: cached.status === TxStatus.SUCCESS,
+        txHash: cached.txHash,
+      },
+      'cached-outcome',
+      (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      signal,
+    );
+    return;
+  }
 
   const monitor = MONITORS.get(tx.type);
   if (monitor === null) {

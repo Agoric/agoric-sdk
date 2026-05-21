@@ -9,9 +9,11 @@
 import { Fail, q } from '@endo/errors';
 
 import {
+  deleteDerivedOutcome,
   deleteIgnoredTx,
   deleteResolvedTx,
   deleteTxBlockLowerBound,
+  getDerivedOutcome,
   getIgnoredTx,
   getResolvedTx,
   getTxBlockLowerBound,
@@ -42,10 +44,14 @@ export const inspectCache = (
     const resolved = getResolvedTx(kvStore, txId);
     const ignored = getIgnoredTx(kvStore, txId);
     const blockLowerBound = getTxBlockLowerBound(kvStore, txId);
+    const derivedOutcome = getDerivedOutcome(kvStore, txId);
     console.log(`Cache state for ${txId}:`);
     console.log(`  resolved:        ${resolved ?? '(none)'}`);
     console.log(`  ignored:         ${ignored ?? '(none)'}`);
     console.log(`  blockLowerBound: ${blockLowerBound ?? '(none)'}`);
+    console.log(
+      `  derivedOutcome:  ${derivedOutcome ? JSON.stringify(derivedOutcome) : '(none)'}`,
+    );
   } finally {
     db.close();
   }
@@ -62,10 +68,12 @@ export const deleteCachedTx = (
       resolved: getResolvedTx(kvStore, txId),
       ignored: getIgnoredTx(kvStore, txId),
       blockLowerBound: getTxBlockLowerBound(kvStore, txId),
+      derivedOutcome: getDerivedOutcome(kvStore, txId),
     };
     deleteResolvedTx(kvStore, txId);
     deleteIgnoredTx(kvStore, txId);
     deleteTxBlockLowerBound(kvStore, txId);
+    deleteDerivedOutcome(kvStore, txId);
     const removed = Object.entries(before)
       .filter(([_, v]) => v !== undefined)
       .map(([k]) => k);

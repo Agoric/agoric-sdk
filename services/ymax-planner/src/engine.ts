@@ -76,6 +76,7 @@ import {
   planWithdrawFromAllocations,
 } from './plan-deposit.ts';
 import {
+  deleteDerivedOutcome,
   getIgnoredTx,
   getResolvedTx,
   setIgnoredTx,
@@ -591,6 +592,7 @@ export const processPendingTxEvents = async (
           data.status === TxStatus.FAILED
         ) {
           setResolvedTx(kvStore, txId, data.status);
+          deleteDerivedOutcome(kvStore, txId);
         }
         continue;
       }
@@ -898,6 +900,7 @@ export const startEngine = async (
             data?.status === TxStatus.FAILED
           ) {
             setResolvedTx(kvStore, txId, data.status);
+            deleteDerivedOutcome(kvStore, txId);
           }
           return;
         }

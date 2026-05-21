@@ -146,3 +146,44 @@ export const setIgnoredTx = (
 export const deleteIgnoredTx = (store: KVStore, txId: `tx${number}`): void => {
   store.delete(getIgnoredTxKey(txId));
 };
+
+/**
+ * The outcome derived by a watcher but not yet confirmed as settled on-chain.
+ * Persisted between the watcher resolving the outcome and the resolver
+ * smart-wallet submission succeeding, so a restart in that window can skip
+ * the (expensive) watcher and just retry the submission.
+ */
+export type DerivedOutcome = {
+  status: ResolvedTxStatus;
+  txHash?: string;
+};
+
+const getDerivedOutcomeKey = (txId: `tx${number}`) => `${txId}.derivedOutcome`;
+
+export const getDerivedOutcome = (
+  store: KVStore,
+  txId: `tx${number}`,
+): DerivedOutcome | undefined => {
+  const raw = store.get(getDerivedOutcomeKey(txId));
+  if (raw === undefined) return undefined;
+  try {
+    return JSON.parse(raw) as DerivedOutcome;
+  } catch (cause) {
+    throw Error(`Invalid derivedOutcome for ${txId}: ${raw}`, { cause });
+  }
+};
+
+export const setDerivedOutcome = (
+  store: KVStore,
+  txId: `tx${number}`,
+  outcome: DerivedOutcome,
+): void => {
+  store.set(getDerivedOutcomeKey(txId), JSON.stringify(outcome));
+};
+
+export const deleteDerivedOutcome = (
+  store: KVStore,
+  txId: `tx${number}`,
+): void => {
+  store.delete(getDerivedOutcomeKey(txId));
+};
