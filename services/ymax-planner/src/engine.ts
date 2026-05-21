@@ -37,9 +37,10 @@ import {
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
+import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
 import {
   mustMatch,
   naturalCompare,
@@ -436,7 +437,11 @@ export const processPortfolioEvents = async (
       }
     } catch (err) {
       annotateError(err, inspect(logContext, { depth: 4 }));
-      if (err instanceof UserInputError || err instanceof NoSolutionError) {
+      if (
+        err instanceof UserInputError ||
+        err instanceof NoSolutionError ||
+        err instanceof TargetBalanceError
+      ) {
         await settle('rejectPlan', [...scope, err.message, ...versions], {
           cause: err,
         }).catch(err2 => {

@@ -1,6 +1,9 @@
-import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
+import type { NetworkSpec } from './network-spec.js';
 
-export const PROD_NETWORK: NetworkSpec = harden({
+const hardenOrFreeze = globalThis.harden ?? Object.freeze;
+
+// Initial production network in NetworkSpec format
+export const PROD_NETWORK: NetworkSpec = hardenOrFreeze({
   // Enable debug diagnostics to aid troubleshooting in tests
   debug: true,
   environment: 'prod',
@@ -40,6 +43,19 @@ export const PROD_NETWORK: NetworkSpec = harden({
       pool: 'Beefy_compoundUsdc_Arbitrum',
       chain: 'Arbitrum',
       protocol: 'Beefy',
+    },
+    {
+      pool: 'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
+      chain: 'Ethereum',
+      protocol: 'ERC4626',
+      blockDepositReason: 'AT_CAPACITY',
+      blockWithdrawReason: 'LOW_LIQUIDITY',
+    },
+    {
+      pool: 'ERC4626_morphoSeamlessUsdcVault_Base',
+      chain: 'Base',
+      protocol: 'ERC4626',
+      blockDepositReason: 'AT_CAPACITY',
     },
     { pool: 'Compound_Arbitrum', chain: 'Arbitrum', protocol: 'Compound' },
     { pool: 'Compound_Base', chain: 'Base', protocol: 'Compound' },
@@ -179,8 +195,6 @@ export const PROD_NETWORK: NetworkSpec = harden({
     // CCTPv2 direct EVM-to-EVM routes (full mesh connectivity)
     // Estimated time: ~13-60 seconds depending on finality threshold
     // Note: CCTPv2 contracts must be deployed on both source and destination chains
-
-    /* DIRECT CCTPv2 TEMPORARILY DISABLED
 
     // Arbitrum ↔ other EVM chains
     {
@@ -369,8 +383,6 @@ export const PROD_NETWORK: NetworkSpec = harden({
       min: 100_000n,
       feeMode: 'evmToEvm',
     },
-
-    */
   ],
 });
 

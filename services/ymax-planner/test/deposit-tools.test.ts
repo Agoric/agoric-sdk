@@ -25,7 +25,7 @@ import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-net
 import type {
   NetworkSpec,
   PoolKey,
-} from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+} from '@agoric/portfolio-api/src/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
@@ -35,7 +35,7 @@ import { fromTypedEntries, objectMap } from '@agoric/internal';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { q, Fail } from '@endo/errors';
 import { Far } from '@endo/pass-style';
-import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/prod-network.ts';
+import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.ts';
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
 import {
@@ -1361,7 +1361,7 @@ test('@<ChainName> USDC target allocations', async t => {
 // |       A is no-withdraw | *$20* |  $16  |  $16  |  $16  |  $16  |  $16  |
 // |       D is no-withdraw |  $20  |  $15  |  $15  | *$20* |  $15  |  $15  |
 // |  chain min delta is $6 |  $20  |  $14  | *$18* |  $20  |  $14  |  $14  |
-test('computeWeightedTargets cascades blocked/suppressed sources', async t => {
+test('computeTargetBalances cascades blocked/suppressed sources', async t => {
   const blockWithdrawReason = 'LOW_LIQUIDITY';
   const blockDepositReason = 'AT_CAPACITY';
   const chain = 'Ethereum';
