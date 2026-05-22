@@ -2,6 +2,10 @@
   "name": "@agoric/client-utils",
   "version": "0.1.0",
   "description": "Utilities for building Agoric clients",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"

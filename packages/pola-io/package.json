@@ -2,6 +2,10 @@
   "name": "@agoric/pola-io",
   "version": "0.1.0",
   "description": "Least Authority I/O utilities",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/types.ts",
