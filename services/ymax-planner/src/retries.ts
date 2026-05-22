@@ -1,14 +1,5 @@
 /**
- * Retry helper for chain submissions (resolver settlements, plan submissions).
- *
- * Unbounded retries with exponential backoff. Every failed attempt is logged,
- * but only the first failure and then one every `alertIntervalMs` carry the
- * caller-supplied `errorCode` prefix — the ops alerting filter matches on that
- * code, so this in-code throttling keeps pages to one per interval while the
- * submission stays stuck.
- *
- * Each retry is a fresh call through the sequencing wallet's queue, so other
- * in-flight submissions interleave normally between attempts.
+ * Helpers for automatic retries with exponential backoff.
  */
 
 export const DEFAULT_INITIAL_DELAY_MS = 5 * 1000;
@@ -29,13 +20,22 @@ export type RetryCallbackArgs = {
 
 export type WithRetriesOpts = {
   setTimeout: typeof globalThis.setTimeout;
+  signal?: AbortSignal;
   policy?: RetryPolicy;
 };
 
+/**
+ * Invoke a callback until it succeeds, backing off exponentially.
+ * The delay between the first failure and the first retry is `initialDelayMs`,
+ * and each subsequent delay is doubled and clamped to `maxDelayMs`.
+ * Retry status is communicated to the callback as a { retryCount, nextDelay }
+ * argument.
+ */
 export const withRetries = async <T>(
   callback: (args: RetryCallbackArgs) => Promise<T>,
   {
     setTimeout,
+    signal,
     policy: {
       initialDelayMs = DEFAULT_INITIAL_DELAY_MS,
       maxDelayMs = DEFAULT_MAX_DELAY_MS,
@@ -47,6 +47,7 @@ export const withRetries = async <T>(
 
   await null;
   while (true) {
+    signal?.throwIfAborted();
     try {
       return await callback({ retryCount, nextDelayMs: delay });
     } catch {
@@ -76,6 +77,14 @@ export type WithRetriesForAlertingOpts = {
   policy?: WithRetriesForAlertingPolicy;
 };
 
+/**
+ * Invoke a thunk until it succeeds, backing off exponentially.
+ * The delay between the first failure and the first retry is `initialDelayMs`,
+ * and each subsequent delay is doubled and clamped to `maxDelayMs`.
+ * Every failed attempt is logged, but only the first failure and then one every
+ * `alertIntervalMs` carry the supplied `alertingPrefix`, so that ops alert
+ * noise can be reduced by filtering for that prefix.
+ */
 export const withRetriesForAlerting = async <T>(
   label: string,
   thunk: () => Promise<T>,
@@ -111,9 +120,10 @@ export const withRetriesForAlerting = async <T>(
         }
         return result;
       } catch (err) {
-        const elapsedMs = now() - start;
-        const shouldAlert = now() - lastAlertAt >= alertIntervalMs;
-        if (shouldAlert) lastAlertAt = now();
+        const t = now();
+        const elapsedMs = t - start;
+        const shouldAlert = t - lastAlertAt >= alertIntervalMs;
+        if (shouldAlert) lastAlertAt = t;
         const aborted = signal?.aborted;
         const messageParts = [
           shouldAlert && alertingPrefix,
