@@ -80,7 +80,11 @@ jobs:
 
   pre-upgrade:
     needs: [plan, build-bundle]
+    # Opt out of GitHub's implicit success() so a skipped build-bundle job
+    # does not skip pre-upgrade for non-devnet targets.
     if: |
+      always() &&
+      needs.plan.result == 'success' &&
       needs.plan.outputs.need_pre_upgrade == 'true' &&
       (inputs.target != 'ymax0-devnet' || contains(fromJSON('["success","skipped"]'), needs.build-bundle.result))
     runs-on: ubuntu-latest
@@ -119,7 +123,10 @@ jobs:
       always() &&
       needs.plan.result == 'success' &&
       needs.plan.outputs.need_upgrade == 'true' &&
-      contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
+      (
+        needs.pre-upgrade.result == 'success' ||
+        (needs.plan.outputs.need_pre_upgrade != 'true' && needs.pre-upgrade.result == 'skipped')
+      )
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
