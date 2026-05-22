@@ -89,6 +89,7 @@ export const main = async (
       sendBridgeAction: async (
         ...args: Parameters<typeof ssk.sendBridgeAction>
       ) => {
+        console.error('rpcAddrs', ssk.networkConfig.rpcAddrs);
         const tx = await ssk.sendBridgeAction(...args);
         lastTx = tx;
         txHistory.push(tx);

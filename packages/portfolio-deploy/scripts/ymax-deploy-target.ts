@@ -652,7 +652,7 @@ const recordUpgradeContract = async (
         'result-file': resultFile.toString(),
       }),
     ],
-    { stdio: ['ignore', 'pipe', 'inherit'] } as any,
+    { stdio: ['ignore', 'inherit', 'inherit'] } as any,
   );
   const result = JSON.parse(await resultFile.readOnly().readText()) as Pick<
     UpgradeRecord,

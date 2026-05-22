@@ -64,7 +64,7 @@ const upgradeYmax = async (tools: RunTools) => {
     ({ tx } = await ymaxControl.upgrade({ bundleId, privateArgsOverrides }));
   } catch (err) {
     tx = account.lastTx;
-    if (!tx) throw err;
+    if (!tx) throw Error('no lastTx?!', { cause: err });
     console.error('recovering from upgrade() throw via lastTx', err);
   }
   trace(`upgrade tx: ${tx.transactionHash} at height ${tx.height}`);
