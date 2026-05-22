@@ -37,7 +37,7 @@ type TestWithRetriesForAlertingArgs = {
     optsBase: WithRetriesForAlertingOpts,
   ) => WithRetriesForAlertingOpts;
   callback: (attempt: number) => unknown;
-  expectCalls: number;
+  expectCallCount: number;
   expectResult: unknown;
   expectSleeps: number[];
   expectLogs: unknown[][];
@@ -49,7 +49,7 @@ const testWithRetriesForAlerting = (
     label,
     makeOptions,
     callback,
-    expectCalls,
+    expectCallCount,
     expectResult,
     expectSleeps,
     expectLogs,
@@ -65,7 +65,7 @@ const testWithRetriesForAlerting = (
     };
     const result = await withRetriesForAlerting(label, thunk, opts);
     t.is(result, expectResult, 'result');
-    t.is(calls, expectCalls, 'calls');
+    t.is(calls, expectCallCount, 'calls');
     t.deepEqual(h.sleeps, expectSleeps, 'sleeps');
     t.deepEqual(h.logs, expectLogs, 'logs');
   });
@@ -73,7 +73,7 @@ const testWithRetriesForAlerting = (
 testWithRetriesForAlerting('returns immediately on first-try success', {
   label: '[tx1] settlement',
   callback: () => 'ok',
-  expectCalls: 1,
+  expectCallCount: 1,
   expectResult: 'ok',
   expectSleeps: [],
   expectLogs: [],
@@ -85,7 +85,7 @@ testWithRetriesForAlerting('retries with exponential backoff until success', {
     if (calls < 4) throw failure;
     return 'settled';
   },
-  expectCalls: 4,
+  expectCallCount: 4,
   expectResult: 'settled',
   expectSleeps: [5_000, 10_000, 20_000],
   expectLogs: [
@@ -117,7 +117,7 @@ testWithRetriesForAlerting(
       if (calls < 4) throw failure;
       return 'ok';
     },
-    expectCalls: 4,
+    expectCallCount: 4,
     expectResult: 'ok',
     expectSleeps: [100, 100, 100],
     expectLogs: [
@@ -160,7 +160,7 @@ testWithRetriesForAlerting(
       if (calls <= 7) throw failure;
       return 'ok';
     },
-    expectCalls: 8,
+    expectCallCount: 8,
     expectResult: 'ok',
     expectSleeps: Array(7).fill(100),
     expectLogs: [
@@ -182,7 +182,7 @@ testWithRetriesForAlerting('caps backoff at maxDelayMs', {
     if (calls < 8) throw failure;
     return 'done';
   },
-  expectCalls: 8,
+  expectCallCount: 8,
   expectResult: 'done',
   expectSleeps: [5_000, 10_000, 20_000, 40_000, 60_000, 60_000, 60_000],
   expectLogs: [
