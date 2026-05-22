@@ -22,17 +22,14 @@ const makeHarness = () => {
     return 0 as unknown as NodeJS.Timeout;
   }) as typeof globalThis.setTimeout;
   const now = () => nowMs;
-  return { logs, sleeps, log, setTimeout, now };
+  const baseOpts: WithRetriesForAlertingOpts = {
+    log,
+    setTimeout,
+    now,
+    alertingPrefix: TEST_ALERTING_PREFIX,
+  };
+  return { logs, sleeps, log, setTimeout, now, baseOpts };
 };
-
-const baseOpts = (
-  h: ReturnType<typeof makeHarness>,
-): WithRetriesForAlertingOpts => ({
-  log: h.log,
-  setTimeout: h.setTimeout,
-  now: h.now,
-  alertingPrefix: TEST_ALERTING_PREFIX,
-});
 
 type TestWithRetriesForAlertingArgs = {
   label: string;
@@ -60,7 +57,7 @@ const testWithRetriesForAlerting = (
 ) =>
   test(testLabel, async t => {
     const h = makeHarness();
-    const opts = makeOptions ? makeOptions(baseOpts(h)) : baseOpts(h);
+    const opts = makeOptions ? makeOptions(h.baseOpts) : h.baseOpts;
     let calls = 0;
     const thunk = async () => {
       calls += 1;
@@ -232,7 +229,7 @@ test('aborts before first attempt when signal already aborted', async t => {
       calls += 1;
       return 'ok';
     },
-    { ...baseOpts(h), signal: ctrl.signal },
+    { ...h.baseOpts, signal: ctrl.signal },
   );
   t.is(result, undefined);
   t.is(calls, 0);
@@ -260,7 +257,7 @@ test('aborts on the next iteration after signal fires during sleep', async t => 
       throw failure;
     },
     {
-      ...baseOpts(h),
+      ...h.baseOpts,
       setTimeout: setTimeoutAbortFirst,
       signal: ctrl.signal,
     },
@@ -288,7 +285,7 @@ test('logs "aborting" when signal fires during a failing thunk', async t => {
       ctrl.abort();
       throw failure;
     },
-    { ...baseOpts(h), signal: ctrl.signal },
+    { ...h.baseOpts, signal: ctrl.signal },
   );
   t.is(result, undefined);
   t.is(calls, 1);
