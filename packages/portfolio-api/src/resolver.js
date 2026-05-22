@@ -70,6 +70,10 @@ harden(TxType);
  * identifier for the transaction
  * @property {AccountId} [sourceAddress] - The source LCA address initiating the
  * transaction (required for GMP and MAKE_ACCOUNT transactions)
+ * @property {number} [cctpVersion] - CCTP protocol version for CCTP_TO_EVM
+ * transactions when the version is operationally relevant.
+ * @property {AccountId} [destinationCaller] - Destination-chain account
+ * authorized to call receiveMessage for CCTPv2 CCTP_TO_EVM transactions.
  * @property {HexAddress} [expectedAddr] - The expected address of the EVM smart
  * wallet to be created (only for type "MAKE_ACCOUNT")
  * @property {HexAddress} [factoryAddr] - The address of the EVM smart wallet

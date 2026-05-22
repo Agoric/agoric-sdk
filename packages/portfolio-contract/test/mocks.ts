@@ -350,6 +350,7 @@ export const contractsMock = {
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
+    cctpRelayer: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
   Arbitrum: {

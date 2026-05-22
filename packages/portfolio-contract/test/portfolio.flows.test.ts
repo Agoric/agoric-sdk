@@ -3251,6 +3251,61 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
   const { log } = offer;
   t.log('calls:', log.map(msg => msg._method).join(', '));
   t.snapshot(log, 'call log');
+
+  // Verify destinationCaller in the CCTPv2 depositForBurn memo
+  const memoEntries = log.filter(
+    (e: any) => e._method === 'transfer' && e.opts?.memo,
+  );
+  let verified = false;
+  for (const entry of memoEntries) {
+    let decoded;
+    try {
+      decoded = decodeFunctionCall(entry.opts!.memo, [
+        'approve(address,uint256)',
+        'depositForBurn(uint256,uint32,bytes32,address,bytes32,uint256,uint32)',
+      ]);
+    } catch {
+      continue;
+    }
+    const depositCall = decoded.calls[1];
+    if (depositCall.functionName !== 'depositForBurn') {
+      continue;
+    }
+    // destinationCaller is arg[4] in CCTPv2 depositForBurn
+    const destCaller = depositCall.args[4];
+    const configuredCaller = contractsMock.Optimism.cctpRelayer
+      .toLowerCase()
+      .replace(/^0x/, '');
+    const expectedCaller = `0x${'0'.repeat(24)}${configuredCaller}`;
+    t.is(
+      destCaller.toLowerCase(),
+      expectedCaller,
+      'CCTPv2 depositForBurn destinationCaller matches managed relayer address',
+    );
+    verified = true;
+    break;
+  }
+  t.true(verified, 'found CCTPv2 depositForBurn call with destinationCaller');
+
+  const { remoteAddress } = kit.reader.getGMPInfo('Optimism');
+  t.is(remoteAddress, '0x817f059a7fe5b130f9a331e326f63f3edb3d8214');
+
+  const cctpV2Tx = [...storage.data.keys()]
+    .filter(k => k.includes('published.ymax0.pendingTxs.'))
+    .map(k => storage.getDeserialized(k).at(-1) as any)
+    .find(
+      tx =>
+        tx.type === 'CCTP_TO_EVM' &&
+        tx.amount === 20_000_000n &&
+        tx.sourceAddress === `eip155:8453:${remoteAddress}` &&
+        tx.destinationAddress === `eip155:10:${remoteAddress}`,
+    );
+  t.truthy(cctpV2Tx, 'found CCTPv2 pending tx metadata');
+  t.is(cctpV2Tx.cctpVersion, 2);
+  t.is(
+    cctpV2Tx.destinationCaller,
+    `eip155:10:${contractsMock.Optimism.cctpRelayer}`,
+  );
   await documentStorageSchema(t, storage, docOpts);
 });
 

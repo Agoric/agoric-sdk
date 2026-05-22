@@ -56,7 +56,7 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
-import type { PoolKey } from './type-guards.ts';
+import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
   provideEVMAccount as provideEVMLegacyAccount,
@@ -78,6 +78,7 @@ export type EVMContext = {
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
   addresses: EVMContractAddresses;
+  contracts: EVMContractAddressesMap;
   gmpAddresses: GmpAddresses;
   axelarIds: AxelarId;
   poolKey?: PoolKey;
@@ -308,27 +309,38 @@ export const CCTPv2 = {
         ? FINALITY_THRESHOLD.CONFIRMED
         : FINALITY_THRESHOLD.FINALIZED;
 
+    const destAddresses = ctx.contracts[dest.chainName];
+    const destinationCallerAddress = destAddresses.cctpRelayer;
+    const destinationCaller: `0x${string}` = destinationCallerAddress
+      ? `0x${encodeHex(leftPadEthAddressTo32Bytes(destinationCallerAddress))}`
+      : ZERO_BYTES32;
+
     usdc.approve(tokenMessengerV2, amount.value);
     tm.depositForBurn(
       amount.value,
       destDomain,
       mintRecipient,
       addresses.usdc,
-      // destinationCaller: bytes32(0) = any caller allowed
-      ZERO_BYTES32,
+      destinationCaller,
       maxFee,
       minFinalityThreshold,
     );
 
     const calls = session.finish();
 
-    const { txId, result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP_TO_EVM,
-      `${dest.chainId}:${dest.remoteAddress}`,
-      amount.value,
-      undefined, // expectedAddr - not used for CCTP_V2
-      `${src.chainId}:${src.remoteAddress}`, // sourceAddress for domain mapping
-    );
+    const { txId, result } = ctx.resolverClient.createPendingTx({
+      type: TxType.CCTP_TO_EVM,
+      destinationAddress: `${dest.chainId}:${dest.remoteAddress}`,
+      amountValue: amount.value,
+      sourceAddress: `${src.chainId}:${src.remoteAddress}`,
+      cctpVersion: 2,
+      ...(destinationCallerAddress
+        ? {
+            destinationCaller:
+              `${dest.chainId}:${destinationCallerAddress}` as AccountId,
+          }
+        : {}),
+    });
 
     const sent = sendGMPContractCall(ctx, src, calls, ...optsArgs);
     appendTxIds(optsArgs[0]?.progressTracker, [txId]);
