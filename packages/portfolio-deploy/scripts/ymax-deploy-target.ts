@@ -4,6 +4,7 @@
 // use @endo/init/debug so LOCKDOWN_OPTIONS are consistent with tests
 import '@endo/init/debug.js';
 
+import { retryUntilCondition } from '@agoric/client-utils';
 import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
 import { execa } from 'execa';
 import fs from 'node:fs';
@@ -619,10 +620,12 @@ const recordUpgradeContract = async (
     release,
     walletAdmin,
     upgradeLogs,
+    setTimeout,
   }: StepTools & {
     privateArgs: string | undefined;
     walletAdmin: CmdRunner;
     upgradeLogs: CmdRunner;
+    setTimeout: typeof globalThis.setTimeout;
   },
 ) => {
   expectMissing(
@@ -660,28 +663,38 @@ const recordUpgradeContract = async (
     | 'healthBlocks'
   >;
 
-  const { stdout: slogsText } = await upgradeLogs.exec(
-    flags({
-      contract: info.contract,
-      network: info.network,
-      'tx-hash': result.upgradeTxHash,
-    }),
-    { stdio: ['ignore', 'pipe', 'inherit'] } as any,
-  );
-  const sortedLogEntries = sortUpgradeLogs(decodeUpgradeLogs(slogsText));
   const slogAssetName = `${upgradeTarget}-upgrade-logs.ndjson`;
   const normLogsAssetName = `${upgradeTarget}-upgrade-logs.norm.txt`;
+
+  const getGoodLogs = async () => {
+    const { stdout: slogsText } = await upgradeLogs.exec(
+      flags({
+        contract: info.contract,
+        network: info.network,
+        'tx-hash': result.upgradeTxHash,
+      }),
+      { stdio: ['ignore', 'pipe', 'inherit'] } as any,
+    );
+    const sortedLogEntries = sortUpgradeLogs(decodeUpgradeLogs(slogsText));
+
+    const incarnationNumber = findUpgradeIncarnation({
+      sortedLogEntries,
+      contract: info.contract,
+      bundleId: install.bundleId,
+    });
+    return { sortedLogEntries, slogsText, incarnationNumber };
+  };
+
+  const { sortedLogEntries, slogsText, incarnationNumber } =
+    await retryUntilCondition(getGoodLogs, () => true, 'upgrade logs', {
+      setTimeout,
+      retryIntervalMs: 20_000,
+    });
 
   await release.join(slogAssetName).writeText(slogsText);
   await release
     .join(normLogsAssetName)
     .writeText(makeNormText(sortedLogEntries));
-
-  const incarnationNumber = findUpgradeIncarnation({
-    sortedLogEntries,
-    contract: info.contract,
-    bundleId: install.bundleId,
-  });
 
   const record = await makeUpgradeRecord(
     upgradeTarget,
@@ -737,6 +750,7 @@ const makeGraph = (
     walletAdmin,
     upgradeLogs,
     stdout,
+    setTimeout,
   }: {
     deployPackage: ReturnType<typeof makeDeployPackage>;
     release: ReturnType<typeof makeReleaseRW>;
@@ -744,6 +758,7 @@ const makeGraph = (
     walletAdmin: CmdRunner;
     upgradeLogs: CmdRunner;
     stdout: Pick<typeof process.stdout, 'write'>;
+    setTimeout: typeof globalThis.setTimeout;
   },
 ) => {
   const cache = new Map<string, Promise<unknown>>();
@@ -757,6 +772,7 @@ const makeGraph = (
     deployPackage,
     distDir: deployPackage.distDir,
     release,
+    setTimeout,
   };
 
   const nodes: Record<string, GraphNode> = {
@@ -993,6 +1009,7 @@ export const main = async (
       path: { ...pathio, join: pathio.resolve },
     }),
     stdout = process.stdout as Pick<typeof process.stdout, 'write'>,
+    setTimeout = globalThis.setTimeout,
   } = {},
 ) => {
   const {
@@ -1059,6 +1076,7 @@ export const main = async (
       walletAdmin,
       upgradeLogs,
       stdout,
+      setTimeout,
     },
   );
 
