@@ -4,7 +4,10 @@ import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { objectMap } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { WebSocketProvider } from 'ethers';
-import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
   PendingTx,
   TxId,
@@ -19,7 +22,12 @@ import {
   processPendingTxEvents,
   processInitialPendingTransactions,
 } from '../src/engine.ts';
-import { getIgnoredTx, getResolvedTx } from '../src/kv-store.ts';
+import {
+  getDerivedOutcome,
+  getIgnoredTx,
+  getResolvedTx,
+  setDerivedOutcome,
+} from '../src/kv-store.ts';
 import {
   createMockPendingTxOpts,
   createMockPendingTxEvent,
@@ -278,6 +286,45 @@ test('handlePendingTx prints error for unsupported transaction type', async t =>
       `🚨 [${unsupportedTx.txId}] No monitor registered for tx type: ${unsupportedTx.type}`,
     ],
   ]);
+});
+
+test('handlePendingTx fast-paths a cached derivedOutcome and skips the watcher', async t => {
+  const opts = createMockPendingTxOpts();
+  const submittedOffers: any[] = [];
+  const originalExecuteOffer = opts.signingSmartWalletKit.executeOffer;
+  // Capture every offer submitted via the resolver path.
+  (opts.signingSmartWalletKit as any).executeOffer = async (
+    offerSpec: any,
+    fee: any,
+  ) => {
+    submittedOffers.push(offerSpec);
+    return originalExecuteOffer(offerSpec, fee);
+  };
+
+  const txId = 'tx42' as TxId;
+  setDerivedOutcome(opts.kvStore, txId, {
+    status: TxStatus.SUCCESS,
+    txHash: '0xcafef00d',
+  });
+
+  // The fast path only reads tx.txId off this record; type is irrelevant
+  // because the monitor is skipped.
+  const fakeTx = {
+    txId,
+    type: TxType.CCTP_TO_EVM,
+    status: TxStatus.PENDING,
+    amount: 1n,
+    destinationAddress: 'eip155:1:0x0000000000000000000000000000000000000000',
+  } as unknown as PendingTx;
+
+  await handlePendingTx(fakeTx, opts);
+
+  t.is(submittedOffers.length, 1, 'submitted exactly one resolver offer');
+  t.is(submittedOffers[0].offerArgs.txId, txId);
+  t.is(submittedOffers[0].offerArgs.status, TxStatus.SUCCESS);
+  // After successful settlement the cache is promoted derivedOutcome→resolved.
+  t.is(getDerivedOutcome(opts.kvStore, txId), undefined);
+  t.is(getResolvedTx(opts.kvStore, txId), TxStatus.SUCCESS);
 });
 
 const immediateSetTimeout: typeof globalThis.setTimeout = ((
