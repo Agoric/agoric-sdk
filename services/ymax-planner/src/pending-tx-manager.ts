@@ -19,7 +19,7 @@ import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import type { WebSocketProvider } from 'ethers';
 import { setResolvedTx } from './kv-store.ts';
 import { resolvePendingTx } from './resolver.ts';
-import { submitWithRetry } from './retry-settlement.ts';
+import { withRetriesForAlerting } from './retries.ts';
 import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
 import type { MakeAbortController, UsdcAddresses } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
@@ -205,7 +205,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
     if (transferResult.settled) {
       const finalStatus =
         transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-      const submitted = await submitWithRetry(
+      const submitted = await withRetriesForAlerting(
         `${logPrefix} CCTP settlement`,
         () =>
           resolvePendingTx({
@@ -218,7 +218,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
           log,
           setTimeout: ctx.setTimeout,
           now: ctx.now,
-          errorCode: PendingTxCode.RESOLVER_SETTLEMENT_FAILED,
+          alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
           signal: opts.signal,
         },
       );
@@ -355,7 +355,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
     if (transferResult.settled) {
       const finalStatus =
         transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-      const submitted = await submitWithRetry(
+      const submitted = await withRetriesForAlerting(
         `${logPrefix} GMP settlement`,
         () =>
           resolvePendingTx({
@@ -368,7 +368,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
           log,
           setTimeout: ctx.setTimeout,
           now: ctx.now,
-          errorCode: PendingTxCode.RESOLVER_SETTLEMENT_FAILED,
+          alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
           signal: opts.signal,
         },
       );
@@ -510,7 +510,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
     if (walletResult.settled) {
       const finalStatus =
         walletResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-      const submitted = await submitWithRetry(
+      const submitted = await withRetriesForAlerting(
         `${logPrefix} MAKE_ACCOUNT settlement`,
         () =>
           resolvePendingTx({
@@ -523,7 +523,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
           log,
           setTimeout: ctx.setTimeout,
           now: ctx.now,
-          errorCode: PendingTxCode.RESOLVER_SETTLEMENT_FAILED,
+          alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
           signal: opts.signal,
         },
       );
@@ -651,7 +651,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
     if (transferResult.settled) {
       const finalStatus =
         transferResult.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
-      const submitted = await submitWithRetry(
+      const submitted = await withRetriesForAlerting(
         `${logPrefix} ROUTED_GMP settlement`,
         () =>
           resolvePendingTx({
@@ -664,7 +664,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
           log,
           setTimeout: ctx.setTimeout,
           now: ctx.now,
-          errorCode: PendingTxCode.RESOLVER_SETTLEMENT_FAILED,
+          alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
           signal: opts.signal,
         },
       );
