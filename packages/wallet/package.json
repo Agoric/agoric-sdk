@@ -1,6 +1,10 @@
 {
   "name": "@agoric/wallet",
   "version": "0.18.3",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "type": "module",
   "license": "Apache-2.0",
   "author": "Agoric",

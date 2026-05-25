@@ -2,6 +2,10 @@
   "name": "@agoric/xsnap-lockdown",
   "version": "0.14.0",
   "description": "Endo/lockdown initialization bundle for xsnap workers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "author": "Agoric",
   "license": "Apache-2.0",
   "type": "module",

@@ -2,6 +2,10 @@
   "name": "@agoric/portfolio-api",
   "version": "0.1.0",
   "description": "API for Portfolio management",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "type": "module",
   "files": [
     "src",
