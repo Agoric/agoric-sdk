@@ -2,6 +2,10 @@
   "name": "@agoric/internal",
   "version": "0.5.0-u23.1",
   "description": "Externally unsupported utilities internal to agoric-sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "type": "module",
   "main": "src/index.js",
   "engines": {
