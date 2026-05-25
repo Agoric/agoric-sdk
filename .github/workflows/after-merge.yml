@@ -34,6 +34,12 @@ jobs:
   dev-canary:
     needs: build
     runs-on: ubuntu-latest
+    # id-token: write enables npm OIDC trusted publishing; packages
+    # without a trusted publisher configured on npmjs.com fall back to
+    # the NPM_TOKEN .npmrc credential set up below.
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
@@ -41,6 +47,9 @@ jobs:
           node-version: 'node-new'
 
       # Adapted from https://johnny.sh/notes/publish-canary-lerna-cicd/
+      # Transitional fallback for packages not yet onboarded to OIDC trusted
+      # publishing; remove once every published package has a trusted
+      # publisher configured on npmjs.com.
       - name: configure NPM token
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc

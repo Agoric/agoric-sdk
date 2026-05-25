@@ -2,6 +2,10 @@
   "name": "@agoric/swingset-xsnap-supervisor",
   "version": "0.12.0-u23.1",
   "description": "Supervisor/Liveslots bundle for swingset xsnap workers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "author": "Agoric",
   "license": "Apache-2.0",
   "type": "module",

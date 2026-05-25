@@ -2,6 +2,10 @@
   "name": "@agoric/xsnap",
   "version": "0.16.0-u23.1",
   "description": "Snapshotting VM worker based on Moddable's XS Javascript engine",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "author": "Agoric",
   "license": "Apache-2.0",
   "type": "module",
