@@ -10,9 +10,8 @@ const TEST_ALERTING_PREFIX = '[TEST_ERROR]';
 
 const failure = Error('fail');
 
-const makeExpectedLogFor =
-  (label: string) =>
-  (
+const makeExpectLog = (label: string) => {
+  const expectLog = (
     attempt: number,
     elapsedMs: number,
     nextDelayMs?: number,
@@ -27,6 +26,8 @@ const makeExpectedLogFor =
       failure,
     ];
   };
+  return expectLog;
+};
 
 const makeHarness = () => {
   const logs: unknown[][] = [];
@@ -151,7 +152,7 @@ testWithRetriesForAlerting('returns immediately on first-try success', {
 });
 
 {
-  const expectedLog = makeExpectedLogFor('[tx2] settlement');
+  const expectLog = makeExpectLog('[tx2] settlement');
   testWithRetriesForAlerting('retries with exponential backoff until success', {
     label: '[tx2] settlement',
     callback: calls => {
@@ -162,16 +163,16 @@ testWithRetriesForAlerting('returns immediately on first-try success', {
     expectResult: 'settled',
     expectSleeps: [5_000, 10_000, 20_000],
     expectLogs: [
-      expectedLog(1, 0, 5_000, 'noisy'),
-      expectedLog(2, 5_000, 10_000, 'quiet'),
-      expectedLog(3, 15_000, 20_000, 'quiet'),
-      expectedLog(4, 35_000),
+      expectLog(1, 0, 5_000, 'noisy'),
+      expectLog(2, 5_000, 10_000, 'quiet'),
+      expectLog(3, 15_000, 20_000, 'quiet'),
+      expectLog(4, 35_000),
     ],
   });
 }
 
 {
-  const expectedLog = makeExpectedLogFor('[tx3] settlement');
+  const expectLog = makeExpectLog('[tx3] settlement');
   testWithRetriesForAlerting(
     'first failure logs with alertingPrefix; subsequent failures log unprefixed until alert interval',
     {
@@ -192,10 +193,10 @@ testWithRetriesForAlerting('returns immediately on first-try success', {
       expectResult: 'ok',
       expectSleeps: [100, 100, 100],
       expectLogs: [
-        expectedLog(1, 0, 100, 'noisy'),
-        expectedLog(2, 100, 100, 'quiet'),
-        expectedLog(3, 200, 100, 'quiet'),
-        expectedLog(4, 300),
+        expectLog(1, 0, 100, 'noisy'),
+        expectLog(2, 100, 100, 'quiet'),
+        expectLog(3, 200, 100, 'quiet'),
+        expectLog(4, 300),
       ],
     },
   );
@@ -204,7 +205,7 @@ testWithRetriesForAlerting('returns immediately on first-try success', {
 {
   const label = '[tx3b] settlement';
   const policy = { initialDelayMs: 100, maxDelayMs: 100, alertIntervalMs: 250 };
-  const expectedLog = makeExpectedLogFor(label);
+  const expectLog = makeExpectLog(label);
   testWithRetriesForAlerting('alerts re-fire once alert interval elapses', {
     label,
     makeOptions: opts => ({ ...opts, policy }),
@@ -216,20 +217,20 @@ testWithRetriesForAlerting('returns immediately on first-try success', {
     expectResult: 'ok',
     expectSleeps: Array(7).fill(100),
     expectLogs: [
-      expectedLog(1, 0, 100, 'noisy'),
-      expectedLog(2, 100, 100, 'quiet'),
-      expectedLog(3, 200, 100, 'quiet'),
-      expectedLog(4, 300, 100, 'noisy'),
-      expectedLog(5, 400, 100, 'quiet'),
-      expectedLog(6, 500, 100, 'quiet'),
-      expectedLog(7, 600, 100, 'noisy'),
-      expectedLog(8, 700),
+      expectLog(1, 0, 100, 'noisy'),
+      expectLog(2, 100, 100, 'quiet'),
+      expectLog(3, 200, 100, 'quiet'),
+      expectLog(4, 300, 100, 'noisy'),
+      expectLog(5, 400, 100, 'quiet'),
+      expectLog(6, 500, 100, 'quiet'),
+      expectLog(7, 600, 100, 'noisy'),
+      expectLog(8, 700),
     ],
   });
 }
 
 {
-  const expectedLog = makeExpectedLogFor('[tx4] settlement');
+  const expectLog = makeExpectLog('[tx4] settlement');
   testWithRetriesForAlerting('caps backoff at maxDelayMs', {
     label: '[tx4] settlement',
     callback: calls => {
@@ -240,14 +241,14 @@ testWithRetriesForAlerting('returns immediately on first-try success', {
     expectResult: 'done',
     expectSleeps: [5_000, 10_000, 20_000, 40_000, 60_000, 60_000, 60_000],
     expectLogs: [
-      expectedLog(1, 0, 5_000, 'noisy'),
-      expectedLog(2, 5_000, 10_000, 'quiet'),
-      expectedLog(3, 15_000, 20_000, 'quiet'),
-      expectedLog(4, 35_000, 40_000, 'quiet'),
-      expectedLog(5, 75_000, 60_000, 'quiet'),
-      expectedLog(6, 135_000, 60_000, 'quiet'),
-      expectedLog(7, 195_000, 60_000, 'quiet'),
-      expectedLog(8, 255_000),
+      expectLog(1, 0, 5_000, 'noisy'),
+      expectLog(2, 5_000, 10_000, 'quiet'),
+      expectLog(3, 15_000, 20_000, 'quiet'),
+      expectLog(4, 35_000, 40_000, 'quiet'),
+      expectLog(5, 75_000, 60_000, 'quiet'),
+      expectLog(6, 135_000, 60_000, 'quiet'),
+      expectLog(7, 195_000, 60_000, 'quiet'),
+      expectLog(8, 255_000),
     ],
   });
 }
