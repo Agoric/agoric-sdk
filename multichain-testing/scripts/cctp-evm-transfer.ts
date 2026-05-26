@@ -49,7 +49,7 @@ const CHAIN_CONFIGS: Record<ChainName, ChainConfig> = {
   eth: {
     name: 'Ethereum',
     domainId: 0,
-    rpcUrl: (network) =>
+    rpcUrl: network =>
       network === 'mainnet'
         ? `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API}`
         : `https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API}`,
@@ -69,7 +69,7 @@ const CHAIN_CONFIGS: Record<ChainName, ChainConfig> = {
   aval: {
     name: 'Avalanche',
     domainId: 1,
-    rpcUrl: (network) =>
+    rpcUrl: network =>
       network === 'mainnet'
         ? `https://avax-mainnet.g.alchemy.com/v2/${ALCHEMY_API}`
         : `https://avax-fuji.g.alchemy.com/v2/${ALCHEMY_API}`,
@@ -89,7 +89,7 @@ const CHAIN_CONFIGS: Record<ChainName, ChainConfig> = {
   base: {
     name: 'Base',
     domainId: 6,
-    rpcUrl: (network) =>
+    rpcUrl: network =>
       network === 'mainnet'
         ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API}`
         : `https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API}`,
@@ -109,7 +109,7 @@ const CHAIN_CONFIGS: Record<ChainName, ChainConfig> = {
   arb: {
     name: 'Arbitrum',
     domainId: 3,
-    rpcUrl: (network) =>
+    rpcUrl: network =>
       network === 'mainnet'
         ? `https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_API}`
         : `https://arb-sepolia.g.alchemy.com/v2/${ALCHEMY_API}`,
@@ -129,7 +129,7 @@ const CHAIN_CONFIGS: Record<ChainName, ChainConfig> = {
   op: {
     name: 'Optimism',
     domainId: 2,
-    rpcUrl: (network) =>
+    rpcUrl: network =>
       network === 'mainnet'
         ? `https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_API}`
         : `https://opt-sepolia.g.alchemy.com/v2/${ALCHEMY_API}`,
@@ -157,10 +157,6 @@ const TOKEN_MESSENGER_ABI = [
   'function localMinter() external view returns (address)',
 ];
 
-const TOKEN_MINTER_ABI = [
-  'function burnLimitsPerMessage(address burnToken) external view returns (uint256)',
-];
-
 const MESSAGE_TRANSMITTER_ABI = [
   'function receiveMessage(bytes message, bytes attestation) external returns (bool)',
 ];
@@ -186,7 +182,7 @@ const addressToBytes32 = (address: string): string => {
   // Remove 0x prefix if present
   const cleanAddress = address.toLowerCase().replace('0x', '');
   // Pad with zeros to make it 64 characters (32 bytes)
-  return '0x' + cleanAddress.padStart(64, '0');
+  return `0x${cleanAddress.padStart(64, '0')}`;
 };
 
 /**
@@ -210,8 +206,9 @@ const getAttestation = async (
   const maxAttempts = 60; // 10 minutes (10 second intervals)
   let attempts = 0;
 
+  await null;
   while (attempts < maxAttempts) {
-    attempts++;
+    attempts += 1;
 
     try {
       const response = await fetch(url);
@@ -243,7 +240,7 @@ const getAttestation = async (
     }
 
     // Wait 10 seconds before next attempt
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await new Promise(resolve => setTimeout(resolve, 10000));
   }
 
   throw new Error(
@@ -428,7 +425,7 @@ const parseArgs = (): TransferOptions & {
     autoMint: false,
   };
 
-  for (let i = 0; i < args.length; i++) {
+  for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
 
     if (arg === '--help' || arg === '-h') {
@@ -455,16 +452,19 @@ const parseArgs = (): TransferOptions & {
 
     if (arg === '--src') {
       options.srcChain = value;
-      i++;
+      i += 1;
     } else if (arg === '--dest') {
       options.destChain = value;
-      i++;
+      i += 1;
     } else if (arg === '--amount') {
       options.amount = value;
-      i++;
+      i += 1;
     } else if (arg === '--addr') {
       options.recipientAddress = value;
-      i++;
+      i += 1;
+    } else if (arg === '--relay-tx') {
+      options.relayTx = value;
+      i += 1;
     }
   }
 
@@ -553,6 +553,7 @@ Note:
     process.exit(1);
   }
 
+  await null;
   try {
     const srcConfig = CHAIN_CONFIGS[options.srcChain as ChainName];
     const rpcUrl = srcConfig.rpcUrl(options.network);
