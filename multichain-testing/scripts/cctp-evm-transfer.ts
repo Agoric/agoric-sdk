@@ -179,6 +179,18 @@ interface TransferOptions {
   network: NetworkType;
 }
 
+interface AttestationResult {
+  message: string;
+  attestation: string;
+  decodedMessage?: {
+    destinationDomain?: string;
+    decodedMessageBody?: {
+      mintRecipient?: string;
+      amount?: string;
+    };
+  };
+}
+
 /**
  * Convert an Ethereum address to bytes32 format
  */
@@ -190,13 +202,29 @@ const addressToBytes32 = (address: string): string => {
 };
 
 /**
+ * Convert a Circle-decoded mint recipient to an EVM address.
+ */
+const mintRecipientToAddress = (mintRecipient?: string): string | undefined => {
+  if (!mintRecipient) {
+    return undefined;
+  }
+  if (/^0x[0-9a-fA-F]{40}$/.test(mintRecipient)) {
+    return mintRecipient;
+  }
+  if (/^0x[0-9a-fA-F]{64}$/.test(mintRecipient)) {
+    return `0x${mintRecipient.slice(-40)}`;
+  }
+  return undefined;
+};
+
+/**
  * Poll Circle's API for attestation
  */
 const getAttestation = async (
   txHash: string,
   sourceDomain: number,
   network: NetworkType,
-): Promise<{ message: string; attestation: string }> => {
+): Promise<AttestationResult> => {
   const apiUrl =
     network === 'mainnet'
       ? 'https://iris-api.circle.com'
@@ -228,6 +256,7 @@ const getAttestation = async (
           return {
             message: msg.message,
             attestation: msg.attestation,
+            decodedMessage: msg.decodedMessage,
           };
         }
 
@@ -597,7 +626,7 @@ Note:
 
       try {
         // Get attestation from Circle
-        const { message, attestation } = await getAttestation(
+        const { message, attestation, decodedMessage } = await getAttestation(
           tx.hash,
           srcConfig.domainId,
           options.network,
@@ -614,6 +643,16 @@ Note:
 
         // Check final balance
         console.log(`\n📊 Final Balance Check...`);
+        const decodedRecipient = mintRecipientToAddress(
+          decodedMessage?.decodedMessageBody?.mintRecipient,
+        );
+        if (decodedRecipient) {
+          console.log(`Mint recipient: ${decodedRecipient}`);
+        }
+        const decodedAmount = decodedMessage?.decodedMessageBody?.amount;
+        if (decodedAmount) {
+          console.log(`Mint amount: ${Number(decodedAmount) / 1e6} USDC`);
+        }
         const destUsdcAddress = destConfig.usdc[options.network];
         const destUsdcToken = new Contract(
           destUsdcAddress,
@@ -621,7 +660,9 @@ Note:
           destProvider,
         );
         const recipient =
-          options.recipientAddress || (await signer.getAddress());
+          options.recipientAddress ||
+          decodedRecipient ||
+          (await signer.getAddress());
         const finalBalance = await destUsdcToken.balanceOf(recipient);
         console.log(
           `✅ Recipient balance on ${destConfig.name}: ${Number(finalBalance) / 1e6} USDC`,
