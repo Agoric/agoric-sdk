@@ -12,7 +12,8 @@ import {
   type ContractTransactionResponse,
 } from 'ethers';
 
-const { PRIVATE_KEY, ALCHEMY_API } = process.env;
+const { PRIVATE_KEY, ALCHEMY_API, AVALANCHE_RPC_URL, BASE_RPC_URL } =
+  process.env;
 
 if (!PRIVATE_KEY) {
   throw Error('PRIVATE_KEY not defined');
@@ -71,9 +72,10 @@ const CHAIN_CONFIGS: Record<ChainName, ChainConfig> = {
     name: 'Avalanche',
     domainId: 1,
     rpcUrl: network =>
-      network === 'mainnet'
+      AVALANCHE_RPC_URL ||
+      (network === 'mainnet'
         ? `https://avax-mainnet.g.alchemy.com/v2/${ALCHEMY_API}`
-        : `https://avax-fuji.g.alchemy.com/v2/${ALCHEMY_API}`,
+        : `https://avax-fuji.g.alchemy.com/v2/${ALCHEMY_API}`),
     usdc: {
       mainnet: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
       testnet: '0x5425890298aed601595a70AB815c96711a31Bc65',
@@ -91,9 +93,10 @@ const CHAIN_CONFIGS: Record<ChainName, ChainConfig> = {
     name: 'Base',
     domainId: 6,
     rpcUrl: network =>
-      network === 'mainnet'
+      BASE_RPC_URL ||
+      (network === 'mainnet'
         ? `https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_API}`
-        : `https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API}`,
+        : `https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_API}`),
     usdc: {
       mainnet: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
       testnet: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
@@ -517,6 +520,8 @@ Examples:
 Environment Variables:
   PRIVATE_KEY        Private key for signing transactions (required)
   ALCHEMY_API        Alchemy API key for RPC access (required)
+  AVALANCHE_RPC_URL  Optional Avalanche RPC override for mainnet or testnet
+  BASE_RPC_URL       Optional Base RPC override for mainnet or testnet
 
 Note:
   - Use --auto-mint to automatically complete the transfer (includes attestation + minting)
