@@ -1,3 +1,4 @@
+#!/usr/bin/env -S node --import ts-blank-space/register
 // CCTP EVM-to-EVM Transfer Script
 // Supports transfers between: Ethereum, Avalanche, Base, Arbitrum, Optimism
 // Usage: ts-node cctp-evm-transfer.ts --src eth --dest aval --amount 10 [--addr 0x...] [--testnet]
@@ -418,6 +419,7 @@ const executeCCTPTransfer = async (
 const parseArgs = (): TransferOptions & {
   help?: boolean;
   autoMint?: boolean;
+  relayTx?: string;
 } => {
   const args = process.argv.slice(2);
   const options: any = {
@@ -488,6 +490,8 @@ Optional Arguments:
   --testnet          Use testnet (default)
   --mainnet          Use mainnet
   --auto-mint        Automatically retrieve attestation and mint on destination
+  --relay-tx <hash>  Resume from an existing CCTP burn transaction; skips
+                     source-chain transfer and mints on destination
   --help, -h         Show this help message
 
 Supported Chains:
@@ -530,7 +534,7 @@ Note:
     process.exit(0);
   }
 
-  if (!options.srcChain || !options.destChain || !options.amount) {
+  if (!options.srcChain || !options.destChain) {
     console.error('Error: Missing required arguments\n');
     printUsage();
     process.exit(1);
@@ -564,12 +568,23 @@ Note:
 
     console.log(`Wallet address: ${await signer.getAddress()}`);
 
-    const tx = await executeCCTPTransfer(signer, options as TransferOptions);
+    let tx: { hash: string };
+    if (options.relayTx) {
+      console.log(`\n🚀 Relaying existing transaction: ${options.relayTx}`);
+      tx = { hash: options.relayTx };
+    } else {
+      if (!options.amount) {
+        console.error('Error: Missing required arguments\n');
+        printUsage();
+        process.exit(1);
+      }
+      tx = await executeCCTPTransfer(signer, options as TransferOptions);
 
-    console.log(`\n📋 Transaction hash: ${tx.hash}`);
+      console.log(`\n📋 Transaction hash: ${tx.hash}`);
+    }
 
     // Auto-mint if requested
-    if (options.autoMint) {
+    if (options.autoMint || options.relayTx) {
       const destConfig = CHAIN_CONFIGS[options.destChain as ChainName];
       const destRpcUrl = destConfig.rpcUrl(options.network);
       const destProvider = new JsonRpcProvider(destRpcUrl);
