@@ -35,7 +35,7 @@ import { fromTypedEntries, objectMap } from '@agoric/internal';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { q, Fail } from '@endo/errors';
 import { Far } from '@endo/pass-style';
-import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.ts';
+import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.js';
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
 import {

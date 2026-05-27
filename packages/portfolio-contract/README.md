@@ -35,26 +35,6 @@ For details on making offers and querying vstorage, see
 
 ## Off-chain Target Balance API
 
-YDS should consume the shared target-balance helper from the public
-`@agoric/portfolio-api` package. That package participates in the repo's
-after-merge canary publish flow, so production network changes can propagate
-without waiting for `@aglocal/portfolio-contract` packaging.
-
-```js
-import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
-import { PROD_NETWORK } from '@agoric/portfolio-api/src/network/prod-network.js';
-
-const changedTargets = computeTargetBalances({
-  brand: usdcBrand,
-  currentBalances,
-  balanceDelta,
-  targetAllocation,
-  network: PROD_NETWORK,
-  depositFromChain,
-});
-```
-
-`changedTargets` contains only balances that need to change. YDS should pass the
-same USDC brand used by its `currentBalances`, use signed minor-unit deltas
-(positive deposits, negative withdrawals), and keep importing the `.js` subpaths
-so the same source works after packaging.
+YDS should consume the shared target-balance helper and production network data
+from the public `@agoric/portfolio-api` package. See
+[`../portfolio-api/README.md`](../portfolio-api/README.md).

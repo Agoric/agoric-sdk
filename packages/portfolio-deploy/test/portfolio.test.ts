@@ -24,7 +24,7 @@ import {
 import {
   getYmaxWitness,
   type TargetAllocation,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TestFn } from 'ava';
 import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
 import { axelarConfig } from '../src/axelar-configs.js';

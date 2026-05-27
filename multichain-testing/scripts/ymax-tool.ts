@@ -60,7 +60,7 @@ import {
 import {
   getYmaxWitness,
   type TargetAllocation as Allocation,
-} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import { M } from '@agoric/store';
 import { SigningStargateClient } from '@cosmjs/stargate';

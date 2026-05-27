@@ -1,9 +1,19 @@
 import type { NetworkSpec } from './network-spec.js';
 
-const hardenOrFreeze = globalThis.harden ?? Object.freeze;
+const isPrimitive = (value: unknown): boolean => Object(value) !== value;
+
+const deepFreeze = <T>(value: T): T => {
+  if (isPrimitive(value)) return value;
+  const obj = value as Record<PropertyKey, unknown>;
+  Object.freeze(obj);
+  for (const key of Reflect.ownKeys(obj)) {
+    deepFreeze(obj[key]);
+  }
+  return value;
+};
 
 // Initial production network in NetworkSpec format
-export const PROD_NETWORK: NetworkSpec = hardenOrFreeze({
+export const PROD_NETWORK: NetworkSpec = deepFreeze({
   // Enable debug diagnostics to aid troubleshooting in tests
   debug: true,
   environment: 'prod',

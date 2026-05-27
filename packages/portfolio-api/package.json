@@ -12,6 +12,17 @@
     "tools"
   ],
   "main": "src/main.js",
+  "exports": {
+    ".": "./src/main.js",
+    "./src/evm-wallet/eip712-messages.js": "./src/evm-wallet/eip712-messages.ts",
+    "./src/network/network-spec.js": "./src/network/network-spec.ts",
+    "./src/network/prod-network.js": "./src/network/prod-network.ts",
+    "./src/places.js": "./src/places.ts",
+    "./src/target-balances.js": "./src/target-balances.ts",
+    "./src/type-guards.js": "./src/type-guards.ts",
+    "./src/*.js": "./src/*.js",
+    "./package.json": "./package.json"
+  },
   "bin": "./src/cli/bin.js",
   "scripts": {
     "build": "exit 0",

@@ -1,5 +1,12 @@
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
-import type { SupportedChain } from './constants.js';
+import {
+  fromTypedEntries,
+  objectMap,
+  provideLazyMap,
+  typedEntries,
+} from '@agoric/internal';
+import { ACCOUNT_DUST_EPSILON, type SupportedChain } from './constants.js';
+import { chainOf, isInstrumentId } from './places.ts';
 import type { AssetPlaceRef, TargetAllocation } from './types.js';
 
 import type {
@@ -9,12 +16,6 @@ import type {
 } from './network/network-spec.js';
 
 const hardenOrFreeze = globalThis.harden ?? Object.freeze;
-
-/**
- * Mirrors `@agoric/portfolio-api/src/constants.js` without adding a runtime
- * dependency on the broader API surface or SES globals.
- */
-const ACCOUNT_DUST_EPSILON = 100n;
 
 export const DEFAULT_DELTA_SOFT_MIN = 1_000_000n; // 1 USDC
 
@@ -74,8 +75,7 @@ const getOwn = <V>(
 const isDust = (value: bigint): boolean =>
   -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
 
-const isInstrumentId = (ref: string): boolean => !!ref.match(/^[a-z]/i);
-
+// #region XXX These probably belong in @agoric/internal.
 const bigintAbs = (x: bigint) => (x < 0n ? -x : x);
 
 const bigintMin = (first: bigint, ...rest: bigint[]): bigint => {
@@ -85,13 +85,7 @@ const bigintMin = (first: bigint, ...rest: bigint[]): bigint => {
   }
   return min;
 };
-
-const entriesOf = <K extends string, V>(
-  record: Partial<Record<K, V>>,
-): [K, V][] => Object.entries(record) as [K, V][];
-
-const fromEntries = <K extends string, V>(entries: [K, V][]): Record<K, V> =>
-  Object.fromEntries(entries) as Record<K, V>;
+// #endregion
 
 const sortEntriesDesc = <T extends [unknown, number] | [unknown, NatValue]>(
   entries: T[],
@@ -103,55 +97,37 @@ const makeNatAmount = (brand: Brand<'nat'>, value: NatValue): NatAmount => {
   return hardenOrFreeze({ brand, value }) as NatAmount;
 };
 
-const chainNameOfPlace = (place: AssetPlaceRef): SupportedChain => {
-  if (place.startsWith('<')) return 'agoric';
-  if (place.startsWith('@') || place.startsWith('+') || place.startsWith('-')) {
-    return place.slice(1) as SupportedChain;
-  }
-
-  const lastUnderscore = place.lastIndexOf('_');
-  if (lastUnderscore > 0 && lastUnderscore < place.length - 1) {
-    return place.slice(lastUnderscore + 1) as SupportedChain;
-  }
-
-  return failInternal(`Unknown chain name for asset place ${place}`);
-};
-
 const getPlaceData = (
   place: AssetPlaceRef,
   network: NetworkSpec,
 ): PlaceRecord => {
   // The `chains` and `pools` arrays of `network` are immutable, so we only need
   // to build its corresponding Map<AssetPlaceRef, PlaceRecord> once.
-  let placeRecords = placeRecordsByNetwork.get(network);
-  if (!placeRecords) {
-    placeRecords = new Map<AssetPlaceRef, PlaceRecord>();
+  const placeRecords = provideLazyMap(placeRecordsByNetwork, network, () => {
+    const records = new Map<AssetPlaceRef, PlaceRecord>();
     for (const chain of network.chains) {
-      placeRecords.set(`@${chain.name}` as AssetPlaceRef, { chain });
+      records.set(`@${chain.name}` as AssetPlaceRef, { chain });
     }
     for (const pool of network.pools) {
       const chainRecord =
-        placeRecords.get(`@${pool.chain}` as AssetPlaceRef) ??
+        records.get(`@${pool.chain}` as AssetPlaceRef) ??
         failInternal(`No chain found for pool ${pool.pool}`);
-      placeRecords.set(pool.pool as AssetPlaceRef, {
+      records.set(pool.pool as AssetPlaceRef, {
         chain: chainRecord.chain,
         pool,
       });
     }
-    placeRecordsByNetwork.set(network, placeRecords);
-  }
+    return records;
+  });
 
   // `network.pools` is not necessarily complete.
-  let placeRecord = placeRecords.get(place);
-  if (!placeRecord) {
-    const chainName = chainNameOfPlace(place);
+  return provideLazyMap(placeRecords, place, () => {
+    const chainName = chainOf(place);
     const chainRecord =
       placeRecords.get(`@${chainName}` as AssetPlaceRef) ??
       failInternal(`No chain found for asset place ${place}`);
-    placeRecord = { chain: chainRecord.chain };
-    placeRecords.set(place, placeRecord);
-  }
-  return placeRecord;
+    return { chain: chainRecord.chain };
+  });
 };
 
 const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
@@ -181,22 +157,22 @@ export const computeTargetBalances = <
   network,
   depositFromChain,
 }: ComputeTargetBalancesOptions<C, T>): Partial<Record<C | T, NatAmount>> => {
-  const currentValues = fromEntries(
-    entriesOf(currentBalances).map(([place, amount]) => [place, amount.value]),
-  );
-  const currentTotal = Object.values<NatValue>(currentValues).reduce(
-    (acc, value) => acc + value,
-    0n,
-  );
+  const currentValues = objectMap(
+    currentBalances as Record<C, NatAmount>,
+    amount => amount.value,
+  ) as Partial<Record<C, NatValue>>;
+  const currentTotal = Object.values<NatValue>(
+    currentValues as Record<C, NatValue>,
+  ).reduce((acc, value) => acc + value, 0n);
   const total = currentTotal + balanceDelta;
   total >= 0n || failTargetBalance('Insufficient funds for withdrawal.');
   let liquidTotal = total;
 
   type PW = [C | T, NatValue];
   const allWeights: PW[] = Object.keys(targetAllocation).length
-    ? (entriesOf({
+    ? (typedEntries({
         // Any current balance with no target has an effective weight of 0.
-        ...fromEntries(entriesOf(currentValues).map(([p]) => [p, 0n])),
+        ...objectMap(currentValues, () => 0n),
         ...(targetAllocation as Required<typeof targetAllocation>),
       } as Partial<Record<C | T, NatValue>>) as PW[])
     : // In the absence of target weights, maintain the relative status quo but
@@ -205,7 +181,7 @@ export const computeTargetBalances = <
         return valueEntries.some(isNonemptyPositionEntry)
           ? valueEntries.map(([p, v]) => [p, isInstrumentId(p) ? v : 0n] as PW)
           : (valueEntries as PW[]);
-      })(entriesOf(currentValues));
+      })(typedEntries(currentValues) as [C, NatValue][]);
   allWeights.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   let sumW = allWeights.reduce((acc, entry) => acc + entry[1], 0n);
   sumW > 0n ||
@@ -242,9 +218,9 @@ export const computeTargetBalances = <
       resolvedDelta: 0n,
     };
   };
-  const draft = Object.assign(
+  const draft: Record<C | T, DraftRecord> = Object.assign(
     Object.create(null) as Record<C | T, DraftRecord>,
-    fromEntries(
+    fromTypedEntries(
       allWeights.map(([place, weight]) => {
         return [place, makeDraftRecord(place, weight)] as [C | T, DraftRecord];
       }),
@@ -260,7 +236,7 @@ export const computeTargetBalances = <
   for (;;) {
     const badSources: [DraftRecord, gap: NatValue][] = [];
     const needsSuppress: [DraftRecord, gap: NatValue][] = [];
-    for (const [place, draftRecord] of entriesOf(draft)) {
+    for (const [place, draftRecord] of typedEntries(draft)) {
       if (suppressions.has(place)) continue;
       const { weight, current, blockDeposit, blockWithdraw } = draftRecord;
       const target = (liquidTotal * weight) / sumW; // rounds down
@@ -310,7 +286,9 @@ export const computeTargetBalances = <
   if (liquidTotal < 0n && balanceDelta < 0n) {
     const fallback = Object.create(null) as Partial<Record<C | T, NatAmount>>;
     let unsatisfied = -balanceDelta;
-    for (const [place, value] of sortEntriesDesc(entriesOf(currentValues))) {
+    for (const [place, value] of sortEntriesDesc(
+      typedEntries(currentValues) as [C, NatValue][],
+    )) {
       if (isDust(value)) break;
       if (draft[place]?.blockWithdraw !== false) continue;
       const take = bigintMin(unsatisfied, value);
@@ -326,7 +304,7 @@ export const computeTargetBalances = <
   // Blocked/suppressed *sinks* just leave funds in a source chain account.
   // We track chain-level outflow to know which one.
   const outByChain: Partial<Record<SupportedChain, NatValue>> = {};
-  for (const [place, { chain, delta }] of entriesOf(draft)) {
+  for (const [place, { chain, delta }] of typedEntries(draft)) {
     if (suppressions.has(place)) continue;
     const chainName = chain.name;
     outByChain[chainName] = (getOwn(outByChain, chainName) ?? 0n) - delta;
@@ -335,7 +313,9 @@ export const computeTargetBalances = <
     outByChain[depositFromChain] =
       (getOwn(outByChain, depositFromChain) ?? 0n) + balanceDelta;
   }
-  const donorChainsDesc = sortEntriesDesc(entriesOf(outByChain));
+  const donorChainsDesc = sortEntriesDesc(
+    typedEntries(outByChain) as [SupportedChain, NatValue][],
+  );
   let remainder = liquidTotal;
   const pending = new Set<DraftRecord>(Object.values(draft));
   for (const draftRecord of pending) {
@@ -403,7 +383,7 @@ export const computeTargetBalances = <
 
   // Return a mutable Record that omits no-change entries.
   const result = Object.create(null) as Partial<Record<C | T, NatAmount>>;
-  for (const [place, draftRecord] of entriesOf(draft)) {
+  for (const [place, draftRecord] of typedEntries(draft)) {
     const { current, resolvedDelta } = draftRecord;
     if (resolvedDelta === 0n) continue;
     const targetValue = current + resolvedDelta;
