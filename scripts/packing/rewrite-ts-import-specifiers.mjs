@@ -99,11 +99,7 @@ const rewritePackageJsonContent = input => {
   };
 
   const packageJson = JSON.parse(input);
-  if (typeof packageJson.main === 'string') {
-    const updatedMain = rewriteSpecifier(packageJson.main);
-    if (updatedMain !== packageJson.main) changed = true;
-    packageJson.main = updatedMain;
-  }
+  packageJson.main = rewriteValue(packageJson.main);
   if (packageJson.exports) {
     packageJson.exports = rewriteValue(packageJson.exports);
   }
