@@ -62,6 +62,7 @@ import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import type { InstrumentBlocks } from './instrument-status.ts';
 import type {
   EvmChain,
   EvmContext,
@@ -199,6 +200,7 @@ export type Powers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
+  getInstrumentBlocks?: () => Promise<InstrumentBlocks>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
   makeNonce: () => string;
@@ -231,6 +233,7 @@ export type ProcessPortfolioPowers = Pick<
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
+  instrumentBlocks?: InstrumentBlocks;
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
@@ -272,6 +275,7 @@ export const processPortfolioEvents = async (
     feeBrand,
     gasEstimator,
     network,
+    instrumentBlocks,
     signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate,
@@ -393,6 +397,7 @@ export const processPortfolioEvents = async (
       // "deposit" and "withdraw" and it's harmless otherwise.
       amount: flowDetail.amount,
       network,
+      instrumentBlocks,
       brand: depositBrand,
       feeBrand,
       gasEstimator,
@@ -750,6 +755,7 @@ export const startEngine = async (
     rpc,
     signingSmartWalletKit,
     makeNonce,
+    getInstrumentBlocks,
   } = powers;
   const { kvStore } = evmCtx;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
@@ -757,11 +763,19 @@ export const startEngine = async (
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 
-  const vbankAssetCapData = await readStreamCellValue(
-    query.vstorage,
-    'published.agoricNames.vbankAsset',
-    { retries: 4 },
-  );
+  let instrumentBlocks: InstrumentBlocks | undefined;
+  const updateInstrumentBlocks = async () => {
+    instrumentBlocks = await getInstrumentBlocks?.();
+  };
+
+  const [vbankAssetCapData] = await Promise.all([
+    readStreamCellValue(query.vstorage, 'published.agoricNames.vbankAsset', {
+      retries: 4,
+    }),
+    updateInstrumentBlocks().catch(err =>
+      console.error('🚨 Failed to initialize instrument blocks', err),
+    ),
+  ]);
   const vbankAssets: AssetInfo[] = marshaller
     .fromCapData(vbankAssetCapData)
     .map(([_ibcDenom, asset]) => asset);
@@ -837,6 +851,7 @@ export const startEngine = async (
     vstoragePathPrefixes,
     portfolioKeyForDepositAddr,
     evmProviders: evmCtx.evmProviders,
+    instrumentBlocks,
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(
@@ -1012,12 +1027,21 @@ export const startEngine = async (
     // ASAP to avoid missing transactions that settle while portfolio
     // processing (balance queries, planning, tx submission) is in progress.
     await Promise.all([
-      processPortfolioEvents(
-        portfolioEvents,
-        respHeight,
-        portfoliosMemory,
-        processPortfolioPowers,
-      ),
+      portfolioEvents.length &&
+        // Update blocked-instrument sets at most once per chain block, and only
+        // when there are portfolio events to process.
+        updateInstrumentBlocks()
+          .catch(err =>
+            console.error('⚠️ Failed to update instrument blocks', err),
+          )
+          .then(() =>
+            processPortfolioEvents(
+              portfolioEvents,
+              respHeight,
+              portfoliosMemory,
+              { ...processPortfolioPowers, instrumentBlocks },
+            ),
+          ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
 

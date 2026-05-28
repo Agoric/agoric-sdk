@@ -5,6 +5,7 @@ import { inspect } from 'node:util';
 
 import { SigningStargateClient, StargateClient } from '@cosmjs/stargate';
 import type { GraphQLClient } from 'graphql-request';
+import ky from 'ky';
 import * as ws from 'ws';
 
 import { Fail, q } from '@endo/errors';
@@ -35,11 +36,13 @@ import {
   axelarConfigTestnet,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 
-import { loadConfig } from './config.ts';
+import { FETCH_HEADERS, loadConfig } from './config.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
+import { calculateInstrumentBlocks } from './instrument-status.ts';
+import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
 import {
   createEVMContext,
   prepareAbortController,
@@ -271,6 +274,21 @@ export const main = async (
     trace: () => {},
   });
 
+  const ydsFetchConfig = {
+    fetch,
+    prefixUrl: config.yds.url,
+    headers: FETCH_HEADERS,
+  };
+
+  const getInstrumentBlocks = config.yds.url
+    ? async (): Promise<InstrumentBlocks> => {
+        const resp = await ky
+          .get('instruments', ydsFetchConfig)
+          .json<{ data: YdsInstrument[] }>();
+        return calculateInstrumentBlocks(resp.data);
+      }
+    : undefined;
+
   const ydsNotifier = config.yds.url
     ? new YdsNotifier(
         { fetch, log: console.log.bind(console) },
@@ -305,6 +323,7 @@ export const main = async (
     evmTokenAddresses,
     spectrumBlockchain,
     network: PROD_NETWORK,
+    getInstrumentBlocks,
     signingSmartWalletKit,
     makeNonce,
     walletStore,

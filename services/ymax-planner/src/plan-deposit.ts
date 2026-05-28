@@ -255,6 +255,7 @@ export type PlannerContext<
   | 'currentBalances'
   | 'targetAllocation'
   | 'network'
+  | 'instrumentBlocks'
 > & {
   feeBrand: Brand<'nat'>;
   gasEstimator: GasEstimator;
@@ -288,6 +289,7 @@ export const planDepositToAllocations: PlanMaker<{
     network,
     targetAllocation,
     depositFromChain: fromChain,
+    instrumentBlocks: details.instrumentBlocks,
   });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
@@ -318,6 +320,7 @@ export const planRebalanceToAllocations: PlanMaker = async details => {
     currentBalances,
     network,
     targetAllocation,
+    instrumentBlocks: details.instrumentBlocks,
   });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
@@ -345,6 +348,7 @@ export const planWithdrawFromAllocations: PlanMaker<{
     network,
     balanceDelta: -amount.value,
     targetAllocation,
+    instrumentBlocks: details.instrumentBlocks,
   });
 
   const { feeBrand, gasEstimator, toChain = 'agoric' } = details;

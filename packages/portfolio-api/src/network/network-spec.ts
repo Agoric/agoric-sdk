@@ -48,7 +48,7 @@ export interface ChainSpec {
 
 // Any reason to block withdrawal is by extension also a reason to block
 // deposit.
-type BlockWithdrawReason = 'LOW_LIQUIDITY';
+type BlockWithdrawReason = null | 'LOW_LIQUIDITY';
 type BlockDepositReason = BlockWithdrawReason | 'AT_CAPACITY';
 
 export type PoolKey = InstrumentId;
