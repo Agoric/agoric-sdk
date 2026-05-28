@@ -28,6 +28,14 @@ const changedTargets = computeTargetBalances({
 minor-unit deltas: positive for deposits, negative for withdrawals, and `0n` for
 rebalances.
 
-The `./src/target-balances.js` and `./src/network/prod-network.js` subpaths are
-explicit `package.json` exports. Keep importing the `.js` subpaths so the same
-source works after packaging.
+Relevant explicit `package.json` subpath exports are:
+
+- `./src/target-balances.js`
+- `./src/network/prod-network.js`
+- `./src/network/network-spec.js`
+- `./src/places.js`
+- `./src/type-guards.js`
+- `./src/evm-wallet/eip712-messages.js`
+- `./src/evm-wallet/message-handler-helpers.js`
+
+Keep importing the `.js` subpaths so the same source works after packaging.

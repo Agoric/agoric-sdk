@@ -98,7 +98,16 @@ const rewritePackageJsonContent = input => {
     return value;
   };
 
-  const output = `${JSON.stringify(rewriteValue(JSON.parse(input)), null, 2)}\n`;
+  const packageJson = JSON.parse(input);
+  if (typeof packageJson.main === 'string') {
+    const updatedMain = rewriteSpecifier(packageJson.main);
+    if (updatedMain !== packageJson.main) changed = true;
+    packageJson.main = updatedMain;
+  }
+  if (packageJson.exports) {
+    packageJson.exports = rewriteValue(packageJson.exports);
+  }
+  const output = `${JSON.stringify(packageJson, null, 2)}\n`;
   return { output, changed };
 };
 

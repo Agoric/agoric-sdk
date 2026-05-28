@@ -8,7 +8,17 @@ import type {
 import type { InstrumentId } from './instruments.js';
 import type { AssetPlaceRef } from './types.js';
 
-const hardenOrFreeze = globalThis.harden ?? Object.freeze;
+const isPrimitive = (value: unknown): boolean => Object(value) !== value;
+
+const deepFreeze = <T>(value: T): T => {
+  if (isPrimitive(value)) return value;
+  const obj = value as Record<PropertyKey, unknown>;
+  Object.freeze(obj);
+  for (const key of Reflect.ownKeys(obj)) {
+    deepFreeze(obj[key]);
+  }
+  return value;
+};
 
 export type PoolPlaceInfo =
   | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
@@ -41,7 +51,7 @@ export const BeefyPoolPlaces = {
     chainName: 'Arbitrum',
   },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
-hardenOrFreeze(BeefyPoolPlaces);
+deepFreeze(BeefyPoolPlaces);
 
 export type BeefyInstrumentId = keyof typeof BeefyPoolPlaces;
 
@@ -131,7 +141,7 @@ export const ERC4626PoolPlaces = {
     chainName: 'Optimism',
   },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
-hardenOrFreeze(ERC4626PoolPlaces);
+deepFreeze(ERC4626PoolPlaces);
 
 export type ERC4626InstrumentId = keyof typeof ERC4626PoolPlaces;
 
@@ -150,7 +160,7 @@ export const PoolPlaces = {
   ...BeefyPoolPlaces,
   ...ERC4626PoolPlaces,
 } as const satisfies Record<InstrumentId, PoolPlaceInfo>;
-hardenOrFreeze(PoolPlaces);
+deepFreeze(PoolPlaces);
 
 export type PoolKey = InstrumentId;
 
@@ -160,8 +170,9 @@ export type PoolKey = InstrumentId;
  */
 export const isInstrumentId = (ref: string): ref is InstrumentId =>
   !!ref.match(/^[a-z]/i);
-hardenOrFreeze(isInstrumentId);
+deepFreeze(isInstrumentId);
 
+// XXX Possible to consolidate with {@link getChainNameOfPlaceRef}?
 export const chainOf = (id: AssetPlaceRef): SupportedChain => {
   if (id.startsWith('<')) return 'agoric';
   if (!isInstrumentId(id)) return id.slice(1) as SupportedChain;
@@ -176,4 +187,4 @@ export const chainOf = (id: AssetPlaceRef): SupportedChain => {
 
   throw Fail`Cannot determine chain for ${id}`;
 };
-hardenOrFreeze(chainOf);
+deepFreeze(chainOf);
