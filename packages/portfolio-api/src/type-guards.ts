@@ -1,14 +1,12 @@
-import type {
-  BeefyInstrumentId,
-  ERC4626InstrumentId,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
-import type { InstrumentId } from './instruments.js';
+import type { BeefyInstrumentId, ERC4626InstrumentId } from './places.ts';
 import type {
   DepositFromChainRef,
   LocalChainAccountRef,
   InterChainAccountRef,
   WithdrawToChainRef,
 } from './types.js';
+
+export { isInstrumentId } from './places.ts';
 
 /**
  * Without regard to supported chains, is the input plausibly a
@@ -36,14 +34,6 @@ export const isInterChainAccountRef = (
   ref: string,
 ): ref is InterChainAccountRef => ref.startsWith('@');
 harden(isInterChainAccountRef);
-
-/**
- * Without regard to supported chains, is the input plausibly an InstrumentId
- * (i.e., does it start with an ASCII letter)?
- */
-export const isInstrumentId = (ref: string): ref is InstrumentId =>
-  !!ref.match(/^[a-z]/i);
-harden(isInstrumentId);
 
 /**
  * Without regard to supported chains, is the input plausibly a

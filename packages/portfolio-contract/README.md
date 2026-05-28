@@ -32,3 +32,9 @@ For details on making offers and querying vstorage, see
  - `src/type-guards.ts` - types and pattern guards
  - `test/portfolio-agents.ts` - example client code
  - `test/snapshots/*.md` - example vstorage data
+
+## Off-chain Target Balance API
+
+YDS should consume the shared target-balance helper and production network data
+from the public `@agoric/portfolio-api` package. See
+[`../portfolio-api/README.md`](../portfolio-api/README.md).

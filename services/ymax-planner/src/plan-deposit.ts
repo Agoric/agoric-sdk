@@ -1,5 +1,4 @@
-import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
-import { assert, Fail, q, X } from '@endo/errors';
+import { assert, Fail } from '@endo/errors';
 
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
@@ -9,27 +8,13 @@ import type {
   TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
-import { chainOf } from '@aglocal/portfolio-contract/tools/network/buildGraph.js';
-import type {
-  ChainSpec,
-  NetworkSpec,
-  PoolSpec,
-} from '@aglocal/portfolio-contract/tools/network/network-spec.js';
-import {
-  bigintAbs,
-  bigintMin,
-  planRebalanceFlow,
-} from '@aglocal/portfolio-contract/tools/plan-solve.js';
+import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
+import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
+import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
-import {
-  fromTypedEntries,
-  objectMap,
-  objectMetaMap,
-  provideLazyMap,
-  typedEntries,
-} from '@agoric/internal';
+import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import { objectMetaMap, typedEntries } from '@agoric/internal';
 import type { Caip10Record, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type {
@@ -37,7 +22,7 @@ import type {
   InterChainAccountRef,
   SupportedChain,
 } from '@agoric/portfolio-api';
-import { ACCOUNT_DUST_EPSILON, isInstrumentId } from '@agoric/portfolio-api';
+import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 
 import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
@@ -48,73 +33,12 @@ import type {
 } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { EvmChain } from './pending-tx-manager.ts';
-import { UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
-
-const DEFAULT_DELTA_SOFT_MIN = 1_000_000n; // 1 USDC
 
 const scale6 = (x: number) => {
   assert.typeof(x, 'number');
   return BigInt(Math.round(x * 1e6));
 };
-
-const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
-  assert.fail(details, ((...args) =>
-    Reflect.construct(UserInputError, args)) as ErrorConstructor);
-
-const isDust = (value: bigint): boolean =>
-  -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
-
-type PlaceRecord = {
-  chain: ChainSpec;
-  pool?: PoolSpec;
-};
-
-const placeRecordsByNetwork = new WeakMap<
-  NetworkSpec,
-  Map<AssetPlaceRef, PlaceRecord>
->();
-
-const getPlaceData = (
-  place: AssetPlaceRef,
-  network: NetworkSpec,
-): PlaceRecord => {
-  // The `chains` and `pools` arrays of `network` are immutable, so we only need
-  // to build its corresponding Map<AssetPlaceRef, PlaceRecord> once.
-  const placeRecords = provideLazyMap(placeRecordsByNetwork, network, () => {
-    const chainEntries = network.chains.map<[AssetPlaceRef, PlaceRecord]>(
-      chain => [`@${chain.name}`, { chain }],
-    );
-    // eslint-disable-next-line no-shadow
-    const placeRecords = new Map(typedEntries(fromUniqueEntries(chainEntries)));
-    for (const pool of network.pools) {
-      const { chain } =
-        placeRecords.get(`@${pool.chain}`) ||
-        Fail`No chain found for pool ${q(pool.pool)}`;
-      placeRecords.set(pool.pool, { chain, pool });
-    }
-    return placeRecords;
-  });
-  // `network.pools` is not necessarily complete.
-  const placeRecord = provideLazyMap(placeRecords, place, () => {
-    const chainName =
-      chainOf(place) || Fail`Unknown chain name for asset place ${q(place)}`;
-    const { chain } =
-      placeRecords.get(`@${chainName}`) ||
-      Fail`No chain found for pool ${q(place)}`;
-    return { chain };
-  });
-  return placeRecord;
-};
-
-const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
-  const [place, value] = entry;
-  return isInstrumentId(place) && value > 0n;
-};
-
-const sortEntriesDesc = <T extends [unknown, number] | [unknown, NatValue]>(
-  entries: T[],
-): T[] => entries.sort(([_k1, a], [_k2, b]) => (a < b ? 1 : a > b ? -1 : 0));
 
 const amountFromSpectrumAccountBalance = (
   brand: Brand<'nat'>,
@@ -322,260 +246,6 @@ export const getNonDustBalances = async <C extends AssetPlaceRef>(
   return nonDustBalances;
 };
 
-/**
- * Derive weighted targets for allocation keys, suppressing small changes and
- * movements blocked by e.g. lack of instrument liquidity or available capacity.
- * When target allocations cannot be satisfied, strive for proportionality and
- * bend the rules for a withdrawal, but do not increase any position beyond its
- * target allocation (opting instead to leave the excess at a non-instrument
- * hub).
- *
- * Returns only entries whose values change by at least ACCOUNT_DUST_EPSILON
- * compared to current.
- */
-const computeWeightedTargets = <
-  C extends AssetPlaceRef,
-  T extends keyof TargetAllocation,
->(
-  brand: Brand<'nat'>,
-  currentAmounts: Record<C, NatAmount>,
-  balanceDelta: NatValue,
-  allocation: Partial<Pick<TargetAllocation, T>> = {},
-  network: NetworkSpec,
-  depositFromChain?: SupportedChain,
-): Partial<Record<C | T, NatAmount>> => {
-  const currentValues = objectMap(currentAmounts, amount => amount.value);
-  const currentTotal = Object.values<NatValue>(currentValues).reduce(
-    (acc, value) => acc + value,
-    0n,
-  );
-  const total = currentTotal + balanceDelta;
-  total >= 0n || rejectUserInput('Insufficient funds for withdrawal.');
-  let liquidTotal = total;
-
-  type PW = [C | T, NatValue];
-  const allWeights: PW[] = Object.keys(allocation).length
-    ? typedEntries({
-        // Any current balance with no target has an effective weight of 0.
-        ...objectMap(currentValues, () => 0n),
-        ...(allocation as Required<typeof allocation>),
-      })
-    : // In the absence of target weights, maintain the relative status quo but
-      // zero out hubs (chains) if there is anywhere else to deploy their funds.
-      (valueEntries => {
-        return valueEntries.some(isNonemptyPositionEntry)
-          ? valueEntries.map(([p, v]) => [p, isInstrumentId(p) ? v : 0n] as PW)
-          : valueEntries;
-      })(typedEntries(currentValues));
-  allWeights.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  let sumW = allWeights.reduce((acc, entry) => acc + entry[1], 0n);
-  sumW > 0n ||
-    rejectUserInput('Total target allocation weights must be positive.');
-
-  type DraftRecord = {
-    readonly place: C | T;
-    readonly chain: ChainSpec;
-    readonly weight: NatValue;
-    readonly current: NatValue;
-    readonly blockDeposit: boolean;
-    readonly blockWithdraw: boolean;
-    readonly deltaSoftMin: NatValue;
-    target: NatValue;
-    delta: NatValue; // target - current
-    resolvedDelta: NatValue;
-  };
-  const makeDraftRecord = (
-    place: C | T,
-    weight: NatValue = 0n,
-  ): DraftRecord => {
-    const placeData = getPlaceData(place, network);
-    return {
-      place,
-      chain: placeData.chain,
-      weight,
-      current: getOwn(currentValues, place) ?? 0n,
-      blockDeposit: !!placeData.pool?.blockDepositReason,
-      blockWithdraw: !!placeData.pool?.blockWithdrawReason,
-      deltaSoftMin: placeData.chain.deltaSoftMin ?? DEFAULT_DELTA_SOFT_MIN,
-
-      target: 0n,
-      delta: 0n,
-      resolvedDelta: 0n,
-    };
-  };
-  // @ts-expect-error Record confused by null prototype
-  const draft: Record<C | T, DraftRecord> = {
-    __proto__: null,
-    ...fromTypedEntries(
-      allWeights.map(([place, weight]) => {
-        return [place, makeDraftRecord(place, weight)] as [C | T, DraftRecord];
-      }),
-    ),
-  };
-
-  // Blocked/suppressed sources proportionally reduce the other targets,
-  // potentially even cascading into new blocked sources (e.g., A/B/C/D target
-  // balances 40/20/20/20 can become 52/16/16/16 from A being withdraw-blocked
-  // at current 52, and then 52/15/15/18 from the originally-a-sink D being
-  // withdraw-blocked at current 18.
-  const suppressions = new Map<AssetPlaceRef, NatValue>();
-  for (;;) {
-    const badSources: [DraftRecord, gap: NatValue][] = [];
-    const needsSuppress: [DraftRecord, gap: NatValue][] = [];
-    for (const [place, draftRecord] of typedEntries(draft)) {
-      if (suppressions.has(place)) continue;
-      const { weight, current, blockDeposit, blockWithdraw } = draftRecord;
-      const target = (liquidTotal * weight) / sumW; // rounds down
-      /** positive delta is a sink, negative delta is a source */
-      const delta = target - current;
-      Object.assign(draftRecord, { target, delta });
-      const absDelta = bigintAbs(delta);
-      const isBlocked =
-        (delta > 0n && blockDeposit) || (delta < 0n && blockWithdraw);
-      const isSuppressed = delta !== 0n && absDelta < draftRecord.deltaSoftMin;
-      if (isBlocked && delta < 0n) {
-        badSources.push([draftRecord, 0n]);
-      } else if (isSuppressed && delta < 0n) {
-        needsSuppress.push([draftRecord, draftRecord.deltaSoftMin - absDelta]);
-      }
-      draftRecord.resolvedDelta = isBlocked || isSuppressed ? 0n : delta;
-    }
-
-    if (badSources.length === 0) {
-      // No sources to block, but there still might be suppressions.
-      // Cement those with the largest gap.
-      sortEntriesDesc(needsSuppress);
-      for (let i = 0; i < needsSuppress.length; i += 1) {
-        const gap = needsSuppress[i][1];
-        if (i > 0 && gap !== needsSuppress[i - 1][1]) break;
-        badSources.push(needsSuppress[i]);
-      }
-    }
-    for (const [source, gap] of badSources) {
-      const { place, current, weight, blockWithdraw } = source;
-      // A blocked source is not usable even as a withdrawal fallback.
-      if (blockWithdraw) delete draft[place];
-      if (suppressions.has(place)) continue;
-      suppressions.set(place, gap);
-      liquidTotal -= current;
-      sumW -= weight;
-    }
-    if (badSources.length === 0 || liquidTotal < 0n) break;
-  }
-
-  // If all sources are suppressed for a deposit or rebalance, we're done.
-  if (liquidTotal <= 0n && balanceDelta >= 0n) return {};
-
-  // If all sources are suppressed for a withdrawal, try to succeed anyway but
-  // minimize the count of affected places rather than the divergence from
-  // allocation.
-  if (liquidTotal < 0n && balanceDelta < 0n) {
-    // @ts-expect-error Record confused by null prototype
-    const fallback: Partial<Record<C | T, NatAmount>> = { __proto__: null };
-    let unsatisfied = -balanceDelta;
-    for (const [place, value] of sortEntriesDesc(typedEntries(currentValues))) {
-      if (isDust(value)) break;
-      if (draft[place]?.blockWithdraw !== false) continue;
-      const take = bigintMin(unsatisfied, value);
-      fallback[place] = AmountMath.make(brand, value - take);
-      unsatisfied -= take;
-      if (unsatisfied === 0n) return { ...fallback };
-    }
-    // TODO(AGO-535): Effect a partial withdrawal here if necessary (e.g., when
-    // some requested funds are in a low-liquidity position).
-    return {};
-  }
-
-  // Blocked/suppressed *sinks* just leave funds in a source chain account.
-  // We track chain-level outflow to know which one.
-  const outByChain: Partial<Record<SupportedChain, NatValue>> = {};
-  for (const [place, { chain, delta }] of typedEntries(draft)) {
-    if (suppressions.has(place)) continue;
-    const chainName = chain.name;
-    outByChain[chainName] = (getOwn(outByChain, chainName) ?? 0n) - delta;
-  }
-  if (depositFromChain) {
-    outByChain[depositFromChain] =
-      (getOwn(outByChain, depositFromChain) ?? 0n) + balanceDelta;
-  }
-  const donorChainsDesc = sortEntriesDesc(
-    typedEntries(outByChain as Required<typeof outByChain>),
-  );
-  let remainder = liquidTotal;
-  const pending = new Set<DraftRecord>(Object.values(draft));
-  for (const draftRecord of pending) {
-    pending.delete(draftRecord);
-    const { place, current, delta, resolvedDelta } = draftRecord;
-    if (suppressions.has(place)) continue;
-    // No adjustment is necessary for a source and/or satisfied delta.
-    if (delta <= 0n || resolvedDelta !== 0n) {
-      const newBalance = current + resolvedDelta;
-      remainder -= newBalance;
-      continue;
-    }
-
-    // This sink cannot receive its inbound funds. If its chain is a net source
-    // or neutral, we leave them at the local hub. Otherwise, we reduce the net
-    // outflow from one or more donor-chain hubs.
-    remainder -= current;
-    const local = getPlaceData(place, network).chain;
-    const localNetOut = donorChainsDesc.find(([n]) => n === local.name)![1];
-    if (localNetOut >= 0n) {
-      const chainPlace = `@${local.name}` as C | T;
-      draft[chainPlace] ??= makeDraftRecord(chainPlace);
-      draft[chainPlace].resolvedDelta += delta;
-      if (!pending.has(draft[chainPlace])) remainder -= delta;
-    } else {
-      let excess = delta;
-      for (const donorEntry of donorChainsDesc) {
-        const [chainName, netOut] = donorEntry;
-        if (excess === 0n || netOut <= 0n) break;
-        const chainPlace = `@${chainName}` as C | T;
-        draft[chainPlace] ??= makeDraftRecord(chainPlace);
-        const d = bigintMin(excess, netOut);
-        if (!pending.has(draft[chainPlace])) remainder -= d;
-        draft[chainPlace].resolvedDelta += d;
-        donorEntry[1] -= d;
-        excess -= d;
-      }
-      excess === 0n ||
-        Fail`internal: Unable to suppress ${q(place)} for ${{ currentValues, balanceDelta, allocation }}`;
-      sortEntriesDesc(donorChainsDesc);
-    }
-  }
-
-  // We have our targets. Distribute any rounding loss to the highest-weight
-  // place that can accept it.
-  // XXX We should instead redistribute to minimize error.
-  if (remainder !== 0n) {
-    const weightsDesc = sortEntriesDesc(allWeights);
-    for (const [place, _w] of weightsDesc) {
-      if (draft[place]?.blockDeposit) continue;
-      draft[place] ??= makeDraftRecord(place);
-      const newDelta = draft[place].resolvedDelta + remainder;
-      if (newDelta === 0n || !isDust(newDelta)) {
-        draft[place].resolvedDelta = newDelta;
-        remainder = 0n;
-        break;
-      }
-    }
-    remainder === 0n ||
-      rejectUserInput(
-        X`Nowhere to place ${remainder} in update of ${currentValues} to ${draft}`,
-      );
-  }
-
-  // Return a mutable Record that omits no-change entries.
-  return {
-    ...objectMetaMap(draft, (desc, _place) => {
-      const { current, resolvedDelta } = desc.value as DraftRecord;
-      if (resolvedDelta === 0n) return undefined;
-      const targetValue = current + resolvedDelta;
-      return { ...desc, value: AmountMath.make(brand, targetValue) };
-    }),
-  };
-};
-
 export type PlannerContext<
   C extends AssetPlaceRef,
   T extends keyof TargetAllocation,
@@ -609,14 +279,14 @@ export const planDepositToAllocations: PlanMaker<{
     fromChain = 'agoric',
   } = details;
   if (!targetAllocation) return { flow: [], order: undefined };
-  const target = computeWeightedTargets(
+  const target = computeTargetBalances({
     brand,
     currentBalances,
-    amount.value,
-    targetAllocation,
+    balanceDelta: amount.value,
     network,
-    fromChain,
-  );
+    targetAllocation,
+    depositFromChain: fromChain,
+  });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
   const { feeBrand, gasEstimator } = details;
@@ -641,13 +311,12 @@ export const planDepositToAllocations: PlanMaker<{
 export const planRebalanceToAllocations: PlanMaker = async details => {
   const { brand, currentBalances, network, targetAllocation } = details;
   if (!targetAllocation) return { flow: [], order: undefined };
-  const target = computeWeightedTargets(
+  const target = computeTargetBalances({
     brand,
     currentBalances,
-    0n,
-    targetAllocation,
     network,
-  );
+    targetAllocation,
+  });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
   const { feeBrand, gasEstimator } = details;
@@ -668,13 +337,13 @@ export const planWithdrawFromAllocations: PlanMaker<{
   toChain?: SupportedChain;
 }> = async details => {
   const { amount, brand, currentBalances, network, targetAllocation } = details;
-  const target = computeWeightedTargets(
+  const target = computeTargetBalances({
     brand,
     currentBalances,
-    -amount.value,
-    targetAllocation,
     network,
-  );
+    balanceDelta: -amount.value,
+    targetAllocation,
+  });
 
   const { feeBrand, gasEstimator, toChain = 'agoric' } = details;
   const withdrawTo =

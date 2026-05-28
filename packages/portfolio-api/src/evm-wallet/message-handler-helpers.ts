@@ -28,7 +28,7 @@ import {
   validateTokenPermissionsType,
   type Permit2Domain,
   type PermitWitnessTransferFromInputComponents,
-} from '@agoric/orchestration/src/utils/permit2.js';
+} from '@agoric/orchestration/src/utils/permit2.ts';
 import {
   type OperationTypeNames,
   type YmaxStandaloneOperationData,

@@ -76,13 +76,45 @@ const rewriteContent = input => {
   return { output, changed };
 };
 
+const rewritePackageJsonContent = input => {
+  let changed = false;
+  const rewriteValue = value => {
+    if (typeof value === 'string') {
+      const updated = rewriteSpecifier(value);
+      if (updated !== value) changed = true;
+      return updated;
+    }
+    if (Array.isArray(value)) {
+      return value.map(rewriteValue);
+    }
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, entryValue]) => [
+          key,
+          rewriteValue(entryValue),
+        ]),
+      );
+    }
+    return value;
+  };
+
+  const packageJson = JSON.parse(input);
+  packageJson.main = rewriteValue(packageJson.main);
+  if (packageJson.exports) {
+    packageJson.exports = rewriteValue(packageJson.exports);
+  }
+  const output = `${JSON.stringify(packageJson, null, 2)}\n`;
+  return { output, changed };
+};
+
 const shouldProcessFile = filePath =>
   filePath.endsWith('.js') ||
   filePath.endsWith('.mjs') ||
   filePath.endsWith('.cjs') ||
   filePath.endsWith('.d.ts') ||
   filePath.endsWith('.d.mts') ||
-  filePath.endsWith('.d.cts');
+  filePath.endsWith('.d.cts') ||
+  path.basename(filePath) === 'package.json';
 
 const listFiles = async rootDir => {
   /** @type {string[]} */
@@ -123,7 +155,10 @@ const main = async () => {
 
   for (const filePath of files) {
     const original = await fs.readFile(filePath, 'utf-8');
-    const { output, changed } = rewriteContent(original);
+    const { output, changed } =
+      path.basename(filePath) === 'package.json'
+        ? rewritePackageJsonContent(original)
+        : rewriteContent(original);
     if (!changed) continue;
 
     await fs.writeFile(filePath, output);
