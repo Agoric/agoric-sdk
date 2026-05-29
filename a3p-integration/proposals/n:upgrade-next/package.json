@@ -15,7 +15,7 @@
     "@agoric/client-utils": "dev",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
-    "@agoric/synthetic-chain": "^0.6.1",
+    "@agoric/synthetic-chain": "^0.7.0",
     "@agoric/zoe": "dev",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
