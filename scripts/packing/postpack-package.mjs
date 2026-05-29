@@ -4,7 +4,10 @@
  *
  * This script handles cleanup after npm pack completes:
  * 1. Restores .ts files that were deleted during prepack (via git checkout)
- * 2. Removes generated .d.ts, .d.ts.map, .js, and .mts files (via git clean)
+ * 2. Restores files rewritten during prepack (via git checkout), except during
+ *    `npm publish` where reverting package.json would undo lerna's canary version
+ *    bump before npm reads the version for upload (E400 version mismatch).
+ * 3. Removes generated .d.ts, .d.ts.map, .js, and .mts files (via git clean)
  *
  * Usage: yarn run -T postpack-package (from any package directory)
  */
@@ -48,11 +51,17 @@ const restoreRewriteList = async (listPath, gitCwd, label) => {
   if (!fs.existsSync(listPath)) return false;
   console.log(`  → restoring rewritten files (${label})`);
   try {
-    const entries = fs
+    let entries = fs
       .readFileSync(listPath, 'utf-8')
       .split('\n')
       .map(line => line.trim())
       .filter(Boolean);
+    // During `npm publish`, postpack runs after the tarball is built but before
+    // upload. `git checkout -- package.json` would restore the committed version
+    // (e.g. 0.1.0) while the tarball still has lerna's canary version.
+    if (process.env.npm_command === 'publish') {
+      entries = entries.filter(entry => path.basename(entry) !== 'package.json');
+    }
     if (entries.length > 0) {
       try {
         await spawn('git', ['ls-files', '-z', '--', ...entries], {
