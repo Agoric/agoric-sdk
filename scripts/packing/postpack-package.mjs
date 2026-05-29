@@ -60,7 +60,9 @@ const restoreRewriteList = async (listPath, gitCwd, label) => {
     // upload. `git checkout -- package.json` would restore the committed version
     // (e.g. 0.1.0) while the tarball still has lerna's canary version.
     if (process.env.npm_command === 'publish') {
-      entries = entries.filter(entry => path.basename(entry) !== 'package.json');
+      entries = entries.filter(
+        entry => path.basename(entry) !== 'package.json',
+      );
     }
     if (entries.length > 0) {
       try {
