@@ -37,6 +37,8 @@ import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FlowConfig,
+  FlowAgent,
+  PortfolioPermissions,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
@@ -58,10 +60,11 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
+import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
+import { preparePortfolioDelegationKit } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
 import { preparePlanner } from './planner.exo.ts';
 import {
@@ -397,7 +400,7 @@ export const contract = async (
     defaultFlowConfig = DEFAULT_FLOW_CONFIG,
   } = privateArgs;
   const { brands } = zcf.getTerms();
-  const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
+  const { orchestrateAll, zoeTools, chainHub, vowTools, baggage } = tools;
 
   assert(brands.USDC, 'USDC missing from brands in terms');
   assert(brands.Fee, 'Fee missing from brands in terms');
@@ -562,6 +565,65 @@ export const contract = async (
     txfrCtx,
   );
 
+  // `portfolios` must exist before portfolio creation can allocate IDs.
+  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+  const getPortfolio = (id: number) => portfolios.get(id);
+
+  const makeDelegationKit = preparePortfolioDelegationKit(
+    zone.subZone('delegation'),
+    { zcf },
+  );
+
+  // The contract delivers EVM-initiated delegation invitations via a
+  // pre-registered postal service. The creator registers it once at
+  // deployment via `setPostalService`.
+  const DELEGATION_POSTAL_SERVICE = 'delegationPostalService';
+  const DELEGATION_POSTAL_SERVICE_FACET = 'delegationPostalServiceFacet';
+  const getPostalService = (): ERef<PostalServiceI> => {
+    if (baggage.has(DELEGATION_POSTAL_SERVICE_FACET)) {
+      return baggage.get(DELEGATION_POSTAL_SERVICE_FACET) as PostalServiceI;
+    }
+    baggage.has(DELEGATION_POSTAL_SERVICE) ||
+      Fail`postal service not registered; call creatorFacet.setPostalService first`;
+    const zoe = zcf.getZoeService();
+    return E(zoe).getPublicFacet(
+      baggage.get(DELEGATION_POSTAL_SERVICE) as Instance<
+        () => { publicFacet: PostalServiceI }
+      >,
+    );
+  };
+
+  /**
+   * Mint a delegation invitation for one portfolio and deliver it to `grantee`.
+   * The grantee redeems it once and saves the resulting wallet-store entry
+   * for later `invokeEntry` calls. Reachable only via `evmHandler.grant`,
+   * which requires the caller to already hold the per-portfolio evmHandler
+   * facet — i.e., the per-wallet `wallet.portfolios.get(id)` lookup has
+   * already authorized the signer as the portfolio's owner.
+   */
+  const deliverDelegationInvitation = async (
+    target: Pick<
+      PortfolioKit,
+      'reader' | 'planner' | 'reporter' | 'simpleRebalanceHandler'
+    >,
+    agentId: FlowAgent['id'],
+    grantee: Bech32Address,
+    permissions: PortfolioPermissions,
+  ): Promise<void> => {
+    const portfolioId = target.reader.getPortfolioId();
+    const kit = makeDelegationKit({ agentId, permissions, target });
+    const invitation = await zcf.makeInvitation(
+      (seat: ZCFSeat) => {
+        seat.exit();
+        return kit.client;
+      },
+      'portfolioMandate',
+      harden({ portfolioId, agentId, permissions }),
+    );
+    const ps = await getPostalService();
+    await E(ps).deliverPayment(grantee, invitation);
+  };
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
@@ -577,10 +639,8 @@ export const contract = async (
     usdcBrand: brands.USDC,
     eip155ChainIdToAxelarChain,
     contracts,
+    deliverDelegationInvitation,
   });
-
-  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
-  const getPortfolio = (id: number) => portfolios.get(id);
 
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
@@ -841,6 +901,10 @@ export const contract = async (
         M.string(),
         M.remotable('Instance'),
       ).returns(),
+      setPostalService: M.call(M.remotable('Instance')).returns(),
+      setPostalServicePublicFacet: M.call(
+        M.remotable('PostalServicePublicFacet'),
+      ).returns(),
       withdrawFees: M.callWhen(M.string())
         .optional(M.record())
         .returns(M.record()),
@@ -902,6 +966,26 @@ export const contract = async (
         trace('made EVM wallet handler invitation', invitation);
         await E(pfP).deliverPayment(address, invitation);
         trace('delivered EVM wallet handler invitation');
+      },
+      /**
+       * Register the postal service used to deliver EVM-initiated delegation
+       * invitations. Idempotent overwrite; called once at deployment.
+       */
+      setPostalService(
+        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+      ) {
+        if (baggage.has(DELEGATION_POSTAL_SERVICE)) {
+          baggage.set(DELEGATION_POSTAL_SERVICE, instancePS);
+        } else {
+          baggage.init(DELEGATION_POSTAL_SERVICE, instancePS);
+        }
+      },
+      setPostalServicePublicFacet(postalService: PostalServiceI) {
+        if (baggage.has(DELEGATION_POSTAL_SERVICE_FACET)) {
+          baggage.set(DELEGATION_POSTAL_SERVICE_FACET, postalService);
+        } else {
+          baggage.init(DELEGATION_POSTAL_SERVICE_FACET, postalService);
+        }
       },
       /**
        * Withdraw from contractAccount; for example, before terminating the contract

@@ -108,6 +108,10 @@ const makeMockPortfolioEvmHandler = ({
       calls.withdraw.push(args);
       return 'withdraw-flow';
     },
+    async grant(..._args: Parameters<PortfolioEVMFacet['grant']>) {
+      // Not exercised by existing tests; present so the mock satisfies the
+      // facet type after the security fix moved delegation onto evmHandler.
+    },
   });
 };
 

@@ -5,13 +5,13 @@ import { AmountMath, type Brand } from '@agoric/ertp';
 import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
-import { hexToBytes } from '@noble/hashes/utils';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   type AccountId,
+  type Bech32Address,
   type Caip10Record,
   type CaipChainId,
 } from '@agoric/orchestration';
-import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   coerceAccountId,
   parseAccountId,
@@ -19,9 +19,12 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import type {
-  FundsFlowPlan,
   FlowConfig,
+  FlowAgent,
+  FundsFlowPlan,
+  PortfolioAgentStatus,
   PortfolioContinuingInvitationMaker,
+  PortfolioPermissions,
   PortfolioRemoteAccountState,
 } from '@agoric/portfolio-api';
 import {
@@ -30,8 +33,8 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type {
-  YmaxFullDomain,
   TargetAllocation as EIP712Allocation,
+  YmaxFullDomain,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { MapStore } from '@agoric/store';
@@ -40,20 +43,27 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { Fail, X, bare } from '@endo/errors';
+import { bare, Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { hexToBytes } from '@noble/hashes/utils';
 import type { Address as EvmAddress } from 'abitype';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
+import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
-  type EVMContractAddressesMap,
+  FlowAgentShape,
+  makeFlowAgentPath,
   makeFlowPath,
   makeFlowStepsPath,
+  makePortfolioAgentId,
+  makePortfolioAgentsPath,
   makePortfolioPath,
+  PortfolioAgentStatusShape,
   PoolKeyShapeExt,
+  type EVMContractAddressesMap,
   type FlowDetail,
   type makeProposalShapes,
   type PoolKey,
@@ -63,7 +73,6 @@ import {
 } from './type-guards.js';
 import { predictWalletAddress } from './utils/evm-orch-factory.js';
 import { predictRemoteAccountAddress } from './utils/evm-orch-router.ts';
-import type { EVMContractAddresses } from './portfolio.contract.ts';
 
 const trace = makeTracer('PortExo');
 
@@ -126,6 +135,7 @@ type PortfolioKitState = {
     number,
     { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
   >;
+  delegations?: MapStore<number, PortfolioAgentStatus>;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
@@ -143,6 +153,7 @@ export const PortfolioStateShape = {
   accounts: M.remotable('accounts'),
   positions: M.remotable('positions'),
   flowsRunning: M.remotable('flowsRunning'),
+  delegations: M.opt(M.remotable('delegations')),
   nextFlowId: M.number(),
   targetAllocation: M.opt(M.record()),
   policyVersion: M.number(),
@@ -275,6 +286,21 @@ const accountStateByChain = (
 
 const { fromEntries } = Object;
 
+const makePortfolioAgentsRecord = (
+  portfolioId: number,
+  delegations?: PortfolioKitState['delegations'],
+): StatusFor['portfolioAgents'] =>
+  harden(
+    delegations
+      ? fromEntries(
+          [...delegations.entries()].map(([agentId, status]) => [
+            makePortfolioAgentId(portfolioId, agentId),
+            status,
+          ]),
+        )
+      : {},
+  );
+
 /** publish everyting about flowsRunning but the sync VowKit */
 const makeFlowsRunningRecord = (
   flowsRunning: PortfolioKitState['flowsRunning'],
@@ -296,6 +322,21 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 /** avoid circular reference */
 type PortfolioKitCycleBreaker = unknown;
 
+type DelegationTarget = {
+  reader: {
+    getPortfolioId: () => number;
+  };
+  planner: {
+    submitVersion: (versionPre: number, countPre: number) => void;
+  };
+  reporter: {
+    publishFlowAgent: (id: number, agent: FlowAgent) => void;
+  };
+  simpleRebalanceHandler: {
+    handle: (seat: ZCFSeat, offerArgs: unknown) => string;
+  };
+};
+
 export const preparePortfolioKit = (
   zone: Zone,
   {
@@ -313,6 +354,7 @@ export const preparePortfolioKit = (
     usdcBrand,
     eip155ChainIdToAxelarChain,
     contracts,
+    deliverDelegationInvitation,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -349,6 +391,18 @@ export const preparePortfolioKit = (
       [chainId in `${number | bigint}`]?: AxelarChain;
     };
     contracts: EVMContractAddressesMap;
+    /**
+     * Mint a delegation invitation for this portfolio and deliver it to
+     * `grantee`. The closure encapsulates the postal-service dependency so
+     * this exo doesn't need ambient authority to deliver, and only receives
+     * the per-portfolio capabilities needed by delegation.
+     */
+    deliverDelegationInvitation: (
+      target: DelegationTarget,
+      agentId: FlowAgent['id'],
+      grantee: string,
+      permissions: PortfolioPermissions,
+    ) => Promise<void>;
   },
 ) => {
   // Ephemeral node cache
@@ -381,6 +435,13 @@ export const preparePortfolioKit = (
   });
 
   const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
+  const makeDelegationsStore = (
+    portfolioId: number,
+  ): MapStore<number, PortfolioAgentStatus> =>
+    zone.detached().mapStore(`portfolio${portfolioId}:delegations`, {
+      keyShape: M.number(),
+      valueShape: PortfolioAgentStatusShape,
+    }) as MapStore<number, PortfolioAgentStatus>;
 
   return zone.exoClassKit(
     'Portfolio',
@@ -408,6 +469,7 @@ export const preparePortfolioKit = (
           keyShape: M.number(),
           valueShape: M.record(),
         }),
+        delegations: undefined,
         accounts: zone.detached().mapStore('accounts', {
           keyShape: M.string(),
           valueShape: M.or(
@@ -514,11 +576,16 @@ export const preparePortfolioKit = (
         },
       },
       reporter: {
+        /**
+         * Publishing is assumed to succeed; there is no cost-effective retry or
+         * compensation path for vstorage writes in this contract.
+         */
         publishStatus() {
           const {
             portfolioId,
             positions,
             accounts,
+            delegations,
             nextFlowId,
             flowsRunning,
             targetAllocation,
@@ -556,6 +623,16 @@ export const preparePortfolioKit = (
             rebalanceCount,
           } satisfies StatusFor['portfolio']);
         },
+        publishAgents() {
+          const { portfolioId, delegations } = this.state;
+          if (!delegations) {
+            return;
+          }
+          publishStatus(
+            makePortfolioAgentsPath(portfolioId),
+            makePortfolioAgentsRecord(portfolioId, delegations),
+          );
+        },
         finishFlow(flowId) {
           const { flowsRunning } = this.state;
           flowsRunning.delete(flowId);
@@ -576,6 +653,11 @@ export const preparePortfolioKit = (
         publishFlowStatus(id: number, status: StatusFor['flow']) {
           const { portfolioId } = this.state;
           publishStatus(makeFlowPath(portfolioId, id), status);
+        },
+        publishFlowAgent(id: number, agent: FlowAgent) {
+          mustMatch(agent, FlowAgentShape);
+          const { portfolioId } = this.state;
+          publishStatus(makeFlowAgentPath(portfolioId, id), agent);
         },
       },
       planner: {
@@ -1120,6 +1202,44 @@ export const preparePortfolioKit = (
           void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
+        /**
+         * Mint a delegation invitation for this portfolio and deliver it to
+         * `grantee`. Only reachable by holders of this portfolio's
+         * evmHandler facet — in practice the EVM wallet handler, which
+         * resolves the signer's per-wallet portfolio reference. That
+         * resolution is the authorization check; this method then enforces
+         * its own input validation.
+         */
+        grant(grantee: Bech32Address, permissions: PortfolioPermissions) {
+          const { portfolioId, sourceAccountId } = this.state;
+          if (!sourceAccountId) {
+            throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+          }
+          permissions.allocation === true ||
+            Fail`grant requires allocation permission`;
+          const delegations =
+            this.state.delegations || makeDelegationsStore(portfolioId);
+          this.state.delegations = delegations;
+          const nextAgentId = delegations.getSize() + 1;
+          delegations.init(
+            nextAgentId,
+            harden({
+              grantee,
+              permissions,
+              state: 'active',
+            }),
+          );
+          this.facets.reporter.publishAgents();
+          const agentId = makePortfolioAgentId(portfolioId, nextAgentId);
+          const { reader, planner, reporter, simpleRebalanceHandler } =
+            this.facets;
+          return deliverDelegationInvitation(
+            harden({ reader, planner, reporter, simpleRebalanceHandler }),
+            agentId,
+            grantee,
+            permissions,
+          );
+        },
       },
       rebalanceHandler: {
         async handle(seat: ZCFSeat, offerArgs: unknown) {
@@ -1159,20 +1279,15 @@ export const preparePortfolioKit = (
         },
       },
       simpleRebalanceHandler: {
-        handle(seat: ZCFSeat, offerArgs: unknown) {
+        handle(seat: ZCFSeat, offerArgs: unknown): `flow${number}` {
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
+          const { manager } = this.facets;
           if (offerArgs.targetAllocation) {
-            const { manager } = this.facets;
             manager.setTargetAllocation(offerArgs.targetAllocation);
           }
-          const flowDetail = {
-            type: 'rebalance',
-          } as FlowDetail;
-          const startedFlow = this.facets.manager.startFlow(
-            flowDetail,
-            offerArgs.flow,
-          );
+          const flowDetail = { type: 'rebalance' } as FlowDetail;
+          const startedFlow = manager.startFlow(flowDetail, offerArgs.flow);
           // This flow does its own error handling and always exits the seat
           void executePlan(
             seat,

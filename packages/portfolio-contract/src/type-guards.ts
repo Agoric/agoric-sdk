@@ -30,9 +30,13 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
+  PortfolioPermissionsShape,
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
+  type FlowAgent,
+  type PortfolioAgentId,
+  type PortfolioAgentStatus,
   type PortfolioPublishedPathTypes,
   type ProposalType,
   type StatusFor,
@@ -113,6 +117,8 @@ export const makeProposalShapes = (
   return harden({ openPortfolio, rebalance, withdraw, deposit });
 };
 harden(makeProposalShapes);
+// XXX avoid ReturnType - make an inline type and assert that it matches in a type test
+export type ProposalShapes = ReturnType<typeof makeProposalShapes>;
 // #endregion
 
 // #region Offer Args
@@ -189,6 +195,12 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   );
 };
 
+export const makePortfolioAgentId = (
+  portfolioId: number,
+  agentId: number,
+): `portfolio${number}agent${number}` =>
+  `portfolio${portfolioId}agent${agentId}`;
+
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
 const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
@@ -222,6 +234,26 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
     },
   );
+
+export const PortfolioAgentIdShape: TypedPattern<PortfolioAgentId> = M.string();
+
+export const FlowAgentShape: TypedPattern<FlowAgent> = M.splitRecord(
+  {
+    id: PortfolioAgentIdShape,
+  },
+  {},
+  M.record(),
+);
+
+export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
+  M.splitRecord({
+    grantee: AnyString<Bech32Address>(),
+    permissions: PortfolioPermissionsShape,
+    state: M.or('active', 'revoked', 'expired'),
+  });
+
+export const PortfolioAgentsShape: TypedPattern<StatusFor['portfolioAgents']> =
+  M.recordOf(PortfolioAgentIdShape, PortfolioAgentStatusShape);
 
 /**
  * Creates vstorage path for position transfer history.
@@ -266,6 +298,20 @@ export const makeFlowPath = (parent: number, id: number) => [
   `portfolio${parent}`,
   'flows',
   `flow${id}`,
+];
+
+export const makePortfolioAgentsPath = (
+  parent: number,
+): [`portfolio${number}`, 'agents'] => [`portfolio${parent}`, 'agents'];
+
+export const makeFlowAgentPath = (
+  parent: number,
+  id: number,
+): [`portfolio${number}`, 'flows', `flow${number}`, 'agent'] => [
+  `portfolio${parent}`,
+  'flows',
+  `flow${id}`,
+  'agent',
 ];
 
 export const makeFlowStepsPath = (

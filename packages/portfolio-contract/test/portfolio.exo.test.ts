@@ -69,11 +69,17 @@ const makeTestSetup = () => {
   const marshaller = board.getReadonlyMarshaller();
   const vowTools = prepareVowTools(zone);
 
-  const depStubs: Pick<PortfolioKitDeps, 'rebalance' | 'executePlan'> = {
+  const depStubs: Pick<
+    PortfolioKitDeps,
+    'rebalance' | 'executePlan' | 'deliverDelegationInvitation'
+  > = {
     rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) =>
       vowTools.asVow(() => {}),
     executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
       vowTools.asVow(() => {}),
+    deliverDelegationInvitation: async (
+      ..._args: Parameters<PortfolioKitDeps['deliverDelegationInvitation']>
+    ) => {},
   };
 
   const { spies, log: callLog } = makeSpies(depStubs);
@@ -1015,4 +1021,57 @@ test('evmHandler rebalance without allocations fails without current target allo
   t.throws(() => evmHandler.rebalance(), {
     message: /rebalance requires targetAllocation to be set/,
   });
+});
+
+test('evmHandler grant passes a narrowed per-portfolio target', async t => {
+  const ownerAddress = '0x1212121212121212121212121212121212121212' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler, reader, planner, reporter, simpleRebalanceHandler } =
+    makePortfolioKit({
+      portfolioId: 14,
+      sourceAccountId: `eip155:42161:${ownerAddress}`,
+    });
+
+  await evmHandler.grant('agoric1delegate', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegationInvitation');
+  const [, target, agentId, grantee, permissions] = callLog[0] as [
+    'deliverDelegationInvitation',
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[0],
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[1],
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[2],
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[3],
+  ];
+  t.is(agentId, 'portfolio14agent1');
+  t.is(grantee, 'agoric1delegate');
+  t.deepEqual(permissions, { allocation: true });
+  t.deepEqual(Object.keys(target).sort(), [
+    'planner',
+    'reader',
+    'reporter',
+    'simpleRebalanceHandler',
+  ]);
+  t.is(target.reader, reader);
+  t.is(target.planner, planner);
+  t.is(target.reporter, reporter);
+  t.is(target.simpleRebalanceHandler, simpleRebalanceHandler);
+});
+
+test('evmHandler grant allocates sequential portfolio-qualified agent ids', async t => {
+  const ownerAddress = '0x3434343434343434343434343434343434343434' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 18,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  await evmHandler.grant('agoric1delegatea', { allocation: true });
+  await evmHandler.grant('agoric1delegateb', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 2);
+  t.is(callLog[0][2], 'portfolio18agent1');
+  t.is(callLog[1][2], 'portfolio18agent2');
 });

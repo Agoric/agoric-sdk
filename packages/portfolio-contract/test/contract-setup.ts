@@ -9,7 +9,7 @@ import type { Installation, Invitation, ZoeService } from '@agoric/zoe';
 // eslint-disable-next-line import/no-named-as-default -- buildZoeManualTimer is both the named and default export; the names match by design
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
@@ -168,6 +168,18 @@ const forkDeployBase = async (
       makePrivateArgs(overrides),
     ),
   );
+  const postalService = Far('DummyPostalServicePublicFacet', {
+    async deliverPayment(addr: string, payment: Invitation) {
+      const depositFacet = await E(common.bootstrap.namesByAddress).lookup(
+        addr,
+        'depositFacet',
+      );
+      await E(depositFacet).receive(payment);
+    },
+  });
+  await time('creatorFacet.setPostalServicePublicFacet', () =>
+    E(started.creatorFacet).setPostalServicePublicFacet(postalService),
+  );
   assert.doesNotThrow(() =>
     mustMatch(
       started,
@@ -193,6 +205,7 @@ const forkDeployBase = async (
     },
     zoe: base.zoe,
     contractBaggage,
+    postalService,
     started,
     timerService,
   };

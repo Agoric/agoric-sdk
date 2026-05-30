@@ -7,16 +7,19 @@ import {
   TxType,
   type PublishedTx,
 } from '@agoric/portfolio-api/src/resolver.js';
+import { PortfolioPermissionsShape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { PublishedTxShape } from '../src/resolver/types.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
   FlowDetailShape,
+  FlowAgentShape,
   FlowStatusShape,
   FlowStepsShape,
   makeProposalShapes,
   PoolKeyShapeExt,
+  PortfolioAgentStatusShape,
   PortfolioStatusShapeExt,
   PositionStatusShape,
   TargetAllocationShape,
@@ -171,6 +174,67 @@ test('PoolKeyExt shapes accept future pool keys', t => {
   });
 
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
+});
+
+test('portfolio permission shapes allow upgrade-compatible keys', t => {
+  t.notThrows(
+    () => mustMatch(harden({}), PortfolioPermissionsShape),
+    'known permission keys should remain optional for upgrade compatibility',
+  );
+
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({ allocation: true, futurePermission: false }),
+        PortfolioPermissionsShape,
+      ),
+    'future permission keys should be accepted',
+  );
+
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          grantee: 'agoric1test',
+          permissions: { futurePermission: true },
+          state: 'active',
+        }),
+        PortfolioAgentStatusShape,
+      ),
+    'agent status should accept upgraded permission bags',
+  );
+});
+
+test('flow agent shape allows future attribution fields', t => {
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          id: 'portfolio17agent2',
+          grantee: 'agoric1future',
+          scope: 'setTargetAllocation',
+        }),
+        FlowAgentShape,
+      ),
+    'flow agent shape should allow additional attribution fields',
+  );
+});
+
+test('portfolio agent status shape allows future top-level fields', t => {
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          grantee: 'agoric1test',
+          permissions: { allocation: true },
+          state: 'active',
+          expiresAt: 1234567890,
+          revokedBy: 'agoric1admin',
+        }),
+        PortfolioAgentStatusShape,
+      ),
+    'agent status should allow additional top-level fields',
+  );
 });
 
 test('numeric position references are rejected', t => {
