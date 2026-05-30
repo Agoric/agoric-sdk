@@ -1442,7 +1442,10 @@ test('@<ChainName> USDC target allocations', async t => {
         [E]: 20n,
         [F]: 20n,
       };
-      {
+      const assertPlan = async (
+        label: string,
+        expectSteps: ReturnType<typeof makeMovementDesc>[],
+      ) => {
         const plan = await planDepositToAllocations({
           ...plannerContext,
           network,
@@ -1453,36 +1456,25 @@ test('@<ChainName> USDC target allocations', async t => {
           instrumentBlocks,
         });
         // t.log(readableSteps(plan.flow, depositBrand));
-        arrayIsLike(t, plan?.flow, [
-          makeMovementDesc(B, atChain, scale6(6)),
-          makeMovementDesc(atChain, E, scale6(6)),
-          makeMovementDesc(fromChain, atChain, scale6(12)),
-          makeMovementDesc(atChain, F, scale6(12)),
-        ]);
-      }
+        arrayIsLike(t, plan?.flow, expectSteps, label);
+      };
+      await assertPlan('without deposit blocking', [
+        makeMovementDesc(B, atChain, scale6(6)),
+        makeMovementDesc(atChain, E, scale6(6)),
+        makeMovementDesc(fromChain, atChain, scale6(12)),
+        makeMovementDesc(atChain, F, scale6(12)),
+      ]);
 
       // Now replace F with the deposit-blocked X.
       currentBalances[X] = currentBalances[F];
       delete currentBalances[F];
       targetAllocation[X] = targetAllocation[F];
       delete targetAllocation[F];
-      {
-        const plan = await planDepositToAllocations({
-          ...plannerContext,
-          network,
-          currentBalances,
-          targetAllocation,
-          amount: makeDeposit(scale6(12)),
-          fromChain: chain,
-          instrumentBlocks,
-        });
-        // t.log(readableSteps(plan.flow, depositBrand));
-        arrayIsLike(t, plan?.flow, [
-          makeMovementDesc(B, atChain, scale6(6)),
-          makeMovementDesc(atChain, E, scale6(6)),
-          makeMovementDesc(fromChain, atChain, scale6(12)),
-        ]);
-      }
+      await assertPlan('with deposit blocking', [
+        makeMovementDesc(B, atChain, scale6(6)),
+        makeMovementDesc(atChain, E, scale6(6)),
+        makeMovementDesc(fromChain, atChain, scale6(12)),
+      ]);
     });
   }
 }
