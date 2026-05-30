@@ -356,6 +356,13 @@ test.serial('delegate ymax control; invite planner; submit plan', async t => {
     saveResult: { name: 'ymax0.creatorFacet' },
   });
 
+  t.log('setPostalService');
+  await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
+    targetName: 'ymax0.creatorFacet',
+    method: 'setPostalService',
+    args: [pInst],
+  });
+
   t.log('invite planner');
   const addrPl = 'agoric1planner';
   const [walletPl] = await provisionSmartWallet(addrPl);

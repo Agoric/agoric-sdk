@@ -17,6 +17,7 @@ const installAndStartYmax = async ({
   walletKit,
   makeAccount,
   cwd,
+  E,
 }: RunTools) => {
   const { values } = parseArgs({ args: scriptArgs, options });
   const { contract, bundle: bundleId, overrides } = values;
@@ -39,6 +40,14 @@ const installAndStartYmax = async ({
     issuers: { USDC, BLD, Fee: BLD, Access: accessIssuer as any },
     privateArgsOverrides,
   });
+
+  const { postalService } = walletKit.agoricNames.instance;
+  postalService || assert.fail('missing postalService instance in agoricNames');
+  const { result: savedCreatorFacet } = await ymaxControl
+    .saveAs('creatorFacet')
+    .getCreatorFacet();
+  const creatorFacet = savedCreatorFacet || Fail`failed to save creatorFacet`;
+  await E(creatorFacet).setPostalService(postalService);
 };
 
 export default installAndStartYmax;

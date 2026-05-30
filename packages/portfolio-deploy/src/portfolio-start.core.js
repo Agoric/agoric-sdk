@@ -158,6 +158,16 @@ export const startPortfolio = async (permitted, configStruct) => {
     configStruct,
     issuerKeywordRecord,
   );
+  const [{ creatorFacet }, agoricNames] = await Promise.all([
+    permitted.consume.ymax0Kit,
+    permitted.consume.agoricNames,
+  ]);
+  const postalService = await E(agoricNames)
+    .lookup('instance', 'postalService')
+    .catch(_err => undefined);
+  if (postalService) {
+    await E(creatorFacet).setPostalService(postalService);
+  }
 
   trace('startPortfolio done');
 };

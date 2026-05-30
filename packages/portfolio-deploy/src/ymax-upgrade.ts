@@ -5,12 +5,16 @@ import type { ContractControl } from '@agoric/deploy-script-support/src/control/
 import { makeTendermint34Client } from '@agoric/client-utils';
 import type { DeliverTxResponse } from '@cosmjs/stargate';
 import { parseArgs } from 'node:util';
+import type { StartedInstanceKit } from '@agoric/zoe/src/zoeService/utils.js';
 import type { RunTools } from './wallet-admin-types.ts';
 import {
   WALLET_KEY,
   checkContract,
   netOfConfig,
 } from './ymax-admin-helpers.ts';
+
+const trace = (...args: unknown[]) =>
+  console.error('-- ymax-upgrade:', ...args);
 
 const options = {
   contract: { type: 'string', default: 'ymax0' },
@@ -20,9 +24,25 @@ const options = {
 } as const;
 
 type BlockInfo = { height: number; hash: string; time: string };
+type YMaxCreatorFacet = StartedInstanceKit<typeof YMaxStart>['creatorFacet'];
+
+const setPostalService = async ({
+  E,
+  walletKit,
+  account,
+}: Pick<RunTools, 'E' | 'walletKit'> & {
+  account: Awaited<ReturnType<RunTools['makeAccount']>>;
+}) => {
+  const { postalService } = walletKit.agoricNames.instance;
+  postalService || assert.fail('missing postalService instance in agoricNames');
+  const creatorFacet = account.store.get<YMaxCreatorFacet>('creatorFacet');
+  trace('setting postal service');
+  await E(creatorFacet).setPostalService(postalService);
+};
 
 const upgradeYmax = async (tools: RunTools) => {
-  const { scriptArgs, makeAccount, cwd, fetch, setTimeout } = tools;
+  const { scriptArgs, makeAccount, cwd, fetch, setTimeout, E, walletKit } =
+    tools;
   const { values } = parseArgs({ args: scriptArgs, options });
   const {
     contract,
@@ -51,13 +71,20 @@ const upgradeYmax = async (tools: RunTools) => {
     account.store.get<ContractControl<typeof YMaxStart>>(WALLET_KEY);
   let tx: DeliverTxResponse | undefined;
   try {
+    trace('upgrading contract', contract, 'to bundle', bundleId);
     ({ tx } = await ymaxControl.upgrade({ bundleId, privateArgsOverrides }));
   } catch (err) {
     tx = account.lastTx;
     if (!tx) throw err;
     console.error('recovering from upgrade() throw via lastTx', err);
   }
-  console.error(`upgrade tx: ${tx.transactionHash} at height ${tx.height}`);
+  trace(`upgrade tx: ${tx.transactionHash} at height ${tx.height}`);
+
+  try {
+    await setPostalService({ E, walletKit, account });
+  } catch (err) {
+    console.error('failed to get setPostalService() result; check logs', err);
+  }
 
   const rpcAddr =
     account.networkConfig.rpcAddrs[0] ||
@@ -69,7 +96,7 @@ const upgradeYmax = async (tools: RunTools) => {
       for (;;) {
         const block = await tmClient.block(height).catch(() => undefined);
         if (block) return block;
-        console.error(`waiting for block ${height}...`);
+        trace(`healthCheck: waiting for block ${height}...`);
         await new Promise(resolve => setTimeout(resolve, 3_000));
       }
     };
