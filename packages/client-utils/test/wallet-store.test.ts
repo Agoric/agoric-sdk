@@ -28,10 +28,11 @@ test('reflectWalletStore save/overwrite chains without changing args', async t =
 
   const target = walletStore.get<any>('ymaxControl');
 
-  await target.getCreatorFacet('arg1', 2);
+  const invokeResult = await target.getCreatorFacet('arg1', 2);
   t.is(actions.length, 1);
   t.deepEqual(actions[0].message.args, ['arg1', 2]);
   t.falsy(actions[0].message.saveResult);
+  t.is(invokeResult.invocationResult, 'ok');
 
   await target.saveAs('creatorFacet').getCreatorFacet('arg2');
   t.is(actions.length, 2);

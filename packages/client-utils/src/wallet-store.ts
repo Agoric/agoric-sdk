@@ -23,6 +23,7 @@ export type WalletStoreEntryProxy<T> = {
         (...args: P) => {
           id?: string;
           tx: DeliverTxResponse;
+          invocationResult?: EUnwrap<R>;
           result?: WalletStoreEntryProxy<EUnwrap<R>>;
         }
       >
@@ -111,15 +112,20 @@ export const reflectWalletStore = (
           if (tx.code !== 0) {
             throw Error(tx.rawLog);
           }
-          if (!sendOnly && id) {
-            await getInvocationUpdate(id, sswk.query.getLastUpdate, retryOpts);
-          }
-          const ret = { id, tx };
+          const invocationResult =
+            !sendOnly && id
+              ? await getInvocationUpdate(
+                  id,
+                  sswk.query.getLastUpdate,
+                  retryOpts,
+                )
+              : undefined;
+          const ret = { id, tx, invocationResult };
           if (saveTo) {
-            const result = saveTo.name
+            const savedResult = saveTo.name
               ? makeEntryProxy(saveTo.name, overrides)
               : undefined;
-            return { ...ret, result };
+            return { ...ret, result: savedResult };
           }
           return ret;
         };
