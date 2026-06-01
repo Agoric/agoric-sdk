@@ -7,7 +7,10 @@ import {
   TxType,
   type PublishedTx,
 } from '@agoric/portfolio-api/src/resolver.js';
-import { PortfolioPermissionsShape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import {
+  PortfolioPermissionsExtShape,
+  PortfolioPermissionsV1Shape,
+} from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { PublishedTxShape } from '../src/resolver/types.ts';
@@ -178,7 +181,22 @@ test('PoolKeyExt shapes accept future pool keys', t => {
 
 test('portfolio permission shapes allow upgrade-compatible keys', t => {
   t.notThrows(
-    () => mustMatch(harden({}), PortfolioPermissionsShape),
+    () => mustMatch(harden({ allocation: true }), PortfolioPermissionsV1Shape),
+    'v1 shape should accept the current wire-format permission bag',
+  );
+
+  t.truthy(
+    t.throws(() =>
+      mustMatch(
+        harden({ allocation: true, futurePermission: false }),
+        PortfolioPermissionsV1Shape,
+      ),
+    ),
+    'v1 shape should reject future permission keys',
+  );
+
+  t.notThrows(
+    () => mustMatch(harden({}), PortfolioPermissionsExtShape),
     'known permission keys should remain optional for upgrade compatibility',
   );
 
@@ -186,7 +204,7 @@ test('portfolio permission shapes allow upgrade-compatible keys', t => {
     () =>
       mustMatch(
         harden({ allocation: true, futurePermission: false }),
-        PortfolioPermissionsShape,
+        PortfolioPermissionsExtShape,
       ),
     'future permission keys should be accepted',
   );

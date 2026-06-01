@@ -30,7 +30,7 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
-  PortfolioPermissionsShape,
+  PortfolioPermissionsExtShape,
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
@@ -248,7 +248,7 @@ export const FlowAgentShape: TypedPattern<FlowAgent> = M.splitRecord(
 export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
   M.splitRecord({
     grantee: AnyString<Bech32Address>(),
-    permissions: PortfolioPermissionsShape,
+    permissions: PortfolioPermissionsExtShape,
     state: M.or('active', 'revoked', 'expired'),
   });
 

@@ -40,13 +40,14 @@ import type {
   AxelarChain,
   PortfolioPermissions,
 } from '@agoric/portfolio-api';
+import { PortfolioPermissionsV1Shape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
-import type { ERemote } from '@agoric/internal';
+import { mustMatch, type ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
 import type { TypedDataDefinition } from 'viem';
 import type { PrivateKeyAccount } from 'viem/accounts';
@@ -514,15 +515,20 @@ export const makeEvmTrader = ({
         },
         /**
          * Submit a signed Grant op and return the resulting wallet status
-         * entry. `options.targetPortfolioId` overrides the default of this
-         * trader's own portfolio, for tests that exercise cross-portfolio
-         * authorization attempts.
+         * entry for this trader's portfolio.
+         *
+         * Although the caller-facing type is {@link PortfolioPermissions},
+         * the current standalone EIP-712 `Grant` payload uses
+         * {@link PortfolioPermissionsV1Shape}. This helper validates that
+         * the requested permission bag fits the current wire shape before
+         * signing, so unsupported permissions fail client-side.
          */
         async grant(
           granteeAddress: Bech32Address,
           permissions: PortfolioPermissions,
         ) {
           const deadline = await getDeadline();
+          mustMatch(permissions, PortfolioPermissionsV1Shape);
           const message = getYmaxStandaloneOperationData(
             {
               accountHolder: granteeAddress,

@@ -11,7 +11,7 @@
  */
 import type { TypedPattern } from '@agoric/internal';
 import {
-  PortfolioPermissionsShape,
+  PortfolioPermissionsExtShape,
   type FlowAgent,
   type PortfolioSyncState,
   type PortfolioPermissions,
@@ -48,7 +48,7 @@ const DelegationTargetShape = M.splitRecord({
 // exoClassKit expects a plain state-shape record, not a TypedPattern wrapper.
 export const DelegationStateShape = {
   agentId: M.string(),
-  permissions: PortfolioPermissionsShape,
+  permissions: PortfolioPermissionsExtShape,
   target: DelegationTargetShape,
 };
 harden(DelegationStateShape);
@@ -63,7 +63,7 @@ const sameKeySet = (a: Record<string, unknown>, b: Record<string, unknown>) => {
 
 const DelegationReaderI = M.interface('PortfolioDelegationReader', {
   getPortfolioId: M.call().returns(M.number()),
-  getPermissions: M.call().returns(PortfolioPermissionsShape),
+  getPermissions: M.call().returns(PortfolioPermissionsExtShape),
 });
 
 const DelegationClientI = M.interface('PortfolioDelegationClient', {

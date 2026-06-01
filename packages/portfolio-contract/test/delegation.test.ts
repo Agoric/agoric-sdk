@@ -129,9 +129,10 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   const { zoe } = deployed;
   const { receiver, peteKit, peteArbitrum, portfolioId } =
     await openPetePortfolio(deployed);
-  const grantStatus = await peteArbitrum.grant(PETE_AGENT, {
-    allocation: true,
-  });
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({ allocation: true }),
+  );
   const { delegationClient } = await redeemAndCheckDelegation({
     t,
     zoe,
@@ -187,9 +188,10 @@ test('Granted rebalance cannot introduce a new instrument', async t => {
   const deployed = await deploy(t);
   const { zoe } = deployed;
   const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
-  const grantStatus = await peteArbitrum.grant(PETE_AGENT, {
-    allocation: true,
-  });
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({ allocation: true }),
+  );
   const { delegationClient } = await redeemAndCheckDelegation({
     t,
     zoe,
@@ -228,9 +230,10 @@ test('Grant rejects allocation permission set to false', async t => {
   const deployed = await deploy(t);
   const { peteArbitrum } = await openPetePortfolio(deployed);
 
-  const grantStatus = await peteArbitrum.grant(PETE_AGENT, {
-    allocation: false,
-  });
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({ allocation: false }),
+  );
 
   t.is(grantStatus.status, 'error');
   if (!('error' in grantStatus)) {
