@@ -38,7 +38,7 @@ export const SECONDS_PER_HOUR = 60n * 60n;
 export const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
-/** @import {start as VFStart} from '../vaultFactory/vaultFactory.js' */
+/** @typedef {typeof import('../vaultFactory/vaultFactory.js').start} VFStart */
 /** @typedef {Awaited<ReturnType<VFStart>>['publicFacet']} VaultFactoryPublicFacet */
 
 /**

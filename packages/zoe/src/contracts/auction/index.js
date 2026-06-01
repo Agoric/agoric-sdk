@@ -41,7 +41,7 @@ const SECOND_PRICE = 'second-price';
  *
  * @param {ZCF<{
  * timeAuthority: TimerService,
- * winnerPriceOption?: FIRST_PRICE | SECOND_PRICE,
+ * winnerPriceOption?: typeof FIRST_PRICE | typeof SECOND_PRICE,
  * bidDuration: bigint,
  * }>} zcf
  */

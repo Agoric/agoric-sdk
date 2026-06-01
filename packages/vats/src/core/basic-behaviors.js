@@ -288,7 +288,6 @@ export const produceStartGovernedUpgradable = async ({
    */
   const contractKits = zone.mapStore('GovernedContractKits');
 
-  /** @type {startGovernedUpgradable} */
   const startGovernedUpgradable = async ({
     installation,
     issuerKeywordRecord,

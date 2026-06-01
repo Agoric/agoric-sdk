@@ -217,7 +217,7 @@ export const PromiseAllOrErrors = async items => {
  * @template T
  * @param {() => Promise<T>} trier
  * @param {(error?: unknown) => Promise<unknown>} finalizer
- * @returns {ReturnType<trier>}
+ * @returns {ReturnType<typeof trier>}
  */
 export const aggregateTryFinally = async (trier, finalizer) =>
   trier().then(
@@ -238,7 +238,7 @@ export const aggregateTryFinally = async (trier, finalizer) =>
  * @param {(
  *   addCleanup: (fn: (err?: unknown) => Promise<void>) => void,
  * ) => Promise<T>} fn
- * @returns {ReturnType<fn>}
+ * @returns {ReturnType<typeof fn>}
  */
 export const withDeferredCleanup = async fn => {
   /** @type {((err?: unknown) => unknown)[]} */

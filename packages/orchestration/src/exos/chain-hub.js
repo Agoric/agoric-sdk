@@ -79,7 +79,7 @@ export const ASSETS_KEY = HubName.ChainAssets;
  */
 const CHAIN_ID_SEPARATOR = '_';
 
-/** @typedef {`${string}${CHAIN_ID_SEPARATOR}${string}`} IbcConnectionKey */
+/** @typedef {`${string}${typeof CHAIN_ID_SEPARATOR}${string}`} IbcConnectionKey */
 
 /**
  * Vstorage keys can be only alphanumerics, dash, or underscore, which are all

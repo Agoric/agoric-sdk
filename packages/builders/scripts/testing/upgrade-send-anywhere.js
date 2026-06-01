@@ -19,7 +19,7 @@ import { E } from '@endo/far';
 const trace = makeTracer('UpgradeSA', true);
 
 /**
- * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
+ * @typedef {typeof import('@agoric/orchestration/src/examples/send-anywhere.contract.js').start} StartFn
  */
 
 /**
