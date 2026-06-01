@@ -9,7 +9,7 @@ import { writeFileAtomic } from '@agoric/internal/src/build-cache.js';
 
 /**
  * @param {string} cacheDir
- * @param {{ now: typeof Date.now, fs: promises, pathResolve: typeof resolve, pid?: number }} param1
+ * @param {{ now: typeof Date.now, fs: typeof promises, pathResolve: typeof resolve, pid?: number }} param1
  */
 export const makeCacheAndGetBundleSpec =
   (cacheDir, { now, fs, pathResolve, pid = process.pid }) =>
