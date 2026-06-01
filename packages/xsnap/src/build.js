@@ -7,7 +7,6 @@ import fsTop from 'node:fs';
 import osTop from 'node:os';
 
 /**
- * @import {spawn} from 'node:child_process';
  * @import {ChildProcess} from 'node:child_process';
  * @import {promises} from 'node:fs';
  */
@@ -42,7 +41,7 @@ const ModdableSDK = {
  *
  * @param {string} command
  * @param {{
- *   spawn: typeof spawn,
+ *   spawn: typeof import('node:child_process').spawn,
  * }} io
  */
 function makeCLI(command, { spawn }) {
@@ -270,7 +269,7 @@ const buildXsnap = async (platform, force, { fs, make }) => {
  * @param {{
  *   env: Record<string, string | undefined>,
  *   stdout: typeof process.stdout,
- *   spawn: typeof spawn,
+ *   spawn: typeof import('node:child_process').spawn,
  *   fs: Pick<typeof import('fs'), 'existsSync'> &
  *     Pick<typeof promises, 'readFile' | 'writeFile' | 'mkdir' | 'rm' | 'rename'>,
  *   os: Pick<typeof import('os'), 'type'>,
