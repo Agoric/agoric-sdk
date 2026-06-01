@@ -322,6 +322,7 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 /** avoid circular reference */
 type PortfolioKitCycleBreaker = unknown;
 
+// Avoid circular Pick<PortfolioKitState, 'accounts' | 'positions' | 'targetAllocation'>
 type DelegationTarget = {
   reader: {
     getPortfolioId: () => number;
