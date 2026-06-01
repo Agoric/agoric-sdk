@@ -5,11 +5,6 @@ import process from 'node:process';
 
 import { Fail, q } from '@endo/errors';
 
-/**
- * @import {readFile} from 'fs/promises';
- * @import {stdout} from 'process';
- */
-
 const { entries, keys, values } = Object;
 
 const logged = label => x => {
@@ -210,7 +205,7 @@ const manifest2graph = manifest => {
  * @param {string} specifier
  * @param {object} io
  * @param {Resolver} io.resolve
- * @param {typeof readFile} io.readFile
+ * @param {typeof import('fs/promises').readFile} io.readFile
  */
 const loadConfig = async (specifier, { resolve, readFile }) => {
   const fullPath = await resolve(specifier, import.meta.url).then(
@@ -225,7 +220,7 @@ const loadConfig = async (specifier, { resolve, readFile }) => {
 /**
  * @param {string[]} args
  * @param {object} io
- * @param {typeof stdout} io.stdout
+ * @param {typeof import('process').stdout} io.stdout
  * @param {typeof import('fs/promises')} io.fsp
  * @param {{
  *   resolve: Resolver;
