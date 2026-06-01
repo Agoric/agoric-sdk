@@ -230,11 +230,11 @@ harden(isBech32Address);
  * @param {string} address - The value to check
  * @returns {asserts address is Bech32Address} - TypeScript assertion
  */
-export const assertBech32Address = address => {
+export function assertBech32Address(address) {
   if (!isBech32Address(address)) {
     Fail`Expected a valid Bech32 address, got ${q(address)}`;
   }
-};
+}
 harden(assertBech32Address);
 
 /**
