@@ -53,24 +53,23 @@ const restoreRewriteList = async (listPath, gitCwd, label) => {
   if (!fs.existsSync(listPath)) return false;
   console.log(`  → restoring rewritten files (${label})`);
   try {
-    let entries = fs
-      .readFileSync(listPath, 'utf-8')
-      .split('\n')
-      .map(line => line.trim())
-      .filter(Boolean);
     // During the dev-canary publish workflow, Lerna Lite runs postpack after
     // the tarball is built but before it rereads package.json for upload.
     // Restoring package.json here would undo the canary version bump while the
     // tarball still contains the bumped version.
-    if (preservePackageJson) {
-      const packageJsonEntry = path.relative(
-        gitCwd,
-        path.join(packageDir, 'package.json'),
-      );
-      entries = entries.filter(
-        entry => path.normalize(entry) !== path.normalize(packageJsonEntry),
-      );
-    }
+    const packageJsonEntry = path.relative(
+      gitCwd,
+      path.join(packageDir, 'package.json'),
+    );
+    const filterEntry = preservePackageJson
+      ? entry =>
+          entry && path.normalize(entry) !== path.normalize(packageJsonEntry)
+      : Boolean;
+    const entries = fs
+      .readFileSync(listPath, 'utf-8')
+      .split('\n')
+      .map(line => line.trim())
+      .filter(filterEntry);
     if (entries.length > 0) {
       try {
         await spawn('git', ['ls-files', '-z', '--', ...entries], {
