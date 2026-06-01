@@ -469,8 +469,15 @@ export const makeReplayMembraneForTesting = ({
       resolve = res;
       reject = rej;
     }, guestHandler);
-    // @ts-expect-error TS cannot infer that it is a PromiseKit
-    return harden({ promise, resolve, reject });
+    return harden({
+      promise,
+      resolve: /** @type {PromiseKit<any>['resolve']} */ (
+        /** @type {unknown} */ (resolve)
+      ),
+      reject: /** @type {PromiseKit<any>['reject']} */ (
+        /** @type {unknown} */ (reject)
+      ),
+    });
   };
 
   // //////////////// Converters ///////////////////////////////////////////////
