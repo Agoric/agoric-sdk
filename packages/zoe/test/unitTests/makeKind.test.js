@@ -14,7 +14,7 @@ const root = `${dirname}/../minimalMakeKindContract.js`;
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore some resolutions don't expect this on global
-const VatData = global.VatData;
+const VatData = /** @type {any} */ (global).VatData;
 
 test('defineKind non-swingset', async t => {
   const bundle = await bundleSource(root);

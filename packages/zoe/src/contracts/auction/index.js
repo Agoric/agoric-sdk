@@ -60,6 +60,7 @@ const start = zcf => {
   let sellSeat;
   let isTimerStarted = false;
   let isClosed = false;
+  /** @type {import('@agoric/time').Timestamp | null} */
   let closesAfter = null;
 
   const bidSeats = [];

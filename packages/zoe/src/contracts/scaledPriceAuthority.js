@@ -58,7 +58,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     quoteMint,
     // If the priceAuthority is overridden in privateArgs, use that version
     sourcePriceAuthority:
-      privateArgs?.newPriceAuthority || sourcePriceAuthority,
+      /** @type {any} */ (privateArgs)?.newPriceAuthority ||
+      sourcePriceAuthority,
     sourceBrandIn,
     sourceBrandOut,
     actualBrandIn,

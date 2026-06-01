@@ -2,7 +2,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore some resolutions don't expect this on global
-const VatData = global.VatData;
+const VatData = /** @type {any} */ (global).VatData;
 
 test('harden from SES is in the zoe contract environment', t => {
   // @ts-expect-error testing existence of function only

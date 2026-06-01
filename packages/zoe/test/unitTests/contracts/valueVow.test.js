@@ -73,8 +73,7 @@ test('baggage', async t => {
   });
 
   await E(zoe).startInstance(
-    /** @type {Installation<typeof startValueVow>} */
-    (await bundleAndInstall(contractFile)),
+    await bundleAndInstall(/** @type {any} */ (contractFile)),
   );
 
   // @ts-expect-error setJig may not have been called
