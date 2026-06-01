@@ -16,7 +16,7 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 /**
  * Constants for the kinds of assets we support.
  *
- * @enum {(typeof AssetKind)[keyof typeof AssetKind]}
+ * @typedef {(typeof AssetKind)[keyof typeof AssetKind]} AssetKind
  */
 export const AssetKind = /** @type {const} */ ({
   NAT: 'nat',

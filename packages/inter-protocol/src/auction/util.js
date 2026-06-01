@@ -14,7 +14,7 @@ import { Far } from '@endo/marshal';
 /**
  * Constants for Auction State.
  *
- * @enum {(typeof AuctionState)[keyof typeof AuctionState]}
+ * @typedef {(typeof AuctionState)[keyof typeof AuctionState]} AuctionState
  */
 export const AuctionState = /** @type {const} */ ({
   ACTIVE: 'active',

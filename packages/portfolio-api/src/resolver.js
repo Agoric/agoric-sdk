@@ -13,7 +13,7 @@ import { keyMirror } from '@agoric/internal';
  *   - pending -> success (when cross-chain operation completes successfully)
  *   - pending -> failed (when operation fails or times out)
  *
- * @enum {(typeof TxStatus)[keyof typeof TxStatus]}
+ * @typedef {(typeof TxStatus)[keyof typeof TxStatus]} TxStatus
  */
 export const TxStatus = /** @type {const} */ ({
   SETUP: 'setup',
@@ -26,7 +26,7 @@ harden(TxStatus);
 /**
  * Tx types for published transactions
  *
- * @enum {Readonly<(typeof TxType)[keyof typeof TxType]>}
+ * @typedef {Readonly<(typeof TxType)[keyof typeof TxType]>} TxType
  */
 export const TxType = keyMirror({
   CCTP_TO_EVM: null,

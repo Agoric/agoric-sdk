@@ -66,7 +66,7 @@ const trace = makeTracer('Vault', true);
  * - LIQUIDATED - vault was closed by the manager, with remaining assets paid to
  *   owner
  *
- * @enum {(typeof Phase)[keyof typeof Phase]}
+ * @typedef {(typeof Phase)[keyof typeof Phase]} Phase
  */
 export const Phase = /** @type {const} */ ({
   ACTIVE: 'active',

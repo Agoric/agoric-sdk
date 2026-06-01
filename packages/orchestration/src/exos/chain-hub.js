@@ -55,7 +55,7 @@ export const PFM_RECEIVER = /** @type {const} */ ('pfm');
  */
 
 /**
- * @enum {(typeof HubName)[keyof typeof HubName]}
+ * @typedef {(typeof HubName)[keyof typeof HubName]} HubName
  */
 export const HubName = /** @type {const} */ ({
   /** agoricNames key for ChainInfo hub */

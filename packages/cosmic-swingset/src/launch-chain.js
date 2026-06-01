@@ -126,7 +126,7 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
  *   - Inbound: queued work that follows timer advancement (e.g., normal messages)
  *   - Cleanup: for dealing with data from terminated vats
  *
- * @enum {(typeof CrankerPhase)[keyof typeof CrankerPhase]} CrankerPhase
+ * @typedef {(typeof CrankerPhase)[keyof typeof CrankerPhase]} CrankerPhase
  */
 const CrankerPhase = /** @type {const} */ ({
   Leftover: 'leftover',
@@ -140,7 +140,7 @@ const CrankerPhase = /** @type {const} */ ({
 /**
  * Some phases correspond with inbound message queues.
  *
- * @enum {(typeof InboundQueueName)[keyof typeof InboundQueueName]} InboundQueueName
+ * @typedef {(typeof InboundQueueName)[keyof typeof InboundQueueName]} InboundQueueName
  */
 const InboundQueueName = /** @type {const} */ ({
   Forced: CrankerPhase.Forced,
