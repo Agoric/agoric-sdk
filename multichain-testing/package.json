@@ -140,7 +140,13 @@
     "@cosmjs/proto-signing@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/stargate@npm:0.32.3": "npm:^0.36.0",
     "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0",
-    "@endo/bundle-source": "portal:../../agoric-sdk/node_modules/@endo/bundle-source"
+    "@endo/bundle-source": "portal:../../agoric-sdk/node_modules/@endo/bundle-source",
+    "follow-redirects@npm:^1.15.6": "npm:^1.16.0",
+    "form-data@npm:^4.0.0": "npm:^4.0.4",
+    "sha.js@npm:^2.4.11": "npm:^2.4.12",
+    "tmp@npm:^0.2.1": "npm:^0.2.6",
+    "ws@npm:8.17.1": "npm:^8.17.2",
+    "ws@npm:^7": "npm:^7.5.11"
   },
   "license": "Apache-2.0"
 }

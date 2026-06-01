@@ -26,6 +26,9 @@
   "packageManager": "yarn@4.12.0",
   "license": "Apache-2.0",
   "resolutions": {
-    "@endo/bundle-source": "portal:../node_modules/@endo/bundle-source"
+    "@endo/bundle-source": "portal:../node_modules/@endo/bundle-source",
+    "brace-expansion@npm:^1.1.7": "npm:^1.1.13",
+    "flatted": "npm:^3.4.2",
+    "tar-fs": "npm:^2.1.4"
   }
 }
