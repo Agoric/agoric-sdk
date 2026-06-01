@@ -638,8 +638,6 @@ export {};
  */
 
 /**
- * @template [P=StandardParamPath]
- *
  * @callback VoteOnParamChanges
  * @param {Installation} voteCounterInstallation
  * @param {Timestamp} deadline
