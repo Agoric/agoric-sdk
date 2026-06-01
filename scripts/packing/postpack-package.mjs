@@ -19,6 +19,8 @@ import spawn from 'nano-spawn';
 // Package directory from INIT_CWD (set by yarn) or current directory
 const packageDir = process.env.INIT_CWD || process.cwd();
 const rewriteListPath = path.join(packageDir, '.pack-rewrite-files.txt');
+const preservePackageJson =
+  process.env.AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON === '1';
 
 console.log(`postpack-package: ${path.basename(packageDir)}`);
 
@@ -56,12 +58,17 @@ const restoreRewriteList = async (listPath, gitCwd, label) => {
       .split('\n')
       .map(line => line.trim())
       .filter(Boolean);
-    // During `npm publish`, postpack runs after the tarball is built but before
-    // upload. `git checkout -- package.json` would restore the committed version
-    // (e.g. 0.1.0) while the tarball still has lerna's canary version.
-    if (process.env.npm_command === 'publish') {
+    // During the dev-canary publish workflow, Lerna Lite runs postpack after
+    // the tarball is built but before it rereads package.json for upload.
+    // Restoring package.json here would undo the canary version bump while the
+    // tarball still contains the bumped version.
+    if (preservePackageJson) {
+      const packageJsonEntry = path.relative(
+        gitCwd,
+        path.join(packageDir, 'package.json'),
+      );
       entries = entries.filter(
-        entry => path.basename(entry) !== 'package.json',
+        entry => path.normalize(entry) !== path.normalize(packageJsonEntry),
       );
     }
     if (entries.length > 0) {
