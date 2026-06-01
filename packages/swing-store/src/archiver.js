@@ -13,9 +13,9 @@ const streamFinished = promisify(streamFinishedCallback);
 /**
  * @param {string} dirPath
  * @param {object} powers
- * @param {Pick<import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} powers.fs
- * @param {Pick<import('path'), 'join'>} powers.path
- * @param {Pick<import('tmp'), 'fileSync'>} powers.tmp
+ * @param {Pick<typeof import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} powers.fs
+ * @param {Pick<typeof import('path'), 'join'>} powers.path
+ * @param {Pick<typeof import('tmp'), 'fileSync'>} powers.tmp
  */
 export const makeArchiveSnapshot = (dirPath, powers) => {
   const { fs, path, tmp } = powers;
@@ -55,9 +55,9 @@ harden(makeArchiveSnapshot);
 /**
  * @param {string} dirPath
  * @param {object} powers
- * @param {Pick<import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} powers.fs
- * @param {Pick<import('path'), 'join'>} powers.path
- * @param {Pick<import('tmp'), 'fileSync'>} powers.tmp
+ * @param {Pick<typeof import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} powers.fs
+ * @param {Pick<typeof import('path'), 'join'>} powers.path
+ * @param {Pick<typeof import('tmp'), 'fileSync'>} powers.tmp
  */
 export const makeArchiveTranscript = (dirPath, powers) => {
   const { fs, path, tmp } = powers;
