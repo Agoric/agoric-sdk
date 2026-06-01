@@ -3,7 +3,6 @@ import test from 'ava';
 const mockDefineKind = /** @type {any} */ (harden({}));
 
 /* global globalThis */
-// @ts-expect-error missing fields
 globalThis.VatData ||= { defineKind: mockDefineKind };
 
 test('methods available', async t => {
