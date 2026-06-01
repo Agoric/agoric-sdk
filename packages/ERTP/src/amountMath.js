@@ -254,18 +254,18 @@ export const AmountMath = {
    * Return the amount representing an empty amount. This is the identity
    * element for MathHelpers.add and MatHelpers.subtract.
    *
-   * @type {{
+   */
+  makeEmpty: /** @type {{
    *   (brand: Brand): Amount<'nat'>;
    *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
-   * }}
-   */
-  makeEmpty: (brand, assetKind = /** @type {const} */ ('nat')) => {
-    assertRemotable(brand, 'brand');
-    assertAssetKind(assetKind);
-    const value = helpers[assetKind].doMakeEmpty();
-    // @ts-expect-error XXX narrowing from function overload
-    return harden({ brand, value });
-  },
+   * }} */ (
+    (brand, assetKind = /** @type {const} */ ('nat')) => {
+      assertRemotable(brand, 'brand');
+      assertAssetKind(assetKind);
+      const value = helpers[assetKind].doMakeEmpty();
+      return harden({ brand, value });
+    }
+  ),
   /**
    * Return the amount representing an empty amount, using another amount as the
    * template for the brand and assetKind.
