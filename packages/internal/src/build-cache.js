@@ -166,7 +166,7 @@ let atomicWriteSequence = 0;
 
 /**
  * @param {{
- *   fs: Pick<import('node:fs/promises'), 'rename' | 'writeFile'>;
+ *   fs: Pick<typeof import('node:fs/promises'), 'rename' | 'writeFile'>;
  *   filePath: string;
  *   data: string;
  *   now: () => number;

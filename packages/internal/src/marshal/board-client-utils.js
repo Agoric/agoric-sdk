@@ -34,9 +34,8 @@ export const slotToBoardRemote = (boardId, iface) =>
   makeBoardRemote({ boardId, iface });
 
 /**
- * @template {BoardRemote<any> | object} V
- * @param {V} val
- * @returns {V extends BoardRemote<infer BoardId> ? BoardId : never}
+ * @param {BoardRemote<any> | object} val
+ * @returns {val extends BoardRemote<infer BoardId> ? BoardId : never}
  */
 const boardValToSlot = val => {
   if ('getBoardId' in val) {
