@@ -10,6 +10,7 @@ import {
 import {
   PortfolioPermissionsExtShape,
   PortfolioPermissionsV1Shape,
+  type PortfolioPermissions,
 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
@@ -27,6 +28,7 @@ import {
   PositionStatusShape,
   TargetAllocationShape,
   TargetAllocationShapeExt,
+  type PortfolioAgentStatus,
   type StatusFor,
   type TargetAllocation,
 } from '../src/type-guards.ts';
@@ -179,48 +181,74 @@ test('PoolKeyExt shapes accept future pool keys', t => {
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
 });
 
-test('portfolio permission shapes allow upgrade-compatible keys', t => {
-  t.notThrows(
-    () => mustMatch(harden({ allocation: true }), PortfolioPermissionsV1Shape),
-    'v1 shape should accept the current wire-format permission bag',
-  );
+test('PortfolioPermissionsV1Shape', t => {
+  const passCases = harden({
+    allocationOnly: {
+      allocation: true,
+    },
+  } satisfies Record<string, PortfolioPermissions>);
+  const failCases = harden({
+    empty: {},
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  });
 
-  t.truthy(
-    t.throws(() =>
-      mustMatch(
-        harden({ allocation: true, futurePermission: false }),
-        PortfolioPermissionsV1Shape,
-      ),
-    ),
-    'v1 shape should reject future permission keys',
-  );
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsV1Shape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsV1Shape), name);
+  }
+});
 
-  t.notThrows(
-    () => mustMatch(harden({}), PortfolioPermissionsExtShape),
-    'known permission keys should remain optional for upgrade compatibility',
-  );
+test('PortfolioPermissionsExtShape', t => {
+  const passCases = harden({
+    empty: {},
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  } satisfies Record<string, PortfolioPermissions>);
+  const failCases = harden({});
 
-  t.notThrows(
-    () =>
-      mustMatch(
-        harden({ allocation: true, futurePermission: false }),
-        PortfolioPermissionsExtShape,
-      ),
-    'future permission keys should be accepted',
-  );
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsExtShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsExtShape), name);
+  }
+});
 
-  t.notThrows(
-    () =>
-      mustMatch(
-        harden({
-          grantee: 'agoric1test',
-          permissions: { futurePermission: true },
-          state: 'active',
-        }),
-        PortfolioAgentStatusShape,
-      ),
-    'agent status should accept upgraded permission bags',
-  );
+test('PortfolioAgentStatusShape allows upgraded permission bags', t => {
+  const passCases = harden({
+    futurePermission: {
+      grantee: 'agoric1test',
+      permissions: { futurePermission: true },
+      state: 'active',
+    },
+  } satisfies Record<string, PortfolioAgentStatus>);
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioAgentStatusShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioAgentStatusShape), name);
+  }
 });
 
 test('flow agent shape allows future attribution fields', t => {
