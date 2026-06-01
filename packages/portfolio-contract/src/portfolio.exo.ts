@@ -26,6 +26,7 @@ import type {
   PortfolioContinuingInvitationMaker,
   PortfolioPermissions,
   PortfolioRemoteAccountState,
+  FlowKey,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -1279,7 +1280,7 @@ export const preparePortfolioKit = (
         },
       },
       simpleRebalanceHandler: {
-        handle(seat: ZCFSeat, offerArgs: unknown): `flow${number}` {
+        handle(seat: ZCFSeat, offerArgs: unknown): FlowKey {
           // XXX offerArgs.flow shouldn't be allowed
           mustMatch(offerArgs, offerArgsShapes.rebalance);
           const { manager } = this.facets;
