@@ -16,7 +16,7 @@ The contract creates a new exo with a reference to portfolio45
 and the permissions, and sends an invitation with the portfolio id
 and the permissions in the invitation details to `agoric1claw1...`.
 
-claw1 redeems the invitation and then uses a continuing invitation
+claw1 redeems the invitation and uses the returned exo
 to update allocations to 50% Aave, 50% Compound.
 
 claw1 tries to allocate 40% to a new, risky instrument, and fails.
