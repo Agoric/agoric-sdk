@@ -478,7 +478,7 @@ const verifyPublishKitTermination = test.macro(
       subscriber.subscribeAfter(undefined),
     ];
     const { method = 'finish', getExtraFinalPromises = getLatestPromises } =
-      /** @type {object} */ (config);
+      /** @type {Record<string, any>} */ (config);
 
     const cellsP = [...(await getExtraFinalPromises(publisher, subscriber))];
     const value = Symbol.for('termination');
