@@ -135,14 +135,14 @@ expectNotAssignable<FlowKey>('flow');
 expectType<PortfolioKey>('portfolio2');
 expectNotAssignable<PortfolioKey>('portfolio');
 
-expectType<PortfolioAgentId>('portfolio2agent3');
-expectNotAssignable<PortfolioAgentId>('agent3');
+expectType<PortfolioAgentId>('agent3');
+expectNotAssignable<PortfolioAgentId>('portfolio2agent3');
 
 const flowsRunning: Record<FlowKey, FlowDetail> = {
   flow1: { type: 'withdraw', amount: natAmount },
 };
 
-const flowAgent: FlowAgent = { id: 'portfolio2agent3' };
+const flowAgent: FlowAgent = { id: 'agent3' };
 
 const status: StatusFor = {
   contract: {
@@ -208,7 +208,7 @@ const status: StatusFor = {
     flowsRunning,
   },
   portfolioAgents: {
-    portfolio2agent3: {
+    agent3: {
       grantee: bech32Address,
       permissions: { allocation: true },
       state: 'active',

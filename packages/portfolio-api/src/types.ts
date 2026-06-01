@@ -195,7 +195,7 @@ export type TrafficReport = {
 
 export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
-export type PortfolioAgentId = `portfolio${number}agent${number}`;
+export type PortfolioAgentId = `agent${number}`;
 
 export type FlowAgent = {
   id: PortfolioAgentId;
