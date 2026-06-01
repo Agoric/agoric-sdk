@@ -223,7 +223,7 @@ export type AxelarConfig = {
   };
 };
 
-interface PostalServiceI {
+interface PostalService {
   deliverPayment(addr: string, pmt: Payment): Promise<void>;
 }
 
@@ -575,16 +575,16 @@ export const contract = async (
   // deployment via `setPostalService`.
   const DELEGATION_POSTAL_SERVICE = 'delegationPostalService';
   const DELEGATION_POSTAL_SERVICE_FACET = 'delegationPostalServiceFacet';
-  const getPostalService = (): ERef<PostalServiceI> => {
+  const getPostalService = (): ERef<PostalService> => {
     if (baggage.has(DELEGATION_POSTAL_SERVICE_FACET)) {
-      return baggage.get(DELEGATION_POSTAL_SERVICE_FACET) as PostalServiceI;
+      return baggage.get(DELEGATION_POSTAL_SERVICE_FACET) as PostalService;
     }
     baggage.has(DELEGATION_POSTAL_SERVICE) ||
       Fail`postal service not registered; call creatorFacet.setPostalService first`;
     const zoe = zcf.getZoeService();
     return E(zoe).getPublicFacet(
       baggage.get(DELEGATION_POSTAL_SERVICE) as Instance<
-        () => { publicFacet: PostalServiceI }
+        () => { publicFacet: PostalService }
       >,
     );
   };
@@ -914,7 +914,7 @@ export const contract = async (
       },
       async deliverResolverInvitation(
         address: string,
-        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
       ) {
         const zoe = zcf.getZoeService();
         const pfP = E(zoe).getPublicFacet(instancePS);
@@ -937,7 +937,7 @@ export const contract = async (
        */
       async deliverPlannerInvitation(
         address: string,
-        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
       ) {
         trace('deliverPlannerInvitation', address, instancePS);
         const zoe = zcf.getZoeService();
@@ -956,7 +956,7 @@ export const contract = async (
        */
       async deliverEVMWalletHandlerInvitation(
         address: string,
-        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
       ) {
         trace('deliverEVMWalletHandlerInvitation');
         const zoe = zcf.getZoeService();
@@ -971,7 +971,7 @@ export const contract = async (
        * invitations. Idempotent overwrite; called once at deployment.
        */
       setPostalService(
-        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
       ) {
         if (baggage.has(DELEGATION_POSTAL_SERVICE)) {
           baggage.set(DELEGATION_POSTAL_SERVICE, instancePS);
@@ -979,7 +979,7 @@ export const contract = async (
           baggage.init(DELEGATION_POSTAL_SERVICE, instancePS);
         }
       },
-      setPostalServicePublicFacet(postalService: PostalServiceI) {
+      setPostalServicePublicFacet(postalService: PostalService) {
         if (baggage.has(DELEGATION_POSTAL_SERVICE_FACET)) {
           baggage.set(DELEGATION_POSTAL_SERVICE_FACET, postalService);
         } else {
