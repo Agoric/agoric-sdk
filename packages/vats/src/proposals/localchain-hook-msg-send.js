@@ -8,9 +8,10 @@ import {
 /**
  * @import {ScopedBridgeManager} from '../types.js';
  * @import {TransferMiddleware} from '../transfer.js';
- * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {CreateVatResults, VatAdminSvc, VatUpgradeOptions} from '@agoric/swingset-vat';
  * @import {MapStore} from '@agoric/store';
  * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
  */
 
 /**
@@ -23,6 +24,12 @@ import {
  *   };
  * }} powers
  * @param {object} options
+ * @param {{
+ *   bundleRefs: { [vatName: string]: VatSourceRef };
+ *   vatOptions?: {
+ *     [vatName: string]: VatUpgradeOptions;
+ *   };
+ * }} options.options
  */
 export const upgradeAndInterceptMsgSend = async (powers, options) => {
   const {

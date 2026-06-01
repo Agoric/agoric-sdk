@@ -510,7 +510,7 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
         async query(request) {
           const requests = harden([request]);
           return watch(
-            E(this.facets.public).queryMany(requests),
+            E(this.facets.public).queryMany(/** @type {any} */ (requests)),
             this.facets.extractFirstQueryResultWatcher,
           );
         },

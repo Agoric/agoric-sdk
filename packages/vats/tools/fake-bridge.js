@@ -193,7 +193,7 @@ export const SIMULATED_ERRORS = /** @type {const} */ ({
  *
  * Returns an empty object per message unless specified.
  *
- * @param {object} message
+ * @param {Record<string, any>} message
  * @param {number} sequence
  * @returns {unknown}
  * @throws {Error} to simulate failures in certain cases
@@ -264,7 +264,7 @@ export const LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE = 'fakeDenomHash';
  *
  * Returns an empty object per query message unless specified.
  *
- * @param {object} message
+ * @param {Record<string, any>} message
  * @returns {unknown}
  */
 export const fakeLocalChainBridgeQueryHandler = message => {
