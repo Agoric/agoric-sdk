@@ -59,7 +59,6 @@ import {
   makeFlowAgentPath,
   makeFlowPath,
   makeFlowStepsPath,
-  makePortfolioAgentId,
   makePortfolioAgentsPath,
   makePortfolioPath,
   PortfolioAgentStatusShape,
@@ -288,14 +287,13 @@ const accountStateByChain = (
 const { fromEntries } = Object;
 
 const makePortfolioAgentsRecord = (
-  portfolioId: number,
   delegations?: PortfolioKitState['delegations'],
 ): StatusFor['portfolioAgents'] =>
   harden(
     delegations
       ? fromEntries(
           [...delegations.entries()].map(([agentId, status]) => [
-            makePortfolioAgentId(portfolioId, agentId),
+            `agent${agentId}`,
             status,
           ]),
         )
@@ -631,7 +629,7 @@ export const preparePortfolioKit = (
           }
           publishStatus(
             makePortfolioAgentsPath(portfolioId),
-            makePortfolioAgentsRecord(portfolioId, delegations),
+            makePortfolioAgentsRecord(delegations),
           );
         },
         finishFlow(flowId) {
@@ -1231,7 +1229,7 @@ export const preparePortfolioKit = (
             }),
           );
           this.facets.reporter.publishAgents();
-          const agentId = makePortfolioAgentId(portfolioId, nextAgentId);
+          const agentId = `agent${nextAgentId}` as const;
           const { reader, planner, reporter, simpleRebalanceHandler } =
             this.facets;
           return deliverDelegationInvitation(

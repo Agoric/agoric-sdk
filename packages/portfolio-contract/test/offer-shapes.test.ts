@@ -256,7 +256,7 @@ test('flow agent shape allows future attribution fields', t => {
     () =>
       mustMatch(
         harden({
-          id: 'portfolio17agent2',
+          id: 'agent2',
           grantee: 'agoric1future',
           scope: 'setTargetAllocation',
         }),

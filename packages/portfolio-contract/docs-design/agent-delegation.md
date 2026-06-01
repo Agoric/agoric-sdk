@@ -116,12 +116,12 @@ state, not just delivered capabilities. In addition to `flow34.steps`,
 publish agent attribution on the flow, e.g.
 
 ```js
-flow34.agent = { id: 'portfolio17agent4' };
+flow34.agent = { id: 'agent4' };
 ```
 
 The important part is not the exact encoding, but the semantics:
 
-- the published id `portfolio17agent4` is assigned by the portfolio, not
+- the published id `agent4` is assigned by the portfolio, not
   chosen by the grantee
 - the numeric key is stable for the lifetime of that delegation
 - every flow started through that delegation publishes a small agent
@@ -137,13 +137,13 @@ assigned ids, analogous to `nextFlowId`:
 - each record stores at least grantee address, permissions, and lifecycle
   state (`active`, later maybe `revoked`, `expired`)
 
-Externally, the published id should stay portfolio-qualified:
-`portfolio17agent4`. That makes the id self-describing in logs, tests,
-and off-chain analytics even when the surrounding portfolio path is not
-present. So there is a deliberate split:
+Externally, the published id can stay simple: `agent4`. Since the
+portfolio path already scopes the registry and flow attribution, the
+extra portfolio prefix does not add much value. So there is still a
+split:
 
 - durable contract state: key `4`
-- published / API-facing handle: `portfolio17agent4`
+- published / API-facing handle: `agent4`
 
 ### Where the agent id lives
 
@@ -159,7 +159,7 @@ So the portfolio status might grow something like:
 ```js
 // conceptual published view
 portfolio17.agents = {
-  portfolio17agent4: {
+  agent4: {
     grantee: 'agoric1claw1...',
     permissions: { allocation: true },
     state: 'active',
@@ -170,13 +170,13 @@ portfolio17.agents = {
 and the flow attribution would live at a sibling path:
 
 ```js
-portfolio17.flows.flow34.agent = { id: 'portfolio17agent4' };
+portfolio17.flows.flow34.agent = { id: 'agent4' };
 ```
 
 Do not denormalize permissions, grantee address, or other delegation
 metadata onto the flow. The flow only needs a small reference record.
 Everything else should be resolved through
-`portfolio17.agents.portfolio17agent4`. That keeps vstorage writes
+`portfolio17.agents.agent4`. That keeps vstorage writes
 smaller and avoids duplicating mutable metadata onto a record that is
 updated many times already. Using a record now leaves room to extend the
 shape later without changing the path.
@@ -195,10 +195,10 @@ Then:
 3. claw1 calls delegated `setTargetAllocation(...)`.
 4. The wrapper performs the key-set / version checks and forwards to the
    existing rebalance path with out-of-band attribution
-   `portfolio17agent4`.
+   `agent4`.
 5. As soon as the delegated call gets back `flow34`, the delegation exo
    can call the portfolio's reporter facet to publish
-   `flows.flow34.agent = { id: 'portfolio17agent4' }`; it does not need
+   `flows.flow34.agent = { id: 'agent4' }`; it does not need
    to wait for later updates to the mutable flow status.
 6. The portfolio publishes `flows.flow34` as it already does.
 
@@ -237,7 +237,7 @@ At minimum, this design implies tests for:
 - lazy registry behavior: portfolios with no delegations publish no
   `agents` collection, and readers treat absence as equivalent to empty
 - grant-time id allocation: the first delegation for `portfolio17`
-  becomes `portfolio17agent1`, the next `portfolio17agent2`, and ids are
+  becomes `agent1`, the next `agent2`, and ids are
   stable once assigned
 - delegated attribution: a delegated `SimpleRebalance` publishes
   `flows.flowN.agent = { id: 'portfolio17agentM' }` as soon as `flowN`
@@ -256,7 +256,7 @@ At minimum, this design implies tests for:
 Earlier we treated "listing existing delegations" as out of scope, but
 auditability changes the tradeoff. Once we want durable attribution, a
 registry is no longer just a convenience; it becomes the source of truth
-for what `portfolio17.agents.portfolio17agent4` means.
+for what `portfolio17.agents.agent4` means.
 
 Without a registry:
 
@@ -264,7 +264,7 @@ Without a registry:
   grantee address or invitation history
 - revocation would be awkward, because there is no durable object to
   mark inactive
-- UIs could show that `flow34` was done by `portfolio17agent4`, but
+- UIs could show that `flow34` was done by `agent4`, but
   would have no canonical place to resolve that id into address,
   permissions, or current status
 
@@ -277,7 +277,7 @@ With a registry:
 
 ### Open design choices
 
-- **Id format**: internal key `4`, published id `portfolio17agent4`.
+- **Id format**: internal key `4`, published id `agent4`.
 - **When the id is allocated**: on grant creation, not on first use.
   Otherwise the same delegation would lack an identity until its first
   action.

@@ -30,7 +30,7 @@ type Deployed = Awaited<ReturnType<typeof deploy>>;
 type Receiver<R> = ReturnType<typeof makeDepositFacetSpy<R>>;
 type ExpectedDelegationDetails = {
   portfolioId: number;
-  agentId: `portfolio${number}agent${number}`;
+  agentId: `agent${number}`;
   permissions: { allocation: true };
 };
 
@@ -140,7 +140,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
     receiver,
     expectedDetails: {
       portfolioId,
-      agentId: `portfolio${portfolioId}agent1`,
+      agentId: 'agent1',
       permissions: { allocation: true },
     },
   });
@@ -163,10 +163,10 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   const flowAgent = await peteKit.readPublished(
     `${portfolioPath}.flows.${rebalanceFlowId}.agent`,
   );
-  t.deepEqual(flowAgent, { id: `portfolio${portfolioId}agent1` });
+  t.deepEqual(flowAgent, { id: 'agent1' });
   const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
   t.deepEqual(agents, {
-    [`portfolio${portfolioId}agent1`]: {
+    agent1: {
       grantee: PETE_AGENT,
       permissions: { allocation: true },
       state: 'active',
@@ -199,7 +199,7 @@ test('Granted rebalance cannot introduce a new instrument', async t => {
     receiver,
     expectedDetails: {
       portfolioId: peteKit.evmTrader.getPortfolioId(),
-      agentId: `portfolio${peteKit.evmTrader.getPortfolioId()}agent1`,
+      agentId: 'agent1',
       permissions: { allocation: true },
     },
   });

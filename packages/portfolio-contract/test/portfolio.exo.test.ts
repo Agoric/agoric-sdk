@@ -1044,7 +1044,7 @@ test('evmHandler grant passes a narrowed per-portfolio target', async t => {
     Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[2],
     Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[3],
   ];
-  t.is(agentId, 'portfolio14agent1');
+  t.is(agentId, 'agent1');
   t.is(grantee, 'agoric1delegate');
   t.deepEqual(permissions, { allocation: true });
   t.deepEqual(Object.keys(target).sort(), [
@@ -1059,7 +1059,7 @@ test('evmHandler grant passes a narrowed per-portfolio target', async t => {
   t.is(target.simpleRebalanceHandler, simpleRebalanceHandler);
 });
 
-test('evmHandler grant allocates sequential portfolio-qualified agent ids', async t => {
+test('evmHandler grant allocates sequential agent ids', async t => {
   const ownerAddress = '0x3434343434343434343434343434343434343434' as const;
   const { makePortfolioKit, getCallLog } = makeTestSetup();
   const { evmHandler } = makePortfolioKit({
@@ -1072,6 +1072,6 @@ test('evmHandler grant allocates sequential portfolio-qualified agent ids', asyn
 
   const callLog = getCallLog();
   t.is(callLog.length, 2);
-  t.is(callLog[0][2], 'portfolio18agent1');
-  t.is(callLog[1][2], 'portfolio18agent2');
+  t.is(callLog[0][2], 'agent1');
+  t.is(callLog[1][2], 'agent2');
 });

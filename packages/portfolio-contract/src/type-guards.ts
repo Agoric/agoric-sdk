@@ -195,12 +195,6 @@ export const portfolioIdOfPath = (path: string | string[]) => {
   );
 };
 
-export const makePortfolioAgentId = (
-  portfolioId: number,
-  agentId: number,
-): `portfolio${number}agent${number}` =>
-  `portfolio${portfolioId}agent${agentId}`;
-
 /** ChainNames including those in future upgrades */
 type ChainNameExt = string;
 const ChainNameExtShape: TypedPattern<ChainNameExt> = M.string();
