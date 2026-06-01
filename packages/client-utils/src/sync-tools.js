@@ -224,7 +224,7 @@ const makeQueryWallet = follow => async (/** @type {string} */ addr) => {
 
 /**
  *
- * @param {object} offerStatus
+ * @param {Record<string, any>} offerStatus
  * @param {boolean} waitForPayouts
  * @param {string} offerId
  */
@@ -309,7 +309,7 @@ const makeQueryWalletCurrent = follow => (/** @type {string} */ addr) =>
   follow('-lF', `:published.wallet.${addr}.current`);
 
 /**
- * @param {object} update
+ * @param {Record<string, any>} update
  * @param {string} offerId
  * @returns {boolean}
  */
