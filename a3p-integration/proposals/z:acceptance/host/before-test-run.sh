@@ -1,9 +1,5 @@
 #! /bin/bash
-# We cannot fail the script on error (using set -e or set -o errexit)
-# as the exit code has to be written to the message file and the tests
-# will get stuck if the exit code (wether failure or success) is never
-# written to the message file
-set -o nounset -o xtrace
+set -e -o nounset -o xtrace
 
 AG_CHAIN_COSMOS_HOME="$HOME/.agoric"
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
@@ -11,6 +7,7 @@ FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
 LOGS_FILE="/tmp/before-test-run-hook-logs"
 SDK_REPOSITORY_NAME="agoric-sdk"
 TIMESTAMP="$(date '+%s')"
+LOADGEN_PATH=${LOADGEN_PATH:-}
 
 COMMON_PARENT="${DIRECTORY_PATH%/"$SDK_REPOSITORY_NAME"*}"
 NETWORK_CONFIG="/tmp/network-config-$TIMESTAMP"
@@ -24,6 +21,7 @@ main() {
 }
 
 start_follower() {
+  trap 'echo -n "exit code $?" > "$MESSAGE_FILE_PATH"' EXIT
   AG_CHAIN_COSMOS_HOME="$AG_CHAIN_COSMOS_HOME" \
     SDK_SRC="$COMMON_PARENT/$SDK_REPOSITORY_NAME" \
     "$LOADGEN_PATH/runner/bin/loadgen-runner" \
@@ -36,8 +34,7 @@ start_follower() {
     --stages "3" \
     --testnet-origin "file://$NETWORK_CONFIG" \
     --use-state-sync
-
-  echo -n "exit code $?" > "$MESSAGE_FILE_PATH"
+  exit
 }
 
 wait_for_network_config() {
@@ -52,13 +49,13 @@ wait_for_rpc() {
   local rpc_address
   local status_code
 
-  rpc_address="$(jq --raw-output '.rpcAddrs[0]' < "$NETWORK_CONFIG/network-config")"
+  rpc_address=${PUBLISHED_RPC_ENDPOINT:-$(jq --raw-output '.rpcAddrs[0]' < "$NETWORK_CONFIG/network-config")}
 
   echo "Waiting for rpc '$rpc_address' to respond"
 
   while true; do
-    curl "$rpc_address" --max-time "5" --silent > /dev/null 2>&1
-    status_code="$?"
+    status_code=0
+    curl "$rpc_address" --max-time "5" --silent > /dev/null 2>&1 || status_code=$?
 
     echo "rpc '$rpc_address' responded with '$status_code'"
 
