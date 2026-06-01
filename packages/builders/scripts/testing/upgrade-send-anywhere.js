@@ -30,7 +30,7 @@ const trace = makeTracer('UpgradeSA', true);
  *     };
  *   };
  * }} powers
- * @param {...any} rest
+ * @param {{ options: { sendAnywhereRef: any } }} config
  */
 export const upgradeSendAnywhere = async (
   {
