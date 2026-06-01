@@ -30,12 +30,12 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
+  FlowAgentShape,
+  PortfolioAgentIdShape,
   PortfolioPermissionsExtShape,
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
-  type FlowAgent,
-  type PortfolioAgentId,
   type PortfolioAgentStatus,
   type PortfolioPublishedPathTypes,
   type ProposalType,
@@ -234,16 +234,6 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
     },
   );
-
-export const PortfolioAgentIdShape: TypedPattern<PortfolioAgentId> = M.string();
-
-export const FlowAgentShape: TypedPattern<FlowAgent> = M.splitRecord(
-  {
-    id: PortfolioAgentIdShape,
-  },
-  {},
-  M.record(),
-);
 
 export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
   M.splitRecord({

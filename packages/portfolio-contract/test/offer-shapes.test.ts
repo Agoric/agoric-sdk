@@ -12,13 +12,13 @@ import {
   PortfolioPermissionsV1Shape,
   type PortfolioPermissions,
 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { PublishedTxShape } from '../src/resolver/types.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
   FlowDetailShape,
-  FlowAgentShape,
   FlowStatusShape,
   FlowStepsShape,
   makeProposalShapes,
@@ -28,10 +28,10 @@ import {
   PositionStatusShape,
   TargetAllocationShape,
   TargetAllocationShapeExt,
-  type PortfolioAgentStatus,
   type StatusFor,
   type TargetAllocation,
 } from '../src/type-guards.ts';
+import type { PortfolioAgentStatus } from '@agoric/portfolio-api';
 
 const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
 const usdc = usdcKit.make;

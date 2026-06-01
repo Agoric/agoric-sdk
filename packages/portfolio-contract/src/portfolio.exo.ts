@@ -33,6 +33,7 @@ import {
   SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
+import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import type {
   TargetAllocation as EIP712Allocation,
   YmaxFullDomain,
@@ -55,7 +56,6 @@ import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
-  FlowAgentShape,
   makeFlowAgentPath,
   makeFlowPath,
   makeFlowStepsPath,
