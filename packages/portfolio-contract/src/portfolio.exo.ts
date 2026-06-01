@@ -585,7 +585,6 @@ export const preparePortfolioKit = (
             portfolioId,
             positions,
             accounts,
-            delegations,
             nextFlowId,
             flowsRunning,
             targetAllocation,
