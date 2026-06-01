@@ -263,7 +263,7 @@ jobs:
           GCE_ZONE: ${{ env.GCE_ZONE }}
         run: |
           TARGET="ghcr.io/agoric/agoric-sdk:ymax-planner@${{ needs.docker-ymax.outputs.digest }}"
-          .github/scripts/check_digest.sh "$GCE_INSTANCE" "$GCE_ZONE" "$TARGET"
+          .github/scripts/check_digest.sh "$GCE_INSTANCE" "$GCE_ZONE" "$TARGET" "$GITHUB_OUTPUT" "./.env.gcp"
 
       - name: Update GCE Ymax0 container (by digest)
         if: steps.decide.outputs.should_deploy == 'true'
