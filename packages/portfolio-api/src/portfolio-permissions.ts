@@ -4,11 +4,12 @@ import { M } from '@endo/patterns';
 
 /**
  * Portfolio permissions granted to an automation agent.
- *
- * `allocation`: whether the agent may change portions of instruments already in the
- * portfolio's `targetAllocation`, but may not add or remove keys.
  */
 export type PortfolioPermissions = {
+  /**
+   * whether the agent may change portions of instruments already in the
+   * portfolio's `targetAllocation`, but may not add or remove keys.
+   */
   allocation?: boolean;
   [permission: string]: unknown;
 } & CopyRecord;
