@@ -327,7 +327,6 @@ export async function buildSwingset(
  */
 
 /**
- * @template [T=unknown]
  * @typedef {object} LaunchOptions
  * @property {QueueStorage} actionQueueStorage
  * @property {QueueStorage} highPriorityQueueStorage
