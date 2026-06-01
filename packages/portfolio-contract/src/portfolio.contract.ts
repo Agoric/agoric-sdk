@@ -565,10 +565,6 @@ export const contract = async (
     txfrCtx,
   );
 
-  // `portfolios` must exist before portfolio creation can allocate IDs.
-  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
-  const getPortfolio = (id: number) => portfolios.get(id);
-
   const makeDelegationKit = preparePortfolioDelegationKit(
     zone.subZone('delegation'),
     { zcf },
@@ -641,6 +637,9 @@ export const contract = async (
     contracts,
     deliverDelegationInvitation,
   });
+
+  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+  const getPortfolio = (id: number) => portfolios.get(id);
 
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
