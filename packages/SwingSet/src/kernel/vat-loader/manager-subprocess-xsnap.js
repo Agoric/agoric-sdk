@@ -136,6 +136,7 @@ export function makeXsSubprocessFactory({
 
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const snapshotInfo = vatKeeper.getSnapshotInfo();
+    /** @type {number | null} */
     let uncompressedSizeLoaded = null;
     if (snapshotInfo) {
       kernelSlog.write({ type: 'heap-snapshot-load', vatID, ...snapshotInfo });

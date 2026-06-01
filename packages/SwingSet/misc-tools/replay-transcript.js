@@ -182,10 +182,12 @@ async function replay(transcriptFile) {
 
   const fakeKernelKeeper = /** @type {KernelKeeper} */ ({
     provideVatKeeper: _vatID =>
-      /** @type {Partial<VatKeeper>} */ ({
-        addToTranscript: () => {},
-        getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
-      }),
+      /** @type {Partial<VatKeeper>} */ (
+        /** @type {unknown} */ ({
+          addToTranscript: () => {},
+          getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
+        })
+      ),
     getRelaxDurabilityRules: () => false,
   });
 
@@ -286,7 +288,7 @@ async function replay(transcriptFile) {
    *  xsnapPID: number | undefined;
    *  deliveryTimeTotal: number;
    *  deliveryTimeSinceLastSnapshot: number;
-   *  loadSnapshotID: string | undefined;
+   *  loadSnapshotID: string | null | undefined;
    *  timeOfLastCommand: number;
    *  keep: boolean;
    *  firstTranscriptNum: number | null;

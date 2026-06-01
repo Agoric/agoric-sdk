@@ -93,9 +93,9 @@ const addEvent = (schedule, when, event) => {
  */
 const removeEvent = (schedule, when, event) => {
   if (schedule.has(when)) {
-    /** @typedef { Event[] } */
+    /** @type { Event[] } */
     const originalEvents = schedule.get(when);
-    /** @typedef { Event[] } */
+    /** @type { Event[] } */
     const remainingEvents = originalEvents.filter(ev => ev !== event);
     if (remainingEvents.length === 0) {
       schedule.delete(when);

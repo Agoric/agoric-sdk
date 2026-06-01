@@ -284,11 +284,12 @@ export async function buildSwingsetKernelConfig(
    * @param {Record<string, *>} [nameToBundle]
    */
   async function getBundle(desc, nameToBundle) {
+    const descProps = /** @type {Record<string, any>} */ (desc);
     trace(
       'getBundle',
       Object.keys(desc),
-      desc.moduleFormat,
-      desc.endoZipBase64Sha512 || desc.sourceSpec,
+      descProps.moduleFormat,
+      descProps.endoZipBase64Sha512 || descProps.sourceSpec,
     );
 
     // shape validated by caller

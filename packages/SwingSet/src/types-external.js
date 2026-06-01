@@ -8,23 +8,8 @@ export {};
  * @import {SlogProps} from './controller/controller.js';
  * @import {StartDuration} from './kernel/slogger.js';
  * @import {CapData} from '@endo/marshal';
- * @import {Message} from '@agoric/swingset-liveslots';
- * @import {VatDeliveryObject} from '@agoric/swingset-liveslots';
- * @import {VatDeliveryResult} from '@agoric/swingset-liveslots';
- * @import {VatSyscallObject} from '@agoric/swingset-liveslots';
- * @import {VatSyscallResult} from '@agoric/swingset-liveslots';
  * @import {makeVatKeeper} from './kernel/state/vatKeeper.js';
- * @import {KernelKeeper} from './kernel/state/kernelKeeper.js';
  * @import {xsnap} from '@agoric/xsnap';
- * @import { KVStore } from '@agoric/internal/src/kv-store.js';
- * @import {SnapStore} from '@agoric/swing-store';
- * @import {SnapshotResult} from '@agoric/swing-store';
- * @import {TranscriptStore} from '@agoric/swing-store';
- * @import {SwingStore} from '@agoric/swing-store';
- * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
- * @import {SwingStoreHostStorage} from '@agoric/swing-store';
- * @import {Mailbox} from './devices/mailbox/mailbox.js';
- * @import {MailboxExport} from './devices/mailbox/mailbox.js';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -97,14 +82,14 @@ export {};
  */
 
 /**
- * @typedef { Message } Message
+ * @typedef { import('@agoric/swingset-liveslots').Message } Message
  *
  * @typedef { 'none' | 'ignore' | 'logAlways' | 'logFailure' | 'panic' } ResolutionPolicy
  *
- * @typedef { VatDeliveryObject } VatDeliveryObject
- * @typedef { VatDeliveryResult } VatDeliveryResult
- * @typedef { VatSyscallObject } VatSyscallObject
- * @typedef { VatSyscallResult } VatSyscallResult
+ * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
+ * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
+ * @typedef { import('@agoric/swingset-liveslots').VatSyscallResult } VatSyscallResult
  *
  * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
  * @typedef { [kpid: string, kp: { state: string, data: SwingSetCapData }] } KernelDeliveryOneNotify
@@ -157,7 +142,7 @@ export {};
  *
  * @typedef { { transcriptCount: number } } VatStats
  * @typedef { ReturnType<typeof makeVatKeeper> } VatKeeper
- * @typedef { KernelKeeper } KernelKeeper
+ * @typedef { import('./kernel/state/kernelKeeper.js').KernelKeeper } KernelKeeper
  * @typedef { Awaited<ReturnType<typeof xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall
@@ -207,7 +192,7 @@ export {};
  */
 /**
  * @template [Fields=object]
- * @typedef {(SourceSpec | BundleSpec | BundleName | BundleRef) & Fields} SwingSetConfigProperties
+ * @typedef {(SourceSpec | BundleSpec | BundleName | BundleRef) & VatConfigOptions & Fields} SwingSetConfigProperties
  */
 
 /**
@@ -248,13 +233,13 @@ export {};
  * @typedef {BundleName | BundleRef | {bundleID: BundleID}} SourceOfBundle
  */
 /**
- * @typedef { KVStore } KVStore
- * @typedef { SnapStore } SnapStore
- * @typedef { SnapshotResult } SnapshotResult
- * @typedef { TranscriptStore } TranscriptStore
- * @typedef { SwingStore } SwingStore
- * @typedef { SwingStoreKernelStorage } SwingStoreKernelStorage
- * @typedef { SwingStoreHostStorage } SwingStoreHostStorage
+ * @typedef { import('@agoric/internal/src/kv-store.js').KVStore } KVStore
+ * @typedef { import('@agoric/swing-store').SnapStore } SnapStore
+ * @typedef { import('@agoric/swing-store').SnapshotResult } SnapshotResult
+ * @typedef { import('@agoric/swing-store').TranscriptStore } TranscriptStore
+ * @typedef { import('@agoric/swing-store').SwingStore } SwingStore
+ * @typedef { import('@agoric/swing-store').SwingStoreKernelStorage } SwingStoreKernelStorage
+ * @typedef { import('@agoric/swing-store').SwingStoreHostStorage } SwingStoreHostStorage
  */
 
 /**
@@ -325,10 +310,10 @@ export {};
  */
 
 /**
- * @typedef { Mailbox } Mailbox
+ * @typedef { import('./devices/mailbox/mailbox.js').Mailbox } Mailbox
  */
 /**
- * @typedef { MailboxExport } MailboxExport
+ * @typedef { import('./devices/mailbox/mailbox.js').MailboxExport } MailboxExport
  */
 
 /**
