@@ -597,7 +597,6 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
 
         /**
          * @param {ZCFSeat} seat
-         * @returns {VaultKit}
          */
         makeTransferInvitationHook(seat) {
           const { state, facets } = this;
@@ -610,7 +609,10 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
           state.outerUpdater = vaultKit.vaultUpdater;
           helper.updateUiState();
 
-          return vaultKit;
+          // Cast breaks a Vault<->VaultKit type-inference cycle (tsgo TS2456):
+          // Vault would otherwise reference VaultKit here, which references
+          // Vault via the holder's state. The runtime value is a VaultKit.
+          return /** @type {any} */ (vaultKit);
         },
       },
       self: {

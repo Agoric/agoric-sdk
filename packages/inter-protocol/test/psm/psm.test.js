@@ -262,8 +262,8 @@ async function makePsmDriver(t, customTerms) {
 
     /** @type {(subpath: string) => object} */
     getStorageChildBody(subpath) {
-      return mockChainStorage.getBody(
-        `mockChainStorageRoot.psm.IST.AUSD.${subpath}`,
+      return /** @type {object} */ (
+        mockChainStorage.getBody(`mockChainStorageRoot.psm.IST.AUSD.${subpath}`)
       );
     },
 

@@ -588,7 +588,9 @@ export const prepareVaultManagerKit = (
             const proposal = { give: { Collateral: penalty } };
             return offerTo(
               zcf,
-              invite,
+              // reserve invitation's offer result is a string message, not the
+              // object offerTo's type expects
+              /** @type {any} */ (invite),
               { [seatKeyword]: 'Collateral' },
               proposal,
               seat,

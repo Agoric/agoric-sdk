@@ -8,6 +8,7 @@ import { scaledPriceFeedName } from './utils.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.ts';
  * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.ts';
  * @import {EconomyBootstrapPowers} from './core-proposal.js';
+ * @import {InterchainAssetOptions} from './addAssetToVault.js';
  */
 
 const trace = makeTracer('replaceScaledPA', true);
@@ -15,7 +16,7 @@ const trace = makeTracer('replaceScaledPA', true);
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
- * @param {object} config.options
+ * @param {{ interchainAssetOptions: InterchainAssetOptions }} config.options
  */
 export const replaceScaledPriceAuthority = async (powers, { options }) => {
   const {
@@ -95,7 +96,13 @@ export const replaceScaledPriceAuthorities = async (powers, { options }) => {
     assert(entry, 'unable to find issuerName for ', brand);
     const issuerName = entry[0];
     await replaceScaledPriceAuthority(powers, {
-      options: { interchainAssetOptions: { issuerName } },
+      // the replacement flow only needs issuerName; keyword (nominally required
+      // on InterchainAssetOptions) is unused on this path
+      options: {
+        interchainAssetOptions: /** @type {InterchainAssetOptions} */ ({
+          issuerName,
+        }),
+      },
     });
   }
 };

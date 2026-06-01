@@ -65,10 +65,12 @@ export const buildRootObject = async () => {
 
   let governorFacets;
   /**
-   * @type {ReturnType<
-   *   Awaited<
-   *     ReturnType<typeof fluxAggregatorStart>
-   *   >['creatorFacet']['getLimitedCreatorFacet']
+   * @type {Awaited<
+   *   ReturnType<
+   *     Awaited<ReturnType<typeof fluxAggregatorStart>>['creatorFacet'][
+   *       'getLimitedCreatorFacet'
+   *     ]
+   *   >
    * >}
    */
   let faLimitedFacet;
@@ -192,8 +194,11 @@ export const buildRootObject = async () => {
       );
       trace('BOOT buildV1 started instance');
 
-      // @ts-expect-error XXX governance types https://github.com/Agoric/agoric-sdk/issues/7178
-      faLimitedFacet = await E(governorFacets.creatorFacet).getCreatorFacet();
+      faLimitedFacet = /** @type {typeof faLimitedFacet} */ (
+        /** @type {unknown} */ (
+          await E(governorFacets.creatorFacet).getCreatorFacet()
+        )
+      );
 
       oracleA = await E(faLimitedFacet).initOracle('oracleA');
 

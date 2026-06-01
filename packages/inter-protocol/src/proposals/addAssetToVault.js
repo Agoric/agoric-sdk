@@ -237,7 +237,7 @@ export const startScaledPriceAuthority = async (
 /**
  * @param {EconomyBootstrapPowers} powers
  * @param {object} config
- * @param {object} config.options
+ * @param {{ interchainAssetOptions: InterchainAssetOptions }} config.options
  */
 export const registerScaledPriceAuthority = async (powers, { options }) => {
   const {
