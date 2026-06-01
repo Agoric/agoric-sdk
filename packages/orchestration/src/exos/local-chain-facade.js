@@ -114,7 +114,7 @@ const prepareLocalChainFacadeKit = (
         },
         /** @type {HostOf<Chain<{ chainId: 'agoriclocal' }>['query']>} */
         query(requests) {
-          return watch(E(localchain).queryMany(requests));
+          return watch(E(localchain).queryMany(/** @type {any} */ (requests)));
         },
         /** @type {HostOf<AgoricChainMethods['getVBankAssetInfo']>} */
         getVBankAssetInfo() {

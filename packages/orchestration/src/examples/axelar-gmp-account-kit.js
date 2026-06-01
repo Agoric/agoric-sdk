@@ -12,8 +12,6 @@
  * @import {AmountArg} from '@agoric/orchestration';
  */
 
-/** @typedef {ContractCall} ContractCall */
-
 import { M, mustMatch } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { makeTracer, NonNullish } from '@agoric/internal';
