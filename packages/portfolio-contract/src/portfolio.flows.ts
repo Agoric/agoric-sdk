@@ -1731,6 +1731,9 @@ export const openPortfolio = (async (
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');
+    if (offerArgs.targetAllocation && !offerArgs.flow) {
+      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    }
 
     // TODO provide a way to recover if any of these provisionings fail
     // SEE https://github.com/Agoric/agoric-private/issues/488
@@ -1743,7 +1746,6 @@ export const openPortfolio = (async (
         // XXX only for testing recovery?
         await rebalance(orch, ctxI, seat, offerArgs, kit, undefined, config);
       } else if (offerArgs.targetAllocation) {
-        kit.manager.setTargetAllocation(offerArgs.targetAllocation);
         let depositFlowDetail: FlowDetail | undefined;
         let depositOptions: ExecutePlanOptions | undefined;
 
