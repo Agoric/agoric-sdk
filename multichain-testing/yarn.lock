@@ -445,8 +445,6 @@ __metadata:
     "@endo/common": "npm:^1.2.13"
     "@endo/errors": "npm:^1.2.13"
     "@endo/patterns": "npm:^1.7.0"
-  bin:
-    portfolio-api: ./src/cli/bin.js
   languageName: node
   linkType: soft
 

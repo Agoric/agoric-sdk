@@ -27,7 +27,6 @@
     "./src/type-guards.js": "./src/type-guards.ts",
     "./package.json": "./package.json"
   },
-  "bin": "./src/cli/bin.js",
   "scripts": {
     "build": "exit 0",
     "test": "ava",

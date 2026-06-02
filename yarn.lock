@@ -1001,8 +1001,6 @@ __metadata:
     js-yaml: "npm:^4.1.1"
     ts-blank-space: "npm:^0.8.0"
     tsd: "npm:^0.33.0"
-  bin:
-    portfolio-api: ./src/cli/bin.js
   languageName: unknown
   linkType: soft
 
