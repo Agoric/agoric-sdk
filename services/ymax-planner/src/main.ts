@@ -280,12 +280,26 @@ export const main = async (
     headers: FETCH_HEADERS,
   };
 
+  let lastInstrumentBlocksString = '';
+  const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
+    const { noDepositInstruments, noWithdrawInstruments } = instrumentBlocks;
+    const sets = { noDepositInstruments, noWithdrawInstruments };
+    return JSON.stringify(objectMap(sets, s => [...s].sort()));
+  };
   const getInstrumentBlocks = config.yds.url
     ? async (): Promise<InstrumentBlocks> => {
         const resp = await ky
           .get('instruments', ydsFetchConfig)
           .json<{ data: YdsInstrument[] }>();
-        return calculateInstrumentBlocks(resp.data);
+        const instrumentBlocks = calculateInstrumentBlocks(resp.data);
+        {
+          const newBlocksString = stringifyInstrumentBlocks(instrumentBlocks);
+          if (newBlocksString !== lastInstrumentBlocksString) {
+            console.warn('New instrument blocks:', instrumentBlocks, resp.data);
+          }
+          lastInstrumentBlocksString = newBlocksString;
+        }
+        return instrumentBlocks;
       }
     : undefined;
 
