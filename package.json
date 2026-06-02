@@ -143,7 +143,7 @@
     "typecheck-quick": "yarn run -T tsc -p tsconfig.quickcheck.json",
     "build": "yarn workspaces foreach --all --topological run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "scripts/agd-builder.sh stamp yarn-installed",
-    "build-lockfiles": "./scripts/update-package-locks.sh",
+    "build-lockfiles": "./scripts/maintenance/update-package-locks.sh",
     "build-ts": "tsc --build tsconfig.build.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
   },
