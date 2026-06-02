@@ -37,8 +37,6 @@ import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FlowConfig,
-  FlowAgent,
-  PortfolioPermissions,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
@@ -64,7 +62,7 @@ import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
-import { preparePortfolioDelegationKit } from './delegation.exo.ts';
+import type { PortfolioDelegationKit } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
 import { preparePlanner } from './planner.exo.ts';
 import {
@@ -565,11 +563,6 @@ export const contract = async (
     txfrCtx,
   );
 
-  const makeDelegationKit = preparePortfolioDelegationKit(
-    zone.subZone('delegation'),
-    { zcf },
-  );
-
   // The contract delivers EVM-initiated delegation invitations via a
   // pre-registered postal service. The creator registers it once at
   // deployment via `setPostalService`.
@@ -598,20 +591,16 @@ export const contract = async (
    * already authorized the signer as the portfolio's owner.
    */
   const deliverDelegationInvitation = async (
-    target: Pick<
-      PortfolioKit,
-      'reader' | 'planner' | 'reporter' | 'simpleRebalanceHandler'
-    >,
-    agentId: FlowAgent['id'],
-    grantee: Bech32Address,
-    permissions: PortfolioPermissions,
+    delegationKit: PortfolioDelegationKit,
+    grantee: string,
   ): Promise<void> => {
-    const portfolioId = target.reader.getPortfolioId();
-    const kit = makeDelegationKit({ agentId, permissions, target });
+    const portfolioId = delegationKit.reader.getPortfolioId();
+    const agentId = delegationKit.reader.getAgentId();
+    const permissions = delegationKit.reader.getPermissions();
     const invitation = await zcf.makeInvitation(
       (seat: ZCFSeat) => {
         seat.exit();
-        return kit.client;
+        return delegationKit.client;
       },
       'portfolioMandate',
       harden({ portfolioId, agentId, permissions }),

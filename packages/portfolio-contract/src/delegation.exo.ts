@@ -15,6 +15,7 @@ import {
   type FlowAgent,
   type PortfolioSyncState,
   type PortfolioPermissions,
+  type PortfolioAgentId,
 } from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
@@ -32,24 +33,14 @@ export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
 type DelegationState = {
   agentId: FlowAgent['id'];
   permissions: PortfolioPermissions;
-  target: Pick<
-    PortfolioKit,
-    'reader' | 'planner' | 'reporter' | 'simpleRebalanceHandler'
-  >;
+  portfolioHelper: PortfolioKit['delegationsHelper'];
 };
-
-const DelegationTargetShape = M.splitRecord({
-  reader: M.remotable('PortfolioReader'),
-  planner: M.remotable('PortfolioPlanner'),
-  reporter: M.remotable('PortfolioReporter'),
-  simpleRebalanceHandler: M.remotable('PortfolioSimpleRebalanceHandler'),
-});
 
 // exoClassKit expects a plain state-shape record, not a TypedPattern wrapper.
 export const DelegationStateShape = {
   agentId: M.string(),
   permissions: PortfolioPermissionsExtShape,
-  target: DelegationTargetShape,
+  portfolioHelper: M.remotable('portfolioDelegationsHelper'),
 };
 harden(DelegationStateShape);
 
@@ -63,6 +54,7 @@ const sameKeySet = (a: Record<string, unknown>, b: Record<string, unknown>) => {
 
 const DelegationReaderI = M.interface('PortfolioDelegationReader', {
   getPortfolioId: M.call().returns(M.number()),
+  getAgentId: M.call().returns(M.string()),
   getPermissions: M.call().returns(PortfolioPermissionsExtShape),
 });
 
@@ -75,6 +67,7 @@ const DelegationClientI = M.interface('PortfolioDelegationClient', {
 
 export type PortfolioDelegationReader = {
   getPortfolioId: () => number;
+  getAgentId: () => PortfolioAgentId;
   getPermissions: () => PortfolioPermissions;
 };
 
@@ -99,8 +92,14 @@ export const preparePortfolioDelegationKit = (
     {
       reader: {
         getPortfolioId(): number {
-          const { reader } = this.state.target;
+          const { portfolioHelper } = this.state;
+          const { reader } = portfolioHelper.getKitForDelegationClient(
+            this.facets.client,
+          );
           return reader.getPortfolioId();
+        },
+        getAgentId(): string {
+          return this.state.agentId;
         },
         getPermissions(): PortfolioPermissions {
           return this.state.permissions;
@@ -111,13 +110,18 @@ export const preparePortfolioDelegationKit = (
           targetAllocation: TargetAllocation,
           syncState: PortfolioSyncState,
         ): `flow${number}` {
-          const { agentId, target } = this.state;
-          const { planner, reporter, simpleRebalanceHandler: handler } = target;
+          const { agentId, portfolioHelper } = this.state;
+          const {
+            reader,
+            planner,
+            reporter,
+            simpleRebalanceHandler: handler,
+          } = portfolioHelper.getKitForDelegationClient(this.facets.client);
 
           // We can assume allocation permission because the grant path only
           // mints this wrapper when `permissions.allocation === true`.
 
-          const current = target.reader.getTargetAllocation() || {};
+          const current = reader.getTargetAllocation() || {};
           sameKeySet(current, targetAllocation) ||
             Fail`granted rebalance must preserve allocation key set: have ${q(Object.keys(current))}, got ${q(Object.keys(targetAllocation))}`;
 

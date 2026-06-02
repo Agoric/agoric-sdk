@@ -33,6 +33,7 @@ import { axelarCCTPConfig } from './supports.ts';
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
+import type { PortfolioDelegationKit } from '../src/delegation.exo.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -1026,37 +1027,26 @@ test('evmHandler rebalance without allocations fails without current target allo
 test('evmHandler grant passes a narrowed per-portfolio target', async t => {
   const ownerAddress = '0x1212121212121212121212121212121212121212' as const;
   const { makePortfolioKit, getCallLog } = makeTestSetup();
-  const { evmHandler, reader, planner, reporter, simpleRebalanceHandler } =
-    makePortfolioKit({
-      portfolioId: 14,
-      sourceAccountId: `eip155:42161:${ownerAddress}`,
-    });
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 14,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
 
   await evmHandler.grant('agoric1delegate', { allocation: true });
 
   const callLog = getCallLog();
   t.is(callLog.length, 1);
   t.is(callLog[0][0], 'deliverDelegationInvitation');
-  const [, target, agentId, grantee, permissions] = callLog[0] as [
+  const [, delegationKit, grantee] = callLog[0] as [
     'deliverDelegationInvitation',
     Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[0],
     Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[1],
-    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[2],
-    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[3],
   ];
-  t.is(agentId, 'agent1');
+  t.is(delegationKit.reader.getAgentId(), 'agent1');
+  t.deepEqual(delegationKit.reader.getPermissions(), { allocation: true });
+  // The following verifies the delegation is active
+  t.is(delegationKit.reader.getPortfolioId(), 14);
   t.is(grantee, 'agoric1delegate');
-  t.deepEqual(permissions, { allocation: true });
-  t.deepEqual(Object.keys(target).sort(), [
-    'planner',
-    'reader',
-    'reporter',
-    'simpleRebalanceHandler',
-  ]);
-  t.is(target.reader, reader);
-  t.is(target.planner, planner);
-  t.is(target.reporter, reporter);
-  t.is(target.simpleRebalanceHandler, simpleRebalanceHandler);
 });
 
 test('evmHandler grant allocates sequential agent ids', async t => {
@@ -1072,6 +1062,6 @@ test('evmHandler grant allocates sequential agent ids', async t => {
 
   const callLog = getCallLog();
   t.is(callLog.length, 2);
-  t.is(callLog[0][2], 'agent1');
-  t.is(callLog[1][2], 'agent2');
+  t.is((callLog[0][1] as PortfolioDelegationKit).reader.getAgentId(), 'agent1');
+  t.is((callLog[1][1] as PortfolioDelegationKit).reader.getAgentId(), 'agent2');
 });

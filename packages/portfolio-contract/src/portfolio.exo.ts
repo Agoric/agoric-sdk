@@ -2,7 +2,12 @@
  * NOTE: This is host side code; can't use await.
  */
 import { AmountMath, type Brand } from '@agoric/ertp';
-import { makeTracer, mustMatch, type ERemote } from '@agoric/internal';
+import {
+  makeTracer,
+  mustMatch,
+  type ERemote,
+  type TypedPattern,
+} from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { IBCConnectionInfo } from '@agoric/network/ibc';
@@ -73,6 +78,10 @@ import {
 } from './type-guards.js';
 import { predictWalletAddress } from './utils/evm-orch-factory.js';
 import { predictRemoteAccountAddress } from './utils/evm-orch-router.ts';
+import {
+  preparePortfolioDelegationKit,
+  type PortfolioDelegationKit,
+} from './delegation.exo.ts';
 
 const trace = makeTracer('PortExo');
 
@@ -126,6 +135,28 @@ export type AccountInfoFor = Record<AxelarChain, GMPAccountInfo> & {
   noble: NobleAccountInfo;
 };
 
+type PortfolioDelegationsState = {
+  activeClients: MapStore<PortfolioDelegationKit['client'], number>;
+  statusById: MapStore<
+    number,
+    PortfolioAgentStatus & {
+      activeClient: PortfolioDelegationKit['client'] | null;
+    }
+  >;
+  // XXX: MapStore of delegations by expiration time
+};
+
+const DelegationsStateShape: TypedPattern<PortfolioDelegationsState> =
+  M.splitRecord(
+    {
+      statusById: M.remotable('delegationStatusStore'),
+      activeClients: M.remotable('activeDelegationClientsStore'),
+    },
+    {},
+    // Allow adding new delegation fields in the future
+    M.record(),
+  );
+
 type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
@@ -135,7 +166,7 @@ type PortfolioKitState = {
     number,
     { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
   >;
-  delegations?: MapStore<number, PortfolioAgentStatus>;
+  delegations?: PortfolioDelegationsState;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
@@ -153,7 +184,7 @@ export const PortfolioStateShape = {
   accounts: M.remotable('accounts'),
   positions: M.remotable('positions'),
   flowsRunning: M.remotable('flowsRunning'),
-  delegations: M.opt(M.remotable('delegations')),
+  delegations: M.opt(DelegationsStateShape),
   nextFlowId: M.number(),
   targetAllocation: M.opt(M.record()),
   policyVersion: M.number(),
@@ -292,10 +323,12 @@ const makePortfolioAgentsRecord = (
   harden(
     delegations
       ? fromEntries(
-          [...delegations.entries()].map(([agentId, status]) => [
-            `agent${agentId}`,
-            status,
-          ]),
+          [...delegations.statusById.entries()].map(
+            ([agentId, { activeClient: _, ...status }]) => [
+              `agent${agentId}`,
+              status,
+            ],
+          ),
         )
       : {},
   );
@@ -320,22 +353,6 @@ export type PublishStatusFn = <K extends keyof StatusFor>(
 
 /** avoid circular reference */
 type PortfolioKitCycleBreaker = unknown;
-
-// Avoid circular Pick<PortfolioKitState, 'accounts' | 'positions' | 'targetAllocation'>
-type DelegationTarget = {
-  reader: {
-    getPortfolioId: () => number;
-  };
-  planner: {
-    submitVersion: (versionPre: number, countPre: number) => void;
-  };
-  reporter: {
-    publishFlowAgent: (id: number, agent: FlowAgent) => void;
-  };
-  simpleRebalanceHandler: {
-    handle: (seat: ZCFSeat, offerArgs: unknown) => string;
-  };
-};
 
 export const preparePortfolioKit = (
   zone: Zone,
@@ -398,10 +415,8 @@ export const preparePortfolioKit = (
      * the per-portfolio capabilities needed by delegation.
      */
     deliverDelegationInvitation: (
-      target: DelegationTarget,
-      agentId: FlowAgent['id'],
+      delegationKit: PortfolioDelegationKit,
       grantee: string,
-      permissions: PortfolioPermissions,
     ) => Promise<void>;
   },
 ) => {
@@ -435,13 +450,69 @@ export const preparePortfolioKit = (
   });
 
   const makePosition = preparePosition(zone, emptyTransferState, publishStatus);
-  const makeDelegationsStore = (
+
+  const makeDelegationsState = (
     portfolioId: number,
-  ): MapStore<number, PortfolioAgentStatus> =>
-    zone.detached().mapStore(`portfolio${portfolioId}:delegations`, {
-      keyShape: M.number(),
-      valueShape: PortfolioAgentStatusShape,
-    }) as MapStore<number, PortfolioAgentStatus>;
+  ): PortfolioDelegationsState => {
+    const statusById = zone
+      .detached()
+      .mapStore(`portfolio${portfolioId}:delegationsStatus`, {
+        keyShape: M.number(),
+        valueShape: PortfolioAgentStatusShape,
+      }) as PortfolioDelegationsState['statusById'];
+
+    const activeClients = zone
+      .detached()
+      .mapStore(`portfolio${portfolioId}:activeDelegationClients`, {
+        keyShape: M.remotable('delegationClient'),
+        valueShape: M.number(),
+      }) as PortfolioDelegationsState['activeClients'];
+
+    return harden({
+      statusById,
+      activeClients,
+    });
+  };
+
+  const delegationZone = zone.subZone('delegation');
+
+  const makeDelegationKit = preparePortfolioDelegationKit(delegationZone, {
+    zcf,
+  });
+
+  const existingPortfolioDelegationsState = delegationZone.weakMapStore<
+    PortfolioKit['delegationsHelper'],
+    PortfolioDelegationsState
+  >('delegations state by existing portfolio', {
+    keyShape: M.remotable('delegationsHelper'),
+    valueShape: DelegationsStateShape,
+  });
+
+  const getPortfolioDelegationsState = (
+    state: PortfolioKitState,
+    {
+      delegationsHelper,
+    }: { delegationsHelper: PortfolioKit['delegationsHelper'] },
+  ): PortfolioDelegationsState => {
+    const { portfolioId } = state;
+
+    if ('delegations' in state) {
+      if (state.delegations) {
+        return state.delegations;
+      }
+      const delegations = makeDelegationsState(portfolioId);
+      state.delegations = delegations;
+      return delegations;
+    }
+
+    if (!existingPortfolioDelegationsState.has(delegationsHelper)) {
+      existingPortfolioDelegationsState.init(
+        delegationsHelper,
+        makeDelegationsState(portfolioId),
+      );
+    }
+    return existingPortfolioDelegationsState.get(delegationsHelper);
+  };
 
   return zone.exoClassKit(
     'Portfolio',
@@ -623,7 +694,11 @@ export const preparePortfolioKit = (
           } satisfies StatusFor['portfolio']);
         },
         publishAgents() {
-          const { portfolioId, delegations } = this.state;
+          const { portfolioId } = this.state;
+          const delegations = getPortfolioDelegationsState(
+            this.state,
+            this.facets,
+          );
           if (!delegations) {
             return;
           }
@@ -902,6 +977,20 @@ export const preparePortfolioKit = (
       },
       // XXX: for compat with devnet
       allocation: {},
+      delegationsHelper: {
+        getKitForDelegationClient(client: PortfolioDelegationKit['client']) {
+          const delegationsState = getPortfolioDelegationsState(
+            this.state,
+            this.facets,
+          );
+          if (!delegationsState.activeClients.has(client)) {
+            Fail`Unknown delegation client`;
+          }
+          const { reader, planner, reporter, simpleRebalanceHandler } =
+            this.facets;
+          return harden({ reader, planner, reporter, simpleRebalanceHandler });
+        },
+      },
       evmHandler: {
         /**
          * Note: evmHandler is only valid for portfolios opened from EVM.
@@ -1210,34 +1299,35 @@ export const preparePortfolioKit = (
          * its own input validation.
          */
         grant(grantee: Bech32Address, permissions: PortfolioPermissions) {
-          const { portfolioId, sourceAccountId } = this.state;
+          const { sourceAccountId } = this.state;
           if (!sourceAccountId) {
             throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;
           }
           permissions.allocation === true ||
             Fail`grant requires allocation permission`;
-          const delegations =
-            this.state.delegations || makeDelegationsStore(portfolioId);
-          this.state.delegations = delegations;
-          const nextAgentId = delegations.getSize() + 1;
-          delegations.init(
+          const delegations = getPortfolioDelegationsState(
+            this.state,
+            this.facets,
+          );
+          const nextAgentId = delegations.statusById.getSize() + 1;
+          const agentId = `agent${nextAgentId}` as const;
+          const delegationKit = makeDelegationKit({
+            agentId,
+            permissions,
+            portfolioHelper: this.facets.delegationsHelper,
+          });
+          delegations.statusById.init(
             nextAgentId,
             harden({
               grantee,
               permissions,
               state: 'active',
+              activeClient: delegationKit.client,
             }),
           );
+          delegations.activeClients.init(delegationKit.client, nextAgentId);
           this.facets.reporter.publishAgents();
-          const agentId = `agent${nextAgentId}` as const;
-          const { reader, planner, reporter, simpleRebalanceHandler } =
-            this.facets;
-          return deliverDelegationInvitation(
-            harden({ reader, planner, reporter, simpleRebalanceHandler }),
-            agentId,
-            grantee,
-            permissions,
-          );
+          return deliverDelegationInvitation(delegationKit, grantee);
         },
       },
       rebalanceHandler: {
