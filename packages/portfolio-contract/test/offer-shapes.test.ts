@@ -2,11 +2,18 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import type { PortfolioAgentStatus } from '@agoric/portfolio-api';
+import {
+  PortfolioPermissionsExtShape,
+  PortfolioPermissionsV1Shape,
+  type PortfolioPermissions,
+} from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   TxStatus,
   TxType,
   type PublishedTx,
 } from '@agoric/portfolio-api/src/resolver.js';
+import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { PublishedTxShape } from '../src/resolver/types.ts';
@@ -17,6 +24,7 @@ import {
   FlowStepsShape,
   makeProposalShapes,
   PoolKeyShapeExt,
+  PortfolioAgentStatusShape,
   PortfolioStatusShapeExt,
   PositionStatusShape,
   TargetAllocationShape,
@@ -171,6 +179,108 @@ test('PoolKeyExt shapes accept future pool keys', t => {
   });
 
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
+});
+
+test('PortfolioPermissionsV1Shape', t => {
+  const passCases = harden({
+    allocationOnly: {
+      allocation: true,
+    },
+  } satisfies Record<string, PortfolioPermissions>);
+  const failCases = harden({
+    empty: {},
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  });
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsV1Shape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsV1Shape), name);
+  }
+});
+
+test('PortfolioPermissionsExtShape', t => {
+  const passCases = harden({
+    empty: {},
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  } satisfies Record<string, PortfolioPermissions>);
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsExtShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsExtShape), name);
+  }
+});
+
+test('PortfolioAgentStatusShape allows upgraded permission bags', t => {
+  const passCases = harden({
+    futurePermission: {
+      grantee: 'agoric1test',
+      permissions: { futurePermission: true },
+      state: 'active',
+    },
+  } satisfies Record<string, PortfolioAgentStatus>);
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioAgentStatusShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioAgentStatusShape), name);
+  }
+});
+
+test('flow agent shape allows future attribution fields', t => {
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          id: 'agent2',
+          grantee: 'agoric1future',
+          scope: 'setTargetAllocation',
+        }),
+        FlowAgentShape,
+      ),
+    'flow agent shape should allow additional attribution fields',
+  );
+});
+
+test('portfolio agent status shape allows future top-level fields', t => {
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          grantee: 'agoric1test',
+          permissions: { allocation: true },
+          state: 'active',
+          expiresAt: 1234567890,
+          revokedBy: 'agoric1admin',
+        }),
+        PortfolioAgentStatusShape,
+      ),
+    'agent status should allow additional top-level fields',
+  );
 });
 
 test('numeric position references are rejected', t => {

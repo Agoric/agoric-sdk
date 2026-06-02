@@ -12,7 +12,7 @@
  */
 import { AmountMath, type NatAmount } from '@agoric/ertp';
 import type { VstorageKit } from '@agoric/client-utils';
-import type { ChainInfo } from '@agoric/orchestration';
+import type { Bech32Address, ChainInfo } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import {
   getPermitWitnessTransferFromData,
@@ -38,14 +38,16 @@ import type {
   PortfolioPublicInvitationMaker,
   PortfolioContinuingInvitationMaker,
   AxelarChain,
+  PortfolioPermissions,
 } from '@agoric/portfolio-api';
+import { PortfolioPermissionsV1Shape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
-import type { ERemote } from '@agoric/internal';
+import { mustMatch, type ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
 import type { TypedDataDefinition } from 'viem';
 import type { PrivateKeyAccount } from 'viem/accounts';
@@ -332,7 +334,11 @@ export const makeEvmTrader = ({
       StatusFor['evmWallet']
     >;
 
-  const getMessageResult = async (
+  /**
+   * Read the most-recent message status without asserting success — for tests
+   * that want to inspect failure modes.
+   */
+  const getMessageStatus = async (
     expectedNonce: bigint,
     expectedDeadline: bigint,
   ) => {
@@ -345,6 +351,14 @@ export const makeEvmTrader = ({
       assert.fail(
         `deadline mismatch: ${status.deadline} vs ${expectedDeadline}`,
       );
+    return status;
+  };
+
+  const getMessageResult = async (
+    expectedNonce: bigint,
+    expectedDeadline: bigint,
+  ) => {
+    const status = await getMessageStatus(expectedNonce, expectedDeadline);
     if (status.status === 'error') {
       assert.fail(`message failed: ${status.error}`);
     } else if (status.status !== 'ok') {
@@ -498,6 +512,38 @@ export const makeEvmTrader = ({
           const expectedNonce = nonce;
           await submitMessage(message);
           return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        /**
+         * Submit a signed Grant op and return the resulting wallet status
+         * entry for this trader's portfolio.
+         *
+         * Although the caller-facing type is {@link PortfolioPermissions},
+         * the current standalone EIP-712 `Grant` payload uses
+         * {@link PortfolioPermissionsV1Shape}. This helper validates that
+         * the requested permission bag fits the current wire shape before
+         * signing, so unsupported permissions fail client-side.
+         */
+        async grant(
+          granteeAddress: Bech32Address,
+          permissions: PortfolioPermissions,
+        ) {
+          const deadline = await getDeadline();
+          mustMatch(permissions, PortfolioPermissionsV1Shape);
+          const message = getYmaxStandaloneOperationData(
+            {
+              accountHolder: granteeAddress,
+              permissions,
+              portfolio: BigInt(self.getPortfolioId()),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Grant',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
         },
       });
     },

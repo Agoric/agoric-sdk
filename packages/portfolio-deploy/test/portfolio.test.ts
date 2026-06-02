@@ -424,6 +424,8 @@ test.serial('remove old contract; start new contract', async t => {
 
   const oldBoardId = (instancePre as any).getBoardId();
   const wallet = await wfd.provideSmartWallet(controllerAddr);
+  const postalServiceInstance = agoricNamesRemotes.instance.postalService;
+  t.truthy(postalServiceInstance);
 
   t.log('Invoking ymaxControl to remove old contract');
   await wallet.invokeEntry({
@@ -440,6 +442,7 @@ test.serial('remove old contract; start new contract', async t => {
     contracts: privateArgs.contracts,
     gmpAddresses: privateArgs.gmpAddresses,
     walletBytecode: privateArgs.walletBytecode,
+    postalServiceInstance,
   }) satisfies CopyRecord;
   t.is(passStyleOf(privateArgsOverrides), 'copyRecord');
 

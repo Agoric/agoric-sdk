@@ -172,6 +172,29 @@ test.before(async t => {
   t.context = await makeBootstrap(t);
 });
 
+test.serial(
+  'deployPostalService publishes instance in agoricNames',
+  async t => {
+    const { common, powers, zoe, bundleAndInstall } = t.context;
+
+    // @ts-expect-error test bootstrap powers omit postalService installation slot
+    powers.installation.produce.postalService.resolve(
+      await bundleAndInstall(postalServiceExports),
+    );
+
+    await deployPostalService(powers as any);
+
+    const postalServiceInstance = await E(common.bootstrap.agoricNames).lookup(
+      'instance',
+      'postalService',
+    );
+    t.is(passStyleOf(postalServiceInstance), 'remotable');
+
+    const postalServicePub = await E(zoe).getPublicFacet(postalServiceInstance);
+    t.is(passStyleOf(postalServicePub), 'remotable');
+  },
+);
+
 test.serial('coreEval code without swingset', async t => {
   const { common, powers, zoe, bundleAndInstall } = t.context;
   const { bootstrap, utils } = common;
@@ -182,6 +205,11 @@ test.serial('coreEval code without swingset', async t => {
   powers.installation.produce[contractName].resolve(
     await bundleAndInstall(contractExports, 'b2-ymax-bundleId'),
   );
+  // @ts-expect-error test bootstrap powers omit postalService installation slot
+  powers.installation.produce.postalService.resolve(
+    await bundleAndInstall(postalServiceExports),
+  );
+  await deployPostalService(powers as any);
 
   t.log('invoke coreEval');
   await t.notThrowsAsync(startPortfolio(powers, { options: ymaxOptions }));
@@ -329,6 +357,10 @@ test.serial('delegate ymax control; invite planner; submit plan', async t => {
     const issuers = { USDC, Access: PoC26, Fee: BLD, BLD };
     const { privateArgs } = await (powers as PortfolioBootPowers).consume
       .ymax0Kit;
+    const postalServiceInstance = await E(agoricNames).lookup(
+      'instance',
+      pContractName,
+    );
 
     // New portfolio-control does not use privateArgs from previous kit
     const privateArgsOverrides = {
@@ -338,6 +370,7 @@ test.serial('delegate ymax control; invite planner; submit plan', async t => {
       contracts: privateArgs.contracts,
       gmpAddresses: privateArgs.gmpAddresses,
       walletBytecode,
+      postalServiceInstance,
     } as CopyRecord;
 
     await E(E(walletCtrl).getInvokeFacet()).invokeEntry({

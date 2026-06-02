@@ -84,6 +84,20 @@ const OperationTypes = {
    * - token: ERC-20 token contract address (must be USDC contract on the destination chain)
    */
   Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],
+  /**
+   * Grant portfolio permissions on a portfolio to another Agoric address
+   * (e.g. an automation agent). The contract delivers an invitation whose
+   * redeemed result can be saved in the grantee's wallet store and used via
+   * wallet invocation.
+   *
+   * - accountHolder: bech32 Agoric address that will receive the invitation
+   * - permissions: encoded portfolio permissions (see PortfolioPermissions)
+   */
+  Grant: [
+    { name: 'accountHolder', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    PortfolioIdParam,
+  ],
 } as const satisfies TypedData;
 type OperationTypes = typeof OperationTypes;
 export type OperationTypeNames = keyof OperationTypes;
@@ -94,6 +108,8 @@ const OperationSubTypes = {
     { name: 'portion', type: 'uint256' },
   ],
   Asset: TokenPermissionsComponents,
+  /** @see {@link PortfolioPermissions} */
+  PortfolioPermissions: [{ name: 'allocation', type: 'bool' }],
 } as const satisfies TypedData;
 
 /**

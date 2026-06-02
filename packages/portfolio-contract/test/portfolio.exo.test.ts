@@ -26,13 +26,13 @@ import {
   preparePortfolioKit,
   type AccountInfoFor,
 } from '../src/portfolio.exo.ts';
+import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
 import type { StatusFor } from '../src/type-guards.ts';
-import { contractsMock } from './mocks.ts';
-import { axelarCCTPConfig } from './supports.ts';
-import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
+import { contractsMock } from './mocks.ts';
+import { axelarCCTPConfig } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -69,11 +69,17 @@ const makeTestSetup = () => {
   const marshaller = board.getReadonlyMarshaller();
   const vowTools = prepareVowTools(zone);
 
-  const depStubs: Pick<PortfolioKitDeps, 'rebalance' | 'executePlan'> = {
+  const depStubs: Pick<
+    PortfolioKitDeps,
+    'rebalance' | 'executePlan' | 'deliverDelegationInvitation'
+  > = {
     rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) =>
       vowTools.asVow(() => {}),
     executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
       vowTools.asVow(() => {}),
+    deliverDelegationInvitation: async (
+      ..._args: Parameters<PortfolioKitDeps['deliverDelegationInvitation']>
+    ) => {},
   };
 
   const { spies, log: callLog } = makeSpies(depStubs);
@@ -1015,4 +1021,50 @@ test('evmHandler rebalance without allocations fails without current target allo
   t.throws(() => evmHandler.rebalance(), {
     message: /rebalance requires targetAllocation to be set/,
   });
+});
+
+test('evmHandler grant passes only the delegation client to delivery', async t => {
+  const ownerAddress = '0x1212121212121212121212121212121212121212' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler, delegationHelper } = makePortfolioKit({
+    portfolioId: 14,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+  t.truthy(delegationHelper);
+
+  await evmHandler.grant('agoric1delegate', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegationInvitation');
+  const [, client, portfolioId, agentId, grantee, permissions] = callLog[0] as [
+    'deliverDelegationInvitation',
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[0],
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[1],
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[2],
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[3],
+    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[4],
+  ];
+  t.truthy(client);
+  t.is(portfolioId, 14);
+  t.is(agentId, 'agent1');
+  t.is(grantee, 'agoric1delegate');
+  t.deepEqual(permissions, { allocation: true });
+});
+
+test('evmHandler grant allocates sequential agent ids', async t => {
+  const ownerAddress = '0x3434343434343434343434343434343434343434' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 18,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  await evmHandler.grant('agoric1delegatea', { allocation: true });
+  await evmHandler.grant('agoric1delegateb', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 2);
+  t.is(callLog[0][3], 'agent1');
+  t.is(callLog[1][3], 'agent2');
 });
