@@ -197,6 +197,10 @@ export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
 export type PortfolioAgentId = `agent${number}`;
 
+/**
+ * attribute a flow to an agent that initiated it.
+ * @see {StatusFor['flowAgent']}
+ */
 export type FlowAgent = {
   id: PortfolioAgentId;
 };
