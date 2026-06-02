@@ -171,7 +171,7 @@ jobs:
           node-version: 'node-new'
 
       - name: Update package lockfiles
-        run: scripts/maintenance/update-package-locks.sh || exit 0
+        run: scripts/maintenance/update-package-locks.sh
 
       - name: Check if lockfiles are changed
         run: |

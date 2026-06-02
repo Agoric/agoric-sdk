@@ -19,9 +19,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aglocal/fast-usdc-deploy@portal:../../agoric-sdk/packages/fast-usdc-deploy::locator=root-workspace-0b6124%40workspace%3A.":
+"@aglocal/fast-usdc-deploy@portal:../packages/fast-usdc-deploy::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/fast-usdc-deploy@portal:../../agoric-sdk/packages/fast-usdc-deploy::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@aglocal/fast-usdc-deploy@portal:../packages/fast-usdc-deploy::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
@@ -47,9 +47,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@aglocal/portfolio-contract@portal:../../agoric-sdk/packages/portfolio-contract::locator=root-workspace-0b6124%40workspace%3A.":
+"@aglocal/portfolio-contract@portal:../packages/portfolio-contract::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/portfolio-contract@portal:../../agoric-sdk/packages/portfolio-contract::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@aglocal/portfolio-contract@portal:../packages/portfolio-contract::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
@@ -76,9 +76,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@aglocal/portfolio-deploy@portal:../../agoric-sdk/packages/portfolio-deploy::locator=root-workspace-0b6124%40workspace%3A.":
+"@aglocal/portfolio-deploy@portal:../packages/portfolio-deploy::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/portfolio-deploy@portal:../../agoric-sdk/packages/portfolio-deploy::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@aglocal/portfolio-deploy@portal:../packages/portfolio-deploy::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@aglocal/portfolio-contract": "workspace:*"
     "@agoric/client-utils": "workspace:*"
@@ -428,17 +428,17 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/pola-io@portal:../../agoric-sdk/packages/pola-io::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/pola-io@portal:../packages/pola-io::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/pola-io@portal:../../agoric-sdk/packages/pola-io::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/pola-io@portal:../packages/pola-io::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
   languageName: node
   linkType: soft
 
-"@agoric/portfolio-api@portal:../../agoric-sdk/packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/portfolio-api@portal:../packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/portfolio-api@portal:../../agoric-sdk/packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/portfolio-api@portal:../packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/orchestration": "workspace:*"
@@ -1028,9 +1028,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/bundle-source@portal:../../agoric-sdk/node_modules/@endo/bundle-source::locator=root-workspace-0b6124%40workspace%3A.":
+"@endo/bundle-source@portal:../node_modules/@endo/bundle-source::locator=root-workspace-0b6124%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@endo/bundle-source@portal:../../agoric-sdk/node_modules/@endo/bundle-source::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@endo/bundle-source@portal:../node_modules/@endo/bundle-source::locator=root-workspace-0b6124%40workspace%3A."
   dependencies:
     "@endo/base64": "npm:^1.0.12"
     "@endo/compartment-mapper": "npm:^1.6.3"
