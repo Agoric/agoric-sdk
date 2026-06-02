@@ -12,6 +12,9 @@ import {
   netOfConfig,
 } from './ymax-admin-helpers.ts';
 
+const trace = (...args: unknown[]) =>
+  console.error('-- ymax-upgrade:', ...args);
+
 const options = {
   contract: { type: 'string', default: 'ymax0' },
   bundle: { type: 'string' },
@@ -22,7 +25,7 @@ const options = {
 type BlockInfo = { height: number; hash: string; time: string };
 
 const upgradeYmax = async (tools: RunTools) => {
-  const { scriptArgs, makeAccount, cwd, fetch, setTimeout } = tools;
+  const { scriptArgs, makeAccount, cwd, fetch, setTimeout, walletKit } = tools;
   const { values } = parseArgs({ args: scriptArgs, options });
   const {
     contract,
@@ -33,9 +36,15 @@ const upgradeYmax = async (tools: RunTools) => {
   if (!bundleId) throw Error('--bundle missing');
   if (!resultFile) throw Error('--result-file missing');
 
-  const privateArgsOverrides = await (overrides
+  const fileOverrides = await (overrides
     ? cwd.readOnly().join(overrides).readJSON()
     : {});
+  const { postalService } = walletKit.agoricNames.instance;
+  postalService || assert.fail('missing postalService instance in agoricNames');
+  const privateArgsOverrides = harden({
+    ...fileOverrides,
+    postalServiceInstance: postalService,
+  });
 
   // XXX use different env var per account?
   const account = await makeAccount(`MNEMONIC`, {
@@ -51,13 +60,14 @@ const upgradeYmax = async (tools: RunTools) => {
     account.store.get<ContractControl<typeof YMaxStart>>(WALLET_KEY);
   let tx: DeliverTxResponse | undefined;
   try {
+    trace('upgrading contract', contract, 'to bundle', bundleId);
     ({ tx } = await ymaxControl.upgrade({ bundleId, privateArgsOverrides }));
   } catch (err) {
     tx = account.lastTx;
     if (!tx) throw err;
     console.error('recovering from upgrade() throw via lastTx', err);
   }
-  console.error(`upgrade tx: ${tx.transactionHash} at height ${tx.height}`);
+  trace(`upgrade tx: ${tx.transactionHash} at height ${tx.height}`);
 
   const rpcAddr =
     account.networkConfig.rpcAddrs[0] ||
@@ -69,7 +79,7 @@ const upgradeYmax = async (tools: RunTools) => {
       for (;;) {
         const block = await tmClient.block(height).catch(() => undefined);
         if (block) return block;
-        console.error(`waiting for block ${height}...`);
+        trace(`healthCheck: waiting for block ${height}...`);
         await new Promise(resolve => setTimeout(resolve, 3_000));
       }
     };
