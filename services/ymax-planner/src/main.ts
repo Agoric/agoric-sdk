@@ -274,11 +274,9 @@ export const main = async (
     trace: () => {},
   });
 
-  const ydsFetchConfig = {
-    fetch,
-    prefixUrl: config.yds.url,
-    headers: FETCH_HEADERS,
-  };
+  const ydsClient =
+    config.yds.url &&
+    ky.create({ fetch, headers: FETCH_HEADERS, prefixUrl: config.yds.url });
 
   let lastInstrumentBlocksString = '';
   const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
@@ -286,19 +284,18 @@ export const main = async (
     const sets = { noDepositInstruments, noWithdrawInstruments };
     return JSON.stringify(objectMap(sets, s => [...s].sort()));
   };
-  const getInstrumentBlocks = config.yds.url
+  const getInstrumentBlocks = ydsClient
     ? async (): Promise<InstrumentBlocks> => {
-        const resp = await ky
-          .get('instruments', ydsFetchConfig)
-          .json<{ data: YdsInstrument[] }>();
-        const instrumentBlocks = calculateInstrumentBlocks(resp.data);
-        {
-          const newBlocksString = stringifyInstrumentBlocks(instrumentBlocks);
-          if (newBlocksString !== lastInstrumentBlocksString) {
-            console.warn('New instrument blocks:', instrumentBlocks, resp.data);
-          }
-          lastInstrumentBlocksString = newBlocksString;
+        const resp = await ydsClient.get('instruments').json();
+        const instruments = (resp as any).data as YdsInstrument[];
+        const instrumentBlocks = calculateInstrumentBlocks(instruments);
+
+        const newBlocksString = stringifyInstrumentBlocks(instrumentBlocks);
+        if (newBlocksString !== lastInstrumentBlocksString) {
+          console.warn('New instrument blocks:', instrumentBlocks, instruments);
         }
+        lastInstrumentBlocksString = newBlocksString;
+
         return instrumentBlocks;
       }
     : undefined;
