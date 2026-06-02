@@ -30,7 +30,6 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
-  FlowAgentShape,
   PortfolioAgentIdShape,
   PortfolioPermissionsExtShape,
   YieldProtocol,
@@ -42,16 +41,16 @@ import {
   type StatusFor,
   type TargetAllocation,
 } from '@agoric/portfolio-api';
-import {
-  BeefyPoolPlaces,
-  ERC4626PoolPlaces,
-  PoolPlaces,
-} from '@agoric/portfolio-api/src/places.js';
 import type {
   BeefyInstrumentId,
   ERC4626InstrumentId,
   PoolKey,
   PoolPlaceInfo,
+} from '@agoric/portfolio-api/src/places.js';
+import {
+  BeefyPoolPlaces,
+  ERC4626PoolPlaces,
+  PoolPlaces,
 } from '@agoric/portfolio-api/src/places.js';
 import type {
   ContinuingInvitationSpec,
