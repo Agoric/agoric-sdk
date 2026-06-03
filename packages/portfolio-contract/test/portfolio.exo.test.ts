@@ -63,7 +63,7 @@ const makeSpies = <T extends Record<string, Callable>>(
   return { spies, log };
 };
 
-const makeTestSetup = () => {
+const makeTestSetup = (prepareOverrides: Partial<PortfolioKitDeps> = {}) => {
   const zone = makeHeapZone();
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
@@ -151,6 +151,7 @@ const makeTestSetup = () => {
     contracts: contractsMock,
     walletBytecode,
     transferChannels,
+    ...prepareOverrides,
     // rest are not used for this test
     ...({} as any),
   });
@@ -450,6 +451,7 @@ const doEVMDeposit = test.macro(
       otherRemoteAccount?: EVMDepositRemoteAccountConfig | undefined;
       spender?: Address | 'deriveDepositFactory' | 'deriveRouter';
       expectFail?: ThrowsExpectation<any> | boolean;
+      defaultToRouter?: boolean;
     },
   ) => {
     const ownerAddress =
@@ -460,7 +462,7 @@ const doEVMDeposit = test.macro(
       predictMockWalletAddress,
       predictMockRemoteAccountAddress,
       getCallLog,
-    } = makeTestSetup();
+    } = makeTestSetup({ defaultToRouter: params.defaultToRouter });
     const { evmHandler, manager, reader } = makePortfolioKit({
       portfolioId: 454,
       sourceAccountId: `eip155:42161:${ownerAddress}`,
@@ -704,6 +706,17 @@ test(
   {
     spender: 'deriveRouter',
     expectFail: true,
+    defaultToRouter: false,
+  },
+);
+
+test(
+  'evmHandler deposit rejects spender mismatch with expected router derived remote account',
+  doEVMDeposit,
+  {
+    spender: 'deriveDepositFactory',
+    expectFail: true,
+    defaultToRouter: true,
   },
 );
 
