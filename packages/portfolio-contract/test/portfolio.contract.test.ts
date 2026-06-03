@@ -997,12 +997,11 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const addr2 = {
     lca: makeTestAddress(3), // agoric1q...rytxkw
     nobleICA: 'noble1test1',
-    evm: '0x9d935c48219d075735ea090130045d8693e6273f',
   } as const;
   const amount = usdc.units(3_333.33);
 
   for (const { msg, ack } of values(
-    makeCCTPTraffic(addr2.nobleICA, `${amount.value}`, addr2.evm),
+    makeCCTPTraffic(addr2.nobleICA, `${amount.value}`, addr2.lca),
   )) {
     common.mocks.ibcBridge.addMockAck(msg, ack);
   }
@@ -3064,8 +3063,8 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
           parseAccountId(statusAfterFlow1.accountIdByChain.noble!)
             .accountAddress,
           `${flow2AllocationTargets[`Aave_${chain}`].value}`,
-          parseAccountId(statusAfterFlow1.accountIdByChain[chain]!)
-            .accountAddress,
+          parseAccountId(statusAfterFlow1.accountIdByChain.agoric!)
+            .accountAddress as `agoric1${string}`,
           chainInfoWithCCTP[chain].cctpDestinationDomain,
         ),
       ),

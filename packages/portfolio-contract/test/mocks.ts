@@ -36,8 +36,11 @@ import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
+import { hexToBytes } from '@noble/hashes/utils';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
+import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
+import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 
 const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
 const MsgDepositForBurnResponse = CodecHelper(MsgDepositForBurnResponseType);
@@ -240,41 +243,78 @@ export const makeUSDNIBCTraffic = (
 export const makeCCTPTraffic = (
   from = 'noble1test',
   money = `${3_333.33 * 1000000}`,
-  // This default matches the predicted addresss computed during tests
-  dest = '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
+  lca = portfolio0lcaOrch,
   destinationDomain = 3,
-) => ({
-  depositForBurn: {
-    msg: buildTxPacketString([
-      MsgDepositForBurn.toProtoMsg({
-        amount: money,
-        burnToken: 'uusdc',
-        destinationDomain,
-        from,
-        mintRecipient: leftPadEthAddressTo32Bytes(dest),
-      }),
-    ]),
+) => {
+  const destinationChain = {
+    0: 'Ethereum',
+    1: 'Avalanche',
+    2: 'Optimism',
+    3: 'Arbitrum',
+    6: 'Base',
+  }[destinationDomain];
 
-    ack: buildTxResponseString([
-      { encoder: MsgDepositForBurnResponse, message: {} },
-    ]),
-  },
-  depositForBurnx2: {
-    msg: buildTxPacketString([
-      MsgDepositForBurn.toProtoMsg({
-        amount: `${6_666.67 * 1000000}`,
-        burnToken: 'uusdc',
-        destinationDomain: 3,
-        from,
-        mintRecipient: leftPadEthAddressTo32Bytes(dest),
-      }),
-    ]),
+  if (!destinationChain) {
+    throw new Error(
+      `Unsupported CCTP destination domain: ${destinationDomain}`,
+    );
+  }
 
-    ack: buildTxResponseString([
-      { encoder: MsgDepositForBurnResponse, message: {} },
+  const chainContracts = contractsMock[destinationChain];
+  const destinations = [
+    predictWalletAddress({
+      owner: lca,
+      factoryAddress: chainContracts.factory,
+      gatewayAddress: chainContracts.gateway,
+      gasServiceAddress: chainContracts.gasService,
+      walletBytecode: hexToBytes('1234'),
+    }),
+    predictRemoteAccountAddress({
+      owner: lca,
+      factoryAddress: chainContracts.remoteAccountFactory,
+      implementationAddress: chainContracts.remoteAccountImplementation,
+    }),
+  ];
+
+  return Object.fromEntries(
+    destinations.flatMap((target, ix) => [
+      [
+        `depositForBurn${ix || ''}`,
+        {
+          msg: buildTxPacketString([
+            MsgDepositForBurn.toProtoMsg({
+              amount: money,
+              burnToken: 'uusdc',
+              destinationDomain,
+              from,
+              mintRecipient: leftPadEthAddressTo32Bytes(target),
+            }),
+          ]),
+          ack: buildTxResponseString([
+            { encoder: MsgDepositForBurnResponse, message: {} },
+          ]),
+        },
+      ],
+      [
+        `depositForBurnx2${ix || ''}`,
+        {
+          msg: buildTxPacketString([
+            MsgDepositForBurn.toProtoMsg({
+              amount: `${6_666.67 * 1000000}`,
+              burnToken: 'uusdc',
+              destinationDomain: 3,
+              from,
+              mintRecipient: leftPadEthAddressTo32Bytes(target),
+            }),
+          ]),
+          ack: buildTxResponseString([
+            { encoder: MsgDepositForBurnResponse, message: {} },
+          ]),
+        },
+      ],
     ]),
-  },
-});
+  );
+};
 
 /** https://developers.circle.com/cctp/evm-smart-contracts#tokenmessenger-testnet */
 const testnetTokenMessenger = (rows =>
