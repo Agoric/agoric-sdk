@@ -526,6 +526,21 @@ const gasServiceAddresses = harden({
   },
 });
 
+/**
+ * Address for the Merkle Distributor contract, which is used by morpho to distribute rewards
+ * @see {@link https://app.merkl.xyz/status}
+ * @type {AddressesMap}
+ */
+const merkleDistributorAddresses = harden({
+  mainnet: {
+    Arbitrum: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+    Base: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+    Ethereum: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+    Optimism: '0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae',
+  },
+  testnet: {},
+});
+
 /** @see {@link https://developers.circle.com/cctp/v1/evm-smart-contracts#mainnet-contract-addresses} */
 const mainnetTokenMessenger = (rows =>
   Object.fromEntries(
@@ -647,6 +662,7 @@ const mainnetContracts = {
     ERC4626_morphoKpkUsdcPrime_Ethereum:
       erc4626VaultAddresses.morphoKpkUsdcPrime.mainnet.Ethereum,
     oneInchRouter,
+    merkleDistributor: merkleDistributorAddresses.mainnet.Ethereum,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
@@ -673,6 +689,7 @@ const mainnetContracts = {
     oneInchRouter,
     ERC4626_morphoGauntletUsdcPrime_Optimism:
       erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Optimism,
+    merkleDistributor: merkleDistributorAddresses.mainnet.Optimism,
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
@@ -703,6 +720,7 @@ const mainnetContracts = {
       erc4626VaultAddresses.morphoGauntletUsdcCore.mainnet.Arbitrum,
     ERC4626_morphoHyperithmUsdc_Arbitrum:
       erc4626VaultAddresses.morphoHyperithmUsdc.mainnet.Arbitrum,
+    merkleDistributor: merkleDistributorAddresses.mainnet.Arbitrum,
   },
   Base: {
     aavePool: aaveAddresses.mainnet.Base,
@@ -736,6 +754,7 @@ const mainnetContracts = {
       erc4626VaultAddresses.morphoSeamlessUsdcVault.mainnet.Base,
     ERC4626_morphoEthenaSteakhouseUsdc_Base:
       erc4626VaultAddresses.morphoEthenaSteakhouseUsdc.mainnet.Base,
+    merkleDistributor: merkleDistributorAddresses.mainnet.Base,
   },
 };
 harden(mainnetContracts);
