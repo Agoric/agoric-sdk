@@ -319,7 +319,14 @@ export const processPortfolioEvents = async (
     opts?: ReadVstorageSimpleOpts,
   ) => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}.flows.${flowKey}`;
-    const capdata = await readStreamCellValue(vstorage, path, opts);
+    const metaResponse = await readStorageMeta(vstorage, path, 'data', opts);
+    if (metaResponse.result.value === '') {
+      // A flow key may exist only as a parent of children such as `.agent`,
+      // with no published flow-status payload at the flow node itself yet.
+      return undefined;
+    }
+    const streamCell = parseStreamCell(metaResponse.result.value, path);
+    const capdata = parseStreamCellValue(streamCell, -1, path);
     const flowStatus = marshaller.fromCapData(capdata);
     mustMatch(flowStatus, FlowStatusShape, path);
     return flowStatus.state === 'run';
@@ -499,7 +506,14 @@ export const processPortfolioEvents = async (
       for (const [flowKey, flowDetail] of typedEntries(status.flowsRunning || {})) {
         // If vstorage has a node for this flow then we've already responded.
         if (flowKeys.has(flowKey)) {
-          if (await isActiveFlow(portfolioKey, flowKey, readOpts)) return;
+          const isActive = await isActiveFlow(portfolioKey, flowKey, readOpts);
+          if (isActive === undefined) {
+            // Treat empty flow nodes like missing status nodes: tolerate the
+            // goofy publish shape and submit the flow instead of deferring.
+            await startFlow(status, portfolioKey, flowKey, flowDetail);
+            break;
+          }
+          if (isActive) return;
           continue;
         }
         await startFlow(status, portfolioKey, flowKey, flowDetail);

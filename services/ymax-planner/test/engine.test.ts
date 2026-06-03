@@ -721,6 +721,71 @@ test('processPortfolioEvents runs flows in sequence', async t => {
   }
 });
 
+test('processPortfolioEvents does not defer when a flow key exists only via flow.agent', async t => {
+  const kit = await fakePortfolioKit({
+    accounts: { noble: makeDeposit(0n) },
+    otherBalances: { usdn: makeDeposit(0n) },
+  });
+  const { portfolioId, portfolioPath, initialPortfolioStatus, powers } = kit;
+  const { consoleWrites, getBridgeSends, updateBlockHeight, updateVstorage } =
+    kit.testPowers;
+
+  const flowId = 2;
+  const flowKey = `flow${flowId}`;
+  const portfolioStatus = {
+    ...initialPortfolioStatus,
+    rebalanceCount: 0,
+    positionKeys: ['USDN'],
+    targetAllocation: { USDN: 1n },
+    flowCount: 2,
+    flowsRunning: {
+      [flowKey]: {
+        type: 'rebalance',
+      },
+    },
+  };
+  updateVstorage(portfolioPath, 'set', {
+    object: { ...portfolioStatus },
+    wrap: true,
+  });
+  updateVstorage(`${portfolioPath}.flows.${flowKey}`, 'set', { string: '' });
+  updateVstorage(`${portfolioPath}.flows.${flowKey}.agent`, 'set', {
+    object: { id: 'agent1' },
+    wrap: true,
+  });
+
+  const blockHeight = updateBlockHeight();
+  const vstorageEventDetail = makeVstorageEventDetail(
+    blockHeight,
+    portfolioPath,
+    harden({ ...portfolioStatus }),
+  );
+  const memory: PortfoliosMemory = { deferrals: [] };
+  await processPortfolioEvents(
+    [vstorageEventDetail],
+    blockHeight,
+    memory,
+    powers,
+  );
+
+  t.deepEqual(memory.deferrals, []);
+  t.false(consoleWrites.some(({ level }) => level === 'error'));
+  const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+  arrayIsLike(t, bridgeActions, [bridgeActions[0]]);
+  const action = bridgeActions[0] as InvokeStoreEntryAction;
+  t.like(action, {
+    method: 'invokeEntry',
+    message: { targetName: 'planner' },
+  });
+  arrayIsLike(t, action.message.args, [
+    portfolioId,
+    flowId,
+    action.message.args[2],
+    portfolioStatus.policyVersion,
+    portfolioStatus.rebalanceCount,
+  ]);
+});
+
 test('startFlow logs include traceId prefix', async t => {
   const kit = await fakePortfolioKit({
     accounts: { noble: AmountMath.make(depositBrand, 1_000_000n) },
