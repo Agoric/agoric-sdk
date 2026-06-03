@@ -57,6 +57,15 @@ export const isERC4626InstrumentId = (
 harden(isERC4626InstrumentId);
 
 /**
+ * Is the input an ERC-4626 and a morpho InstrumentId
+ * (i.e., does it start with 'ERC4626_morpho')?
+ */
+export const isERC4626MorphoInstrumentId = (
+  ref: string,
+): ref is ERC4626InstrumentId => ref.startsWith('ERC4626_morpho');
+harden(isERC4626MorphoInstrumentId);
+
+/**
  * Is the input an Beefy InstrumentId
  * (i.e., does it start with 'Beefy_')?
  */

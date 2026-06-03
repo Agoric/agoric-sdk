@@ -206,6 +206,12 @@ export type ProtocolDetail<
     claimRewards?: ClaimRewardsParams,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
+  claimRewards?: (
+    ctx: CTX,
+    dest: AccountInfoFor[C],
+    claimParams: ClaimRewardsParams,
+    ...optsArgs: [OrchestrationOptions?]
+  ) => Promise<void>;
 };
 
 const { min } = Math;
@@ -1195,6 +1201,9 @@ const stepFlow = async (
       }
 
       case 'USDN': {
+        if ('claimParams' in way) {
+          throw Fail`USDN does not support claimRewards`;
+        }
         const vault =
           way.poolKey === 'USDNVault' ? VaultType.STAKED : undefined;
         const ctxU = { usdnOut: move?.detail?.usdnOut, vault };

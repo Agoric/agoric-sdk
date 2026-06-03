@@ -1904,8 +1904,8 @@ const erc4626TestMacro = test.macro({
         flow: [
           { src: '<Deposit>', dest: '@agoric', amount },
           { src: '@agoric', dest: '@noble', amount },
-          { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-          { src: '@Arbitrum', dest: vaultKey, amount, fee: feeCall },
+          { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
+          { src: '@Ethereum', dest: vaultKey, amount, fee: feeCall },
         ],
       },
     );
