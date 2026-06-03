@@ -135,6 +135,19 @@ export type FlowStatus =
   | { state: 'done' }
   | ({ state: 'fail' } & FlowErrors);
 
+/**
+ * Per-protocol parameters for claiming external rewards.
+ * Fields are optional so each protocol can use whichever subset it needs
+ * (e.g. ERC4626 + Morpho uses a Merkle distributor with all four; Aave
+ * and Compound use their own rewards controllers with different params).
+ */
+export type ClaimRewardsParams = {
+  users?: EvmAddress[];
+  tokens?: EvmAddress[];
+  amounts?: bigint[];
+  proofs?: `0x${string}`[][];
+};
+
 export type MovementDesc = {
   amount: NatAmount;
   src: AssetPlaceRef;
@@ -144,6 +157,8 @@ export type MovementDesc = {
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
   claim?: boolean;
+  /** Present iff this step is a standalone rewards claim. */
+  claimParams?: ClaimRewardsParams;
 };
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';

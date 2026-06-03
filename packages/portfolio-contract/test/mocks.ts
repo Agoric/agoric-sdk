@@ -378,6 +378,7 @@ export const contractsMock = {
       '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
     Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     ERC4626_vaultU2_Ethereum: '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
+    merkleDistributor: '0x330eefa8a787552DC5cAd3C3cA644844B1E61Ddb',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
   Base: {

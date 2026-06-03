@@ -24,7 +24,10 @@ import {
   coerceAccountId,
   leftPadEthAddressTo32Bytes,
 } from '@agoric/orchestration/src/utils/address.js';
-import type { MovementDesc } from '@agoric/portfolio-api';
+import {
+  isERC4626MorphoInstrumentId,
+  type MovementDesc,
+} from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
@@ -37,6 +40,7 @@ import {
 } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
+import { merkleDistributorABI } from './interfaces/merkle-distributor.ts';
 import {
   tokenMessengerABI,
   tokenMessengerV2ABI,
@@ -496,6 +500,25 @@ export const ERC4626Protocol = {
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
+  claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
+    await null;
+    if (isERC4626MorphoInstrumentId(ctx.poolKey)) {
+      const { users, tokens, amounts, proofs } = claimParams;
+      if (!users || !tokens || !amounts || !proofs) {
+        throw Fail`ERC4626 claimRewards requires users, tokens, amounts, and proofs`;
+      }
+      const { addresses: a } = ctx;
+      const distributor =
+        a.merkleDistributor ||
+        assert.fail(X`merkleDistributor address not configured`);
+      const session = makeEvmAbiCallBatch();
+      const md = session.makeContract(distributor, merkleDistributorABI);
+      md.claim(users, tokens, amounts, proofs);
+      const calls = session.finish();
+
+      await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+    }
   },
 } as const satisfies ProtocolDetail<
   'ERC4626',

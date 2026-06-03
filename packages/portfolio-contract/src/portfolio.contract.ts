@@ -263,6 +263,7 @@ export type EVMContractAddresses = {
   aaveUSDC: `0x${string}`;
   aaveRewardsController: `0x${string}`;
   compoundRewardsController: `0x${string}`;
+  merkleDistributor?: `0x${string}`;
   gateway: `0x${string}`;
   gasService: `0x${string}`;
   cctpRelayer?: `0x${string}`;

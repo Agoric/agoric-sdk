@@ -39,6 +39,7 @@ import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/p
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   TxType,
+  type ClaimRewardsParams,
   type FlowConfig,
   type FlowErrors,
   type FlowFeatures,
@@ -196,6 +197,12 @@ export type ProtocolDetail<
     amount: NatAmount,
     dest: AccountInfoFor[C],
     claim?: boolean,
+    ...optsArgs: [OrchestrationOptions?]
+  ) => Promise<void>;
+  claimRewards?: (
+    ctx: CTX,
+    dest: AccountInfoFor[C],
+    claimParams: ClaimRewardsParams,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
@@ -643,6 +650,15 @@ type Way =
       /** chain with account where assets will go */
       dest: SupportedChain;
       claim?: boolean;
+    }
+  | {
+      how: YieldProtocol;
+      /** pool we're claiming rewards for */
+      poolKey: PoolKey;
+      /** chain with account that will receive the claimed rewards */
+      dest: SupportedChain;
+      /** External params required for claiming rewards */
+      claimParams: ClaimRewardsParams;
     };
 
 // exported only for testing
@@ -663,6 +679,14 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
+      if (moveDesc.claimParams) {
+        return {
+          how: protocol,
+          poolKey,
+          dest: destName,
+          claimParams: moveDesc.claimParams,
+        };
+      }
       // XXX check that destName is in protocol.chains
       return {
         how: protocol,
@@ -871,7 +895,7 @@ const stepFlow = async (
       Aave: AaveProtocol,
       Beefy: BeefyProtocol,
       ERC4626: ERC4626Protocol,
-    }[way.how];
+    }[way.how] as ProtocolDetail<P, AxelarChain, EVMContext>;
 
     const { amount } = move;
     const phases =
@@ -901,6 +925,13 @@ const stepFlow = async (
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo, opts);
           return harden({ destPos: pos });
+        } else if ('claimParams' in way) {
+          pImpl.claimRewards ||
+            Fail`${q(way.how)} does not support claimRewards`;
+          await pImpl.claimRewards!(evmCtx, gInfo, way.claimParams, opts);
+          // Rewards land in the user's remote address as separate tokens;
+          // the pool position is unchanged.
+          return harden({});
         } else {
           await pImpl.withdraw(evmCtx, amount, gInfo, way.claim, opts);
           return harden({ srcPos: pos });
@@ -1124,6 +1155,9 @@ const stepFlow = async (
       }
 
       case 'USDN': {
+        if ('claimParams' in way) {
+          throw Fail`USDN does not support claimRewards`;
+        }
         const vault =
           way.poolKey === 'USDNVault' ? VaultType.STAKED : undefined;
         const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
