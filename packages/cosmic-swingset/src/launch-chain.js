@@ -1,8 +1,14 @@
 /* eslint-env node */
 
-// XXX the JSON configs specify that launching the chain requires @agoric/builders,
-// so let the JS tooling know about it by importing it here.
+// Launching the chain requires @agoric/builders (the proposal builders that
+// bootstrap configs run) and @agoric/vm-config (the bootstrap config JSON
+// resolved by chain-main.js / sim-chain.js). Both are referenced only via
+// string config specifiers, so nothing imports them as modules. Import them
+// here as no-op markers so the JS tooling keeps them in the dependency graph;
+// each resolves to a near-empty index.js that exists solely as the resolution
+// target for these markers.
 import '@agoric/builders';
+import '@agoric/vm-config';
 
 import anylogger from '@agoric/internal/vendor/anylogger.js';
 
