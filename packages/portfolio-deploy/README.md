@@ -32,7 +32,11 @@ Development proceeds by way of upgrade.
 
 Use the [Deploy YMax Release](https://github.com/Agoric/agoric-sdk/actions/workflows/deploy-ymax-release.yml) GitHub Actions workflow, aka
 [deploy-ymax-release.yml](../../.github/workflows/deploy-ymax-release.yml)
-for `ymax0-devnet` and `ymax0-main`.
+for the normal end-to-end operator path. It submits the upgrade and then confirms / records it in the same workflow run.
+
+If submission likely already happened but confirmation / record-writing did not finish, use
+[confirm-ymax-upgrade.yml](../../.github/workflows/confirm-ymax-upgrade.yml)
+to run the confirm-only recovery path without resubmitting the upgrade transaction.
 
 ### CLI Usage
 
@@ -50,7 +54,16 @@ packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
   --tag v0.3.2606-beta1
 ```
 
-This verifies prerequisites from `ymax0-main`. `export GITHUB_TOKEN=...` is used to attach assets to the release.
+This verifies prerequisites from `ymax0-main`, submits the upgrade, and then confirms / records it. `export GITHUB_TOKEN=...` is used to attach assets to the release.
+
+If a prior submit likely landed on chain but the final record is missing, run the confirm-only phase instead:
+
+```bash
+packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+  phase-upgrade-confirm \
+  --target ymax1-main \
+  --tag v0.3.2606-beta1
+```
 
 Pass private args overrides when needed: `export PRIVATE_ARGS_OVERRIDES='{"offerFilter":["foo"]}'`
 

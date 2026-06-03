@@ -84,11 +84,12 @@ const makePlan = ({
     bundleId,
     needBundleBuild,
     needPreUpgrade: true,
-    needUpgrade: true,
+    needUpgradeSubmit: true,
+    needUpgradeConfirm: true,
   };
 
   if (mode === 'bundle-only') {
-    return plan;
+    return { ...plan, needUpgrade: true };
   }
 
   if (!bundleId) {
@@ -100,7 +101,10 @@ const makePlan = ({
     // bundleId is unknown until build-bundle runs; skip record validation.
     // The downstream pre-upgrade job derives bundleId from the built file
     // and writes the install/upgrade records itself.
-    return plan;
+    return {
+      ...plan,
+      needUpgrade: plan.needUpgradeSubmit || plan.needUpgradeConfirm,
+    };
   }
 
   for (const priorTarget of prerequisiteTargets[target]) {
@@ -132,14 +136,27 @@ const makePlan = ({
         `existing ${upgradeAssetName} uses ${record.privateArgsOverridesPath}, not ${expectedOverrides}; remove or rename ${upgradeAssetName} to change private args`,
       );
     }
-    plan.needUpgrade = false;
+    plan.needUpgradeSubmit = false;
+    plan.needUpgradeConfirm = false;
   }
 
-  if (target === 'ymax1-main' && plan.needUpgrade && ymax1Planner !== 'down') {
+  const pendingAssetName = `${target}-upgrade-pending.json`;
+  if (assetNames.has(pendingAssetName)) {
+    plan.needUpgradeSubmit = false;
+  }
+
+  if (
+    target === 'ymax1-main' &&
+    (plan.needUpgradeSubmit || plan.needUpgradeConfirm) &&
+    ymax1Planner !== 'down'
+  ) {
     throw Error('ymax1Planner must be down for ymax1-main');
   }
 
-  return plan;
+  return {
+    ...plan,
+    needUpgrade: plan.needUpgradeSubmit || plan.needUpgradeConfirm,
+  };
 };
 
 const makeGh =
@@ -173,7 +190,7 @@ export const main = async ({
   stdout = process.stdout,
 } = {}) => {
   const mode = env.MODE || 'deploy';
-  const releaseTag = env.RELEASE_TAG || fail('--release-tag missing');
+  const releaseTag = env.RELEASE_TAG || fail('$RELEASE_TAG missing');
   const target = env.TARGET || fail('--target missing');
   const gh = makeGh({ env, spawn });
   const plan = makePlan({

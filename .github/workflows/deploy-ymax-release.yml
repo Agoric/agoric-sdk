@@ -51,7 +51,8 @@ jobs:
     outputs:
       need_bundle_build: ${{ steps.plan.outputs.need_bundle_build }}
       need_pre_upgrade: ${{ steps.plan.outputs.need_pre_upgrade }}
-      need_upgrade: ${{ steps.plan.outputs.need_upgrade }}
+      need_upgrade_submit: ${{ steps.plan.outputs.need_upgrade_submit }}
+      need_upgrade_confirm: ${{ steps.plan.outputs.need_upgrade_confirm }}
     steps:
       - uses: actions/checkout@v4
 
@@ -117,16 +118,13 @@ jobs:
             --tag "$RELEASE_TAG" \
             --branch "$BRANCH"
 
-  upgrade:
+  upgrade-submit:
     needs: [plan, pre-upgrade]
     if: |
       always() &&
       needs.plan.result == 'success' &&
-      needs.plan.outputs.need_upgrade == 'true' &&
-      (
-        needs.pre-upgrade.result == 'success' ||
-        (needs.plan.outputs.need_pre_upgrade != 'true' && needs.pre-upgrade.result == 'skipped')
-      )
+      needs.plan.outputs.need_upgrade_submit == 'true' &&
+      contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
@@ -141,7 +139,7 @@ jobs:
           echo 'ymax1Planner must be down for ymax1-main' >&2
           exit 1
 
-      - name: Run upgrade phase
+      - name: Run upgrade submit phase
         env:
           AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
           GITHUB_TOKEN: ${{ github.token }}
@@ -151,6 +149,41 @@ jobs:
           TARGET: ${{ inputs.target }}
         run: |
           packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-            phase-upgrade \
+            phase-upgrade-submit \
+            --target "$TARGET" \
+            --tag "$RELEASE_TAG"
+
+  upgrade-confirm:
+    needs: [plan, pre-upgrade, upgrade-submit]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.need_upgrade_confirm == 'true' &&
+      contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
+      contains(fromJSON('["success","skipped","failure"]'), needs.upgrade-submit.result)
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Require ymax1 planner down
+        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        run: |
+          echo 'ymax1Planner must be down for ymax1-main' >&2
+          exit 1
+
+      - name: Run upgrade confirm phase
+        env:
+          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+            phase-upgrade-confirm \
             --target "$TARGET" \
             --tag "$RELEASE_TAG"
