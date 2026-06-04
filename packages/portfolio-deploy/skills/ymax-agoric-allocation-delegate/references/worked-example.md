@@ -29,6 +29,8 @@ agoric wallet provision --account "$AGENT_ADDRESS" --spend
 
 _TODO: For now, this is part of the grubby blockchain onboarding that the future worker proxy should hide._
 
+Before using repo tooling, the agent verifies that the mnemonic derives `AGENT_ADDRESS` on the same HD path the tool will use. This matters because the current `wallet-admin.ts` path comes from `client-utils` default derivation (`m/44'/564'/0'/0/0`). If the funded delegate address was derived on another path such as `m/44'/118'/0'/0/0`, the stock scripts will sign as the wrong address unless patched or replaced with a one-off helper.
+
 ## Step 4: Authorize the Agent for Later Adjustments
 The agent gives the user a link that includes both the created portfolio id and the delegate address:
 
@@ -97,8 +99,21 @@ The key set stays the same; only the portions change. That is the point of the d
   --allocations-file ./allocations-portfolio95.json
 ```
 
+The agent records the returned Agoric tx hash, then registers it with YDS:
+
+```sh
+curl -sS -X POST "https://main0.ymax.app/transactions" \
+  -H 'content-type: application/json' \
+  --data '{
+    "txHash":"AGORIC_TX_HASH",
+    "chain":"agoric-3",
+    "ymaxInstance":"ymax0"
+  }'
+```
+
 ## Step 10: Confirm the New Allocation
 - Confirm the tool prints a successful submission tx hash.
+- Confirm YDS accepted the tx hash through `POST /transactions`.
 - Confirm YDS publishes the updated `targetAllocation`, for example:
 
 ```sh

@@ -15,6 +15,8 @@ Advise on an initial mainnet `ymax0` allocation, hand off a pre-populated create
 - Do not attempt deposit, withdraw, or other owner-only actions after delegation.
 - Do not add instruments not already present in the portfolio's current `targetAllocation`.
 - Use the portfolio's current sync state (`policyVersion`, `rebalanceCount`) when submitting.
+- Treat the YDS tx-registration step as required unless verified otherwise for the current backend; an on-chain success alone may not update the YDS portfolio view.
+- Confirm the delegate wallet derivation path matches the funded address before using `wallet-admin.ts`; the default client-utils path is `m/44'/564'/0'/0/0`.
 
 ## Run Order
 1. Complete onboarding, research, and owner handoff: [agent-onboarding.md](references/agent-onboarding.md).
@@ -27,4 +29,6 @@ Advise on an initial mainnet `ymax0` allocation, hand off a pre-populated create
 - Invitation missing: confirm owner Grant succeeded and the delegation invitation was redeemed into the expected wallet-store key.
 - Sync-state mismatch: refresh `policyVersion` and `rebalanceCount` from vstorage, then retry once.
 - Key-set rejection: remove any added or missing instruments from the allocation file and retry once.
+- On-chain success but stale YDS state: submit the Agoric tx hash to YDS `POST /transactions` with `chain=agoric-3` and `ymaxInstance=ymax0`, then poll the portfolio again.
+- Wallet/address mismatch: verify the mnemonic derives the funded delegate address on the same HD path the tool is using; if not, override the path or use a one-off submission helper.
 - Repeated non-input failure: stop and escalate with the tx hash, portfolio id, delegation key, and allocation file.
