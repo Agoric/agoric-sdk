@@ -16,7 +16,15 @@ The agent should:
 - propose an initial allocation that fits that discussion
 
 ## Step 2: Hand Off a Pre-Populated Create-Portfolio Link
-The agent proposes a link of the form:
+The agent proposes a link.
+
+During a transitionary period, use the deploy preview:
+
+```text
+https://feat-ago-611-prepopulated-li.ymax1-ui.pages.dev?Aave_Arbitrum=60&Compound_Arbitrum=40
+```
+
+in due course, it should be available at:
 
 ```text
 https://main0.ymax.app/create-portfolio?Aave_Arbitrum=60&Compound_Arbitrum=40
@@ -55,7 +63,15 @@ The first form reports the provisioning cost; the second actually spends it.
 TODO: figure out where the required 10 BLD comes from for delegate-wallet provisioning. One possibility is to use x409 to buy it with USDC or similar, but this needs a real operational answer before the flow is complete.
 
 ## Step 6: Hand Off the Delegation Link
-The agent gives the user a link of the form:
+The agent gives the user a link.
+
+The branch preview is currently operational:
+
+```text
+https://feat-ago-611-prepopulated-li.ymax1-ui.pages.dev/grant?portfolioId=P&accountHolder=agoric1...
+```
+
+In due course, you should be able to use:
 
 ```text
 https://main0.ymax.app/grant?portfolioId=P&accountHolder=agoric1...
