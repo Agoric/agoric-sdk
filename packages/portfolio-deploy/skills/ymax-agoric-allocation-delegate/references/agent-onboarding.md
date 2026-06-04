@@ -15,6 +15,9 @@ The agent should:
 - explore the user's risk profile and how much capital they want to deploy
 - propose an initial allocation that fits that discussion
 
+Avoid financial advice phrasing by saying, for example:
+The following allocation appears to meet your preferences based on the current APYs.
+
 ## Step 2: Hand Off a Pre-Populated Create-Portfolio Link
 The agent proposes a link.
 
