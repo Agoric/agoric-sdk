@@ -32,7 +32,7 @@ import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
-import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
+import { aavePoolABI } from './interfaces/aave.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
 import {
   compoundABI,
@@ -377,18 +377,11 @@ export const AaveProtocol = {
 
     return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { remoteAddress } = dest;
     const { addresses: a } = ctx;
 
     const session = makeEvmAbiCallBatch();
-    if (claim) {
-      const aaveRewardsController = session.makeContract(
-        a.aaveRewardsController,
-        aaveRewardsControllerABI,
-      );
-      aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
-    }
     const aave = session.makeContract(a.aavePool, aavePoolABI);
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
@@ -411,16 +404,9 @@ export const CompoundProtocol = {
 
     return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { addresses: a } = ctx;
     const session = makeEvmAbiCallBatch();
-    if (claim) {
-      const compoundRewardsController = session.makeContract(
-        a.compoundRewardsController,
-        compoundRewardsControllerABI,
-      );
-      compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
-    }
     const compound = session.makeContract(a.compound, compoundABI);
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
@@ -458,7 +444,7 @@ export const BeefyProtocol = {
 
     return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const session = makeEvmAbiCallBatch();
     const vaultAddress =
@@ -500,7 +486,7 @@ export const ERC4626Protocol = {
 
     await sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const { remoteAddress } = dest;
     const session = makeEvmAbiCallBatch();
@@ -516,7 +502,7 @@ export const ERC4626Protocol = {
   claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
     await null;
     if (isERC4626MorphoInstrumentId(ctx.poolKey)) {
-      const { users, tokens, amounts, proofs } = claimParams;
+      const { users, tokens, amounts, proofs } = claimParams || {};
       if (!users || !tokens || !amounts || !proofs) {
         throw Fail`ERC4626 claimRewards requires users, tokens, amounts, and proofs`;
       }

@@ -3477,29 +3477,6 @@ test('protocolUSDN.supply executes swap+lock on Noble ICA', async t => {
   t.deepEqual(options, { timeoutHeight: 123n });
 });
 
-test('protocolUSDN.withdraw rejects claim mode', async t => {
-  const ica = {
-    getAddress: () =>
-      harden({
-        value: 'noble1test',
-        chainId: 'noble-1',
-        encoding: 'bech32',
-      }),
-    executeEncodedTx: async () => undefined,
-  };
-
-  await t.throwsAsync(
-    () =>
-      protocolUSDN.withdraw(
-        { usdnOut: 9_900_000n },
-        make(USDC, 10_000_000n),
-        { ica } as any,
-        true,
-      ),
-    { message: 'claiming USDN is not supported' },
-  );
-});
-
 test('agoricToNoble.apply transfers USDC denom to Noble ICA', async t => {
   const calls: unknown[][] = [];
   const src = {
@@ -3582,12 +3559,14 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
     dest: '@Arbitrum',
     amount,
     fee: feeCall,
+    claim: true,
     claimParams,
   });
   t.deepEqual(actual, {
     how: 'ERC4626',
     poolKey: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: 'Arbitrum',
+    claim: true,
     claimParams,
   });
 });
@@ -3627,6 +3606,7 @@ test('claim rewards from ERC4626 position', async t => {
             src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
             amount: emptyAmount,
             fee: feeCall,
+            claim: true,
             claimParams,
           },
         ],
@@ -3688,7 +3668,7 @@ test('claim rewards from Compound position', async t => {
             src: 'Compound_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimParams: {},
+            claim: true,
           },
         ],
       },

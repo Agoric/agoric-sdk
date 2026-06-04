@@ -196,13 +196,12 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
-    claim?: boolean,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
   claimRewards?: (
     ctx: CTX,
     dest: AccountInfoFor[C],
-    claimParams: ClaimRewardsParams,
+    claimParams?: ClaimRewardsParams,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
@@ -649,7 +648,6 @@ type Way =
       poolKey: PoolKey;
       /** chain with account where assets will go */
       dest: SupportedChain;
-      claim?: boolean;
     }
   | {
       how: YieldProtocol;
@@ -657,8 +655,10 @@ type Way =
       poolKey: PoolKey;
       /** chain with account that will receive the claimed rewards */
       dest: SupportedChain;
-      /** External params required for claiming rewards */
-      claimParams: ClaimRewardsParams;
+      /** Discriminant: claim flag routes the step to claimRewards. */
+      claim: true;
+      /** Optional protocol-specific claim params (e.g. Merkle proof data). */
+      claimParams?: ClaimRewardsParams;
     };
 
 // exported only for testing
@@ -679,12 +679,15 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
-      if (moveDesc.claimParams) {
+      if (moveDesc.claim) {
         return {
           how: protocol,
           poolKey,
           dest: destName,
-          claimParams: moveDesc.claimParams,
+          claim: true,
+          ...(moveDesc.claimParams
+            ? { claimParams: moveDesc.claimParams }
+            : {}),
         };
       }
       // XXX check that destName is in protocol.chains
@@ -692,7 +695,6 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
         how: protocol,
         poolKey,
         dest: destName,
-        claim: moveDesc.claim,
       };
     }
 
@@ -925,7 +927,7 @@ const stepFlow = async (
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo, opts);
           return harden({ destPos: pos });
-        } else if ('claimParams' in way) {
+        } else if ('claim' in way) {
           pImpl.claimRewards ||
             Fail`${q(way.how)} does not support claimRewards`;
           await pImpl.claimRewards!(evmCtx, gInfo, way.claimParams, opts);
@@ -933,7 +935,7 @@ const stepFlow = async (
           // the pool position is unchanged.
           return harden({});
         } else {
-          await pImpl.withdraw(evmCtx, amount, gInfo, way.claim, opts);
+          await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });
         }
       },
@@ -1155,7 +1157,7 @@ const stepFlow = async (
       }
 
       case 'USDN': {
-        if ('claimParams' in way) {
+        if ('claim' in way) {
           throw Fail`USDN does not support claimRewards`;
         }
         const vault =
@@ -1178,13 +1180,7 @@ const stepFlow = async (
               await protocolUSDN.supply(ctxU, amount, noble, ...optsArgs);
               return harden({ destPos: pos });
             } else {
-              await protocolUSDN.withdraw(
-                ctxU,
-                amount,
-                noble,
-                way.claim,
-                ...optsArgs,
-              );
+              await protocolUSDN.withdraw(ctxU, amount, noble, ...optsArgs);
               return harden({ srcPos: pos });
             }
           },
