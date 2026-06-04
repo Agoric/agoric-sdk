@@ -3549,6 +3549,7 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
     dest: '@Arbitrum',
     amount,
     fee: feeCall,
+    claim: true,
     claimParams,
   });
   t.deepEqual(actual, {
@@ -3593,6 +3594,7 @@ test('claim rewards from ERC4626 position', async t => {
             src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
             amount: emptyAmount,
             fee: feeCall,
+            claim: true,
             claimParams,
           },
         ],
@@ -3654,7 +3656,7 @@ test('claim rewards from Compound position', async t => {
             src: 'Compound_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimParams: {},
+            claim: true,
           },
         ],
       },

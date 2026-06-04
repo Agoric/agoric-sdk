@@ -31,7 +31,10 @@ import { Fail, q, X } from '@endo/errors';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
 import { aavePoolABI } from './interfaces/aave.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
-import { compoundABI } from './interfaces/compound.ts';
+import {
+  compoundABI,
+  compoundRewardsControllerABI,
+} from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
 import {
