@@ -406,6 +406,18 @@ export const CompoundProtocol = {
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
+  claimRewards: async (ctx, dest, _claimParams, ...optsArgs) => {
+    const { addresses: a } = ctx;
+    const session = makeEvmAbiCallBatch();
+    const compoundRewardsController = session.makeContract(
+      a.compoundRewardsController,
+      compoundRewardsControllerABI,
+    );
+    compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
+    const calls = session.finish();
+
+    await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 
 export const BeefyProtocol = {
