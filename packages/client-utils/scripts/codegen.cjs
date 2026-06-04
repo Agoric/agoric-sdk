@@ -149,8 +149,12 @@ telescope({
 
     const cleanedFiles = await fixRpcTypeImports(outPath);
     const rewrittenFiles = await rewriteRpcImportsToCosmicProto(outPath);
+    // Re-run after Telescope cleanups so RPC modules never keep local helper imports.
+    const stabilizedFiles = await rewriteRpcImportsToCosmicProto(outPath);
     const removedFiles = await pruneNonRpcGeneratedModules(outPath);
-    const postProcessFiles = [...new Set([...cleanedFiles, ...rewrittenFiles])];
+    const postProcessFiles = [
+      ...new Set([...cleanedFiles, ...rewrittenFiles, ...stabilizedFiles]),
+    ];
     if (postProcessFiles.length > 0) {
       const prettierHelpersResult = spawnSync(
         'yarn',

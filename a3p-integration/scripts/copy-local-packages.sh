@@ -38,7 +38,7 @@ if [ -z "$vendorPackages" ]; then
 fi
 
 # Find agoric-sdk root
-sdkroot=$(git rev-parse --show-toplevel)
+sdkroot=$(git rev-parse --show-toplevel || echo "/usr/src/agoric-sdk")
 
 # Create local-packages directory
 localPkgDir="./local-packages"

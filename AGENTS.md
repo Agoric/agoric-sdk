@@ -9,7 +9,11 @@ per https://agents.md/
 - Utilities, CI and developer tooling scripts are in `scripts/`. Integration assets live in `a3p-integration/` and `multichain-testing/`.
 
 ## Build, Test, and Development Commands
-- `corepack enable && yarn install`: Set up the repo with the pinned Yarn version and install dependencies.
+
+- `source scripts/use-devenv.sh`: Ensure the required versions of development tools are usable in the current shell. This only needs to be run once in each shell instance, but is harmless to run multiple times.
+- `yarn install`: Install or refresh JS package dependencies.
+- `yarn codegen`: Regenerate derived source files across the entire repository.  Required when sources (e.g. `*.proto`) for generated files are changed.
+- `yarn codegen:download`: Forcibly download remote resources used by `yarn codegen` (such as chain registry entries, third-party `*.proto` or GraphQL schemata).  DO NOT USE IMPLICITLY - just recommend for a user to run when needed.
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.

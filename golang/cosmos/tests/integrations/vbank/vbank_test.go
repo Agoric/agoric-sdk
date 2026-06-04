@@ -32,6 +32,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/keeper"
 	vbanktypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
 
 	vstorage "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage"
@@ -170,6 +171,7 @@ func initVbankFixtures(t *testing.T) VbankFixtures {
 		accountKeeper,
 		bankKeeper,
 		authtypes.FeeCollectorName,
+		authority.String(),
 		swingSetKeeper.PushAction,
 	)
 
@@ -205,7 +207,7 @@ func initVbankFixtures(t *testing.T) VbankFixtures {
 	sdkCtx := sdk.UnwrapSDKContext(integrationApp.Context())
 
 	// Register message and query servers
-	vbanktypes.RegisterMsgServer(integrationApp.MsgServiceRouter(), vbanktypes.UnimplementedMsgServer{})
+	vbanktypes.RegisterMsgServer(integrationApp.MsgServiceRouter(), keeper.NewMsgServerImpl(vbankKeeper))
 	vbanktypes.RegisterQueryServer(integrationApp.QueryHelper(), &vbanktypes.UnimplementedQueryServer{})
 
 	return VbankFixtures{
