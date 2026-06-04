@@ -41,9 +41,9 @@ The agent cannot proceed with delegated updates until the user shares the create
 ## Step 5: Generate the Delegate Key Pair and Agoric Address
 The delegate agent should generate a key pair, derive an Agoric address, and provision a Smart Wallet for that address. That provisioned wallet address is the Grant target.
 
-TODO: specify exactly how the agent generates the key pair and recovers/persists it. This should name the intended tool or command, the mnemonic/private-key handling expectations, and the derivation path / address derivation details for the Agoric wallet. (In the real product, a worker proxy should handle the keys and blockchain integration, exposing MCP / code-mode interfaces to agents.)
+1. Generate a new BIP-39 mnemonic.
 
-Save the mnemonic securely. The same delegate wallet will be needed later for invitation redemption and delegated submissions.
+Save the mnemonic securely. The same delegate wallet will be needed later for provisioning, invitation redemption, and delegated submissions.
 
 Export the delegate wallet mnemonic in the environment:
 
@@ -51,16 +51,25 @@ Export the delegate wallet mnemonic in the environment:
 export MNEMONIC='delegate mnemonic'
 ```
 
-The local CLI path should be based on `packages/agoric-cli` wallet provisioning, for example:
+
+2. Derive the delegate private key and bech32 `agoric1...` address using `m/44'/564'/0'/0/0`, and record that address as `AGENT_ADDRESS`.
+
+3. Run:
 
 ```sh
 agoric wallet provision --account "$AGENT_ADDRESS"
+```
+
+This reports the provisioning cost for that exact address.
+
+4. Ask the user to send at least `15 BLD` to `AGENT_ADDRESS`.
+5. After the funds arrive, run:
+
+```sh
 agoric wallet provision --account "$AGENT_ADDRESS" --spend
 ```
 
-The first form reports the provisioning cost; the second actually spends it.
-
-TODO: figure out where the required 10 BLD comes from for delegate-wallet provisioning. One possibility is to use x409 to buy it with USDC or similar, but this needs a real operational answer before the flow is complete.
+This spends the provisioning cost and creates the Smart Wallet for `AGENT_ADDRESS`.
 
 ## Step 6: Hand Off the Delegation Link
 The agent gives the user a link.
