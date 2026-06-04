@@ -550,7 +550,7 @@ test('open portfolio with target allocations', async t => {
   snapshotTimed(t, tree, 'baggage after open with target allocations');
 });
 
-test('claim rewards on Aave position successfully', async t => {
+test('withdraw from Aave position successfully', async t => {
   const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
@@ -600,7 +600,6 @@ test('claim rewards on Aave position successfully', async t => {
           src: 'Aave_Arbitrum',
           amount: usdc.make(100n),
           fee: feeCall,
-          claim: true,
         },
       ],
     },
@@ -623,89 +622,6 @@ test('claim rewards on Aave position successfully', async t => {
   await documentStorageSchemaTimed(t, storage, pendingTxOpts);
 
   snapshotTimed(t, rebalanceResult.payouts, 'rebalance payouts');
-});
-
-test('USDN claim fails currently', async t => {
-  const { trader1, common, txResolver } = await setupTrader(t);
-  const { usdc, poc26 } = common.brands;
-
-  const amount = usdc.units(3_333.33);
-  const doneP = trader1.openPortfolio(
-    t,
-    { Deposit: amount, Access: poc26.make(1n) },
-    {
-      flow: [
-        { src: '<Deposit>', dest: '@agoric', amount },
-        { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: 'USDN', amount },
-      ],
-    },
-  );
-
-  // ack IBC transfer for forward
-  await ackNFA(common.utils);
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
-
-  const done = await doneP;
-  const result = done.result as any;
-  t.is(passStyleOf(result.invitationMakers), 'remotable');
-  t.like(result.publicSubscribers, {
-    portfolio: {
-      description: 'Portfolio',
-      storagePath: 'orchtest.portfolios.portfolio0',
-    },
-  });
-  t.is(keys(result.publicSubscribers).length, 1);
-  const { storagePath } = result.publicSubscribers.portfolio;
-  t.log(storagePath);
-
-  // let vstorage settle since our mocks don't fully resolve IBC.
-  await txResolver.drainPending();
-  const { storage } = common.bootstrap;
-  const { contents, positionPaths } = getPortfolioInfoTimed(
-    t,
-    storagePath,
-    storage,
-  );
-  snapshotTimed(t, contents, 'vstorage');
-  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
-
-  t.log(
-    'I can see where my money is:',
-    positionPaths.map(p => contents[p].accountId),
-  );
-  t.is(contents[positionPaths[0]].accountId, `cosmos:noble-1:noble1test`);
-  t.is(
-    contents[storagePath].accountIdByChain.agoric,
-    `cosmos:agoric-3:${portfolio0lcaOrch}`,
-    'LCA',
-  );
-
-  const rebalanceRet = await trader1.rebalance(
-    t,
-    { give: {}, want: {} },
-    {
-      flow: [
-        {
-          dest: '@noble',
-          src: 'USDN',
-          amount: usdc.make(100n),
-          claim: true,
-        },
-      ],
-    },
-  );
-
-  t.deepEqual(rebalanceRet, {
-    result: 'flow2',
-    payouts: {},
-  });
-
-  const portfolioInfo = getPortfolioInfoTimed(t, storagePath, storage);
-  const flowInfo =
-    portfolioInfo.contents[`${storagePath}.flows.${rebalanceRet.result}`];
-  snapshotTimed(t, flowInfo, 'flow info after failed claim');
-  t.is(flowInfo.at(-1).error, 'claiming USDN is not supported');
 });
 
 const beefyTestMacro = test.macro({

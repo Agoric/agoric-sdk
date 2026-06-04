@@ -196,7 +196,6 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
-    claim?: boolean,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
   claimRewards?: (
@@ -649,7 +648,6 @@ type Way =
       poolKey: PoolKey;
       /** chain with account where assets will go */
       dest: SupportedChain;
-      claim?: boolean;
     }
   | {
       how: YieldProtocol;
@@ -692,7 +690,6 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
         how: protocol,
         poolKey,
         dest: destName,
-        claim: moveDesc.claim,
       };
     }
 
@@ -933,7 +930,7 @@ const stepFlow = async (
           // the pool position is unchanged.
           return harden({});
         } else {
-          await pImpl.withdraw(evmCtx, amount, gInfo, way.claim, opts);
+          await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });
         }
       },
@@ -1178,13 +1175,7 @@ const stepFlow = async (
               await protocolUSDN.supply(ctxU, amount, noble, ...optsArgs);
               return harden({ destPos: pos });
             } else {
-              await protocolUSDN.withdraw(
-                ctxU,
-                amount,
-                noble,
-                way.claim,
-                ...optsArgs,
-              );
+              await protocolUSDN.withdraw(ctxU, amount, noble, ...optsArgs);
               return harden({ srcPos: pos });
             }
           },

@@ -605,62 +605,6 @@ test.skip('rebalance handles stepFlow failure correctly', async t => {
   t.snapshot(log, 'call log');
 });
 
-test('claim rewards on Aave position', async t => {
-  const amount = AmountMath.make(USDC, 2_000_000n);
-  const emptyAmount = AmountMath.make(USDC, 0n);
-  const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
-    {},
-    { Deposit: amount },
-  );
-
-  const kit = await ctx.makePortfolioKit();
-  await Promise.all([
-    rebalance(
-      orch,
-      ctx,
-      offer.seat,
-      {
-        flow: [
-          {
-            dest: '@Arbitrum',
-            src: 'Aave_Arbitrum',
-            amount: emptyAmount,
-            fee: feeCall,
-            claim: true,
-          },
-        ],
-      },
-      kit,
-    ),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
-      await txResolver.drainPending();
-    }),
-  ]);
-
-  const { log } = offer;
-  t.log(log.map(msg => msg._method).join(', '));
-  const axelarId = await cosmosId('axelar');
-  t.like(log, [
-    { _method: 'monitorTransfers' },
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: axelarId } },
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: axelarId } },
-    { _method: 'exit', _cap: 'seat' },
-  ]);
-  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
-
-  const rawMemo = log[4].opts?.memo;
-  const decodedCalls = decodeFunctionCall(rawMemo, [
-    'claimAllRewardsToSelf(address[])',
-    'withdraw(address,uint256,address)',
-  ]);
-  t.snapshot(decodedCalls, 'decoded calls');
-
-  await documentStorageSchema(t, storage, docOpts);
-});
-
 test('open portfolio with Beefy position', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const feeAcct = AmountMath.make(BLD, 50n);
@@ -3475,29 +3419,6 @@ test('protocolUSDN.supply executes swap+lock on Noble ICA', async t => {
   const [protoMessages, options] = calls[0];
   t.is((protoMessages as unknown[]).length, 2);
   t.deepEqual(options, { timeoutHeight: 123n });
-});
-
-test('protocolUSDN.withdraw rejects claim mode', async t => {
-  const ica = {
-    getAddress: () =>
-      harden({
-        value: 'noble1test',
-        chainId: 'noble-1',
-        encoding: 'bech32',
-      }),
-    executeEncodedTx: async () => undefined,
-  };
-
-  await t.throwsAsync(
-    () =>
-      protocolUSDN.withdraw(
-        { usdnOut: 9_900_000n },
-        make(USDC, 10_000_000n),
-        { ica } as any,
-        true,
-      ),
-    { message: 'claiming USDN is not supported' },
-  );
 });
 
 test('agoricToNoble.apply transfers USDC denom to Noble ICA', async t => {
