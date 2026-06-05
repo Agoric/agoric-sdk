@@ -908,6 +908,7 @@ const stepFlow = async (
       src: move.src,
       dest: move.dest,
       ...(phases ? { phases } : {}),
+      ...(move.claim ? { claim: move.claim } : {}),
       apply: async ({ [evmChain]: gInfo, agoric }, _traceStep, opts) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
@@ -1157,14 +1158,12 @@ const stepFlow = async (
       }
 
       case 'USDN': {
-        if ('claim' in way) {
-          throw Fail`USDN does not support claimRewards`;
-        }
         const vault =
           way.poolKey === 'USDNVault' ? VaultType.STAKED : undefined;
         const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
 
         const isSupply = 'src' in way;
+        const isClaim = 'claim' in way && way.claim;
 
         todo.push({
           how: way.how,
@@ -1176,6 +1175,9 @@ const stepFlow = async (
             await null;
             const acctId = coerceAccountId(noble.ica.getAddress());
             const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
+            if (isClaim) {
+              throw new Error('claiming USDN is not supported');
+            }
             if (isSupply) {
               await protocolUSDN.supply(ctxU, amount, noble, ...optsArgs);
               return harden({ destPos: pos });
