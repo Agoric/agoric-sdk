@@ -1335,7 +1335,8 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       "walletHelper": "0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f",
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
     },
     "Avalanche": {
       "Beefy_re7_Avalanche": "0xdA640bE4588C469C9DB45D082B36913490924c08",
@@ -1381,7 +1382,8 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "walletHelper": "0xE0aFf709b7A6Cdf476738b86354D17bd334eB516",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f",
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
     },
     "Ethereum": {
       "Beefy_morphoGauntletUsdc_Ethereum": "0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0",
@@ -1415,7 +1417,8 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       "walletHelper": "0x",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f",
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
     },
     "Optimism": {
       "Beefy_compoundUsdc_Optimism": "0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F",
@@ -1437,7 +1440,8 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
       "walletHelper": "0x",
-      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
+      "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f",
+      "merkleDistributor": "0x3Ef3D8bA38EBe18DB133cEc108f4D14CE00Dd9Ae"
     }
   },
   "gmpAddresses": {
