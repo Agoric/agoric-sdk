@@ -3180,3 +3180,78 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
   // XXX: At this level we cannot (yet) check that the from account is no longer failed
   // we could observe that another flow does not trigger another make-account.
 });
+
+test('claim rewards on Compound position successfully', async t => {
+  const { trader1, common, txResolver } = await setupTrader(t);
+  const { usdc, bld, poc26 } = common.brands;
+
+  const amount = usdc.units(3_333.33);
+  const feeAcct = bld.make(100n);
+  const feeCall = bld.make(100n);
+
+  const actualP = trader1.openPortfolio(
+    t,
+    { Deposit: amount, Access: poc26.make(1n) },
+    {
+      flow: [
+        { src: '<Deposit>', dest: '@agoric', amount },
+        { src: '@agoric', dest: '@noble', amount },
+        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@Arbitrum', dest: 'Compound_Arbitrum', amount, fee: feeCall },
+      ],
+    },
+  );
+
+  await eventLoopIteration(); // let IBC message go out
+  await ackNFA(common.utils);
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
+  t.log('ackd send to Axelar to create account');
+
+  await simulateCCTPAck(common.utils).finally(() =>
+    txResolver
+      .drainPending()
+      .then(() => simulateAckTransferToAxelar(common.utils)),
+  );
+
+  const done = await actualP;
+
+  t.log('=== Portfolio completed');
+  const result = done.result as any;
+
+  const { storagePath } = result.publicSubscribers.portfolio;
+  const messagesBefore = common.utils.inspectLocalBridge();
+
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: { Deposit: amount }, want: {} },
+    {
+      flow: [
+        {
+          dest: '@Arbitrum',
+          src: 'Compound_Arbitrum',
+          amount: usdc.make(100n),
+          fee: feeCall,
+          claim: true,
+        },
+      ],
+    },
+  );
+
+  await txResolver.drainPending();
+
+  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  const rebalanceResult = await rebalanceP;
+  t.log('rebalance done', rebalanceResult);
+
+  const messagesAfter = common.utils.inspectLocalBridge();
+
+  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+
+  t.log(storagePath);
+  const { storage } = common.bootstrap;
+  const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+  snapshotTimed(t, contents, 'vstorage');
+  await documentStorageSchemaTimed(t, storage, pendingTxOpts);
+
+  snapshotTimed(t, rebalanceResult.payouts, 'rebalance payouts');
+});
