@@ -550,8 +550,7 @@ test('open portfolio with target allocations', async t => {
   snapshotTimed(t, tree, 'baggage after open with target allocations');
 });
 
-// Skipping since claim is unimplemented for aave
-test.skip('claim rewards on Aave position successfully', async t => {
+test('claim rewards on Aave position successfully', async t => {
   const { trader1, common, txResolver } = await setupTrader(t);
   const { usdc, bld, poc26 } = common.brands;
 
