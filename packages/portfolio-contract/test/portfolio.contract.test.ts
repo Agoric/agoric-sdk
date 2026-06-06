@@ -36,7 +36,6 @@ import {
 } from '@agoric/portfolio-api';
 import type { TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import { E, passStyleOf } from '@endo/far';
-import { hexToBytes } from '@noble/hashes/utils';
 import type { ExecutionContext } from 'ava';
 import assert from 'node:assert/strict';
 import {
@@ -51,7 +50,6 @@ import type {
   StatusFor,
   TargetAllocation,
 } from '../src/type-guards.ts';
-import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
@@ -74,7 +72,6 @@ import {
   makeStorageTools,
 } from './supports.ts';
 import { timeAsync, timeSync } from './test-timing.ts';
-import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -2274,6 +2271,9 @@ test('open portfolio from Base with @Base allocation', async t => {
   }
 });
 
+// Test deposits from an existing chain (where an account already exists).
+// The spender is the remote account address on that chain.
+
 test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t => {
   const shared = await setupPlanner(t);
   const { common } = shared;
@@ -2378,8 +2378,8 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
 });
 
 // Test deposits from a NEW chain (where no account exists yet).
-// For deposits to existing portfolios, spender must be the predicted smart wallet address
-// (or depositFactory). The wallet is created via provideEVMAccount first.
+// The spender is the representative contract on the new chain.
+// The remote account is created via provideEVMAccount with the deposit.
 
 test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t => {
   const shared = await setupPlanner(t);
@@ -2418,19 +2418,9 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
 
     const newChain = 'Base' as const;
     const newChainContracts = contractsMock[newChain];
-    const predictedSpender = useRouter
-      ? predictRemoteAccountAddress({
-          owner: lcaAddress as Bech32Address,
-          factoryAddress: newChainContracts.remoteAccountFactory,
-          implementationAddress: newChainContracts.remoteAccountImplementation,
-        })
-      : predictWalletAddress({
-          owner: lcaAddress!,
-          factoryAddress: newChainContracts.factory,
-          gatewayAddress: newChainContracts.gateway,
-          gasServiceAddress: newChainContracts.gasService,
-          walletBytecode: hexToBytes('1234'),
-        });
+    const newChainSpender = useRouter
+      ? newChainContracts.remoteAccountRouter
+      : newChainContracts.depositFactory;
 
     const newDepositAmount = usdc.units(500);
     await t.throwsAsync(
@@ -2447,7 +2437,7 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
 
     const flowKey = (await evmTrader
       .forChain(newChain)
-      .deposit(newDepositAmount.value, predictedSpender)) as RunningFlowKey;
+      .deposit(newDepositAmount.value, newChainSpender)) as RunningFlowKey;
     t.regex(flowKey, /^flow\d+$/, `${label} deposit returns a flow key`);
 
     const statusAfter = await evmTrader.getPortfolioStatus();
