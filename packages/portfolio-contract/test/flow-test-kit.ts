@@ -587,6 +587,7 @@ export const mocks = (
     usdcBrand: USDC,
     eip155ChainIdToAxelarChain,
     contracts: contractsMock,
+    defaultToRouter: false, // some portfolio flows tests assume GMP to wallet contracts
     walletBytecode: ctx1.walletBytecode,
     ...(null as any),
   });

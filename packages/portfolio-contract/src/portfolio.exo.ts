@@ -86,22 +86,6 @@ import { predictRemoteAccountAddress } from './utils/evm-orch-router.ts';
 
 const trace = makeTracer('PortExo');
 
-const DEFAULT_TO_ROUTER = false;
-
-const useRouter = (addresses: EVMContractAddresses) => {
-  if (
-    !addresses.remoteAccountRouter ||
-    !(addresses.remoteAccountRouter.length > 2)
-  ) {
-    return false;
-  }
-  if (!addresses.depositFactory || !(addresses.depositFactory.length > 2)) {
-    return true;
-  }
-
-  return DEFAULT_TO_ROUTER;
-};
-
 export type AccountInfo = GMPAccountInfo | AgoricAccountInfo | NobleAccountInfo;
 export type GMPAccountInfo = {
   namespace: 'eip155';
@@ -365,6 +349,7 @@ export const preparePortfolioKit = (
     usdcBrand,
     eip155ChainIdToAxelarChain,
     contracts,
+    defaultToRouter = false,
     deliverDelegationInvitation,
   }: {
     rebalance: (
@@ -402,6 +387,7 @@ export const preparePortfolioKit = (
       [chainId in `${number | bigint}`]?: AxelarChain;
     };
     contracts: EVMContractAddressesMap;
+    defaultToRouter?: boolean;
     /**
      * Deliver a previously created delegation client invitation to `grantee`.
      * The closure encapsulates the postal-service dependency so this exo
@@ -457,6 +443,20 @@ export const preparePortfolioKit = (
       keyShape: M.number(),
       valueShape: PortfolioAgentInfoShape,
     }) as PortfolioKitState['delegations'];
+
+  const useRouter = (addresses: EVMContractAddresses) => {
+    if (
+      !addresses.remoteAccountRouter ||
+      !(addresses.remoteAccountRouter.length > 2)
+    ) {
+      return false;
+    }
+    if (!addresses.depositFactory || !(addresses.depositFactory.length > 2)) {
+      return true;
+    }
+
+    return defaultToRouter;
+  };
 
   return zone.exoClassKit(
     'Portfolio',

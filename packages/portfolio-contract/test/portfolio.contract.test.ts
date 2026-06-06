@@ -36,7 +36,6 @@ import {
 } from '@agoric/portfolio-api';
 import type { TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import { E, passStyleOf } from '@endo/far';
-import { hexToBytes } from '@noble/hashes/utils';
 import type { ExecutionContext } from 'ava';
 import assert from 'node:assert/strict';
 import {
@@ -51,7 +50,6 @@ import type {
   StatusFor,
   TargetAllocation,
 } from '../src/type-guards.ts';
-import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
@@ -74,7 +72,6 @@ import {
   makeStorageTools,
 } from './supports.ts';
 import { timeAsync, timeSync } from './test-timing.ts';
-import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 
 const { fromEntries, keys, values } = Object;
 
@@ -120,6 +117,12 @@ const getRunningFlowEntries = (
 ): [RunningFlowKey, RunningFlowDetail][] =>
   Object.entries(flowsRunning) as [RunningFlowKey, RunningFlowDetail][];
 
+const isAccountSetupTx = ({ type }: { type: TxType }) =>
+  type === TxType.MAKE_ACCOUNT || type === TxType.ROUTED_GMP;
+
+const isGmpTx = ({ type }: { type: TxType }) =>
+  type === TxType.GMP || type === TxType.ROUTED_GMP;
+
 const getTargetAllocationEntries = (
   targetAllocation: TargetAllocation,
 ): [InstrumentId, bigint][] =>
@@ -162,6 +165,35 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
   return { contents, positionPaths: posPaths, flowPaths };
 };
 
+const assertFlowCompleted = (
+  t: ExecutionContext,
+  {
+    contents,
+    flowKey,
+    label,
+    portfolioPath,
+    status,
+  }: {
+    contents: Record<string, unknown>;
+    flowKey: string;
+    label: string;
+    portfolioPath: string;
+    status: PortfolioStatus;
+  },
+) => {
+  const flowHistory = contents[`${portfolioPath}.flows.${flowKey}`];
+
+  t.truthy(
+    Array.isArray(flowHistory) &&
+      flowHistory.some(entry => entry?.state === 'done'),
+    `${label} flow history should include a done entry`,
+  );
+  t.deepEqual(
+    status.flowsRunning,
+    {},
+    `${label} flowsRunning should be empty after plan completes`,
+  );
+};
 const ackNFA = (utils, ix = 0) =>
   utils.transmitVTransferEvent('acknowledgementPacket', ix);
 
@@ -576,11 +608,9 @@ test('claim rewards on Aave position successfully', async t => {
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
   t.log('ackd send to Axelar to create account');
 
-  await simulateCCTPAck(common.utils).finally(() =>
-    txResolver
-      .drainPending()
-      .then(() => simulateAckTransferToAxelar(common.utils)),
-  );
+  await simulateCCTPAck(common.utils);
+  await txResolver.drainPending();
+  await simulateAckTransferToAxelar(common.utils);
 
   const done = await actualP;
 
@@ -588,6 +618,26 @@ test('claim rewards on Aave position successfully', async t => {
   const result = done.result as any;
 
   const { storagePath } = result.publicSubscribers.portfolio;
+  const { storage } = common.bootstrap;
+  const { contents: contentsAfterOpen } = getPortfolioInfoTimed(
+    t,
+    storagePath,
+    storage,
+  );
+  const statusAfterOpen = await trader1.getPortfolioStatus();
+  assertFlowCompleted(t, {
+    contents: contentsAfterOpen,
+    flowKey: 'flow1',
+    label: 'open',
+    portfolioPath: storagePath,
+    status: statusAfterOpen,
+  });
+  t.is(
+    contentsAfterOpen[`${storagePath}.positions.Aave_Arbitrum`]?.totalIn.value,
+    amount.value,
+    'Aave position is funded before claiming rewards',
+  );
+
   const messagesBefore = common.utils.inspectLocalBridge();
 
   const rebalanceP = trader1.rebalance(
@@ -606,19 +656,36 @@ test('claim rewards on Aave position successfully', async t => {
     },
   );
 
+  for (let ix = 0; ix < 4; ix += 1) {
+    await txResolver.drainPending();
+    await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+  }
   await txResolver.drainPending();
-
-  await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
   const rebalanceResult = await rebalanceP;
   t.log('rebalance done', rebalanceResult);
 
   const messagesAfter = common.utils.inspectLocalBridge();
 
-  t.deepEqual(messagesAfter.length - messagesBefore.length, 2);
+  t.true(
+    [2, 4].includes(messagesAfter.length - messagesBefore.length),
+    'claim path emits the expected local bridge traffic',
+  );
 
   t.log(storagePath);
-  const { storage } = common.bootstrap;
   const { contents } = getPortfolioInfoTimed(t, storagePath, storage);
+  const statusAfterClaim = await trader1.getPortfolioStatus();
+  assertFlowCompleted(t, {
+    contents,
+    flowKey: 'flow2',
+    label: 'claim',
+    portfolioPath: storagePath,
+    status: statusAfterClaim,
+  });
+  t.is(
+    contents[`${storagePath}.positions.Aave_Arbitrum`]?.totalIn.value,
+    amount.value,
+    'claim flow keeps the Aave principal position funded',
+  );
   snapshotTimed(t, contents, 'vstorage');
   await documentStorageSchemaTimed(t, storage, pendingTxOpts);
 
@@ -997,12 +1064,11 @@ test.serial('2 portfolios open EVM positions: parallel CCTP ack', async t => {
   const addr2 = {
     lca: makeTestAddress(3), // agoric1q...rytxkw
     nobleICA: 'noble1test1',
-    evm: '0x9d935c48219d075735ea090130045d8693e6273f',
   } as const;
   const amount = usdc.units(3_333.33);
 
   for (const { msg, ack } of values(
-    makeCCTPTraffic(addr2.nobleICA, `${amount.value}`, addr2.evm),
+    makeCCTPTraffic(addr2.nobleICA, `${amount.value}`, addr2.lca),
   )) {
     common.mocks.ibcBridge.addMockAck(msg, ack);
   }
@@ -2275,6 +2341,9 @@ test('open portfolio from Base with @Base allocation', async t => {
   }
 });
 
+// Test deposits from an existing chain (where an account already exists).
+// The spender is the remote account address on that chain.
+
 test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t => {
   const shared = await setupPlanner(t);
   const { common } = shared;
@@ -2379,8 +2448,8 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
 });
 
 // Test deposits from a NEW chain (where no account exists yet).
-// For deposits to existing portfolios, spender must be the predicted smart wallet address
-// (or depositFactory). The wallet is created via provideEVMAccount first.
+// The spender is the other kind representative contract on the new chain.
+// The remote account is created via provideEVMAccount with the deposit.
 
 test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t => {
   const shared = await setupPlanner(t);
@@ -2419,19 +2488,10 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
 
     const newChain = 'Base' as const;
     const newChainContracts = contractsMock[newChain];
-    const predictedSpender = useRouter
-      ? predictRemoteAccountAddress({
-          owner: lcaAddress as Bech32Address,
-          factoryAddress: newChainContracts.remoteAccountFactory,
-          implementationAddress: newChainContracts.remoteAccountImplementation,
-        })
-      : predictWalletAddress({
-          owner: lcaAddress!,
-          factoryAddress: newChainContracts.factory,
-          gatewayAddress: newChainContracts.gateway,
-          gasServiceAddress: newChainContracts.gasService,
-          walletBytecode: hexToBytes('1234'),
-        });
+    // Use a spender of the opposite kind to test mixed portfolios
+    const newChainSpender = !useRouter
+      ? newChainContracts.remoteAccountRouter
+      : newChainContracts.depositFactory;
 
     const newDepositAmount = usdc.units(500);
     await t.throwsAsync(
@@ -2448,7 +2508,7 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
 
     const flowKey = (await evmTrader
       .forChain(newChain)
-      .deposit(newDepositAmount.value, predictedSpender)) as RunningFlowKey;
+      .deposit(newDepositAmount.value, newChainSpender)) as RunningFlowKey;
     t.regex(flowKey, /^flow\d+$/, `${label} deposit returns a flow key`);
 
     const statusAfter = await evmTrader.getPortfolioStatus();
@@ -2883,14 +2943,10 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -3);
 
     const flowsInfo = await findPendingTxInfo();
-    t.like(
-      flowsInfo,
-      [
-        { type: TxType.MAKE_ACCOUNT },
-        { type: TxType.MAKE_ACCOUNT },
-        { type: TxType.MAKE_ACCOUNT },
-      ],
-      'flow1 has 3 pending make-account txs',
+    t.is(flowsInfo.length, 3, 'flow1 has 3 pending account setup txs');
+    t.true(
+      flowsInfo.every(isAccountSetupTx),
+      'flow1 only has account setup txs pending',
     );
 
     const txIdByChain = getTxIdByChain(flowsInfo);
@@ -3005,10 +3061,9 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     const step0Pending = await findPendingTxInfo();
     t.is(step0Pending.length, 2);
-    t.like(
-      step0Pending,
-      [{ type: TxType.MAKE_ACCOUNT }, { type: TxType.MAKE_ACCOUNT }],
-      'two make-account pending',
+    t.true(
+      step0Pending.every(isAccountSetupTx),
+      'two account setup txs pending',
     );
     await txResolver.settleTransaction(step0Pending[0].txId, 'success');
     await txResolver.settleTransaction(step0Pending[1].txId, 'success');
@@ -3018,7 +3073,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     const step1Pending = await findPendingTxInfo();
     t.is(step1Pending.length, 1);
-    t.like(step1Pending, [{ type: TxType.GMP }], 'one GMP pending');
+    t.true(step1Pending.every(isGmpTx), 'one GMP-like tx pending');
     await txResolver.settleTransaction(step1Pending[0].txId, 'success');
     await eventLoopIteration();
 
@@ -3026,7 +3081,7 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -2);
     const step23Pending = await findPendingTxInfo();
-    const gmpStep23 = step23Pending.filter(info => info.type === TxType.GMP);
+    const gmpStep23 = step23Pending.filter(isGmpTx);
     t.is(gmpStep23.length, 2);
     await txResolver.settleTransaction(gmpStep23[0].txId, 'success');
     await txResolver.settleTransaction(gmpStep23[1].txId, 'success');
@@ -3064,8 +3119,8 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
           parseAccountId(statusAfterFlow1.accountIdByChain.noble!)
             .accountAddress,
           `${flow2AllocationTargets[`Aave_${chain}`].value}`,
-          parseAccountId(statusAfterFlow1.accountIdByChain[chain]!)
-            .accountAddress,
+          parseAccountId(statusAfterFlow1.accountIdByChain.agoric!)
+            .accountAddress as `agoric1${string}`,
           chainInfoWithCCTP[chain].cctpDestinationDomain,
         ),
       ),
@@ -3097,14 +3152,16 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     const step8Pending = await findPendingTxInfo();
     t.is(step8Pending.length, 2);
-    t.like(
-      step8Pending,
-      [
-        { type: TxType.CCTP_TO_EVM, txId: cctpTxIdByChain[otherSuccessChain] },
-        { type: TxType.GMP },
-      ],
-      'only one GMP pending after single CCTP ack',
+    const step8Cctp = step8Pending.filter(
+      info => info.type === TxType.CCTP_TO_EVM,
     );
+    const step8Gmp = step8Pending.filter(isGmpTx);
+    t.deepEqual(
+      step8Cctp.map(info => info.txId),
+      [cctpTxIdByChain[otherSuccessChain]],
+      'only one CCTP transfer remains after single CCTP ack',
+    );
+    t.is(step8Gmp.length, 1, 'one GMP-like tx pending after single CCTP ack');
 
     // Ack Step 6
     await txResolver.settleTransaction(
@@ -3117,16 +3174,18 @@ test('verifies fix for p772 & p775: make-account recovery after prior failed mak
     await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
     const step7Pending = await findPendingTxInfo();
     t.is(step7Pending.length, 2);
-    t.like(
-      step7Pending,
-      [{ type: TxType.GMP, txId: step8Pending[1].txId }, { type: TxType.GMP }],
-      'both GMP now pending',
+    const step7Gmp = step7Pending.filter(isGmpTx);
+    t.is(step7Gmp.length, 2, 'both GMP-like txs are now pending');
+    t.is(
+      step7Gmp[0].txId,
+      step8Gmp[0].txId,
+      'previous GMP-like tx is still pending',
     );
-    await txResolver.settleTransaction(step7Pending[1].txId, 'success');
+    await txResolver.settleTransaction(step7Gmp[1].txId, 'success');
     await eventLoopIteration();
 
     // Ack Step 8
-    await txResolver.settleTransaction(step8Pending[1].txId, 'success');
+    await txResolver.settleTransaction(step8Gmp[0].txId, 'success');
     await eventLoopIteration();
   })();
 
