@@ -2378,7 +2378,7 @@ test('evmHandler.deposit (existing Arbitrum) completes a deposit flow', async t 
 });
 
 // Test deposits from a NEW chain (where no account exists yet).
-// The spender is the representative contract on the new chain.
+// The spender is the other kind representative contract on the new chain.
 // The remote account is created via provideEVMAccount with the deposit.
 
 test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t => {
@@ -2418,7 +2418,8 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
 
     const newChain = 'Base' as const;
     const newChainContracts = contractsMock[newChain];
-    const newChainSpender = useRouter
+    // Use a spender of the opposite kind to test mixed portfolios
+    const newChainSpender = !useRouter
       ? newChainContracts.remoteAccountRouter
       : newChainContracts.depositFactory;
 
