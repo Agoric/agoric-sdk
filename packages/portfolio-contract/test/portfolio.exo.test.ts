@@ -462,7 +462,7 @@ const doEVMDeposit = test.macro(
       predictMockWalletAddress,
       predictMockRemoteAccountAddress,
       getCallLog,
-    } = makeTestSetup({ defaultToRouter: params.defaultToRouter });
+    } = makeTestSetup({ defaultToRouter: params.defaultToRouter ?? true });
     const { evmHandler, manager, reader } = makePortfolioKit({
       portfolioId: 454,
       sourceAccountId: `eip155:42161:${ownerAddress}`,
