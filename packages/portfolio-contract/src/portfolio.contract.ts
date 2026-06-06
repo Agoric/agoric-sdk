@@ -625,6 +625,7 @@ export const contract = async (
     usdcBrand: brands.USDC,
     eip155ChainIdToAxelarChain,
     contracts,
+    defaultToRouter: true,
     deliverDelegationInvitation,
   });
 
