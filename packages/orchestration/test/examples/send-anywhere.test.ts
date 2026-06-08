@@ -286,6 +286,11 @@ test('baggage', async t => {
   );
 
   const tree = inspectMapStore(contractBaggage);
+  // This snapshot includes the full chain info registered into the durable
+  // chainHub at startup. That's intentional: the contract's job is to send
+  // *anywhere*, so it gets the complete fetched chain info. The snapshot will
+  // therefore churn whenever `src/fetched-chain-info.js` is refreshed; that's
+  // expected and should land in the same deliberate refresh commit.
   t.snapshot(tree, 'contract baggage after start');
 });
 

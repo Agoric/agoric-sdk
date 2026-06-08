@@ -20,6 +20,12 @@ console.log('Discovering packages with a codegen script...');
 
 // `yarn workspaces foreach` could do this more concisely but it would couple
 // this implementation to a Yarn CLI which has caused migration work in the past
+//
+// NOTE: every `codegen` script MUST be deterministic, or this check breaks on
+// unrelated PRs whenever its input changes. Codegen that pulls external data
+// should pin that source (e.g. to a specific upstream commit) and adopt updates
+// via a separate, deliberate refresh step — fetching is fine, drifting is not
+// (see packages/orchestration/scripts/fetch-chain-info.ts).
 /** @type {string[]} */
 const packages = [];
 for (const pkgsDir of [
@@ -70,8 +76,18 @@ for (const pkg of packages) {
   } catch (err) {
     console.error(`Changes detected after ${pkg} codegen.`);
     console.error(
-      `Please run 'yarn codegen' in ${pkg} and commit the results.`,
+      `The generated files committed in ${pkg} are out of date with its \`codegen\` script.`,
     );
+    console.error(
+      `To fix: run \`yarn codegen\` in ${pkg}, then commit the resulting changes.`,
+    );
+    console.error(
+      `(\`codegen\` must be deterministic. If it pulls external data, it should pin`,
+    );
+    console.error(
+      ` that source and adopt updates via a separate refresh step — see`,
+    );
+    console.error(` packages/orchestration/scripts/fetch-chain-info.ts.)`);
     process.exitCode = 1;
   }
 }
