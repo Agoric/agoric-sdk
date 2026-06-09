@@ -692,7 +692,7 @@ export const makeBenchmarkerator = async () => {
    * Execute the benchmarks.
    */
   const run = async () => {
-    /** @type {object} */
+    /** @type {Record<string, any>} */
     const benchmarkContext = { ...context };
     await null;
     for (const [title, benchmark] of benchmarks.entries()) {
