@@ -3556,81 +3556,9 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
     how: 'ERC4626',
     poolKey: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: 'Arbitrum',
+    claim: true,
+    claimParams,
   });
-});
-
-test('claim rewards from ERC4626 position', async t => {
-  const amount = AmountMath.make(USDC, 1_000_000n);
-  const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, txResolver } = mocks(
-    {},
-    { Deposit: amount },
-  );
-
-  const kit = await ctx.makePortfolioKit();
-  const emptyAmount = AmountMath.make(USDC, 0n);
-
-  const claimParams = {
-    users: ['0x0000000000000000000000000000000000000001'] as `0x${string}`[],
-    tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
-    amounts: [1_234_567n],
-    proofs: [
-      [
-        '0x1111111111111111111111111111111111111111111111111111111111111111',
-        '0x2222222222222222222222222222222222222222222222222222222222222222',
-      ],
-    ] as `0x${string}`[][],
-  };
-
-  await Promise.all([
-    rebalance(
-      orch,
-      ctx,
-      offer.seat,
-      {
-        flow: [
-          {
-            dest: '@Arbitrum',
-            src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
-            amount: emptyAmount,
-            fee: feeCall,
-            claim: true,
-            claimParams,
-          },
-        ],
-      },
-      kit,
-    ),
-    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
-      await txResolver.drainPending();
-    }),
-  ]);
-
-  const { log } = offer;
-  t.log(log.map(msg => msg._method).join(', '));
-  t.like(log, [
-    { _method: 'monitorTransfers' },
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
-    { _method: 'send' },
-    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
-    { _method: 'exit', _cap: 'seat' },
-  ]);
-
-  const rawMemo = log[4].opts!.memo;
-  t.deepEqual;
-  const decoded = decodeFunctionCall(rawMemo, [
-    'claim(address[],address[],uint256[],bytes32[][])',
-  ]);
-  t.is(decoded.calls.length, 1);
-  const [call] = decoded.calls;
-  t.is(call.functionName, 'claim');
-  t.deepEqual(call.args, [
-    claimParams.users,
-    claimParams.tokens,
-    claimParams.amounts,
-    claimParams.proofs,
-  ]);
 });
 
 test('claim rewards from Compound position', async t => {
