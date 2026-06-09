@@ -141,10 +141,7 @@ export const protocolUSDN = {
     trace('supply result', result);
   },
   /** Withdraw from USDN: optionally unlock vault position, then swap USDN to USDC. */
-  withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
-    if (claim) {
-      throw new Error('claiming USDN is not supported');
-    }
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { usdnOut } = ctx;
     const { ica } = dest;
     const address = ica.getAddress();

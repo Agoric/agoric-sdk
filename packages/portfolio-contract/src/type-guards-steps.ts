@@ -127,7 +127,6 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     {
       fee: AnyNatAmountShape,
       detail: M.recordOf(M.string(), M.nat()),
-      claim: M.boolean(),
       swap: M.splitRecord({
         provider: '1inch',
         tokenIn: M.string(),
@@ -137,6 +136,13 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
         srcReceiver: M.string(),
         data: M.string(),
       }),
+      claimRewards: M.splitRecord(
+        {},
+        {
+          /* TODO(#12701, #12707, #12711): Define optional fields */
+        },
+        {},
+      ),
     },
     // Be robust in the face of additional properties
     M.record(),
