@@ -150,6 +150,12 @@ jobs:
       - name: typecheck-quick
         run: yarn typecheck-quick
 
+      # Also type-check under tsgo (TypeScript 7 native preview) so the repo
+      # stays green for the TS7 migration and cannot regress. Uses the same
+      # tsconfig.quickcheck.json scope as typecheck-quick.
+      - name: typecheck-tsgo
+        run: yarn typecheck-tsgo
+
       # Attempt the doc generation to catch build errors before
       # landing on master
       - name: build API docs
