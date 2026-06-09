@@ -29,8 +29,6 @@ import { PowerFlags } from './walletFlags.js';
  * @import {ERef} from '@endo/far'
  * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
  * @import {MapStore, SetStore} from '@agoric/store';
- * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {start as psmStart} from '@agoric/inter-protocol/src/psm/psm.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
  * @import {Zone} from '@agoric/zone';
@@ -55,16 +53,11 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  *     getWalletReviver: () => ERef<any>;
  *     setReferences: (erefs: ProvisionPoolKitReferences) => Promise<void>;
  *     makeHandler: () => ERef<BridgeHandler>;
- *     initPSM: (brand: Brand, instance: Instance<typeof psmStart>) => void;
  *   };
  *   helper: any;
  *   forHandler: any;
  *   public: any;
  * }} ProvisionPoolKit
- */
-
-/**
- * @typedef {Instance<typeof psmStart>} PsmInstance
  */
 
 /**

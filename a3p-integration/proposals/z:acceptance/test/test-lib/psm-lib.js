@@ -21,7 +21,6 @@ import {
   executeCommand,
   executeOffer,
   getUser,
-  GOV1ADDR,
   mkTemp,
   VALIDATORADDR,
 } from '@agoric/synthetic-chain';

@@ -5,7 +5,7 @@ import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { Stable } from '@agoric/internal/src/tokens.js';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import {
   makeHistoryReviver,
   makeBoardRemote,
@@ -41,7 +41,7 @@ const trace = makeTracer('StartWF', 'verbose');
 // eslint-disable-next-line no-unused-vars
 const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 
-const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
+const StakeUnit = BigInt(10 ** Stake.displayInfo.decimalPlaces);
 
 /**
  * Publish an arbitrary wallet state so that clients can tell that a wallet has
@@ -112,13 +112,13 @@ export const startWalletFactory = async (
     },
     instance: { produce: instanceProduce },
     brand: {
-      consume: { [Stable.symbol]: feeBrandP },
+      consume: { [Stake.symbol]: provisionBrandP },
     },
     issuer: {
       consume: { [Stable.symbol]: feeIssuerP },
     },
   },
-  { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
+  { options: { perAccountInitialValue = (StakeUnit * 25n) / 100n } = {} } = {},
 ) => {
   // The wallet path is read by the cosmos side to check provisioning
   // See `WalletStoragePathSegment` and `GetSmartWalletState` in
@@ -150,13 +150,13 @@ export const startWalletFactory = async (
     walletStorageNode,
     poolStorageNode,
     namesByAddressAdmin,
-    feeBrand,
+    provisionBrand,
     feeIssuer,
   ] = await Promise.all([
     makeStorageNodeChild(chainStorage, WALLET_STORAGE_PATH_SEGMENT),
     makeStorageNodeChild(chainStorage, POOL_STORAGE_PATH_SEGMENT),
     namesByAddressAdminP,
-    feeBrandP,
+    provisionBrandP,
     feeIssuerP,
   ]);
 
@@ -174,7 +174,7 @@ export const startWalletFactory = async (
     /** @type {any} */
     const oldPoolMetrics = dataReviver.getItem(OLD_POOL_METRICS_STORAGE_PATH);
     const newBrandFromOldSlotID = makeMap([
-      [oldPoolMetrics.totalMintedProvided.brand.getBoardId(), feeBrand],
+      [oldPoolMetrics.totalMintedProvided.brand.getBoardId(), provisionBrand],
     ]);
     const brandReviver = makeHistoryReviver(
       chainStorageEntries,
@@ -214,7 +214,7 @@ export const startWalletFactory = async (
     governedParams: {
       PerAccountInitialAmount: {
         type: ParamTypes.AMOUNT,
-        value: AmountMath.make(feeBrand, perAccountInitialValue),
+        value: AmountMath.make(provisionBrand, perAccountInitialValue),
       },
     },
   });
@@ -334,7 +334,7 @@ export const WALLET_FACTORY_MANIFEST = {
       },
     },
     brand: {
-      consume: { [Stable.symbol]: 'zoe' },
+      consume: { [Stake.symbol]: 'zoe' },
     },
     issuer: {
       consume: { [Stable.symbol]: 'zoe' },

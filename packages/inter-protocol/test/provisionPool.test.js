@@ -53,8 +53,9 @@ const test = unknownTest;
 
 const makeTestContext = async () => {
   const bundleCache = await unsafeSharedBundleCache;
-  const { provisionPoolBundle: policyBundle } =
-    await bundleCache.loadRegistry(interProtocolBundleSpecs);
+  const { provisionPoolBundle: policyBundle } = await bundleCache.loadRegistry(
+    interProtocolBundleSpecs,
+  );
   const { committeeBundle } = await bundleCache.loadRegistry(
     governanceSourceSpecRegistry,
   );
