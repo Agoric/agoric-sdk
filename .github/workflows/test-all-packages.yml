@@ -279,9 +279,8 @@ jobs:
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   # Verify that running `yarn codegen` in any package that defines it
-  # does not produce changes. Only runs on pull requests.
+  # does not produce changes.
   test-codegen:
-    if: github.event_name == 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     steps:
