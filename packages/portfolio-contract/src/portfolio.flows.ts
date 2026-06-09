@@ -39,6 +39,7 @@ import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/p
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
   TxType,
+  type ClaimRewardsParams,
   type FlowConfig,
   type FlowErrors,
   type FlowFeatures,
@@ -195,7 +196,12 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
-    claim?: boolean,
+    ...optsArgs: [OrchestrationOptions?]
+  ) => Promise<void>;
+  claimRewards?: (
+    ctx: CTX,
+    dest: AccountInfoFor[C],
+    claimParams?: ClaimRewardsParams,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
@@ -642,7 +648,17 @@ type Way =
       poolKey: PoolKey;
       /** chain with account where assets will go */
       dest: SupportedChain;
-      claim?: boolean;
+    }
+  | {
+      how: YieldProtocol;
+      /** pool we're claiming rewards for */
+      poolKey: PoolKey;
+      /** chain with account that will receive the claimed rewards */
+      dest: SupportedChain;
+      /** Discriminant: claim flag routes the step to claimRewards. */
+      claim: true;
+      /** External params required for claiming rewards */
+      claimParams?: ClaimRewardsParams;
     };
 
 // exported only for testing
@@ -663,12 +679,22 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
+      if (moveDesc.claim) {
+        return {
+          how: protocol,
+          poolKey,
+          dest: destName,
+          claim: true,
+          ...(moveDesc.claimParams
+            ? { claimParams: moveDesc.claimParams }
+            : {}),
+        };
+      }
       // XXX check that destName is in protocol.chains
       return {
         how: protocol,
         poolKey,
         dest: destName,
-        claim: moveDesc.claim,
       };
     }
 
@@ -871,7 +897,7 @@ const stepFlow = async (
       Aave: AaveProtocol,
       Beefy: BeefyProtocol,
       ERC4626: ERC4626Protocol,
-    }[way.how];
+    }[way.how] as ProtocolDetail<P, AxelarChain, EVMContext>;
 
     const { amount } = move;
     const phases =
@@ -882,6 +908,7 @@ const stepFlow = async (
       src: move.src,
       dest: move.dest,
       ...(phases ? { phases } : {}),
+      ...(move.claim ? { claim: move.claim } : {}),
       apply: async ({ [evmChain]: gInfo, agoric }, _traceStep, opts) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
@@ -901,8 +928,15 @@ const stepFlow = async (
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo, opts);
           return harden({ destPos: pos });
+        } else if ('claim' in way) {
+          pImpl.claimRewards ||
+            Fail`${q(way.how)} does not support claimRewards`;
+          await pImpl.claimRewards!(evmCtx, gInfo, way.claimParams, opts);
+          // Rewards land in the user's remote address as separate tokens;
+          // the pool position is unchanged.
+          return harden({});
         } else {
-          await pImpl.withdraw(evmCtx, amount, gInfo, way.claim, opts);
+          await pImpl.withdraw(evmCtx, amount, gInfo, opts);
           return harden({ srcPos: pos });
         }
       },
@@ -1129,6 +1163,7 @@ const stepFlow = async (
         const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
 
         const isSupply = 'src' in way;
+        const isClaim = 'claim' in way && way.claim;
 
         todo.push({
           how: way.how,
@@ -1140,17 +1175,14 @@ const stepFlow = async (
             await null;
             const acctId = coerceAccountId(noble.ica.getAddress());
             const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
+            if (isClaim) {
+              throw new Error('claiming USDN is not supported');
+            }
             if (isSupply) {
               await protocolUSDN.supply(ctxU, amount, noble, ...optsArgs);
               return harden({ destPos: pos });
             } else {
-              await protocolUSDN.withdraw(
-                ctxU,
-                amount,
-                noble,
-                way.claim,
-                ...optsArgs,
-              );
+              await protocolUSDN.withdraw(ctxU, amount, noble, ...optsArgs);
               return harden({ srcPos: pos });
             }
           },
