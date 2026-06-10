@@ -86,10 +86,20 @@ export const setupBootstrap = async (t, optTimer) => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccess);
 
-  const { agoricNames, agoricNamesAdmin, spaces } =
-    await makeAgoricNamesAccess();
+  const {
+    agoricNames,
+    agoricNamesAdmin,
+    spaces: rawSpaces,
+  } = await makeAgoricNamesAccess();
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
+
+  // The Inter Protocol contract types are no longer in vats' WellKnownSpaces;
+  // assert them here since these tests install those contracts.
+  const spaces =
+    /** @type {Pick<Space, 'brand' | 'issuer' | 'oracleBrand' | 'installation' | 'instance'>} */ (
+      /** @type {unknown} */ (rawSpaces)
+    );
 
   const { brand, issuer } = spaces;
   brand.produce.IST.resolve(run.brand);

@@ -50,8 +50,13 @@ export const setupPsmBootstrap = async (
   const zoe = space.consume.zoe;
   produce.feeMintAccess.resolve(feeMintAccessP);
 
-  const { agoricNames, agoricNamesAdmin, spaces } =
-    await makeAgoricNamesAccess();
+  const {
+    agoricNames,
+    agoricNamesAdmin,
+    spaces: rawSpaces,
+  } = await makeAgoricNamesAccess();
+  // XXX assert the Inter Protocol contract types; close enough for these tests
+  const spaces = /** @type {any} */ (rawSpaces);
   produce.agoricNames.resolve(agoricNames);
   produce.agoricNamesAdmin.resolve(agoricNamesAdmin);
 

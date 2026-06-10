@@ -20,8 +20,7 @@ import {
  * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
  * @import {ScopedBridgeManager} from '../types.js';
- * @import {start} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
- * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ERef} from '@agoric/vow';
  * @import {GovernanceFacetKit} from '@agoric/governance';
@@ -79,7 +78,13 @@ const publishRevivableWalletState = async (
  *   PromiseSpaceOf<{
  *     economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet;
  *     econCharterKit: {
- *       creatorFacet: Awaited<ReturnType<typeof start>>['creatorFacet'];
+ *       creatorFacet: {
+ *         addInstance: (
+ *           instance: Instance<any>,
+ *           creatorFacet: unknown,
+ *           label?: string,
+ *         ) => void;
+ *       };
  *       adminFacet: AdminFacet;
  *     };
  *     walletBridgeManager: ScopedBridgeManager<'wallet'>;

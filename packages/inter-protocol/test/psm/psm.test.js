@@ -756,8 +756,13 @@ test('restore PSM: startPSM with previous metrics, params', async t => {
   /** @type {EconomyBootstrapPowers} */
   // @ts-expect-error mock
   const { produce, consume } = makePromiseSpace();
-  const { agoricNames, agoricNamesAdmin, spaces } =
-    await makeAgoricNamesAccess();
+  const {
+    agoricNames,
+    agoricNamesAdmin,
+    spaces: rawSpaces,
+  } = await makeAgoricNamesAccess();
+  // XXX assert the Inter Protocol contract types; close enough for this test
+  const spaces = /** @type {any} */ (rawSpaces);
   const { zoe } = t.context;
 
   // Prep bootstrap space
