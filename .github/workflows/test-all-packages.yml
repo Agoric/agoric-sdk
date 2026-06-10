@@ -105,7 +105,10 @@ jobs:
       # Run ESLint once from the repo root so type-aware project state can be reused.
       - run: yarn lint:eslint --quiet
 
-      # XXX running tsc in every package is slow and redundant.
+      # Type-check each package against its own tsconfig (tsgo via lint:types),
+      # resolving dependencies through node_modules entrypoints as a consumer
+      # would. Complements typecheck-all, which maps everything to source in
+      # one unified config.
       - run: yarn typecheck-packages
 
       # multichain-testing is a standalone yarn project (not a workspace), so
@@ -149,8 +152,8 @@ jobs:
       # run the typecheck-all that local dev can rely on for fast feedback.
       # Uses tsgo (TypeScript 7 native preview) over the unified
       # tsconfig.check.json, so the repo stays green for the TS7 migration
-      # and cannot regress. (TS 6 compatibility is gated per-package by
-      # typecheck-packages in the lint-primary job.)
+      # and cannot regress. (tsc 6 is used only for declaration emit, which
+      # the build and prepack steps exercise.)
       - name: typecheck-all
         run: yarn typecheck-all
 

@@ -6,7 +6,7 @@ Our use of TypeScript has to accommodate both .js development in agoric-sdk (whi
 
 We are mid-transition from TypeScript 6 (`tsc`, the JS-based compiler) to TypeScript 7 (`tsgo`, the Go-native rewrite). As of mid-2026, TS 7.0 is in beta with stable expected imminently; we use the `@typescript/native-preview` nightlies, which are roughly 10x faster than `tsc`.
 
-The repo must type-check clean under **both** compilers. `tsgo` is intentionally stricter about some JSDoc patterns than `tsc` 6, so passing `tsgo` locally usually implies passing `tsc`, but CI gates both.
+All type-checking uses `tsgo`; `tsc` 6 remains only where something is built or consumed through the compiler API. (`tsgo` is intentionally stricter about some JSDoc patterns than `tsc` 6, and `tsc` must still emit declarations cleanly — exercised by the build and prepack steps in CI — so source files stay effectively TS 6-compatible without a dedicated TS 6 type-check gate.)
 
 Division of labor during the transition:
 
@@ -14,7 +14,8 @@ Division of labor during the transition:
 | --- | --- | --- |
 | `lint:types` (root and per package) | `tsgo` | Fast dev loop. Type-checking emits nothing, so a preview compiler is low-risk here. |
 | `typecheck-all` (CI) | `tsgo` | Gates TS 7 cleanliness over `tsconfig.check.json`, the unified repo-wide config. Excludes only `a3p-integration`, `multichain-testing` (standalone yarn projects), and `swingset-runner` (not yet type-clean). |
-| `typecheck-packages` (CI, via `lint:packages`) | `tsc` | TS 6 compatibility gate: per-package check of every workspace with a `lint:types` script. |
+| `typecheck-packages` (CI, via `lint:packages`) | `tsgo` | Runs each workspace's `lint:types` against its own tsconfig, resolving dependencies through `node_modules` entrypoints as a consumer would. |
+| Declaration-emit check | `tsc` | The CI build and prepack steps run `tsc` for `.d.ts` emit, which is what keeps the source TS 6-compatible. |
 | Declaration emit (`build-ts`, package `prepack`) | `tsc` | `tsgo` declaration-emit parity is not complete; emit stays on the stable compiler until 7.0 stable proves parity. |
 | ESLint type-aware rules | TS 6 API | typescript-eslint consumes the `typescript` package's JS API; `tsgo` has no compatible API yet. |
 | `a3p-integration` `lint:types` | `tsc` | Vendored dependencies aren't tsgo-clean (also excluded from `tsconfig.check.json`). |
