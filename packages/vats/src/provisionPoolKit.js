@@ -1,28 +1,23 @@
 // @ts-check
-import { X, q, Fail } from '@endo/errors';
+import { Fail, X, q } from '@endo/errors';
 import { E } from '@endo/far';
 
-import { AmountMath, BrandShape } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import {
   observeIteration,
   observeNotifier,
   subscribeEach,
 } from '@agoric/notifier';
-import {
-  M,
-  makeScalarBigMapStore,
-  makeScalarBigSetStore,
-} from '@agoric/vat-data';
 import { makeAtomicProvider, makeScalarMapStore } from '@agoric/store';
-import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
+import { M, makeScalarBigSetStore } from '@agoric/vat-data';
 import {
   PublicTopicShape,
   makeRecorderTopic,
 } from '@agoric/zoe/src/contractSupport/topics.js';
-import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { PowerFlags } from './walletFlags.js';
 
 /**
  * @import {EReturn} from '@endo/far';
@@ -34,8 +29,6 @@ import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
  * @import {ERef} from '@endo/far'
  * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
  * @import {MapStore, SetStore} from '@agoric/store';
- * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {start as psmStart} from '@agoric/inter-protocol/src/psm/psm.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
  * @import {Zone} from '@agoric/zone';
@@ -60,16 +53,11 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  *     getWalletReviver: () => ERef<any>;
  *     setReferences: (erefs: ProvisionPoolKitReferences) => Promise<void>;
  *     makeHandler: () => ERef<BridgeHandler>;
- *     initPSM: (brand: Brand, instance: Instance<typeof psmStart>) => void;
  *   };
  *   helper: any;
  *   forHandler: any;
  *   public: any;
  * }} ProvisionPoolKit
- */
-
-/**
- * @typedef {Instance<typeof psmStart>} PsmInstance
  */
 
 /**
@@ -86,7 +74,7 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  * @property {Amount<'nat'>} totalMintedProvided running sum of Minted provided
  *   to new wallets
  * @property {Amount<'nat'>} totalMintedConverted running sum of Minted ever
- *   received by the contract from PSM
+ *   received by the contract
  */
 
 /**
@@ -159,7 +147,6 @@ export const prepareProvisionPoolKit = (
   zone,
   { makeRecorderKit, params, poolBank, zcf, makeBridgeProvisionTool },
 ) => {
-  const zoe = zcf.getZoeService();
   const ephemeralPurses = makeScalarMapStore('fundingPurseForBrand');
   const purseProvider = makeAtomicProvider(ephemeralPurses);
   const getFundingPurseForBrand = async poolBrand => {
@@ -189,7 +176,6 @@ export const prepareProvisionPoolKit = (
           walletFactory: M.eref(M.remotable('walletFactory')),
         }).returns(),
         makeHandler: M.call().returns(M.remotable('BridgeHandler')),
-        initPSM: M.call(BrandShape, InstanceHandleShape).returns(),
       }),
       walletReviver: M.interface('ProvisionPoolKit wallet reviver', {
         reviveWallet: M.callWhen(M.string()).returns(
@@ -213,8 +199,6 @@ export const prepareProvisionPoolKit = (
       /** @type {RecorderKit<MetricsNotification>} */
       const metricsRecorderKit = makeRecorderKit(metricsNode);
 
-      /** @type {MapStore<ERef<Brand>, PsmInstance>} */
-      const brandToPSM = makeScalarBigMapStore('brandToPSM', { durable: true });
       const revivableAddresses = makeScalarBigSetStore('revivableAddresses', {
         durable: true,
         keyShape: M.string(),
@@ -232,7 +216,6 @@ export const prepareProvisionPoolKit = (
       };
 
       return {
-        brandToPSM,
         fundPurse,
         metricsRecorderKit,
         poolBrand,
@@ -283,14 +266,6 @@ export const prepareProvisionPoolKit = (
           );
 
           return provisionHandler;
-        },
-        /**
-         * @param {Brand} brand
-         * @param {PsmInstance} instance
-         */
-        initPSM(brand, instance) {
-          const { brandToPSM } = this.state;
-          brandToPSM.init(brand, instance);
         },
       },
       walletReviver: {
@@ -361,33 +336,6 @@ export const prepareProvisionPoolKit = (
           facets.helper.publishMetrics();
         },
         /**
-         * @param {Amount} amount
-         * @param {ERef<Purse>} srcPurse
-         */
-        async onPoolDeposit(amount, srcPurse) {
-          const { helper } = this.facets;
-          const { brandToPSM, poolBrand } = this.state;
-
-          const { brand } = amount;
-          if (AmountMath.isEmpty(amount) || brand === poolBrand) {
-            return;
-          }
-
-          // `amount` doesn't match the current `poolBrand`, so we need to swap
-          // it.
-          if (!brandToPSM.has(brand)) {
-            console.error('funds arrived but no PSM instance', brand);
-            return;
-          }
-          const instance = brandToPSM.get(brand);
-          const payment = E(srcPurse).withdraw(amount);
-          await helper.swap(payment, amount, instance).catch(async reason => {
-            console.error(X`swap failed: ${reason}`);
-            const resolvedPayment = await payment;
-            return E(srcPurse).deposit(resolvedPayment);
-          });
-        },
-        /**
          * @param {ERef<Purse>} exchangePurse
          * @param {ERef<Brand>} brand
          */
@@ -396,7 +344,6 @@ export const prepareProvisionPoolKit = (
           void observeNotifier(E(exchangePurse).getCurrentAmountNotifier(), {
             updateState: async amount => {
               trace('provisionPool balance update', amount);
-              await helper.onPoolDeposit(amount, exchangePurse);
             },
             fail: reason => {
               if (isUpgradeDisconnection(reason)) {
@@ -506,28 +453,6 @@ export const prepareProvisionPoolKit = (
           }
 
           void helper.watchAssetSubscription();
-        },
-        /**
-         * @param {ERef<Payment>} payIn
-         * @param {Amount} amount
-         * @param {PsmInstance} instance
-         */
-        async swap(payIn, amount, instance) {
-          await null;
-          const { facets, state } = this;
-          const { helper } = facets;
-          const {
-            poolBrand,
-            fundPurse = await getFundingPurseForBrand(poolBrand),
-          } = state;
-          const psmPub = E(zoe).getPublicFacet(instance);
-          const proposal = harden({ give: { In: amount } });
-          const invitation = E(psmPub).makeWantMintedInvitation();
-          const seat = E(zoe).offer(invitation, proposal, { In: payIn });
-          const payout = await E(seat).getPayout('Out');
-          const rxd = await E(fundPurse).deposit(payout);
-          helper.onTrade(rxd);
-          return rxd;
         },
         /**
          * @param {Purse<'nat'>} purse

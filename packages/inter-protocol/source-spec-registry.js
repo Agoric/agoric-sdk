@@ -25,10 +25,8 @@ export const interProtocolBundleSpecs = {
   },
   provisionPool: {
     bundleName: 'provisionPool',
-    packagePath: '@agoric/inter-protocol/src/provisionPool.js',
-    sourceSpec: resolveSourceSpec(
-      '@agoric/inter-protocol/src/provisionPool.js',
-    ),
+    packagePath: '@agoric/vats/src/provisionPool.js',
+    sourceSpec: resolveSourceSpec('@agoric/vats/src/provisionPool.js'),
   },
   priceAggregator: {
     bundleName: 'priceAggregator',

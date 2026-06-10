@@ -196,15 +196,9 @@ export type WellKnownContracts = {
   centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
   committee: typeof import('@agoric/governance/src/committee.js').start;
   contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
-  econCommitteeCharter: typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start;
-  feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
   mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
-  psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
-  provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
-  priceAggregator: typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start;
-  reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
+  provisionPool: typeof import('@agoric/vats/src/provisionPool.js').start;
   reserveGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
-  VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
   // no typeof because walletFactory is exporting `start` as a type
   walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
 };
@@ -408,7 +402,7 @@ export type ChainBootstrapSpaceT = {
     | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
   provisionPoolStartResult: import('@agoric/governance').GovernanceFacetKit<
-    typeof import('@agoric/inter-protocol/src/provisionPool.js').start
+    typeof import('@agoric/vats/src/provisionPool.js').start
   >;
   vatStore: import('./utils.js').VatStore;
   vatUpgradeInfo: import('@agoric/store').MapStore;

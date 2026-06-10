@@ -16,7 +16,7 @@ import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params
  * @import {AdminFacet, Instance} from '@agoric/zoe';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {RelativeTime} from '@agoric/time';
- * @import {WellKnownSpaces} from '@agoric/vats/src/core/types.js';
+ * @import {WellKnownSpaces, ContractInstallationPromises, ContractInstancePromises} from '@agoric/vats/src/core/types.js';
  * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
  * @import {PromiseSpaceOf} from '@agoric/vats/src/core/types.js';
  * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
@@ -62,7 +62,32 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  */
 
 /**
- * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
+ * Contracts that Inter Protocol adds to the well-known spaces. Defined here
+ * rather than in @agoric/vats so that the base layer doesn't depend on this
+ * package.
+ *
+ * @typedef {{
+ *   econCommitteeCharter: typeof import('../econCommitteeCharter.js').start;
+ *   feeDistributor: typeof import('../feeDistributor.js').start;
+ *   psm: typeof import('../psm/psm.js').start;
+ *   priceAggregator: typeof import('../price/fluxAggregatorContract.js').start;
+ *   reserve: typeof import('../reserve/assetReserve.js').start;
+ *   VaultFactory: VFStart;
+ * }} EconContractStarts
+ *
+ * @typedef {{
+ *   installation: {
+ *     consume: ContractInstallationPromises<EconContractStarts>;
+ *   };
+ *   instance: {
+ *     consume: ContractInstancePromises<EconContractStarts>;
+ *   };
+ * }} EconContractSpaces
+ *
+ * @typedef {WellKnownSpaces &
+ *   EconContractSpaces &
+ *   ChainBootstrapSpace &
+ *   EconomyBootstrapSpace} EconomyBootstrapPowers
  *
  *
  * @typedef {PromiseSpaceOf<{

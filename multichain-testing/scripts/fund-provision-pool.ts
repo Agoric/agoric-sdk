@@ -11,10 +11,10 @@ import { makeHttpClient } from '../tools/makeHttpClient.js';
 const DEFAULT_PROVISION_POOL_ADDR =
   'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 /**
- * Each wallet gets 0.25 IST when provisioned, so this make allows 399 accounts.
+ * Each wallet gets 0.25 BLD when provisioned, so this make allows 399 accounts.
  * (400 would be more round and make the number less apparent in logs.)
  */
-const DEFAULT_PROVISION_POOL_COIN = '999750000uist';
+const DEFAULT_PROVISION_POOL_COIN = '999750000ubld';
 
 const DEFAULT_PROVISION_POOL_WHALE = 'test1'; // Not as noisy as 'faucet'.
 
@@ -116,7 +116,7 @@ async function main() {
 Usage: fund-provision-pool.ts [options]
 
 Fund the vbank/provision module account so it can provision smart wallets.
-Each wallet gets 0.25 IST when provisioned.
+Each wallet gets 0.25 BLD when provisioned.
 
 Options:
   -a, --address     The provision pool address (default: ${DEFAULT_PROVISION_POOL_ADDR})

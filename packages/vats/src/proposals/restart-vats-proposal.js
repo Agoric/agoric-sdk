@@ -4,11 +4,26 @@ import { M, mustMatch } from '@agoric/store';
 import { E, getInterfaceOf } from '@endo/far';
 
 /**
+ * @import {Brand} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
  * @import {AdminFacet, ZCFMint} from '@agoric/zoe';
- * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {ERef} from '@endo/far';
- * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {BootstrapPowers, PromiseSpaceOf} from '../core/types.ts';
+ */
+
+/**
+ * The subset of EconomyBootstrapSpace (from
+ * inter-protocol/src/proposals/econ-behaviors.js) that this proposal reads,
+ * declared structurally so this package doesn't depend on inter-protocol.
+ *
+ * @typedef {PromiseSpaceOf<{
+ *   psmKit: MapStore<
+ *     Brand,
+ *     { label: string; psm: Instance<any>; psmAdminFacet: AdminFacet }
+ *   >;
+ *   vaultFactoryKit: unknown;
+ * }>} EconomyKitSpace
  */
 
 const trace = makeTracer('RV');
@@ -34,7 +49,7 @@ const vatUpgradeStatus = {
 };
 
 /**
- * @param {BootstrapPowers & EconomyBootstrapSpace} space
+ * @param {BootstrapPowers & EconomyKitSpace} space
  * @param {object} config
  * @param {{ skip: string[] }} config.options
  */

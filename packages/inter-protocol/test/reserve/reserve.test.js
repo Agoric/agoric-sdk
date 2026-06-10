@@ -433,7 +433,6 @@ test('reserve burn IST, with snapshot', async t => {
   );
 
   const params = harden([oneK]);
-  // @ts-expect-error puppet governor
   await E(governor.governorCreatorFacet).invokeAPI(
     'burnFeesToReduceShortfall',
     params,

@@ -2,6 +2,7 @@
 import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { WalletName } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -9,6 +10,7 @@ import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
+import { prepareBridgeProvisionTool } from '@agoric/vats/src/provisionPoolKit.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
   makeFakeBankKit,
@@ -16,10 +18,8 @@ import {
 } from '@agoric/vats/tools/bank-utils.js';
 import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import { E, Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/zone';
-import { prepareBridgeProvisionTool } from '../src/provisionPoolKit.js';
+import { E, Far } from '@endo/far';
 import { interProtocolBundleSpecs } from '../source-spec-registry.js';
 import {
   makeMockChainStorageRoot,
@@ -31,10 +31,10 @@ import {
  * @import {EReturn} from '@endo/far';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js'
- * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
  * @import {TestFn} from 'ava';
  * @import {WalletFactoryStartResult} from '@agoric/vats/src/core/startWalletFactory.js';
- * @import {start} from '../src/provisionPool.js';
+ * @import {start as startPP} from '@agoric/vats/src/provisionPool.js';
+ * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {Installation} from '@agoric/zoe';
  * @import {Brand} from '@agoric/ertp';
  * @import {Purse} from '@agoric/ertp';
@@ -53,8 +53,9 @@ const test = unknownTest;
 
 const makeTestContext = async () => {
   const bundleCache = await unsafeSharedBundleCache;
-  const { psmBundle, provisionPoolBundle: policyBundle } =
-    await bundleCache.loadRegistry(interProtocolBundleSpecs);
+  const { provisionPoolBundle: policyBundle } = await bundleCache.loadRegistry(
+    interProtocolBundleSpecs,
+  );
   const { committeeBundle } = await bundleCache.loadRegistry(
     governanceSourceSpecRegistry,
   );
@@ -69,9 +70,8 @@ const makeTestContext = async () => {
   const anchor = withAmountUtils(makeIssuerKit('aUSD'));
 
   const committeeInstall = await E(zoe).install(committeeBundle);
-  const psmInstall = await E(zoe).install(psmBundle);
   const centralSupply = await E(zoe).install(centralSupplyBundle);
-  /** @type {Installation<typeof start>} */
+  /** @type {Installation<typeof startPP>} */
   const policyInstall = await E(zoe).install(policyBundle);
 
   const mintLimit = AmountMath.make(mintedBrand, MINT_LIMIT);
@@ -98,7 +98,6 @@ const makeTestContext = async () => {
   );
 
   return {
-    bundles: { psmBundle },
     storageRoot,
     zoe: await zoe,
     feeMintAccess: await feeMintAccessP,
@@ -108,7 +107,6 @@ const makeTestContext = async () => {
     anchor,
     installs: {
       committeeInstall,
-      psmInstall,
       centralSupply,
       provisionPool: policyInstall,
     },
@@ -143,7 +141,7 @@ test.before(async t => {
 
 /** @param {EReturn<typeof makeTestContext>} context */
 const tools = context => {
-  const { zoe, anchor, installs, storageRoot } = context;
+  const { anchor } = context;
   // @ts-expect-error missing mint
   const minted = withAmountUtils(context.minted);
   const { assetPublication, bank: poolBank } = makeFakeBankKit([
@@ -153,20 +151,6 @@ const tools = context => {
 
   // Each driver needs its own to avoid state pollution between tests
   context.mockChainStorage = makeMockChainStorageRoot();
-  const { feeMintAccess, initialPoserInvitation } = context;
-  const startPSM = name => {
-    return E(zoe).startInstance(
-      installs.psmInstall,
-      harden({ AUSD: anchor.issuer }),
-      context.terms,
-      {
-        feeMintAccess,
-        initialPoserInvitation,
-        storageNode: storageRoot.makeChildNode(name),
-        marshaller: makeFakeBoard().getReadonlyMarshaller(),
-      },
-    );
-  };
 
   const publishAnchorAsset = async () => {
     assetPublication.updateState({
@@ -177,13 +161,13 @@ const tools = context => {
       proposedName: 'toy USDC',
     });
   };
-  return { minted, poolBank, startPSM, publishAnchorAsset };
+  return { minted, poolBank, publishAnchorAsset };
 };
 
-test('provisionPool trades provided assets for IST', async t => {
+test('provisionPool no longer trades provided assets for IST', async t => {
   const { zoe, anchor, installs, storageRoot, committeeCreator } = t.context;
 
-  const { minted, poolBank, startPSM, publishAnchorAsset } = tools(t.context);
+  const { minted, poolBank, publishAnchorAsset } = tools(t.context);
 
   t.log('prepare anchor purse with 100 aUSD');
   const anchorPurse = E(poolBank).getPurse(anchor.brand);
@@ -244,13 +228,6 @@ test('provisionPool trades provided assets for IST', async t => {
     'mockChainStorageRoot.provisionPool.metrics',
   );
 
-  t.log('introduce PSM instance to provisionPool');
-  const psm = await startPSM('IST-AUSD');
-  await E(E(facets.creatorFacet).getLimitedCreatorFacet()).initPSM(
-    anchor.brand,
-    psm.instance,
-  );
-
   t.log('publish anchor asset to initiate trading');
   await publishAnchorAsset();
   await eventLoopIteration(); // wait for trade
@@ -258,23 +235,23 @@ test('provisionPool trades provided assets for IST', async t => {
   const mintedPurse = E(poolBank).getPurse(minted.brand);
   const poolBalanceAfter = await E(mintedPurse).getCurrentAmount();
   t.log('post-trade pool balance:', poolBalanceAfter);
-  const hundredLessFees = minted.make(
-    scale6(100) - WantMintedFeeBP * BASIS_POINTS,
-  );
-  t.deepEqual(poolBalanceAfter, hundredLessFees);
+
+  // This used to be IST from PSM (less fees) but we don't swap anymore
+  t.deepEqual(poolBalanceAfter, minted.makeEmpty());
 
   const {
     head: { value: postTradeMetrics },
   } = await E(metrics).subscribeAfter();
   t.deepEqual(postTradeMetrics, {
-    totalMintedConverted: hundredLessFees,
-    totalMintedProvided: minted.make(0n),
+    totalMintedConverted: minted.makeEmpty(),
+    totalMintedProvided: minted.makeEmpty(),
     walletsProvisioned: 0n,
   });
 
   const anchorBalanceAfter = await E(anchorPurse).getCurrentAmount();
   t.log('post-trade anchor balance:', anchorBalanceAfter);
-  t.deepEqual(anchorBalanceAfter, anchor.makeEmpty());
+  // $100 still there
+  t.deepEqual(anchorBalanceAfter, anchor.make(scale6(100)));
 });
 
 /**
@@ -323,9 +300,7 @@ const makeWalletFactoryKitForAddresses = async addresses => {
     }),
   );
 
-  /** @type {WalletReviver | undefined} */
   let walletReviver;
-  /** @param {ERef<WalletReviver>} walletReviverP */
   const setReviver = async walletReviverP => {
     walletReviver = await walletReviverP;
   };
@@ -488,6 +463,7 @@ test('provisionPool revives old wallets', async t => {
   const bridgeHandler = await E(creatorFacet).makeHandler();
 
   // revive the old wallet and verify absence of new starter funds
+  /** @type {WalletReviver} */
   const reviverP = E(creatorFacet).getWalletReviver();
   await setReviver(reviverP);
   const reviveWallet = addr => E(reviverP).reviveWallet(addr);
