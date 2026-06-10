@@ -308,6 +308,7 @@ export const contractsMock = {
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
   Ethereum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -332,6 +333,7 @@ export const contractsMock = {
       '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     ERC4626_vaultU2_Ethereum: '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
   Optimism: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -353,6 +355,7 @@ export const contractsMock = {
     Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
     cctpRelayer: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
   Arbitrum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -379,6 +382,7 @@ export const contractsMock = {
       '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
     Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
   Base: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -399,6 +403,7 @@ export const contractsMock = {
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
 } as const satisfies EVMContractAddressesMap;
 

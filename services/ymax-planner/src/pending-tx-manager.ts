@@ -208,21 +208,28 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
         opts.signal ? [opts.signal] : undefined,
       );
 
-      const liveResultP = watchCctpTransfer({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-        kvStore: ctx.kvStore,
-        txId,
+      const liveResultP = liveWatchWithRetry(
+        () =>
+          watchCctpTransfer({
+            ...watchArgs,
+            timeoutMs: opts.timeoutMs,
+            signal: abortController.signal,
+            kvStore: ctx.kvStore,
+            txId,
+          }),
+        {
+          makeAbortController: ctx.makeAbortController,
+          signal: abortController.signal,
+          log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        },
+        e => log(`${logPrefix} Live watcher failed:`, e),
+      );
+      void liveResultP.then(result => {
+        if (result.settled) {
+          log(`${logPrefix} Live mode completed`);
+          abortController.abort();
+        }
       });
-      void liveResultP
-        .then(result => {
-          if (result.settled) {
-            log(`${logPrefix} Live mode completed`);
-            abortController.abort();
-          }
-        })
-        .catch(e => log(`${logPrefix} Live watcher failed:`, e));
 
       await null;
       // Wait for at least one block to ensure overlap between lookback and live mode

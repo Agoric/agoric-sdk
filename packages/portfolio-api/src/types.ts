@@ -148,6 +148,44 @@ export type ClaimRewardsParams = {
   proofs?: `0x${string}`[][];
 };
 
+/**
+ * Decomposed parameters for a same-chain, same-account reward-token -> USDC
+ * swap (src === dest === `@{chain}`) routed through 1inch.
+ *
+ * Rather than forwarding an opaque calldata blob, the planner supplies the swap
+ * as named fields and the contract reconstructs the call itself, filling the
+ * fund-safety fields it controls (`dstToken` = USDC, `dstReceiver` = this
+ * portfolio's own account, `minReturnAmount` = the movement `amount`) and
+ * pinning the router/selector from `provider`. `executor`, `srcReceiver`, and
+ * `data` are provider route internals
+ */
+export type OneInchSwapDesc = {
+  provider: '1inch';
+  /** reward token; becomes `desc.srcToken` and the approved spend token */
+  tokenIn: `0x${string}`;
+  /** becomes `desc.amount` and the approved amount */
+  amountIn: bigint;
+  /** provider routing flags (e.g. 1inch `_PARTIAL_FILL`) */
+  flags: bigint;
+  /** provider route internal: the contract executing the swap */
+  executor: `0x${string}`;
+  /** provider route internal: where `tokenIn` is routed */
+  srcReceiver: `0x${string}`;
+  /** provider route internal: opaque executor calldata */
+  data: `0x${string}`;
+};
+
+/**
+ * A reward-token -> USDC swap request. Currently only 1inch is supported;
+ * supporting another aggregator widens this to a union of per-provider descs.
+ */
+export type SwapDesc = OneInchSwapDesc;
+
+/**
+ * Swap aggregator whose API produced the swap `data`
+ */
+export type SwapProvider = SwapDesc['provider'];
+
 export type MovementDesc = {
   amount: NatAmount;
   src: AssetPlaceRef;
@@ -157,6 +195,7 @@ export type MovementDesc = {
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
   claimRewards?: true | ClaimRewardsParams;
+  swap?: SwapDesc;
 };
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
@@ -182,7 +221,13 @@ export type FlowStep = {
    * and for each property, to have an array of zero or more TxIds.
    */
   phases?: Partial<Record<TxPhase, TxId[]>>;
-  // XXX all parts: fee etc.
+  /**
+   * The swap request this step performs, carried through from the plan
+   * `MovementDesc` so it is visible in published flow steps. Present only on
+   * reward-token -> USDC swap steps.
+   */
+  swap?: SwapDesc;
+  // XXX remaining plan parts (fee, detail, claim) could be surfaced the same way
 };
 
 /**

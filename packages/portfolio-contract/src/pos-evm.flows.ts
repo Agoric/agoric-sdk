@@ -34,6 +34,7 @@ import { beefyVaultABI } from './interfaces/beefy.ts';
 import { compoundABI } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
+import { getOneInchSwapArgs, oneInchRouterABI } from './interfaces/one-inch.ts';
 import {
   tokenMessengerABI,
   tokenMessengerV2ABI,
@@ -353,6 +354,47 @@ export const CCTPv2 = {
   EVMContext
 >;
 harden(CCTPv2);
+
+/**
+ * Swap a reward token to USDC on an EVM chain via 1inch
+ * @see {@link https://business.1inch.com/portal/documentation/apis/swap/classic-swap/quick-start}
+ */
+export const swapRewardToUsdc = async (
+  ctx: EVMContext,
+  gInfo: Parameters<typeof sendGMPContractCall>[1],
+  amount: MovementDesc['amount'],
+  swap: MovementDesc['swap'],
+  ...optsArgs: [OrchestrationOptions?]
+) => {
+  const { addresses: a } = ctx;
+  assert(swap, 'swap params required for reward-token swap');
+  const { provider, tokenIn, amountIn } = swap;
+  // The calldata layout and router are provider-specific; only 1inch is
+  // supported so far. Branch explicitly so a new provider must add its own
+  provider === '1inch' || Fail`unsupported swap provider ${q(provider)}`;
+  const router =
+    a.oneInchRouter ||
+    Fail`oneInchRouter not configured for ${q(gInfo.chainId)}`;
+
+  const session = makeEvmAbiCallBatch();
+  const token = session.makeContract(tokenIn, erc20ABI);
+  token.approve(router, amountIn);
+  const oneInchRouter = session.makeContract(router, oneInchRouterABI);
+  oneInchRouter.swap(
+    ...getOneInchSwapArgs(swap, {
+      usdc: a.usdc,
+      receiver: gInfo.remoteAddress,
+      minReturnAmount: amount.value,
+    }),
+  );
+  // Reset the allowance so the router cannot retain a spending grant if it
+  // consumed less than amountIn.
+  token.approve(router, 0n);
+  const calls = session.finish();
+
+  return sendGMPContractCall(ctx, gInfo, calls, ...optsArgs);
+};
+harden(swapRewardToUsdc);
 
 export const AaveProtocol = {
   protocol: 'Aave',

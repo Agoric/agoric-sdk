@@ -545,6 +545,15 @@ const mainnetTokenMessengerV2 = (rows =>
 const cctpRelayer = '0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f';
 
 /**
+ * 1inch AggregationRouterV6, deployed at the same address on all supported EVM
+ * chains.
+ *
+ * @see {@link https://github.com/1inch/limit-order-protocol#deployments--audits-limit-orders-protocol-v4}
+ * @see {@link https://business.1inch.com/portal/documentation/apis/swap/classic-swap/quick-start}
+ */
+const oneInchRouter = '0x111111125421cA6dc452d289314280a0f8842A65';
+
+/**
  * Mainnet configuration with real contract addresses
  *
  * @type {EVMContractAddressesMap}
@@ -569,6 +578,7 @@ const mainnetContracts = {
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyVaultAddresses.re7.mainnet.Avalanche,
     walletHelper: walletHelperAddresses.mainnet.Avalanche,
+    oneInchRouter,
     cctpRelayer,
   },
   Ethereum: {
@@ -619,6 +629,7 @@ const mainnetContracts = {
     ERC4626_morphoGauntletUsdcCore_Ethereum:
       erc4626VaultAddresses.morphoGauntletUsdcCore.mainnet.Ethereum,
     walletHelper: walletHelperAddresses.mainnet.Ethereum,
+    oneInchRouter,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
@@ -642,6 +653,7 @@ const mainnetContracts = {
     Beefy_compoundUsdc_Optimism:
       beefyVaultAddresses.compoundUsdc.mainnet.Optimism,
     walletHelper: walletHelperAddresses.mainnet.Optimism,
+    oneInchRouter,
     ERC4626_morphoGauntletUsdcPrime_Optimism:
       erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Optimism,
   },
@@ -667,6 +679,7 @@ const mainnetContracts = {
     Beefy_compoundUsdc_Arbitrum:
       beefyVaultAddresses.compoundUsdc.mainnet.Arbitrum,
     walletHelper: walletHelperAddresses.mainnet.Arbitrum,
+    oneInchRouter,
     ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum:
       erc4626VaultAddresses.morphoSteakhouseHighYieldUsdc.mainnet.Arbitrum,
     ERC4626_morphoGauntletUsdcCore_Arbitrum:
@@ -695,6 +708,7 @@ const mainnetContracts = {
     Beefy_morphoSeamlessUsdc_Base:
       beefyVaultAddresses.morphoSeamlessUsdc.mainnet.Base,
     walletHelper: walletHelperAddresses.mainnet.Base,
+    oneInchRouter,
     ERC4626_morphoSteakhousePrimeUsdc_Base:
       erc4626VaultAddresses.morphoSteakhousePrimeUsdc.mainnet.Base,
     ERC4626_morphoSteakhouseUsdc_Base:
