@@ -137,6 +137,30 @@ test('offerArgs can carry usdnOut', t => {
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
+test('offerArgs can carry 1inch swap params', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc(200n);
+  const specimen = harden({
+    flow: [
+      {
+        src: '@Avalanche',
+        dest: '@Avalanche',
+        amount,
+        swap: {
+          provider: '1inch',
+          tokenIn: '0x0000000000000000000000000000000000000abc',
+          amountIn: 5_000_000n,
+          flags: 0n,
+          executor: '0x2222222222222222222222222222222222222222',
+          srcReceiver: '0x3333333333333333333333333333333333333333',
+          data: '0xdeadbeef',
+        },
+      },
+    ],
+  });
+  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
 test('movementDescShape allows unknown additional properties', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const { movementDescShape } = shapes;
