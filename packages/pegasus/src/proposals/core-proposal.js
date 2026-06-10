@@ -1,7 +1,7 @@
 // @ts-check
-import { E, Far } from '@endo/far';
-import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
+import { E, Far } from '@endo/far';
 
 /**
  * @import {Connection, Port, PortAllocator} from '@agoric/network';

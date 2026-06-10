@@ -1,12 +1,13 @@
 import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
+
 import type { BeefyInstrumentId, ERC4626InstrumentId } from './places.ts';
 import type {
   DepositFromChainRef,
   FlowAgent,
+  InterChainAccountRef,
   LocalChainAccountRef,
   PortfolioAgentId,
-  InterChainAccountRef,
   WithdrawToChainRef,
 } from './types.js';
 

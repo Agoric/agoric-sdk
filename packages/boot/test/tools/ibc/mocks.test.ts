@@ -1,6 +1,7 @@
 // @ts-check
 
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { addParamsIfJsonVersion } from '../../../tools/ibc/mocks.js';
 
 test('addParamsToVersion', t => {

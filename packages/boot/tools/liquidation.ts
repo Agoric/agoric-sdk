@@ -6,19 +6,20 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
 import type { ExecutionContext } from 'ava';
+
 import {
   type GovernanceDriver,
-  type PriceFeedDriver,
-  type WalletFactoryDriver,
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
+  type PriceFeedDriver,
+  type WalletFactoryDriver,
 } from './drivers.js';
 import {
-  type SwingsetTestKit,
   insistManagerType,
   makeSwingsetHarness,
   makeSwingsetTestKit,
+  type SwingsetTestKit,
 } from './supports.js';
 
 export type LiquidationSetup = {

@@ -5,6 +5,7 @@
  * (see update-settler-reference.core.js)
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
+
 import { getManifestForUpdateSettlerReference } from './update-settler-reference.core.js';
 
 /**

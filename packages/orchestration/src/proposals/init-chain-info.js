@@ -1,7 +1,8 @@
+import { makeTracer } from '@agoric/internal';
 import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { makeTracer } from '@agoric/internal';
+
 import { registerKnownChains } from '../chain-info.js';
 import { HubName } from '../exos/chain-hub.js';
 

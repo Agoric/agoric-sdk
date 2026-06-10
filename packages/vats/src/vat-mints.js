@@ -1,8 +1,7 @@
-import { Far } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-
-import { makeScalarMapStore } from '@agoric/store';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
+import { makeScalarMapStore } from '@agoric/store';
+import { Far } from '@endo/far';
 
 /**
  * @import {MapStore} from '@agoric/store';

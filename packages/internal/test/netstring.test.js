@@ -2,10 +2,10 @@
 import test from 'ava';
 
 import {
-  encode,
   decode,
-  netstringEncoderStream,
+  encode,
   netstringDecoderStream,
+  netstringEncoderStream,
 } from '../src/netstring.js';
 
 const umlaut = 'ümlaut';

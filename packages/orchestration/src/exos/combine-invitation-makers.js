@@ -1,9 +1,9 @@
-import { M } from '@endo/patterns';
-import {
-  prepareGuardedAttenuator,
-  makeSyncMethodCallback,
-} from '@agoric/internal/src/callback.js';
 import { getStringMethodNames } from '@agoric/internal';
+import {
+  makeSyncMethodCallback,
+  prepareGuardedAttenuator,
+} from '@agoric/internal/src/callback.js';
+import { M } from '@endo/patterns';
 
 /**
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';

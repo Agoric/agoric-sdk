@@ -9,6 +9,7 @@ import {
 } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
+
 import { asPercent } from '../lib/format.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 

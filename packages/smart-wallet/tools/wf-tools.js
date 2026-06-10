@@ -8,6 +8,7 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/far';
+
 import * as wfExports from '../src/walletFactory.js';
 
 /**

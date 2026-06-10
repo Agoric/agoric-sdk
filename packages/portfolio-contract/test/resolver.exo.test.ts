@@ -8,11 +8,12 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
-import type { TestFn } from 'ava';
 import { mustMatch } from '@endo/patterns';
+import type { TestFn } from 'ava';
+
 import { TxStatus, TxType } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.ts';
-import { PublishedTxShape, type PublishedTx } from '../src/resolver/types.ts';
+import { type PublishedTx, PublishedTxShape } from '../src/resolver/types.ts';
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 

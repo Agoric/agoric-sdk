@@ -1,6 +1,6 @@
-import { Far, E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarBigWeakSetStore } from '@agoric/vat-data';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 async function sendExport(doomedRoot) {
   const exportToDoomed = Far('exportToDoomed', {});

@@ -3,11 +3,11 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import {
+  assertBallotConcernsParam,
   assertContractElectorate,
   assertContractGovernance,
-  validateQuestionFromCounter,
   validateQuestionDetails,
-  assertBallotConcernsParam,
+  validateQuestionFromCounter,
 } from '../../../src/index.js';
 import { MALLEABLE_NUMBER } from './governedContract.js';
 

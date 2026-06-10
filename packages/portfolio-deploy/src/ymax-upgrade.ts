@@ -1,15 +1,17 @@
 /** @file upgrade ymax using ymaxControl */
 /* eslint-disable @jessie.js/safe-await-separator */
-import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
-import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
-import { makeTendermint34Client } from '@agoric/client-utils';
-import type { DeliverTxResponse } from '@cosmjs/stargate';
 import { parseArgs } from 'node:util';
+
+import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import { makeTendermint34Client } from '@agoric/client-utils';
+import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
+import type { DeliverTxResponse } from '@cosmjs/stargate';
+
 import type { RunTools } from './wallet-admin-types.ts';
 import {
-  WALLET_KEY,
   checkContract,
   netOfConfig,
+  WALLET_KEY,
 } from './ymax-admin-helpers.ts';
 
 const trace = (...args: unknown[]) =>

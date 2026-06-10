@@ -1,8 +1,7 @@
-// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { initSwingStore } from '@agoric/swing-store';
 import { kslot, kunser } from '@agoric/kmarshal';
+import { initSwingStore } from '@agoric/swing-store';
 
 import { makeSwingsetController } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';

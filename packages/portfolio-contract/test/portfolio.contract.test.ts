@@ -6,6 +6,8 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import assert from 'node:assert/strict';
+
 import type { NatAmount } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
@@ -27,31 +29,32 @@ import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   AxelarChain,
-  InstrumentId,
-  TxType,
   type FundsFlowPlan,
+  InstrumentId,
   type PublishedPortfolioTxDetails,
   type PublishedTx,
   type TxId,
+  TxType,
 } from '@agoric/portfolio-api';
 import type { TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import { E, passStyleOf } from '@endo/far';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { ExecutionContext } from 'ava';
-import assert from 'node:assert/strict';
+
 import {
+  type EVMContractAddresses,
   extractEvmRemoteAccountConfig,
   makeEip155ChainIdToAxelarChain,
-  type EVMContractAddresses,
   type PortfolioPrivateArgs,
 } from '../src/portfolio.contract.ts';
-import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import type {
   OfferArgsFor,
   StatusFor,
   TargetAllocation,
 } from '../src/type-guards.ts';
+import type { AssetPlaceRef } from '../src/type-guards-steps.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
+import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
@@ -74,7 +77,6 @@ import {
   makeStorageTools,
 } from './supports.ts';
 import { timeAsync, timeSync } from './test-timing.ts';
-import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 
 const { fromEntries, keys, values } = Object;
 

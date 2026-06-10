@@ -1,5 +1,6 @@
 import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
 import { M } from '@endo/patterns';
+
 import { OfferHandlerI } from '../typeGuards.js';
 
 /**

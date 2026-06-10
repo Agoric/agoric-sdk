@@ -2,9 +2,9 @@ import path from 'node:path';
 import process from 'node:process';
 
 import {
-  initGraphSpec,
   addDataToGraphSpec,
   addGraphToGraphSpec,
+  initGraphSpec,
   renderGraph,
 } from '@agoric/stat-logger';
 

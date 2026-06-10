@@ -9,13 +9,12 @@
 import { fork } from 'node:child_process';
 import path from 'node:path';
 import { promisify } from 'node:util';
-import anylogger from '@agoric/internal/vendor/anylogger.js';
-
-import { q, Fail } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
-import { makeQueue } from '@endo/stream';
 
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
+import { Fail, q } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
+import { makeQueue } from '@endo/stream';
 
 /**
  * @import {AsyncQueue} from '@endo/stream';

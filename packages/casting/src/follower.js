@@ -1,11 +1,12 @@
 import { Far } from '@endo/far';
+
+import { makeCastingSpec } from './casting-spec.js';
+import { makeCosmjsFollower } from './follower-cosmjs.js';
 import {
   mapAsyncIterable,
   subscribeEach,
   subscribeLatest,
 } from './iterable.js';
-import { makeCosmjsFollower } from './follower-cosmjs.js';
-import { makeCastingSpec } from './casting-spec.js';
 
 /**
  * @import {CastingSpec} from './types.js';

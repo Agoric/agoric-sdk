@@ -1,10 +1,12 @@
 /** @file install and start a ymax contract via ymaxControl */
+import { parseArgs } from 'node:util';
+
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { Fail } from '@endo/errors';
-import { parseArgs } from 'node:util';
+
 import type { RunTools } from './wallet-admin-types.ts';
-import { WALLET_KEY, getYmaxControlKit } from './ymax-admin-helpers.ts';
+import { getYmaxControlKit, WALLET_KEY } from './ymax-admin-helpers.ts';
 
 const options = {
   contract: { type: 'string', default: 'ymax0' },

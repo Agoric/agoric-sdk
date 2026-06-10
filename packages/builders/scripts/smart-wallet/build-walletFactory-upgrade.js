@@ -8,6 +8,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { smartWalletSourceSpecRegistry } from '@agoric/smart-wallet/source-spec-registry.js';
 import { getManifestForUpgrade } from '@agoric/smart-wallet/src/proposals/upgrade-walletFactory-proposal.js';
+
 import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**

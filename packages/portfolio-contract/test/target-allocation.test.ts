@@ -2,7 +2,9 @@
  * @file Test target allocation functionality
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import type { TestFn } from 'ava';
+
 import { setupTrader } from './contract-setup.js';
 
 const ackNFA = (utils, ix = 0) =>

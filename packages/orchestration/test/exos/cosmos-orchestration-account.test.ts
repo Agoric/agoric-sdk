@@ -1,5 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
   QueryAllBalancesRequest as QueryAllBalancesRequestType,
   QueryAllBalancesResponse,
@@ -38,6 +40,7 @@ import {
   MsgTransfer as MsgTransferType,
   MsgTransferResponse as MsgTransferResponseType,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { Height as HeightType } from '@agoric/cosmic-proto/ibc/core/client/v1/client.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
@@ -47,9 +50,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
-import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
-import { CodecHelper } from '@agoric/cosmic-proto';
-import { Height as HeightType } from '@agoric/cosmic-proto/ibc/core/client/v1/client.js';
+
 import type {
   CosmosValidatorAddress,
   TrafficEntry,
@@ -60,7 +61,10 @@ import type {
   CosmosChainAddress,
   Denom,
 } from '../../src/orchestration-api.js';
+import { leftPadEthAddressTo32Bytes } from '../../src/utils/address.js';
 import { assetOn } from '../../src/utils/asset.js';
+import { makeTxPacket } from '../../src/utils/packet.js';
+import { protoMsgMocks } from '../../tools/ibc-mock-fixtures.js';
 import {
   buildMsgResponseString,
   buildQueryPacketString,
@@ -68,11 +72,8 @@ import {
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
-import { protoMsgMocks } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
-import { leftPadEthAddressTo32Bytes } from '../../src/utils/address.js';
-import { makeTxPacket } from '../../src/utils/packet.js';
 
 const MsgSend = CodecHelper(MsgSendType);
 const MsgSendResponse = CodecHelper(MsgSendResponseType);

@@ -18,13 +18,15 @@
  *
  * See the "Refreshing chain info" section of the package README for details.
  */
-import { ChainRegistryClient } from '@chain-registry/client';
-import { execFileSync } from 'node:child_process';
 import assert from 'node:assert';
+import { execFileSync } from 'node:child_process';
 import fsp from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+
+import { ChainRegistryClient } from '@chain-registry/client';
 import prettier from 'prettier';
+
 import { convertChainInfo } from '../src/utils/registry.js';
 
 // The chain-registry commit codegen reads from, pinned so codegen is

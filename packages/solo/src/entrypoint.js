@@ -3,12 +3,12 @@
 // we need to enable Math.random as a workaround for 'brace-expansion' module
 // (dep chain: temp->glob->minimatch->brace-expansion)
 import '@endo/init/legacy.js';
-
-import process from 'node:process';
-import path from 'node:path';
-
 // Configure logs.
 import '@agoric/cosmic-swingset/src/anylogger-agoric.js';
+
+import path from 'node:path';
+import process from 'node:process';
+
 import solo from './main.js';
 
 const baseprog = path.basename(process.argv[1]);

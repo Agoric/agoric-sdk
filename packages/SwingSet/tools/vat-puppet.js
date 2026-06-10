@@ -3,12 +3,12 @@
  *   testing.
  */
 
-import { Fail, q } from '@endo/errors';
-import { Far, E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap } from '@agoric/internal';
 import { M } from '@agoric/store';
 import { prepareExoClass, watchPromise } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {VatPowers} from '@agoric/swingset-vat';

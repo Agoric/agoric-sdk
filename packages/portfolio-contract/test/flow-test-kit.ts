@@ -13,10 +13,10 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
-  denomHash,
   type AccountId,
   type Bech32Address,
   type CaipChainId,
+  denomHash,
   type IBCMsgTransferOptions,
   type LegacyExecuteEncodedTxOptions,
   type Orchestrator,
@@ -30,8 +30,8 @@ import {
 import { prepareProgressTracker } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { AxelarChain } from '@agoric/portfolio-api';
-import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { DEFAULT_FLOW_CONFIG } from '@agoric/portfolio-api/src/constants.js';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -41,16 +41,17 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import { makeHeapZone } from '@agoric/zone';
 import { Far } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import {
-  preparePortfolioKit,
   type PortfolioKit,
+  preparePortfolioKit,
 } from '../src/portfolio.exo.ts';
 import {
-  onAgoricTransfer,
   executePlan as rawExecutePlan,
-  rebalance as rawRebalance,
+  onAgoricTransfer,
   type OnTransferContext,
   type PortfolioInstanceContext,
+  rebalance as rawRebalance,
 } from '../src/portfolio.flows.ts';
 import { TxStatus } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.js';
@@ -59,8 +60,8 @@ import {
   type PublishedTx,
   type TxId,
 } from '../src/resolver/types.ts';
-import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
+import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import { axelarIdsMock, contractsMock, gmpAddresses } from './mocks.ts';
 import { axelarCCTPConfig, makeIncomingVTransferEvent } from './supports.ts';
 

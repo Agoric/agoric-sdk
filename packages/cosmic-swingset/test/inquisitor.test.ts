@@ -1,24 +1,21 @@
-import type { TestFn } from 'ava';
-import anyTest from 'ava';
-
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 
-import tmp from 'tmp';
-
-import { Fail, q } from '@endo/errors';
-
 import {
   BridgeId,
-  VBankAccount,
   deepCopyJsonable,
   objectMap,
+  VBankAccount,
 } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import type { SwingStore } from '@agoric/swing-store';
 import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { Fail, q } from '@endo/errors';
+import type { TestFn } from 'ava';
+import anyTest from 'ava';
+import tmp from 'tmp';
 
-import type { SwingStore } from '@agoric/swing-store';
 import { makeHelpers, makeSwingStoreOverlay } from '../tools/inquisitor.mjs';
 import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
 

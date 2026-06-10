@@ -1,12 +1,12 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { Far } from '@endo/marshal';
 
-import { setup } from '../setupBasicMints.js';
+import { Far } from '@endo/marshal';
 
 import {
   defaultAcceptanceMsg,
   satisfies,
 } from '../../../src/contractSupport/index.js';
+import { setup } from '../setupBasicMints.js';
 
 /**
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';

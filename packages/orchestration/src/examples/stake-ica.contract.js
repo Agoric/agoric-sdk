@@ -11,9 +11,10 @@ import {
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
+
+import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareProgressTracker } from '../utils/progress.js';
-import { makeChainHub } from '../exos/chain-hub.js';
 
 const trace = makeTracer('StakeIca');
 /**

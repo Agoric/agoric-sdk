@@ -1,7 +1,8 @@
 import { Nat } from '@endo/nat';
+
+import { cdebug } from './cdebug.js';
 import { insistLocalType } from './parseLocalSlots.js';
 import { makeRemoteSlot } from './parseRemoteSlot.js';
-import { cdebug } from './cdebug.js';
 
 export function makeIngressEgress(state, provideLocalForRemote) {
   function addEgress(remoteID, remoteRefID, loid) {

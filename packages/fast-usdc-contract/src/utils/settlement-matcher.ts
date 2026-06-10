@@ -15,8 +15,9 @@
  * larger transaction sets, though typical match depth is 2-3 transactions.
  */
 
-import type { MapStore } from '@agoric/swingset-liveslots';
 import type { NobleAddress, PendingTx } from '@agoric/fast-usdc/src/types.js';
+import type { MapStore } from '@agoric/swingset-liveslots';
+
 import { insertIntoSortedArray } from './store.ts';
 
 /**

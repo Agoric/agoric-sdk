@@ -32,12 +32,13 @@ import { Fail, makeError, q } from '@endo/errors';
 import type { PureData } from '@endo/pass-style';
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+
 import { makeEvmContract } from './evm-facade.ts';
 import {
+  type ProvideRemoteAccountInstruction,
   remoteAccountAxelarRouterABI,
   type RouterOperationPayload,
   type SupportedOperations,
-  type ProvideRemoteAccountInstruction,
 } from './interfaces/orch-router.ts';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import type { GMPAccountInfo, PortfolioKit } from './portfolio.exo.ts';
@@ -45,16 +46,16 @@ import {
   type LocalAccount,
   type PortfolioInstanceContext,
 } from './portfolio.flows.ts';
+import type { EVMContext } from './pos-evm.flows.ts';
 import {
-  TxType,
   type PublishedRoutedGMPTxDetails,
+  TxType,
 } from './resolver/constants.js';
 import {
   padTxId,
   predictRemoteAccountAddress,
 } from './utils/evm-orch-router.ts';
 import { appendTxIds } from './utils/traffic.ts';
-import type { EVMContext } from './pos-evm.flows.ts';
 
 const trace = makeTracer('GMPRF');
 

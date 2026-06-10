@@ -1,6 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+
 import { assertRightsConserved } from '../../src/contractFacet/rightsConservation.js';
 
 const setupBrands = () => {

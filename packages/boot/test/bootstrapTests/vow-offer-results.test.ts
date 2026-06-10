@@ -1,10 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
+
 import {
   makeBootTestContext,
-  withWalletFactory,
   type WalletFactoryBootTestContext,
+  withWalletFactory,
 } from '../tools/boot-test-context.js';
 
 const test: TestFn<WalletFactoryBootTestContext> = anyTest;

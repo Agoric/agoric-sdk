@@ -1,16 +1,16 @@
 // @ts-nocheck
-import test from 'ava';
-
+import { kser, kslot, kunser } from '@agoric/kmarshal';
+import { M } from '@agoric/store';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { kslot, kser, kunser } from '@agoric/kmarshal';
-import { M } from '@agoric/store';
+import test from 'ava';
+
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
-import { makeMessage, makeStartVat, makeResolve, makeReject } from './util.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeMessage, makeReject, makeResolve, makeStartVat } from './util.js';
 
 function matchIDCounterSet(t, log) {
   t.like(log.shift(), { type: 'vatstoreSet', key: 'idCounters' });

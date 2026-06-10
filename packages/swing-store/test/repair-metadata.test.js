@@ -1,15 +1,14 @@
 // @ts-check
 
 import path from 'node:path';
+
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import test from 'ava';
 import sqlite3 from 'better-sqlite3';
 import tmp from 'tmp';
 
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
-
 import { importSwingStore, openSwingStore } from '../src/index.js';
-
-import { makeExporter, buildData } from './exports.js';
+import { buildData, makeExporter } from './exports.js';
 
 const tmpDir = makeTempDirFactory(tmp);
 

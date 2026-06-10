@@ -22,11 +22,11 @@ import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { mustMatch } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
-  type Publisher,
-  type Subscriber,
   makePublishKit,
   observeIteration,
+  type Publisher,
   subscribeEach,
+  type Subscriber,
 } from '@agoric/notifier';
 import type {
   Bech32Address,
@@ -46,6 +46,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, type ERef, type EReturn } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { ExecutionContext } from 'ava';
+
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import * as contractExports from '../src/fast-usdc.contract.ts';

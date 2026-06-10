@@ -1,7 +1,8 @@
-import { WebSocketProvider, Log, toQuantity, isError } from 'ethers';
-import type { Filter, TransactionReceipt, TransactionResponse } from 'ethers';
-import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
+import type { Filter, TransactionReceipt, TransactionResponse } from 'ethers';
+import { isError, Log, toQuantity, WebSocketProvider } from 'ethers';
+import type { Address as EvmAddress } from 'viem';
+
 import { getBlockTimeMs, prepareAbortController } from './support.ts';
 
 export type WatcherTimeoutOptions = {

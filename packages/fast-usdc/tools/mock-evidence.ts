@@ -1,5 +1,6 @@
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Bech32Address, CosmosChainAddress } from '@agoric/orchestration';
+
 import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
 export type MockScenario =

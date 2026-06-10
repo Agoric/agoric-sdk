@@ -2,9 +2,10 @@
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 
-import { Fail, assert } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 import { initEmpty, M } from '@agoric/store';
+import { assert, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**

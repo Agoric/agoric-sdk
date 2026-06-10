@@ -1,8 +1,8 @@
-import { E, makeLoopback } from '@endo/captp';
-
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import bundleSource from '@endo/bundle-source';
+import { E, makeLoopback } from '@endo/captp';
 import { bundleTestExports } from '@endo/import-bundle';
+
 import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 
@@ -11,9 +11,9 @@ import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
  * @import {FeeIssuerConfig, Installation} from '../src/types-index.js';
  */
 
-/** @type {Map<string, Promise<import('@agoric/swingset-vat').EndoZipBase64Bundle | import('@agoric/swingset-vat').TestBundle>>} */
+/** @type {Map<string, Promise<EndoZipBase64Bundle | TestBundle>>} */
 const bundledPathCache = new Map();
-/** @type {WeakMap<object, Promise<import('@agoric/swingset-vat').EndoZipBase64Bundle | import('@agoric/swingset-vat').TestBundle>>} */
+/** @type {WeakMap<object, Promise<EndoZipBase64Bundle | TestBundle>>} */
 const bundledExportsCache = new WeakMap();
 
 /**

@@ -1,8 +1,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
 
-import { E } from '@endo/eventual-send';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { E } from '@endo/eventual-send';
+
 import { provideEscrowStorage } from '../../../src/zoeService/escrowStorage.js';
 import {
   assertAmountsEqual,

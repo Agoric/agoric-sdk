@@ -1,15 +1,15 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { setup } from '../setupBasicMints.js';
 import { calculateShares } from '../../../src/contracts/callSpread/calculateShares.js';
-import {
-  ceilMultiplyBy,
-  floorMultiplyBy,
-} from '../../../src/contractSupport/index.js';
 import {
   make0Percent,
   make100Percent,
 } from '../../../src/contracts/callSpread/percent.js';
+import {
+  ceilMultiplyBy,
+  floorMultiplyBy,
+} from '../../../src/contractSupport/index.js';
+import { setup } from '../setupBasicMints.js';
 
 function compareShareRatios(t, actual, expected, amount) {
   t.deepEqual(

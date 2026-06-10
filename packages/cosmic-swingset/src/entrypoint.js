@@ -1,17 +1,16 @@
 #! /usr/bin/env node
 
 import '@endo/init/pre.js';
-
-import agcc from '@agoric/cosmos';
-
 import '@endo/init/unsafe-fast.js';
+import './anylogger-agoric.js';
 
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
-import './anylogger-agoric.js';
+import agcc from '@agoric/cosmos';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
+
 import main from './chain-main.js';
 
 const log = anylogger('ag-chain-cosmos');

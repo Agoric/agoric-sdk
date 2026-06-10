@@ -1,7 +1,8 @@
 /* eslint-env node */
 
-import { b, Fail } from '@endo/errors';
 import url from 'node:url';
+
+import { b, Fail } from '@endo/errors';
 
 /**
  * @import * as nodePath from 'node:path';

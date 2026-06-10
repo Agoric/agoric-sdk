@@ -9,9 +9,10 @@
  * @import {ZCFSeat} from '@agoric/zoe';
  */
 
-import { mustMatch } from '@endo/patterns';
-import { Fail, makeError, q } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
+import { Fail, makeError, q } from '@endo/errors';
+import { mustMatch } from '@endo/patterns';
+
 import { CosmosChainAddressShape } from '../typeGuards.js';
 
 const trace = makeTracer('StakingCombinationsFlows');

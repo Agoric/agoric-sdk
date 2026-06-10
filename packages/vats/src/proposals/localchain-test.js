@@ -1,9 +1,9 @@
 // @ts-check
-import { Far } from '@endo/far';
-import { heapVowE as E } from '@agoric/vow/vat.js';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { QueryAllBalancesRequest as QueryAllBalancesRequestType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import { Far } from '@endo/far';
 
 /**
  * @import {LocalChain} from '../localchain.js';

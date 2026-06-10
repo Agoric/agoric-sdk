@@ -1,9 +1,9 @@
 // @ts-check
+import { assert, Fail, X } from '@endo/errors';
+import { Far } from '@endo/far';
+import { fc, testProp } from '@fast-check/ava';
 import test from 'ava';
 
-import { fc, testProp } from '@fast-check/ava';
-import { assert, X, Fail } from '@endo/errors';
-import { Far } from '@endo/far';
 import {
   deepMapObject,
   makeMeasureSeconds,
@@ -12,15 +12,15 @@ import {
 import {
   assertAllDefined,
   attenuate,
-  whileTrue,
-  untilTrue,
-  forever,
   deeplyFulfilledObject,
-  synchronizedTee,
+  forever,
   stripPrefix,
+  synchronizedTee,
   throwErrorCode,
   tryJsonParse,
   tryNow,
+  untilTrue,
+  whileTrue,
 } from '../src/ses-utils.js';
 import { arrayIsLike } from '../tools/ava-assertions.js';
 

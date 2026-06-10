@@ -1,7 +1,7 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { getInterfaceOf, E } from '@endo/far';
+import { E, getInterfaceOf } from '@endo/far';
 
 /**
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js';

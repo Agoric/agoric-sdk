@@ -1,4 +1,5 @@
 import { test } from './prepare-test-env-ava.js';
+
 import { assertNetworkConfig } from '../src/netconfig.js';
 
 /**

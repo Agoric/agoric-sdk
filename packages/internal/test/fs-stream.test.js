@@ -1,9 +1,10 @@
 // @ts-check
-import test from 'ava';
 import { EventEmitter } from 'node:events';
-import { open, rm, mkdtemp } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdtemp, open, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import test from 'ava';
 
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeFsStreamWriter } from '../src/node/fs-stream.js';

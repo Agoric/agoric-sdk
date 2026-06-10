@@ -2,12 +2,11 @@
 // https://github.com/Agoric/agoric-sdk/issues/9377
 // as the `test.serial.failing` test at the end.
 
-// eslint-disable-next-line import/order
 import {
-  test,
-  getBaggage,
   annihilate,
+  getBaggage,
   nextLife,
+  test,
 } from './prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

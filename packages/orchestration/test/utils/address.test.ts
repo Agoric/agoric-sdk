@@ -1,5 +1,6 @@
 import { decodeRemoteIbcAddress } from '@agoric/network/ibc/utils.js';
 import test from '@endo/ses-ava/prepare-endo.js';
+
 import type { Bech32Address } from '../../src/cosmos-api.ts';
 import type { CosmosChainAddress } from '../../src/orchestration-api.ts';
 import {

@@ -1,8 +1,9 @@
-import test from '@endo/ses-ava/prepare-endo.js';
+import { createRequire } from 'node:module';
 
 import bundleSource from '@endo/bundle-source';
 import { importBundle } from '@endo/import-bundle';
-import { createRequire } from 'node:module';
+import test from '@endo/ses-ava/prepare-endo.js';
+
 import { denomHash } from '../../src/utils/denomHash.js';
 
 const nodeRequire = createRequire(import.meta.url);

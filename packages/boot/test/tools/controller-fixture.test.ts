@@ -3,9 +3,9 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 import type { TestFn } from 'ava';
 
 import {
+  type ControllerFixture,
   forkScenario,
   makeBootControllerFixture,
-  type ControllerFixture,
 } from './controller-fixture.js';
 
 const test = anyTest as TestFn<ControllerFixture>;

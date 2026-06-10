@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { krefOf, kser, kslot, kunser } from '@agoric/kmarshal';
+
 import { extractMessage } from './vat-util.js';
 
 /**

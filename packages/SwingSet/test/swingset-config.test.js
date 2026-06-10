@@ -1,6 +1,7 @@
+import fs from 'node:fs';
+
 import test from 'ava';
 
-import fs from 'node:fs';
 import { makeSwingsetConfigIO } from '../src/controller/swingset-config.js';
 
 /**

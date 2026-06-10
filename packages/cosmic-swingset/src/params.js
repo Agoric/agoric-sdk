@@ -1,7 +1,7 @@
 // @ts-check
 
-import { X, Fail, makeError } from '@endo/errors';
-import { Nat, isNat } from '@endo/nat';
+import { Fail, makeError, X } from '@endo/errors';
+import { isNat, Nat } from '@endo/nat';
 
 /**
  * @import {ParamsSDKType} from '@agoric/cosmic-proto/swingset/swingset.js'

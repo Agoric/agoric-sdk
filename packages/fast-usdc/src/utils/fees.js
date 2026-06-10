@@ -1,8 +1,9 @@
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy } from '@agoric/ertp/src/ratio.js';
+import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
 import { Fail } from '@endo/errors';
 import { mustMatch } from '@endo/patterns';
-import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
+
 import { FeeConfigShape } from '../type-guards.js';
 
 const { add, isGTE, subtract, makeEmpty } = AmountMath;

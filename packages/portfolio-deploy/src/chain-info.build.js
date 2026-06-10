@@ -5,12 +5,13 @@
  * @see {parseBuilderArgs} for CLI usage
  * @see {sourceSpec} for core-eval details
  */
+import { parseArgs } from 'node:util';
+
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { mustMatch } from '@agoric/internal';
 import { ChainInfoShape, IBCConnectionInfoShape } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { M } from '@endo/patterns';
-import { parseArgs } from 'node:util';
 
 const { keys } = Object;
 
@@ -26,6 +27,7 @@ const sourceSpec =
  * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
  * @import {ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {ExecFileSyncOptionsWithStringEncoding} from 'node:child_process';
+ * @import {execFileSync} from 'child_process';
  */
 
 /** @param {string[]} args */
@@ -90,7 +92,7 @@ const parsePeers = strs => {
  * Checks:
  *   1. agd binary exists locally
  *   2. kubectl binary exists AND target pod/container has agd
- * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
+ * @param {{ execFileSync: typeof execFileSync}} io
  * @param {string} podName
  * @param {string} container
  * @returns {'agd' | 'kubectl'}
@@ -141,7 +143,7 @@ const findAgdOrKubectl = ({ execFileSync }, podName, container) => {
  *   const agd = makeAgd({execFileSync})
  *                 .withOpts({rpcAddrs: ['https...]});
  *   const info = await agd.query(['bank', 'balances', 'agoric1...]);
- * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
+ * @param {{ execFileSync: typeof execFileSync}} io
  * @param {{ podName?: string, container?: string }} [options] - Optional configuration for kubectl
  */
 const makeAgd = (

@@ -1,5 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { createRequire } from 'node:module';
+
 import { makeIssuerKit } from '@agoric/ertp';
 import { prepareSwingsetVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
@@ -7,9 +9,9 @@ import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeHeapZone } from '@agoric/zone';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import { E, Far, type EReturn } from '@endo/far';
+import { E, type EReturn, Far } from '@endo/far';
 import type { TestFn } from 'ava';
-import { createRequire } from 'node:module';
+
 import { makeZcfTools } from '../../src/utils/zcf-tools.js';
 
 const nodeRequire = createRequire(import.meta.url);

@@ -1,6 +1,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 import { smartWalletSourceSpecRegistry } from '@agoric/smart-wallet/source-spec-registry.js';
+
 import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**

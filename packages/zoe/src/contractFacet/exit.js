@@ -1,4 +1,4 @@
-import { M, initEmpty } from '@agoric/store';
+import { initEmpty, M } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 import { prepareExoClass, provideDurableSetStore } from '@agoric/vat-data';
 import { Fail, q } from '@endo/errors';

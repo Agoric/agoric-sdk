@@ -1,4 +1,5 @@
 import { Far } from '@endo/marshal';
+
 import { providePriceAuthorityRegistry } from './priceAuthorityRegistry.js';
 
 /**

@@ -1,9 +1,9 @@
 import { Far } from '@endo/marshal';
 
 import {
-  swap,
   assertIssuerKeywords,
   assertProposalShape,
+  swap,
 } from '../../../src/contractSupport/index.js';
 
 /**

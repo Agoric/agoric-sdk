@@ -1,18 +1,18 @@
 // @ts-nocheck
-import test from 'ava';
-
-import tmp from 'tmp';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { kunser } from '@agoric/kmarshal';
 import {
-  initSwingStore,
-  openSwingStore,
-  makeSwingStoreExporter,
   importSwingStore,
+  initSwingStore,
+  makeSwingStoreExporter,
+  openSwingStore,
 } from '@agoric/swing-store';
+import test from 'ava';
+import tmp from 'tmp';
+
+import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 import { makeSwingsetController } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
-import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 
 const tmpDir = makeTempDirFactory(tmp);
 

@@ -1,10 +1,11 @@
-import { Fail, q } from '@endo/errors';
-import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import { WalletName } from '@agoric/internal';
-import { E, Far } from '@endo/far';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
+import { keyEQ } from '@agoric/store';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { makeScalarBigMapStore, makeScalarMapStore } from '@agoric/vat-data';
-import { keyEQ } from '@agoric/store';
+import { Fail, q } from '@endo/errors';
+import { E, Far } from '@endo/far';
+
 import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 

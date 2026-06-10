@@ -1,13 +1,13 @@
 import { test } from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { E } from '@endo/far';
+
 import {
-  observeIteration,
-  makeSubscriptionKit,
   makeSubscription,
+  makeSubscriptionKit,
+  observeIteration,
 } from '../src/index.js';
-import { paula, alice, bob, carol } from './iterable-testing-tools.js';
+import { alice, bob, carol, paula } from './iterable-testing-tools.js';
 
 test('subscription for-await-of success example', async t => {
   const { publication, subscription } = makeSubscriptionKit();

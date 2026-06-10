@@ -5,6 +5,7 @@
  * see {@link fast-usdc-contract/src/update-fee-config.core.js}
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
+
 import { getManifestForUpdateFeeConfig } from './update-fee-config.core.js';
 
 /**

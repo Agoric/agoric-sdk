@@ -1,7 +1,6 @@
-import { makePromiseKit } from '@endo/promise-kit';
-import { Far, E } from '@endo/far';
-
 import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const log = vatPowers.testLog;

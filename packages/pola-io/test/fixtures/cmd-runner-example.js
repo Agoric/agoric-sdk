@@ -1,7 +1,7 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { makeCmdRunner } from '@agoric/pola-io';
 import { execFile as execFileNode } from 'node:child_process';
 import { promisify } from 'node:util';
+
+import { makeCmdRunner } from '@agoric/pola-io';
 
 export const main = async ({ execFile = promisify(execFileNode) }) => {
   const npx = makeCmdRunner('npx', { execFile }); // TODO --no-install

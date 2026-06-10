@@ -2,17 +2,18 @@
 /* eslint-env node */
 import '@endo/init';
 
+import { exec, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import temp from 'temp';
 import process from 'node:process';
-import { exec, spawn } from 'node:child_process';
-import inquirer from 'inquirer';
 
-import { running } from './run.js';
-import { setup } from './setup.js';
+import inquirer from 'inquirer';
+import temp from 'temp';
+
 import * as files from './files.js';
 import deploy from './main.js';
+import { running } from './run.js';
+import { setup } from './setup.js';
 
 process.on('SIGINT', () => process.exit(-1));
 deploy(process.argv[1], process.argv.splice(2), {

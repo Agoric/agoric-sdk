@@ -1,12 +1,14 @@
 // this file is loaded by the controller, in the start compartment
 import { spawn } from 'node:child_process';
+
 import { makePromiseKit } from '@endo/promise-kit';
+
 import { NonNullish } from '../errors.js';
-import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 import {
-  netstringEncoderStream,
   netstringDecoderStream,
+  netstringEncoderStream,
 } from '../netstring.js';
+import { arrayDecoderStream, arrayEncoderStream } from './worker-protocol.js';
 
 /**
  * @import {IOType} from 'child_process'

@@ -5,9 +5,10 @@
  *   Includes {@link BaseChainInfo} and {@link CosmosChainInfo}
  */
 
+import { keyMirror } from '@agoric/internal';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
-import { keyMirror } from '@agoric/internal';
+
 import cctpChainInfo from './cctp-chain-info.js';
 import { withChainCapabilities } from './chain-capabilities.js';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';

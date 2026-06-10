@@ -1,4 +1,5 @@
 import { assert } from '@endo/errors';
+
 import { buildSerializationTools } from '../../src/devices/lib/deviceTools.js';
 
 export function buildDevice(tools, endowments) {

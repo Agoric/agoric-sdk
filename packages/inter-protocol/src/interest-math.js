@@ -1,7 +1,7 @@
 import {
   divideBy,
-  multiplyBy,
   invertRatio,
+  multiplyBy,
   multiplyRatios,
   ratiosSame,
 } from '@agoric/ertp/src/ratio.js';

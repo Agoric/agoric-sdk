@@ -1,5 +1,5 @@
-import { Far } from '@endo/marshal';
 import { assertProposalShape } from '@agoric/zoe/src/contractSupport/index.js';
+import { Far } from '@endo/marshal';
 
 /**
  * @import {FeeMintAccess, ZCF, ZCFSeat} from '@agoric/zoe';

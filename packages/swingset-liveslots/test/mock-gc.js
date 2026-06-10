@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 import { makeDummyMeterControl } from './dummyMeterControl.js';
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 
 // Create a WeakRef/FinalizationRegistry pair that can be manipulated for
 // tests. Limitations:

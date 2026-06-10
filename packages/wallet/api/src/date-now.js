@@ -1,5 +1,5 @@
-import { E } from '@endo/eventual-send';
 import { observeNotifier } from '@agoric/notifier';
+import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**

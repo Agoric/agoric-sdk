@@ -1,5 +1,6 @@
-import { assert } from '@endo/errors';
 import { kser, kunser } from '@agoric/kmarshal';
+import { assert } from '@endo/errors';
+
 import { insistVatID } from '../lib/id.js';
 
 export function makeVatAdminHooks(tools) {

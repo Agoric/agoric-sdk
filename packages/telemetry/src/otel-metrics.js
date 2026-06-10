@@ -1,13 +1,12 @@
-import { q, Fail } from '@endo/errors';
-
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { objectMapMutable } from '@agoric/internal/src/js-utils.js';
 import {
-  HISTOGRAM_METRICS,
   BLOCK_HISTOGRAM_METRICS,
+  HISTOGRAM_METRICS,
   KERNEL_STATS_METRICS,
   makeQueueMetrics,
 } from '@agoric/internal/src/metrics.js';
+import { Fail, q } from '@endo/errors';
 
 /**
  * @import {MetricOptions, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api';

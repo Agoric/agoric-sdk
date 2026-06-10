@@ -4,7 +4,9 @@
 
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+
 import { Fail } from '@endo/errors';
+
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 /**

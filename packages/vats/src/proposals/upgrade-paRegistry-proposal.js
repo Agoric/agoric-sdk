@@ -1,7 +1,7 @@
 // @ts-check
-import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { E } from '@endo/far';
 
 /**
  * @import {BootstrapPowers} from '../core/types.ts';

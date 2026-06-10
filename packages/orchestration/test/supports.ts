@@ -8,8 +8,8 @@ import { makeNameHubKit, type VTransferIBCEvent } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import {
-  prepareLocalChainTools,
   type AdditionalTransferPowers,
+  prepareLocalChainTools,
 } from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
@@ -25,6 +25,7 @@ import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';

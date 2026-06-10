@@ -1,6 +1,7 @@
+import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
-import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
+
 import { fromExternalConfig } from './utils/config-marshal.js';
 import {
   inviteOracles,

@@ -1,11 +1,12 @@
 /* eslint-env node */
 
-import { Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
-import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { handlePKitWarning } from '../src/handleWarning.js';
 import { makeHandle } from '../src/makeHandle.js';
 import { buildTestRootObject } from './testVatRoot.js';

@@ -1,12 +1,12 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import bundleSource from '@endo/bundle-source';
-import { kunser, kser, kslot } from '@agoric/kmarshal';
+import { kser, kslot, kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import bundleSource from '@endo/bundle-source';
 
-import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
+import { buildKernelBundles, makeSwingsetController } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 
 function dfile(name) {

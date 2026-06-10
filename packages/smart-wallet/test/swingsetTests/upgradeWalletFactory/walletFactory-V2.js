@@ -11,6 +11,7 @@ import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { E } from '@endo/far';
+
 import { prepareSmartWallet } from '../../../src/smartWallet.js';
 import { shape } from '../../../src/typeGuards.js';
 import {

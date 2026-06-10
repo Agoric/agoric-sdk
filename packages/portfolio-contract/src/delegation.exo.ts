@@ -12,7 +12,8 @@ import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { TargetAllocationShape, type TargetAllocation } from './type-guards.ts';
+
+import { type TargetAllocation, TargetAllocationShape } from './type-guards.ts';
 
 export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
   M.splitRecord({

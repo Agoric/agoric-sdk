@@ -1,5 +1,4 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
 
 import { CodecHelper } from '@agoric/cosmic-proto';
 import {
@@ -29,6 +28,8 @@ import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
+import type { TestFn } from 'ava';
+
 import * as contractExports from '../src/fast-usdc.contract.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import {

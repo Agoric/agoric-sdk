@@ -7,17 +7,11 @@
  * main export: @see {prepareSettler}
  */
 
-import { AmountMath } from '@agoric/ertp';
-import { assertAllDefined, makeTracer } from '@agoric/internal';
-import {
-  AccountIdArgShape,
-  CosmosChainAddressShape,
-} from '@agoric/orchestration';
-import { atob } from '@endo/base64';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
-
+import type { HostInterface, HostOf } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { Amount, Brand, NatAmount } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
 import {
   AddressHookShape,
@@ -25,12 +19,6 @@ import {
   EvmHashShape,
   makeNatAmountShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
-import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
-import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
-
-import type { HostInterface, HostOf } from '@agoric/async-flow';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { Amount, Brand, NatAmount } from '@agoric/ertp';
 import type {
   CctpTxEvidence,
   EvmHash,
@@ -38,6 +26,9 @@ import type {
   LogFn,
   NobleAddress,
 } from '@agoric/fast-usdc/src/types.js';
+import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
+import type { IBCChannelID } from '@agoric/network/ibc';
 import type {
   AccountId,
   AccountIdArg,
@@ -46,15 +37,23 @@ import type {
   Denom,
   OrchestrationAccount,
 } from '@agoric/orchestration';
+import {
+  AccountIdArgShape,
+  CosmosChainAddressShape,
+} from '@agoric/orchestration';
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { mustMatch, type MapStore } from '@agoric/store';
-import type { IBCChannelID } from '@agoric/network/ibc';
+import { type MapStore, mustMatch } from '@agoric/store';
 import type { IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import type { Vow, VowTools } from '@agoric/vow';
+import { fromOnly } from '@agoric/zoe/src/contractSupport/index.js';
 import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
+import { atob } from '@endo/base64';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+
 import { asMultiset } from '../utils/store.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';
 import type { StatusManager } from './status-manager.js';

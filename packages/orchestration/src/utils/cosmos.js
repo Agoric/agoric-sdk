@@ -1,7 +1,7 @@
-import { makeError } from '@endo/errors';
-import { decodeBase64 } from '@endo/base64';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { TxMsgData as TxMsgDataType } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
+import { decodeBase64 } from '@endo/base64';
+import { makeError } from '@endo/errors';
 
 const TxMsgData = CodecHelper(TxMsgDataType);
 

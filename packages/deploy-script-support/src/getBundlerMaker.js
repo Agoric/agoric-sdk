@@ -10,8 +10,9 @@
  * https://github.com/Agoric/agoric-sdk/issues/5002 and the replacement will be
  * linked with https://github.com/agoric/agoric-sdk/issues/4564
  */
-import { E } from '@endo/far';
 import url from 'node:url';
+
+import { E } from '@endo/far';
 
 /**
  * @import {start} from './endo-pieces-contract.js';

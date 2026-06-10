@@ -3,6 +3,7 @@
 /* eslint-env node */
 import { execFileSync } from 'node:child_process';
 import { basename } from 'node:path';
+
 import { listWorkspaces } from '../src/lib/packageManager.js';
 
 const workspaces = listWorkspaces({ execFileSync });

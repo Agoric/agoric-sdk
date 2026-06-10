@@ -7,16 +7,13 @@ import {
 } from '@aglocal/boot/tools/supports.js';
 import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import {
   defaultMarshaller,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { passStyleOf, type CopyRecord } from '@endo/pass-style';
-import { mustMatch } from '@endo/patterns';
-import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
@@ -25,9 +22,13 @@ import {
   getYmaxWitness,
   type TargetAllocation,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { type CopyRecord, passStyleOf } from '@endo/pass-style';
+import { mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
-import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+
 import { axelarConfig } from '../src/axelar-configs.js';
+import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
 import {
   beneficiary,
   controllerAddr,

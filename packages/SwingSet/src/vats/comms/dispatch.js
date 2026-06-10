@@ -1,14 +1,14 @@
-import { assert, Fail } from '@endo/errors';
 import { kser, kunser } from '@agoric/kmarshal';
-import { makeVatSlot } from '../../lib/parseVatSlots.js';
-import { insistMessage } from '../../lib/message.js';
-import { makeState } from './state.js';
-import { deliverToController } from './controller.js';
-import { insistCapData } from '../../lib/capdata.js';
+import { assert, Fail } from '@endo/errors';
 
+import { insistCapData } from '../../lib/capdata.js';
+import { insistMessage } from '../../lib/message.js';
+import { makeVatSlot } from '../../lib/parseVatSlots.js';
 import { makeCListKit } from './clist.js';
+import { deliverToController } from './controller.js';
 import { makeDeliveryKit } from './delivery.js';
 import { makeGCKit } from './gc-comms.js';
+import { makeState } from './state.js';
 
 export const debugState = new WeakMap();
 

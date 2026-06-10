@@ -1,24 +1,24 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
-import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { Far } from '@endo/marshal';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeStoredPublishKit } from '@agoric/notifier';
 import {
   eventLoopIteration,
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { makeBinaryVoteCounter } from '../../src/binaryVoteCounter.js';
 import {
   ChoiceMethod,
-  ElectionType,
-  QuorumRule,
   coerceQuestionSpec,
+  ElectionType,
   makeParamChangePositions,
+  QuorumRule,
 } from '../../src/index.js';
-import { makeBinaryVoteCounter } from '../../src/binaryVoteCounter.js';
 
 const SIMPLE_ISSUE = harden({ text: 'Fish or cut bait?' });
 const FISH = harden({ text: 'Fish' });

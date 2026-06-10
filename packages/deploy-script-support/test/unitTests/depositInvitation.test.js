@@ -1,10 +1,10 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
-
-import { InvitationElementShape } from '@agoric/zoe/src/typeGuards.js';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+import { InvitationElementShape } from '@agoric/zoe/src/typeGuards.js';
+
 import { makeDepositInvitation } from '../../src/depositInvitation.js';
 
 const instance = makeHandle('Instance');

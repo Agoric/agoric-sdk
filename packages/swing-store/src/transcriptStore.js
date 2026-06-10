@@ -1,8 +1,10 @@
 // @ts-check
-import { Readable } from 'node:stream';
 import { Buffer } from 'node:buffer';
-import { Fail, q } from '@endo/errors';
+import { Readable } from 'node:stream';
+
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
+import { Fail, q } from '@endo/errors';
+
 import { createSHA256 } from './hasher.js';
 
 /**

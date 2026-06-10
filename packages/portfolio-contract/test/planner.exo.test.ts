@@ -6,6 +6,7 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
+
 import { preparePlanner } from '../src/planner.exo.ts';
 import { preparePortfolioKit } from '../src/portfolio.exo.ts';
 import {

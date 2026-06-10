@@ -1,18 +1,18 @@
 // @ts-nocheck
 /* global process */
-import test from 'ava';
-
+import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
+import { kser, kslot } from '@agoric/kmarshal';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { kslot, kser } from '@agoric/kmarshal';
-import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
+import test from 'ava';
+
 import engineGC from './engine-gc.js';
-import { watchCollected, makeGcAndFinalize } from './gc-and-finalize.js';
+import { makeGcAndFinalize, watchCollected } from './gc-and-finalize.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
 import {
-  makeMessage,
   makeBringOutYourDead,
   makeDropExports,
+  makeMessage,
   makeRetireExports,
   makeRetireImports,
 } from './util.js';

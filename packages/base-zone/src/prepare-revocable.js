@@ -1,4 +1,5 @@
 import { M } from '@endo/patterns';
+
 import { wrapperMethods } from './prepare-attenuator.js';
 
 /**

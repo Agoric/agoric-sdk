@@ -1,7 +1,8 @@
 /** @file core-eval to publish update to Fast USDC feedPolicy */
 
-import { E } from '@endo/far';
 import { FeedPolicyShape } from '@agoric/fast-usdc/src/type-guards.js';
+import { E } from '@endo/far';
+
 import { fromExternalConfig } from './utils/config-marshal.js';
 import { publishFeedPolicy } from './utils/core-eval.js';
 

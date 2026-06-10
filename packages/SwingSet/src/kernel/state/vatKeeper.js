@@ -1,17 +1,18 @@
 /**
  * Kernel's keeper of persistent state for a vat.
  */
+import { assert, Fail, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
-import { assert, q, Fail } from '@endo/errors';
 import { isPrimitive } from '@endo/pass-style';
-import { parseKernelSlot } from '../parseKernelSlots.js';
-import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
-import { insistVatID } from '../../lib/id.js';
+
 import { insistCapData } from '../../lib/capdata.js';
+import { insistVatID } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
+import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { parseKernelSlot } from '../parseKernelSlots.js';
 import {
-  parseReachableAndVatSlot,
   buildReachableAndVatSlot,
+  parseReachableAndVatSlot,
 } from './reachable.js';
 import { enumeratePrefixedKeys } from './storageHelper.js';
 

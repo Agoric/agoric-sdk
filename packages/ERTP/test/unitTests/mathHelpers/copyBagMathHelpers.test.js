@@ -1,9 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeTagged } from '@endo/marshal';
+
 import {
   getCopyBagEntries,
   makeCopyBagFromElements as makeBag,
 } from '@agoric/store';
+import { makeTagged } from '@endo/marshal';
 
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
 import { mockCopyBagBrand as mockBrand } from './mockBrand.js';

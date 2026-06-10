@@ -1,8 +1,9 @@
 /* eslint-env node */
 import { parseArgs } from 'node:util';
-import { isNat } from '@endo/nat';
+
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForInviteWithdrawer } from '@agoric/inter-protocol/src/proposals/withdraw-reserve-proposal.js';
+import { isNat } from '@endo/nat';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';

@@ -1,4 +1,5 @@
 import { fromHex } from '@cosmjs/encoding';
+
 import {
   encodeAbiParameters,
   encodeFunctionData,

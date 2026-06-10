@@ -3,13 +3,13 @@ import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import path from 'node:path';
 
-import { E } from '@endo/eventual-send';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { E } from '@endo/eventual-send';
 
-import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
+import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 
 /**
  * @import {ExecutionContext} from 'ava';

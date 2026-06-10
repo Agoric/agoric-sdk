@@ -5,11 +5,11 @@
  */
 import { AmountMath, type Payment } from '@agoric/ertp';
 import {
+  type ERemote,
   fromTypedEntries,
   makeTracer,
   mustMatch,
   NonNullish,
-  type ERemote,
   type Remote,
   type TypedPattern,
 } from '@agoric/internal';
@@ -19,20 +19,20 @@ import type {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
-  ChainInfoShape,
-  DenomDetailShape,
-  OrchestrationPowersShape,
-  registerChainsAndAssets,
-  withOrchestration,
   type AccountId,
   type Bech32Address,
   type ChainInfo,
+  ChainInfoShape,
   type CosmosChainInfo,
   type Denom,
   type DenomAmount,
   type DenomDetail,
+  DenomDetailShape,
   type OrchestrationPowers,
+  OrchestrationPowersShape,
   type OrchestrationTools,
+  registerChainsAndAssets,
+  withOrchestration,
 } from '@agoric/orchestration';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
@@ -64,27 +64,28 @@ import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
+
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
 import { preparePlanner } from './planner.exo.ts';
 import {
   makeValidateOpenMessageRepresentativeInfo,
-  preparePortfolioKit,
   type PortfolioKit,
+  preparePortfolioKit,
 } from './portfolio.exo.ts';
 import * as flows from './portfolio.flows.ts';
 import { prepareResolverKit } from './resolver/resolver.exo.js';
 import { PENDING_TXS_NODE_KEY } from './resolver/types.ts';
-import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import {
   BeefyPoolPlaces,
   ERC4626PoolPlaces,
-  makeProposalShapes,
   type EVMContractAddressesMap,
+  makeProposalShapes,
   type OfferArgsFor,
   type ProposalType,
   type StatusFor,
 } from './type-guards.ts';
+import { makeOfferArgsShapes } from './type-guards-steps.ts';
 
 const trace = makeTracer('PortC');
 const { fromEntries, keys } = Object;

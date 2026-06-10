@@ -1,16 +1,16 @@
-import test from 'ava';
-
-import { Fail } from '@endo/errors';
-import { Far } from '@endo/marshal';
-import { M } from '@agoric/store';
-import { makePromiseKit } from '@endo/promise-kit';
 // Disabled to avoid circular dependencies.
 // import { makeStoreUtils } from '@agoric/vat-data/src/vat-data-bindings.js';
 // import { makeExoUtils } from '@agoric/vat-data/src/exo-utils.js';
-import { kslot, kser } from '@agoric/kmarshal';
-import { setupTestLiveslots } from './liveslots-helpers.js';
-import { makeResolve, makeReject } from './util.js';
+import { kser, kslot } from '@agoric/kmarshal';
+import { M } from '@agoric/store';
+import { Fail } from '@endo/errors';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import test from 'ava';
+
 import { makeExoUtils } from './exo-utils.js';
+import { setupTestLiveslots } from './liveslots-helpers.js';
+import { makeReject, makeResolve } from './util.js';
 
 // eslint-disable-next-line no-unused-vars
 const compareEntriesByKey = ([ka], [kb]) => (ka < kb ? -1 : 1);

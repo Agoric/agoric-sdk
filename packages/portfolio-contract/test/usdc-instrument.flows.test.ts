@@ -2,9 +2,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, type NatAmount } from '@agoric/ertp';
 import type { AccountId } from '@agoric/orchestration';
+
 import { openPortfolio } from '../src/portfolio.flows.ts';
 import { decodeCreateAndDepositPayload } from './abi-utils.ts';
-import { BLD, USDC, makePermitDetails, mocks } from './flow-test-kit.ts';
+import { BLD, makePermitDetails, mocks, USDC } from './flow-test-kit.ts';
 import { makeStorageTools } from './supports.ts';
 
 /* eslint-disable no-underscore-dangle */

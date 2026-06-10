@@ -1,15 +1,15 @@
-import { Far, E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { initEmpty } from '@agoric/store';
 import {
-  makeKindHandle,
   defineDurableKind,
   defineDurableKindMulti,
   defineKind,
+  makeKindHandle,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
   watchPromise,
 } from '@agoric/vat-data';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';

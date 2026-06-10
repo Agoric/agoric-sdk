@@ -4,6 +4,7 @@
 import '@endo/init/debug.js';
 
 import * as http from 'node:http';
+
 import test from 'ava';
 
 import { makeJsonHttpClient } from '../src/json-http-client-node.js';

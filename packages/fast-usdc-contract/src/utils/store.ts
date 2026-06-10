@@ -1,6 +1,6 @@
+import type { MapStore } from '@agoric/store';
 import { Fail } from '@endo/errors';
 import type { Key } from '@endo/patterns';
-import type { MapStore } from '@agoric/store';
 
 // TODO provide something like this in a more common place, perhaps as a BagStore
 /**

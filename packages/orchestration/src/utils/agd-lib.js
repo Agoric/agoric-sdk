@@ -1,4 +1,5 @@
 import assert from 'node:assert';
+
 import { toCLIOptions } from '@agoric/internal/src/cli-utils.js';
 
 const { freeze } = Object;

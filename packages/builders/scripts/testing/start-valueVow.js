@@ -6,8 +6,12 @@ import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
 /**
+ * @import {start} from '@agoric/zoe/src/contracts/valueVow.contract.js';
+ */
+
+/**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
- * @typedef {typeof import('@agoric/zoe/src/contracts/valueVow.contract.js').start} start
+ * @typedef {typeof start} start
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';

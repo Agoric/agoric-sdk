@@ -3,7 +3,7 @@
  * and holding portfolios for EVM accounts.
  * @see {@link prepareEVMWalletHandlerKit}
  */
-import { makeTracer, type ERemote, type Remote } from '@agoric/internal';
+import { type ERemote, makeTracer, type Remote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
@@ -23,22 +23,23 @@ import type {
   YmaxStandaloneOperationData,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import {
-  makeEVMHandlerUtils,
   type FullMessageDetails,
+  makeEVMHandlerUtils,
   type PermitDetails,
   type YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
-import { provideLazy, type MapStore } from '@agoric/store';
+import { type MapStore, provideLazy } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
-import { VowShape, type Vow, type VowTools } from '@agoric/vow';
+import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import { type Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { makePassableKit } from '@endo/marshal';
-import { passStyleOf, type Passable, type PureData } from '@endo/pass-style';
+import { type Passable, passStyleOf, type PureData } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { Address } from 'abitype';
 import type { RecoverTypedDataAddressParameters } from 'viem';
+
 import type { PublishStatus } from './portfolio.contract.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 

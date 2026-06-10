@@ -1,11 +1,11 @@
-import { assert } from '@endo/errors';
-import { E } from '@endo/eventual-send';
-import bundleSource from '@endo/bundle-source';
-
 import path from 'node:path';
 
-import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
+import bundleSource from '@endo/bundle-source';
+import { assert } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

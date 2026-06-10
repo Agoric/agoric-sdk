@@ -1,5 +1,5 @@
-import { Far } from '@endo/far';
 import { defineKind } from '@agoric/vat-data';
+import { Far } from '@endo/far';
 
 export function buildRootObject() {
   const makeHolder = defineKind('holder', thing => ({ thing }), {});

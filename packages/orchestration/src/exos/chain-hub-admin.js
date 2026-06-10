@@ -2,6 +2,7 @@
 /* eslint-disable no-restricted-syntax */
 import { heapVowE } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
+
 import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
 /**

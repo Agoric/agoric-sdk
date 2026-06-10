@@ -7,8 +7,8 @@
  * @see resolveUSDC
  * @see {@link https://ping.pub/agoric/gov/59 59. Start USDC (Noble) PSM} 2023-11-01
  */
-import { E } from '@endo/eventual-send';
 import { makeTracer } from '@agoric/internal/src/debug.js';
+import { E } from '@endo/eventual-send';
 
 /**
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';

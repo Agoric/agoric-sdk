@@ -2,16 +2,15 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { assert } from '@endo/errors';
-import bundleSource from '@endo/bundle-source';
-import { makeIssuerKit, AmountMath, isSetValue } from '@agoric/ertp';
+import { AmountMath, isSetValue, makeIssuerKit } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import bundleSource from '@endo/bundle-source';
+import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
+import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
-
-import { defaultAcceptanceMsg } from '../../../src/contractSupport/index.js';
 
 /**
  * @import {Amount} from '@agoric/ertp';

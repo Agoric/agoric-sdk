@@ -29,6 +29,7 @@ import type { EReturn } from '@endo/far';
 import { Far } from '@endo/pass-style';
 import { M, mustMatch } from '@endo/patterns';
 import type { TestFn } from 'ava';
+
 import { prepareAdvancer, stateShape } from '../../src/exos/advancer.ts';
 import type { LiquidityPoolKit } from '../../src/exos/liquidity-pool.ts';
 import {

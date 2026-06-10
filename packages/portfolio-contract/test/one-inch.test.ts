@@ -1,6 +1,7 @@
+import type { SwapDesc } from '@agoric/portfolio-api';
 import test from 'ava';
 import { encodeFunctionData } from 'viem';
-import type { SwapDesc } from '@agoric/portfolio-api';
+
 import {
   getOneInchSwapArgs,
   oneInchRouterABI,

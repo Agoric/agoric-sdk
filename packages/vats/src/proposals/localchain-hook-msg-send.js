@@ -1,5 +1,6 @@
 // @ts-check
 import { E } from '@endo/far';
+
 import {
   getManifestForUpgradingVats,
   upgradeVatsGeneric,

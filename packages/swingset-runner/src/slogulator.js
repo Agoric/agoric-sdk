@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import process from 'node:process';
-import Readlines from 'n-readlines';
-import yargs from 'yargs';
 
 import { Fail } from '@endo/errors';
+import Readlines from 'n-readlines';
+import yargs from 'yargs';
 
 function usage() {
   console.error('usage message goes here');

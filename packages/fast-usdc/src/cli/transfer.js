@@ -7,14 +7,15 @@ import {
   pickEndpoint,
 } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+
 import { queryFastUSDCLocalChainAccount } from './util/agoric.js';
+import { queryUSDCBalance } from './util/bank.js';
 import { depositForBurn, makeProvider } from './util/cctp.js';
 import {
   makeSigner,
   queryForwardingAccount,
   registerFwdAccount,
 } from './util/noble.js';
-import { queryUSDCBalance } from './util/bank.js';
 
 /**
  * @import { File } from './util/file.js'

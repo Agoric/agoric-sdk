@@ -1,18 +1,18 @@
 // @ts-nocheck
 /* global setTimeout clearTimeout setInterval clearInterval process */
 // Start a network service
-import path from 'node:path';
+import { existsSync as existsSyncAmbient } from 'node:fs';
 import http from 'node:http';
 import { createConnection } from 'node:net';
-import { existsSync as existsSyncAmbient } from 'node:fs';
-import express from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import WebSocket from 'ws';
-import anylogger from '@agoric/internal/vendor/anylogger.js';
-import morgan from 'morgan';
+import path from 'node:path';
 import { format as urlFormat } from 'node:url';
 
 import { getAccessToken } from '@agoric/access-token';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
+import express from 'express';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import morgan from 'morgan';
+import WebSocket from 'ws';
 
 const maximumBundleSize = 1024 * 1024 * 128; // 128MB
 

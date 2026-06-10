@@ -1,7 +1,7 @@
 // @ts-check
 
-import { Fail } from '@endo/errors';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import {
   deeplyFulfilledObject,
@@ -11,10 +11,10 @@ import {
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { mustMatch } from '@agoric/store';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';

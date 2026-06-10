@@ -1,5 +1,5 @@
-import { E, Far } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { E, Far } from '@endo/far';
 
 export const testUpgradedBoard = async ({
   consume: { board },

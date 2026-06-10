@@ -3,11 +3,11 @@ import test from 'ava';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
+  type OperationTypeNames,
+  splitWitnessFieldType,
+  type TargetAllocation,
   validateYmaxDomain,
   validateYmaxOperationTypeName,
-  splitWitnessFieldType,
-  type OperationTypeNames,
-  type TargetAllocation,
   type YmaxOperationType,
 } from '../src/evm-wallet/eip712-messages.ts';
 

@@ -1,23 +1,23 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import type { Issuer } from '@agoric/ertp/src/types.js';
+import type { StartedInstanceKit } from '@agoric/vats/src/core/types.js';
 import {
   LOCALCHAIN_DEFAULT_ADDRESS,
   SIMULATED_ERRORS,
 } from '@agoric/vats/tools/fake-bridge.js';
+import type { Installation, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import {
   type AmountUtils,
   withAmountUtils,
 } from '@agoric/zoe/tools/test-utils.js';
 import { E, type EReturn } from '@endo/far';
-import type { ZoeService, Installation } from '@agoric/zoe';
-import type { StartedInstanceKit } from '@agoric/vats/src/core/types.js';
-import { commonSetup } from '../supports.js';
+import type { TestFn } from 'ava';
 
 import * as contractExports from '../fixtures/zoe-tools.contract.js';
+import { commonSetup } from '../supports.js';
 
 const contractName = 'zoeTools';
 type StartFn = typeof contractExports.start;

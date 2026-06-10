@@ -1,12 +1,13 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
-import { assert } from '@endo/errors';
-import { kunser, krefOf } from '@agoric/kmarshal';
+import { krefOf, kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
+import { assert } from '@endo/errors';
+
 import { makeSwingsetController } from '../../../src/index.js';
+import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
 import { initializeTestSwingset as initializeSwingset } from '../../../tools/test-swingset.js';
 
 function bfile(name) {

@@ -1,7 +1,9 @@
 // @ts-check
+import { parseArgs } from 'node:util';
+
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { Far } from '@endo/far';
-import { parseArgs } from 'node:util';
+
 import { getManifestForAddOperators } from './add-operators.core.js';
 import { toExternalConfig } from './utils/config-marshal.js';
 import { configurations } from './utils/deploy-config.js';

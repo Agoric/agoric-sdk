@@ -1,12 +1,11 @@
 // @ts-nocheck
+import { initEmpty } from '@agoric/store';
+import { Far } from '@endo/marshal';
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
-import { initEmpty } from '@agoric/store';
-
+import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 import engineGC from '../engine-gc.js';
 import { makeGcAndFinalize, watchCollected } from '../gc-and-finalize.js';
-import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 
 function makeStashKit(name = 'held') {
   const held = Far(name);

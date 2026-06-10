@@ -1,20 +1,22 @@
 /* eslint-env node */
 /* global globalThis */
-import { Command } from 'commander';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
-import { homedir } from 'node:os';
 import {
   readFile as readAsync,
   writeFile as writeAsync,
 } from 'node:fs/promises';
-import { addConfigCommands } from './config-commands.js';
-import { addOperatorCommands } from './operator-commands.js';
+import { homedir } from 'node:os';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { Command } from 'commander';
+
 import * as configLib from './config.js';
+import { addConfigCommands } from './config-commands.js';
+import { addLPCommands } from './lp-commands.js';
+import { addOperatorCommands } from './operator-commands.js';
 import * as transferLib from './transfer.js';
 import { makeFile } from './util/file.js';
-import { addLPCommands } from './lp-commands.js';
 
 const packageJson = JSON.parse(
   readFileSync(

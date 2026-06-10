@@ -1,7 +1,7 @@
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 const packageRoot = fileURLToPath(new URL('../../', import.meta.url));
 const snapshotCli = './test/tools/create-runutils-snapshot.ts';

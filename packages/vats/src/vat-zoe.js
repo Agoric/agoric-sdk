@@ -1,5 +1,5 @@
-import { Far } from '@endo/far';
 import { makeDurableZoeKit } from '@agoric/zoe';
+import { Far } from '@endo/far';
 
 /**
  * @import {ZCFSpec} from '@agoric/zoe';

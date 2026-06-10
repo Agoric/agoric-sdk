@@ -34,7 +34,7 @@ export function loader(url, readFile = undefined) {
 
 /**
  * @param {{
- *   spawn: typeof import('child_process').spawn,
+ *   spawn: typeof spawn,
  *   os: string,
  *   fs: typeof import('fs'),
  *   tmpName: (typeof import('tmp'))['tmpName'],

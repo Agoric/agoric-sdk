@@ -1,7 +1,8 @@
 /* eslint-env node */
 // @ts-check
-import test from 'ava';
 import { Far } from '@endo/marshal';
+import test from 'ava';
+
 import {
   waitUntilAccountFunded,
   waitUntilContractDeployed,

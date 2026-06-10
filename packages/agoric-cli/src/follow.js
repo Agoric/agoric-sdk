@@ -1,19 +1,20 @@
 // @ts-check
 import process from 'node:process';
-import {
-  Far,
-  getInterfaceOf,
-  decodeToJustin,
-  makeMarshal,
-} from '@endo/marshal';
 
 import {
+  iterateEach,
   iterateLatest,
   makeCastingSpec,
-  iterateEach,
   makeFollower,
   makeLeader,
 } from '@agoric/casting';
+import {
+  decodeToJustin,
+  Far,
+  getInterfaceOf,
+  makeMarshal,
+} from '@endo/marshal';
+
 import { makeLeaderOptions } from './lib/casting.js';
 
 /**

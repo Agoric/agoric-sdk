@@ -1,4 +1,5 @@
 import makeScratchPad from '@agoric/internal/src/scratch.js';
+
 import { makeScriptLoader } from './scripts.js';
 
 export default async function runMain(progname, rawArgs, powers, opts) {

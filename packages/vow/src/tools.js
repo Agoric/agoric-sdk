@@ -1,10 +1,10 @@
 // @ts-check
-import { makeAsVow } from './vow-utils.js';
-import { prepareVowKit } from './vow.js';
-import { prepareWatchUtils } from './watch-utils.js';
-import { prepareWatch } from './watch.js';
 import { prepareVowRejectionTracker } from './rejection-tracker.js';
 import { prepareRetryableTools } from './retryable.js';
+import { prepareVowKit } from './vow.js';
+import { makeAsVow } from './vow-utils.js';
+import { prepareWatch } from './watch.js';
+import { prepareWatchUtils } from './watch-utils.js';
 import { makeWhen } from './when.js';
 
 /**

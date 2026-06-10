@@ -1,4 +1,4 @@
-import type { TypedDataType, TypedData } from 'abitype';
+import type { TypedData, TypedDataType } from 'abitype';
 
 // Redefine abitype's TypedDataParameter to make it generic
 export type TypedDataParameter<

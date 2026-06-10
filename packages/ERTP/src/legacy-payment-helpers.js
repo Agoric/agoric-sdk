@@ -1,6 +1,7 @@
+import { mustMatch } from '@agoric/store';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { mustMatch } from '@agoric/store';
+
 import { AmountMath } from './amountMath.js';
 
 /**

@@ -29,10 +29,10 @@ import {
 import type { MakeRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import type {
+  TransferPart,
   ZCF,
   ZCFMint,
   ZCFSeat,
-  TransferPart,
 } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';

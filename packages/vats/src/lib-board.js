@@ -3,17 +3,17 @@
  * @see prepareBoardKit()
  */
 
-import { assert, Fail, q } from '@endo/errors';
+import { makeInaccessibleVal } from '@agoric/internal/src/marshal/inaccessible-val.js';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
   defineRecorderKit,
   prepareRecorder,
 } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { assert, Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { isRemotable, makeMarshal } from '@endo/marshal';
 
-import { makeInaccessibleVal } from '@agoric/internal/src/marshal/inaccessible-val.js';
 import { crc6 } from './crc.js';
 
 /**

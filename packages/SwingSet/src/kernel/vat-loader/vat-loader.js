@@ -1,4 +1,5 @@
 import { assert, Fail } from '@endo/errors';
+
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 

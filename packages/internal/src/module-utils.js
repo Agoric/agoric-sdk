@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+
 import { search } from '@endo/compartment-mapper';
 import { Fail } from '@endo/errors';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /**
  * Given a file URL, return a deep import specifier that starts with the

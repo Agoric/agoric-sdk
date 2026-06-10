@@ -1,15 +1,14 @@
 /* eslint-env node */
 
-import test from 'ava';
-
 import * as proc from 'node:child_process';
 import fs from 'node:fs';
 import * as os from 'node:os';
+
+import test from 'ava';
 import { tmpName } from 'tmp';
 
 import { recordXSnap, replayXSnap } from '../src/replay.js';
-
-import { options, encode, decode } from './message-tools.js';
+import { decode, encode, options } from './message-tools.js';
 
 const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 

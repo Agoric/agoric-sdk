@@ -5,26 +5,27 @@
  * to act on.
  */
 
-import { makeTracer } from '@agoric/internal';
-import { prepareDurablePublishKit } from '@agoric/notifier';
-import { Fail, quote } from '@endo/errors';
-import { keyEQ, M } from '@endo/patterns';
+import { INVITATION_MAKERS_DESC } from '@agoric/fast-usdc/src/operator-kit-interface.js';
 import {
   CctpTxEvidenceShape,
   RiskAssessmentShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
-import { INVITATION_MAKERS_DESC } from '@agoric/fast-usdc/src/operator-kit-interface.js';
-import type { Zone } from '@agoric/zone';
-import type { MapStore } from '@agoric/store';
 import type {
   CctpTxEvidence,
   EvidenceWithRisk,
   RiskAssessment,
 } from '@agoric/fast-usdc/src/types.js';
-import type { ZCF, Invitation } from '@agoric/zoe';
+import { makeTracer } from '@agoric/internal';
+import { prepareDurablePublishKit } from '@agoric/notifier';
+import type { MapStore } from '@agoric/store';
+import type { Invitation, ZCF } from '@agoric/zoe';
+import type { Zone } from '@agoric/zone';
+import { Fail, quote } from '@endo/errors';
+import { keyEQ, M } from '@endo/patterns';
+
 import { defineInertInvitation } from '../utils/zoe.ts';
-import { prepareOperatorKit } from './operator-kit.ts';
 import type { OperatorKit } from './operator-kit.ts';
+import { prepareOperatorKit } from './operator-kit.ts';
 
 const trace = makeTracer('TxFeed', true);
 

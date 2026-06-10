@@ -2,12 +2,13 @@
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
+import { decodeIbcEndpoint } from '@agoric/network/ibc/utils.js';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
-import { decodeIbcEndpoint } from '@agoric/network/ibc/utils.js';
+
 import {
   AmountArgShape,
   CoinShape,
@@ -20,25 +21,8 @@ import {
   LegacyExecuteEncodedTxOptionsShape,
   Proto3Shape,
 } from '../typeGuards.js';
-import { coerceCoin, coerceDenom } from '../utils/amounts.js';
-import {
-  maxClockSkew,
-  toCosmosDelegationResponse,
-  toCosmosValidatorAddress,
-  toDenomAmount,
-  toTruncatedDenomAmount,
-  tryDecodeResponses,
-} from '../utils/cosmos.js';
-import { makeVowExoHelpers } from '../utils/exo-helpers.js';
-import {
-  orchestrationAccountMethods,
-  addTrafficEntries,
-  finishTrafficEntries,
-  trafficTransforms,
-  SliceDescriptorShape,
-} from '../utils/orchestrationAccount.js';
-import { makeTimestampHelper } from '../utils/time.js';
 import { accountIdTo32Bytes, parseAccountId } from '../utils/address.js';
+import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import {
   Any,
   MsgBeginRedelegate,
@@ -69,6 +53,23 @@ import {
   QueryUnbondingDelegationResponse,
   responseCodecForTypeUrl,
 } from '../utils/codecs.js';
+import {
+  maxClockSkew,
+  toCosmosDelegationResponse,
+  toCosmosValidatorAddress,
+  toDenomAmount,
+  toTruncatedDenomAmount,
+  tryDecodeResponses,
+} from '../utils/cosmos.js';
+import { makeVowExoHelpers } from '../utils/exo-helpers.js';
+import {
+  addTrafficEntries,
+  finishTrafficEntries,
+  orchestrationAccountMethods,
+  SliceDescriptorShape,
+  trafficTransforms,
+} from '../utils/orchestrationAccount.js';
+import { makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';

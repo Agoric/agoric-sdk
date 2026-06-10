@@ -6,6 +6,7 @@
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { startAutoStakeIt } from '@agoric/orchestration/src/proposals/start-auto-stake-it.js';
+
 import { parseChainHubOpts } from '../orchestration/helpers.js';
 
 /**

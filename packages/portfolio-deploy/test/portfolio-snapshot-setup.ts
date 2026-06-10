@@ -1,6 +1,7 @@
 import { AckBehavior } from '@aglocal/boot/tools/supports.js';
 import { BridgeId } from '@agoric/internal';
 import type { ChainInfo } from '@agoric/orchestration';
+
 import type { PortfolioBootPowers } from '../src/portfolio-start.type.ts';
 import type { WalletFactoryTestContext } from './walletFactory.ts';
 

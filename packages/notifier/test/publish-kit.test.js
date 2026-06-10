@@ -1,28 +1,33 @@
 /* eslint-disable no-void */
 
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
-import test from 'ava';
 
-import { q } from '@endo/errors';
-import { E } from '@endo/far';
+import { kunser } from '@agoric/kmarshal';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { initializeTestSwingset as initializeSwingset } from '@agoric/swingset-vat/tools/test-swingset.js';
-import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/kmarshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
+import { q } from '@endo/errors';
+import { E } from '@endo/far';
+import test from 'ava';
+
 import {
   makePublishKit,
+  prepareDurablePublishKit,
   subscribeEach,
   subscribeLatest,
-  prepareDurablePublishKit,
 } from '../src/index.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
 /**
- * @typedef {typeof import('../src/index.js').makePublishKit} MakePublishKit
+ * @import {makePublishKit} from '../src/index.js';
+ */
+
+/**
+ * @typedef {typeof makePublishKit} MakePublishKit
  * @import {PublicationRecord} from '../src/types.js';
  * @import {Bundle, SwingSetConfig} from '@agoric/swingset-vat/src/types-external.js';
  */

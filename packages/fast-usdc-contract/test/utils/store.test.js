@@ -1,5 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { makeScalarMapStore } from '@agoric/store';
+
 import { asMultiset, insertIntoSortedArray } from '../../src/utils/store.ts';
 
 test('add and get', t => {

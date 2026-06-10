@@ -1,13 +1,14 @@
-// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import crypto from 'node:crypto';
+
+import { decodeBase64 } from '@endo/base64';
 import bundleSource from '@endo/bundle-source';
 import { parseArchive } from '@endo/compartment-mapper';
-import { decodeBase64 } from '@endo/base64';
-import { makeKernelEndowments } from '../util.js';
-import buildKernel from '../../src/kernel/index.js';
+
 import { initializeKernel } from '../../src/controller/initializeKernel.js';
+import buildKernel from '../../src/kernel/index.js';
+import { makeKernelEndowments } from '../util.js';
 
 test('install bundle', async t => {
   const endowments = makeKernelEndowments();

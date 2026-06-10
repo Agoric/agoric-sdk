@@ -1,4 +1,5 @@
 import test from 'ava';
+
 import { makeSpy, runVOTest } from './vo-test-harness.js';
 
 async function voTestTest(t, mode) {

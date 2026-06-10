@@ -1,5 +1,5 @@
-import { BroadcastTxError } from '@cosmjs/stargate';
 import type { BaseAccount } from '@agoric/cosmic-proto/codegen/cosmos/auth/v1beta1/auth.js';
+import { BroadcastTxError } from '@cosmjs/stargate';
 
 export const createMockFetchAccount = (
   accountNumber: bigint,

@@ -1,4 +1,5 @@
 import { test } from './prepare-test-env-ava.js';
+
 import { makeNotifierKit } from '../src/index.js';
 
 /**

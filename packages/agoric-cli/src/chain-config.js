@@ -1,6 +1,6 @@
-import djson from 'deterministic-json';
-import TOML from '@iarna/toml';
 import * as Tokens from '@agoric/internal/src/tokens.js';
+import TOML from '@iarna/toml';
+import djson from 'deterministic-json';
 
 export const STAKING_MAX_VALIDATORS = 150;
 // Required for IBC connections not to time out.

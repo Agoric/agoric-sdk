@@ -1,8 +1,8 @@
-import { q, Fail } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap } from '@agoric/internal';
 import { defineName } from '@agoric/internal/src/js-utils.js';
 import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
+import { Fail, q } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /** @import {Callable} from '@agoric/internal'; */
 /** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */

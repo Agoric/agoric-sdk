@@ -1,7 +1,9 @@
 /* eslint-env node */
 import fs from 'node:fs';
 import path from 'node:path';
+
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+
 import { makeSwingsetConfigIO } from './swingset-config.js';
 
 const { loadBasedir, normalizeConfig, loadSwingsetConfigFile } =

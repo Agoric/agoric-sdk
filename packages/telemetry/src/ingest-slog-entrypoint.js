@@ -3,9 +3,9 @@
 import '@endo/init';
 
 import fs from 'node:fs';
-import zlib from 'node:zlib';
-import readline from 'node:readline';
 import process from 'node:process';
+import readline from 'node:readline';
+import zlib from 'node:zlib';
 
 import { makeSlogSender } from './make-slog-sender.js';
 

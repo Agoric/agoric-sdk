@@ -5,15 +5,15 @@ import {
   provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
-import { ACCOUNT_DUST_EPSILON, type SupportedChain } from './constants.js';
-import { chainOf, isInstrumentId } from './places.ts';
-import type { AssetPlaceRef, TargetAllocation } from './types.js';
 
+import { ACCOUNT_DUST_EPSILON, type SupportedChain } from './constants.js';
 import type {
   ChainSpec,
   NetworkSpec,
   PoolSpec,
 } from './network/network-spec.js';
+import { chainOf, isInstrumentId } from './places.ts';
+import type { AssetPlaceRef, TargetAllocation } from './types.js';
 
 const hardenOrFreeze = globalThis.harden ?? Object.freeze;
 

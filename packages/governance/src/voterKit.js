@@ -1,6 +1,7 @@
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { defineDurableHandle } from '@agoric/zoe/src/makeHandle.js';
 import { E } from '@endo/eventual-send';
+
 import { PositionShape, QuestionHandleShape } from './typeGuards.js';
 
 /**

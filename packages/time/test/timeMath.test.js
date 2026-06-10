@@ -1,5 +1,6 @@
-import test from 'ava';
 import { Far } from '@endo/far';
+import test from 'ava';
+
 import { TimeMath } from '../src/timeMath.js';
 
 /**

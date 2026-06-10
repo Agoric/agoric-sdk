@@ -1,29 +1,30 @@
-import type { DProxy } from '@agoric/swingset-vat/src/types-external.js';
+import type { Brand, Issuer, Mint, Payment } from '@agoric/ertp';
+import type { OrchestrationVat } from '@agoric/orchestration';
 import type { BridgeDevice } from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
 import type { CommandDevice } from '@agoric/swingset-vat/src/devices/command/device-command.js';
 import type { MailboxDevice } from '@agoric/swingset-vat/src/devices/mailbox/device-mailbox.js';
 import type { PluginDevice } from '@agoric/swingset-vat/src/devices/plugin/device-plugin.js';
 import type { TimerDevice } from '@agoric/swingset-vat/src/devices/timer/device-timer.js';
 import type { VatAdminDevice } from '@agoric/swingset-vat/src/devices/vat-admin/device-vat-admin.js';
-import type { VattpVat } from '@agoric/swingset-vat/src/vats/vattp/vat-vattp.js';
-import type { VatAdminVat } from '@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js';
+import type { DProxy } from '@agoric/swingset-vat/src/types-external.js';
 /** @see deliverToController in packages/SwingSet/src/vats/comms/controller.js */
 import type { TimerVat } from '@agoric/swingset-vat/src/vats/timer/vat-timer.js';
-import type { Issuer, Brand, Payment, Mint } from '@agoric/ertp';
-import type { OrchestrationVat } from '@agoric/orchestration';
+import type { VatAdminVat } from '@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js';
+import type { VattpVat } from '@agoric/swingset-vat/src/vats/vattp/vat-vattp.js';
 import type { ERef } from 'jessie.js';
-import type { LocalChainVat } from '../vat-localchain.js';
-import type { TransferVat } from '../vat-transfer.js';
-import type { ZoeVat } from '../vat-zoe.js';
-import type { PriceAuthorityVat } from '../vat-priceAuthority.js';
-import type { ProvisioningVat } from '../vat-provisioning.js';
+
+import type { AgoricNamesVat } from '../vat-agoricNames.js';
 import type { BankVat } from '../vat-bank.js';
+import type { BoardVat } from '../vat-board.js';
+import type { BridgeVat } from '../vat-bridge.js';
+import type { IBCVat } from '../vat-ibc.js';
+import type { LocalChainVat } from '../vat-localchain.js';
 import type { MintsVat } from '../vat-mints.js';
 import type { NetworkVat } from '../vat-network.js';
-import type { IBCVat } from '../vat-ibc.js';
-import type { BoardVat } from '../vat-board.js';
-import type { AgoricNamesVat } from '../vat-agoricNames.js';
-import type { BridgeVat } from '../vat-bridge.js';
+import type { PriceAuthorityVat } from '../vat-priceAuthority.js';
+import type { ProvisioningVat } from '../vat-provisioning.js';
+import type { TransferVat } from '../vat-transfer.js';
+import type { ZoeVat } from '../vat-zoe.js';
 
 export type BootDevices<T> = { vatPowers: { D: DProxy }; devices: T };
 

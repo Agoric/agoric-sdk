@@ -1,8 +1,7 @@
 // @ts-check
-import test from 'ava';
-
-import { E } from '@endo/far';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
+import { E } from '@endo/far';
+import test from 'ava';
 
 import { prepareBasicVowTools } from '../src/tools.js';
 import { getVowPayload, isVow } from '../src/vow-utils.js';

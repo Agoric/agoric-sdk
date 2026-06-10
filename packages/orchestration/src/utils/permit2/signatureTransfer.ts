@@ -18,6 +18,7 @@ import type {
   TypedDataDefinition,
   TypedDataDomain,
 } from 'viem';
+
 import type { TypedDataParameter } from '../abitype.ts';
 
 export const PERMIT2_DOMAIN_NAME = 'Permit2';

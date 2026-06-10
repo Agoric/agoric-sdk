@@ -3,19 +3,18 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { assert } from '@endo/errors';
-import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { TimeMath } from '@agoric/time';
+import bundleSource from '@endo/bundle-source';
+import { assert } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
-import { makeZoeForTest } from '../../tools/setup-zoe.js';
-
 import buildManualTimer from '../../tools/manualTimer.js';
-import { setup } from './setupBasicMints.js';
-import { assertPayoutAmount } from '../zoeTestHelpers.js';
 import { makeScriptedOracle } from '../../tools/scriptedOracle.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
+import { assertPayoutAmount } from '../zoeTestHelpers.js';
+import { setup } from './setupBasicMints.js';
 
 /**
  * @import {ExecutionContext} from 'ava';

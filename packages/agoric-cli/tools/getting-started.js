@@ -1,13 +1,13 @@
 // @ts-check
 /* eslint-env node */
 
-import fs from 'node:fs';
-import path from 'node:path';
-import tmp from 'tmp';
-import { makePromiseKit } from '@endo/promise-kit';
-import { request } from 'node:http';
-
 import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import { request } from 'node:http';
+import path from 'node:path';
+
+import { makePromiseKit } from '@endo/promise-kit';
+import tmp from 'tmp';
 
 import { makePspawn } from '../src/helpers.js';
 

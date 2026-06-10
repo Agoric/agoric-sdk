@@ -1,13 +1,11 @@
 import { Far, makeTagged } from '@endo/marshal';
 import {
+  M,
   makeCopyBag,
   makeCopyMap,
   makeCopySet,
   matches,
-  M,
 } from '@endo/patterns';
-import engineGC from './engine-gc.js';
-import { makeGcAndFinalize } from './gc-and-finalize.js';
 
 import {
   AmountShape,
@@ -16,6 +14,8 @@ import {
   PaymentShape,
   ProposalShape,
 } from './borrow-guards.js';
+import engineGC from './engine-gc.js';
+import { makeGcAndFinalize } from './gc-and-finalize.js';
 /**
  * @import {Passable} from '@endo/pass-style';
  * @import {Pattern} from '@endo/patterns';

@@ -2,6 +2,7 @@ import { finished as streamFinishedCallback, Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { createGzip } from 'node:zlib';
+
 import { withDeferredCleanup } from '@agoric/internal';
 
 /**

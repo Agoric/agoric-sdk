@@ -1,10 +1,10 @@
 // @ts-check
-import test from 'ava';
-
+import { mkdir, mkdtemp, readFile, rm, utimes } from 'node:fs/promises';
+import * as fsPromises from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { mkdtemp, mkdir, readFile, rm, utimes } from 'node:fs/promises';
-import * as fsPromises from 'node:fs/promises';
+
+import test from 'ava';
 
 import { makeDirectoryLock, writeFileAtomic } from '../src/build-cache.js';
 

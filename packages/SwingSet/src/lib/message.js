@@ -1,4 +1,5 @@
 import { assert, Fail } from '@endo/errors';
+
 import { insistCapData } from './capdata.js';
 
 /**

@@ -4,6 +4,7 @@ import type { EUnwrap } from '@agoric/vow/src/types.js';
 import type { Instance } from '@agoric/zoe';
 import type { DeliverTxResponse, StdFee } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
+
 import type { SigningSmartWalletKit } from './signing-smart-wallet-kit.ts';
 import { getInvocationUpdate, getOfferResult } from './smart-wallet-utils.js';
 import type { RetryOptionsAndPowers } from './sync-tools.js';

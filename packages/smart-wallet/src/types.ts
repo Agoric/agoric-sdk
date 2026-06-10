@@ -11,6 +11,7 @@ import type { Payment } from '@agoric/ertp';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { InvitationDetails } from '@agoric/zoe';
 import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+
 import type { OfferSpec } from './offers.js';
 import type { CurrentWalletRecord, UpdateRecord } from './smartWallet.js';
 

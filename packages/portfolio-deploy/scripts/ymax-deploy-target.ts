@@ -4,13 +4,15 @@
 // use @endo/init/debug so LOCKDOWN_OPTIONS are consistent with tests
 import '@endo/init/debug.js';
 
-import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
-import { execa } from 'execa';
 import fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+
+import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
+import { execa } from 'execa';
+
 import {
   bundleIdFromBundleRecord,
   canonicalizePrivateArgs,

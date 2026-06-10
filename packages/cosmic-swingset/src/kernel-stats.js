@@ -1,8 +1,6 @@
 // @ts-check
-import { MeterProvider } from '@opentelemetry/sdk-metrics';
-
-import { Fail } from '@endo/errors';
-import { isNat } from '@endo/nat';
+import process from 'node:process';
+import v8 from 'node:v8';
 
 import { defineName } from '@agoric/internal/src/js-utils.js';
 import {
@@ -12,9 +10,9 @@ import {
   QueueMetricAspect,
 } from '@agoric/internal/src/metrics.js';
 import { makeLegacyMap } from '@agoric/store';
-
-import v8 from 'node:v8';
-import process from 'node:process';
+import { Fail } from '@endo/errors';
+import { isNat } from '@endo/nat';
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 
 /** @import {Histogram, Meter as OTelMeter, MetricAttributes, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api' */
 

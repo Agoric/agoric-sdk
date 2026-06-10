@@ -1,19 +1,18 @@
-// eslint-disable-next-line import/order
 import {
-  test,
-  getBaggage,
   annihilate,
-  nextLife,
   asyncFlowVerbose,
+  getBaggage,
+  nextLife,
+  test,
 } from './prepare-test-env-ava.js';
 
-import { X, makeError } from '@endo/errors';
-import { Far } from '@endo/pass-style';
 import { prepareVowTools } from '@agoric/vow';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
-import { makeDurableZone } from '@agoric/zone/durable.js';
+import { makeError, X } from '@endo/errors';
+import { Far } from '@endo/pass-style';
 
 import { prepareBijection } from '../src/bijection.js';
 import { makeEquate } from '../src/equate.js';

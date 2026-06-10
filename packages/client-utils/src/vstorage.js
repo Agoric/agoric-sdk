@@ -1,13 +1,13 @@
-import { decodeBase64 } from '@endo/base64';
-import { encodeHex } from '@agoric/internal/src/hex.js';
-import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
-import { mustMatch } from '@agoric/internal';
 import {
   QueryChildrenRequest,
   QueryChildrenResponse,
   QueryDataRequest,
   QueryDataResponse,
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
+import { mustMatch } from '@agoric/internal';
+import { encodeHex } from '@agoric/internal/src/hex.js';
+import { StreamCellShape } from '@agoric/internal/src/lib-chainStorage.js';
+import { decodeBase64 } from '@endo/base64';
 
 /**
  * @import {JsonSafe} from '@agoric/cosmic-proto';

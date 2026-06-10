@@ -6,9 +6,10 @@ import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/s
 import { MsgUndelegateResponse as MsgUndelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { MsgTransferResponse as MsgTransferResponseType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import type { Installation } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import type { Installation } from '@agoric/zoe';
+
 import * as contractExports from '../../src/examples/unbond.contract.js';
 import {
   buildMsgResponseString,

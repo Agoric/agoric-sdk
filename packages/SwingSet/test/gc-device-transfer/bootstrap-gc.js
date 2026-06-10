@@ -1,4 +1,4 @@
-import { Far, E } from '@endo/far';
+import { E, Far } from '@endo/far';
 
 async function sendAmy(D, dev, testLog, left) {
   const amy = Far('amy', {

@@ -1,35 +1,36 @@
-import type { Filter, Log } from 'ethers';
-import { id, AbiCoder } from 'ethers';
-import type { WebSocket } from 'ws';
-import type { CaipChainId } from '@agoric/orchestration';
-import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import type { CaipChainId } from '@agoric/orchestration';
+import type { Filter, Log } from 'ethers';
+import { AbiCoder, id } from 'ethers';
+import type { WebSocket } from 'ws';
+
 import {
+  type EvmRpc,
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
-  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
-import type { MakeAbortController } from '../support.ts';
-import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
 import type { WatcherResult } from '../pending-tx-manager.ts';
+import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import type { MakeAbortController } from '../support.ts';
 import {
-  extractPayloadHash,
-  extractPaddedTxId,
-  fetchReceiptWithRetry,
-  handleTxRevert,
-  handleOperationFailure,
-  FAILED_TX_SCOPE,
-  DEFAULT_RETRY_OPTIONS,
-  WatcherTransportError,
   type AlchemySubscriptionMessage,
+  DEFAULT_RETRY_OPTIONS,
+  extractPaddedTxId,
+  extractPayloadHash,
+  FAILED_TX_SCOPE,
+  fetchReceiptWithRetry,
+  handleOperationFailure,
+  handleTxRevert,
   type RetryOptions,
+  WatcherTransportError,
 } from './watcher-utils.ts';
 
 /**

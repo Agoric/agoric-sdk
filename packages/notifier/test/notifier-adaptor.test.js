@@ -7,12 +7,12 @@ import {
   observeNotifier,
 } from '../src/index.js';
 import {
-  finiteStream,
   explodingStream,
+  finiteStream,
+  makeTestIterationObserver,
+  testAutoConsumer,
   testEnding,
   testManualConsumer,
-  testAutoConsumer,
-  makeTestIterationObserver,
 } from './iterable-testing-tools.js';
 
 // /////////////// Self test the testing tools for consistency /////////////////

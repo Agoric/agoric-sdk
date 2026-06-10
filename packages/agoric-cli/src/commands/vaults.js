@@ -11,6 +11,7 @@ import {
   Offers,
 } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
+
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 

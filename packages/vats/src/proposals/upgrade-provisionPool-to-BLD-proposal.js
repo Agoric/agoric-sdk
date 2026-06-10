@@ -1,7 +1,7 @@
-import { E } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { Stake } from '@agoric/internal/src/tokens.js';
+import { E } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
 
 /**
  * @import {BootstrapPowers} from '../core/types.ts';

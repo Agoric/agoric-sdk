@@ -10,9 +10,9 @@
 /* eslint-disable import/no-extraneous-dependencies */
 // dynamic import { makeHelpers } from '@agoric/deploy-script-support';
 // dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
-import { E, passStyleOf } from '@endo/far';
 import { makeTracer } from '@agoric/internal/src/debug.js';
 import { isAbandonedError } from '@agoric/internal/src/upgrade-api.js';
+import { E, passStyleOf } from '@endo/far';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';

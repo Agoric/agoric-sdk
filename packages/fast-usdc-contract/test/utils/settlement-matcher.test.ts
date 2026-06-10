@@ -1,16 +1,17 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeHeapZone } from '@agoric/zone';
-import type { TestFn } from 'ava';
 
+import { PendingTxShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type {
   EvmHash,
   NobleAddress,
   PendingTx,
   PendingTxStatus,
 } from '@agoric/fast-usdc/src/types.js';
-import { M } from '@endo/patterns';
-import { PendingTxShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type { MapStore } from '@agoric/store';
+import { makeHeapZone } from '@agoric/zone';
+import { M } from '@endo/patterns';
+import type { TestFn } from 'ava';
+
 import { makeSettlementMatcher } from '../../src/utils/settlement-matcher.ts';
 import { MockCctpTxEvidences } from '../fixtures.ts';
 

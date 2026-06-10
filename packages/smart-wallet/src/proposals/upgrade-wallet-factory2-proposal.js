@@ -1,7 +1,7 @@
 // @ts-check
 
-import { E } from '@endo/far';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { E } from '@endo/far';
 
 /**
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';

@@ -1,12 +1,12 @@
-import test from 'ava';
-import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
+import { Far } from '@endo/marshal';
+import test from 'ava';
 
-import { gasEstimator } from '../mocks.js';
-import type { NetworkSpec } from '../../tools/network/network-spec.js';
 import { makeGraphForFlow } from '../../tools/network/buildGraph.js';
+import type { NetworkSpec } from '../../tools/network/network-spec.js';
 import { planRebalanceFlow } from '../../tools/plan-solve.js';
+import { gasEstimator } from '../mocks.js';
 
 const brand = Far('TestBrand') as any;
 const feeBrand = Far('TestFeeBrand') as any;

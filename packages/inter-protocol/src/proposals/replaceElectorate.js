@@ -10,11 +10,12 @@
  */
 
 // @ts-check
-import { E } from '@endo/eventual-send';
 import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import { E } from '@endo/eventual-send';
+
 import { provideRetiredInstances, reserveThenDeposit } from './utils.js';
 
 /**

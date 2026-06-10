@@ -9,6 +9,7 @@ import {
 } from '@agoric/vat-data';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+
 import { defineDurableHandle } from '../makeHandle.js';
 import {
   BrandKeywordRecordShape,

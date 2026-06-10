@@ -12,6 +12,7 @@ import {
 import { mustMatch } from '@agoric/internal';
 import { Nat } from '@endo/nat';
 import { InvalidArgumentError } from 'commander';
+
 import { INVITATION_MAKERS_DESC } from '../operator-kit-interface.js';
 import { CctpTxEvidenceShape } from '../type-guards.js';
 import { outputActionAndHint } from './bridge-action.js';

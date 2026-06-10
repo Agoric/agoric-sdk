@@ -2,16 +2,16 @@
 /* eslint-env node */
 
 import '@endo/init/legacy.js';
+// Configure logs.
+import './anylogger-agoric.js';
 
-import path from 'node:path';
-import WebSocket from 'ws';
 import { spawn } from 'node:child_process';
 import rawFs from 'node:fs';
 import os from 'node:os';
+import path from 'node:path';
 
-// Configure logs.
-import './anylogger-agoric.js';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
+import WebSocket from 'ws';
 
 import main from './main.js';
 

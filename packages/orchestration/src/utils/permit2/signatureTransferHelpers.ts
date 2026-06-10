@@ -6,6 +6,8 @@
  * This is original code that was adapted for permit2-sdk, unlike {@link ./permit2SignatureTransfer.ts}
  */
 
+import { objectMapMutable } from '@agoric/internal/src/js-utils.js';
+import { keyMirror } from '@agoric/internal/src/keyMirror.js';
 import type {
   AbiFunction,
   AbiParameter,
@@ -14,9 +16,9 @@ import type {
   TypedData,
   TypedDataDomain,
 } from 'abitype';
-import { keyMirror } from '@agoric/internal/src/keyMirror.js';
-import { objectMapMutable } from '@agoric/internal/src/js-utils.js';
+
 import type { TypedDataParameter } from '../abitype.ts';
+import { sameEvmAddress } from '../address.js';
 import type { encodeType } from '../viem-utils/hashTypedData.ts';
 import {
   PERMIT2_DOMAIN_NAME,
@@ -27,7 +29,6 @@ import {
   permitWitnessTransferFromTypes,
   TokenPermissionTypeParams,
 } from './signatureTransfer.ts';
-import { sameEvmAddress } from '../address.js';
 
 const PrimaryTypes = keyMirror({
   PermitBatchWitnessTransferFrom: null,

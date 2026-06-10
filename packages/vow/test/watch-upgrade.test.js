@@ -1,12 +1,11 @@
+import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import {
   annihilate,
   startLife,
   test,
 } from '@agoric/swingset-vat/tools/prepare-strict-test-env-ava.js';
-
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { prepareVowTools } from '../vat.js';
 
 /**

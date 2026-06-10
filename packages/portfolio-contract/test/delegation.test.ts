@@ -21,6 +21,7 @@ import type { NameAdmin } from '@agoric/vats';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
 import { E, Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
 import { evmTrader0PrivateKey } from './mocks.ts';

@@ -1,4 +1,5 @@
 import test from '@endo/ses-ava/prepare-endo.js';
+
 import { makeTracer } from '../src/debug.js';
 
 // See https://github.com/Agoric/agoric-sdk/pull/11847

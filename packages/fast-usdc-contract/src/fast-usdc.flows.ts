@@ -27,6 +27,7 @@ import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { ZCFSeat } from '@agoric/zoe';
 import { Fail, q } from '@endo/errors';
 import type { CopyRecord } from '@endo/pass-style';
+
 import type { LiquidityPoolKit } from './exos/liquidity-pool.ts';
 import type { SettlerKit } from './exos/settler.ts';
 import type { StatusManager } from './exos/status-manager.ts';

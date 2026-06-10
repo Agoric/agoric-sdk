@@ -1,9 +1,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import {
+  calcLiqValueToMint,
   getInputPrice,
   getOutputPrice,
-  calcLiqValueToMint,
 } from '../../../src/contractSupport/index.js';
 
 const testGetPrice = (

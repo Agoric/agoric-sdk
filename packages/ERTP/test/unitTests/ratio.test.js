@@ -1,22 +1,22 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, AmountMath } from '../../src/index.js';
+import { AmountMath, makeIssuerKit } from '../../src/index.js';
 import {
+  addRatios,
+  ceilDivideBy,
+  ceilMultiplyBy,
+  divideBy,
+  floorDivideBy,
+  floorMultiplyBy,
+  invertRatio,
   makeRatio,
   makeRatioFromAmounts,
-  floorMultiplyBy,
-  floorDivideBy,
-  ceilMultiplyBy,
-  ceilDivideBy,
-  invertRatio,
-  oneMinus,
-  multiplyRatios,
-  addRatios,
-  quantize,
   multiplyBy,
-  subtractRatios,
+  multiplyRatios,
+  oneMinus,
   parseRatio,
-  divideBy,
+  quantize,
+  subtractRatios,
 } from '../../src/ratio.js';
 
 /**

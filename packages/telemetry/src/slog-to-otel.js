@@ -1,13 +1,12 @@
-import otel, { SpanStatusCode } from '@opentelemetry/api';
-
+import { makeLegacyMap } from '@agoric/store';
 import { Fail, q } from '@endo/errors';
 import { makeMarshal, Remotable } from '@endo/marshal';
+import otel, { SpanStatusCode } from '@opentelemetry/api';
 
-import { makeLegacyMap } from '@agoric/store';
 import {
+  makeKVDatabaseTransactionManager,
   makeKVStringStore,
   makeTempKVDatabase,
-  makeKVDatabaseTransactionManager,
 } from './kv-string-store.js';
 
 // import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';

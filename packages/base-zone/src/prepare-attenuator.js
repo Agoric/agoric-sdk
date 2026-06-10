@@ -1,6 +1,7 @@
-import { Fail, q } from '@endo/errors';
 import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
+import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
+
 import { makeHeapZone } from './heap.js';
 
 /**

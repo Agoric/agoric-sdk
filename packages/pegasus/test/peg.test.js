@@ -2,22 +2,21 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
-import { E, Far } from '@endo/far';
+
+import { AmountMath } from '@agoric/ertp';
 import {
-  prepareNetworkProtocol,
   prepareLoopbackProtocolHandler,
   prepareNetworkPowers,
+  prepareNetworkProtocol,
 } from '@agoric/network';
-
-import bundleSource from '@endo/bundle-source';
-import { AmountMath } from '@agoric/ertp';
-import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeSubscription } from '@agoric/notifier';
-import { prepareVowTools } from '@agoric/vow/vat.js';
-
-import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMapStore } from '@agoric/vat-data';
+import { prepareVowTools } from '@agoric/vow/vat.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import bundleSource from '@endo/bundle-source';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {Assertions} from 'ava';

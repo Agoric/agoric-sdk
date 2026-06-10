@@ -2,9 +2,10 @@
 // I turned off dot-notation so eslint won't rewrite the grep-preserving
 // test.stuff patterns.
 
-import { makePromiseKit } from '@endo/promise-kit';
 import { q } from '@endo/errors';
-import { Far, E } from '@endo/far';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { ignore } from './vat-util.js';
 
 // Exercise a set of increasingly complex object-capability message patterns,

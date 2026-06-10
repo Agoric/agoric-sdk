@@ -1,6 +1,7 @@
 /* eslint-env node */
 // @ts-check
 import test from 'ava';
+
 import { makeVStorage } from '../src/vstorage.js';
 
 const testConfig = {

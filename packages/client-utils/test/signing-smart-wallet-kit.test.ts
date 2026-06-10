@@ -1,5 +1,3 @@
-import test from 'ava';
-
 import { decodeHex } from '@agoric/internal/src/hex.js';
 import type { EncodeObject } from '@cosmjs/proto-signing';
 import type {
@@ -8,6 +6,8 @@ import type {
   SigningStargateClient,
   StdFee,
 } from '@cosmjs/stargate';
+import test from 'ava';
+
 import { makeSigningSmartWalletKit } from '../dist/signing-smart-wallet-kit.js';
 import { LOCAL_CONFIG } from '../src/network-config.js';
 import { makeSmartWalletKit } from '../src/smart-wallet-kit.js';

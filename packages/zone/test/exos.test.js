@@ -1,21 +1,19 @@
-import { M } from '@endo/patterns';
+import { agoricVatDataKeys as keys } from '@agoric/base-zone';
+import * as g from '@agoric/base-zone/tools/greeter.js';
+import {
+  agoricVatDataCompatibleKeys,
+  testFirstZoneIncarnation,
+  testGreeter,
+  testSecondZoneIncarnation,
+} from '@agoric/base-zone/tools/testers.js';
 import {
   annihilate,
   getBaggage,
   nextLife,
   test,
 } from '@agoric/swingset-vat/tools/prepare-strict-test-env-ava.js';
-
 import * as vatData from '@agoric/vat-data';
-
-import { agoricVatDataKeys as keys } from '@agoric/base-zone';
-import {
-  agoricVatDataCompatibleKeys,
-  testFirstZoneIncarnation,
-  testSecondZoneIncarnation,
-  testGreeter,
-} from '@agoric/base-zone/tools/testers.js';
-import * as g from '@agoric/base-zone/tools/greeter.js';
+import { M } from '@endo/patterns';
 
 import { makeDurableZone } from '../durable.js';
 import { makeHeapZone } from '../heap.js';

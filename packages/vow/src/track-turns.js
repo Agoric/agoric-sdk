@@ -1,10 +1,9 @@
 // @ts-check
 /* global globalThis */
 import {
-  getEnvironmentOption,
   environmentOptionsListHas,
+  getEnvironmentOption,
 } from '@endo/env-options';
-
 // Note that in the original track-turns.js in @endo/eventual-send we
 // can't simply import these because `assert` is not in scope before lockdown.
 // But this copy in @agoric/vow the import is fine.

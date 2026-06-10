@@ -1,3 +1,4 @@
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { makeTracer } from '@agoric/internal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -6,6 +7,7 @@ import {
   observeIteration,
   subscribeEach,
 } from '@agoric/notifier';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
@@ -13,8 +15,6 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest as generalSetUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
-import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 const bundleCache = await unsafeSharedBundleCache;
 const {

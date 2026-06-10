@@ -1,6 +1,6 @@
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
-import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 
 /**
  * @import {Device} from '../../types-external.js';

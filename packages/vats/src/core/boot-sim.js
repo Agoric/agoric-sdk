@@ -1,7 +1,6 @@
-import { makeBootstrap } from './lib-boot.js';
-
 import * as basicBehaviorsPlus from './basic-behaviors.js';
 import * as chainBehaviorsPlus from './chain-behaviors.js';
+import { makeBootstrap } from './lib-boot.js';
 import * as simBehaviorsPlus from './sim-behaviors.js';
 import * as utils from './utils.js';
 

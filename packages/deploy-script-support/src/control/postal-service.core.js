@@ -1,7 +1,7 @@
+import { makeTracer } from '@agoric/internal/src/debug.js';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/pass-style';
 import { objectMap } from '@endo/patterns';
-import { makeTracer } from '@agoric/internal/src/debug.js';
 
 const contractName = 'postalService';
 

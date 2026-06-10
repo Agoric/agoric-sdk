@@ -1,9 +1,10 @@
 import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
-import { M } from '@endo/patterns';
 import {
   DenomDetailShape,
   DenomShape,
 } from '@agoric/orchestration/src/typeGuards.js';
+import { M } from '@endo/patterns';
+
 import { PendingTxStatus } from './constants.js';
 
 /**

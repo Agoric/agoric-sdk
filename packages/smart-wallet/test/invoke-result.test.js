@@ -5,8 +5,9 @@ import { AmountMath } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { makeCopyBag } from '@agoric/store';
 import { E, passStyleOf } from '@endo/far';
-import { deploy } from '../tools/wf-tools.js';
+
 import * as gameExports from '../tools/fixtures/gameAssetContract.js';
+import { deploy } from '../tools/wf-tools.js';
 import * as priceExports from './wallet-fun.contract.js';
 
 /**

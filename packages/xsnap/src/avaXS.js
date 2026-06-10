@@ -10,10 +10,11 @@ import '@endo/init';
 
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+
+import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
+import { assert, Fail, q } from '@endo/errors';
 import { tmpName } from 'tmp';
 
-import { assert, q, Fail } from '@endo/errors';
-import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
 import { xsnap } from './xsnap.js';
 
 /**
@@ -92,8 +93,8 @@ function isMatch(specimen, pattern) {
  *   spawnXSnap: (opts: object) => XSnap,
  *   bundleSource: BundleSource,
  *   resolve: ResolveFn,
- *   dirname: typeof import('path').dirname,
- *   basename: typeof import('path').basename,
+ *   dirname: typeof dirname,
+ *   basename: typeof basename,
  * }} io
  * @returns {Promise<TestResults>}
  *
@@ -304,9 +305,9 @@ async function avaConfig(args, options, { glob, readFile }) {
  *   spawn: typeof import('child_process')['spawn'],
  *   osType: typeof import('os')['type'],
  *   readFile: typeof import('fs')['promises']['readFile'],
- *   resolve: typeof import('path').resolve,
- *   dirname: typeof import('path').dirname,
- *   basename: typeof import('path').basename,
+ *   resolve: typeof resolve,
+ *   dirname: typeof dirname,
+ *   basename: typeof basename,
  *   glob: (pattern: string) => Promise<string[]>,
  * }} io
  */
@@ -404,7 +405,7 @@ export async function main(
  *
  * @param {typeof import('path')} path
  * @returns {ResolveFn}
- * @typedef {typeof import('path').resolve } ResolveFn
+ * @typedef {typeof resolve } ResolveFn
  */
 export function makeBundleResolve(path) {
   const bundleRoots = [

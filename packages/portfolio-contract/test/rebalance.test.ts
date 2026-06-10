@@ -1,5 +1,3 @@
-import test from 'ava';
-import type { ExecutionContext, ImplementationFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
@@ -8,19 +6,22 @@ import type {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import { Far } from '@endo/marshal';
+import type { ExecutionContext, ImplementationFn } from 'ava';
+import test from 'ava';
+
 import type { PoolKey } from '../src/type-guards.js';
 import type { AssetPlaceRef } from '../src/type-guards-steps.js';
+import type { FlowEdge } from '../tools/network/buildGraph.js';
 import type {
   NetworkSpec,
   TransferProtocol,
 } from '../tools/network/network-spec.js';
-import type { FlowEdge } from '../tools/network/buildGraph.js';
 import { TEST_NETWORK } from '../tools/network/test-network.js';
-import { planRebalanceFlow } from '../tools/plan-solve.js';
 import type { RebalanceMode } from '../tools/plan-solve.js';
+import { planRebalanceFlow } from '../tools/plan-solve.js';
 import { gasEstimator } from './mocks.js';
-import { readableSteps } from './supports.js';
 import type { MockMovementDesc } from './supports.js';
+import { readableSteps } from './supports.js';
 
 const strcmp = (a: string, b: string) => (a > b ? 1 : a < b ? -1 : 0);
 const compareFlowEdges = (a: FlowEdge, b: FlowEdge) =>

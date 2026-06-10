@@ -2,11 +2,11 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import path from 'node:path';
 
-import { heapVowTools } from '@agoric/vow/vat.js';
-
-import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { E } from '@endo/eventual-send';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { heapVowTools } from '@agoric/vow/vat.js';
+import { E } from '@endo/eventual-send';
+
 import { makeZoeForTest, setUpZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**

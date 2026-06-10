@@ -5,6 +5,7 @@
  * (see upgrade-evm-dests.core.js)
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
+
 import { getManifestForUpgradeEvmDests } from './upgrade-evm-dests.core.js';
 
 /**

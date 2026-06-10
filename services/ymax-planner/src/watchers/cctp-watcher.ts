@@ -1,14 +1,13 @@
-import type { Filter, Log } from 'ethers';
-import { id, zeroPadValue, getAddress, ethers } from 'ethers';
-import type { WebSocket } from 'ws';
-import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
-import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
-import { WatcherTransportError } from './watcher-utils.ts';
+import type { CaipChainId } from '@agoric/orchestration';
+import type { Filter, Log } from 'ethers';
+import { ethers, getAddress, id, zeroPadValue } from 'ethers';
+import type { WebSocket } from 'ws';
+
 import {
+  type EvmRpc,
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
-  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import {
@@ -17,6 +16,8 @@ import {
   setTxBlockLowerBound,
 } from '../kv-store.ts';
 import type { WatcherResult } from '../pending-tx-manager.ts';
+import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import { WatcherTransportError } from './watcher-utils.ts';
 
 /**
  * The Keccak256 hash (event signature) of the standard ERC-20 `Transfer` event.

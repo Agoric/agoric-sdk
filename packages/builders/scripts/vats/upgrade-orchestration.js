@@ -1,4 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+
 import { upgradeVatsProposalBuilder } from './upgrade-vats.js';
 
 /**

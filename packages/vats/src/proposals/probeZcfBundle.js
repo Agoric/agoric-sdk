@@ -1,5 +1,5 @@
-import { E } from '@endo/far';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { E } from '@endo/far';
 
 // verify that Zoe remembers the zcfBundleCap across upgrades
 export const probeZcfBundleCap = async (

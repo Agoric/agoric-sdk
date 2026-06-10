@@ -1,6 +1,5 @@
-import { E } from '@endo/eventual-send';
-
 import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
 export const getZcfBundleCap = (zcfSpec, vatAdminSvc) => {
   let zcfBundleCapP;

@@ -1,6 +1,6 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-import { makeFileRW } from '@agoric/pola-io';
 import * as fsp from 'node:fs/promises';
+
+import { makeFileRW } from '@agoric/pola-io';
 
 const file = makeFileRW('/', { fsp });
 const readonly = file.readOnly();

@@ -1,11 +1,13 @@
 // @ts-check
+import { Buffer } from 'node:buffer';
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
-import { Buffer } from 'node:buffer';
-import { Fail, q } from '@endo/errors';
-import { encodeBase64, decodeBase64 } from '@endo/base64';
+
+import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { checkBundle } from '@endo/check-bundle/lite.js';
+import { Fail, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
+
 import { createSHA256 } from './hasher.js';
 
 /**

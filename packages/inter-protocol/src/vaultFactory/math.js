@@ -4,13 +4,14 @@
  */
 
 import { AmountMath } from '@agoric/ertp';
-import { getAmountOut } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import {
   addRatios,
   ceilMultiplyBy,
   floorDivideBy,
   ratioGTE,
 } from '@agoric/ertp/src/ratio.js';
+import { getAmountOut } from '@agoric/zoe/src/contractSupport/priceQuote.js';
+
 import { priceFrom } from '../auction/util.js';
 import { addSubtract } from '../contractSupport.js';
 

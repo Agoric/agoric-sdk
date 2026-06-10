@@ -1,6 +1,7 @@
-import { Far } from '@endo/far';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Far } from '@endo/far';
+
 import { prepareCosmosInterchainService } from './exos/cosmos-interchain-service.js';
 
 /**

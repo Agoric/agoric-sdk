@@ -4,6 +4,7 @@ import { keyEQ, mustMatch } from '@agoric/store';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 

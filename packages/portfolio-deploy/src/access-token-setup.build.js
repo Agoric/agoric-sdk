@@ -1,7 +1,8 @@
 /* global harden */
 /// <reference types="ses" />
-import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
+
+import { makeHelpers } from '@agoric/deploy-script-support';
 
 // based on register-interchain-bank-assets.builder.js
 

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import '@endo/init';
+
 import fs from 'node:fs';
 import process from 'node:process';
 

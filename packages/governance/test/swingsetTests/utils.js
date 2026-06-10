@@ -1,5 +1,5 @@
-import { Far, makeMarshal } from '@endo/marshal';
 import { makeExo } from '@agoric/store';
+import { Far, makeMarshal } from '@endo/marshal';
 
 const nullMarshaller = makeMarshal(
   _ => null,

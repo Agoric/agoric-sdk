@@ -1,5 +1,6 @@
 /** @file terminate a ymax contract via ymaxControl */
 import { parseArgs } from 'node:util';
+
 import type { RunTools } from './wallet-admin-types.ts';
 import { getYmaxControlKit } from './ymax-admin-helpers.ts';
 

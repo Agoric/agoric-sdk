@@ -1,5 +1,4 @@
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
-
 import type { RankComparison, RemotableObject } from '@endo/marshal';
 
 // These aren't in the global runtime environment. They are just types that are

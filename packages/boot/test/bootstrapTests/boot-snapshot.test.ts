@@ -1,7 +1,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
+
 import { BridgeId } from '@agoric/internal';
 import { buildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
+import type { TestFn } from 'ava';
+
 import { AckBehavior, makeSwingsetTestKit } from '../../tools/supports.js';
 
 const test = anyTest as TestFn;

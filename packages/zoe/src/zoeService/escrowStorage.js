@@ -5,7 +5,6 @@ import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /// <reference path="./types.js" />
-
 import { cleanKeywords } from '../cleanProposal.js';
 
 /**

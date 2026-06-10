@@ -9,9 +9,9 @@ import {
   type RepayAmountKWR,
 } from '@agoric/fast-usdc/src/utils/fees.js';
 import {
-  denomHash,
   type CosmosChainInfo,
   type Denom,
+  denomHash,
 } from '@agoric/orchestration';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
@@ -23,6 +23,7 @@ import { type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+
 import { makeTestFeeConfig } from './mocks.js';
 
 export {

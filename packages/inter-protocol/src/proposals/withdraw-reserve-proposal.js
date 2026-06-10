@@ -1,5 +1,6 @@
-import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal/src/debug.js';
+import { E } from '@endo/far';
+
 import { reserveThenDeposit } from './utils.js';
 
 /**

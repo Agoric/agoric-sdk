@@ -1,14 +1,14 @@
 // @ts-check
-import anyTest from 'ava';
-
-// Use ambient authority only in test.before()
-import type { TestFn, Macro, ExecutionContext } from 'ava';
 import { spawn as ambientSpawn, type StdioOptions } from 'node:child_process';
 import * as ambientPath from 'node:path';
 
+// Use ambient authority only in test.before()
+import type { ExecutionContext, Macro, TestFn } from 'ava';
+import anyTest from 'ava';
+
 import {
-  prometheusSampleRegExp,
   prometheusNumberValue,
+  prometheusSampleRegExp,
 } from '../tools/prometheus.js';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 

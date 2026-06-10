@@ -5,6 +5,7 @@
  */
 
 import { objectMap } from '@endo/patterns';
+
 import cctpChainInfo from './cctp-chain-info.js';
 
 /**

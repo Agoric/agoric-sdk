@@ -1,12 +1,12 @@
 import {
-  keyEQ,
-  makeCopyBag,
-  mustMatch,
-  M,
-  getCopyBagEntries,
+  bagDisjointSubtract,
   bagIsSuperbag,
   bagUnion,
-  bagDisjointSubtract,
+  getCopyBagEntries,
+  keyEQ,
+  M,
+  makeCopyBag,
+  mustMatch,
 } from '@agoric/store';
 
 /**

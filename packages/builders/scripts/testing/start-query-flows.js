@@ -7,6 +7,7 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
+
 import { parseChainHubOpts } from '../orchestration/helpers.js';
 
 /**

@@ -1,8 +1,9 @@
 /* eslint-env node */
-import test from 'ava';
 import { encodeBase64 } from '@endo/base64';
-import { makeAgoricNames, makeVstorageKit } from '../src/vstorage-kit.js';
+import test from 'ava';
+
 import { makeAbciQuery } from '../src/vstorage.js';
+import { makeAgoricNames, makeVstorageKit } from '../src/vstorage-kit.js';
 
 const makeDefaultMockResponse = () => {
   const jsonString = JSON.stringify({ value: '{"blockHeight":1,"values":[]}' });

@@ -1,7 +1,8 @@
-import path from 'node:path';
-import { Fail } from '@endo/errors';
 import { type as osType } from 'node:os';
-import { xsnap, recordXSnap } from '@agoric/xsnap';
+import path from 'node:path';
+
+import { recordXSnap, xsnap } from '@agoric/xsnap';
+import { Fail } from '@endo/errors';
 
 /**
  * @import {BundleHandler} from './bundle-handler.js';

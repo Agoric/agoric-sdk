@@ -1,6 +1,8 @@
 /** @file deliver a ymax privileged invitation to a target address */
-import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import { parseArgs } from 'node:util';
+
+import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
+
 import type { RunTools } from './wallet-admin-types.ts';
 import { getCreatorFacetKey, getYmaxControlKit } from './ymax-admin-helpers.ts';
 

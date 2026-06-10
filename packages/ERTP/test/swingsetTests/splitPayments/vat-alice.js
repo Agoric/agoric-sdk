@@ -1,5 +1,6 @@
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+
 import { AmountMath } from '../../../src/index.js';
 import { split } from '../../../src/legacy-payment-helpers.js';
 

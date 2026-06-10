@@ -2,13 +2,14 @@
 /* eslint-env node */
 
 import * as childProcessTop from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import fsTop from 'node:fs';
 import osTop from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 /**
  * @import {ChildProcess} from 'node:child_process';
  * @import {promises} from 'node:fs';
+ * @import {spawn} from 'node:child_process';
  */
 
 const { freeze } = Object;
@@ -41,7 +42,7 @@ const ModdableSDK = {
  *
  * @param {string} command
  * @param {{
- *   spawn: typeof import('node:child_process').spawn,
+ *   spawn: typeof spawn,
  * }} io
  */
 function makeCLI(command, { spawn }) {
@@ -269,7 +270,7 @@ const buildXsnap = async (platform, force, { fs, make }) => {
  * @param {{
  *   env: Record<string, string | undefined>,
  *   stdout: typeof process.stdout,
- *   spawn: typeof import('node:child_process').spawn,
+ *   spawn: typeof spawn,
  *   fs: Pick<typeof import('fs'), 'existsSync'> &
  *     Pick<typeof promises, 'readFile' | 'writeFile' | 'mkdir' | 'rm' | 'rename'>,
  *   os: Pick<typeof import('os'), 'type'>,

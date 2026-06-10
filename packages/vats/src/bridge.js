@@ -1,5 +1,5 @@
-import { Fail, X } from '@endo/errors';
 import { M } from '@agoric/store';
+import { Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 
 /**

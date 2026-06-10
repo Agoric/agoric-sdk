@@ -8,6 +8,7 @@ import { DestinationOverridesShape } from '@agoric/fast-usdc/src/type-guards.js'
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { AccountId } from '@agoric/orchestration';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+
 import {
   config as evmConfig,
   externalConfigContext,

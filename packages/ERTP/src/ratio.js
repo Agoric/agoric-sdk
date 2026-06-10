@@ -1,4 +1,4 @@
-import { q, Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { assertRecord } from '@endo/marshal';
 import { isNat } from '@endo/nat';
 

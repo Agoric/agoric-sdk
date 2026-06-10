@@ -1,14 +1,14 @@
 // @ts-nocheck
-import test from 'ava';
 import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
-
 import { kslot, kunser } from '@agoric/kmarshal';
-import {
-  setupTestLiveslots,
-  findSyscallsByType,
-} from '../liveslots-helpers.js';
-import { buildRootObject, mainHeldIdx, mapRef } from '../gc-helpers.js';
+import test from 'ava';
+
 import { parseVatSlot } from '../../src/parseVatSlots.js';
+import { buildRootObject, mainHeldIdx, mapRef } from '../gc-helpers.js';
+import {
+  findSyscallsByType,
+  setupTestLiveslots,
+} from '../liveslots-helpers.js';
 
 // These tests follow the model described in
 // ../virtualObjects/test-virtualObjectGC.js

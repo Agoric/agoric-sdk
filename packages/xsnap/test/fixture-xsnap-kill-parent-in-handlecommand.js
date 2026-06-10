@@ -1,10 +1,13 @@
-import console from 'node:console';
-import * as proc from 'node:child_process';
-import * as os from 'node:os';
-import fs from 'node:fs';
-import process from 'node:process';
-import { tmpName } from 'tmp';
 import '@endo/init';
+
+import * as proc from 'node:child_process';
+import console from 'node:console';
+import fs from 'node:fs';
+import * as os from 'node:os';
+import process from 'node:process';
+
+import { tmpName } from 'tmp';
+
 import { xsnap } from '../src/xsnap.js';
 import { options } from './message-tools.js';
 

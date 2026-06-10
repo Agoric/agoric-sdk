@@ -1,10 +1,10 @@
 // @ts-check
 /* eslint-env node */
-import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/captp';
-
 import { createRequire } from 'node:module';
 import path from 'node:path';
+
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/captp';
 
 /**
  * @import {ModuleFormat} from '@endo/bundle-source';

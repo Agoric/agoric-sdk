@@ -1,14 +1,16 @@
-import test from 'ava';
 import * as proc from 'node:child_process';
-import * as os from 'node:os';
 import fs from 'node:fs';
-import { fileURLToPath, URL } from 'node:url';
-import { tmpName } from 'tmp';
+import * as os from 'node:os';
 import { text } from 'node:stream/consumers';
+import { fileURLToPath, URL } from 'node:url';
+
 import { makePromiseKit } from '@endo/promise-kit';
-import { options } from './message-tools.js';
-import { xsnap } from '../src/xsnap.js';
+import test from 'ava';
+import { tmpName } from 'tmp';
+
 import { ExitCode } from '../api.js';
+import { xsnap } from '../src/xsnap.js';
+import { options } from './message-tools.js';
 
 /**
  * @import { Readable, Writable, Duplex } from 'stream'

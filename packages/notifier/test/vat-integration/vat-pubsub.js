@@ -1,5 +1,6 @@
-import { Far } from '@endo/marshal';
 import { provide } from '@agoric/vat-data';
+import { Far } from '@endo/marshal';
+
 import {
   prepareDurablePublishKit,
   subscribeEach,

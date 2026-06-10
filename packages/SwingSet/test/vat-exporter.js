@@ -1,10 +1,10 @@
-import { Far } from '@endo/far';
-import { M, defineExoClass } from '@agoric/store';
+import { defineExoClass, M } from '@agoric/store';
 import {
   defineVirtualExoClass,
   prepareExoClass,
   provide,
 } from '@agoric/vat-data';
+import { Far } from '@endo/far';
 
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const { version } = vatParameters || {};

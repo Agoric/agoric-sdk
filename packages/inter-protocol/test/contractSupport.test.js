@@ -1,8 +1,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { withAmountUtils } from './supports.js';
+
 import { checkDebtLimit } from '../src/contractSupport.js';
+import { withAmountUtils } from './supports.js';
 
 const debt = withAmountUtils(makeIssuerKit('rupies'));
 

@@ -16,6 +16,7 @@ import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { makeJigKit } from '@agoric/zoe/src/contractSupport/testJigHelpers.js';
 import { E } from '@endo/far';
+
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 

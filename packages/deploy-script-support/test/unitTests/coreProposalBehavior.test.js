@@ -1,11 +1,12 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/far';
 import {
   makeAgoricNamesAccess,
   runModuleBehaviors,
 } from '@agoric/vats/src/core/utils.js';
+import { E } from '@endo/far';
+
 import { makeCoreProposalBehavior } from '../../src/coreProposalBehavior.js';
 
 // TODO: we need to rewrite writeCoreEvalParts.js to produce BundleIDs,

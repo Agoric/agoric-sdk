@@ -1,15 +1,14 @@
 // @ts-check
-import test from 'ava';
-
-import { Fail } from '@endo/errors';
-import { Far } from '@endo/pass-style';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { Fail } from '@endo/errors';
+import { Far } from '@endo/pass-style';
+import test from 'ava';
 
+import { prepareVowRejectionTracker } from '../src/rejection-tracker.js';
+import { prepareRetryableTools } from '../src/retryable.js';
 import { prepareVowKit } from '../src/vow.js';
 import { isVow } from '../src/vow-utils.js';
-import { prepareRetryableTools } from '../src/retryable.js';
-import { prepareVowRejectionTracker } from '../src/rejection-tracker.js';
 import { makeWhen } from '../src/when.js';
 
 /**

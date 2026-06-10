@@ -1,10 +1,12 @@
+import { parseArgs } from 'node:util';
+
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/far';
-import { parseArgs } from 'node:util';
-import { toExternalConfig } from './utils/config-marshal.js';
+
 import { getManifestForDistributeFees } from './distribute-fees.core.js';
+import { toExternalConfig } from './utils/config-marshal.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'

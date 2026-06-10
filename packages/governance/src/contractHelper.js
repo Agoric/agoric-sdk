@@ -1,16 +1,17 @@
-import { Fail } from '@endo/errors';
-import { Far } from '@endo/marshal';
-import { getMethodNames } from '@endo/eventual-send/utils.js';
-import { makeStoredPublisherKit } from '@agoric/notifier';
-import { objectMap } from '@agoric/internal';
-import { ignoreContext, prepareExo } from '@agoric/vat-data';
-import { M } from '@agoric/store';
 import { AmountShape, BrandShape } from '@agoric/ertp';
+import { objectMap } from '@agoric/internal';
+import { makeStoredPublisherKit } from '@agoric/notifier';
+import { M } from '@agoric/store';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
+import { ignoreContext, prepareExo } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { getMethodNames } from '@endo/eventual-send/utils.js';
+import { Far } from '@endo/marshal';
+
+import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 import { makeParamManagerFromTerms } from './contractGovernance/typedParamManager.js';
 import { GovernorFacetShape } from './typeGuards.js';
-import { CONTRACT_ELECTORATE } from './contractGovernance/governParam.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';

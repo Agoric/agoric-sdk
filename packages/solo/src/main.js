@@ -1,11 +1,11 @@
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import parseArgs from 'minimist';
 import process from 'node:process';
-import { spawnSync } from 'node:child_process';
-import { assert } from '@endo/errors';
 
 import anylogger from '@agoric/internal/vendor/anylogger.js';
+import { assert } from '@endo/errors';
+import parseArgs from 'minimist';
 
 // Start a network service
 import addChain from './add-chain.js';

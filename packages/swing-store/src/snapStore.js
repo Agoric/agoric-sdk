@@ -6,9 +6,11 @@ import {
   Readable,
 } from 'node:stream';
 import { promisify } from 'node:util';
-import { createGzip, createGunzip } from 'node:zlib';
-import { Fail, q } from '@endo/errors';
+import { createGunzip, createGzip } from 'node:zlib';
+
 import { withDeferredCleanup } from '@agoric/internal';
+import { Fail, q } from '@endo/errors';
+
 import { buffer } from './util.js';
 
 /**

@@ -1,9 +1,10 @@
 // @ts-check
-import { Fail } from '@endo/errors';
-import { deeplyFulfilledObject } from '@agoric/internal';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+
+import { deeplyFulfilledObject } from '@agoric/internal';
+import { Fail } from '@endo/errors';
 
 import { defangAndTrim, stringify } from './code-gen.js';
 import {

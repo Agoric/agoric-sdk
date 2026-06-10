@@ -1,9 +1,10 @@
-import { IBCConnectionInfoShape } from '@agoric/orchestration/src/typeGuards.js';
-import { mustMatch } from '@endo/patterns';
-import { makeAgd } from '@agoric/orchestration/src/utils/agd-lib.js';
 import * as childProcess from 'node:child_process';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+
 import { fetchNetworkConfig } from '@agoric/client-utils';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { IBCConnectionInfoShape } from '@agoric/orchestration/src/typeGuards.js';
+import { makeAgd } from '@agoric/orchestration/src/utils/agd-lib.js';
+import { mustMatch } from '@endo/patterns';
 
 /**
  * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';

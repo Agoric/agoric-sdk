@@ -1,5 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import path from 'node:path';
+
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
@@ -7,13 +9,12 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
-import path from 'node:path';
 
 import {
   ChoiceMethod,
+  coerceQuestionSpec,
   ElectionType,
   QuorumRule,
-  coerceQuestionSpec,
 } from '../../src/index.js';
 import { documentStorageSchema } from '../../tools/storageDoc.js';
 import { remoteNullMarshaller } from '../swingsetTests/utils.js';

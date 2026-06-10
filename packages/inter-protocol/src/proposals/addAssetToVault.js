@@ -29,10 +29,14 @@ export * from './startPSM.js';
  */
 
 /**
+ * @import {prepare} from '@agoric/zoe/src/contracts/scaledPriceAuthority.js';
+ */
+
+/**
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js'
  * @import {TimerService} from '@agoric/time';
  * @import {Issuer, IssuerKit} from '@agoric/ertp';
- * @typedef {typeof import('@agoric/zoe/src/contracts/scaledPriceAuthority.js').prepare} prepare
+ * @typedef {typeof prepare} prepare
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.ts';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  */

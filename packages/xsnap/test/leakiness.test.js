@@ -1,18 +1,18 @@
 /** global FinalizationRegistry */
 
-import test from 'ava';
-
 import process from 'node:process';
 import v8 from 'node:v8';
 
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import test from 'ava';
 
 import { spawnRetentiveVatSequence } from './leakiness.mjs';
 
 /**
  * @import {XSnapOptions} from '@agoric/xsnap/src/xsnap.js'
  * @import {ExecutionContext} from 'ava';
+ * @import {xsnap} from '../src/xsnap.js';
  */
 
 /**
@@ -22,7 +22,7 @@ import { spawnRetentiveVatSequence } from './leakiness.mjs';
 const testRetention = async (t, xsnapOptions) => {
   let snapshotsCreated = 0;
   let snapshotsFreed = 0;
-  /** @type {null | Awaited<ReturnType<typeof import('../src/xsnap.js').xsnap>>} */
+  /** @type {null | Awaited<ReturnType<typeof xsnap>>} */
   let lastVat = null;
   /** @type {FinalizationRegistry<void>} */
   const fr = new FinalizationRegistry(() => {

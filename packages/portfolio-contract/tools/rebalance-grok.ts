@@ -1,20 +1,22 @@
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+
 import { AmountMath, type Brand, type NatAmount } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { mustMatch, objectMap } from '@agoric/internal';
-import { createRequire } from 'node:module';
-import { readFile } from 'node:fs/promises';
 import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
+
 import {
-  makeOfferArgsShapes,
+  makeProposalShapes,
+  type PoolKey,
+  PoolPlaces,
+} from '../src/type-guards.js';
+import {
   type AssetPlaceRef,
+  makeOfferArgsShapes,
   type MovementDesc,
   type SeatKeyword,
 } from '../src/type-guards-steps.js';
-import {
-  makeProposalShapes,
-  PoolPlaces,
-  type PoolKey,
-} from '../src/type-guards.js';
 
 /** OCap exception: infrastructure to make up for lack of import x from 'foo.txt' */
 export const importText = (specifier: string, base): Promise<string> =>

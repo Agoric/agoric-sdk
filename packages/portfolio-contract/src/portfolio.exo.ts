@@ -3,9 +3,9 @@
  */
 import { AmountMath, type Brand } from '@agoric/ertp';
 import {
+  type ERemote,
   makeTracer,
   mustMatch,
-  type ERemote,
   type TypedPattern,
 } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
@@ -24,7 +24,6 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import {
-  PortfolioPermissionsV1Shape,
   type FlowAgent,
   type FlowConfig,
   type FlowKey,
@@ -32,6 +31,7 @@ import {
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
+  PortfolioPermissionsV1Shape,
   type PortfolioRemoteAccountState,
 } from '@agoric/portfolio-api';
 import {
@@ -56,31 +56,32 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address as EvmAddress } from 'abitype';
+
 import {
-  preparePortfolioDelegationKit,
   type PortfolioDelegationClient,
+  preparePortfolioDelegationKit,
 } from './delegation.exo.ts';
 import { generateNobleForwardingAddress } from './noble-fwd-calc.js';
 import type { EVMContractAddresses } from './portfolio.contract.ts';
 import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
-import { preparePosition, type Position } from './pos.exo.js';
-import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
+import { type Position, preparePosition } from './pos.exo.js';
 import {
+  type EVMContractAddressesMap,
+  type FlowDetail,
   makeFlowAgentPath,
   makeFlowPath,
   makeFlowStepsPath,
   makePortfolioAgentsPath,
   makePortfolioPath,
-  PoolKeyShapeExt,
-  PortfolioAgentStatusShape,
-  type EVMContractAddressesMap,
-  type FlowDetail,
   type makeProposalShapes,
   type PoolKey,
+  PoolKeyShapeExt,
+  PortfolioAgentStatusShape,
   type ProposalType,
   type StatusFor,
   type TargetAllocation,
 } from './type-guards.js';
+import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import { predictWalletAddress } from './utils/evm-orch-factory.js';
 import { predictRemoteAccountAddress } from './utils/evm-orch-router.ts';
 

@@ -1,5 +1,5 @@
-import { Fail } from '@endo/errors';
 import { writeFileAtomic } from '@agoric/internal/src/build-cache.js';
+import { Fail } from '@endo/errors';
 
 /**
  * @import {promises} from 'fs';

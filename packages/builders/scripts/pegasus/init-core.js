@@ -1,4 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+
 import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**

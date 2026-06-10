@@ -1,4 +1,5 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makePromiseSpace } from '../src/core/promise-space.js';

@@ -1,4 +1,5 @@
 import { kunser } from '@agoric/kmarshal';
+
 import { insistCapData } from '../lib/capdata.js';
 
 /**

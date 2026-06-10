@@ -1,14 +1,14 @@
-import { q } from '@endo/errors';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 import {
   ChoiceMethod,
+  coerceQuestionSpec,
   ElectionType,
   QuorumRule,
-  coerceQuestionSpec,
 } from '../../../src/index.js';
 import { remoteNullMarshaller } from '../utils.js';
 

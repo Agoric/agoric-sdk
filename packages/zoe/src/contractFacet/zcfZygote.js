@@ -1,8 +1,3 @@
-import { Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/pass-style';
-import { makePromiseKit } from '@endo/promise-kit';
-
 import { AssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { assertPattern, mustMatch } from '@agoric/store';
@@ -14,20 +9,23 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/pass-style';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { provideIssuerStorage } from '../issuerStorage.js';
 import { defineDurableHandle } from '../makeHandle.js';
+import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { evalContractBundle } from './evalContractCode.js';
 import { makeMakeExiter } from './exit.js';
 import { makeOfferHandlerStorage } from './offerHandlerStorage.js';
-import { createSeatManager } from './zcfSeat.js';
-
-import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { ZcfI } from './typeGuards.js';
 import { prepareZcMint } from './zcfMint.js';
+import { createSeatManager } from './zcfSeat.js';
 
 /**
  * @import {BundleCap, ShutdownWithFailure, VatPowers} from '@agoric/swingset-vat';

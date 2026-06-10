@@ -1,17 +1,17 @@
-import { Fail } from '@endo/errors';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import { TxBody as TxBodyType } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
+import {
+  CosmosQuery as CosmosQueryType,
+  CosmosResponse as CosmosResponseType,
+} from '@agoric/cosmic-proto/icq/v1/packet.js';
 import {
   RequestQuery as RequestQueryType,
   ResponseQuery as ResponseQueryType,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { atob, decodeBase64, encodeBase64 } from '@endo/base64';
-import {
-  CosmosQuery as CosmosQueryType,
-  CosmosResponse as CosmosResponseType,
-} from '@agoric/cosmic-proto/icq/v1/packet.js';
-import { CodecHelper } from '@agoric/cosmic-proto';
-import { Type as PacketType } from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
+import { Fail } from '@endo/errors';
 
 const TxBody = CodecHelper(TxBodyType);
 const Any = CodecHelper(AnyType);

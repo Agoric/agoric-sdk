@@ -9,9 +9,9 @@
 
 import '@endo/init';
 
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { Fail } from '@endo/errors';
-import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import { makeSlogSender } from './make-slog-sender.js';
 

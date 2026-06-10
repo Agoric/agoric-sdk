@@ -2,9 +2,9 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { E } from '@endo/eventual-send';
 
 import {
   makeTrader,
@@ -13,9 +13,9 @@ import {
   scaleForAddLiquidity,
   updatePoolState,
 } from '../../autoswapJig.js';
-import { setup } from '../setupBasicMints.js';
-import { installationPFromSource } from '../installFromSource.js';
 import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { setup } from '../setupBasicMints.js';
 
 /**
  * @import {AutoswapPublicFacet} from '../../../src/contracts/types.js';

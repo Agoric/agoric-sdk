@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, AmountMath } from '../../src/index.js';
+import { AmountMath, makeIssuerKit } from '../../src/index.js';
 import { combine, split } from '../../src/legacy-payment-helpers.js';
 
 const { isEqual } = AmountMath;

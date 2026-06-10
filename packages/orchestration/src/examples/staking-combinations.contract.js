@@ -7,13 +7,14 @@
  */
 import { AmountShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
+
+import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
 import { CosmosOrchestrationInvitationMakersI } from '../exos/cosmos-orchestration-account.js';
 import { CosmosChainAddressShape, DelegationShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
-import * as flows from './staking-combinations.flows.js';
 import * as sharedFlows from './shared.flows.js';
-import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
+import * as flows from './staking-combinations.flows.js';
 
 /**
  * @import {Remote} from '@agoric/internal';

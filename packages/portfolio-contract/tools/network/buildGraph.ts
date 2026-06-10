@@ -1,7 +1,3 @@
-import { Fail } from '@endo/errors';
-
-import { zeroPad } from '@endo/marshal';
-
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { partialMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
@@ -11,11 +7,12 @@ import {
   isInterChainAccountRef,
   isWithdrawToChainRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
+import { Fail } from '@endo/errors';
+import { zeroPad } from '@endo/marshal';
 
-import { PoolPlaces } from '../../src/type-guards.js';
 import type { PoolKey } from '../../src/type-guards.js';
+import { PoolPlaces } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
-
 import type { FeeMode, LinkSpec, NetworkSpec } from './network-spec.js';
 
 export { chainOf };

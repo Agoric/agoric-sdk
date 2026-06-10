@@ -1,12 +1,11 @@
 // @ts-check
 
+import { AmountMath } from '@agoric/ertp';
+import { multiplyBy } from '@agoric/ertp/src/ratio.js';
+import { makeNotifier } from '@agoric/notifier';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
-import { AmountMath } from '@agoric/ertp';
-import { makeNotifier } from '@agoric/notifier';
-
-import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import { mintQuote } from './priceAuthorityTransform.js';
 
 /**

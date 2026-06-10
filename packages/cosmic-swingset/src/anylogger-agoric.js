@@ -15,12 +15,12 @@
  *   not apply cosmic-swingset suppression semantics.
  */
 /* eslint-env node */
-import {
-  getEnvironmentOptionsList,
-  getEnvironmentOption,
-} from '@endo/env-options';
-import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { defineName } from '@agoric/internal/src/js-utils.js';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
+import {
+  getEnvironmentOption,
+  getEnvironmentOptionsList,
+} from '@endo/env-options';
 
 /** @import {BaseLevels} from '@agoric/internal/vendor/anylogger.js'; */
 /** @typedef {keyof BaseLevels} LogLevel; */

@@ -1,4 +1,5 @@
 import test from 'ava';
+
 import { makeFile } from '../../src/cli/util/file.js';
 
 const makeReadMock = (content: string) => {

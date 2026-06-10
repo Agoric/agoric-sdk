@@ -1,5 +1,5 @@
-import { Fail } from '@endo/errors';
 import { mustMatch } from '@agoric/store';
+import { Fail } from '@endo/errors';
 
 import { DisplayInfoShape } from './typeGuards.js';
 

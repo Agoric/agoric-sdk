@@ -1,12 +1,13 @@
-import test from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import test from 'ava';
+
 import * as transferLib from '../../src/cli/transfer.js';
 import {
-  mockOut,
-  mockFile,
-  makeVstorageMock,
   makeFetchMock,
   makeMockSigner,
+  makeVstorageMock,
+  mockFile,
+  mockOut,
 } from '../../testing/mocks.js';
 import { settlementAddress } from '../../tools/mock-evidence.js';
 

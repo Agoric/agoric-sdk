@@ -4,10 +4,12 @@
  *
  * channel info defaults to mainnet configuration (see update-noble-ica.core.js)
  */
+import { parseArgs } from 'node:util';
+
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { IBCConnectionInfoShape } from '@agoric/orchestration';
 import { mustMatch } from '@endo/patterns';
-import { parseArgs } from 'node:util';
+
 import { getManifestForUpdateNobleICA } from './update-noble-ica.core.js';
 
 /**

@@ -1,16 +1,17 @@
-import { Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
-import { isPromise } from '@endo/promise-kit';
-import {
-  isRemotable,
-  isPassable,
-  GET_METHOD_NAMES,
-  Far,
-} from '@endo/pass-style';
-import { M, objectMap } from '@endo/patterns';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { prepareVowTools, toPassableCap } from '@agoric/vow';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import {
+  Far,
+  GET_METHOD_NAMES,
+  isPassable,
+  isRemotable,
+} from '@endo/pass-style';
+import { M, objectMap } from '@endo/patterns';
+import { isPromise } from '@endo/promise-kit';
+
 import { PropertyKeyShape } from './type-guards.js';
 
 /**

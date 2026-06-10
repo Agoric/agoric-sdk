@@ -1,8 +1,8 @@
-import { promisify } from 'node:util';
 import { Readable } from 'node:stream';
-import chalk from 'chalk';
+import { promisify } from 'node:util';
 
 import { Fail } from '@endo/errors';
+import chalk from 'chalk';
 
 const { freeze } = Object;
 

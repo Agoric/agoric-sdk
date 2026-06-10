@@ -1,11 +1,13 @@
 // import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
-import { makeHelpers } from '@agoric/deploy-script-support';
-import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { parseArgs } from 'node:util';
+
+import { makeHelpers } from '@agoric/deploy-script-support';
+
 import {
-  axelarConfigTestnet,
   axelarConfig as axelarMainnetConfig,
+  axelarConfigTestnet,
   gmpAddresses,
 } from './axelar-configs.js';
 import { toExternalConfig } from './config-marshal.js';

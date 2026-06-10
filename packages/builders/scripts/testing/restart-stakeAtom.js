@@ -9,7 +9,11 @@ import { E } from '@endo/far';
 const trace = makeTracer('RestartSA', true);
 
 /**
- * @typedef {typeof import('@agoric/orchestration/src/examples/stake-ica.contract.js').start} StartFn
+ * @import {start} from '@agoric/orchestration/src/examples/stake-ica.contract.js';
+ */
+
+/**
+ * @typedef {typeof start} StartFn
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';

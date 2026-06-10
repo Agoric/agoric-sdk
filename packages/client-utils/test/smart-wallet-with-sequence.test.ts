@@ -1,8 +1,9 @@
-import test from 'ava';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
+import test from 'ava';
+
 import { makeTxSequencer } from '../src/sequence-manager.js';
-import { makeSequencingSmartWallet } from '../src/smart-wallet-with-sequence.js';
 import type { SigningSmartWalletKit } from '../src/signing-smart-wallet-kit.js';
+import { makeSequencingSmartWallet } from '../src/smart-wallet-with-sequence.js';
 import { createMockFetchAccount, MockSigningSmartWalletKit } from './mocks.js';
 
 test('handles concurrent offers and actions with correct sequence management', async t => {

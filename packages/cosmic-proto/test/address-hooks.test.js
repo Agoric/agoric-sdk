@@ -1,10 +1,10 @@
-import rawTest from 'ava';
 import '@endo/init/debug.js';
+
+import { createRequire } from 'node:module';
 
 import bundleSourceAmbient from '@endo/bundle-source';
 import { importBundle } from '@endo/import-bundle';
-
-import { createRequire } from 'node:module';
+import rawTest from 'ava';
 
 /**
  * @import {TestFn} from 'ava';

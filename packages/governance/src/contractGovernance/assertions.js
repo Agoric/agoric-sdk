@@ -1,8 +1,8 @@
-import { Fail } from '@endo/errors';
-import { isRemotable } from '@endo/marshal';
 import { assertIsRatio } from '@agoric/ertp/src/ratio.js';
 import { mustMatch } from '@agoric/store';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
+import { Fail } from '@endo/errors';
+import { isRemotable } from '@endo/marshal';
 
 /**
  * @import {Brand} from '@agoric/ertp';

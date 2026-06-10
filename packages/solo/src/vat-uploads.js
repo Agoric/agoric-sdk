@@ -1,5 +1,5 @@
-import { Far } from '@endo/marshal';
 import makeScratchPad from '@agoric/internal/src/scratch.js';
+import { Far } from '@endo/marshal';
 
 // This vat contains the private upload scratch pad.
 

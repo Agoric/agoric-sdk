@@ -1,4 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
+
 import { makeRatio } from '../src/contractSupport/index.js';
 
 /**

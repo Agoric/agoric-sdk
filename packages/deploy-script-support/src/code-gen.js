@@ -1,5 +1,5 @@
 // @ts-check
-import { makeMarshal, decodeToJustin } from '@endo/marshal';
+import { decodeToJustin, makeMarshal } from '@endo/marshal';
 
 const { keys, values, fromEntries } = Object;
 

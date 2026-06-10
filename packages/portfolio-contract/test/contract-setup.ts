@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
-import { mustMatch, type ERemote } from '@agoric/internal';
 import type { VstorageKit } from '@agoric/client-utils';
+import { type ERemote, mustMatch } from '@agoric/internal';
 import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
@@ -15,6 +15,7 @@ import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
 import type { Hex } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+
 import type { PortfolioPrivateArgs } from '../src/portfolio.contract.ts';
 import * as contractExports from '../src/portfolio.contract.ts';
 import type { PublishedTx, TxId, TxStatus } from '../src/resolver/types.ts';

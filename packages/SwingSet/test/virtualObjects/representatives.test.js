@@ -1,15 +1,15 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { kser, kslot } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { initSwingStore } from '@agoric/swing-store';
+
 import { buildVatController, makeSwingsetController } from '../../src/index.js';
+import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import makeNextLog from '../make-nextlog.js';
-
-import { enumeratePrefixedKeys } from '../../src/kernel/state/storageHelper.js';
 import { vstr } from '../util.js';
 
 test.serial('exercise cache', async t => {

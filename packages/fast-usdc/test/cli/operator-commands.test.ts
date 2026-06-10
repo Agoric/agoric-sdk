@@ -1,7 +1,8 @@
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { makeMarshal } from '@endo/marshal';
 import test from 'ava';
 import { Command } from 'commander';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
+
 import { addOperatorCommands } from '../../src/cli/operator-commands.js';
 import { flags } from '../../tools/cli-tools.js';
 import { mockStream } from '../../tools/mock-io.js';

@@ -1,34 +1,35 @@
-import { ethers } from 'ethers';
-import type { Filter } from 'ethers';
-import type { WebSocket } from 'ws';
 import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
-import type { CaipChainId } from '@agoric/orchestration';
-import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
-import { PendingTxCode } from '../pending-tx-manager.ts';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import type { CaipChainId } from '@agoric/orchestration';
+import type { Filter } from 'ethers';
+import { ethers } from 'ethers';
+import type { WebSocket } from 'ws';
+
 import {
+  type EvmRpc,
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
-  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
-import type { MakeAbortController } from '../support.ts';
-import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
+import { PendingTxCode } from '../pending-tx-manager.ts';
+import { TX_TIMEOUT_MS, type WatcherResult } from '../pending-tx-manager.ts';
+import type { MakeAbortController } from '../support.ts';
 import {
-  fetchReceiptWithRetry,
-  extractGmpExecuteData,
-  DEFAULT_RETRY_OPTIONS,
-  FAILED_TX_SCOPE,
-  WatcherTransportError,
   type AlchemySubscriptionMessage,
-  type RetryOptions,
+  DEFAULT_RETRY_OPTIONS,
+  extractGmpExecuteData,
+  FAILED_TX_SCOPE,
+  fetchReceiptWithRetry,
   handleTxRevert,
+  type RetryOptions,
+  WatcherTransportError,
 } from './watcher-utils.ts';
 
 const MULTICALL_STATUS_SIGNATURE = ethers.id(

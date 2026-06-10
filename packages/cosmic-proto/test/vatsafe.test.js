@@ -1,8 +1,8 @@
 // @ts-check
-import test from 'ava';
 import '@endo/init/debug.js';
 
 import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import test from 'ava';
 
 test('proto encoding', t => {
   const contents = {

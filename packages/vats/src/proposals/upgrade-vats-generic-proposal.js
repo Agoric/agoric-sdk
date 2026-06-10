@@ -1,6 +1,5 @@
-import { E } from '@endo/far';
-
 import { makeTracer } from '@agoric/internal';
+import { E } from '@endo/far';
 
 /**
  * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';

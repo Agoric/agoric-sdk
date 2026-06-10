@@ -2,10 +2,14 @@
 export {};
 
 /**
+ * @import {writeFile} from 'node:fs/promises';
+ */
+
+/**
  * @import {NameHub} from '@agoric/vats';
  * @import {ZoeService} from '@agoric/zoe';
  * @import {BundleSource} from '@endo/bundle-source';
- * @typedef {typeof import('node:fs/promises').writeFile} WriteFile
+ * @typedef {typeof writeFile} WriteFile
  * @import {ERef} from '@agoric/vow';
  * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
  * @import {CoreEvalMaterialRecord} from './writeCoreEvalParts.js';

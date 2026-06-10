@@ -1,6 +1,6 @@
-import { promises as fs } from 'node:fs';
-
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import { promises as fs } from 'node:fs';
 
 import {
   availableRunUtilsSnapshotNames,

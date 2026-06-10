@@ -7,13 +7,13 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
-
 import {
-  getManifestForInterProtocol,
   getManifestForEconCommittee,
+  getManifestForInterProtocol,
   getManifestForMain,
 } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
+
 import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**
@@ -56,7 +56,6 @@ const installKeyGroups = {
  */
 const publishInstallGroup = async ({ publishRef, install, group, persist }) =>
   Object.fromEntries(
-    // eslint-disable-next-line @jessie.js/safe-await-separator
     await Promise.all(
       Object.entries(group).map(async ([key, entry]) => {
         const bundlePath = await buildBundlePath(import.meta.url, entry);

@@ -1,13 +1,12 @@
 /** @file tests for PortfolioKit exo */
 /* eslint-disable no-sparse-arrays */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { ThrowsExpectation } from 'ava';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
+  type Callable,
   fromTypedEntries,
   typedEntries,
-  type Callable,
 } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -21,10 +20,12 @@ import { makeHeapZone } from '@agoric/zone';
 import { Far } from '@endo/pass-style';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
+import type { ThrowsExpectation } from 'ava';
+
 import {
+  type AccountInfoFor,
   PortfolioStateShape,
   preparePortfolioKit,
-  type AccountInfoFor,
 } from '../src/portfolio.exo.ts';
 import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';

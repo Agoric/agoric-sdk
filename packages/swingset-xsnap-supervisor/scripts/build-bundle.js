@@ -1,12 +1,14 @@
 #! /usr/bin/env node
 import '@endo/init';
-import path from 'node:path';
-import fs from 'node:fs';
+
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
 
 import bundleSource from '@endo/bundle-source';
-import { bundlePaths, hashPaths, entryPaths } from '../src/paths.js';
+
+import { bundlePaths, entryPaths, hashPaths } from '../src/paths.js';
 
 /** @param {Uint8Array | string} bytes */
 const computeSha256 = bytes => {

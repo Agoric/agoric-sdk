@@ -1,7 +1,8 @@
 // @ts-check
-import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import { E } from '@endo/far';
+
 import { makeScopedBridge } from '../bridge.js';
 
 /**

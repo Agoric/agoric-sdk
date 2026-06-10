@@ -1,29 +1,30 @@
-import { assert, q, Fail } from '@endo/errors';
+import { isCopyMap, isCopySet } from '@agoric/store';
+import { assert, Fail, q } from '@endo/errors';
 import { Far, passStyleOf } from '@endo/far';
 import {
-  zeroPad,
-  makeEncodePassable,
-  makeDecodePassable,
   compareRank,
+  makeDecodePassable,
+  makeEncodePassable,
+  zeroPad,
 } from '@endo/marshal';
 import {
   assertPattern,
-  matches,
-  mustMatch,
-  M,
-  makeCopySet,
-  makeCopyMap,
-  getRankCover,
   getCopyMapEntries,
   getCopySetKeys,
+  getRankCover,
+  M,
+  makeCopyMap,
+  makeCopySet,
+  matches,
+  mustMatch,
 } from '@endo/patterns';
-import { isCopyMap, isCopySet } from '@agoric/store';
+
+import { makeCache } from './cache.js';
 import { makeBaseRef, parseVatSlot } from './parseVatSlots.js';
 import {
   enumerateKeysStartEnd,
   enumerateKeysWithPrefix,
 } from './vatstore-iterators.js';
-import { makeCache } from './cache.js';
 
 /**
  * @import {ToCapData, FromCapData} from '@endo/marshal';
@@ -35,6 +36,7 @@ import { makeCache } from './cache.js';
  * @import {WeakMapStore} from '@agoric/store';
  * @import {SetStore} from '@agoric/store';
  * @import {WeakSetStore} from '@agoric/store';
+ * @import {CapData} from '@endo/marshal';
  */
 
 // XXX TODO: The following key length limit was put in place due to limitations
@@ -84,7 +86,7 @@ export const collectionMetaKeys = new Set([
  * @property {Pattern} keyShape
  * @property {Pattern} valueShape
  * @property {string} label
- * @property {import('@endo/marshal').CapData<string>} schemataCapData
+ * @property {CapData<string>} schemataCapData
  */
 
 /*

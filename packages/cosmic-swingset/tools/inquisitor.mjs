@@ -12,7 +12,6 @@
 // Overwrite the global console for deeper inspection.
 // @ts-expect-error TS2307 Cannot find module
 import 'data:text/javascript,import { Console } from "node:console"; const { stdout, stderr, env } = process; const inspectOptions = { depth: Number(env.CONSOLE_INSPECT_DEPTH) || 6 }; globalThis.console = new Console({ stdout, stderr, inspectOptions });';
-
 import 'ses';
 import '@endo/eventual-send/shim.js';
 import '@endo/init/pre.js';
@@ -37,22 +36,24 @@ import {
 import { fileURLToPath } from 'node:url';
 import { inspect, parseArgs } from 'node:util';
 import { isMainThread } from 'node:worker_threads';
-// eslint-disable-next-line import/no-extraneous-dependencies
-import sqlite3 from 'better-sqlite3';
-import { Fail, b, q } from '@endo/errors';
-import * as farExports from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
-import { objectMap, BridgeId } from '@agoric/internal';
+
+import { BridgeId, objectMap } from '@agoric/internal';
 import { QueuedActionType } from '@agoric/internal/src/action-types.js';
 import { defineName } from '@agoric/internal/src/js-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
 import { krefOf, kser, kslot, kunser } from '@agoric/kmarshal';
 import {
-  openSwingStore,
-  makeBundleStore,
   bundleIDFromName,
+  makeBundleStore,
+  openSwingStore,
 } from '@agoric/swing-store';
+import { b, Fail, q } from '@endo/errors';
+import * as farExports from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import sqlite3 from 'better-sqlite3';
+
 import {
   makeBufferedStorage,
   provideEnhancedKVStore,

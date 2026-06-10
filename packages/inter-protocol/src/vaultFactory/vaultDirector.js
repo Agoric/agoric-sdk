@@ -21,6 +21,7 @@ import {
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import {
   provideVaultParamManagers,

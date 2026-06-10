@@ -5,9 +5,8 @@ import {
   startLife,
   test,
 } from '@agoric/swingset-vat/tools/prepare-strict-test-env-ava.js';
-
-import { Fail } from '@endo/errors';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Fail } from '@endo/errors';
 
 import { prepareVowTools } from '../vat.js';
 

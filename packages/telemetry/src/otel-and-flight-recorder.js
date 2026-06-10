@@ -1,4 +1,5 @@
 import { NonNullish } from '@agoric/internal';
+
 import { makeSlogSender as makeSlogSenderFromEnv } from './make-slog-sender.js';
 
 /**

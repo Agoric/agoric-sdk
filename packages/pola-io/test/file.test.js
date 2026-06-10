@@ -1,7 +1,9 @@
-import test from 'ava';
 import * as fs from 'node:fs';
 import * as fsp from 'node:fs/promises';
 import * as path from 'node:path';
+
+import test from 'ava';
+
 import { makeFileRd, makeFileRW } from '../src/file.js';
 
 const { isFrozen } = Object;

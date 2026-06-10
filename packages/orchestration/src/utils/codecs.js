@@ -12,8 +12,8 @@ import {
   QueryBalanceResponse as QueryBalanceResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import {
-  MsgSendResponse as MsgSendResponseType,
   MsgSend as MsgSendType,
+  MsgSendResponse as MsgSendResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
   QueryDelegationRewardsRequest as QueryDelegationRewardsRequestType,
@@ -47,8 +47,8 @@ import {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
-  MsgTransferResponse as MsgTransferResponseType,
   MsgTransfer as MsgTransferType,
+  MsgTransferResponse as MsgTransferResponseType,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 
 /**

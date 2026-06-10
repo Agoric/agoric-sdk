@@ -1,11 +1,12 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
-import { E } from '@endo/far';
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { makeDurableZone } from '@agoric/zone/durable.js';
-import { makeHeapZone } from '@agoric/zone';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { subscribeEach } from '@agoric/notifier';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
+import { makeHeapZone } from '@agoric/zone';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { E } from '@endo/far';
+
 import { buildRootObject } from '../src/vat-bank.js';
 
 /**

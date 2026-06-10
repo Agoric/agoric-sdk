@@ -1,8 +1,8 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { kunser } from '@agoric/kmarshal';
-import { loadBasedir, buildVatController } from '../../src/index.js';
+
+import { buildVatController, loadBasedir } from '../../src/index.js';
 
 const expected = [
   ['B good', 'C good', 'F good', 'three good', 'exit good', 'exitWF good'],

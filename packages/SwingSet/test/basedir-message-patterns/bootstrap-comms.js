@@ -1,4 +1,4 @@
-import { Far, E } from '@endo/far';
+import { E, Far } from '@endo/far';
 
 // machine names, to link vattp messages and loopbox channels
 const A = 'A';

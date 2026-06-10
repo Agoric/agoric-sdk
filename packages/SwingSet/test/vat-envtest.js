@@ -1,9 +1,9 @@
 // @ts-nocheck
 /* global VatData globalThis */
 import { Far } from '@endo/far';
+import { importBundle } from '@endo/import-bundle';
 import { passStyleOf } from '@endo/pass-style';
 import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
-import { importBundle } from '@endo/import-bundle';
 
 export function meta() {
   return { globalThis, passStyleOf };

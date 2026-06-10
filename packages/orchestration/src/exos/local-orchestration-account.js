@@ -1,27 +1,27 @@
 /** @file Use-object for the owner of a localchain account */
 import { CodecHelper } from '@agoric/cosmic-proto';
+import {
+  QueryAllBalancesRequest as QueryAllBalancesRequestType,
+  QueryBalanceRequest as QueryBalanceRequestType,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import {
+  MsgDelegate as MsgDelegateType,
+  MsgUndelegate as MsgUndelegateType,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import {
+  QueryDenomHashRequest as QueryDenomHashRequestType,
+  QueryDenomHashResponse as QueryDenomHashResponseType,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { E } from '@endo/far';
 import { Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
 
-import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import {
-  QueryDenomHashRequest as QueryDenomHashRequestType,
-  QueryDenomHashResponse as QueryDenomHashResponseType,
-} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
-import {
-  QueryAllBalancesRequest as QueryAllBalancesRequestType,
-  QueryBalanceRequest as QueryBalanceRequestType,
-} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import {
-  MsgDelegate as MsgDelegateType,
-  MsgUndelegate as MsgUndelegateType,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
   AmountArgShape,
   AnyNatAmountsRecord,
@@ -31,19 +31,19 @@ import {
   TimestampProtoShape,
   TypedJsonShape,
 } from '../typeGuards.js';
+import { chainOfAccount } from '../utils/address.js';
+import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 import { maxClockSkew, toDenomAmount } from '../utils/cosmos.js';
+import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 import {
   addTrafficEntries,
   orchestrationAccountMethods,
   trafficTransforms,
 } from '../utils/orchestrationAccount.js';
-import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 import { makeTimestampHelper } from '../utils/time.js';
-import { preparePacketTools } from './packet-tools.js';
-import { prepareIBCTools } from './ibc-packet.js';
-import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 import { TransferRouteShape } from './chain-hub.js';
-import { chainOfAccount } from '../utils/address.js';
+import { prepareIBCTools } from './ibc-packet.js';
+import { preparePacketTools } from './packet-tools.js';
 
 const { details: X } = assert;
 

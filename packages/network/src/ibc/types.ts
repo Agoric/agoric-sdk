@@ -1,6 +1,6 @@
 import type {
-  State as IBCChannelState,
   Order,
+  State as IBCChannelState,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 

@@ -1,31 +1,31 @@
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
 import repl from 'node:repl';
 import util from 'node:util';
+
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { makeStatLogger } from '@agoric/stat-logger';
+import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 import {
   buildTimer,
-  loadSwingsetConfigFile,
-  loadBasedir,
   initializeSwingset,
+  loadBasedir,
+  loadSwingsetConfigFile,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
 import { buildLoopbox } from '@agoric/swingset-vat/src/devices/loopbox/loopbox.js';
-import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
-
-import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 import { makeSlogSender } from '@agoric/telemetry';
 
-import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
 import { initEmulatedChain } from './chain.js';
+import { dumpStore } from './dumpstore.js';
 import {
   organizeBenchmarkStats,
-  printBenchmarkStats,
   organizeMainStats,
-  printMainStats,
   outputStats,
+  printBenchmarkStats,
+  printMainStats,
 } from './printStats.js';
 
 /**

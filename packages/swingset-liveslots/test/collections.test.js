@@ -1,9 +1,9 @@
 // @ts-nocheck
+import { M } from '@agoric/store';
+import { Far } from '@endo/marshal';
+import { makeCopyMap, makeCopySet } from '@endo/patterns';
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
-import { M } from '@agoric/store';
-import { makeCopyMap, makeCopySet } from '@endo/patterns';
 import { makeFakeCollectionManager } from '../tools/fakeVirtualSupport.js';
 
 const {

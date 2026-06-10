@@ -1,15 +1,17 @@
 /**
  * @file Tests for EVM call batch facade helpers.
  */
-import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
-import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
+import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { hexToBytes } from '@noble/hashes/utils';
 import { type Abi } from 'viem';
+
 import {
   makeEvmAbiCallBatch,
-  makeGmpBuilder,
   makeEvmContract,
+  makeGmpBuilder,
 } from '../src/evm-facade.ts';
 import { depositFactoryABI } from '../src/interfaces/orch-factory.ts';
 import { depositFactoryCreateAndDepositInputs } from '../src/utils/evm-orch-factory.ts';

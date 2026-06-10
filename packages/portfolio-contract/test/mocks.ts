@@ -1,4 +1,3 @@
-import type { Hex } from 'viem';
 import type { HostInterface } from '@agoric/async-flow';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import {
@@ -36,6 +35,8 @@ import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
 import { makePromiseKit } from '@endo/promise-kit';
+import type { Hex } from 'viem';
+
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
 

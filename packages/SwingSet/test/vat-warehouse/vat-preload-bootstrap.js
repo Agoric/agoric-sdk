@@ -1,4 +1,4 @@
-import { Far, E } from '@endo/far';
+import { E, Far } from '@endo/far';
 
 export function buildRootObject() {
   const extras = new Map(); // count -> root

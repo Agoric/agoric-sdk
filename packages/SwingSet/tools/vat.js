@@ -1,18 +1,21 @@
 #!/usr/bin/env node
 
-import { dirname } from 'node:path';
-import yargsParser from 'yargs-parser';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
+
+import { dirname } from 'node:path';
 import process from 'node:process';
 import repl from 'node:repl';
 import util from 'node:util';
-import {
-  loadSwingsetConfigFile,
-  loadBasedir,
-  buildVatController,
-} from '../src/index.js';
+
+import yargsParser from 'yargs-parser';
+
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
+import {
+  buildVatController,
+  loadBasedir,
+  loadSwingsetConfigFile,
+} from '../src/index.js';
 
 const USAGE = `
 Usage: ${process.argv[1]} \\

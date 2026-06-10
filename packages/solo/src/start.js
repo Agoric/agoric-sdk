@@ -1,53 +1,50 @@
 // @ts-check
 /* eslint-env node */
-import fs from 'node:fs';
-import url from 'node:url';
-import path from 'node:path';
-import temp from 'temp';
 import { fork } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 import { promisify } from 'node:util';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
+
+import {
+  exportKernelStats,
+  makeDefaultMeterProvider,
+  makeSlogCallbacks,
+} from '@agoric/cosmic-swingset/src/kernel-stats.js';
+import { unprefixedProperties } from '@agoric/internal/src/js-utils.js';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
 // import { createHash } from 'crypto';
-
 import anylogger from '@agoric/internal/vendor/anylogger.js';
-
-// import connect from 'lotion-connect';
-// import djson from 'deterministic-json';
-
-import { assert, Fail } from '@endo/errors';
+import { openSwingStore } from '@agoric/swing-store';
+import {
+  buildCommand,
+  buildMailbox,
+  buildMailboxStateMap,
+  buildPlugin,
+  buildTimer,
+  exportMailboxData,
+  initializeSwingset,
+  loadSwingsetConfigFile,
+  makeEphemeralMailboxStorage,
+  makeSwingsetController,
+  swingsetIsInitialized,
+} from '@agoric/swingset-vat';
 import {
   getTelemetryProviders,
   makeSlogSender,
   tryFlushSlogSender,
 } from '@agoric/telemetry';
-import {
-  loadSwingsetConfigFile,
-  buildCommand,
-  swingsetIsInitialized,
-  initializeSwingset,
-  makeSwingsetController,
-  buildMailboxStateMap,
-  buildMailbox,
-  buildPlugin,
-  buildTimer,
-  exportMailboxData,
-  makeEphemeralMailboxStorage,
-} from '@agoric/swingset-vat';
-import { openSwingStore } from '@agoric/swing-store';
-import { unprefixedProperties } from '@agoric/internal/src/js-utils.js';
-import { makeWithQueue } from '@agoric/internal/src/queue.js';
-import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
-import {
-  makeDefaultMeterProvider,
-  makeSlogCallbacks,
-  exportKernelStats,
-} from '@agoric/cosmic-swingset/src/kernel-stats.js';
-
-import { deliver, addDeliveryTarget } from './outbound.js';
-// import { connectToPipe } from './pipe.js';
-import { makeHTTPListener } from './web.js';
+// import connect from 'lotion-connect';
+// import djson from 'deterministic-json';
+import { assert, Fail } from '@endo/errors';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import temp from 'temp';
 
 import { connectToChain } from './chain-cosmos-sdk.js';
+import { addDeliveryTarget, deliver } from './outbound.js';
+// import { connectToPipe } from './pipe.js';
+import { makeHTTPListener } from './web.js';
 
 const log = anylogger('start');
 

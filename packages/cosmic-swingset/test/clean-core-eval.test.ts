@@ -1,8 +1,9 @@
 import type { TestFn, ThrowsExpectation } from 'ava';
 import anyTest from 'ava';
+
 import {
-  defangEvaluableCode,
   compartmentEvaluate,
+  defangEvaluableCode,
 } from '../scripts/clean-core-eval.js';
 
 const test = anyTest as TestFn;

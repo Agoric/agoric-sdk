@@ -1,8 +1,8 @@
 /* eslint-env node */
-import { Fail } from '@endo/errors';
-
 // adapted from 'netstring-stream', https://github.com/tlivings/netstring-stream/
 import { Transform } from 'node:stream';
+
+import { Fail } from '@endo/errors';
 
 const COLON = 58;
 const COMMA = 44;

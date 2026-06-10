@@ -1,4 +1,4 @@
-import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
+import { getInterfaceGuardPayload, M, matches } from '@endo/patterns';
 /**
  * @import {AmountValue, Ratio} from './types.js'
  * @import {TypedPattern} from '@agoric/internal'

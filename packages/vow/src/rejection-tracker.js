@@ -1,7 +1,7 @@
 // @ts-check
 import { X } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
 import { M } from '@endo/patterns';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { sink } from './vow-utils.js';
 

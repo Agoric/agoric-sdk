@@ -1,16 +1,16 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
-import tmp from 'tmp';
-import sqlite3 from 'better-sqlite3';
 import path from 'node:path';
 
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import sqlite3 from 'better-sqlite3';
+import tmp from 'tmp';
 
-import { buildVatController, buildKernelBundles } from '../../../src/index.js';
+import { buildKernelBundles, buildVatController } from '../../../src/index.js';
 import { enumeratePrefixedKeys } from '../../../src/kernel/state/storageHelper.js';
 
 const tmpDir = makeTempDirFactory(tmp);

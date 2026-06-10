@@ -3,15 +3,14 @@ import {
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
-
 import type { ExecutionContext } from 'ava';
 
 import {
   type GovernanceDriver,
-  type SmartWalletDriver,
-  type WalletFactoryDriver,
   makeGovernanceDriver,
   makeWalletFactoryDriver,
+  type SmartWalletDriver,
+  type WalletFactoryDriver,
 } from '../../tools/drivers.js';
 import { makeLiquidationTestKit } from '../../tools/liquidation.js';
 import {

@@ -1,23 +1,24 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
 
 import { BridgeId, typedEntries } from '@agoric/internal';
 import {
-  type TestStep,
   testInterruptedSteps,
+  type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
 import {
-  withChainCapabilities,
   type CosmosValidatorAddress,
+  withChainCapabilities,
 } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
+import type { TestFn } from 'ava';
+
 import {
   makeBootTestContext,
-  withWalletFactory,
   type WalletFactoryBootTestContext,
+  withWalletFactory,
 } from '../tools/boot-test-context.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
 

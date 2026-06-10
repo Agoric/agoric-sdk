@@ -2,9 +2,9 @@
 import type { AccountId } from '@agoric/orchestration';
 
 import {
-  TxType,
   type PublishedTx,
   type TxStatus,
+  TxType,
 } from '../src/resolver/constants.js';
 
 const TxTypesWithSourceAddress: TxType[] = harden([

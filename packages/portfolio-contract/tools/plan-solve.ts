@@ -1,12 +1,3 @@
-import jsLPSolver from 'javascript-lp-solver';
-import type {
-  IModel,
-  IModelVariableConstraint,
-  Solution,
-} from 'javascript-lp-solver';
-
-import { assert, Fail, X } from '@endo/errors';
-
 import { AmountMath } from '@agoric/ertp';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import {
@@ -16,23 +7,30 @@ import {
   provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
-import { EvmWalletOperationType } from '@agoric/portfolio-api';
 import type {
   AxelarChain,
   FundsFlowPlan,
   YieldProtocol,
 } from '@agoric/portfolio-api';
+import { EvmWalletOperationType } from '@agoric/portfolio-api';
+import { assert, Fail, X } from '@endo/errors';
+import type {
+  IModel,
+  IModelVariableConstraint,
+  Solution,
+} from 'javascript-lp-solver';
+import jsLPSolver from 'javascript-lp-solver';
 
-import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
-import { PoolPlaces } from '../src/type-guards.js';
 import type { PoolKey } from '../src/type-guards.js';
+import { PoolPlaces } from '../src/type-guards.js';
+import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
 import {
-  preflightValidateNetworkPlan,
   formatInfeasibleDiagnostics,
+  preflightValidateNetworkPlan,
   validateSolvedFlows,
 } from './graph-diagnose.js';
-import { chainOf, makeGraphForFlow } from './network/buildGraph.js';
 import type { FlowEdge, FlowGraph } from './network/buildGraph.js';
+import { chainOf, makeGraphForFlow } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
 
 const replaceOrInit = <K, V>(

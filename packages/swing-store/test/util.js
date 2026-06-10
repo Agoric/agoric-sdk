@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+
 import { createSHA256 } from '../src/hasher.js';
 
 export async function* getSnapshotStream(contents) {

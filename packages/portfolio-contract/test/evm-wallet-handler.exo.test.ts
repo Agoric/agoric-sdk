@@ -1,28 +1,29 @@
 import { test as rawTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
-import type {
-  FullMessageDetails,
-  YmaxOperationDetails,
-} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import { getPermitWitnessTransferFromData } from '@agoric/orchestration/src/utils/permit2.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import { getPermitWitnessTransferFromData } from '@agoric/orchestration/src/utils/permit2.js';
-import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
+import type {
+  FullMessageDetails,
+  YmaxOperationDetails,
+} from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import { type Baggage, makeScalarBigMapStore } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import type { TestFn } from 'ava';
 import { privateKeyToAccount } from 'viem/accounts';
+
 import {
+  type EVMWallet,
   makeNonceManager,
   prepareEVMPortfolioOperationManager,
   prepareEVMWalletMessageHandler,
-  type EVMWallet,
 } from '../src/evm-wallet-handler.exo.ts';
 import type { contract, PublishStatus } from '../src/portfolio.contract.ts';
 import type { PortfolioKit } from '../src/portfolio.exo.ts';

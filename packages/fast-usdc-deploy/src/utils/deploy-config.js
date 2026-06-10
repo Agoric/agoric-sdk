@@ -1,7 +1,8 @@
 import { denomHash, withChainCapabilities } from '@agoric/orchestration';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { objectMap } from '@endo/patterns';
+
 import { ChainPolicies, DepositForBurnEvent } from './chain-policies.js';
 
 /**

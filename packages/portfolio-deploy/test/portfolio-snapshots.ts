@@ -3,7 +3,9 @@ import { promises as fs } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
 import { type SwingsetTestKitSnapshot } from '@aglocal/boot/tools/supports.js';
+
 import {
   getCurrentKernelBundleSha512,
   loadOrCreateCachedSnapshot,

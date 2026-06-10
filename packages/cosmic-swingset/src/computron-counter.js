@@ -1,6 +1,7 @@
 // @ts-check
 
 import { assert } from '@endo/errors';
+
 import {
   BeansPerBlockComputeLimit,
   BeansPerVatCreation,

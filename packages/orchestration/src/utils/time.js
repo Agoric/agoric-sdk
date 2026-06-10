@@ -1,5 +1,5 @@
-import { E } from '@endo/far';
 import { TimeMath } from '@agoric/time';
+import { E } from '@endo/far';
 
 /**
  * @import {TimerService} from '@agoric/time';

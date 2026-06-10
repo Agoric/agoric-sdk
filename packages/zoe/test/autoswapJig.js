@@ -1,6 +1,6 @@
+import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Remotable } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
 import { assertOfferResult, assertPayoutAmount } from './zoeTestHelpers.js';

@@ -1,13 +1,13 @@
 import { test } from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { E } from '@endo/far';
+
 import {
-  observeIteration,
-  makeNotifierKit,
   makeNotifier,
+  makeNotifierKit,
+  observeIteration,
 } from '../src/index.js';
-import { paula, alice, bob } from './iterable-testing-tools.js';
+import { alice, bob, paula } from './iterable-testing-tools.js';
 
 const last = array => array[array.length - 1];
 

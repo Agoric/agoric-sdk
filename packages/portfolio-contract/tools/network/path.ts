@@ -1,4 +1,5 @@
 import type { Amount } from '@agoric/ertp';
+
 import type {
   AssetPlaceRef,
   MovementDesc,

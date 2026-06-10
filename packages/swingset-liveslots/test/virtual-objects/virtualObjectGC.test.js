@@ -1,14 +1,14 @@
 // @ts-nocheck
+import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
+import { krefOf, kser, kslot } from '@agoric/kmarshal';
+import { Far } from '@endo/marshal';
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
-import { krefOf, kser, kslot } from '@agoric/kmarshal';
-import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
-import {
-  setupTestLiveslots,
-  findSyscallsByType,
-} from '../liveslots-helpers.js';
 import { parseVatSlot } from '../../src/parseVatSlots.js';
+import {
+  findSyscallsByType,
+  setupTestLiveslots,
+} from '../liveslots-helpers.js';
 
 // Legs:
 //

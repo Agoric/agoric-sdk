@@ -1,6 +1,5 @@
-import { Nat } from '@endo/nat';
-
 import { Fail } from '@endo/errors';
+import { Nat } from '@endo/nat';
 
 /**
  * Endowments for a Timer device that can be made available to SwingSet vats.

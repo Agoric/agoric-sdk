@@ -16,8 +16,8 @@ import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type {
-  State as IBCChannelState,
   Order,
+  State as IBCChannelState,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 import type {
@@ -44,6 +44,7 @@ import type {
   TargetApp,
   TargetRegistration,
 } from '@agoric/vats/src/bridge-target.js';
+
 import type { PFM_RECEIVER } from './exos/chain-hub.js';
 import type {
   AccountId,

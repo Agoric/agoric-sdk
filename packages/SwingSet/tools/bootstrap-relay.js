@@ -7,7 +7,8 @@
  */
 
 import { Fail, q } from '@endo/errors';
-import { Far, E } from '@endo/far';
+import { E, Far } from '@endo/far';
+
 import { buildManualTimer } from './manual-timer.js';
 import { makeReflectionMethods } from './vat-puppet.js';
 

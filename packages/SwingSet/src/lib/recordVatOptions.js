@@ -1,4 +1,5 @@
 import { Fail } from '@endo/errors';
+
 import { makeWorkerOptions } from './workerOptions.js';
 
 /**

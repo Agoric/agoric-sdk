@@ -2,13 +2,13 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { E } from '@endo/eventual-send';
 
-import { setup } from '../setupBasicMints.js';
+import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
 import { installationPFromSource } from '../installFromSource.js';
-import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers.js';
+import { setup } from '../setupBasicMints.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

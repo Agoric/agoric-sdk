@@ -1,11 +1,12 @@
-import test from 'ava';
-import fs from 'node:fs';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
+
+import test from 'ava';
 
 import {
+  getDebugLockdownBundle,
   getLockdownBundle,
   getLockdownBundleSHA256,
-  getDebugLockdownBundle,
 } from '../src/index.js';
 import { bundlePaths } from '../src/paths.js';
 

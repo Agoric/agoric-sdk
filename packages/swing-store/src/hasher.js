@@ -1,6 +1,6 @@
-import { Fail } from '@endo/errors';
-
 import { createHash } from 'node:crypto';
+
+import { Fail } from '@endo/errors';
 
 /**
  * @typedef {{

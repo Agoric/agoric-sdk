@@ -1,6 +1,7 @@
-import test from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { runJob, type Job } from '../src/schedule-order.ts';
+import test from 'ava';
+
+import { type Job, runJob } from '../src/schedule-order.ts';
 
 const USDC = { name: 'USDC' };
 const BLD = { name: 'BLD' };

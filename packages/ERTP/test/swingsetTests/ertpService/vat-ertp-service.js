@@ -1,9 +1,9 @@
-import { Far } from '@endo/marshal';
 import {
   makeScalarBigMapStore,
   prepareSingleton,
   provideDurableSetStore,
 } from '@agoric/vat-data';
+import { Far } from '@endo/marshal';
 
 import {
   AssetKind,

@@ -4,12 +4,14 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { inspect } from 'node:util';
+
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { PublishedTx, TxStatus } from '@agoric/portfolio-api';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { inspect } from 'node:util';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import type { OfferArgsFor, ProposalType } from '../src/type-guards.ts';
 import {
   grokRebalanceScenarios,

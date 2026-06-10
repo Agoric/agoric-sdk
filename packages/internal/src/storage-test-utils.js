@@ -2,6 +2,7 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
+
 import { makeTracer } from './debug.js';
 import { NonNullish } from './errors.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';

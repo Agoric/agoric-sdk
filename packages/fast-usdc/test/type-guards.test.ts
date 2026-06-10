@@ -1,6 +1,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { mustMatch } from '@endo/patterns';
+
 import { PendingTxStatus, TxStatus } from '../src/constants.js';
 import {
   CctpTxEvidenceShape,
@@ -8,7 +9,6 @@ import {
   PendingTxShape,
 } from '../src/type-guards.js';
 import type { CctpTxEvidence, ChainPolicy } from '../src/types.js';
-
 import { MockCctpTxEvidences } from '../tools/mock-evidence.js';
 
 test('CctpTxEvidenceShape', t => {

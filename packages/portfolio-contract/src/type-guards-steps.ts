@@ -1,7 +1,6 @@
 /**
  * @file offerArgs types / shapes - temporarily separate from type-guards.ts
  */
-import { assert } from '@endo/errors';
 import type { Brand } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { AnyNatAmountShape } from '@agoric/orchestration';
@@ -10,12 +9,14 @@ import {
   AxelarChain,
   SupportedChain,
 } from '@agoric/portfolio-api/src/constants.js';
+import { assert } from '@endo/errors';
 import { M } from '@endo/patterns';
+
 import {
   makeNatAmountShape,
   PoolPlaces,
-  TargetAllocationShape,
   type TargetAllocation,
+  TargetAllocationShape,
 } from './type-guards.ts';
 
 const { keys, values } = Object;

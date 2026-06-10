@@ -1,5 +1,5 @@
-import { Far, E } from '@endo/far';
 import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
 
 export function buildRootObject(vatPowers, vatParameters) {
   return Far('root', {

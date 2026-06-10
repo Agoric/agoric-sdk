@@ -1,5 +1,5 @@
-import { Far, E } from '@endo/far';
 import { defineKind } from '@agoric/vat-data';
+import { E, Far } from '@endo/far';
 
 const things = [];
 

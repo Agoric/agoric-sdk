@@ -1,8 +1,8 @@
 // this file is imported by some test vats, so don't import any non-pure
 // modules
 
-import { assert } from '@endo/errors';
 import { kser, kunser } from '@agoric/kmarshal';
+import { assert } from '@endo/errors';
 
 export function extractMessage(vatDeliverObject) {
   const [type, ...vdoargs] = vatDeliverObject;

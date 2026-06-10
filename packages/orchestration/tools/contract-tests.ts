@@ -6,16 +6,16 @@ import {
   makeAsyncQueue,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { setupFakeNetwork } from '@agoric/orchestration/tools/network-fakes.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { IBCChannelID } from '@agoric/network/ibc';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { setupFakeNetwork } from '@agoric/orchestration/tools/network-fakes.js';
 import { makeNameHubKit, type VTransferIBCEvent } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import {
-  prepareLocalChainTools,
   type AdditionalTransferPowers,
+  prepareLocalChainTools,
 } from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
@@ -30,7 +30,8 @@ import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { objectMap } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
-import { withChainCapabilities, type ChainInfo } from '../index.js';
+
+import { type ChainInfo, withChainCapabilities } from '../index.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';

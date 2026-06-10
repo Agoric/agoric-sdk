@@ -1,9 +1,9 @@
 // @ts-check
-import { Far } from '@endo/far';
-import { makeDurableZone } from '@agoric/zone/durable.js';
-
 import { provideLazy } from '@agoric/store';
 import { prepareVowTools } from '@agoric/vow/vat.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Far } from '@endo/far';
+
 import { prepareBridgeTargetModule } from './bridge-target.js';
 import { prepareTransferTools } from './transfer.js';
 

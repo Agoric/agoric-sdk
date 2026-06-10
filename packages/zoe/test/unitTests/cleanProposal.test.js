@@ -1,9 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import { M } from '@agoric/store';
 
 import { cleanProposal } from '../../src/cleanProposal.js';
-import { setup } from './setupBasicMints.js';
 import buildManualTimer from '../../tools/manualTimer.js';
+import { setup } from './setupBasicMints.js';
 
 const proposeGood = (t, proposal, assetKind, expected) =>
   t.deepEqual(

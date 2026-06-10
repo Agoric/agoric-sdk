@@ -3,6 +3,11 @@
 /* global globalThis */
 import '@endo/init/debug.js';
 
+import * as fsp from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+import { parseArgs, promisify } from 'node:util';
+import { gzip as gzipCb } from 'node:zlib';
+
 import {
   iterateEach,
   makeCastingSpec,
@@ -20,10 +25,6 @@ import { stringToPath } from '@cosmjs/crypto';
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import type { StdFee } from '@cosmjs/stargate';
 import { SigningStargateClient } from '@cosmjs/stargate';
-import * as fsp from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
-import { parseArgs, promisify } from 'node:util';
-import { gzip as gzipCb } from 'node:zlib';
 
 const usage = `Usage: install-bundle.ts --bundle <path>`;
 

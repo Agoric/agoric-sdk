@@ -5,7 +5,6 @@
  */
 
 import '@endo/init/pre-bundle-source.js';
-
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
 import { wrapTest } from '@endo/ses-ava';

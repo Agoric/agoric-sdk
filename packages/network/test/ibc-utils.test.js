@@ -1,4 +1,5 @@
 import test from 'ava';
+
 import { decodeRemoteIbcAddress, localAddrToPortID } from '../src/ibc/utils.js';
 
 /**

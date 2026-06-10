@@ -1,11 +1,11 @@
 /* eslint-env node */
 import { makeHelpers } from '@agoric/deploy-script-support';
-
 import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 import { getManifestForAddAssetToVault } from '@agoric/inter-protocol/src/proposals/addAssetToVault.js';
 import { getManifestForPsm } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
+
 import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**

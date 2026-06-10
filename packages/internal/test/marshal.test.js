@@ -1,8 +1,8 @@
 // @ts-check
+import { Fail, q } from '@endo/errors';
+import { Far, getInterfaceOf, makeMarshal, passStyleOf } from '@endo/marshal';
 import test from 'ava';
 
-import { Far, getInterfaceOf, makeMarshal, passStyleOf } from '@endo/marshal';
-import { Fail, q } from '@endo/errors';
 import { makeInaccessibleVal } from '../src/marshal/inaccessible-val.js';
 import { wrapRemoteMarshallerSendSlotsOnly as wrapRemoteMarshaller } from '../src/marshal/wrap-marshaller.js';
 

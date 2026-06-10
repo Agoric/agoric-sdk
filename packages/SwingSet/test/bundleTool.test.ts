@@ -1,7 +1,6 @@
-import test, { type ExecutionContext } from 'ava';
 import {
-  mkdtemp,
   mkdir,
+  mkdtemp,
   readFile,
   rm,
   utimes,
@@ -10,6 +9,8 @@ import {
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+
+import test, { type ExecutionContext } from 'ava';
 
 import {
   makeAmbientBundleToolPowers,

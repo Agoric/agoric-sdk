@@ -4,25 +4,25 @@ import fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
 import nativePath from 'node:path';
 
-import tmp from 'tmp';
-import { Fail } from '@endo/errors';
-
 import {
-  SwingsetMessageType,
   QueuedActionType,
+  SwingsetMessageType,
 } from '@agoric/internal/src/action-types.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import { Fail } from '@endo/errors';
+import tmp from 'tmp';
+
 import {
   extractPortNums,
   makeLaunchChain,
   makeQueueStorage,
 } from '../src/chain-main.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
 import { makeQueue } from '../src/helpers/make-queue.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
 
 /**
  * @import {EReturn} from '@endo/far';

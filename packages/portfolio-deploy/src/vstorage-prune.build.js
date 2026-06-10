@@ -10,8 +10,9 @@
 /* global globalThis */
 import { fetchEnvNetworkConfig, makeVStorage } from '@agoric/client-utils';
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForPruneVStorage } from './vstorage-prune.core.js';
+
 import { findOutdated } from './vstorage-outdated.js';
+import { getManifestForPruneVStorage } from './vstorage-prune.core.js';
 
 const sourceSpec = './vstorage-prune.core.js';
 

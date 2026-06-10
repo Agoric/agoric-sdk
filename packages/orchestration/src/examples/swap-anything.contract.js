@@ -3,6 +3,7 @@ import { makeTracer } from '@agoric/internal';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';

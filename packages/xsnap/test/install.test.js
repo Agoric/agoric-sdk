@@ -1,17 +1,19 @@
 import { createHash } from 'node:crypto';
-import { createServer } from 'node:http';
 import {
+  copyFile,
+  mkdir,
   mkdtemp,
   readFile,
   rm,
   writeFile,
-  copyFile,
-  mkdir,
 } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { $ } from 'execa';
+import { join, resolve } from 'node:path';
+
 import test from 'ava';
+import { $ } from 'execa';
+
 import {
   mapOsArchToTarget,
   targetToBuildPlatform,

@@ -1,4 +1,5 @@
-import { kunser, kser, kslot, krefOf } from '@agoric/kmarshal';
+import { krefOf, kser, kslot, kunser } from '@agoric/kmarshal';
+
 import { insistVatType } from '../../src/lib/parseVatSlots.js';
 import { extractMessage } from '../vat-util.js';
 

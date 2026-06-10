@@ -7,6 +7,7 @@
 
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForGame1 } from '@agoric/smart-wallet/tools/fixtures/start-game1-proposal.js';
+
 import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**

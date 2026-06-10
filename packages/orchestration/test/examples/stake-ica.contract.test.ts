@@ -4,15 +4,15 @@ import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+
 import type { CosmosChainInfo } from '../../src/cosmos-api.js';
 import { type StakeIcaTerms } from '../../src/examples/stake-ica.contract.js';
+import * as contractExports from '../../src/examples/stake-ica.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type { DenomAmount } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { UNBOND_PERIOD_SECONDS } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
-
-import * as contractExports from '../../src/examples/stake-ica.contract.js';
 
 type StartFn = typeof contractExports.start;
 

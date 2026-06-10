@@ -10,14 +10,15 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import type { ExecutionContext, TestFn } from 'ava';
+
 import {
   insistManagerType,
   makeSwingsetHarness,
 } from '../../tools/supports.js';
 import {
   makeBootTestContext,
-  withWalletFactory,
   type WalletFactoryBootTestContext,
+  withWalletFactory,
 } from '../tools/boot-test-context.js';
 
 type ChainInfoState = {

@@ -1,3 +1,4 @@
+import { makeTracer } from '@agoric/internal';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
@@ -5,8 +6,6 @@ import {
 } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { diff } from 'deep-object-diff';
-
-import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {PublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';

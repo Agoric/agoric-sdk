@@ -7,7 +7,6 @@ import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
-
 import {
   coreUserSeatMethods,
   declareOldZoeSeatAdminKind,

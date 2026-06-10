@@ -1,6 +1,8 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
+import { inspect } from 'node:util';
+
 import {
   fetchEnvNetworkConfig,
   makeAgoricNames,
@@ -13,7 +15,7 @@ import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { Command } from 'commander';
-import { inspect } from 'node:util';
+
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
 import {
@@ -29,6 +31,8 @@ import {
  * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {TimestampRecord} from '@agoric/time';
+ * @import {createCommand} from 'commander';
+ * @import {execFileSync} from 'child_process';
  */
 
 // XXX support other decimal places
@@ -40,9 +44,9 @@ const scaleDecimals = num => BigInt(Math.round(num * Number(COSMOS_UNIT)));
  * Prints JSON output to stdout and diagnostic info (like logs) to stderr
  *
  * @param {{
- *   createCommand: typeof import('commander').createCommand,
+ *   createCommand: typeof createCommand,
  *   env: Partial<Record<string, string>>,
- *   execFileSync: typeof import('child_process').execFileSync,
+ *   execFileSync: typeof execFileSync,
  *   now: () => number,
  *   setTimeout: typeof globalThis.setTimeout,
  *   stderr: Pick<Writable,'write'>,

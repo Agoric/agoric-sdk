@@ -2,8 +2,8 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { BridgeId } from '@agoric/internal';
 import {
-  withChainCapabilities,
   type CosmosValidatorAddress,
+  withChainCapabilities,
 } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stake-ica.contract.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
@@ -13,14 +13,15 @@ import type { ZoeService } from '@agoric/zoe';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { Fail } from '@endo/errors';
 import type { TestFn } from 'ava';
+
 import {
   insistManagerType,
   makeSwingsetHarness,
 } from '../../tools/supports.js';
 import {
   makeBootTestContext,
-  withWalletFactory,
   type WalletFactoryBootTestContext,
+  withWalletFactory,
 } from '../tools/boot-test-context.js';
 import { minimalChainInfos } from '../tools/chainInfo.js';
 

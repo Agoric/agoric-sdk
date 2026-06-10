@@ -1,4 +1,5 @@
 import test from 'ava';
+
 import { makeCmdRunner } from '../src/cmd.js';
 
 const { isFrozen } = Object;

@@ -1,6 +1,6 @@
 // @ts-check
-import { createMockAckMap } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { IBCChannelID } from '@agoric/network/ibc';
+import { createMockAckMap } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { IBCEvent, IBCMethod } from '@agoric/vats';
 
 const responses = {

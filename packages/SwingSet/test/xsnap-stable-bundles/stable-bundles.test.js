@@ -1,17 +1,18 @@
 // @ts-nocheck
-import test from 'ava';
 import { createHash } from 'node:crypto';
 
 import { initSwingStore } from '@agoric/swing-store';
 import {
-  getLockdownBundleSHA256,
-  getLockdownBundle,
-} from '@agoric/xsnap-lockdown';
-import {
-  getSupervisorBundleSHA256,
   getSupervisorBundle,
+  getSupervisorBundleSHA256,
 } from '@agoric/swingset-xsnap-supervisor';
-import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
+import {
+  getLockdownBundle,
+  getLockdownBundleSHA256,
+} from '@agoric/xsnap-lockdown';
+import test from 'ava';
+
+import { buildKernelBundles, makeSwingsetController } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 
 function sha256(s) {

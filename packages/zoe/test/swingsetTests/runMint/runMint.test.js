@@ -1,8 +1,10 @@
-import anyTest from 'ava';
 import path from 'node:path';
-import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
+
+import { buildKernelBundles, buildVatController } from '@agoric/swingset-vat';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import bundleSource from '@endo/bundle-source';
+import anyTest from 'ava';
+
 import { zoeSourceSpecRegistry } from '../../../source-spec-registry.js';
 
 /**

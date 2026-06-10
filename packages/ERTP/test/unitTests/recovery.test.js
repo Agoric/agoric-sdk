@@ -1,7 +1,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import { getCopySetKeys, keyEQ, makeCopySet } from '@agoric/store';
 
-import { makeIssuerKit, AmountMath } from '../../src/index.js';
+import { AmountMath, makeIssuerKit } from '../../src/index.js';
 
 const { isEmpty, isEqual } = AmountMath;
 const emptySet = makeCopySet([]);

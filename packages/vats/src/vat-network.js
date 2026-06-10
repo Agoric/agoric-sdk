@@ -1,5 +1,4 @@
 // @ts-check
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
   prepareEchoConnectionKit,
   prepareLoopbackProtocolHandler,
@@ -8,6 +7,7 @@ import {
   prepareRouterProtocol,
 } from '@agoric/network';
 import { prepareVowTools } from '@agoric/vow/vat.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/far';
 
 export function buildRootObject(_vatPowers, _args, baggage) {

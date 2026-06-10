@@ -17,6 +17,7 @@ import * as secondPriceLogic from './secondPriceLogic.js';
 /**
  * @import {TimerService} from '@agoric/time';
  * @import {OfferHandler, ZCF} from '@agoric/zoe';
+ * @import {Timestamp} from '@agoric/time';
  */
 
 const FIRST_PRICE = 'first-price';
@@ -60,7 +61,7 @@ const start = zcf => {
   let sellSeat;
   let isTimerStarted = false;
   let isClosed = false;
-  /** @type {import('@agoric/time').Timestamp | null} */
+  /** @type {Timestamp | null} */
   let closesAfter = null;
 
   const bidSeats = [];

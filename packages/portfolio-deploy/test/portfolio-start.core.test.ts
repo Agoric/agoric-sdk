@@ -2,6 +2,9 @@
 // see also https://github.com/endojs/endo/issues/1467
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+
 import * as contractExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
   gmpAddresses,
@@ -10,6 +13,11 @@ import {
 import { setupPortfolioTest } from '@aglocal/portfolio-contract/test/supports.ts';
 import { makeTrader } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
 import { makeWallet } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.ts';
+import { produceAttenuatedDeposit } from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
+import type { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
+import { produceDeliverContractControl } from '@agoric/deploy-script-support/src/control/contract-control.core.js';
+import { produceGetUpgradeKit } from '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
+import { deployPostalService } from '@agoric/deploy-script-support/src/control/postal-service.core.js';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -17,38 +25,32 @@ import {
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { deploy as deployWalletFactory } from '@agoric/smart-wallet/tools/wf-tools.js';
 import { makePromiseSpace } from '@agoric/vats';
-import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import {
   produceDiagnostics,
   produceStartUpgradable,
 } from '@agoric/vats/src/core/basic-behaviors.js';
+import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
+import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import { passStyleOf, type CopyRecord } from '@endo/pass-style';
-import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
+import { type CopyRecord, passStyleOf } from '@endo/pass-style';
 import type { TestFn } from 'ava';
-import { produceAttenuatedDeposit } from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
-import type { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
-import { deployPostalService } from '@agoric/deploy-script-support/src/control/postal-service.core.js';
-import { produceDeliverContractControl } from '@agoric/deploy-script-support/src/control/contract-control.core.js';
-import { produceGetUpgradeKit } from '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
+
 import { axelarConfig } from '../src/axelar-configs.js';
 import { toExternalConfig } from '../src/config-marshal.js';
+import * as postalServiceExports from '../src/control/postal-service.contract.js';
+import { name as contractName } from '../src/portfolio.contract.permit.js';
 import { delegatePortfolioContract } from '../src/portfolio-control.core.js';
 import {
+  type PortfolioDeployConfig,
   portfolioDeployConfigShape,
   startPortfolio,
-  type PortfolioDeployConfig,
 } from '../src/portfolio-start.core.js';
 import type {
   PortfolioBootPowers,
   StartFn,
 } from '../src/portfolio-start.type.ts';
-import { name as contractName } from '../src/portfolio.contract.permit.js';
-import * as postalServiceExports from '../src/control/postal-service.contract.js';
 
 const { entries, keys } = Object;
 

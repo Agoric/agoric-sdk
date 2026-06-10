@@ -3,7 +3,9 @@ import { promises as fs } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+
 import { buildKernelBundle } from '@agoric/swingset-vat/src/controller/initializeSwingset.js';
+
 import {
   makeSwingsetTestKit,
   type SwingsetTestKitSnapshot,

@@ -1,19 +1,20 @@
 // @ts-check
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
-import anyTest from 'ava';
 import { spawn as ambientSpawn } from 'node:child_process';
 import { promises as fsPromises } from 'node:fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import path from 'node:path';
 
 import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
 import { mustMatch } from '@agoric/store';
 import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import anyTest from 'ava';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 /**
  * @import {TestFn} from 'ava';
+ * @import {spawn} from 'child_process';
  */
 
 const importConfig = async configName =>
@@ -56,7 +57,7 @@ const makeMemoizedPromise = makeFn => {
 
 /**
  * @param {string} bin
- * @param {{ spawn: typeof import('child_process').spawn }} io
+ * @param {{ spawn: typeof spawn }} io
  */
 export const pspawn =
   (bin, { spawn }) =>

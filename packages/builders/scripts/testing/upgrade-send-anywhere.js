@@ -14,12 +14,13 @@ import { E } from '@endo/far';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {start} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
  */
 
 const trace = makeTracer('UpgradeSA', true);
 
 /**
- * @typedef {typeof import('@agoric/orchestration/src/examples/send-anywhere.contract.js').start} StartFn
+ * @typedef {typeof start} StartFn
  */
 
 /**

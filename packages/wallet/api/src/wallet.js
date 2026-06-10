@@ -8,15 +8,15 @@
  * itself.  The parts that are relied on by other dapps are documented in the
  * types.js file.
  */
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { makeNotifierKit, observeIteration } from '@agoric/notifier';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
-import { makeWalletRoot } from './lib-wallet.js';
-import pubsub from './pubsub.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makeTimerDeviceDateNow, makeTimerServiceDateNow } from './date-now.js';
+import { makeWalletRoot } from './lib-wallet.js';
+import pubsub from './pubsub.js';
 
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';

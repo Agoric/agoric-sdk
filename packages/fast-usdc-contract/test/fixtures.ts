@@ -1,11 +1,11 @@
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import type { Bech32Address, CosmosChainAddress } from '@agoric/orchestration';
-import type { VTransferIBCEvent } from '@agoric/vats';
 import {
   MockCctpTxEvidences,
   type MockScenario,
 } from '@agoric/fast-usdc/tools/mock-evidence.js';
+import type { Bech32Address, CosmosChainAddress } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { VTransferIBCEvent } from '@agoric/vats';
 
 export { MockCctpTxEvidences };
 

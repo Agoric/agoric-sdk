@@ -1,4 +1,4 @@
-import { NonNullish, makeTracer } from '@agoric/internal';
+import { makeTracer, NonNullish } from '@agoric/internal';
 import { makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 

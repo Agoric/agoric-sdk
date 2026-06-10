@@ -1,6 +1,6 @@
 // @ts-check
-import test from 'ava';
 import { E, Far } from '@endo/far';
+import test from 'ava';
 
 import { heapVowE as VE, heapVowTools } from '../vat.js';
 

@@ -2,12 +2,12 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import type { TestFn } from 'ava';
 
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   attachBootContextHelpers,
   enhanceSmartWalletDriver,
   makeBootTestContext,
 } from './boot-test-context.js';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { loadOrCreateRunUtilsSnapshot } from './runutils-snapshots.js';
 
 const test = anyTest as TestFn;

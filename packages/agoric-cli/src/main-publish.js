@@ -6,7 +6,6 @@ import path from 'node:path';
 import { SigningStargateClient } from '@cosmjs/stargate';
 
 import { parseLocatedJson } from './json.js';
-
 import { makeBundlePublisher, makeCosmosBundlePublisher } from './publish.js';
 
 /**

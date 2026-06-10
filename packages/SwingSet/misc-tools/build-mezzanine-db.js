@@ -1,9 +1,9 @@
 /* eslint-disable camelcase */
 // import '@endo/init';
 import fs from 'node:fs';
-import zlib from 'node:zlib';
 import process from 'node:process';
 import readline from 'node:readline';
+import zlib from 'node:zlib';
 
 import sqlite3 from 'better-sqlite3';
 

@@ -1,9 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeIssuerKit, AssetKind } from '@agoric/ertp';
+
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
-import { provideIssuerStorage as provideIssuerStorageOrig } from '../../src/issuerStorage.js';
 import { makeIssuerRecord } from '../../src/issuerRecord.js';
+import { provideIssuerStorage as provideIssuerStorageOrig } from '../../src/issuerStorage.js';
 
 const provideIssuerStorage = () => {
   return provideIssuerStorageOrig(

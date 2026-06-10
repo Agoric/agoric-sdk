@@ -1,7 +1,8 @@
 import { provide } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { Far } from '@endo/marshal';
-import { prepareRecorderFactory, prepareBoardKit } from './lib-board.js';
+
+import { prepareBoardKit, prepareRecorderFactory } from './lib-board.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';

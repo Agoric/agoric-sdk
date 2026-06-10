@@ -10,7 +10,6 @@ import {
   getAmountOut,
   getTimestamp,
 } from '../../contractSupport/index.js';
-
 import { makeAddCollateralInvitation } from './addCollateral.js';
 import { makeCloseLoanInvitation } from './close.js';
 import { scheduleLiquidation } from './scheduleLiquidation.js';

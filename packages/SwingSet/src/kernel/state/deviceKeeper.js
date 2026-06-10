@@ -2,11 +2,12 @@
  * Kernel's keeper of persistent state for a device.
  */
 
-import { Nat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
-import { parseKernelSlot } from '../parseKernelSlots.js';
-import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { Nat } from '@endo/nat';
+
 import { insistDeviceID } from '../../lib/id.js';
+import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
+import { parseKernelSlot } from '../parseKernelSlots.js';
 import { enumeratePrefixedKeys } from './storageHelper.js';
 
 const FIRST_DEVICE_IMPORTED_OBJECT_ID = 10n;

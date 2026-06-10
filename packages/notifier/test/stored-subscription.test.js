@@ -1,8 +1,8 @@
-// eslint-disable-next-line import/order
 import { test } from './prepare-test-env-ava.js';
 
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+
 import {
   makePublishKit,
   makeStoredPublishKit,
@@ -13,10 +13,9 @@ import {
 } from '../src/index.js';
 import {
   eventLoopIteration,
-  makeFakeStorage,
   makeFakeMarshaller,
+  makeFakeStorage,
 } from '../tools/testSupports.js';
-
 import { jsonPairs } from './marshal-corpus.js';
 
 test('stored subscription', async t => {

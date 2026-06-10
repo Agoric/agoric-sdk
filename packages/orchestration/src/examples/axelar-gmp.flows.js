@@ -11,6 +11,7 @@
 
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { Fail, makeError, q } from '@endo/errors';
+
 import { AxelarGMPMessageType } from '../axelar-types.js';
 import { denomHash } from '../utils/denomHash.js';
 import { buildGasPayload, gmpAddresses } from '../utils/gmp.js';

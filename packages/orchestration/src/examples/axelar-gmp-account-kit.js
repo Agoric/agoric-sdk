@@ -12,14 +12,15 @@
  * @import {AmountArg} from '@agoric/orchestration';
  */
 
-import { M, mustMatch } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
 import { makeTracer, NonNullish } from '@agoric/internal';
+import { VowShape } from '@agoric/vow';
 import { atob, decodeBase64 } from '@endo/base64';
 import { Fail } from '@endo/errors';
-import { decodeAbiParameters } from '../vendor/viem/viem-abi.js';
+import { M, mustMatch } from '@endo/patterns';
+
 import { CosmosChainAddressShape } from '../typeGuards.js';
-import { gmpAddresses, buildGMPPayload } from '../utils/gmp.js';
+import { buildGMPPayload, gmpAddresses } from '../utils/gmp.js';
+import { decodeAbiParameters } from '../vendor/viem/viem-abi.js';
 
 const trace = makeTracer('EvmAccountKit');
 const { entries } = Object;

@@ -1,6 +1,7 @@
+import { PromiseWatcherI } from '@agoric/base-zone';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { PromiseWatcherI } from '@agoric/base-zone';
+
 import { makeAsVow, toPassableCap, VowShape } from './vow-utils.js';
 
 /**

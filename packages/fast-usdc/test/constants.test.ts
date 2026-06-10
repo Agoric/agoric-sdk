@@ -1,5 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { TxStatus, PendingTxStatus } from '../src/constants.js';
+
+import { PendingTxStatus, TxStatus } from '../src/constants.js';
 
 const { values } = Object;
 

@@ -3,8 +3,8 @@
  * @see {@link factoryABI} {@link depositFactoryABI} {@link walletABI}
  */
 import {
-  PermitTransferFromInternalTypeName,
   PermitTransferFromComponents,
+  PermitTransferFromInternalTypeName,
 } from '@agoric/orchestration/src/utils/permit2.js';
 import type { Abi } from 'viem';
 

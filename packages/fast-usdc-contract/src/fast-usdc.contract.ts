@@ -1,38 +1,10 @@
-import { AssetKind, type Amount } from '@agoric/ertp';
+import type { HostInterface } from '@agoric/async-flow';
+import { type Amount, AssetKind } from '@agoric/ertp';
 import {
   CosmosChainInfoShapeV1,
   FastUSDCTermsShape,
   FeeConfigShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
-import { makeTracer } from '@agoric/internal';
-import { observeIteration, subscribeEach } from '@agoric/notifier';
-import {
-  DenomDetailShape,
-  DenomShape,
-  OrchestrationPowersShape,
-  registerChainsAndAssets,
-  withOrchestration,
-  type AmountArg,
-  type Bech32Address,
-  type ChainInfo,
-  type CosmosChainAddress,
-  type Denom,
-  type DenomAmount,
-  type DenomDetail,
-  type OrchestrationAccount,
-  type OrchestrationPowers,
-  type OrchestrationTools,
-} from '@agoric/orchestration';
-import type { IBCConnectionInfo } from '@agoric/network/ibc';
-import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
-import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Fail, quote } from '@endo/errors';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
-
-import type { HostInterface } from '@agoric/async-flow';
 import type {
   ChainHubChainInfo,
   ContractRecord,
@@ -40,13 +12,41 @@ import type {
   FeeConfig,
 } from '@agoric/fast-usdc/src/types.js';
 import type { ERemote, Remote } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { type EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
+import {
+  type AmountArg,
+  type Bech32Address,
+  type ChainInfo,
+  type CosmosChainAddress,
+  type Denom,
+  type DenomAmount,
+  type DenomDetail,
+  DenomDetailShape,
+  DenomShape,
+  type OrchestrationAccount,
+  type OrchestrationPowers,
+  OrchestrationPowersShape,
+  type OrchestrationTools,
+  registerChainsAndAssets,
+  withOrchestration,
+} from '@agoric/orchestration';
+import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
+import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { ContractMeta, Invitation, ZCF } from '@agoric/zoe';
+import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import type { Zone } from '@agoric/zone';
+import { Fail, quote } from '@endo/errors';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+
 import { prepareAdvancer } from './exos/advancer.ts';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.ts';
 import { prepareSettler } from './exos/settler.ts';

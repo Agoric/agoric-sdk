@@ -1,13 +1,14 @@
 // @ts-nocheck
-import test from 'ava';
-import { Far } from '@endo/marshal';
 import { kser } from '@agoric/kmarshal';
-import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
+import { Far } from '@endo/marshal';
+import test from 'ava';
+
 import { makeLiveSlots } from '../../src/liveslots.js';
 import { parseVatSlot } from '../../src/parseVatSlots.js';
+import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 import { buildSyscall } from '../liveslots-helpers.js';
-import { makeStartVat, makeMessage } from '../util.js';
 import { makeMockGC } from '../mock-gc.js';
+import { makeMessage, makeStartVat } from '../util.js';
 
 const init = () => ({});
 const behavior = {};

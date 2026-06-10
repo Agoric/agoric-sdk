@@ -11,6 +11,7 @@ import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js'
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+
 import {
   prepareBridgeProvisionTool,
   prepareProvisionPoolKit,

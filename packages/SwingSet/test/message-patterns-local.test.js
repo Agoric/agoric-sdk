@@ -3,16 +3,17 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
-// eslint-disable-next-line import/order -- has side-effects AND exports
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
-import bundleSource from '@endo/bundle-source';
+
 import { initSwingStore } from '@agoric/swing-store';
-import { makeSwingsetController, buildKernelBundles } from '../src/index.js';
+import bundleSource from '@endo/bundle-source';
+
+import { buildKernelBundles, makeSwingsetController } from '../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
-import { bundleOpts } from './util.js';
 import { buildPatterns } from './message-patterns.js';
+import { bundleOpts } from './util.js';
 
 // This exercises all the patterns in 'message-patterns.js' with
 // vatA/vatB connected directly through the kernel (a different file

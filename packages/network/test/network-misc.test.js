@@ -1,20 +1,20 @@
 // @ts-check
 
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 
 import {
+  CLOSE_REASON_FINALIZER,
   parse,
   prepareLoopbackProtocolHandler,
+  prepareNetworkPowers,
   prepareNetworkProtocol,
   prepareRouter,
-  prepareNetworkPowers,
   unparse,
-  CLOSE_REASON_FINALIZER,
 } from '../src/index.js';
 import { fakeNetworkEchoStuff } from './fakes.js';
 

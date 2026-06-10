@@ -1,6 +1,8 @@
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
+
 import type { ZoeService } from '@agoric/zoe';
+import type { TestFn } from 'ava';
+
 import { makeBootTestContext } from '../tools/boot-test-context.js';
 
 // A more minimal set would be better. We need governance, but not econ vats.

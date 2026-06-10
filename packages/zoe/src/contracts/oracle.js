@@ -1,8 +1,8 @@
 import { AmountMath } from '@agoric/ertp';
 import { assert, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-import { E } from '@endo/eventual-send';
 import { atomicTransfer } from '../contractSupport/index.js';
 
 /**

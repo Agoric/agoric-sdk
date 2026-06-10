@@ -4,24 +4,24 @@
 // This file functions as both an importable module and a standalone script.
 import './helpers/maybe-unsafe-lockdown.js';
 
-import os from 'node:os';
-import process from 'node:process';
-import { Transform } from 'node:stream';
 import fsPower from 'node:fs';
 import fsPromisesPower from 'node:fs/promises';
+import os from 'node:os';
 import pathPower from 'node:path';
+import process from 'node:process';
+import { Transform } from 'node:stream';
 
-import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
 import { importSwingStore, openSwingStore } from '@agoric/swing-store';
+import { Fail, q } from '@endo/errors';
 
+import {
+  checkArtifactMode,
+  checkExportDataMode,
+  ExportManifestFileName,
+} from './export-kernel-db.js';
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';
-import {
-  ExportManifestFileName,
-  checkExportDataMode,
-  checkArtifactMode,
-} from './export-kernel-db.js';
 
 /**
  * @import {SwingStoreExportDataMode} from './export-kernel-db.js';

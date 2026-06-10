@@ -1,6 +1,7 @@
 import test from 'ava';
-import { makeWebRd, makeWebCache } from '../src/net.js';
+
 import { makeFileRW } from '../src/file.js';
+import { makeWebCache, makeWebRd } from '../src/net.js';
 
 const { isFrozen } = Object;
 

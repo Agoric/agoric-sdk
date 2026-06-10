@@ -1,14 +1,15 @@
 /** @file Bootstrap test of liquidation across multiple collaterals */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { TestFn } from 'ava';
 import process from 'node:process';
 
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import type { TestFn } from 'ava';
+
 import {
-  makeLiquidationTestContext,
   type LiquidationSetup,
   type LiquidationTestContext,
+  makeLiquidationTestContext,
 } from '../../tools/liquidation.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;

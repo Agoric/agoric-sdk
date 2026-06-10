@@ -1,4 +1,5 @@
 import type { NatValue } from '@agoric/ertp';
+
 import type { SupportedChain, YieldProtocol } from '../constants.js';
 import type { InstrumentId } from '../instruments.js';
 import type { AssetPlaceRef } from '../types.js';

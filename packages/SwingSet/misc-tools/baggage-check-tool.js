@@ -1,6 +1,9 @@
-import process from 'node:process';
-import sqlite3 from 'better-sqlite3';
 import '@endo/init/debug.js';
+
+import process from 'node:process';
+
+import sqlite3 from 'better-sqlite3';
+
 import { checkBaggage } from '../tools/baggage-check.js';
 
 function main() {

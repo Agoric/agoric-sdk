@@ -1,13 +1,14 @@
-import { Fail, q } from '@endo/errors';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import {
   EvmWalletOperationType,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import { Fail, q } from '@endo/errors';
+
 import {
-  walletOperationGasLimitEstimates,
   walletOperationFallbackGasLimit,
+  walletOperationGasLimitEstimates,
 } from './support.ts';
 
 const AGORIC_CHAIN = 'agoric';

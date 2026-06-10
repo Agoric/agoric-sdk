@@ -1,20 +1,18 @@
 // @ts-check
 
-import path from 'node:path';
-import { createGunzip } from 'node:zlib';
-import { Readable } from 'node:stream';
 import { Buffer } from 'node:buffer';
-
-import sqlite3 from 'better-sqlite3';
-import test from 'ava';
-import tmp from 'tmp';
-import { decodeBase64 } from '@endo/base64';
+import path from 'node:path';
+import { Readable } from 'node:stream';
+import { createGunzip } from 'node:zlib';
 
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { decodeBase64 } from '@endo/base64';
+import test from 'ava';
+import sqlite3 from 'better-sqlite3';
+import tmp from 'tmp';
 
-import { buffer } from '../src/util.js';
 import { importSwingStore, makeSwingStoreExporter } from '../src/index.js';
-
+import { buffer } from '../src/util.js';
 import {
   buildData,
   bundle0,
@@ -23,6 +21,10 @@ import {
   snapHash,
   snapshotData,
 } from './exports.js';
+
+/**
+ * @import {ArtifactMode} from '../src/internal.js';
+ */
 
 const rank = {
   operational: 1,
@@ -62,8 +64,7 @@ test('import empty', async t => {
 });
 
 const importTest = test.macro(async (t, mode) => {
-  const artifactMode =
-    /** @type {import('../src/internal.js').ArtifactMode} */ (mode);
+  const artifactMode = /** @type {ArtifactMode} */ (mode);
 
   const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);

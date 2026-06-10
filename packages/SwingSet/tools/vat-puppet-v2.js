@@ -1,4 +1,5 @@
 import { Far } from '@endo/far';
+
 import { makeReflectionMethods } from './vat-puppet.js';
 
 export function buildRootObject(vatPowers, _vatParameters, baggage) {

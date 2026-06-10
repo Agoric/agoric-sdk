@@ -1,8 +1,9 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
-import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeScopedBridge } from '@agoric/vats';
+import { E } from '@endo/far';
+
 import { smartWalletSourceSpecRegistry } from '../source-spec-registry.js';
 import { withAmountUtils } from './supports.js';
 

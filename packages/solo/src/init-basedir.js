@@ -1,11 +1,12 @@
 // @ts-check
 /* eslint-env node */
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 
-import { assert, X } from '@endo/errors';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
+import { assert, X } from '@endo/errors';
+
 import { HELPER } from './chain-cosmos-sdk.js';
 
 const console = anylogger('ag-solo:init');

@@ -1,10 +1,11 @@
-import test from 'ava';
-import { Far } from '@endo/marshal';
 import { kser, kslot } from '@agoric/kmarshal';
+import { Far } from '@endo/marshal';
+import test from 'ava';
+
 import { makeLiveSlots } from '../src/liveslots.js';
 import { buildSyscall } from './liveslots-helpers.js';
-import { makeStartVat, makeMessage, makeBringOutYourDead } from './util.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeBringOutYourDead, makeMessage, makeStartVat } from './util.js';
 
 const justGC = log =>
   log.filter(

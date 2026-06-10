@@ -2,8 +2,8 @@
  * @file Utilities for using Factory.sol to emulate orchestration
  * `chain.makeAccount()` behavior on EVM chains (CREATE2 prediction, etc.).
  */
-import { assert, Fail } from '@endo/errors';
 import type { Bech32Address } from '@agoric/orchestration';
+import { assert, Fail } from '@endo/errors';
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import { hexToBytes } from '@noble/hashes/utils';
 import type {
@@ -13,7 +13,7 @@ import type {
   ContractFunctionName,
   Hex,
 } from 'viem';
-import { computeCreate2Address } from './create2.ts';
+
 import type {
   AbiContract,
   AbiContractArgs,
@@ -21,6 +21,7 @@ import type {
   AbiTagged,
 } from '../evm-facade.ts';
 import type { ContractCall } from '../interfaces/orch-router.ts';
+import { computeCreate2Address } from './create2.ts';
 
 export const toUtf8 = (() => {
   // TextEncoder has state. encapsulate it.

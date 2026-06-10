@@ -5,6 +5,7 @@
 
 import { makeError, q } from '@endo/errors';
 import { mustMatch } from '@endo/patterns';
+
 import { CosmosChainAddressShape } from '../../src/typeGuards.js';
 
 const { values } = Object;

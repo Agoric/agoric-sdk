@@ -1,5 +1,6 @@
 import { makeError, X } from '@endo/errors';
 import test from '@endo/ses-ava/prepare-endo.js';
+
 import { makeTracer } from '../src/debug.js';
 
 // As a *-demo.test.js, the purpose of this test file is not so much to be an

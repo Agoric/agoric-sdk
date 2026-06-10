@@ -1,9 +1,9 @@
 /** @file core eval to give control of YMax contract to a smartWallet */
 
-import { makeTracer } from '@agoric/internal/src/debug.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal/src/debug.js';
+import { E, getInterfaceOf, passStyleOf } from '@endo/far';
 import { objectMap } from '@endo/patterns';
-import { E, passStyleOf, getInterfaceOf } from '@endo/far';
 
 /**
  * @import {ContractControlPowers, DeliverContractControl} from '@agoric/deploy-script-support/src/control/contract-control.core.js';

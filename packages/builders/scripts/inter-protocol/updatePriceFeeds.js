@@ -1,6 +1,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 import { getManifestForPriceFeeds } from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js';
+
 import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**

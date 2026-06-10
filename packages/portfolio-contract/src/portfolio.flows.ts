@@ -15,13 +15,14 @@ import {
   objectMap,
   type TraceLogger,
 } from '@agoric/internal';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import type {
   AccountId,
   BaseChainInfo,
+  Chain,
   CosmosChainAddress,
   Denom,
   DenomAmount,
-  Chain,
   OrchestrationAccount,
   OrchestrationFlow,
   OrchestrationOptions,
@@ -29,7 +30,6 @@ import type {
   ProgressTracker,
   TrafficEntry,
 } from '@agoric/orchestration';
-import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   coerceAccountId,
   parseAccountId,
@@ -38,7 +38,6 @@ import {
 import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import {
-  TxType,
   type FlowConfig,
   type FlowErrors,
   type FlowFeatures,
@@ -47,6 +46,7 @@ import {
   type TrafficReport,
   type TxId,
   type TxPhase,
+  TxType,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -61,9 +61,15 @@ import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import { assert, Fail, q } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
+
+import { provideEVMAccountWithPermit as provideEVMLegacyAccountWithPermit } from './axelar-gmp-legacy.flows.ts';
+import { provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit } from './axelar-gmp-router.flows.ts';
+import { makeEvmAbiCallBatch } from './evm-facade.ts';
+import { erc20ABI } from './interfaces/erc20.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
+import type { Position } from './pos.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
@@ -72,42 +78,36 @@ import {
   CCTPv2,
   CompoundProtocol,
   ERC4626Protocol,
+  type EVMContext,
+  type GMPAccountStatus,
   provideEVMAccount,
   sendGMPContractCall,
   sendPermit2GMP,
   swapRewardToUsdc,
-  type EVMContext,
-  type GMPAccountStatus,
 } from './pos-evm.flows.ts';
-import { provideEVMAccountWithPermit as provideEVMLegacyAccountWithPermit } from './axelar-gmp-legacy.flows.ts';
-import { provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit } from './axelar-gmp-router.flows.ts';
-
-import { makeEvmAbiCallBatch } from './evm-facade.ts';
-import { erc20ABI } from './interfaces/erc20.ts';
 import {
   agoricToNoble,
   nobleToAgoric,
   protocolUSDN,
 } from './pos-usdn.flows.ts';
-import type { Position } from './pos.exo.ts';
 import type { ResolverKit } from './resolver/resolver.exo.js';
-import { runJob, type Job } from './schedule-order.ts';
+import { type Job, runJob } from './schedule-order.ts';
 import {
+  type EVMContractAddressesMap,
+  type FlowDetail,
+  type PoolKey,
+  PoolPlaces,
+  type ProposalType,
+} from './type-guards.ts';
+import {
+  type AssetPlaceRef,
   getChainNameOfPlaceRef,
   getDepositChainOfPlaceRef,
   getKeywordOfPlaceRef,
   getWithdrawChainOfPlaceRef,
-  type AssetPlaceRef,
   type MovementDesc,
   type OfferArgsFor,
 } from './type-guards-steps.ts';
-import {
-  PoolPlaces,
-  type EVMContractAddressesMap,
-  type FlowDetail,
-  type PoolKey,
-  type ProposalType,
-} from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 
 const { keys, fromEntries } = Object;

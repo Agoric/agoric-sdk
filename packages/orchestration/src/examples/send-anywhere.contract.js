@@ -1,10 +1,11 @@
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
-import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
+import { withOrchestration } from '../utils/start-helper.js';
 import {
   makeNobleAccount as makeNobleAccountFlow,
   sendIt,

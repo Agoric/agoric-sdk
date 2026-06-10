@@ -4,9 +4,9 @@ import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { E } from '@endo/far';
 
-import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import {
   oracleBrandFeedName,
   reserveThenDeposit,

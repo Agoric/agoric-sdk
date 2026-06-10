@@ -6,7 +6,8 @@
  * This is an orchestration component that can be used independently of portfolio logic.
  */
 
-import { makeTracer, type ERemote } from '@agoric/internal';
+import type { NatValue } from '@agoric/ertp';
+import { type ERemote, makeTracer } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { AccountId } from '@agoric/orchestration';
@@ -17,7 +18,7 @@ import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import type { NatValue } from '@agoric/ertp';
+
 import { TxStatus, TxType } from './constants.js';
 import type {
   PublishedTx,

@@ -1,14 +1,14 @@
-import { Fail } from '@endo/errors';
-import {
-  type AgoricNamesRemotes,
-  makeAgoricNamesRemotesFromFakeStorage,
-} from '@agoric/vats/tools/board-utils.js';
+import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import {
   fetchCoreEvalRelease,
   makeSwingsetTestKit,
 } from '@aglocal/boot/tools/supports.js';
-import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import type { PortfolioPublishedPathTypes } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import {
+  type AgoricNamesRemotes,
+  makeAgoricNamesRemotesFromFakeStorage,
+} from '@agoric/vats/tools/board-utils.js';
+import { Fail } from '@endo/errors';
 
 // XXX same as fast-usdc-deploy/test/walletFactory.ts and
 // XXX same as packages/boot/test/bootstrapTests/walletFactory.ts

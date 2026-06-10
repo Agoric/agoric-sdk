@@ -4,10 +4,8 @@ import {
   insistManagerType,
   makeSwingsetHarness,
 } from '@aglocal/boot/tools/supports.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
-import { type CopyRecord } from '@endo/pass-style';
-import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
@@ -16,7 +14,10 @@ import {
   getYmaxWitness,
   type TargetAllocation,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { type CopyRecord } from '@endo/pass-style';
 import type { TestFn } from 'ava';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
+
 import { axelarConfig } from '../src/axelar-configs.js';
 import {
   beneficiary,

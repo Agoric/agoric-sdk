@@ -1,11 +1,13 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+
 import { privateArgsShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import { mustMatch } from '@agoric/internal';
 import { type CosmosChainInfo } from '@agoric/orchestration';
 import { Far } from '@endo/pass-style';
-import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
+
 import {
   axelarConfig,
   gmpAddresses as gmpAddressesByEnv,

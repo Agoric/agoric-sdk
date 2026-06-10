@@ -1,9 +1,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import {
+  CodecHelper,
   type JsonSafe,
   toRequestQueryJson,
-  CodecHelper,
 } from '@agoric/cosmic-proto';
 import {
   QueryAllBalancesRequest as QueryAllBalancesRequestType,
@@ -16,18 +16,19 @@ import {
   LOCALCHAIN_DEFAULT_ADDRESS,
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
 } from '@agoric/vats/tools/fake-bridge.js';
+import type { ZoeService } from '@agoric/zoe';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { decodeBase64 } from '@endo/base64';
 import { E, type EReturn } from '@endo/far';
 import type { TestFn } from 'ava';
-import type { ZoeService } from '@agoric/zoe';
+
 import * as contractExports from '../../src/fixtures/query-flows.contract.js';
+import { defaultMockAckMap } from '../../tools/ibc-mock-fixtures.js';
 import {
   buildQueryPacketString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
-import { defaultMockAckMap } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 
 const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);

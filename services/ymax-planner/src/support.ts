@@ -1,14 +1,15 @@
-import { WebSocketProvider } from 'ethers';
-import type { Address as EvmAddress } from 'viem';
-import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
 import { objectMap } from '@agoric/internal';
+import type { CaipChainId } from '@agoric/orchestration';
+import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import {
   CaipChainIds,
   EvmWalletOperationType,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import { WebSocketProvider } from 'ethers';
+import type { Address as EvmAddress } from 'viem';
+
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
 

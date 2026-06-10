@@ -1,13 +1,13 @@
+import { keyEQ } from '@agoric/store';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { keyEQ } from '@agoric/store';
 
 import {
   ChoiceMethod,
-  QuorumRule,
-  ElectionType,
   coerceQuestionSpec,
+  ElectionType,
+  QuorumRule,
 } from '../question.js';
 
 /**

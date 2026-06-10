@@ -3,6 +3,7 @@
 import { fetchEnvNetworkConfig, makeWalletUtils } from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
 import { CommanderError } from 'commander';
+
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
 import { sendAction } from '../lib/wallet.js';
@@ -10,6 +11,8 @@ import { sendAction } from '../lib/wallet.js';
 /**
  * @import {Writable} from 'stream';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {createCommand} from 'commander';
+ * @import {execFileSync} from 'child_process';
  */
 
 /**
@@ -21,8 +24,8 @@ import { sendAction } from '../lib/wallet.js';
  *   stderr: Pick<Writable,'write'>,
  *   now: () => number,
  *   createCommand: // Note: includes access to process.stdout, .stderr, .exit
- *     typeof import('commander').createCommand,
- *   execFileSync: typeof import('child_process').execFileSync,
+ *     typeof createCommand,
+ *   execFileSync: typeof execFileSync,
  *   setTimeout: typeof globalThis.setTimeout,
  * }} process
  * @param {{ fetch: typeof window.fetch }} net

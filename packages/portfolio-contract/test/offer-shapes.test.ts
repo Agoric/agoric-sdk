@@ -4,20 +4,20 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import type { PortfolioAgentStatus } from '@agoric/portfolio-api';
 import {
+  type PortfolioPermissions,
   PortfolioPermissionsExtShape,
   PortfolioPermissionsV1Shape,
-  type PortfolioPermissions,
 } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
+  type PublishedTx,
   TxStatus,
   TxType,
-  type PublishedTx,
 } from '@agoric/portfolio-api/src/resolver.js';
 import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
+
 import { PublishedTxShape } from '../src/resolver/types.ts';
-import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
   FlowDetailShape,
   FlowStatusShape,
@@ -27,11 +27,12 @@ import {
   PortfolioAgentStatusShape,
   PortfolioStatusShapeExt,
   PositionStatusShape,
-  TargetAllocationShape,
-  TargetAllocationShapeExt,
   type StatusFor,
   type TargetAllocation,
+  TargetAllocationShape,
+  TargetAllocationShapeExt,
 } from '../src/type-guards.ts';
+import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 
 const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
 const usdc = usdcKit.make;

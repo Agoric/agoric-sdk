@@ -1,16 +1,14 @@
 // @ts-check
 
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import bundleSource from '@endo/bundle-source';
 import test from 'ava';
 import tmp from 'tmp';
 
-import bundleSource from '@endo/bundle-source';
-
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
-
 import {
   initSwingStore,
-  openSwingStore,
   isSwingStore,
+  openSwingStore,
 } from '../src/swingStore.js';
 
 const tmpDir = makeTempDirFactory(tmp);

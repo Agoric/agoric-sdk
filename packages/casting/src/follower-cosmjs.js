@@ -1,13 +1,13 @@
 /// <reference types="ses" />
 
-import { X, q, Fail, makeError } from '@endo/errors';
-import { E, Far } from '@endo/far';
-import * as tendermint34 from '@cosmjs/tendermint-rpc';
-import * as stargateStar from '@cosmjs/stargate';
-
 import { isStreamCell } from '@agoric/internal/src/lib-chainStorage.js';
-import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
+import * as stargateStar from '@cosmjs/stargate';
+import * as tendermint34 from '@cosmjs/tendermint-rpc';
+import { Fail, makeError, q, X } from '@endo/errors';
+import { E, Far } from '@endo/far';
+
 import { makeCastingSpec } from './casting-spec.js';
+import { MAKE_DEFAULT_DECODER, MAKE_DEFAULT_UNSERIALIZER } from './defaults.js';
 import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
 
 /**
@@ -16,6 +16,7 @@ import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
  * @import {LeaderOrMaker} from './types.js';
  * @import {FollowerOptions} from './types.js';
  * @import {StreamCell} from './types.js';
+ * @import {QueryClient} from '@cosmjs/stargate';
  */
 
 // A lot of cosmjs classes end up hardened through instances shared by this
@@ -159,7 +160,7 @@ export const makeCosmjsFollower = (
     return clientP;
   };
 
-  /** @type {Map<string, import('@cosmjs/stargate').QueryClient>} */
+  /** @type {Map<string, QueryClient>} */
   const endpointToQueryClient = new Map();
 
   /**

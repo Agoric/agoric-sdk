@@ -1,8 +1,10 @@
 // @ts-nocheck
 
 import '@endo/init';
-import process from 'node:process';
+
 import fs from 'node:fs';
+import process from 'node:process';
+
 import { isSwingStore, openSwingStore } from '@agoric/swing-store';
 import { E } from '@endo/far';
 

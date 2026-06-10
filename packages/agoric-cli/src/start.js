@@ -1,21 +1,20 @@
 /* eslint-env node */
-import chalk from 'chalk';
 import { createHash } from 'node:crypto';
-import path from 'node:path';
 import { createRequire } from 'node:module';
+import path from 'node:path';
 
-import { Nat, isNat } from '@endo/nat';
 import { untilTrue } from '@agoric/internal';
+import { isNat, Nat } from '@endo/nat';
+import chalk from 'chalk';
 
 import {
   CENTRAL_DENOM,
-  STAKING_DENOM,
-  finishTendermintConfig,
-  finishCosmosGenesis,
   finishCosmosApp,
+  finishCosmosGenesis,
+  finishTendermintConfig,
+  STAKING_DENOM,
 } from './chain-config.js';
-
-import { makePspawn, getSDKBinaries } from './helpers.js';
+import { getSDKBinaries, makePspawn } from './helpers.js';
 
 const require = createRequire(import.meta.url);
 

@@ -1,5 +1,5 @@
-import { Far } from '@endo/far';
 import { defineKind } from '@agoric/vat-data';
+import { Far } from '@endo/far';
 
 const makeThing = defineKind(
   'thing',

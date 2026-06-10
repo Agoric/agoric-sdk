@@ -1,5 +1,5 @@
-import { M } from '@endo/patterns';
 import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 /**
  * @import {ContractStartFn} from '../../../src/contractFacet/types.js';

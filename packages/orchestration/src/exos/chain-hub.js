@@ -1,9 +1,9 @@
 import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
+import { VowShape } from '@agoric/vow';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
-import { VowShape } from '@agoric/vow';
 import {
   AccountIdArgShape,
   ChainInfoShape,

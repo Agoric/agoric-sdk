@@ -7,11 +7,13 @@
 // kernel disconnects (rejects) the previous incarnation's outstanding
 // promises (https://github.com/Agoric/agoric-sdk/issues/9039).
 
-import process from 'node:process';
+import '@endo/init/debug.js';
+
 import fs from 'node:fs';
+import process from 'node:process';
+
 import sqlite3 from 'better-sqlite3';
 import yargsParser from 'yargs-parser';
-import '@endo/init/debug.js';
 
 const main = rawArgv => {
   const { _: args, ...options } = yargsParser(rawArgv.slice(2));

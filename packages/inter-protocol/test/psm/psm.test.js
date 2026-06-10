@@ -3,6 +3,19 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { split } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import * as committee from '@agoric/governance/src/committee.js';
+import * as contractGovernor from '@agoric/governance/src/contractGovernor.js';
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
+import { makeTracer, NonNullish } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { Stable } from '@agoric/internal/src/tokens.js';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import * as centralSupply from '@agoric/vats/src/centralSupply.js';
+import {
+  produceDiagnostics,
+  produceStartUpgradable,
+} from '@agoric/vats/src/core/basic-behaviors.js';
+import * as mintHolder from '@agoric/vats/src/mintHolder.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   floorDivideBy,
@@ -10,22 +23,9 @@ import {
   makeRatio,
   natSafeMath as NatMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-
-import * as contractGovernor from '@agoric/governance/src/contractGovernor.js';
-import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { makeTracer, NonNullish } from '@agoric/internal';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { Stable } from '@agoric/internal/src/tokens.js';
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
-import {
-  produceDiagnostics,
-  produceStartUpgradable,
-} from '@agoric/vats/src/core/basic-behaviors.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E, Far } from '@endo/far';
-import * as committee from '@agoric/governance/src/committee.js';
-import * as centralSupply from '@agoric/vats/src/centralSupply.js';
-import * as mintHolder from '@agoric/vats/src/mintHolder.js';
+
 import { makeAnchorAsset, startPSM } from '../../src/proposals/startPSM.js';
 import * as psmContract from '../../src/psm/psm.js';
 import {

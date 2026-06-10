@@ -1,7 +1,7 @@
 import {
   CONTRACT_ELECTORATE,
-  ParamTypes,
   handleParamGovernance,
+  ParamTypes,
 } from '@agoric/governance';
 import { prepareExoClassKit, provide } from '@agoric/vat-data';
 

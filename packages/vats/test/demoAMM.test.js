@@ -1,4 +1,5 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { Stable } from '@agoric/internal/src/tokens.js';
 

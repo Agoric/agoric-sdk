@@ -4,16 +4,17 @@
  *   either directly or indirectly (e.g. by @endo imports).
  */
 
+import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { objectMap } from '@endo/common/object-map.js';
 import { objectMetaMap } from '@endo/common/object-meta-map.js';
-import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
-import { q, b, Fail, makeError, annotateError, X } from '@endo/errors';
+import { annotateError, b, Fail, makeError, q, X } from '@endo/errors';
 import { deeplyFulfilled, isPrimitive } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore TS7016 The 'jessie.js' library may need to update its package.json or typings
 import { asyncGenerate } from 'jessie.js';
+
 import { logLevels } from './js-utils.js';
 
 /**

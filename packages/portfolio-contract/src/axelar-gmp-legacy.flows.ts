@@ -31,6 +31,7 @@ import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message
 import { Fail, makeError, q } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'viem';
+
 import { makeEvmAbiCallBatch, makeGmpBuilder } from './evm-facade.ts';
 import { depositFactoryABI, factoryABI } from './interfaces/orch-factory.ts';
 import type { GmpAddresses } from './portfolio.contract.ts';
@@ -39,11 +40,11 @@ import {
   type LocalAccount,
   type PortfolioInstanceContext,
 } from './portfolio.flows.ts';
+import type { EVMContext } from './pos-evm.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { TxId } from './resolver/types.ts';
 import { predictWalletAddress } from './utils/evm-orch-factory.ts';
 import { appendTxIds } from './utils/traffic.ts';
-import type { EVMContext } from './pos-evm.flows.ts';
 
 const trace = makeTracer('GMPF');
 

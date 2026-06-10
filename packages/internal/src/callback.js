@@ -1,7 +1,7 @@
 // @ts-check
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
-import { isPrimitive, isPassableSymbol } from '@endo/pass-style';
+import { isPassableSymbol, isPrimitive } from '@endo/pass-style';
 import { getInterfaceMethodKeys } from '@endo/patterns';
 
 /**

@@ -1,10 +1,11 @@
 // @ts-check
-import { makeMarshal, decodeToJustin } from '@endo/marshal';
-import { Shape as NetworkShape } from '@agoric/network';
-import { M, matches } from '@endo/patterns';
-import { E } from '@endo/far';
-import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
+import { pickFacet } from '@agoric/vat-data';
+import { E } from '@endo/far';
+import { decodeToJustin, makeMarshal } from '@endo/marshal';
+import { M, matches } from '@endo/patterns';
+
 import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 
 const trace = makeTracer('PacketTools');

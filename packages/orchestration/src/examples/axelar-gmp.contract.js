@@ -1,11 +1,12 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
-import { prepareEvmAccountKit } from './axelar-gmp-account-kit.js';
 import * as evmFlows from './axelar-gmp.flows.js';
+import { prepareEvmAccountKit } from './axelar-gmp-account-kit.js';
 
 /**
  * @import {Remote, Vow} from '@agoric/vow';

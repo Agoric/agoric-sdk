@@ -1,5 +1,6 @@
 /** @file redeem a privileged invitation from a wallet */
 import { parseArgs } from 'node:util';
+
 import type { RunTools } from './wallet-admin-types.ts';
 
 const options = {

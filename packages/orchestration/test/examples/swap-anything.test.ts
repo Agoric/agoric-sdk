@@ -1,16 +1,18 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { NonNullish } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { Installation } from '@agoric/zoe';
-import * as contractExports from '../../src/examples/swap-anything.contract.js';
-import { commonSetup } from '../supports.js';
-import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
+
 import { withChainCapabilities } from '../../src/chain-capabilities.js';
-import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import * as contractExports from '../../src/examples/swap-anything.contract.js';
 import { connectionKey, HubName } from '../../src/exos/chain-hub.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
 const contractName = 'swap-anything';
 type StartFn = typeof contractExports.start;

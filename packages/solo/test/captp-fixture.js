@@ -1,10 +1,10 @@
 // @ts-nocheck
 /* eslint-env node */
 import { spawn } from 'node:child_process';
-import WebSocket from 'ws';
-import { makeCapTP, E } from '@endo/captp';
 
 import { getAccessToken } from '@agoric/access-token';
+import { E, makeCapTP } from '@endo/captp';
+import WebSocket from 'ws';
 
 // Ensure we're all using the same HandledPromise.
 export { E };

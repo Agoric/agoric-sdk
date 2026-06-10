@@ -2,16 +2,16 @@
 
 import { test } from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { M } from '@agoric/store';
-import {
-  makeKindHandle,
-  makeScalarBigMapStore,
-} from '../src/vat-data-bindings.js';
+
 import {
   defineDurableExoClass,
   defineDurableExoClassKit,
 } from '../src/exo-utils.js';
+import {
+  makeKindHandle,
+  makeScalarBigMapStore,
+} from '../src/vat-data-bindings.js';
 
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call()

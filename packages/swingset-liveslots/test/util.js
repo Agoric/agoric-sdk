@@ -1,4 +1,5 @@
 import { kser } from '@agoric/kmarshal';
+
 import { vstr } from './vat-util.js';
 
 export { vstr };

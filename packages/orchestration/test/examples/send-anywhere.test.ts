@@ -2,11 +2,12 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import type { Installation } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import { mustMatch } from '@endo/patterns';
-import type { Installation } from '@agoric/zoe';
+
 import { registerChain } from '../../src/chain-info.js';
 import type {
   CosmosChainInfo,

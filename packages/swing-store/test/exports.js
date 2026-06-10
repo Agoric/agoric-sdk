@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+
 import { makeB0ID } from './util.js';
 
 /**

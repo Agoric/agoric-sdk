@@ -1,12 +1,12 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { CONTRACT_ELECTORATE, ParamTypes } from '../../src/index.js';
 import { setUpGovernedContract } from '../../tools/puppetGovernance.js';

@@ -1,11 +1,12 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
+import { kser, kslot, kunser } from '@agoric/kmarshal';
 import { Fail } from '@endo/errors';
-import { kser, kunser, kslot } from '@agoric/kmarshal';
-import buildKernel from '../src/kernel/index.js';
+
 import { initializeKernel } from '../src/controller/initializeKernel.js';
+import buildKernel from '../src/kernel/index.js';
 import { makeVatSlot } from '../src/lib/parseVatSlots.js';
 import { checkKT, extractMessage, makeKernelEndowments } from './util.js';
 

@@ -1,11 +1,11 @@
-import { q, Fail } from '@endo/errors';
-import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
-
 import { M, matches } from '@agoric/store';
+import { Fail, q } from '@endo/errors';
+import { assertRecord, assertRemotable, passStyleOf } from '@endo/marshal';
+
+import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
+import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
-import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
-import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
  * @import {CopyBag, CopySet} from '@endo/patterns';
@@ -255,10 +255,11 @@ export const AmountMath = {
    * element for MathHelpers.add and MatHelpers.subtract.
    *
    */
-  makeEmpty: /** @type {{
-   *   (brand: Brand): Amount<'nat'>;
-   *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
-   * }} */ (
+  makeEmpty: /**
+              * @type {{
+              *   (brand: Brand): Amount<'nat'>;
+              *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
+               }} */ (
     (brand, assetKind = /** @type {const} */ ('nat')) => {
       assertRemotable(brand, 'brand');
       assertAssetKind(assetKind);

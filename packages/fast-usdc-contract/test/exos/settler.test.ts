@@ -1,5 +1,4 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
 
 import {
   decodeAddressHook,
@@ -22,6 +21,8 @@ import type {
 } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import type { EReturn } from '@endo/far';
+import type { TestFn } from 'ava';
+
 import {
   prepareSettler,
   type SettlerKit,

@@ -1,4 +1,5 @@
 import { makeTracer } from '@agoric/internal';
+
 import { prepareVaultHolder } from './vaultHolder.js';
 
 const trace = makeTracer('VK', true);

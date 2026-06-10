@@ -1,11 +1,9 @@
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import test from 'ava';
 import tmp from 'tmp';
 
-import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
-
-import { buffer } from '../src/util.js';
 import { initSwingStore, makeSwingStoreExporter } from '../src/index.js';
-
+import { buffer } from '../src/util.js';
 import { getSnapshotStream, makeB0ID } from './util.js';
 
 /**

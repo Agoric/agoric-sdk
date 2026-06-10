@@ -1,16 +1,13 @@
-import test from 'ava';
-
-import { matches } from '@endo/patterns';
-
 import { boardSlottingMarshaller } from '@agoric/client-utils';
+import { matches } from '@endo/patterns';
+import test from 'ava';
 
 import { TxType } from '../src/resolver/constants.js';
 import {
+  type PendingTx,
   PublishedTxShape,
   type TxId,
-  type PendingTx,
 } from '../src/resolver/types.ts';
-
 import { createMockPendingTxData } from '../tools/mocks.ts';
 
 const marshaller = boardSlottingMarshaller();

@@ -1,9 +1,8 @@
 // @ts-check
 
+import { makeScalarWeakMapStore } from '@agoric/store';
 import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-
-import { makeScalarWeakMapStore } from '@agoric/store';
 
 /**
  * @import {ZoeIssuerRecord} from '@agoric/zoe';

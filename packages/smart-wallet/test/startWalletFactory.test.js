@@ -1,8 +1,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E } from '@endo/far';
+
 import { smartWalletSourceSpecRegistry } from '../source-spec-registry.js';
 import { makeMockTestSpace } from './supports.js';
 

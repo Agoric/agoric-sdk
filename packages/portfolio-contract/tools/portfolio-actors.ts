@@ -10,47 +10,48 @@
  *
  * @see type-guards.ts for the authoritative interface specification
  */
-import { AmountMath, type NatAmount } from '@agoric/ertp';
+import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+import {
+  type EVMContractAddressesMap,
+  makePositionPath,
+  type OfferArgsFor,
+  type PoolKey,
+  portfolioIdOfPath,
+  type PortfolioPublishedPathTypes,
+  type ProposalType,
+  type StatusFor,
+} from '@aglocal/portfolio-contract/src/type-guards.js';
+import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 import type { VstorageKit } from '@agoric/client-utils';
+import { AmountMath, type NatAmount } from '@agoric/ertp';
+import { type ERemote, mustMatch } from '@agoric/internal';
 import type { Bech32Address, ChainInfo } from '@agoric/orchestration';
-import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
 } from '@agoric/orchestration/src/utils/permit2.js';
-import type { VowTools } from '@agoric/vow';
-import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
-import type { Instance } from '@agoric/zoe';
-import type { ExecutionContext } from 'ava';
-import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
-import {
-  makePositionPath,
-  portfolioIdOfPath,
-  type OfferArgsFor,
-  type ProposalType,
-  type PortfolioPublishedPathTypes,
-  type StatusFor,
-  type PoolKey,
-  type EVMContractAddressesMap,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
-import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type {
-  PortfolioPublicInvitationMaker,
-  PortfolioContinuingInvitationMaker,
   AxelarChain,
+  PortfolioContinuingInvitationMaker,
   PortfolioPermissions,
+  PortfolioPublicInvitationMaker,
 } from '@agoric/portfolio-api';
-import { PortfolioPermissionsV1Shape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { PortfolioPermissionsV1Shape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { TimerService } from '@agoric/time';
-import { mustMatch, type ERemote } from '@agoric/internal';
+import type { VowTools } from '@agoric/vow';
+import type { Instance } from '@agoric/zoe';
 import { E } from '@endo/far';
+import type { ExecutionContext } from 'ava';
 import type { TypedDataDefinition } from 'viem';
 import type { PrivateKeyAccount } from 'viem/accounts';
+
 import type { EVMWalletMessageHandler } from '../src/evm-wallet-handler.exo.ts';
 
 const { fromEntries } = Object;

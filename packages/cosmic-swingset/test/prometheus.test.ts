@@ -1,21 +1,20 @@
-import type { TestFn, Implementation } from 'ava';
-import anyTest from 'ava';
 import { fileURLToPath } from 'node:url';
-import { execa } from 'execa';
 
-import { q, Fail } from '@endo/errors';
-
-import { BridgeId, VBankAccount, type TotalMap } from '@agoric/internal';
+import { BridgeId, type TotalMap, VBankAccount } from '@agoric/internal';
 import {
-  HISTOGRAM_METRICS,
   BLOCK_HISTOGRAM_METRICS,
+  HISTOGRAM_METRICS,
 } from '@agoric/internal/src/metrics.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { Fail, q } from '@endo/errors';
+import type { Implementation, TestFn } from 'ava';
+import anyTest from 'ava';
+import { execa } from 'execa';
 
 import {
   leadingPrometheusNameRegExp,
-  prometheusSampleRegExp,
   prometheusNumberValue,
+  prometheusSampleRegExp,
 } from '../tools/prometheus.js';
 import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
 

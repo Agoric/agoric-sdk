@@ -1,16 +1,15 @@
+import { BrandShape } from '@agoric/ertp';
+import { provideLazy } from '@agoric/store';
+import {
+  M,
+  makeScalarBigMapStore,
+  prepareExo,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
+import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
-
-import { BrandShape } from '@agoric/ertp';
-import {
-  M,
-  prepareExo,
-  makeScalarBigMapStore,
-  provideDurableMapStore,
-} from '@agoric/vat-data';
-import { provideLazy } from '@agoric/store';
-import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';

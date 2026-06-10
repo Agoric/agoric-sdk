@@ -10,6 +10,15 @@
  * name but with some effort this could be parametrizable
  */
 
+import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.js';
+import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
+import {
+  type getPermitBatchWitnessTransferFromData,
+  type getPermitWitnessTransferFromData,
+  makeWitness,
+  TokenPermissionsComponents,
+  type Witness,
+} from '@agoric/orchestration/src/utils/permit2.ts';
 import type {
   Address,
   TypedData,
@@ -17,15 +26,6 @@ import type {
   TypedDataToPrimitiveTypes,
 } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
-import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.js';
-import {
-  type Witness,
-  type getPermitWitnessTransferFromData,
-  type getPermitBatchWitnessTransferFromData,
-  makeWitness,
-  TokenPermissionsComponents,
-} from '@agoric/orchestration/src/utils/permit2.ts';
-import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 
 const YMAX_DOMAIN_NAME = 'Ymax';
 const YMAX_DOMAIN_VERSION = '1';

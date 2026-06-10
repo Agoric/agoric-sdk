@@ -5,14 +5,14 @@
 
 /* global globalThis */
 // @ts-check
-import {
-  isUpgradeDisconnection,
-  isAbandonedError,
-} from '@agoric/internal/src/upgrade-api.js';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
+import {
+  isAbandonedError,
+  isUpgradeDisconnection,
+} from '@agoric/internal/src/upgrade-api.js';
 
-import { prepareBasicVowTools } from './src/tools.js';
 import makeE from './src/E.js';
+import { prepareBasicVowTools } from './src/tools.js';
 
 /**
  * @import {IsRetryableReason} from './src/types.js';

@@ -1,4 +1,4 @@
-import { LOCAL_CONFIG_KEY, fetchNetworkConfig } from './network-config.js';
+import { fetchNetworkConfig, LOCAL_CONFIG_KEY } from './network-config.js';
 
 /**
  * @import {MinimalNetworkConfig} from './network-config.js';

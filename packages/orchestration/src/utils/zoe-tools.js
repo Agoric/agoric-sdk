@@ -15,10 +15,10 @@
  *   input.
  */
 
-import { makeError, q, Fail } from '@endo/errors';
-import { depositToSeat } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
+import { depositToSeat } from '@agoric/zoe/src/contractSupport/index.js';
+import { Fail, makeError, q } from '@endo/errors';
+import { E } from '@endo/far';
 
 const trace = makeTracer('ZoeTools');
 

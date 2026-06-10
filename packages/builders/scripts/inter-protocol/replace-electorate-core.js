@@ -16,6 +16,7 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { getManifestForReplaceAllElectorates } from '@agoric/inter-protocol/src/proposals/replaceElectorate.js';
+
 import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**

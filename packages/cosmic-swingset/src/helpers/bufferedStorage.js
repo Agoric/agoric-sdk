@@ -1,8 +1,8 @@
-import { assert, Fail } from '@endo/errors';
 import {
-  makeKVStoreFromMap,
   compareByCodePoints,
+  makeKVStoreFromMap,
 } from '@agoric/internal/src/kv-store.js';
+import { assert, Fail } from '@endo/errors';
 
 // XXX Do these "StorageAPI" functions belong in their own package?
 /**

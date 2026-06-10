@@ -1,31 +1,28 @@
 // @ts-nocheck
 /* global clearTimeout setTimeout */
-import path from 'node:path';
-import fs from 'node:fs';
-import url from 'node:url';
 import { execFile } from 'node:child_process';
-import { open as tempOpen } from 'temp';
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 
-import WebSocket from 'ws';
-
-import anylogger from '@agoric/internal/vendor/anylogger.js';
-import { decodeBase64, encodeBase64 } from '@endo/base64';
-import { Fail, makeError } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
-
+import { CodecHelper } from '@agoric/cosmic-proto';
 import {
   QueryDataRequest,
   QueryDataResponse,
 } from '@agoric/cosmic-proto/vstorage/query.js';
-import { CodecHelper } from '@agoric/cosmic-proto';
-
-import { makeNotifierKit } from '@agoric/notifier';
+import { forever, whileTrue } from '@agoric/internal';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
 } from '@agoric/internal/src/batched-deliver.js';
-import { forever, whileTrue } from '@agoric/internal';
 import { decodeHex, encodeHex } from '@agoric/internal/src/hex.js';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
+import { makeNotifierKit } from '@agoric/notifier';
+import { decodeBase64, encodeBase64 } from '@endo/base64';
+import { Fail, makeError } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
+import { open as tempOpen } from 'temp';
+import WebSocket from 'ws';
 
 const console = anylogger('chain-cosmos-sdk');
 

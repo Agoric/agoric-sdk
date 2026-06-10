@@ -4,28 +4,16 @@
 import type { InspectOptions } from 'node:util';
 import { inspect } from 'node:util';
 
-import type { Coin } from '@cosmjs/stargate';
-
-import { Fail, annotateError, q } from '@endo/errors';
-import { Nat } from '@endo/nat';
-import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
-import { AmountMath } from '@agoric/ertp';
-import type { Brand, NatAmount } from '@agoric/ertp';
-import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
-import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
-import {
-  PublishedTxShape,
-  type PendingTx,
-  type TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import {
+  type PendingTx,
+  PublishedTxShape,
+  type TxId,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type {
   FlowDetail,
   PoolKey as InstrumentId,
@@ -37,10 +25,14 @@ import {
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
-import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
-import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
+import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
+import { getInvocationUpdate, reflectWalletStore } from '@agoric/client-utils';
+import type { RetryOptionsAndPowers } from '@agoric/client-utils/src/sync-tools.js';
+import type { Brand, NatAmount } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import {
   mustMatch,
   naturalCompare,
@@ -51,31 +43,23 @@ import {
 } from '@agoric/internal';
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
+import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import type {
   FlowKey,
   FundsFlowPlan,
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
-
-import type { EvmAddress } from '@agoric/fast-usdc';
+import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
+import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import type { Coin } from '@cosmjs/stargate';
+import { annotateError, Fail, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
 import type { WebSocketProvider } from 'ethers';
+
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type {
-  EvmChain,
-  EvmContext,
-  HandlePendingTxOpts,
-} from './pending-tx-manager.ts';
-import { handlePendingTx } from './pending-tx-manager.ts';
-import rateLimitedSource from './rate-limited-source.ts';
-import type { BalanceQueryPowers } from './plan-deposit.ts';
-import {
-  getNonDustBalances,
-  planDepositToAllocations,
-  planRebalanceToAllocations,
-  planWithdrawFromAllocations,
-} from './plan-deposit.ts';
 import {
   deleteDerivedOutcome,
   getIgnoredTx,
@@ -83,19 +67,33 @@ import {
   setIgnoredTx,
   setResolvedTx,
 } from './kv-store.ts';
+import type {
+  EvmChain,
+  EvmContext,
+  HandlePendingTxOpts,
+} from './pending-tx-manager.ts';
+import { handlePendingTx } from './pending-tx-manager.ts';
+import type { BalanceQueryPowers } from './plan-deposit.ts';
+import {
+  getNonDustBalances,
+  planDepositToAllocations,
+  planRebalanceToAllocations,
+  planWithdrawFromAllocations,
+} from './plan-deposit.ts';
+import rateLimitedSource from './rate-limited-source.ts';
 import { UserInputError } from './support.ts';
+import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 import {
   encodedKeyToPath,
-  pathToEncodedKey,
   parseStreamCell,
   parseStreamCellValue,
+  pathToEncodedKey,
   readStorageMeta,
   readStreamCellValue,
   STALE_RESPONSE,
   vstoragePathIsAncestorOf,
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
-import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 
 const { values } = Object;
 

@@ -6,6 +6,20 @@
  * on chain and in off-chain services.
  */
 
+import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
+import {
+  extractWitnessFieldFromTypes,
+  isPermit2MessageType,
+  makeWitnessTypeStringExtractor,
+  type Permit2Domain,
+  type PermitWitnessTransferFromInputComponents,
+  validatePermit2Domain,
+  validateTokenPermissionsType,
+} from '@agoric/orchestration/src/utils/permit2.ts';
+import type {
+  encodeType,
+  WithSignature,
+} from '@agoric/orchestration/src/utils/viem.js';
 import type { AbiParameterToPrimitiveType, Address } from 'abitype';
 import type { getTypesForEIP712Domain } from 'viem';
 import type {
@@ -15,30 +29,17 @@ import type {
   RecoverTypedDataAddressParameters,
   validateTypedData,
 } from 'viem/utils';
-import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
-import type {
-  encodeType,
-  WithSignature,
-} from '@agoric/orchestration/src/utils/viem.js';
+
 import {
-  extractWitnessFieldFromTypes,
-  isPermit2MessageType,
-  makeWitnessTypeStringExtractor,
-  validatePermit2Domain,
-  validateTokenPermissionsType,
-  type Permit2Domain,
-  type PermitWitnessTransferFromInputComponents,
-} from '@agoric/orchestration/src/utils/permit2.ts';
-import {
+  getYmaxOperationTypes,
   type OperationTypeNames,
-  type YmaxStandaloneOperationData,
-  type YmaxPermitWitnessTransferFromData,
-  type YmaxOperationType,
   splitWitnessFieldType,
   validateYmaxDomain,
   validateYmaxOperationTypeName,
-  getYmaxOperationTypes,
   type YmaxFullDomain,
+  type YmaxOperationType,
+  type YmaxPermitWitnessTransferFromData,
+  type YmaxStandaloneOperationData,
 } from './eip712-messages.ts';
 
 export type YmaxOperationDetails<

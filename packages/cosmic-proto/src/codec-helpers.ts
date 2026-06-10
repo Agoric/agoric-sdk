@@ -2,13 +2,13 @@ import type { DeepPartial } from './codegen/helpers.ts';
 import type { BinaryReader, BinaryWriter, JsonSafe } from './codegen/index.js';
 import type { MessageBody, TypedJson } from './helpers.js';
 import {
+  annotationsFromTypeUrlForCodec,
   type FieldAnnotations,
   type FieldAnnotationsRecord,
   type FieldTypeReference,
   type ProtoFieldName,
-  type TypeUrl,
-  annotationsFromTypeUrlForCodec,
   scalarMakersFromType,
+  type TypeUrl,
   typeUrlFromFieldType,
 } from './type-url-annotations.js';
 

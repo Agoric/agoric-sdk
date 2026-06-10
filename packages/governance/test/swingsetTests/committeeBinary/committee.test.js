@@ -1,11 +1,12 @@
 /* eslint-disable ava/assertion-arguments -- the standard diff is unreadable */
 
-import test from 'ava';
-import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import bundleSource from '@endo/bundle-source';
 import path from 'node:path';
+
+import { buildKernelBundles, buildVatController } from '@agoric/swingset-vat';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { zoeSourceSpecRegistry } from '@agoric/zoe/source-spec-registry.js';
+import bundleSource from '@endo/bundle-source';
+import test from 'ava';
 
 const CONTRACT_FILES = ['committee', 'binaryVoteCounter'];
 

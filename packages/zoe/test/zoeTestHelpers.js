@@ -1,7 +1,6 @@
+import { AmountMath, assertValueGetHelpers } from '@agoric/ertp';
 import { q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-
-import { AmountMath, assertValueGetHelpers } from '@agoric/ertp';
 
 export const assertAmountsEqual = (t, amount, expected, label = '') => {
   harden(amount);

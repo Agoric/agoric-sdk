@@ -1,8 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { decodeBase64 } from '@endo/base64';
-import { getMethodNames } from '@endo/eventual-send/utils.js';
-import { matches } from '@endo/patterns';
 import { CodecHelper, toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
@@ -17,6 +14,10 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { LocalIbcAddress } from '@agoric/network/ibc';
 import type { IBCMethod } from '@agoric/vats';
 import { heapVowE as E } from '@agoric/vow/vat.js';
+import { decodeBase64 } from '@endo/base64';
+import { getMethodNames } from '@endo/eventual-send/utils.js';
+import { matches } from '@endo/patterns';
+
 import { CosmosChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
 import { buildChannelCloseConfirmEvent } from '../tools/ibc-mocks.js';

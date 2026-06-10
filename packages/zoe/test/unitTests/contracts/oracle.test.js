@@ -2,12 +2,11 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { Fail } from '@endo/errors';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import bundleSource from '@endo/bundle-source';
-import { Far } from '@endo/marshal';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { Far } from '@endo/marshal';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';

@@ -7,6 +7,7 @@ import {
   PORTFOLIO_CONTRACT_NAMES,
   YMAX_CONTROL_WALLET_KEY as WALLET_KEY,
 } from '@agoric/portfolio-api/src/portfolio-constants.js';
+
 import type { RunTools } from './wallet-admin-types.ts';
 
 export { WALLET_KEY };

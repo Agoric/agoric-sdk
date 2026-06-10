@@ -1,13 +1,13 @@
 // @ts-nocheck
-import test from 'ava';
-
+import { kser, kslot } from '@agoric/kmarshal';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
-import { kser, kslot } from '@agoric/kmarshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import test from 'ava';
+
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
-import { makeMessage, makeResolve, makeReject } from './util.js';
+import { makeMessage, makeReject, makeResolve } from './util.js';
 
 function hush(p) {
   p.then(

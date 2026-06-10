@@ -3,8 +3,9 @@ import { makeCacheMapKit } from '@endo/cache-map';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
-import { PASS_STYLE } from '@endo/pass-style';
 import { makeMarshal } from '@endo/marshal';
+import { PASS_STYLE } from '@endo/pass-style';
+
 import { makeInaccessibleVal } from './inaccessible-val.js';
 
 /**

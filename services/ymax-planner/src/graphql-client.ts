@@ -1,13 +1,11 @@
-import { GraphQLClient } from 'graphql-request';
+import { objectMap } from '@agoric/internal';
+import { Fail, q } from '@endo/errors';
 import type {
   RequestDocument,
   RequestOptions,
   Variables,
 } from 'graphql-request';
-
-import { Fail, q } from '@endo/errors';
-
-import { objectMap } from '@agoric/internal';
+import { GraphQLClient } from 'graphql-request';
 
 import type { RequestLimits } from './config.ts';
 import type { SimplePowers } from './main.ts';

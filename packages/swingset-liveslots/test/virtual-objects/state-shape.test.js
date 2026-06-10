@@ -1,15 +1,15 @@
 // @ts-nocheck
-import test from 'ava';
-
-import { Fail } from '@endo/errors';
-import { Far } from '@endo/marshal';
 import { kser, kslot, kunser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
+import { Fail } from '@endo/errors';
+import { Far } from '@endo/marshal';
+import test from 'ava';
+
 import { makeLiveSlots } from '../../src/liveslots.js';
-import { buildSyscall } from '../liveslots-helpers.js';
-import { makeStartVat, makeMessage } from '../util.js';
-import { makeMockGC } from '../mock-gc.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
+import { buildSyscall } from '../liveslots-helpers.js';
+import { makeMockGC } from '../mock-gc.js';
+import { makeMessage, makeStartVat } from '../util.js';
 
 /**
  * @import {VatOneResolution} from '../../src/types.js';

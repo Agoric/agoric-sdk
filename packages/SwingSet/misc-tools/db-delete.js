@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // @ts-nocheck
 import '@endo/init';
+
 import process from 'node:process';
+
 import { openSwingStore } from '@agoric/swing-store';
 
 const log = console.log;

@@ -13,15 +13,8 @@ import { makeTracer, mustMatch } from '@agoric/internal';
 import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
 import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-
 import { type AccountId, type Orchestrator } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import {
-  decodeFunctionData,
-  getAbiItem,
-  getAddress,
-  toFunctionSelector,
-} from 'viem';
 import {
   type AxelarChain,
   type FlowDetail,
@@ -39,8 +32,13 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
 import type { Assertions } from 'ava';
-import { erc20ABI } from '../src/interfaces/erc20.ts';
-import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
+import {
+  decodeFunctionData,
+  getAbiItem,
+  getAddress,
+  toFunctionSelector,
+} from 'viem';
+
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
@@ -50,18 +48,20 @@ import {
 import {
   provideEVMAccount as provideEVMRoutedAccount,
   provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit,
-  sendPermit2GMP as sendPermit2RoutedGMP,
   sendGMPContractCall as sendRoutedGMPContractCall,
+  sendPermit2GMP as sendPermit2RoutedGMP,
 } from '../src/axelar-gmp-router.flows.ts';
+import { erc20ABI } from '../src/interfaces/erc20.ts';
+import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
 import { type PortfolioKit } from '../src/portfolio.exo.ts';
 import {
-  makeErrorList,
-  provideCosmosAccount,
   executePlan as rawExecutePlan,
+  makeErrorList,
   openPortfolio as rawOpenPortfolio,
+  type PortfolioInstanceContext,
+  provideCosmosAccount,
   rebalance as rawRebalance,
   wayFromSrcToDest,
-  type PortfolioInstanceContext,
 } from '../src/portfolio.flows.ts';
 import { type EVMContext } from '../src/pos-evm.flows.ts';
 import {
@@ -71,11 +71,11 @@ import {
   nobleToAgoric,
   protocolUSDN,
 } from '../src/pos-usdn.flows.ts';
+import { makeProposalShapes } from '../src/type-guards.ts';
 import {
   type MovementDesc,
   type OfferArgsFor,
 } from '../src/type-guards-steps.ts';
-import { makeProposalShapes } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { makePortfolioSteps } from '../tools/plan-transfers.ts';
 import {
@@ -85,13 +85,13 @@ import {
 } from './abi-utils.ts';
 import {
   BLD,
-  USDC,
   docOpts,
   makeMockSeat,
   makePermitDetails,
+  type Mocks,
   mocks,
   silent,
-  type Mocks,
+  USDC,
 } from './flow-test-kit.ts';
 import {
   axelarIdsMock,

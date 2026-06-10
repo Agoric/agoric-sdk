@@ -1,4 +1,4 @@
-import { M, getInterfaceGuardPayload, objectMap } from '@endo/patterns';
+import { getInterfaceGuardPayload, M, objectMap } from '@endo/patterns';
 
 /**
  * @import {Zone} from '../src/types.js';

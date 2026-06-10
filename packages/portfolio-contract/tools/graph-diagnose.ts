@@ -1,29 +1,28 @@
 // Lightweight diagnostics for infeasible solver models.
 // Extracted to a separate module to keep solver core lean and allow reuse.
 
-import { Fail, q } from '@endo/errors';
-
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 import { tryNow } from '@agoric/internal/src/ses-utils.js';
+import type {
+  AssetPlaceRef,
+  InterChainAccountRef,
+} from '@agoric/portfolio-api';
 import {
   isDepositFromChainRef,
   isInstrumentId,
   isInterChainAccountRef,
   isWithdrawToChainRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
-import type {
-  AssetPlaceRef,
-  InterChainAccountRef,
-} from '@agoric/portfolio-api';
-import { chainOf } from './network/buildGraph.ts';
+import { Fail, q } from '@endo/errors';
 
 import {
-  PoolPlaces,
   type PoolKey,
   type PoolPlaceInfo,
+  PoolPlaces,
 } from '../src/type-guards.js';
 import type { FlowGraph } from './network/buildGraph.js';
+import { chainOf } from './network/buildGraph.ts';
 import type { NetworkSpec } from './network/network-spec.js';
 import type { LpModel, SolvedEdgeFlow } from './plan-solve.js';
 

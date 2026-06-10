@@ -1,7 +1,4 @@
 // @ts-check
-import { Fail, X, q } from '@endo/errors';
-import { E } from '@endo/far';
-
 import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
@@ -14,9 +11,12 @@ import {
 import { makeAtomicProvider, makeScalarMapStore } from '@agoric/store';
 import { M, makeScalarBigSetStore } from '@agoric/vat-data';
 import {
-  PublicTopicShape,
   makeRecorderTopic,
+  PublicTopicShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
+import { Fail, q, X } from '@endo/errors';
+import { E } from '@endo/far';
+
 import { PowerFlags } from './walletFlags.js';
 
 /**

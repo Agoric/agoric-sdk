@@ -1,6 +1,6 @@
+import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
-import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {BootstrapPowers} from '../core/types.ts';

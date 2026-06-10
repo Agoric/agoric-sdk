@@ -1,8 +1,7 @@
 // @ts-nocheck
-import test from 'ava';
-
-import { Remotable } from '@endo/marshal';
 import { initEmpty } from '@agoric/store';
+import { Remotable } from '@endo/marshal';
+import test from 'ava';
 
 import { makeVatSlot } from '../../src/parseVatSlots.js';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';

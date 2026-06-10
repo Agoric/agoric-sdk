@@ -3,8 +3,8 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareBridgeTargetModule } from '../src/bridge-target.js';
 
+import { prepareBridgeTargetModule } from '../src/bridge-target.js';
 import { makeFakeTransferBridge } from '../tools/fake-bridge.js';
 
 /**

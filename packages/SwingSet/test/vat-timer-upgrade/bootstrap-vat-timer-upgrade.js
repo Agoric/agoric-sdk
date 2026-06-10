@@ -1,5 +1,5 @@
-import { Far, E } from '@endo/far';
 import { TimeMath } from '@agoric/time';
+import { E, Far } from '@endo/far';
 
 export function buildRootObject() {
   let ts;

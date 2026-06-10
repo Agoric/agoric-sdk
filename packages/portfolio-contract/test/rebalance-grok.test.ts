@@ -1,14 +1,15 @@
+import type { Brand } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { Far } from '@endo/pass-style';
 import test from 'ava';
-import type { Brand } from '@agoric/ertp';
+
 import {
+  type Dollars,
   grokRebalanceScenarios,
   importText,
   numeral,
   parseCSV,
   withBrand,
-  type Dollars,
 } from '../tools/rebalance-grok.ts';
 
 test('parseCSV test utility', async t => {

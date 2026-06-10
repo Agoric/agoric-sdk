@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 // @ts-nocheck XXX
 /* eslint no-labels: "off", no-extra-label: "off", no-underscore-dangle: "off" */
-import process from 'node:process';
-import sqlite3 from 'better-sqlite3';
-import yargsParser from 'yargs-parser';
 import '@endo/init/debug.js';
-import { makeStandinPromise, krefOf } from '@agoric/kmarshal';
+
+import process from 'node:process';
+
+import { krefOf, makeStandinPromise } from '@agoric/kmarshal';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M, matches, mustMatch } from '@endo/patterns';
+import sqlite3 from 'better-sqlite3';
+import yargsParser from 'yargs-parser';
 
 /**
  * @import {Matcher} from '@endo/patterns';

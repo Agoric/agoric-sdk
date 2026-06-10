@@ -7,6 +7,7 @@ import {
   makeWalletStateCoalescer,
 } from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
+
 import { execSwingsetTransaction, pollTx } from './chain.js';
 
 /**

@@ -4,10 +4,10 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import bundleSource from '@endo/bundle-source';
 import { Far } from '@endo/marshal';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 import { makeInstanceRecordStorage } from '../../src/instanceRecordStorage.js';
 import { makeIssuerRecord } from '../../src/issuerRecord.js';

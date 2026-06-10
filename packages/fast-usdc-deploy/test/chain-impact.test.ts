@@ -11,20 +11,21 @@
  * Fast USDC specific aspects are relegated to fu-sim-iter.ts.
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
+
+import fs from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 
 import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
-
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
 import { makeArchiveSnapshot, type SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler } from '@agoric/vats';
 import { keyEQ } from '@endo/patterns';
-import fs from 'node:fs';
-import { readFile, writeFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import path from 'node:path';
+import type { TestFn } from 'ava';
 import tmp from 'tmp';
+
 import { makeSimulation } from './fu-sim-iter.js';
 import {
   makeWalletFactoryContext,

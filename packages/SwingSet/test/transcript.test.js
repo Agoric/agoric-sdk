@@ -1,5 +1,5 @@
 import { test } from '../tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/order
+
 import { initSwingStore } from '@agoric/swing-store';
 
 // import fs from 'fs';

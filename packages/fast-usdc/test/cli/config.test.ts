@@ -1,6 +1,7 @@
 import test from 'ava';
+
 import * as config from '../../src/cli/config.js';
-import { mockOut, mockrl, mockFile } from '../../testing/mocks.js';
+import { mockFile, mockOut, mockrl } from '../../testing/mocks.js';
 
 test('show reads the config file', async t => {
   const path = 'config/dir/.fast-usdc/config.json';

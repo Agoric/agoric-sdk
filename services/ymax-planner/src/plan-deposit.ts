@@ -1,6 +1,3 @@
-import { assert, Fail } from '@endo/errors';
-
-import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
   PoolKey,
   PoolPlaceInfo,
@@ -8,12 +5,12 @@ import type {
   TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
+import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
-import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
-import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { objectMetaMap, typedEntries } from '@agoric/internal';
 import type { Caip10Record, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
@@ -23,9 +20,11 @@ import type {
   SupportedChain,
 } from '@agoric/portfolio-api';
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
-
-import type { EvmAddress } from '@agoric/fast-usdc';
+import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
+import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
+import { assert, Fail } from '@endo/errors';
 import type { WebSocketProvider } from 'ethers';
+
 import { getErc20Balances } from './evm-utils.ts';
 import type {
   ChainAddressTokenBalance as SpectrumGetAddressBalanceResult,

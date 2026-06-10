@@ -1,11 +1,13 @@
 import { execFileSync } from 'node:child_process';
-import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
+
+import { makeHelpers } from '@agoric/deploy-script-support';
 import {
   getManifest,
   startAxelarGmp,
 } from '@agoric/orchestration/src/proposals/start-axelar-gmp.js';
 import { assetInfo } from '@agoric/orchestration/src/utils/axelar-static-config.js';
+
 import { getChainConfig } from './get-chain-config.js';
 
 /** @typedef {{ net?: string, peer?: string[] }} PeerChainOpts */

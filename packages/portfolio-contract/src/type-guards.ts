@@ -24,22 +24,22 @@ import type { Brand, NatValue } from '@agoric/ertp';
 import type { TypedPattern } from '@agoric/internal';
 import { stripPrefix, tryNow } from '@agoric/internal/src/ses-utils.js';
 import {
-  AnyNatAmountShape,
   type AccountId,
+  AnyNatAmountShape,
   type Bech32Address,
 } from '@agoric/orchestration';
 import {
-  AxelarChain,
-  PortfolioAgentIdShape,
-  PortfolioPermissionsExtShape,
-  YieldProtocol,
   type AssetPlaceRef,
+  AxelarChain,
   type FlowDetail,
+  PortfolioAgentIdShape,
   type PortfolioAgentStatus,
+  PortfolioPermissionsExtShape,
   type PortfolioPublishedPathTypes,
   type ProposalType,
   type StatusFor,
   type TargetAllocation,
+  YieldProtocol,
 } from '@agoric/portfolio-api';
 import type {
   BeefyInstrumentId,
@@ -59,6 +59,7 @@ import type {
 import { Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { M } from '@endo/patterns';
+
 import type { EVMContractAddresses } from './portfolio.contract.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';

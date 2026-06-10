@@ -8,9 +8,9 @@
 
 import '@endo/init/pre.js';
 import './anylogger-legacy.js';
-
 // Now do lockdown.
 import '@endo/init';
+
 import { main } from './main.js';
 
 process.exitCode = 1;

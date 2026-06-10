@@ -1,5 +1,6 @@
 import { encodeBech32 } from '@agoric/cosmic-proto/address-hooks.js';
 import test from '@endo/ses-ava/prepare-endo.js';
+
 import { GenerateAddress } from '../src/noble-fwd-calc.js';
 
 test('GenerateAddress', t => {

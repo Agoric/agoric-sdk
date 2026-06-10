@@ -7,9 +7,10 @@
 
 /// <reference types="ses" />
 
-import { setObjectInspector } from './console-shim.js';
 import '@endo/init';
+
 import confinedObjectInspect from './confined-object-inspect.js';
+import { setObjectInspector } from './console-shim.js';
 
 setObjectInspector(confinedObjectInspect);
 

@@ -1,7 +1,7 @@
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { VstorageKit } from '@agoric/client-utils';
-import { makeIssuerKit } from '@agoric/ertp';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { Brand, NatAmount } from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import {
   defaultMarshaller,
   defaultSerializer,
@@ -9,12 +9,12 @@ import {
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
-  denomHash,
-  withChainCapabilities,
   type BaseChainInfo,
   type ChainInfo,
   type CosmosChainInfo,
   type Denom,
+  denomHash,
+  withChainCapabilities,
 } from '@agoric/orchestration';
 import { type DenomDetail } from '@agoric/orchestration/src/exos/chain-hub.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
@@ -30,6 +30,7 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+
 import type {
   PortfolioPublishedPathTypes,
   StatusFor,

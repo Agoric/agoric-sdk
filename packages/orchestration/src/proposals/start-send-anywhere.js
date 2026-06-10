@@ -6,9 +6,13 @@ import {
 import { E } from '@endo/far';
 
 /**
+ * @import {start} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
+ */
+
+/**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
- * @typedef {typeof import('@agoric/orchestration/src/examples/send-anywhere.contract.js').start} StartFn
+ * @typedef {typeof start} StartFn
  * @import {Instance} from '@agoric/zoe';
  * @import {Issuer} from '@agoric/ertp';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';

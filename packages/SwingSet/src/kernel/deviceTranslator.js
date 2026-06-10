@@ -1,10 +1,11 @@
 // @ts-nocheck
 import { assert, Fail } from '@endo/errors';
-import { insistMessage } from '../lib/message.js';
-import { insistKernelType } from './parseKernelSlots.js';
-import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
+
 import { insistCapData } from '../lib/capdata.js';
 import { kdebug } from '../lib/kdebug.js';
+import { insistMessage } from '../lib/message.js';
+import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
+import { insistKernelType } from './parseKernelSlots.js';
 import { assertValidVatstoreKey } from './vatTranslator.js';
 
 /*

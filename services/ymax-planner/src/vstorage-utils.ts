@@ -1,13 +1,13 @@
 /// <reference types="ses" />
 import type {
-  VStorage,
   QueryChildrenMetaResponse,
   QueryDataMetaResponse,
+  VStorage,
 } from '@agoric/client-utils';
 import { mustMatch, throwErrorCode, tryJsonParse } from '@agoric/internal';
 import {
-  StreamCellShape,
   type StreamCell,
+  StreamCellShape,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { Fail, q } from '@endo/errors';
 

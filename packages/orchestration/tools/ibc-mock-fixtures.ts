@@ -1,5 +1,9 @@
 /** @file Canned IBC message and acknowledgement fixtures for tests and fakes */
 import {
+  MsgDepositForBurn,
+  MsgDepositForBurnResponse,
+} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
@@ -8,14 +12,9 @@ import {
   MsgSendResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
-  MsgDepositForBurn,
-  MsgDepositForBurnResponse,
-} from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
-import {
   MsgWithdrawDelegatorReward,
   MsgWithdrawDelegatorRewardResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
-import type { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import {
   MsgBeginRedelegate,
   MsgBeginRedelegateResponse,
@@ -24,6 +23,9 @@ import {
   MsgUndelegate,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import type { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
+
+import { leftPadEthAddressTo32Bytes } from '../src/utils/address.js';
 import {
   buildMsgErrorString,
   buildMsgResponseString,
@@ -32,7 +34,6 @@ import {
   buildTxPacketString,
   createMockAckMap,
 } from './ibc-mocks.js';
-import { leftPadEthAddressTo32Bytes } from '../src/utils/address.js';
 
 /**
  * TODO: provide mappings to cosmos error codes (and module specific error codes)

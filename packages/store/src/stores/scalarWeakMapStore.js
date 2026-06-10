@@ -1,10 +1,10 @@
-import { q, Fail } from '@endo/errors';
-import { Far, assertPassable, passStyleOf } from '@endo/pass-style';
+import { Fail, q } from '@endo/errors';
+import { assertPassable, Far, passStyleOf } from '@endo/pass-style';
 import {
-  getCopyMapEntries,
-  mustMatch,
   assertPattern,
+  getCopyMapEntries,
   isCopyMap,
+  mustMatch,
 } from '@endo/patterns';
 
 /**

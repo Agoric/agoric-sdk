@@ -1,6 +1,7 @@
 /* global process */
 
 import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
+
 import { DEFAULT_CONTRACT_TERMS } from '../inter-protocol/price-feed-core.js';
 import { buildBundlePath } from '../lib/build-bundle.js';
 

@@ -1,6 +1,8 @@
 import path from 'node:path';
-import tmp from 'tmp';
+
 import { PromiseAllOrErrors, unprefixedProperties } from '@agoric/internal';
+import tmp from 'tmp';
+
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 export const DEFAULT_SLOGSENDER_AGENT = 'self';
