@@ -201,7 +201,7 @@ export type ProtocolDetail<
   claimRewards?: (
     ctx: CTX,
     dest: AccountInfoFor[C],
-    claimParams?: ClaimRewardsParams,
+    claimRewards?: ClaimRewardsParams,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
@@ -655,10 +655,8 @@ type Way =
       poolKey: PoolKey;
       /** chain with account that will receive the claimed rewards */
       dest: SupportedChain;
-      /** Discriminant: claim flag routes the step to claimRewards. */
-      claim: true;
       /** External params required for claiming rewards */
-      claimParams?: ClaimRewardsParams;
+      claimRewards?: ClaimRewardsParams;
     };
 
 // exported only for testing
@@ -679,15 +677,13 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
-      if (moveDesc.claim) {
+      if (moveDesc.claimRewards) {
         return {
           how: protocol,
           poolKey,
           dest: destName,
-          claim: true,
-          ...(moveDesc.claimParams
-            ? { claimParams: moveDesc.claimParams }
-            : {}),
+          claimRewards:
+            moveDesc.claimRewards === true ? {} : moveDesc.claimRewards,
         };
       }
       // XXX check that destName is in protocol.chains
@@ -908,7 +904,7 @@ const stepFlow = async (
       src: move.src,
       dest: move.dest,
       ...(phases ? { phases } : {}),
-      ...(move.claim ? { claim: move.claim } : {}),
+      ...(move.claimRewards ? { claimRewards: move.claimRewards } : {}),
       apply: async ({ [evmChain]: gInfo, agoric }, _traceStep, opts) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
@@ -928,10 +924,10 @@ const stepFlow = async (
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo, opts);
           return harden({ destPos: pos });
-        } else if ('claim' in way && way.claim) {
+        } else if ('claimRewards' in way && way.claimRewards) {
           pImpl.claimRewards ||
             Fail`${q(way.how)} does not support claimRewards`;
-          await pImpl.claimRewards!(evmCtx, gInfo, way.claimParams, opts);
+          await pImpl.claimRewards!(evmCtx, gInfo, way.claimRewards, opts);
           // Rewards land in the user's remote address as separate tokens;
           // the pool position is unchanged.
           return harden({});
@@ -1163,7 +1159,7 @@ const stepFlow = async (
         const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
 
         const isSupply = 'src' in way;
-        const isClaim = 'claim' in way && way.claim;
+        const isClaim = 'claimRewards' in way && way.claimRewards;
 
         todo.push({
           how: way.how,

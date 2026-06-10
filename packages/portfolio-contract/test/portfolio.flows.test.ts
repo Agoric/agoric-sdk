@@ -3543,15 +3543,16 @@ test('nobleToAgoric.apply transfers uusdc from Noble ICA', async t => {
 test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
   const amount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const claimParams = {};
+  const claimRewards = true;
   const actual = wayFromSrcToDest({
     src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: '@Arbitrum',
     amount,
     fee: feeCall,
-    claimParams,
+    claimRewards,
   });
   t.deepEqual(actual, {
+    claimRewards: true,
     how: 'ERC4626',
     poolKey: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: 'Arbitrum',

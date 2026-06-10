@@ -690,7 +690,7 @@ test('USDN claim fails currently', async t => {
           dest: '@noble',
           src: 'USDN',
           amount: usdc.make(100n),
-          claim: true,
+          claimRewards: true,
         },
       ],
     },

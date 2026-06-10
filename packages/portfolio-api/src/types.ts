@@ -156,8 +156,7 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
-  claim?: boolean;
-  claimParams?: ClaimRewardsParams;
+  claimRewards?: true | ClaimRewardsParams;
 };
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
