@@ -14,8 +14,8 @@ per https://agents.md/
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.
 - `yarn lint:types`: Fast typecheck within a package (uses tsgo, the TypeScript 7 native preview); do this after changes.
-    - Watch mode for type errors in active workspaces: run `yarn run -T tsc --noEmit --incremental --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
-- `yarn typecheck-all` to do a fast typecheck over the whole repo (~3 seconds, using tsgo)
+    - Watch mode for type errors in active workspaces: run `yarn lint:types --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
+- `yarn typecheck-all` to do a fast typecheck over the whole repo (a few seconds, using tsgo)
 - `yarn format`: Format code via dprint; `yarn lint:format` to check only.
 - Git hooks: installed by `scripts/install-git-hooks.sh`.
   - Install or refresh hooks with `yarn hooks:install`.
