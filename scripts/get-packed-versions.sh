@@ -23,6 +23,7 @@ cd -- "$WORKDIR" 1>&2
 yarn install 1>&2
 yarn build 1>&2
 
+WORKDIR_ABS=$(pwd)
 npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   echo "dir=$dir" 1>&2
@@ -35,13 +36,14 @@ npm query .workspace | jq -r '.[].location' | while read -r dir; do
   name=$(jq -r .name < package.json)
   version=$(jq -r .version < package.json)
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
-  file="$(pwd)/package.tgz"
+  # ts-node-pack writes <stem>-<version>.tgz into the current directory.
+  file="$(pwd)/${stem}-${version}.tgz"
 
   # Clean up.
-  rm -f "${stem}"-v*.tgz
+  rm -f "${stem}"-v*.tgz "$file"
 
   # Create the tarball.
-  yarn pack 1>&2
+  "$WORKDIR_ABS/node_modules/.bin/ts-node-pack" . 1>&2
 
   if $cache_bust; then
     # Bust the cache!

@@ -22,7 +22,7 @@ If you modify any `package.json` files, you **must** run the lock file update sc
 
 ```bash
 # From repository root
-scripts/update-package-locks.sh
+scripts/maintenance/update-package-locks.sh
 ```
 
 This updates all yarn.lock files across the repository. This is critical because:

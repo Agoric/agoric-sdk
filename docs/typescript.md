@@ -77,37 +77,66 @@ The repo-wide `tsconfig-build-options.json` sets `emitDeclarationOnly: true`. Th
 
 Some `.ts` files contain actual runtime code (functions, constants) rather than just type definitions. Examples include type guard functions, EIP-712 message helpers, etc. These files need corresponding `.js` files when published to npm.
 
-Since `tsc` won't generate `.js` files (due to `emitDeclarationOnly`), we use `build-ts-to-js` to strip types and produce `.js` files.
+Since `tsc` won't generate `.js` files (due to `emitDeclarationOnly`), we use [`ts-node-pack`](https://github.com/turadg/ts-node-pack) at pack time to strip types and produce a tarball whose contents are plain `.js` + `.d.ts` with rewritten import specifiers.
 
-### Using `build-ts-to-js`
+### Using `ts-node-pack`
 
-The `build-ts-to-js` script uses `ts-blank-space` to transform `.ts` files into `.js` by replacing type annotations with whitespace. This preserves line numbers (no source maps needed) and is very fast.
+`ts-node-pack` is a wrapper around `tsc` + `npm pack` that runs entirely against a temp staging directory: it never mutates the source tree. For each publishable workspace it:
 
-Add it to your package's `prepack` script:
+1. Stages the package files into `mkdtemp()/package/`.
+2. Emits `.js` (via `ts-blank-space`) and `.d.ts` (via `tsc` with `rewriteRelativeImportExtensions`) into the staging dir.
+3. Rewrites `.ts` → `.js` specifiers in emitted `.d.ts` files and in `package.json` (`main`, `module`, `types`, `exports`, `bin`, `files`).
+4. Validates that no `.ts` specifier or missing entry point remains.
+5. Runs `npm pack` in the staging dir and moves the resulting `<name>-<version>.tgz` to the caller's CWD.
 
-```json
-{
-  "scripts": {
-    "prepack": "yarn run -T build-ts-to-js && yarn run -T tsc --build tsconfig.build.json && find src -name '*.ts' ! -name '*.d.ts' -delete",
-    "postpack": "git checkout -- '*.ts' && git clean -f '*.d.ts' '*.d.ts.map' '*.js'"
-  }
-}
+Because the source tree is untouched, **packages no longer need `prepack` / `postpack` scripts**. The previous in-place approach (`build-ts-to-js` + `tsc --build` + `find ... -delete` in `prepack`, then `git checkout -- '*.ts'` in `postpack`) has been removed.
+
+To pack a single package locally:
+
+```sh
+cd packages/<name>
+yarn run -T ts-node-pack .
+# produces e.g. agoric-foo-1.2.3.tgz in the current directory
 ```
 
-The script finds all `.ts` files in `src/` (excluding `.d.ts`) and generates corresponding `.js` files. During `prepack`:
-1. `build-ts-to-js` generates `.js` runtime files from `.ts` sources
-2. `tsc` generates `.d.ts` declaration files for all sources
-3. Original `.ts` source files are deleted (so only `.js` and `.d.ts` are published)
+To verify every publishable workspace packs cleanly (the same check CI runs in `test-all-packages.yml`):
 
-The `postpack` script restores `.ts` files from git and cleans up generated files.
+```sh
+scripts/packing/verify-package-exports.mjs --quiet
+# Snapshot the repo root and a scratch dir *before* the loop: the subshell's
+# `cd` would otherwise rewrite $PWD before the ts-node-pack/source paths expand.
+WORKSPACE=$(pwd)
+TARBALL_DIR=$(mktemp -d)
+trap 'rm -rf "$TARBALL_DIR"' EXIT
+npm query .workspace \
+  | jq -r '.[] | select(.private != true) | .location' \
+  | while read -r dir; do
+      (cd "$TARBALL_DIR" && "$WORKSPACE/node_modules/.bin/ts-node-pack" "$WORKSPACE/$dir") || exit 1
+      rm -f "$TARBALL_DIR"/*.tgz
+    done
+```
 
-### Why not two `tsc` passes?
+This mirrors the `Pack packages with ts-node-pack` step in
+`.github/workflows/test-all-packages.yml`; keep the two in sync if either changes.
 
-An alternative would be using two tsconfig files: one with `allowJs: false` to emit `.js` only for `.ts` files, and another for declarations. This was rejected because:
+### Publishing
 
-- Requires careful management of `allowJs`/`include`/`exclude` to avoid conflicts
-- More complex to maintain and understand
-- The `build-ts-to-js` approach is simpler: one tool for `.js`, one for `.d.ts`
+`yarn lerna publish` would otherwise pack tarballs through lerna's own pipeline (Arborist + npm-packlist on the source tree), which ships `.ts` files and `.ts` import specifiers. We instead pre-stage every publishable workspace into a `<pkg>/.ts-node-pack/` subdirectory and pass `--contents .ts-node-pack` to `lerna publish`, so lerna packs and uploads from the ts-node-pack output:
+
+1. `yarn lerna version ...` — bump versions in place. (We can't keep `lerna publish --canary` because the staging step has to see the post-bump versions; `--canary` is publish-only in lerna-lite, so we encode the SHA in `--preid` and use `--force-publish`.)
+2. `node scripts/packing/stage-with-ts-node-pack.mjs` — for each publishable workspace, run `ts-node-pack --skip-pack --stage-to <pkg>/.ts-node-pack --force`. ts-node-pack writes directly into that directory with `.ts → .js` rewrites in code, manifests, exports, and the `files` array; resolves `workspace:` deps against the local workspace version map (it walks up to the workspace root); and strips `devDependencies` + `scripts`.
+3. `yarn lerna publish from-package --contents .ts-node-pack ...` — lerna handles topological publish order, dist-tag, retries, OTP, and already-published detection, but tars from `<pkg>/.ts-node-pack/` and uploads `<pkg>/.ts-node-pack/package.json` as the registry manifest.
+4. `node scripts/packing/stage-with-ts-node-pack.mjs --clean` — remove the staging directories so the working tree is clean for downstream cache invariants.
+
+Both the after-merge dev-canary workflow (`.github/workflows/after-merge.yml`) and the local Verdaccio publish flow (`scripts/registry.sh`) follow this pattern. The `.ts-node-pack/` path is gitignored.
+
+To smoke-test the publish pipeline (version bump → stage → `lerna publish from-package --contents .ts-node-pack` → cleanup) against a local Verdaccio registry, run:
+
+```sh
+scripts/packing/smoketest-publishing.sh
+```
+
+This deliberately skips the dapp-offer-up "getting started" integration test that `scripts/registry.sh ci` would run afterward.
 
 ## Generating API docs
 

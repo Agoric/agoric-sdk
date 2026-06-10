@@ -3,8 +3,8 @@ set -ueo pipefail
 
 COMMAND=${1:-install}
 
-# cd to the script's directory
-cd "$(dirname -- "$(readlink -f -- "$0")")/.."
+# cd to the repo root (this script lives in scripts/maintenance/).
+cd "$(dirname -- "$(readlink -f -- "$0")")/../.."
 
 # Check if COREPACK_ROOT is set, which means we need to explicitly
 # use the corepack shims from it (otherwise recursive calls to
