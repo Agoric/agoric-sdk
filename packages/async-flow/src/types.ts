@@ -129,6 +129,11 @@ export type PreparationOptions = {
   endowmentTools?: EndowmentTools;
   panicHandler?: (e: any) => void;
 };
+
+export type AsyncFlowOptions = {
+  startEager?: boolean;
+};
+
 export type OutcomeKind = 'return' | 'throw';
 
 export type Outcome =

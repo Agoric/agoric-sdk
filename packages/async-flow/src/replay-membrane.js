@@ -13,38 +13,46 @@ import { makeEquate } from './equate.js';
  * @import {RemotableBrand} from '@endo/eventual-send';
  * @import {Callable, Passable, PassableCap} from '@endo/pass-style';
  * @import {Vow, VowTools, VowKit} from '@agoric/vow';
- * @import {LogStore} from '../src/log-store.js';
- * @import {Bijection} from '../src/bijection.js';
- * @import {Host, HostVow, LogEntry, Outcome} from '../src/types.js';
+ * @import {LogStore} from './log-store.js';
+ * @import {Bijection} from './bijection.js';
+ * @import {Host, HostVow, LogEntry, Outcome} from './types.js';
  */
 
 const { fromEntries, defineProperties, assign } = Object;
 
 /**
- * @param {object} arg
- * @param {LogStore} arg.log
- * @param {Bijection} arg.bijection
- * @param {VowTools} arg.vowTools
- * @param {(vowish: Promise | Vow) => void} arg.watchWake
- * @param {(problem: Error) => never} arg.panic
+ * @typedef {object} MakeReplayMembraneArg
+ * @property {LogStore} log
+ * @property {Bijection} bijection
+ * @property {VowTools} vowTools
+ * @property {(vowish: Promise | Vow) => void} watchWake
+ * @property {(problem: Error) => never} panic
+ * @property {boolean} [__eventualSendForTesting]
  */
-export const makeReplayMembrane = arg => {
+
+/**
+ * @param {MakeReplayMembraneArg} arg
+ * @returns {ReplayMembrane}
+ */
+export const makeReplayMembrane = arg => makeReplayMembraneKit(arg).membrane;
+harden(makeReplayMembrane);
+
+/**
+ * @param {MakeReplayMembraneArg} arg
+ * @returns {ReplayMembraneKit}
+ */
+export const makeReplayMembraneKit = arg => {
   const noDunderArg = /** @type {typeof arg} */ (
     Object.fromEntries(Object.entries(arg).filter(([k]) => !k.startsWith('__')))
   );
-  return makeReplayMembraneForTesting(noDunderArg);
+  return makeReplayMembraneKitForTesting(noDunderArg);
 };
+harden(makeReplayMembraneKit);
 
 /**
- * @param {object} arg
- * @param {LogStore} arg.log
- * @param {Bijection} arg.bijection
- * @param {VowTools} arg.vowTools
- * @param {(vowish: Promise | Vow) => void} arg.watchWake
- * @param {(problem: Error) => never} arg.panic
- * @param {boolean} [arg.__eventualSendForTesting] CAVEAT: Only for async-flow tests
+ * @param {MakeReplayMembraneArg} arg
  */
-export const makeReplayMembraneForTesting = ({
+export const makeReplayMembraneKitForTesting = ({
   log,
   bijection,
   vowTools,
@@ -62,11 +70,11 @@ export const makeReplayMembraneForTesting = ({
 
   const Panic = (template, ...args) => panic(makeError(X(template, ...args)));
 
-  const startGeneration = generation => {
-    Number.isSafeInteger(generation) ||
-      Fail`generation expected integer; got ${generation}`;
-    generation >= 0 ||
-      Fail`generation expected non-negative; got ${generation}`;
+  let generation;
+  const startGeneration = gen => {
+    Number.isSafeInteger(gen) || Fail`generation expected integer; got ${gen}`;
+    gen >= 0 || Fail`generation expected non-negative; got ${gen}`;
+    generation = gen;
   };
 
   // ////////////// Host or Interpreter to Guest ///////////////////////////////
@@ -673,7 +681,7 @@ export const makeReplayMembraneForTesting = ({
    */
   const unnestInterpreter = callIndex => {
     !stopped ||
-      Fail`This membrane stopped. Restart with new membrane ${replayMembrane}`;
+      Fail`This membrane stopped. Restart with new membrane ${membrane}`;
     callStack.length >= 1 ||
       // separate line so I can set a breakpoint
       Fail`Unmatched unnest: ${q(callIndex)}`;
@@ -701,18 +709,34 @@ export const makeReplayMembraneForTesting = ({
     }
   };
 
-  const stop = () => {
-    stopped = true;
-  };
-
-  const replayMembrane = Far('replayMembrane', {
+  const membrane = Far('replayMembrane', {
     hostToGuest,
     guestToHost,
     wake,
-    stop,
+    stop() {
+      stopped = true;
+    },
   });
-  return replayMembrane;
+  const flowInspector = Far('flowInspector', {
+    getLogDump() {
+      return hostToGuest(log.dump());
+    },
+    getLogIndex() {
+      return log.getIndex();
+    },
+    getGeneration() {
+      return generation;
+    },
+    isReplaying() {
+      return log.isReplaying();
+    },
+  });
+  return { membrane, flowInspector };
 };
-harden(makeReplayMembrane);
+harden(makeReplayMembraneKitForTesting);
 
-/** @typedef {ReturnType<typeof makeReplayMembrane>} ReplayMembrane */
+/**
+ * @typedef {ReturnType<typeof makeReplayMembraneKitForTesting>} ReplayMembraneKit
+ * @typedef {ReplayMembraneKit['membrane']} ReplayMembrane
+ * @typedef {ReplayMembraneKit['flowInspector']} FlowInspector
+ */
