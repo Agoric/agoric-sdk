@@ -928,7 +928,7 @@ const stepFlow = async (
         if ('src' in way) {
           await pImpl.supply(evmCtx, amount, gInfo, opts);
           return harden({ destPos: pos });
-        } else if ('claim' in way) {
+        } else if ('claim' in way && way.claim) {
           pImpl.claimRewards ||
             Fail`${q(way.how)} does not support claimRewards`;
           await pImpl.claimRewards!(evmCtx, gInfo, way.claimParams, opts);
