@@ -15,7 +15,7 @@
     "print:runutils-snapshot-cache-key": "node --import ts-blank-space/register ./test/tools/create-runutils-snapshot.ts --cache-key",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:types": "yarn run -T tsc",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "keywords": [],

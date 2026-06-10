@@ -26,7 +26,7 @@
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:types": "yarn run -T tsc",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "devDependencies": {
