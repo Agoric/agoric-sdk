@@ -146,14 +146,11 @@ jobs:
         run: yarn run build:submissions
         working-directory: a3p-integration
 
-      # run the typecheck-quick that local dev can rely on for fast feedback
-      - name: typecheck-quick
-        run: yarn typecheck-quick
-
-      # Also type-check under tsgo (TypeScript 7 native preview) so the repo
-      # stays green for the TS7 migration and cannot regress. tsgo is fast
-      # enough to cover the full tsconfig.check.json scope, a superset of
-      # typecheck-quick.
+      # run the typecheck-all that local dev can rely on for fast feedback.
+      # Uses tsgo (TypeScript 7 native preview) over the unified
+      # tsconfig.check.json, so the repo stays green for the TS7 migration
+      # and cannot regress. (TS 6 compatibility is gated per-package by
+      # typecheck-packages in the lint-primary job.)
       - name: typecheck-all
         run: yarn typecheck-all
 
