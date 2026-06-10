@@ -210,6 +210,7 @@ test('ymax0 contract addresses match golden snapshot', async t => {
     'gasService',
     'tokenMessenger',
     'tokenMessengerV2',
+    'oneInchRouter',
   ];
   checkContracts(t, golden, computed, shareFields, 'ymax0');
 });
