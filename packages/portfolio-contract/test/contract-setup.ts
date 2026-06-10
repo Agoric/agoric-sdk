@@ -306,8 +306,36 @@ export const setupTrader = async (
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
     ibcBridge.addMockAck(msg, ack);
   }
-  for (const { msg, ack } of values(makeCCTPTraffic())) {
-    ibcBridge.addMockAck(msg, ack);
+
+  const cctpTrafficParams = [
+    // Ethereum
+    {
+      dest: '0x5ea5b8bba287da59b100e85c6c5ec982e6f528ff',
+      destinationDomain: 0,
+    },
+    // Avalanche
+    {
+      dest: '0xfbc3e68cd36d341ed9252e2d0bb77871e736f1cf',
+      destinationDomain: 1,
+    },
+    // Arbitrum
+    {
+      dest: '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
+      destinationDomain: 3,
+    },
+  ];
+
+  for (const { dest, destinationDomain } of cctpTrafficParams) {
+    for (const { msg, ack } of values(
+      makeCCTPTraffic(
+        'noble1test',
+        `${3_333.33 * 1000000}`,
+        dest,
+        destinationDomain,
+      ),
+    )) {
+      ibcBridge.addMockAck(msg, ack);
+    }
   }
 
   let resolverMakersP: ReturnType<typeof getResolverMakers> | undefined;

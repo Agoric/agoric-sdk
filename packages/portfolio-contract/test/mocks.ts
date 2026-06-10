@@ -331,6 +331,7 @@ export const contractsMock = {
     Beefy_morphoSmokehouseUsdc_Ethereum:
       '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    ERC4626_vaultU2_Ethereum: '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
   },
   Optimism: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
@@ -377,7 +378,6 @@ export const contractsMock = {
     Beefy_morphoSmokehouseUsdc_Ethereum:
       '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
     Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
-    ERC4626_vaultU2_Ethereum: '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
   },
   Base: {

@@ -671,7 +671,9 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
       if (!destName)
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
-      const { protocol } = PoolPlaces[poolKey];
+      const { protocol, chainName } = PoolPlaces[poolKey];
+      destName === chainName ||
+        Fail`pool ${q(poolKey)} lives on ${q(chainName)}, not ${q(destName)}`;
       // TODO move this into metadata
       const feeRequired = ['Compound', 'Aave', 'Beefy', 'ERC4626'];
       moveDesc.fee ||
@@ -686,7 +688,6 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
             moveDesc.claimRewards === true ? {} : moveDesc.claimRewards,
         };
       }
-      // XXX check that destName is in protocol.chains
       return {
         how: protocol,
         poolKey,

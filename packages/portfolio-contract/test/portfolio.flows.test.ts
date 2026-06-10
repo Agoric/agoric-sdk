@@ -2186,9 +2186,9 @@ test('open portfolio with ERC4626 position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
         {
-          src: '@Arbitrum',
+          src: '@Ethereum',
           dest: 'ERC4626_vaultU2_Ethereum',
           amount,
           fee: feeCall,
@@ -2248,7 +2248,7 @@ test('withdraw from ERC4626 position', async t => {
       {
         flow: [
           {
-            dest: '@Arbitrum',
+            dest: '@Ethereum',
             src: 'ERC4626_vaultU2_Ethereum',
             amount: emptyAmount,
             fee: feeCall,
@@ -2301,7 +2301,7 @@ test('withdraw from Beefy position', async t => {
       {
         flow: [
           {
-            dest: '@Arbitrum',
+            dest: '@Avalanche',
             src: 'Beefy_re7_Avalanche',
             amount,
             fee: feeCall,
@@ -3546,15 +3546,28 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
   const claimRewards = true;
   const actual = wayFromSrcToDest({
     src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
-    dest: '@Arbitrum',
+    dest: '@Ethereum',
     amount,
     fee: feeCall,
     claimRewards,
   });
   t.deepEqual(actual, {
-    claimRewards: true,
+    claimRewards: {},
     how: 'ERC4626',
     poolKey: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
-    dest: 'Arbitrum',
+    dest: 'Ethereum',
   });
+});
+
+test('wayFromSrcToDest with different dest and poolKey should fail', t => {
+  const amount = AmountMath.make(USDC, 0n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  t.throws(() =>
+    wayFromSrcToDest({
+      src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+      dest: '@Arbitrum',
+      amount,
+      fee: feeCall,
+    }),
+  );
 });

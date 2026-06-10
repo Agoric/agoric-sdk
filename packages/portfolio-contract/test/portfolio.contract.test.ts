@@ -806,8 +806,13 @@ test('Withdraw from a Beefy position (future client)', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
-        { src: '@Arbitrum', dest: 'Beefy_re7_Avalanche', amount, fee: feeCall },
+        { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
+        {
+          src: '@Avalanche',
+          dest: 'Beefy_re7_Avalanche',
+          amount,
+          fee: feeCall,
+        },
       ],
     },
   );
@@ -833,12 +838,12 @@ test('Withdraw from a Beefy position (future client)', async t => {
       flow: [
         {
           src: 'Beefy_re7_Avalanche',
-          dest: '@Arbitrum',
+          dest: '@Avalanche',
           amount,
           fee: feeCall,
         },
         {
-          src: '@Arbitrum',
+          src: '@Avalanche',
           dest: '@agoric',
           amount,
         },
@@ -1958,9 +1963,9 @@ test('Withdraw from an ERC4626 position', async t => {
       flow: [
         { src: '<Deposit>', dest: '@agoric', amount },
         { src: '@agoric', dest: '@noble', amount },
-        { src: '@noble', dest: '@Arbitrum', amount, fee: feeAcct },
+        { src: '@noble', dest: '@Ethereum', amount, fee: feeAcct },
         {
-          src: '@Arbitrum',
+          src: '@Ethereum',
           dest: 'ERC4626_vaultU2_Ethereum',
           amount,
           fee: feeCall,
@@ -1990,12 +1995,12 @@ test('Withdraw from an ERC4626 position', async t => {
       flow: [
         {
           src: 'ERC4626_vaultU2_Ethereum',
-          dest: '@Arbitrum',
+          dest: '@Ethereum',
           amount,
           fee: feeCall,
         },
         {
-          src: '@Arbitrum',
+          src: '@Ethereum',
           dest: '@agoric',
           amount,
         },
