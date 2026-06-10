@@ -106,10 +106,10 @@ jobs:
       - run: yarn lint:eslint --quiet
 
       # XXX running tsc in every package is slow and redundant.
-      - run: yarn typecheck-all
+      - run: yarn typecheck-packages
 
       # multichain-testing is a standalone yarn project (not a workspace), so
-      # the root lint:eslint and typecheck-all don't cover it.
+      # the root lint:eslint and typecheck-packages don't cover it.
       - name: lint multichain-testing
         run: yarn install && yarn lint && yarn ava test/imports.test.ts
         working-directory: multichain-testing
@@ -151,10 +151,11 @@ jobs:
         run: yarn typecheck-quick
 
       # Also type-check under tsgo (TypeScript 7 native preview) so the repo
-      # stays green for the TS7 migration and cannot regress. Uses the same
-      # tsconfig.quickcheck.json scope as typecheck-quick.
-      - name: typecheck-tsgo
-        run: yarn typecheck-tsgo
+      # stays green for the TS7 migration and cannot regress. tsgo is fast
+      # enough to cover the full tsconfig.check.json scope, a superset of
+      # typecheck-quick.
+      - name: typecheck-all
+        run: yarn typecheck-all
 
       # Attempt the doc generation to catch build errors before
       # landing on master

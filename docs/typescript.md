@@ -13,8 +13,9 @@ Division of labor during the transition:
 | Task | Compiler | Why |
 | --- | --- | --- |
 | `lint:types` (root and per package) | `tsgo` | Fast dev loop. Type-checking emits nothing, so a preview compiler is low-risk here. |
-| `typecheck-tsgo` (CI quickcheck) | `tsgo` | Gates TS 7 cleanliness over `tsconfig.quickcheck.json`. |
-| `typecheck-all` (CI, via `lint:packages`) | `tsc` | TS 6 compatibility gate. |
+| `typecheck-all` (CI) | `tsgo` | Gates TS 7 cleanliness over `tsconfig.check.json`, the unified repo-wide config. Excludes only `a3p-integration`, `multichain-testing` (standalone yarn projects), and `swingset-runner` (not yet type-clean). |
+| `typecheck-packages` (CI, via `lint:packages`) | `tsc` | TS 6 compatibility gate: per-package check of every workspace with a `lint:types` script. |
+| `typecheck-quick` | `tsc` | TS 6 over `tsconfig.quickcheck.json`, which additionally excludes rarely-changing packages for speed. |
 | Declaration emit (`build-ts`, package `prepack`) | `tsc` | `tsgo` declaration-emit parity is not complete; emit stays on the stable compiler until 7.0 stable proves parity. |
 | ESLint type-aware rules | TS 6 API | typescript-eslint consumes the `typescript` package's JS API; `tsgo` has no compatible API yet. |
 | `a3p-integration` `lint:types` | `tsc` | Vendored dependencies aren't tsgo-clean (also excluded from quickcheck). |
