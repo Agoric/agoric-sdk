@@ -33,7 +33,7 @@ import {
  * @import {PriceRound} from '@agoric/inter-protocol/src/price/roundsManager.js';
  * @import {ContinuingInvitationSpec} from '@agoric/smart-wallet/src/invitations.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
- * @import {start as CommitteeStart} from '@agoric/governance/src/committee.js';
+ * @typedef {typeof import('@agoric/governance/src/committee.js').start} CommitteeStart
  * @import {Amount} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
  * @import {ERef} from '@agoric/vow';

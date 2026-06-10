@@ -451,8 +451,11 @@ const prepareVaultDirector = (
         getCollateralManager(brandIn) {
           collateralManagers.has(brandIn) ||
             Fail`Not a supported collateral type ${brandIn}`;
-          /** @type {VaultManager} */
-          return managerForCollateral(brandIn).getPublicFacet();
+          return /** @type {VaultManager} */ (
+            /** @type {unknown} */ (
+              managerForCollateral(brandIn).getPublicFacet()
+            )
+          );
         },
         getDebtIssuer() {
           return debtMint.getIssuerRecord().issuer;

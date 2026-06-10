@@ -9,9 +9,12 @@ const { freeze, entries } = Object;
 
 /**
  * Mirror the keys of an object to string values that match the key names. This
- * works well to define a TypeScript enum type compatible with erasable syntax:
+ * works well to define a TypeScript enum type compatible with erasable syntax.
+ * Declare the companion type with `@typedef` (whose name matches the const) so
+ * it resolves under both `tsc` and `tsgo`; the `@enum` tag is not honored by
+ * `tsgo`:
  *
- *    `@enum {(typeof MyEnum)[keyof typeof MyEnum]}`
+ *    `@typedef {(typeof MyEnum)[keyof typeof MyEnum]} MyEnum`
  *
  * The provided record must only map property names to either `null` or the
  * property name itself. The returned object has identical keys whose values are

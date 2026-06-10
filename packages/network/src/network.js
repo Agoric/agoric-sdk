@@ -410,7 +410,7 @@ const prepareInboundAttempt = (zone, makeConnection, { watch, finalizer }) => {
   return makeInboundAttempt;
 };
 
-/** @enum {typeof RevokeState[keyof typeof RevokeState]} */
+/** @typedef {typeof RevokeState[keyof typeof RevokeState]} RevokeState */
 const RevokeState = /** @type {const} */ ({
   NOT_REVOKED: 0,
   REVOKING: 1,

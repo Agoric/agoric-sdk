@@ -30,7 +30,7 @@ const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambien
  * interpreting it as a decimal count of bytes to retain.
  *
  * @param {Partial<XSnapOptions>} [xsnapOptions]
- * @returns {Promise<Awaited<ReturnType<xsnap>>>}
+ * @returns {Promise<Awaited<ReturnType<typeof xsnap>>>}
  */
 export const makeRetentiveVat = async xsnapOptions => {
   const vat = await xsnap({ ...makeXSnapOptions(io), ...xsnapOptions });
@@ -60,7 +60,7 @@ harden(makeRetentiveVat);
  * approximately the same amount of additional data.
  *
  * @param {object} options
- * @param {(newVat: Awaited<ReturnType<xsnap>>, loadedSnapshotStream: AsyncIterable<Uint8Array> | undefined) => Promise<void>} [options.afterCommand]
+ * @param {(newVat: Awaited<ReturnType<typeof xsnap>>, loadedSnapshotStream: AsyncIterable<Uint8Array> | undefined) => Promise<void>} [options.afterCommand]
  *   a callback to run after a vat handles its command, for e.g. interrogation and/or
  *   inserting delays between instances
  * @param {number} options.chunkCount the number of instances to spawn
@@ -75,7 +75,7 @@ export const spawnRetentiveVatSequence = async ({
   xsnapOptions,
 }) => {
   await null;
-  /** @type {Awaited<ReturnType<xsnap>> | undefined} */
+  /** @type {Awaited<ReturnType<typeof xsnap>> | undefined} */
   let vat;
   try {
     for (let i = 0; i < chunkCount; i += 1) {

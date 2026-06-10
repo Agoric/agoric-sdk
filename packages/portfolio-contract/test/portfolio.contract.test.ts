@@ -488,7 +488,7 @@ test('open portfolio with USDN, Aave positions', async t => {
   snapshotTimed(t, done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
-  delete tree.chainHub; // 'initial baggage' test captures this
+  delete (tree as Record<string, unknown>).chainHub; // 'initial baggage' test captures this
   // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
   snapshotTimed(t, tree, 'baggage after open with positions');
 });
@@ -545,7 +545,7 @@ test('open portfolio with target allocations', async t => {
   snapshotTimed(t, done.payouts, 'refund payouts');
 
   const tree = inspectMapStore(contractBaggage);
-  delete tree.chainHub; // 'initial baggage' test captures this
+  delete (tree as Record<string, unknown>).chainHub; // 'initial baggage' test captures this
   // XXX portfolio exo state not included UNTIL https://github.com/Agoric/agoric-sdk/issues/10950
   snapshotTimed(t, tree, 'baggage after open with target allocations');
 });

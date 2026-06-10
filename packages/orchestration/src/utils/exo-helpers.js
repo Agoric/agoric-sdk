@@ -29,7 +29,7 @@ export const makeVowExoHelpers = ({ watch }) => {
        * fulfilment of `inputV`. If `inputV` rejects, the returned vow rejects
        * with the same reason.
        *
-       * @template {readonly Record<PropertyKey, any>} R
+       * @template {Record<PropertyKey, any>} R
        * @template {PropertyKey} K
        * @param {EVow<R>} inputV
        * @param {K} prop

@@ -132,10 +132,10 @@ export const buildRootObject = async () => {
     /**
      * @param {{
      *   vatAdmin: ReturnType<
-     *     import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js')['buildRootObject']
+     *     (typeof import('@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js'))['buildRootObject']
      *   >;
      *   zoe: ReturnType<
-     *     import('@agoric/vats/src/vat-zoe.js')['buildRootObject']
+     *     (typeof import('@agoric/vats/src/vat-zoe.js'))['buildRootObject']
      *   >;
      * }} vats
      * @param {any} devices

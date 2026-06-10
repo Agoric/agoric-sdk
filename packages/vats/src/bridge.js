@@ -23,14 +23,14 @@ import { E } from '@endo/far';
  * loses the function's genericity. If `register` was async, we could use its
  * type directly, and it would remain generic.
  *
- * @template {BridgeId} BridgeId
+ * @template {BridgeId} B
  * @param {ERef<BridgeManager>} bridgeManager
- * @param {BridgeId} bridgeIdValue
+ * @param {B} bridgeIdValue
  * @param {Remote<BridgeHandler>} [handler]
- * @returns {Promise<ScopedBridgeManager<BridgeId>>}
+ * @returns {Promise<ScopedBridgeManager<B>>}
  */
 export const makeScopedBridge = (bridgeManager, bridgeIdValue, handler) =>
-  /** @type {Promise<ScopedBridgeManager<BridgeId>>} */ (
+  /** @type {Promise<ScopedBridgeManager<B>>} */ (
     E(bridgeManager).register(bridgeIdValue, handler)
   );
 

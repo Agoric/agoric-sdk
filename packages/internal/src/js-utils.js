@@ -49,7 +49,7 @@ export const logLevels = /** @type {const} */ ([
 ]);
 Object.freeze(logLevels);
 
-/** @typedef {(typeof logLevels)[keyof logLevels & number]} LogLevel */
+/** @typedef {(typeof logLevels)[keyof typeof logLevels & number]} LogLevel */
 
 /** @typedef {Pick<Console, LogLevel>} LimitedConsole */
 

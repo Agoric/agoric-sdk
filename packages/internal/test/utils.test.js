@@ -145,7 +145,9 @@ const { value: arbShallow } = fc.letrec(tie => ({
     arbBad = /** @type {Arbitrary<B>} */ (arbBad);
     const badBase =
       makeBad &&
-      fc.tuple(base, arbBad).map((testCase, bad) => makeBad(testCase, bad));
+      fc
+        .tuple(base, arbBad)
+        .map(([testCase, bad]) => makeBad(/** @type {T} */ (testCase), bad));
 
     const recurse = /** @type {Arbitrary<T>} */ (
       fc
@@ -650,13 +652,15 @@ test('tryJsonParse(invalidJson, replacer)', t => {
 });
 
 /**
- * @template {(...args: unknown[]) => any} F
+ * @typedef {(...args: unknown[]) => any} TryNowFn
+ */
+/**
  * @type {Macro<
  *   [
- *     F | ((...args: Parameters<F>) => never),
+ *     TryNowFn | ((...args: Parameters<TryNowFn>) => never),
  *     ((err: Error) => any) | undefined,
  *     {
- *       args?: Parameters<F>;
+ *       args?: Parameters<TryNowFn>;
  *       catches?: ThrowsExpectation<Error>;
  *       returns?: any;
  *       throws?: ThrowsExpectation<Error> & {
@@ -673,7 +677,7 @@ const testTryNow = test.macro((t, fn, projectError, details) => {
 
   /** @type {Error[]} */
   const caught = [];
-  /** @type {(err: Error) => ReturnType<F>} */
+  /** @type {(err: Error) => ReturnType<TryNowFn>} */
   const logAndProjectError = err => {
     caught.push(err);
     if (projectError) return projectError(err);
@@ -681,7 +685,11 @@ const testTryNow = test.macro((t, fn, projectError, details) => {
   };
 
   const callTryNow = () =>
-    tryNow(fn, logAndProjectError, .../** @type {Parameters<F>} */ (args));
+    tryNow(
+      fn,
+      logAndProjectError,
+      .../** @type {Parameters<TryNowFn>} */ (args),
+    );
   const result = throws ? t.throws(callTryNow, throws) : callTryNow();
 
   if (catches || throws) {

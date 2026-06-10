@@ -25,8 +25,6 @@ import {
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
- * @import {createCommand} from 'commander';
- * @import {execFileSync} from 'child_process';
  * @import {Writable} from 'stream';
  * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
@@ -42,11 +40,11 @@ const scaleDecimals = num => BigInt(Math.round(num * Number(COSMOS_UNIT)));
  * Prints JSON output to stdout and diagnostic info (like logs) to stderr
  *
  * @param {{
- *   createCommand: typeof createCommand,
+ *   createCommand: typeof import('commander').createCommand,
  *   env: Partial<Record<string, string>>,
- *   execFileSync: typeof execFileSync,
+ *   execFileSync: typeof import('child_process').execFileSync,
  *   now: () => number,
- *   setTimeout: typeof setTimeout,
+ *   setTimeout: typeof globalThis.setTimeout,
  *   stderr: Pick<Writable,'write'>,
  *   stdout: Pick<Writable,'write'>,
  * }} process

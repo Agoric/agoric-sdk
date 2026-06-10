@@ -233,7 +233,6 @@ export const makeExpectUnhandledRejectionMacro = ({
         ? async t => innerMacro.exec(t, ...args)
         : t => (0, args[0])(t, ...args);
 
-    /** @type {string} */
     return test.macro(
       /** @type {MacroDeclarationOptions<A, C>} */ ({
         title(providedTitle = '', ...args) {

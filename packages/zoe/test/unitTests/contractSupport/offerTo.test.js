@@ -159,7 +159,10 @@ test(`offerTo - basic usage`, async t => {
   });
 
   // The offerResult is as expected
-  t.is(await E(contractBUserSeat).getOfferResult(), successMsg);
+  t.is(
+    /** @type {any} */ (await E(contractBUserSeat).getOfferResult()),
+    successMsg,
+  );
 });
 
 test(`offerTo - violates offer safety of fromSeat`, async t => {

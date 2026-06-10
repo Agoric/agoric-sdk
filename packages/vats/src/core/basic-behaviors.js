@@ -113,10 +113,12 @@ export const makeVatsFromBundles = async ({
     };
   };
 
-  loadVat.resolve(makeLazyVatLoader());
+  loadVat.resolve(/** @type {VatLoader} */ (makeLazyVatLoader()));
 
   const criticalVatKey = await E(vats.vatAdmin).getCriticalVatKey();
-  loadCriticalVat.resolve(makeLazyVatLoader({ critical: criticalVatKey }));
+  loadCriticalVat.resolve(
+    /** @type {VatLoader} */ (makeLazyVatLoader({ critical: criticalVatKey })),
+  );
 };
 harden(makeVatsFromBundles);
 
@@ -288,7 +290,6 @@ export const produceStartGovernedUpgradable = async ({
    */
   const contractKits = zone.mapStore('GovernedContractKits');
 
-  /** @type {startGovernedUpgradable} */
   const startGovernedUpgradable = async ({
     installation,
     issuerKeywordRecord,

@@ -9,7 +9,7 @@ import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 /**
- * @import {MapStore} from '@agoric/store';
+ * @import {MapStore, WeakMapStore} from '@agoric/store';
  * @import {ERef} from '@agoric/vow';
  * @import {WellKnownName} from './types.ts';
  * @import {VattpVat} from '@agoric/swingset-vat/src/vats/vattp/vat-vattp.js';
@@ -369,7 +369,12 @@ export const makeVatSpace = (
     return vatInfo;
   };
 
-  const { provideAsync } = makeAtomicProvider(tmpStore);
+  // CreateVatResults has a `root: object` field that isn't statically Passable,
+  // so widen the value type for the atomic provider (the consume proxy below is
+  // likewise loosely typed).
+  const { provideAsync } = makeAtomicProvider(
+    /** @type {WeakMapStore<string, any>} */ (tmpStore),
+  );
   /** @type {NamedVatPowers['namedVat']['consume']} */
   // @ts-expect-error cast
   const consume = new Proxy(

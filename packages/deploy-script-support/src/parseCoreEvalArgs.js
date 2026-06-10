@@ -1,4 +1,8 @@
 /**
+ * @import {DeployScriptEndownments} from './externalTypes.js';
+ */
+
+/**
  * To customize proposals for multiple environments, we pass the "variant"
  * identifier in scriptArgs. The variant must match a knownVariant.
  *
@@ -11,10 +15,6 @@ export const parseScriptArgs = async (endowments, name, knownVariants) => {
   // const variantOrConfig = scriptArgs?.[0];
   const variantOrConfig =
     scriptArgs && scriptArgs.length > 0 ? scriptArgs : undefined;
-
-  /**
-   * @import {DeployScriptEndownments} from './externalTypes.js';
-   */
 
   console.log(`${name}`, variantOrConfig);
 

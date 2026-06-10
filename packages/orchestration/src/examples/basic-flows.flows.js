@@ -66,7 +66,7 @@ export const makePortfolioAccount = async (
     ),
   );
   const publicTopicEntries = harden(
-    /** @type {[string, ResolvedPublicTopic<unknown>][]} */ (
+    /** @type {[string, ResolvedPublicTopic<any>][]} */ (
       await Promise.all(
         accountEntries.map(async ([name, account]) => {
           const { account: topicRecord } = await account.getPublicTopics();

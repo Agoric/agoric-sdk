@@ -1,8 +1,7 @@
 import test from 'ava';
 
 /* global globalThis */
-// @ts-expect-error VatData not optional
-delete globalThis.VatData;
+delete (/** @type {any} */ (globalThis).VatData);
 
 /** @see present.test.js */
 test('methods available that throw', async t => {

@@ -49,11 +49,12 @@ export const start = (zcf, _privateArgs, baggage) => {
     },
     makeSetterInvitation() {
       return zcf.makeInvitation(
-        /** @type {HandleOffer<void, { value: unknown }>}} */
-        (seat, offerArgs) => {
-          seat.exit();
-          resolver.resolve(offerArgs.value);
-        },
+        /** @type {any} */ (
+          (seat, offerArgs) => {
+            seat.exit();
+            resolver.resolve(offerArgs.value);
+          }
+        ),
         'set value',
       );
     },

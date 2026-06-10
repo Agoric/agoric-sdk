@@ -82,7 +82,7 @@ test.serial('make IBC callbacks before upgrade', async t => {
   const { root: ibc } = await EV(vatStore).get('ibc');
   t.log('E(ibc).makeCallbacks(m1)');
   const dummyBridgeManager = null as unknown as ScopedBridgeManager<any>;
-  const callbacks = await EV(ibc).makeCallbacks(dummyBridgeManager);
+  const callbacks = await EV(ibc as any).makeCallbacks(dummyBridgeManager);
   t.truthy(callbacks);
   t.context.shared.ibcCallbacks = callbacks;
 });
@@ -104,7 +104,7 @@ test.serial('use IBC callbacks after upgrade', async t => {
   const { root: ibc } = await EV(vatStore).get('ibc');
   t.log('E(ibc).createHandlers(...)');
 
-  const h = await EV(ibc).createHandlers(ibcCallbacks);
+  const h = await EV(ibc as any).createHandlers(ibcCallbacks);
   t.log(h);
   t.truthy(h.protocolHandler, 'protocolHandler');
   t.truthy(h.bridgeHandler, 'bridgeHandler');

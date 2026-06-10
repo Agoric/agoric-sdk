@@ -33,6 +33,7 @@ harden(NetworkConfigShape);
  * @returns {asserts specimen is NetworkConfig}
  */
 
-export const assertNetworkConfig = specimen =>
+export function assertNetworkConfig(specimen) {
   mustMatch(specimen, NetworkConfigShape);
+}
 harden(assertNetworkConfig);

@@ -31,7 +31,7 @@ const parsePeers = strs => {
  * @param {object} args - The arguments object.
  * @param {'bootstrap' | 'devnet' |'emerynet' | 'local' } args.net - Agoric network shorthand (e.g., 'emerynet').
  * @param {string[]} args.peers - The peers to connect .
- * @param {childProcess.execFileSync} [args.execFileSync] - Optional execFileSync function.
+ * @param {typeof childProcess.execFileSync} [args.execFileSync] - Optional execFileSync function.
  * @returns {Promise<Record<string, CosmosChainInfo>>} A promise that resolves to the chain configuration details keyed by chain name.
  */
 

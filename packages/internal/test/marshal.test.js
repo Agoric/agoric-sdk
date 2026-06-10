@@ -223,6 +223,7 @@ const withNullAndNonNullSlots = test.macro(async (t, { withCache }) => {
   const sharedCap = Far('shared', { sentinel() {} });
 
   const mockSotToVal = new Map();
+  /** @type {WeakMap<object, string>} */
   const mockValToSlot = new WeakMap();
 
   let valueHookCalled = false;

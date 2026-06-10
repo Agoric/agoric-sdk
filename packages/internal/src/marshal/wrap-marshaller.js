@@ -248,7 +248,7 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
       }
     }
 
-    return harden(locallyResolvedCapSlots);
+    return harden(/** @type {(object | null)[]} */ (locallyResolvedCapSlots));
   };
 
   /**
@@ -263,7 +263,7 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
    */
   const mapCapsToSlots = async caps => {
     if (caps.length === 0) {
-      return caps;
+      return /** @type {Slot[]} */ (caps);
     }
     let hasRemoteCap = false;
     const { length } = caps;
@@ -294,8 +294,9 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
 
     await null;
     if (hasRemoteCap) {
-      const remotelyResolvedSlotsCapData =
-        await E(marshaller).toCapData(remoteCapsToResolve);
+      const remotelyResolvedSlotsCapData = await E(marshaller).toCapData(
+        /** @type {Passable} */ (remoteCapsToResolve),
+      );
       try {
         /** @type {(RemotableSlotWrapper<Slot> | null | undefined)[]} */
         const slotWrapperMappedSlots = slotWrapperMarshaller.fromCapData(
@@ -368,7 +369,9 @@ export const wrapRemoteMarshallerSendSlotsOnly = (
    */
   const toCapData = async val => {
     const capData = passThroughMarshaller.toCapData(val);
-    const mappedSlots = await mapCapsToSlots(capData.slots);
+    const mappedSlots = await mapCapsToSlots(
+      /** @type {object[]} */ (capData.slots),
+    );
     return harden({ ...capData, slots: mappedSlots });
   };
 

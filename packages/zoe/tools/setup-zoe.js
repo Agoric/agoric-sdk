@@ -68,7 +68,7 @@ export const setUpZoeForTest = async ({
   );
 
   /**
-   * @param {object} pathOrExports
+   * @param {string | object} pathOrExports
    * @returns {Promise<EndoZipBase64Bundle | TestBundle>}
    */
   const bundleModule = async pathOrExports => {
@@ -102,7 +102,7 @@ export const setUpZoeForTest = async ({
    * and return an Installation. The bundleID is random and should not be relied
    * upon in tests of this variety.
    *
-   * @param {object} pathOrExports
+   * @param {string | object} pathOrExports
    * @param {string} [bundleId]
    * @returns {Promise<Installation>}
    */
