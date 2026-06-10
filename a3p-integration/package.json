@@ -27,6 +27,8 @@
   "license": "Apache-2.0",
   "resolutions": {
     "@endo/bundle-source": "portal:../node_modules/@endo/bundle-source",
-    "@endo/compartment-mapper": "portal:../node_modules/@endo/compartment-mapper"
+    "@endo/compartment-mapper": "portal:../node_modules/@endo/compartment-mapper",
+    "@endo/promise-kit": "npm:^1.2.1",
+    "ses": "npm:^2.0.0"
   }
 }
