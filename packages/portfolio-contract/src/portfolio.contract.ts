@@ -209,6 +209,7 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
       remoteAccountFactory: M.string(),
       remoteAccountRouter: M.string(),
       remoteAccountImplementation: M.string(),
+      oneInchRouter: M.string(),
     },
   );
 
@@ -267,6 +268,8 @@ export type EVMContractAddresses = {
   gasService: `0x${string}`;
   cctpRelayer?: `0x${string}`;
   walletHelper: `0x${string}`;
+  /** 1inch AggregationRouterV6; mainnet-only (1inch has no testnet support) */
+  oneInchRouter?: `0x${string}`;
 } & Partial<BeefyContracts> &
   Partial<ERC4626Contracts>;
 

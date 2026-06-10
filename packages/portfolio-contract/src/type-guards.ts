@@ -326,12 +326,20 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
   ),
 );
 
-export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
-  how: M.string(),
-  amount: AnyNatAmountShape,
-  src: AnyString<AssetPlaceRef>(),
-  dest: AnyString<AssetPlaceRef>(),
-});
+export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf(
+  M.splitRecord(
+    {
+      how: M.string(),
+      amount: AnyNatAmountShape,
+      src: AnyString<AssetPlaceRef>(),
+      dest: AnyString<AssetPlaceRef>(),
+    },
+    {
+      phases: M.recordOf(M.string(), M.arrayOf(M.string())),
+      swap: M.record(),
+    },
+  ),
+);
 // #endregion
 
 // XXX deployment concern, not part of contract external interface

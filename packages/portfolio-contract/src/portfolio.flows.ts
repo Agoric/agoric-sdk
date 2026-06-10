@@ -75,6 +75,7 @@ import {
   provideEVMAccount,
   sendGMPContractCall,
   sendPermit2GMP,
+  swapRewardToUsdc,
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-evm.flows.ts';
@@ -150,6 +151,7 @@ type AssetMovement = {
   amount: Amount<'nat'>;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  swap?: FlowStep['swap'];
   apply: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
@@ -629,6 +631,7 @@ type Way =
   | { how: 'CCTPv2'; src: AxelarChain; dest: AxelarChain }
   | { how: 'withdrawToEVM'; dest: AxelarChain }
   | { how: 'CCTPtoUser'; dest: AxelarChain }
+  | { how: 'swap'; chain: AxelarChain }
   | {
       how: YieldProtocol;
       /** pool we're supplying */
@@ -719,6 +722,12 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
           // Otherwise, fall through to existing v1 routing which may be cheaper
           const srcIsEVM = keys(AxelarChain).includes(srcName);
           const destIsEVM = keys(AxelarChain).includes(destName);
+
+          // In-place reward-token -> USDC swap via 1inch (e.g. @Arbitrum -> @Arbitrum)
+          if (srcIsEVM && srcName === destName && moveDesc.swap) {
+            return { how: 'swap', chain: srcName as AxelarChain };
+          }
+
           // TODO HACK don't use magic number 2 for CCTPv2 signal
           if (
             srcIsEVM &&
@@ -1116,6 +1125,37 @@ const stepFlow = async (
               ctx.transferChannels.noble.counterPartyChannelId,
             );
             await CCTPv2.apply(evmCtx, amount, srcInfo, destInfo, ...optsArgs);
+            return {};
+          },
+        });
+
+        break;
+      }
+
+      case 'swap': {
+        const { chain } = way;
+        todo.push({
+          how: 'swap',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          ...(move.swap ? { swap: move.swap } : {}),
+          apply: async ({ [chain]: gInfo, agoric }, _tracer, ...optsArgs) => {
+            assert(gInfo && agoric, chain);
+            await gInfo.ready;
+            const evmCtx = await makeEVMCtx(
+              chain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await swapRewardToUsdc(
+              evmCtx,
+              gInfo,
+              amount,
+              move.swap,
+              ...optsArgs,
+            );
             return {};
           },
         });
