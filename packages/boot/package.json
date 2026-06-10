@@ -80,7 +80,7 @@
     "*.json"
   ],
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "typeCoverage": {
     "atLeast": 89.91

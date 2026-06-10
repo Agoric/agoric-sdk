@@ -115,7 +115,7 @@
     }
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "scripts": {
     "prepack-package": "scripts/packing/prepack-package.mjs",
