@@ -5,8 +5,8 @@ import { kser, kslot } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { buildSyscall } from './liveslots-helpers.js';
-import { makeMessage, makeStartVat, makeBringOutYourDead } from './util.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeMessage, makeStartVat, makeBringOutYourDead } from './util.js';
 
 const getPrefixedKeys = (map, prefix) => {
   const keys = [];

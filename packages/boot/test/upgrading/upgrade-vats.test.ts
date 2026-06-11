@@ -2,12 +2,12 @@ import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava
 
 import type { ExecutionContext, TestFn } from 'ava';
 
+import { Fail } from '@endo/errors';
+import { makeTagged } from '@endo/marshal';
 import type { IssuerKit } from '@agoric/ertp/src/types.js';
 import { BridgeId, deepCopyJsonable } from '@agoric/internal';
 import type { BankVat } from '@agoric/vats/src/vat-bank.js';
 import type { PriceAuthorityVat } from '@agoric/vats/src/vat-priceAuthority.js';
-import { Fail } from '@endo/errors';
-import { makeTagged } from '@endo/marshal';
 import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
 import {
   forkScenario,

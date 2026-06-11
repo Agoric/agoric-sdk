@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import util from 'node:util';
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
@@ -13,9 +16,6 @@ import {
   fetchEnvNetworkConfig,
   makeAgoricNames,
 } from '@agoric/client-utils';
-import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
-import util from 'node:util';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {

@@ -1,11 +1,11 @@
 /* eslint-disable @agoric/group-jsdoc-imports -- due to conflicting `start` values */
 
+import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 

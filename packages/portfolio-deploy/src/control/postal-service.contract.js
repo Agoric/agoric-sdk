@@ -1,10 +1,10 @@
 /** @file contract to deliver to addressees */
 
-import { makeTracer } from '@agoric/internal';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/eventual-send';
 import { M } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makeTracer } from '@agoric/internal';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 
 const depositFacetKey = 'depositFacet';
 

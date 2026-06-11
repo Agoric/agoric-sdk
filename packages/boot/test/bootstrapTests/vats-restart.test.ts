@@ -3,8 +3,8 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { Fail } from '@endo/errors';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { ScopedBridgeManager } from '@agoric/vats';
 import {
   makeBootTestContext,

@@ -2,8 +2,8 @@
 
 /// <reference types="ses" />
 
-import { keyMirror } from '@agoric/internal';
 import { M, objectMap } from '@endo/patterns';
+import { keyMirror } from '@agoric/internal';
 
 /**
  * @import {ClusterName, TypedPattern} from '@agoric/internal';

@@ -13,8 +13,8 @@ import {
 } from '@agoric/internal/src/metrics.js';
 import { makeLegacyMap } from '@agoric/store';
 
-import v8 from 'node:v8';
 import process from 'node:process';
+import v8 from 'node:v8';
 
 /** @import {Histogram, Meter as OTelMeter, MetricAttributes, ObservableCounter, ObservableUpDownCounter} from '@opentelemetry/api' */
 

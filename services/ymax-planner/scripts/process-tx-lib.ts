@@ -16,23 +16,23 @@ import {
 import { deeplyFulfilledObject, mustMatch, objectMap } from '@agoric/internal';
 
 import {
-  PublishedTxShape,
-  type PendingTx,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import {
+  PublishedTxShape,
+  type PendingTx,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
 
 import type { CaipChainId } from '@agoric/orchestration';
 import { loadConfig } from '../src/config.ts';
 import { CosmosRPCClient } from '../src/cosmos-rpc.ts';
-import { createEVMContext, prepareAbortController } from '../src/support.ts';
 import { makeEvmRpc, type EvmRpc } from '../src/evm-scanner.ts';
-import type { SimplePowers } from '../src/main.ts';
 import { makeSQLiteKeyValueStore } from '../src/kv-store.ts';
+import type { SimplePowers } from '../src/main.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { createEVMContext, prepareAbortController } from '../src/support.ts';
 import { makeNowISO } from '../src/utils.ts';
 import {
   parseStreamCell,

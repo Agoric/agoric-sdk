@@ -1,10 +1,10 @@
+import { E } from '@endo/far';
 // @ts-check
 import { makeMarshal, decodeToJustin } from '@endo/marshal';
-import { Shape as NetworkShape } from '@agoric/network';
 import { M, matches } from '@endo/patterns';
-import { E } from '@endo/far';
-import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
+import { pickFacet } from '@agoric/vat-data';
 import { makeVowExoHelpers } from '../utils/exo-helpers.js';
 
 const trace = makeTracer('PacketTools');
@@ -70,11 +70,9 @@ const just = obj => {
  * Add new watchers here as they are removed from service. Maybe someday
  * contract upgrade will allow us to prune this list.
  */
-const TOMBSTONED_WATCHERS = /** @type {const} */ (
-  [
-    // 'packetWasSentWithMetaWatcher', // deprecated but not yet tombstoned
-  ]
-);
+const TOMBSTONED_WATCHERS = /** @type {const} */ ([
+  // 'packetWasSentWithMetaWatcher', // deprecated but not yet tombstoned
+]);
 
 const { Vow$ } = NetworkShape; // TODO #9611
 

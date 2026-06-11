@@ -3,9 +3,9 @@ import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js'
 
 import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { makeDurableZone } from '@agoric/zone/durable.js';
-import { makeHeapZone } from '@agoric/zone';
 import { subscribeEach } from '@agoric/notifier';
+import { makeHeapZone } from '@agoric/zone';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { buildRootObject } from '../src/vat-bank.js';
 
 /**

@@ -1,12 +1,12 @@
 // @ts-check
 import '@endo/init/debug.js';
 
-import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
-import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
-import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
-import { agoric, mkTemp } from '@agoric/synthetic-chain';
 import test from 'ava';
 import { writeFile } from 'node:fs/promises';
+import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
+import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
+import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
+import { agoric, mkTemp } from '@agoric/synthetic-chain';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 
 /**

@@ -1,7 +1,7 @@
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
-import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';

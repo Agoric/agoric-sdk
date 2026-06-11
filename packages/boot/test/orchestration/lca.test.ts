@@ -4,8 +4,8 @@ import type { TestFn } from 'ava';
 
 import { Fail } from '@endo/errors';
 import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stake-bld.contract.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import {
   makeBootTestContext,
   withWalletFactory,

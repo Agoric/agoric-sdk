@@ -6,8 +6,8 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { GET_METHOD_NAMES } from '@endo/marshal';
 
-import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
  * @import {start as startOwnableCounter} from './ownable-counter.js';

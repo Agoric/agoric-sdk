@@ -9,6 +9,7 @@
  * @import {SmartWalletKit} from '@agoric/client-utils';
  */
 
+import { InvalidArgumentError } from 'commander';
 import {
   fetchEnvNetworkConfig,
   makeSmartWalletKit,
@@ -21,9 +22,8 @@ import {
   multiplyBy,
   parseRatio,
 } from '@agoric/ertp/src/ratio.js';
-import { InvalidArgumentError } from 'commander';
-import { outputActionAndHint } from './bridge-action.js';
 import { Offers } from '../clientSupport.js';
+import { outputActionAndHint } from './bridge-action.js';
 
 export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 

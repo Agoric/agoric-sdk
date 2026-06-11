@@ -1,8 +1,8 @@
+import { E } from '@endo/far';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
-import { E } from '@endo/far';
 import { makeChainHub } from '../exos/chain-hub.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 

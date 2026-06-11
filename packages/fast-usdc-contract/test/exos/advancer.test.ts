@@ -1,5 +1,10 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { TestFn } from 'ava';
+import { q } from '@endo/errors';
+import type { EReturn } from '@endo/far';
+import { Far } from '@endo/pass-style';
+import { M, mustMatch } from '@endo/patterns';
 import {
   decodeAddressHook,
   encodeAddressHook,
@@ -24,11 +29,6 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { Vow } from '@agoric/vow';
 import type { ZCFSeat, ZcfSeatKit } from '@agoric/zoe';
-import { q } from '@endo/errors';
-import type { EReturn } from '@endo/far';
-import { Far } from '@endo/pass-style';
-import { M, mustMatch } from '@endo/patterns';
-import type { TestFn } from 'ava';
 import { prepareAdvancer, stateShape } from '../../src/exos/advancer.ts';
 import type { LiquidityPoolKit } from '../../src/exos/liquidity-pool.ts';
 import {

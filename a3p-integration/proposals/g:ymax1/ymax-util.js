@@ -3,15 +3,15 @@ import { execFileSync } from 'node:child_process'; // TODO: use execa
 import * as path from 'node:path';
 import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
 import {
-  flags,
-  voteLatestProposalAndWait,
-  makeAgd,
-} from '@agoric/synthetic-chain';
-import {
   walletUpdates,
   makeActionId,
 } from '@agoric/deploy-script-support/src/wallet-utils.js';
 import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import {
+  flags,
+  voteLatestProposalAndWait,
+  makeAgd,
+} from '@agoric/synthetic-chain';
 import { sendWalletAction } from './wallet-util.js';
 
 const agd = makeAgd({ execFileSync }).withOpts({

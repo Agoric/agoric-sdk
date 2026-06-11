@@ -3,8 +3,8 @@
 import { E } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { UserSeat, ZoeService } from '@agoric/zoe';
-import type { ResolverInvitationMakers } from '../src/resolver/resolver.exo.js';
 import type { TxStatus } from '../src/resolver/constants.js';
+import type { ResolverInvitationMakers } from '../src/resolver/resolver.exo.js';
 
 /**
  * Helper to get resolver makers from a creator facet.

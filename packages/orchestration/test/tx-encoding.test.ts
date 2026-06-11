@@ -1,5 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import {
   MsgWithdrawDelegatorReward as MsgWithdrawDelegatorRewardType,
@@ -7,7 +8,6 @@ import {
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import { MsgDelegateResponse as MsgDelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
 
 const Any = CodecHelper(AnyType);

@@ -1,9 +1,9 @@
+import { Far } from '@endo/marshal';
 import {
   makeRatioFromAmounts,
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { Far } from '@endo/marshal';
 
 /**
  * @import {Key, Pattern} from '@endo/patterns';

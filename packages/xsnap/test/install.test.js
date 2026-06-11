@@ -1,5 +1,5 @@
+import test from 'ava';
 import { createHash } from 'node:crypto';
-import { createServer } from 'node:http';
 import {
   mkdtemp,
   readFile,
@@ -8,10 +8,10 @@ import {
   copyFile,
   mkdir,
 } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { $ } from 'execa';
-import test from 'ava';
 import {
   mapOsArchToTarget,
   targetToBuildPlatform,

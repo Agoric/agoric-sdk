@@ -1,11 +1,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { spy, spyOn } from 'tinyspy';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
-import { spy, spyOn } from 'tinyspy';
 
-import type { EvmHash } from '@agoric/fast-usdc/src/types.js';
 import type { ExecutionContext } from 'ava';
+import type { EvmHash } from '@agoric/fast-usdc/src/types.js';
 import type { StatusManager } from '../../src/exos/status-manager.js';
 import { startForwardRetrier } from '../../src/utils/forward-retrier.js';
 import { makeRouteHealth } from '../../src/utils/route-health.js';

@@ -1,6 +1,6 @@
 import { q, Fail, annotateError, X } from '@endo/errors';
-import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@endo/patterns';
+import { isPromise } from '@endo/promise-kit';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';

@@ -1,15 +1,15 @@
-/* eslint-env node */
-import type { ParamsSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
-import type { JsonSafe } from '@agoric/cosmic-proto/json-safe';
-import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
-import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
-import { assert, Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
 import type { TestFn } from 'ava';
 import anyTest from 'ava';
+import { assert, Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
+import type { JsonSafe } from '@agoric/cosmic-proto/json-safe';
+/* eslint-env node */
+import type { ParamsSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
+import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import type { SwingSetConfigDescriptor } from '@agoric/swingset-vat';
 import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
 import {
   DEFAULT_SIM_SWINGSET_PARAMS,

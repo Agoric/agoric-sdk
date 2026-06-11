@@ -1,5 +1,5 @@
-import { makeScalarMapStore } from '@agoric/vat-data';
 import { Fail } from '@endo/errors';
+import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import { assertRightsConserved } from './rightsConservation.js';

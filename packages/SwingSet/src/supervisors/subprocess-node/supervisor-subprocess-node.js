@@ -3,23 +3,23 @@
 // this file is loaded at the start of a new subprocess
 import '@endo/init';
 
-import anylogger from '@agoric/internal/vendor/anylogger.js';
-import fs from 'node:fs';
 import { Buffer } from 'node:buffer';
+import fs from 'node:fs';
 import process from 'node:process';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import { assert, X, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { encode, decode } from '@agoric/internal/src/netstring.js';
 import {
   makeLiveSlots,
   insistVatDeliveryObject,
   insistVatSyscallResult,
 } from '@agoric/swingset-liveslots';
-import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
-import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { encode, decode } from '@agoric/internal/src/netstring.js';
 import { makeDummyMeterControl } from '../../kernel/dummyMeterControl.js';
 import {
   makeSupervisorDispatch,

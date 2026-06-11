@@ -1,5 +1,5 @@
-import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
 import { E, passStyleOf } from '@endo/far';
+import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
 import { makeAssetInfo } from './chain-name-service.js';
 import { fromExternalConfig } from './config-marshal.js';
 /**

@@ -1,7 +1,7 @@
-/* globals globalThis, process */
-import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { Resource } from '@opentelemetry/resources';
+/* globals globalThis, process */
+import { MeterProvider } from '@opentelemetry/sdk-metrics';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
 /**

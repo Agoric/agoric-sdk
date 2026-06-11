@@ -1,7 +1,7 @@
-import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makeMarshal } from '@endo/marshal';
+import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
 
 const trace = makeTracer('FUCoreEval');
 

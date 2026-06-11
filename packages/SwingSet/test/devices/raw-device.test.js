@@ -1,10 +1,9 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
-import { initSwingStore } from '@agoric/swing-store';
 import { kunser } from '@agoric/kmarshal';
+import { initSwingStore } from '@agoric/swing-store';
 
 import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';

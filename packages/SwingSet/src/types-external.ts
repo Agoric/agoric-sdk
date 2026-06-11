@@ -10,15 +10,6 @@ import type { CapData } from '@endo/marshal';
 import type { LimitedConsole } from '@agoric/internal/src/js-utils.js';
 import type { xsnap } from '@agoric/xsnap';
 
-// Types sourced elsewhere but re-exported as part of the SwingSet external API
-// (see the `export type { ... }` block below).
-import type {
-  Message,
-  VatDeliveryObject,
-  VatDeliveryResult,
-  VatSyscallObject,
-  VatSyscallResult,
-} from '@agoric/swingset-liveslots';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import type {
   SnapStore,
@@ -28,11 +19,20 @@ import type {
   SwingStoreKernelStorage,
   SwingStoreHostStorage,
 } from '@agoric/swing-store';
-import type { makeVatKeeper } from './kernel/state/vatKeeper.js';
-import type { StartDuration } from './kernel/slogger.js';
+// Types sourced elsewhere but re-exported as part of the SwingSet external API
+// (see the `export type { ... }` block below).
+import type {
+  Message,
+  VatDeliveryObject,
+  VatDeliveryResult,
+  VatSyscallObject,
+  VatSyscallResult,
+} from '@agoric/swingset-liveslots';
 import type { SlogProps } from './controller/controller.js';
-import type { KernelKeeper } from './kernel/state/kernelKeeper.js';
 import type { Mailbox, MailboxExport } from './devices/mailbox/mailbox.js';
+import type { StartDuration } from './kernel/slogger.js';
+import type { KernelKeeper } from './kernel/state/kernelKeeper.js';
+import type { makeVatKeeper } from './kernel/state/vatKeeper.js';
 
 export type {
   Message,

@@ -5,11 +5,11 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { ExecutionContext, TestFn } from 'ava';
 import {
   defaultMarshaller,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
-import type { ExecutionContext, TestFn } from 'ava';
 import {
   insistManagerType,
   makeSwingsetHarness,

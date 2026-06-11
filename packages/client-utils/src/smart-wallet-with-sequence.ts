@@ -2,14 +2,14 @@
  * @file Smart wallet wrapper with queue-based transaction sequence management
  */
 
-import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import { BroadcastTxError, type SignerData } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
+import type { BridgeAction } from '@agoric/smart-wallet/src/smartWallet.js';
+import type { TxSequencer } from './sequence-manager.js';
 import type {
   SigningSmartWalletKit,
   SmartWalletKit,
 } from './signing-smart-wallet-kit.js';
-import type { TxSequencer } from './sequence-manager.js';
 
 type QueuedThunk<T> = {
   label: string;

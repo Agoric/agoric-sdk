@@ -1,8 +1,7 @@
 import test from 'ava';
-import { ethers } from 'ethers';
-import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { objectMap } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
+import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 import {
   TxStatus,
@@ -13,21 +12,22 @@ import type {
   TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import { boardSlottingMarshaller } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
-import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
-import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
-import { prepareAbortController } from '../src/support.ts';
-import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
   processPendingTxEvents,
   processInitialPendingTransactions,
 } from '../src/engine.ts';
+import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
   getDerivedOutcome,
   getIgnoredTx,
   getResolvedTx,
   setDerivedOutcome,
 } from '../src/kv-store.ts';
+import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
+import { prepareAbortController } from '../src/support.ts';
+import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
 import {
   createMockPendingTxOpts,
   createMockPendingTxEvent,

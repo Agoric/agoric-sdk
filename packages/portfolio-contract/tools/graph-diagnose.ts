@@ -6,16 +6,16 @@ import { Fail, q } from '@endo/errors';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 import { tryNow } from '@agoric/internal/src/ses-utils.js';
+import type {
+  AssetPlaceRef,
+  InterChainAccountRef,
+} from '@agoric/portfolio-api';
 import {
   isDepositFromChainRef,
   isInstrumentId,
   isInterChainAccountRef,
   isWithdrawToChainRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
-import type {
-  AssetPlaceRef,
-  InterChainAccountRef,
-} from '@agoric/portfolio-api';
 import { chainOf } from './network/buildGraph.ts';
 
 import {

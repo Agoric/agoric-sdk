@@ -1,11 +1,11 @@
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { hexToBytes } from '@noble/hashes/utils';
+import { type Abi } from 'viem';
+import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
 /**
  * @file Tests for EVM call batch facade helpers.
  */
 import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
-import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { hexToBytes } from '@noble/hashes/utils';
-import { type Abi } from 'viem';
 import {
   makeEvmAbiCallBatch,
   makeGmpBuilder,

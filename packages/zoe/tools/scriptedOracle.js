@@ -1,6 +1,6 @@
-import { TimeMath } from '@agoric/time';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { TimeMath } from '@agoric/time';
 
 /**
  * @import {Installation, ZoeService} from '@agoric/zoe';

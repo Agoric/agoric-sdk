@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { Far } from '@endo/far';
-import { getCopyMapEntries, M } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
+import { getCopyMapEntries, M } from '@agoric/store';
 import {
   prepareExo,
   provideDurableMapStore,

@@ -2,10 +2,10 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import type { EReturn } from '@endo/far';
-import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import type { AccountId } from '@agoric/orchestration';
-import { setupFastUsdcTest } from '../supports.js';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { makeSupportsCctp } from '../../src/utils/cctp.ts';
+import { setupFastUsdcTest } from '../supports.js';
 
 type Common = EReturn<typeof setupFastUsdcTest>;
 

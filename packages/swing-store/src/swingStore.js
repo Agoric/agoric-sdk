@@ -8,16 +8,16 @@ import sqlite3 from 'better-sqlite3';
 import { Fail, q } from '@endo/errors';
 
 import { attenuate } from '@agoric/internal';
-import { makeKVStore } from '@agoric/internal/src/kv-store.js';
 import { TRUE } from '@agoric/internal/src/js-utils.js';
+import { makeKVStore } from '@agoric/internal/src/kv-store.js';
 
-import { dbFileInDirectory, getKVStoreKeyType } from './util.js';
-import { makeTranscriptStore } from './transcriptStore.js';
-import { makeSnapStore } from './snapStore.js';
 import { makeBundleStore } from './bundleStore.js';
 import { createSHA256 } from './hasher.js';
-import { makeSnapStoreIO } from './snapStoreIO.js';
 import { doRepairMetadata } from './repairMetadata.js';
+import { makeSnapStore } from './snapStore.js';
+import { makeSnapStoreIO } from './snapStoreIO.js';
+import { makeTranscriptStore } from './transcriptStore.js';
+import { dbFileInDirectory, getKVStoreKeyType } from './util.js';
 
 // https://github.com/WiseLibs/better-sqlite3/blob/HEAD/docs/api.md#new-databasepath-options
 const IN_MEMORY = ':memory:';

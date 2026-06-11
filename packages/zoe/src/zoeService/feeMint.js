@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import {
   AssetKind,
   BrandShape,
@@ -11,7 +12,6 @@ import {
   provide,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { Fail, q } from '@endo/errors';
 import { FeeMintAccessShape } from '../typeGuards.js';
 
 /**

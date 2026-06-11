@@ -1,3 +1,7 @@
+import { assert } from '@endo/errors';
+import { E, Far } from '@endo/far';
+import { Nat } from '@endo/nat';
+import { makePromiseKit } from '@endo/promise-kit';
 // @ts-check
 /* eslint-disable jsdoc/check-param-names */
 /* global harden */
@@ -6,15 +10,11 @@ import {
   makeVstorageKit,
   makeSmartWalletKitFromVstorageKit,
 } from '@agoric/client-utils';
-import { assert } from '@endo/errors';
-import { E, Far } from '@endo/far';
-import { Nat } from '@endo/nat';
-import { makePromiseKit } from '@endo/promise-kit';
 import { makeTracer, toCLIOptions } from '@agoric/internal';
+import { makeVStorage } from './batchQuery.js';
 import { makeAgd, makeCopyFiles } from './chaind-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
-import { makeVStorage } from './batchQuery.js';
 import { makeRetryUntilCondition } from './sleep.js';
 
 /**

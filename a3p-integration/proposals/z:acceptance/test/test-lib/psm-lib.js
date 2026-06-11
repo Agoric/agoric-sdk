@@ -1,7 +1,8 @@
 /* eslint-env node */
 
-import { execa } from 'execa';
+import fsp from 'node:fs/promises';
 import { getNetworkConfig } from 'agoric/src/helpers.js';
+import { execa } from 'execa';
 import {
   boardSlottingMarshaller,
   makeFromBoard,
@@ -11,6 +12,7 @@ import {
 } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import { deepMapObject } from '@agoric/internal';
+import { NonNullish } from '@agoric/internal/src/errors.js';
 import {
   addUser,
   agd,
@@ -24,8 +26,6 @@ import {
   mkTemp,
   VALIDATORADDR,
 } from '@agoric/synthetic-chain';
-import fsp from 'node:fs/promises';
-import { NonNullish } from '@agoric/internal/src/errors.js';
 import { getBalances } from './utils.js';
 
 /** @import {Result as ExecaResult, ExecaError} from 'execa';

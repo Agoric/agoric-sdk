@@ -1,15 +1,14 @@
 // @ts-nocheck
 /* global FinalizationRegistry WeakRef */
-// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import * as childProcess from 'node:child_process';
 import fs from 'node:fs';
 import * as os from 'node:os';
 import { tmpName } from 'tmp';
-import { xsnap } from '@agoric/xsnap';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
+import { xsnap } from '@agoric/xsnap';
 
 function makeVictim() {
   const victim = { doomed: 'oh no' };

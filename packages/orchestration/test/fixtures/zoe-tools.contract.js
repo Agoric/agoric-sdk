@@ -3,14 +3,14 @@
  *   around `zoeTools.localTransfer` and `zoeTools.withdrawToSeat`
  */
 
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { withOrchestration } from '../../src/utils/start-helper.js';
-import { prepareChainHubAdmin } from '../../src/exos/chain-hub-admin.js';
-import * as flows from './zoe-tools.flows.js';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import * as sharedFlows from '../../src/examples/shared.flows.js';
+import { prepareChainHubAdmin } from '../../src/exos/chain-hub-admin.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import { withOrchestration } from '../../src/utils/start-helper.js';
+import * as flows from './zoe-tools.flows.js';
 
 const { values } = Object;
 

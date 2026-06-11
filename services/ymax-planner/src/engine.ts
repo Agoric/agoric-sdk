@@ -18,14 +18,14 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import {
   PublishedTxShape,
   type PendingTx,
   type TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import {
-  TxStatus,
-  TxType,
-} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
   FlowDetail,
   PoolKey as InstrumentId,
@@ -39,8 +39,6 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
-import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
-import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
 import {
   mustMatch,
   naturalCompare,
@@ -57,25 +55,13 @@ import type {
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
+import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
+import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
 
-import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type {
-  EvmChain,
-  EvmContext,
-  HandlePendingTxOpts,
-} from './pending-tx-manager.ts';
-import { handlePendingTx } from './pending-tx-manager.ts';
-import rateLimitedSource from './rate-limited-source.ts';
-import type { BalanceQueryPowers } from './plan-deposit.ts';
-import {
-  getNonDustBalances,
-  planDepositToAllocations,
-  planRebalanceToAllocations,
-  planWithdrawFromAllocations,
-} from './plan-deposit.ts';
 import {
   deleteDerivedOutcome,
   getIgnoredTx,
@@ -83,6 +69,20 @@ import {
   setIgnoredTx,
   setResolvedTx,
 } from './kv-store.ts';
+import type {
+  EvmChain,
+  EvmContext,
+  HandlePendingTxOpts,
+} from './pending-tx-manager.ts';
+import { handlePendingTx } from './pending-tx-manager.ts';
+import type { BalanceQueryPowers } from './plan-deposit.ts';
+import {
+  getNonDustBalances,
+  planDepositToAllocations,
+  planRebalanceToAllocations,
+  planWithdrawFromAllocations,
+} from './plan-deposit.ts';
+import rateLimitedSource from './rate-limited-source.ts';
 import { UserInputError } from './support.ts';
 import {
   encodedKeyToPath,

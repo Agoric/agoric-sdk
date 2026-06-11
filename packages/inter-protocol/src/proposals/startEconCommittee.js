@@ -1,9 +1,9 @@
+import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
 import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
 
 /**
  * @import {EconomyBootstrapPowers} from './econ-behaviors.js';

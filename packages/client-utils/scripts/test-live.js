@@ -2,8 +2,8 @@
 // @ts-check
 import '@endo/init/legacy.js';
 
-import process from 'node:process';
 import assert from 'node:assert/strict';
+import process from 'node:process';
 
 import { makeAgoricQueryClient } from '../dist/clients.js';
 

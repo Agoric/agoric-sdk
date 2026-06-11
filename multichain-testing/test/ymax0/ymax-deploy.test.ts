@@ -4,17 +4,6 @@
 /* global globalThis */
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
-import {
-  LOCAL_CONFIG,
-  makeSmartWalletKit,
-  makeVstorageKit,
-  type VStorage,
-} from '@agoric/client-utils';
-import {
-  denomHash,
-  type CosmosChainInfo,
-  type IBCConnectionInfo,
-} from '@agoric/orchestration';
 import type { TestFn } from 'ava';
 import {
   makeFlowPath,
@@ -23,7 +12,18 @@ import {
   PortfolioStatusShapeExt,
   type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import {
+  LOCAL_CONFIG,
+  makeSmartWalletKit,
+  makeVstorageKit,
+  type VStorage,
+} from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
+import {
+  denomHash,
+  type CosmosChainInfo,
+  type IBCConnectionInfo,
+} from '@agoric/orchestration';
 
 const { fromEntries } = Object;
 

@@ -15,16 +15,16 @@ import type { TestFn } from 'ava';
 
 import { makeSwingsetHarness } from '@aglocal/boot/tools/supports.js';
 
-import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
-import { makeArchiveSnapshot, type SnapStoreDebug } from '@agoric/swing-store';
-import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { BridgeHandler } from '@agoric/vats';
-import { keyEQ } from '@endo/patterns';
 import fs from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { keyEQ } from '@endo/patterns';
 import tmp from 'tmp';
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
+import { makeArchiveSnapshot, type SnapStoreDebug } from '@agoric/swing-store';
+import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
+import type { BridgeHandler } from '@agoric/vats';
 import { makeSimulation } from './fu-sim-iter.js';
 import {
   makeWalletFactoryContext,

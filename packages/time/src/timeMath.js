@@ -1,5 +1,5 @@
-import { Nat } from '@endo/nat';
 import { Fail, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
 import { mustMatch } from '@agoric/store';
 import { RelativeTimeRecordShape, TimestampRecordShape } from './typeGuards.js';
 

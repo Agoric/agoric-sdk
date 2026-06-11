@@ -1,3 +1,6 @@
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   GovernorFacetShape,
@@ -18,9 +21,6 @@ import {
   TopicsRecordShape,
   unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import {
   provideVaultParamManagers,

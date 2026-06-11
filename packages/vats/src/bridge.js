@@ -1,6 +1,6 @@
 import { Fail, X } from '@endo/errors';
-import { M } from '@agoric/store';
 import { E } from '@endo/far';
+import { M } from '@agoric/store';
 
 /**
  * @import {BridgeId} from '@agoric/internal';

@@ -1,9 +1,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
-import { heapVowE as E } from '@agoric/vow/vat.js';
-import { makeHeapZone } from '@agoric/zone';
 import { getInterfaceOf } from '@endo/far';
 import { prepareVowTools } from '@agoric/vow';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import { makeHeapZone } from '@agoric/zone';
 import { makeICAChannelAddress } from '../src/utils/address.js';
 import { setupFakeNetwork } from '../tools/network-fakes.js';
 

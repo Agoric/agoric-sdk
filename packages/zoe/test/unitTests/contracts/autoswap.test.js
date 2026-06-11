@@ -13,9 +13,9 @@ import {
   scaleForAddLiquidity,
   updatePoolState,
 } from '../../autoswapJig.js';
-import { setup } from '../setupBasicMints.js';
-import { installationPFromSource } from '../installFromSource.js';
 import { assertOfferResult, assertPayoutAmount } from '../../zoeTestHelpers.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { setup } from '../setupBasicMints.js';
 
 /**
  * @import {AutoswapPublicFacet} from '../../../src/contracts/types.js';

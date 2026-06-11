@@ -1,5 +1,5 @@
-import djson from 'deterministic-json';
 import TOML from '@iarna/toml';
+import djson from 'deterministic-json';
 import * as Tokens from '@agoric/internal/src/tokens.js';
 
 export const STAKING_MAX_VALIDATORS = 150;

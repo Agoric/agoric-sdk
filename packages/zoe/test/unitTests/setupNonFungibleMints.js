@@ -1,6 +1,6 @@
 import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
-import { makeZoeForTest } from '../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
 
 /**
  * @import {Brand} from '@agoric/ertp';

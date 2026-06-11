@@ -1,6 +1,8 @@
 import { inspect } from 'node:util';
 
-import type { VowTools } from '@agoric/vow';
+import type { Guarded } from '@endo/exo';
+import { E, Far } from '@endo/far';
+import { BridgeId, makeTracer } from '@agoric/internal';
 import {
   base64ToBytes,
   prepareEchoConnectionKit,
@@ -14,7 +16,6 @@ import type {
   IBCConnectionID,
   IBCPortID,
 } from '@agoric/network/ibc';
-import type { Zone } from '@agoric/zone';
 import type {
   IBCMethod,
   IBCEvent,
@@ -24,9 +25,8 @@ import {
   prepareCallbacks as prepareIBCCallbacks,
   prepareIBCProtocol,
 } from '@agoric/vats/src/ibc.js';
-import { BridgeId, makeTracer } from '@agoric/internal';
-import { E, Far } from '@endo/far';
-import type { Guarded } from '@endo/exo';
+import type { VowTools } from '@agoric/vow';
+import type { Zone } from '@agoric/zone';
 import {
   defaultMockAckMap,
   errorAcknowledgments,

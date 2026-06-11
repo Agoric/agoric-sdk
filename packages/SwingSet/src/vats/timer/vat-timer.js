@@ -1,7 +1,9 @@
 import { assert } from '@endo/errors';
 import { Far, E, passStyleOf } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
+import { makePromiseKit } from '@endo/promise-kit';
+import { makeScalarWeakMapStore } from '@agoric/store';
+import { TimeMath } from '@agoric/time';
 import {
   provideKindHandle,
   provideDurableMapStore,
@@ -10,8 +12,6 @@ import {
   prepareKind,
   prepareSingleton,
 } from '@agoric/vat-data';
-import { makeScalarWeakMapStore } from '@agoric/store';
-import { TimeMath } from '@agoric/time';
 
 /**
  * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';

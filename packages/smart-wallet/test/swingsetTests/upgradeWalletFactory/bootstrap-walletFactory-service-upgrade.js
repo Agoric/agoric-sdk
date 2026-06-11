@@ -1,5 +1,8 @@
 // @ts-check
 import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
@@ -7,9 +10,6 @@ import { makeNameHubKit } from '@agoric/vats';
 import { makeAgoricNamesAccess } from '@agoric/vats/src/core/utils.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {AdminFacet, InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';

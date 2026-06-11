@@ -1,7 +1,7 @@
 // @ts-check
 
-import { AmountMath } from '@agoric/ertp';
 import { Fail } from '@endo/errors';
+import { AmountMath } from '@agoric/ertp';
 
 /**
  * @import {Amount, Brand, Payment, Purse} from '@agoric/ertp';

@@ -1,41 +1,41 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 
-import process from 'node:process';
-import crypto from 'node:crypto';
-import { performance } from 'node:perf_hooks';
 import { spawn as ambientSpawn } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { performance } from 'node:perf_hooks';
+import process from 'node:process';
+import microtime from 'microtime';
 import { tmpName } from 'tmp';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
-import microtime from 'microtime';
 
 import { assert, q, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 
-import { mustMatch, M } from '@endo/patterns';
 import { checkBundle } from '@endo/check-bundle/lite.js';
+import { mustMatch, M } from '@endo/patterns';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
-import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
+import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 import { kslot, krefOf } from '@agoric/kmarshal';
-import { insistStorageAPI } from '../lib/storageAPI.js';
 import { insistCapData } from '../lib/capdata.js';
+import { insistStorageAPI } from '../lib/storageAPI.js';
+import {
+  makeWorkerBundleHandler,
+  makeXsnapBundleData,
+} from './bundle-handler.js';
 import {
   buildSwingsetKernelConfig,
   buildKernelBundle,
   initializeSwingsetKernel,
   swingsetIsInitialized,
 } from './initializeSwingset.js';
-import {
-  makeWorkerBundleHandler,
-  makeXsnapBundleData,
-} from './bundle-handler.js';
-import { makeStartXSnap } from './startXSnap.js';
 import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
+import { makeStartXSnap } from './startXSnap.js';
 
 /**
  * @import {EReturn} from '@endo/far';

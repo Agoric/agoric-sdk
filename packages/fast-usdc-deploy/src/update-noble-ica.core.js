@@ -1,7 +1,7 @@
 /** @file core-eval to 1) update ChainInfo 2) re-request the Noble ICA `intermediateRecipient` */
 
-import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import { makeTracer } from '@agoric/internal';
 import { feedPolicies } from './utils/chain-policies.js';
 import { publishFeedPolicy } from './utils/core-eval.js';
 

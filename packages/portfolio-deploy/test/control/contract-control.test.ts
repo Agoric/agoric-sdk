@@ -1,6 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { expectType } from 'tsd';
 
+import type { ExecutionContext, TestFn } from 'ava';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/pass-style';
 import * as ymaxExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
   axelarIdsMock,
@@ -11,29 +16,24 @@ import {
   chainInfoWithCCTP,
   setupPortfolioTest,
 } from '@aglocal/portfolio-contract/test/supports.js';
+import {
+  prepareContractControl,
+  type ContractControl,
+} from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makePromiseSpace } from '@agoric/vats';
 import {
   produceDiagnostics,
   produceStartUpgradable,
 } from '@agoric/vats/src/core/basic-behaviors.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/pass-style';
-import type { ExecutionContext, TestFn } from 'ava';
-import { readFile } from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import type { ZoeService } from '@agoric/zoe';
 import type {
   WellKnownSpaces,
   BootstrapSpace,
   PromiseSpaceOf,
 } from '@agoric/vats/src/core/types.js';
+import type { ZoeService } from '@agoric/zoe';
 import type { StartedInstanceKit } from '@agoric/zoe/src/zoeService/utils.js';
-import {
-  prepareContractControl,
-  type ContractControl,
-} from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');

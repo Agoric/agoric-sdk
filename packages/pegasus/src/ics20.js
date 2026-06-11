@@ -1,7 +1,7 @@
 // @ts-check
 import { assert, X, Fail, annotateError } from '@endo/errors';
-import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
+import { Nat } from '@endo/nat';
 
 /**
  * @import {Denom} from './types.js';

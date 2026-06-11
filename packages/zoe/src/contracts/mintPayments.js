@@ -1,5 +1,5 @@
-import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import { AmountMath } from '@agoric/ertp';
 
 /**
  * @import {ZCF} from '@agoric/zoe';

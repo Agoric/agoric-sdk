@@ -1,3 +1,4 @@
+import type { Abi } from 'viem';
 /**
  * @file ABIs for Factory/DepositFactory and wallet events.
  * @see {@link factoryABI} {@link depositFactoryABI} {@link walletABI}
@@ -6,7 +7,6 @@ import {
   PermitTransferFromInternalTypeName,
   PermitTransferFromComponents,
 } from '@agoric/orchestration/src/utils/permit2.js';
-import type { Abi } from 'viem';
 
 /**
  * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/main/packages/axelar-local-dev-cosmos/src/contracts/Factory.sol}

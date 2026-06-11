@@ -1,5 +1,5 @@
-import { AmountMath } from '@agoric/ertp';
 import { E, Far } from '@endo/far';
+import { AmountMath } from '@agoric/ertp';
 
 /**
  * @import {FeeMintAccess, Invitation, OfferHandler, TransferPart, ZCF, ZCFMint, ZCFSeat} from '@agoric/zoe';

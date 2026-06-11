@@ -7,9 +7,9 @@ import {
   insistVatSyscallResult,
 } from '@agoric/swingset-liveslots';
 
+import { makeGcAndFinalize } from './gc-and-finalize.js';
 // grumble... waitUntilQuiescent is exported and closes over ambient authority
 import { waitUntilQuiescent } from './waitUntilQuiescent.js';
-import { makeGcAndFinalize } from './gc-and-finalize.js';
 
 import {
   makeSupervisorDispatch,

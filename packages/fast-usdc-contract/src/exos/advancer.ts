@@ -6,6 +6,8 @@
  * main export: @see {prepareAdvancerKit}
  */
 
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
 import type { HostInterface } from '@agoric/async-flow';
 import type { Amount, Brand, NatAmount } from '@agoric/ertp';
 import {
@@ -44,8 +46,6 @@ import type { VowTools } from '@agoric/vow';
 import { VowShape } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
 import { type advanceFunds as advanceFundsT } from '../fast-usdc.flows.ts';
 import { makeSupportsCctp } from '../utils/cctp.ts';
 import type { LiquidityPoolKit } from './liquidity-pool.js';

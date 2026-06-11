@@ -6,8 +6,8 @@
  * allowing a3p tests to use reflectWalletStore without a full SigningSmartWalletKit.
  */
 
-import { agoric, mkTemp } from '@agoric/synthetic-chain';
 import { writeFile } from 'node:fs/promises';
+import { agoric, mkTemp } from '@agoric/synthetic-chain';
 
 /**
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';

@@ -2,6 +2,8 @@
  * @file pure types, no runtime, ignored by Ava
  */
 
+import type { Passable } from '@endo/marshal';
+import { expectAssignable, expectError, expectNotType, expectType } from 'tsd';
 import type { HostInterface, HostOf } from '@agoric/async-flow';
 import type {
   AnyJson,
@@ -16,22 +18,23 @@ import type {
   QueryBalanceResponse as QueryBalanceResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { MsgDelegateResponse as MsgDelegateResponseType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import type { Vow, VowTools } from '@agoric/vow';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import type { Passable } from '@endo/marshal';
-import { expectAssignable, expectError, expectNotType, expectType } from 'tsd';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type {
   TargetApp,
   TargetRegistration,
 } from '@agoric/vats/src/bridge-target.js';
+import type { Vow, VowTools } from '@agoric/vow';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import cctpChainInfo from '../src/cctp-chain-info.js';
+import { withChainCapabilities } from '../src/chain-capabilities.js';
 import {
   prepareCosmosOrchestrationAccount as prepareCOA,
   type CosmosOrchestrationAccount,
 } from '../src/exos/cosmos-orchestration-account.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import type { OrchestrationFacade } from '../src/facade.js';
+import fetchedChainInfo from '../src/fetched-chain-info.js';
 import type {
   AmountArg,
   Chain,
@@ -47,11 +50,8 @@ import type {
   KnownChains,
 } from '../src/types.js';
 import { Any as OrchAny } from '../src/utils/codecs.js';
-import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
-import { withChainCapabilities } from '../src/chain-capabilities.js';
-import fetchedChainInfo from '../src/fetched-chain-info.js';
-import cctpChainInfo from '../src/cctp-chain-info.js';
 import { tryDecodeResponses } from '../src/utils/cosmos.js';
+import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 
 const MsgDelegate: Proto3CodecHelper<'/cosmos.staking.v1beta1.MsgDelegate'> =
   null as any;

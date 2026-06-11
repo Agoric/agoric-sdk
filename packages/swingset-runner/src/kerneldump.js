@@ -4,8 +4,8 @@ import process from 'node:process';
 
 import { openSwingStore } from '@agoric/swing-store';
 
-import { dumpStore } from './dumpstore.js';
 import { auditRefCounts } from './auditstore.js';
+import { dumpStore } from './dumpstore.js';
 import { organizeMainStats, printMainStats } from './printStats.js';
 
 function usage() {

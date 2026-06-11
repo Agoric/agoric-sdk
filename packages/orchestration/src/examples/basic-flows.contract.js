@@ -1,12 +1,12 @@
+import { M } from '@endo/patterns';
 /**
  * @file Primarily a testing fixture, but also serves as an example of how to
  *   leverage basic functionality of the Orchestration API with async-flow.
  */
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { M } from '@endo/patterns';
 import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
-import { withOrchestration } from '../utils/start-helper.js';
 import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
+import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './basic-flows.flows.js';
 
 /**

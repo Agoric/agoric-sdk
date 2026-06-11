@@ -3,13 +3,13 @@ import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
 import { BrandShape } from '@agoric/ertp';
+import { provideLazy } from '@agoric/store';
 import {
   M,
   prepareExo,
   makeScalarBigMapStore,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { provideLazy } from '@agoric/store';
 import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.js';
 
 /**

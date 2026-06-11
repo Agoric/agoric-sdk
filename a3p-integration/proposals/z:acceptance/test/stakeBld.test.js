@@ -5,9 +5,9 @@ import test from 'ava';
 import { QueryClient, setupStakingExtension } from '@cosmjs/stargate';
 import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 
-import { GOV1ADDR } from '@agoric/synthetic-chain';
 import assert from 'node:assert';
 import process from 'node:process';
+import { GOV1ADDR } from '@agoric/synthetic-chain';
 import { networkConfig, agdWalletUtils } from './test-lib/index.js';
 
 /**

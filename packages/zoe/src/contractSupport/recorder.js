@@ -1,9 +1,9 @@
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { mustMatch } from '@agoric/store';
 import { M, prepareExoClass } from '@agoric/vat-data';
-import { Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 
 /**
  * @import {TypedPattern, ERemote, Remote} from '@agoric/internal';

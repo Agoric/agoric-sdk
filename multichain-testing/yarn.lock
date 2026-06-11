@@ -259,11 +259,9 @@ __metadata:
     eslint: ^9.0.0
     eslint-config-airbnb-base: ^15.0.0
     eslint-config-jessie: ^0.0.6
-    eslint-config-prettier: ^9.0.0
     eslint-plugin-github: ^5.1.4
     eslint-plugin-import: ^2.25.3 || ^4.16.0
     eslint-plugin-jsdoc: ^46.4.3
-    prettier: ^3.4.2
     typescript-eslint: ^8.17.0
   languageName: node
   linkType: soft
@@ -3320,14 +3318,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-config-prettier@npm:^10.1.1":
-  version: 10.1.5
-  resolution: "eslint-config-prettier@npm:10.1.5"
+"eslint-config-prettier@npm:^10.1.8":
+  version: 10.1.8
+  resolution: "eslint-config-prettier@npm:10.1.8"
   peerDependencies:
     eslint: ">=7.0.0"
   bin:
     eslint-config-prettier: bin/cli.js
-  checksum: 10c0/5486255428e4577e8064b40f27db299faf7312b8e43d7b4bc913a6426e6c0f5950cd519cad81ae24e9aecb4002c502bc665c02e3b52efde57af2debcf27dd6e0
+  checksum: 10c0/e1bcfadc9eccd526c240056b1e59c5cd26544fe59feb85f38f4f1f116caed96aea0b3b87868e68b3099e55caaac3f2e5b9f58110f85db893e83a332751192682
   languageName: node
   linkType: hard
 
@@ -5320,7 +5318,7 @@ __metadata:
     ava: "npm:^6.2.0"
     cosmjs-types: "npm:^0.10.1"
     eslint: "npm:^9.39.4"
-    eslint-config-prettier: "npm:^10.1.1"
+    eslint-config-prettier: "npm:^10.1.8"
     ethers: "npm:^6.13.4"
     execa: "npm:^9.5.2"
     fs-extra: "npm:^11.2.0"

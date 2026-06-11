@@ -1,20 +1,20 @@
 // @ts-check
 
-import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/far';
 
 import fs from 'node:fs/promises';
 import os from 'node:os';
 
-import { makeInstall } from './install.js';
-import { makeOfferAndFindInvitationAmount } from './offer.js';
-import { makeStartInstance } from './startInstance.js';
+import { assertOfferResult } from './assertOfferResult.js';
 import { makeCacheAndGetBundleSpec } from './cachedBundleSpec.js';
 import { makeDepositInvitation } from './depositInvitation.js';
-import { makeSaveIssuer } from './saveIssuer.js';
 import { makeGetBundlerMaker } from './getBundlerMaker.js';
-import { assertOfferResult } from './assertOfferResult.js';
+import { makeInstall } from './install.js';
 import { installInPieces } from './installInPieces.js';
+import { makeOfferAndFindInvitationAmount } from './offer.js';
+import { makeSaveIssuer } from './saveIssuer.js';
+import { makeStartInstance } from './startInstance.js';
 import { makeWriteCoreEval } from './writeCoreEvalParts.js';
 
 /**

@@ -1,7 +1,7 @@
-import { Fail, X, annotateError, q } from '@endo/errors';
 import { throwLabeled } from '@endo/common/throw-labeled.js';
-import { getTag, isPrimitive, passStyleOf } from '@endo/pass-style';
+import { Fail, X, annotateError, q } from '@endo/errors';
 import { recordNames } from '@endo/marshal';
+import { getTag, isPrimitive, passStyleOf } from '@endo/pass-style';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 
 const { is } = Object;

@@ -18,12 +18,12 @@ import {
   getCopySetKeys,
 } from '@endo/patterns';
 import { isCopyMap, isCopySet } from '@agoric/store';
+import { makeCache } from './cache.js';
 import { makeBaseRef, parseVatSlot } from './parseVatSlots.js';
 import {
   enumerateKeysStartEnd,
   enumerateKeysWithPrefix,
 } from './vatstore-iterators.js';
-import { makeCache } from './cache.js';
 
 /**
  * @import {ToCapData, FromCapData} from '@endo/marshal';

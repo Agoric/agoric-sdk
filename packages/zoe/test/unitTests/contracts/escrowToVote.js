@@ -2,8 +2,8 @@
 
 import { Fail, q } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
+import { makeScalarMapStore } from '@agoric/store';
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,

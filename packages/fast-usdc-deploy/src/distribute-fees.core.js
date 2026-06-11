@@ -1,8 +1,8 @@
+import { E } from '@endo/far';
 /** @file core eval module to collect fees. */
 import { AmountMath } from '@agoric/ertp';
-import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
+import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/index.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**

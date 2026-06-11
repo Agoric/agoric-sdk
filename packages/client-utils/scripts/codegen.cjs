@@ -136,29 +136,29 @@ telescope({
     fixTypeImportForVerbatim('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    const prettierResult = spawnSync(
+    // top-level to get the root oxfmt config
+    const oxfmtResult = spawnSync(
       'yarn',
-      ['run', '--top-level', 'prettier', '--write', 'src/codegen'],
+      ['run', '--top-level', 'oxfmt', 'src/codegen'],
       {
         cwd: path.join(__dirname, '..'),
         stdio: 'inherit',
       },
     );
-    assert.equal(prettierResult.status, 0);
-    console.log('💅 code formatted by Prettier');
+    assert.equal(oxfmtResult.status, 0);
+    console.log('💅 code formatted by oxfmt');
 
     const cleanedFiles = await fixRpcTypeImports(outPath);
     const rewrittenFiles = await rewriteRpcImportsToCosmicProto(outPath);
     const removedFiles = await pruneNonRpcGeneratedModules(outPath);
     const postProcessFiles = [...new Set([...cleanedFiles, ...rewrittenFiles])];
     if (postProcessFiles.length > 0) {
-      const prettierHelpersResult = spawnSync(
+      const oxfmtHelpersResult = spawnSync(
         'yarn',
         [
           'run',
           '--top-level',
-          'prettier',
-          '--write',
+          'oxfmt',
           ...postProcessFiles.map(file =>
             path.relative(path.join(__dirname, '..'), file),
           ),
@@ -168,7 +168,7 @@ telescope({
           stdio: 'inherit',
         },
       );
-      assert.equal(prettierHelpersResult.status, 0);
+      assert.equal(oxfmtHelpersResult.status, 0);
     }
     console.log(
       `🧹 rewrote RPC imports and pruned ${removedFiles.length} generated support modules`,

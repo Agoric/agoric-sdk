@@ -3,25 +3,25 @@ import { E, Far } from '@endo/far';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
+import { Stake } from '@agoric/internal/src/tokens.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeHeapZone } from '@agoric/zone';
-import { Stake } from '@agoric/internal/src/tokens.js';
-import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
-import { setupClientManager } from '../src/core/chain-behaviors.js';
-import { makeAgoricNamesAccess, feeIssuerConfig } from '../src/core/utils.js';
-import { makePromiseSpace } from '../src/core/promise-space.js';
-import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
-import { buildRootObject as boardRoot } from '../src/vat-board.js';
 import {
   installBootContracts,
   makeAddressNameHubs,
   makeBoard,
   makeClientBanks,
 } from '../src/core/basic-behaviors.js';
+import { setupClientManager } from '../src/core/chain-behaviors.js';
+import { connectFaucet, showAmount } from '../src/core/demoIssuers.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
+import { makeAgoricNamesAccess, feeIssuerConfig } from '../src/core/utils.js';
+import { buildRootObject as boardRoot } from '../src/vat-board.js';
+import { buildRootObject as mintsRoot } from '../src/vat-mints.js';
 import { buildRootObject as buildProvisioningRoot } from '../src/vat-provisioning.js';
 
-import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 import { makeNameHubKit, prepareMixinMyAddress } from '../src/nameHub.js';
+import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 /**
  * @import {UserPaymentRecord} from '../src/core/demoIssuers.js';

@@ -1,6 +1,6 @@
+import { assert, X } from '@endo/errors';
 /* eslint-env node */
 import opener from 'opener';
-import { assert, X } from '@endo/errors';
 import { getAccessToken } from '@agoric/access-token';
 
 export default async function walletMain(_progname, _rawArgs, powers, opts) {

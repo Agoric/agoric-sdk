@@ -1,9 +1,9 @@
+import { E } from '@endo/far';
 import {
   deeplyFulfilledObject,
   makeTracer,
   NonNullish,
 } from '@agoric/internal';
-import { E } from '@endo/far';
 
 /**
  * @import {Issuer} from '@agoric/ertp';

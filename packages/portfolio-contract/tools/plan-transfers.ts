@@ -1,17 +1,17 @@
+import { throwRedacted as Fail } from '@endo/errors';
+import { objectMap } from '@endo/patterns';
+import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { AmountMath } from '@agoric/ertp';
 import type { Amount, Brand, NatAmount, NatValue } from '@agoric/ertp';
-import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { NonNullish } from '@agoric/internal';
 import type {
   YieldProtocol,
   AxelarChain,
 } from '@agoric/portfolio-api/src/constants.js';
 import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
-import { throwRedacted as Fail } from '@endo/errors';
-import { objectMap } from '@endo/patterns';
 import type { MovementDesc } from '../src/type-guards-steps.ts';
-import { planRebalanceFlow } from './plan-solve.js';
 import { PROD_NETWORK } from './network/prod-network.js';
+import { planRebalanceFlow } from './plan-solve.js';
 /**
  * Plan deposit transfers based on the target allocation and current balances.
  *

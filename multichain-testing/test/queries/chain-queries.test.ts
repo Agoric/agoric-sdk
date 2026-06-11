@@ -1,22 +1,22 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import { decodeBase64 } from '@endo/base64';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
+import { toRequestQueryJson, CodecHelper } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest as QueryBalanceRequestType,
   QueryBalanceResponse as QueryBalanceResponseType,
   QueryAllBalancesRequest as QueryAllBalancesRequestType,
   QueryAllBalancesResponse as QueryAllBalancesResponseType,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { toRequestQueryJson, CodecHelper } from '@agoric/cosmic-proto';
-import { decodeBase64 } from '@endo/base64';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeQueryClient } from '../../tools/query.js';
+import { createWallet } from '../../tools/wallet.js';
 import {
   commonSetup,
   type SetupContextWithWallets,
   chainConfig,
   FAUCET_POUR,
 } from '../support.js';
-import { makeDoOffer } from '../../tools/e2e-tools.js';
-import { createWallet } from '../../tools/wallet.js';
-import { makeQueryClient } from '../../tools/query.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 

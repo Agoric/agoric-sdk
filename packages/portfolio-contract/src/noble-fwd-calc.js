@@ -1,5 +1,5 @@
-import { encodeBech32 } from '@agoric/cosmic-proto/address-hooks.js';
 import { sha256 } from '@noble/hashes/sha256';
+import { encodeBech32 } from '@agoric/cosmic-proto/address-hooks.js';
 
 const MODULE_NAME = 'forwarding';
 

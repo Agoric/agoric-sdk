@@ -3,8 +3,8 @@
 // import '@endo/init';
 // import { E } from '@endo/far';
 import fs from 'fs';
-import zlib from 'zlib';
 import process from 'process';
+import zlib from 'zlib';
 import sqlite3 from 'better-sqlite3';
 
 // super-experimental tool to parse an XS heap snapshot file (as

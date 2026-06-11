@@ -7,6 +7,9 @@ import type { DeliverTxResponse } from '@cosmjs/stargate';
 
 import { Fail, q } from '@endo/errors';
 
+import type { Marshal } from '@endo/marshal';
+import { Far } from '@endo/pass-style';
+import type { Passable } from '@endo/pass-style';
 import type {
   FlowDetail,
   StatusFor,
@@ -20,6 +23,13 @@ import {
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit, VStorage } from '@agoric/client-utils';
 import {
+  AmountMath,
+  type Brand,
+  type DisplayInfo,
+  type Issuer,
+  type NatAmount,
+} from '@agoric/ertp';
+import {
   defineName,
   fromTypedEntries,
   partialMap,
@@ -28,13 +38,6 @@ import {
 import type { RecordFromTuple } from '@agoric/internal';
 import { compareByCodePoints } from '@agoric/internal/src/kv-store.js';
 import type { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';
-import {
-  AmountMath,
-  type Brand,
-  type DisplayInfo,
-  type Issuer,
-  type NatAmount,
-} from '@agoric/ertp';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import {
   CaipChainIds,
@@ -43,9 +46,6 @@ import {
 } from '@agoric/portfolio-api';
 import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
-import type { Marshal } from '@endo/marshal';
-import { Far } from '@endo/pass-style';
-import type { Passable } from '@endo/pass-style';
 import {
   makeVstorageEvent,
   pickBalance,

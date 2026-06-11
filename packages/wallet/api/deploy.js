@@ -2,9 +2,9 @@
 // Agoric wallet deployment script.
 // FIXME: This is just hacked together for the legacy wallet.
 
+import path from 'node:path';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import path from 'node:path';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

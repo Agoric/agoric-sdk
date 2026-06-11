@@ -2,11 +2,11 @@
 import { spawn } from 'node:child_process';
 import { makePromiseKit } from '@endo/promise-kit';
 import { NonNullish } from '../errors.js';
-import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 import {
   netstringEncoderStream,
   netstringDecoderStream,
 } from '../netstring.js';
+import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 
 /**
  * @import {IOType} from 'child_process'

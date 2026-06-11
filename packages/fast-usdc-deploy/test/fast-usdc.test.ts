@@ -1,6 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { Fail } from '@endo/errors';
 import { protoMsgMockMap } from '@aglocal/boot/tools/ibc/mocks.js';
 import {
   AckBehavior,
@@ -23,6 +24,7 @@ import {
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { ForwardInfo } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { accountIdTo32Bytes } from '@agoric/orchestration/src/utils/address.js';
 import {
@@ -30,8 +32,6 @@ import {
   buildTxPacketString,
   buildVTransferEvent,
 } from '@agoric/orchestration/tools/ibc-mocks.js';
-import { Fail } from '@endo/errors';
-import type { ForwardInfo } from '@agoric/orchestration';
 import { configurations } from '../src/utils/deploy-config.js';
 import {
   makeWalletFactoryContext,

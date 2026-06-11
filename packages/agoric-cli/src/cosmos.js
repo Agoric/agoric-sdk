@@ -1,5 +1,5 @@
-import chalk from 'chalk';
 import path from 'node:path';
+import chalk from 'chalk';
 import { makePspawn, getSDKBinaries } from './helpers.js';
 
 const filename = new URL(import.meta.url).pathname;

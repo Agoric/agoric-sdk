@@ -7,8 +7,8 @@ import fs from 'node:fs';
 import * as os from 'node:os';
 import { tmpName } from 'tmp';
 
-import { xsnap } from '../src/xsnap.js';
 import { METER_TYPE } from '../api.js';
+import { xsnap } from '../src/xsnap.js';
 
 import { options, decode, encode } from './message-tools.js';
 

@@ -1,7 +1,7 @@
+import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stake } from '@agoric/internal/src/tokens.js';
-import { E } from '@endo/far';
 
 /**
  * @import {start} from '../../src/examples/stake-bld.contract.js';

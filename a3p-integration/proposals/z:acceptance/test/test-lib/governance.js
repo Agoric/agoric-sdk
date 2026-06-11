@@ -1,10 +1,10 @@
 /* global setTimeout */
 
-import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
 import {
   retryUntilCondition,
   waitUntilElectionResult,
 } from '@agoric/client-utils';
+import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
 import { agdWalletUtils } from './index.js';
 import {
   checkCommitteeElectionResult,

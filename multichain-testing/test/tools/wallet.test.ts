@@ -1,5 +1,5 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
 import { makeQueryClient } from '../../tools/query.js';
 import { createWallet } from '../../tools/wallet.js';
 import { commonSetup } from '../support.js';

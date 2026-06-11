@@ -1,6 +1,8 @@
 // @ts-check
 import '@endo/init/debug.js';
 
+import test from 'ava';
+import { writeFile } from 'node:fs/promises';
 import {
   LOCAL_CONFIG,
   makeVstorageKit,
@@ -12,8 +14,6 @@ import {
   GOV1ADDR,
   mkTemp,
 } from '@agoric/synthetic-chain';
-import test from 'ava';
-import { writeFile } from 'node:fs/promises';
 
 /**
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';

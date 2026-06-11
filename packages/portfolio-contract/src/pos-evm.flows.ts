@@ -1,3 +1,5 @@
+import { fromBech32 } from '@cosmjs/encoding';
+import { Fail, q, X } from '@endo/errors';
 /**
  * @file flows for Aave, Compound, Beefy, and ERC4626 protocols on EVM chains
  *
@@ -26,8 +28,17 @@ import {
 } from '@agoric/orchestration/src/utils/address.js';
 import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import { fromBech32 } from '@cosmjs/encoding';
-import { Fail, q, X } from '@endo/errors';
+import {
+  provideEVMAccount as provideEVMLegacyAccount,
+  sendGMPContractCall as sendLegacyGMPContractCall,
+  sendPermit2GMP as sendLegacyPermit2GMP,
+  type GMPAccountStatus,
+} from './axelar-gmp-legacy.flows.ts';
+import {
+  provideEVMAccount as provideEVMRoutedAccount,
+  sendGMPContractCall as sendRoutedGMPContractCall,
+  sendPermit2GMP as sendRoutedPermit2GMP,
+} from './axelar-gmp-router.flows.ts';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
 import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
@@ -59,17 +70,6 @@ import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
 import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
-import {
-  provideEVMAccount as provideEVMLegacyAccount,
-  sendGMPContractCall as sendLegacyGMPContractCall,
-  sendPermit2GMP as sendLegacyPermit2GMP,
-  type GMPAccountStatus,
-} from './axelar-gmp-legacy.flows.ts';
-import {
-  provideEVMAccount as provideEVMRoutedAccount,
-  sendGMPContractCall as sendRoutedGMPContractCall,
-  sendPermit2GMP as sendRoutedPermit2GMP,
-} from './axelar-gmp-router.flows.ts';
 
 export type { GMPAccountStatus };
 

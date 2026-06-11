@@ -1,7 +1,7 @@
-// @ts-check
-import { objectMap } from '@agoric/internal';
 import { assert } from '@endo/errors';
 import { E, passStyleOf } from '@endo/far';
+// @ts-check
+import { objectMap } from '@agoric/internal';
 
 /**
  * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';

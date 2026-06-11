@@ -1,15 +1,14 @@
 // @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
 
-// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { assert } from '@endo/errors';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { kser, kunser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
+import buildKernel from '../src/kernel/index.js';
 import { makeConsole } from './util.js';
 
 // eslint-disable-next-line no-unused-vars

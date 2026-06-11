@@ -1,6 +1,6 @@
+import type { RemotableObject } from '@endo/pass-style';
 import { expectAssignable, expectType } from 'tsd';
 import type { Vow, VowTools } from '@agoric/vow';
-import type { RemotableObject } from '@endo/pass-style';
 import type {
   HostOf,
   GuestOf,

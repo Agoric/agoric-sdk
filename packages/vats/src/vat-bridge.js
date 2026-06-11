@@ -1,8 +1,8 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import * as cb from '@agoric/internal/src/callback.js';
 import { prepareChainStorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareBridgeManager } from './bridge.js';
 
 /**

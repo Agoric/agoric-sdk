@@ -1,14 +1,14 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { makeQueryClient } from '../../tools/query.js';
+import { sleep } from '../../tools/sleep.js';
+import { STAKING_REWARDS_TIMEOUT } from '../config.js';
 import {
   commonSetup,
   type SetupContextWithWallets,
   FAUCET_POUR,
 } from '../support.js';
-import { makeDoOffer } from '../../tools/e2e-tools.js';
-import { makeQueryClient } from '../../tools/query.js';
-import { sleep } from '../../tools/sleep.js';
-import { STAKING_REWARDS_TIMEOUT } from '../config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 

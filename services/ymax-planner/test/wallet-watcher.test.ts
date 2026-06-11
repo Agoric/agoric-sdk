@@ -1,17 +1,17 @@
 import test from 'ava';
-import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
 import { objectMap } from '@endo/patterns';
+import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { CaipChainId } from '@agoric/orchestration';
-import { createMockPendingTxOpts } from './mocks.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import type { EvmRpc } from '../src/evm-scanner.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import {
   SMART_WALLET_CREATED_SIGNATURE,
   parseSmartWalletCreatedLog,
 } from '../src/watchers/wallet-watcher.ts';
+import { createMockPendingTxOpts } from './mocks.ts';
 
 const abiCoder = new AbiCoder();
 

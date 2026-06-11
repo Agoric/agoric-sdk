@@ -1,6 +1,6 @@
 import { E } from '@endo/far';
-import type { StartedInstanceKit } from '../src/zoeService/utils.js';
 import type { ZCF } from '../src/types-index.js';
+import type { StartedInstanceKit } from '../src/zoeService/utils.js';
 
 const someContractStartFn = (
   _zcf: ZCF,

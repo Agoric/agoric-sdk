@@ -1,5 +1,5 @@
-import { mustMatch } from '@endo/patterns';
 import test from 'ava';
+import { mustMatch } from '@endo/patterns';
 import {
   ChainAddressShape,
   CosmosChainAddressShape,

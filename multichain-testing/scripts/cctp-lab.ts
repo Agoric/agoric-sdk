@@ -10,13 +10,6 @@
  */
 import '@endo/init';
 
-import { CodecHelper } from '@agoric/cosmic-proto';
-import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
-import type { NobleAddress } from '@agoric/fast-usdc';
-import {
-  accountIdTo32Bytes,
-  parseAccountId,
-} from '@agoric/orchestration/src/utils/address.js';
 import { keccak256 } from '@cosmjs/crypto';
 import { fromBase64, toHex } from '@cosmjs/encoding';
 import {
@@ -25,7 +18,14 @@ import {
   type GeneratedType,
 } from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
+import type { NobleAddress } from '@agoric/fast-usdc';
 import type { AccountId } from '@agoric/orchestration';
+import {
+  accountIdTo32Bytes,
+  parseAccountId,
+} from '@agoric/orchestration/src/utils/address.js';
 
 const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
 

@@ -1,8 +1,8 @@
+import { Fail } from '@endo/errors';
+import { CommanderError } from 'commander';
 // @ts-check
 /* eslint-env node */
 import { fetchEnvNetworkConfig, makeWalletUtils } from '@agoric/client-utils';
-import { Fail } from '@endo/errors';
-import { CommanderError } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
 import { sendAction } from '../lib/wallet.js';

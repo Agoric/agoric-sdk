@@ -1,12 +1,12 @@
+import { Fail } from '@endo/errors';
+import { Far } from '@endo/marshal';
+import { Nat } from '@endo/nat';
 import { AmountMath } from '@agoric/ertp';
 import {
   makeNotifierKit,
   observeIteration,
   subscribeLatest,
 } from '@agoric/notifier';
-import { Fail } from '@endo/errors';
-import { Far } from '@endo/marshal';
-import { Nat } from '@endo/nat';
 import {
   assertIssuerKeywords,
   assertNatAssetKind,

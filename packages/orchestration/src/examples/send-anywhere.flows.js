@@ -1,6 +1,6 @@
-import { NonNullish } from '@agoric/internal';
 import { Fail, makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
+import { NonNullish } from '@agoric/internal';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';

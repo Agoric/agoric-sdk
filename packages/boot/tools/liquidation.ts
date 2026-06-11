@@ -1,11 +1,11 @@
+import type { ExecutionContext } from 'ava';
+import { Fail } from '@endo/errors';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ManagerType } from '@agoric/swingset-vat';
 import {
   type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { Fail } from '@endo/errors';
-import type { ExecutionContext } from 'ava';
 import {
   type GovernanceDriver,
   type PriceFeedDriver,

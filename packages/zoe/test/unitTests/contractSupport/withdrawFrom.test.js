@@ -2,18 +2,18 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
 
-import { setup } from '../setupBasicMints.js';
-import { makeZoeForTest } from '../../../tools/setup-zoe.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import {
   depositToSeat,
   withdrawFromSeat,
 } from '../../../src/contractSupport/index.js';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { assertPayoutAmount } from '../../zoeTestHelpers.js';
 import { makeOffer } from '../makeOffer.js';
+import { setup } from '../setupBasicMints.js';
 
 /**
  * @import {ZCF} from '@agoric/zoe';

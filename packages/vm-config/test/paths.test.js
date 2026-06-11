@@ -1,8 +1,8 @@
 import test from 'ava';
 import fs from 'node:fs';
 import path from 'node:path';
-import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
 import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
+import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
 
 const vmConfigDir = new URL('..', import.meta.url).pathname;
 

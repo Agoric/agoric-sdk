@@ -1,6 +1,6 @@
-import { Fail, X, annotateError, makeError, q } from '@endo/errors';
-import { throwLabeled } from '@endo/common/throw-labeled.js';
 import { objectMap } from '@endo/common/object-map.js';
+import { throwLabeled } from '@endo/common/throw-labeled.js';
+import { Fail, X, annotateError, makeError, q } from '@endo/errors';
 import {
   getErrorConstructor,
   getTag,

@@ -3,20 +3,20 @@
  * @file tools for local integration testing for FastUSDC. See USAGE.
  */
 import '@endo/init';
-import { parseArgs } from 'node:util';
 import type { ExecutionContext } from 'ava';
+import { parseArgs } from 'node:util';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
-import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import { divideBy } from '@agoric/ertp/src/ratio.js';
-import { makeDenomTools } from '../tools/asset-info.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-import { commonSetup } from '../test/support.js';
+import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import {
   makeFeedPolicyPartial,
   oracleMnemonics,
 } from '../test/fast-usdc/config.js';
 import { agoricNamesQ, fastLPQ } from '../test/fast-usdc/fu-actors.js';
+import { commonSetup } from '../test/support.js';
+import { makeDenomTools } from '../tools/asset-info.js';
+import { makeDoOffer } from '../tools/e2e-tools.js';
 
 const USAGE = `
 Usage:

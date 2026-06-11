@@ -1,6 +1,8 @@
 /** @file tests for ResolverKit exo */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { TestFn } from 'ava';
+import { mustMatch } from '@endo/patterns';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -8,8 +10,6 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
-import type { TestFn } from 'ava';
-import { mustMatch } from '@endo/patterns';
 import { TxStatus, TxType } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.ts';
 import { PublishedTxShape, type PublishedTx } from '../src/resolver/types.ts';

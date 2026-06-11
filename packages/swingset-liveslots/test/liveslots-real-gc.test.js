@@ -4,8 +4,8 @@ import test from 'ava';
 
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-import { kslot, kser } from '@agoric/kmarshal';
 import { avaRetry } from '@agoric/internal/tools/avaRetry.js';
+import { kslot, kser } from '@agoric/kmarshal';
 import engineGC from './engine-gc.js';
 import { watchCollected, makeGcAndFinalize } from './gc-and-finalize.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';

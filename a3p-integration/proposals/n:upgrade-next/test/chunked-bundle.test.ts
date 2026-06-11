@@ -1,6 +1,12 @@
 import '@endo/init/debug.js';
 import test from 'ava';
 
+import { createHash } from 'node:crypto';
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { promisify } from 'node:util';
+import { gzip as gzipCb } from 'node:zlib';
 import { fromHex } from '@cosmjs/encoding';
 import {
   DirectSecp256k1Wallet,
@@ -12,20 +18,14 @@ import {
   SigningStargateClient,
 } from '@cosmjs/stargate';
 import bundleSource from '@endo/bundle-source';
-import { createHash } from 'node:crypto';
-import { mkdtemp, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { promisify } from 'node:util';
-import { gzip as gzipCb } from 'node:zlib';
 
+import type { BinaryLike } from 'node:crypto';
 import {
   installBundle,
   LOCAL_CONFIG,
   makeAgoricQueryClient,
   makeBundleRegistry,
 } from '@agoric/client-utils';
-import type { BinaryLike } from 'node:crypto';
 
 const gzip = promisify(gzipCb);
 

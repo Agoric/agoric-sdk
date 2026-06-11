@@ -4,6 +4,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
 import { createRequire } from 'node:module';
 
+import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { typedEntries } from '@agoric/internal';
 import {
   testInterruptedSteps,
@@ -12,7 +13,6 @@ import {
 import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import type { EVProxy } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { Installation, ZoeService } from '@agoric/zoe';
-import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 

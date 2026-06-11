@@ -1,6 +1,6 @@
-import { NonNullish, makeTracer } from '@agoric/internal';
 import { makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
+import { NonNullish, makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('SwapAnything.Flow');
 

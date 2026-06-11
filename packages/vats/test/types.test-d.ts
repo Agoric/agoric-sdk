@@ -8,8 +8,8 @@
 import { expectNotType, expectType } from 'tsd';
 
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import type { start as provisionPoolStart } from '../src/provisionPool.js';
 import type { WellKnownSpaces } from '../src/core/types.js';
+import type { start as provisionPoolStart } from '../src/provisionPool.js';
 
 const mock = null as any;
 

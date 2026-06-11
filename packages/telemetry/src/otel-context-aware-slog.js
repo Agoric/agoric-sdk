@@ -1,3 +1,4 @@
+import { readFileSync, writeFileSync } from 'node:fs';
 /* eslint-env node */
 import { logs, SeverityNumber } from '@opentelemetry/api-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
@@ -6,7 +7,6 @@ import {
   LoggerProvider,
   SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
-import { readFileSync, writeFileSync } from 'node:fs';
 import { makeContextualSlogProcessor } from './context-aware-slog.js';
 import { getResourceAttributes } from './index.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';

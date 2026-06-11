@@ -9,8 +9,8 @@
  * Scripts are exempt because they are all entrypoints.
  */
 
-import { execaSync } from 'execa';
 import fs from 'node:fs';
+import { execaSync } from 'execa';
 
 // When this was run on 2025-04-03, the output was:
 const lastRun = {

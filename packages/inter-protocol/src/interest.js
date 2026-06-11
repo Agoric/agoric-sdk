@@ -1,8 +1,8 @@
 import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
-import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { makeRatio, multiplyRatios, quantize } from '@agoric/ertp/src/ratio.js';
 import { TimeMath } from '@agoric/time';
+import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 
 /**
  * @import {Timestamp} from '@agoric/time'

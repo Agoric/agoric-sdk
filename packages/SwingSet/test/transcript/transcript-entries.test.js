@@ -3,9 +3,9 @@ import test from 'ava';
 
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 import { makeSwingsetController } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
-import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 

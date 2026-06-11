@@ -1,3 +1,5 @@
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/marshal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { initEmpty } from '@agoric/store';
 import {
@@ -7,8 +9,6 @@ import {
   provideDurableWeakMapStore,
   watchPromise,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/marshal';
 
 import { Fail, q } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';

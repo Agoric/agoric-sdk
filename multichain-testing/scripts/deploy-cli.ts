@@ -16,9 +16,9 @@
  */
 import '@endo/init/debug.js';
 
+import childProcess from 'node:child_process';
 import { execa } from 'execa';
 import fse from 'fs-extra';
-import childProcess from 'node:child_process';
 
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { makeDeployBuilder } from '../tools/deploy.js';

@@ -1,19 +1,19 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import bundleSource from '@endo/bundle-source';
 import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
-import bundleSource from '@endo/bundle-source';
 import { makeMarshal } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeCopyBag } from '@agoric/store';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
+import { makeImportContext } from '../src/marshal-contexts.js';
 import { makeDefaultTestContext } from './contexts.js';
 import { ActionType, headValue, makeMockTestSpace } from './supports.js';
-import { makeImportContext } from '../src/marshal-contexts.js';
 
 const importSpec = async spec =>
   new URL(importMetaResolve(spec, import.meta.url)).pathname;

@@ -1,6 +1,6 @@
-import { makeTracer } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';

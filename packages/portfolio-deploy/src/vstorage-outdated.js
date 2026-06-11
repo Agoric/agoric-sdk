@@ -1,5 +1,5 @@
-import { NonNullish } from '@agoric/internal';
 import { throwRedacted as Fail } from '@endo/errors';
+import { NonNullish } from '@agoric/internal';
 
 /**
  * @import { StreamCell } from '@agoric/internal/src/lib-chainStorage.js';

@@ -1,10 +1,10 @@
+import { E } from '@endo/eventual-send';
+import { diff } from 'deep-object-diff';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
   subscribeEach,
 } from '@agoric/notifier';
-import { E } from '@endo/eventual-send';
-import { diff } from 'deep-object-diff';
 
 import { makeTracer } from '@agoric/internal';
 

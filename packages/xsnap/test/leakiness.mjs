@@ -8,11 +8,11 @@ import '@endo/eventual-send/shim.js';
 import 'data:text/javascript,try { lockdown(); } catch {}';
 
 import * as proc from 'node:child_process';
-import * as os from 'node:os';
 import fs from 'node:fs';
-import { tmpName } from 'tmp';
+import * as os from 'node:os';
 import { parseArgs } from 'node:util';
 import { isMainThread } from 'node:worker_threads';
+import { tmpName } from 'tmp';
 
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';

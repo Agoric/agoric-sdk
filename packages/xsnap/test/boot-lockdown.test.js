@@ -3,8 +3,8 @@
 import test from 'ava';
 
 import * as proc from 'node:child_process';
-import * as os from 'node:os';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import { tmpName } from 'tmp';
 
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';

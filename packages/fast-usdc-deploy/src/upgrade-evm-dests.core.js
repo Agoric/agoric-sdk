@@ -1,10 +1,10 @@
 /** @file core-eval that includes changes necessary to support FastUSDC to EVM destinations */
 
-import { makeTracer } from '@agoric/internal';
 import { E, Far } from '@endo/far';
-import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import { AmountMath } from '@agoric/ertp';
 import { DestinationOverridesShape } from '@agoric/fast-usdc/src/type-guards.js';
+import { makeTracer } from '@agoric/internal';
+import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
 import {
   fromExternalConfig,
   toExternalConfig,

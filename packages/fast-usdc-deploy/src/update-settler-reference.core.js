@@ -1,7 +1,7 @@
 /** @file core-eval to update Advancer's reference to Settler */
 
-import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('FUSD-3', true);
 

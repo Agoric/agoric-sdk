@@ -1,3 +1,4 @@
+import { Command } from 'commander';
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
@@ -7,7 +8,6 @@ import {
   makeVstorageKit,
 } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { Command } from 'commander';
 import { outputActionAndHint } from '../lib/wallet.js';
 
 /**

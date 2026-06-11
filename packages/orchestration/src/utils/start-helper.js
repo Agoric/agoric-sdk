@@ -7,12 +7,12 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
-import { prepareProgressTracker } from './progress.js';
 import { prepareOrchestrator } from '../exos/orchestrator.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { makeOrchestrationFacade } from '../facade.js';
-import { makeZoeTools } from './zoe-tools.js';
+import { prepareProgressTracker } from './progress.js';
 import { makeZcfTools } from './zcf-tools.js';
+import { makeZoeTools } from './zoe-tools.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';

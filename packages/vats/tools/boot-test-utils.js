@@ -2,9 +2,9 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
-import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { vatsSourceSpecRegistry } from '../source-spec-registry.js';
 
 import { buildRootObject as agoricNamesRoot } from '../src/vat-agoricNames.js';

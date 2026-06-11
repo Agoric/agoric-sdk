@@ -1,9 +1,9 @@
 import { Fail } from '@endo/errors';
 
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
 
 import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
@@ -17,6 +17,7 @@ import type {
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
 import type { WebSocketProvider } from 'ethers';
+import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
 import {
   deleteDerivedOutcome,
   getDerivedOutcome,
@@ -25,18 +26,17 @@ import {
 } from './kv-store.ts';
 import { resolvePendingTx } from './resolver.ts';
 import { withRetriesForAlerting } from './retries.ts';
-import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
 import type { MakeAbortController, UsdcAddresses } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
 import {
-  watchSmartWalletTx,
-  lookBackSmartWalletTx,
-} from './watchers/wallet-watcher.ts';
-import {
   watchOperationResult,
   lookBackOperationResult,
 } from './watchers/operation-watcher.ts';
+import {
+  watchSmartWalletTx,
+  lookBackSmartWalletTx,
+} from './watchers/wallet-watcher.ts';
 import {
   abortableSleep,
   WatcherTransportError,

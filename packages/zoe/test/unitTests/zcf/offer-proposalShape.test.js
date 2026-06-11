@@ -2,14 +2,14 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
 
 import { M } from '@endo/patterns';
 import { AmountShape } from '@agoric/ertp';
+import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { setup } from '../setupBasicMints.js';
-import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
 
 /**
  * @import {ZCF, ZoeService} from '@agoric/zoe';
@@ -47,8 +47,9 @@ test(`ProposalShapes mismatch`, async t => {
   // is available here for testing purposes
   t.truthy(testJig);
   /** @type {ZCF} */
-  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
-    .zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (
+    /** @type {unknown} */ (testJig)
+  ).zcf;
 
   const boring = () => {
     return 'ok';
@@ -117,8 +118,9 @@ test(`ProposalShapes matched`, async t => {
   // is available here for testing purposes
   t.truthy(testJig);
   /** @type {ZCF} */
-  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
-    .zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (
+    /** @type {unknown} */ (testJig)
+  ).zcf;
 
   const boring = () => {
     return 'ok';

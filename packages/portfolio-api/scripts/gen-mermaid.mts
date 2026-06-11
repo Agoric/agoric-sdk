@@ -1,10 +1,10 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+import assert from 'node:assert';
 // Generate Mermaid state diagrams from the generated Ymax machine model.
 // Outputs separate .mmd files for each machine in the spec.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import assert from 'node:assert';
 import {
   ymaxMachine,
   type MachineDefinition,

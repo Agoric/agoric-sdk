@@ -1,6 +1,6 @@
-import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
-import { provideLazy } from '@agoric/store';
 import { makeNotifierKit } from '@agoric/notifier';
+import { provideLazy } from '@agoric/store';
+import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
 
 /**
  * @import {Purse} from './types.js';

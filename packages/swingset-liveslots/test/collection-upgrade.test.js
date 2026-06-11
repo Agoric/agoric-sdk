@@ -6,8 +6,8 @@ import { M } from '@agoric/store';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { buildSyscall } from './liveslots-helpers.js';
-import { makeStartVat } from './util.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeStartVat } from './util.js';
 
 test('durable collections survive upgrade', async t => {
   let map1;

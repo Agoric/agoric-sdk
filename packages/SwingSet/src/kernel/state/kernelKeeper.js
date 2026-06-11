@@ -1,23 +1,8 @@
-import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { Nat, isNat } from '@endo/nat';
 import { KERNEL_STATS_METRICS } from '@agoric/internal/src/metrics.js';
 import { naturalCompare } from '@agoric/internal/src/natural-sort.js';
-import { makeDummySlogger, noopConsole } from '../slogger.js';
-import {
-  initializeVatState,
-  makeVatKeeper,
-  DEFAULT_REAP_DIRT_THRESHOLD_KEY,
-} from './vatKeeper.js';
-import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
-import { parseReachableAndVatSlot } from './reachable.js';
-import { insistStorageAPI } from '../../lib/storageAPI.js';
-import {
-  insistKernelType,
-  makeKernelSlot,
-  parseKernelSlot,
-} from '../parseKernelSlots.js';
 import { insistCapData } from '../../lib/capdata.js';
-import { insistMessage } from '../../lib/message.js';
 import {
   insistDeviceID,
   insistVatID,
@@ -26,12 +11,27 @@ import {
   makeUpgradeID,
 } from '../../lib/id.js';
 import { kdebug } from '../../lib/kdebug.js';
+import { insistMessage } from '../../lib/message.js';
+import { insistStorageAPI } from '../../lib/storageAPI.js';
+import {
+  insistKernelType,
+  makeKernelSlot,
+  parseKernelSlot,
+} from '../parseKernelSlots.js';
+import { makeDummySlogger, noopConsole } from '../slogger.js';
+import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
+import { parseReachableAndVatSlot } from './reachable.js';
 import { makeKernelStats } from './stats.js';
 import {
   enumeratePrefixedKeys,
   getPrefixedValues,
   deletePrefixedKeys,
 } from './storageHelper.js';
+import {
+  initializeVatState,
+  makeVatKeeper,
+  DEFAULT_REAP_DIRT_THRESHOLD_KEY,
+} from './vatKeeper.js';
 
 const enableKernelGC = true;
 

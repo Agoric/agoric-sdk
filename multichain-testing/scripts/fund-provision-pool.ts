@@ -1,9 +1,9 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 
 import '@endo/init';
-import { execa } from 'execa';
 import assert from 'node:assert/strict';
 import { parseArgs } from 'node:util';
+import { execa } from 'execa';
 import { makeBlockTool } from '../tools/e2e-tools.js';
 import { makeHttpClient } from '../tools/makeHttpClient.js';
 

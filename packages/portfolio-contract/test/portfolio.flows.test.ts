@@ -14,14 +14,19 @@ import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-node
 import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
-import { type AccountId, type Orchestrator } from '@agoric/orchestration';
-import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import type { Assertions } from 'ava';
+import { passStyleOf } from '@endo/pass-style';
+import { makePromiseKit } from '@endo/promise-kit';
+import { hexToBytes } from '@noble/hashes/utils';
+import type { Address } from 'abitype';
 import {
   decodeFunctionData,
   getAbiItem,
   getAddress,
   toFunctionSelector,
 } from 'viem';
+import { type AccountId, type Orchestrator } from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
   type AxelarChain,
   type FlowDetail,
@@ -34,13 +39,6 @@ import {
 } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import { passStyleOf } from '@endo/pass-style';
-import { makePromiseKit } from '@endo/promise-kit';
-import { hexToBytes } from '@noble/hashes/utils';
-import type { Address } from 'abitype';
-import type { Assertions } from 'ava';
-import { erc20ABI } from '../src/interfaces/erc20.ts';
-import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
@@ -53,6 +51,8 @@ import {
   sendPermit2GMP as sendPermit2RoutedGMP,
   sendGMPContractCall as sendRoutedGMPContractCall,
 } from '../src/axelar-gmp-router.flows.ts';
+import { erc20ABI } from '../src/interfaces/erc20.ts';
+import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
 import { type PortfolioKit } from '../src/portfolio.exo.ts';
 import {
   makeErrorList,

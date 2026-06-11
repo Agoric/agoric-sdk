@@ -1,3 +1,6 @@
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
@@ -9,9 +12,6 @@ import {
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 import {
   addRatios,
@@ -282,8 +282,10 @@ const start = async (zcf, privateArgs) => {
     timestamp = TimeMath.coerceTimestampRecord(timestamp, timerBrand);
 
     const submitted = [...oracleRecords.values()].map(
-      ({ oracleKey, lastSample }) =>
-        /** @type {[OracleKey, Ratio]} */ ([oracleKey, lastSample]),
+      ({ oracleKey, lastSample }) => /** @type {[OracleKey, Ratio]} */ ([
+        oracleKey,
+        lastSample,
+      ]),
     );
     const median = calculateMedian(
       submitted

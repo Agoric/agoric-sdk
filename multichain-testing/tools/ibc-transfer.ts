@@ -2,6 +2,8 @@ import type { ExecutionContext } from 'ava';
 import type { StdFee } from '@cosmjs/amino';
 import { coins, type EncodeObject } from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type {
   CosmosChainInfo,
   DenomAmount,
@@ -12,12 +14,10 @@ import {
   NANOSECONDS_PER_MILLISECOND,
   SECONDS_PER_MINUTE,
 } from '@agoric/orchestration/src/utils/time.js';
-import { CodecHelper } from '@agoric/cosmic-proto';
-import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { createWallet } from './wallet.js';
 import chainInfo from '../starship-chain-info.js';
 import type { MultichainRegistry } from './registry.js';
 import type { RetryUntilCondition } from './sleep.js';
+import { createWallet } from './wallet.js';
 
 const MsgTransfer = CodecHelper(MsgTransferType);
 

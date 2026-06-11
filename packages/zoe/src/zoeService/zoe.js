@@ -10,11 +10,11 @@
 
 /// <reference path="../internal-types.js" />
 
-import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { M } from '@endo/patterns';
+import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 
 import { ZoeServiceI } from '../typeGuards.js';
 import { getZcfBundleCap } from './createZCFVat.js';

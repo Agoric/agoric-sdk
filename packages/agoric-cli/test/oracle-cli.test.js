@@ -2,9 +2,9 @@
 
 import '@endo/init';
 
-import { boardSlottingMarshaller } from '@agoric/client-utils';
 import test from 'ava';
 import { createCommand } from 'commander';
+import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { makeOracleCommand } from '../src/commands/oracle.js';
 
 const marshaller = boardSlottingMarshaller();

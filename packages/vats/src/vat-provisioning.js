@@ -1,11 +1,11 @@
 import { E, Far } from '@endo/far';
-import { makeNotifierKit } from '@agoric/notifier';
 import {
   makeSyncMethodCallback,
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
-import { makeDurableZone } from '@agoric/zone/durable.js';
+import { makeNotifierKit } from '@agoric/notifier';
 import { provide } from '@agoric/vat-data';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
   NameHubIKit,
   prepareMixinMyAddress,

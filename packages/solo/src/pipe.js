@@ -2,8 +2,8 @@
 import { fork } from 'node:child_process';
 import path from 'node:path';
 
-import { makePromiseKit } from '@endo/promise-kit';
 import { parse, stringify } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 

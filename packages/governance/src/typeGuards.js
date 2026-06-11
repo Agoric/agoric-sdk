@@ -1,3 +1,4 @@
+import { SubscriberShape } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 import {
@@ -5,7 +6,6 @@ import {
   TimerShape,
   makeHandleShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { SubscriberShape } from '@agoric/notifier';
 
 export const ChoiceMethodShape = M.or('unranked', 'order', 'plurality');
 export const QuorumRuleShape = M.or('majority', 'no_quorum', 'all');

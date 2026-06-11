@@ -1,11 +1,11 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 
+import { objectMap } from '@endo/patterns';
 import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import { objectMap } from '@endo/patterns';
-import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { withChainCapabilities } from '../../src/chain-capabilities.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
 import knownChains from '../../src/fetched-chain-info.js';

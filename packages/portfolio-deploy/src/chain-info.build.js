@@ -1,3 +1,5 @@
+import { parseArgs } from 'node:util';
+import { M } from '@endo/patterns';
 /**
  * @file build core-eval to populate agoricNames.chain etc.
  * optionally using IBC queries.
@@ -9,8 +11,6 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 import { mustMatch } from '@agoric/internal';
 import { ChainInfoShape, IBCConnectionInfoShape } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { M } from '@endo/patterns';
-import { parseArgs } from 'node:util';
 
 const { keys } = Object;
 

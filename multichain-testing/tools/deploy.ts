@@ -1,7 +1,7 @@
+import { createRequire } from 'node:module';
 /** @file run a builder and deploy it onto the Agoric chain in local Starship cluster */
 import type { CoreEvalPlan } from '@agoric/deploy-script-support/src/writeCoreEvalParts.js';
 import { makeTracer, toCLIOptions } from '@agoric/internal';
-import { createRequire } from 'node:module';
 import type { AgdTools } from './agd-tools.js';
 
 const nodeRequire = createRequire(import.meta.url);

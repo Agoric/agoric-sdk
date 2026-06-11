@@ -1,3 +1,6 @@
+import type { ExecutionContext } from 'ava';
+import { E, type ERef, type EReturn } from '@endo/eventual-send';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
   decodeAddressHook,
   encodeAddressHook,
@@ -43,9 +46,6 @@ import type {
   Instance,
 } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, type ERef, type EReturn } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
-import type { ExecutionContext } from 'ava';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import * as contractExports from '../src/fast-usdc.contract.ts';

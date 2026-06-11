@@ -16,6 +16,9 @@ module.exports = {
     'airbnb-base',
     'plugin:@endo/recommended',
     'plugin:jsdoc/recommended',
+    // Disable ESLint rules that overlap with the formatter (oxfmt). Despite the
+    // package name, eslint-config-prettier is formatter-agnostic and is also
+    // required transitively by @endo/recommended.
     'prettier',
   ],
   plugins: ['import'],
@@ -70,6 +73,10 @@ module.exports = {
     'import/default': 'off',
     'import/no-named-as-default-member': 'off',
     'import/no-unresolved': 'off', // Plus no-unresolved doesn't support exports maps https://github.com/import-js/eslint-plugin-import/issues/1810
+
+    // Import ordering is owned by the formatter (oxfmt sortImports), so the
+    // lint rule would only conflict with it. See .oxfmtrc.json.
+    'import/order': 'off',
 
     'import/prefer-default-export': 'off',
 

@@ -1,4 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { mustMatch } from '@endo/patterns';
 import { testProp, fc } from '@fast-check/ava';
 import { AmountMath, makeIssuerKit, type Amount } from '@agoric/ertp';
 import {
@@ -6,7 +7,6 @@ import {
   multiplyBy,
   parseRatio,
 } from '@agoric/ertp/src/ratio.js';
-import { mustMatch } from '@endo/patterns';
 import {
   borrowCalc,
   depositCalc,

@@ -1,12 +1,12 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from '@endo/ses-ava/prepare-endo.js';
 
+import { E } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
 import type { IBCChannelID, IBCConnectionInfo } from '@agoric/network/ibc';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { E } from '@endo/far';
 import cctpChainInfo from '../../src/cctp-chain-info.js';
 import {
   registerChainAssets,

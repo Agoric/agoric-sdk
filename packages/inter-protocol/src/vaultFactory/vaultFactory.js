@@ -11,6 +11,7 @@
 // contractHelper to satisfy contractGovernor. It needs to return a creatorFacet
 // with { getParamMgrRetriever, getInvitation, getLimitedCreatorFacet }.
 
+import { E } from '@endo/eventual-send';
 import { CONTRACT_ELECTORATE } from '@agoric/governance';
 import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import { validateElectorate } from '@agoric/governance/src/contractHelper.js';
@@ -20,7 +21,6 @@ import { makeStoredSubscription, makeSubscriptionKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { E } from '@endo/eventual-send';
 import { FeeMintAccessShape } from '@agoric/zoe/src/typeGuards.js';
 import { SHORTFALL_INVITATION_KEY, vaultDirectorParamTypes } from './params.js';
 import { provideDirector } from './vaultDirector.js';

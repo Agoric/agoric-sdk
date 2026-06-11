@@ -12,8 +12,8 @@ import {
   type CosmosValidatorAddress,
 } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
+import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import {
   makeBootTestContext,
   withWalletFactory,

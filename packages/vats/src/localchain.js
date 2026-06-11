@@ -2,6 +2,10 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import {
   AmountPatternShape,
   AmountShape,
@@ -9,10 +13,6 @@ import {
   PaymentShape,
 } from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
-import { CodecHelper } from '@agoric/cosmic-proto';
-import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
-import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const MsgSend = CodecHelper(MsgSendType);
 const MsgTransfer = CodecHelper(MsgTransferType);

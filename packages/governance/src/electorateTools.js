@@ -1,6 +1,6 @@
-import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
+import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 
 /**
  * @import {Handle} from '@agoric/zoe';

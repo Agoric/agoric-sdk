@@ -1,14 +1,14 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { CosmosChainInfo } from '@agoric/orchestration';
+import chainInfo from '../../starship-chain-info.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
+import { MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT } from '../config.js';
 import {
   commonSetup,
   type SetupContextWithWallets,
   chainConfig,
 } from '../support.js';
-import { makeDoOffer } from '../../tools/e2e-tools.js';
-import chainInfo from '../../starship-chain-info.js';
-import { MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT } from '../config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 

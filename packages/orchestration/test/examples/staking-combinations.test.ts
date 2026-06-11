@@ -1,5 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { E } from '@endo/far';
 import {
   MsgTransfer,
   MsgTransferResponse,
@@ -7,18 +8,17 @@ import {
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
 import type { Installation } from '@agoric/zoe';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import * as contractExports from '../../src/examples/staking-combinations.contract.js';
-import {
-  buildMsgResponseString,
-  parseOutgoingTxPacket,
-} from '../../tools/ibc-mocks.js';
 import {
   protoMsgMocks,
   UNBOND_PERIOD_SECONDS,
 } from '../../tools/ibc-mock-fixtures.js';
+import {
+  buildMsgResponseString,
+  parseOutgoingTxPacket,
+} from '../../tools/ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 
 type StartFn = typeof contractExports.start;

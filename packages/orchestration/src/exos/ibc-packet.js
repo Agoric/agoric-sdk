@@ -1,7 +1,7 @@
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 import { makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
-import { M } from '@endo/patterns';
-import { E } from '@endo/far';
 import {
   finishTrafficEntries,
   trafficTransforms,

@@ -2,9 +2,9 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
+import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.js';
 // eslint-disable-next-line no-unused-vars -- used by typedef
 import { CONTRACT_ELECTORATE } from '../src/contractGovernance/governParam.js';
-import { makeApiInvocationPositions } from '../src/contractGovernance/governApi.js';
 
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style';

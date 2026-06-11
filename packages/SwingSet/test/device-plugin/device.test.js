@@ -1,16 +1,15 @@
 // @ts-nocheck
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 
+import { buildBridge } from '../../src/devices/bridge/bridge.js';
+import { buildPlugin } from '../../src/devices/plugin/plugin.js';
 import {
   swingsetIsInitialized,
   makeSwingsetController,
 } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
-import { buildBridge } from '../../src/devices/bridge/bridge.js';
-import { buildPlugin } from '../../src/devices/plugin/plugin.js';
 
 async function setupVatController(t, kernelStorage) {
   const inputQueue = [];

@@ -1,5 +1,5 @@
-import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
+import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import {
   DenomDetailShape,
   DenomShape,

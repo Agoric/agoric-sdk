@@ -1,5 +1,5 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
 import { commonSetup } from '../support.js';
 
 const test = anyTest as TestFn<Record<string, never>>;

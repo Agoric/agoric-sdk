@@ -1,3 +1,5 @@
+import { Fail, q } from '@endo/errors';
+import { M } from '@endo/patterns';
 import type { Amount, Brand } from '@agoric/ertp';
 import { AmountMath, AmountShape, RatioShape } from '@agoric/ertp';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
@@ -35,8 +37,6 @@ import type {
   TransferPart,
 } from '@agoric/zoe/src/zoeService/zoe.js';
 import type { Zone } from '@agoric/zone';
-import { Fail, q } from '@endo/errors';
-import { M } from '@endo/patterns';
 
 const { add, isGTE, makeEmpty } = AmountMath;
 

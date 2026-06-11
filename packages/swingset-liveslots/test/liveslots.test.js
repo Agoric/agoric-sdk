@@ -9,8 +9,8 @@ import { kslot, kser, kunser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
 import { makeLiveSlots, makeMarshaller } from '../src/liveslots.js';
 import { buildSyscall, makeDispatch } from './liveslots-helpers.js';
-import { makeMessage, makeStartVat, makeResolve, makeReject } from './util.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeMessage, makeStartVat, makeResolve, makeReject } from './util.js';
 
 function matchIDCounterSet(t, log) {
   t.like(log.shift(), { type: 'vatstoreSet', key: 'idCounters' });

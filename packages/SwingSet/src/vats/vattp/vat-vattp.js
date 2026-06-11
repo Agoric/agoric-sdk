@@ -1,4 +1,5 @@
 import { Fail } from '@endo/errors';
+import { Far, E } from '@endo/far';
 import {
   provide,
   defineDurableKindMulti,
@@ -7,7 +8,6 @@ import {
   provideDurableSetStore,
   provideKindHandle,
 } from '@agoric/vat-data';
-import { Far, E } from '@endo/far';
 
 /**
  * @import {ERef} from '@endo/far';

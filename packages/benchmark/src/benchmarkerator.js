@@ -1,5 +1,5 @@
-import process from 'node:process';
 import fs from 'node:fs';
+import process from 'node:process';
 
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
@@ -7,14 +7,14 @@ import '@endo/init';
 import '@agoric/cosmic-swingset/src/launch-chain.js';
 
 import { Fail } from '@endo/errors';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from '@aglocal/boot/tools/supports.js';
 import {
   makeWalletFactoryDriver,
   makeGovernanceDriver,
 } from '@aglocal/boot/tools/drivers.js';
 import { makeLiquidationTestKit } from '@aglocal/boot/tools/liquidation.js';
+import { makeSwingsetTestKit } from '@aglocal/boot/tools/supports.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 
 /**
  * @import {SmartWalletDriver} from '@aglocal/boot/tools/drivers.ts';

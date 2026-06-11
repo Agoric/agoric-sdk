@@ -10,9 +10,9 @@ import {
   makeSwingStoreExporter,
   importSwingStore,
 } from '@agoric/swing-store';
+import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 import { makeSwingsetController } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
-import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
 
 const tmpDir = makeTempDirFactory(tmp);
 

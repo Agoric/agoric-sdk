@@ -2,8 +2,8 @@ import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from 'ava';
 
 import bundleSource from '@endo/bundle-source';
-import { buildVatController } from '@agoric/swingset-vat';
 import { kunser } from '@agoric/kmarshal';
+import { buildVatController } from '@agoric/swingset-vat';
 
 /**
  * @import {SwingSetConfig} from '@agoric/swingset-vat';

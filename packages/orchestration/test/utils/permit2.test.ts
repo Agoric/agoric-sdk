@@ -1,17 +1,17 @@
 import test from '@endo/ses-ava/prepare-endo.js';
 
-import { encodeType } from '../../src/utils/viem-utils/hashTypedData.js';
+import {
+  permitBatchWitnessTransferFromTypes,
+  permitWitnessTransferFromTypes,
+  TokenPermissionTypeParams,
+} from '../../src/utils/permit2/signatureTransfer.js';
 import {
   extractWitnessFieldFromTypes,
   makeWitnessTypeStringExtractor,
   validatePermit2Domain,
   validateTokenPermissionsType,
 } from '../../src/utils/permit2/signatureTransferHelpers.js';
-import {
-  permitBatchWitnessTransferFromTypes,
-  permitWitnessTransferFromTypes,
-  TokenPermissionTypeParams,
-} from '../../src/utils/permit2/signatureTransfer.js';
+import { encodeType } from '../../src/utils/viem-utils/hashTypedData.js';
 
 const witnessField = { name: 'witness', type: 'Foo' } as const;
 const witnessTypes = {

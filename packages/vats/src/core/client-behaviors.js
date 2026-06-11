@@ -1,8 +1,8 @@
 /* eslint-disable @agoric/group-jsdoc-imports */
 import { E, Far } from '@endo/far';
-import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
-import { observeNotifier } from '@agoric/notifier';
 import { deeplyFulfilledObject } from '@agoric/internal';
+import { observeNotifier } from '@agoric/notifier';
+import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { registerNetworkProtocols } from '../proposals/network-proposal.js';
 import { makeVatsFromBundles } from './basic-behaviors.js';
 

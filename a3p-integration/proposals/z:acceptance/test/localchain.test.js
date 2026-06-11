@@ -1,16 +1,16 @@
 /* global setTimeout */
 
+import test from 'ava';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { retryUntilCondition } from '@agoric/client-utils';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import {
   agd,
   evalBundles,
   passCoreEvalProposal,
   GOV1ADDR,
 } from '@agoric/synthetic-chain';
-import test from 'ava';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { retryUntilCondition } from '@agoric/client-utils';
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const SUBMISSION_DIR = 'test/localchaintest-submission';
 

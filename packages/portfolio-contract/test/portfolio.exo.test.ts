@@ -3,6 +3,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ThrowsExpectation } from 'ava';
 
+import { Far } from '@endo/pass-style';
+import { hexToBytes } from '@noble/hashes/utils';
+import type { Address } from 'abitype';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
   fromTypedEntries,
@@ -18,9 +21,6 @@ import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
-import { Far } from '@endo/pass-style';
-import { hexToBytes } from '@noble/hashes/utils';
-import type { Address } from 'abitype';
 import {
   PortfolioStateShape,
   preparePortfolioKit,

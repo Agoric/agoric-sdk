@@ -1,8 +1,8 @@
-import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import type { AbiParametersToPrimitiveTypes } from 'abitype';
 import type { AbiParameter, Hex } from 'viem';
+import { encodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 
 const toHex = (bytes: Uint8Array): Hex => `0x${bytesToHex(bytes)}`;
 

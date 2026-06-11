@@ -1,6 +1,6 @@
+import { E } from '@endo/far';
 /** @file core eval module to reimburse a manual intervention. */
 import { makeTracer } from '@agoric/internal';
-import { E } from '@endo/far';
 import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**

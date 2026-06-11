@@ -1,8 +1,8 @@
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import { AmountMath, type Brand, type NatAmount } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { mustMatch, objectMap } from '@agoric/internal';
-import { createRequire } from 'node:module';
-import { readFile } from 'node:fs/promises';
 import { YieldProtocol } from '@agoric/portfolio-api/src/constants.js';
 import {
   makeOfferArgsShapes,

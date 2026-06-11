@@ -8,14 +8,15 @@ import {
   LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE,
   SIMULATED_ERRORS,
 } from '@agoric/vats/tools/fake-bridge.js';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { heapVowTools, heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { isVow } from '@agoric/vow/src/vow-utils.js';
 import type {
   IBCMsgTransferOptions,
   TrafficEntry,
 } from '../../src/cosmos-api.js';
 import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
+import { ICS20_TRANSFER_SUCCESS_RESULT } from '../../src/exos/ibc-packet.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import type {
   AmountArg,
@@ -25,11 +26,10 @@ import type {
 import { assetOn } from '../../src/utils/asset.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
-import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 import { UNBOND_PERIOD_SECONDS } from '../../tools/ibc-mock-fixtures.js';
+import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
-import { ICS20_TRANSFER_SUCCESS_RESULT } from '../../src/exos/ibc-packet.js';
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);

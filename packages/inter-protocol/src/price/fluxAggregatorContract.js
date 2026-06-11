@@ -1,3 +1,4 @@
+import { E } from '@endo/eventual-send';
 import { prepareIssuerKit } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
@@ -6,7 +7,6 @@ import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorder } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from '../proposals/utils.js';
 import { prepareFluxAggregatorKit } from './fluxAggregatorKit.js';
 

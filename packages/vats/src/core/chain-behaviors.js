@@ -15,10 +15,10 @@ import {
 } from '@agoric/notifier';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { makeScopedBridge } from '../bridge.js';
 import { PowerFlags } from '../walletFlags.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
-import { makeScopedBridge } from '../bridge.js';
 
 /**
  * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';

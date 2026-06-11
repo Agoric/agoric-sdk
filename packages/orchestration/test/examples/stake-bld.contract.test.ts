@@ -4,8 +4,8 @@ import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import type { Installation } from '@agoric/zoe';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import * as contractExports from '../../src/examples/stake-bld.contract.js';
 import { commonSetup } from '../supports.js';
 

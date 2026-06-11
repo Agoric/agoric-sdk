@@ -5,30 +5,30 @@
 import fs from 'node:fs';
 import '@agoric/internal/src/install-ses-debug.js';
 
-import zlib from 'node:zlib';
-import readline from 'node:readline';
-import process from 'node:process';
 import { spawn } from 'node:child_process';
-import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
-import { Readable, finished as finishedCallback } from 'node:stream';
 import { performance } from 'node:perf_hooks';
-import { tmpName, dirSync as tmpDirSync } from 'tmp';
+import process from 'node:process';
+import readline from 'node:readline';
+import { Readable, finished as finishedCallback } from 'node:stream';
+import { promisify } from 'node:util';
+import zlib from 'node:zlib';
 import sqlite3 from 'better-sqlite3';
+import { tmpName, dirSync as tmpDirSync } from 'tmp';
 import yargsParser from 'yargs-parser';
 import { makeMeasureSeconds } from '@agoric/internal';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeSnapStore } from '@agoric/swing-store';
-import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
-import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
-import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
-import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
-import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
+import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
+import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
+import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
 
 /**
  * @import {SnapStore} from '@agoric/swing-store';
@@ -181,13 +181,12 @@ async function replay(transcriptFile) {
   const snapshotActivityFd = fs.openSync('snapshot-activity.jsonl', 'a');
 
   const fakeKernelKeeper = /** @type {KernelKeeper} */ ({
-    provideVatKeeper: _vatID =>
-      /** @type {Partial<VatKeeper>} */ (
-        /** @type {unknown} */ ({
-          addToTranscript: () => {},
-          getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
-        })
-      ),
+    provideVatKeeper: _vatID => /** @type {Partial<VatKeeper>} */ (
+      /** @type {unknown} */ ({
+        addToTranscript: () => {},
+        getSnapshotInfo: () => loadSnapshotID && { hash: loadSnapshotID },
+      })
+    ),
     getRelaxDurabilityRules: () => false,
   });
 

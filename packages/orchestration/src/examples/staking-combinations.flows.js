@@ -9,8 +9,8 @@
  * @import {ZCFSeat} from '@agoric/zoe';
  */
 
-import { mustMatch } from '@endo/patterns';
 import { Fail, makeError, q } from '@endo/errors';
+import { mustMatch } from '@endo/patterns';
 import { makeTracer } from '@agoric/internal';
 import { CosmosChainAddressShape } from '../typeGuards.js';
 

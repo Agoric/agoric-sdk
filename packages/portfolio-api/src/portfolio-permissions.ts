@@ -1,6 +1,6 @@
-import type { TypedPattern } from '@agoric/internal';
 import { type CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import type { TypedPattern } from '@agoric/internal';
 
 /**
  * Portfolio permissions granted to an automation agent.

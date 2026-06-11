@@ -1,5 +1,5 @@
-import { makePublishKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
+import { makePublishKit } from '@agoric/notifier';
 import { makeExo } from '@agoric/store';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 

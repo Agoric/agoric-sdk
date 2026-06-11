@@ -2,8 +2,8 @@
 /* global FinalizationRegistry WeakRef */
 import test from 'ava';
 
-import { buildSyscall } from '../liveslots-helpers.js';
 import { makeVirtualReferenceManager } from '../../src/virtualReferences.js';
+import { buildSyscall } from '../liveslots-helpers.js';
 
 function makeVRM() {
   const { log, syscall } = buildSyscall();

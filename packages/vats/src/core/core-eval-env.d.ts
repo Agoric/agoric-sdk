@@ -10,9 +10,9 @@
  *   modules that have no imports or named exports.
  */
 
-import type { VatData } from '@agoric/swingset-liveslots/src/vatDataTypes.js';
 import type * as far from '@endo/far';
 import type { Assert } from 'ses';
+import type { VatData } from '@agoric/swingset-liveslots/src/vatDataTypes.js';
 import type { BootstrapModules } from './boot-chain.js';
 
 // Provided by 'CORE_EVAL' handler in chain-behaviors.js

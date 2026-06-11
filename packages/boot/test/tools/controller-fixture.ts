@@ -1,7 +1,7 @@
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController, type SwingSetConfig } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import type { ExecutionContext } from 'ava';
 

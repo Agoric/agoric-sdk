@@ -1,11 +1,12 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+import { dirname, resolve } from 'node:path';
 /**
  * Normalize imports in TypeScript/JavaScript files
  *
  * This script processes TypeScript and JavaScript files to:
  * - Fix inline type imports and add missing imports
  * - Organize and normalize import statements
- * - Apply prettier formatting
+ * - Apply oxfmt formatting
  * - Run ESLint auto-fix
  *
  * Usage: node scripts/normalize-imports.ts "<glob>" [...more globs]
@@ -14,10 +15,8 @@
  */
 /* eslint-disable no-underscore-dangle */
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import { execa } from 'execa';
 import { Project } from 'ts-morph';
-import prettier from 'prettier';
 import ts from 'typescript';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -197,20 +196,16 @@ if (sourceFiles.length === 0) {
   process.exit(0);
 }
 
-const prettierConfigCache = new Map();
-
-const resolvePrettierOptions = async filePath => {
-  if (!prettierConfigCache.has(filePath)) {
-    const resolved =
-      (await prettier.resolveConfig(filePath, {
-        editorconfig: true,
-      })) ?? {};
-    prettierConfigCache.set(filePath, resolved);
-  }
-  return {
-    ...prettierConfigCache.get(filePath),
-    filepath: filePath,
-  };
+const formatWithOxfmt = async (text: string, filePath: string) => {
+  const { stdout } = await execa(
+    'yarn',
+    ['oxfmt', '--stdin-filepath', filePath],
+    {
+      cwd: packageRoot,
+      input: text,
+    },
+  );
+  return stdout;
 };
 
 const runEslintAutofix = async (filePath: string) => {
@@ -235,13 +230,12 @@ for (const sourceFile of sourceFiles) {
   const changedByFixes = originalText !== textAfterFixes;
   if (changedByFixes) {
     try {
-      const prettierOptions = await resolvePrettierOptions(filePath);
-      const formatted = await prettier.format(textAfterFixes, prettierOptions);
+      const formatted = await formatWithOxfmt(textAfterFixes, filePath);
       if (formatted !== textAfterFixes) {
         sourceFile.replaceWithText(formatted);
       }
     } catch (err) {
-      console.warn(`Prettier failed for ${filePath}:`, err);
+      console.warn(`Oxfmt failed for ${filePath}:`, err);
     }
   }
   if (sourceFile.getFullText() !== originalText) {

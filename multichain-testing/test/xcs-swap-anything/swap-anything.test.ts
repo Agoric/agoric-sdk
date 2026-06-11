@@ -1,18 +1,18 @@
+import type { TestFn } from 'ava';
 /* eslint-disable camelcase */
 import anyTest from '@endo/ses-ava/prepare-endo.js';
-import type { TestFn } from 'ava';
-import { AmountMath } from '@agoric/ertp';
-import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import type { Pool } from 'osmojs/osmosis/gamm/v1beta1/balancerPool.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
-import { makeDoOffer } from '../../tools/e2e-tools.js';
-import { commonSetup } from '../support.js';
-import { makeQueryClient } from '../../tools/query.js';
+import { AmountMath } from '@agoric/ertp';
+import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import starshipChainInfo from '../../starship-chain-info.js';
+import { makeDoOffer } from '../../tools/e2e-tools.js';
 import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
 } from '../../tools/ibc-transfer.js';
+import { makeQueryClient } from '../../tools/query.js';
+import { commonSetup } from '../support.js';
 import {
   makeOsmosisSwapTools,
   type Prefix,

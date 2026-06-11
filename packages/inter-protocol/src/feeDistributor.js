@@ -1,7 +1,7 @@
-import { AmountMath } from '@agoric/ertp';
-import { splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
+import { AmountMath } from '@agoric/ertp';
+import { splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { observeNotifier } from '@agoric/notifier';
 import { mustMatch, makeScalarSetStore, M } from '@agoric/store';
 import { RelativeTimeShape } from '@agoric/time';

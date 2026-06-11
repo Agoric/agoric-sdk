@@ -22,9 +22,9 @@
  * expose only capabilities that don't reveal them.
  */
 
-import { Nat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
+import { Nat } from '@endo/nat';
 
 /**
  * @import {Device} from '../../types-external.js';

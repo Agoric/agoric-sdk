@@ -1,6 +1,6 @@
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { makePrintLog } from './printLog.js';
 
 import atomicSwapBundle from './bundle-atomicSwap.js';

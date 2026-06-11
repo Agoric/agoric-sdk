@@ -3,9 +3,9 @@
 
 import childProcessAmbient from 'node:child_process';
 import fsRaw from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
-import { createRequire } from 'node:module';
 
 import makeScratchPad from '@agoric/internal/src/scratch.js';
 

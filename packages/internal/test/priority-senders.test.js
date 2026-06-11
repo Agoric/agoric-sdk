@@ -1,9 +1,9 @@
 // @ts-check
 import test from 'ava';
 
-import { makeFakeStorageKit } from '../src/storage-test-utils.js';
 import { HIGH_PRIORITY_SENDERS } from '../src/chain-storage-paths.js';
 import { makePrioritySendersManager } from '../src/priority-senders.js';
+import { makeFakeStorageKit } from '../src/storage-test-utils.js';
 import { eventLoopIteration as writesSettled } from '../src/testing-utils.js';
 
 test('basic', async t => {

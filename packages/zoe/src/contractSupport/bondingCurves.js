@@ -1,6 +1,6 @@
-import { natSafeMath } from '@agoric/ertp/src/safeMath.js';
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
+import { natSafeMath } from '@agoric/ertp/src/safeMath.js';
 
 /**
  * @import {NatValue} from '@agoric/ertp';

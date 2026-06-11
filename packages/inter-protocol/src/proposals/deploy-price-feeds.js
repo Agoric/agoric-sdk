@@ -1,15 +1,15 @@
+import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
+import { replaceScaledPriceAuthorities } from './replace-scaledPriceAuthorities.js';
 import {
   oracleBrandFeedName,
   provideRetiredInstances,
   reserveThenDeposit,
   sanitizePathSegment,
 } from './utils.js';
-import { replaceScaledPriceAuthorities } from './replace-scaledPriceAuthorities.js';
 
 const STORAGE_PATH = 'priceFeed';
 

@@ -1,8 +1,8 @@
+import { once } from 'node:events';
+import repl from 'node:repl';
 /** @file start a repl with ymax wallet-admin bindings */
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
-import { once } from 'node:events';
-import repl from 'node:repl';
 import type { RunTools } from './wallet-admin-types.ts';
 import { WALLET_KEY } from './ymax-admin-helpers.ts';
 

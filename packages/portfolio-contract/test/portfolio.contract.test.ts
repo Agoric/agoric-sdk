@@ -6,6 +6,10 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { ExecutionContext } from 'ava';
+import assert from 'node:assert/strict';
+import { E, passStyleOf } from '@endo/far';
+import { hexToBytes } from '@noble/hashes/utils';
 import type { NatAmount } from '@agoric/ertp';
 import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
@@ -35,10 +39,6 @@ import {
   type TxId,
 } from '@agoric/portfolio-api';
 import type { TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import { E, passStyleOf } from '@endo/far';
-import { hexToBytes } from '@noble/hashes/utils';
-import type { ExecutionContext } from 'ava';
-import assert from 'node:assert/strict';
 import {
   extractEvmRemoteAccountConfig,
   makeEip155ChainIdToAxelarChain,
@@ -52,6 +52,7 @@ import type {
   TargetAllocation,
 } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
+import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 import { makeWallet } from '../tools/wallet-offer-tools.ts';
 import {
   deploy,
@@ -74,7 +75,6 @@ import {
   makeStorageTools,
 } from './supports.ts';
 import { timeAsync, timeSync } from './test-timing.ts';
-import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
 
 const { fromEntries, keys, values } = Object;
 

@@ -1,3 +1,6 @@
+import { Fail, quote } from '@endo/errors';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 import { AssetKind, type Amount } from '@agoric/ertp';
 import {
   CosmosChainInfoShapeV1,
@@ -5,6 +8,7 @@ import {
   FeeConfigShape,
 } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeTracer } from '@agoric/internal';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   DenomDetailShape,
@@ -23,14 +27,10 @@ import {
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
-import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import type { HostForGuest } from '@agoric/orchestration/src/facade.js';
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Fail, quote } from '@endo/errors';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
 
 import type { HostInterface } from '@agoric/async-flow';
 import type {

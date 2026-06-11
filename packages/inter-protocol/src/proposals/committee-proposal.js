@@ -1,5 +1,5 @@
-import { deeplyFulfilledObject } from '@agoric/internal';
 import { E } from '@endo/far';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { reserveThenDeposit } from './utils.js';
 
 /**

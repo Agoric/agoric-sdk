@@ -1,21 +1,21 @@
 import { Fail } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeExo, keyEQ, makeScalarMapStore } from '@agoric/store';
 
+import { scheduleClose } from './closingRule.js';
 import {
   buildQuestion,
   ChoiceMethod,
   coerceQuestionSpec,
   positionIncluded,
 } from './question.js';
-import { scheduleClose } from './closingRule.js';
+import { makeQuorumCounter } from './quorumCounter.js';
 import {
   BinaryVoteCounterAdminI,
   BinaryVoteCounterCloseI,
   BinaryVoteCounterPublicI,
 } from './typeGuards.js';
-import { makeQuorumCounter } from './quorumCounter.js';
 
 /**
  * @import {Handle} from '@agoric/zoe';

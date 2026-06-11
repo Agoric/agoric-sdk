@@ -1,7 +1,7 @@
+import { parseArgs } from 'node:util';
+import { Far } from '@endo/far';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/far';
-import { parseArgs } from 'node:util';
 import { assertBech32Address } from '@agoric/orchestration/src/utils/address.js';
 import { getManifestForReimburseManualIntervention } from './reimburse-manual-intervention.core.js';
 import { toExternalConfig } from './utils/config-marshal.js';

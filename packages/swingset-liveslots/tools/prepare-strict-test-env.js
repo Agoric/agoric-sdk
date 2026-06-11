@@ -9,11 +9,10 @@
 
 import '@agoric/internal/src/install-ses-debug.js';
 
-// eslint-disable-next-line import/order
 import { reincarnate, flushIncarnation } from './setup-vat-data.js';
 
-import { makePromiseKit } from '@endo/promise-kit';
 import { Fail } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 

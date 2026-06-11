@@ -2,14 +2,14 @@
 /* global globalThis */
 import '@endo/init/debug.js';
 
+import { execa } from 'execa';
+import { fetchEnvNetworkConfig } from '@agoric/client-utils';
 import {
   installBundle,
   txFlags,
 } from '@agoric/deploy-script-support/src/permissioned-deployment.js';
-import { makeCmdRunner, makeFileRd } from '@agoric/pola-io';
-import { execa } from 'execa';
 import { toCLIOptions } from '@agoric/internal';
-import { fetchEnvNetworkConfig } from '@agoric/client-utils';
+import { makeCmdRunner, makeFileRd } from '@agoric/pola-io';
 
 const Usage = '_script_ bundle.json';
 

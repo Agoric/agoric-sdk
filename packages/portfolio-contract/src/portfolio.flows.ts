@@ -5,6 +5,8 @@
  * @see {rebalance}
  */
 
+import { assert, Fail, q } from '@endo/errors';
+import { makeMarshal } from '@endo/marshal';
 import type { GuestInterface } from '@agoric/async-flow';
 import { VaultType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/vaults.js';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
@@ -15,6 +17,7 @@ import {
   objectMap,
   type TraceLogger,
 } from '@agoric/internal';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import type {
   AccountId,
   BaseChainInfo,
@@ -29,7 +32,6 @@ import type {
   ProgressTracker,
   TrafficEntry,
 } from '@agoric/orchestration';
-import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   coerceAccountId,
   parseAccountId,
@@ -59,8 +61,8 @@ import type { VTransferIBCEvent } from '@agoric/vats';
 import type { EVow } from '@agoric/vow';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { assert, Fail, q } from '@endo/errors';
-import { makeMarshal } from '@endo/marshal';
+import { provideEVMAccountWithPermit as provideEVMLegacyAccountWithPermit } from './axelar-gmp-legacy.flows.ts';
+import { provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit } from './axelar-gmp-router.flows.ts';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
 import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
@@ -79,8 +81,6 @@ import {
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-evm.flows.ts';
-import { provideEVMAccountWithPermit as provideEVMLegacyAccountWithPermit } from './axelar-gmp-legacy.flows.ts';
-import { provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit } from './axelar-gmp-router.flows.ts';
 
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
 import { erc20ABI } from './interfaces/erc20.ts';

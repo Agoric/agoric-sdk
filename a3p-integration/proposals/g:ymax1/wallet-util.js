@@ -1,6 +1,6 @@
+import { writeFile } from 'node:fs/promises';
 // @ts-check
 import { agoric, mkTemp } from '@agoric/synthetic-chain';
-import { writeFile } from 'node:fs/promises';
 
 /**
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';

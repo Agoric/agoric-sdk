@@ -1,6 +1,6 @@
 import test from 'ava';
-import fs from 'node:fs';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 
 import {
   getLockdownBundle,

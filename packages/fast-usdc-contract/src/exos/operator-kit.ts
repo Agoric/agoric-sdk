@@ -1,12 +1,12 @@
-import { OperatorKitI } from '@agoric/fast-usdc/src/operator-kit-interface.js';
-import { makeTracer } from '@agoric/internal';
-import type { Zone } from '@agoric/zone';
 import { Fail } from '@endo/errors';
+import { OperatorKitI } from '@agoric/fast-usdc/src/operator-kit-interface.js';
 import type {
   CctpTxEvidence,
   RiskAssessment,
 } from '@agoric/fast-usdc/src/types.js';
+import { makeTracer } from '@agoric/internal';
 import type { Invitation } from '@agoric/zoe';
+import type { Zone } from '@agoric/zone';
 
 const trace: (...args: unknown[]) => void = makeTracer('TxOperator');
 

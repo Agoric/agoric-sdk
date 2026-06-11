@@ -1,8 +1,9 @@
+import type { Guarded } from '@endo/exo';
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { JsonSafe } from '@agoric/cosmic-proto';
-import type { Brand, Issuer } from '@agoric/ertp';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import type { Brand, Issuer } from '@agoric/ertp';
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type {
@@ -11,7 +12,6 @@ import type {
   IBCConnectionID,
   IBCPortID,
 } from '@agoric/network/ibc';
-import type { Guarded } from '@endo/exo';
 import type { CaipChainId } from '@agoric/orchestration';
 import type {
   Installation,

@@ -2,9 +2,9 @@ import test from 'ava';
 
 import { Far } from '@endo/marshal';
 import { kunser } from '@agoric/kmarshal';
+import { parseVatSlot } from '../src/parseVatSlots.js';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { vstr } from './util.js';
-import { parseVatSlot } from '../src/parseVatSlots.js';
 
 function buildRootObject(_vatPowers, _vatParameters, baggage) {
   baggage.has('outside');

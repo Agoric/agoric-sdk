@@ -1,7 +1,7 @@
+import { makeTagged } from '@endo/pass-style';
+import { M } from '@endo/patterns';
 // @ts-check
 import { makePromiseKit } from '@endo/promise-kit';
-import { M } from '@endo/patterns';
-import { makeTagged } from '@endo/pass-style';
 import { PromiseWatcherI } from '@agoric/base-zone';
 
 const { details: X } = assert;

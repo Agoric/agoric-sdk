@@ -1,9 +1,9 @@
 // @ts-check
 import test from 'ava';
 
-import { fc, testProp } from '@fast-check/ava';
 import { assert, X, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
+import { fc, testProp } from '@fast-check/ava';
 import {
   deepMapObject,
   makeMeasureSeconds,

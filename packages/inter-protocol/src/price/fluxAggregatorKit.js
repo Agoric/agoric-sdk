@@ -1,3 +1,5 @@
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 /**
  * @file Adaptation of Chainlink algorithm to the Agoric platform. Modeled on
  *   https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.6/FluxAggregator.sol
@@ -13,8 +15,6 @@ import {
   makeRecorderTopic,
   provideAll,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { prepareOracleAdminKit } from './priceOracleKit.js';
 import { prepareRoundsManagerKit } from './roundsManager.js';
 

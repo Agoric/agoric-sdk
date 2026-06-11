@@ -1,6 +1,6 @@
+import assert from 'node:assert/strict';
 // @ts-check
 import { prepareVowTools } from '@agoric/vow';
-import assert from 'node:assert/strict';
 import {
   prepareEchoConnectionKit,
   prepareNetworkPowers,

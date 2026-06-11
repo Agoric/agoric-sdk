@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/order
 import {
   test,
   getBaggage,
@@ -11,9 +10,9 @@ import { M } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { prepareVowTools } from '@agoric/vow';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareTestAsyncFlowTools } from './_utils.js';
 

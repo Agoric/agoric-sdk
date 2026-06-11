@@ -1,3 +1,5 @@
+import { Fail, q } from '@endo/errors';
+import type { CopyRecord } from '@endo/pass-style';
 import type { GuestOf } from '@agoric/async-flow';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath, type Brand, type NatAmount } from '@agoric/ertp';
@@ -25,8 +27,6 @@ import {
 } from '@agoric/orchestration/src/utils/address.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import type { ZCFSeat } from '@agoric/zoe';
-import { Fail, q } from '@endo/errors';
-import type { CopyRecord } from '@endo/pass-style';
 import type { LiquidityPoolKit } from './exos/liquidity-pool.ts';
 import type { SettlerKit } from './exos/settler.ts';
 import type { StatusManager } from './exos/status-manager.ts';

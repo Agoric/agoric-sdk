@@ -14,9 +14,9 @@ import {
 import { TxStatus } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
 import { loadConfig } from '../src/config.ts';
-import { prepareAbortController } from '../src/support.ts';
 import type { SimplePowers } from '../src/main.ts';
 import { resolvePendingTx } from '../src/resolver.ts';
+import { prepareAbortController } from '../src/support.ts';
 import { makeNowISO } from '../src/utils.ts';
 
 const parseStatus = (statusArg: string): Omit<TxStatus, 'pending'> => {

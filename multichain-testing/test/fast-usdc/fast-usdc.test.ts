@@ -1,5 +1,6 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
+import type { ExecutionContext, TestFn } from 'ava';
 import { sleep } from '@agoric/client-utils';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
@@ -9,7 +10,6 @@ import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.j
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { makeTracer } from '@agoric/internal';
 import type { AccountId, Denom, DenomDetail } from '@agoric/orchestration';
-import type { ExecutionContext, TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
 import { makeBlocksIterable } from '../../tools/block-iter.js';
 import { makeDoOffer } from '../../tools/e2e-tools.js';

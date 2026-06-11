@@ -1,7 +1,7 @@
-import { AmountMath } from '@agoric/ertp';
-import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import { Fail } from '@endo/errors';
 import { mustMatch } from '@endo/patterns';
+import { AmountMath } from '@agoric/ertp';
+import { multiplyBy } from '@agoric/ertp/src/ratio.js';
 import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
 import { FeeConfigShape } from '../type-guards.js';
 

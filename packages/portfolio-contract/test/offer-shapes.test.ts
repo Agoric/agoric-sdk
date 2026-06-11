@@ -1,6 +1,7 @@
 /** @file test for ProposalShapes, offerArgs, vstorage shapes */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { matches, mustMatch } from '@endo/patterns';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import type { PortfolioAgentStatus } from '@agoric/portfolio-api';
 import {
@@ -15,7 +16,6 @@ import {
 } from '@agoric/portfolio-api/src/resolver.js';
 import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { matches, mustMatch } from '@endo/patterns';
 import { PublishedTxShape } from '../src/resolver/types.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {

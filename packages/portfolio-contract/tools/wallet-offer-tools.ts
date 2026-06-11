@@ -1,3 +1,5 @@
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
 import type { Amount, Brand, Payment, Purse } from '@agoric/ertp';
 import { deeplyFulfilledObject, NonNullish, objectMap } from '@agoric/internal';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
@@ -14,8 +16,6 @@ import type {
   StartedInstanceKit,
 } from '@agoric/zoe/src/zoeService/utils.js';
 import type { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
 
 const { keys } = Object;
 

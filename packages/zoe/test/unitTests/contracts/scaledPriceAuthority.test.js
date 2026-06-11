@@ -7,11 +7,11 @@ import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 import { makeRatio } from '../../../src/contractSupport/index.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-import buildManualTimer from '../../../tools/manualTimer.js';
 import { makeManualPriceAuthority } from '../../../tools/manualPriceAuthority.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**
  * @import {FeeIssuerConfig, Installation, ZoeService} from '@agoric/zoe';

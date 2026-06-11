@@ -1,3 +1,4 @@
+import { E } from '@endo/far';
 import {
   AmountMath,
   AssetKind,
@@ -11,7 +12,6 @@ import {
   provideDurableSetStore,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/far';
 
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';

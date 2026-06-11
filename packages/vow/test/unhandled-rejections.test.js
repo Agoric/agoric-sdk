@@ -8,8 +8,8 @@ import { Far } from '@endo/far';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
-import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import { prepareVowTools } from '../vat.js';
 
 /**

@@ -1,3 +1,7 @@
+import { Fail, makeError, q } from '@endo/errors';
+import type { PureData } from '@endo/pass-style';
+import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 /**
  * @file flows for interacting with router-based remote account contracts on EVM chains
  *
@@ -28,10 +32,6 @@ import { constructContractCall } from '@agoric/orchestration/src/utils/gmp.js';
 import { PermitWitnessTransferFromFunctionABIType } from '@agoric/orchestration/src/utils/permit2.js';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
-import { Fail, makeError, q } from '@endo/errors';
-import type { PureData } from '@endo/pass-style';
-import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import { makeEvmContract } from './evm-facade.ts';
 import {
   remoteAccountAxelarRouterABI,
@@ -45,6 +45,7 @@ import {
   type LocalAccount,
   type PortfolioInstanceContext,
 } from './portfolio.flows.ts';
+import type { EVMContext } from './pos-evm.flows.ts';
 import {
   TxType,
   type PublishedRoutedGMPTxDetails,
@@ -54,7 +55,6 @@ import {
   predictRemoteAccountAddress,
 } from './utils/evm-orch-router.ts';
 import { appendTxIds } from './utils/traffic.ts';
-import type { EVMContext } from './pos-evm.flows.ts';
 
 const trace = makeTracer('GMPRF');
 

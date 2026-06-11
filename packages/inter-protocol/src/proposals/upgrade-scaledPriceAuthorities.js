@@ -1,5 +1,5 @@
-import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';

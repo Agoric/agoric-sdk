@@ -1,10 +1,10 @@
+import type { Abi, Hex } from 'viem';
 /**
  * @file ABI subset and calldata construction for the 1inch AggregationRouterV6.
  * @see {@link oneInchRouterABI}
  * @see {@link getOneInchSwapArgs}
  */
 import type { OneInchSwapDesc } from '@agoric/portfolio-api';
-import type { Abi, Hex } from 'viem';
 import type { AbiContractArgs } from '../evm-facade.ts';
 
 /**

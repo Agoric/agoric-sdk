@@ -1,30 +1,30 @@
 /* global globalThis */
 import type { ExecutionContext } from 'ava';
+import childProcess from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
-import childProcess from 'node:child_process';
+import { withCosmosChainId } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
 import {
   withChainCapabilities,
   type CosmosChainInfo,
 } from '@agoric/orchestration';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
-import { withCosmosChainId } from '@aglocal/fast-usdc-deploy/src/utils/deploy-config.js';
+import starshipChainInfo from '../starship-chain-info.js';
 import { makeAgdTools } from '../tools/agd-tools.js';
+import { makeAssetInfo } from '../tools/asset-info.js';
+import { makeDeployBuilder } from '../tools/deploy.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
+import { makeFaucetTools } from '../tools/faucet-tools.js';
+import { makeNobleTools } from '../tools/noble-tools.js';
 import {
   makeGetFile,
   makeSetupRegistry,
   type MultichainRegistry,
 } from '../tools/registry.js';
-import { generateMnemonic } from '../tools/wallet.js';
-import { makeRetryUntilCondition } from '../tools/sleep.js';
-import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeRelayer } from '../tools/relayer-tools.js';
-import { makeNobleTools } from '../tools/noble-tools.js';
-import { makeAssetInfo } from '../tools/asset-info.js';
-import starshipChainInfo from '../starship-chain-info.js';
-import { makeFaucetTools } from '../tools/faucet-tools.js';
+import { makeRetryUntilCondition } from '../tools/sleep.js';
+import { generateMnemonic } from '../tools/wallet.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 

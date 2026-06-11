@@ -1,3 +1,5 @@
+import type { Address as EvmAddress } from 'abitype';
+import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import type { NatAmount } from '@agoric/ertp';
 import type {
   AccountId,
@@ -5,8 +7,6 @@ import type {
   CaipChainId,
   CosmosChainAddress,
 } from '@agoric/orchestration';
-import type { Address as EvmAddress } from 'abitype';
-import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import type { SupportedChain, YieldProtocol } from '../src/constants.js';
 import { AxelarChain } from '../src/constants.js';
 import type { InstrumentId } from '../src/instruments.js';

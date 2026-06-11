@@ -6,6 +6,10 @@
  * This is an orchestration component that can be used independently of portfolio logic.
  */
 
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+import type { NatValue } from '@agoric/ertp';
 import { makeTracer, type ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
@@ -14,10 +18,6 @@ import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
-import type { NatValue } from '@agoric/ertp';
 import { TxStatus, TxType } from './constants.js';
 import type {
   PublishedTx,

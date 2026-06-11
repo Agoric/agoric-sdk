@@ -1,3 +1,7 @@
+import { inspect } from 'node:util';
+import { Fail } from '@endo/errors';
+import { Nat } from '@endo/nat';
+import { Command } from 'commander';
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
@@ -10,10 +14,6 @@ import {
 } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
-import { Fail } from '@endo/errors';
-import { Nat } from '@endo/nat';
-import { Command } from 'commander';
-import { inspect } from 'node:util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
 import {
@@ -289,7 +289,11 @@ export const makeOracleCommand = (
          *  keys: string[],
          *  price: number,
          * }}
-         */ { pair, keys, price },
+         */ {
+          pair,
+          keys,
+          price,
+        },
       ) => {
         const {
           readLatestHead,

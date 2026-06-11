@@ -1,7 +1,7 @@
 import { Fail } from '@endo/errors';
 import { parseVatSlot, insistVatType } from '../../lib/parseVatSlots.js';
-import { parseLocalSlot } from './parseLocalSlots.js';
 import { cdebug } from './cdebug.js';
+import { parseLocalSlot } from './parseLocalSlots.js';
 
 export function makeKernel(state, syscall) {
   // *-KernelForLocal: comms vat sending out to kernel

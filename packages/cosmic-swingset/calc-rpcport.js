@@ -2,8 +2,8 @@
 
 // NOTE: Runs outside SES
 
-import process from 'node:process';
 import fs from 'node:fs';
+import process from 'node:process';
 import toml from '@iarna/toml';
 
 // point this at ~/.ag-cosmos-chain/config/config.toml

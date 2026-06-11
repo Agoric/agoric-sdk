@@ -3,10 +3,10 @@
  * for a contract in a branch of agoricNames / chain-storage.
  */
 
-import { makeTracer } from '@agoric/internal/src/debug.js';
 import { Fail, q } from '@endo/errors';
 import { E, passStyleOf } from '@endo/far';
 import { M, objectMap } from '@endo/patterns';
+import { makeTracer } from '@agoric/internal/src/debug.js';
 
 const trace = makeTracer('CCtrl');
 

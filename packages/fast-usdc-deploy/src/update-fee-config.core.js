@@ -1,7 +1,7 @@
 /** @file core-eval to update feeConfig. feeConfig is supplied via privateArgs and requires a contract upgrade to change */
 
-import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('FUSD-UpdateFees', true);
 

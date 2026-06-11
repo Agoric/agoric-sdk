@@ -1,5 +1,5 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
 import {
   NANOSECONDS_PER_MILLISECOND,
   SECONDS_PER_MINUTE,

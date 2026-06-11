@@ -1,6 +1,6 @@
 import { makeInbound } from './clist-inbound.js';
-import { makeOutbound } from './clist-outbound.js';
 import { makeKernel } from './clist-kernel.js';
+import { makeOutbound } from './clist-outbound.js';
 import { makeIngressEgress } from './clist-xgress.js';
 
 // get-*: the entry must be present

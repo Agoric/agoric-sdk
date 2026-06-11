@@ -18,9 +18,9 @@ mkdir -p .vscode \
 
 cat > .vscode/settings.json.new << \EOF || die "Could not write settings.json"
 {
-  // Automatically format with dprint on save
+  // Automatically format with Oxfmt on save
   "editor.formatOnSave": true,
-  "editor.defaultFormatter": "dprint.dprint",
+  "editor.defaultFormatter": "oxc.oxc-vscode",
 
   "typescript.preferences.importModuleSpecifierEnding": "js",
   "typescript.tsdk": "node_modules/typescript/lib",
@@ -30,14 +30,11 @@ cat > .vscode/settings.json.new << \EOF || die "Could not write settings.json"
     "source.fixAll.eslint": true
   },
   "eslint.rules.customizations": [
-    // Leave this to repo formatter
-    { "rule": "prettier/*", "severity": "off" },
     // Error in CI but a common state while coding in IDE
     { "rule": "no-unused-vars", "severity": "warn" },
     { "rule": "@typescript-eslint/no-unused-vars", "severity": "warn" },
     // Imports are auto-fixed on save
     { "rule": "import/newline-after-import", "severity": "off" },
-    { "rule": "import/order", "severity": "off" },
   ],
   "eslint.useESLintClass": true,
   "eslint.packageManager": "yarn"
@@ -86,7 +83,7 @@ EOF
 cat > .vscode/extensions.json.new << \EOF || die "Could not write extensions.json"
 {
     "recommendations": [
-        "dprint.dprint"
+        "oxc.oxc-vscode"
     ]
 }
 EOF

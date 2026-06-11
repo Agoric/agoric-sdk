@@ -6,13 +6,13 @@ import { E } from '@endo/eventual-send';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 
-import { setup } from '../setupBasicMints.js';
-import { installationPFromSource } from '../installFromSource.js';
+import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
 import {
   assertPayoutDeposit,
   assertPayoutAmount,
 } from '../../zoeTestHelpers.js';
-import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { setup } from '../setupBasicMints.js';
 
 /**
  * @import {ContractMeta, Invitation, OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';

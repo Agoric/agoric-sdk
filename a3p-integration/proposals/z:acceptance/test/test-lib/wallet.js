@@ -1,7 +1,7 @@
 // @ts-check
 
-import { sendAction } from 'agoric/src/lib/index.js';
 import { inspect } from 'node:util';
+import { sendAction } from 'agoric/src/lib/index.js';
 
 /**
  * @import {SmartWalletKit} from '@agoric/client-utils';

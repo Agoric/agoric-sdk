@@ -19,8 +19,8 @@ import {
   getEnvironmentOptionsList,
   getEnvironmentOption,
 } from '@endo/env-options';
-import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { defineName } from '@agoric/internal/src/js-utils.js';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 /** @import {BaseLevels} from '@agoric/internal/vendor/anylogger.js'; */
 /** @typedef {keyof BaseLevels} LogLevel; */

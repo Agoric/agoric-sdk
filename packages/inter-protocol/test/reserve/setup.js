@@ -1,17 +1,17 @@
-import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { feeIssuerConfig } from '@agoric/vats/src/core/utils.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
+import { feeIssuerConfig } from '@agoric/vats/src/core/utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { setupReserve } from '../../src/proposals/econ-behaviors.js';
 
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import {
   installPuppetGovernance,
   makeMockChainStorageRoot,
 } from '../supports.js';
-import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
 /**
  * @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js';

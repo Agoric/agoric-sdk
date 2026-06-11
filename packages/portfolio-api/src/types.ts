@@ -1,3 +1,4 @@
+import type { Address as EvmAddress } from 'abitype';
 /* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
 import {
@@ -11,16 +12,15 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
-import type { Address as EvmAddress } from 'abitype';
 import type {
   AxelarChain,
   SupportedChain,
   YieldProtocol,
 } from './constants.js';
-import type { InstrumentId } from './instruments.js';
-import type { PublishedTx } from './resolver.js';
 import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
+import type { InstrumentId } from './instruments.js';
 import type { PortfolioPermissions } from './portfolio-permissions.js';
+import type { PublishedTx } from './resolver.js';
 
 /**
  * Feature flags to handle contract upgrade flow compatibility.

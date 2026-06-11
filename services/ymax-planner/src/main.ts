@@ -9,7 +9,10 @@ import * as ws from 'ws';
 
 import { Fail, q } from '@endo/errors';
 
-import { PROD_NETWORK } from '@agoric/portfolio-api/src/network/prod-network.js';
+import {
+  axelarConfig,
+  axelarConfigTestnet,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
@@ -20,38 +23,35 @@ import {
   reflectWalletStore,
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import type { CaipChainId } from '@agoric/orchestration';
 import {
   deeplyFulfilledObject,
   objectMap,
   withDeferredCleanup,
 } from '@agoric/internal';
+import type { CaipChainId } from '@agoric/orchestration';
 import {
   CaipChainIds,
   UsdcTokenIds,
 } from '@agoric/portfolio-api/src/constants.js';
-import {
-  axelarConfig,
-  axelarConfigTestnet,
-} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import { PROD_NETWORK } from '@agoric/portfolio-api/src/network/prod-network.js';
 
 import { loadConfig } from './config.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
+import { startEngine } from './engine.ts';
+import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
+import { getPoolTokenAddresses } from './evm-utils.ts';
+import { makeGasEstimator } from './gas-estimation.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import { startEngine } from './engine.ts';
+import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import {
   createEVMContext,
   prepareAbortController,
   spectrumChainIdsByCluster,
 } from './support.ts';
 import type { MakeAbortController } from './support.ts';
-import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
-import { makeGasEstimator } from './gas-estimation.ts';
-import { makeSQLiteKeyValueStore } from './kv-store.ts';
-import { YdsNotifier } from './yds-notifier.ts';
-import { getPoolTokenAddresses } from './evm-utils.ts';
 import { makeNowISO } from './utils.ts';
+import { YdsNotifier } from './yds-notifier.ts';
 
 const { fromEntries, entries } = Object;
 

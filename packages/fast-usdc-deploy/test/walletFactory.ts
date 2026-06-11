@@ -1,15 +1,15 @@
 import { Fail } from '@endo/errors';
-import {
-  type AgoricNamesRemotes,
-  makeAgoricNamesRemotesFromFakeStorage,
-} from '@agoric/vats/tools/board-utils.js';
+import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import {
   fetchCoreEvalRelease,
   makeSwingsetTestKit,
 } from '@aglocal/boot/tools/supports.js';
-import { makeWalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import type { FastUsdcPublishedPathTypes } from '@agoric/fast-usdc';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import {
+  type AgoricNamesRemotes,
+  makeAgoricNamesRemotesFromFakeStorage,
+} from '@agoric/vats/tools/board-utils.js';
 import type { FastUSDCCorePowers } from '../src/start-fast-usdc.core.js';
 
 type FastUsdcBootstrapVatItems = FastUSDCCorePowers['consume'] &

@@ -15,7 +15,6 @@ import type {
   Marshaller,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
-import type { Instance } from '../src/zoeService/utils.js';
 import type {
   ContractMeta,
   FeeMintAccess,
@@ -25,6 +24,7 @@ import type {
   ZCFSeat,
   ZoeService,
 } from '../src/types-index.js';
+import type { Instance } from '../src/zoeService/utils.js';
 
 const zoe = {} as ZoeService;
 const scaledPriceInstallation = {} as Installation<

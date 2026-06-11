@@ -2,8 +2,8 @@
 import test from 'ava';
 
 import { Far } from '@endo/marshal';
-import { M } from '@agoric/store';
 import { makeCopyMap, makeCopySet } from '@endo/patterns';
+import { M } from '@agoric/store';
 import { makeFakeCollectionManager } from '../tools/fakeVirtualSupport.js';
 
 const {

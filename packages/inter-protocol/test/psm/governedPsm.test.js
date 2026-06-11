@@ -1,12 +1,12 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeFakeMarshaller } from '@agoric/notifier/tools/testSupports.js';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { setupPsm } from './setupPsm.js';
 
 /**

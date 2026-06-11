@@ -1,5 +1,5 @@
-import type { TypedPattern } from '@agoric/internal';
 import { M } from '@endo/patterns';
+import type { TypedPattern } from '@agoric/internal';
 import type { BeefyInstrumentId, ERC4626InstrumentId } from './places.ts';
 import type {
   DepositFromChainRef,

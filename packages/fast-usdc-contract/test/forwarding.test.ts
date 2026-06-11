@@ -1,9 +1,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { E, type EReturn } from '@endo/far';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makePublishKit } from '@agoric/notifier';
-import { E, type EReturn } from '@endo/far';
 import {
   makeCustomer,
   makeLP,

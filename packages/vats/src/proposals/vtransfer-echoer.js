@@ -1,6 +1,6 @@
+import { E } from '@endo/far';
 // @ts-check
 import { makeExo } from '@agoric/store';
-import { E } from '@endo/far';
 
 /**
  * @import {TransferMiddleware} from '../transfer.js';
