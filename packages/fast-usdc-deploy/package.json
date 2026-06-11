@@ -20,6 +20,7 @@
     "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo"
   },
   "devDependencies": {
+    "@aglocal/boot": "workspace:*",
     "@agoric/swing-store": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@endo/promise-kit": "^1.1.13",
