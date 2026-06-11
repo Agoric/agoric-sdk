@@ -5,6 +5,45 @@
   "singleQuote": true,
   "printWidth": 80, // Prettier's default
   "sortPackageJson": false,
+  "sortImports": {
+    "internalPattern": ["@agoric/", "@aglocal/"],
+    "sortSideEffects": false,
+    "newlinesBetween": false,
+    "partitionByNewline": true,
+    "customGroups": [
+      {
+        "groupName": "test-env",
+        "elementNamePattern": ["ava", "**/prepare-test*", "prepare-test*"]
+      }
+    ],
+    "groups": [
+      "test-env",
+      "builtin",
+      "external",
+      ["internal", "subpath"],
+      ["parent", "sibling", "index"],
+      "style",
+      "unknown"
+    ]
+  },
+  "overrides": [
+    {
+      // Do not sort imports in files with a file-level `//@ts-nocheck`: sorting
+      // can hoist an import above the directive, silently disabling it. This
+      // covers generated codegen output plus a few hand-written `@ts-nocheck`
+      // modules. Whitespace formatting still applies.
+      "files": [
+        "**/codegen/**",
+        "packages/deployment/src/main.js",
+        "packages/inter-protocol/src/proposals/price-feed-proposal.js",
+        "packages/solo/src/chain-cosmos-sdk.js",
+        "packages/solo/src/outbound.js",
+        "packages/solo/src/web.js",
+        "packages/swingset-liveslots/test/mock-gc.js"
+      ],
+      "options": { "sortImports": false }
+    }
+  ],
   "ignorePatterns": [
     "build",
     "bundles",
