@@ -1,14 +1,18 @@
 # Agent Onboarding and Authorization
 
 ## Purpose
-Prepare an initial `mainnet` `ymax0` allocation recommendation, hand the user a pre-populated YDS create-portfolio link, then receive and redeem delegation after the user creates the portfolio.
+
+Enable a smooth, secure onboarding flow for a delegated YMax investment portfolio on `main0.ymax.app` by aligning the user's risk profile with a concrete allocation recommendation, minimizing manual setup with a pre-filled portfolio link, and establishing a correctly provisioned delegate wallet so the agent can operate on the user's behalf.
 
 ## Inputs
+
 - `YDS_BASE=https://main0.ymax.app`
 - `CONTRACT=ymax0`
 - the user's risk profile, time horizon, and intended capital deployment
+- Documentation: https://ymax.freshdesk.com/support/home
 
 ## Step 1: Research and Discuss an Initial Allocation
+
 The agent should:
 - use YDS to inspect the currently listed instruments
 - do a bit of real-world research on those instruments and protocols
@@ -18,35 +22,11 @@ The agent should:
 Avoid financial advice phrasing by saying, for example:
 The following allocation appears to meet your preferences based on the current APYs.
 
-## Step 2: Hand Off a Pre-Populated Create-Portfolio Link
-The agent proposes a link.
+## Step 2: Generate the Delegate Key Pair and Agoric Address
 
-During a transitionary period, use the deploy preview:
-
-```text
-https://feat-ago-611-prepopulated-li.ymax1-ui.pages.dev?Aave_Arbitrum=60&Compound_Arbitrum=40
-```
-
-in due course, it should be available at:
-
-```text
-https://main0.ymax.app/create-portfolio?Aave_Arbitrum=60&Compound_Arbitrum=40
-```
-
-That link should pre-populate the YMax create-portfolio page with the discussed allocation.
-
-## Step 3: User Creates the Portfolio
-The user follows the link, creates the portfolio on `main0.ymax.app`, and notes the resulting portfolio number.
-
-## Step 4: User Gives the Portfolio Number to the Agent
-The agent cannot proceed with delegated updates until the user shares the created portfolio id.
-
-## Step 5: Generate the Delegate Key Pair and Agoric Address
 The delegate agent should generate a key pair, derive an Agoric address, and provision a Smart Wallet for that address. That provisioned wallet address is the Grant target.
 
 1. Generate a new BIP-39 mnemonic.
-
-Save the mnemonic securely. The same delegate wallet will be needed later for provisioning, invitation redemption, and delegated submissions.
 
 Export the delegate wallet mnemonic in the environment:
 
@@ -54,8 +34,9 @@ Export the delegate wallet mnemonic in the environment:
 export MNEMONIC='delegate mnemonic'
 ```
 
+Save the mnemonic durably and keep it reasonably confidential. The same delegate wallet will be needed later for provisioning, invitation redemption, and delegated submissions.
 
-2. Derive the delegate private key and bech32 `agoric1...` address using `m/44'/564'/0'/0/0`, and record that address as `AGENT_ADDRESS`.
+2. Derive the delegate private key and bech32 `agoric1...` address using HD path `m/44'/564'/0'/0/0`, and record that address as `AGENT_ADDRESS`.
 
 3. Run:
 
@@ -74,6 +55,33 @@ agoric wallet provision --account "$AGENT_ADDRESS" --spend
 
 This spends the provisioning cost and creates the Smart Wallet for `AGENT_ADDRESS`.
 
+
+## Step 3: Hand Off a Pre-Populated Create-Portfolio Link
+
+The agent proposes a link.
+
+During a transitionary period, use the deploy preview:
+
+```text
+https://feat-ago-611-prepopulated-li.ymax1-ui.pages.dev?Aave_Arbitrum=60&Compound_Arbitrum=40
+```
+
+in due course, it should be available at:
+
+The agent proposes a link of the form:
+
+```text
+https://main0.ymax.app/create-portfolio?Aave_Arbitrum=60&Compound_Arbitrum=40
+```
+
+That link should pre-populate the YMax create-portfolio page with the discussed allocation.
+
+## Step 4: User Creates the Portfolio
+The user follows the link, creates the portfolio on `main0.ymax.app`, and notes the resulting portfolio number.
+
+## Step 5: User Gives the Portfolio Number to the Agent
+The agent cannot proceed with delegated updates until the user shares the created portfolio id.
+
 ## Step 6: Hand Off the Delegation Link
 The agent gives the user a link.
 
@@ -89,11 +97,12 @@ In due course, you should be able to use:
 https://main0.ymax.app/grant?portfolioId=P&accountHolder=agoric1...
 ```
 
-Replace `P` with the created portfolio id and `agoric1...` with the delegate address from step 5.
+Replace `P` with the created portfolio id and `agoric1...` with the delegate address from step 2.
 
 The user follows that link to complete the delegation flow in the `main0.ymax.app` UI.
 
 ## Step 7: Delegate Redeems the Invitation
+
 Before redeeming, the agent should poll for the delivered invitation by checking the current wallet state and invitation balance. The local CLI path should be based on `packages/agoric-cli`, for example:
 
 ```sh

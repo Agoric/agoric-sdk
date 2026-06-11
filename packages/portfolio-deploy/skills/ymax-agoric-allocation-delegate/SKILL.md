@@ -1,6 +1,11 @@
 ---
 name: ymax-agoric-allocation-delegate
-description: Operate a YMax portfolio as a delegated Agoric allocation agent on mainnet `ymax0`. Use when the operator needs to discuss allocations with a user, hand off a pre-populated YDS create-portfolio link, receive the created portfolio id, redeem the delegation invitation, and submit delegated setTargetAllocation updates.
+description: |-
+  Manage a YMax DeFi portfolio's capital allocation under delegated authority on mainnet. YMax is a non-custodial cross-chain portfolio command center built on Agoric Orchestration — it executes multi-block, multi-chain workflows (withdraw, bridge, swap, deposit) from a single user signature across Ethereum Mainnet, Arbitrum, Base, Optimism, and Avalanche. Currently integrates 3 lending protocols via USDC vaults: Aave, Compound, and Morpho.
+
+  Use when a portfolio owner has granted an AI agent permission to adjust their target allocation — rebalance across Aave, Compound, and Morpho vaults in response to market conditions, and optimize returns within the approved instrument set, all without needing the owner's keys.
+
+  Triggers: "adjust allocation", "rebalance portfolio", "optimize yield", "update targets", "delegated rebalance", "ymax allocation change". The agent operates within `setTargetAllocation` scope only and must preserve the existing instrument key set — no adding or removing vaults, no withdrawals, no deposits.
 ---
 
 # YMax Agoric Allocation Delegate
@@ -19,7 +24,7 @@ Advise on an initial mainnet `ymax0` allocation, hand off a pre-populated create
 - Confirm the delegate wallet derivation path matches the funded address before using `wallet-admin.ts`; the default client-utils path is `m/44'/564'/0'/0/0`.
 
 ## Run Order
-1. Complete onboarding, research, and owner handoff: [agent-onboarding.md](references/agent-onboarding.md).
+1. Complete onboarding, research, and owner handoff: [ymax-agoric-onboarding](../ymax-agoric-onboarding/SKILL.md).
 2. After the user creates the portfolio and shares the id, query YDS and build a candidate that preserves the existing instrument key set: [yds-query-playbook.md](references/yds-query-playbook.md).
 3. Submit delegated allocation update: [set-target-allocation.md](references/set-target-allocation.md).
 4. Verify the YDS-visible portfolio state and diagnose failures.
@@ -32,3 +37,4 @@ Advise on an initial mainnet `ymax0` allocation, hand off a pre-populated create
 - On-chain success but stale YDS state: submit the Agoric tx hash to YDS `POST /transactions` with `chain=agoric-3` and `ymaxInstance=ymax0`, then poll the portfolio again.
 - Wallet/address mismatch: verify the mnemonic derives the funded delegate address on the same HD path the tool is using; if not, override the path or use a one-off submission helper.
 - Repeated non-input failure: stop and escalate with the tx hash, portfolio id, delegation key, and allocation file.
+- Agoric CLI not found: if the `agoric` command is missing, you may need to clone `agoric/agoric-sdk` and install dependencies (for example, run `yarn` and `yarn install` in the SDK) so the `agoric` CLI is available.
