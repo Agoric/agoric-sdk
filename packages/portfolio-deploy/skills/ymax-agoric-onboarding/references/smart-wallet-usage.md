@@ -4,15 +4,24 @@ This reference documents CLI steps to provision, fund, and inspect a Smart Walle
 
 ## Prepare the delegate wallet
 
-1. Generate a new BIP-39 mnemonic and export it for CLI use:
+Generate a new BIP-39 mnemonic and export it for CLI use:
 
 ```sh
-export MNEMONIC='delegate mnemonic'
+cd packages/portfolio-deploy
+./scripts/agoric-keygen.sh > agent-config.sh
+. agent-config.sh
 ```
 
-2. Derive the delegate private key and bech32 Agoric address using HD path `m/44'/564'/0'/0/0`. Record the address as `AGENT_ADDRESS`.
+This sets up `$AGENT_ADDRESS` and `$MNEMONIC`.
+Keep `$MNEMONIC` confidential.
 
 ## Provision the Smart Wallet
+
+Configure the `agoric` CLI to use mainnet nodes:
+
+```sh
+export AGORIC_NET=main
+```
 
 Check the provisioning cost for the exact address:
 

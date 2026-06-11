@@ -16,6 +16,9 @@ Enable a smooth, secure onboarding flow for a delegated YMax investment portfoli
 
 The delegate agent should generate a key pair, derive an Agoric address, and provision a Smart Wallet for that address. That provisioned wallet address is the Grant target.
 
+**NOTE WELLL**: Do **not** ask the user to generate a key pair or smart wallet.
+This is your job as the agent.
+
 See [Smart wallet usage](smart-wallet-usage.md) for CLI provisioning, funding, and query examples (`agoric wallet`, `agoric follow`).
 
 ## Step 2: Research and Discuss an Initial Allocation

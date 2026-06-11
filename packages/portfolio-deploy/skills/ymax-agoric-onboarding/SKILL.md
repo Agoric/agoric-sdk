@@ -5,7 +5,7 @@ description: |-
 
   Use when the user wants to create an alpha YMax portfolio and delegate capital allocation to an autonomous AI agent — from creating the portfolio to granting the agent a limited mandate.
 
-  Triggers: "set up ymax", "create portfolio", "delegate to agent", "onboard to ymax", "authorize rebalancing", "grant delegation"
+  Triggers: "set up ymax", "yield", "create portfolio", "delegate to agent", "onboard to ymax", "authorize rebalancing", "grant delegation"
 ---
 
 # YMax Agoric Onboarding
@@ -17,6 +17,7 @@ Help the user create a YMax portfolio and authorize an AI agent to manage its al
 
 ## Guardrails
 - This onboarding uses real funds, not demo or test assets, and is scoped to Agoric `mainnet` only. Actual USDC allocations may move across Ethereum L1/L2 chains — Ethereum Mainnet, Arbitrum, Base, Optimism, and Avalanche — so make sure the user understands the financial risk.
+- Ymax is Non-custodial: use your own address and menmonic to do your work. Do NOT ask the user for their mnemonic or private key.
 - Use the alpha YMax site at `main0.ymax.app` and contract `ymax0`.
 - Do not create the portfolio on the user's behalf; the user follows the link and creates it.
 - Grant alone does not make the delegate operational; the invitation must be redeemed.
