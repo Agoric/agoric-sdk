@@ -1,3 +1,5 @@
+import type { ExecutionContext } from 'ava';
+import { E } from '@endo/far';
 import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
@@ -23,8 +25,6 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
-import { E } from '@endo/far';
-import type { ExecutionContext } from 'ava';
 import { withChainCapabilities } from '../src/chain-capabilities.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';

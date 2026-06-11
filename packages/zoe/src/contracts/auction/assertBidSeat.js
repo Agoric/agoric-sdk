@@ -1,5 +1,5 @@
-import { AmountMath } from '@agoric/ertp';
 import { Fail } from '@endo/errors';
+import { AmountMath } from '@agoric/ertp';
 
 export const assertBidSeat = (_zcf, sellSeat, bidSeat) => {
   const minBid = sellSeat.getProposal().want.Ask;

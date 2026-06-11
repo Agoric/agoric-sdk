@@ -1,5 +1,7 @@
 import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -14,9 +16,7 @@ import { setupClientManager } from '@agoric/vats/src/core/chain-behaviors.js';
 import { buildRootObject as boardRoot } from '@agoric/vats/src/vat-board.js';
 import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, Far } from '@endo/far';
 
 /**
  * @import {StoredFacet} from '@agoric/internal/src/lib-chainStorage.js';

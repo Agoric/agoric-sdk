@@ -1,5 +1,5 @@
-import { E } from '@endo/eventual-send';
 import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '../../../src/index.js';
 

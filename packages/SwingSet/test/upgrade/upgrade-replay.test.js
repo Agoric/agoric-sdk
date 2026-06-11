@@ -3,8 +3,8 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { assert } from '@endo/errors';
-import { kser } from '@agoric/kmarshal';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { buildKernelBundles, makeSwingsetController } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';

@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+import { dirname, resolve } from 'node:path';
 /**
  * Normalize imports in TypeScript/JavaScript files
  *
@@ -14,7 +15,6 @@
  */
 /* eslint-disable no-underscore-dangle */
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import { execa } from 'execa';
 import { Project } from 'ts-morph';
 import ts from 'typescript';

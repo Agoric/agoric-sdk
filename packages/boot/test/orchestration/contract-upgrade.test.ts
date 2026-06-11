@@ -3,8 +3,8 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { BridgeId } from '@agoric/internal';
-import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { withChainCapabilities } from '@agoric/orchestration';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeBootTestContext,

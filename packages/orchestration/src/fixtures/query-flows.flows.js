@@ -1,9 +1,9 @@
+import { Fail, q } from '@endo/errors';
+import { M, mustMatch } from '@endo/patterns';
 /**
  * @file Testing fixture for Local and Interchain Queries
  */
 import { makeTracer } from '@agoric/internal';
-import { Fail, q } from '@endo/errors';
-import { M, mustMatch } from '@endo/patterns';
 
 const trace = makeTracer('BasicFlows');
 

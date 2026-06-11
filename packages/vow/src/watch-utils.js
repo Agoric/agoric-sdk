@@ -1,8 +1,8 @@
 // @ts-check
 
-import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
 import { M } from '@endo/patterns';
 import { PromiseWatcherI } from '@agoric/base-zone';
+import { provideLazyMap } from '@agoric/internal/src/js-utils.js';
 
 const { Fail, bare, details: X } = assert;
 

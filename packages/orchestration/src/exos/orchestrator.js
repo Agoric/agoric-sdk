@@ -1,10 +1,10 @@
-/** @file Orchestrator exo */
-import { AmountShape } from '@agoric/ertp';
-import { makeScalarMapStore, pickFacet } from '@agoric/vat-data';
-import { makeTracer } from '@agoric/internal';
-import { Shape as NetworkShape } from '@agoric/network';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
+/** @file Orchestrator exo */
+import { AmountShape } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
+import { Shape as NetworkShape } from '@agoric/network';
+import { makeScalarMapStore, pickFacet } from '@agoric/vat-data';
 import { DenomInfoShape, DenomAmountShape, DenomShape } from '../typeGuards.js';
 
 /**

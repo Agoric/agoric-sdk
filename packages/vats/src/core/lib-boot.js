@@ -1,12 +1,12 @@
 import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/zone';
+import { makePromiseSpace } from './promise-space.js';
 import {
   makeVatSpace,
   makeWellKnownSpaces,
   runModuleBehaviors,
 } from './utils.js';
-import { makePromiseSpace } from './promise-space.js';
 
 /**
  * @import {EReturn} from '@endo/far';

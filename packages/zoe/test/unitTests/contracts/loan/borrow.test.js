@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
+import { AmountMath } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
 
@@ -21,8 +21,8 @@ import {
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 
-import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
 import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';
+import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
 import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../../../zoeTestHelpers.js';

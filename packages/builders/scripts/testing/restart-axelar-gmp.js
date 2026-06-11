@@ -1,3 +1,4 @@
+import { E } from '@endo/far';
 /**
  * @file This is for use in tests in a3p-integration
  * Unlike most builder scripts, this one includes the proposal exports as well.
@@ -7,7 +8,6 @@ import {
   makeTracer,
   NonNullish,
 } from '@agoric/internal';
-import { E } from '@endo/far';
 
 const trace = makeTracer('StartAxelarGmp', true);
 

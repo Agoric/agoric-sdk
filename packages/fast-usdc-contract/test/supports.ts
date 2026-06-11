@@ -1,3 +1,5 @@
+import type { ExecutionContext } from 'ava';
+import { E } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
 import type {
   CctpTxEvidence,
@@ -21,8 +23,6 @@ import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { E } from '@endo/far';
-import type { ExecutionContext } from 'ava';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {

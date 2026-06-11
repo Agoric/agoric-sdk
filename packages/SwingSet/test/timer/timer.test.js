@@ -3,9 +3,9 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import { buildTimer } from '../../src/devices/timer/timer.js';
 import { makeSwingsetController } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
-import { buildTimer } from '../../src/devices/timer/timer.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 

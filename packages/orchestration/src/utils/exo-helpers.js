@@ -1,5 +1,5 @@
-import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
+import { Shape as NetworkShape } from '@agoric/network';
 
 /**
  * @import {EVow, Vow, VowTools} from '@agoric/vow';

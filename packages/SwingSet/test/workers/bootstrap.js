@@ -1,5 +1,5 @@
-import { makePromiseKit } from '@endo/promise-kit';
 import { Far, E } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export function buildRootObject() {
   const callbackObj = Far('callback', {

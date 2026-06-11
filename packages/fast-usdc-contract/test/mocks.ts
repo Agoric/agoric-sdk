@@ -1,3 +1,4 @@
+import { makePromiseKit } from '@endo/promise-kit';
 import type { HostInterface } from '@agoric/async-flow';
 import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
@@ -10,7 +11,6 @@ import type {
 import type { VowTools } from '@agoric/vow';
 import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { Zone } from '@agoric/zone';
-import { makePromiseKit } from '@endo/promise-kit';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,

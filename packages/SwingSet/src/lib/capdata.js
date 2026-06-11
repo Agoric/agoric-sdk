@@ -1,5 +1,5 @@
-import { krefOf, kunser } from '@agoric/kmarshal';
 import { passStyleOf } from '@endo/far';
+import { krefOf, kunser } from '@agoric/kmarshal';
 
 /**
  * @import {CapData} from '@endo/marshal';

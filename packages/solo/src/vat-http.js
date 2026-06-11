@@ -1,11 +1,11 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
+import { makeCache } from '@agoric/cache';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { makeNotifierKit } from '@agoric/notifier';
-import { makeCache } from '@agoric/cache';
 import { getReplHandler } from '@agoric/vats/src/repl.js';
 import { getCapTPHandler } from './captp.js';
 

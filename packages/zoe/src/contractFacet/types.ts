@@ -1,3 +1,6 @@
+import type { ERef } from '@endo/far';
+import type { Passable } from '@endo/pass-style';
+import type { Key, Pattern } from '@endo/patterns';
 import type {
   AdditionalDisplayInfo,
   Amount,
@@ -9,9 +12,6 @@ import type {
   Payment,
 } from '@agoric/ertp';
 import type { Subscriber } from '@agoric/notifier';
-import type { ERef } from '@endo/far';
-import type { Passable } from '@endo/pass-style';
-import type { Key, Pattern } from '@endo/patterns';
 import type {
   AmountKeywordRecord,
   ExitRule,

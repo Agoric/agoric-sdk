@@ -1,8 +1,8 @@
 import { E, makeLoopback } from '@endo/captp';
 
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import bundleSource from '@endo/bundle-source';
 import { bundleTestExports } from '@endo/import-bundle';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeDurableZoeKit } from '../src/zoeService/zoe.js';
 import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
 

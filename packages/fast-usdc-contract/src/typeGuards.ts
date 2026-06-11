@@ -1,9 +1,9 @@
+import { M } from '@endo/patterns';
 import { type NatValue } from '@agoric/ertp';
 import { EvmHashShape } from '@agoric/fast-usdc/src/type-guards.js';
 import type { EvmHash } from '@agoric/fast-usdc/src/types.js';
 import type { TypedPattern } from '@agoric/internal';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
-import { M } from '@endo/patterns';
 
 /**
  * A transaction for which Forwarding was attempted and failed.

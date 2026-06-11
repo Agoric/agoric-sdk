@@ -2,14 +2,14 @@
 
 import { createReadStream, createWriteStream, realpathSync } from 'node:fs';
 import { mkdir, mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
-import readline from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
+import readline from 'node:readline/promises';
 import { finished } from 'node:stream/promises';
-import { parseArgs } from 'node:util';
-import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import { $ } from 'execa';
 
 const { freeze } = Object;

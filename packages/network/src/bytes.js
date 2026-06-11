@@ -1,6 +1,6 @@
+import { encodeBase64, decodeBase64 } from '@endo/base64';
 // @ts-check
 import { X, Fail } from '@endo/errors';
-import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { isPrimitive } from '@endo/pass-style';
 
 /**

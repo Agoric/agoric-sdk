@@ -2,10 +2,10 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { VowShape } from '@agoric/vow';
 import { NonNullish, makeTracer } from '@agoric/internal';
-import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
+import { VowShape } from '@agoric/vow';
 import { ICQMsgShape, OutboundConnectionHandlerI } from '../typeGuards.js';
+import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';

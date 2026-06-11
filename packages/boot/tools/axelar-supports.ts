@@ -1,5 +1,5 @@
-import { encodeAbiParameters, toBytes, type Hex } from 'viem';
 import { encodeBase64 } from '@endo/base64';
+import { encodeAbiParameters, toBytes, type Hex } from 'viem';
 
 type CallResult = {
   success: boolean;

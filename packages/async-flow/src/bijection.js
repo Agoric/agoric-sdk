@@ -1,6 +1,6 @@
 import { b, Fail } from '@endo/errors';
-import { M } from '@endo/patterns';
 import { Far, isPassable } from '@endo/pass-style';
+import { M } from '@endo/patterns';
 import { toPassableCap } from '@agoric/vow';
 import { makeEphemera } from './ephemera.js';
 

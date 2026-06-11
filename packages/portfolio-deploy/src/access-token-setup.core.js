@@ -1,3 +1,5 @@
+import { E } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 /**
  * @file Core Eval to register PoC access token
  *
@@ -5,8 +7,6 @@
  */
 import { AssetKind } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { E } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
 
 const { Fail } = assert;
 

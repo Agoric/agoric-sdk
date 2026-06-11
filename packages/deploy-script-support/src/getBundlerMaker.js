@@ -1,3 +1,4 @@
+import url from 'node:url';
 // @ts-check
 /**
  * This helper mainly exists to bridge the gaps that would be filled by
@@ -11,7 +12,6 @@
  * linked with https://github.com/agoric/agoric-sdk/issues/4564
  */
 import { E } from '@endo/far';
-import url from 'node:url';
 
 /**
  * @import {start} from './endo-pieces-contract.js';

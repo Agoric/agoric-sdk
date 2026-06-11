@@ -10,11 +10,11 @@ import {
   loadBasedir,
   makeSwingsetController,
 } from '../src/index.js';
-import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper, {
   CURRENT_SCHEMA_VERSION,
 } from '../src/kernel/state/kernelKeeper.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 import { checkKT } from './util.js';
 
 const emptyVP = kser({});

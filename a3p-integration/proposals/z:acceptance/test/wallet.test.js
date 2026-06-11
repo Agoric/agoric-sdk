@@ -2,13 +2,14 @@
 
 import test from 'ava';
 
+import { execFileSync } from 'node:child_process';
 import { Fail } from '@endo/errors';
 import {
   retryUntilCondition,
   waitUntilAccountFunded,
 } from '@agoric/client-utils';
-import { ModuleAccount as ModuleAccountType } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
 import { CodecHelper } from '@agoric/cosmic-proto';
+import { ModuleAccount as ModuleAccountType } from '@agoric/cosmic-proto/cosmos/auth/v1beta1/auth.js';
 import { VBankAccount } from '@agoric/internal/src/config.js';
 import {
   addUser,
@@ -20,10 +21,9 @@ import {
   makeAgd,
   provisionSmartWallet,
 } from '@agoric/synthetic-chain';
-import { execFileSync } from 'node:child_process';
 import { agdWalletUtils } from './test-lib/index.js';
-import { getBalances, replaceTemplateValuesInFile } from './test-lib/utils.js';
 import { bankSend, tryISTBalances } from './test-lib/psm-lib.js';
+import { getBalances, replaceTemplateValuesInFile } from './test-lib/utils.js';
 
 const ModuleAccount = CodecHelper(ModuleAccountType);
 

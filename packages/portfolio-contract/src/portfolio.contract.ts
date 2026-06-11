@@ -1,3 +1,8 @@
+import { Fail, q } from '@endo/errors';
+import { E, type ERef } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
+import type { CopyRecord } from '@endo/pass-style';
+import { M, objectMap } from '@endo/patterns';
 /**
  * @file Creates and manages diversified stablecoin portfolios that can be rebalanced across different yield-generating protocols.
  * @see {@link contract}
@@ -59,11 +64,6 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
-import { Fail, q } from '@endo/errors';
-import { E, type ERef } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
-import type { CopyRecord } from '@endo/pass-style';
-import { M, objectMap } from '@endo/patterns';
 import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
 import { preparePlanner } from './planner.exo.ts';

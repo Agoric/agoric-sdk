@@ -1,3 +1,4 @@
+import { M } from '@endo/patterns';
 /**
  * @file Planner exo for off-chain planning services to submit portfolio rebalancing plans.
  * @see {@link preparePlanner}
@@ -7,7 +8,6 @@ import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { M } from '@endo/patterns';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';

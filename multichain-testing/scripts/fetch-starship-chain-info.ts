@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 
-import fsp from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import fsp from 'node:fs/promises';
 
 import { convertChainInfo } from '@agoric/orchestration/src/utils/registry.js';
 

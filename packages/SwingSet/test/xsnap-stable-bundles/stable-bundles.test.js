@@ -4,13 +4,13 @@ import { createHash } from 'node:crypto';
 
 import { initSwingStore } from '@agoric/swing-store';
 import {
-  getLockdownBundleSHA256,
-  getLockdownBundle,
-} from '@agoric/xsnap-lockdown';
-import {
   getSupervisorBundleSHA256,
   getSupervisorBundle,
 } from '@agoric/swingset-xsnap-supervisor';
+import {
+  getLockdownBundleSHA256,
+  getLockdownBundle,
+} from '@agoric/xsnap-lockdown';
 import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 

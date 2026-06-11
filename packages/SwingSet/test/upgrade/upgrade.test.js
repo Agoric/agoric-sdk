@@ -9,11 +9,11 @@ import { objectMap, objectMapMutable } from '@agoric/internal';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { kser, kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import { buildKernelBundles, makeSwingsetController } from '../../src/index.js';
 import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
 import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
-import { buildKernelBundles, makeSwingsetController } from '../../src/index.js';
-import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { makeRunUtils } from '../../tools/run-utils.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
 
 /**

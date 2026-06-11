@@ -1,8 +1,8 @@
-import { makeTracer } from '@agoric/internal';
-import { registerChain } from '@agoric/orchestration/src/chain-info.js';
 import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+import { makeTracer } from '@agoric/internal';
+import { registerChain } from '@agoric/orchestration/src/chain-info.js';
 
 // TODO: refactor overlap with init-chain-info.js in orch pkg
 

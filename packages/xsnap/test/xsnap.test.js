@@ -2,16 +2,16 @@
 
 import test from 'ava';
 
-import { createHash } from 'node:crypto';
 import * as proc from 'node:child_process';
-import * as os from 'node:os';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import * as os from 'node:os';
 import path from 'node:path';
 import { tmpName } from 'tmp';
 
-import { xsnap } from '../src/xsnap.js';
-import { recordXSnap } from '../src/replay.js';
 import { ExitCode, ErrorCode } from '../api.js';
+import { recordXSnap } from '../src/replay.js';
+import { xsnap } from '../src/xsnap.js';
 
 import { options, decode, encode, loader } from './message-tools.js';
 

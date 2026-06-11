@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync } from 'node:fs';
 /**
  * @file Rewrite ".ts" import specifiers to ".js" for npm publish artifacts.
  *
@@ -10,7 +11,6 @@
  *   ../../scripts/packing/rewrite-ts-import-specifiers.mjs
  */
 import fs from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 const args = process.argv.slice(2);

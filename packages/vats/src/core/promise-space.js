@@ -1,7 +1,7 @@
 import { E } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 import { assertKey } from '@agoric/store';
 import { canBeDurable } from '@agoric/vat-data';
-import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {Passable} from '@endo/marshal';

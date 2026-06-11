@@ -1,8 +1,8 @@
 import test from 'ava';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
-import * as snip from './fixtures/example-snippets.js';
 import { main as cmdMain } from './fixtures/cmd-runner-example.js';
+import * as snip from './fixtures/example-snippets.js';
 
 const require = createRequire(import.meta.url);
 const readmePath = require.resolve('../README.md');

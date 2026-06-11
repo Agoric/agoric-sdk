@@ -1,19 +1,19 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import type { CosmosOrchestrationAccountStorageState } from '@agoric/orchestration/src/exos/cosmos-orchestration-account.js';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { IdentifiedChannelSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import type { CosmosOrchestrationAccountStorageState } from '@agoric/orchestration/src/exos/cosmos-orchestration-account.js';
 import type { IBCChannelID, IBCPortID } from '@agoric/vats';
+import chainInfo from '../starship-chain-info.js';
+import { parseLocalAddress, parseRemoteAddress } from '../tools/address.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
+import { makeQueryClient } from '../tools/query.js';
+import { sleep } from '../tools/sleep.js';
+import { ICA_CHANNEL_CLOSE_TIMEOUT } from './config.js';
 import {
   commonSetup,
   type SetupContextWithWallets,
   chainConfig,
 } from './support.js';
-import { makeQueryClient } from '../tools/query.js';
-import { parseLocalAddress, parseRemoteAddress } from '../tools/address.js';
-import chainInfo from '../starship-chain-info.js';
-import { ICA_CHANNEL_CLOSE_TIMEOUT } from './config.js';
-import { sleep } from '../tools/sleep.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 

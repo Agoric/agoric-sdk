@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { existsSync } from 'node:fs';
 /* eslint-disable no-plusplus */
 /**
  * @file Verify package export specifiers resolve for consumers.
@@ -13,7 +14,6 @@
  *   (or run via `yarn lerna run` with INIT_CWD set per package)
  */
 import fs from 'node:fs/promises';
-import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';

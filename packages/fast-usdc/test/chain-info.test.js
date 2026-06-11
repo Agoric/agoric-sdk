@@ -1,6 +1,6 @@
 import test from 'ava';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import cctpChainInfo from '@agoric/orchestration/src/cctp-chain-info.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 
 // List of chains to test to ensure an IBC connection exists from noble to them
 // XXX: Some missing connections.

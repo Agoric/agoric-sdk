@@ -11,9 +11,9 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { makeReflectionMethods } from '@agoric/swingset-vat/tools/vat-puppet.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { makeBootstrap } from '../src/core/lib-boot.js';
 import * as basicBehaviorsNamespace from '../src/core/basic-behaviors.js';
 import * as chainBehaviorsNamespace from '../src/core/chain-behaviors.js';
+import { makeBootstrap } from '../src/core/lib-boot.js';
 import * as utils from '../src/core/utils.js';
 
 /**

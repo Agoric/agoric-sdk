@@ -1,7 +1,7 @@
+import { E } from '@endo/far';
+import { M, objectMap } from '@endo/patterns';
 import { makeTracer } from '@agoric/internal';
 import { FlowConfigShape } from '@agoric/portfolio-api/src/constants.js';
-import { M, objectMap } from '@endo/patterns';
-import { E } from '@endo/far';
 import {
   lookupInterchainInfo,
   makeGetManifest,

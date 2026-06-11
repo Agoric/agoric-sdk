@@ -1,8 +1,8 @@
 #! /usr/bin/env node
+import { execFileSync } from 'node:child_process';
 /* eslint-env node */
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 // eslint-disable-next-line import/no-relative-packages -- okay for dev script
 import { listWorkspaces } from '../packages/agoric-cli/src/lib/packageManager.js';
 

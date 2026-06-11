@@ -5,15 +5,15 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 
 import { makePrintLog } from './printLog.js';
 
-import automaticRefundBundle from './bundle-automaticRefund.js';
-import coveredCallBundle from './bundle-coveredCall.js';
-import secondPriceAuctionBundle from './bundle-secondPriceAuction.js';
 import atomicSwapBundle from './bundle-atomicSwap.js';
-import simpleExchangeBundle from './bundle-simpleExchange.js';
+import automaticRefundBundle from './bundle-automaticRefund.js';
 import autoswapBundle from './bundle-autoswap.js';
-import sellItemsBundle from './bundle-sellItems.js';
+import coveredCallBundle from './bundle-coveredCall.js';
 import mintAndSellNFTBundle from './bundle-mintAndSellNFT.js';
 import otcDeskBundle from './bundle-otcDesk.js';
+import secondPriceAuctionBundle from './bundle-secondPriceAuction.js';
+import sellItemsBundle from './bundle-sellItems.js';
+import simpleExchangeBundle from './bundle-simpleExchange.js';
 
 const setupBasicMints = () => {
   const all = [

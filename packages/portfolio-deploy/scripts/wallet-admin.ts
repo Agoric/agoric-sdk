@@ -2,13 +2,9 @@
 /** @file tools for smart wallet stores, e.g. ymaxControl */
 import '@endo/init';
 
-import {
-  fetchEnvNetworkConfig,
-  makeSigningSmartWalletKit,
-  makeSmartWalletKit,
-  reflectWalletStore,
-} from '@agoric/client-utils';
-import { makeFileRW } from '@agoric/pola-io/src/file.js';
+import fsp from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 import {
   SigningStargateClient,
   type DeliverTxResponse,
@@ -16,9 +12,13 @@ import {
 } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import fsp from 'node:fs/promises';
-import { createRequire } from 'node:module';
-import path from 'node:path';
+import {
+  fetchEnvNetworkConfig,
+  makeSigningSmartWalletKit,
+  makeSmartWalletKit,
+  reflectWalletStore,
+} from '@agoric/client-utils';
+import { makeFileRW } from '@agoric/pola-io/src/file.js';
 import type { RunTools } from '../src/wallet-admin-types.ts';
 
 const Usage = `tool.ts MODULE ...args`;

@@ -1,8 +1,8 @@
+import crypto from 'node:crypto';
+import { encodeBase64, decodeBase64 } from '@endo/base64';
 // @ts-check
 import { E } from '@endo/far';
 import { ZipReader } from '@endo/zip';
-import { encodeBase64, decodeBase64 } from '@endo/base64';
-import crypto from 'node:crypto';
 
 const computeSha512 = bytes => {
   const hash = crypto.createHash('sha512');

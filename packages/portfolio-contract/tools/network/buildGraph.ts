@@ -12,9 +12,9 @@ import {
   isWithdrawToChainRef,
 } from '@agoric/portfolio-api/src/type-guards.js';
 
+import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 import { PoolPlaces } from '../../src/type-guards.js';
 import type { PoolKey } from '../../src/type-guards.js';
-import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 
 import type { FeeMode, LinkSpec, NetworkSpec } from './network-spec.js';
 

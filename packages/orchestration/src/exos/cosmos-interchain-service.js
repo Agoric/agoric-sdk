@@ -1,9 +1,9 @@
 /** @file Orchestration service */
 
-import { Shape as NetworkShape } from '@agoric/network';
-import { pickFacet } from '@agoric/vat-data';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import { Shape as NetworkShape } from '@agoric/network';
+import { pickFacet } from '@agoric/vat-data';
 import {
   DEFAULT_ICQ_VERSION,
   makeICAChannelAddress,

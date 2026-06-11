@@ -1,3 +1,5 @@
+import type { DeliverTxResponse } from '@cosmjs/stargate';
+import type { E } from '@endo/far';
 /**
  * @file types for admin tool endowments
  *
@@ -9,9 +11,7 @@ import type {
   reflectWalletStore,
   makeSigningSmartWalletKit,
 } from '@agoric/client-utils';
-import type { DeliverTxResponse } from '@cosmjs/stargate';
 import type { FileRW } from '@agoric/pola-io/src/file.js';
-import type { E } from '@endo/far';
 
 export type SigningSmartWalletKitWithStore = SigningSmartWalletKit & {
   store: ReturnType<typeof reflectWalletStore>;

@@ -1,8 +1,8 @@
-import { makeRatio } from '@agoric/ertp/src/ratio.js';
+import anyTest, { type TestFn } from 'ava';
 import type { EReturn } from '@endo/far';
 import { Far, makeMarshal } from '@endo/marshal';
-import anyTest, { type TestFn } from 'ava';
 import { Command } from 'commander';
+import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { addLPCommands } from '../../src/cli/lp-commands.js';
 import { flags } from '../../tools/cli-tools.js';
 import { mockStream } from '../../tools/mock-io.js';

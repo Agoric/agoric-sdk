@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // @ts-check
 
-import { $ } from 'execa';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+import { $ } from 'execa';
 
 // Ensure we run from the repository root if possible
 try {

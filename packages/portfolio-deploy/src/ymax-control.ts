@@ -1,3 +1,4 @@
+import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 /**
  * @file Shared YMax control-kit initialization.
  *
@@ -5,7 +6,6 @@
  * ymax control entries without ambient authority.
  */
 import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
-import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import {
   fetchEnvNetworkConfig,
   makeSigningSmartWalletKit,
@@ -14,8 +14,8 @@ import {
   type SmartWalletKit,
   type WalletStoreEntryProxy,
 } from '@agoric/client-utils';
+import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
-import { SigningStargateClient, type StdFee } from '@cosmjs/stargate';
 
 type YMaxStartFn = typeof YMaxStart;
 type WalletStoreSigner = Pick<

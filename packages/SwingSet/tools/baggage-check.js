@@ -1,5 +1,5 @@
-import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 
 function fakeSTV(slot, iface = 'Remotable') {
   return Far(iface, {

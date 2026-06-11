@@ -4,16 +4,16 @@
 // This file functions as both an importable module and a standalone script.
 import './helpers/maybe-unsafe-lockdown.js';
 
-import os from 'node:os';
-import process from 'node:process';
 import fsPower from 'node:fs/promises';
+import os from 'node:os';
 import pathPower from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import { Fail, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import { makeSwingStoreExporter } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';

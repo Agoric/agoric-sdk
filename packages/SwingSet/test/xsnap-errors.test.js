@@ -4,17 +4,17 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
-import { tmpName } from 'tmp';
 import bundleSource from '@endo/bundle-source';
+import { tmpName } from 'tmp';
 import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 
-import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 import {
   makeWorkerBundleHandler,
   makeXsnapBundleData,
 } from '../src/controller/bundle-handler.js';
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
+import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
 
 test('child termination distinguished from meter exhaustion', async t => {
   /** @type { ReturnType<typeof spawn> } */

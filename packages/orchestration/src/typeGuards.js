@@ -1,7 +1,7 @@
+import { M } from '@endo/patterns';
 import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { SendOptionsShape } from '@agoric/network';
 import { VowShape } from '@agoric/vow';
-import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';

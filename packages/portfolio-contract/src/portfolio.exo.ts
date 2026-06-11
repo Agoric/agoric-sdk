@@ -1,3 +1,8 @@
+import { bare, Fail, X } from '@endo/errors';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+import { hexToBytes } from '@noble/hashes/utils';
+import type { Address as EvmAddress } from 'abitype';
 /**
  * NOTE: This is host side code; can't use await.
  */
@@ -51,11 +56,6 @@ import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { bare, Fail, X } from '@endo/errors';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
-import { hexToBytes } from '@noble/hashes/utils';
-import type { Address as EvmAddress } from 'abitype';
 import {
   preparePortfolioDelegationKit,
   type PortfolioDelegationClient,

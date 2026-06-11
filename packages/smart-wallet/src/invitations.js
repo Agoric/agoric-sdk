@@ -1,8 +1,8 @@
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
 import { shape } from './typeGuards.js';
 
 /**

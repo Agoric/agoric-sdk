@@ -1,5 +1,5 @@
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 import { depositToSeat } from '../../../src/contractSupport/index.js';
 

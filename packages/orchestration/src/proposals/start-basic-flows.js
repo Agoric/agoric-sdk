@@ -1,9 +1,9 @@
+import { E } from '@endo/far';
 /**
  * @file A proposal to start the basic flows contract.
  */
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
 
 /**
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';

@@ -1,9 +1,9 @@
 import type { Filter, Log } from 'ethers';
 import { id, AbiCoder } from 'ethers';
 import type { WebSocket } from 'ws';
-import type { CaipChainId } from '@agoric/orchestration';
-import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { tryJsonParse } from '@agoric/internal';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
+import type { CaipChainId } from '@agoric/orchestration';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
@@ -11,14 +11,14 @@ import {
   type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
-import type { MakeAbortController } from '../support.ts';
-import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import {
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
   setTxBlockLowerBound,
 } from '../kv-store.ts';
+import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
 import type { WatcherResult } from '../pending-tx-manager.ts';
+import type { MakeAbortController } from '../support.ts';
 import {
   extractPayloadHash,
   extractPaddedTxId,

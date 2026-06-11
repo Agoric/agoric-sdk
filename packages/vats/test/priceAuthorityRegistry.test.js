@@ -1,10 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakePriceAuthority } from '@agoric/zoe/tools/fakePriceAuthority.js';
-import { E } from '@endo/far';
 import { providePriceAuthorityRegistry } from '../src/priceAuthorityRegistry.js';
 
 test('price authority confused stores', async t => {

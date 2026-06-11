@@ -6,8 +6,8 @@
  * garbage collection.
  */
 
-import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';

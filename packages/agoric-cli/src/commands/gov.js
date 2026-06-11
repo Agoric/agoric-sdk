@@ -1,3 +1,5 @@
+import { execFileSync as execFileSyncAmbient } from 'node:child_process';
+import { Command, CommanderError } from 'commander';
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
@@ -6,8 +8,6 @@ import {
   makeAgoricNames,
   makeVstorageKit,
 } from '@agoric/client-utils';
-import { execFileSync as execFileSyncAmbient } from 'node:child_process';
-import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
   findContinuingIds,

@@ -4,8 +4,8 @@
 // (dep chain: temp->glob->minimatch->brace-expansion)
 import '@endo/init/legacy.js';
 
-import process from 'node:process';
 import path from 'node:path';
+import process from 'node:process';
 
 // Configure logs.
 import '@agoric/cosmic-swingset/src/anylogger-agoric.js';

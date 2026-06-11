@@ -6,6 +6,7 @@ import { kslot, kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { buildSyscall } from './liveslots-helpers.js';
+import { makeMockGC } from './mock-gc.js';
 import {
   makeMessage,
   makeStartVat,
@@ -13,7 +14,6 @@ import {
   makeResolve,
   makeRetireImports,
 } from './util.js';
-import { makeMockGC } from './mock-gc.js';
 
 test('dropImports', async t => {
   const { syscall } = buildSyscall();

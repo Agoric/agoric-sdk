@@ -1,8 +1,8 @@
-import { M, mustMatch } from '@endo/patterns';
-import { E } from '@endo/far';
-import { VowShape } from '@agoric/vow';
-import { makeTracer } from '@agoric/internal';
 import { atob } from '@endo/base64';
+import { E } from '@endo/far';
+import { M, mustMatch } from '@endo/patterns';
+import { makeTracer } from '@agoric/internal';
+import { VowShape } from '@agoric/vow';
 import { CosmosChainAddressShape } from '../typeGuards.js';
 
 const trace = makeTracer('AutoStakeItTap');

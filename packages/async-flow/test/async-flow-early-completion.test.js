@@ -11,8 +11,8 @@ import { passStyleOf } from '@endo/pass-style';
 import { makeCopyMap } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { prepareVowTools } from '@agoric/vow';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareTestAsyncFlowTools } from './_utils.js';

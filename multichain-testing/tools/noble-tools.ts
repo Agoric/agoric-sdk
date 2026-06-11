@@ -1,7 +1,7 @@
-import type { IBCChannelID } from '@agoric/vats';
-import type { CosmosChainAddress } from '@agoric/orchestration';
-import type { NobleAddress } from '@agoric/fast-usdc';
 import type { ExecSyncOptions } from 'node:child_process';
+import type { NobleAddress } from '@agoric/fast-usdc';
+import type { CosmosChainAddress } from '@agoric/orchestration';
+import type { IBCChannelID } from '@agoric/vats';
 import { emulateBroadcastModeBlock } from './bblock.ts';
 
 const kubectlBinary = 'kubectl';

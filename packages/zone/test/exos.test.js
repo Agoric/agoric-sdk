@@ -9,13 +9,13 @@ import {
 import * as vatData from '@agoric/vat-data';
 
 import { agoricVatDataKeys as keys } from '@agoric/base-zone';
+import * as g from '@agoric/base-zone/tools/greeter.js';
 import {
   agoricVatDataCompatibleKeys,
   testFirstZoneIncarnation,
   testSecondZoneIncarnation,
   testGreeter,
 } from '@agoric/base-zone/tools/testers.js';
-import * as g from '@agoric/base-zone/tools/greeter.js';
 
 import { makeDurableZone } from '../durable.js';
 import { makeHeapZone } from '../heap.js';

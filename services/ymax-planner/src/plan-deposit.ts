@@ -9,8 +9,6 @@ import type {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
-import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
-import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
@@ -23,9 +21,11 @@ import type {
   SupportedChain,
 } from '@agoric/portfolio-api';
 import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
+import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
+import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
 
-import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { getErc20Balances } from './evm-utils.ts';
 import type {
   ChainAddressTokenBalance as SpectrumGetAddressBalanceResult,

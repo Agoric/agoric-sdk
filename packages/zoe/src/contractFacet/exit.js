@@ -1,8 +1,8 @@
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { M, initEmpty } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 import { prepareExoClass, provideDurableSetStore } from '@agoric/vat-data';
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 
 import {
   isAfterDeadlineExitRule,

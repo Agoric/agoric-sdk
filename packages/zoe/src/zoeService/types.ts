@@ -1,3 +1,4 @@
+import type { ERef, EReturn } from '@endo/eventual-send';
 import type {
   AnyAmount,
   AssetKind,
@@ -7,9 +8,8 @@ import type {
   Payment,
 } from '@agoric/ertp';
 import type { Subscriber } from '@agoric/notifier';
-import type { ERef, EReturn } from '@endo/eventual-send';
 import type { Bundle, BundleID } from '@agoric/swingset-vat';
-import type { ContractStartFunction, StartParams } from './utils.js';
+import type { Allocation } from '../types-index.js';
 import type {
   Keyword,
   InvitationHandle,
@@ -17,7 +17,7 @@ import type {
   Handle,
   IssuerKeywordRecord,
 } from '../types.js';
-import type { Allocation } from '../types-index.js';
+import type { ContractStartFunction, StartParams } from './utils.js';
 
 /**
  * @see {@link https://github.com/sindresorhus/type-fest/blob/main/source/is-any.d.ts}

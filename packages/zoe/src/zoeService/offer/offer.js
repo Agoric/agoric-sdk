@@ -1,7 +1,7 @@
-import { mustMatch } from '@agoric/store';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
+import { mustMatch } from '@agoric/store';
 
 import { cleanProposal } from '../../cleanProposal.js';
 import { makeInvitationQueryFns } from '../invitationQueries.js';

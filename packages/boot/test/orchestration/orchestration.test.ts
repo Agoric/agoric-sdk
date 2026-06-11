@@ -1,5 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { TestFn } from 'ava';
+import { Fail } from '@endo/errors';
 import { BridgeId } from '@agoric/internal';
 import {
   withChainCapabilities,
@@ -11,8 +13,6 @@ import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.j
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import type { ZoeService } from '@agoric/zoe';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { Fail } from '@endo/errors';
-import type { TestFn } from 'ava';
 import {
   insistManagerType,
   makeSwingsetHarness,

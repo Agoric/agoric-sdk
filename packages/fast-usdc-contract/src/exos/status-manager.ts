@@ -1,3 +1,7 @@
+import { Fail, makeError, q } from '@endo/errors';
+import { E } from '@endo/far';
+import { Nat } from '@endo/nat';
+import { M } from '@endo/patterns';
 import { type NatValue } from '@agoric/ertp';
 import {
   PendingTxStatus,
@@ -21,15 +25,11 @@ import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
 import type { ERemote } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
+import type { AccountId, CaipChainId } from '@agoric/orchestration';
+import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
 import type { MapStore, SetStore } from '@agoric/store';
 import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Zone } from '@agoric/zone';
-import { Fail, makeError, q } from '@endo/errors';
-import { E } from '@endo/far';
-import { Nat } from '@endo/nat';
-import { M } from '@endo/patterns';
-import { chainOfAccount } from '@agoric/orchestration/src/utils/address.js';
-import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import { ForwardFailedTxShape, type ForwardFailedTx } from '../typeGuards.ts';
 import { type RouteHealth } from '../utils/route-health.ts';
 import { makeSettlementMatcher } from '../utils/settlement-matcher.ts';

@@ -7,8 +7,8 @@ import { AmountMath } from '@agoric/ertp';
 
 import bundleSource from '@endo/bundle-source';
 
-import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
+import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

@@ -1,3 +1,5 @@
+import type { Database as SQLiteDatabase } from 'better-sqlite3';
+import Database from 'better-sqlite3';
 /**
  * Key-value store interface for storing and retrieving configuration values.
  * This abstraction allows for different storage backends to be plugged in.
@@ -5,8 +7,6 @@
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { makeKVStore } from '@agoric/internal/src/kv-store.js';
 import type { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
-import type { Database as SQLiteDatabase } from 'better-sqlite3';
-import Database from 'better-sqlite3';
 
 type ResolvedTxStatus = Exclude<TxStatus, 'pending' | 'setup'>;
 

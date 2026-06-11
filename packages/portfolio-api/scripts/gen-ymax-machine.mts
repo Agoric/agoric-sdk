@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+import { spawnSync } from 'node:child_process';
 /**
  * Generate src/model/generated/ymax-machine.js from the YAML spec.
  * Validates against the JSON schema before writing. Use --check to verify
@@ -6,7 +7,6 @@
  */
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import Ajv, { type ErrorObject } from 'ajv';
 import {

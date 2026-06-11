@@ -1,8 +1,8 @@
+import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
+import path from 'node:path';
 /* eslint-env node */
 import chalk from 'chalk';
-import { createHash } from 'node:crypto';
-import path from 'node:path';
-import { createRequire } from 'node:module';
 
 import { Nat, isNat } from '@endo/nat';
 import { untilTrue } from '@agoric/internal';

@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import pathlib from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import dotenv from 'dotenv';
 import type { CodegenConfig } from '@graphql-codegen/cli';
+import dotenv from 'dotenv';
 
 import { getOwn, parseGraphqlEndpoints } from '../utils.ts';
 

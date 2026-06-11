@@ -1,3 +1,5 @@
+import { Fail, q } from '@endo/errors';
+import { M } from '@endo/patterns';
 /**
  * @file Delegation wrapper exo. A portfolio owner may grant constrained
  * authority to the holder of another Agoric account (e.g. an automation agent).
@@ -10,8 +12,6 @@ import type { TypedPattern } from '@agoric/internal';
 import { type PortfolioSyncState } from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { Fail, q } from '@endo/errors';
-import { M } from '@endo/patterns';
 import { TargetAllocationShape, type TargetAllocation } from './type-guards.ts';
 
 export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =

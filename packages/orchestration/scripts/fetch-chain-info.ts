@@ -1,4 +1,9 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+import assert from 'node:assert';
+import { execFileSync, spawnSync } from 'node:child_process';
+import fsp from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 /**
  * @file Generate src/fetched-chain-info.js from the cosmos chain-registry.
  *
@@ -19,11 +24,6 @@
  * See the "Refreshing chain info" section of the package README for details.
  */
 import { ChainRegistryClient } from '@chain-registry/client';
-import { execFileSync, spawnSync } from 'node:child_process';
-import assert from 'node:assert';
-import fsp from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import { parseArgs } from 'node:util';
 import { convertChainInfo } from '../src/utils/registry.js';
 
 // The chain-registry commit codegen reads from, pinned so codegen is

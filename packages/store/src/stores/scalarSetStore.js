@@ -1,6 +1,6 @@
 import { q } from '@endo/errors';
-import { Far, filterIterable } from '@endo/pass-style';
 import { compareRank } from '@endo/marshal';
+import { Far, filterIterable } from '@endo/pass-style';
 import {
   assertScalarKey,
   makeCopySet,

@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 /// <reference types="ses" />
 import type {
   VStorage,
@@ -9,7 +10,6 @@ import {
   StreamCellShape,
   type StreamCell,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { Fail, q } from '@endo/errors';
 
 // #region vstorage paths, cf. golang/cosmos/x/vstorage/types/path_keys.go
 // XXX: Promote elsewhere, maybe @agoric/internal?

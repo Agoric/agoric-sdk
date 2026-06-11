@@ -1,3 +1,4 @@
+import type { Details } from 'ses';
 /**
  * @file for use with wallet-admin
  */
@@ -5,7 +6,6 @@ import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfol
 import { makeTracer } from '@agoric/internal';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';
-import type { Details } from 'ses';
 import type { RunTools } from './wallet-admin-types.ts';
 
 const Usage = `invite-ems ymax1 | ymax0`;

@@ -7,9 +7,9 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
+import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
-import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

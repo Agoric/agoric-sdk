@@ -17,6 +17,8 @@
  *   reverted.
  */
 
+import { Fail, makeError, X } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import {
   AmountMath,
   AmountShape,
@@ -49,8 +51,6 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { Fail, makeError, X } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 import {
   checkDebtLimit,
   makeNatAmountShape,

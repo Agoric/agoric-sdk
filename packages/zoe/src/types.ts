@@ -1,5 +1,5 @@
-import type { Brand, Issuer } from '@agoric/ertp';
 import type { RemotableObject } from '@endo/pass-style';
+import type { Brand, Issuer } from '@agoric/ertp';
 
 /**
  * Alias for RemotableObject

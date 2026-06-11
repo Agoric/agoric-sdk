@@ -1,8 +1,8 @@
+import { Fail } from '@endo/errors';
 import {
   type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { Fail } from '@endo/errors';
 
 import type { ExecutionContext } from 'ava';
 

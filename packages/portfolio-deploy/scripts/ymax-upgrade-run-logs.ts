@@ -1,13 +1,13 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
 /** @file query upgrade run slogs for a ymax control tx */
 
+import { writeFile } from 'node:fs/promises';
+import { URLSearchParams } from 'node:url';
+import { parseArgs } from 'node:util';
 import {
   getControlAddress,
   isPortfolioContract,
 } from '@agoric/portfolio-api/src/portfolio-constants.js';
-import { writeFile } from 'node:fs/promises';
-import { URLSearchParams } from 'node:url';
-import { parseArgs } from 'node:util';
 
 const usage = `Usage:
   packages/portfolio-deploy/scripts/ymax-upgrade-run-logs.ts [options]

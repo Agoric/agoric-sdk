@@ -10,6 +10,7 @@ import { basename, dirname, join, resolve as pathResolve } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
 
+import { Fail } from '@endo/errors';
 import type {
   PublishedPathTypes as ClientPublishedPathTypes,
   TypedPublishedFor,
@@ -42,7 +43,6 @@ import {
   fakeLocalChainBridgeQueryHandler,
   fakeLocalChainBridgeTxMsgHandler,
 } from '@agoric/vats/tools/fake-bridge.js';
-import { Fail } from '@endo/errors';
 
 import type { Amount, Brand } from '@agoric/ertp';
 import type {
@@ -67,6 +67,8 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
+import type { EProxy } from '@endo/eventual-send';
+import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
@@ -77,8 +79,6 @@ import type { SwingsetController } from '@agoric/swingset-vat/src/controller/con
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { ERef } from '@agoric/vow';
-import type { EProxy } from '@endo/eventual-send';
-import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 import {
   type TraceCompleteEvent,

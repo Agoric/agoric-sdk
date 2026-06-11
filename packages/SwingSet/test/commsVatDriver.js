@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { assert, Fail } from '@endo/errors';
 import { kslot, kser } from '@agoric/kmarshal';
-import buildCommsDispatch from '../src/vats/comms/index.js';
 import { debugState } from '../src/vats/comms/dispatch.js';
+import buildCommsDispatch from '../src/vats/comms/index.js';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';
 import { makeMessage, makeResolutions } from './util.js';
 

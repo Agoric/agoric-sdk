@@ -1,10 +1,10 @@
+import { M, mustMatch } from '@endo/patterns';
 /**
  * @file An example of how to leverage basic functionality of the Orchestration
  *   API with async-flow. Each offer returning a ContinuingOfferResult, with
  *   invitationMakers for Delegate, WithdrawRewards, Transfer, etc.
  */
 import { makeTracer } from '@agoric/internal';
-import { M, mustMatch } from '@endo/patterns';
 
 const trace = makeTracer('BasicFlows');
 

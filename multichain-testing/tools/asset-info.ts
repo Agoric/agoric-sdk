@@ -1,3 +1,4 @@
+import { objectMap } from '@endo/patterns';
 import {
   denomHash,
   type ChainInfo,
@@ -6,7 +7,6 @@ import {
   type DenomDetail,
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
-import { objectMap } from '@endo/patterns';
 
 export const selectCosmosChainInfo = (
   chainInfo: Record<string, ChainInfo>,

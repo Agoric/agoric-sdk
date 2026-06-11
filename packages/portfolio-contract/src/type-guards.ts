@@ -1,3 +1,6 @@
+import { Fail } from '@endo/errors';
+import { isNat } from '@endo/nat';
+import { M } from '@endo/patterns';
 /**
  * @file Patterns (aka type guards) for the portfolio contract's external interface.
  *
@@ -56,9 +59,6 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
-import { Fail } from '@endo/errors';
-import { isNat } from '@endo/nat';
-import { M } from '@endo/patterns';
 import type { EVMContractAddresses } from './portfolio.contract.js';
 
 export type { OfferArgsFor } from './type-guards-steps.js';

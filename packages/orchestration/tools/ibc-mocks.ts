@@ -1,3 +1,4 @@
+import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
 /** @file Tools to support making IBC mocks */
 import {
   type JsonSafe,
@@ -5,8 +6,8 @@ import {
   toRequestQueryJson,
   CodecHelper,
 } from '@agoric/cosmic-proto';
-import { TxBody as TxBodyType } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { TxMsgData as TxMsgDataType } from '@agoric/cosmic-proto/cosmos/base/abci/v1beta1/abci.js';
+import { TxBody as TxBodyType } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { Any as AnyType } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { FungibleTokenPacketData as FungibleTokenPacketDataType } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
@@ -22,7 +23,6 @@ import {
 import type { IBCChannelID } from '@agoric/network/ibc';
 import type { IBCEvent, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
-import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
 import type { CosmosChainAddress, Denom } from '../src/orchestration-api.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 

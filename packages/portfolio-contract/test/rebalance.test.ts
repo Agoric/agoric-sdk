@@ -1,5 +1,6 @@
 import test from 'ava';
 import type { ExecutionContext, ImplementationFn } from 'ava';
+import { Far } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
@@ -7,14 +8,13 @@ import type {
   SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import { Far } from '@endo/marshal';
-import type { PoolKey } from '../src/type-guards.js';
 import type { AssetPlaceRef } from '../src/type-guards-steps.js';
+import type { PoolKey } from '../src/type-guards.js';
+import type { FlowEdge } from '../tools/network/buildGraph.js';
 import type {
   NetworkSpec,
   TransferProtocol,
 } from '../tools/network/network-spec.js';
-import type { FlowEdge } from '../tools/network/buildGraph.js';
 import { TEST_NETWORK } from '../tools/network/test-network.js';
 import { planRebalanceFlow } from '../tools/plan-solve.js';
 import type { RebalanceMode } from '../tools/plan-solve.js';

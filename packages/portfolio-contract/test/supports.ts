@@ -1,5 +1,7 @@
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type { ExecutionContext } from 'ava';
+import { E } from '@endo/far';
 import type { VstorageKit } from '@agoric/client-utils';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp';
 import {
@@ -28,13 +30,11 @@ import type { FundsFlowPlan } from '@agoric/portfolio-api';
 import { makeNameHubKit } from '@agoric/vats';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { E } from '@endo/far';
-import type { ExecutionContext } from 'ava';
+import type { MovementDesc } from '../src/type-guards-steps.js';
 import type {
   PortfolioPublishedPathTypes,
   StatusFor,
 } from '../src/type-guards.ts';
-import type { MovementDesc } from '../src/type-guards-steps.js';
 
 // Use realistic flow values (e.g., millions of uUSDC) but format for
 // readability (e.g., in full USDC).

@@ -16,10 +16,6 @@ import type {
   validateTypedData,
 } from 'viem/utils';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
-import type {
-  encodeType,
-  WithSignature,
-} from '@agoric/orchestration/src/utils/viem.js';
 import {
   extractWitnessFieldFromTypes,
   isPermit2MessageType,
@@ -29,6 +25,10 @@ import {
   type Permit2Domain,
   type PermitWitnessTransferFromInputComponents,
 } from '@agoric/orchestration/src/utils/permit2.ts';
+import type {
+  encodeType,
+  WithSignature,
+} from '@agoric/orchestration/src/utils/viem.js';
 import {
   type OperationTypeNames,
   type YmaxStandaloneOperationData,

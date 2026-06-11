@@ -7,12 +7,12 @@ import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addC
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
 
+import { makeRatio } from '../../../../src/contractSupport/index.js';
 import {
   setupLoanUnitTest,
   makeSeatKit,
   performAddCollateral,
 } from './helpers.js';
-import { makeRatio } from '../../../../src/contractSupport/index.js';
 
 test.todo('makeAddCollateralInvitation - test bad proposal');
 

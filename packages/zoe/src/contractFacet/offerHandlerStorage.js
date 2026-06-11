@@ -1,6 +1,6 @@
+import { ToFarFunction } from '@endo/marshal';
 import { makeScalarWeakMapStore } from '@agoric/store';
 import { canBeDurable, provideDurableWeakMapStore } from '@agoric/vat-data';
-import { ToFarFunction } from '@endo/marshal';
 
 import { defineDurableHandle } from '../makeHandle.js';
 

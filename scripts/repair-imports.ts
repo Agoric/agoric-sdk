@@ -1,4 +1,7 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+import { dirname, resolve } from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 /**
  * Run `yarn docs` and iteratively repair missing imports using normalize-imports.
  *
@@ -6,9 +9,6 @@
  * remaining docs output (if any).
  */
 import { execa } from 'execa';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
-import process from 'node:process';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 

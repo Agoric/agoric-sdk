@@ -1,7 +1,7 @@
-import { encodeRemoteIbcAddress } from '@agoric/network/ibc/utils.js';
 import { fromBech32, fromHex } from '@cosmjs/encoding';
 import { Fail, q } from '@endo/errors';
 import bs58 from 'bs58';
+import { encodeRemoteIbcAddress } from '@agoric/network/ibc/utils.js';
 
 /**
  * @import {IBCConnectionID, RemoteIbcAddress} from '@agoric/network/ibc';

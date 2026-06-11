@@ -8,10 +8,10 @@ import {
   randomBytes,
   toUtf8Bytes,
 } from 'ethers';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { createMockPendingTxOpts, mockFetch } from './mocks.ts';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { createMockPendingTxOpts, mockFetch } from './mocks.ts';
 
 test('handlePendingTx processes GMP transaction successfully', async t => {
   const opts = createMockPendingTxOpts();

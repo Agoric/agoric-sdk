@@ -1,6 +1,6 @@
+import { E } from '@endo/eventual-send';
 import { allValues, objectMap } from '@agoric/internal';
 import { provide } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';

@@ -5,6 +5,7 @@
  * orchestration component that can be used independently of the portfolio contract.
  */
 
+import { M } from '@endo/patterns';
 import type { TypedPattern } from '@agoric/internal';
 import type { AccountId, HexAddress } from '@agoric/orchestration';
 import type {
@@ -14,7 +15,6 @@ import type {
 } from '@agoric/portfolio-api';
 import { TxStatus, TxType } from '@agoric/portfolio-api/src/resolver.js';
 import type { NetworkBinding, NetworkEndpoint } from '@agoric/vats';
-import { M } from '@endo/patterns';
 
 export type { TxId };
 

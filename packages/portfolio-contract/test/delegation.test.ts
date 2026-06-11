@@ -10,6 +10,8 @@
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { ExecutionContext } from 'ava';
+import { E, Far } from '@endo/far';
 import {
   defaultSerializer,
   documentStorageSchema,
@@ -19,8 +21,6 @@ import type { Bech32Address } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { NameAdmin } from '@agoric/vats';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
-import { E, Far } from '@endo/far';
-import type { ExecutionContext } from 'ava';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
 import { evmTrader0PrivateKey } from './mocks.ts';

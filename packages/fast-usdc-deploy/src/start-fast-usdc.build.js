@@ -1,13 +1,13 @@
+import { parseArgs } from 'node:util';
+import { Far } from '@endo/far';
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
-import { Far } from '@endo/far';
-import { parseArgs } from 'node:util';
-import { configurations } from './utils/deploy-config.js';
-import { toExternalConfig } from './utils/config-marshal.js';
+import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { getManifestForFastUSDC } from './start-fast-usdc.core.js';
+import { toExternalConfig } from './utils/config-marshal.js';
+import { configurations } from './utils/deploy-config.js';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'

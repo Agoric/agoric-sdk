@@ -1,3 +1,5 @@
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/far';
 import { VBankAccount } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
@@ -6,8 +8,6 @@ import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/far';
 import * as wfExports from '../src/walletFactory.js';
 
 /**

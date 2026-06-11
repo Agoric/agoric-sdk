@@ -1,16 +1,16 @@
-// import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
-import { makeHelpers } from '@agoric/deploy-script-support';
-import { parseArgs } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { parseArgs } from 'node:util';
+// import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+import { makeHelpers } from '@agoric/deploy-script-support';
 import {
   axelarConfigTestnet,
   axelarConfig as axelarMainnetConfig,
   gmpAddresses,
 } from './axelar-configs.js';
 import { toExternalConfig } from './config-marshal.js';
-import { name } from './portfolio.contract.permit.js';
 import { portfolioDeployConfigShape } from './portfolio-start.core.js';
+import { name } from './portfolio.contract.permit.js';
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = spec => readFile(nodeRequire.resolve(spec), 'utf8');

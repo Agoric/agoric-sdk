@@ -10,13 +10,13 @@ import {
 } from 'ethers';
 import type { Log } from 'ethers';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
-import { createMockProvider } from './mocks.ts';
 import { prepareAbortController } from '../src/support.ts';
 import {
   watchOperationResult,
   lookBackOperationResult,
   padTxId,
 } from '../src/watchers/operation-watcher.ts';
+import { createMockProvider } from './mocks.ts';
 
 const OPERATION_RESULT_SIGNATURE = id(
   'OperationResult(string,string,string,address,bytes4,bool,bytes)',

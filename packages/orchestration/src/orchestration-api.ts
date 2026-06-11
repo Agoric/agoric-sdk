@@ -1,16 +1,16 @@
+import type { Passable } from '@endo/marshal';
 /**
  * @file General API of orchestration
  * - must not have chain-specific types without runtime narrowing by chain id
  * - should remain relatively stable.
  */
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import type { SendOptions } from '@agoric/network';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- fails to notice the @see uses
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { Timestamp } from '@agoric/time';
 import type { QueryManyFn } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import type { Passable } from '@endo/marshal';
-import type { SendOptions } from '@agoric/network';
 import type {
   AgoricChainMethods,
   CosmosChainAccountMethods,

@@ -1,12 +1,3 @@
-/**
- * @file Type-safe EVM contract call builder for Axelar GMP integration.
- * @see {@link makeEvmAbiCallBatch} for creating contract call batches
- */
-import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
-import {
-  encodeAbiParameters,
-  encodeFunctionData,
-} from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import { assert } from '@endo/errors';
 import { hexToBytes } from '@noble/hashes/utils';
 import type {
@@ -18,6 +9,15 @@ import type {
   ContractFunctionName,
   Hex,
 } from 'viem';
+/**
+ * @file Type-safe EVM contract call builder for Axelar GMP integration.
+ * @see {@link makeEvmAbiCallBatch} for creating contract call batches
+ */
+import { type ContractCall } from '@agoric/orchestration/src/axelar-types.js';
+import {
+  encodeAbiParameters,
+  encodeFunctionData,
+} from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 
 export const AbiSend = Symbol('send');
 

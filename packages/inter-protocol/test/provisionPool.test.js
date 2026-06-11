@@ -1,25 +1,25 @@
 // @ts-check
 import { test as unknownTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { E, Far } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { WalletName } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { publishDepositFacet } from '@agoric/smart-wallet/src/walletFactory.js';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
+import { makeNameHubKit } from '@agoric/vats/src/nameHub.js';
 import { prepareBridgeProvisionTool } from '@agoric/vats/src/provisionPoolKit.js';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
   makeFakeBankKit,
   makeFakeBankManagerKit,
 } from '@agoric/vats/tools/bank-utils.js';
-import { governanceSourceSpecRegistry } from '@agoric/governance/source-spec-registry.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeHeapZone } from '@agoric/zone';
-import { E, Far } from '@endo/far';
 import { interProtocolBundleSpecs } from '../source-spec-registry.js';
 import {
   makeMockChainStorageRoot,

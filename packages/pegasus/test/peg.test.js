@@ -11,9 +11,9 @@ import {
 
 import bundleSource from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
-import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeSubscription } from '@agoric/notifier';
 import { prepareVowTools } from '@agoric/vow/vat.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMapStore } from '@agoric/vat-data';

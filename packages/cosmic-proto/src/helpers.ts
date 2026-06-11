@@ -1,9 +1,9 @@
 import { RequestQuery } from './codegen/tendermint/abci/types.js';
 
-import type { TypeFromUrl } from './codegen/typeFromUrl.js';
-import type { JsonSafe } from './codegen/index.js';
-import type { Any } from './codegen/google/protobuf/any.js';
 import type { QueryBalanceRequestProtoMsg } from './codegen/cosmos/bank/v1beta1/query.js';
+import type { Any } from './codegen/google/protobuf/any.js';
+import type { JsonSafe } from './codegen/index.js';
+import type { TypeFromUrl } from './codegen/typeFromUrl.js';
 
 /**
  * A mapping from typeUrl strings to their corresponding TypeScript types. This

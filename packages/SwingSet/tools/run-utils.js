@@ -1,6 +1,6 @@
 import { Fail, q } from '@endo/errors';
-import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
+import { kunser } from '@agoric/kmarshal';
 
 /**
  * @import { ERef } from '@endo/far'

@@ -26,12 +26,12 @@
  * }} AgoricNamesRemotes
  */
 
+import { makeMarshal } from '@endo/marshal';
 import {
   slotToBoardRemote,
   unmarshalFromVstorage,
 } from '@agoric/internal/src/marshal/board-client-utils.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeMarshal } from '@endo/marshal';
 import { prepareBoardKit } from '../src/lib-board.js';
 
 export * from '@agoric/internal/src/marshal/board-client-utils.js';

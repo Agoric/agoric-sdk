@@ -1,10 +1,10 @@
 /** @file core eval to deliver control of a contract to a smartWallet */
 
-import { makeTracer } from '@agoric/internal/src/debug.js';
-import { makeHeapZone } from '@agoric/zone';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { makeTracer } from '@agoric/internal/src/debug.js';
 import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import { makeHeapZone } from '@agoric/zone';
 import { prepareContractControl } from './contract-control.contract.js';
 
 /**

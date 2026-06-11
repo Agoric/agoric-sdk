@@ -1,8 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { M, mustMatch } from '@agoric/store';
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { setup } from '../setupBasicMints.js';
+import { M, mustMatch } from '@agoric/store';
 import {
   swap,
   assertIssuerKeywords,
@@ -12,8 +11,9 @@ import {
   saveAllIssuers,
 } from '../../../src/contractSupport/index.js';
 import { assertPayoutAmount } from '../../zoeTestHelpers.js';
-import { setupZCFTest } from './setupZcfTest.js';
 import { makeOffer } from '../makeOffer.js';
+import { setup } from '../setupBasicMints.js';
+import { setupZCFTest } from './setupZcfTest.js';
 
 test(`zoeHelper with zcf - swap`, async t => {
   const {

@@ -3,12 +3,11 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { E } from '@endo/far';
-import { AG_COSMOS_INIT } from '@agoric/internal/src/action-types.js';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { AG_COSMOS_INIT } from '@agoric/internal/src/action-types.js';
 import { observeIteration } from '@agoric/notifier';
+import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeHeapZone } from '@agoric/zone';
-import { buildRootObject } from '../src/vat-bank.js';
 import {
   mintInitialSupply,
   addBankAssets,
@@ -16,8 +15,9 @@ import {
   produceStartUpgradable,
   produceDiagnostics,
 } from '../src/core/basic-behaviors.js';
-import { makeAgoricNamesAccess } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
+import { makeAgoricNamesAccess } from '../src/core/utils.js';
+import { buildRootObject } from '../src/vat-bank.js';
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 /**

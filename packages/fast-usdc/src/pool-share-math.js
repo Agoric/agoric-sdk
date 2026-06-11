@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import {
   divideBy,
@@ -5,7 +6,6 @@ import {
   makeRatioFromAmounts,
   multiplyBy,
 } from '@agoric/ertp/src/ratio.js';
-import { Fail, q } from '@endo/errors';
 
 const { keys } = Object;
 const { add, isEmpty, isEqual, isGTE, make, makeEmpty, subtract } = AmountMath;

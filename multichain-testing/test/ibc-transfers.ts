@@ -1,14 +1,14 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
-import { execFileSync } from 'node:child_process';
 import type { TestFn, ExecutionContext } from 'ava';
-import type { CosmosChainAddress, ForwardInfo } from '@agoric/orchestration';
+import { execFileSync } from 'node:child_process';
 import { objectMap } from '@endo/patterns';
-import { commonSetup, type SetupContext } from './support.js';
-import { createWallet, generateMnemonic } from '../tools/wallet.js';
-import { makeQueryClient } from '../tools/query.js';
-import { makeAgd, type Agd } from '../tools/chaind-lib.js';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
+import type { CosmosChainAddress, ForwardInfo } from '@agoric/orchestration';
 import starshipChainInfo from '../starship-chain-info.js';
+import { makeAgd, type Agd } from '../tools/chaind-lib.js';
+import { makeQueryClient } from '../tools/query.js';
 import { sleep } from '../tools/sleep.js';
+import { createWallet, generateMnemonic } from '../tools/wallet.js';
+import { commonSetup, type SetupContext } from './support.js';
 
 const test = anyTest as TestFn<SetupContext>;
 

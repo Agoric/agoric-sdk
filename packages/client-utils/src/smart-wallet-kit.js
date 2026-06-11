@@ -1,10 +1,10 @@
-/* global globalThis */
-import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 import {
   getOfferResult,
   getOfferWantsSatisfied,
   makeWalletStateCoalescer,
 } from './smart-wallet-utils.js';
+/* global globalThis */
+import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
 /**
  * @import {EReturn} from '@endo/far';

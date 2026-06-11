@@ -1,11 +1,11 @@
 // @ts-check
 
+import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { parseRatio } from '@agoric/ertp/src/ratio.js';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { Stable } from '@agoric/internal/src/tokens.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
 
 import {
   oracleBrandFeedName,

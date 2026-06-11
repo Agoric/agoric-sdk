@@ -2,8 +2,8 @@
  * @import { CoreEvalBuilder, DeployScriptFunction } from '@agoric/deploy-script-support/src/externalTypes.js';
  */
 
-import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
+import { makeHelpers } from '@agoric/deploy-script-support';
 import {
   getManifestForPortfolioControl,
   isYMaxContractName,

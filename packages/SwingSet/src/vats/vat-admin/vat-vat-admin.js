@@ -1,3 +1,6 @@
+import { q, Fail } from '@endo/errors';
+// import { makeNotifierKit } from '@agoric/notifier'; // XXX RESTORE
+import { Far, E, passStyleOf } from '@endo/far';
 /**
  * The VatAdmin wrapper vat.
  *
@@ -6,10 +9,7 @@
  * device affordances into objects that can be used by code in other vats.
  */
 import { Nat, isNat } from '@endo/nat';
-import { q, Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
-// import { makeNotifierKit } from '@agoric/notifier'; // XXX RESTORE
-import { Far, E, passStyleOf } from '@endo/far';
 import {
   provide,
   makeScalarBigMapStore,

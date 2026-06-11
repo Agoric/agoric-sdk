@@ -1,9 +1,9 @@
 import { assert, X, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { keyEQ } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { keyEQ } from '@agoric/store';
 import { showPurseBalance, setupIssuers } from '../helpers.js';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {

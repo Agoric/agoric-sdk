@@ -2,9 +2,9 @@
 /* eslint-env node */
 
 import * as childProcessTop from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 import fsTop from 'node:fs';
 import osTop from 'node:os';
+import { fileURLToPath } from 'node:url';
 
 /**
  * @import {ChildProcess} from 'node:child_process';

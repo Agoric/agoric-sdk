@@ -1,5 +1,5 @@
-import { Far, E } from '@endo/far';
 import { Fail } from '@endo/errors';
+import { Far, E } from '@endo/far';
 
 export function buildRootObject(vatPowers, _vatParameters) {
   const log = vatPowers.testLog;

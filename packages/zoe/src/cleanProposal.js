@@ -1,8 +1,8 @@
+import { assert, Fail, q } from '@endo/errors';
+import { assertRecord } from '@endo/marshal';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { assertKey, assertPattern, isKey, mustMatch } from '@agoric/store';
-import { assert, Fail, q } from '@endo/errors';
-import { assertRecord } from '@endo/marshal';
 import { FullProposalShape } from './typeGuards.js';
 
 const { ownKeys } = Reflect;

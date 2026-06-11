@@ -7,6 +7,7 @@
  *   interface changes here, that will also need to change.
  */
 
+import { E } from '@endo/far';
 import { makeTracer, WalletName } from '@agoric/internal';
 import { wrapRemoteMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
@@ -15,7 +16,6 @@ import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { provideAll } from '@agoric/zoe/src/contractSupport/durability.js';
 import { makeJigKit } from '@agoric/zoe/src/contractSupport/testJigHelpers.js';
-import { E } from '@endo/far';
 import { prepareSmartWallet } from './smartWallet.js';
 import { shape } from './typeGuards.js';
 

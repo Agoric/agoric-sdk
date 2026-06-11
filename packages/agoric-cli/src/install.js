@@ -1,10 +1,10 @@
+import { execFileSync } from 'node:child_process';
 /* eslint-env node */
 import path from 'node:path';
 import chalk from 'chalk';
-import { execFileSync } from 'node:child_process';
 import { makePspawn } from './helpers.js';
-import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
 import { listWorkspaces } from './lib/packageManager.js';
+import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
 
 const REQUIRED_AGORIC_START_PACKAGES = [
   '@agoric/solo',

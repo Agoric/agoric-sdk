@@ -3,18 +3,18 @@
 
 import { environmentOptionsListHas } from '@endo/env-options';
 import { assert, Fail, q, b } from '@endo/errors';
-import { assertPattern, mustMatch } from '@agoric/store';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@endo/nat';
 import { kindOf } from '@endo/patterns';
-import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
-import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
+import { assertPattern, mustMatch } from '@agoric/store';
 import { makeCache } from './cache.js';
 import {
   assessFacetiousness,
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
+import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
+import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 /**
  * @import {DurableKindHandle} from '@agoric/swingset-liveslots'

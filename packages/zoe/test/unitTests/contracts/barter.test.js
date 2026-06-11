@@ -6,9 +6,9 @@ import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
-import { setup } from '../setupBasicMints.js';
-import { installationPFromSource } from '../installFromSource.js';
 import { assertPayoutAmount, assertOfferResult } from '../../zoeTestHelpers.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { setup } from '../setupBasicMints.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

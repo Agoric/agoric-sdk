@@ -1,3 +1,4 @@
+import { E } from '@endo/far';
 import { M, mustMatch } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
@@ -5,7 +6,6 @@ import {
   InstallationShape,
   InstanceHandleShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/far';
 
 /**
  * @import {MapStore, SetStore} from '@agoric/store';

@@ -2,10 +2,10 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import path from 'node:path';
 
-import { Fail } from '@endo/errors';
 import bundleSource from '@endo/bundle-source';
-import { Far } from '@endo/marshal';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 

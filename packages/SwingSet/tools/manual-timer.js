@@ -1,7 +1,7 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
-import { makeScalarMapStore } from '@agoric/store';
 import { bindAllMethods } from '@agoric/internal';
+import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { buildRootObject } from '../src/vats/timer/vat-timer.js';
 

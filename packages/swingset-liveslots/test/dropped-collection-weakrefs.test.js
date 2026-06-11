@@ -3,8 +3,8 @@ import { Far } from '@endo/marshal';
 import { kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { buildSyscall } from './liveslots-helpers.js';
-import { makeStartVat } from './util.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeStartVat } from './util.js';
 
 test('droppedCollectionWeakRefs', async t => {
   const { syscall } = buildSyscall();

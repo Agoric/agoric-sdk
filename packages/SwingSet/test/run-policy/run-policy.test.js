@@ -5,12 +5,12 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import { kslot, kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { makeSwingsetController } from '../../src/index.js';
-import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import {
   crankCounter,
   computronCounter,
   wallClockWaiter,
 } from '../../src/lib/runPolicies.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 
 async function testCranks(t, mode) {
   /** @type {SwingSetConfig} */

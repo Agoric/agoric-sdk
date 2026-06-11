@@ -4,9 +4,9 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { buildRootObject, debugTools } from '../src/vats/timer/vat-timer.js';
 
 test('schedule', t => {

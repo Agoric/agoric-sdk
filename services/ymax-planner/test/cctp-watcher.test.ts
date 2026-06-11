@@ -1,17 +1,17 @@
 import test from 'ava';
 import { id, toBeHex, zeroPadValue } from 'ethers';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
+import { getResolvedTx } from '../src/kv-store.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';
+import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
 import {
   createMockPendingTxOpts,
   createMockProvider,
   mockFetch,
 } from './mocks.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
-import { getResolvedTx } from '../src/kv-store.ts';
-import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
 
 const usdcAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const toAddress = '0x742d35Cc6635C0532925a3b8D9dEB1C9e5eb2b64';

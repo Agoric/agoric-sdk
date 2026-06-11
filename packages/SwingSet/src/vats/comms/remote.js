@@ -1,5 +1,5 @@
-import { Nat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { Nat } from '@endo/nat';
 import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import {
   makeRemoteSlot,

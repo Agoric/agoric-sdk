@@ -3,14 +3,14 @@
 import { Buffer } from 'node:buffer';
 
 import test from 'ava';
-import tmp from 'tmp';
 import bundleSource from '@endo/bundle-source';
+import tmp from 'tmp';
 
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 
-import { initSwingStore } from '../src/swingStore.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
+import { initSwingStore } from '../src/swingStore.js';
 
 const tmpDir = makeTempDirFactory(tmp);
 

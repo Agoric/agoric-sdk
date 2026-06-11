@@ -1,7 +1,7 @@
+import type { ExecutionContext } from 'ava';
+import { Far, type EReturn } from '@endo/far';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Far, type EReturn } from '@endo/far';
-import type { ExecutionContext } from 'ava';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { prepareProgressTracker } from '../../src/utils/progress.js';
 import { commonSetup } from '../supports.js';

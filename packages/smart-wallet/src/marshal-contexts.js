@@ -2,8 +2,8 @@
 import { Fail, q } from '@endo/errors';
 import { HandledPromise } from '@endo/eventual-send'; // TODO: convince tsc this isn't needed
 
-import { makeScalarMapStore } from '@agoric/store';
 import { Far, makeMarshal, Remotable } from '@endo/marshal';
+import { makeScalarMapStore } from '@agoric/store';
 import { DEFAULT_PREFIX } from '@agoric/vats/src/lib-board.js';
 
 /**

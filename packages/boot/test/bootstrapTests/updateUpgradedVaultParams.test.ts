@@ -8,15 +8,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 
 import type { ZoeService } from '@agoric/zoe';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '../../tools/drivers.js';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { updateVaultManagerParams } from '../tools/changeVaultParams.js';
 
 const makeDefaultTestContext = async t => {

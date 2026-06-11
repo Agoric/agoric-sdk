@@ -1,6 +1,8 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { E, type EReturn } from '@endo/far';
+import { matches } from '@endo/patterns';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import {
   MsgDepositForBurn as MsgDepositForBurnType,
@@ -27,8 +29,6 @@ import {
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E, type EReturn } from '@endo/far';
-import { matches } from '@endo/patterns';
 import * as contractExports from '../src/fast-usdc.contract.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import {

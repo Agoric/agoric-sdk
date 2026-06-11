@@ -10,12 +10,12 @@ import {
 import { Fail } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { prepareVowTools } from '@agoric/vow';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { prepareLogStore } from '../src/log-store.js';
 import { prepareBijection } from '../src/bijection.js';
+import { prepareLogStore } from '../src/log-store.js';
 import { makeReplayMembrane } from '../src/replay-membrane.js';
 
 /**

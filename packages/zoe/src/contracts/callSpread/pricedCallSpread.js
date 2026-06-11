@@ -1,10 +1,10 @@
 /// <reference path="./types.js" />
 
-import { AmountMath } from '@agoric/ertp';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { AmountMath } from '@agoric/ertp';
 import {
   assertNatAssetKind,
   assertProposalShape,

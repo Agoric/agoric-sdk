@@ -9,9 +9,16 @@ import anylogger from '@agoric/internal/vendor/anylogger.js';
 import bundleSource from '@endo/bundle-source';
 import { assert, Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { toThrowable, passStyleOf } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
+import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
+import * as ActionType from '@agoric/internal/src/action-types.js';
+import { objectMapMutable, TRUE } from '@agoric/internal/src/js-utils.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { BLOCK_HISTOGRAM_METRICS } from '@agoric/internal/src/metrics.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import { openSwingStore } from '@agoric/swing-store';
 import {
   buildMailbox,
   buildMailboxStateMap,
@@ -25,19 +32,12 @@ import {
   normalizeConfig,
   upgradeSwingset,
 } from '@agoric/swingset-vat';
-import { openSwingStore } from '@agoric/swing-store';
-import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
-import * as ActionType from '@agoric/internal/src/action-types.js';
-import { objectMapMutable, TRUE } from '@agoric/internal/src/js-utils.js';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { BLOCK_HISTOGRAM_METRICS } from '@agoric/internal/src/metrics.js';
-import { makeWithQueue } from '@agoric/internal/src/queue.js';
 
+import { fileURLToPath } from 'node:url';
 import {
   extractCoreProposalBundles,
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
-import { fileURLToPath } from 'node:url';
 
 import {
   makeDefaultMeterProvider,
@@ -45,11 +45,11 @@ import {
   makeSlogCallbacks,
 } from './kernel-stats.js';
 
-import { parseParams } from './params.js';
-import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
+import { computronCounter } from './computron-counter.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
-import { computronCounter } from './computron-counter.js';
+import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
+import { parseParams } from './params.js';
 
 /**
  * @import {BlockInfo} from '@agoric/internal/src/chain-utils.js';

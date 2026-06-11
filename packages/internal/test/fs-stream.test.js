@@ -2,8 +2,8 @@
 import test from 'ava';
 import { EventEmitter } from 'node:events';
 import { open, rm, mkdtemp } from 'node:fs/promises';
-import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { waitUntilQuiescent } from '../src/lib-nodejs/waitUntilQuiescent.js';
 import { makeFsStreamWriter } from '../src/node/fs-stream.js';

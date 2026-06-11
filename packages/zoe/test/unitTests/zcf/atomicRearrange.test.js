@@ -7,9 +7,9 @@ import {
   toOnly,
 } from '../../../src/contractSupport/atomicTransfer.js';
 
-import { setupZCFTest } from './setupZcfTest.js';
 import { makeOffer } from '../makeOffer.js';
 import { setup } from '../setupBasicMints.js';
+import { setupZCFTest } from './setupZcfTest.js';
 
 const zcfMintUtils = async (zcf, name) => {
   const mint = await zcf.makeZCFMint(name);

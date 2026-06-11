@@ -1,8 +1,8 @@
 /// <reference path="./types.js" />
 
-import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+import { AmountMath } from '@agoric/ertp';
 import {
   assertNatAssetKind,
   assertProposalShape,

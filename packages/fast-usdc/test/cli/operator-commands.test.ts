@@ -1,5 +1,5 @@
-import { makeMarshal } from '@endo/marshal';
 import test from 'ava';
+import { makeMarshal } from '@endo/marshal';
 import { Command } from 'commander';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/tools/mock-evidence.js';
 import { addOperatorCommands } from '../../src/cli/operator-commands.js';

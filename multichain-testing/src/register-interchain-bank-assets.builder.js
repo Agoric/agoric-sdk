@@ -1,7 +1,7 @@
+import { parseArgs } from 'node:util';
 /* global harden */
 /// <reference types="ses" />
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { parseArgs } from 'node:util';
 
 /**
  * @import {ParseArgsConfig} from 'node:util';

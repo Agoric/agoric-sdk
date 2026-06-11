@@ -1,9 +1,9 @@
-import { expectNotType, expectType } from 'tsd';
 import { E, type ERef } from '@endo/far';
+import { expectNotType, expectType } from 'tsd';
+import { keyMirror } from '../src/keyMirror.js';
+import type { StorageNode } from '../src/lib-chainStorage.js';
 import { attenuate } from '../src/ses-utils.js';
 import type { Permit, RecordFromTuple, Remote } from '../src/types.js';
-import type { StorageNode } from '../src/lib-chainStorage.js';
-import { keyMirror } from '../src/keyMirror.js';
 
 {
   const makeCoin = (denom: string, amount: bigint) => ({ denom, amount });

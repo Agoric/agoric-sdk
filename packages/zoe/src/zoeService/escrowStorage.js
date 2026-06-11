@@ -1,8 +1,8 @@
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 
 /// <reference path="./types.js" />
 

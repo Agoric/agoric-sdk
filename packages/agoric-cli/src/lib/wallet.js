@@ -1,12 +1,12 @@
 // @ts-check
 /* eslint-env node */
 
+import { Fail } from '@endo/errors';
 import { iterateReverse } from '@agoric/casting';
 import {
   boardSlottingMarshaller,
   makeWalletStateCoalescer,
 } from '@agoric/client-utils';
-import { Fail } from '@endo/errors';
 import { execSwingsetTransaction, pollTx } from './chain.js';
 
 /**

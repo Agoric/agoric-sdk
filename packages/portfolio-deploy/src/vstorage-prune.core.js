@@ -9,8 +9,8 @@
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
-import { makeTracer, zip } from '@agoric/internal';
 import { E } from '@endo/eventual-send';
+import { makeTracer, zip } from '@agoric/internal';
 
 const trace = makeTracer('VSP');
 

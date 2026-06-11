@@ -7,15 +7,15 @@
  * main export: @see {prepareSettler}
  */
 
+import { atob } from '@endo/base64';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
   AccountIdArgShape,
   CosmosChainAddressShape,
 } from '@agoric/orchestration';
-import { atob } from '@endo/base64';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
 
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '@agoric/fast-usdc/src/constants.js';
@@ -38,6 +38,7 @@ import type {
   LogFn,
   NobleAddress,
 } from '@agoric/fast-usdc/src/types.js';
+import type { IBCChannelID } from '@agoric/network/ibc';
 import type {
   AccountId,
   AccountIdArg,
@@ -49,7 +50,6 @@ import type {
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { mustMatch, type MapStore } from '@agoric/store';
-import type { IBCChannelID } from '@agoric/network/ibc';
 import type { IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import type { Vow, VowTools } from '@agoric/vow';

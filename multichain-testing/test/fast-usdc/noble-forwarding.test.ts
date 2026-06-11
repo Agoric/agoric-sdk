@@ -1,8 +1,8 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
+import type { TestFn } from 'ava';
 import type { IBCConnectionInfo } from '@agoric/orchestration';
 import { assertBech32Address } from '@agoric/orchestration/src/utils/address.js';
-import type { TestFn } from 'ava';
 import starshipChainInfo from '../../starship-chain-info.js';
 import { makeQueryClient } from '../../tools/query.js';
 import { createWallet } from '../../tools/wallet.js';

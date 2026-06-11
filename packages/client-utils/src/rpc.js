@@ -1,6 +1,6 @@
-import { makeTendermintRpcClient } from '@agoric/casting';
 import { StargateClient } from '@cosmjs/stargate';
 import { Tendermint37Client } from '@cosmjs/tendermint-rpc';
+import { makeTendermintRpcClient } from '@agoric/casting';
 
 /**
  * @import {MinimalNetworkConfig} from './network-config.js';

@@ -1,7 +1,7 @@
+import { M } from '@endo/patterns';
 /** @file contract that can invite participants to set prices */
 import { makeTracer } from '@agoric/internal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { M } from '@endo/patterns';
 
 /**
  * @import {Baggage} from '@agoric/swingset-liveslots';

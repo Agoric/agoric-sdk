@@ -12,12 +12,12 @@
 // XXX importing these that are declared to be used only for testing
 // until @agoric/store supports composite keys
 import { makeDecodePassable, makeEncodePassable } from '@endo/marshal';
+import { makeTracer } from '@agoric/internal';
 import {
   getAmountIn,
   getAmountOut,
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeTracer } from '@agoric/internal';
 
 const { multiply } = natSafeMath;
 

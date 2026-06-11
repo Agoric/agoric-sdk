@@ -1,7 +1,10 @@
 // @ts-check
 import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
 import { AmountMath, AmountShape, IssuerShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
@@ -12,9 +15,6 @@ import {
   AmountKeywordRecordShape,
   OfferHandlerI,
 } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
-import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
-import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 const trace = makeTracer('ReserveKit', true);

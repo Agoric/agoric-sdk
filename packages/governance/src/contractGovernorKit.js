@@ -1,13 +1,13 @@
 import { Fail } from '@endo/errors';
-import { UnguardedHelperI, makeTracer } from '@agoric/internal';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
+import { UnguardedHelperI, makeTracer } from '@agoric/internal';
+import { TimestampShape } from '@agoric/time';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 import {
   InvitationShape,
   InstanceHandleShape,
   InstallationShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { TimestampShape } from '@agoric/time';
 import { setupApiGovernance } from './contractGovernance/governApi.js';
 import { setupFilterGovernance } from './contractGovernance/governFilter.js';
 import {

@@ -1,3 +1,5 @@
+import { annotateError, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
 import {
@@ -7,8 +9,6 @@ import {
   provide,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { annotateError, Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 
 import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 import {

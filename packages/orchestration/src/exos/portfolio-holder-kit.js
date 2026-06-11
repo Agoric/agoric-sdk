@@ -1,9 +1,9 @@
-import { M, mustMatch } from '@endo/patterns';
-import { E } from '@endo/far';
 import { Fail } from '@endo/errors';
-import { PublicTopicShape } from '@agoric/zoe/src/contractSupport/topics.js';
+import { E } from '@endo/far';
+import { M, mustMatch } from '@endo/patterns';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
+import { PublicTopicShape } from '@agoric/zoe/src/contractSupport/topics.js';
 
 const { fromEntries } = Object;
 

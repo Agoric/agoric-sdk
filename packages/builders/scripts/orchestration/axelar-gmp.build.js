@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
-import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
+import { makeHelpers } from '@agoric/deploy-script-support';
 import {
   getManifest,
   startAxelarGmp,

@@ -1,3 +1,4 @@
+import { readFile, writeFile } from 'node:fs/promises';
 /* eslint-env node */
 import {
   LOCAL_CONFIG,
@@ -6,7 +7,6 @@ import {
   retryUntilCondition,
 } from '@agoric/client-utils';
 import { evalBundles, getDetailsMatchingVats } from '@agoric/synthetic-chain';
-import { readFile, writeFile } from 'node:fs/promises';
 
 export const stargateClientP = makeStargateClient(LOCAL_CONFIG, { fetch });
 export const vstorageKit = makeVstorageKit({ fetch }, LOCAL_CONFIG);

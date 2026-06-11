@@ -1,11 +1,11 @@
 import { q } from '@endo/errors';
+import { compareRank } from '@endo/marshal';
 import {
   Far,
   assertPassable,
   filterIterable,
   mapIterable,
 } from '@endo/pass-style';
-import { compareRank } from '@endo/marshal';
 import {
   assertScalarKey,
   makeCopyMap,

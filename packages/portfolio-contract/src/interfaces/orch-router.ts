@@ -1,3 +1,4 @@
+import type { Abi, AbiParameter, AbiParameterToPrimitiveType } from 'viem';
 /**
  * @file ABIs and payload shapes for router-based remote account contracts.
  * @see {@link remoteAccountAxelarRouterABI} {@link remoteAccountABI}
@@ -6,7 +7,6 @@ import {
   PermitTransferFromComponents,
   PermitTransferFromInternalTypeName,
 } from '@agoric/orchestration/src/utils/permit2.js';
-import type { Abi, AbiParameter, AbiParameterToPrimitiveType } from 'viem';
 
 /**
  * @see {@link https://github.com/agoric-labs/agoric-to-axelar-local/blob/mhofman/setup-router/packages/axelar-local-dev-cosmos/src/contracts/interfaces/IRemoteAccount.sol}

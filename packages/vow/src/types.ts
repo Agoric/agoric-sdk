@@ -1,7 +1,7 @@
-import type { Remote } from '@agoric/internal';
-import type { Zone } from '@agoric/zone';
 import type { ERef } from '@endo/far';
 import type { CopyTagged, RemotableObject } from '@endo/pass-style';
+import type { Remote } from '@agoric/internal';
+import type { Zone } from '@agoric/zone';
 
 export type { ERef };
 

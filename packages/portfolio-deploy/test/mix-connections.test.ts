@@ -1,14 +1,14 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { objectMap } from '@endo/patterns';
 import {
   Order,
   State,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import { HubName as HubNameCopy } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
 import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import type { ChainInfo } from '@agoric/orchestration';
 import { HubName } from '@agoric/orchestration/src/exos/chain-hub.js';
-import { objectMap } from '@endo/patterns';
-import { HubName as HubNameCopy } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
 import { makeAssetInfo } from '../src/chain-name-service.js';
 import { mixConnections } from '../src/orch.start.js';
 

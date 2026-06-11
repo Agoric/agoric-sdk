@@ -1,6 +1,6 @@
+import { parseArgs } from 'node:util';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { FeedPolicyShape } from '@agoric/fast-usdc/src/type-guards.js';
-import { parseArgs } from 'node:util';
 import { getManifestForUpdateFastUsdcPolicy } from './fast-usdc-policy.core.js';
 import { toExternalConfig } from './utils/config-marshal.js';
 

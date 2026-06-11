@@ -1,10 +1,10 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import bundleSource from '@endo/bundle-source';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 
 import { makeInstall } from '../../src/install.js';
 

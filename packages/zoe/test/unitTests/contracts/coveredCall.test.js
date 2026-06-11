@@ -11,9 +11,9 @@ import { keyEQ } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
+import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
-import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
 /**
  * @import {FeeIssuerConfig, InvitationDetails} from '@agoric/zoe';

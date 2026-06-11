@@ -1,8 +1,8 @@
 import { assert, Fail } from '@endo/errors';
 import { kser } from '@agoric/kmarshal';
-import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
-import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
 import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';
+import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
+import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
 

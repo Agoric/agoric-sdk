@@ -4,6 +4,26 @@ import type { Assertions } from 'ava';
 
 import type { PartialDeep } from 'type-fest';
 
+import { q, Fail } from '@endo/errors';
+import { Far } from '@endo/pass-style';
+import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
+import type {
+  PortfolioPublishedPathTypes,
+  TargetAllocation,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import {
+  readableSteps,
+  readableOrder,
+} from '@aglocal/portfolio-contract/test/supports.js';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
+import type { VstorageKit } from '@agoric/client-utils';
+import { AmountMath } from '@agoric/ertp';
+import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import type { EvmAddress } from '@agoric/fast-usdc';
+import { fromTypedEntries, objectMap } from '@agoric/internal';
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import {
   ACCOUNT_DUST_EPSILON,
   CaipChainIds,
@@ -14,30 +34,11 @@ import {
   type StatusFor,
 } from '@agoric/portfolio-api';
 import type {
-  PortfolioPublishedPathTypes,
-  TargetAllocation,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
-import {
-  readableSteps,
-  readableOrder,
-} from '@aglocal/portfolio-contract/test/supports.js';
-import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
-import type {
   NetworkSpec,
   PoolKey,
 } from '@agoric/portfolio-api/src/network/network-spec.js';
-import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
-import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
-import type { VstorageKit } from '@agoric/client-utils';
-import { AmountMath } from '@agoric/ertp';
-import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
-import { fromTypedEntries, objectMap } from '@agoric/internal';
-import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
-import { q, Fail } from '@endo/errors';
-import { Far } from '@endo/pass-style';
 import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.js';
-import type { EvmAddress } from '@agoric/fast-usdc';
-import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
+import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import {
   getNonDustBalances,
   planDepositToAllocations,
@@ -45,14 +46,13 @@ import {
   planWithdrawFromAllocations,
 } from '../src/plan-deposit.ts';
 import type { PlannerContext } from '../src/plan-deposit.ts';
+import PROD_NETWORK_202604 from '../tools/network-snapshots/prod-network-2026-04.ts';
 import {
   mockEvmCtx,
   mockGasEstimator,
   createMockSpectrumBlockchain,
   createMockProviderSets,
 } from './mocks.ts';
-import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import PROD_NETWORK_202604 from '../tools/network-snapshots/prod-network-2026-04.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);

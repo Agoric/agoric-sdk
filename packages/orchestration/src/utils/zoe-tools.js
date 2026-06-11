@@ -16,9 +16,9 @@
  */
 
 import { makeError, q, Fail } from '@endo/errors';
-import { depositToSeat } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal';
+import { depositToSeat } from '@agoric/zoe/src/contractSupport/index.js';
 
 const trace = makeTracer('ZoeTools');
 

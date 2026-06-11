@@ -1,20 +1,20 @@
 // @ts-check
 import test from 'ava';
 
+import { Codec, CodecHelper } from '../dist/codec-helpers.js';
+import { QueryParamsResponse as SwingSetQueryParamsResponseOrig } from '../dist/codegen/agoric/swingset/query.js';
 import { ModuleAccount as ModuleAccountType } from '../dist/codegen/cosmos/auth/v1beta1/auth.js';
+import { QueryAllBalancesRequest } from '../dist/codegen/cosmos/bank/v1beta1/query.js';
+import { MsgSend } from '../dist/codegen/cosmos/bank/v1beta1/tx.js';
 import { cosmos } from '../dist/codegen/cosmos/bundle.js';
+import { MsgTransfer as MsgTransferOrig } from '../dist/codegen/ibc/applications/transfer/v1/tx.js';
 import { ibc } from '../dist/codegen/ibc/bundle.js';
 import { icq } from '../dist/codegen/icq/bundle.js';
-import { Codec, CodecHelper } from '../dist/codec-helpers.js';
 import {
   typeUrlToGrpcPath,
   toRequestQueryJson,
   typedJson,
 } from '../dist/helpers.js';
-import { QueryAllBalancesRequest } from '../dist/codegen/cosmos/bank/v1beta1/query.js';
-import { MsgSend } from '../dist/codegen/cosmos/bank/v1beta1/tx.js';
-import { MsgTransfer as MsgTransferOrig } from '../dist/codegen/ibc/applications/transfer/v1/tx.js';
-import { QueryParamsResponse as SwingSetQueryParamsResponseOrig } from '../dist/codegen/agoric/swingset/query.js';
 
 /**
  * @import {ExecutionContext, Macro} from 'ava';

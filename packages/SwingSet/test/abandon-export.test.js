@@ -2,15 +2,15 @@
 /* eslint-disable import/order */
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import buildKernel from '../src/kernel/index.js';
+import { kser, kunser, kslot } from '@agoric/kmarshal';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
+import buildKernel from '../src/kernel/index.js';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
-import { extractMethod } from '../src/lib/kdebug.js';
 import makeKernelKeeper, {
   CURRENT_SCHEMA_VERSION,
 } from '../src/kernel/state/kernelKeeper.js';
+import { extractMethod } from '../src/lib/kdebug.js';
 import { makeKernelEndowments, buildDispatch } from './util.js';
-import { kser, kunser, kslot } from '@agoric/kmarshal';
 
 /**
  * @import {ExecutionContext} from 'ava';

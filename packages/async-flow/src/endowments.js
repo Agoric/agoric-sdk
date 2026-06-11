@@ -1,6 +1,5 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { isPromise } from '@endo/promise-kit';
 import {
   isRemotable,
   isPassable,
@@ -8,9 +7,10 @@ import {
   Far,
 } from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
+import { isPromise } from '@endo/promise-kit';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { prepareVowTools, toPassableCap } from '@agoric/vow';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { PropertyKeyShape } from './type-guards.js';
 
 /**

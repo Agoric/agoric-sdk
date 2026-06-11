@@ -1,9 +1,9 @@
 /* eslint-disable camelcase */
 
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
-import type { NetworkSpec } from '../../tools/network/network-spec.js';
-import type { PoolKey } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
+import type { PoolKey } from '../../src/type-guards.js';
+import type { NetworkSpec } from '../../tools/network/network-spec.js';
 
 // @ts-expect-error TS2322: Type '"Polygon"' is not assignable to type 'SupportedChain'.
 const Polygon: SupportedChain = 'Polygon';

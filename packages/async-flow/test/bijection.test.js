@@ -9,9 +9,9 @@ import {
 import { Far } from '@endo/pass-style';
 import { prepareVowTools } from '@agoric/vow';
 import { isVow, toPassableCap } from '@agoric/vow/src/vow-utils.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareBijection } from '../src/bijection.js';
 

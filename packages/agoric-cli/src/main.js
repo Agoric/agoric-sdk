@@ -1,8 +1,8 @@
-/* eslint-env node */
-import { Command } from 'commander';
 import path from 'node:path';
 import url from 'node:url';
 import { assert, X } from '@endo/errors';
+/* eslint-env node */
+import { Command } from 'commander';
 import {
   DEFAULT_KEEP_POLLING_SECONDS,
   DEFAULT_JITTER_SECONDS,

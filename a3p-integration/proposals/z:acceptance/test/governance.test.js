@@ -3,14 +3,14 @@
 import test from 'ava';
 
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
-import { bankSend } from './test-lib/psm-lib.js';
 import {
   makeGovernanceDriver,
   runCommitteeElectionParamChange,
 } from './test-lib/governance.js';
 import { agdWalletUtils } from './test-lib/index.js';
-import { upgradeContract } from './test-lib/utils.js';
+import { bankSend } from './test-lib/psm-lib.js';
 import { networkConfig } from './test-lib/rpc.js';
+import { upgradeContract } from './test-lib/utils.js';
 
 const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
 const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];

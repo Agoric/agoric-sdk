@@ -11,6 +11,11 @@
  */
 import '@endo/init';
 
+import { parseArgs } from 'node:util';
+import { SigningStargateClient } from '@cosmjs/stargate';
+import type { CopyRecord } from '@endo/pass-style';
+import type { HDAccount } from 'viem';
+import { mnemonicToAccount } from 'viem/accounts';
 import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
 import {
   TargetAllocationShape,
@@ -63,11 +68,6 @@ import {
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { OfferStatus } from '@agoric/smart-wallet/src/offers.js';
 import { M } from '@agoric/store';
-import { SigningStargateClient } from '@cosmjs/stargate';
-import type { CopyRecord } from '@endo/pass-style';
-import { parseArgs } from 'node:util';
-import type { HDAccount } from 'viem';
-import { mnemonicToAccount } from 'viem/accounts';
 import { walletUpdates } from '../tools/wallet-store-reflect.ts';
 
 const getUsage = (programName: string): string =>

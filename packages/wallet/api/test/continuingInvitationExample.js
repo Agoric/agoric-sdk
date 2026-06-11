@@ -1,7 +1,7 @@
 // @ts-check
 
-import { makeNotifierFromSubscriber, makePublishKit } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
+import { makeNotifierFromSubscriber, makePublishKit } from '@agoric/notifier';
 
 export const start = zcf => {
   const { subscriber, publisher } = makePublishKit();

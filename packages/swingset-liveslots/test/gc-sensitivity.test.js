@@ -2,8 +2,8 @@
 import test from 'ava';
 import { Far } from '@endo/marshal';
 import { kser } from '@agoric/kmarshal';
-import { buildSyscall } from './liveslots-helpers.js';
 import { makeLiveSlots } from '../src/liveslots.js';
+import { buildSyscall } from './liveslots-helpers.js';
 import { makeMockGC } from './mock-gc.js';
 import { makeMessage, makeStartVat } from './util.js';
 

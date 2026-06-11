@@ -1,3 +1,5 @@
+import { parseArgs } from 'node:util';
+import { mustMatch } from '@endo/patterns';
 /**
  * Usage:
  * agoric run fast-usdc-reconfigure.build.js [--agoricToNoble <IBCChannelInfo>]
@@ -6,8 +8,6 @@
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { IBCConnectionInfoShape } from '@agoric/orchestration';
-import { mustMatch } from '@endo/patterns';
-import { parseArgs } from 'node:util';
 import { getManifestForUpdateNobleICA } from './update-noble-ica.core.js';
 
 /**

@@ -11,12 +11,12 @@
 
 // @ts-check
 
+import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
 } from '@agoric/internal/src/marshal/board-client-utils.js';
-import { E, Far } from '@endo/far';
-import { Fail } from '@endo/errors';
 
 /**
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';

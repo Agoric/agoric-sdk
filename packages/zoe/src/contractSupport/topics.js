@@ -1,6 +1,6 @@
+import { E } from '@endo/far';
 import { SubscriberShape } from '@agoric/notifier';
 import { M } from '@agoric/store';
-import { E } from '@endo/far';
 
 /**
  * @import {Remote} from '@agoric/internal';

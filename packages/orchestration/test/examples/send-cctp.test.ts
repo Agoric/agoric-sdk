@@ -1,15 +1,15 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { E } from '@endo/far';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { MsgDepositForBurn as MsgDepositForBurnType } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { E } from '@endo/far';
 import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import type { Installation } from '@agoric/zoe';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,

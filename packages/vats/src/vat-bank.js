@@ -13,8 +13,8 @@ import {
   subscribeEach,
 } from '@agoric/notifier';
 import { provideLazy } from '@agoric/store';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { BridgeHandlerI, BridgeScopedManagerI } from './bridge.js';
 import {
   makeVirtualPurseKitIKit,

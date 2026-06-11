@@ -21,8 +21,8 @@ import {
   getEnvironmentOption,
   getEnvironmentOptionsList,
 } from '@endo/env-options';
-import anylogger from '@agoric/internal/vendor/anylogger.js';
 import chalk from 'chalk';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
 

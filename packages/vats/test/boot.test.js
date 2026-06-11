@@ -1,8 +1,8 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSourceAmbient from '@endo/bundle-source';
 import { E } from '@endo/far';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 
 import { buildRootObject } from '../src/core/boot-chain.js';
 import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';

@@ -9,11 +9,11 @@ import { test } from '../tools/prepare-test-env-ava.js';
 import path from 'node:path';
 import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
+import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import { makeSwingsetController, buildKernelBundles } from '../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
-import { bundleOpts } from './util.js';
-import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import { buildPatterns } from './message-patterns.js';
+import { bundleOpts } from './util.js';
 
 // This exercises all the patterns in 'message-patterns.js' twice with
 // comms vats in the path (a different file runs them all with a

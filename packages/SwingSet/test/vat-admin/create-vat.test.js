@@ -10,9 +10,9 @@ import {
   makeSwingsetController,
   loadBasedir,
 } from '../../src/index.js';
+import { extractMethod } from '../../src/lib/kdebug.js';
 import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
-import { extractMethod } from '../../src/lib/kdebug.js';
 
 function nonBundleFunction(_E) {
   return {};

@@ -1,7 +1,7 @@
 /// <reference path="./types.js" />
 
-import { AmountMath } from '@agoric/ertp';
 import { Fail } from '@endo/errors';
+import { AmountMath } from '@agoric/ertp';
 
 import { assertProposalShape } from '../../contractSupport/index.js';
 

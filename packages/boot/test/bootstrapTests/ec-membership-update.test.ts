@@ -1,7 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { passStyleOf } from '@endo/marshal';
 import type { TestFn } from 'ava';
+import { passStyleOf } from '@endo/marshal';
 import {
   makeBootTestContext,
   withGovernance,

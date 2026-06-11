@@ -1,5 +1,11 @@
-/* eslint-disable camelcase */
-import { osmosis } from 'osmojs';
+import { writeFileSync } from 'node:fs';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
+import { toUtf8 } from '@cosmjs/encoding';
+import type { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
+import type { SigningStargateClient } from '@cosmjs/stargate';
+import type { Coin } from 'cosmjs-types/cosmos/base/v1beta1/coin.js';
 import {
   MsgStoreCode,
   MsgExecuteContract,
@@ -7,20 +13,14 @@ import {
   MsgStoreCodeResponse,
   MsgInstantiateContractResponse,
 } from 'cosmjs-types/cosmwasm/wasm/v1/tx.js';
-import type { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
-import type { Coin } from 'cosmjs-types/cosmos/base/v1beta1/coin.js';
-import type { SigningStargateClient } from '@cosmjs/stargate';
-import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
-import { toUtf8 } from '@cosmjs/encoding';
 import { $ } from 'execa';
-import { writeFileSync } from 'node:fs';
-import fs from 'node:fs/promises';
-import path from 'node:path';
+/* eslint-disable camelcase */
+import { osmosis } from 'osmojs';
+import starshipChainInfo from '../../starship-chain-info.js';
 import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
 } from '../../tools/ibc-transfer.js';
-import starshipChainInfo from '../../starship-chain-info.js';
 import { makeQueryClient } from '../../tools/query.js';
 import type { SetupContextWithWallets } from '../support.js';
 

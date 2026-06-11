@@ -6,8 +6,8 @@
 
 import '@agoric/swingset-liveslots/tools/prepare-strict-test-env.js';
 
-import { wrapTest } from '@endo/ses-ava';
 import rawTest from 'ava';
+import { wrapTest } from '@endo/ses-ava';
 
 export * from '@agoric/swingset-liveslots/tools/prepare-strict-test-env.js';
 

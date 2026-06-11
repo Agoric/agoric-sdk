@@ -4,9 +4,9 @@ import path from 'node:path';
 
 import { heapVowTools } from '@agoric/vow/vat.js';
 
-import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { E } from '@endo/eventual-send';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeZoeForTest, setUpZoeForTest } from '../../../tools/setup-zoe.js';
 
 /**

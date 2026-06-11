@@ -1,6 +1,6 @@
 import { E } from '@endo/eventual-send';
-import { observeNotifier } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
+import { observeNotifier } from '@agoric/notifier';
 
 /**
  * @import {PromiseRecord} from '@endo/promise-kit';

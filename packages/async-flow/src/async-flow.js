@@ -1,13 +1,13 @@
 import { annotateError, Fail, makeError, q, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { M } from '@endo/patterns';
-import { makeScalarWeakMapStore } from '@agoric/store';
 import { PromiseWatcherI } from '@agoric/base-zone';
+import { makeScalarWeakMapStore } from '@agoric/store';
 import { prepareVowTools, toPassableCap, VowShape } from '@agoric/vow';
-import { makeReplayMembrane } from './replay-membrane.js';
-import { prepareLogStore } from './log-store.js';
 import { prepareBijection } from './bijection.js';
 import { prepareEndowmentTools } from './endowments.js';
+import { prepareLogStore } from './log-store.js';
+import { makeReplayMembrane } from './replay-membrane.js';
 import { LogEntryShape, FlowStateShape } from './type-guards.js';
 
 /**

@@ -5,14 +5,14 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 import bundleSource from '@endo/bundle-source';
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
-import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import {
   buildMailboxStateMap,
   buildMailbox,
   exportMailboxData,
   makeEphemeralMailboxStorage,
 } from '../../src/devices/mailbox/mailbox.js';
+import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { bundleOpts } from '../util.js';
 
 test.before(async t => {

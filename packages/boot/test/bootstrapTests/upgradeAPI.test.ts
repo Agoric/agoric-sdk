@@ -9,11 +9,11 @@ import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-
 
 import { makePromiseKit } from '@endo/promise-kit';
 import type { ZoeService } from '@agoric/zoe';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '../../tools/drivers.js';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

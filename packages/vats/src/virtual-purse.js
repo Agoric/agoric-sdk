@@ -1,9 +1,8 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { isPromise } from '@endo/promise-kit';
 import { getInterfaceGuardPayload } from '@endo/patterns';
+import { isPromise } from '@endo/promise-kit';
 
-import { M } from '@agoric/store';
 import {
   AmountPatternShape,
   AmountShape,
@@ -12,6 +11,7 @@ import {
   NotifierShape,
   PaymentShape,
 } from '@agoric/ertp';
+import { M } from '@agoric/store';
 
 /**
  * @import {EReturn} from '@endo/far';

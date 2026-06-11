@@ -1,6 +1,6 @@
 import { Far } from '@endo/marshal';
-import { M } from '@agoric/store';
 import { kslot, kser } from '@agoric/kmarshal';
+import { M } from '@agoric/store';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 
 // These tests follow the model described in

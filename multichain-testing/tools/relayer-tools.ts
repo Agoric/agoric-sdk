@@ -1,5 +1,5 @@
-import type { IBCChannelID, IBCConnectionID, IBCPortID } from '@agoric/vats';
 import type { ExecSyncOptions } from 'node:child_process';
+import type { IBCChannelID, IBCConnectionID, IBCPortID } from '@agoric/vats';
 
 const kubectlBinary = 'kubectl';
 

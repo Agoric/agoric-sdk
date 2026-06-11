@@ -1,15 +1,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { TestFn } from 'ava';
+import { E, getInterfaceOf, type EReturn } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
+import type { ZoeService } from '@agoric/zoe';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import {
   withAmountUtils,
   type AmountUtils,
 } from '@agoric/zoe/tools/test-utils.js';
-import { E, getInterfaceOf, type EReturn } from '@endo/far';
-import type { TestFn } from 'ava';
-import type { ZoeService } from '@agoric/zoe';
 import * as contractExports from '../../src/examples/basic-flows.contract.js';
 import { commonSetup } from '../supports.js';
 

@@ -1,6 +1,6 @@
 import { Fail } from '@endo/errors';
-import { Nat } from '@endo/nat';
 import { Far } from '@endo/far';
+import { Nat } from '@endo/nat';
 
 /**
  * @import {Device} from '../../types-external.js';

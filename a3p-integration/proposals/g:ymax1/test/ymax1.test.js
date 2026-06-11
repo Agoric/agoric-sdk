@@ -1,14 +1,14 @@
 // @ts-check
 import '@endo/init/debug.js';
 
+import anyTest from 'ava';
+import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
 import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
 import {
   getDetailsMatchingVats,
   getVatInfoFromID,
 } from '@agoric/synthetic-chain';
-import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
-import anyTest from 'ava';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 import { makeActionId, sendWalletAction } from '../wallet-util.js';
 import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';

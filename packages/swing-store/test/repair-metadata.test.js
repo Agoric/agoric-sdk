@@ -1,7 +1,7 @@
 // @ts-check
 
-import path from 'node:path';
 import test from 'ava';
+import path from 'node:path';
 import sqlite3 from 'better-sqlite3';
 import tmp from 'tmp';
 

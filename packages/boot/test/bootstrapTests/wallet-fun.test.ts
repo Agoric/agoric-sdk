@@ -1,14 +1,14 @@
 /** @file use capabilities in smart wallet without offers */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { ExecutionContext, TestFn } from 'ava';
+import { createRequire } from 'node:module';
+import bundleSource from '@endo/bundle-source';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import { start as startPriceContract } from '@agoric/smart-wallet/test/wallet-fun.contract.js';
 import type { IssuerKeywordRecord } from '@agoric/zoe';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
-import bundleSource from '@endo/bundle-source';
-import type { ExecutionContext, TestFn } from 'ava';
-import { createRequire } from 'node:module';
 import {
   makeBootTestContext,
   withWalletFactory,

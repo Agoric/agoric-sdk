@@ -2,8 +2,8 @@
 // Unlike in error.test.js
 import '@endo/init/unsafe-fast.js';
 
-import { wrapTest } from '@endo/ses-ava';
 import rawTest from 'ava';
+import { wrapTest } from '@endo/ses-ava';
 
 import { cases } from './error-test-cases.js';
 

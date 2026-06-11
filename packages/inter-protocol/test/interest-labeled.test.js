@@ -1,8 +1,8 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { Far } from '@endo/marshal';
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
-import { Far } from '@endo/marshal';
 import { TimeMath } from '@agoric/time';
 
 import { makeInterestCalculator, SECONDS_PER_YEAR } from '../src/interest.js';

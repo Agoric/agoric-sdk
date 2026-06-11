@@ -1,3 +1,5 @@
+import { E } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
 /**
  * @file A proposal to start the auto-stake-it contract.
  *
@@ -6,8 +8,6 @@
  */
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
 
 /**
  * @import {AutoStakeItSF} from '@agoric/orchestration/src/examples/auto-stake-it.contract.js';

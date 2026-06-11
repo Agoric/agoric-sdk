@@ -7,8 +7,8 @@ import fs from 'node:fs';
 import * as os from 'node:os';
 import { tmpName } from 'tmp';
 
-import { xsnap } from '../src/xsnap.js';
 import { ExitCode } from '../api.js';
+import { xsnap } from '../src/xsnap.js';
 
 import { options } from './message-tools.js';
 

@@ -1,8 +1,8 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { WalletName } from '@agoric/internal';
-import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { assertPathSegment } from '@agoric/internal/src/lib-chainStorage.js';
+import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 /**

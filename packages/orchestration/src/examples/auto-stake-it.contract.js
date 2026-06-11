@@ -1,14 +1,14 @@
+import { M } from '@endo/patterns';
 import {
   EmptyProposalShape,
   InvitationShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { M } from '@endo/patterns';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { prepareStakingTap } from './auto-stake-it-tap-kit.js';
 import * as flows from './auto-stake-it.flows.js';
-import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 /**
  * @import {Remote} from '@agoric/internal';

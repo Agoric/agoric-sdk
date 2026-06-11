@@ -4,9 +4,9 @@
  *   either directly or indirectly (e.g. by @endo imports).
  */
 
+import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { objectMap } from '@endo/common/object-map.js';
 import { objectMetaMap } from '@endo/common/object-meta-map.js';
-import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { q, b, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isPrimitive } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';

@@ -2,11 +2,11 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
-import { floorMultiplyBy } from '../../../src/contractSupport/index.js';
 import {
   make100Percent,
   make0Percent,
 } from '../../../src/contracts/callSpread/percent.js';
+import { floorMultiplyBy } from '../../../src/contractSupport/index.js';
 
 // duplicated from test-ratio, but should go away with the amount refactoring
 function amountsEqual(t, a1, a2, brand) {

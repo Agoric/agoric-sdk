@@ -28,6 +28,7 @@ import {
   provide,
   watchPromise,
 } from '@agoric/vat-data';
+import { prepareVowTools } from '@agoric/vow';
 import {
   prepareRecorderKit,
   SubscriberShape,
@@ -38,13 +39,12 @@ import {
   PaymentPKeywordRecordShape,
   InvitationElementShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { makeInvitationsHelper } from './invitations.js';
+import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
-import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
 /**
  * @import {ERemote, Remote} from '@agoric/internal';

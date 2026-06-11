@@ -21,11 +21,6 @@
  */
 import '@endo/init';
 
-import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
-import { CodecHelper } from '@agoric/cosmic-proto';
-import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { MsgLock as MsgLockType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
-import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { StdFee } from '@cosmjs/amino';
 import { stringToPath } from '@cosmjs/crypto';
 import {
@@ -36,6 +31,11 @@ import {
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { $ } from 'execa';
 import { ConfigContext, useChain, useRegistry } from 'starshipjs';
+import { makeSwapLockMessages } from '@aglocal/portfolio-contract/src/pos-usdn.flows.ts';
+import { CodecHelper } from '@agoric/cosmic-proto';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { MsgLock as MsgLockType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
+import { MsgSwap as MsgSwapType } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import starshipChainInfo from '../starship-chain-info.js';
 import { DEFAULT_TIMEOUT_NS } from '../tools/ibc-transfer.ts';
 import { registerNobleForwardingAddress } from '../tools/noble-aux.ts';

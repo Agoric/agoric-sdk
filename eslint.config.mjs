@@ -1,12 +1,12 @@
-/* eslint-disable -- going away soon */
-import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
-import typescriptEslint from '@typescript-eslint/eslint-plugin';
-import tsParser from '@typescript-eslint/parser';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import js from '@eslint/js';
+/* eslint-disable -- going away soon */
+import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
 import { FlatCompat } from '@eslint/eslintrc';
-import { createRequire } from 'node:module';
+import js from '@eslint/js';
+import typescriptEslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
 import nodePlugin from 'eslint-plugin-n';
 import { legacySrcToToolsFiles } from './scripts/ci/tools-scope-policy.mjs';
 

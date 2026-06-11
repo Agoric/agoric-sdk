@@ -1,3 +1,10 @@
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
+import { makePassableKit } from '@endo/marshal';
+import { passStyleOf, type Passable, type PureData } from '@endo/pass-style';
+import { M } from '@endo/patterns';
+import type { Address } from 'abitype';
+import type { RecoverTypedDataAddressParameters } from 'viem';
 /**
  * @file EVM Wallet handler for accepting and verifying EIP-712 YMax messages,
  * and holding portfolios for EVM accounts.
@@ -32,13 +39,6 @@ import { provideLazy, type MapStore } from '@agoric/store';
 import type { TimerService } from '@agoric/time';
 import { VowShape, type Vow, type VowTools } from '@agoric/vow';
 import { type Zone } from '@agoric/zone';
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
-import { makePassableKit } from '@endo/marshal';
-import { passStyleOf, type Passable, type PureData } from '@endo/pass-style';
-import { M } from '@endo/patterns';
-import type { Address } from 'abitype';
-import type { RecoverTypedDataAddressParameters } from 'viem';
 import type { PublishStatus } from './portfolio.contract.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 

@@ -1,9 +1,9 @@
+import type { FarRef } from '@endo/far';
+import type { RemotableObject } from '@endo/marshal';
 import type { Issuer } from '@agoric/ertp/src/types.js';
 import type { TagContainer } from '@agoric/internal/src/tagged.js';
 import type { Baggage } from '@agoric/swingset-liveslots';
 import type { VatUpgradeResults } from '@agoric/swingset-vat';
-import type { RemotableObject } from '@endo/marshal';
-import type { FarRef } from '@endo/far';
 import type { AnyTerms, Handle, Keyword, ZCF } from '../types-index.js';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565

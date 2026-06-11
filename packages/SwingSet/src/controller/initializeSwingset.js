@@ -1,9 +1,9 @@
 /* eslint-env node */
 
-import { deepCopyJsonable, makeTracer } from '@agoric/internal';
-import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
 import { assert, Fail } from '@endo/errors';
+import { deepCopyJsonable, makeTracer } from '@agoric/internal';
+import { mustMatch } from '@agoric/store';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { ManagerType } from '../typeGuards.js';

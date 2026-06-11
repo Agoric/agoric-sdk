@@ -1,7 +1,7 @@
 import { E, Far } from '@endo/far';
+import { makePollingChangeFollower } from './change-follower.js';
 import { DEFAULT_RETRY_CALLBACK, DEFAULT_JITTER } from './defaults.js';
 import { shuffle } from './shuffle.js';
-import { makePollingChangeFollower } from './change-follower.js';
 
 /**
  * @import {LeaderOptions} from './types.js';

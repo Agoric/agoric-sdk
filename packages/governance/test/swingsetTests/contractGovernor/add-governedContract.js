@@ -5,11 +5,11 @@
  *     agoric run /path/to/$0 [<bootstrap powers produce key> [<label>]]
  */
 
+import { E } from '@endo/far';
 /* eslint-disable import/no-extraneous-dependencies */
 // dynamic import { makeHelpers } from '@agoric/deploy-script-support';
 // dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
-import { E } from '@endo/far';
 
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';

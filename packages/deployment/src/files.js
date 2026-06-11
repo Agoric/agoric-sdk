@@ -1,5 +1,5 @@
-import { promisify } from 'node:util';
 import { Readable } from 'node:stream';
+import { promisify } from 'node:util';
 import chalk from 'chalk';
 
 import { Fail } from '@endo/errors';

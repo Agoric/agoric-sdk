@@ -1,12 +1,12 @@
 // @file types for the client-utils package
 // NB: this doesn't follow best practices for TS in JS because this package will likely soon be written in TS
 
+import type { Marshal } from '@endo/marshal';
 import type {
   SmartWalletPublishedPathTypes,
   SmartWalletPublishedPathValue,
 } from '@agoric/smart-wallet/src/types.js';
 import type { AgoricNamesPublishedPathTypes } from '@agoric/vats/src/types.js';
-import type { Marshal } from '@endo/marshal';
 import type { MinimalNetworkConfig } from './network-config.js';
 import type { VStorage } from './vstorage.js';
 
