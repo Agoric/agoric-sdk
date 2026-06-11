@@ -2,7 +2,6 @@
 // https://github.com/Agoric/agoric-sdk/issues/9377
 // as the `test.serial.failing` test at the end.
 
-// eslint-disable-next-line import/order
 import {
   test,
   getBaggage,

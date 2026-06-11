@@ -1,7 +1,6 @@
 // @ts-nocheck
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { Far } from '@endo/far';
 import {
   makeTimerMap,

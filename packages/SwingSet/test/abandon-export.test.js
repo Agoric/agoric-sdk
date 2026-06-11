@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-disable import/order */
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { kser, kunser, kslot } from '@agoric/kmarshal';

@@ -3,7 +3,6 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
-// eslint-disable-next-line import/order -- has side-effects AND exports
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import path from 'node:path';

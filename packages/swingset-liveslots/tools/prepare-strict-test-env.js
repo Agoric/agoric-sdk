@@ -9,7 +9,6 @@
 
 import '@agoric/internal/src/install-ses-debug.js';
 
-// eslint-disable-next-line import/order
 import { reincarnate, flushIncarnation } from './setup-vat-data.js';
 
 import { Fail } from '@endo/errors';

@@ -1,6 +1,5 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 import { buildTimer } from '../src/devices/timer/timer.js';
 import { makeSwingsetController } from '../src/index.js';

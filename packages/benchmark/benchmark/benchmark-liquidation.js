@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/order
 import { bench } from '../src/benchmarkerator.js';
 
 import { scale6 } from '@aglocal/boot/tools/liquidation.js';

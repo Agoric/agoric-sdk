@@ -2,7 +2,6 @@
 
 import { test } from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { M } from '@agoric/store';
 import {
   defineDurableExoClass,

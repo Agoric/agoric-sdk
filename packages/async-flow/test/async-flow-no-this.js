@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/order
 import { test, getBaggage, annihilate } from './prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';

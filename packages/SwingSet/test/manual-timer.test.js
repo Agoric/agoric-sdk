@@ -1,5 +1,4 @@
 import { test } from '../tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/order
 import { TimeMath } from '@agoric/time';
 import { buildManualTimer } from '../tools/manual-timer.js';
 

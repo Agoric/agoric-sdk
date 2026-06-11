@@ -35,7 +35,6 @@ cat > .vscode/settings.json.new << \EOF || die "Could not write settings.json"
     { "rule": "@typescript-eslint/no-unused-vars", "severity": "warn" },
     // Imports are auto-fixed on save
     { "rule": "import/newline-after-import", "severity": "off" },
-    { "rule": "import/order", "severity": "off" },
   ],
   "eslint.useESLintClass": true,
   "eslint.packageManager": "yarn"

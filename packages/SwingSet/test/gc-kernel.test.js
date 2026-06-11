@@ -1,7 +1,6 @@
 // @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
 
-// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import { assert } from '@endo/errors';
