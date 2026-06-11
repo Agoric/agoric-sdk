@@ -286,7 +286,7 @@ export const main = async (
   };
   const getInstrumentBlocks = ydsClient
     ? async (): Promise<InstrumentBlocks> => {
-        const resp = await ydsClient.get('instruments').json();
+        const resp = await ydsClient.get('instruments?includeAll=true').json();
         const instruments = (resp as any).data as YdsInstrument[];
         const instrumentBlocks = calculateInstrumentBlocks(instruments);
 
