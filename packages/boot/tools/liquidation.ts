@@ -56,7 +56,7 @@ export type LiquidationSetup = {
 };
 
 // TODO read from the config file
-export const atomConfig = {
+const atomConfig = {
   oracleAddresses: [
     'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
     'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
