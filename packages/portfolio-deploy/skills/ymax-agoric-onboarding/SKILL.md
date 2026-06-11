@@ -27,6 +27,7 @@ Help the user create a YMax portfolio and authorize an AI agent to manage its al
 - `CONTRACT=ymax0`
 - Documentation: https://ymax.freshdesk.com/support/home
 - the user's risk profile, time horizon, and intended capital deployment
+- a sponsor to provide 15 BLD for the delegate wallet
 
 ## Run Order
 1. Research and discuss an initial allocation: [agent-onboarding.md](references/agent-onboarding.md) step 1.

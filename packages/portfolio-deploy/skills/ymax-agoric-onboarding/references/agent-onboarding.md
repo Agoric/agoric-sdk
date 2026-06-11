@@ -10,8 +10,15 @@ Enable a smooth, secure onboarding flow for a delegated YMax investment portfoli
 - `CONTRACT=ymax0`
 - the user's risk profile, time horizon, and intended capital deployment
 - Documentation: https://ymax.freshdesk.com/support/home
+- a sponsor to provide 15 BLD for the delegate wallet
 
-## Step 1: Research and Discuss an Initial Allocation
+## Step 1: Set up the agent account
+
+The delegate agent should generate a key pair, derive an Agoric address, and provision a Smart Wallet for that address. That provisioned wallet address is the Grant target.
+
+See [Smart wallet usage](smart-wallet-usage.md) for CLI provisioning, funding, and query examples (`agoric wallet`, `agoric follow`).
+
+## Step 2: Research and Discuss an Initial Allocation
 
 The agent should:
 - use YDS to inspect the currently listed instruments
@@ -21,40 +28,6 @@ The agent should:
 
 Avoid financial advice phrasing by saying, for example:
 The following allocation appears to meet your preferences based on the current APYs.
-
-## Step 2: Generate the Delegate Key Pair and Agoric Address
-
-The delegate agent should generate a key pair, derive an Agoric address, and provision a Smart Wallet for that address. That provisioned wallet address is the Grant target.
-
-1. Generate a new BIP-39 mnemonic.
-
-Export the delegate wallet mnemonic in the environment:
-
-```sh
-export MNEMONIC='delegate mnemonic'
-```
-
-Save the mnemonic durably and keep it reasonably confidential. The same delegate wallet will be needed later for provisioning, invitation redemption, and delegated submissions.
-
-2. Derive the delegate private key and bech32 `agoric1...` address using HD path `m/44'/564'/0'/0/0`, and record that address as `AGENT_ADDRESS`.
-
-3. Run:
-
-```sh
-agoric wallet provision --account "$AGENT_ADDRESS"
-```
-
-This reports the provisioning cost for that exact address.
-
-4. Ask the user to send at least `15 BLD` to `AGENT_ADDRESS`.
-5. After the funds arrive, run:
-
-```sh
-agoric wallet provision --account "$AGENT_ADDRESS" --spend
-```
-
-This spends the provisioning cost and creates the Smart Wallet for `AGENT_ADDRESS`.
-
 
 ## Step 3: Hand Off a Pre-Populated Create-Portfolio Link
 
@@ -103,11 +76,7 @@ The user follows that link to complete the delegation flow in the `main0.ymax.ap
 
 ## Step 7: Delegate Redeems the Invitation
 
-Before redeeming, the agent should poll for the delivered invitation by checking the current wallet state and invitation balance. The local CLI path should be based on `packages/agoric-cli`, for example:
-
-```sh
-agoric wallet show --from "$AGENT_ADDRESS"
-```
+Before redeeming, the agent should poll for the delivered invitation by checking the current wallet state and invitation balance. The local CLI path should be based on `packages/agoric-cli`; see [Smart wallet usage](smart-wallet-usage.md) for `agoric wallet show` examples.
 
 Use that about every 30 seconds until the delegated invitation is visible in the wallet's current invitation holdings.
 
