@@ -19,8 +19,10 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
       {
         bundleRefs: Object.fromEntries(
           Object.entries(vatNameToEntrypoint).map(
-            ([name, entrypoint]) =>
-              /** @type {const} */ ([name, publishRef(install(entrypoint))]),
+            ([name, entrypoint]) => /** @type {const} */ ([
+              name,
+              publishRef(install(entrypoint)),
+            ]),
           ),
         ),
       },

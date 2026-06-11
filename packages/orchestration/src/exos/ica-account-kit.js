@@ -84,17 +84,16 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
      * @param {Port} port
      * @param {string} requestedRemoteAddress
      */
-    (chainId, port, requestedRemoteAddress) =>
-      /** @type {State} */ ({
-        chainId,
-        port,
-        connection: undefined,
-        requestedRemoteAddress,
-        remoteAddress: undefined,
-        chainAddress: undefined,
-        localAddress: undefined,
-        isInitiatingClose: false,
-      }),
+    (chainId, port, requestedRemoteAddress) => /** @type {State} */ ({
+      chainId,
+      port,
+      connection: undefined,
+      requestedRemoteAddress,
+      remoteAddress: undefined,
+      chainAddress: undefined,
+      localAddress: undefined,
+      isInitiatingClose: false,
+    }),
     {
       parseTxPacketWatcher: {
         /** @param {string} ack */

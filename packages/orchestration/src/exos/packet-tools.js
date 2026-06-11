@@ -70,11 +70,9 @@ const just = obj => {
  * Add new watchers here as they are removed from service. Maybe someday
  * contract upgrade will allow us to prune this list.
  */
-const TOMBSTONED_WATCHERS = /** @type {const} */ (
-  [
-    // 'packetWasSentWithMetaWatcher', // deprecated but not yet tombstoned
-  ]
-);
+const TOMBSTONED_WATCHERS = /** @type {const} */ ([
+  // 'packetWasSentWithMetaWatcher', // deprecated but not yet tombstoned
+]);
 
 const { Vow$ } = NetworkShape; // TODO #9611
 

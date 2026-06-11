@@ -92,11 +92,9 @@ const MsgSend = CodecHelper(MsgSendType);
  * Add new watchers here as they are removed from service. Maybe someday
  * contract upgrade will allow us to prune this list.
  */
-const TOMBSTONED_WATCHERS = /** @type {const} */ (
-  [
-    // 'transferWithMetaWatcher', // deprecated but not yet tombstoned
-  ]
-);
+const TOMBSTONED_WATCHERS = /** @type {const} */ ([
+  // 'transferWithMetaWatcher', // deprecated but not yet tombstoned
+]);
 
 const trace = makeTracer('LocalOrchAccount');
 

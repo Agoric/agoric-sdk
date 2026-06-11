@@ -48,8 +48,9 @@ test(`zoe - zcfSeat.fail() doesn't throw`, async t => {
   // is available here for testing purposes
   t.truthy(testJig);
   /** @type {ZCF} */
-  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
-    .zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (
+    /** @type {unknown} */ (testJig)
+  ).zcf;
 
   let firstSeat;
 

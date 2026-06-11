@@ -47,8 +47,9 @@ test(`ProposalShapes mismatch`, async t => {
   // is available here for testing purposes
   t.truthy(testJig);
   /** @type {ZCF} */
-  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
-    .zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (
+    /** @type {unknown} */ (testJig)
+  ).zcf;
 
   const boring = () => {
     return 'ok';
@@ -117,8 +118,9 @@ test(`ProposalShapes matched`, async t => {
   // is available here for testing purposes
   t.truthy(testJig);
   /** @type {ZCF} */
-  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
-    .zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (
+    /** @type {unknown} */ (testJig)
+  ).zcf;
 
   const boring = () => {
     return 'ok';
