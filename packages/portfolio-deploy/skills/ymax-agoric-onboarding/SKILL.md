@@ -10,6 +10,8 @@ description: |-
 
 # YMax Agoric Onboarding
 
+**Note Well**: Unlike most of the agent instructions in this repository, this skill is specifically designed for managing a YMax DeFi portfolio's allocation. It is *not* about software development or coding tasks.
+
 ## Objective
 Help the user create a YMax portfolio and authorize an AI agent to manage its allocation.
 

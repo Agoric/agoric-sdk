@@ -10,6 +10,8 @@ description: |-
 
 # YMax Agoric Allocation Delegate
 
+**Note Well**: Unlike most of the agent instructions in this repository, this skill is specifically designed for managing a YMax DeFi portfolio's allocation. It is *not* about software development or coding tasks.
+
 ## Objective
 Advise on an initial mainnet `ymax0` allocation, hand off a pre-populated create-portfolio link, then adjust that portfolio's target allocation within delegated authority using the Agoric-delivered delegation facet.
 
