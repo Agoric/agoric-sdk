@@ -8,6 +8,7 @@ import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
+import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
@@ -42,6 +43,9 @@ export const preparePlanner = (
     ) => Vow<any>; // XXX HostForGuest???
     zcf: ZCF;
     getPortfolio: (id: number) => PortfolioKit;
+    getPlannerDelegation: (
+      portfolioPlanner: PortfolioKit['planner'],
+    ) => PortfolioDelegationClient | undefined;
     shapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: Pick<VowTools, 'asVow'>;
   },

@@ -29,6 +29,7 @@ import {
   type FlowConfig,
   type FlowKey,
   type FundsFlowPlan,
+  type PortfolioAgentGrantee,
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
@@ -405,8 +406,7 @@ export const preparePortfolioKit = (
     contracts: EVMContractAddressesMap;
     /**
      * Deliver a previously created delegation client invitation to `grantee`.
-     * The closure encapsulates the postal-service dependency so this exo
-     * doesn't need ambient authority to deliver.
+     * The closure encapsulates the delivery dependencies.
      *
      * Must be prompt.
      */
@@ -414,7 +414,7 @@ export const preparePortfolioKit = (
       client: PortfolioDelegationClient,
       portfolioId: number,
       agentId: number,
-      grantee: Bech32Address,
+      grantee: PortfolioAgentGrantee,
       permissions: PortfolioPermissionsExt,
     ) => Promise<void>;
   },
@@ -999,7 +999,7 @@ export const preparePortfolioKit = (
          * Returns promptly the agent ID of the new delegation.
          */
         async grantDelegation(
-          grantee: Bech32Address,
+          grantee: PortfolioAgentGrantee,
           permissions: PortfolioPermissionsExt,
         ) {
           const { portfolioId } = this.state;

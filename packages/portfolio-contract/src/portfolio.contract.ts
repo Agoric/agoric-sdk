@@ -38,6 +38,7 @@ import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FlowAgent,
   FlowConfig,
+  PortfolioAgentGrantee,
   PortfolioPermissionsExt,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
@@ -46,6 +47,7 @@ import {
   AxelarChain,
   DEFAULT_FLOW_CONFIG,
   FlowConfigShape,
+  PortfolioPlannerAgent,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
@@ -581,11 +583,42 @@ export const contract = async (
     txfrCtx,
   );
 
+  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+  const getPortfolio = (id: number) => portfolios.get(id);
+
+  const plannerDelegations = zone.mapStore<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >('plannerDelegations', {
+    keyShape: M.remotable('Portfolio planner'),
+    valueShape: M.remotable('PortfolioDelegationClient'),
+  });
+  const setPlannerDelegation = (
+    portfolioPlanner: PortfolioKit['planner'],
+    client: PortfolioDelegationClient,
+  ): void => {
+    if (plannerDelegations.has(portfolioPlanner)) {
+      plannerDelegations.set(portfolioPlanner, client);
+    } else {
+      plannerDelegations.init(portfolioPlanner, client);
+    }
+  };
+  const getPlannerDelegation = (
+    portfolioPlanner: PortfolioKit['planner'],
+  ): PortfolioDelegationClient | undefined => {
+    if (!plannerDelegations.has(portfolioPlanner)) {
+      return undefined;
+    }
+    return plannerDelegations.get(portfolioPlanner);
+  };
+
   const postalServiceP: ERef<PostalService> | undefined = postalServiceInstance
     ? E(zcf.getZoeService()).getPublicFacet(postalServiceInstance)
     : postalService;
 
   /**
+   * Sets a delegation for the planner, or delivers it to an agoric address as an invitation.
+   *
    * Mint a delegation invitation for one portfolio and deliver it to `grantee`.
    * The grantee redeems it once and saves the resulting wallet-store entry
    * for later `invokeEntry` calls. Reachable only via `evmHandler.grant`,
@@ -597,9 +630,15 @@ export const contract = async (
     client: PortfolioDelegationClient,
     portfolioId: number,
     agentId: number,
-    grantee: Bech32Address,
+    grantee: PortfolioAgentGrantee,
     permissions: PortfolioPermissionsExt,
   ): Promise<void> => {
+    if (grantee === PortfolioPlannerAgent) {
+      const planner = getPortfolio(portfolioId)!.planner;
+      setPlannerDelegation(planner, client);
+      return;
+    }
+
     const ps =
       postalServiceP || Fail`postal service not configured in private args`;
     const invitation = await zcf.makeInvitation(
@@ -634,9 +673,6 @@ export const contract = async (
     contracts,
     deliverDelegation,
   });
-
-  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
-  const getPortfolio = (id: number) => portfolios.get(id);
 
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
@@ -849,6 +885,7 @@ export const contract = async (
     zcf,
     rebalance,
     getPortfolio,
+    getPlannerDelegation,
     shapes: offerArgsShapes,
     vowTools,
   });

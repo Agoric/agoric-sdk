@@ -53,6 +53,7 @@ test('planner exo submit method', async t => {
     rebalance: mockRebalance,
     zcf: mockZcf,
     getPortfolio: mockGetPortfolio,
+    getPlannerDelegation: () => undefined,
     shapes: makeOfferArgsShapes(USDC),
     vowTools: vt,
   });
@@ -148,6 +149,7 @@ test('planner can reject a plan due to insufficient funds', async t => {
     rebalance: mockRebalance,
     zcf: mockZcf,
     getPortfolio: mockGetPortfolio,
+    getPlannerDelegation: () => undefined,
     shapes: makeOfferArgsShapes(USDC),
     vowTools: vt,
   });

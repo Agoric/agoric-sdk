@@ -16,6 +16,7 @@ import type {
   AxelarChain,
   SupportedChain,
   YieldProtocol,
+  PortfolioPlannerAgent as PortfolioPlannerAgentValue,
 } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
@@ -252,8 +253,11 @@ export type FlowAgent = {
 
 export type PortfolioAgentState = 'active' | 'revoked' | 'expired';
 
+export type PortfolioPlannerAgentId = typeof PortfolioPlannerAgentValue;
+export type PortfolioAgentGrantee = Bech32Address | PortfolioPlannerAgentId;
+
 export type PortfolioAgentStatus = {
-  grantee: Bech32Address;
+  grantee: PortfolioAgentGrantee;
   permissions: PortfolioPermissionsExt;
   state: PortfolioAgentState;
 };
