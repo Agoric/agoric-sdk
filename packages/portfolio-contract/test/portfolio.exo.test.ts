@@ -1074,3 +1074,48 @@ test('evmHandler grant allocates sequential agent ids', async t => {
   t.is(callLogRaced[2][3], 3);
   t.is(callLogRaced[3][3], 4);
 });
+
+test('revoked delegation client is no longer usable', async t => {
+  const ownerAddress = '0x4545454545454545454545454545454545454545' as const;
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioAgents } = makeTestSetup({
+    storage,
+  });
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 19,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  manager.setTargetAllocation({ USDN: 100n });
+  await evmHandler.grant('agoric1delegate', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+  const [, client, , agentId] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.true(client.getReader().isActive());
+  t.like(await getPortfolioAgents!(19), {
+    agent1: { state: 'active' },
+  });
+
+  manager.revokeDelegation(agentId);
+
+  t.false(client.getReader().isActive());
+  t.like(await getPortfolioAgents!(19), {
+    agent1: { state: 'revoked' },
+  });
+  t.throws(
+    () =>
+      client.setTargetAllocation(
+        { USDN: 100n },
+        { policyVersion: 1, rebalanceCount: 0 },
+      ),
+    {
+      message: /delegation client is not active for agent1/,
+    },
+  );
+});

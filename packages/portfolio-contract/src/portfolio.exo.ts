@@ -1035,6 +1035,26 @@ export const preparePortfolioKit = (
 
           return nextAgentId;
         },
+        revokeDelegation(agentId: number) {
+          const { delegations } = this.state;
+          if (!delegations) {
+            throw Fail`no delegations available`;
+          }
+          const delegation = delegations.get(agentId);
+          if (!delegation) {
+            throw Fail`no delegation found for agent ${agentId}`;
+          }
+          // XXX: consider interacting with client to have it drop our helper facet
+          delegations.set(
+            agentId,
+            harden({
+              ...delegation,
+              state: 'revoked',
+              activeClient: undefined,
+            }),
+          );
+          this.facets.reporter.publishAgents();
+        },
       },
       accountWatcher: {
         onFulfilled(info: AccountInfo, chainName: AxelarChain) {

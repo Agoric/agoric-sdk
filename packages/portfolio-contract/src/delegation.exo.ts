@@ -47,10 +47,12 @@ const auditKeys = (
 };
 
 const DelegationReaderI = M.interface('PortfolioDelegationReader', {
+  isActive: M.call().returns(M.boolean()),
   getPortfolioId: M.call().returns(M.number()),
 });
 
 const DelegationClientI = M.interface('PortfolioDelegationClient', {
+  getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
   setTargetAllocation: M.call(
     TargetAllocationShape,
     PortfolioSyncStateShape,
@@ -74,8 +76,20 @@ export const preparePortfolioDelegationKit = (
           const { portfolioAccess, agentId } = this.state;
           return portfolioAccess.getPortfolioId(this.facets.client, agentId);
         },
+        isActive(): boolean {
+          const { portfolioAccess, agentId } = this.state;
+          try {
+            portfolioAccess.assertActive(this.facets.client, agentId);
+            return true;
+          } catch {
+            return false;
+          }
+        },
       },
       client: {
+        getReader() {
+          return this.facets.reader;
+        },
         setTargetAllocation(
           targetAllocation: TargetAllocation,
           syncState: PortfolioSyncState,
