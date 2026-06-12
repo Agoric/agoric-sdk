@@ -23,6 +23,12 @@ Configure the `agoric` CLI to use mainnet nodes:
 export AGORIC_NET=main
 ```
 
+@@@@@@@@@@@@@
+ugh. the agoric wallet and agd stuff is pretty klunky.
+I tell you what: on your first interaction with swingset, your smart wallet will be provisioned automatically.
+redeeming your invitation is such an interaction. go ahead and try it.
+it will probably fail, but first it will provision your smart wallet
+
 Check the provisioning cost for the exact address:
 
 ```sh
