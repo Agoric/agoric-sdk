@@ -47,6 +47,7 @@ import type { Marshal } from '@endo/marshal';
 import { Far } from '@endo/pass-style';
 import type { Passable } from '@endo/pass-style';
 import {
+  makeSleepQueue,
   makeVstorageEvent,
   pickBalance,
   processPortfolioEvents,
@@ -526,6 +527,35 @@ test('ignore additional balances', t => {
 
   const actual = pickBalance(balances, depositAsset);
   t.deepEqual(actual, { brand: depositBrand, value: 50n });
+});
+
+test('makeSleepQueue resolves ready sleeps in wake time order', async t => {
+  const queue = makeSleepQueue();
+  const settled: string[] = [];
+
+  const p15 = queue.sleepUntil(15).then(() => settled.push('15'));
+  const p5 = queue.sleepUntil(5).then(() => settled.push('5'));
+  const p10 = queue.sleepUntil(10).then(() => settled.push('10'));
+  const p20 = queue.sleepUntil(20).then(
+    () => settled.push('20'),
+    err => settled.push(`rejected:${err.message}`),
+  );
+
+  t.is(queue.size, 4);
+  t.is(queue.resolveReady(10), 1);
+  await p5;
+  t.deepEqual(settled, ['5']);
+  t.is(queue.size, 3);
+
+  t.is(queue.resolveReady(16), 2);
+  await Promise.all([p10, p15]);
+  t.deepEqual(settled, ['5', '10', '15']);
+  t.is(queue.size, 1);
+
+  t.is(queue.rejectAll(Error('engine terminated')), 1);
+  await p20;
+  t.deepEqual(settled, ['5', '10', '15', 'rejected:engine terminated']);
+  t.is(queue.size, 0);
 });
 
 // #region processPortfolioEvents

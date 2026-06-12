@@ -43,6 +43,7 @@ import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-block
 import { startEngine } from './engine.ts';
 import { calculateInstrumentBlocks } from './instrument-status.ts';
 import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
+import type { RebalanceScannerPortfolio } from './rebalance-scanner.ts';
 import {
   createEVMContext,
   prepareAbortController,
@@ -88,6 +89,55 @@ export type SimplePowers = {
 
 /** `makeNonce` defaults to the wall clock for debugging sent transactions. */
 const defaultMakeNonce = makeNowISO(Date.now);
+
+const makeYdsJsonGetter =
+  ({
+    fetch,
+    ydsUrl,
+    ydsApiKey,
+  }: {
+    fetch: typeof globalThis.fetch;
+    ydsUrl: string;
+    ydsApiKey: string;
+  }) =>
+  async (pathname: string, params?: URLSearchParams) => {
+    const url = new URL(pathname, ydsUrl);
+    if (params) url.search = params.toString();
+    const response = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Agoric-YMax-Planner/1.0.0',
+        'x-resolver-auth-key': ydsApiKey,
+      },
+    });
+    if (!response.ok) {
+      throw Error(`YDS ${url.pathname} failed: ${response.status}`);
+    }
+    return response.json();
+  };
+
+const parseYdsPortfolios = (data: any): RebalanceScannerPortfolio[] => {
+  const portfolios = Array.isArray(data) ? data : data?.portfolios;
+  if (!Array.isArray(portfolios)) {
+    throw Error('YDS portfolios response must be an array or { portfolios }');
+  }
+  return portfolios.map(portfolio => {
+    const portfolioKey =
+      portfolio.portfolioKey ??
+      portfolio.key ??
+      (portfolio.portfolioId !== undefined
+        ? `portfolio${portfolio.portfolioId}`
+        : undefined) ??
+      (typeof portfolio.id === 'number'
+        ? `portfolio${portfolio.id}`
+        : undefined);
+    if (!portfolioKey) throw Error('YDS portfolio is missing portfolioKey');
+    return {
+      portfolioKey,
+      status: portfolio.status ?? portfolio,
+    } as RebalanceScannerPortfolio;
+  });
+};
 
 export const main = async (
   cliArgs: string[],
@@ -310,6 +360,14 @@ export const main = async (
         },
       )
     : undefined;
+  const ydsGetter =
+    config.yds.url && config.yds.apiKey
+      ? makeYdsJsonGetter({
+          fetch,
+          ydsUrl: config.yds.url,
+          ydsApiKey: config.yds.apiKey,
+        })
+      : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -348,6 +406,22 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    ...(ydsGetter && {
+      rebalanceScanner: {
+        rebalanceScanPeriodS: config.rebalanceScanPeriodS,
+        queryPortfolios: async (notRebalancedSince: number) =>
+          parseYdsPortfolios(
+            await ydsGetter(
+              '/portfolios',
+              new URLSearchParams({
+                feature: 'auto-rebalance',
+                notRebalancedSince: String(notRebalancedSince),
+              }),
+            ),
+          ),
+        queryGasPrices: async () => ydsGetter('/gas-prices'),
+      },
+    }),
   };
 
   await withDeferredCleanup(async addCleanup => {
