@@ -40,7 +40,7 @@ import type {
   AxelarChain,
   PortfolioPermissions,
 } from '@agoric/portfolio-api';
-import { PortfolioPermissionsV1Shape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import { PortfolioPermissionsEIP712Shape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
@@ -519,7 +519,7 @@ export const makeEvmTrader = ({
          *
          * Although the caller-facing type is {@link PortfolioPermissions},
          * the current standalone EIP-712 `Grant` payload uses
-         * {@link PortfolioPermissionsV1Shape}. This helper validates that
+         * {@link PortfolioPermissionsEIP712Shape}. This helper validates that
          * the requested permission bag fits the current wire shape before
          * signing, so unsupported permissions fail client-side.
          */
@@ -528,7 +528,7 @@ export const makeEvmTrader = ({
           permissions: PortfolioPermissions,
         ) {
           const deadline = await getDeadline();
-          mustMatch(permissions, PortfolioPermissionsV1Shape);
+          mustMatch(permissions, PortfolioPermissionsEIP712Shape);
           const message = getYmaxStandaloneOperationData(
             {
               accountHolder: granteeAddress,

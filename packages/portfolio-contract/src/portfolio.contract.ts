@@ -38,7 +38,7 @@ import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FlowAgent,
   FlowConfig,
-  PortfolioPermissions,
+  PortfolioPermissionsExt,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
@@ -598,7 +598,7 @@ export const contract = async (
     portfolioId: number,
     agentId: FlowAgent['id'],
     grantee: Bech32Address,
-    permissions: PortfolioPermissions,
+    permissions: PortfolioPermissionsExt,
   ): Promise<void> => {
     const ps =
       postalServiceP || Fail`postal service not configured in private args`;

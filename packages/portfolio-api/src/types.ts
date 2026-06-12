@@ -20,7 +20,7 @@ import type {
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
 import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
-import type { PortfolioPermissions } from './portfolio-permissions.js';
+import type { PortfolioPermissionsExt } from './portfolio-permissions.js';
 
 /**
  * Feature flags to handle contract upgrade flow compatibility.
@@ -254,7 +254,7 @@ export type PortfolioAgentState = 'active' | 'revoked' | 'expired';
 
 export type PortfolioAgentStatus = {
   grantee: Bech32Address;
-  permissions: PortfolioPermissions;
+  permissions: PortfolioPermissionsExt;
   state: PortfolioAgentState;
 };
 

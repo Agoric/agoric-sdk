@@ -24,7 +24,7 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import {
-  PortfolioPermissionsV1Shape,
+  PortfolioPermissionsShape,
   type FlowAgent,
   type FlowConfig,
   type FlowKey,
@@ -32,6 +32,7 @@ import {
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
+  type PortfolioPermissionsExt,
   type PortfolioRemoteAccountState,
 } from '@agoric/portfolio-api';
 import {
@@ -412,7 +413,7 @@ export const preparePortfolioKit = (
       portfolioId: number,
       agentId: FlowAgent['id'],
       grantee: string,
-      permissions: PortfolioPermissions,
+      permissions: PortfolioPermissionsExt,
     ) => Promise<void>;
   },
 ) => {
@@ -1292,8 +1293,8 @@ export const preparePortfolioKit = (
          * resolution is the authorization check; this method then enforces
          * its own input validation.
          */
-        grant(grantee: Bech32Address, permissions: PortfolioPermissions) {
-          mustMatch(permissions, PortfolioPermissionsV1Shape);
+        grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
+          mustMatch(permissions, PortfolioPermissionsShape);
           const { portfolioId, sourceAccountId } = this.state;
           if (!sourceAccountId) {
             throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;

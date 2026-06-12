@@ -131,6 +131,10 @@ type YmaxOperationTypesWithSubTypes<
   [K in T]: P;
 } & typeof OperationSubTypes;
 
+export type PortfolioPermissionsEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioPermissions'];
+
 /**
  * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.
  * so we put the ymax-specifc domain name and version in the type name.
