@@ -21,7 +21,10 @@ import type {
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
 import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
-import type { PortfolioPermissionsExt } from './portfolio-permissions.js';
+import type {
+  PortfolioAutoFeaturesExt,
+  PortfolioPermissionsExt,
+} from './portfolio-permissions.js';
 
 /**
  * Feature flags to handle contract upgrade flow compatibility.
@@ -353,6 +356,7 @@ export type StatusFor = {
     /** @deprecated in favor of flowsRunning */
     flowCount: number;
     flowsRunning?: Record<FlowKey, FlowDetail>;
+    enabledAutoFeatures?: PortfolioAutoFeaturesExt;
   };
   portfolioAgents: Record<PortfolioAgentId, PortfolioAgentStatus>;
   position: {

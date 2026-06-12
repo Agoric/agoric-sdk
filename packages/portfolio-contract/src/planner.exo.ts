@@ -164,6 +164,12 @@ export const preparePlanner = (
           `planner delegation must be active for portfolio ${portfolioId}`,
         );
 
+        const autoFeatures = delegationClient.getReader().getAutoFeatures();
+        assert(
+          autoFeatures?.rebalance,
+          `portfolio ${portfolioId} auto-feature "rebalance" must be enabled`,
+        );
+
         // The flow created by rebalance is guaranteed to have its plan sync kit
         // fully ready.
         const flowKey = delegationClient.rebalance({

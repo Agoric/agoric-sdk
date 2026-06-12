@@ -7,7 +7,11 @@
  * @see {@link preparePortfolioDelegationKit}
  */
 import type { TypedPattern } from '@agoric/internal';
-import { type FlowKey, type PortfolioSyncState } from '@agoric/portfolio-api';
+import {
+  PortfolioAutoFeaturesExtShape,
+  type FlowKey,
+  type PortfolioSyncState,
+} from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
@@ -49,6 +53,7 @@ const auditKeys = (
 const DelegationReaderI = M.interface('PortfolioDelegationReader', {
   isActive: M.call().returns(M.boolean()),
   getPortfolioId: M.call().returns(M.number()),
+  getAutoFeatures: M.call().returns(M.opt(PortfolioAutoFeaturesExtShape)),
 });
 
 const DelegationClientI = M.interface('PortfolioDelegationClient', {
@@ -76,6 +81,10 @@ export const preparePortfolioDelegationKit = (
         getPortfolioId(): number {
           const { portfolioAccess, agentId } = this.state;
           return portfolioAccess.getPortfolioId(this.facets.client, agentId);
+        },
+        getAutoFeatures() {
+          const { portfolioAccess, agentId } = this.state;
+          return portfolioAccess.getAutoFeatures(this.facets.client, agentId);
         },
         isActive(): boolean {
           const { portfolioAccess, agentId } = this.state;

@@ -25,6 +25,7 @@ import {
 } from '@agoric/orchestration/src/utils/address.js';
 import {
   PortfolioPermissionsShape,
+  PortfolioAutoFeaturesShape,
   type FlowAgent,
   type FlowConfig,
   type FlowKey,
@@ -34,10 +35,14 @@ import {
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
   type PortfolioPermissionsExt,
+  type PortfolioAutoFeatures,
   type PortfolioRemoteAccountState,
+  type PortfolioAutoFeaturesExt,
+  PortfolioAutoFeaturesExtShape,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
+  PortfolioPlannerAgent,
   SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
@@ -163,6 +168,8 @@ type PortfolioKitState = {
     { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
   >;
   delegations?: MapStore<number, PortfolioAgentInfo>;
+  plannerAgentId?: number;
+  enabledAutoFeatures?: PortfolioAutoFeatures;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
@@ -181,6 +188,8 @@ export const PortfolioStateShape = {
   positions: M.remotable('positions'),
   flowsRunning: M.remotable('flowsRunning'),
   delegations: M.opt(M.remotable('delegations')),
+  plannerAgentId: M.opt(M.number()),
+  enabledAutoFeatures: M.opt(PortfolioAutoFeaturesExtShape),
   nextFlowId: M.number(),
   targetAllocation: M.opt(M.record()),
   policyVersion: M.number(),
@@ -502,6 +511,8 @@ export const preparePortfolioKit = (
           keyShape: PoolKeyShapeExt,
           valueShape: M.remotable('Position'),
         }),
+        plannerAgentId: undefined,
+        enabledAutoFeatures: undefined,
         targetAllocation: undefined,
         policyVersion: 0,
         rebalanceCount: 0,
@@ -630,6 +641,11 @@ export const preparePortfolioKit = (
           const { reader } = this.facets;
           return reader.getPortfolioId();
         },
+        getAutoFeatures(client: PortfolioDelegationClient, agentId: number) {
+          this.facets.delegationHelper.assertActive(client, agentId);
+          const { enabledAutoFeatures } = this.state;
+          return enabledAutoFeatures;
+        },
         getTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
@@ -703,6 +719,7 @@ export const preparePortfolioKit = (
             policyVersion,
             rebalanceCount,
             sourceAccountId,
+            enabledAutoFeatures,
           } = this.state;
 
           const agoricAux = (): Pick<
@@ -731,6 +748,7 @@ export const preparePortfolioKit = (
             accountsPending: [...accountsPending.keys()],
             policyVersion,
             rebalanceCount,
+            ...(enabledAutoFeatures && { enabledAutoFeatures }),
           } satisfies StatusFor['portfolio']);
         },
         publishAgents() {
@@ -1080,6 +1098,61 @@ export const preparePortfolioKit = (
           );
           this.facets.reporter.publishAgents();
         },
+        /**
+         * Sets the pre-validated features settings on the portfolio and
+         * delivers the delegation to the planner as needed.
+         *
+         * Promptly resolves
+         *
+         * @param features
+         */
+        async setAutoFeatures(features: PortfolioAutoFeatures) {
+          if (!('enabledAutoFeatures' in this.state)) {
+            throw Fail`portfolio pre-dates auto features support`;
+          }
+
+          const permissions: PortfolioPermissions = {
+            allocation: false,
+            rebalance: !!features.rebalance,
+          };
+
+          const hasAnyPermission =
+            permissions.allocation || permissions.rebalance;
+
+          let plannerAgentId = this.state.plannerAgentId;
+
+          if (plannerAgentId !== undefined) {
+            // delegations must exist if there previously was a planner agent
+            const delegation = this.state.delegations!.get(plannerAgentId);
+
+            if (delegation.state !== 'active') {
+              trace(
+                `existing planner delegation ${plannerAgentId} is not active, granting a new one`,
+              );
+              plannerAgentId = undefined;
+              this.state.plannerAgentId = undefined;
+            } else {
+              this.state.delegations!.set(
+                plannerAgentId,
+                harden({ ...delegation, permissions }),
+              );
+              this.facets.reporter.publishAgents();
+            }
+          }
+
+          await null;
+          if (hasAnyPermission && plannerAgentId === undefined) {
+            // grantDelegation is guaranteed to be prompt, safe to await here
+            plannerAgentId = await this.facets.manager.grantDelegation(
+              PortfolioPlannerAgent,
+              permissions,
+            );
+            this.state.plannerAgentId = plannerAgentId;
+          }
+
+          this.state.enabledAutoFeatures = features;
+          this.facets.reporter.publishStatus();
+        },
       },
       accountWatcher: {
         onFulfilled(info: AccountInfo, chainName: AxelarChain) {
@@ -1421,7 +1494,21 @@ export const preparePortfolioKit = (
             permissions.allocation === true ||
               Fail`grant requires allocation permission`;
             // Returns promise promptly resolved
-            return this.facets.manager.grantDelegation(grantee, permissions);
+            await this.facets.manager.grantDelegation(grantee, permissions);
+          });
+        },
+        /**
+         * Set the auto-features for this portfolio
+         */
+        setAutoFeatures(features: PortfolioAutoFeaturesExt) {
+          return vowTools.asVow(() => {
+            mustMatch(features, PortfolioAutoFeaturesShape);
+            const { sourceAccountId } = this.state;
+            if (!sourceAccountId) {
+              throw Fail`setAutoFeatures requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+            }
+            // Returns promise promptly resolved
+            return this.facets.manager.setAutoFeatures(features);
           });
         },
       },

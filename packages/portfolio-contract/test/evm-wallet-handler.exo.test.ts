@@ -48,12 +48,15 @@ type DepositArgs = Parameters<PortfolioEVMFacet['deposit']>;
 
 type RebalanceArgs = Parameters<PortfolioEVMFacet['rebalance']>;
 
+type SetAutoFeatureArgs = Parameters<PortfolioEVMFacet['setAutoFeatures']>;
+
 type MockPortfolioCalls = {
   openPortfolioFromEVM: OpenPortfolioArgs[];
   validateEVMMessageDomain: ValidateEVMMessageDomainArgs[];
   withdraw: WithdrawArgs[];
   deposit: DepositArgs[];
   rebalance: RebalanceArgs[];
+  setAutoFeatures: SetAutoFeatureArgs[];
 };
 
 /**
@@ -111,6 +114,12 @@ const makeMockPortfolioEvmHandler = ({
     grant(..._args: Parameters<PortfolioEVMFacet['grant']>) {
       // Not exercised by existing tests; present so the mock satisfies the
       // facet type after the security fix moved delegation onto evmHandler.
+      return vowTools.asVow(() => {});
+    },
+    setAutoFeatures(
+      ..._args: Parameters<PortfolioEVMFacet['setAutoFeatures']>
+    ) {
+      calls.setAutoFeatures.push(_args);
       return vowTools.asVow(() => {});
     },
   });
@@ -253,6 +262,7 @@ const makeHandleOperationTestSetup = (
     withdraw: [],
     deposit: [],
     rebalance: [],
+    setAutoFeatures: [],
   };
 
   let nextPortfolioId = 1;

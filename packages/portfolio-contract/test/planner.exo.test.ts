@@ -158,7 +158,7 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
       permissions,
     ) {
       t.is(grantee, PortfolioPlannerAgent);
-      t.deepEqual(permissions, { rebalance: true });
+      t.like(permissions, { rebalance: true });
       plannerDelegations.set(aPortfolio.planner, client);
     },
     ...({} as any),
@@ -181,7 +181,7 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
   const planner = makePlanner();
 
   aPortfolio.manager.setTargetAllocation({ USDN: 100n });
-  await aPortfolio.manager.grantDelegation(PortfolioPlannerAgent, {
+  await aPortfolio.manager.setAutoFeatures({
     rebalance: true,
   });
 

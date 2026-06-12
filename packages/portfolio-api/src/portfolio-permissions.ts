@@ -41,3 +41,22 @@ export const PortfolioPermissionsEIP712Shape: TypedPattern<PortfolioPermissionsE
  */
 export const PortfolioPermissionsExtShape: TypedPattern<PortfolioPermissionsExt> =
   M.recordOf(M.string(), M.any());
+
+/** A set of auto-features that can be enabled for a portfolio. */
+export type PortfolioAutoFeatures = {
+  rebalance?: boolean;
+};
+
+/**
+ * Shape enforcing the current known auto-features accepted by the system.
+ * Changes to this shape should be backward compatible.
+ */
+export const PortfolioAutoFeaturesShape: TypedPattern<PortfolioAutoFeatures> =
+  M.splitRecord({}, { rebalance: M.boolean() }, {});
+
+/** Extensible type compatible with future auto-features definitions */
+export type PortfolioAutoFeaturesExt = PortfolioAutoFeatures & CopyRecord<any>;
+
+/** Shape for storing auto-features in a forward compatible way. */
+export const PortfolioAutoFeaturesExtShape: TypedPattern<PortfolioAutoFeaturesExt> =
+  M.recordOf(M.string(), M.any());
