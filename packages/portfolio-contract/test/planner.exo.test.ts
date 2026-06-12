@@ -6,8 +6,13 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
+import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
+import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { preparePlanner } from '../src/planner.exo.ts';
-import { preparePortfolioKit } from '../src/portfolio.exo.ts';
+import {
+  type PortfolioKit,
+  preparePortfolioKit,
+} from '../src/portfolio.exo.ts';
 import {
   makeOfferArgsShapes,
   type MovementDesc,
@@ -110,6 +115,89 @@ test('planner exo submit method', async t => {
   await t.notThrowsAsync(
     vt.when(planner.resolvePlan(portfolioId, 1, plan, 1, 2)),
   );
+});
+
+test('planner starts delegated rebalance and resolves its plan', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+
+  let startedFlow: { stepsP: unknown; flowId: number } | undefined;
+  const mockExecutePlan = (_seat, _offerArgs, _kit, _flowDetail, flow) => {
+    startedFlow = flow;
+    return vt.asVow(() => undefined);
+  };
+  const mockZcf = {
+    makeEmptySeatKit: () => ({
+      zcfSeat: null as any,
+    }),
+  } as ZCF;
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const marshaller = board.getReadonlyMarshaller();
+  const plannerDelegations = new Map<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >();
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    executePlan: mockExecutePlan as any,
+    zcf: mockZcf,
+    offerArgsShapes: makeOfferArgsShapes(USDC),
+    deliverDelegation(
+      client: PortfolioDelegationClient,
+      _portfolioId,
+      _agentId,
+      grantee,
+      permissions,
+    ) {
+      t.is(grantee, PortfolioPlannerAgent);
+      t.deepEqual(permissions, { rebalance: true });
+      plannerDelegations.set(aPortfolio.planner, client);
+    },
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  const mockGetPortfolio = _id => aPortfolio;
+
+  const makePlanner = preparePlanner(zone, {
+    zcf: mockZcf,
+    getPortfolio: mockGetPortfolio,
+    getPlannerDelegation: portfolioPlanner =>
+      plannerDelegations.get(portfolioPlanner),
+    shapes: makeOfferArgsShapes(USDC),
+    vowTools: vt,
+    ...({} as any),
+  });
+  const planner = makePlanner();
+
+  aPortfolio.manager.setTargetAllocation({ USDN: 100n });
+  await aPortfolio.manager.grantDelegation(PortfolioPlannerAgent, {
+    rebalance: true,
+  });
+
+  const amount = { brand: USDC, value: 100n };
+  const plan: MovementDesc[] = [
+    { src: '@agoric', dest: '@noble', amount },
+    { src: '@noble', dest: 'USDN', amount },
+  ];
+  const flowKey = planner.rebalance(0, plan, 1, 0);
+
+  t.is(flowKey, 'flow1');
+  t.truthy(startedFlow);
+  t.deepEqual(await vt.when(startedFlow!.stepsP as any), plan);
+
+  const portfolioStatus = await getPortfolioStatus(1);
+  t.like(portfolioStatus, { policyVersion: 1, rebalanceCount: 1 });
 });
 
 test('planner can reject a plan due to insufficient funds', async t => {
