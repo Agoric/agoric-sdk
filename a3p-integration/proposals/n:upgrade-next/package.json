@@ -64,7 +64,18 @@
     "@agoric/wallet-backend": "portal:../../agoric-sdk/packages/wallet/api",
     "@agoric/xsnap-lockdown": "portal:../../agoric-sdk/packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
-    "@agoric/zone": "portal:../../agoric-sdk/packages/zone"
+    "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
+    "ws@npm:^7": "npm:^7.5.11",
+    "ws@npm:^7.2.0": "npm:^7.5.11",
+    "tar-fs": "npm:^2.1.4",
+    "lodash": "npm:^4.17.23",
+    "brace-expansion@npm:^1.1.7": "npm:^1.1.13",
+    "js-yaml@npm:^3.14.1": "npm:^3.14.2",
+    "glob@npm:^10.0.0": "npm:^10.5.0",
+    "glob@npm:^10.2.2": "npm:^10.5.0",
+    "glob@npm:^10.3.10": "npm:^10.5.0",
+    "glob@npm:^10.3.7": "npm:^10.5.0",
+    "glob@npm:^10.4.1": "npm:^10.5.0"
   },
   "ava": {
     "concurrency": 1,

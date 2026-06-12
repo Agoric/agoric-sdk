@@ -83,7 +83,18 @@
     "@cosmjs/proto-signing@^0.35.0-rc": "^0.36.0",
     "@cosmjs/stargate@npm:^0.35.0-rc": "^0.36.0",
     "@cosmjs/tendermint-rpc@npm:^0.35.0-rc": "^0.36.0",
-    "@cosmjs/tendermint-rpc@npm:0.35.0-rc": "^0.36.0"
+    "@cosmjs/tendermint-rpc@npm:0.35.0-rc": "^0.36.0",
+    "ws@npm:^7": "npm:^7.5.11",
+    "ws@npm:^7.2.0": "npm:^7.5.11",
+    "tar-fs": "npm:^2.1.4",
+    "lodash": "npm:^4.17.23",
+    "brace-expansion@npm:^1.1.7": "npm:^1.1.13",
+    "glob@npm:^10.0.0": "npm:^10.5.0",
+    "glob@npm:^10.2.2": "npm:^10.5.0",
+    "glob@npm:^10.3.10": "npm:^10.5.0",
+    "glob@npm:^10.3.7": "npm:^10.5.0",
+    "glob@npm:^10.4.1": "npm:^10.5.0",
+    "picomatch@npm:^4.0.2": "npm:^4.0.4"
   },
   "ava": {
     "require": [
