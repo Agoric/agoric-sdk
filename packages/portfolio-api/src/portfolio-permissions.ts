@@ -1,7 +1,10 @@
 import type { TypedPattern } from '@agoric/internal';
 import { type CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
-import type { PortfolioPermissionsEIP712 } from './evm-wallet/eip712-messages.ts';
+import type {
+  PortfolioAutoFeaturesEIP712,
+  PortfolioPermissionsEIP712,
+} from './evm-wallet/eip712-messages.ts';
 
 /**
  * Portfolio permissions granted to an automation agent.
@@ -53,6 +56,9 @@ export type PortfolioAutoFeatures = {
  */
 export const PortfolioAutoFeaturesShape: TypedPattern<PortfolioAutoFeatures> =
   M.splitRecord({}, { rebalance: M.boolean() }, {});
+
+export const PortfolioAutoFeaturesEIP712Shape: TypedPattern<PortfolioAutoFeaturesEIP712> =
+  M.splitRecord({ rebalance: M.boolean() });
 
 /** Extensible type compatible with future auto-features definitions */
 export type PortfolioAutoFeaturesExt = PortfolioAutoFeatures & CopyRecord<any>;

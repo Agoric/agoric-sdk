@@ -35,12 +35,16 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 import type {
+  PortfolioAutoFeatures,
   PortfolioPublicInvitationMaker,
   PortfolioContinuingInvitationMaker,
   AxelarChain,
   PortfolioPermissions,
 } from '@agoric/portfolio-api';
-import { PortfolioPermissionsEIP712Shape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import {
+  PortfolioAutoFeaturesEIP712Shape,
+  PortfolioPermissionsEIP712Shape,
+} from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
@@ -540,6 +544,31 @@ export const makeEvmTrader = ({
             'Grant',
             chainId,
             standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+        /**
+         * Submit a signed SetAutoFeatures op and return the resulting wallet
+         * status entry for this trader's portfolio.
+         */
+        async setAutoFeatures(features: PortfolioAutoFeatures) {
+          const deadline = await getDeadline();
+          const hardenedFeatures = harden({ ...features });
+          mustMatch(hardenedFeatures, PortfolioAutoFeaturesEIP712Shape);
+          const message = harden(
+            getYmaxStandaloneOperationData(
+              {
+                features: hardenedFeatures,
+                portfolio: BigInt(self.getPortfolioId()),
+                nonce: (nonce += 1n),
+                deadline,
+              },
+              'SetAutoFeatures',
+              chainId,
+              standaloneVerifyingContract,
+            ),
           );
           const expectedNonce = nonce;
           await submitMessage(message);

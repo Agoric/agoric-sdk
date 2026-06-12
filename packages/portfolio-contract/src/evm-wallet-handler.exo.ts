@@ -388,6 +388,15 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
+          case 'SetAutoFeatures': {
+            const {
+              data: { features },
+            } = operationDetails;
+
+            const result = E(portfolio!).setAutoFeatures(features);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
           default:
             // @ts-expect-error exhaustiveness check
             Fail`Unsupported operation: ${q(operationDetails.operation)}`;
