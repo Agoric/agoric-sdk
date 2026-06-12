@@ -13,7 +13,7 @@ const main = async () => {
 
   const [{ address }] = await wallet.getAccounts();
   console.log('export AGENT_ADDRESS=%s', address);
-  console.log('export MNEMONIC=%s', mnemonic);
+  console.log('export MNEMONIC="%s"', mnemonic);
 };
 
 if (
