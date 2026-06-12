@@ -1075,6 +1075,62 @@ test('evmHandler grant allocates sequential agent ids', async t => {
   t.is(callLogRaced[3][3], 4);
 });
 
+test('delegation rebalance creates flow and calls executePlan', async t => {
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { manager } = makePortfolioKit({ portfolioId: 20 });
+
+  const agentId = await manager.grantDelegation('agoric1delegate', {
+    allocation: false,
+    rebalance: true,
+  });
+
+  t.is(agentId, 1);
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+
+  const [, client] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
+  t.like(getCallLog()[1], [
+    'executePlan',
+    ,
+    {},
+    ,
+    { type: 'rebalance' },
+    { flowId: 1 },
+  ]);
+});
+
+test('allocation delegation cannot use rebalance', async t => {
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { manager } = makePortfolioKit({ portfolioId: 21 });
+
+  const agentId = await manager.grantDelegation('agoric1delegate', {
+    allocation: true,
+  });
+
+  t.is(agentId, 1);
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+
+  const [, client] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.throws(() => client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), {
+    message: /delegation agent1 does not have required permission "rebalance"/,
+  });
+  t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
+});
+
 test('revoked delegation client is no longer usable', async t => {
   const ownerAddress = '0x4545454545454545454545454545454545454545' as const;
   const storage = makeFakeStorageKit('published', { sequence: true });

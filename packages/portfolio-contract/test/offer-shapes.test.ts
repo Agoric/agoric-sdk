@@ -212,6 +212,9 @@ test('PortfolioPermissionsShape', t => {
     allocationOnly: {
       allocation: true,
     },
+    rebalanceOnly: {
+      rebalance: true,
+    },
   } satisfies Record<string, PortfolioPermissions>);
   const failCases = harden({
     futurePermission: {

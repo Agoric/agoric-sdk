@@ -660,6 +660,31 @@ export const preparePortfolioKit = (
           });
           return flowId;
         },
+        submitRebalance(
+          client: PortfolioDelegationClient,
+          agentId: number,
+          syncState: { policyVersion: number; rebalanceCount: number },
+        ): FlowKey {
+          this.facets.delegationHelper.assertActive(client, agentId, {
+            rebalance: true,
+          });
+          const { reader, reporter, manager } = this.facets;
+
+          const { policyVersion, rebalanceCount } = syncState;
+          reader.checkVersion(policyVersion, rebalanceCount);
+          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
+
+          const flowDetail = { type: 'rebalance' } as FlowDetail;
+          const startedFlow = manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(emptySeat, {}, this.facets, flowDetail, startedFlow);
+
+          const { flowId } = startedFlow;
+          reporter.publishFlowAgent(flowId, {
+            id: `agent${agentId}`,
+          });
+          return `flow${flowId}`;
+        },
       },
       reporter: {
         /**

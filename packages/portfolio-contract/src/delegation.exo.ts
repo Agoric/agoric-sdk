@@ -53,6 +53,7 @@ const DelegationReaderI = M.interface('PortfolioDelegationReader', {
 
 const DelegationClientI = M.interface('PortfolioDelegationClient', {
   getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
+  rebalance: M.call(PortfolioSyncStateShape).returns(M.string()),
   setTargetAllocation: M.call(
     TargetAllocationShape,
     PortfolioSyncStateShape,
@@ -89,6 +90,14 @@ export const preparePortfolioDelegationKit = (
       client: {
         getReader() {
           return this.facets.reader;
+        },
+        rebalance(syncState: PortfolioSyncState): FlowKey {
+          const { portfolioAccess, agentId } = this.state;
+          return portfolioAccess.submitRebalance(
+            this.facets.client,
+            agentId,
+            syncState,
+          );
         },
         setTargetAllocation(
           targetAllocation: TargetAllocation,

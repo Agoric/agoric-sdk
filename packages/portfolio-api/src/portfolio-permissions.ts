@@ -12,6 +12,8 @@ export type PortfolioPermissions = {
    * portfolio's `targetAllocation`, but may not add or remove keys.
    */
   allocation?: boolean;
+  /** whether the agent may trigger a rebalance using the current policy. */
+  rebalance?: boolean;
 };
 
 /**
@@ -26,7 +28,7 @@ export type PortfolioPermissionsExt = PortfolioPermissions & CopyRecord<any>;
  * grant paths may still require specific permissions before creating a grant.
  */
 export const PortfolioPermissionsShape: TypedPattern<PortfolioPermissions> =
-  M.splitRecord({}, { allocation: M.boolean() }, {});
+  M.splitRecord({}, { allocation: M.boolean(), rebalance: M.boolean() }, {});
 
 export const PortfolioPermissionsEIP712Shape: TypedPattern<PortfolioPermissionsEIP712> =
   M.splitRecord({ allocation: M.boolean() });
