@@ -19,7 +19,7 @@
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "yarn run -T eslint src/",
-    "lint:types": "yarn run -T tsc",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "lint:graphql": "ls -d ./src/graphql/api-* | xargs -n 1 yarn run graphql-dir-validate",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",

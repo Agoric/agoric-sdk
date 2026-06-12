@@ -20,7 +20,7 @@
     "clean": "rm -rf dist",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "node ../../scripts/eslint-repo.mjs 'lib/**/*.js' 'src/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
-    "lint:types": "yarn run -T tsc",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "lint-fix": "yarn lint:eslint --fix",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",

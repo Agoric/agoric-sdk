@@ -2,6 +2,29 @@
 
 Our use of TypeScript has to accommodate both .js development in agoric-sdk (which could not import types until TS 5.5) and .ts development of consumers of agoric-sdk packages (which could always import types). For .js development, we have many ambient (global) types so that we don't have to precede each type reference by an import. For .ts development, we want exports from modules so we don't pollute a global namespace. We are slowly transitioning away from ambient types.
 
+## TypeScript Preview (tsgo)
+
+We are mid-transition from TypeScript 6 (`tsc`, the JS-based compiler) to TypeScript 7 (`tsgo`, the Go-native rewrite). As of mid-2026, TS 7.0 is in beta with stable expected imminently; we use the `@typescript/native-preview` nightlies, which are roughly 10x faster than `tsc`.
+
+All type-checking uses `tsgo`; `tsc` 6 remains only where something is built or consumed through the compiler API. (`tsgo` is intentionally stricter about some JSDoc patterns than `tsc` 6, and `tsc` must still emit declarations cleanly — exercised by the build and prepack steps in CI — so source files stay effectively TS 6-compatible without a dedicated TS 6 type-check gate.)
+
+Division of labor during the transition:
+
+| Task | Compiler | Why |
+| --- | --- | --- |
+| `lint:types` (root and per package) | `tsgo` | Fast dev loop. Type-checking emits nothing, so a preview compiler is low-risk here. |
+| `typecheck-all` (CI) | `tsgo` | Gates TS 7 cleanliness over `tsconfig.check.json`, the unified repo-wide config. Excludes only `a3p-integration`, `multichain-testing` (standalone yarn projects), and `swingset-runner` (not yet type-clean). |
+| `typecheck-packages` (CI and root `lint:packages`) | `tsgo` | Runs each workspace's `lint:types` against its own tsconfig, resolving dependencies through `node_modules` entrypoints as a consumer would. |
+| Declaration emit (`build-ts`, package `prepack`; exercised by the CI build and prepack steps) | `tsc` | `tsgo` declaration-emit parity is not complete; emit stays on the stable compiler until 7.0 stable proves parity. This is also what keeps source TS 6-compatible. |
+| ESLint type-aware rules | TS 6 API | typescript-eslint consumes the `typescript` package's JS API; `tsgo` has no compatible API yet. |
+| `a3p-integration` `lint:types` | `tsc` | Vendored dependencies aren't tsgo-clean (also excluded from `tsconfig.check.json`). |
+
+Notes:
+
+- `@typescript/native-preview` is deliberately **not pinned** to an exact nightly; it's OK for it to advance on installs and Renovate bumps. If a new nightly surfaces errors, prefer fixing the code (the added strictness is usually correct); for an upstream regression, temporarily hold it back with a yarn `resolutions` entry.
+- `tsgo` invocations pass `--tsBuildInfoFile` ending in `.tsgo.tsbuildinfo` because the two compilers' incremental-state formats are incompatible; separate files keep them from clobbering each other's caches. (Both match the `*.tsbuildinfo` gitignore.)
+- At 7.0 stable: replace the preview package with `typescript@7`, trial declaration emit (diff `.d.ts` output in an emit-heavy package such as `@agoric/cosmic-proto`), and retire the TS 6 gate once tooling like typescript-eslint supports TS 7.
+
 ## Best practices
 
 ### Exported types

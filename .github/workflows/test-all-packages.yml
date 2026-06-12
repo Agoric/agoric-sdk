@@ -105,11 +105,14 @@ jobs:
       # Run ESLint once from the repo root so type-aware project state can be reused.
       - run: yarn lint:eslint --quiet
 
-      # XXX running tsc in every package is slow and redundant.
-      - run: yarn typecheck-all
+      # Type-check each package against its own tsconfig (tsgo via lint:types),
+      # resolving dependencies through node_modules entrypoints as a consumer
+      # would. Complements typecheck-all, which maps everything to source in
+      # one unified config.
+      - run: yarn typecheck-packages
 
       # multichain-testing is a standalone yarn project (not a workspace), so
-      # the root lint:eslint and typecheck-all don't cover it.
+      # the root lint:eslint and typecheck-packages don't cover it.
       - name: lint multichain-testing
         run: yarn install && yarn lint && yarn ava test/imports.test.ts
         working-directory: multichain-testing
@@ -146,15 +149,13 @@ jobs:
         run: yarn run build:submissions
         working-directory: a3p-integration
 
-      # run the typecheck-quick that local dev can rely on for fast feedback
-      - name: typecheck-quick
-        run: yarn typecheck-quick
-
-      # Also type-check under tsgo (TypeScript 7 native preview) so the repo
-      # stays green for the TS7 migration and cannot regress. Uses the same
-      # tsconfig.quickcheck.json scope as typecheck-quick.
-      - name: typecheck-tsgo
-        run: yarn typecheck-tsgo
+      # run the typecheck-all that local dev can rely on for fast feedback.
+      # Uses tsgo (TypeScript 7 native preview) over the unified
+      # tsconfig.check.json, so the repo stays green for the TS7 migration
+      # and cannot regress. (tsc 6 is used only for declaration emit, which
+      # the build and prepack steps exercise.)
+      - name: typecheck-all
+        run: yarn typecheck-all
 
       # Attempt the doc generation to catch build errors before
       # landing on master

@@ -16,7 +16,7 @@
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
-    "lint:types": "yarn run -T tsc"
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo"
   },
   "devDependencies": {
     "@aglocal/boot": "workspace:*",
