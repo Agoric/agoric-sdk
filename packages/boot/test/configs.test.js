@@ -86,7 +86,7 @@ const makeTestContext = async () => {
 
   const bundleCache = await unsafeSharedBundleCache;
 
-  const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
+  const vizTool = pathResolve('..', 'scripts', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
 
   const getConfigPath = makeMemoizedPromise(async configName => {
