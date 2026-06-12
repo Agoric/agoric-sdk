@@ -7,6 +7,7 @@ const pkg = JSON.parse(
 
 // Import rules
 const noTypedefImport = require('./rules/no-typedef-import.js');
+const fetchResponseOk = require('./rules/fetch-response-ok.js');
 const groupJsdocImports = require('./rules/group-jsdoc-imports.js');
 
 module.exports = {
@@ -19,6 +20,7 @@ module.exports = {
   rules: {
     'no-typedef-import': noTypedefImport,
     'group-jsdoc-imports': groupJsdocImports,
+    'fetch-response-ok': fetchResponseOk,
   },
 
   // Recommended config
@@ -28,6 +30,7 @@ module.exports = {
       rules: {
         '@agoric/no-typedef-import': 'error',
         '@agoric/group-jsdoc-imports': 'warn',
+        '@agoric/fetch-response-ok': 'error',
       },
     },
   },

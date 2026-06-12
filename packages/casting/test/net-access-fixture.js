@@ -1,3 +1,5 @@
+import { makeFetchError } from '@agoric/internal/src/fetch.js';
+
 const { stringify: jq } = JSON;
 
 /**
@@ -162,7 +164,14 @@ export const captureIO = fetch => {
   const f = async (...args) => {
     const key = normalizeID(JSON.stringify(args));
     const resp = await fetch(...args);
+    if (!resp.ok) {
+      throw makeFetchError(resp, `Captured fetch ${String(args[0])}`);
+    }
     return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      url: String(args[0]),
       json: async () => {
         const data = await resp.json();
         web.set(key, data);
@@ -189,6 +198,10 @@ export const replayIO = web => {
       throw Error(`no data for ${key}`);
     }
     return {
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      url: String(args[0]),
       json: async () => data,
     };
   };
