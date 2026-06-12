@@ -71,14 +71,14 @@ const makeTestSetup = () => {
 
   const depStubs: Pick<
     PortfolioKitDeps,
-    'rebalance' | 'executePlan' | 'deliverDelegationInvitation'
+    'rebalance' | 'executePlan' | 'deliverDelegation'
   > = {
     rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) =>
       vowTools.asVow(() => {}),
     executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
       vowTools.asVow(() => {}),
-    deliverDelegationInvitation: async (
-      ..._args: Parameters<PortfolioKitDeps['deliverDelegationInvitation']>
+    deliverDelegation: async (
+      ..._args: Parameters<PortfolioKitDeps['deliverDelegation']>
     ) => {},
   };
 
@@ -1036,18 +1036,14 @@ test('evmHandler grant passes only the delegation client to delivery', async t =
 
   const callLog = getCallLog();
   t.is(callLog.length, 1);
-  t.is(callLog[0][0], 'deliverDelegationInvitation');
+  t.is(callLog[0][0], 'deliverDelegation');
   const [, client, portfolioId, agentId, grantee, permissions] = callLog[0] as [
-    'deliverDelegationInvitation',
-    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[0],
-    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[1],
-    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[2],
-    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[3],
-    Parameters<PortfolioKitDeps['deliverDelegationInvitation']>[4],
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
   t.truthy(client);
   t.is(portfolioId, 14);
-  t.is(agentId, 'agent1');
+  t.is(agentId, 1);
   t.is(grantee, 'agoric1delegate');
   t.deepEqual(permissions, { allocation: true });
 });
@@ -1065,6 +1061,16 @@ test('evmHandler grant allocates sequential agent ids', async t => {
 
   const callLog = getCallLog();
   t.is(callLog.length, 2);
-  t.is(callLog[0][3], 'agent1');
-  t.is(callLog[1][3], 'agent2');
+  t.is(callLog[0][3], 1);
+  t.is(callLog[1][3], 2);
+
+  await Promise.all([
+    evmHandler.grant('agoric1delegatec', { allocation: true }),
+    evmHandler.grant('agoric1delegated', { allocation: true }),
+  ]);
+
+  const callLogRaced = getCallLog();
+  t.is(callLogRaced.length, 4);
+  t.is(callLogRaced[2][3], 3);
+  t.is(callLogRaced[3][3], 4);
 });

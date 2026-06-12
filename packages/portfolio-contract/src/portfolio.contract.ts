@@ -593,10 +593,10 @@ export const contract = async (
    * facet — i.e., the per-wallet `wallet.portfolios.get(id)` lookup has
    * already authorized the signer as the portfolio's owner.
    */
-  const deliverDelegationInvitation = async (
+  const deliverDelegation = async (
     client: PortfolioDelegationClient,
     portfolioId: number,
-    agentId: FlowAgent['id'],
+    agentId: number,
     grantee: Bech32Address,
     permissions: PortfolioPermissionsExt,
   ): Promise<void> => {
@@ -608,7 +608,11 @@ export const contract = async (
         return client;
       },
       'portfolioMandate',
-      harden({ portfolioId, agentId, permissions }),
+      harden({
+        portfolioId,
+        agentId: `agent${agentId}` satisfies FlowAgent['id'],
+        permissions,
+      }),
     );
     await E(ps).deliverPayment(grantee, invitation);
   };
@@ -628,7 +632,7 @@ export const contract = async (
     usdcBrand: brands.USDC,
     eip155ChainIdToAxelarChain,
     contracts,
-    deliverDelegationInvitation,
+    deliverDelegation,
   });
 
   const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
