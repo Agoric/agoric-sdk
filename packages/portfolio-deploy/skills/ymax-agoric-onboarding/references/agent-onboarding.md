@@ -21,13 +21,19 @@ This is your job as the agent.
 
 See [Smart wallet usage](smart-wallet-usage.md) for CLI provisioning, funding, and query examples (`agoric wallet`, `agoric follow`).
 
-## Step 2: Research and Discuss an Initial Allocation
+## Step 2: Research and Discuss Instruments
 
 The agent should:
 - use YDS to inspect the currently listed instruments
 - do a bit of real-world research on those instruments and protocols
-- explore the user's risk profile and how much capital they want to deploy
-- propose an initial allocation that fits that discussion
+- explore the user's risk profile
+- propose a list of instruments that the agent should be allowed to move capital between.
+- propose an initial allocation of assets among instruments: for example, 60% Aave on Arbitrum, 40% Compound on Arbitrum.
+
+Note that some instruments may have 0 initial allocation. In order for the agent
+to later deposit into that instrument, the instrument has to be in the list.
+
+The allocation should be percentages that add up to 100.
 
 Avoid financial advice phrasing by saying, for example:
 The following allocation appears to meet your preferences based on the current APYs.
@@ -39,7 +45,7 @@ The agent proposes a link.
 During a transitionary period, use the deploy preview:
 
 ```text
-https://feat-ago-611-prepopulated-li.ymax1-ui.pages.dev?Aave_Arbitrum=60&Compound_Arbitrum=40
+https://feat-ago-611-prepopulated-li.ymax0-ui.pages.dev/create-portfolio?Aave_Arbitrum=60&Compound_Arbitrum=40&Compound_Ethereum=0
 ```
 
 in due course, it should be available at:
@@ -52,19 +58,33 @@ https://main0.ymax.app/create-portfolio?Aave_Arbitrum=60&Compound_Arbitrum=40
 
 That link should pre-populate the YMax create-portfolio page with the discussed allocation.
 
+TODO: possibly explain the xyz2 spending cap thing?
+
 ## Step 4: User Creates the Portfolio
-The user follows the link, creates the portfolio on `main0.ymax.app`, and notes the resulting portfolio number.
+The user follows the link and creates the portfolio on `main0.ymax.app`.
+
+To get the portfolio id, they should go to the Activity tab and look at the details of their first activity: https://feat-ago-611-prepopulated-li.ymax0-ui.pages.dev/activity/flow1
+
+There they should see something like:
+Activity ID 123-1
+
+Then `portfolio123` is their portfolio.
+
+Use the [YDS Query Playbook](../ymax-agoric-allocation-delegate/references/yds-query-playbook.md) to explore the portfolio status.
 
 ## Step 5: User Gives the Portfolio Number to the Agent
 The agent cannot proceed with delegated updates until the user shares the created portfolio id.
 
 ## Step 6: Hand Off the Delegation Link
+
+**Note well**: Double-check that your smart wallet (that is: the agent's smart wallet) is provisioned: use `agoric wallet show ...` as in [Smart wallet usage](smart-wallet-usage.md). If your smart wallet is not provisioned, the grant will fail (TODO: the failure should be visible to the user).
+
 The agent gives the user a link.
 
 The branch preview is currently operational:
 
 ```text
-https://feat-ago-611-prepopulated-li.ymax1-ui.pages.dev/grant?portfolioId=P&accountHolder=agoric1...
+https://feat-ago-611-prepopulated-li.ymax0-ui.pages.dev/grant?portfolioId=P&accountHolder=agoric1...
 ```
 
 In due course, you should be able to use:
@@ -97,8 +117,30 @@ Redeem the delivered invitation and save the delegation facet under a wallet-sto
 
 Choose a saved key that is portfolio-specific, since the same wallet may hold multiple delegations.
 
+Confirm that the agent is published to vstorage in the portfolio status:
+
+```sh
+agoric follow -lF -B https://main.agoric.net/network-config --output json :published.ymax0.portfolios.portfolio77.agents
+```
+
 ## Step 8: Record the Saved Delegation Key
 Use the exact value passed to `--save-as` in step 7 as `--delegation-key` for later delegated submissions.
+
+## Step 9: Report completion of onboarding
+
+Summarize the results of onboarding, such as:
+
+ - Chosen instruments: Aave_Arbitrum, ...
+   - Allocations: Aave_Arbitrum: 35%; ...
+ - Portfolio id: portfolio77
+ - Delegate address: agoric1s8wkm5ze3ra9ttad55fuq3m5z2vrf583rmagml
+   - Mnemonic / config saved: agent-config.sh:1-2
+ - Save-result name: delegate-portfolio77 (wallet-store key)
+   - Invitation description: portfolioMandate
+ - Agent id: agent1
+   - Permissions: allocation: true
+   - Status: active
+
 
 ## Notes
 - Scope this workflow to `https://main0.ymax.app` and `ymax0`.
@@ -106,17 +148,3 @@ Use the exact value passed to `--save-as` in step 7 as `--delegation-key` for la
 - Grant alone does not make the delegate operational; the invitation must be redeemed.
 - Delegation is portfolio-specific.
 - The v1 permission is allocation-only.
-
-## Appendix: Initial Integration Testing
-For early integration testing, the owner/operator can still submit the EVM-signed Grant directly on mainnet `ymax0`:
-
-```sh
-TRADER_KEY='owner mnemonic or private key' \
-EMS_KEY='agoric submit mnemonic' \
-AGORIC_NET=main \
-./packages/portfolio-deploy/scripts/grant-portfolio-delegation.ts \
-  --portfolio "$PORTFOLIO_ID" \
-  --account-holder "$AGENT_ADDRESS" \
-  --chain-id 1 \
-  --contract ymax0
-```

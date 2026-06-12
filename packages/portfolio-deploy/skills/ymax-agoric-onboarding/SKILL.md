@@ -48,3 +48,4 @@ Help the user create a YMax portfolio and authorize an AI agent to manage its al
 
 ## Next Skill
 After onboarding completes, proceed to [ymax-agoric-allocation-delegate](../ymax-agoric-allocation-delegate/SKILL.md) for ongoing portfolio allocation updates.
+- Agoric CLI not found: if the `agoric` command is missing, you may need to clone `agoric/agoric-sdk` and install dependencies (for example, run `yarn` and `yarn install` in the SDK) so the `agoric` CLI is available. Also run `yarn build` to ensure client-utils is built.
