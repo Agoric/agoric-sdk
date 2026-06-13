@@ -200,7 +200,7 @@ export type Powers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
-  getInstrumentBlocks?: () => Promise<InstrumentBlocks>;
+  getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
   makeNonce: () => string;

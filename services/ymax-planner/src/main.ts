@@ -285,7 +285,7 @@ export const main = async (
     return JSON.stringify(objectMap(sets, s => [...s].sort()));
   };
   const getInstrumentBlocks = ydsClient
-    ? async (): Promise<InstrumentBlocks> => {
+    ? async (): Promise<InstrumentBlocks | undefined> => {
         const resp = await ydsClient.get('instruments?includeAll=true').json();
         const instruments = (resp as any).data as YdsInstrument[];
         const instrumentBlocks = calculateInstrumentBlocks(instruments);
@@ -296,7 +296,8 @@ export const main = async (
         }
         lastInstrumentBlocksString = newBlocksString;
 
-        return instrumentBlocks;
+        // TODO(AGO-550): return instrumentBlocks;
+        return undefined;
       }
     : undefined;
 
