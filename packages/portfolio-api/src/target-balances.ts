@@ -47,6 +47,10 @@ export type ComputeTargetBalancesOptions<
    * target sink is unavailable or suppressed.
    */
   depositFromChain?: SupportedChain;
+  instrumentBlocks?: {
+    noDepositInstruments: Set<AssetPlaceRef>;
+    noWithdrawInstruments: Set<AssetPlaceRef>;
+  };
 };
 
 type PlaceRecord = {
@@ -156,7 +160,10 @@ export const computeTargetBalances = <
   targetAllocation = {},
   network,
   depositFromChain,
+  instrumentBlocks,
 }: ComputeTargetBalancesOptions<C, T>): Partial<Record<C | T, NatAmount>> => {
+  const { noDepositInstruments, noWithdrawInstruments } =
+    instrumentBlocks ?? {};
   const currentValues = objectMap(
     currentBalances as Record<C, NatAmount>,
     amount => amount.value,
@@ -204,14 +211,23 @@ export const computeTargetBalances = <
     weight: NatValue = 0n,
   ): DraftRecord => {
     const placeData = getPlaceData(place, network);
+    const { blockDepositReason, blockWithdrawReason } = placeData.pool ?? {};
     return {
       place,
       chain: placeData.chain,
       weight,
       current: getOwn(currentValues, place) ?? 0n,
-      blockDeposit: !!placeData.pool?.blockDepositReason,
-      blockWithdraw: !!placeData.pool?.blockWithdrawReason,
       deltaSoftMin: placeData.chain.deltaSoftMin ?? DEFAULT_DELTA_SOFT_MIN,
+      // `network` can force an instrument to be blocked or unblocked, but
+      // otherwise it's based upon dynamic status.
+      blockDeposit:
+        blockDepositReason !== undefined
+          ? !!blockDepositReason
+          : !!noDepositInstruments?.has(place),
+      blockWithdraw:
+        blockWithdrawReason !== undefined
+          ? !!blockWithdrawReason
+          : !!noWithdrawInstruments?.has(place),
 
       target: 0n,
       delta: 0n,
