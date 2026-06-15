@@ -62,7 +62,6 @@
     "@cosmjs/tendermint-rpc@npm:0.32.3": "npm:^0.36.0",
     "@cosmology/ast@npm:2.2.0": "patch:@cosmology/ast@npm%3A2.2.0#~/.yarn/patches/@cosmology-ast-npm-2.2.0-40b2669a5e.patch",
     "@endo/bundle-source": "patch:@endo/bundle-source@npm%3A4.3.2#~/.yarn/patches/@endo-bundle-source-npm-4.3.2-fc66574e44.patch",
-    "@endo/compartment-mapper": "patch:@endo/compartment-mapper@npm%3A2.3.0#~/.yarn/patches/@endo-compartment-mapper-npm-2.3.0-29c504f4c7.patch",
     "@graphql-codegen/visitor-plugin-common@npm:^6.1.0": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.1.0#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.1.0-c6f558d634.patch",
     "@graphql-codegen/visitor-plugin-common@npm:^6.2.2": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch",
     "@graphql-codegen/visitor-plugin-common@npm:2.13.8": "patch:@graphql-codegen/visitor-plugin-common@npm%3A6.2.2#~/.yarn/patches/@graphql-codegen-visitor-plugin-common-npm-6.2.2-1dfc1601b5.patch",
