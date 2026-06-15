@@ -1,0 +1,58 @@
+diff --git a/src/digest.js b/src/digest.js
+index 5ffa1207e8161b321600a73169933d3448dbb2d2..09db2b1f29aab45a5a47c9cba539e6d0f934ee52 100644
+--- a/src/digest.js
++++ b/src/digest.js
+@@ -179,21 +179,18 @@ const translateCompartmentMap = (
+               location,
+               parser,
+               ...(sha512 !== undefined && { sha512 }),
+-              __createdBy: 'digest',
+             };
+           } else if (isExitModuleSource(source)) {
+             const { exit } = source;
+             /** @type {ExitModuleConfiguration} */
+             modules[name] = {
+               exit,
+-              __createdBy: 'digest',
+             };
+           } else if (isErrorModuleSource(source)) {
+             const { deferredError } = source;
+             /** @type {ErrorModuleConfiguration} */
+             modules[name] = {
+               deferredError,
+-              __createdBy: 'digest',
+             };
+           } else {
+             throw new TypeError(
+diff --git a/src/import-hook.js b/src/import-hook.js
+index fb3c040af342822c5b9f3ee4efd76f221d278004..9d67c9041ef73027d05de4520f7935e49b6fbeb2 100644
+--- a/src/import-hook.js
++++ b/src/import-hook.js
+@@ -459,7 +459,6 @@ function* chooseModuleDescriptor(
+           retained: true,
+           module: candidateSpecifier,
+           compartment: packageLocation,
+-          __createdBy: 'import-hook',
+         };
+       }
+       /** @type {StaticModuleType} */
+diff --git a/src/link.js b/src/link.js
+index a880bf0e735442e26f082ea661c2f657540e4468..871cbd7ae922e4fa33546c53418f745b0cd883c7 100644
+--- a/src/link.js
++++ b/src/link.js
+@@ -240,7 +240,6 @@ const makeModuleMapHook = (
+           retained: true,
+           compartment: targetCompartmentName,
+           module: resolvedPath,
+-          __createdBy: 'link-pattern',
+         };
+ 
+         // Policy enforcement for pattern-matched modules
+@@ -309,7 +308,6 @@ const makeModuleMapHook = (
+           retained: true,
+           compartment: foreignCompartmentName,
+           module: foreignModuleSpecifier,
+-          __createdBy: 'link',
+         };
+         // actual module descriptor
+         return {
