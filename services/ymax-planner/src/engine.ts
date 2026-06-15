@@ -370,6 +370,17 @@ export const shouldRunRebalance = ({
   (!atBlockHeight || atBlockHeight <= rebalanceExpiredHeight);
 harden(shouldRunRebalance);
 
+export const shouldRunRebalanceScanner = ({
+  hasGasPrices,
+  gasPricesChanged,
+  portfolioEventCount,
+}: {
+  hasGasPrices: boolean;
+  gasPricesChanged: boolean;
+  portfolioEventCount: number;
+}) => hasGasPrices && (gasPricesChanged || portfolioEventCount > 0);
+harden(shouldRunRebalanceScanner);
+
 const fingerprintPortfolioState = (
   status: StatusFor['portfolio'],
   activeFlowKeys: Set<string>,
@@ -1332,6 +1343,25 @@ export const startEngine = async (
               },
             ),
           ),
+      powers.rebalanceScanner &&
+        shouldRunRebalanceScanner({
+          hasGasPrices: !!gasPrices,
+          gasPricesChanged,
+          portfolioEventCount: portfolioEvents.length,
+        }) &&
+        gasPrices &&
+        scanRebalanceOnce(
+          {
+            ...processPortfolioPowers,
+            instrumentBlocks,
+            queryPortfolios: powers.rebalanceScanner.queryPortfolios,
+            gasPrices,
+            now: () => blockTimeMs,
+          },
+          powers.rebalanceScanner.rebalanceScanPeriodS,
+        ).catch(err => {
+          console.error('🚨 rebalance scanner iteration failed', err);
+        }),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
 

@@ -51,6 +51,7 @@ import {
   makeVstorageEvent,
   pickBalance,
   processPortfolioEvents,
+  shouldRunRebalanceScanner,
 } from '../src/engine.ts';
 import type {
   Powers,
@@ -556,6 +557,50 @@ test('makeSleepQueue resolves ready sleeps in wake time order', async t => {
   await p20;
   t.deepEqual(settled, ['5', '10', '15', 'rejected:engine terminated']);
   t.is(queue.size, 0);
+});
+
+test('shouldRunRebalanceScanner gates on gas prices and activity', t => {
+  t.false(
+    shouldRunRebalanceScanner({
+      hasGasPrices: false,
+      gasPricesChanged: true,
+      portfolioEventCount: 0,
+    }),
+  );
+  t.false(
+    shouldRunRebalanceScanner({
+      hasGasPrices: true,
+      gasPricesChanged: false,
+      portfolioEventCount: 0,
+    }),
+  );
+  t.true(
+    shouldRunRebalanceScanner({
+      hasGasPrices: true,
+  t.false(
+    shouldRunRebalance({
+      ...ready,
+      enabledAutoFeatures: undefined,
+    }),
+  );
+  t.false(
+    shouldRunRebalance({
+      ...ready,
+      enabledAutoFeatures: { rebalance: false },
+    }),
+  );
+  t.true(shouldRunRebalance(ready));
+      gasPricesChanged: true,
+      portfolioEventCount: 0,
+    }),
+  );
+  t.true(
+    shouldRunRebalanceScanner({
+      hasGasPrices: true,
+      gasPricesChanged: false,
+      portfolioEventCount: 1,
+    }),
+  );
 });
 
 // #region processPortfolioEvents

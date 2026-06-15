@@ -8,11 +8,9 @@ import { CaipChainIds } from '@agoric/portfolio-api/src/constants.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 
-import type { GasStateResponse } from '../src/rebalance-scanner.ts';
-import {
-  filterGasFavorablePlan,
-  scanRebalanceOnce,
-} from '../src/rebalance-scanner.ts';
+import type { GasStateResponse } from '../src/gas-prices.ts';
+import { filterGasFavorablePlan } from '../src/gas-prices.ts';
+import { scanRebalanceOnce } from '../src/rebalance-scanner.ts';
 import {
   createMockEnginePowers,
   makeNotImplemented,
@@ -233,8 +231,7 @@ test('scanRebalanceOnce logs per-portfolio errors and continues', async t => {
           status: baseStatus,
         },
       ],
-      queryGasPrices: async () => makeGasState({}),
-      sleep: async () => {},
+      gasPrices: makeGasState({}),
       now: () => 1_000_000_000_000,
     },
     60,
