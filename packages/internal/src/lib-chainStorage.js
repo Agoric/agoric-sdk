@@ -48,6 +48,7 @@ export const StreamCellShape = harden({
   values: M.array(),
 });
 
+// eslint-disable-next-line @agoric/group-jsdoc-imports, @agoric/no-typedef-import -- top level import would conflict
 /**
  * This represents a node in an IAVL tree.
  *
@@ -58,12 +59,11 @@ export const StreamCellShape = harden({
  * identifies children by restricted ASCII name and is associated with arbitrary
  * string-valued data for each node, defaulting to the empty string.
  *
- * @typedef {import('@endo/pass-style').RemotableObject & {
- *   setValue: (data: string) => Promise<void>;
- *   getPath: () => string;
- *   getStoreKey: () => Promise<VStorageKey>;
- *   makeChildNode: (subPath: string, options?: { sequence?: boolean }) => StorageNode;
- * }} StorageNode
+ * Defined as an interface in ./types.ts so its per-property documentation
+ * survives declaration emit. Re-exported here as an alias so existing
+ * `from '@agoric/internal/src/lib-chainStorage.js'` importers keep working.
+ *
+ * @typedef {import('./types.js').StorageNode} StorageNode
  */
 
 const ChainStorageNodeI = M.interface('StorageNode', {

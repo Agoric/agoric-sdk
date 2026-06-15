@@ -4,6 +4,7 @@ import type { Primitive, RemotableObject } from '@endo/pass-style';
 import type { CastedPattern } from '@endo/patterns';
 
 import type { Callable } from './ses-utils.js';
+import type { VStorageKey } from './lib-chainStorage.js';
 
 /**
  * A mapping of a tuple type (as from `Parameters<...>`) into a corresponding
@@ -131,3 +132,26 @@ export type ERemote<Primary, Local = DataOnly<Primary>> = ERef<
 export type TypedPattern<T> = CastedPattern<T>;
 
 export type { TraceLogger } from './debug.js';
+
+/**
+ * This represents a node in an IAVL tree.
+ *
+ * The active implementation is x/vstorage, an Agoric extension of the Cosmos
+ * SDK.
+ *
+ * Vstorage is a hierarchical externally-reachable storage structure that
+ * identifies children by restricted ASCII name and is associated with arbitrary
+ * string-valued data for each node, defaulting to the empty string.
+ */
+export interface StorageNode extends RemotableObject {
+  /** publishes some data */
+  setValue: (data: string) => Promise<void>;
+  /** the chain storage path at which the node was constructed */
+  getPath: () => string;
+  /** @deprecated use getPath */
+  getStoreKey: () => Promise<VStorageKey>;
+  makeChildNode: (
+    subPath: string,
+    options?: { sequence?: boolean },
+  ) => StorageNode;
+}
