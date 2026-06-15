@@ -1,5 +1,5 @@
 /** @file start a repl with ymax wallet-admin bindings */
-import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { once } from 'node:events';
 import repl from 'node:repl';

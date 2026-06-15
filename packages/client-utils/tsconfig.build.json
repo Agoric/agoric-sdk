@@ -6,6 +6,9 @@
     ],
     "compilerOptions": {
         "noEmit": false,
+        // Unlike other packages we emit JS (emitDeclarationOnly is false). Since
+        // sources inherit allowImportingTsExtensions, emitting requires this (TS5096).
+        "rewriteRelativeImportExtensions": true,
         "rootDir": "src",
         "outDir": "dist",
         "emitDeclarationOnly": false,

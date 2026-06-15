@@ -1,5 +1,5 @@
 /** @file install and start a ymax contract via ymaxControl */
-import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { Fail } from '@endo/errors';
 import { parseArgs } from 'node:util';

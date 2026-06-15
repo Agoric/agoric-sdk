@@ -33,7 +33,7 @@ export * from './startPSM.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Issuer, IssuerKit} from '@agoric/ertp';
  * @typedef {typeof import('@agoric/zoe/src/contracts/scaledPriceAuthority.js').prepare} prepare
- * @import {BootstrapPowers} from '@agoric/vats/src/core/types.ts';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
  */
 

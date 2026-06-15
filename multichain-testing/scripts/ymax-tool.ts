@@ -11,16 +11,16 @@
  */
 import '@endo/init';
 
-import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
+import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
   TargetAllocationShape,
   type OfferArgsFor,
   type PortfolioPublishedPathTypes,
   type ProposalType,
   type TargetAllocation,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/plan-transfers.ts';
-import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
+import { makePortfolioSteps } from '@aglocal/portfolio-contract/tools/plan-transfers.js';
+import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import {
   axelarConfig as axelarConfigMainnet,
   axelarConfigTestnet,
@@ -52,7 +52,7 @@ import {
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 import {
   AxelarChain,
   YieldProtocol,

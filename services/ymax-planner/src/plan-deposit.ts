@@ -11,7 +11,7 @@ import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
 import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
-import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { objectMetaMap, typedEntries } from '@agoric/internal';

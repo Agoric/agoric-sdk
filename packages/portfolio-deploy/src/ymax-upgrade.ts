@@ -1,6 +1,6 @@
 /** @file upgrade ymax using ymaxControl */
 /* eslint-disable @jessie.js/safe-await-separator */
-import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { makeTendermint34Client } from '@agoric/client-utils';
 import type { DeliverTxResponse } from '@cosmjs/stargate';

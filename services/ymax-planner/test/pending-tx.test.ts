@@ -11,8 +11,8 @@ import {
 import type {
   PendingTx,
   TxId,
-} from '@aglocal/portfolio-contract/src/resolver/types.ts';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+} from '@aglocal/portfolio-contract/src/resolver/types.js';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
 import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';

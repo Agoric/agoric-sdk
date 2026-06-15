@@ -16,7 +16,7 @@ import {
 import type {
   PortfolioPublishedPathTypes,
   TargetAllocation,
-} from '@aglocal/portfolio-contract/src/type-guards.ts';
+} from '@aglocal/portfolio-contract/src/type-guards.js';
 import {
   readableSteps,
   readableOrder,
@@ -28,7 +28,7 @@ import type {
   PoolKey,
   PoolSpec,
 } from '@agoric/portfolio-api/src/network/network-spec.js';
-import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';

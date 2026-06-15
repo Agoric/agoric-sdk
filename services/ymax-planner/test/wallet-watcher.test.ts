@@ -3,7 +3,7 @@ import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
 import { objectMap } from '@endo/patterns';
 import type { WebSocketProvider } from 'ethers';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import { createMockPendingTxOpts } from './mocks.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';

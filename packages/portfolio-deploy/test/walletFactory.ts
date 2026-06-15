@@ -2,7 +2,7 @@ import { makeWalletFactoryContext as makeWalletFactoryContextShared } from '@agl
 import type { WalletFactoryDriver } from '@aglocal/boot/tools/drivers.js';
 import type { SwingsetTestKit } from '@aglocal/boot/tools/supports.js';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
-import type { PortfolioPublishedPathTypes } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { PortfolioPublishedPathTypes } from '@aglocal/portfolio-contract/src/type-guards.js';
 
 type PortfolioSwingsetTestKit = SwingsetTestKit<PortfolioPublishedPathTypes>;
 type PortfolioWalletFactoryContext = PortfolioSwingsetTestKit & {

@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events';
 import { ethers } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
 
-import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { TxId } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -20,7 +20,7 @@ import {
   toFunctionSelector,
 } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
-import type { EvmAddress } from '@agoric/fast-usdc/src/types.ts';
+import type { EvmAddress } from '@agoric/fast-usdc/src/types.js';
 import type { Powers as EnginePowers } from '../src/engine.ts';
 import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';

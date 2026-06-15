@@ -5,8 +5,8 @@ import {
   insistManagerType,
   makeSwingsetHarness,
 } from '@aglocal/boot/tools/supports.js';
-import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.ts';
-import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.ts';
+import { makeProposalShapes } from '@aglocal/portfolio-contract/src/type-guards.js';
+import { makeUSDNIBCTraffic } from '@aglocal/portfolio-contract/test/mocks.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeClientMarshaller } from '@agoric/client-utils';
 import { AmountMath, type Brand } from '@agoric/ertp';
@@ -20,7 +20,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 import {
   getYmaxWitness,
   type TargetAllocation,

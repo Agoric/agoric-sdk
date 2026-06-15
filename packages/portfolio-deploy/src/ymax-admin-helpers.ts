@@ -1,5 +1,5 @@
 /** @file shared helpers for ymax wallet-admin modules */
-import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import type { ContractControl } from '@agoric/deploy-script-support/src/control/contract-control.contract.js';
 import { makeTracer } from '@agoric/internal';
 import {
