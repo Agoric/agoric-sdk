@@ -18,7 +18,7 @@ import { name, permit } from './portfolio.contract.permit.js';
  * @import { OrchestrationPowersWithStorage } from './orch.start.types.ts';
  * @import {PortfolioBootPowers} from './portfolio-start.type.ts';
  * @import {AxelarChainConfigMap} from './axelar-configs.js';
- * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
+ * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.js';
  * @import { TypedPattern, Remote } from '@agoric/internal';
  * @import { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
  * @import { Bech32Address } from '@agoric/orchestration';

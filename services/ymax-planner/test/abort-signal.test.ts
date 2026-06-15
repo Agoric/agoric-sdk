@@ -1,7 +1,7 @@
 /* eslint-disable no-plusplus */
 import test from 'ava';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
+import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.js';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { createMockPendingTxOpts } from './mocks.ts';
 

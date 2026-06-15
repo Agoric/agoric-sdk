@@ -1,5 +1,5 @@
 /** @file submit an empty rebalance plan for a portfolio */
-import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
+import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.js';
 import { parseArgs } from 'node:util';
 import type { RunTools } from './wallet-admin-types.ts';
 

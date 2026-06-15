@@ -5,8 +5,8 @@ import { startScaledPriceAuthority } from './addAssetToVault.js';
 import { scaledPriceFeedName } from './utils.js';
 
 /**
- * @import {BootstrapPowers} from '@agoric/vats/src/core/types.ts';
- * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.ts';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
  * @import {EconomyBootstrapPowers} from './core-proposal.js';
  * @import {InterchainAssetOptions} from './addAssetToVault.js';
  */

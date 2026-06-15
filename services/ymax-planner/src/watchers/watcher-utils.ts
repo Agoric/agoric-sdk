@@ -1,7 +1,7 @@
 import type { TransactionReceipt, Filter, Log } from 'ethers';
 import { Interface, AbiCoder, getAddress, keccak256 } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
-import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
+import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { decodeAbiParameters } from 'viem';
 import type { EvmRpc } from '../evm-scanner.ts';

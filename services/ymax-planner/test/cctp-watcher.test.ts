@@ -1,6 +1,6 @@
 import test from 'ava';
 import { id, toBeHex, zeroPadValue } from 'ethers';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.js';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import { makeKVStoreFromMap } from '@agoric/internal/src/kv-store.js';
 import { watchCctpTransfer } from '../src/watchers/cctp-watcher.ts';

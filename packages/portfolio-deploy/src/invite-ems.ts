@@ -1,7 +1,7 @@
 /**
  * @file for use with wallet-admin
  */
-import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { start as YMaxStart } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import { makeTracer } from '@agoric/internal';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { StartedInstanceKit as ZStarted } from '@agoric/zoe/src/zoeService/utils.js';

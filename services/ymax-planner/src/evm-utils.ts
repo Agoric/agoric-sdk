@@ -1,6 +1,6 @@
 import { Contract } from 'ethers';
 import type { WebSocketProvider } from 'ethers';
-import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { CaipChainId } from '@agoric/orchestration';
 import type {
   InterChainAccountRef,
@@ -14,7 +14,7 @@ import { Fail, q } from '@endo/errors';
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { fromUniqueEntries, partialMap, typedEntries } from '@agoric/internal';
 import type { axelarConfig } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
-import type { EVMContractAddresses } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
+import type { EVMContractAddresses } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import type { EvmChain } from './pending-tx-manager.ts';
 
 /**
