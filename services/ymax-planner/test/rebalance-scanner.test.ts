@@ -8,6 +8,7 @@ import { CaipChainIds } from '@agoric/portfolio-api/src/constants.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 
+import type { GasStateResponse } from '../src/rebalance-scanner.ts';
 import {
   filterGasFavorablePlan,
   scanRebalanceOnce,
@@ -22,6 +23,33 @@ import {
 const brand = Far('USDC brand') as unknown as Brand<'nat'>;
 const feeBrand = Far('Fee brand') as unknown as Brand<'nat'>;
 const makeAmount = (value: bigint) => AmountMath.make(brand, value);
+const makeGasState = (
+  prices: Record<string, { current: number; p30dP50: number }>,
+): GasStateResponse => ({
+  message: 'Gas data retrieved successfully',
+  timestamp: '2026-06-12T00:00:00.000Z',
+  data: Object.entries(prices).map(([chainName, price], index) => ({
+    caip2Id: `eip155:${index + 1}`,
+    chainName,
+    gasDenom: 'ETH',
+    gasDenomScale: 9,
+    current: {
+      latestScaledGasDenomPerGasUnit: price.current,
+      takenAtSec: 1_797_000_000,
+    },
+    windows: [
+      {
+        window: 'P30D',
+        until: '2026-06-12T00:00:00.000Z',
+        mean: price.p30dP50,
+        p50: price.p30dP50,
+        p90: price.p30dP50,
+        sampleCount: 1,
+      },
+    ],
+    recent: [],
+  })),
+});
 
 test('filterGasFavorablePlan removes expensive steps and dependents', t => {
   const plan: FundsFlowPlan = {
@@ -51,11 +79,14 @@ test('filterGasFavorablePlan removes expensive steps and dependents', t => {
     ],
   };
 
-  const filtered = filterGasFavorablePlan(plan, {
-    Ethereum: 1_000n,
-    Arbitrum: 1n,
-    Base: 1n,
-  });
+  const filtered = filterGasFavorablePlan(
+    plan,
+    makeGasState({
+      Ethereum: { current: 151, p30dP50: 100 },
+      Arbitrum: { current: 100, p30dP50: 100 },
+      Base: { current: 100, p30dP50: 100 },
+    }),
+  );
 
   t.deepEqual(filtered, { flow: [], order: [] });
 });
@@ -85,11 +116,14 @@ test('filterGasFavorablePlan compacts retained order indexes', t => {
     order: [[2, [1]]],
   };
 
-  const filtered = filterGasFavorablePlan(plan, {
-    Ethereum: 1_000n,
-    Base: 1n,
-    Optimism: 1n,
-  });
+  const filtered = filterGasFavorablePlan(
+    plan,
+    makeGasState({
+      Ethereum: { current: 151, p30dP50: 100 },
+      Base: { current: 100, p30dP50: 100 },
+      Optimism: { current: 100, p30dP50: 100 },
+    }),
+  );
 
   t.deepEqual(filtered, {
     flow: [
@@ -107,6 +141,43 @@ test('filterGasFavorablePlan compacts retained order indexes', t => {
       },
     ],
     order: [[1, [0]]],
+  });
+});
+
+test('filterGasFavorablePlan removes steps at gas favorability boundary', t => {
+  const plan: FundsFlowPlan = {
+    flow: [
+      {
+        src: '@agoric',
+        dest: '@Ethereum',
+        amount: makeAmount(1_000n),
+      } as any,
+      {
+        src: '@agoric',
+        dest: '@Base',
+        amount: makeAmount(1_000n),
+      } as any,
+    ],
+    order: [],
+  };
+
+  const filtered = filterGasFavorablePlan(
+    plan,
+    makeGasState({
+      Ethereum: { current: 150, p30dP50: 100 },
+      Base: { current: 149, p30dP50: 100 },
+    }),
+  );
+
+  t.deepEqual(filtered, {
+    flow: [
+      {
+        src: '@agoric',
+        dest: '@Base',
+        amount: makeAmount(1_000n),
+      },
+    ],
+    order: [],
   });
 });
 
@@ -162,7 +233,7 @@ test('scanRebalanceOnce logs per-portfolio errors and continues', async t => {
           status: baseStatus,
         },
       ],
-      queryGasPrices: async () => 0n,
+      queryGasPrices: async () => makeGasState({}),
       sleep: async () => {},
       now: () => 1_000_000_000_000,
     },

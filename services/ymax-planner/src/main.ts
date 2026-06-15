@@ -43,7 +43,10 @@ import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-block
 import { startEngine } from './engine.ts';
 import { calculateInstrumentBlocks } from './instrument-status.ts';
 import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
-import type { RebalanceScannerPortfolio } from './rebalance-scanner.ts';
+import type {
+  GasStateResponse,
+  RebalanceScannerPortfolio,
+} from './rebalance-scanner.ts';
 import {
   createEVMContext,
   prepareAbortController,
@@ -56,6 +59,9 @@ import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
 import { makeNowISO } from './utils.ts';
+
+/** Maximum age for cached gas state in milliseconds */
+const GAS_STATE_MAX_AGE_MS = 60_000;
 
 const { fromEntries, entries } = Object;
 
@@ -115,6 +121,35 @@ const makeYdsJsonGetter =
     }
     return response.json();
   };
+
+const parseChainsGasResponse = (data: any): GasStateResponse => {
+  // TODO: actually validate the shape of the response, and throw if it's not as
+  // expected. For now we just want to avoid crashing the whole planner if YDS
+  // returns something unexpected.
+  return data as GasStateResponse;
+};
+
+const makeCachedYdsGasGetter = ({
+  now,
+  ydsGetter,
+}: {
+  now: () => number;
+  ydsGetter: ReturnType<typeof makeYdsJsonGetter>;
+}) => {
+  let cached: { gasState: GasStateResponse; fetchedAtMs: number } | undefined;
+  return async (): Promise<GasStateResponse> => {
+    await null;
+    if (!cached || now() - cached.fetchedAtMs >= GAS_STATE_MAX_AGE_MS) {
+      const chainsGasResponse = await ydsGetter('/chains/gas');
+      const gasState = parseChainsGasResponse(chainsGasResponse);
+      cached = {
+        gasState,
+        fetchedAtMs: now(),
+      };
+    }
+    return cached.gasState;
+  };
+};
 
 const parseYdsPortfolios = (data: any): RebalanceScannerPortfolio[] => {
   const portfolios = Array.isArray(data) ? data : data?.portfolios;
@@ -368,6 +403,8 @@ export const main = async (
           ydsApiKey: config.yds.apiKey,
         })
       : undefined;
+  const queryGasPrices =
+    ydsGetter && makeCachedYdsGasGetter({ now, ydsGetter });
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -406,22 +443,23 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
-    ...(ydsGetter && {
-      rebalanceScanner: {
-        rebalanceScanPeriodS: config.rebalanceScanPeriodS,
-        queryPortfolios: async (notRebalancedSince: number) =>
-          parseYdsPortfolios(
-            await ydsGetter(
+    ...(ydsGetter &&
+      queryGasPrices && {
+        rebalanceScanner: {
+          rebalanceScanPeriodS: config.rebalanceScanPeriodS,
+          queryPortfolios: async (notRebalancedSince: number) => {
+            const portfoliosResponse = await ydsGetter(
               '/portfolios',
               new URLSearchParams({
                 feature: 'auto-rebalance',
                 notRebalancedSince: String(notRebalancedSince),
               }),
-            ),
-          ),
-        queryGasPrices: async () => ydsGetter('/gas-prices'),
-      },
-    }),
+            );
+            return parseYdsPortfolios(portfoliosResponse);
+          },
+          queryGasPrices,
+        },
+      }),
   };
 
   await withDeferredCleanup(async addCleanup => {

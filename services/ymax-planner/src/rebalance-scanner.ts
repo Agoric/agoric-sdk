@@ -7,6 +7,7 @@ import type {
   MovementDesc,
   PortfolioKey,
 } from '@agoric/portfolio-api';
+import { chainOf } from '@agoric/portfolio-api/src/places.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import { portfolioIdFromKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
@@ -15,16 +16,34 @@ import { makePortfolioFlowPlan, type StartFlowPowers } from './engine.ts';
 
 export const DEFAULT_REBALANCE_SCAN_PERIOD_S = 7 * 24 * 60 * 60;
 
-type StepWithGasEstimate = MovementDesc & {
-  gasEstimate?: bigint | number | string;
+export type ChainGasState = {
+  caip2Id: string;
+  chainName: string;
+  gasDenom: string;
+  gasDenomScale: number;
+  current: {
+    latestScaledGasDenomPerGasUnit: number;
+    takenAtSec: number;
+  };
+  windows: Array<{
+    window: string;
+    until: string;
+    mean: number;
+    p50: number;
+    p90: number;
+    sampleCount: number;
+  }>;
+  recent: Array<{
+    takenAtSec: number;
+    scaledGasDenomPerGasUnit: number;
+  }>;
 };
 
-export type GasPrices =
-  | bigint
-  | number
-  | string
-  | Partial<Record<string, bigint | number | string>>
-  | { gasPrices: GasPrices };
+export type GasStateResponse = {
+  message: 'Gas data retrieved successfully';
+  data: ChainGasState[];
+  timestamp: string;
+};
 
 export type RebalanceScannerPortfolio = {
   portfolioKey: PortfolioKey;
@@ -35,59 +54,41 @@ export type RebalanceScannerPowers = StartFlowPowers & {
   queryPortfolios: (
     notRebalancedSince: number,
   ) => Promise<RebalanceScannerPortfolio[]>;
-  queryGasPrices: () => Promise<GasPrices>;
+  queryGasPrices: () => Promise<GasStateResponse>;
   sleep: (seconds: number) => Promise<void>;
   now: () => number;
 };
 
 const inspectOpts: InspectOptions = { depth: 4 };
+const GAS_STATS_WINDOW = 'P30D';
 
-const toBigint = (value: bigint | number | string | undefined): bigint => {
-  if (value === undefined) return 0n;
-  if (typeof value === 'bigint') return value;
-  if (typeof value === 'number') return BigInt(Math.trunc(value));
-  return BigInt(value);
+const chainNamesForStep = ({ src, dest }: MovementDesc): string[] => {
+  const chainNames = [src, dest]
+    .map(place => chainOf(place))
+    .filter(chainName => chainName !== 'agoric' && chainName !== 'noble');
+  return [...new Set(chainNames)];
 };
 
-const placeGasKeys = ({ src, dest }: MovementDesc) =>
-  [src, dest]
-    .map(place =>
-      String(place)
-        .replace(/^[+@<-]+/, '')
-        .replace(/[>]+$/, ''),
-    )
-    .filter(Boolean);
+const gasFavorableForStep = (
+  gasStateByChainName: Map<string, ChainGasState>,
+  step: MovementDesc,
+): boolean => {
+  const chainNames = chainNamesForStep(step);
+  if (chainNames.length === 0) return true;
 
-const gasPriceForStep = (gasPrices: GasPrices, step: MovementDesc): bigint => {
-  if (
-    typeof gasPrices === 'object' &&
-    gasPrices !== null &&
-    'gasPrices' in gasPrices
-  ) {
-    const nested = (gasPrices as { gasPrices: GasPrices }).gasPrices;
-    return gasPriceForStep(nested, step);
+  for (const chainName of chainNames) {
+    const gasState = gasStateByChainName.get(chainName);
+    if (!gasState) continue;
+    const p30d = gasState.windows.find(
+      ({ window }) => window === GAS_STATS_WINDOW,
+    );
+    return (
+      !!p30d &&
+      gasState.current.latestScaledGasDenomPerGasUnit * 2 < p30d.p50 * 3
+    );
   }
-  if (
-    typeof gasPrices === 'bigint' ||
-    typeof gasPrices === 'number' ||
-    typeof gasPrices === 'string'
-  ) {
-    return toBigint(gasPrices);
-  }
-  for (const key of placeGasKeys(step)) {
-    const price = gasPrices[key];
-    if (price !== undefined) return toBigint(price);
-  }
-  return 0n;
+  return false;
 };
-
-const gasEstimateForStep = (step: StepWithGasEstimate): bigint =>
-  toBigint(
-    step.gasEstimate ??
-      step.fee?.value ??
-      step.detail?.gasEstimate ??
-      step.detail?.gas,
-  );
 
 const dependenciesFor = (plan: FundsFlowPlan, stepIndex: number): number[] => {
   if (!plan.order) {
@@ -99,13 +100,17 @@ const dependenciesFor = (plan: FundsFlowPlan, stepIndex: number): number[] => {
 
 export const filterGasFavorablePlan = (
   plan: FundsFlowPlan,
-  gasPrices: GasPrices,
+  gasState: GasStateResponse,
 ): FundsFlowPlan => {
   const removed = new Set<number>();
+  const gasStateByChainName = new Map(
+    gasState.data.map(chainGasState => [
+      chainGasState.chainName,
+      chainGasState,
+    ]),
+  );
   for (let i = 0; i < plan.flow.length; i += 1) {
-    const step = plan.flow[i] as StepWithGasEstimate;
-    const gasCost = gasEstimateForStep(step) * gasPriceForStep(gasPrices, step);
-    if (gasCost >= step.amount.value / 2n) {
+    if (!gasFavorableForStep(gasStateByChainName, plan.flow[i])) {
       removed.add(i);
     }
   }
@@ -162,7 +167,6 @@ export const scanRebalanceOnce = async (
   const portfolios = await queryPortfolios(notRebalancedSince);
   if (portfolios.length === 0) return;
 
-  const gasPrices = await queryGasPrices();
   for (const { portfolioKey, status } of portfolios) {
     const logPrefix = `[rebalance-scanner.${portfolioKey}]`;
     try {
@@ -178,7 +182,8 @@ export const scanRebalanceOnce = async (
           isDryRun,
         },
       );
-      const filteredPlan = filterGasFavorablePlan(plan, gasPrices);
+      const gasState = await queryGasPrices();
+      const filteredPlan = filterGasFavorablePlan(plan, gasState);
       if (filteredPlan.flow.length === 0) {
         console.warn(logPrefix, 'skipping empty gas-favorable plan');
         continue;
