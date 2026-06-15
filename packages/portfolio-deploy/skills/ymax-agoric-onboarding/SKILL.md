@@ -3,7 +3,7 @@ name: ymax-agoric-onboarding
 description: |-
   Onboard a user to the alpha YMax experience at https://main0.ymax.app/ — the cross-chain DeFi command center that moves, allocates, and rebalances real USDC portfolios with one signature across Ethereum Mainnet, Arbitrum, Base, Optimism, and Avalanche. Currently integrates 3 blue-chip lending protocols: Aave, Compound, and Morpho. Non-custodial: funds never enter a shared pool; the user signs once and multi-block orchestration handles bridging, swaps, and deposits.
 
-  Use when the user wants to create an alpha YMax portfolio and delegate capital allocation to an autonomous AI agent — from creating the portfolio to granting the agent a limited mandate.
+  Use when the user wants to create an alpha YMax portfolio and delegate capital allocation to an autonomous AI agent — from creating the portfolio (if they don't already have one) to granting the agent a limited mandate.
 
   Triggers: "set up ymax", "yield", "create portfolio", "delegate to agent", "onboard to ymax", "authorize rebalancing", "grant delegation"
 ---
@@ -14,6 +14,11 @@ description: |-
 
 ## Objective
 Help the user create a YMax portfolio and authorize an AI agent to manage its allocation.
+
+## Roles
+
+- The AI agent can autonomously execute transactions on the Agoric blockchain. It must create its own secret key and keep it confidential. will be responsible for allocating capital within the portfolio based on the user's instructions and risk profile.
+- The user is responsible for creating the YMax portfolio and providing the necessary information for the AI agent to manage it. The user is familiar with defi basics; in particular: signing transactions with an EVM wallet such as MetaMask.
 
 ## Guardrails
 - This onboarding uses real funds, not demo or test assets, and is scoped to Agoric `mainnet` only. Actual USDC allocations may move across Ethereum L1/L2 chains — Ethereum Mainnet, Arbitrum, Base, Optimism, and Avalanche — so make sure the user understands the financial risk.
