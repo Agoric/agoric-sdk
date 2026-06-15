@@ -11,7 +11,7 @@ import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import {
   getPermitWitnessTransferFromData,
   type TokenPermissions,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 import {
   getYmaxWitness,
   type TargetAllocation,

@@ -24,7 +24,7 @@ import {
   type getPermitBatchWitnessTransferFromData,
   makeWitness,
   TokenPermissionsComponents,
-} from '@agoric/orchestration/src/utils/permit2.ts';
+} from '@agoric/orchestration/src/utils/permit2.js';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 
 const YMAX_DOMAIN_NAME = 'Ymax';

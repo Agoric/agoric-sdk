@@ -1,10 +1,14 @@
 /**
  * @file entry point for orchestration's permit2 utils
  *
- * This file should eventually become a `.js` file once we can strip types from
- * `.ts` files and rewrite relative import specifiers in `.js` files.
+ * This barrel is a `.js` file (it declares no types of its own) so consumers can
+ * import `@agoric/orchestration/src/utils/permit2.js` and have it resolve to a
+ * real file even under plain Node — e.g. when a packed `@agoric/*` package's
+ * exports are verified/executed without a `.js`→`.ts` resolver.
  *
- * NPM consumers could use jsr.io to consume this in the meantime.
+ * The sub-modules keep heavy TypeScript generics, so they stay `.ts`; we
+ * re-export them with `.ts` specifiers, which resolve at type-check and at
+ * runtime (Node strips the types).
  */
 
 export * from './permit2/signatureTransfer.ts';
