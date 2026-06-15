@@ -104,7 +104,7 @@
     "rxjs@npm:^7.5.5": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch"
   },
   "dependenciesMeta": {
-    "better-sqlite3@10.1.0": {
+    "better-sqlite3@12.10.0": {
       "built": true
     },
     "dprint@0.53.0": {
@@ -115,7 +115,7 @@
     }
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "scripts": {
     "prepack-package": "scripts/packing/prepack-package.mjs",

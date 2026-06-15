@@ -29,7 +29,7 @@ per https://agents.md/
   - After any prepack run, clean generated artifacts and restore package trees with: `yarn lerna run --reject-cycles --concurrency 1 postpack`
 
 ## Coding Style & Naming Conventions
-- ESM by default; JS and TypeScript both used. Target Node ^20.9 or ^22.11.
+- ESM by default; JS and TypeScript both used. Target Node ^22.11.
 - dprint enforced (Prettier-compatible options include single quotes and trailing commas).
 - ESLint configured via `eslint.config.mjs` (includes AVA, TypeScript, JSDoc, and repository-specific rules).
 - Package names: publishable packages use `@agoric/*`; private/local packages use `@aglocal/*` (verify with `yarn lint:package-names`).

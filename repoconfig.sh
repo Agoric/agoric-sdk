@@ -1,6 +1,6 @@
 #! /bin/sh
 # shellcheck disable=SC2034
-NODEJS_VERSION=v20
+NODEJS_VERSION=v22
 GOLANG_VERSION=1.24.1
 GOLANG_DIR=golang/cosmos
 GOLANG_DAEMON=$GOLANG_DIR/build/agd
@@ -18,9 +18,8 @@ golang_version_check() {
 # nodejs_version_check $major $minor $patch $version
 nodejs_version_check() {
   # Keep synchronized with README.md section "Prerequisites".
-  [ "$1" -eq 20 ] && [ "$2" -ge 9 ] && return 0
   [ "$1" -eq 22 ] && [ "$2" -ge 11 ] && return 0
 
-  echo 1>&2 "need Node.js LTS version ^20.9 or ^22.11, found $4"
+  echo 1>&2 "need Node.js LTS version ^22.11, found $4"
   return 1
 }
