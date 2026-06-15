@@ -63,21 +63,23 @@ These files are never runtime imported as they are only linked through a `.d.ts`
 
 ## Import specifiers use `.js`
 
-Write `.js` in import specifiers. This holds whether the target is a `.js` file or a `.ts` file: for a `.ts` target with no `.js` twin, TypeScript and the dev-time loaders (esbuild, ava) resolve the `.js` specifier to the `.ts` file.
+**Cross-package (non-relative) specifiers are always `.js`, never `.ts`.** This holds whether the target is a `.js` file or a `.ts` file: for a `.ts` target with no `.js` twin, TypeScript and the dev-time loaders (esbuild, ava) resolve the `.js` specifier to the `.ts` file.
 
 ```js
 /** @import {PortfolioPublishedPathTypes} from '@aglocal/portfolio-contract/src/type-guards.js' */
 // resolves to type-guards.ts; no type-guards.js exists
 ```
 
-Two resolvers do **not** do that `.js`→`.ts` mapping: **plain Node** (it resolves the literal path) and the **Endo bundler** (which also can't parse `.ts`). So the extension has to match where the import is resolved:
+The reason `.ts` is banned across package boundaries: two resolvers do **not** do the `.js`→`.ts` mapping — **plain Node** (it resolves the literal path) and the **Endo bundler** (which also can't parse `.ts`) — and a cross-package import may be resolved by either. So the extension has to match every resolver that could see it:
 
 - **Type-only** (`import type`, `@import`): always `.js`. These are erased before anything runs, so only TypeScript ever resolves them.
 - **Value (runtime) imports**: also `.js`, but the target must be resolvable at runtime. Under a dev loader (tests, services, esbuild bundles) a `.js`→`.ts` map is fine. Under **plain Node** — verifying or executing a packed `@agoric/*` package's exports — or under Endo, the target must be a **real `.js` file**. A `.ts` module that needs cross-package value imports therefore exposes a `.js` barrel: e.g. `@agoric/orchestration/src/utils/permit2.js` is a `.js` file re-exporting its `.ts` implementation, so `@agoric/portfolio-api` resolves it under plain Node. (A `.ts` module can't be Endo-bundled at all — see [.ts modules](#ts-modules).)
 
-### The one place `.ts` specifiers appear
+**Relative specifiers follow the importing module's kind.** A `.js` module writes `.js`; a `.ts` module commonly writes `.ts` for its siblings (e.g. `services/ymax-planner/src` and the `permit2/` submodules). Those relative `.ts` specifiers are fine because the `.ts` modules are only ever consumed as source — by TypeScript, by the dev loaders, by esbuild, or by a `.ts`-aware Node — never emitted to `.js` and re-run, so there's nothing to rewrite. This is why `rewriteRelativeImportExtensions` can stay off (see below).
 
-A `.js` barrel re-exporting *sibling `.ts` modules within the same package* writes `.ts` specifiers, not `.js`:
+### Why the `.js` barrel re-exports with `.ts`
+
+The `permit2.js` barrel is a `.js` file whose re-exports name `.ts` siblings — a deliberate combination, not a stray `.ts` specifier:
 
 ```js
 // packages/orchestration/src/utils/permit2.js
@@ -85,11 +87,11 @@ export * from './permit2/signatureTransfer.ts';
 export * from './permit2/signatureTransferHelpers.ts';
 ```
 
-This is deliberate, and it's the exception that proves the rule above. The barrel exists so plain-Node consumers resolve a *real `.js` file* (see the previous bullet). Inside it, the relative re-exports must name `.ts`: there is no `.js` twin, and because the barrel is consumed under plain Node, no `.js`→`.ts` mapping runs — Node loads `signatureTransfer.ts` directly (stripping the types). A `.js` specifier here would resolve to a file that doesn't exist. The cross-package importer still writes `.js` (`@agoric/orchestration/src/utils/permit2.js`); only the in-package re-export hop is `.ts`.
+The barrel exists so plain-Node consumers resolve a *real `.js` file* across the package boundary (see the value-imports bullet). Inside it, the relative re-exports must name `.ts`: there is no `.js` twin, and because the barrel can be consumed under plain Node, no `.js`→`.ts` mapping runs — the runtime loads `signatureTransfer.ts` directly. That requires a `.ts`-aware runtime: Node ≥22.18 strips the types natively (the repo is moving to a Node 22+ floor, [#12722](https://github.com/Agoric/agoric-sdk/pull/12722)), and before that a type-stripping loader (such as the one ava uses) is needed. The cross-package importer still writes `.js` (`@agoric/orchestration/src/utils/permit2.js`); only the in-package re-export hop is `.ts`.
 
 ### Why the `.ts`-extension compiler options stay confined
 
-Because nearly all specifiers are `.js`, two compiler options stay out of everyday code:
+Because all cross-package specifiers are `.js` and relative `.ts` modules are consumed as source, two compiler options stay out of everyday code:
 
 - `allowImportingTsExtensions` (whether `.ts` specifiers are allowed at all) is enabled in the root config only because a few bundle inputs are `.ts` files executed as JS, and because of barrels like the one above; normal code never relies on it.
 - `rewriteRelativeImportExtensions` (rewrite *relative* `.ts` specifiers to `.js` on emit) is meaningful only when emitting JS. With it on, a *non-relative* `.ts` specifier can't be rewritten and errors (`TS2877`), and it's incompatible with project references (`TS2878`). So the root `tsconfig.json` and the repo-wide `tsconfig.check.json` leave it off (the default), and it's set `true` only in the two packages that emit JS from `.ts` sources — `@agoric/cosmic-proto` and `@agoric/client-utils` — where emitting while inheriting `allowImportingTsExtensions` requires it (`TS5096`). Those two packages contain only *relative* `.ts` specifiers (all type-only), which rewrite cleanly to `.js`; they have no non-relative `.ts` specifiers, so `TS2877` never fires.
