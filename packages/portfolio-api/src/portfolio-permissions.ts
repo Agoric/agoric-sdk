@@ -6,6 +6,8 @@ import type {
   PortfolioPermissionsEIP712,
 } from './evm-wallet/eip712-messages.ts';
 
+const PercentShape = M.and(M.number(), M.gte(0), M.lte(100));
+
 /**
  * Portfolio permissions granted to an automation agent.
  */
@@ -14,7 +16,15 @@ export type PortfolioPermissions = {
    * whether the agent may change portions of instruments already in the
    * portfolio's `targetAllocation`, but may not add or remove keys.
    */
-  allocation?: boolean;
+  allocation?:
+    | boolean
+    | {
+        /**
+         * optional maximum integer percentage for any non-cash position in a
+         * delegated `setTargetAllocation` request.
+         */
+        capPct?: number;
+      };
   /** whether the agent may trigger a rebalance using the current policy. */
   rebalance?: boolean;
 };
@@ -24,22 +34,34 @@ export type PortfolioPermissions = {
  */
 export type PortfolioPermissionsExt = PortfolioPermissions & CopyRecord<any>;
 
+const permissionProperties = harden({
+  allocation: M.or(
+    M.boolean(),
+    M.splitRecord({}, { capPct: PercentShape }, {}),
+  ),
+  rebalance: M.boolean(),
+});
+
 /**
  * The currently implemented permissions. Granted permissions must match this shape.
  *
- * The empty bag `{}` is valid and represents no delegated authority. End-user
+ * The empty record `{}` is valid and represents no delegated authority. End-user
  * grant paths may still require specific permissions before creating a grant.
  */
 export const PortfolioPermissionsShape: TypedPattern<PortfolioPermissions> =
-  M.splitRecord({}, { allocation: M.boolean(), rebalance: M.boolean() }, {});
+  M.splitRecord({}, permissionProperties, {});
 
 export const PortfolioPermissionsEIP712Shape: TypedPattern<PortfolioPermissionsEIP712> =
-  M.splitRecord({ allocation: M.boolean() });
+  harden({
+    mayAllocate: M.boolean(),
+    allocationCapPct: PercentShape,
+    mayRebalance: M.boolean(),
+  });
 
 /**
  * Extensible app-level shape for portfolio permissions.
  *
- * Future versions may add more permission keys while preserving the
+ * Future versions may add new top-level permission keys while preserving the
  * broad `PortfolioPermissionsExt` type throughout the rest of the system.
  */
 export const PortfolioPermissionsExtShape: TypedPattern<PortfolioPermissionsExt> =

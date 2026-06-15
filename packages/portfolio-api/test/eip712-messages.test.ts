@@ -192,6 +192,42 @@ test('getYmaxStandaloneOperationData for SetTargetAllocation', t => {
   ]);
 });
 
+test('getYmaxStandaloneOperationData for Grant', t => {
+  const data = {
+    accountHolder: 'agoric1delegate',
+    permissions: {
+      mayAllocate: true,
+      allocationCapPct: 30,
+      mayRebalance: false,
+    },
+    portfolio: 9n,
+    nonce: 2n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'Grant',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'Grant');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.Grant, [
+    { name: 'accountHolder', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+  t.deepEqual(result.types.PortfolioPermissions, [
+    { name: 'mayAllocate', type: 'bool' },
+    { name: 'allocationCapPct', type: 'uint8' },
+    { name: 'mayRebalance', type: 'bool' },
+  ]);
+});
+
 test('getYmaxWitness for OpenPortfolio', t => {
   const allocations: TargetAllocation[] = [
     { instrument: 'Aave_Arbitrum', portion: 10000n },
