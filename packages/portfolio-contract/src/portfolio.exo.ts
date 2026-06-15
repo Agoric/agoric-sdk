@@ -24,7 +24,6 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import {
-  PortfolioPermissionsShape,
   PortfolioAutoFeaturesShape,
   type FlowAgent,
   type FlowConfig,
@@ -34,11 +33,11 @@ import {
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
-  type PortfolioPermissionsExt,
   type PortfolioAutoFeatures,
   type PortfolioRemoteAccountState,
   type PortfolioAutoFeaturesExt,
   PortfolioAutoFeaturesExtShape,
+  PortfolioPermissionsShape,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
@@ -424,7 +423,7 @@ export const preparePortfolioKit = (
       portfolioId: number,
       agentId: number,
       grantee: PortfolioAgentGrantee,
-      permissions: PortfolioPermissionsExt,
+      permissions: PortfolioPermissions,
     ) => Promise<void>;
   },
 ) => {
@@ -617,7 +616,7 @@ export const preparePortfolioKit = (
         assertActive(
           client: PortfolioDelegationClient,
           agentId: number,
-          required: Partial<PortfolioPermissions> = {},
+          required: string[] = [],
         ) {
           const { delegations, portfolioId } = this.state;
           if (!delegations) {
@@ -629,11 +628,9 @@ export const preparePortfolioKit = (
           status.state === 'active' ||
             Fail`delegation agent${agentId} is not active; current state is ${status.state}`;
 
-          for (const permission of Object.keys(
-            required,
-          ) as (keyof PortfolioPermissions)[]) {
-            status.permissions[permission] ||
-              Fail`delegation agent${agentId} does not have required permission ${permission}`;
+          for (const may of required) {
+            may in status.permissions ||
+              Fail`delegation agent${agentId} does not have required permission ${may}`;
           }
         },
         getPortfolioId(client: PortfolioDelegationClient, agentId: number) {
@@ -660,9 +657,9 @@ export const preparePortfolioKit = (
           targetAllocation: TargetAllocation,
           syncState: { policyVersion: number; rebalanceCount: number },
         ): FlowKey {
-          this.facets.delegationHelper.assertActive(client, agentId, {
-            allocation: true,
-          });
+          this.facets.delegationHelper.assertActive(client, agentId, [
+            'allocation',
+          ]);
           const { reader, reporter, simpleRebalanceHandler } = this.facets;
 
           const { policyVersion, rebalanceCount } = syncState;
@@ -681,9 +678,9 @@ export const preparePortfolioKit = (
           agentId: number,
           syncState: { policyVersion: number; rebalanceCount: number },
         ): FlowKey {
-          this.facets.delegationHelper.assertActive(client, agentId, {
-            rebalance: true,
-          });
+          this.facets.delegationHelper.assertActive(client, agentId, [
+            'rebalance',
+          ]);
           const { reader, reporter, manager } = this.facets;
 
           const { policyVersion, rebalanceCount } = syncState;
@@ -1018,7 +1015,7 @@ export const preparePortfolioKit = (
          */
         async grantDelegation(
           grantee: PortfolioAgentGrantee,
-          permissions: PortfolioPermissionsExt,
+          permissions: PortfolioPermissions,
         ) {
           const { portfolioId } = this.state;
           if (!('delegations' in this.state)) {
@@ -1033,6 +1030,7 @@ export const preparePortfolioKit = (
           const nextAgentId = delegations.getSize() + 1;
           const delegationKit = makeDelegationKit({
             agentId: nextAgentId,
+            permissions,
             portfolioAccess: this.facets.delegationHelper,
           });
           // Initialize the delegation record first to avoid any race claiming
@@ -1111,13 +1109,11 @@ export const preparePortfolioKit = (
             throw Fail`portfolio pre-dates auto features support`;
           }
 
-          const permissions: PortfolioPermissions = {
-            allocation: false,
-            rebalance: !!features.rebalance,
-          };
+          const permissions: PortfolioPermissions = features.rebalance
+            ? harden({ rebalance: true })
+            : harden({});
 
-          const hasAnyPermission =
-            permissions.allocation || permissions.rebalance;
+          const hasAnyPermission = Object.keys(permissions).length > 0;
 
           let plannerAgentId = this.state.plannerAgentId;
 
@@ -1484,15 +1480,13 @@ export const preparePortfolioKit = (
          * resolution is the authorization check; this method then enforces
          * its own input validation.
          */
-        grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
+        grant(grantee: Bech32Address, permissions: unknown) {
           return vowTools.asVow(async () => {
             mustMatch(permissions, PortfolioPermissionsShape);
             const { sourceAccountId } = this.state;
             if (!sourceAccountId) {
               throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;
             }
-            permissions.allocation === true ||
-              Fail`grant requires allocation permission`;
             // Returns promise promptly resolved
             await this.facets.manager.grantDelegation(grantee, permissions);
           });

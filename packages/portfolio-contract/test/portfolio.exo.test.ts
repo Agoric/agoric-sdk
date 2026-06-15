@@ -1091,7 +1091,6 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
   const { manager } = makePortfolioKit({ portfolioId: 20 });
 
   const agentId = await manager.grantDelegation('agoric1delegate', {
-    allocation: false,
     rebalance: true,
   });
 
@@ -1244,7 +1243,7 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
   t.like(await getPortfolioAgents!(22), {
     agent1: {
       grantee: PortfolioPlannerAgent,
-      permissions: { rebalance: false },
+      permissions: {},
       state: 'active',
     },
   });
@@ -1266,7 +1265,7 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
   t.like(await getPortfolioAgents!(22), {
     agent1: {
       grantee: PortfolioPlannerAgent,
-      permissions: { rebalance: false },
+      permissions: {},
       state: 'revoked',
     },
   });
@@ -1284,7 +1283,7 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
   t.like(await getPortfolioAgents!(22), {
     agent1: {
       grantee: PortfolioPlannerAgent,
-      permissions: { rebalance: false },
+      permissions: {},
       state: 'revoked',
     },
     agent2: {

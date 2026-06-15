@@ -10,49 +10,51 @@
  *
  * @see type-guards.ts for the authoritative interface specification
  */
-import { AmountMath, type NatAmount } from '@agoric/ertp';
-import type { VstorageKit } from '@agoric/client-utils';
-import type { Bech32Address, ChainInfo } from '@agoric/orchestration';
-import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
-import {
-  getPermitWitnessTransferFromData,
-  type TokenPermissions,
-} from '@agoric/orchestration/src/utils/permit2.js';
-import type { VowTools } from '@agoric/vow';
-import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
-import type { Instance } from '@agoric/zoe';
-import type { ExecutionContext } from 'ava';
 import { type start } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import {
   makePositionPath,
   portfolioIdOfPath,
-  type OfferArgsFor,
-  type ProposalType,
-  type PortfolioPublishedPathTypes,
-  type StatusFor,
-  type PoolKey,
   type EVMContractAddressesMap,
+  type OfferArgsFor,
+  type PoolKey,
+  type PortfolioPublishedPathTypes,
+  type ProposalType,
+  type StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
-import type {
-  PortfolioAutoFeatures,
-  PortfolioPublicInvitationMaker,
-  PortfolioContinuingInvitationMaker,
-  AxelarChain,
-  PortfolioPermissions,
-} from '@agoric/portfolio-api';
+import type { VstorageKit } from '@agoric/client-utils';
+import { AmountMath, type NatAmount } from '@agoric/ertp';
+import { mustMatch, type ERemote } from '@agoric/internal';
+import type { Bech32Address, ChainInfo } from '@agoric/orchestration';
 import {
-  PortfolioAutoFeaturesEIP712Shape,
-  PortfolioPermissionsEIP712Shape,
-} from '@agoric/portfolio-api/src/portfolio-permissions.js';
+  getPermitWitnessTransferFromData,
+  type TokenPermissions,
+} from '@agoric/orchestration/src/utils/permit2.js';
+import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
+import type {
+  AxelarChain,
+  PortfolioAutoFeatures,
+  PortfolioContinuingInvitationMaker,
+  PortfolioPermissions,
+  PortfolioPublicInvitationMaker,
+} from '@agoric/portfolio-api';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
+  type PortfolioAutoFeaturesEIP712,
+  type PortfolioPermissionsEIP712,
+  type TargetAllocation,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import {
+  PortfolioAutoFeaturesEIP712Shape,
+  PortfolioPermissionsShape,
+} from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { TimerService } from '@agoric/time';
-import { mustMatch, type ERemote } from '@agoric/internal';
+import type { VowTools } from '@agoric/vow';
+import type { Instance } from '@agoric/zoe';
 import { E } from '@endo/far';
+import type { ExecutionContext } from 'ava';
 import type { TypedDataDefinition } from 'viem';
 import type { PrivateKeyAccount } from 'viem/accounts';
 import type { EVMWalletMessageHandler } from '../src/evm-wallet-handler.exo.ts';
@@ -522,9 +524,9 @@ export const makeEvmTrader = ({
          * entry for this trader's portfolio.
          *
          * Although the caller-facing type is {@link PortfolioPermissions},
-         * the current standalone EIP-712 `Grant` payload uses
-         * {@link PortfolioPermissionsEIP712Shape}. This helper validates that
-         * the requested permission bag fits the current wire shape before
+         * the standalone EIP-712 `Grant` payload uses a fixed permissions
+         * struct validated by {@link PortfolioPermissionsEIP712Shape}. This
+         * helper normalizes the TS permission bag into that wire shape before
          * signing, so unsupported permissions fail client-side.
          */
         async grant(
@@ -532,11 +534,11 @@ export const makeEvmTrader = ({
           permissions: PortfolioPermissions,
         ) {
           const deadline = await getDeadline();
-          mustMatch(permissions, PortfolioPermissionsEIP712Shape);
+          const wirePermissions = toPortfolioPermissionsEIP712(permissions);
           const message = getYmaxStandaloneOperationData(
             {
               accountHolder: granteeAddress,
-              permissions,
+              permissions: wirePermissions,
               portfolio: BigInt(self.getPortfolioId()),
               nonce: (nonce += 1n),
               deadline,
@@ -555,7 +557,9 @@ export const makeEvmTrader = ({
          */
         async setAutoFeatures(features: PortfolioAutoFeatures) {
           const deadline = await getDeadline();
-          const hardenedFeatures = harden({ ...features });
+          const hardenedFeatures: PortfolioAutoFeaturesEIP712 = harden({
+            rebalance: features.rebalance === true,
+          });
           mustMatch(hardenedFeatures, PortfolioAutoFeaturesEIP712Shape);
           const message = harden(
             getYmaxStandaloneOperationData(
@@ -586,4 +590,16 @@ export const makeEvmTrader = ({
   });
 
   return self;
+};
+export const toPortfolioPermissionsEIP712 = (
+  permissions: PortfolioPermissions,
+): PortfolioPermissionsEIP712 => {
+  mustMatch(permissions, PortfolioPermissionsShape);
+  const { allocation, rebalance } = permissions;
+  return harden({
+    mayAllocate: !!allocation,
+    allocationCapPct:
+      typeof allocation === 'object' ? (allocation.capPct ?? 0) : 0,
+    mayRebalance: !!rebalance,
+  });
 };
