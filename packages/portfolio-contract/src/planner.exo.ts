@@ -57,15 +57,29 @@ export const preparePlanner = (
   );
   const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
 
+  const portfolioIdShape = M.number();
+  const flowIdShape = M.number();
+  const policyVersionShape = M.number();
+  const rebalanceCountShape = M.number();
+
   const PlannerI = M.interface('Planner', {
-    submit: M.call(M.number(), M.arrayOf(movementDescShape), M.number())
-      .optional(M.number())
+    submit: M.call(
+      portfolioIdShape,
+      M.arrayOf(movementDescShape),
+      policyVersionShape,
+    )
+      .optional(rebalanceCountShape)
       .returns(VowShape),
-    resolvePlan: M.call(M.number(), M.number(), planCompatShape, M.number())
-      .optional(M.number())
+    resolvePlan: M.call(
+      portfolioIdShape,
+      flowIdShape,
+      planCompatShape,
+      policyVersionShape,
+    )
+      .optional(rebalanceCountShape)
       .returns(),
-    rejectPlan: M.call(M.number(), M.number(), M.string())
-      .optional(M.number(), M.number())
+    rejectPlan: M.call(portfolioIdShape, flowIdShape, M.string())
+      .optional(policyVersionShape, rebalanceCountShape)
       .returns(),
   });
 
