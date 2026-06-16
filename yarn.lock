@@ -16901,7 +16901,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ses@npm:^2.0.0, ses@npm:^2.2.0":
+"ses@npm:2.2.0":
   version: 2.2.0
   resolution: "ses@npm:2.2.0"
   dependencies:
@@ -16909,6 +16909,17 @@ __metadata:
     "@endo/env-options": "npm:^1.1.11"
     "@endo/immutable-arraybuffer": "npm:^1.1.2"
   checksum: 10c0/d412182c08d7bc0997c98d0e68ca926286130e9a6853c94dd08a8cd02df097e4c3b61d6f18ebd88bebe1f4af982608637caf89de44471701fc05ca8de74b6b8c
+  languageName: node
+  linkType: hard
+
+"ses@patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch":
+  version: 2.2.0
+  resolution: "ses@patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch::version=2.2.0&hash=7e521d"
+  dependencies:
+    "@endo/cache-map": "npm:^1.1.0"
+    "@endo/env-options": "npm:^1.1.11"
+    "@endo/immutable-arraybuffer": "npm:^1.1.2"
+  checksum: 10c0/6ae3e0267f831fcc46a8d941c60ecc49b010a9356a6e461d7fe885c2c992bafbd3e163d2c6a3cea3ce251ac4cd739c4f13a54fae6f87cfe4f5296a6ffa8318ce
   languageName: node
   linkType: hard
 
