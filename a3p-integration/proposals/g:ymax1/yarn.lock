@@ -12,9 +12,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aglocal/portfolio-contract@portal:./local-packages/portfolio-contract::locator=root-workspace-0b6124%40workspace%3A.":
+"@aglocal/portfolio-contract@portal:./local-packages/portfolio-contract::locator=g%3Aymax1%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/portfolio-contract@portal:./local-packages/portfolio-contract::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@aglocal/portfolio-contract@portal:./local-packages/portfolio-contract::locator=g%3Aymax1%40workspace%3A."
   dependencies:
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/ertp": "npm:dev"
@@ -41,9 +41,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@aglocal/portfolio-deploy@portal:./local-packages/portfolio-deploy::locator=root-workspace-0b6124%40workspace%3A.":
+"@aglocal/portfolio-deploy@portal:./local-packages/portfolio-deploy::locator=g%3Aymax1%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/portfolio-deploy@portal:./local-packages/portfolio-deploy::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@aglocal/portfolio-deploy@portal:./local-packages/portfolio-deploy::locator=g%3Aymax1%40workspace%3A."
   dependencies:
     "@aglocal/portfolio-contract": "npm:dev"
     "@agoric/client-utils": "npm:dev"
@@ -144,9 +144,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/client-utils@portal:./local-packages/client-utils::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/client-utils@portal:./local-packages/client-utils::locator=g%3Aymax1%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/client-utils@portal:./local-packages/client-utils::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/client-utils@portal:./local-packages/client-utils::locator=g%3Aymax1%40workspace%3A."
   dependencies:
     "@agoric/casting": "npm:dev"
     "@agoric/cosmic-proto": "npm:dev"
@@ -168,9 +168,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/cosmic-proto@portal:./local-packages/cosmic-proto::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/cosmic-proto@portal:./local-packages/cosmic-proto::locator=g%3Aymax1%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/cosmic-proto@portal:./local-packages/cosmic-proto::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/cosmic-proto@portal:./local-packages/cosmic-proto::locator=g%3Aymax1%40workspace%3A."
   dependencies:
     "@chain-registry/v2": "npm:^1.71.186"
     "@chain-registry/v2-types": "npm:^0.53.115"
@@ -183,9 +183,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/deploy-script-support@portal:./local-packages/deploy-script-support::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/deploy-script-support@portal:./local-packages/deploy-script-support::locator=g%3Aymax1%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/deploy-script-support@portal:./local-packages/deploy-script-support::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/deploy-script-support@portal:./local-packages/deploy-script-support::locator=g%3Aymax1%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "npm:dev"
     "@agoric/ertp": "npm:dev"
@@ -483,9 +483,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/portfolio-api@portal:./local-packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/portfolio-api@portal:./local-packages/portfolio-api::locator=g%3Aymax1%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/portfolio-api@portal:./local-packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/portfolio-api@portal:./local-packages/portfolio-api::locator=g%3Aymax1%40workspace%3A."
   dependencies:
     "@agoric/internal": "npm:dev"
     "@agoric/orchestration": "npm:dev"
@@ -3191,6 +3191,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"g:ymax1@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "g:ymax1@workspace:."
+  dependencies:
+    "@aglocal/portfolio-deploy": "npm:dev"
+    "@agoric/client-utils": "npm:dev"
+    "@agoric/deploy-script-support": "npm:dev"
+    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api"
+    "@agoric/synthetic-chain": "npm:^0.7.1"
+    "@endo/far": "npm:^1.1.14"
+    "@endo/init": "npm:^1.1.12"
+    "@endo/pass-style": "npm:^1.6.3"
+    ava: "npm:^6.4.1"
+    ts-blank-space: "npm:^0.7.0"
+  languageName: unknown
+  linkType: soft
+
 "get-caller-file@npm:^2.0.5":
   version: 2.0.5
   resolution: "get-caller-file@npm:2.0.5"
@@ -4396,23 +4413,6 @@ __metadata:
   checksum: 10c0/4eff0d4a5f9383566c7d7ec437b671cc51b25963bd61bf127c3f3d3f68e44a026d99b8d2f1ad344afff8d278a8fe70a8ea092650a716d22287e8bef7126bb2fa
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@aglocal/portfolio-deploy": "npm:dev"
-    "@agoric/client-utils": "npm:dev"
-    "@agoric/deploy-script-support": "npm:dev"
-    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api"
-    "@agoric/synthetic-chain": "npm:^0.7.1"
-    "@endo/far": "npm:^1.1.14"
-    "@endo/init": "npm:^1.1.12"
-    "@endo/pass-style": "npm:^1.6.3"
-    ava: "npm:^6.4.1"
-    ts-blank-space: "npm:^0.7.0"
-  languageName: unknown
-  linkType: soft
 
 "run-parallel@npm:^1.1.9":
   version: 1.2.0

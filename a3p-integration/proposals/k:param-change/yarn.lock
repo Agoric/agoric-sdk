@@ -4661,6 +4661,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"k:param-change@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "k:param-change@workspace:."
+  dependencies:
+    "@agoric/synthetic-chain": "npm:^0.7.1"
+    agoric: "npm:dev"
+    eslint: "npm:^8.57.0"
+    npm-run-all: "npm:^4.1.5"
+  languageName: unknown
+  linkType: soft
+
 "keyv@npm:^4.5.3":
   version: 4.5.4
   resolution: "keyv@npm:4.5.4"
@@ -5799,17 +5810,6 @@ __metadata:
   checksum: 10c0/9cb7757acb489bd83757ba1a274ab545eafd75598a9d817e0c3f8b164238dd90eba50d6b848bd4dcc5f3040912e882dc7ba71653e35af660d77b25c381d402e8
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@agoric/synthetic-chain": "npm:^0.7.1"
-    agoric: "npm:dev"
-    eslint: "npm:^8.57.0"
-    npm-run-all: "npm:^4.1.5"
-  languageName: unknown
-  linkType: soft
 
 "run-async@npm:^2.4.0":
   version: 2.4.1

@@ -4715,6 +4715,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"h:hook-msg-send@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "h:hook-msg-send@workspace:."
+  dependencies:
+    "@agoric/client-utils": "npm:dev"
+    "@agoric/synthetic-chain": "npm:^0.7.1"
+    "@endo/init": "npm:^1.1.12"
+    agoric: "npm:dev"
+    ava: "npm:^5.3.1"
+  languageName: unknown
+  linkType: soft
+
 "has-flag@npm:^4.0.0":
   version: 4.0.0
   resolution: "has-flag@npm:4.0.0"
@@ -6395,18 +6407,6 @@ __metadata:
   checksum: 10c0/bc3746c988d903c2211266ddc539379d53d92689b9cc5c2b4e3ae161689de9af491957a567c629b6cc81f48d0928a7591fc4c383fba68a48d2966c9fb8a2bce9
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@agoric/client-utils": "npm:dev"
-    "@agoric/synthetic-chain": "npm:^0.7.1"
-    "@endo/init": "npm:^1.1.12"
-    agoric: "npm:dev"
-    ava: "npm:^5.3.1"
-  languageName: unknown
-  linkType: soft
 
 "run-async@npm:^2.4.0":
   version: 2.4.1

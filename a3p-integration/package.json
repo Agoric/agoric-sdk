@@ -1,4 +1,6 @@
 {
+  "name": "a3p-integration",
+  "type": "module",
   "private": true,
   "agoricSyntheticChain": {
     "fromTag": "use-upgrade-22"
