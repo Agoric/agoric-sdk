@@ -334,6 +334,12 @@ export const computeTargetBalances = <
   );
   let remainder = liquidTotal;
   const pending = new Set<DraftRecord>(Object.values(draft));
+  const claim = (chainName: SupportedChain, value: NatValue) => {
+    const chainPlace = `@${chainName}` as C | T;
+    draft[chainPlace] ??= makeDraftRecord(chainPlace);
+    draft[chainPlace].resolvedDelta += value;
+    if (!pending.has(draft[chainPlace])) remainder -= value;
+  };
   for (const draftRecord of pending) {
     pending.delete(draftRecord);
     const { place, current, delta, resolvedDelta } = draftRecord;
@@ -347,30 +353,26 @@ export const computeTargetBalances = <
 
     // This sink cannot receive its inbound funds. If its chain is a net source
     // or neutral, we leave them at the local hub. Otherwise, we reduce the net
-    // outflow from one or more donor-chain hubs.
+    // outflow from one or more donor-chain hubs before adjusting the local hub.
     remainder -= current;
     const local = getPlaceData(place, network).chain;
-    const localNetOut = donorChainsDesc.find(([n]) => n === local.name)![1];
+    const localDonorEntry = donorChainsDesc.find(([n]) => n === local.name)!;
+    const localNetOut = localDonorEntry[1];
     if (localNetOut >= 0n) {
-      const chainPlace = `@${local.name}` as C | T;
-      draft[chainPlace] ??= makeDraftRecord(chainPlace);
-      draft[chainPlace].resolvedDelta += delta;
-      if (!pending.has(draft[chainPlace])) remainder -= delta;
+      claim(local.name, delta);
     } else {
       let excess = delta;
       for (const donorEntry of donorChainsDesc) {
         const [chainName, netOut] = donorEntry;
         if (excess === 0n || netOut <= 0n) break;
-        const chainPlace = `@${chainName}` as C | T;
-        draft[chainPlace] ??= makeDraftRecord(chainPlace);
         const d = bigintMin(excess, netOut);
-        if (!pending.has(draft[chainPlace])) remainder -= d;
-        draft[chainPlace].resolvedDelta += d;
+        claim(chainName, d);
         donorEntry[1] -= d;
         excess -= d;
       }
       if (excess !== 0n) {
-        failInternal(`internal: Unable to suppress ${place}`);
+        claim(local.name, excess);
+        localDonorEntry[1] -= excess;
       }
       sortEntriesDesc(donorChainsDesc);
     }
