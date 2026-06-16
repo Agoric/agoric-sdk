@@ -1,6 +1,6 @@
 /** @file test for deposit tools */
 import test from 'ava';
-import type { Assertions } from 'ava';
+import type { ExecutionContext } from 'ava';
 
 import type { PartialDeep } from 'type-fest';
 
@@ -93,13 +93,17 @@ const makeMovementDesc = (
 };
 
 /** A helper to support prettier-friendly plan flow assertions. */
-const assertPlanFlow = (
-  t: Assertions,
+const assertPlanFlow = async (
+  t: ExecutionContext,
   label: string,
   flow: MovementDesc[],
   expectedFlow: PartialDeep<MovementDesc>[],
 ) => {
-  arrayIsLike(t, flow, expectedFlow, label);
+  const result = await t.try(tt => arrayIsLike(tt, flow, expectedFlow, label));
+  if (!result.passed) {
+    t.log(`${label} actual flow`, readableSteps(flow, depositBrand));
+  }
+  result.commit();
 };
 
 /**
@@ -740,7 +744,7 @@ test('solver regressions', async t => {
     },
     amount: makeDeposit(223560027n),
   });
-  assertPlanFlow(t, 'portfolio90 flow9', portfolio90Flow9.flow, [
+  await assertPlanFlow(t, 'portfolio90 flow9', portfolio90Flow9.flow, [
     makeMovementDesc('Aave_Ethereum', '@Ethereum', 108975753n),
     makeMovementDesc('Compound_Ethereum', '@Ethereum', 114584274n),
     makeMovementDesc('@Ethereum', '@agoric', 223560027n),
@@ -758,11 +762,16 @@ test('solver regressions', async t => {
     amount: makeDeposit(999999n),
     toChain: 'Avalanche',
   });
-  assertPlanFlow(t, 'portfolio176 flow{2,3,4,8}', portfolio176FlowX.flow, [
-    makeMovementDesc('Aave_Base', '@Base', 999999n),
-    makeMovementDesc('@Base', '@Avalanche', 999999n),
-    makeMovementDesc('@Avalanche', '-Avalanche', 999999n),
-  ]);
+  await assertPlanFlow(
+    t,
+    'portfolio176 flow{2,3,4,8}',
+    portfolio176FlowX.flow,
+    [
+      makeMovementDesc('Aave_Base', '@Base', 999999n),
+      makeMovementDesc('@Base', '@Avalanche', 999999n),
+      makeMovementDesc('@Avalanche', '-Avalanche', 999999n),
+    ],
+  );
 
   // 2026-04-21T16:31Z
   const portfolio81Flow23 = await planDepositToAllocations({
@@ -778,7 +787,7 @@ test('solver regressions', async t => {
     amount: makeDeposit(1000000000n),
     fromChain: 'Ethereum',
   });
-  assertPlanFlow(t, 'portfolio81 flow23', portfolio81Flow23.flow, [
+  await assertPlanFlow(t, 'portfolio81 flow23', portfolio81Flow23.flow, [
     makeMovementDesc('+Ethereum', '@Ethereum', 1000000000n),
     makeMovementDesc('@Ethereum', 'Aave_Ethereum', 499989607n),
     makeMovementDesc('@Ethereum', 'Compound_Ethereum', 500010393n),
@@ -796,7 +805,7 @@ test('solver regressions', async t => {
     amount: makeDeposit(scale6(25_000)),
     fromChain: 'Ethereum',
   });
-  assertPlanFlow(t, 'portfolio177 flow1', portfolio177Flow1.flow, [
+  await assertPlanFlow(t, 'portfolio177 flow1', portfolio177Flow1.flow, [
     makeMovementDesc('+Ethereum', '@Ethereum', scale6(25_000)),
     makeMovementDesc('@Ethereum', 'Aave_Ethereum', scale6(8500)),
     makeMovementDesc('@Ethereum', 'Compound_Ethereum', scale6(8250)),
@@ -820,9 +829,12 @@ test('solver regressions', async t => {
     },
     currentBalances: { '@Avalanche': makeDeposit(3900011n) },
   });
-  assertPlanFlow(t, 'ymax0 portfolio35 flow76', ymax0Portfolio35Flow76.flow, [
-    makeMovementDesc('@Avalanche', 'Aave_Avalanche', 3900011n),
-  ]);
+  await assertPlanFlow(
+    t,
+    'ymax0 portfolio35 flow76',
+    ymax0Portfolio35Flow76.flow,
+    [makeMovementDesc('@Avalanche', 'Aave_Avalanche', 3900011n)],
+  );
 
   // 2026-05-13T17:42Z
   const portfolio195Flow2 = await planDepositToAllocations({
@@ -836,7 +848,7 @@ test('solver regressions', async t => {
     amount: makeDeposit(1500000000n),
     fromChain: 'Ethereum',
   });
-  assertPlanFlow(t, 'portfolio195 flow2', portfolio195Flow2.flow, [
+  await assertPlanFlow(t, 'portfolio195 flow2', portfolio195Flow2.flow, [
     makeMovementDesc('+Ethereum', '@Ethereum', scale6(1500)),
     makeMovementDesc('@Ethereum', '@agoric', scale6(1500)),
     makeMovementDesc('@agoric', '@noble', scale6(1500)),
@@ -1055,7 +1067,7 @@ test('@<ChainName> USDC target allocations', async t => {
     targetAllocation: objectMap(currentBalances, amt => amt.value),
     amount: makeDeposit(scale6(10)),
   });
-  assertPlanFlow(t, 'withdraw from mixed targets', withdrawPlan.flow, [
+  await assertPlanFlow(t, 'withdraw from mixed targets', withdrawPlan.flow, [
     makeMovementDesc('Aave_Base', '@Base', scale6(5)),
     makeMovementDesc('@Base', '@agoric', scale6(10)),
     makeMovementDesc('@agoric', '<Cash>', scale6(10)),
@@ -1067,7 +1079,7 @@ test('@<ChainName> USDC target allocations', async t => {
     targetAllocation: objectMap(currentBalances, amt => amt.value),
     amount: makeDeposit(scale6(10)),
   });
-  assertPlanFlow(t, 'deposit to mixed targets', depositPlan.flow, [
+  await assertPlanFlow(t, 'deposit to mixed targets', depositPlan.flow, [
     makeMovementDesc('<Deposit>', '@agoric', scale6(10)),
     makeMovementDesc('@agoric', '@noble', scale6(10)),
     makeMovementDesc('@noble', '@Base', scale6(10)),
@@ -1080,19 +1092,24 @@ test('@<ChainName> USDC target allocations', async t => {
     targetAllocation: { '@Base': 100n },
     amount: makeDeposit(scale6(10)),
   });
-  assertPlanFlow(t, 'deposit and consolidate', depositAndRebalancePlan.flow, [
-    makeMovementDesc('Aave_Base', '@Base', scale6(10)),
-    makeMovementDesc('<Deposit>', '@agoric', scale6(10)),
-    makeMovementDesc('@agoric', '@noble', scale6(10)),
-    makeMovementDesc('@noble', '@Base', scale6(10)),
-  ]);
+  await assertPlanFlow(
+    t,
+    'deposit and consolidate',
+    depositAndRebalancePlan.flow,
+    [
+      makeMovementDesc('Aave_Base', '@Base', scale6(10)),
+      makeMovementDesc('<Deposit>', '@agoric', scale6(10)),
+      makeMovementDesc('@agoric', '@noble', scale6(10)),
+      makeMovementDesc('@noble', '@Base', scale6(10)),
+    ],
+  );
 
   const rebalancePlan = await planRebalanceToAllocations({
     ...plannerContext,
     currentBalances,
     targetAllocation: { '@Base': 100n },
   });
-  assertPlanFlow(t, 'rebalance into chain', rebalancePlan.flow, [
+  await assertPlanFlow(t, 'rebalance into chain', rebalancePlan.flow, [
     makeMovementDesc('Aave_Base', '@Base', scale6(10)),
   ]);
 
@@ -1101,7 +1118,7 @@ test('@<ChainName> USDC target allocations', async t => {
     currentBalances,
     targetAllocation: { '@Base': 50n, '@Optimism': 50n },
   });
-  assertPlanFlow(t, 'rebalance into chains', rerebalancePlan.flow, [
+  await assertPlanFlow(t, 'rebalance into chains', rerebalancePlan.flow, [
     makeMovementDesc('Aave_Base', '@Base', scale6(10)),
     makeMovementDesc('@Base', '@agoric', scale6(10)),
     makeMovementDesc('@agoric', '@noble', scale6(10)),
