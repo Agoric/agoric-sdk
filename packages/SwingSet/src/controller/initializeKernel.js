@@ -235,7 +235,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
       errorIdNum: 60_000,
     });
     const bootstrapArgs = /** @type {Passable} */ (
-      harden([vatObj0s, deviceObj0s])
+      /** @type {unknown} */ (harden([vatObj0s, deviceObj0s]))
     );
     const args = kunser(m.serialize(bootstrapArgs));
     const rootKref = exportRootObject(kernelKeeper, bootstrapVatID);
