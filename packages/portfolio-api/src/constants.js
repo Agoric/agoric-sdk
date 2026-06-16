@@ -213,3 +213,9 @@ export const FlowConfigShape = M.splitRecord(
     features: FlowFeaturesShape,
   },
 );
+
+/**
+ * Special string to designate the planner as a grantee.
+ * Includes a special & character to avoid potential collision with any CAIP-10 account address.
+ */
+export const PortfolioPlannerAgent = '&planner';

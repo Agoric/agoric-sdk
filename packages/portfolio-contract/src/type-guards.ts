@@ -210,6 +210,9 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   { type: 'rebalance' },
 );
 
+export const FlowKeyShape: TypedPattern<`flow${number}`> =
+  AnyString<`flow${number}`>();
+
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(
     {
@@ -224,7 +227,7 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       nobleForwardingAddress: AnyString<Bech32Address>(),
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
-      flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
+      flowsRunning: M.recordOf(FlowKeyShape, FlowDetailShape),
     },
   );
 

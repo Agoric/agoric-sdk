@@ -141,7 +141,9 @@ const getFlowHistory = (
     .flatMap(fsp =>
       storage.data.has(fsp) ? [[fsp, storage.getDeserialized(fsp).at(-1)]] : [],
     );
-  const zipped = flowEntries.flatMap((e, ix) => [e, stepsEntries[ix]]);
+  const zipped = flowEntries.flatMap((e, ix) =>
+    stepsEntries[ix] ? [e, stepsEntries[ix]] : [e],
+  );
   return {
     flowPaths,
     byFlow: fromEntries(zipped),
@@ -2655,6 +2657,114 @@ test('evmHandler.rebalance without target allocation uses existing allocation', 
       evmTrader.getPortfolioPath(),
       common.bootstrap.storage,
     );
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+  }
+});
+
+test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t => {
+  const shared = await setupEvmPlanner(t);
+  const { common } = shared;
+  const { usdc, bld } = common.brands;
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [
+      { instrument: 'Aave_Arbitrum', portion: 6000n },
+      { instrument: 'Compound_Arbitrum', portion: 4000n },
+    ],
+  };
+
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = !useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader, planner1 } = powers;
+
+    await doOpenEvmPortfolio(shared, inputs, powers);
+    await planner1.redeem();
+
+    const autoFeatureStatus = await evmTrader
+      .forChain(inputs.fromChain)
+      .setAutoFeatures({ rebalance: true });
+    t.is(autoFeatureStatus.status, 'ok', `${label} auto-feature message ok`);
+
+    const statusBefore = await evmTrader.getPortfolioStatus();
+    t.like(statusBefore, {
+      enabledAutoFeatures: { rebalance: true },
+      policyVersion: 1,
+      rebalanceCount: 1,
+    });
+
+    const amount = usdc.units(100);
+    const fee = bld.make(100n);
+    const steps = [
+      {
+        src: 'Aave_Arbitrum',
+        dest: '@Arbitrum',
+        amount,
+        fee,
+      },
+      {
+        src: '@Arbitrum',
+        dest: 'Compound_Arbitrum',
+        amount,
+        fee,
+      },
+    ];
+
+    const rebalanceFlowKey = await E(planner1.stub).rebalance(
+      evmTrader.getPortfolioId(),
+      steps,
+      statusBefore.policyVersion,
+      statusBefore.rebalanceCount,
+    );
+    t.regex(
+      rebalanceFlowKey,
+      /^flow\d+$/,
+      `${label} planner initiated rebalance returns flow key`,
+    );
+
+    for (const _ of steps) {
+      await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+      await powers.txResolver.drainPending();
+      await eventLoopIteration();
+    }
+
+    const statusAfter = await evmTrader.getPortfolioStatus();
+    t.like(statusAfter, {
+      enabledAutoFeatures: { rebalance: true },
+      policyVersion: 1,
+      rebalanceCount: 2,
+    });
+    t.deepEqual(
+      statusAfter.flowsRunning,
+      {},
+      `no flows running after ${label} planner rebalance completes`,
+    );
+
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    const flowHistory =
+      contents[`${evmTrader.getPortfolioPath()}.flows.${rebalanceFlowKey}`];
+    t.truthy(
+      Array.isArray(flowHistory) &&
+        flowHistory.some(entry => entry?.state === 'done'),
+      `${label} planner rebalance flow history includes a done entry`,
+    );
+
     snapshotTimed(t, contents, `vstorage (${label})`);
     await documentStorageSchemaTimed(
       t,
