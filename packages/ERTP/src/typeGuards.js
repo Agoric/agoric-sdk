@@ -1,8 +1,7 @@
 import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
 /**
  * @import {AmountValue, Ratio} from './types.js'
- * @import {TypedPattern} from '@agoric/internal'
- * @import {CopyBag, CopySet, Pattern} from '@endo/patterns';
+ * @import {CastedPattern, CopyBag, CopySet, Pattern} from '@endo/patterns';
  * @import {NatValue, SetValue} from './types.js';
  */
 
@@ -91,7 +90,7 @@ harden(AmountShape);
  */
 export const AmountPatternShape = M.pattern();
 
-/** @type {TypedPattern<Ratio>} */
+/** @type {CastedPattern<Ratio>} */
 export const RatioShape = { numerator: AmountShape, denominator: AmountShape };
 harden(RatioShape);
 

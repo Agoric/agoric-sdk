@@ -9,10 +9,11 @@ import * as cb from './callback.js';
 /**
  * @import {ERef} from '@endo/far';
  * @import {Marshal, Passable} from '@endo/marshal';
- * @import {Remote, ERemote, TypedPattern} from './types.js';
+ * @import {Remote, ERemote} from './types.js';
  * @import {EMarshaller} from './marshal/wrap-marshaller.js';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Callback} from './types.js';
+ * @import {CastedPattern} from '@endo/patterns';
  */
 
 /** @typedef {Marshal<unknown>} Marshaller */
@@ -36,7 +37,7 @@ import * as cb from './callback.js';
  * @property {T[]} values
  */
 
-/** @type {TypedPattern<StreamCell>} */
+/** @type {CastedPattern<StreamCell>} */
 export const StreamCellShape = harden({
   blockHeight: M.string(),
   values: M.array(),

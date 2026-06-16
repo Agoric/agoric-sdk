@@ -12,7 +12,7 @@ import { M } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {AfterDeadlineExitRule, Installation, ZoeIssuerRecord} from '@agoric/zoe';
  * @import {ExitRule, Invitation, InvitationHandle, WaivedExitRule} from './types-index.js';
  * @import {InvitationDetails} from './types-index.js';
@@ -21,12 +21,12 @@ import { TimestampShape } from '@agoric/time';
 // keywords have an initial cap
 export const KeywordShape = M.string();
 
-/** @type {TypedPattern<InvitationHandle>} */
+/** @type {CastedPattern<InvitationHandle>} */
 export const InvitationHandleShape = M.remotable('InvitationHandle');
-/** @type {TypedPattern<Invitation>} */
+/** @type {CastedPattern<Invitation>} */
 export const InvitationShape = M.remotable('Invitation');
 export const InstanceHandleShape = M.remotable('InstanceHandle');
-/** @type {TypedPattern<Installation>} */
+/** @type {CastedPattern<Installation>} */
 export const InstallationShape = M.remotable('Installation');
 export const SeatShape = M.remotable('Seat');
 
@@ -46,7 +46,7 @@ export const IssuerPKeywordRecordShape = M.recordOf(
 );
 export const BrandKeywordRecordShape = M.recordOf(KeywordShape, BrandShape);
 
-/** @type {TypedPattern<ZoeIssuerRecord>} */
+/** @type {CastedPattern<ZoeIssuerRecord>} */
 export const IssuerRecordShape = M.splitRecord(
   {
     brand: BrandShape,
@@ -135,7 +135,7 @@ export const isAfterDeadlineExitRule = exit => {
 };
 harden(isAfterDeadlineExitRule);
 
-/** @type {TypedPattern<InvitationDetails>} */
+/** @type {CastedPattern<InvitationDetails>} */
 export const InvitationElementShape = M.splitRecord({
   description: M.string(),
   handle: InvitationHandleShape,
