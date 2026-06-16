@@ -41,7 +41,6 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
-import type { PortfoliosFilter, PortfoliosResponse } from './engine.ts';
 import { calculateInstrumentBlocks } from './instrument-status.ts';
 import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
 import { parseChainsGasResponse } from './gas-prices.ts';
@@ -90,29 +89,6 @@ export type SimplePowers = {
 
 /** `makeNonce` defaults to the wall clock for debugging sent transactions. */
 const defaultMakeNonce = makeNowISO(Date.now);
-
-const parseYdsPortfolios = (data: any): PortfoliosResponse[] => {
-  const portfolios = Array.isArray(data) ? data : data?.portfolios;
-  if (!Array.isArray(portfolios)) {
-    throw Error('YDS portfolios response must be an array or { portfolios }');
-  }
-  return portfolios.map(portfolio => {
-    const portfolioKey =
-      portfolio.portfolioKey ??
-      portfolio.key ??
-      (portfolio.portfolioId !== undefined
-        ? `portfolio${portfolio.portfolioId}`
-        : undefined) ??
-      (typeof portfolio.id === 'number'
-        ? `portfolio${portfolio.id}`
-        : undefined);
-    if (!portfolioKey) throw Error('YDS portfolio is missing portfolioKey');
-    return {
-      portfolioKey,
-      status: portfolio.status ?? portfolio,
-    } as PortfoliosResponse;
-  });
-};
 
 export const main = async (
   cliArgs: string[],
@@ -380,20 +356,7 @@ export const main = async (
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
     ...(ydsClient && {
-      rebalanceScanner: {
-        rebalanceScanPeriodS: config.rebalanceScanPeriodS,
-        queryPortfolios: async (filter?: PortfoliosFilter) => {
-          const portfoliosResponse = await ydsClient
-            .get('portfolios', {
-              searchParams: {
-                ...filter,
-                feature: 'auto-rebalance',
-              },
-            })
-            .json();
-          return parseYdsPortfolios(portfoliosResponse);
-        },
-      },
+        autoRebalancePeriodS: config.autoRebalancePeriodS,
     }),
   };
 

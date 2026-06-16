@@ -48,7 +48,7 @@ export interface YmaxPlannerConfig {
     readonly url?: string;
     readonly apiKey?: string;
   };
-  readonly rebalanceScanPeriodS: number;
+  readonly autoRebalancePeriodS: number;
 }
 
 export type SecretManager = Pick<
@@ -173,9 +173,9 @@ export const loadConfig = async (
   const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
   const ydsApiKey = env.YDS_API_KEY?.trim();
   !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
-  const rebalanceScanPeriodS = parsePositiveInteger(
+  const autoRebalancePeriodS = parsePositiveInteger(
     env,
-    'REBALANCE_SCAN_PERIOD_S',
+    'AUTO_REBALANCE_PERIOD_S',
     7 * 24 * 60 * 60,
   );
 
@@ -198,7 +198,7 @@ export const loadConfig = async (
       url: ydsUrl,
       apiKey: ydsApiKey,
     },
-    rebalanceScanPeriodS,
+    autoRebalancePeriodS,
   });
 
   return config;

@@ -54,7 +54,6 @@ import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 import type {
   FlowKey,
   FundsFlowPlan,
-  PortfolioAutoFeaturesExt,
   PortfolioKey,
   SupportedChain,
 } from '@agoric/portfolio-api';
@@ -85,9 +84,8 @@ import {
   setResolvedTx,
 } from './kv-store.ts';
 import { UserInputError } from './support.ts';
-import { rebalancePortfolios } from './rebalancer.ts';
-import type { RebalancerPowers } from './rebalancer.ts';
-import type { GasStateResponse } from './gas-prices.ts';
+import { rebalancePortfolios, shouldRunRebalance } from './rebalancer.ts';
+import type { YdsGasStateResponse } from './gas-prices.ts';
 import { stringifyGasPrices } from './gas-prices.ts';
 import {
   encodedKeyToPath,
@@ -260,7 +258,7 @@ export type Powers = {
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
   getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
-  getGasPrices?: () => Promise<GasStateResponse | undefined>;
+  getGasPrices?: () => Promise<YdsGasStateResponse | undefined>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
   makeNonce: () => string;
@@ -274,9 +272,7 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
-  rebalancer?: Pick<RebalancerPowers, 'queryPortfolios'> & {
-    autoRebalancePeriodS?: number;
-  };
+  autoRebalancePeriodS?: number;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -292,14 +288,13 @@ export type ProcessPortfolioPowers = Pick<
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
-  | 'rebalancer'
 > & {
   console: Required<Powers>['console'];
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   instrumentBlocks?: InstrumentBlocks;
-  gasPrices?: GasStateResponse;
+  gasPrices?: YdsGasStateResponse;
   gasPricesChanged?: boolean;
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   vstoragePathPrefixes: {
@@ -311,6 +306,7 @@ export type ProcessPortfolioPowers = Pick<
     string,
     StatusFor['portfolio'] & { atBlockHeight?: bigint }
   >;
+  autoRebalancePeriodS?: number;
 };
 
 export type StartFlowPowers = Pick<
@@ -334,52 +330,10 @@ export type StartFlowPowers = Pick<
   isDryRun?: boolean;
 };
 
-export type PortfoliosFilter = {
-  bucketKey?: string;
-  bucketSize?: number;
-  numBuckets?: number;
-  bucketIndex?: number;
-};
-
-export type PortfoliosResponse = {
-  portfolioKey: PortfolioKey;
-  status: StatusFor['portfolio'];
-};
-
 export type PortfoliosMemory = {
   deferrals: EventRecord[];
   snapshots?: Map<string, { fingerprint: string; repeats: number }>;
 };
-
-export const shouldRunRebalance = ({
-  hasGasPrices,
-  gasPricesChanged,
-  enabledAutoFeatures,
-  atBlockHeight,
-  rebalanceExpiredHeight,
-}: {
-  hasGasPrices: boolean;
-  gasPricesChanged: boolean;
-  enabledAutoFeatures?: PortfolioAutoFeaturesExt;
-  atBlockHeight?: bigint;
-  rebalanceExpiredHeight: bigint;
-}) =>
-  hasGasPrices &&
-  gasPricesChanged &&
-  enabledAutoFeatures?.rebalance &&
-  (!atBlockHeight || atBlockHeight <= rebalanceExpiredHeight);
-harden(shouldRunRebalance);
-
-export const shouldRunRebalanceScanner = ({
-  hasGasPrices,
-  gasPricesChanged,
-  portfolioEventCount,
-}: {
-  hasGasPrices: boolean;
-  gasPricesChanged: boolean;
-  portfolioEventCount: number;
-}) => hasGasPrices && (gasPricesChanged || portfolioEventCount > 0);
-harden(shouldRunRebalanceScanner);
 
 const fingerprintPortfolioState = (
   status: StatusFor['portfolio'],
@@ -500,7 +454,6 @@ export const processPortfolioEvents = async (
     instrumentBlocks,
     gasPrices,
     gasPricesChanged = false,
-    rebalancer,
     now,
     signingSmartWalletKit,
     walletStore,
@@ -515,6 +468,7 @@ export const processPortfolioEvents = async (
     blockCalculator,
     portfolioKeyForDepositAddr,
     portfoliosToRebalance,
+    autoRebalancePeriodS,
   }: ProcessPortfolioPowers,
 ) => {
   const { deferrals } = memory;
@@ -779,24 +733,24 @@ export const processPortfolioEvents = async (
   }
 
   rebalanceMutex = rebalanceMutex.then(async () => {
-    const autoRebalancePeriodS = rebalancer?.autoRebalancePeriodS;
     if (!autoRebalancePeriodS) {
       return;
     }
-    const rebalanceExpiredBlockHeight: bigint = blockCalculator.heightForTime(
+    const rebalanceExpiredHeight: bigint = blockCalculator.heightForTime(
       now() - autoRebalancePeriodS * 1000,
     );
 
     assert(gasPrices, 'Gas prices are needed for rebalance');
     for (const [portfolioKey, status] of statusForPortfolioKey.entries()) {
-      const { enabledAutoFeatures, atBlockHeight } = status;
+      const { enabledAutoFeatures } = status;
       if (
         !shouldRunRebalance({
           enabledAutoFeatures,
           hasGasPrices: !!gasPrices,
           gasPricesChanged,
-          atBlockHeight,
-          rebalanceExpiredHeight: rebalanceExpiredBlockHeight,
+          // `atBlockHeight` is not included because initial queueing should not
+          // be dependent on the event's block height.
+          rebalanceExpiredHeight,
         })
       )
         continue;
@@ -826,11 +780,10 @@ export const processPortfolioEvents = async (
         usdcTokensByChain,
         evmProviders,
         chainNameToChainIdMap,
-        queryPortfolios: rebalancer.queryPortfolios,
         gasPrices,
         now,
       },
-      rebalanceExpiredBlockHeight,
+      rebalanceExpiredHeight,
     ).catch(err => {
       console.error('🚨 rebalancePortfolios failed:', err);
     });
@@ -1017,7 +970,7 @@ export const startEngine = async (
     makeNonce,
     getInstrumentBlocks,
     getGasPrices,
-    rebalancer,
+    autoRebalancePeriodS,
   } = powers;
   const { kvStore } = evmCtx;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
@@ -1029,7 +982,7 @@ export const startEngine = async (
   const updateInstrumentBlocks = async () => {
     instrumentBlocks = await getInstrumentBlocks?.();
   };
-  let gasPrices = null as unknown as GasStateResponse;
+  let gasPrices = null as unknown as YdsGasStateResponse;
   let gasPricesString = '';
   const updateGasPrices = async () => {
     const newGasPrices = await getGasPrices?.();
@@ -1259,8 +1212,7 @@ export const startEngine = async (
     blockCalculator.append(respHeight, blockTimeMs);
     // We prune old block history using the longest of the task triggers,
     // in this case, the autoRebalancePeriod in milliseconds.
-    rebalancer?.autoRebalancePeriodS &&
-      blockCalculator.prune(rebalancer.autoRebalancePeriodS * 1000);
+    autoRebalancePeriodS && blockCalculator.prune(autoRebalancePeriodS * 1000);
 
     let gasPricesChanged = false;
     await updateGasPrices()
@@ -1343,25 +1295,6 @@ export const startEngine = async (
               },
             ),
           ),
-      powers.rebalanceScanner &&
-        shouldRunRebalanceScanner({
-          hasGasPrices: !!gasPrices,
-          gasPricesChanged,
-          portfolioEventCount: portfolioEvents.length,
-        }) &&
-        gasPrices &&
-        scanRebalanceOnce(
-          {
-            ...processPortfolioPowers,
-            instrumentBlocks,
-            queryPortfolios: powers.rebalanceScanner.queryPortfolios,
-            gasPrices,
-            now: () => blockTimeMs,
-          },
-          powers.rebalanceScanner.rebalanceScanPeriodS,
-        ).catch(err => {
-          console.error('🚨 rebalance scanner iteration failed', err);
-        }),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
 

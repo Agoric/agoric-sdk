@@ -1,7 +1,7 @@
 import type {
   FundsFlowPlan,
   MovementDesc,
-  SupportedChain,
+  SupportedChain as EverySupportedChain,
 } from '@agoric/portfolio-api';
 import { chainOf } from '@agoric/portfolio-api/src/places.js';
 
@@ -29,15 +29,23 @@ export type YdsChainGasState = {
   }>;
 };
 
-export type GasStateResponse = {
+export type YdsGasStateResponse = {
   message: 'Gas data retrieved successfully';
   data: YdsChainGasState[];
   timestamp: string;
 };
 
+/** It would be better to detect chain support dynamically within the moves. */
+export const unsupportedChainNames = ['agoric', 'noble'] as const;
+export type SupportedChain = Exclude<
+  EverySupportedChain,
+  (typeof unsupportedChainNames)[number]
+>;
+
 const GAS_STATS_WINDOW = 'P30D';
 
-export const makeFilterStepByGasStateV1 = (gasPrices: GasStateResponse) => {
+export const makeFilterStepByGasState = (gasPrices: YdsGasStateResponse) => {
+  /** The filter function that curries in the gasPrices. */
   const filterByGasState = (
     chainGasState: YdsChainGasState,
     _chainName: SupportedChain,
@@ -59,6 +67,8 @@ export const makeFilterStepByGasStateV1 = (gasPrices: GasStateResponse) => {
  
   const filterStep = (step: MovementDesc, _index: number): boolean => {
     const chainNames = chainNamesForStep(step);
+    if (chainNames.length === 0) return true;
+
     for (const chainName of chainNames) {
       const gasState = gasStateByChainName.get(chainName);
       if (gasState) return !!filterByGasState(gasState, chainName);
@@ -117,7 +127,7 @@ const isChainGasState = (data: unknown): data is YdsChainGasState => {
   );
 };
 
-export const parseChainsGasResponse = (data: unknown): GasStateResponse => {
+export const parseChainsGasResponse = (data: unknown): YdsGasStateResponse => {
   if (
     !isRecord(data) ||
     data.message !== 'Gas data retrieved successfully' ||
@@ -127,72 +137,87 @@ export const parseChainsGasResponse = (data: unknown): GasStateResponse => {
   ) {
     throw Error('unexpected /chains/gas response schema');
   }
-  return data as GasStateResponse;
+  return data as YdsGasStateResponse;
 };
 
-export const stringifyGasPrices = (gasPrices: GasStateResponse): string =>
+export const stringifyGasPrices = (gasPrices: YdsGasStateResponse): string =>
   JSON.stringify(
     [...gasPrices.data].sort((a, b) => a.chainName.localeCompare(b.chainName)),
   );
 
-const chainNamesForStep = ({ src, dest }: MovementDesc): SupportedChain[] => {
+const chainNamesForStep = (step: MovementDesc): SupportedChain[] => {
+  const { src, dest } = step;
   const chainNames = [src, dest]
-    .map(place => chainOf(place));
+    .map(place => chainOf(place))
+    .filter(
+      chainName => !unsupportedChainNames.includes(chainName as any),
+    ) as SupportedChain[];
   return [...new Set(chainNames)];
 };
 
-const gasFavorableForStep = (
-  gasStateByChainName: Map<string, YdsChainGasState>,
-  step: MovementDesc,
-): boolean => {
-  const chainNames = chainNamesForStep(step);
-  if (chainNames.length === 0) return true;
-
-  for (const chainName of chainNames) {
-    const gasState = gasStateByChainName.get(chainName);
-    if (!gasState) continue;
-    const p30d = gasState.windows.find(
-      ({ window }) => window === GAS_STATS_WINDOW,
-    );
-    return (
-      !!p30d &&
-      gasState.current.latestScaledGasDenomPerGasUnit * 2 < p30d.p50 * 3
+/**
+ * Find all the transitive dependencies indices for the step at `stepIndex`.
+ *
+ * @param plan
+ */
+const makeDependenciesFor = (plan: FundsFlowPlan | MovementDesc[]) => {
+  // Compile a dependency graph from the plan's order, or if not present then
+  // from the flow's linear order.
+  let order: [number, number[]][] | undefined;
+  if ('order' in plan) {
+    order = plan.order;
+  }
+  if (!order) {
+    const steps = Array.isArray(plan) ? plan : plan.flow;
+    order = steps.map(
+      (_step, idx) => [idx, idx === 0 ? [] : [idx - 1]] as const,
     );
   }
-  return false;
+
+  /**
+   *
+   * @param stepIndex the index of the plan step for which to find dependencies
+   * @returns the indices of all steps that the step at `stepIndex` depends on, including itself
+   */
+  const dependenciesFor = (stepIndex: number): number[] => {
+    // Traverse the dependency graph to find all steps that the given step depends
+    // on.
+    const selectedIndices = new Set<number>();
+    const todo = [stepIndex];
+    while (todo.length > 0) {
+      // Ensure we don't revisit steps we've already seen, which also handles
+      // cycles in the dependency graph (though there shouldn't be any).
+      const currentIndex = todo.shift()!;
+      if (selectedIndices.has(currentIndex)) continue;
+      selectedIndices.add(currentIndex);
+
+      // Add the direct dependencies of the current step to the todo list.
+      const deps = order.find(([idx]) => idx === currentIndex)?.[1] ?? [];
+      todo.push(...deps.filter(dep => !selectedIndices.has(dep)));
+    }
+    return [...selectedIndices.keys()];
+  };
+  return dependenciesFor;
 };
 
-const dependenciesFor = (plan: FundsFlowPlan, stepIndex: number): number[] => {
-  if (!plan.order) {
-    return stepIndex === 0 ? [] : [stepIndex - 1];
-  }
-  const entry = plan.order.find(([idx]) => idx === stepIndex);
-  return entry?.[1] ?? [];
-};
-
-export const filterGasFavorablePlan = (
+export const filterPlan = (
   plan: FundsFlowPlan,
-  gasState: GasStateResponse,
+  filterStep: (step: MovementDesc, index: number) => boolean,
 ): FundsFlowPlan => {
   const removed = new Set<number>();
-  const gasStateByChainName = new Map(
-    gasState.data.map(chainGasState => [
-      chainGasState.chainName,
-      chainGasState,
-    ]),
-  );
   for (let i = 0; i < plan.flow.length; i += 1) {
-    if (!gasFavorableForStep(gasStateByChainName, plan.flow[i])) {
+    if (!filterStep(plan.flow[i], i)) {
       removed.add(i);
     }
   }
 
+  const dependenciesFor = makeDependenciesFor(plan);
   let changed = true;
   while (changed) {
     changed = false;
     for (let i = 0; i < plan.flow.length; i += 1) {
       if (removed.has(i)) continue;
-      if (dependenciesFor(plan, i).some(dep => removed.has(dep))) {
+      if (dependenciesFor(i).some(dep => removed.has(dep))) {
         removed.add(i);
         changed = true;
       }
@@ -220,4 +245,4 @@ export const filterGasFavorablePlan = (
     .map(([idx, prerequisites]) => [idx, prerequisites] as [number, number[]]);
   return harden({ flow, order });
 };
-harden(filterGasFavorablePlan);
+harden(filterPlan);

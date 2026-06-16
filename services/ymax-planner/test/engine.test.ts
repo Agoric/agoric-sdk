@@ -47,11 +47,9 @@ import type { Marshal } from '@endo/marshal';
 import { Far } from '@endo/pass-style';
 import type { Passable } from '@endo/pass-style';
 import {
-  makeSleepQueue,
   makeVstorageEvent,
   pickBalance,
   processPortfolioEvents,
-  shouldRunRebalanceScanner,
 } from '../src/engine.ts';
 import type {
   Powers,
@@ -65,6 +63,7 @@ import {
   mockEvmCtx,
   mockGasEstimator,
 } from './mocks.ts';
+import { shouldRunRebalance } from '../src/rebalancer.ts';
 
 // #region client-utils mocks
 // XXX these helpers belong somewhere else; maybe *in* packages/client-utils?
@@ -448,6 +447,8 @@ const fakePortfolioKit = async ({
     vstoragePathPrefixes: { portfoliosPathPrefix },
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
+    blockCalculator: { heightForTime: () => 0n } as any,
+    portfoliosToRebalance: new Map(),
   };
 
   const initialPortfolioStatus: StatusFor['portfolio'] = {
@@ -530,53 +531,26 @@ test('ignore additional balances', t => {
   t.deepEqual(actual, { brand: depositBrand, value: 50n });
 });
 
-test('makeSleepQueue resolves ready sleeps in wake time order', async t => {
-  const queue = makeSleepQueue();
-  const settled: string[] = [];
+test('shouldRunRebalance gates on gas prices and activity', t => {
+  const ready = {
+    hasGasPrices: true,
+    gasPricesChanged: true,
+    enabledAutoFeatures: { rebalance: true },
+    rebalanceExpiredHeight: 10n,
+  };
 
-  const p15 = queue.sleepUntil(15).then(() => settled.push('15'));
-  const p5 = queue.sleepUntil(5).then(() => settled.push('5'));
-  const p10 = queue.sleepUntil(10).then(() => settled.push('10'));
-  const p20 = queue.sleepUntil(20).then(
-    () => settled.push('20'),
-    err => settled.push(`rejected:${err.message}`),
-  );
-
-  t.is(queue.size, 4);
-  t.is(queue.resolveReady(10), 1);
-  await p5;
-  t.deepEqual(settled, ['5']);
-  t.is(queue.size, 3);
-
-  t.is(queue.resolveReady(16), 2);
-  await Promise.all([p10, p15]);
-  t.deepEqual(settled, ['5', '10', '15']);
-  t.is(queue.size, 1);
-
-  t.is(queue.rejectAll(Error('engine terminated')), 1);
-  await p20;
-  t.deepEqual(settled, ['5', '10', '15', 'rejected:engine terminated']);
-  t.is(queue.size, 0);
-});
-
-test('shouldRunRebalanceScanner gates on gas prices and activity', t => {
   t.false(
-    shouldRunRebalanceScanner({
+    shouldRunRebalance({
+      ...ready,
       hasGasPrices: false,
-      gasPricesChanged: true,
-      portfolioEventCount: 0,
     }),
   );
   t.false(
-    shouldRunRebalanceScanner({
-      hasGasPrices: true,
+    shouldRunRebalance({
+      ...ready,
       gasPricesChanged: false,
-      portfolioEventCount: 0,
     }),
   );
-  t.true(
-    shouldRunRebalanceScanner({
-      hasGasPrices: true,
   t.false(
     shouldRunRebalance({
       ...ready,
@@ -590,15 +564,16 @@ test('shouldRunRebalanceScanner gates on gas prices and activity', t => {
     }),
   );
   t.true(shouldRunRebalance(ready));
-      gasPricesChanged: true,
-      portfolioEventCount: 0,
+  t.true(
+    shouldRunRebalance({
+      ...ready,
+      atBlockHeight: 10n,
     }),
   );
-  t.true(
-    shouldRunRebalanceScanner({
-      hasGasPrices: true,
-      gasPricesChanged: false,
-      portfolioEventCount: 1,
+  t.false(
+    shouldRunRebalance({
+      ...ready,
+      atBlockHeight: 11n,
     }),
   );
 });
