@@ -183,13 +183,20 @@ async function overflowCrank(t, explosion) {
   // let the vatAdminService get wired up before we create any new vats
   await c.run();
 
-  // create a meter with ~10M remaining
+  // create a meter with ~8.5M remaining
   // This test runs at the cusp of meter failure and is sensitive to changes to
   // the underlying platform, including merely adding more text to the source.
+  // The figure must sit just above dispatch.startVat consumption
+  // (consumedByStartVat) plus one normal run() crank, so the normal message
+  // succeeds but the deliberate per-crank overflow below still trips the meter.
+  // The cost is deterministic (this test pins xs-worker), so local and CI agree;
+  // measure it only after every ses/@endo patch is applied. The ses 2.x bump
+  // plus the ses compartment patch raised consumedByStartVat to 8_389_970, with
+  // ~14_529 per run(). See MAINTAINERS.md "Syncing Endo dependency versions".
   t.log(
     'adjust the remaining computrons figure if this test fails due to platform changes and run a benchmark to check the wallclock impact',
   );
-  const cmargs = [7_500_000n, 5_000_000n]; // remaining, notifyThreshold
+  const cmargs = [8_500_000n, 5_000_000n]; // remaining, notifyThreshold
   const kp1 = c.queueToVatRoot('bootstrap', 'createMeter', cmargs);
   await c.run();
   const marg = kunser(c.kpResolution(kp1));

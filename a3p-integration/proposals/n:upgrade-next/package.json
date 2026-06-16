@@ -1,4 +1,5 @@
 {
+  "name": "n:upgrade-next",
   "agoricProposal": {
     "releaseNotes": false,
     "sdkImageTag": "unreleased",

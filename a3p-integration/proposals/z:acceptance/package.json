@@ -1,4 +1,5 @@
 {
+  "name": "z:acceptance",
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
