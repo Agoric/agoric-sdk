@@ -7,7 +7,6 @@ export const updateVaultManagerParams = async (t, gd, brand, newDebtLimit) => {
   const timerBrand = agoricNamesRemotes.brand.timer;
   assert(timerBrand);
 
-  /* XXX @type {Partial<VaultsParams>} */
   const params = {
     DebtLimit: { brand: agoricNamesRemotes.brand.IST, value: newDebtLimit },
   };
