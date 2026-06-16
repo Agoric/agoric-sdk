@@ -56,6 +56,7 @@ import {
 } from './mocks.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import PROD_NETWORK_202604 from '../tools/network-snapshots/prod-network-2026-04.ts';
+import PROD_NETWORK_202606 from '../tools/network-snapshots/prod-network-2026-06.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -859,6 +860,38 @@ test('solver regressions', async t => {
     makeMovementDesc('@Optimism', 'Compound_Optimism', scale6(495)),
     makeMovementDesc('@Base', 'Compound_Base', scale6(495)),
   ]);
+
+  // 2026-06-15 (simulated)
+  const portfolio145Rebalance202606 = await planRebalanceToAllocations({
+    ...plannerContext,
+    network: PROD_NETWORK_202606,
+    targetAllocation: {
+      ERC4626_morphoAlphaUsdcCore_Ethereum: 1515152n,
+      ERC4626_morphoClearstarHighYieldUsdc_Ethereum: 2525253n,
+      ERC4626_morphoGauntletUsdcCore_Arbitrum: 1515152n,
+      ERC4626_morphoGauntletUsdcRwa_Ethereum: 1414141n,
+      ERC4626_morphoSeamlessUsdcVault_Base: 1515152n,
+      ERC4626_morphoSteakhousePrimeUsdc_Base: 1515152n,
+    },
+    currentBalances: {
+      Compound_Arbitrum: makeDeposit(37n),
+      ERC4626_morphoAlphaUsdcCore_Ethereum: makeDeposit(15465311n),
+      ERC4626_morphoClearstarHighYieldUsdc_Ethereum: makeDeposit(69299093n),
+      ERC4626_morphoGauntletUsdcCore_Arbitrum: makeDeposit(15372933n),
+      ERC4626_morphoGauntletUsdcRwa_Ethereum: makeDeposit(14394083n),
+      ERC4626_morphoSeamlessUsdcVault_Base: makeDeposit(13870033n),
+      ERC4626_morphoSteakhousePrimeUsdc_Base: makeDeposit(15387391n),
+      '@Base': makeDeposit(1402522n),
+      '@Arbitrum': makeDeposit(0n),
+      '@Ethereum': makeDeposit(4633698n),
+    },
+  });
+  await assertPlanFlow(
+    t,
+    'portfolio145 simulated rebalance',
+    portfolio145Rebalance202606.flow,
+    [],
+  );
 });
 
 test('planRebalanceToAllocations regression - multiple sources', async t => {
