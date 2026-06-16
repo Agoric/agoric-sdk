@@ -4410,6 +4410,7 @@ __metadata:
     "@endo/init": "npm:^1.1.12"
     "@endo/pass-style": "npm:^1.6.3"
     ava: "npm:^6.4.1"
+    ts-blank-space: "npm:^0.7.0"
   languageName: unknown
   linkType: soft
 
@@ -4842,6 +4843,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"ts-blank-space@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "ts-blank-space@npm:0.7.0"
+  dependencies:
+    typescript: "npm:5.1.6 - 5.9.x"
+  checksum: 10c0/60f9ab704380ff5e8a28ab8d5048cc9f85c2cbc7215738497abaf989171e7dbd69ed27b2a8866b3b5c96e433a477b70e667dadf1d1d2a58e71c01681880e50b5
+  languageName: node
+  linkType: hard
+
 "tunnel-agent@npm:^0.6.0":
   version: 0.6.0
   resolution: "tunnel-agent@npm:0.6.0"
@@ -4855,6 +4865,26 @@ __metadata:
   version: 0.13.1
   resolution: "type-fest@npm:0.13.1"
   checksum: 10c0/0c0fa07ae53d4e776cf4dac30d25ad799443e9eef9226f9fddbb69242db86b08584084a99885cfa5a9dfe4c063ebdc9aa7b69da348e735baede8d43f1aeae93b
+  languageName: node
+  linkType: hard
+
+"typescript@npm:5.1.6 - 5.9.x":
+  version: 5.9.3
+  resolution: "typescript@npm:5.9.3"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/6bd7552ce39f97e711db5aa048f6f9995b53f1c52f7d8667c1abdc1700c68a76a308f579cd309ce6b53646deb4e9a1be7c813a93baaf0a28ccd536a30270e1c5
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A5.1.6 - 5.9.x#optional!builtin<compat/typescript>":
+  version: 5.9.3
+  resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/ad09fdf7a756814dce65bc60c1657b40d44451346858eea230e10f2e95a289d9183b6e32e5c11e95acc0ccc214b4f36289dcad4bf1886b0adb84d711d336a430
   languageName: node
   linkType: hard
 
