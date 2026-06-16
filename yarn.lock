@@ -7530,7 +7530,6 @@ __metadata:
     "@agoric/deploy-script-support": "workspace:*"
     "@agoric/ertp": "workspace:*"
     "@agoric/governance": "workspace:*"
-    "@agoric/inter-protocol": "workspace:*"
     "@agoric/internal": "workspace:*"
     "@agoric/network": "workspace:*"
     "@agoric/smart-wallet": "workspace:*"
