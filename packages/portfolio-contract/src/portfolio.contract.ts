@@ -897,12 +897,9 @@ export const contract = async (
   );
 
   const makePlanner = preparePlanner(zone.subZone('planner'), {
-    zcf,
-    rebalance,
     getPortfolio,
     getPlannerDelegation,
     shapes: offerArgsShapes,
-    vowTools,
   });
 
   const makePlannerInvitation = prepareResultOnlyInvitation('planner', () =>
