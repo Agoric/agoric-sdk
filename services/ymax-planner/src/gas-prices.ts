@@ -12,20 +12,29 @@ export type YdsChainGasState = {
   gasDenom: string;
   gasDenomScale: number;
   current: {
-    latestScaledGasDenomPerGasUnit: number;
+    sampleBaseFee: number;
+    samplePriorityFee: number;
+    sample: number;
+    sampleUusd: number;
+    usdPerGasDenom: number;
+    blockNumber: number;
+    blockTimestampSec: number;
     takenAtSec: number;
   };
   windows: Array<{
-    window: string;
-    until: string;
+    duration: string;
+    untilSec: number;
+    min: number;
     mean: number;
     p50: number;
     p90: number;
+    max: number;
+    minUusd: number;
+    meanUusd: number;
+    p50Uusd: number;
+    p90Uusd: number;
+    maxUusd: number;
     sampleCount: number;
-  }>;
-  recent: Array<{
-    takenAtSec: number;
-    scaledGasDenomPerGasUnit: number;
   }>;
 };
 
@@ -51,11 +60,12 @@ export const makeFilterStepByGasState = (gasPrices: YdsGasStateResponse) => {
     _chainName: SupportedChain,
   ): boolean => {
     const period = chainGasState.windows.find(
-      // @ts-expect-error -- aspirational
       ({ duration }) => duration === GAS_STATS_WINDOW,
     );
-    // @ts-expect-error -- aspirational
-    return !!period && chainGasState.current.sampleUusd * 2 < period.p50Uusd * 3;
+    // Return true if we allow plan steps to proceed.
+    return (
+      !!period && chainGasState.current.sampleUusd * 2 < period.p50Uusd * 3
+    );
   };
 
   const gasStateByChainName = new Map<SupportedChain, YdsChainGasState>(

@@ -39,7 +39,6 @@ const makeGasState = (
 ): YdsGasStateResponse => ({
   message: 'Gas data retrieved successfully',
   timestamp: '2026-06-12T00:00:00.000Z',
-  // @ts-expect-error -- aspirational
   data: Object.entries(prices).map(([chainName, price], index) => {
     const currentUusd = price.currentUusd ?? price.current * 2;
     const p30dP50Uusd = price.p30dP50Uusd ?? price.p30dP50 * 2;
