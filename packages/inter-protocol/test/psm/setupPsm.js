@@ -19,7 +19,7 @@ import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.j
 import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
 
 const psmRoot = './src/psm/psm.js'; // package relative
-const charterRoot = './src/econCommitteeCharter.js'; // package relative
+const charterRoot = '@agoric/governance/src/econCommitteeCharter.js';
 
 /**
  * @import {ZoeManualTimer} from '@agoric/zoe/tools/manualTimer.js';

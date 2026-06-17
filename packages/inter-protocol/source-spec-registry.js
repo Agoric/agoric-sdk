@@ -18,9 +18,9 @@ export const interProtocolBundleSpecs = {
   },
   econCommitteeCharter: {
     bundleName: 'econCommitteeCharter',
-    packagePath: '@agoric/inter-protocol/src/econCommitteeCharter.js',
+    packagePath: '@agoric/governance/src/econCommitteeCharter.js',
     sourceSpec: resolveSourceSpec(
-      '@agoric/inter-protocol/src/econCommitteeCharter.js',
+      '@agoric/governance/src/econCommitteeCharter.js',
     ),
   },
   provisionPool: {

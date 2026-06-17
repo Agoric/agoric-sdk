@@ -69,7 +69,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  * package.
  *
  * @typedef {{
- *   econCommitteeCharter: typeof import('../econCommitteeCharter.js').start;
+ *   econCommitteeCharter: typeof import('@agoric/governance/src/econCommitteeCharter.js').start;
  *   feeDistributor: typeof import('../feeDistributor.js').start;
  *   psm: typeof import('../psm/psm.js').start;
  *   priceAggregator: typeof import('../price/fluxAggregatorContract.js').start;
@@ -112,7 +112,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
 /**
  * @typedef {StartedInstanceKit<
- *   typeof import('../econCommitteeCharter.js').start
+ *   typeof import('@agoric/governance/src/econCommitteeCharter.js').start
  * >} EconCharterStartResult
  */
 /**

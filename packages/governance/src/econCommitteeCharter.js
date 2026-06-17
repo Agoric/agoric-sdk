@@ -12,7 +12,7 @@ import { E } from '@endo/far';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {TimestampValue} from '@agoric/time';
  * @import {ContractMeta, Installation, Instance, ZCF, ZCFSeat} from '@agoric/zoe';
- * @import {GovernorCreatorFacet} from '@agoric/governance/src/types.js';
+ * @import {GovernorCreatorFacet} from './types.js';
  */
 
 /**
@@ -20,6 +20,12 @@ import { E } from '@endo/far';
  *   for votes on changes. A more complete implementation would validate
  *   parameters, constrain deadlines and possibly split the ability to call for
  *   votes into separate capabilities for finer grain encapsulation.
+ *
+ *   XXX There is nothing Inter-Protocol- or "econ"-specific in this module: it
+ *   is a generic charter over arbitrary governed contracts. The
+ *   `econCommitteeCharter` name (and the agoricNames registration that uses it)
+ *   is kept for legacy clarity and on-chain continuity. Relocated from
+ *   @agoric/inter-protocol to @agoric/governance (refs #12719).
  */
 
 export const INVITATION_MAKERS_DESC = 'charter member invitation';
