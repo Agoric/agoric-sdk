@@ -47,6 +47,7 @@ export const makePrioritySendersManager = sendersNode => {
     );
   };
 
+  /** @param {string} address */
   const provideRecordForAddress = async address => {
     const extant = addressRecords.get(address);
     if (extant) {

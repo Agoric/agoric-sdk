@@ -138,9 +138,8 @@ const onceWithError = makeMemoizedOnceWithError(subscribeOnceWithError);
  */
 const writeChunk = (stream, data) =>
   new Promise((resolve, reject) => {
-    let waitForDrain;
     try {
-      waitForDrain = !stream.write(data, err => {
+      const waitForDrain = !stream.write(data, err => {
         if (err) {
           reject(err);
           return;
@@ -174,15 +173,18 @@ export const makeFsStreamWriter = async filePath => {
       ? undefined
       : promisify(/** @type {WriteStream} */ (stream).close.bind(stream));
 
+  /** @type {Promise<boolean>} */
   let flushed = Promise.resolve();
   let closed = false;
 
+  /** @param {Promise<boolean>} p */
   const updateFlushed = p => {
     flushed = flushed.then(
       () => p,
       err =>
         p.then(
           () => Promise.reject(err),
+          /** @param {Error} pError */
           pError =>
             Promise.reject(
               pError !== err ? AggregateError([err, pError]) : err,
@@ -192,6 +194,7 @@ export const makeFsStreamWriter = async filePath => {
     flushed.catch(() => {});
   };
 
+  /** @param {string | Uint8Array} data */
   const write = async data => {
     const written = closed
       ? Promise.reject(Error('Stream closed'))
