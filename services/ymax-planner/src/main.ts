@@ -303,9 +303,9 @@ export const main = async (
     : undefined;
   const getGasPrices = ydsClient
     ? async () => {
-      const gasResponse = await ydsClient.get('chains/gas').json();
-      return parseChainsGasResponse(gasResponse);
-    }
+        const gasResponse = await ydsClient.get('chains/gas').json();
+        return parseChainsGasResponse(gasResponse);
+      }
     : undefined;
 
   const ydsNotifier = config.yds.url
@@ -356,7 +356,7 @@ export const main = async (
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
     ...(ydsClient && {
-        autoRebalancePeriodS: config.autoRebalancePeriodS,
+      autoRebalancePeriodS: config.autoRebalancePeriodS,
     }),
   };
 

@@ -84,6 +84,7 @@ import {
   setResolvedTx,
 } from './kv-store.ts';
 import { UserInputError } from './support.ts';
+import { BlockCalculator } from './utils.ts';
 import { rebalancePortfolios, shouldRunRebalance } from './rebalancer.ts';
 import type { YdsGasStateResponse } from './gas-prices.ts';
 import { stringifyGasPrices } from './gas-prices.ts';
@@ -101,61 +102,6 @@ import {
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 
 const { values } = Object;
-
-class BlockCalculator {
-  #blockTimeRange = 0;
-
-  #blockHeightRange = 0n;
-
-  #blockHistory = [] as Array<{ blockHeight: bigint; blockTimeMs: number }>;
-
-  get meanBlockTimeMs() {
-    return this.#blockHeightRange > 0n
-      ? Number(this.#blockTimeRange) / Number(this.#blockHeightRange)
-      : 0;
-  }
-
-  timeMsAt(index: number, dflt = 0) {
-    return this.#blockHistory.at(index)?.blockTimeMs ?? dflt;
-  }
-
-  heightAt(index: number, dflt = 0n) {
-    return this.#blockHistory.at(index)?.blockHeight ?? dflt;
-  }
-
-  append(blockHeight: bigint, blockTimeMs: number) {
-    this.#blockHistory.push(harden({ blockHeight, blockTimeMs }));
-    this.#blockTimeRange = this.timeMsAt(0) - this.timeMsAt(-1);
-    this.#blockHeightRange = this.heightAt(0) - this.heightAt(-1);
-  }
-
-  prune(maxRangeMs: number) {
-    let remainderMs = this.#blockTimeRange;
-    while (remainderMs > maxRangeMs) {
-      const removed = this.#blockHistory.shift();
-      if (!removed) break;
-      remainderMs = removed.blockTimeMs - this.timeMsAt(-1);
-    }
-    this.#blockTimeRange = this.timeMsAt(-1) - this.timeMsAt(0);
-    this.#blockHeightRange = this.heightAt(-1) - this.heightAt(0);
-  }
-
-  heightForTime(targetTimeMs: number) {
-    if (targetTimeMs < this.timeMsAt(0)) {
-      // Extrapolate based on the mean block time if the target time is older than our window.
-      const deltaTimeMs = this.timeMsAt(0) - targetTimeMs;
-      return (
-        this.heightAt(0) -
-        BigInt(Math.floor(deltaTimeMs / this.meanBlockTimeMs))
-      );
-    }
-
-    const targetEntry = this.#blockHistory.findLast(
-      ({ blockTimeMs }) => blockTimeMs <= targetTimeMs,
-    );
-    return targetEntry ? targetEntry.blockHeight : this.heightAt(0);
-  }
-}
 
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
@@ -732,62 +678,70 @@ export const processPortfolioEvents = async (
     }
   }
 
-  rebalanceMutex = rebalanceMutex.then(async () => {
-    if (!autoRebalancePeriodS) {
-      return;
-    }
-    const rebalanceExpiredHeight: bigint = blockCalculator.heightForTime(
-      now() - autoRebalancePeriodS * 1000,
-    );
+  rebalanceMutex = rebalanceMutex
+    .catch(err => console.error('🚨 rebalance mutex chain failed:', err))
+    .then(async () => {
+      if (!autoRebalancePeriodS) {
+        return;
+      }
+      const rebalanceExpiredHeight: bigint = blockCalculator.heightForTime(
+        now() - autoRebalancePeriodS * 1000,
+      );
 
-    assert(gasPrices, 'Gas prices are needed for rebalance');
-    for (const [portfolioKey, status] of statusForPortfolioKey.entries()) {
-      const { enabledAutoFeatures } = status;
-      if (
-        !shouldRunRebalance({
-          enabledAutoFeatures,
-          hasGasPrices: !!gasPrices,
-          gasPricesChanged,
-          // `atBlockHeight` is not included because initial queueing should not
-          // be dependent on the event's block height.
-          rebalanceExpiredHeight,
-        })
-      )
-        continue;
-      portfoliosToRebalance.set(portfolioKey, status);
-    }
+      if (!gasPrices) {
+        console.warn(
+          '⚠️ Gas prices not available for rebalance check, skipping rebalance',
+        );
+        return;
+      }
 
-    if (portfoliosToRebalance.size === 0) {
-      return;
-    }
-    console.info(`Rebalancing`, portfoliosToRebalance.size, `portfolios`);
-    await rebalancePortfolios(
-      portfoliosToRebalance,
-      {
-        console,
-        isDryRun,
-        depositBrand,
-        feeBrand,
-        gasEstimator,
-        network,
-        instrumentBlocks,
-        signingSmartWalletKit,
-        walletStore,
-        getWalletInvocationUpdate,
-        spectrumBlockchain,
-        spectrumChainIds,
-        evmTokenAddresses,
-        usdcTokensByChain,
-        evmProviders,
-        chainNameToChainIdMap,
-        gasPrices,
-        now,
-      },
-      rebalanceExpiredHeight,
-    ).catch(err => {
-      console.error('🚨 rebalancePortfolios failed:', err);
+      for (const [portfolioKey, status] of statusForPortfolioKey.entries()) {
+        const { enabledAutoFeatures } = status;
+        if (
+          !shouldRunRebalance({
+            enabledAutoFeatures,
+            hasGasPrices: !!gasPrices,
+            gasPricesChanged,
+            // `atBlockHeight` is not included because initial queueing should not
+            // be dependent on the event's block height.
+            rebalanceExpiredHeight,
+          })
+        )
+          continue;
+        portfoliosToRebalance.set(portfolioKey, status);
+      }
+
+      if (portfoliosToRebalance.size === 0) {
+        return;
+      }
+      console.info(`Rebalancing`, portfoliosToRebalance.size, `portfolios`);
+      await rebalancePortfolios(
+        portfoliosToRebalance,
+        {
+          console,
+          isDryRun,
+          depositBrand,
+          feeBrand,
+          gasEstimator,
+          network,
+          instrumentBlocks,
+          signingSmartWalletKit,
+          walletStore,
+          getWalletInvocationUpdate,
+          spectrumBlockchain,
+          spectrumChainIds,
+          evmTokenAddresses,
+          usdcTokensByChain,
+          evmProviders,
+          chainNameToChainIdMap,
+          gasPrices,
+          now,
+        },
+        rebalanceExpiredHeight,
+      ).catch(err => {
+        console.error('🚨 rebalancePortfolios failed:', err);
+      });
     });
-  });
 };
 
 export const processPendingTxEvents = async (

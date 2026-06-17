@@ -74,7 +74,7 @@ export const makeFilterStepByGasState = (gasPrices: YdsGasStateResponse) => {
       chainGasState,
     ]),
   );
- 
+
   const filterStep = (step: MovementDesc, _index: number): boolean => {
     const chainNames = chainNamesForStep(step);
     if (chainNames.length === 0) return true;
