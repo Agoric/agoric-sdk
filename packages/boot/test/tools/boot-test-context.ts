@@ -13,7 +13,6 @@ import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '../../tools/drivers.js';
-import { makeLiquidationTestKit } from '../../tools/liquidation.js';
 import {
   fetchCoreEvalRelease,
   makeSwingsetTestKit,
@@ -346,6 +345,17 @@ export const withWalletFactory = async <T extends BootTestContext>(
   };
 };
 
+/**
+ * Compose economic-committee governance onto a wallet-factory context: a
+ * {@link GovernanceDriver} for the given committee `wallets` plus assertion
+ * helpers for the propose → vote → param-change flow. Layers on top of
+ * {@link withWalletFactory} the same way that builds on {@link makeBootTestContext}.
+ *
+ * Formerly paired with a `withLiquidation` composer for Inter Protocol vault
+ * tests; that one was removed with IP (#12719) since it depended on the
+ * liquidation test kit. This governance layer has no such coupling — the only
+ * remaining committee-governed contract is provisionPool.
+ */
 export const withGovernance = async <T extends WalletFactoryBootTestContext>(
   ctx: T,
   { wallets }: { wallets: string[] },
@@ -397,26 +407,5 @@ export const withGovernance = async <T extends WalletFactoryBootTestContext>(
     expectProposalAccepted,
     expectVoteAccepted,
     expectParamValue,
-  };
-};
-
-export const withLiquidation = async <
-  T extends WalletFactoryBootTestContext & {
-    governanceDriver: GovernanceDriver;
-  },
->(
-  ctx: T,
-  { t }: { t: ExecutionContext },
-) => {
-  const liquidation = await makeLiquidationTestKit({
-    swingsetTestKit: ctx,
-    agoricNamesRemotes: ctx.agoricNamesRemotes,
-    walletFactoryDriver: ctx.walletFactoryDriver,
-    governanceDriver: ctx.governanceDriver,
-    t,
-  });
-  return {
-    ...ctx,
-    ...liquidation,
   };
 };
