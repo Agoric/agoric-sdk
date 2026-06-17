@@ -7206,7 +7206,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vercel/nft@npm:^1.3.2, @vercel/nft@npm:^1.5.0":
+"@vercel/nft@npm:^1.5.0":
   version: 1.10.2
   resolution: "@vercel/nft@npm:1.10.2"
   dependencies:
@@ -7824,61 +7824,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ava@npm:^7.0.0":
-  version: 7.0.0
-  resolution: "ava@npm:7.0.0"
-  dependencies:
-    "@vercel/nft": "npm:^1.3.2"
-    acorn: "npm:^8.16.0"
-    acorn-walk: "npm:^8.3.5"
-    ansi-styles: "npm:^6.2.3"
-    arrgv: "npm:^1.0.2"
-    arrify: "npm:^3.0.0"
-    callsites: "npm:^4.2.0"
-    cbor: "npm:^10.0.11"
-    chalk: "npm:^5.6.2"
-    chunkd: "npm:^2.0.1"
-    ci-info: "npm:^4.4.0"
-    ci-parallel-vars: "npm:^1.0.1"
-    cli-truncate: "npm:^5.1.1"
-    code-excerpt: "npm:^4.0.0"
-    common-path-prefix: "npm:^3.0.0"
-    concordance: "npm:^5.0.4"
-    currently-unhandled: "npm:^0.4.1"
-    debug: "npm:^4.4.3"
-    emittery: "npm:^1.2.0"
-    figures: "npm:^6.1.0"
-    globby: "npm:^16.1.1"
-    ignore-by-default: "npm:^2.1.0"
-    indent-string: "npm:^5.0.0"
-    is-plain-object: "npm:^5.0.0"
-    is-promise: "npm:^4.0.0"
-    matcher: "npm:^6.0.0"
-    memoize: "npm:^10.2.0"
-    ms: "npm:^2.1.3"
-    p-map: "npm:^7.0.4"
-    package-config: "npm:^5.0.0"
-    picomatch: "npm:^4.0.3"
-    plur: "npm:^6.0.0"
-    pretty-ms: "npm:^9.3.0"
-    resolve-cwd: "npm:^3.0.0"
-    stack-utils: "npm:^2.0.6"
-    supertap: "npm:^3.0.1"
-    temp-dir: "npm:^3.0.0"
-    write-file-atomic: "npm:^7.0.0"
-    yargs: "npm:^18.0.0"
-  peerDependencies:
-    "@ava/typescript": "*"
-  peerDependenciesMeta:
-    "@ava/typescript":
-      optional: true
-  bin:
-    ava: entrypoints/cli.mjs
-  checksum: 10c0/19c5e494bac1cc8140e78cb1440f299f9ae07baea50740c4d66daec3e2af048e71b8b5313e4834e100aeead7182d9bfe1b7acaad3dab7317ef2a00f23d39bc92
-  languageName: node
-  linkType: hard
-
-"ava@npm:^8.0.1":
+"ava@npm:8.0.1":
   version: 8.0.1
   resolution: "ava@npm:8.0.1"
   dependencies:
@@ -7930,6 +7876,61 @@ __metadata:
   bin:
     ava: entrypoints/cli.js
   checksum: 10c0/2edaede2e47aeaf4e1ed5744380d308a1e0ea7aba7f39ce6a96635a463857020826071e1e7ad5c2f79582244aa5c51ed3bab1fa818cc74a5249c8d3f00e4a4d6
+  languageName: node
+  linkType: hard
+
+"ava@patch:ava@npm%3A8.0.1#~/.yarn/patches/ava-npm-8.0.1-b8bcbeb736.patch":
+  version: 8.0.1
+  resolution: "ava@patch:ava@npm%3A8.0.1#~/.yarn/patches/ava-npm-8.0.1-b8bcbeb736.patch::version=8.0.1&hash=7239ec"
+  dependencies:
+    "@vercel/nft": "npm:^1.5.0"
+    acorn: "npm:^8.16.0"
+    acorn-walk: "npm:^8.3.5"
+    ansi-styles: "npm:^6.2.3"
+    arrgv: "npm:^1.0.2"
+    arrify: "npm:^3.0.0"
+    callsites: "npm:^4.2.0"
+    cbor2: "npm:^2.3.0"
+    chalk: "npm:^5.6.2"
+    chunkd: "npm:^2.0.1"
+    ci-info: "npm:^4.4.0"
+    ci-parallel-vars: "npm:^1.0.1"
+    cli-truncate: "npm:^6.0.0"
+    code-excerpt: "npm:^4.0.0"
+    common-path-prefix: "npm:^3.0.0"
+    concordance: "npm:^5.0.4"
+    currently-unhandled: "npm:^0.4.1"
+    debug: "npm:^4.4.3"
+    emittery: "npm:^2.0.0"
+    figures: "npm:^6.1.0"
+    globby: "npm:^16.2.0"
+    ignore-by-default: "npm:^2.1.0"
+    indent-string: "npm:^5.0.0"
+    is-plain-object: "npm:^5.0.0"
+    is-promise: "npm:^4.0.0"
+    matcher: "npm:^6.0.0"
+    memoize: "npm:^11.0.0"
+    ms: "npm:^2.1.3"
+    p-map: "npm:^7.0.4"
+    package-config: "npm:^5.0.0"
+    picomatch: "npm:^4.0.4"
+    plur: "npm:^6.0.0"
+    pretty-ms: "npm:^9.3.0"
+    resolve-cwd: "npm:^3.0.0"
+    slash: "npm:^5.1.0"
+    stack-utils: "npm:^2.0.6"
+    supertap: "npm:^3.0.1"
+    temp-dir: "npm:^3.0.0"
+    write-file-atomic: "npm:^7.0.1"
+    yargs: "npm:^18.0.0"
+  peerDependencies:
+    "@ava/typescript": "*"
+  peerDependenciesMeta:
+    "@ava/typescript":
+      optional: true
+  bin:
+    ava: entrypoints/cli.js
+  checksum: 10c0/1d1b384ae7ac43c0af7ce87c9e3cf7cd6e63ef5a1cdef28ad6398fa487ac8ae3a93ad18fa2575dc24affc8f0d3199933170c1dccfae05f2b747919ea142815e8
   languageName: node
   linkType: hard
 
@@ -8488,15 +8489,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cbor@npm:^10.0.11":
-  version: 10.0.12
-  resolution: "cbor@npm:10.0.12"
-  dependencies:
-    nofilter: "npm:^3.0.2"
-  checksum: 10c0/4c197d783415cade31565725a5e6b2b967d856285eacdb0b5f5ec0687d93c12f2ee9c6cc05aa7be02e8bbf0fe3ba40d22be69b56bd2ab1be2cc0a59370f14246
-  languageName: node
-  linkType: hard
-
 "chain-registry@npm:^2.0.44":
   version: 2.0.44
   resolution: "chain-registry@npm:2.0.44"
@@ -8730,7 +8722,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cli-truncate@npm:^5.0.0, cli-truncate@npm:^5.1.1":
+"cli-truncate@npm:^5.0.0":
   version: 5.2.0
   resolution: "cli-truncate@npm:5.2.0"
   dependencies:
@@ -9812,13 +9804,6 @@ __metadata:
     minimalistic-assert: "npm:^1.0.1"
     minimalistic-crypto-utils: "npm:^1.0.1"
   checksum: 10c0/8b24ef782eec8b472053793ea1e91ae6bee41afffdfcb78a81c0a53b191e715cbe1292aa07165958a9bbe675bd0955142560b1a007ffce7d6c765bcaf951a867
-  languageName: node
-  linkType: hard
-
-"emittery@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "emittery@npm:1.2.0"
-  checksum: 10c0/3b16d67b2cbbc19d44fa124684039956dc94c376cefa8c7b29f4c934d9d370e6819f642cddaa343b83b1fc03fda554a1498e12f5861caf9d6f6394ff4b6e808a
   languageName: node
   linkType: hard
 
@@ -11573,7 +11558,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"globby@npm:^16.1.1, globby@npm:^16.2.0":
+"globby@npm:^16.2.0":
   version: 16.2.0
   resolution: "globby@npm:16.2.0"
   dependencies:
@@ -13812,15 +13797,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"memoize@npm:^10.2.0":
-  version: 10.2.0
-  resolution: "memoize@npm:10.2.0"
-  dependencies:
-    mimic-function: "npm:^5.0.1"
-  checksum: 10c0/8a5891f313e8db82bab4bb9694752aab40c11ce3bf9b8cc32228ebaf87e14e8109a23b37ceef32baadbedc09af2c4dd0d361a93e9e591bb0ed9e23f728e1ce9f
-  languageName: node
-  linkType: hard
-
 "memoize@npm:^11.0.0":
   version: 11.0.0
   resolution: "memoize@npm:11.0.0"
@@ -14825,13 +14801,6 @@ __metadata:
   bin:
     nodemon: bin/nodemon.js
   checksum: 10c0/95b64d647f2c22e85e375b250517b0a4b32c2d2392ad898444e331f70d6b1ab43b17f53a8a1d68d5879ab8401fc6cd6e26f0d2a8736240984f6b5a8435b407c0
-  languageName: node
-  linkType: hard
-
-"nofilter@npm:^3.0.2":
-  version: 3.1.0
-  resolution: "nofilter@npm:3.1.0"
-  checksum: 10c0/92459f3864a067b347032263f0b536223cbfc98153913b5dce350cb39c8470bc1813366e41993f22c33cc6400c0f392aa324a4b51e24c22040635c1cdb046499
   languageName: node
   linkType: hard
 
