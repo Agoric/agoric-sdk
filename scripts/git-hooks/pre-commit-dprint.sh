@@ -36,7 +36,10 @@ for file in "${staged_files[@]}"; do
   fi
 done
 
-"$dprint_bin" fmt -- "${staged_files[@]}"
+# Staged paths are filtered by extension above, but dprint applies its own
+# config excludes (e.g. .yarn). If every staged path is excluded, dprint exits
+# 14 ("No files found to format"); --allow-no-files makes that a clean exit 0.
+"$dprint_bin" fmt --allow-no-files -- "${staged_files[@]}"
 
 if [[ ${#auto_add_files[@]} -gt 0 ]]; then
   git add -- "${auto_add_files[@]}"
