@@ -1,4 +1,4 @@
-import chalk from 'chalk';
+import { styleText } from 'node:util';
 
 export const ACCOUNT_JSON = `account.json`;
 export const DEFAULT_BOOT_TOKENS = `1000000000000000ubld,10000000000000000uist`;
@@ -19,7 +19,12 @@ export const setup = ({ resolve, env, setInterval }) => {
       return [PLAYBOOK_WRAPPER, fullPath, ...args];
     },
     sleep: (seconds, why) => {
-      console.error(chalk.yellow(`Waiting ${seconds} seconds`, why || ''));
+      console.error(
+        styleText(
+          'yellow',
+          [`Waiting ${seconds} seconds`, why || ''].join(' '),
+        ),
+      );
       return new Promise(res => setInterval(res, 1000 * seconds));
     },
   });
