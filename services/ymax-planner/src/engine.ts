@@ -52,6 +52,7 @@ import {
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 import type {
+  AssetPlaceRef,
   FlowKey,
   FundsFlowPlan,
   PortfolioKey,
@@ -60,6 +61,13 @@ import type {
 
 import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
+import {
+  assessAutoRebalanceCriteria,
+  computeRebalanceTargets,
+  makeCachedPortfolioBalanceGetter,
+  type AutoRebalanceBalanceCache,
+  type AutoRebalanceCriteriaOptions,
+} from './auto.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { InstrumentBlocks } from './instrument-status.ts';
@@ -97,6 +105,7 @@ import {
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
+import type { PortfolioBalanceReader } from './yds-portfolio-balances.ts';
 
 const { values } = Object;
 
@@ -214,6 +223,8 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
+  getYdsPortfolioBalances?: PortfolioBalanceReader;
+  autoRebalance: AutoRebalanceCriteriaOptions;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -228,6 +239,9 @@ export type ProcessPortfolioPowers = Pick<
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
+  | 'now'
+  | 'getYdsPortfolioBalances'
+  | 'autoRebalance'
 > & {
   console: Required<Powers>['console'];
   isDryRun?: boolean;
@@ -244,6 +258,8 @@ export type ProcessPortfolioPowers = Pick<
 export type PortfoliosMemory = {
   deferrals: EventRecord[];
   snapshots?: Map<string, { fingerprint: string; repeats: number }>;
+  portfolioStatusForKey?: Map<PortfolioKey, StatusFor['portfolio']>;
+  balanceCache?: AutoRebalanceBalanceCache;
 };
 
 const fingerprintPortfolioState = (
@@ -286,11 +302,17 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
+    now,
+    getYdsPortfolioBalances,
+    autoRebalance,
 
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
 ) => {
   const { deferrals } = memory;
+  memory.portfolioStatusForKey ||= new Map();
+  memory.balanceCache ||= new Map();
+  const { portfolioStatusForKey, balanceCache } = memory;
   const { query, marshaller } = signingSmartWalletKit;
   const { portfoliosPathPrefix } = vstoragePathPrefixes;
   const { vstorage } = query;
@@ -313,6 +335,17 @@ export const processPortfolioEvents = async (
     evmProviders,
     chainNameToChainIdMap,
   };
+  const getFreshBalances = (portfolioStatus: StatusFor['portfolio']) =>
+    getNonDustBalances(portfolioStatus, depositBrand, balanceQueryPowers);
+  const getCachedPortfolioBalances = makeCachedPortfolioBalanceGetter({
+    balanceCache,
+    brand: depositBrand,
+    console,
+    getFreshBalances: portfolioKey =>
+      getFreshBalances(portfolioStatusForKey.get(portfolioKey)!),
+    getYdsPortfolioBalances,
+    now,
+  });
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
     'minBlockHeight' | 'retries'
@@ -349,11 +382,7 @@ export const processPortfolioEvents = async (
     const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
     const versions = [policyVersion, rebalanceCount] as const;
 
-    const currentBalances = await getNonDustBalances(
-      portfolioStatus,
-      depositBrand,
-      balanceQueryPowers,
-    );
+    const currentBalances = await getFreshBalances(portfolioStatus);
     const logContext = {
       path,
       flowKey,
@@ -464,6 +493,125 @@ export const processPortfolioEvents = async (
       }
     }
   };
+  const maybeAutoRebalance = async (
+    portfolioStatus: StatusFor['portfolio'],
+    portfolioKey: PortfolioKey,
+    currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
+  ) => {
+    if (!portfolioStatus.enabledAutoFeatures?.rebalance) return;
+    const path = `${portfoliosPathPrefix}.${portfolioKey}`;
+    const portfolioId = portfolioIdFromKey(portfolioKey);
+    const logPrefix = `[${portfolioKey}.autoRebalance]`;
+    const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
+    const versions = [policyVersion, rebalanceCount] as const;
+
+    const logContext = {
+      path,
+      flowDetail: { type: 'rebalance' as const },
+      currentBalances,
+      policyVersion,
+      rebalanceCount,
+      targetAllocation,
+    };
+    const plannerContext = {
+      ...logContext,
+      network,
+      instrumentBlocks,
+      brand: depositBrand,
+      feeBrand,
+      gasEstimator,
+    };
+
+    try {
+      const targetBalances = computeRebalanceTargets(plannerContext);
+      const criteria = assessAutoRebalanceCriteria(
+        currentBalances,
+        targetAllocation,
+        targetBalances,
+        autoRebalance,
+      );
+      if (!criteria.shouldRebalance) {
+        console.log(
+          logPrefix,
+          'skip',
+          inspectForStdout({ ...logContext, targetBalances, criteria }),
+        );
+        return;
+      }
+      const plan = await planRebalanceToAllocations(plannerContext);
+      if (plan.flow.length === 0) {
+        console.log(
+          logPrefix,
+          'skip',
+          inspectForStdout({
+            ...logContext,
+            targetBalances,
+            criteria,
+            reason: 'empty plan',
+          }),
+        );
+        return;
+      }
+
+      const planOrSteps = plan.order ? plan : plan.flow;
+      const txOpts = { sendOnly: true };
+      const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
+      const { tx, id } = await planReceiver.rebalance(
+        portfolioId,
+        planOrSteps,
+        ...versions,
+      );
+      if (!isDryRun) {
+        void getWalletInvocationUpdate(id as any).catch(err => {
+          console.warn(logPrefix, '⚠️ Failure for rebalance', err);
+        });
+      }
+      console.log(
+        logPrefix,
+        'rebalance',
+        criteria,
+        inspectForStdout({ ...logContext, plan, criteria }),
+        tx,
+      );
+    } catch (err) {
+      annotateError(err, inspect(logContext, { depth: 4 }));
+      if (
+        err instanceof UserInputError ||
+        err instanceof NoSolutionError ||
+        err instanceof TargetBalanceError
+      ) {
+        console.warn(logPrefix, '⚠️ Skipping auto rebalance', err.message);
+        return;
+      }
+      throw err;
+    }
+  };
+  const scanAutoRebalances = async () => {
+    for (const [portfolioKey, portfolioStatus] of portfolioStatusForKey) {
+      if (!portfolioStatus.enabledAutoFeatures?.rebalance) continue;
+      if (Object.keys(portfolioStatus.flowsRunning || {}).length > 0) continue;
+
+      const cachedBalances = await getCachedPortfolioBalances(portfolioKey);
+      const candidateTargets = computeRebalanceTargets({
+        currentBalances: cachedBalances,
+        targetAllocation: portfolioStatus.targetAllocation,
+        network,
+        instrumentBlocks,
+        brand: depositBrand,
+      });
+      const candidateCriteria = assessAutoRebalanceCriteria(
+        cachedBalances,
+        portfolioStatus.targetAllocation,
+        candidateTargets,
+        autoRebalance,
+      );
+      if (!candidateCriteria.shouldRebalance) continue;
+
+      balanceCache.delete(portfolioKey);
+      const freshBalances = await getFreshBalances(portfolioStatus);
+      await maybeAutoRebalance(portfolioStatus, portfolioKey, freshBalances);
+    }
+  };
   const handledPortfolioKeys = new Set<string>();
   // prettier-ignore
   const handlePortfolio = async (portfolioKey: PortfolioKey, eventRecord: EventRecord) => {
@@ -483,6 +631,7 @@ export const processPortfolioEvents = async (
       const status = marshaller.fromCapData(statusCapdata);
       mustMatch(status, PortfolioStatusShapeExt, path);
       const flowKeys = new Set(flowKeysResp.result.children as string[]);
+      portfolioStatusForKey.set(portfolioKey, status);
 
       const { depositAddress } = status;
       if (depositAddress) {
@@ -575,6 +724,7 @@ export const processPortfolioEvents = async (
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
+  await scanAutoRebalances();
 };
 
 export const processPendingTxEvents = async (
@@ -1027,21 +1177,24 @@ export const startEngine = async (
     // ASAP to avoid missing transactions that settle while portfolio
     // processing (balance queries, planning, tx submission) is in progress.
     await Promise.all([
-      portfolioEvents.length &&
-        // Update blocked-instrument sets at most once per chain block, and only
-        // when there are portfolio events to process.
-        updateInstrumentBlocks()
-          .catch(err =>
-            console.error('⚠️ Failed to update instrument blocks', err),
-          )
-          .then(() =>
-            processPortfolioEvents(
-              portfolioEvents,
-              respHeight,
-              portfoliosMemory,
-              { ...processPortfolioPowers, instrumentBlocks },
-            ),
+      // Update blocked-instrument sets at most once per chain block, then run
+      // portfolio processing even when there were no portfolio vstorage events;
+      // auto-rebalance is a block-end scan over remembered portfolios.
+      updateInstrumentBlocks()
+        .catch(err =>
+          console.error('⚠️ Failed to update instrument blocks', err),
+        )
+        .then(() =>
+          processPortfolioEvents(
+            portfolioEvents,
+            respHeight,
+            portfoliosMemory,
+            {
+              ...processPortfolioPowers,
+              instrumentBlocks,
+            },
           ),
+        ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
 

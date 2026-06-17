@@ -48,6 +48,12 @@ export interface YmaxPlannerConfig {
     readonly url?: string;
     readonly apiKey?: string;
   };
+  readonly autoRebalance: {
+    // TODO: `driftBps` should probably be of type number rather than bigint.
+    readonly driftBps: bigint;
+    readonly driftMinDeposit: bigint;
+    readonly cashMinDeposit: bigint;
+  };
 }
 
 export type SecretManager = Pick<
@@ -85,6 +91,26 @@ const parsePositiveInteger = (
   }
   return number;
 };
+
+const parsePositiveBigint = (
+  env: Record<string, string | undefined>,
+  fieldName: string,
+  defaultValue: bigint,
+): bigint => {
+  const value = env[fieldName];
+  if (value === undefined) return defaultValue;
+  if (!/^[0-9]+$/.test(value)) {
+    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
+  }
+  const bigint = BigInt(value);
+  if (bigint <= 0n) {
+    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
+  }
+  return bigint;
+};
+
+export const DEFAULT_AUTO_REBALANCE_DRIFT_BPS = 100n;
+export const DEFAULT_AUTO_REBALANCE_MIN_DEPOSIT = 25_000_000n;
 
 const validateRequired = (
   env: Record<string, string | undefined>,
@@ -172,6 +198,23 @@ export const loadConfig = async (
   const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
   const ydsApiKey = env.YDS_API_KEY?.trim();
   !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
+  const autoRebalance = harden({
+    driftBps: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_DRIFT_BPS',
+      DEFAULT_AUTO_REBALANCE_DRIFT_BPS,
+    ),
+    driftMinDeposit: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_DRIFT_MIN_DEPOSIT',
+      DEFAULT_AUTO_REBALANCE_MIN_DEPOSIT,
+    ),
+    cashMinDeposit: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_CASH_MIN_DEPOSIT',
+      DEFAULT_AUTO_REBALANCE_MIN_DEPOSIT,
+    ),
+  });
 
   const config: YmaxPlannerConfig = harden({
     clusterName,
@@ -192,6 +235,7 @@ export const loadConfig = async (
       url: ydsUrl,
       apiKey: ydsApiKey,
     },
+    autoRebalance,
   });
 
   return config;

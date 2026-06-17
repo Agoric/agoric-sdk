@@ -26,6 +26,7 @@ import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 
 import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
+import { computeRebalanceTargets } from './auto.ts';
 import { getErc20Balances } from './evm-utils.ts';
 import type {
   ChainAddressTokenBalance as SpectrumGetAddressBalanceResult,
@@ -315,13 +316,7 @@ export const planDepositToAllocations: PlanMaker<{
 export const planRebalanceToAllocations: PlanMaker = async details => {
   const { brand, currentBalances, network, targetAllocation } = details;
   if (!targetAllocation) return { flow: [], order: undefined };
-  const target = computeTargetBalances({
-    brand,
-    currentBalances,
-    network,
-    targetAllocation,
-    instrumentBlocks: details.instrumentBlocks,
-  });
+  const target = computeRebalanceTargets(details);
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
   const { feeBrand, gasEstimator } = details;

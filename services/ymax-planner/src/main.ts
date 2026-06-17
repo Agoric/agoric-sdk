@@ -53,6 +53,7 @@ import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
+import { makeYdsPortfolioBalanceReader } from './yds-portfolio-balances.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
 import { makeNowISO } from './utils.ts';
 
@@ -310,6 +311,16 @@ export const main = async (
         },
       )
     : undefined;
+  const getYdsPortfolioBalances =
+    config.yds.url && config.yds.apiKey
+      ? makeYdsPortfolioBalanceReader(
+          { fetch },
+          {
+            ydsUrl: config.yds.url,
+            ydsApiKey: config.yds.apiKey,
+          },
+        )
+      : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -348,6 +359,8 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    getYdsPortfolioBalances,
+    autoRebalance: config.autoRebalance,
   };
 
   await withDeferredCleanup(async addCleanup => {

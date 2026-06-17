@@ -786,6 +786,124 @@ test('processPortfolioEvents does not defer when a flow key exists only via flow
   ]);
 });
 
+test('processPortfolioEvents starts auto rebalance when criteria fire', async t => {
+  const kit = await fakePortfolioKit({
+    accounts: { noble: makeDeposit(25_000_000n) },
+    otherBalances: { usdn: makeDeposit(0n) },
+  });
+  const { portfolioId, portfolioPath, initialPortfolioStatus, powers } = kit;
+  const { getBridgeSends, updateBlockHeight, updateVstorage } = kit.testPowers;
+
+  const portfolioStatus: StatusFor['portfolio'] = harden({
+    ...initialPortfolioStatus,
+    positionKeys: ['USDN'],
+    targetAllocation: { USDN: 1n },
+    enabledAutoFeatures: { rebalance: true },
+  });
+  updateVstorage(portfolioPath, 'set', {
+    object: portfolioStatus,
+    wrap: true,
+  });
+
+  const blockHeight = updateBlockHeight();
+  const memory: PortfoliosMemory = { deferrals: [] };
+  await processPortfolioEvents(
+    [makeVstorageEventDetail(blockHeight, portfolioPath, portfolioStatus)],
+    blockHeight,
+    memory,
+    powers,
+  );
+
+  t.deepEqual(memory.deferrals, []);
+  const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+  arrayIsLike(t, bridgeActions, [{ method: 'invokeEntry' }]);
+  const action = bridgeActions[0] as InvokeStoreEntryAction;
+  t.like(action, {
+    method: 'invokeEntry',
+    message: { targetName: 'planner', method: 'rebalance' },
+  });
+  arrayIsLike(t, action.message.args, [
+    portfolioId,
+    action.message.args[1],
+    portfolioStatus.policyVersion,
+    portfolioStatus.rebalanceCount,
+  ]);
+  const planOrSteps = action.message.args[1] as Array<{
+    dest: string;
+    amount: NatAmount;
+  }>;
+  t.true(Array.isArray(planOrSteps));
+  t.true(
+    planOrSteps.some(
+      step => step.dest === 'USDN' && step.amount.value >= 25_000_000n,
+    ),
+    'auto rebalance deposits at least the minimum into instruments',
+  );
+  t.deepEqual(
+    memory.portfolioStatusForKey?.get(`portfolio${portfolioId}`),
+    portfolioStatus,
+    'portfolio status memory is updated',
+  );
+});
+
+test('processPortfolioEvents scans remembered portfolios when there are no events', async t => {
+  const kit = await fakePortfolioKit({
+    accounts: { noble: makeDeposit(25_000_000n) },
+    otherBalances: { usdn: makeDeposit(0n) },
+  });
+  const { blockHeight, portfolioId, initialPortfolioStatus, powers } = kit;
+  const { getBridgeSends } = kit.testPowers;
+  const portfolioKey = `portfolio${portfolioId}` as const;
+  const portfolioStatus: StatusFor['portfolio'] = harden({
+    ...initialPortfolioStatus,
+    positionKeys: ['USDN'],
+    targetAllocation: { USDN: 1n },
+    enabledAutoFeatures: { rebalance: true },
+  });
+  const memory: PortfoliosMemory = {
+    deferrals: [],
+    portfolioStatusForKey: new Map([[portfolioKey, portfolioStatus]]),
+  };
+
+  await processPortfolioEvents([], blockHeight, memory, powers);
+
+  const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+  arrayIsLike(t, bridgeActions, [
+    { method: 'invokeEntry', message: { method: 'rebalance' } },
+  ]);
+});
+
+test('processPortfolioEvents rechecks YDS candidates with fresh balances', async t => {
+  const kit = await fakePortfolioKit({
+    accounts: { noble: makeDeposit(0n) },
+    otherBalances: { usdn: makeDeposit(0n) },
+  });
+  const { blockHeight, portfolioId, initialPortfolioStatus, powers } = kit;
+  const { getBridgeSends } = kit.testPowers;
+  const portfolioKey = `portfolio${portfolioId}` as const;
+  const portfolioStatus: StatusFor['portfolio'] = harden({
+    ...initialPortfolioStatus,
+    positionKeys: ['USDN'],
+    targetAllocation: { USDN: 1n },
+    enabledAutoFeatures: { rebalance: true },
+  });
+  powers.getYdsPortfolioBalances = async () => ({
+    '@noble': makeDeposit(25_000_000n),
+  });
+  const memory: PortfoliosMemory = {
+    deferrals: [],
+    portfolioStatusForKey: new Map([[portfolioKey, portfolioStatus]]),
+  };
+
+  await processPortfolioEvents([], blockHeight, memory, powers);
+
+  t.deepEqual(
+    getBridgeSends().map(invocation => invocation.action),
+    [],
+    'stale YDS candidate is skipped after fresh direct balance recheck',
+  );
+});
+
 test('startFlow logs include traceId prefix', async t => {
   const kit = await fakePortfolioKit({
     accounts: { noble: AmountMath.make(depositBrand, 1_000_000n) },
