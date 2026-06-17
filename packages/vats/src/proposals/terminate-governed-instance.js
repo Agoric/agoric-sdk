@@ -60,8 +60,9 @@ const parseTargets = (args = [], makeError = defaultMakeError) => {
       badTargets.push(arg);
       continue;
     }
-    // @ts-expect-error cast
-    targets.push(m.groups);
+    targets.push(
+      /** @type {{ boardID: string; instanceKitLabel: string }} */ (m.groups),
+    );
   }
   if (badTargets.length) throw makeError`malformed target(s): ${badTargets}`;
   if (!targets.length) throw makeError`no target(s)`;

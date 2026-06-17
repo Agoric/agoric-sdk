@@ -15,8 +15,7 @@ const compareNats = (a, b) => {
     (Number.isFinite(diff) && diff) ||
     (a === b ? 0 : Number(BigInt(a) - BigInt(b)) || a.length - b.length);
 
-  // @ts-expect-error this call really does return -1 | 0 | 1
-  return Math.sign(finiteDiff);
+  return /** @type {-1 | 0 | 1} */ (Math.sign(finiteDiff));
 };
 
 // TODO: compareByCodePoints

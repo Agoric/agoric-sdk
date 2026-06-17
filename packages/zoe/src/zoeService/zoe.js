@@ -252,9 +252,7 @@ const makeDurableZoeKit = ({
   return harden({
     zoeService,
     zoeConfigFacet,
-    /** @type {FeeMintAccess} */
-    // @ts-expect-error cast
-    feeMintAccess: feeMintKit.feeMintAccess,
+    feeMintAccess: /** @type {FeeMintAccess} */ (feeMintKit.feeMintAccess),
     setVatAdminService,
   });
 };

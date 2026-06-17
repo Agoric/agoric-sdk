@@ -27,8 +27,8 @@ import {
  * @param {CastedPattern<Amount<'nat'>>} [amountShape]
  */
 export const makeVirtualPurseKitIKit = (
-  // @ts-expect-error -- Cast to narrow the pattern's return type to the 'nat' specialization.
-  brandShape = BrandShape,
+  // Cast to narrow the pattern's return type to the 'nat' specialization.
+  brandShape = /** @type {CastedPattern<Brand<'nat'>>} */ (BrandShape),
   amountShape = AmountShape,
 ) => {
   const VirtualPurseI = M.interface('VirtualPurse', {
