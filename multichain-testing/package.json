@@ -128,7 +128,6 @@
     "@agoric/zone": "portal:../packages/zone",
     "@aglocal/deployment": "portal:../packages/deployment",
     "@aglocal/boot": "portal:../packages/boot",
-    "@aglocal/benchmark": "portal:../packages/benchmark",
     "@aglocal/fast-usdc-deploy": "portal:../packages/fast-usdc-deploy",
     "@aglocal/fast-usdc-contract": "portal:../packages/fast-usdc-contract",
     "@aglocal/portfolio-contract": "portal:../packages/portfolio-contract",
