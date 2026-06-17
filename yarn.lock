@@ -506,7 +506,7 @@ __metadata:
   resolution: "@agoric/cosmic-proto@workspace:packages/cosmic-proto"
   dependencies:
     "@agoric/cosmos": "workspace:*"
-    "@ava/typescript": "npm:^6.0.0"
+    "@ava/typescript": "npm:^7.0.0"
     "@chain-registry/v2": "npm:^1.71.186"
     "@chain-registry/v2-types": "npm:^0.53.115"
     "@endo/base64": "npm:^1.1.1"
@@ -1563,13 +1563,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ava/typescript@npm:^6.0.0":
-  version: 6.0.0
-  resolution: "@ava/typescript@npm:6.0.0"
+"@ava/typescript@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "@ava/typescript@npm:7.0.0"
   dependencies:
     escape-string-regexp: "npm:^5.0.0"
-    execa: "npm:^9.6.0"
-  checksum: 10c0/a2a97958cd973c2e716951664bafe4cb717c83c19bac24b6fa455c6cd1305859ace88ebb013f4d4fab9abd2935a45d75071df2f8e3f22149beea8c62c0959b19
+    execa: "npm:^9.6.1"
+  checksum: 10c0/4b22ab58dd0a9e6685554c84abedc133db062451b4e7e4963f5777c578993370bebf2c6d1adda566bdd9cf2572f70b2989eb388c7f8d6560bc70f7c54aeecafc
   languageName: node
   linkType: hard
 
@@ -10664,6 +10664,26 @@ __metadata:
     strip-final-newline: "npm:^4.0.0"
     yoctocolors: "npm:^2.1.1"
   checksum: 10c0/2c44a33142f77d3a6a590a3b769b49b27029a76768593bac1f26fed4dd1330e9c189ee61eba6a8c990fb77e37286c68c7445472ebf24c22b31e9ff320e73d7ac
+  languageName: node
+  linkType: hard
+
+"execa@npm:^9.6.1":
+  version: 9.6.1
+  resolution: "execa@npm:9.6.1"
+  dependencies:
+    "@sindresorhus/merge-streams": "npm:^4.0.0"
+    cross-spawn: "npm:^7.0.6"
+    figures: "npm:^6.1.0"
+    get-stream: "npm:^9.0.0"
+    human-signals: "npm:^8.0.1"
+    is-plain-obj: "npm:^4.1.0"
+    is-stream: "npm:^4.0.1"
+    npm-run-path: "npm:^6.0.0"
+    pretty-ms: "npm:^9.2.0"
+    signal-exit: "npm:^4.1.0"
+    strip-final-newline: "npm:^4.0.0"
+    yoctocolors: "npm:^2.1.1"
+  checksum: 10c0/636b36585306a3c8bc3a9d7b25d2d915fb06d8c9b9b02a804280d62562de3b34535affc1b7702b039320e0953daa6545a073f3c4b63fe974c1fe11336c56b467
   languageName: node
   linkType: hard
 

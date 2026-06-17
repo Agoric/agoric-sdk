@@ -227,7 +227,7 @@
   },
   "devDependencies": {
     "@agoric/cosmos": "workspace:*",
-    "@ava/typescript": "^6.0.0",
+    "@ava/typescript": "^7.0.0",
     "@endo/bundle-source": "^4.3.2",
     "@endo/import-bundle": "^1.7.0",
     "@hyperweb/telescope": "^2.2.1",
