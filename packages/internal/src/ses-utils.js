@@ -183,7 +183,8 @@ export const tryJsonParse = (jsonText, onError) => {
   const transformError =
     typeof onError === 'function'
       ? onError
-      : err => Fail([`${onError}: ${err.message} for input `, ''], jsonText);
+      : /** @param {Error} err */
+        err => Fail([`${onError}: ${err.message} for input `, ''], jsonText);
   return tryNow(() => {
     const type = typeof jsonText;
     type === 'string' || Fail`Input must be a string, not ${b(type)}`;

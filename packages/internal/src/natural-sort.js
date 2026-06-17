@@ -22,6 +22,11 @@ const compareNats = (a, b) => {
 // TODO: compareByCodePoints
 // https://github.com/endojs/endo/pull/2008
 
+/**
+ * @param {string} a
+ * @param {string} b
+ * @returns {-1 | 0 | 1}
+ */
 const compareStrings = (a, b) => (a > b ? 1 : a < b ? -1 : 0);
 
 const rCaptureDigits = /([0-9]+)/;

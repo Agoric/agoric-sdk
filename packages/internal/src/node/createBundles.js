@@ -8,6 +8,7 @@ import { Fail, q } from '@endo/errors';
 const BUNDLE_SOURCE_PROGRAM = 'bundle-source';
 const req = createRequire(import.meta.url);
 
+/** @param {Iterable<readonly [srcPath: string, bundlePath: string]>} sourceBundles */
 export const createBundlesFromAbsolute = async sourceBundles => {
   const prog = req.resolve(`.bin/${BUNDLE_SOURCE_PROGRAM}`);
 
@@ -42,24 +43,47 @@ export const createBundlesFromAbsolute = async sourceBundles => {
   }
 };
 
+/**
+ * @param {Array<readonly [srcPath: string, bundlePath: string]>} sourceBundles
+ * @param {string} [dirname]
+ */
 export const createBundles = async (sourceBundles, dirname = '.') => {
-  const absBundleSources = sourceBundles.map(([srcPath, bundlePath]) => [
-    req.resolve(srcPath, { paths: [dirname] }),
-    path.resolve(dirname, bundlePath),
-  ]);
+  const absBundleSources = sourceBundles.map(
+    ([srcPath, bundlePath]) =>
+      /** @type {readonly [string, string]} */ ([
+        req.resolve(srcPath, { paths: [dirname] }),
+        path.resolve(dirname, bundlePath),
+      ]),
+  );
   return createBundlesFromAbsolute(absBundleSources);
 };
 
+/**
+ * @typedef {(powers: {
+ *   publishRef: (x: unknown) => unknown,
+ *   install: (src: string, bundleName?: string) => Promise<void>,
+ * }) => Promise<unknown>} ProposalBuilder
+ */
+/**
+ * @param {Array<readonly [dir: string, proposalBuilder: ProposalBuilder]>} dirProposalBuilder
+ * @param {string} [dirname]
+ */
 export const extractProposalBundles = async (
   dirProposalBuilder,
   dirname = '.',
 ) => {
+  /** @type {Map<string, string>} */
   const toBundle = new Map();
 
   await Promise.all(
     dirProposalBuilder.map(async ([dir, proposalBuilder]) => {
       const home = path.resolve(dirname, dir);
+      /** @param {unknown} x */
       const publishRef = x => x;
+      /**
+       * @param {string} src
+       * @param {string} [bundleName]
+       */
       const install = async (src, bundleName) => {
         if (bundleName) {
           const bundlePath = path.resolve(home, bundleName);

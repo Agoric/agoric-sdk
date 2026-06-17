@@ -20,6 +20,10 @@ test('repro #11845 makeTracer isolation breach', t => {
       const bobTracer = makeTracer('bob');
       let secretCount = 666;
       const allegedT = harden({
+        /**
+         * @param {string} key
+         * @param {...unknown} _
+         */
         log(key, ..._) {
           const matches = keyRegexp.exec(key);
           if (matches) {

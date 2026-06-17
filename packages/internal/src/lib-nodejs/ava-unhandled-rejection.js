@@ -22,7 +22,9 @@ const settleUnhandled = async () => {
   await delayTurn();
 };
 
+/** @param {'unhandledRejection' | 'rejectionHandled'} event */
 const stripListeners = event => {
+  // @ts-expect-error the overload is per specific event name and can't handle the union
   const listeners = process.listeners(event);
   for (const listener of listeners) {
     process.off(event, listener);
@@ -52,6 +54,10 @@ const makeUnhandledTracker = () => {
     }
   });
 
+  /**
+   * @param {unknown} _reason
+   * @param {Promise<unknown>} promise
+   */
   const onUnhandled = (_reason, promise) => {
     seenUnhandled += 1;
     const token = Symbol('unhandledRejection');
@@ -60,6 +66,7 @@ const makeUnhandledTracker = () => {
     registry.register(promise, token, token);
   };
 
+  /** @param {Promise<unknown>} promise */
   const onHandledLate = promise => {
     const token = tokenByPromise.get(promise);
     tokenByPromise.delete(promise);
