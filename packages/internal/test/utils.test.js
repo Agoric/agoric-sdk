@@ -228,14 +228,6 @@ const { value: arbShallow } = fc.letrec(
       ).filter(
         testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
       ),
-      (testCase, badPermit) => {
-        testCase.permit = badPermit;
-        testCase.problem = 'bad permit';
-        return testCase;
-      },
-    ).filter(
-      testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
-    ),
 
       // Test cases in which the permit is an object but the specimen is not.
       badSpecimen: makeArbTestCase(
