@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 import {
   getOffFlags,
   loadParsedConfig,
-  tscArgsForFlag,
+  typecheckArgsForFlag,
 } from './tsconfig-flags-lib.mjs';
 
 const args = process.argv.slice(2);
@@ -61,10 +61,10 @@ if (!offFlags.some(flag => flag.name === selectedFlag)) {
   process.exit(1);
 }
 
-const tscArgs = tscArgsForFlag(configPath, selectedFlag);
-console.log(`\nRunning: yarn ${tscArgs.join(' ')}`);
+const typecheckArgs = typecheckArgsForFlag(configPath, selectedFlag);
+console.log(`\nRunning: yarn ${typecheckArgs.join(' ')}`);
 
-const child = spawn('yarn', tscArgs, {
+const child = spawn('yarn', typecheckArgs, {
   cwd: process.cwd(),
   stdio: 'inherit',
   env: process.env,
