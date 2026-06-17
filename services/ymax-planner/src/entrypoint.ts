@@ -1,12 +1,9 @@
 /* global process */
 
-// We need some pre-lockdown shimming.
-import '@endo/init/pre-remoting.js';
-import './shims.cjs';
-// import '@endo/lockdown/commit-debug.js';
-import './lockdown.js';
+// Go through the lockdown sequence first.
+import './init.js';
 
-// ...but `main` must be loaded *after* lockdown, seemingly because
+// `main` must be loaded *after* lockdown, seemingly because
 // of a "ws" dependency upon EventEmitter that is otherwise broken:
 // TypeError#1: Cannot assign to read only property '_events' of object '[object Object]'
 //  at EventEmitter.init (node:events:345:18)
@@ -17,7 +14,7 @@ import './lockdown.js';
 //
 // See also https://github.com/nodejs/node/pull/58315 and
 // https://github.com/endojs/endo/issues/2037#issuecomment-3142004849
-import { main } from './main.ts';
+const { main } = await import('./main.ts');
 
 (async () => {
   const dotEnvFile = process.env.DOTENV || '.env';
