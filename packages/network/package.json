@@ -68,6 +68,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 91.16
+    "atLeast": 92.88
   }
 }
