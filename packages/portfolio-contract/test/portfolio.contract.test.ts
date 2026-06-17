@@ -1314,8 +1314,13 @@ const setupEvmRemoteAccountConfigTest = (
     (addresses, chain) =>
       fromTypedEntries(
         typedEntries(addresses).flatMap(([key, value]) => {
+          // `value` is typed `EVMContractAddressesMap[K][string]` via
+          // the indexed access from typedEntries; TypeScript can't
+          // narrow that to `\`0x${string}\` | undefined` without the
+          // explicit cast, even though every concrete entry in the
+          // EVMContractAddressesMap union has that value shape.
           const mappedValue = mapContractEntry(
-            value,
+            value as `0x${string}` | undefined,
             key as keyof EVMContractAddresses,
             chain,
           );

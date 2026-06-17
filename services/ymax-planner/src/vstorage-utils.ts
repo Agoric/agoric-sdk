@@ -17,8 +17,7 @@ import { Fail, q } from '@endo/errors';
 export const EncodedKeySeparator = '\x00';
 export const PathSeparator = '.';
 
-/** @type {(key: string) => string} */
-export const encodedKeyToPath = key => {
+export const encodedKeyToPath = (key: string): string => {
   const encodedParts = key.split(EncodedKeySeparator);
   encodedParts.length > 1 || Fail`invalid encoded key ${q(key)}`;
   const path = encodedParts.slice(1).join(PathSeparator);
@@ -26,8 +25,7 @@ export const encodedKeyToPath = key => {
 };
 harden(encodedKeyToPath);
 
-/** @type {(path: string) => string} */
-export const pathToEncodedKey = path => {
+export const pathToEncodedKey = (path: string): string => {
   const segments = path.split(PathSeparator);
   return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
 };

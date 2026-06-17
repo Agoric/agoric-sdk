@@ -12,7 +12,6 @@ import type {
   IBCPortID,
 } from '@agoric/network/ibc';
 import type { Guarded } from '@endo/exo';
-import type { CaipChainId } from '@agoric/orchestration';
 import type {
   Installation,
   Instance,
@@ -20,6 +19,10 @@ import type {
 import type { TargetApp } from './bridge-target.js';
 import type { LocalChainAccount } from './localchain.js';
 import type { AssetInfo } from './vat-bank.js';
+
+// Inlined to avoid pulling @agoric/orchestration's source files into vats's
+// type-check graph. vats does not depend on orchestration as a package.
+type CaipChainId = `${string}:${string}`;
 
 export type {
   IBCChannelID,

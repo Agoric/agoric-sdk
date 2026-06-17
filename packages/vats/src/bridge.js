@@ -4,6 +4,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {BridgeId} from '@agoric/internal';
+ * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  * @import {BridgeManager} from './types.js';
  * @import {Remote} from '@agoric/internal';
  * @import {BridgeHandler} from './types.js';
@@ -13,7 +14,27 @@ import { E } from '@endo/far';
  * @import {ERef} from '@agoric/vow';
  * @import {DProxy} from '@agoric/swingset-vat';
  * @import {BridgeDevice} from '@agoric/swingset-vat/src/devices/bridge/device-bridge.js';
+ * @import {CastedPattern} from '@endo/patterns';
  */
+
+/**
+ * Cast of M.any() to carry BridgeMessage at the type level, so impls
+ * declaring their parameter as BridgeMessage satisfy the guard's
+ * contravariance check.  At runtime the guard still accepts any
+ * Passable; the narrowing is a static assertion that callers comply.
+ *
+ * @type {CastedPattern<BridgeMessage>}
+ */
+const BridgeMessageShape = M.any();
+
+// `BridgeManager`/`ScopedBridgeManager` typedefs in `./types.ts` declare
+// the bridge methods as returning `Promise<unknown>`, not `PromiseLike`.
+// `M.promise()` now infers as `PromiseLike<any>` (see the TFKindMap
+// comment in `@endo/patterns/src/type-from-pattern.ts`); pin it back to
+// `Promise<any>` here via a CastedPattern so the returned
+// `ScopedBridgeManager` satisfies the consumer-facing typedef.
+/** @type {CastedPattern<Promise<any>>} */
+const PromiseShape = M.promise();
 
 /**
  * Helper to type the registered scoped bridge correctly.
@@ -35,12 +56,12 @@ export const makeScopedBridge = (bridgeManager, bridgeIdValue, handler) =>
   );
 
 export const BridgeHandlerI = M.interface('BridgeHandler', {
-  fromBridge: M.call(M.any()).returns(M.promise()),
+  fromBridge: M.call(BridgeMessageShape).returns(PromiseShape),
 });
 
 export const BridgeScopedManagerI = M.interface('ScopedBridgeManager', {
-  fromBridge: M.call(M.any()).returns(M.promise()),
-  toBridge: M.call(M.any()).returns(M.promise()),
+  fromBridge: M.call(M.any()).returns(PromiseShape),
+  toBridge: M.call(M.any()).returns(PromiseShape),
   initHandler: M.call(M.remotable('BridgeHandler')).returns(),
   setHandler: M.call(M.remotable('BridgeHandler')).returns(),
 });
@@ -57,7 +78,7 @@ const BridgeManagerIKit = harden({
     inbound: M.call(M.string(), M.any()).returns(),
   }),
   privateOutbounder: M.interface('PrivateBridgeOutbounder', {
-    outbound: M.call(M.string(), M.any()).returns(M.promise()),
+    outbound: M.call(M.string(), M.any()).returns(PromiseShape),
   }),
 });
 
@@ -95,12 +116,14 @@ const prepareScopedManager = zone => {
       // the holder can always attenuate the object.
       // We implement separate init and set methods to require the holder to be
       // explicit about intent.
+      /** @param {BridgeHandler} newHandler */
       initHandler(newHandler) {
         newHandler || Fail`Must provide a handler for ${this.state.bridgeId}`;
         !this.state.inboundHandler ||
           Fail`Bridge handler already initialized for ${this.state.bridgeId}`;
         this.state.inboundHandler = newHandler;
       },
+      /** @param {BridgeHandler} newHandler */
       setHandler(newHandler) {
         newHandler || Fail`Must provide a handler for ${this.state.bridgeId}`;
         this.state.inboundHandler ||
@@ -148,6 +171,10 @@ export const prepareBridgeManager = (zone, D) => {
     }),
     {
       manager: {
+        /**
+         * @param {string} bridgeId
+         * @param {BridgeHandler} [handler]
+         */
         register(bridgeId, handler) {
           !this.state.scopedManagers.has(bridgeId) ||
             Fail`Scoped bridge manager already registered for ${bridgeId}`;

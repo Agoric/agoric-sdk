@@ -1,4 +1,5 @@
 {
+  "name": "m:before-next-upgrade",
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal"
   },

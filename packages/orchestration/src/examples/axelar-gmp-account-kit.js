@@ -2,7 +2,7 @@
  * @import {VTransferIBCEvent} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  * @import {AxelarGmpIncomingMemo, EvmTapState, ContractCall, SupportedEVMChains} from '../axelar-types.js';
@@ -43,7 +43,7 @@ const InvitationMakerI = M.interface('invitationMaker', {
 });
 harden(InvitationMakerI);
 
-/** @type {TypedPattern<EvmTapState>} */
+/** @type {CastedPattern<EvmTapState>} */
 const EvmKitStateShape = {
   localChainAddress: CosmosChainAddressShape,
   sourceChannel: M.string(),

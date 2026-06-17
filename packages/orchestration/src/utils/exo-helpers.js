@@ -59,7 +59,7 @@ export const makeVowExoHelpers = ({ watch }) => {
        * @template [T=undefined]
        * @param {Vow<unknown>} inputV
        * @param {T} [newValue]
-       * @returns {Vow<T>}
+       * @returns {Vow<import('@agoric/vow').Fulfilled<T>>}
        */
       overrideVow(inputV, newValue) {
         return watch(inputV, this.facets.overrideVowWatcher, newValue);
@@ -196,11 +196,13 @@ export const makeVowExoHelpers = ({ watch }) => {
             M.interface(
               name,
               /** @type {{ [T in M[number]]: MethodGuard }} */ (
-                Object.fromEntries(
-                  methods.map(method => [
-                    method,
-                    M.call().rest(M.any()).returns(),
-                  ]),
+                /** @type {unknown} */ (
+                  Object.fromEntries(
+                    methods.map(method => [
+                      method,
+                      M.call().rest(M.any()).returns(),
+                    ]),
+                  )
                 )
               ),
             ),

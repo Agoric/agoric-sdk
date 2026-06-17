@@ -27,6 +27,7 @@ import { makeRetryUntilCondition } from './sleep.js';
  * @import {QueryTool} from './queryKit.js';
  * @import {LCD} from './makeHttpClient.js';
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Passable} from '@endo/marshal';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
  * @import {BundleCache} from '@agoric/swingset-vat/tools/bundleTool.js';
@@ -297,7 +298,9 @@ const provisionSmartWalletAndMakeDriver = async (
 
   /** @param {BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
-    const capData = q.toCapData(harden(bridgeAction));
+    // BridgeAction is passable at runtime but doesn't structurally satisfy the
+    // stricter Passable type (e.g. AmountKeywordRecord index signatures).
+    const capData = q.toCapData(/** @type {Passable} */ (harden(bridgeAction)));
     const offerBody = JSON.stringify(capData);
     const txInfo = await agd.tx(
       ['swingset', 'wallet-action', offerBody, '--allow-spend'],

@@ -145,7 +145,9 @@ const parseTypedJSON = <T>(
   } catch (err) {
     throw makeError(err);
   }
-  return result;
+  // `mustMatch` narrows `result`, but inside this generic body TS keeps an
+  // `unknown extends T` conditional that doesn't collapse to `T`, so re-assert.
+  return result as T;
 };
 
 type PortfolioReadPublished = <P extends string>(

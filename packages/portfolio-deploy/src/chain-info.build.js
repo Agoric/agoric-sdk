@@ -22,7 +22,7 @@ const sourceSpec =
 /**
  * @import {ParseArgsConfig} from 'node:util';
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
  * @import {ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {ExecFileSyncOptionsWithStringEncoding} from 'node:child_process';
@@ -54,7 +54,7 @@ export const defaultProposalBuilder = async (_utils, chainInfo) =>
     getManifestCall: ['getManifestForChainInfo', { options: { chainInfo } }],
   });
 
-/** @type {TypedPattern<Record<string, ChainInfo>>} */
+/** @type {CastedPattern<Record<string, ChainInfo>>} */
 const ChainInfosShape = M.recordOf(M.string(), ChainInfoShape);
 
 /**

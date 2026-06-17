@@ -10,7 +10,10 @@ import type { VatAdminVat } from '@agoric/swingset-vat/src/vats/vat-admin/vat-va
 /** @see deliverToController in packages/SwingSet/src/vats/comms/controller.js */
 import type { TimerVat } from '@agoric/swingset-vat/src/vats/timer/vat-timer.js';
 import type { Issuer, Brand, Payment, Mint } from '@agoric/ertp';
-import type { OrchestrationVat } from '@agoric/orchestration';
+import type {
+  CosmosInterchainService,
+  OrchestrationVat,
+} from '@agoric/orchestration';
 import type { ERef } from 'jessie.js';
 import type { LocalChainVat } from '../vat-localchain.js';
 import type { TransferVat } from '../vat-transfer.js';
@@ -328,7 +331,7 @@ export type ChainBootstrapSpaceT = {
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
-  cosmosInterchainService: import('@agoric/orchestration').CosmosInterchainService;
+  cosmosInterchainService: CosmosInterchainService;
   /** Utilities to support debugging */
   diagnostics: {
     /**
@@ -358,7 +361,7 @@ export type ChainBootstrapSpaceT = {
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   networkVat: NetworkVat;
-  orchestration?: import('@agoric/orchestration').CosmosInterchainService;
+  orchestration?: CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   powerStore: import('@agoric/store').MapStore;
