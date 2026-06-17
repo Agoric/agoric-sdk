@@ -47,7 +47,7 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 73.54
+    "atLeast": 74.81
   },
   "engines": {
     "node": "^22.11"

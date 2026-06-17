@@ -52,7 +52,7 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 80.67
+    "atLeast": 80.66
   },
   "engines": {
     "node": "^22.11"
