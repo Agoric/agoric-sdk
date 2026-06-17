@@ -97,7 +97,6 @@
     "@agoric/fast-usdc": "portal:../packages/fast-usdc",
     "@agoric/governance": "portal:../packages/governance",
     "@agoric/import-manager": "portal:../packages/import-manager",
-    "@agoric/inter-protocol": "portal:../packages/inter-protocol",
     "@agoric/internal": "portal:../packages/internal",
     "@agoric/kmarshal": "portal:../packages/kmarshal",
     "@agoric/network": "portal:../packages/network",
