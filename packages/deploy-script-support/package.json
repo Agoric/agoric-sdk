@@ -62,7 +62,7 @@
   "devDependencies": {
     "@agoric/vats": "workspace:*",
     "@endo/init": "^1.1.13",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "import-meta-resolve": "^4.1.0"
   },
   "files": [

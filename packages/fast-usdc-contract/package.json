@@ -23,7 +23,7 @@
     "@agoric/vats": "workspace:*",
     "@agoric/zone": "workspace:*",
     "@fast-check/ava": "^3.0.1",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "execa": "^9.5.2",
     "tinyspy": "^4.0.3",
@@ -60,10 +60,10 @@
     "ethers": "^6.13.4"
   },
   "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],

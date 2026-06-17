@@ -48,7 +48,7 @@
     "@agoric/swingset-liveslots": "workspace:*",
     "@endo/bundle-source": "^4.3.2",
     "@endo/init": "^1.1.13",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.3"
   },
   "files": [

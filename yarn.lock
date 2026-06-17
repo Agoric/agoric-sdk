@@ -59,7 +59,7 @@ __metadata:
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/stream": "npm:^1.3.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     import-meta-resolve: "npm:^4.1.0"
     node-fetch-cache: "npm:^5.0.2"
@@ -118,7 +118,7 @@ __metadata:
     "@endo/promise-kit": "npm:^1.2.1"
     "@fast-check/ava": "npm:^3.0.1"
     "@nick134-bit/noblejs": "npm:0.0.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     bech32: "npm:^2.0.0"
     c8: "npm:^10.1.3"
     commander: "npm:^12.1.0"
@@ -157,7 +157,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     commander: "npm:^12.1.0"
     esbuild: "npm:^0.25.2"
@@ -203,7 +203,7 @@ __metadata:
     "@endo/ses-ava": "npm:^1.4.2"
     "@fast-check/ava": "npm:^3.0.1"
     "@noble/hashes": "npm:~1.5.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     highs: "npm:^1.8.0"
     javascript-lp-solver: "npm:^0.4.24"
@@ -247,7 +247,7 @@ __metadata:
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
     "@noble/hashes": "npm:~1.5.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     esbuild: "npm:^0.25.2"
     execa: "npm:^9.5.2"
@@ -278,7 +278,7 @@ __metadata:
     "@endo/init": "npm:^1.1.13"
     "@endo/marshal": "npm:^1.10.0"
     "@endo/nat": "npm:^5.2.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     expose-gc: "npm:^1.0.0"
     import-meta-resolve: "npm:^4.1.0"
@@ -317,7 +317,7 @@ __metadata:
     "@graphql-inspector/cli": "npm:^5.0.8"
     "@types/node": "npm:^22.10.2"
     "@types/ws": "npm:^8"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     better-sqlite3: "npm:^12.10.0"
     c8: "npm:^10.1.3"
     chain-registry: "npm:^2.0.44"
@@ -342,7 +342,7 @@ __metadata:
   dependencies:
     "@agoric/internal": "workspace:*"
     "@types/proper-lockfile": "npm:^4.1.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     proper-lockfile: "npm:^4.1.2"
     tmp: "npm:^0.2.1"
@@ -367,7 +367,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     tsd: "npm:^0.33.0"
   languageName: unknown
   linkType: soft
@@ -385,7 +385,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/ses-ava": "npm:^1.4.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
   languageName: unknown
   linkType: soft
 
@@ -420,7 +420,7 @@ __metadata:
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/stream": "npm:^1.3.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     import-meta-resolve: "npm:^4.1.0"
   languageName: unknown
@@ -437,7 +437,7 @@ __metadata:
     "@agoric/zoe": "workspace:*"
     "@endo/far": "npm:^1.1.14"
     "@endo/marshal": "npm:^1.10.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
   languageName: unknown
   linkType: soft
@@ -461,7 +461,7 @@ __metadata:
     "@endo/marshal": "npm:^1.10.0"
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/ses-ava": "npm:^1.4.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     express: "npm:^5.0.1"
     tsd: "npm:^0.33.0"
@@ -494,7 +494,7 @@ __metadata:
     "@hyperweb/telescope": "npm:^2.2.1"
     "@interchainjs/cosmos": "npm:^1.19.3"
     "@interchainjs/types": "npm:^1.19.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     rimraf: "npm:^6.0.1"
     ts-blank-space: "npm:^0.6.2"
@@ -516,7 +516,7 @@ __metadata:
     "@hyperweb/telescope": "npm:^2.2.1"
     "@interchainjs/cosmos": "npm:^1.19.3"
     "@interchainjs/types": "npm:^1.19.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     bech32: "npm:^2.0.0"
     esbuild: "npm:^0.25.2"
     query-string: "npm:^9.1.1"
@@ -554,7 +554,7 @@ __metadata:
     "@iarna/toml": "npm:^2.2.3"
     "@opentelemetry/api": "npm:~1.9.0"
     "@opentelemetry/sdk-metrics": "npm:~1.30.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     better-sqlite3: "npm:^12.10.0"
     c8: "npm:^10.1.3"
     deterministic-json: "npm:^1.0.5"
@@ -583,7 +583,7 @@ __metadata:
   resolution: "@agoric/create-dapp@workspace:packages/create-dapp"
   dependencies:
     agoric: "workspace:*"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
   bin:
     create-dapp: src/create-dapp.js
@@ -620,7 +620,7 @@ __metadata:
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/zip": "npm:^1.1.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     import-meta-resolve: "npm:^4.1.0"
   languageName: unknown
   linkType: soft
@@ -643,7 +643,7 @@ __metadata:
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
     "@fast-check/ava": "npm:^3.0.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     tsd: "npm:^0.33.0"
   languageName: unknown
   linkType: soft
@@ -704,7 +704,7 @@ __metadata:
     "@endo/promise-kit": "npm:^1.2.1"
     "@fast-check/ava": "npm:^3.0.1"
     "@nick134-bit/noblejs": "npm:0.0.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     bech32: "npm:^2.0.0"
     c8: "npm:^10.1.3"
     commander: "npm:^12.1.0"
@@ -737,7 +737,7 @@ __metadata:
     "@endo/marshal": "npm:^1.10.0"
     "@endo/nat": "npm:^5.2.0"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     import-meta-resolve: "npm:^4.1.0"
   languageName: unknown
@@ -748,7 +748,7 @@ __metadata:
   resolution: "@agoric/import-manager@workspace:packages/import-manager"
   dependencies:
     "@agoric/swingset-vat": "workspace:*"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
   languageName: unknown
   linkType: soft
@@ -775,7 +775,7 @@ __metadata:
     "@endo/ses-ava": "npm:^1.4.2"
     "@endo/stream": "npm:^1.3.1"
     "@fast-check/ava": "npm:^3.0.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     import-meta-resolve: "npm:^4.1.0"
     jessie.js: "npm:^0.3.4"
     tsd: "npm:^0.33.0"
@@ -791,7 +791,7 @@ __metadata:
     "@endo/init": "npm:^1.1.13"
     "@endo/marshal": "npm:^1.10.0"
     "@endo/ses-ava": "npm:^1.4.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
   languageName: unknown
   linkType: soft
 
@@ -814,7 +814,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
   languageName: unknown
   linkType: soft
@@ -836,7 +836,7 @@ __metadata:
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/ses-ava": "npm:^1.4.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
   languageName: unknown
   linkType: soft
@@ -875,7 +875,7 @@ __metadata:
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/ses-ava": "npm:^1.4.2"
     "@noble/hashes": "npm:~1.5.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     bech32: "npm:^2.0.0"
     bs58: "npm:^6.0.0"
     c8: "npm:^10.1.3"
@@ -914,7 +914,7 @@ __metadata:
     "@endo/init": "npm:^1.1.13"
     "@endo/nat": "npm:^5.2.0"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     import-meta-resolve: "npm:^4.1.0"
   languageName: unknown
@@ -925,7 +925,7 @@ __metadata:
   resolution: "@agoric/pola-io@workspace:packages/pola-io"
   dependencies:
     "@agoric/internal": "workspace:*"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
   languageName: unknown
   linkType: soft
 
@@ -941,7 +941,7 @@ __metadata:
     "@endo/patterns": "npm:^1.9.1"
     "@types/js-yaml": "npm:^4"
     ajv: "npm:^6.12.6"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     js-yaml: "npm:^4.1.1"
     ts-blank-space: "npm:^0.6.2"
@@ -968,7 +968,7 @@ __metadata:
     "@types/node": "npm:~22.9.0"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260610.1"
     "@yarnpkg/types": "npm:^4.0.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     conventional-changelog-conventionalcommits: "npm:^9.1.0"
     dprint: "npm:^0.53.0"
@@ -1030,7 +1030,7 @@ __metadata:
     "@endo/nat": "npm:^5.2.0"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     import-meta-resolve: "npm:^4.1.0"
   languageName: unknown
   linkType: soft
@@ -1063,7 +1063,7 @@ __metadata:
     "@endo/init": "npm:^1.1.13"
     "@endo/marshal": "npm:^1.10.0"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     deterministic-json: "npm:^1.0.5"
     express: "npm:^5.0.1"
@@ -1095,7 +1095,7 @@ __metadata:
     "@endo/import-bundle": "npm:^1.7.0"
     "@endo/init": "npm:^1.1.13"
     "@endo/marshal": "npm:^1.10.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
   languageName: unknown
   linkType: soft
@@ -1130,7 +1130,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/ses-ava": "npm:^1.4.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
   languageName: unknown
   linkType: soft
 
@@ -1148,7 +1148,7 @@ __metadata:
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/stream": "npm:^1.3.1"
     "@types/better-sqlite3": "npm:^7.6.13"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     better-sqlite3: "npm:^12.10.0"
     c8: "npm:^10.1.3"
     tmp: "npm:^0.2.1"
@@ -1173,7 +1173,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
   languageName: unknown
   linkType: soft
 
@@ -1212,7 +1212,7 @@ __metadata:
     "@types/microtime": "npm:^2.1.0"
     "@types/tmp": "npm:^0.2.0"
     ansi-styles: "npm:^6.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     better-sqlite3: "npm:^12.10.0"
     import-meta-resolve: "npm:^4.1.0"
     microtime: "npm:^3.1.0"
@@ -1220,7 +1220,7 @@ __metadata:
     tmp: "npm:^0.2.1"
   peerDependencies:
     "@agoric/xsnap": "workspace:*"
-    ava: ^5.3.0 || ^6.0.0 || ^7.0.0
+    ava: "*"
   bin:
     vat: bin/vat
   languageName: unknown
@@ -1234,7 +1234,7 @@ __metadata:
     "@endo/import-bundle": "npm:^1.7.0"
     "@endo/init": "npm:^1.1.13"
     "@endo/marshal": "npm:^1.10.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
   peerDependencies:
     "@agoric/swingset-liveslots": "workspace:*"
@@ -1267,7 +1267,7 @@ __metadata:
     "@opentelemetry/sdk-metrics": "npm:~1.30.1"
     "@opentelemetry/sdk-trace-base": "npm:~1.30.1"
     "@opentelemetry/semantic-conventions": "npm:~1.28.0"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     better-sqlite3: "npm:^12.10.0"
     c8: "npm:^10.1.3"
     tmp: "npm:^0.2.1"
@@ -1286,7 +1286,7 @@ __metadata:
     "@endo/init": "npm:^1.1.13"
     "@endo/nat": "npm:^5.2.0"
     "@endo/patterns": "npm:^1.9.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
   languageName: unknown
   linkType: soft
 
@@ -1303,7 +1303,7 @@ __metadata:
     "@endo/init": "npm:^1.1.13"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/ses-ava": "npm:^1.4.2"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     tsd: "npm:^0.33.0"
   languageName: unknown
   linkType: soft
@@ -1336,7 +1336,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     import-meta-resolve: "npm:^4.1.0"
     jessie.js: "npm:^0.3.4"
@@ -1351,7 +1351,7 @@ __metadata:
     "@agoric/smart-wallet": "workspace:*"
     "@agoric/vats": "workspace:*"
     "@agoric/zoe": "workspace:*"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
   languageName: unknown
   linkType: soft
@@ -1372,7 +1372,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     tsd: "npm:^0.33.0"
   languageName: unknown
   linkType: soft
@@ -1400,7 +1400,7 @@ __metadata:
     "@endo/marshal": "npm:^1.10.0"
     "@endo/nat": "npm:^5.2.0"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     import-meta-resolve: "npm:^4.1.0"
   languageName: unknown
   linkType: soft
@@ -1435,7 +1435,7 @@ __metadata:
   dependencies:
     "@endo/bundle-source": "npm:^4.3.2"
     "@endo/init": "npm:^1.1.13"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     source-map: "npm:^0.7.4"
   languageName: unknown
@@ -1457,7 +1457,7 @@ __metadata:
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/stream": "npm:^1.3.1"
     "@endo/stream-node": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     execa: "npm:^9.5.2"
     glob: "npm:^7.1.6"
@@ -1499,7 +1499,7 @@ __metadata:
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
     "@endo/promise-kit": "npm:^1.2.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.3"
     import-meta-resolve: "npm:^4.1.0"
     tsd: "npm:^0.33.0"
@@ -1518,7 +1518,7 @@ __metadata:
     "@endo/far": "npm:^1.1.14"
     "@endo/pass-style": "npm:^1.8.1"
     "@endo/patterns": "npm:^1.9.1"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
   languageName: unknown
   linkType: soft
 
@@ -2224,6 +2224,13 @@ __metadata:
     glob: "npm:8.0.3"
     minimatch: "npm:5.1.0"
   checksum: 10c0/54c23e10b20cc821f16aa545d82377dffb24f886ad5fdec8e8864e402f4ba1a3a96b4585d68740637fd84719370801135364e623e3df57897e680f9a4cdbedec
+  languageName: node
+  linkType: hard
+
+"@cto.af/wtf8@npm:0.0.5":
+  version: 0.0.5
+  resolution: "@cto.af/wtf8@npm:0.0.5"
+  checksum: 10c0/b73ebb301b0f1ff0a3b127b5200f0c87deaa69ea0c1cbf5a035ac35d8ff533749e4963b41375c7fcb29d9443990407e864ac009d6c5242d0e0bf9676ab4ae83c
   languageName: node
   linkType: hard
 
@@ -7199,7 +7206,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vercel/nft@npm:^1.3.2":
+"@vercel/nft@npm:^1.3.2, @vercel/nft@npm:^1.5.0":
   version: 1.10.2
   resolution: "@vercel/nft@npm:1.10.2"
   dependencies:
@@ -7502,7 +7509,7 @@ __metadata:
     "@endo/promise-kit": "npm:^1.2.1"
     "@endo/zip": "npm:^1.1.0"
     "@iarna/toml": "npm:^2.2.3"
-    ava: "npm:^7.0.0"
+    ava: "npm:^8.0.1"
     c8: "npm:^10.1.2"
     chalk: "npm:^5.2.0"
     commander: "npm:^12.1.0"
@@ -7868,6 +7875,61 @@ __metadata:
   bin:
     ava: entrypoints/cli.mjs
   checksum: 10c0/19c5e494bac1cc8140e78cb1440f299f9ae07baea50740c4d66daec3e2af048e71b8b5313e4834e100aeead7182d9bfe1b7acaad3dab7317ef2a00f23d39bc92
+  languageName: node
+  linkType: hard
+
+"ava@npm:^8.0.1":
+  version: 8.0.1
+  resolution: "ava@npm:8.0.1"
+  dependencies:
+    "@vercel/nft": "npm:^1.5.0"
+    acorn: "npm:^8.16.0"
+    acorn-walk: "npm:^8.3.5"
+    ansi-styles: "npm:^6.2.3"
+    arrgv: "npm:^1.0.2"
+    arrify: "npm:^3.0.0"
+    callsites: "npm:^4.2.0"
+    cbor2: "npm:^2.3.0"
+    chalk: "npm:^5.6.2"
+    chunkd: "npm:^2.0.1"
+    ci-info: "npm:^4.4.0"
+    ci-parallel-vars: "npm:^1.0.1"
+    cli-truncate: "npm:^6.0.0"
+    code-excerpt: "npm:^4.0.0"
+    common-path-prefix: "npm:^3.0.0"
+    concordance: "npm:^5.0.4"
+    currently-unhandled: "npm:^0.4.1"
+    debug: "npm:^4.4.3"
+    emittery: "npm:^2.0.0"
+    figures: "npm:^6.1.0"
+    globby: "npm:^16.2.0"
+    ignore-by-default: "npm:^2.1.0"
+    indent-string: "npm:^5.0.0"
+    is-plain-object: "npm:^5.0.0"
+    is-promise: "npm:^4.0.0"
+    matcher: "npm:^6.0.0"
+    memoize: "npm:^11.0.0"
+    ms: "npm:^2.1.3"
+    p-map: "npm:^7.0.4"
+    package-config: "npm:^5.0.0"
+    picomatch: "npm:^4.0.4"
+    plur: "npm:^6.0.0"
+    pretty-ms: "npm:^9.3.0"
+    resolve-cwd: "npm:^3.0.0"
+    slash: "npm:^5.1.0"
+    stack-utils: "npm:^2.0.6"
+    supertap: "npm:^3.0.1"
+    temp-dir: "npm:^3.0.0"
+    write-file-atomic: "npm:^7.0.1"
+    yargs: "npm:^18.0.0"
+  peerDependencies:
+    "@ava/typescript": "*"
+  peerDependenciesMeta:
+    "@ava/typescript":
+      optional: true
+  bin:
+    ava: entrypoints/cli.js
+  checksum: 10c0/2edaede2e47aeaf4e1ed5744380d308a1e0ea7aba7f39ce6a96635a463857020826071e1e7ad5c2f79582244aa5c51ed3bab1fa818cc74a5249c8d3f00e4a4d6
   languageName: node
   linkType: hard
 
@@ -8417,6 +8479,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cbor2@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "cbor2@npm:2.3.0"
+  dependencies:
+    "@cto.af/wtf8": "npm:0.0.5"
+  checksum: 10c0/373e528163e58d1b7f74ae6bc201a2c1e4e3d780b9244caa42e5bb14a7c7b5a862b27e01c45ae9371ac9cfd375d9d6c936e38d547ed170ace2e808c26380176e
+  languageName: node
+  linkType: hard
+
 "cbor@npm:^10.0.11":
   version: 10.0.12
   resolution: "cbor@npm:10.0.12"
@@ -8666,6 +8737,16 @@ __metadata:
     slice-ansi: "npm:^8.0.0"
     string-width: "npm:^8.2.0"
   checksum: 10c0/0d4ec94702ca85b64522ac93633837fb5ea7db17b79b1322a60f6045e6ae2b8cd7bd4c1d19ac7d1f9e10e3bbda1112e172e439b68c02b785ee00da8d6a5c5471
+  languageName: node
+  linkType: hard
+
+"cli-truncate@npm:^6.0.0":
+  version: 6.0.0
+  resolution: "cli-truncate@npm:6.0.0"
+  dependencies:
+    slice-ansi: "npm:^9.0.0"
+    string-width: "npm:^8.2.0"
+  checksum: 10c0/e0abb91a00dd20c64b93345e0235e780a5f2cf182c529235bae83f1ab1488b90b047838c1e72b9b472cb5cd6f294f017dac6afed511fa3996d710d3675dec6f7
   languageName: node
   linkType: hard
 
@@ -9738,6 +9819,13 @@ __metadata:
   version: 1.2.0
   resolution: "emittery@npm:1.2.0"
   checksum: 10c0/3b16d67b2cbbc19d44fa124684039956dc94c376cefa8c7b29f4c934d9d370e6819f642cddaa343b83b1fc03fda554a1498e12f5861caf9d6f6394ff4b6e808a
+  languageName: node
+  linkType: hard
+
+"emittery@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "emittery@npm:2.0.0"
+  checksum: 10c0/b8b5836e9fd368670e1ce5cb948feef30351ecebfbf589ac807c1f6b38c90d6556b2d48883f9b3c371fad59c92519b333dc3919a8ff5e351aea0f8b424203826
   languageName: node
   linkType: hard
 
@@ -11465,7 +11553,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"globby@npm:^16.1.1":
+"globby@npm:^16.1.1, globby@npm:^16.2.0":
   version: 16.2.0
   resolution: "globby@npm:16.2.0"
   dependencies:
@@ -13713,6 +13801,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"memoize@npm:^11.0.0":
+  version: 11.0.0
+  resolution: "memoize@npm:11.0.0"
+  dependencies:
+    mimic-function: "npm:^5.0.1"
+  checksum: 10c0/4a64923d7369bb625f2551fcab0d44447b472d15573b5c8dca57d09be23ac8a13adf5da404e36de84db2a2dd6fc8dac876286139d8864cf1e5ab44aa5fb59334
+  languageName: node
+  linkType: hard
+
 "memorystream@npm:^0.3.1":
   version: 0.3.1
   resolution: "memorystream@npm:0.3.1"
@@ -15595,7 +15692,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"picomatch@npm:^4.0.2, picomatch@npm:^4.0.3":
+"picomatch@npm:^4.0.2, picomatch@npm:^4.0.3, picomatch@npm:^4.0.4":
   version: 4.0.4
   resolution: "picomatch@npm:4.0.4"
   checksum: 10c0/e2c6023372cc7b5764719a5ffb9da0f8e781212fa7ca4bd0562db929df8e117460f00dff3cb7509dacfc06b86de924b247f504d0ce1806a37fac4633081466b0
@@ -17045,6 +17142,16 @@ __metadata:
     ansi-styles: "npm:^6.2.3"
     is-fullwidth-code-point: "npm:^5.1.0"
   checksum: 10c0/0ce4aa91febb7cea4a00c2c27bb820fa53b6d2862ce0f80f7120134719f7914fc416b0ed966cf35250a3169e152916392f35917a2d7cad0fcc5d8b841010fa9a
+  languageName: node
+  linkType: hard
+
+"slice-ansi@npm:^9.0.0":
+  version: 9.0.0
+  resolution: "slice-ansi@npm:9.0.0"
+  dependencies:
+    ansi-styles: "npm:^6.2.3"
+    is-fullwidth-code-point: "npm:^5.1.0"
+  checksum: 10c0/fd97f0e3a48386dbf1cbc2f10134f1e345c161188adb6928856079b4c0117c221a5405a7bff341e1a6e428721c5236353ab26b7d777a4f2f35a8ed2a91d82e7a
   languageName: node
   linkType: hard
 
@@ -19017,7 +19124,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"write-file-atomic@npm:^7.0.0":
+"write-file-atomic@npm:^7.0.0, write-file-atomic@npm:^7.0.1":
   version: 7.0.1
   resolution: "write-file-atomic@npm:7.0.1"
   dependencies:

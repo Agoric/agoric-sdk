@@ -31,7 +31,7 @@
     "@endo/promise-kit": "^1.2.1",
     "@endo/ses-ava": "^1.4.2",
     "@fast-check/ava": "^3.0.1",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "ts-blank-space": "^0.6.2"
   },
@@ -60,10 +60,10 @@
     "viem": "^2.31.0"
   },
   "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],

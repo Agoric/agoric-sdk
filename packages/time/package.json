@@ -39,7 +39,7 @@
   "devDependencies": {
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.13",
-    "ava": "^7.0.0"
+    "ava": "^8.0.1"
   },
   "ava": {
     "require": [
