@@ -115,9 +115,11 @@ jobs:
 
       - name: Setup Starship Infrastructure
         id: starship-infra
-        # `inputs.name` is fixed in this commit (hyperweb-io/starship-action#43).
-        # TODO: Adopt an official tag of `starship-action` when it is released
-        uses: hyperweb-io/starship-action@d854f77ccefe7fc3dfe05b0500931ff2563d1406
+        # starship-action 1.1.0 (commit ca7de52). Earlier versions ran their own
+        # `setup-node` pinned to Node 20.x, downgrading the PATH for the rest of
+        # the job and breaking AVA 8 / emittery 2 (which need Node >=22). 1.1.0
+        # removed that step, so the test steps keep the job's node-new (Node 22).
+        uses: hyperweb-io/starship-action@ca7de52c22a3b932e4f87fb0389f3ac174853d5f
         timeout-minutes: 20
         with:
           config: ./agoric-sdk/multichain-testing/${{ inputs.config }}
