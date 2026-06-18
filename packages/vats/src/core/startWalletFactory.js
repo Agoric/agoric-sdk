@@ -16,11 +16,11 @@ import {
  * @import {ERemote} from '@agoric/internal';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {EReturn} from '@endo/far';
- * @import {AdminFacet, InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';
+ * @import {InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';
  * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
  * @import {ScopedBridgeManager} from '../types.js';
- * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ERef} from '@agoric/vow';
  * @import {GovernanceFacetKit} from '@agoric/governance';
@@ -77,16 +77,6 @@ const publishRevivableWalletState = async (
  *   ChainStorageVatParams &
  *   PromiseSpaceOf<{
  *     economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet;
- *     econCharterKit: {
- *       creatorFacet: {
- *         addInstance: (
- *           instance: Instance<any>,
- *           creatorFacet: unknown,
- *           label?: string,
- *         ) => void;
- *       };
- *       adminFacet: AdminFacet;
- *     };
  *     walletBridgeManager: ScopedBridgeManager<'wallet'>;
  *     provisionWalletBridgeManager: ScopedBridgeManager<'provisionWallet'>;
  *   }>} powers
@@ -107,7 +97,6 @@ export const startWalletFactory = async (
       provisionWalletBridgeManager: provisionWalletBridgeManagerP,
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
-      econCharterKit,
       startUpgradable,
       startGovernedUpgradable,
     },
@@ -277,14 +266,7 @@ export const startWalletFactory = async (
 
     const bridgeHandler = await E(ppFacets.creatorFacet).makeHandler();
 
-    await Promise.all([
-      E(provisionWalletBridgeManager).initHandler(bridgeHandler),
-      E(E.get(econCharterKit).creatorFacet).addInstance(
-        ppFacets.instance,
-        ppFacets.governorCreatorFacet,
-        'provisionPool',
-      ),
-    ]);
+    await E(provisionWalletBridgeManager).initHandler(bridgeHandler);
     trace('initAfterProvisionPool done');
   };
 
@@ -325,7 +307,6 @@ export const WALLET_FACTORY_MANIFEST = {
       namesByAddressAdmin: true,
       startUpgradable: true,
       startGovernedUpgradable: true,
-      econCharterKit: 'psmCharter',
     },
     produce: {
       client: true, // dummy client in this configuration

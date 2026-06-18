@@ -1,8 +1,4 @@
 import { type Amount } from '@agoric/ertp';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
-import { NonNullish } from '@agoric/internal';
 import {
   boardSlottingMarshaller,
   unmarshalFromVstorage,
@@ -35,6 +31,9 @@ import type { BankManager } from '@agoric/vats/src/vat-bank.js';
 import type { SwingsetTestKit } from './supports.js';
 
 type Marshaller = Omit<Marshal<string | null>, 'serialize' | 'unserialize'>;
+
+// Formerly imported from inter-protocol's econ-behaviors (refs #12719).
+const SECONDS_PER_MINUTE = 60n;
 
 const isBootProfileEnabled = () => {
   const value = process.env.AGORIC_BOOT_TEST_PROFILE;
@@ -195,72 +194,6 @@ export type WalletFactoryDriver = Awaited<
 export type SmartWalletDriver = Awaited<
   ReturnType<WalletFactoryDriver['provideSmartWallet']>
 >;
-
-export const makePriceFeedDriver = async (
-  collateralBrandKey: string,
-  agoricNamesRemotes: AgoricNamesRemotes,
-  walletFactoryDriver: WalletFactoryDriver,
-  oracleAddresses: string[],
-) => {
-  const priceFeedName = oracleBrandFeedName(collateralBrandKey, 'USD');
-
-  const oracleWallets = await Promise.all(
-    oracleAddresses.map(addr => walletFactoryDriver.provideSmartWallet(addr)),
-  );
-
-  let nonce = 0;
-  let adminOfferId;
-  const acceptInvitations = async () => {
-    const priceFeedInstance = agoricNamesRemotes.instance[priceFeedName];
-    priceFeedInstance || Fail`no price feed ${priceFeedName}`;
-    nonce += 1;
-    adminOfferId = `accept-${collateralBrandKey}-oracleInvitation${nonce}`;
-    return Promise.all(
-      oracleWallets.map(w =>
-        w.executeOffer({
-          id: adminOfferId,
-          invitationSpec: {
-            source: 'purse',
-            instance: priceFeedInstance,
-            description: 'oracle invitation',
-          },
-          proposal: {},
-        }),
-      ),
-    );
-  };
-  await acceptInvitations();
-
-  // zero is the initial lastReportedRoundId so causes an error: cannot report on previous rounds
-  let roundId = 1n;
-  return {
-    async setPrice(price: number) {
-      await Promise.all(
-        oracleWallets.map(w =>
-          w.executeOfferMaker(
-            Offers.fluxAggregator.PushPrice,
-            {
-              offerId: `push-${price}-${Date.now()}`,
-              roundId,
-              unitPrice: BigInt(price * 1_000_000),
-            },
-            adminOfferId,
-          ),
-        ),
-      );
-      // prepare for next round
-      oracleWallets.push(NonNullish(oracleWallets.shift()));
-      roundId += 1n;
-      // TODO confirm the new price is written to storage
-    },
-    async refreshInvitations() {
-      roundId = 1n;
-      await acceptInvitations();
-    },
-  };
-};
-harden(makePriceFeedDriver);
-export type PriceFeedDriver = Awaited<ReturnType<typeof makePriceFeedDriver>>;
 
 export const makeGovernanceDriver = async (
   testKit: SwingsetTestKit,

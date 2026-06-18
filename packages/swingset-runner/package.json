@@ -21,7 +21,6 @@
   "dependencies": {
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/ertp": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/kmarshal": "workspace:*",
     "@agoric/stat-logger": "workspace:*",
