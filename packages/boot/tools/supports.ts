@@ -1128,7 +1128,22 @@ export const makeSwingsetTestKit = async <
         ? initSwingStore(swingStorePath)
         : initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
-  const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
+  // Memoize board remotes by id so a given slot decodes to the *same* remotable
+  // across readPublished calls. Without this, slotToBoardRemote synthesizes a
+  // fresh Far per slot on every call, so brands/instances read from vstorage
+  // never share identity between reads — breaking deepEqual on amounts. (Same
+  // cache pattern as the deprecated makeFromBoard, kept inline to preserve the
+  // BoardRemote shape, i.e. getBoardId(), that agoricNamesRemotes relies on.)
+  const boardRemotes = new Map<string, ReturnType<typeof slotToBoardRemote>>();
+  const cachingSlotToBoardRemote = (boardId: string, iface?: string) => {
+    let remote = boardRemotes.get(boardId);
+    if (!remote) {
+      remote = slotToBoardRemote(boardId, iface ?? '');
+      boardRemotes.set(boardId, remote);
+    }
+    return remote;
+  };
+  const { fromCapData } = boardSlottingMarshaller(cachingSlotToBoardRemote);
 
   const readLatest = (path: string): any => {
     let data;
