@@ -10,7 +10,7 @@ import { WalletName } from '@agoric/internal';
 
 /**
  * Reserve and look up a list of name paths, waiting for each path segment to be
- * reserved before resolving. Relocated from `@agoric/inter-protocol` (refs
+ * reserved before resolving. Relocated from `inter-protocol` (refs
  * #12719); used by the economicCommittee/charter bootstrap proposals.
  *
  * @param {ERef<NameAdmin>} nameAdmin

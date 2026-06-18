@@ -29,7 +29,6 @@
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/governance": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/kmarshal": "workspace:*",
     "@agoric/network": "workspace:*",

@@ -27,7 +27,6 @@ export default [
   "@agoric/fast-usdc",
   "@agoric/governance",
   "@agoric/import-manager",
-  "@agoric/inter-protocol",
   "@agoric/internal",
   "@agoric/kmarshal",
   "@agoric/network",

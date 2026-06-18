@@ -11,7 +11,7 @@ import { reserveThenDeposit } from './reserve-then-deposit.js';
  */
 
 /**
- * Relocated from `@agoric/inter-protocol` (refs #12719). Invites the economic
+ * Relocated from `inter-protocol` (refs #12719). Invites the economic
  * committee members and stands up the (generic) charter through which they pose
  * governance questions. The only governed contract that remains is provisionPool
  * (in this package), so addGovernorsToEconCharter registers it instead of the

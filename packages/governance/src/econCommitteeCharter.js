@@ -25,7 +25,7 @@ import { E } from '@endo/far';
  *   is a generic charter over arbitrary governed contracts. The
  *   `econCommitteeCharter` name (and the agoricNames registration that uses it)
  *   is kept for legacy clarity and on-chain continuity. Relocated from
- *   @agoric/inter-protocol to @agoric/governance (refs #12719).
+ *   inter-protocol to @agoric/governance (refs #12719).
  */
 
 export const INVITATION_MAKERS_DESC = 'charter member invitation';

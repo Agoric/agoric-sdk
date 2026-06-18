@@ -29,7 +29,7 @@ const sanitizePathSegment = name => {
 
 /**
  * Start the Economic Committee electorate. Formerly part of
- * `@agoric/inter-protocol`; relocated to `@agoric/vats` because it outlives
+ * `inter-protocol`; relocated to `@agoric/vats` because it outlives
  * Inter Protocol — provisionPool (in this package) is governed and needs this
  * electorate. The committee contract itself remains in `@agoric/governance`.
  *
