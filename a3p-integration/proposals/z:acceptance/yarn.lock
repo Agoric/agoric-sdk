@@ -142,21 +142,21 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/inter-protocol@portal:../../agoric-sdk/packages/inter-protocol::locator=z%3Aacceptance%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@agoric/inter-protocol@portal:../../agoric-sdk/packages/inter-protocol::locator=z%3Aacceptance%40workspace%3A."
+"@agoric/inter-protocol@npm:0.16.2-dev-cbcea8c.0.cbcea8c":
+  version: 0.16.2-dev-cbcea8c.0.cbcea8c
+  resolution: "@agoric/inter-protocol@npm:0.16.2-dev-cbcea8c.0.cbcea8c"
   dependencies:
-    "@agoric/base-zone": "workspace:*"
-    "@agoric/ertp": "workspace:*"
-    "@agoric/governance": "workspace:*"
-    "@agoric/internal": "workspace:*"
-    "@agoric/notifier": "workspace:*"
-    "@agoric/store": "workspace:*"
-    "@agoric/time": "workspace:*"
-    "@agoric/vat-data": "workspace:*"
-    "@agoric/vats": "workspace:*"
-    "@agoric/zoe": "workspace:*"
-    "@agoric/zone": "workspace:*"
+    "@agoric/base-zone": "npm:0.1.1-dev-cbcea8c.0.cbcea8c"
+    "@agoric/ertp": "npm:0.16.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/governance": "npm:0.10.4-dev-cbcea8c.0.cbcea8c"
+    "@agoric/internal": "npm:0.3.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/notifier": "npm:0.6.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/store": "npm:0.9.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/time": "npm:0.3.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/vat-data": "npm:0.5.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/vats": "npm:0.15.2-dev-cbcea8c.0.cbcea8c"
+    "@agoric/zoe": "npm:0.26.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/zone": "npm:0.2.3-dev-cbcea8c.0.cbcea8c"
     "@endo/captp": "npm:^4.5.1"
     "@endo/errors": "npm:^1.3.1"
     "@endo/eventual-send": "npm:^1.5.0"
@@ -165,8 +165,9 @@ __metadata:
     "@endo/nat": "npm:^5.2.0"
     "@endo/promise-kit": "npm:^1.2.1"
     jessie.js: "npm:^0.3.4"
+  checksum: 10c0/d099e41a3ab0ee8a12aebaf1467ed66d26ff52cb969bdb945bdb502198e455c4dca4a7353012f102ce29c5bb2381948957748b0ec46f11ee6059226bcbe03f9a
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "@agoric/internal@portal:../../agoric-sdk/packages/internal::locator=z%3Aacceptance%40workspace%3A.":
   version: 0.0.0-use.local
@@ -1756,26 +1757,26 @@ __metadata:
   languageName: node
   linkType: hard
 
-"agoric@portal:../../agoric-sdk/packages/agoric-cli::locator=z%3Aacceptance%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "agoric@portal:../../agoric-sdk/packages/agoric-cli::locator=z%3Aacceptance%40workspace%3A."
+"agoric@npm:dev":
+  version: 0.21.2-dev-cbcea8c.0.cbcea8c
+  resolution: "agoric@npm:0.21.2-dev-cbcea8c.0.cbcea8c"
   dependencies:
-    "@agoric/access-token": "workspace:*"
-    "@agoric/cache": "workspace:*"
-    "@agoric/casting": "workspace:*"
-    "@agoric/client-utils": "workspace:*"
-    "@agoric/cosmic-proto": "workspace:*"
-    "@agoric/ertp": "workspace:*"
-    "@agoric/governance": "workspace:*"
-    "@agoric/inter-protocol": "workspace:*"
-    "@agoric/internal": "workspace:*"
-    "@agoric/network": "workspace:*"
-    "@agoric/smart-wallet": "workspace:*"
-    "@agoric/store": "workspace:*"
-    "@agoric/swingset-vat": "workspace:*"
-    "@agoric/vats": "workspace:*"
-    "@agoric/zoe": "workspace:*"
-    "@agoric/zone": "workspace:*"
+    "@agoric/access-token": "npm:0.4.22-dev-cbcea8c.0.cbcea8c"
+    "@agoric/cache": "npm:0.3.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/casting": "npm:0.4.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/client-utils": "npm:0.1.1-dev-cbcea8c.0.cbcea8c"
+    "@agoric/cosmic-proto": "npm:0.4.1-dev-cbcea8c.0.cbcea8c"
+    "@agoric/ertp": "npm:0.16.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/governance": "npm:0.10.4-dev-cbcea8c.0.cbcea8c"
+    "@agoric/inter-protocol": "npm:0.16.2-dev-cbcea8c.0.cbcea8c"
+    "@agoric/internal": "npm:0.3.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/network": "npm:0.1.1-dev-cbcea8c.0.cbcea8c"
+    "@agoric/smart-wallet": "npm:0.5.4-dev-cbcea8c.0.cbcea8c"
+    "@agoric/store": "npm:0.9.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/swingset-vat": "npm:0.32.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/vats": "npm:0.15.2-dev-cbcea8c.0.cbcea8c"
+    "@agoric/zoe": "npm:0.26.3-dev-cbcea8c.0.cbcea8c"
+    "@agoric/zone": "npm:0.2.3-dev-cbcea8c.0.cbcea8c"
     "@cosmjs/crypto": "npm:^0.36.0"
     "@cosmjs/encoding": "npm:^0.36.0"
     "@cosmjs/math": "npm:^0.36.0"
@@ -1805,8 +1806,9 @@ __metadata:
   bin:
     agops: src/bin-agops.js
     agoric: src/entrypoint.js
+  checksum: 10c0/ba235f46906193cd7f03c54518fd2f0aa30c5c77c6d0c536261e35bc8d0fabdb6d98c9cd2a21f4f203abc809f2ba489fd66b1ffd283f47315fe9f7c30802edc6
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "ajv@npm:^6.12.4":
   version: 6.12.6
@@ -6832,7 +6834,6 @@ __metadata:
     "@agoric/client-utils": "npm:dev"
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/ertp": "npm:dev"
-    "@agoric/inter-protocol": "npm:dev"
     "@agoric/internal": "npm:dev"
     "@agoric/store": "npm:dev"
     "@agoric/synthetic-chain": "npm:^0.7.1"
