@@ -582,7 +582,10 @@ const makeCreateAndDepositScenarioRunner = (
       const bankTraffic = common.utils.inspectBankBridge();
       const { accountIdByChain } =
         (await opts.trader1?.getPortfolioStatus()) ?? {};
-      const [_ns, _ref, addr] = accountIdByChain?.agoric!.split(':') ?? [];
+      const agoricAccountId = accountIdByChain?.agoric;
+      if (!agoricAccountId)
+        throw t.fail(`${label}: portfolio status missing agoric accountId`);
+      const [_ns, _ref, addr] = agoricAccountId.split(':');
       const myVBankIO = bankTraffic.filter(obj =>
         [obj.sender, obj.recipient].includes(addr),
       );
