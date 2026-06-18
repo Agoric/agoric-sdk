@@ -177,6 +177,9 @@ Environment variables:
 an absolute path is recommended
 - `YDS_URL`: Base URL of the YMax Data Service API, for fetching dynamic instrument status and sending transaction settlement notifications (optional)
 - `YDS_API_KEY`: API key for authenticating with YDS (required with `YDS_URL`)
+- `AUTO_REBALANCE_DRIFT_BPS`: Basis-point threshold for position drift auto-rebalance candidates. If any single instrument's actual allocation differs from its target by more than this value, and the target balances would deposit enough into non-zero-weight instruments, the planner may submit an auto rebalance (default "100" = 1 percentage point)
+- `AUTO_REBALANCE_DRIFT_MIN_DEPOSIT`: Minimum total micro-USDC deposit into non-zero-weight instruments required for the position drift trigger (default "25000000" = 25 USDC)
+- `AUTO_REBALANCE_CASH_MIN_DEPOSIT`: Minimum total micro-USDC deposit into non-zero-weight instruments required for the excess cash trigger (default "25000000" = 25 USDC)
 - `DOTENV`: Path to environment file containing defaults of above (default ".env")
 
 ## External Service Dependencies
@@ -252,10 +255,17 @@ environment, the GCP lookup is skipped.
 
 **Env vars**: `YDS_URL`, `YDS_API_KEY`
 
-Is sent notifications when monitored transactions settle. After a CCTP transfer,
-GMP transfer, or smart wallet transaction is confirmed, the planner POSTs the transaction ID and on-chain hash to `{YDS_URL}/flow-step-tx-hashes`
-with the `x-resolver-auth-key` header. The service is optional — if `YDS_URL`
-is not set, notifications are silently skipped.
+Provides cached portfolio balances for auto-rebalance candidate detection, dynamic
+instrument status, and transaction settlement notifications. For auto rebalance,
+the planner reads `GET {YDS_URL}/portfolios/{portfolioKey}` and keeps each
+portfolio's normalized balances in a 1-hour local cache before rechecking
+candidates with direct balance queries.
+
+After a CCTP transfer, GMP transfer, or smart wallet transaction is confirmed,
+the planner POSTs the transaction ID and on-chain hash to
+`{YDS_URL}/flow-step-tx-hashes` with the `x-resolver-auth-key` header. The
+service is optional — if `YDS_URL` is not set, notifications are silently
+skipped.
 
 ## Architecture
 
