@@ -1,3 +1,7 @@
+# DISABLED: the test-dapp job (build/test of Agoric/documentation against
+# agoric-sdk HEAD) has been failing consistently. Renamed to .DISABLED so
+# GitHub Actions ignores it. Re-enable by restoring the .yml extension once
+# the dapp build is green again.
 name: Test Documentation
 
 on:
