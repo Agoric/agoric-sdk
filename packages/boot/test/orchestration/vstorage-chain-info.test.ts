@@ -20,16 +20,8 @@ import {
   type WalletFactoryBootTestContext,
 } from '../tools/boot-test-context.js';
 
-type ChainInfoState = {
-  bootReady: Promise<void>;
-  configVerified: Promise<void>;
-  revisedReady: Promise<void>;
-};
-
 type ChainInfoContext = {
   harness?: ReturnType<typeof makeSwingsetHarness>;
-  state: ChainInfoState;
-  markConfigVerified: (error?: unknown) => void;
   makeBootContext: (
     t: ExecutionContext<unknown>,
   ) => Promise<WalletFactoryBootTestContext>;
@@ -50,22 +42,6 @@ test.before(async t => {
 
   const harness = managerType === 'xsnap' ? makeSwingsetHarness() : undefined;
 
-  let settleConfigVerified = (_error?: unknown) => {};
-  const configVerified = new Promise<void>((resolve, reject) => {
-    let settled = false;
-    settleConfigVerified = error => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      if (error) {
-        reject(error);
-      } else {
-        resolve();
-      }
-    };
-  });
-
   const makeBootContext = async (t0: ExecutionContext<unknown>) =>
     withWalletFactory(
       await makeBootTestContext(t0, {
@@ -77,31 +53,17 @@ test.before(async t => {
       }),
     );
 
-  t.context = {
-    harness,
-    state: {
-      bootReady: Promise.resolve(),
-      configVerified,
-      revisedReady: configVerified,
-    },
-    markConfigVerified: settleConfigVerified,
-    makeBootContext,
-  };
+  t.context = { harness, makeBootContext };
 });
 
 /**
- * Test the config itself. Part of this suite so we don't have to start up another swingset.
+ * Verify the orchestration-chains config publishes the expected `chain` and
+ * `chainConnection` info to `agoricNames`. The companion `revise chain info`
+ * test lives in revise-chain-info.test.ts so the two boots run on separate
+ * cores.
  */
 test('config', async t => {
-  await t.context.state.bootReady;
-  let ctx: WalletFactoryBootTestContext | undefined;
-  t.teardown(() => t.context.markConfigVerified());
-  try {
-    ctx = await t.context.makeBootContext(t);
-  } catch (error) {
-    t.context.markConfigVerified(error);
-    throw error;
-  }
+  const ctx = await t.context.makeBootContext(t);
   t.teardown(async () => ctx.shutdown());
 
   const {
@@ -165,36 +127,4 @@ test('config', async t => {
       },
     });
   }
-});
-
-test('revise chain info', async t => {
-  await t.context.state.revisedReady;
-  const ctx = await t.context.makeBootContext(t);
-  t.teardown(async () => ctx.shutdown());
-
-  const {
-    applyProposal,
-    runUtils: { EV },
-  } = ctx;
-
-  await applyProposal('@agoric/builders/scripts/testing/append-chain-info.js');
-
-  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-
-  const hotchain = await EV(agoricNames).lookup('chain', 'hot');
-  t.deepEqual(hotchain, {
-    bech32Prefix: 'cosmos',
-    chainId: 'hot-1',
-    namespace: 'cosmos',
-    reference: 'hot-1',
-  });
-
-  const connection = await EV(agoricNames).lookup(
-    'chainConnection',
-    'cosmoshub-4_hot-1',
-  );
-  t.like(connection, {
-    id: 'connection-1',
-    client_id: '07-tendermint-2',
-  });
 });

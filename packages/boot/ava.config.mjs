@@ -42,6 +42,7 @@ const bootTestOrder = [
   'test/orchestration/axelar-gmp.test.ts',
   'test/bootstrapTests/vow-offer-results.test.ts',
   'test/orchestration/vstorage-chain-info.test.ts',
+  'test/orchestration/revise-chain-info.test.ts',
   'test/tools/runutils-snapshots.test.ts',
   'test/tools/controller-fixture.test.ts',
 
