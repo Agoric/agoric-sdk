@@ -1780,12 +1780,18 @@ const makeCreateAndDepositScenarioRunner = (
   ) => {
     await planner1.redeem();
 
+    // makeFundedTrader creates an external, single-use trader fixture; no
+    // portfolio exists yet, so restarting around it exercises no recovery path.
+    // Run it as per-run setup rather than as an interruption boundary. (It is a
+    // single-use actor — openPortfolio throws once a portfolio is open — so it
+    // must be created fresh per run, which `setup` does.)
+    const setup = async (): Promise<Partial<Input>> => {
+      const trader1 = await makeFundedTrader();
+      t.log('trader1 created');
+      return { trader1 };
+    };
+
     const allSteps: TestStep[] = typedEntries({
-      makeTrader1: async (opts, label) => {
-        const trader1 = await makeFundedTrader();
-        t.log(`${label} trader1 created`);
-        return { ...opts, trader1 };
-      },
       startOpenPortfolio: async (opts, label) => {
         const Deposit = usdc.units(1_000);
         const traderP = (async () => {
@@ -1846,19 +1852,26 @@ const makeCreateAndDepositScenarioRunner = (
         t.log(`${label} trader and planner synced`);
         return opts;
       },
-      verifyBankIO: async (opts, label) => {
-        const bankTraffic = common.utils.inspectBankBridge();
-        const { accountIdByChain } =
-          (await opts.trader1?.getPortfolioStatus()) ?? {};
-        const [_ns, _ref, addr] = accountIdByChain?.agoric!.split(':') ?? [];
-        const myVBankIO = bankTraffic.filter(obj =>
-          [obj.sender, obj.recipient].includes(addr),
-        );
-        t.log(`${label} bankBridge for`, addr, myVBankIO);
-        t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
-        return opts;
-      },
     } satisfies Record<string, TestStep<Input>[1]>);
+
+    // verifyBankIO only reads (inspectBankBridge, getPortfolioStatus) and
+    // asserts; it mutates nothing, so it is an outcome check rather than an
+    // interruption boundary. Run it as a postcondition after each completed run.
+    const verifyBankIO = async (
+      _t: ExecutionContext,
+      opts: Partial<Input>,
+      label: string,
+    ) => {
+      const bankTraffic = common.utils.inspectBankBridge();
+      const { accountIdByChain } =
+        (await opts.trader1?.getPortfolioStatus()) ?? {};
+      const [_ns, _ref, addr] = accountIdByChain?.agoric!.split(':') ?? [];
+      const myVBankIO = bankTraffic.filter(obj =>
+        [obj.sender, obj.recipient].includes(addr),
+      );
+      t.log(`${label} bankBridge for`, addr, myVBankIO);
+      t.like(myVBankIO, [{ type: 'VBANK_GIVE', amount: '1000000000' }]);
+    };
 
     const interrupt =
       testOpts.restartOverrides &&
@@ -1873,7 +1886,10 @@ const makeCreateAndDepositScenarioRunner = (
           { message: 'upgrade not faked' },
         );
       });
-    await testInterruptedSteps(t, allSteps, interrupt);
+    await testInterruptedSteps(t, allSteps, interrupt, {
+      setup,
+      postcondition: verifyBankIO,
+    });
   };
 };
 
