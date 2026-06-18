@@ -8,6 +8,7 @@ import * as AgoricClientUtils from '@agoric/client-utils';
 import { objectMap } from '@agoric/internal';
 import type { ClusterName } from '@agoric/internal';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import { parseBigInt } from './ses-utils.js';
 import { parseGraphqlEndpoints } from './utils.ts';
 
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
@@ -99,14 +100,7 @@ const parsePositiveBigint = (
 ): bigint => {
   const value = env[fieldName];
   if (value === undefined) return defaultValue;
-  if (!/^[0-9]+$/.test(value)) {
-    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
-  }
-  const bigint = BigInt(value);
-  if (bigint <= 0n) {
-    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
-  }
-  return bigint;
+  return parseBigInt(value, { label: fieldName, natural: true });
 };
 
 export const DEFAULT_AUTO_REBALANCE_DRIFT_BPS = 100n;

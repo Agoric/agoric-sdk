@@ -9,46 +9,74 @@ import {
 
 const brand = Far('mock USDC brand') as Brand<'nat'>;
 
-test('normalizeYdsPortfolioBalances accepts record balances', t => {
+const makeYdsPayload = (
+  balances: unknown,
+  extras: Record<string, unknown> = {},
+) => ({
+  data: {
+    latestSnapshot: {
+      balances,
+      observedAt: '2026-06-18T00:00:00Z',
+    },
+    ...extras,
+  },
+});
+
+test('normalizeYdsPortfolioBalances accepts current endpoint balances', t => {
   t.deepEqual(
     normalizeYdsPortfolioBalances(
-      {
-        data: {
-          balances: {
-            '@agoric': '25000000',
-            USDN: { value: '12000000' },
-          },
+      makeYdsPayload({
+        positions: {
+          USDN: 12.5,
+          Aave_Base: 2.000001,
         },
-      },
+        accounts: {
+          noble: 25,
+          Base: 1.25,
+        },
+      }),
       brand,
     ),
     {
-      '@agoric': { brand, value: 25_000_000n },
-      USDN: { brand, value: 12_000_000n },
+      USDN: { brand, value: 12_500_000n },
+      Aave_Base: { brand, value: 2_000_001n },
+      '@noble': { brand, value: 25_000_000n },
+      '@Base': { brand, value: 1_250_000n },
     },
   );
 });
 
-test('normalizeYdsPortfolioBalances accepts array balances', t => {
-  t.deepEqual(
-    normalizeYdsPortfolioBalances(
-      {
-        data: {
-          portfolio: {
-            balances: [
-              { place: '@Base', amount: 1_000_000 },
-              { id: 'Aave_Base', balance: { value: '2000000' } },
-            ],
-          },
-        },
-      },
-      brand,
-    ),
-    {
-      '@Base': { brand, value: 1_000_000n },
-      Aave_Base: { brand, value: 2_000_000n },
-    },
-  );
+test('normalizeYdsPortfolioBalances rejects legacy balance shapes', t => {
+  for (const payload of [
+    { balances: { '@noble': '3000000' } },
+    { data: { balances: { '@noble': '3000000' } } },
+    { data: { portfolio: { balances: [] } } },
+    makeYdsPayload([
+      { place: '@Base', amount: 1 },
+      { id: 'Aave_Base', balance: { value: '2' } },
+    ]),
+  ]) {
+    t.throws(() => normalizeYdsPortfolioBalances(payload, brand));
+  }
+});
+
+test('normalizeYdsPortfolioBalances rejects malformed places and balances', t => {
+  for (const balances of [
+    { positions: { NotAnInstrument: 1 }, accounts: {} },
+    { positions: {}, accounts: { NotAChain: 1 } },
+    { positions: { USDN: '1' }, accounts: {} },
+    { positions: { USDN: { value: 1 } }, accounts: {} },
+    { positions: { USDN: -1 }, accounts: {} },
+    { positions: { USDN: Number.POSITIVE_INFINITY }, accounts: {} },
+    { positions: { USDN: 0.0000001 }, accounts: {} },
+    { positions: { USDN: Number.MAX_SAFE_INTEGER }, accounts: {} },
+    { positions: [], accounts: {} },
+    { positions: {}, accounts: [] },
+  ]) {
+    t.throws(() =>
+      normalizeYdsPortfolioBalances(makeYdsPayload(balances), brand),
+    );
+  }
 });
 
 test('makeYdsPortfolioBalanceReader fetches portfolio endpoint with auth', async t => {
@@ -62,7 +90,12 @@ test('makeYdsPortfolioBalanceReader fetches portfolio endpoint with auth', async
         );
         calls.push({ url, headers });
         return new Response(
-          JSON.stringify({ balances: { '@noble': '3000000' } }),
+          JSON.stringify(
+            makeYdsPayload({
+              positions: {},
+              accounts: { noble: 3 },
+            }),
+          ),
           {
             headers: { 'content-type': 'application/json' },
           },

@@ -9,6 +9,7 @@ import { Fail, q } from '@endo/errors';
 
 import type {
   FlowDetail,
+  PoolKey as InstrumentId,
   StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
@@ -902,6 +903,59 @@ test('processPortfolioEvents rechecks YDS candidates with fresh balances', async
     [],
     'stale YDS candidate is skipped after fresh direct balance recheck',
   );
+});
+
+test('processPortfolioEvents continues auto scan after portfolio error', async t => {
+  const kit = await fakePortfolioKit({
+    accounts: { noble: makeDeposit(25_000_000n) },
+    otherBalances: { usdn: makeDeposit(0n) },
+  });
+  const { blockHeight, portfolioId, initialPortfolioStatus, powers } = kit;
+  const { consoleWrites, getBridgeSends } = kit.testPowers;
+  const badPortfolioKey = `portfolio${portfolioId}` as const;
+  const goodPortfolioId = portfolioId + 1;
+  const goodPortfolioKey = `portfolio${goodPortfolioId}` as const;
+  const commonStatus = {
+    ...initialPortfolioStatus,
+    positionKeys: ['USDN'] as InstrumentId[],
+    enabledAutoFeatures: { rebalance: true },
+  };
+  const badPortfolioStatus: StatusFor['portfolio'] = harden({
+    ...commonStatus,
+    targetAllocation: { USDN: 0n },
+  });
+  const goodPortfolioStatus: StatusFor['portfolio'] = harden({
+    ...commonStatus,
+    targetAllocation: { USDN: 1n },
+  });
+  powers.getYdsPortfolioBalances = async () => ({
+    '@noble': makeDeposit(25_000_000n),
+  });
+  const memory: PortfoliosMemory = {
+    deferrals: [],
+    portfolioStatusForKey: new Map([
+      [badPortfolioKey, badPortfolioStatus],
+      [goodPortfolioKey, goodPortfolioStatus],
+    ]),
+  };
+
+  await processPortfolioEvents([], blockHeight, memory, powers);
+
+  t.true(
+    consoleWrites.some(
+      ({ level, args }) =>
+        level === 'warn' &&
+        args[0] ===
+          `[${badPortfolioKey}.autoRebalance] ⚠️ Skipping auto rebalance scan`,
+    ),
+    'bad portfolio scan error is logged',
+  );
+  const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+  arrayIsLike(t, bridgeActions, [
+    { method: 'invokeEntry', message: { method: 'rebalance' } },
+  ]);
+  const action = bridgeActions[0] as InvokeStoreEntryAction;
+  t.is(action.message.args[0], goodPortfolioId);
 });
 
 test('startFlow logs include traceId prefix', async t => {

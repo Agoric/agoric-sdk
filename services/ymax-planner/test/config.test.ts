@@ -152,9 +152,10 @@ test('loadConfig validates positive integers', async t => {
     message: /"REQUEST_TIMEOUT" must be a positive integer/,
   });
   await t.throwsAsync(
-    () => callLoadConfig({ AUTO_REBALANCE_DRIFT_MIN_DEPOSIT: '0' }),
+    () => callLoadConfig({ AUTO_REBALANCE_DRIFT_MIN_DEPOSIT: '-1' }),
     {
-      message: /"AUTO_REBALANCE_DRIFT_MIN_DEPOSIT" must be a positive integer/,
+      message:
+        /AUTO_REBALANCE_DRIFT_MIN_DEPOSIT "-1" output is not a natural integer/,
     },
   );
 });

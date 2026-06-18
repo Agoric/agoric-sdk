@@ -514,30 +514,37 @@ export const processPortfolioEvents = async (
       if (!portfolioStatus.enabledAutoFeatures?.rebalance) continue;
       if (Object.keys(portfolioStatus.flowsRunning || {}).length > 0) continue;
 
-      const cachedBalances = await getCachedPortfolioBalances(portfolioKey);
-      const candidateTargets = computeRebalanceTargets({
-        currentBalances: cachedBalances,
-        targetAllocation: portfolioStatus.targetAllocation,
-        network,
-        instrumentBlocks,
-        brand: depositBrand,
-      });
-      const candidateCriteria = assessAutoRebalanceCriteria(
-        cachedBalances,
-        portfolioStatus.targetAllocation,
-        candidateTargets,
-        autoRebalance,
-      );
-      if (!candidateCriteria.shouldRebalance) continue;
+      try {
+        const cachedBalances = await getCachedPortfolioBalances(portfolioKey);
+        const candidateTargets = computeRebalanceTargets({
+          currentBalances: cachedBalances,
+          targetAllocation: portfolioStatus.targetAllocation,
+          network,
+          instrumentBlocks,
+          brand: depositBrand,
+        });
+        const candidateCriteria = assessAutoRebalanceCriteria(
+          cachedBalances,
+          portfolioStatus.targetAllocation,
+          candidateTargets,
+          autoRebalance,
+        );
+        if (!candidateCriteria.shouldRebalance) continue;
 
-      balanceCache.delete(portfolioKey);
-      const freshBalances = await getFreshBalances(portfolioStatus);
-      await maybeAutoRebalance(
-        portfolioStatus,
-        portfolioKey,
-        freshBalances,
-        maybeAutoRebalancePowers,
-      );
+        balanceCache.delete(portfolioKey);
+        const freshBalances = await getFreshBalances(portfolioStatus);
+        await maybeAutoRebalance(
+          portfolioStatus,
+          portfolioKey,
+          freshBalances,
+          maybeAutoRebalancePowers,
+        );
+      } catch (err) {
+        console.warn(
+          `[${portfolioKey}.autoRebalance] ⚠️ Skipping auto rebalance scan`,
+          err,
+        );
+      }
     }
   };
   const handledPortfolioKeys = new Set<string>();
