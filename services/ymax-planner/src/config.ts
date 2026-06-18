@@ -11,6 +11,10 @@ import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { parseBigInt } from './ses-utils.js';
 import { parseGraphqlEndpoints } from './utils.ts';
 
+export const DEFAULT_AUTO_REBALANCE_DRIFT_BPS = 100n;
+export const DEFAULT_AUTO_REBALANCE_DRIFT_MIN_DEPOSIT = 25_000_000n;
+export const DEFAULT_AUTO_REBALANCE_CACHE_MIN_DEPOSIT = 25_000_000n;
+
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
   harden({
     local: AgoricClientUtils.LOCAL_CONFIG_KEY,
@@ -102,9 +106,6 @@ const parsePositiveBigint = (
   if (value === undefined) return defaultValue;
   return parseBigInt(value, { label: fieldName, natural: true });
 };
-
-export const DEFAULT_AUTO_REBALANCE_DRIFT_BPS = 100n;
-export const DEFAULT_AUTO_REBALANCE_MIN_DEPOSIT = 25_000_000n;
 
 const validateRequired = (
   env: Record<string, string | undefined>,
@@ -201,12 +202,12 @@ export const loadConfig = async (
     driftMinDeposit: parsePositiveBigint(
       env,
       'AUTO_REBALANCE_DRIFT_MIN_DEPOSIT',
-      DEFAULT_AUTO_REBALANCE_MIN_DEPOSIT,
+      DEFAULT_AUTO_REBALANCE_DRIFT_MIN_DEPOSIT,
     ),
     cashMinDeposit: parsePositiveBigint(
       env,
       'AUTO_REBALANCE_CASH_MIN_DEPOSIT',
-      DEFAULT_AUTO_REBALANCE_MIN_DEPOSIT,
+      DEFAULT_AUTO_REBALANCE_CACHE_MIN_DEPOSIT,
     ),
   });
 
