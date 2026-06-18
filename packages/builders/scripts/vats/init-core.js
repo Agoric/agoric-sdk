@@ -1,5 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
+import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
 import { smartWalletSourceSpecRegistry } from '@agoric/smart-wallet/source-spec-registry.js';
 import { buildBundlePath } from '../lib/build-bundle.js';
 
@@ -10,7 +10,7 @@ import { buildBundlePath } from '../lib/build-bundle.js';
 
 /** @type {CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) => {
-  const provisionPool = interProtocolBundleSpecs.provisionPool;
+  const provisionPool = vatsSourceSpecRegistry.provisionPool;
   const walletFactory = smartWalletSourceSpecRegistry.walletFactory;
   const provisionPoolPath = await buildBundlePath(
     import.meta.url,

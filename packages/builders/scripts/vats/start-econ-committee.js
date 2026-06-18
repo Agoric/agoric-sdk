@@ -8,9 +8,9 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 /**
  * Start the Economic Committee electorate plus the governance installations
  * (contractGovernor, committee, binaryVoteCounter) that governed contracts such
- * as provisionPool depend on. Formerly part of
- * `@agoric/builders/scripts/inter-protocol/init-core.js`; the behavior now
- * lives in `@agoric/vats` and the contracts in `@agoric/governance`.
+ * as provisionPool depend on. Formerly part of inter-protocol's init-core
+ * builder; the behavior now lives in `@agoric/vats` and the contracts in
+ * `@agoric/governance`.
  *
  * @type {CoreEvalBuilder}
  */

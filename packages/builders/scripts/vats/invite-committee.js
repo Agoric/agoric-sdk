@@ -7,10 +7,9 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 
 /**
  * Invite the economic committee members and stand up the charter through which
- * they govern provisionPool. Formerly
- * `@agoric/builders/scripts/inter-protocol/invite-committee-core.js`; the
- * behavior now lives in `@agoric/vats` and the charter contract in
- * `@agoric/governance`.
+ * they govern provisionPool. Formerly inter-protocol's invite-committee-core
+ * builder; the behavior now lives in `@agoric/vats` and the charter contract
+ * in `@agoric/governance`.
  *
  * @type {CoreEvalBuilder}
  */
