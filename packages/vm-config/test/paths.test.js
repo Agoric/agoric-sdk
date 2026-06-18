@@ -28,6 +28,9 @@ const allowedBuilderModules = new Set([
   '@agoric/builders/scripts/vats/start-econ-committee.js',
   '@agoric/builders/scripts/vats/invite-committee.js',
   '@agoric/builders/scripts/orchestration/write-chain-info.js',
+  // Registers the ATOM/USDC test assets formerly provided by inter-protocol's
+  // add-collateral core-eval (#12719); used by the itest-orchestration config.
+  '@agoric/builders/scripts/testing/register-interchain-bank-assets.builder.js',
 ]);
 
 /**
