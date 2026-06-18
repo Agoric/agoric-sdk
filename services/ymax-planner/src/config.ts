@@ -8,12 +8,11 @@ import * as AgoricClientUtils from '@agoric/client-utils';
 import { objectMap } from '@agoric/internal';
 import type { ClusterName } from '@agoric/internal';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
-import { parseBigInt } from './ses-utils.js';
 import { parseGraphqlEndpoints } from './utils.ts';
 
 export const DEFAULT_AUTO_REBALANCE_DRIFT_BPS = 100n;
-export const DEFAULT_AUTO_REBALANCE_DRIFT_MIN_DEPOSIT = 25_000_000n;
-export const DEFAULT_AUTO_REBALANCE_CACHE_MIN_DEPOSIT = 25_000_000n;
+export const DEFAULT_AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC = 25_000_000n;
+export const DEFAULT_AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC = 25_000_000n;
 
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
   harden({
@@ -56,8 +55,8 @@ export interface YmaxPlannerConfig {
   readonly autoRebalance: {
     // TODO: `driftBps` should probably be of type number rather than bigint.
     readonly driftBps: bigint;
-    readonly driftMinDeposit: bigint;
-    readonly cashMinDeposit: bigint;
+    readonly driftMinMoveUusdc: bigint;
+    readonly cashMinMoveUusdc: bigint;
   };
 }
 
@@ -86,7 +85,7 @@ const parsePositiveInteger = (
   fieldName: string,
   defaultValue: number,
 ): number => {
-  const value = env[fieldName];
+  const value = env[fieldName]?.trim();
   if (value === undefined) return defaultValue;
 
   // XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
@@ -102,9 +101,16 @@ const parsePositiveBigint = (
   fieldName: string,
   defaultValue: bigint,
 ): bigint => {
-  const value = env[fieldName];
+  const value = env[fieldName]?.trim();
   if (value === undefined) return defaultValue;
-  return parseBigInt(value, { label: fieldName, natural: true });
+  if (!/^[0-9]+$/.test(value)) {
+    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
+  }
+  const bigint = BigInt(value);
+  if (bigint <= 0n) {
+    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
+  }
+  return bigint;
 };
 
 const validateRequired = (
@@ -199,15 +205,15 @@ export const loadConfig = async (
       'AUTO_REBALANCE_DRIFT_BPS',
       DEFAULT_AUTO_REBALANCE_DRIFT_BPS,
     ),
-    driftMinDeposit: parsePositiveBigint(
+    driftMinMoveUusdc: parsePositiveBigint(
       env,
-      'AUTO_REBALANCE_DRIFT_MIN_DEPOSIT',
-      DEFAULT_AUTO_REBALANCE_DRIFT_MIN_DEPOSIT,
+      'AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC',
+      DEFAULT_AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC,
     ),
-    cashMinDeposit: parsePositiveBigint(
+    cashMinMoveUusdc: parsePositiveBigint(
       env,
-      'AUTO_REBALANCE_CASH_MIN_DEPOSIT',
-      DEFAULT_AUTO_REBALANCE_CACHE_MIN_DEPOSIT,
+      'AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC',
+      DEFAULT_AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC,
     ),
   });
 

@@ -115,8 +115,8 @@ export const createMockEnginePowers = (): EnginePowers => ({
   chainNameToChainIdMap: CaipChainIds.testnet,
   autoRebalance: {
     driftBps: 100n,
-    driftMinDeposit: 25_000_000n,
-    cashMinDeposit: 25_000_000n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
   },
 });
 

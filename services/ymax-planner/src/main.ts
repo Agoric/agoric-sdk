@@ -311,6 +311,8 @@ export const main = async (
         },
       )
     : undefined;
+  // TODO(https://github.com/Agoric/ymax-web/pull/782): make this more like
+  // getInstrumentBlocks
   const getYdsPortfolioBalances =
     config.yds.url && config.yds.apiKey
       ? makeYdsPortfolioBalanceReader(

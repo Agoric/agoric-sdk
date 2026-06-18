@@ -73,8 +73,8 @@ test('loadConfig accepts valid configuration', async t => {
   t.is(config.agoricNetworkSpec, 'devnet,myChainId');
   t.deepEqual(config.autoRebalance, {
     driftBps: 100n,
-    driftMinDeposit: 25_000_000n,
-    cashMinDeposit: 25_000_000n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
   });
 });
 
@@ -88,8 +88,8 @@ test('loadConfig uses default values when optional fields are missing', async t 
   t.is(config.agoricNetworkSpec, 'local');
   t.deepEqual(config.autoRebalance, {
     driftBps: 100n,
-    driftMinDeposit: 25_000_000n,
-    cashMinDeposit: 25_000_000n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
   });
 });
 
@@ -152,10 +152,10 @@ test('loadConfig validates positive integers', async t => {
     message: /"REQUEST_TIMEOUT" must be a positive integer/,
   });
   await t.throwsAsync(
-    () => callLoadConfig({ AUTO_REBALANCE_DRIFT_MIN_DEPOSIT: '-1' }),
+    () => callLoadConfig({ AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC: '-1' }),
     {
       message:
-        /AUTO_REBALANCE_DRIFT_MIN_DEPOSIT "-1" output is not a natural integer/,
+        /"AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC" must be a positive integer/,
     },
   );
 });
@@ -163,23 +163,27 @@ test('loadConfig validates positive integers', async t => {
 test('loadConfig accepts auto rebalance environment overrides', async t => {
   const config = await callLoadConfig({
     AUTO_REBALANCE_DRIFT_BPS: '250',
-    AUTO_REBALANCE_DRIFT_MIN_DEPOSIT: '50000000',
-    AUTO_REBALANCE_CASH_MIN_DEPOSIT: '30000000',
+    AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC: '50000000',
+    AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC: '30000000',
   });
 
   t.deepEqual(config.autoRebalance, {
     driftBps: 250n,
-    driftMinDeposit: 50_000_000n,
-    cashMinDeposit: 30_000_000n,
+    driftMinMoveUusdc: 50_000_000n,
+    cashMinMoveUusdc: 30_000_000n,
   });
 });
 
 test('loadConfig trims whitespace from values', async t => {
-  const config = await callLoadConfig({ AGORIC_NET: '  devnet  ' });
+  const config = await callLoadConfig({
+    AGORIC_NET: '  devnet  ',
+    AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC: ' 30000000 ',
+  });
 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
   t.is(config.agoricNetworkSpec, 'devnet');
+  t.is(config.autoRebalance.cashMinMoveUusdc, 30_000_000n);
 });
 
 test('loadConfig rejects empty required values', async t => {

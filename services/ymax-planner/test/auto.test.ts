@@ -21,8 +21,8 @@ const makeAmount = (value: bigint) => AmountMath.make(brand, value);
 
 const options = harden({
   driftBps: 100n,
-  driftMinDeposit: 25_000_000n,
-  cashMinDeposit: 25_000_000n,
+  driftMinMoveUusdc: 25_000_000n,
+  cashMinMoveUusdc: 25_000_000n,
 });
 
 test('assessAutoRebalanceCriteria requires drift or excess cash and minimum deposits', t => {

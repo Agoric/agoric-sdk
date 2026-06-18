@@ -531,7 +531,6 @@ export const processPortfolioEvents = async (
         );
         if (!candidateCriteria.shouldRebalance) continue;
 
-        balanceCache.delete(portfolioKey);
         const freshBalances = await getFreshBalances(portfolioStatus);
         await maybeAutoRebalance(
           portfolioStatus,

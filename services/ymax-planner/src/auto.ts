@@ -26,10 +26,10 @@ import { YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS } from './yds-portfolio-balances.ts'
 export type AutoRebalanceCriteriaOptions = {
   /** Absolute allocation drift threshold in basis points. */
   driftBps: bigint;
-  /** Minimum target-balance deposits to instruments required for drift. */
-  driftMinDeposit: bigint;
-  /** Minimum target-balance deposits to instruments required for cash. */
-  cashMinDeposit: bigint;
+  /** Minimum target-balance increase to instruments required for drift. */
+  driftMinMoveUusdc: bigint;
+  /** Minimum target-balance increase to instruments required for cash. */
+  cashMinMoveUusdc: bigint;
 };
 
 export type AutoRebalanceCriteria = {
@@ -160,7 +160,7 @@ export const assessAutoRebalanceCriteria = (
   targetBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
   options: AutoRebalanceCriteriaOptions,
 ): AutoRebalanceCriteria => {
-  const { driftBps, driftMinDeposit, cashMinDeposit } = options;
+  const { driftBps, driftMinMoveUusdc, cashMinMoveUusdc } = options;
   const instrumentDeposits = getTargetInstrumentDeposits(
     currentBalances,
     targetAllocation,
@@ -172,8 +172,8 @@ export const assessAutoRebalanceCriteria = (
     driftBps,
   );
   const excessCash = hasExcessCash(currentBalances, targetAllocation);
-  const driftFired = positionDrift && instrumentDeposits >= driftMinDeposit;
-  const cashFired = excessCash && instrumentDeposits >= cashMinDeposit;
+  const driftFired = positionDrift && instrumentDeposits >= driftMinMoveUusdc;
+  const cashFired = excessCash && instrumentDeposits >= cashMinMoveUusdc;
 
   return harden({
     shouldRebalance: driftFired || cashFired,
