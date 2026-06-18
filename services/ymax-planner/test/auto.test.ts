@@ -5,11 +5,16 @@ import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
 import { Far } from '@endo/pass-style';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
+import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
   assessAutoRebalanceCriteria,
   makeCachedPortfolioBalanceGetter,
+  maybeAutoRebalance,
   type AutoRebalanceBalanceCache,
+  type MaybeAutoRebalancePowers,
 } from '../src/auto.ts';
+import { UserInputError } from '../src/support.ts';
 
 const brand = Far('mock USDC brand') as Brand<'nat'>;
 const makeAmount = (value: bigint) => AmountMath.make(brand, value);
@@ -176,4 +181,139 @@ test('makeCachedPortfolioBalanceGetter uses cached, YDS, and fallback balances',
   t.true(
     warnings.some(args => String(args[0]).includes('YDS balance query failed')),
   );
+});
+
+const makeAutoPortfolioStatus = (
+  overrides: Partial<StatusFor['portfolio']> = {},
+): StatusFor['portfolio'] =>
+  harden({
+    policyVersion: 3,
+    rebalanceCount: 4,
+    positionKeys: ['USDN'],
+    accountIdByChain: {},
+    flowCount: 0,
+    targetAllocation: { USDN: 1n },
+    enabledAutoFeatures: { rebalance: true },
+    ...overrides,
+  });
+
+const makeMaybeAutoPowers = (
+  overrides: Partial<MaybeAutoRebalancePowers> = {},
+) => {
+  const logs: unknown[][] = [];
+  const warns: unknown[][] = [];
+  const rebalanceCalls: unknown[][] = [];
+  const powers: MaybeAutoRebalancePowers = {
+    autoRebalance: options,
+    console: {
+      log: (...args) => logs.push(args),
+      warn: (...args) => warns.push(args),
+    },
+    depositBrand: brand,
+    feeBrand: brand,
+    gasEstimator: {} as any,
+    getWalletInvocationUpdate: async () => undefined,
+    inspectForStdout: () => '<details>',
+    isDryRun: true,
+    network: TEST_NETWORK,
+    planRebalanceToAllocations: async () => ({
+      flow: [
+        {
+          src: '@noble',
+          dest: 'USDN',
+          amount: makeAmount(25_000_000n),
+        },
+      ],
+      order: undefined,
+    }),
+    portfoliosPathPrefix: 'published.ymax0.portfolios',
+    walletStore: {
+      get: () =>
+        ({
+          rebalance: (...args: unknown[]) => {
+            rebalanceCalls.push(args);
+            return { tx: 'mock-tx', id: 'mock-id' };
+          },
+        }) as any,
+    },
+    ...overrides,
+  };
+  return { logs, powers, rebalanceCalls, warns };
+};
+
+test('maybeAutoRebalance submits planner rebalance when criteria fire', async t => {
+  const { powers, rebalanceCalls } = makeMaybeAutoPowers();
+
+  await maybeAutoRebalance(
+    makeAutoPortfolioStatus(),
+    'portfolio7',
+    { '@noble': makeAmount(25_000_000n) },
+    powers,
+  );
+
+  t.deepEqual(rebalanceCalls, [
+    [
+      7,
+      [{ src: '@noble', dest: 'USDN', amount: makeAmount(25_000_000n) }],
+      3,
+      4,
+    ],
+  ]);
+});
+
+test('maybeAutoRebalance skips when auto feature is disabled or criteria do not fire', async t => {
+  {
+    const { powers, rebalanceCalls } = makeMaybeAutoPowers();
+    await maybeAutoRebalance(
+      makeAutoPortfolioStatus({ enabledAutoFeatures: { rebalance: false } }),
+      'portfolio7',
+      { '@noble': makeAmount(25_000_000n) },
+      powers,
+    );
+    t.deepEqual(rebalanceCalls, []);
+  }
+  {
+    const { logs, powers, rebalanceCalls } = makeMaybeAutoPowers();
+    await maybeAutoRebalance(
+      makeAutoPortfolioStatus(),
+      'portfolio7',
+      { USDN: makeAmount(25_000_000n) },
+      powers,
+    );
+    t.deepEqual(rebalanceCalls, []);
+    t.is(logs[0]?.[1], 'skip');
+  }
+});
+
+test('maybeAutoRebalance skips empty plans and user-correctable failures', async t => {
+  {
+    const { logs, powers, rebalanceCalls } = makeMaybeAutoPowers({
+      planRebalanceToAllocations: async () => ({
+        flow: [],
+        order: undefined,
+      }),
+    });
+    await maybeAutoRebalance(
+      makeAutoPortfolioStatus(),
+      'portfolio7',
+      { '@noble': makeAmount(25_000_000n) },
+      powers,
+    );
+    t.deepEqual(rebalanceCalls, []);
+    t.is(logs[0]?.[1], 'skip');
+  }
+  {
+    const { powers, warns } = makeMaybeAutoPowers({
+      planRebalanceToAllocations: async () => {
+        throw new UserInputError('bad target');
+      },
+    });
+    await maybeAutoRebalance(
+      makeAutoPortfolioStatus(),
+      'portfolio7',
+      { '@noble': makeAmount(25_000_000n) },
+      powers,
+    );
+    t.true(String(warns[0]?.[1]).includes('Skipping auto rebalance'));
+  }
 });

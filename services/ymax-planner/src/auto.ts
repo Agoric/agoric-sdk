@@ -1,11 +1,25 @@
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
-import type { TargetAllocation } from '@aglocal/portfolio-contract/src/type-guards.js';
+import {
+  portfolioIdFromKey,
+  type StatusFor,
+  type TargetAllocation,
+} from '@aglocal/portfolio-contract/src/type-guards.js';
+import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { typedEntries } from '@agoric/internal';
-import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
+import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
+import {
+  computeTargetBalances,
+  TargetBalanceError,
+} from '@agoric/portfolio-api/src/target-balances.js';
 import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
 import { isInstrumentId } from '@agoric/portfolio-api/src/places.js';
-import type { PortfolioKey } from '@agoric/portfolio-api';
+import type { FundsFlowPlan, PortfolioKey } from '@agoric/portfolio-api';
+import { annotateError } from '@endo/errors';
+import { inspect } from 'node:util';
+import type { InstrumentBlocks } from './instrument-status.ts';
+import { UserInputError } from './support.ts';
 import type { PortfolioBalanceReader } from './yds-portfolio-balances.ts';
 import { YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS } from './yds-portfolio-balances.ts';
 
@@ -169,6 +183,18 @@ export const assessAutoRebalanceCriteria = (
   });
 };
 
+const mapValueCompareAndSwap = <K, V>(
+  map: Map<K, V>,
+  key: K,
+  oldValue: V | undefined,
+  newValue: V,
+): V | undefined => {
+  const currentValue = map.get(key);
+  if (currentValue !== oldValue) return currentValue;
+  map.set(key, newValue);
+  return newValue;
+};
+
 export const makeCachedPortfolioBalanceGetter = ({
   balanceCache,
   brand,
@@ -189,16 +215,22 @@ export const makeCachedPortfolioBalanceGetter = ({
   return async (portfolioKey: PortfolioKey) => {
     const cached = balanceCache.get(portfolioKey);
     if (cached && cached.expiresAt > now()) return cached.balances;
+    await null;
     try {
       const balances =
         getYdsPortfolioBalances &&
         (await getYdsPortfolioBalances(portfolioKey, brand));
       if (balances) {
-        balanceCache.set(portfolioKey, {
-          expiresAt: now() + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
-          balances,
-        });
-        return balances;
+        const stored = mapValueCompareAndSwap(
+          balanceCache,
+          portfolioKey,
+          cached,
+          {
+            expiresAt: now() + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+            balances,
+          },
+        );
+        return stored?.balances ?? balances;
       }
     } catch (err) {
       console.warn(
@@ -207,10 +239,160 @@ export const makeCachedPortfolioBalanceGetter = ({
       );
     }
     const balances = await getFreshBalances(portfolioKey);
-    balanceCache.set(portfolioKey, {
+    const stored = mapValueCompareAndSwap(balanceCache, portfolioKey, cached, {
       expiresAt: now() + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
       balances,
     });
-    return balances;
+    return stored?.balances ?? balances;
   };
+};
+
+export type MaybeAutoRebalancePowers = {
+  autoRebalance: AutoRebalanceCriteriaOptions;
+  console: Pick<Console, 'log' | 'warn'>;
+  depositBrand: Brand<'nat'>;
+  feeBrand: Brand<'nat'>;
+  gasEstimator: GasEstimator;
+  getWalletInvocationUpdate: (messageId: string | number) => Promise<unknown>;
+  inspectForStdout: (obj: unknown) => string;
+  instrumentBlocks?: InstrumentBlocks;
+  isDryRun?: boolean;
+  network: NetworkSpec;
+  planRebalanceToAllocations: (details: {
+    path: string;
+    flowDetail: { type: 'rebalance' };
+    currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>;
+    policyVersion: number;
+    rebalanceCount: number;
+    targetAllocation: StatusFor['portfolio']['targetAllocation'];
+    network: NetworkSpec;
+    instrumentBlocks?: InstrumentBlocks;
+    brand: Brand<'nat'>;
+    feeBrand: Brand<'nat'>;
+    gasEstimator: GasEstimator;
+  }) => Promise<FundsFlowPlan>;
+  portfoliosPathPrefix: string;
+  walletStore: {
+    get(
+      targetName: 'planner',
+      opts: { sendOnly: true },
+    ): {
+      rebalance: (
+        portfolioId: number,
+        planOrSteps: FundsFlowPlan | FundsFlowPlan['flow'],
+        policyVersion: number,
+        rebalanceCount: number,
+      ) => Promise<{ tx: unknown; id: string | number }>;
+    };
+  };
+};
+
+export const maybeAutoRebalance = async (
+  portfolioStatus: StatusFor['portfolio'],
+  portfolioKey: PortfolioKey,
+  currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
+  {
+    autoRebalance,
+    console,
+    depositBrand,
+    feeBrand,
+    gasEstimator,
+    getWalletInvocationUpdate,
+    inspectForStdout,
+    instrumentBlocks,
+    isDryRun,
+    network,
+    planRebalanceToAllocations,
+    portfoliosPathPrefix,
+    walletStore,
+  }: MaybeAutoRebalancePowers,
+) => {
+  if (!portfolioStatus.enabledAutoFeatures?.rebalance) return;
+  const path = `${portfoliosPathPrefix}.${portfolioKey}`;
+  const portfolioId = portfolioIdFromKey(portfolioKey);
+  const logPrefix = `[${portfolioKey}.autoRebalance]`;
+  const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
+  const versions = [policyVersion, rebalanceCount] as const;
+
+  const logContext = {
+    path,
+    flowDetail: { type: 'rebalance' as const },
+    currentBalances,
+    policyVersion,
+    rebalanceCount,
+    targetAllocation,
+  };
+  const plannerContext = {
+    ...logContext,
+    network,
+    instrumentBlocks,
+    brand: depositBrand,
+    feeBrand,
+    gasEstimator,
+  };
+
+  await null;
+  try {
+    const targetBalances = computeRebalanceTargets(plannerContext);
+    const criteria = assessAutoRebalanceCriteria(
+      currentBalances,
+      targetAllocation,
+      targetBalances,
+      autoRebalance,
+    );
+    if (!criteria.shouldRebalance) {
+      console.log(
+        logPrefix,
+        'skip',
+        inspectForStdout({ ...logContext, targetBalances, criteria }),
+      );
+      return;
+    }
+    const plan = await planRebalanceToAllocations(plannerContext);
+    if (plan.flow.length === 0) {
+      console.log(
+        logPrefix,
+        'skip',
+        inspectForStdout({
+          ...logContext,
+          targetBalances,
+          criteria,
+          reason: 'empty plan',
+        }),
+      );
+      return;
+    }
+
+    const planOrSteps = plan.order ? plan : plan.flow;
+    const txOpts = { sendOnly: true } as const;
+    const planReceiver = walletStore.get('planner', txOpts);
+    const { tx, id } = await planReceiver.rebalance(
+      portfolioId,
+      planOrSteps,
+      ...versions,
+    );
+    if (!isDryRun) {
+      void getWalletInvocationUpdate(id as any).catch(err => {
+        console.warn(logPrefix, '⚠️ Failure for rebalance', err);
+      });
+    }
+    console.log(
+      logPrefix,
+      'rebalance',
+      criteria,
+      inspectForStdout({ ...logContext, plan, criteria }),
+      tx,
+    );
+  } catch (err) {
+    annotateError(err, inspect(logContext, { depth: 4 }));
+    if (
+      err instanceof UserInputError ||
+      err instanceof NoSolutionError ||
+      err instanceof TargetBalanceError
+    ) {
+      console.warn(logPrefix, '⚠️ Skipping auto rebalance', err.message);
+      return;
+    }
+    throw err;
+  }
 };

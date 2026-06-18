@@ -52,7 +52,6 @@ import {
 import { fromUniqueEntries } from '@agoric/internal/src/ses-utils.js';
 import { makeWorkPool } from '@agoric/internal/src/work-pool.js';
 import type {
-  AssetPlaceRef,
   FlowKey,
   FundsFlowPlan,
   PortfolioKey,
@@ -65,6 +64,7 @@ import {
   assessAutoRebalanceCriteria,
   computeRebalanceTargets,
   makeCachedPortfolioBalanceGetter,
+  maybeAutoRebalance,
   type AutoRebalanceBalanceCache,
   type AutoRebalanceCriteriaOptions,
 } from './auto.ts';
@@ -493,100 +493,23 @@ export const processPortfolioEvents = async (
       }
     }
   };
-  const maybeAutoRebalance = async (
-    portfolioStatus: StatusFor['portfolio'],
-    portfolioKey: PortfolioKey,
-    currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
-  ) => {
-    if (!portfolioStatus.enabledAutoFeatures?.rebalance) return;
-    const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const portfolioId = portfolioIdFromKey(portfolioKey);
-    const logPrefix = `[${portfolioKey}.autoRebalance]`;
-    const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
-    const versions = [policyVersion, rebalanceCount] as const;
-
-    const logContext = {
-      path,
-      flowDetail: { type: 'rebalance' as const },
-      currentBalances,
-      policyVersion,
-      rebalanceCount,
-      targetAllocation,
-    };
-    const plannerContext = {
-      ...logContext,
-      network,
-      instrumentBlocks,
-      brand: depositBrand,
-      feeBrand,
-      gasEstimator,
-    };
-
-    try {
-      const targetBalances = computeRebalanceTargets(plannerContext);
-      const criteria = assessAutoRebalanceCriteria(
-        currentBalances,
-        targetAllocation,
-        targetBalances,
-        autoRebalance,
-      );
-      if (!criteria.shouldRebalance) {
-        console.log(
-          logPrefix,
-          'skip',
-          inspectForStdout({ ...logContext, targetBalances, criteria }),
-        );
-        return;
-      }
-      const plan = await planRebalanceToAllocations(plannerContext);
-      if (plan.flow.length === 0) {
-        console.log(
-          logPrefix,
-          'skip',
-          inspectForStdout({
-            ...logContext,
-            targetBalances,
-            criteria,
-            reason: 'empty plan',
-          }),
-        );
-        return;
-      }
-
-      const planOrSteps = plan.order ? plan : plan.flow;
-      const txOpts = { sendOnly: true };
-      const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
-      const { tx, id } = await planReceiver.rebalance(
-        portfolioId,
-        planOrSteps,
-        ...versions,
-      );
-      if (!isDryRun) {
-        void getWalletInvocationUpdate(id as any).catch(err => {
-          console.warn(logPrefix, '⚠️ Failure for rebalance', err);
-        });
-      }
-      console.log(
-        logPrefix,
-        'rebalance',
-        criteria,
-        inspectForStdout({ ...logContext, plan, criteria }),
-        tx,
-      );
-    } catch (err) {
-      annotateError(err, inspect(logContext, { depth: 4 }));
-      if (
-        err instanceof UserInputError ||
-        err instanceof NoSolutionError ||
-        err instanceof TargetBalanceError
-      ) {
-        console.warn(logPrefix, '⚠️ Skipping auto rebalance', err.message);
-        return;
-      }
-      throw err;
-    }
+  const maybeAutoRebalancePowers = {
+    autoRebalance,
+    console,
+    depositBrand,
+    feeBrand,
+    gasEstimator,
+    getWalletInvocationUpdate,
+    inspectForStdout,
+    instrumentBlocks,
+    isDryRun,
+    network,
+    planRebalanceToAllocations,
+    portfoliosPathPrefix,
+    walletStore,
   };
   const scanAutoRebalances = async () => {
+    await null;
     for (const [portfolioKey, portfolioStatus] of portfolioStatusForKey) {
       if (!portfolioStatus.enabledAutoFeatures?.rebalance) continue;
       if (Object.keys(portfolioStatus.flowsRunning || {}).length > 0) continue;
@@ -609,7 +532,12 @@ export const processPortfolioEvents = async (
 
       balanceCache.delete(portfolioKey);
       const freshBalances = await getFreshBalances(portfolioStatus);
-      await maybeAutoRebalance(portfolioStatus, portfolioKey, freshBalances);
+      await maybeAutoRebalance(
+        portfolioStatus,
+        portfolioKey,
+        freshBalances,
+        maybeAutoRebalancePowers,
+      );
     }
   };
   const handledPortfolioKeys = new Set<string>();
