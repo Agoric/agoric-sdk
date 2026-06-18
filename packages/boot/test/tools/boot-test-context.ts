@@ -281,7 +281,9 @@ export const withWalletFactory = async <T extends BootTestContext>(
   ctx: T,
 ): Promise<T & WalletFactoryBootTestContext> => {
   const { EV } = ctx.runUtils;
-  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  // Proxy for "bootstrap done": provisionPool is among the last things started
+  // and exists in every config (it is committee-governed).
+  await EV.vat('bootstrap').consumeItem('provisionPoolStartResult');
 
   const agoricNamesRemotes: AgoricNamesRemotes =
     makeAgoricNamesRemotesFromFakeStorage(ctx.storage);
@@ -292,8 +294,6 @@ export const withWalletFactory = async <T extends BootTestContext>(
     );
     return agoricNamesRemotes;
   };
-
-  agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
 
   const baseDriver = await makeWalletFactoryDriver(
     ctx.runUtils,

@@ -1,5 +1,4 @@
 import { type Amount } from '@agoric/ertp';
-import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import {
   boardSlottingMarshaller,
   unmarshalFromVstorage,
@@ -32,6 +31,9 @@ import type { BankManager } from '@agoric/vats/src/vat-bank.js';
 import type { SwingsetTestKit } from './supports.js';
 
 type Marshaller = Omit<Marshal<string | null>, 'serialize' | 'unserialize'>;
+
+// Formerly imported from inter-protocol's econ-behaviors (refs #12719).
+const SECONDS_PER_MINUTE = 60n;
 
 const isBootProfileEnabled = () => {
   const value = process.env.AGORIC_BOOT_TEST_PROFILE;

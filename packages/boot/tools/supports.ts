@@ -71,7 +71,7 @@ import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js'
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
 import type { GovernancePublishedPathTypes } from '@agoric/governance';
-import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
@@ -137,8 +137,7 @@ const fetchCached = NodeFetchCache.create({
   cache: new FileSystemCache(),
 }) as unknown as typeof globalThis.fetch;
 
-type BootstrapVatItemMap = EconomyBootstrapPowers['consume'] &
-  Record<string, unknown>;
+type BootstrapVatItemMap = BootstrapPowers['consume'] & Record<string, unknown>;
 
 type ConsumeBootstrapItem<BootstrapVatItems extends BootstrapVatItemMap> = {
   <N extends keyof BootstrapVatItems>(name: N): BootstrapVatItems[N];
@@ -152,8 +151,7 @@ type BootstrapPublishedPathTypes = GovernancePublishedPathTypes;
  * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
  */
 export type BootstrapEV<
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 > = EProxy & {
   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
   vat: <N extends string>(
@@ -167,8 +165,7 @@ export type BootstrapEV<
 };
 
 const makeBootstrapRunUtils = <
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 >(
   controller: SwingsetController,
   harness?: RunHarness,
@@ -1060,8 +1057,7 @@ export type MakeSwingsetTestKitOptions = {
 export const makeSwingsetTestKit = async <
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 >(
   log: (..._: any[]) => void,
   bundleDir = sharedBundleCachePath,
@@ -1697,8 +1693,7 @@ export const makeSwingsetTestKit = async <
 export type SwingsetTestKit<
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 > = Awaited<
   ReturnType<typeof makeSwingsetTestKit<PublishedPathTypes, BootstrapVatItems>>
 >;
