@@ -3746,7 +3746,7 @@ test('nobleToAgoric.apply transfers uusdc from Noble ICA', async t => {
 test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
   const amount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const claimRewards = true;
+  const claimRewards = {};
   const actual = wayFromSrcToDest({
     src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: '@Ethereum',

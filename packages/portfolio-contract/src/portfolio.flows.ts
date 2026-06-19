@@ -687,8 +687,7 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
           how: protocol,
           poolKey,
           dest: destName,
-          claimRewards:
-            moveDesc.claimRewards === true ? {} : moveDesc.claimRewards,
+          claimRewards: moveDesc.claimRewards,
         };
       }
       return {

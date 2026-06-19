@@ -198,7 +198,7 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
-  claimRewards?: true | ClaimRewardsParams;
+  claimRewards?: ClaimRewardsParams;
   swap?: SwapDesc;
 };
 
