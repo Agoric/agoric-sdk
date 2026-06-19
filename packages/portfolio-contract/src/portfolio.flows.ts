@@ -203,7 +203,7 @@ export type ProtocolDetail<
   claimRewards?: (
     ctx: CTX,
     dest: AccountInfoFor[C],
-    claimRewards?: ClaimRewardsParams,
+    params?: ClaimRewardsParams,
     ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
@@ -659,7 +659,7 @@ type Way =
       /** chain with account that will receive the claimed rewards */
       dest: SupportedChain;
       /** External params required for claiming rewards */
-      claimRewards?: ClaimRewardsParams;
+      claimRewards: ClaimRewardsParams;
     };
 
 // exported only for testing
@@ -913,8 +913,8 @@ const stepFlow = async (
       amount,
       src: move.src,
       dest: move.dest,
-      ...(phases ? { phases } : {}),
-      ...(move.claimRewards ? { claimRewards: move.claimRewards } : {}),
+      ...(phases ? { phases } : undefined),
+      ...(move.claimRewards ? { claimRewards: move.claimRewards } : undefined),
       apply: async ({ [evmChain]: gInfo, agoric }, _traceStep, opts) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
