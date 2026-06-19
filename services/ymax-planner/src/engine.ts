@@ -1122,13 +1122,9 @@ export const startEngine = async (
         compareBigints(a.eventRecord.blockHeight, b.eventRecord.blockHeight) ||
         naturalCompare(a.path, b.path),
     );
-    // Process concurrently: pending tx watchers must subscribe to EVM events
-    // ASAP to avoid missing transactions that settle while portfolio
-    // processing (balance queries, planning, tx submission) is in progress.
+    // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
+    // transactions, so process them concurrently with portfolio events.
     await Promise.all([
-      // Update blocked-instrument sets at most once per chain block, then run
-      // portfolio processing even when there were no portfolio vstorage events;
-      // auto-rebalance is a block-end scan over remembered portfolios.
       updateInstrumentBlocks()
         .catch(err =>
           console.error('⚠️ Failed to update instrument blocks', err),
@@ -1138,10 +1134,7 @@ export const startEngine = async (
             portfolioEvents,
             respHeight,
             portfoliosMemory,
-            {
-              ...processPortfolioPowers,
-              instrumentBlocks,
-            },
+            { ...processPortfolioPowers, instrumentBlocks },
           ),
         ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
