@@ -200,7 +200,7 @@ export const makeCachedPortfolioBalanceGetter = ({
   brand,
   console,
   getFreshBalances,
-  getYdsPortfolioBalances,
+  getYdsBalancesForPortfolio,
   now,
 }: {
   balanceCache: AutoRebalanceBalanceCache;
@@ -209,7 +209,7 @@ export const makeCachedPortfolioBalanceGetter = ({
   getFreshBalances: (
     portfolioKey: PortfolioKey,
   ) => Promise<Partial<Record<AssetPlaceRef, NatAmount>>>;
-  getYdsPortfolioBalances?: PortfolioBalanceReader;
+  getYdsBalancesForPortfolio?: PortfolioBalanceReader;
   now: () => number;
 }) => {
   return async (portfolioKey: PortfolioKey) => {
@@ -218,8 +218,8 @@ export const makeCachedPortfolioBalanceGetter = ({
     await null;
     try {
       const balances =
-        getYdsPortfolioBalances &&
-        (await getYdsPortfolioBalances(portfolioKey, brand));
+        getYdsBalancesForPortfolio &&
+        (await getYdsBalancesForPortfolio(portfolioKey, brand));
       if (balances) {
         const stored = mapValueCompareAndSwap(
           balanceCache,

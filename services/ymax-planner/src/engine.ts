@@ -223,7 +223,7 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
-  getYdsPortfolioBalances?: PortfolioBalanceReader;
+  getYdsBalancesForPortfolio?: PortfolioBalanceReader;
   autoRebalance: AutoRebalanceCriteriaOptions;
 };
 
@@ -240,7 +240,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
   | 'now'
-  | 'getYdsPortfolioBalances'
+  | 'getYdsBalancesForPortfolio'
   | 'autoRebalance'
 > & {
   console: Required<Powers>['console'];
@@ -303,7 +303,7 @@ export const processPortfolioEvents = async (
     evmProviders,
     chainNameToChainIdMap,
     now,
-    getYdsPortfolioBalances,
+    getYdsBalancesForPortfolio,
     autoRebalance,
 
     portfolioKeyForDepositAddr,
@@ -343,7 +343,7 @@ export const processPortfolioEvents = async (
     console,
     getFreshBalances: portfolioKey =>
       getFreshBalances(portfolioStatusForKey.get(portfolioKey)!),
-    getYdsPortfolioBalances,
+    getYdsBalancesForPortfolio,
     now,
   });
   type ReadVstorageSimpleOpts = Pick<

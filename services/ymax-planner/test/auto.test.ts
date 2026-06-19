@@ -144,7 +144,7 @@ test('makeCachedPortfolioBalanceGetter uses cached, YDS, and fallback balances',
       freshCalls += 1;
       return freshBalances;
     },
-    getYdsPortfolioBalances: async () => {
+    getYdsBalancesForPortfolio: async () => {
       ydsCalls += 1;
       return ydsBalances;
     },
@@ -170,7 +170,7 @@ test('makeCachedPortfolioBalanceGetter uses cached, YDS, and fallback balances',
       freshCalls += 1;
       return freshBalances;
     },
-    getYdsPortfolioBalances: async () => {
+    getYdsBalancesForPortfolio: async () => {
       throw Error('YDS unavailable');
     },
     now: () => now,

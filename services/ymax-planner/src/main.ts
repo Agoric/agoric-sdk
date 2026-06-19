@@ -321,7 +321,7 @@ export const main = async (
     : undefined;
   // TODO(https://github.com/Agoric/ymax-web/pull/782): make this more like
   // getInstrumentBlocks
-  const getYdsPortfolioBalances =
+  const getYdsBalancesForPortfolio =
     config.yds.url && config.yds.apiKey
       ? makeYdsPortfolioBalanceReader(
           { fetch },
@@ -371,7 +371,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
-    getYdsPortfolioBalances,
+    getYdsBalancesForPortfolio,
     autoRebalance: config.autoRebalance,
   };
 

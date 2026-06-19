@@ -888,7 +888,7 @@ test('processPortfolioEvents rechecks YDS candidates with fresh balances', async
     targetAllocation: { USDN: 1n },
     enabledAutoFeatures: { rebalance: true },
   });
-  powers.getYdsPortfolioBalances = async () => ({
+  powers.getYdsBalancesForPortfolio = async () => ({
     '@noble': makeDeposit(25_000_000n),
   });
   const memory: PortfoliosMemory = {
@@ -928,7 +928,7 @@ test('processPortfolioEvents continues auto scan after portfolio error', async t
     ...commonStatus,
     targetAllocation: { USDN: 1n },
   });
-  powers.getYdsPortfolioBalances = async () => ({
+  powers.getYdsBalancesForPortfolio = async () => ({
     '@noble': makeDeposit(25_000_000n),
   });
   const memory: PortfoliosMemory = {
