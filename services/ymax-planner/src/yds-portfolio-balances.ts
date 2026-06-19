@@ -6,6 +6,7 @@ import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import { PoolPlaces } from '@agoric/portfolio-api/src/places.js';
 import { Fail, bare, q } from '@endo/errors';
+import { Nat } from '@endo/nat';
 import { FETCH_HEADERS } from './config.ts';
 
 export const YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS = 60 * 60 * 1000;
@@ -38,61 +39,29 @@ const assertRecord = (
   return value as Record<string, unknown>;
 };
 
-const makeIntegerString = (
-  value: string,
-  fixedPlaces: number,
-  label: string,
-): string => {
-  const blabel = bare(label);
-  const match = /^([-+]?\d+)(\.(\d*)?)?$/.exec(value);
-  if (!match) {
-    throw Fail`${blabel} ${value} is not a valid number`;
-  }
-
-  const [, units, dotDecimals = '', decPart = ''] = match;
-  if (dotDecimals && fixedPlaces <= 0) {
-    throw Fail`${blabel} ${value} has ${decPart.length} decimal places but only ${fixedPlaces} allowed`;
-  }
-
-  const decimals = decPart.padEnd(fixedPlaces, '0');
-  if (decPart.length > fixedPlaces) {
-    throw Fail`${blabel} ${value} has more than ${fixedPlaces} decimal places`;
-  }
-
-  return `${units}${decimals}`;
-};
-
-const floatToNat = (
+/**
+ * Scale a floating-point number up to a natural number without rounding.
+ */
+const scaleToNat = (
   value: unknown,
   fixedPlaces: number,
   label: string,
 ): bigint => {
-  const blabel = bare(label);
-  if (typeof value !== 'number') {
-    throw Fail`${blabel} must be a number`;
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    throw Fail`${bare(label)} ${value} must be a non-negative finite number`;
   }
-
-  if (!(value >= 0)) {
-    throw Fail`${blabel} must be non-negative`;
-  }
-
-  const intString = makeIntegerString(String(value), fixedPlaces, label);
-
-  let bint: bigint;
+  const [, n, f = '', e] =
+    value.toExponential().match(/^(\d)(?:\.(\d+))?e([+-]\d+)$/) ||
+    Fail`${bare(label)} must be representable in exponential notation`;
   try {
-    bint = BigInt(intString);
-  } catch (e) {
-    throw Fail`${blabel} ${intString} conversion failed: ${e}`;
+    const fracDigitCount = f.length - Number(e);
+    fracDigitCount <= fixedPlaces || Fail``;
+    const big = BigInt(`${n}${f}${'0'.repeat(fixedPlaces - fracDigitCount)}`);
+    return Nat(Number(big));
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (_err) {
+    throw Fail`${bare(label)} ${value} loses precision at scale ${q(fixedPlaces)}`;
   }
-
-  if (!(bint >= 0n)) {
-    throw Fail`${blabel} ${bint} is not natural`;
-  }
-
-  if (!Number.isSafeInteger(Number(bint))) {
-    throw Fail`${blabel} ${intString} loses precision`;
-  }
-  return bint;
 };
 
 const getYdsBalances = (payload: unknown): Record<string, unknown> => {
@@ -117,7 +86,7 @@ export const normalizeYdsPortfolioBalances = (
   for (const [instrumentId, value] of Object.entries(positions)) {
     Object.hasOwn(PoolPlaces, instrumentId) ||
       Fail`Invalid YDS instrument id ${q(instrumentId)}`;
-    const balance = floatToNat(
+    const balance = scaleToNat(
       value,
       USDC_DECIMALS,
       `YDS balance ${instrumentId}`,
@@ -129,7 +98,7 @@ export const normalizeYdsPortfolioBalances = (
     Object.hasOwn(SupportedChain, chainName) ||
       Fail`Invalid YDS account chain ${q(chainName)}`;
     const place = `@${chainName}` as AssetPlaceRef;
-    const balance = floatToNat(value, USDC_DECIMALS, `YDS balance ${place}`);
+    const balance = scaleToNat(value, USDC_DECIMALS, `YDS balance ${place}`);
     if (balance <= 0n) continue;
     balances[place] = AmountMath.make(brand, balance);
   }
