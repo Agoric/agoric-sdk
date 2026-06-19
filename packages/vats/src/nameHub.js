@@ -12,6 +12,7 @@ import { makeHeapZone } from '@agoric/zone';
 import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
 
 /**
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {Zone} from '@agoric/zone';
  * @import {MakeAttenuator} from '@agoric/internal/src/callback.js';
  * @import {MyAddressNameAdmin} from './types.js';
@@ -27,11 +28,26 @@ import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);
 
+// `NameHub`'s typedef in ./types.ts declares `lookup` as returning
+// `Promise<unknown>`, not `PromiseLike`.  `M.promise()` infers as
+// `PromiseLike<any>` (honest to the runtime duck-typed thenable
+// check; see `TFKindMap['promise']` in
+// `@endo/patterns/src/type-from-pattern.ts`).  Pin it back to
+// `Promise<any>` here so the returned `NameHub` satisfies the
+// consumer-facing typedef.
+/** @type {CastedPattern<Promise<any>>} */
+const PromiseShape = M.promise();
+
+/** @type {CastedPattern<NameHubUpdateHandler>} */
+const NameHubUpdateHandlerShape = M.remotable('NameHubUpdateHandler');
+
 export const NameHubIKit = harden({
   nameHub: M.interface('NameHub', {
     has: M.call(KeyShape).returns(M.boolean()),
-    lookup: M.call().rest(PathShape).returns(M.promise()),
-    entries: M.call().returns(M.arrayOf(M.array())),
+    lookup: M.call().rest(PathShape).returns(PromiseShape),
+    // entries returns `[key, value]` 2-tuples; splitArray expresses
+    // the shape so it infers as `[string, any][]`.
+    entries: M.call().returns(M.arrayOf(M.splitArray([M.string(), M.any()]))),
     values: M.call().returns(M.array()),
     keys: M.call().returns(M.arrayOf(KeyShape)),
   }),
@@ -44,7 +60,7 @@ export const NameHubIKit = harden({
     set: M.call(KeyShape, M.any())
       .optional(M.remotable())
       .returns(M.undefined()),
-    onUpdate: M.call(M.remotable()).returns(M.undefined()),
+    onUpdate: M.call(NameHubUpdateHandlerShape).returns(M.undefined()),
     update: M.call(KeyShape, M.any())
       .optional(M.remotable('newAdminValue'))
       .returns(M.any()),

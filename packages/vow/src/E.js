@@ -312,19 +312,76 @@ export default makeE;
 
 /** @typedef {ReturnType<typeof makeE>} EProxy */
 
+// =====================================================================
+// Type helpers re-exported from `@endo/eventual-send`.
+//
+// These helpers are byte-equivalent (or close enough) to Endo's, so we
+// re-export rather than maintain duplicate definitions.  This file
+// keeps only the helpers whose semantics differ because vow needs to
+// recursively unwrap Vows via `EUnwrap` (a no-op in plain Endo, where
+// `Awaited` is sufficient).
+//
+// Re-exporting via JSDoc `@typedef` preserves the public type names
+// for external consumers (e.g.
+// `import type { ECallable } from '@agoric/vow/src/E.js'`) while
+// pointing the actual definition at Endo.
+// =====================================================================
+
 /**
- * `DataOnly<T>` means to return a record type `T2` consisting only of
- * properties that are *not* functions.
- *
- * @template T The type to be filtered.
- * @typedef {Omit<T, FilteredKeys<T, Callable>>} DataOnly
+ * @template T
+ * @typedef {import('@endo/eventual-send').DataOnly<T>} DataOnly
+ */
+
+/**
+ * @template T
+ * @typedef {import('@endo/eventual-send').EGetters<T>} EGetters
  */
 
 /**
  * @template {Callable} T
- * @typedef {ReturnType<T> extends Promise<EUnwrap<ReturnType<T>>>
+ * @typedef {import('@endo/eventual-send').ESendOnlyCallable<T>} ESendOnlyCallable
+ */
+
+/**
+ * @template T
+ * @typedef {import('@endo/eventual-send').ESendOnlyMethods<T>} ESendOnlyMethods
+ */
+
+/**
+ * @template T
+ * @typedef {import('@endo/eventual-send').ESendOnlyCallableOrMethods<T>} ESendOnlyCallableOrMethods
+ */
+
+/**
+ * @template T
+ * @template U
+ * @typedef {import('@endo/eventual-send').FilteredKeys<T, U>} FilteredKeys
+ */
+
+/**
+ * @template T
+ * @typedef {import('@endo/eventual-send').EOnly<T>} EOnly
+ */
+
+// =====================================================================
+// Vow-specific type helpers.
+//
+// These helpers diverge from Endo's because vow auto-unwraps the Vow
+// chain via `EUnwrap`, while Endo only unwraps Promises via `Awaited`.
+// `ECallable` is the root of the divergence — every helper that
+// transitively references it (`EMethods`, `ECallableOrMethods`,
+// `RemoteFunctions`, `LocalRecord`) must stay local.
+// =====================================================================
+
+/**
+ * Maps a callable to its remotely called type, with Vow auto-unwrapping.
+ *
+ * @template {Callable} T
+ * @typedef {(
+ *   ReturnType<T> extends Promise<EUnwrap<ReturnType<T>>>
  *     ? T
- *     : (...args: Parameters<T>) => Promise<EUnwrap<ReturnType<T>>>} ECallable
+ *     : (...args: Parameters<T>) => Promise<EUnwrap<ReturnType<T>>>
+ * )} ECallable
  */
 
 /**
@@ -338,82 +395,44 @@ export default makeE;
 
 /**
  * @template T
- * @typedef {{
- *   readonly [P in keyof T]: T[P] extends PromiseLike<any>
- *     ? T[P]
- *     : Promise<Awaited<T[P]>>;
- * }} EGetters
- */
-
-/**
- * @template {Callable} T
- * @typedef {(...args: Parameters<T>) => Promise<void>} ESendOnlyCallable
- */
-
-/**
- * @template T
- * @typedef {{
- *   readonly [P in keyof T]: T[P] extends Callable
- *     ? ESendOnlyCallable<T[P]>
- *     : never;
- * }} ESendOnlyMethods
- */
-
-/**
- * @template T
  * @typedef {(
- *   T extends Callable
- *     ? ESendOnlyCallable<T> & ESendOnlyMethods<Required<T>>
- *     : ESendOnlyMethods<Required<T>>
- * )} ESendOnlyCallableOrMethods
- */
-
-/**
- * @template T
- * @typedef {(
- *   T extends Callable
- *     ? ECallable<T> & EMethods<Required<T>>
- *     : EMethods<Required<T>>
+ *   0 extends (1 & T)                              // if T is any
+ *     ? any                                        // propagate any cleanly (avoid distributive collapse)
+ *     : T extends Callable
+ *       ? ECallable<T> & EMethods<Required<T>>
+ *       : EMethods<Required<T>>
  * )} ECallableOrMethods
  */
 
 /**
- * Return a union of property names/symbols/numbers P for which the record element T[P]'s type extends U.
- *
- * Given const x = { a: 123, b: 'hello', c: 42, 49: () => {}, 53: 67 },
- *
- * FilteredKeys<typeof x, number> is the type 'a' | 'c' | 53.
- * FilteredKeys<typeof x, string> is the type 'b'.
- * FilteredKeys<typeof x, 42 | 67> is the type 'c' | 53.
- * FilteredKeys<typeof x, boolean> is the type never.
- *
- * @template T
- * @template U
- * @typedef {{ [P in keyof T]: T[P] extends U ? P : never; }[keyof T]} FilteredKeys
- */
-
-/**
  * `PickCallable<T>` means to return a single root callable or a record type
- * consisting only of properties that are functions.
+ * consisting only of properties that are functions.  Like Endo's
+ * `PickCallable` but with an extra guard against `Pick<T, never>` collapse
+ * when `T` has no callable members.
  *
  * @template T
  * @typedef {(
- *   T extends Callable
- *     ? (...args: Parameters<T>) => ReturnType<T>   // a root callable, no methods
- *     : FilteredKeys<T, Callable> extends never
- *     ? never
- *     : Pick<T, FilteredKeys<T, Callable>>          // any callable methods
+ *   0 extends (1 & T)                              // if T is any
+ *     ? any                                        // propagate any cleanly (avoid Pick<any, string> distributive collapse)
+ *     : T extends Callable
+ *       ? (...args: Parameters<T>) => ReturnType<T>  // a root callable, no methods
+ *       : FilteredKeys<T, Callable> extends never
+ *         ? never
+ *         : Pick<T, FilteredKeys<T, Callable>>      // any callable methods
  * )} PickCallable
  */
 
 /**
- * `RemoteFunctions<T>` means to return the functions and properties that are remotely callable.
+ * `RemoteFunctions<T>` means to return the functions and properties that are
+ * remotely callable, after unwrapping any Vow chain via `EUnwrap`.
  *
  * @template T
  * @typedef {(
- *   EUnwrap<T> extends RemotableBrand<any, infer R>  // if a given T will settle to some remote interface R
- *     ? PickCallable<R>                         // then return the callable properties of R
- *     : PickCallable<EUnwrap<T>>                 // otherwise return the callable properties of the settled T
+ *   0 extends (1 & T)                              // if T is any
+ *     ? any                                        // propagate any cleanly
+ *     : EUnwrap<T> extends RemotableBrand<any, infer R>  // if a given T will settle to some remote interface R
+ *       ? PickCallable<R>                          // then return the callable properties of R
+ *       : PickCallable<EUnwrap<T>>                 // otherwise return the callable properties of the settled T
  * )} RemoteFunctions
  */
 
@@ -424,22 +443,4 @@ export default makeE;
  *     ? L
  *     : EUnwrap<T>
  * )} LocalRecord
- */
-
-/**
- * Type for an object that must only be invoked with E.  It supports a given
- * interface but declares all the functions as asyncable.
- *
- * @template T
- * @typedef {(
- *   T extends Callable
- *     ? (...args: Parameters<T>) => ERef<Awaited<EOnly<ReturnType<T>>>>
- *     : T extends Record<PropertyKey, Callable>
- *     ? {
- *         [K in keyof T]: T[K] extends Callable
- *           ? (...args: Parameters<T[K]>) => ERef<Awaited<EOnly<ReturnType<T[K]>>>>
- *           : T[K];
- *       }
- *     : T
- * )} EOnly
  */

@@ -469,8 +469,15 @@ export const makeReplayMembraneForTesting = ({
       resolve = res;
       reject = rej;
     }, guestHandler);
-    // @ts-expect-error TS cannot infer that it is a PromiseKit
-    return harden({ promise, resolve, reject });
+    return harden({
+      promise,
+      resolve: /** @type {PromiseKit<any>['resolve']} */ (
+        /** @type {unknown} */ (resolve)
+      ),
+      reject: /** @type {PromiseKit<any>['reject']} */ (
+        /** @type {unknown} */ (reject)
+      ),
+    });
   };
 
   // //////////////// Converters ///////////////////////////////////////////////
@@ -654,7 +661,7 @@ export const makeReplayMembraneForTesting = ({
   const nestInterpreter = callIndex => {
     callStack.push(callIndex);
     while (log.isReplaying() && !stopped) {
-      const entry = log.nextUnfilteredEntry();
+      const entry = /** @type {[any, ...any[]]} */ (log.nextUnfilteredEntry());
       const optOutcome = interpretOne(nestDispatch, entry);
       if (unnestFlag) {
         optOutcome ||
@@ -691,7 +698,7 @@ export const makeReplayMembraneForTesting = ({
     while (log.isReplaying() && !stopped) {
       callStack.length === 0 ||
         Fail`wake only with empty callStack: ${q(callStack)}`;
-      const entry = log.peekEntry();
+      const entry = /** @type {[any, ...any[]]} */ (log.peekEntry());
       const op = entry[0];
       if (!(op in topDispatch)) {
         return;

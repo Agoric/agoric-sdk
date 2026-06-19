@@ -18,7 +18,7 @@ import type {
   TransactionRecord,
 } from '@agoric/fast-usdc/src/types.js';
 import type { RepayAmountKWR } from '@agoric/fast-usdc/src/utils/fees.js';
-import type { ERemote } from '@agoric/internal';
+import type { ERemote, TypedPattern } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { EMarshaller } from '@agoric/internal/src/marshal/wrap-marshaller.js';
 import type { MapStore, SetStore } from '@agoric/store';
@@ -241,37 +241,42 @@ export const prepareStatusManager = (
     M.interface('StatusManagerI', {
       // TODO: naming scheme for transition events
       advance: M.call(CctpTxEvidenceShape).returns(),
-      advanceOutcome: M.call(M.string(), M.nat(), M.boolean())
-        .optional(M.splitRecord({ destination: M.string() }))
+      advanceOutcome: M.call(M.string<NobleAddress>(), M.nat(), M.boolean())
+        .optional(
+          M.splitRecord({ destination: M.string() }) as TypedPattern<{
+            destination: AccountId;
+          }>,
+        )
         .returns(),
       skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
-      advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
+      advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean())
+        .optional(
+          M.splitRecord({ destination: M.string() }) as TypedPattern<{
+            destination: AccountId;
+          }>,
+        )
+        .returns(),
       advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
-      getForwardsToRetry: M.call(M.string()).returns(
+      getForwardsToRetry: M.call(M.string<CaipChainId>()).returns(
         M.arrayOf(ForwardFailedTxShape),
       ),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
-      matchAndDequeueSettlement: M.call(M.string(), M.bigint()).returns(
-        M.arrayOf(
-          M.splitRecord({
-            txHash: EvmHashShape,
-            status: M.or(...Object.values(PendingTxStatus)),
-          }),
-        ),
-      ),
-      disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
-        M.undefined(),
-      ),
-      forwarded: M.call(EvmHashShape)
-        .optional(M.splitRecord({ destination: M.string() }))
-        .returns(),
+      matchAndDequeueSettlement: M.call(
+        M.string<NobleAddress>(),
+        M.bigint(),
+      ).returns(M.arrayOf(PendingTxShape)),
+      disbursed: M.call(
+        EvmHashShape,
+        AmountKeywordRecordShape as TypedPattern<RepayAmountKWR>,
+      ).returns(M.undefined()),
+      forwarded: M.call(EvmHashShape).optional(ForwardFailedTxShape).returns(),
       forwardFailed: M.call(EvmHashShape)
         .optional(ForwardFailedTxShape)
         .returns(),
       forwarding: M.call(EvmHashShape).returns(),
       forwardSkipped: M.call(EvmHashShape).returns(),
-      lookupPending: M.call(M.string(), M.bigint()).returns(
+      lookupPending: M.call(M.string<NobleAddress>(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
     }),

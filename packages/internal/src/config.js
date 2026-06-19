@@ -38,7 +38,7 @@ import { keyMirror } from './keyMirror.js';
 /**
  * Event source ids used by the bridge device.
  *
- * @enum {(typeof BridgeId)[keyof typeof BridgeId]}
+ * @typedef {(typeof BridgeId)[keyof typeof BridgeId]} BridgeId
  */
 export const BridgeId = /** @type {const} */ ({
   BANK: 'bank',
@@ -53,7 +53,7 @@ export const BridgeId = /** @type {const} */ ({
 });
 harden(BridgeId);
 
-/** @satisfies {Record<string, BridgeId>} */
+/** @satisfies {Record<string, typeof BridgeId[keyof typeof BridgeId]>} */
 export const CosmosInitKeyToBridgeId = {
   vbankPort: 'bank',
   vibcPort: 'dibc',

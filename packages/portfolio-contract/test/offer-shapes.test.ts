@@ -2,12 +2,13 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import type { PortfolioAgentStatus } from '@agoric/portfolio-api';
 import {
-  PortfolioPermissionsExtShape,
-  PortfolioPermissionsV1Shape,
+  type PortfolioAgentStatus,
   type PortfolioPermissions,
-} from '@agoric/portfolio-api/src/portfolio-permissions.js';
+  type PortfolioPermissionsExt,
+  PortfolioPermissionsExtShape,
+  PortfolioPermissionsShape,
+} from '@agoric/portfolio-api';
 import {
   TxStatus,
   TxType,
@@ -205,14 +206,17 @@ test('PoolKeyExt shapes accept future pool keys', t => {
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
 });
 
-test('PortfolioPermissionsV1Shape', t => {
+test('PortfolioPermissionsShape', t => {
   const passCases = harden({
+    empty: {},
     allocationOnly: {
       allocation: true,
     },
+    rebalanceOnly: {
+      rebalance: true,
+    },
   } satisfies Record<string, PortfolioPermissions>);
   const failCases = harden({
-    empty: {},
     futurePermission: {
       allocation: true,
       futurePermission: false,
@@ -220,15 +224,15 @@ test('PortfolioPermissionsV1Shape', t => {
     futureObject: {
       future: { size: 1 },
     },
-  });
+  }) satisfies Record<string, PortfolioPermissionsExt>;
 
   t.log('good:', Object.keys(passCases).join(', '));
   t.log('bad:', Object.keys(failCases).join(', '));
   for (const [name, specimen] of Object.entries(passCases)) {
-    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsV1Shape), name);
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsShape), name);
   }
   for (const [name, specimen] of Object.entries(failCases)) {
-    t.false(matches(specimen, PortfolioPermissionsV1Shape), name);
+    t.false(matches(specimen, PortfolioPermissionsShape), name);
   }
 });
 
@@ -242,7 +246,7 @@ test('PortfolioPermissionsExtShape', t => {
     futureObject: {
       future: { size: 1 },
     },
-  } satisfies Record<string, PortfolioPermissions>);
+  }) satisfies Record<string, PortfolioPermissionsExt>;
   const failCases = harden({});
 
   t.log('good:', Object.keys(passCases).join(', '));

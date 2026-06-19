@@ -5,7 +5,7 @@ export {};
  * @import {NameHub} from '@agoric/vats';
  * @import {ZoeService} from '@agoric/zoe';
  * @import {BundleSource} from '@endo/bundle-source';
- * @import {writeFile as WriteFile} from 'node:fs/promises';
+ * @typedef {typeof import('node:fs/promises').writeFile} WriteFile
  * @import {ERef} from '@agoric/vow';
  * @import {ScratchPad} from '@agoric/internal/src/scratch.js';
  * @import {CoreEvalMaterialRecord} from './writeCoreEvalParts.js';

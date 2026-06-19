@@ -3,14 +3,16 @@
  * @see {@link preparePlanner}
  */
 import { makeTracer, type TypedPattern } from '@agoric/internal';
-import type { FundsFlowPlan } from '@agoric/portfolio-api';
+import type { FlowKey, FundsFlowPlan } from '@agoric/portfolio-api';
 import { type Vow, VowShape, type VowTools } from '@agoric/vow';
 import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
+import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
+import { flowIdFromKey, FlowKeyShape } from './type-guards.ts';
 
 const trace = makeTracer('PPLN');
 
@@ -32,6 +34,7 @@ export const preparePlanner = (
     rebalance,
     zcf,
     getPortfolio,
+    getPlannerDelegation,
     shapes,
     vowTools,
   }: {
@@ -42,6 +45,9 @@ export const preparePlanner = (
     ) => Vow<any>; // XXX HostForGuest???
     zcf: ZCF;
     getPortfolio: (id: number) => PortfolioKit;
+    getPlannerDelegation: (
+      portfolioPlanner: PortfolioKit['planner'],
+    ) => PortfolioDelegationClient | undefined;
     shapes: ReturnType<typeof makeOfferArgsShapes>;
     vowTools: Pick<VowTools, 'asVow'>;
   },
@@ -53,16 +59,33 @@ export const preparePlanner = (
   );
   const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
 
+  const portfolioIdShape = M.number();
+  const flowIdShape = M.number();
+  const policyVersionShape = M.number();
+  const rebalanceCountShape = M.number();
+
   const PlannerI = M.interface('Planner', {
-    submit: M.call(M.number(), M.arrayOf(movementDescShape), M.number())
-      .optional(M.number())
+    submit: M.call(
+      portfolioIdShape,
+      M.arrayOf(movementDescShape),
+      policyVersionShape,
+    )
+      .optional(rebalanceCountShape)
       .returns(VowShape),
-    resolvePlan: M.call(M.number(), M.number(), planCompatShape, M.number())
-      .optional(M.number())
+    resolvePlan: M.call(
+      portfolioIdShape,
+      flowIdShape,
+      planCompatShape,
+      policyVersionShape,
+    )
+      .optional(rebalanceCountShape)
       .returns(),
-    rejectPlan: M.call(M.number(), M.number(), M.string())
-      .optional(M.number(), M.number())
+    rejectPlan: M.call(portfolioIdShape, flowIdShape, M.string())
+      .optional(policyVersionShape, rebalanceCountShape)
       .returns(),
+    rebalance: M.call(portfolioIdShape, planCompatShape, policyVersionShape)
+      .optional(rebalanceCountShape)
+      .returns(FlowKeyShape),
   });
 
   return zone.exoClass(
@@ -126,6 +149,41 @@ export const preparePlanner = (
         const { planner: portfolioPlanner } = getPortfolio(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.rejectFlowPlan(flowId, reason);
+      },
+      rebalance(
+        portfolioId: number,
+        planOrSteps: FundsFlowPlan | MovementDesc[],
+        policyVersion: number,
+        rebalanceCount = 0,
+      ): FlowKey {
+        const portfolioKit = getPortfolio(portfolioId);
+        const { planner: portfolioPlanner } = portfolioKit;
+        const delegationClient = getPlannerDelegation(portfolioPlanner);
+        assert(
+          delegationClient && delegationClient.getReader().isActive(),
+          `planner delegation must be active for portfolio ${portfolioId}`,
+        );
+
+        const autoFeatures = delegationClient.getReader().getAutoFeatures();
+        assert(
+          autoFeatures?.rebalance,
+          `portfolio ${portfolioId} auto-feature "rebalance" must be enabled`,
+        );
+
+        // The flow created by rebalance is guaranteed to have its plan sync kit
+        // fully ready.
+        const flowKey = delegationClient.rebalance({
+          policyVersion,
+          rebalanceCount,
+        });
+        const flowId = flowIdFromKey(flowKey);
+        trace.sub(`portfolio${portfolioId}`).sub(flowKey)(
+          'TODO(#11782): vet delegated plan',
+          planOrSteps,
+        );
+        portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
+        portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
+        return flowKey;
       },
     },
     {

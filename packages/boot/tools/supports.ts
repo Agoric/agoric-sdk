@@ -71,7 +71,7 @@ import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js'
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
 import type { GovernancePublishedPathTypes } from '@agoric/governance';
-import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
@@ -133,12 +133,11 @@ const makeConfigCacheKey = ({
 // Doesn't help in CI but speeds up local development.
 // CI is on Github Actions, so fetching is reliable.
 // Files appear in a .cache directory.
-export const fetchCached = NodeFetchCache.create({
+const fetchCached = NodeFetchCache.create({
   cache: new FileSystemCache(),
 }) as unknown as typeof globalThis.fetch;
 
-type BootstrapVatItemMap = EconomyBootstrapPowers['consume'] &
-  Record<string, unknown>;
+type BootstrapVatItemMap = BootstrapPowers['consume'] & Record<string, unknown>;
 
 type ConsumeBootstrapItem<BootstrapVatItems extends BootstrapVatItemMap> = {
   <N extends keyof BootstrapVatItems>(name: N): BootstrapVatItems[N];
@@ -152,8 +151,7 @@ type BootstrapPublishedPathTypes = GovernancePublishedPathTypes;
  * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
  */
 export type BootstrapEV<
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 > = EProxy & {
   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
   vat: <N extends string>(
@@ -167,8 +165,7 @@ export type BootstrapEV<
 };
 
 const makeBootstrapRunUtils = <
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 >(
   controller: SwingsetController,
   harness?: RunHarness,
@@ -217,7 +214,7 @@ export const keyArrayEqual = (
    `defaultManagerType`)
  * @returns Path to the generated config file
  */
-export const getNodeTestVaultsConfig = async ({
+const getNodeTestVaultsConfig = async ({
   bundleDir = sharedBundleCachePath,
   configPath,
   defaultManagerType = 'local' as ManagerType,
@@ -916,7 +913,7 @@ export const matchAmount = (
  * @param value - Value object to test
  * @param ref - Reference value object to compare against
  */
-export const matchValue = (t: AvaT, value, ref) => {
+const matchValue = (t: AvaT, value, ref) => {
   matchRef(t, value.brand, ref.brand);
   t.is(value.denom, ref.denom);
   matchRef(t, value.issuer, ref.issuer);
@@ -1060,8 +1057,7 @@ export type MakeSwingsetTestKitOptions = {
 export const makeSwingsetTestKit = async <
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 >(
   log: (..._: any[]) => void,
   bundleDir = sharedBundleCachePath,
@@ -1132,7 +1128,22 @@ export const makeSwingsetTestKit = async <
         ? initSwingStore(swingStorePath)
         : initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
-  const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
+  // Memoize board remotes by id so a given slot decodes to the *same* remotable
+  // across readPublished calls. Without this, slotToBoardRemote synthesizes a
+  // fresh Far per slot on every call, so brands/instances read from vstorage
+  // never share identity between reads — breaking deepEqual on amounts. (Same
+  // cache pattern as the deprecated makeFromBoard, kept inline to preserve the
+  // BoardRemote shape, i.e. getBoardId(), that agoricNamesRemotes relies on.)
+  const boardRemotes = new Map<string, ReturnType<typeof slotToBoardRemote>>();
+  const cachingSlotToBoardRemote = (boardId: string, iface?: string) => {
+    let remote = boardRemotes.get(boardId);
+    if (!remote) {
+      remote = slotToBoardRemote(boardId, iface ?? '');
+      boardRemotes.set(boardId, remote);
+    }
+    return remote;
+  };
+  const { fromCapData } = boardSlottingMarshaller(cachingSlotToBoardRemote);
 
   const readLatest = (path: string): any => {
     let data;
@@ -1697,8 +1708,7 @@ export const makeSwingsetTestKit = async <
 export type SwingsetTestKit<
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 > = Awaited<
   ReturnType<typeof makeSwingsetTestKit<PublishedPathTypes, BootstrapVatItems>>
 >;

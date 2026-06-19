@@ -8,7 +8,7 @@ import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
- * @import {CopyBag, CopySet} from '@endo/patterns';
+ * @import {CopyBag, CopySet, Key} from '@endo/patterns';
  * @import {Amount, AmountValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
 
@@ -16,7 +16,7 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 /**
  * Constants for the kinds of assets we support.
  *
- * @enum {(typeof AssetKind)[keyof typeof AssetKind]}
+ * @typedef {(typeof AssetKind)[keyof typeof AssetKind]} AssetKind
  */
 export const AssetKind = /** @type {const} */ ({
   NAT: 'nat',
@@ -254,18 +254,18 @@ export const AmountMath = {
    * Return the amount representing an empty amount. This is the identity
    * element for MathHelpers.add and MatHelpers.subtract.
    *
-   * @type {{
+   */
+  makeEmpty: /** @type {{
    *   (brand: Brand): Amount<'nat'>;
    *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
-   * }}
-   */
-  makeEmpty: (brand, assetKind = /** @type {const} */ ('nat')) => {
-    assertRemotable(brand, 'brand');
-    assertAssetKind(assetKind);
-    const value = helpers[assetKind].doMakeEmpty();
-    // @ts-expect-error XXX narrowing from function overload
-    return harden({ brand, value });
-  },
+   * }} */ (
+    (brand, assetKind = /** @type {const} */ ('nat')) => {
+      assertRemotable(brand, 'brand');
+      assertAssetKind(assetKind);
+      const value = helpers[assetKind].doMakeEmpty();
+      return harden({ brand, value });
+    }
+  ),
   /**
    * Return the amount representing an empty amount, using another amount as the
    * template for the brand and assetKind.

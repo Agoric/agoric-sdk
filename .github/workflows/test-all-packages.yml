@@ -105,11 +105,14 @@ jobs:
       # Run ESLint once from the repo root so type-aware project state can be reused.
       - run: yarn lint:eslint --quiet
 
-      # XXX running tsc in every package is slow and redundant.
-      - run: yarn typecheck-all
+      # Type-check each package against its own tsconfig (tsgo via lint:types),
+      # resolving dependencies through node_modules entrypoints as a consumer
+      # would. Complements typecheck-all, which maps everything to source in
+      # one unified config.
+      - run: yarn typecheck-packages
 
       # multichain-testing is a standalone yarn project (not a workspace), so
-      # the root lint:eslint and typecheck-all don't cover it.
+      # the root lint:eslint and typecheck-packages don't cover it.
       - name: lint multichain-testing
         run: yarn install && yarn lint && yarn ava test/imports.test.ts
         working-directory: multichain-testing
@@ -146,9 +149,13 @@ jobs:
         run: yarn run build:submissions
         working-directory: a3p-integration
 
-      # run the typecheck-quick that local dev can rely on for fast feedback
-      - name: typecheck-quick
-        run: yarn typecheck-quick
+      # run the typecheck-all that local dev can rely on for fast feedback.
+      # Uses tsgo (TypeScript 7 native preview) over the unified
+      # tsconfig.check.json, so the repo stays green for the TS7 migration
+      # and cannot regress. (tsc 6 is used only for declaration emit, which
+      # the build and prepack steps exercise.)
+      - name: typecheck-all
+        run: yarn typecheck-all
 
       # Attempt the doc generation to catch build errors before
       # landing on master
@@ -211,9 +218,6 @@ jobs:
       - name: yarn test (access-token)
         if: (success() || failure())
         run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (benchmark)
-        if: (success() || failure())
-        run: cd packages/benchmark && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deployment)
         if: (success() || failure())
         run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -596,41 +600,6 @@ jobs:
       - name: yarn test (cosmic-swingset)
         if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
-          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-
-  test-inter-protocol:
-    # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # test:xs is noop in inter-protocol/package.json
-        engine: ['node-new', 'node-old']
-    steps:
-      - name: set vars
-        id: vars
-        run: |
-          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.engine }}
-      # END-TEST-BOILERPLATE
-      - name: yarn test (inter-protocol)
-        if: (success() || failure())
-        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status

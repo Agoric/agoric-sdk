@@ -192,7 +192,7 @@ test('communication', async t => {
   // TODO: We can fix this only if the ERTP methods also allow consuming a
   // `Remote<Payment>` instead of just `Payment`.  That typing has not yet been
   // done, hence the cast.
-  const payment2 = /** @type {Payment} */ (
+  const payment2 = /** @type {Payment<'nat'>} */ (
     await E(vpurse).withdraw(paymentAmount)
   );
   const actualPaymentAmount2 = await E(kit.issuer).burn(

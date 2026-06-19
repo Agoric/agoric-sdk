@@ -14,9 +14,25 @@ import {
  */
 
 /**
+ * A minimal view of the backing collection keyed in terms of the public key
+ * type `K`. The scalar weak map only ever stores object (remotable) keys, so it
+ * backs onto a `WeakMap` keyed by `K & object`; the non-weak scalar map store
+ * reuses these methods over a `Map<K, V>`. The bivariant `any` key lets both
+ * satisfy this view while the methods operate on `K` internally.
+ *
+ * @template {Passable} V
+ * @typedef {{
+ *   has(key: any): boolean,
+ *   get(key: any): V | undefined,
+ *   set(key: any, value: V): unknown,
+ *   delete(key: any): boolean,
+ * }} WeakMapStoreBacking
+ */
+
+/**
  * @template {Key} K
  * @template {Passable} V
- * @param {WeakMap<K & object, V>} jsmap
+ * @param {WeakMapStoreBacking<V>} jsmap
  * @param {(k: K, v: V) => void} assertKVOkToAdd
  * @param {(k: K, v: V) => void} assertKVOkToSet
  * @param {(k: K) => void} [assertKeyOkToDelete]

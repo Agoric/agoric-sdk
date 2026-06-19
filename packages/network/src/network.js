@@ -8,7 +8,7 @@ import { Shape } from './shapes.js';
 
 /// <reference path="./types.js" />
 /**
- * @import {AttemptDescription, Bytes, CloseReason, Closable, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl, SendOptions} from './types.js';
+ * @import {AttemptDescription, Bytes, CloseReason, Closable, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl, SendOptions, InboundAttempt} from './types.js';
  * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {MapStore} from '@agoric/store';
@@ -159,6 +159,9 @@ const prepareHalfConnection = (zone, { watch, allVows, finalizer }) => {
         },
       },
       openConnectionAckWatcher: {
+        /**
+         * @param {Bytes | undefined} ack
+         */
         onFulfilled(ack) {
           return toBytes(ack || '');
         },
@@ -360,6 +363,15 @@ const prepareInboundAttempt = (zone, makeConnection, { watch, finalizer }) => {
         },
       },
       inboundAttemptAcceptWatcher: {
+        /**
+         * @param {unknown} lchandler
+         * @param {{
+         *   localAddress: string;
+         *   rchandler: Remote<ConnectionHandler>;
+         *   remoteAddress: string;
+         *   current: SetStore<Closable>;
+         * }} watchContext
+         */
         onFulfilled(lchandler, watchContext) {
           const { localAddress, rchandler, remoteAddress, current } =
             watchContext;
@@ -410,7 +422,7 @@ const prepareInboundAttempt = (zone, makeConnection, { watch, finalizer }) => {
   return makeInboundAttempt;
 };
 
-/** @enum {typeof RevokeState[keyof typeof RevokeState]} */
+/** @typedef {typeof RevokeState[keyof typeof RevokeState]} RevokeState */
 const RevokeState = /** @type {const} */ ({
   NOT_REVOKED: 0,
   REVOKING: 1,
@@ -569,18 +581,30 @@ const preparePort = (zone, powers) => {
       },
     },
     portAddListenerWatcher: {
+      /**
+       * @param {unknown} _value
+       * @param {{ listenHandler: Remote<Required<ListenHandler>> }} watcherContext
+       */
       onFulfilled(_value, watcherContext) {
         const { listenHandler } = watcherContext;
         return E(listenHandler).onListen(this.facets.port, listenHandler);
       },
     },
     portRemoveListenerWatcher: {
+      /**
+       * @param {unknown} _value
+       * @param {{ listenHandler: Remote<Required<ListenHandler>> }} watcherContext
+       */
       onFulfilled(_value, watcherContext) {
         const { listenHandler } = watcherContext;
         return E(listenHandler).onRemove(this.facets.port, listenHandler);
       },
     },
     portConnectWatcher: {
+      /**
+       * @param {Remote<Connection>} conn
+       * @param {{ chandler: Remote<Required<ConnectionHandler>> }} ctx
+       */
       onFulfilled(conn, { chandler }) {
         const { openConnections, revoked } = this.state;
 
@@ -903,6 +927,15 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderInboundInstantiateWatcher: {
+        /**
+         * @param {string | undefined} localInstance
+         * @param {{
+         *   listenAddr: string;
+         *   remoteAddr: string;
+         *   port: Port;
+         *   listenPrefixIndex: number;
+         * }} watchContext
+         */
         onFulfilled(localInstance, watchContext) {
           const { listenAddr, remoteAddr, port, listenPrefixIndex } =
             watchContext;
@@ -927,6 +960,15 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderInboundInstantiateCatchWatcher: {
+        /**
+         * @param {Error} e
+         * @param {{
+         *   lastFailure: Error;
+         *   listenPrefixIndex: number;
+         *   listenAddr: string;
+         *   remoteAddr: string;
+         * }} watchContext
+         */
         onRejected(e, watchContext) {
           let { lastFailure, listenPrefixIndex } = watchContext;
 
@@ -994,6 +1036,10 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderOutboundInstantiateWatcher: {
+        /**
+         * @param {string | undefined} localInstance
+         * @param {{ localAddr: string }} watchContext
+         */
         onFulfilled(localInstance, watchContext) {
           const { localAddr } = watchContext;
 
@@ -1001,6 +1047,16 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderOutboundConnectWatcher: {
+        /**
+         * @param {{ handler: Remote<ConnectionHandler>; remoteAddress: string; localAddress: string }} arg0
+         * @param {{
+         *   lastFailure: Error;
+         *   lchandler: Remote<ConnectionHandler>;
+         *   localAddr: string;
+         *   remoteAddr: string;
+         *   port: Port;
+         * }} watchContext
+         */
         onFulfilled(
           {
             handler: rchandler,
@@ -1038,6 +1094,15 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderOutboundCatchWatcher: {
+        /**
+         * @param {Error} e
+         * @param {{
+         *   port: Port;
+         *   remoteAddr: string;
+         *   lchandler: Remote<ConnectionHandler>;
+         *   localAddr: string;
+         * }} watchContext
+         */
         onRejected(e, watchContext) {
           let lastFailure;
 
@@ -1071,6 +1136,10 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderOutboundInboundWatcher: {
+        /**
+         * @param {string | undefined} initialLocalAddress
+         * @param {{ remoteAddr: string; localAddr: string }} watchContext
+         */
         onFulfilled(initialLocalAddress, watchContext) {
           const { remoteAddr, localAddr } = watchContext;
 
@@ -1086,12 +1155,20 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderOutboundAcceptWatcher: {
+        /**
+         * @param {InboundAttempt} attempt
+         * @param {{ handler: Remote<Required<ConnectionHandler>> }} watchContext
+         */
         onFulfilled(attempt, watchContext) {
           const { handler } = watchContext;
           return E(attempt).accept({ handler });
         },
       },
       binderBindGeneratePortWatcher: {
+        /**
+         * @param {string} portID
+         * @param {{ localAddr: string; underspecified: boolean }} watchContext
+         */
         onFulfilled(portID, watchContext) {
           const { localAddr, underspecified } = watchContext;
           const { protocolHandler, boundPorts } = this.state;
@@ -1112,6 +1189,10 @@ const prepareBinder = (zone, powers) => {
         },
       },
       binderPortWatcher: {
+        /**
+         * @param {unknown} _value
+         * @param {{ port: Port; localAddr: string }} watchContext
+         */
         onFulfilled(_value, watchContext) {
           const { port, localAddr } = watchContext;
           const { boundPorts, currentConnections } = this.state;
@@ -1345,7 +1426,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
           // noop, for now; Maybe handle a bind?
         },
         /**
-         * @param {*} _port
+         * @param {Remote<Port>} _port
          * @param {Endpoint} localAddr
          * @param {Endpoint} remoteAddr
          * @returns {PromiseVow<AttemptDescription>}}
@@ -1383,6 +1464,12 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
           this.state.instanceNonce += 1n;
           return `${instancePrefix}${this.state.instanceNonce}`;
         },
+        /**
+         * @param {Remote<Port>} port
+         * @param {Endpoint} localAddr
+         * @param {Remote<Required<ListenHandler>>} listenHandler
+         * @param {unknown} _protocolHandler
+         */
         async onListen(port, localAddr, listenHandler, _protocolHandler) {
           const { listeners } = this.state;
 
@@ -1414,8 +1501,8 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
         /**
          * @param {Remote<Port>} port
          * @param {Endpoint} localAddr
-         * @param {Remote<ListenHandler>} listenHandler
-         * @param {*} _protocolHandler
+         * @param {Remote<Required<ListenHandler>>} listenHandler
+         * @param {unknown} _protocolHandler
          */
         async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
           const { listeners } = this.state;
@@ -1435,6 +1522,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
         },
       },
       protocolHandlerConnectWatcher: {
+        /** @param {[InboundAttempt, Remote<Required<ConnectionHandler>>]} results */
         onFulfilled(results) {
           return {
             remoteInstance: results[0],

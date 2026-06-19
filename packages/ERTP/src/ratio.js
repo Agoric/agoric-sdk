@@ -423,10 +423,10 @@ export const parseRatio = (
  * @param {unknown} specimen
  * @returns {asserts specimen is ParsableNumber}
  */
-export const assertParsableNumber = specimen => {
+export function assertParsableNumber(specimen) {
   const match = `${specimen}`.match(NUMERIC_RE);
   match || Fail`Invalid numeric data: ${specimen}`;
-};
+}
 
 /**
  * Ratios might be greater or less than one.

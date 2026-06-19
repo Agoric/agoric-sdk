@@ -45,25 +45,25 @@ const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
   'cosmos:grand-1 noble': 'grand-1',
 };
 
-// Note that lookupValueForKey throws when the key is not found.
+// Throws when the key is not found.  The cast pins
+// `lookupValueForKey`'s generic K to the concrete
+// `${CaipChainId} ${SupportedChain}` union so TypeScript can unify
+// it with `spectrumChainIds`'s keys.
+const lookupSpectrumChainId = (
+  chainId: CaipChainId,
+  chainLabel: SupportedChain,
+): string =>
+  lookupValueForKey(
+    spectrumChainIds,
+    `${chainId} ${chainLabel}` as `${CaipChainId} ${SupportedChain}`,
+  );
+
 export const spectrumChainIdsByCluster: Readonly<
   Record<ClusterName, ROPartial<SupportedChain, string>>
 > = {
-  mainnet: {
-    ...objectMap(CaipChainIds.mainnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-  testnet: {
-    ...objectMap(CaipChainIds.testnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-  local: {
-    ...objectMap(CaipChainIds.local, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
+  mainnet: { ...objectMap(CaipChainIds.mainnet, lookupSpectrumChainId) },
+  testnet: { ...objectMap(CaipChainIds.testnet, lookupSpectrumChainId) },
+  local: { ...objectMap(CaipChainIds.local, lookupSpectrumChainId) },
 };
 
 /**

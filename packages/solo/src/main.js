@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import parseArgs from 'minimist';
+import { parseArgs } from 'node:util';
 import process from 'node:process';
 import { spawnSync } from 'node:child_process';
 import { assert } from '@endo/errors';
@@ -23,6 +23,41 @@ const DEFAULT_EGRESSES = 'cosmos';
 const AG_SOLO_BASEDIR =
   process.env.AG_SOLO_BASEDIR && path.resolve(process.env.AG_SOLO_BASEDIR);
 
+/**
+ * @param {string | boolean | (string | boolean)[] | undefined} value
+ * @param {string} defaultValue
+ */
+const stringOption = (value, defaultValue) =>
+  typeof value === 'string' ? value : defaultValue;
+
+/** @param {string | boolean | (string | boolean)[] | undefined} value */
+const optionalStringOption = value =>
+  typeof value === 'string' ? value : undefined;
+
+/**
+ * @param {string | boolean | (string | boolean)[] | undefined} value
+ * @param {boolean} defaultValue
+ */
+const booleanOption = (value, defaultValue) =>
+  typeof value === 'boolean' ? value : defaultValue;
+
+const parseTopLevelArgs = rawArgv => {
+  const commandIndex = rawArgv.findIndex(arg => !arg.startsWith('-'));
+  const optionArgs =
+    commandIndex < 0 ? rawArgv : rawArgv.slice(0, commandIndex);
+  const commandArgs = commandIndex < 0 ? [] : rawArgv.slice(commandIndex);
+  const { values: opts } = parseArgs({
+    args: optionArgs,
+    options: {
+      help: { type: 'boolean' },
+      version: { type: 'boolean' },
+    },
+    allowPositionals: false,
+    strict: false,
+  });
+  return { opts, argv: commandArgs };
+};
+
 function insistIsBasedir() {
   if (AG_SOLO_BASEDIR) {
     process.chdir(AG_SOLO_BASEDIR);
@@ -39,10 +74,7 @@ function insistIsBasedir() {
 
 export default async function solo(progname, rawArgv) {
   log.debug('solo', rawArgv);
-  const { _: argv, ...opts } = parseArgs(rawArgv, {
-    stopEarly: true,
-    boolean: ['help', 'version'],
-  });
+  const { opts, argv } = parseTopLevelArgs(rawArgv);
 
   if (opts.help) {
     process.stdout.write(`\
@@ -57,7 +89,15 @@ start
   await null;
   switch (argv[0]) {
     case 'setup': {
-      const { netconfig } = parseArgs(argv.slice(1));
+      const { values: setupOpts } = parseArgs({
+        args: argv.slice(1),
+        options: {
+          netconfig: { type: 'string' },
+        },
+        allowPositionals: true,
+        strict: false,
+      });
+      const netconfig = optionalStringOption(setupOpts.netconfig);
       if (!AG_SOLO_BASEDIR) {
         console.error(`setup: you must set $AG_SOLO_BASEDIR`);
         return 1;
@@ -71,16 +111,23 @@ start
       break;
     }
     case 'init': {
-      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
-        default: {
-          webport: '8000',
-          webhost: '127.0.0.1',
-          egresses: DEFAULT_EGRESSES,
-          defaultManagerType: process.env.SWINGSET_WORKER_TYPE || 'xs-worker',
+      const { values: subOpts, positionals: subArgs } = parseArgs({
+        args: argv.slice(1),
+        options: {
+          webport: { type: 'string', default: '8000' },
+          webhost: { type: 'string', default: '127.0.0.1' },
+          egresses: { type: 'string', default: DEFAULT_EGRESSES },
+          defaultManagerType: {
+            type: 'string',
+            default: process.env.SWINGSET_WORKER_TYPE || 'xs-worker',
+          },
         },
+        allowPositionals: true,
+        strict: false,
       });
-      const webport = Number(subOpts.webport);
-      const { webhost, egresses } = subOpts;
+      const webport = Number(stringOption(subOpts.webport, '8000'));
+      const webhost = stringOption(subOpts.webhost, '127.0.0.1');
+      const egresses = stringOption(subOpts.egresses, DEFAULT_EGRESSES);
       const basedir = subArgs[0] || AG_SOLO_BASEDIR;
       const subdir = subArgs[1];
       assert(basedir !== undefined, 'you must provide a BASEDIR');
@@ -103,18 +150,30 @@ start
     }
     case 'add-chain': {
       const basedir = insistIsBasedir();
-      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {
-        boolean: ['reset'],
+      const { values: subOpts, positionals: subArgs } = parseArgs({
+        args: argv.slice(1),
+        options: {
+          reset: { type: 'boolean' },
+        },
+        allowPositionals: true,
+        strict: false,
       });
       const [chainConfig] = subArgs;
-      await addChain(basedir, chainConfig, subOpts.reset);
+      await addChain(basedir, chainConfig, booleanOption(subOpts.reset, false));
       break;
     }
     case 'set-gci-ingress': {
       const basedir = insistIsBasedir();
-      const { _: subArgs, ...subOpts } = parseArgs(argv.slice(1), {});
+      const { values: subOpts, positionals: subArgs } = parseArgs({
+        args: argv.slice(1),
+        options: {
+          chainID: { type: 'string' },
+        },
+        allowPositionals: true,
+        strict: false,
+      });
       const GCI = subArgs[0];
-      const chainID = subOpts.chainID || 'agoric';
+      const chainID = stringOption(subOpts.chainID, 'agoric');
       const rpcAddresses = subArgs.slice(1);
       setGCIIngress(basedir, GCI, rpcAddresses, chainID);
       break;

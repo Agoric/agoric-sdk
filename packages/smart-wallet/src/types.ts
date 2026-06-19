@@ -31,7 +31,7 @@ export type InvitationMakers = Record<
   (...args: any[]) => Promise<Invitation>
 >;
 
-export type PublicSubscribers = Record<string, PublicTopic<unknown>>;
+export type PublicSubscribers = Record<string, PublicTopic<any>>;
 
 export interface ContinuingOfferResult {
   invitationMakers: InvitationMakers;

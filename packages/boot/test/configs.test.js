@@ -14,7 +14,6 @@ import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.j
 
 /**
  * @import {TestFn} from 'ava';
- * @import {spawn} from 'child_process';
  */
 
 const importConfig = async configName =>
@@ -57,7 +56,7 @@ const makeMemoizedPromise = makeFn => {
 
 /**
  * @param {string} bin
- * @param {{ spawn: typeof spawn }} io
+ * @param {{ spawn: typeof import('child_process').spawn }} io
  */
 export const pspawn =
   (bin, { spawn }) =>
@@ -87,7 +86,7 @@ const makeTestContext = async () => {
 
   const bundleCache = await unsafeSharedBundleCache;
 
-  const vizTool = pathResolve('..', 'tools', 'authorityViz.js');
+  const vizTool = pathResolve('..', 'scripts', 'authorityViz.js');
   const runViz = pspawn(vizTool, { spawn: ambientSpawn });
 
   const getConfigPath = makeMemoizedPromise(async configName => {

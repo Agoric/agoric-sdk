@@ -1,4 +1,5 @@
 {
+  "name": "l:wallet-upgrade",
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [

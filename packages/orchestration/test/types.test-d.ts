@@ -196,7 +196,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<Vow<ChainInfo>>(chainHostInterface.getChainInfo());
 
   const publicTopicRecord: HostInterface<
-    Record<string, ResolvedPublicTopic<unknown>>
+    Record<string, ResolvedPublicTopic<any>>
   > = {
     someTopic: {
       subscriber: null as any,
@@ -204,7 +204,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     },
   };
   // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
-  expectType<Record<string, ResolvedPublicTopic<unknown>>>(publicTopicRecord);
+  expectType<Record<string, ResolvedPublicTopic<any>>>(publicTopicRecord);
 }
 
 // HostOf with TransferSteps

@@ -5,17 +5,17 @@ import {
 } from '@agoric/zoe/src/typeGuards.js';
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {InvokeEntryMessage, ResultPlan} from './offers.js';
  */
 
-/** @type {TypedPattern<ResultPlan>} */
+/** @type {CastedPattern<ResultPlan>} */
 const ResultPlanShape = M.splitRecord(
   { name: M.string() },
   { overwrite: M.boolean() },
   {},
 );
-/** @type {TypedPattern<InvokeEntryMessage>} */
+/** @type {CastedPattern<InvokeEntryMessage>} */
 const InvokeEntryMessageShape = M.splitRecord(
   {
     targetName: M.string(),

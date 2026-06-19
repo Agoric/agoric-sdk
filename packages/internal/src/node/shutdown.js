@@ -67,6 +67,7 @@ export const makeFreshShutdown = (verbose = true) => {
   };
 };
 
+/** @type {ReturnType<typeof makeFreshShutdown> | null} */
 let cachedShutdown = null;
 export const makeCachedShutdown = (...args) => {
   // It's possible our caller has specified different arguments.

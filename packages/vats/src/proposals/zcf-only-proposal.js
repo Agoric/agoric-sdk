@@ -16,7 +16,9 @@ export const upgradeZcfOnly = async ({ consume: { vatStore } }, options) => {
 
   const { root: zoeRoot } = await E(vatStore).get('zoe');
 
-  const zoeConfigFacet = await E(zoeRoot).getZoeConfigFacet();
+  const zoeConfigFacet = await E(
+    /** @type {any} */ (zoeRoot),
+  ).getZoeConfigFacet();
   await E(zoeConfigFacet).updateZcfBundleId(zcfRef.bundleID);
   console.log(`ZCF BUNDLE ID: `, zcfRef.bundleID);
 };

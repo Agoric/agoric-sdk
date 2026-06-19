@@ -45,9 +45,10 @@ test(`ProposalShapes mismatch`, async t => {
 
   // The contract uses the testJig so the contractFacet
   // is available here for testing purposes
+  t.truthy(testJig);
   /** @type {ZCF} */
-  // @ts-expect-error cast
-  const zcf = testJig.zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
+    .zcf;
 
   const boring = () => {
     return 'ok';
@@ -114,9 +115,10 @@ test(`ProposalShapes matched`, async t => {
 
   // The contract uses the testJig so the contractFacet
   // is available here for testing purposes
+  t.truthy(testJig);
   /** @type {ZCF} */
-  // @ts-expect-error cast
-  const zcf = testJig.zcf;
+  const zcf = /** @type {{ zcf: ZCF }} */ (/** @type {unknown} */ (testJig))
+    .zcf;
 
   const boring = () => {
     return 'ok';

@@ -5,6 +5,7 @@ import { inspect } from 'node:util';
 
 import { SigningStargateClient, StargateClient } from '@cosmjs/stargate';
 import type { GraphQLClient } from 'graphql-request';
+import ky from 'ky';
 import * as ws from 'ws';
 
 import { Fail, q } from '@endo/errors';
@@ -35,11 +36,13 @@ import {
   axelarConfigTestnet,
 } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 
-import { loadConfig } from './config.ts';
+import { FETCH_HEADERS, loadConfig } from './config.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
+import { calculateInstrumentBlocks } from './instrument-status.ts';
+import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
 import {
   createEVMContext,
   prepareAbortController,
@@ -271,6 +274,33 @@ export const main = async (
     trace: () => {},
   });
 
+  const ydsClient =
+    config.yds.url &&
+    ky.create({ fetch, headers: FETCH_HEADERS, prefixUrl: config.yds.url });
+
+  let lastInstrumentBlocksString = '';
+  const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
+    const { noDepositInstruments, noWithdrawInstruments } = instrumentBlocks;
+    const sets = { noDepositInstruments, noWithdrawInstruments };
+    return JSON.stringify(objectMap(sets, s => [...s].sort()));
+  };
+  const getInstrumentBlocks = ydsClient
+    ? async (): Promise<InstrumentBlocks | undefined> => {
+        const resp = await ydsClient.get('instruments?includeAll=true').json();
+        const instruments = (resp as any).data as YdsInstrument[];
+        const instrumentBlocks = calculateInstrumentBlocks(instruments);
+
+        const newBlocksString = stringifyInstrumentBlocks(instrumentBlocks);
+        if (newBlocksString !== lastInstrumentBlocksString) {
+          console.warn('New instrument blocks:', instrumentBlocks, instruments);
+        }
+        lastInstrumentBlocksString = newBlocksString;
+
+        // TODO(AGO-550): return instrumentBlocks;
+        return undefined;
+      }
+    : undefined;
+
   const ydsNotifier = config.yds.url
     ? new YdsNotifier(
         { fetch, log: console.log.bind(console) },
@@ -305,6 +335,7 @@ export const main = async (
     evmTokenAddresses,
     spectrumBlockchain,
     network: PROD_NETWORK,
+    getInstrumentBlocks,
     signingSmartWalletKit,
     makeNonce,
     walletStore,

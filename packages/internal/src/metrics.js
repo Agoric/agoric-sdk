@@ -123,7 +123,7 @@ export const BLOCK_HISTOGRAM_METRICS = /** @type {const} */ ({
   },
 });
 
-/** @enum {(typeof QueueMetricAspect)[keyof typeof QueueMetricAspect]} */
+/** @typedef {(typeof QueueMetricAspect)[keyof typeof QueueMetricAspect]} QueueMetricAspect */
 export const QueueMetricAspect = /** @type {const} */ ({
   Length: 'length',
   IncrementCount: 'increments',
@@ -295,7 +295,7 @@ export const makeQueueMetrics = ({
 };
 
 // All the kernel metrics we are prepared for.
-/** @enum {(typeof MetricType)[keyof typeof MetricType]} MetricType */
+/** @typedef {(typeof MetricType)[keyof typeof MetricType]} MetricType */
 const MetricType = /** @type {const} */ ({
   Counter: 'counter',
   Gauge: 'gauge',

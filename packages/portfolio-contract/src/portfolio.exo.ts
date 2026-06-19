@@ -24,18 +24,25 @@ import {
   sameEvmAddress,
 } from '@agoric/orchestration/src/utils/address.js';
 import {
-  PortfolioPermissionsV1Shape,
+  PortfolioPermissionsShape,
+  PortfolioAutoFeaturesShape,
   type FlowAgent,
   type FlowConfig,
   type FlowKey,
   type FundsFlowPlan,
+  type PortfolioAgentGrantee,
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
+  type PortfolioPermissionsExt,
+  type PortfolioAutoFeatures,
   type PortfolioRemoteAccountState,
+  type PortfolioAutoFeaturesExt,
+  PortfolioAutoFeaturesExtShape,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
+  PortfolioPlannerAgent,
   SupportedChain,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
@@ -161,6 +168,8 @@ type PortfolioKitState = {
     { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
   >;
   delegations?: MapStore<number, PortfolioAgentInfo>;
+  plannerAgentId?: number;
+  enabledAutoFeatures?: PortfolioAutoFeatures;
   nextFlowId: number;
   targetAllocation?: TargetAllocation;
   policyVersion: number;
@@ -179,6 +188,8 @@ export const PortfolioStateShape = {
   positions: M.remotable('positions'),
   flowsRunning: M.remotable('flowsRunning'),
   delegations: M.opt(M.remotable('delegations')),
+  plannerAgentId: M.opt(M.number()),
+  enabledAutoFeatures: M.opt(PortfolioAutoFeaturesExtShape),
   nextFlowId: M.number(),
   targetAllocation: M.opt(M.record()),
   policyVersion: M.number(),
@@ -365,7 +376,7 @@ export const preparePortfolioKit = (
     usdcBrand,
     eip155ChainIdToAxelarChain,
     contracts,
-    deliverDelegationInvitation,
+    deliverDelegation,
   }: {
     rebalance: (
       seat: ZCFSeat,
@@ -404,15 +415,16 @@ export const preparePortfolioKit = (
     contracts: EVMContractAddressesMap;
     /**
      * Deliver a previously created delegation client invitation to `grantee`.
-     * The closure encapsulates the postal-service dependency so this exo
-     * doesn't need ambient authority to deliver.
+     * The closure encapsulates the delivery dependencies.
+     *
+     * Must be prompt.
      */
-    deliverDelegationInvitation: (
+    deliverDelegation: (
       client: PortfolioDelegationClient,
       portfolioId: number,
-      agentId: FlowAgent['id'],
-      grantee: string,
-      permissions: PortfolioPermissions,
+      agentId: number,
+      grantee: PortfolioAgentGrantee,
+      permissions: PortfolioPermissionsExt,
     ) => Promise<void>;
   },
 ) => {
@@ -499,6 +511,8 @@ export const preparePortfolioKit = (
           keyShape: PoolKeyShapeExt,
           valueShape: M.remotable('Position'),
         }),
+        plannerAgentId: undefined,
+        enabledAutoFeatures: undefined,
         targetAllocation: undefined,
         policyVersion: 0,
         rebalanceCount: 0,
@@ -627,6 +641,11 @@ export const preparePortfolioKit = (
           const { reader } = this.facets;
           return reader.getPortfolioId();
         },
+        getAutoFeatures(client: PortfolioDelegationClient, agentId: number) {
+          this.facets.delegationHelper.assertActive(client, agentId);
+          const { enabledAutoFeatures } = this.state;
+          return enabledAutoFeatures;
+        },
         getTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
@@ -657,6 +676,31 @@ export const preparePortfolioKit = (
           });
           return flowId;
         },
+        submitRebalance(
+          client: PortfolioDelegationClient,
+          agentId: number,
+          syncState: { policyVersion: number; rebalanceCount: number },
+        ): FlowKey {
+          this.facets.delegationHelper.assertActive(client, agentId, {
+            rebalance: true,
+          });
+          const { reader, reporter, manager } = this.facets;
+
+          const { policyVersion, rebalanceCount } = syncState;
+          reader.checkVersion(policyVersion, rebalanceCount);
+          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
+
+          const flowDetail = { type: 'rebalance' } as FlowDetail;
+          const startedFlow = manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(emptySeat, {}, this.facets, flowDetail, startedFlow);
+
+          const { flowId } = startedFlow;
+          reporter.publishFlowAgent(flowId, {
+            id: `agent${agentId}`,
+          });
+          return `flow${flowId}`;
+        },
       },
       reporter: {
         /**
@@ -675,6 +719,7 @@ export const preparePortfolioKit = (
             policyVersion,
             rebalanceCount,
             sourceAccountId,
+            enabledAutoFeatures,
           } = this.state;
 
           const agoricAux = (): Pick<
@@ -703,6 +748,7 @@ export const preparePortfolioKit = (
             accountsPending: [...accountsPending.keys()],
             policyVersion,
             rebalanceCount,
+            ...(enabledAutoFeatures && { enabledAutoFeatures }),
           } satisfies StatusFor['portfolio']);
         },
         publishAgents() {
@@ -959,6 +1005,152 @@ export const preparePortfolioKit = (
         incrPolicyVersion() {
           this.state.policyVersion += 1;
           this.state.rebalanceCount = 0;
+          this.facets.reporter.publishStatus();
+        },
+        /**
+         * Creates and delivers a new delegation client with the specified
+         * permissions for the specified grantee.
+         *
+         * Does not check if the grantee already has an active delegation, or if
+         * the permissions are valid.
+         *
+         * Returns promptly the agent ID of the new delegation.
+         */
+        async grantDelegation(
+          grantee: PortfolioAgentGrantee,
+          permissions: PortfolioPermissionsExt,
+        ) {
+          const { portfolioId } = this.state;
+          if (!('delegations' in this.state)) {
+            throw Fail`portfolio pre-dates delegation support`;
+          }
+          if (!this.state.delegations) {
+            this.state.delegations = makeDelegationsStore(portfolioId);
+          }
+          const delegations = this.state.delegations!;
+          // This assumes we never delete from the delegations store. If we ever
+          // do, we'll need to introduce a dedicated counter.
+          const nextAgentId = delegations.getSize() + 1;
+          const delegationKit = makeDelegationKit({
+            agentId: nextAgentId,
+            portfolioAccess: this.facets.delegationHelper,
+          });
+          // Initialize the delegation record first to avoid any race claiming
+          // the same agent ID or delivery failures resulting in a gap in the
+          // delegation records, either of which could result in a
+          // miscalculation of the next agent ID.
+          // If a delivery fails, we mark the delegation as revoked,
+          // making it unusable.
+          delegations.init(
+            nextAgentId,
+            harden({
+              grantee,
+              permissions,
+              state: 'active',
+              activeClient: delegationKit.client,
+            }),
+          );
+          await null;
+          try {
+            // `deliverDelegation` is guaranteed to promptly resolve.
+            // If we ever change that guarantee, this function will need to
+            // become an async-flow or use a vow watcher.
+            await deliverDelegation(
+              delegationKit.client,
+              portfolioId,
+              nextAgentId,
+              grantee,
+              permissions,
+            );
+          } catch (error) {
+            delegations.set(
+              nextAgentId,
+              harden({
+                grantee,
+                permissions,
+                state: 'revoked',
+              }),
+            );
+            throw error;
+          } finally {
+            this.facets.reporter.publishAgents();
+          }
+
+          return nextAgentId;
+        },
+        revokeDelegation(agentId: number) {
+          const { delegations } = this.state;
+          if (!delegations) {
+            throw Fail`no delegations available`;
+          }
+          const delegation = delegations.get(agentId);
+          if (!delegation) {
+            throw Fail`no delegation found for agent ${agentId}`;
+          }
+          // XXX: consider interacting with client to have it drop our helper facet
+          delegations.set(
+            agentId,
+            harden({
+              ...delegation,
+              state: 'revoked',
+              activeClient: undefined,
+            }),
+          );
+          this.facets.reporter.publishAgents();
+        },
+        /**
+         * Sets the pre-validated features settings on the portfolio and
+         * delivers the delegation to the planner as needed.
+         *
+         * Promptly resolves
+         *
+         * @param features
+         */
+        async setAutoFeatures(features: PortfolioAutoFeatures) {
+          if (!('enabledAutoFeatures' in this.state)) {
+            throw Fail`portfolio pre-dates auto features support`;
+          }
+
+          const permissions: PortfolioPermissions = {
+            allocation: false,
+            rebalance: !!features.rebalance,
+          };
+
+          const hasAnyPermission =
+            permissions.allocation || permissions.rebalance;
+
+          let plannerAgentId = this.state.plannerAgentId;
+
+          if (plannerAgentId !== undefined) {
+            // delegations must exist if there previously was a planner agent
+            const delegation = this.state.delegations!.get(plannerAgentId);
+
+            if (delegation.state !== 'active') {
+              trace(
+                `existing planner delegation ${plannerAgentId} is not active, granting a new one`,
+              );
+              plannerAgentId = undefined;
+              this.state.plannerAgentId = undefined;
+            } else {
+              this.state.delegations!.set(
+                plannerAgentId,
+                harden({ ...delegation, permissions }),
+              );
+              this.facets.reporter.publishAgents();
+            }
+          }
+
+          await null;
+          if (hasAnyPermission && plannerAgentId === undefined) {
+            // grantDelegation is guaranteed to be prompt, safe to await here
+            plannerAgentId = await this.facets.manager.grantDelegation(
+              PortfolioPlannerAgent,
+              permissions,
+            );
+            this.state.plannerAgentId = plannerAgentId;
+          }
+
+          this.state.enabledAutoFeatures = features;
           this.facets.reporter.publishStatus();
         },
       },
@@ -1292,49 +1484,31 @@ export const preparePortfolioKit = (
          * resolution is the authorization check; this method then enforces
          * its own input validation.
          */
-        grant(grantee: Bech32Address, permissions: PortfolioPermissions) {
-          mustMatch(permissions, PortfolioPermissionsV1Shape);
-          const { portfolioId, sourceAccountId } = this.state;
-          if (!sourceAccountId) {
-            throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;
-          }
-          permissions.allocation === true ||
-            Fail`grant requires allocation permission`;
-          if (!('delegations' in this.state)) {
-            throw Fail`portfolio pre-dates delegation support`;
-          }
-          if (!this.state.delegations) {
-            this.state.delegations = makeDelegationsStore(portfolioId);
-          }
-          const delegations = this.state.delegations!;
-          const nextAgentId = delegations.getSize() + 1;
-          const delegationKit = makeDelegationKit({
-            agentId: nextAgentId,
-            portfolioAccess: this.facets.delegationHelper,
-          });
-          // Deliver the invitation before publishing the agent record so
-          // postal failure does not leave an unusable active agent in
-          // vstorage. This leaves a smaller ordering gap: the invitation may
-          // be delivered before the delegation client is recorded as usable in
-          // portfolio state and published to vstorage.
+        grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
           return vowTools.asVow(async () => {
-            await deliverDelegationInvitation(
-              delegationKit.client,
-              portfolioId,
-              `agent${nextAgentId}`,
-              grantee,
-              permissions,
-            );
-            delegations.init(
-              nextAgentId,
-              harden({
-                grantee,
-                permissions,
-                state: 'active',
-                activeClient: delegationKit.client,
-              }),
-            );
-            this.facets.reporter.publishAgents();
+            mustMatch(permissions, PortfolioPermissionsShape);
+            const { sourceAccountId } = this.state;
+            if (!sourceAccountId) {
+              throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+            }
+            permissions.allocation === true ||
+              Fail`grant requires allocation permission`;
+            // Returns promise promptly resolved
+            await this.facets.manager.grantDelegation(grantee, permissions);
+          });
+        },
+        /**
+         * Set the auto-features for this portfolio
+         */
+        setAutoFeatures(features: PortfolioAutoFeaturesExt) {
+          return vowTools.asVow(() => {
+            mustMatch(features, PortfolioAutoFeaturesShape);
+            const { sourceAccountId } = this.state;
+            if (!sourceAccountId) {
+              throw Fail`setAutoFeatures requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+            }
+            // Returns promise promptly resolved
+            return this.facets.manager.setAutoFeatures(features);
           });
         },
       },

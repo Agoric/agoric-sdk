@@ -38,7 +38,9 @@ export const upgradeProvisioningVat = async (powers, options) => {
   const incarnation = await E(adminNode).upgrade(bundleCap, opts);
   console.log({ ...vatUpgrade, incarnation });
 
-  const { namesByAddress } = await E(root).getNamesByAddressKit();
+  const { namesByAddress } = await E(
+    /** @type {any} */ (root),
+  ).getNamesByAddressKit();
   resolver.reset();
   resolver.resolve(namesByAddress);
 };

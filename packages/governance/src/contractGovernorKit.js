@@ -91,7 +91,7 @@ export const prepareContractGovernorKit = (baggage, powers) => {
     ContractGovernorKitI,
     /**
      * @param {StartedInstanceKit<GovernableStartFn>} startedInstanceKit
-     * @param {LimitedCF<unknown>} limitedCreatorFacet
+     * @param {LimitedCF<any>} limitedCreatorFacet
      */
     (startedInstanceKit, limitedCreatorFacet) => {
       return {

@@ -1,4 +1,5 @@
 {
+  "name": "f:ymax0-restart",
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal"
   },

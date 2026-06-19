@@ -5,9 +5,9 @@
  */
 
 import { E, type RemoteFunctions } from '@endo/eventual-send';
-import { expectNotType, expectType } from 'tsd';
+import { expectAssignable, expectNotType, expectType } from 'tsd';
 
-import { M, type Key } from '@endo/patterns';
+import { M, type Key, type TypeFromPattern } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
 import type { Brand } from '@agoric/ertp';
 import type {
@@ -16,6 +16,13 @@ import type {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 import type { Instance } from '../src/zoeService/utils.js';
+import {
+  TransferPartShape,
+  fromOnly,
+  toOnly,
+} from '../src/contractSupport/atomicTransfer.js';
+import type { TransferPart } from '../src/contractFacet/types.js';
+import type { AmountKeywordRecord } from '../src/zoeService/types.js';
 import type {
   ContractMeta,
   FeeMintAccess,
@@ -152,4 +159,51 @@ const mock = null as any;
       storageNode: mock,
     }),
   };
+}
+
+// =============================================================================
+// TransferPart / TransferPartShape tuple typing
+// =============================================================================
+// `atomicRearrange` transfers are positional tuples. Two subtle typings are
+// pinned here so they can't silently regress:
+//
+//  1. TransferPart requires its first THREE positions (any may be `undefined`)
+//     to match the runtime `TransferPartShape` guard, which expects at least
+//     three elements. A 2-element array must be rejected — under the previous
+//     all-optional `[a?, b?, c?, d?]` typing it was wrongly accepted.
+//
+//  2. `TransferPartShape` passes its tuple literals to `M.splitArray` WITHOUT
+//     `harden(...)`. Hardening would widen the literals to arrays, so
+//     `TypeFromPattern<typeof TransferPartShape>` would collapse from a
+//     fixed-length tuple to a variable-length array (losing element-by-element
+//     typing). The `length` assertion below fails if `harden(...)` is
+//     reintroduced.
+{
+  const seat: ZCFSeat = null as any;
+  const amounts: AmountKeywordRecord = null as any;
+
+  // fromOnly/toOnly produce TransferParts.
+  expectType<TransferPart>(fromOnly(seat, amounts));
+  expectType<TransferPart>(toOnly(seat, amounts));
+
+  // 3- and 4-element forms are assignable...
+  expectAssignable<TransferPart>([seat, seat, amounts]);
+  expectAssignable<TransferPart>([seat, seat, amounts, amounts]);
+  // ...including the toOnly shape with leading `undefined`s.
+  expectAssignable<TransferPart>([undefined, seat, undefined, amounts]);
+
+  // A 2-element tuple is NOT a TransferPart (the runtime guard needs >= 3).
+  // This is the assertion that the previous all-optional tuple typing failed.
+  // Uses `@ts-expect-error` rather than tsd's `expectNotAssignable`: these
+  // test-d files are checked by tsc/tsgo (not the tsd runner), and
+  // `expectNotAssignable<T>(expression: any)` exerts no force under tsc, so it
+  // would pass even if the third element became optional again.
+  // @ts-expect-error a 2-element tuple is too short for TransferPart
+  const tooShort: TransferPart = [seat, seat];
+  void tooShort;
+
+  // TypeFromPattern preserves the fixed-length tuple (the value of dropping the
+  // redundant `harden(...)`). A widened array would have `length: number`.
+  type TP = TypeFromPattern<typeof TransferPartShape>;
+  expectType<3 | 4>(null as unknown as TP['length']);
 }
