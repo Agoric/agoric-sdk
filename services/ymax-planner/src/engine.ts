@@ -66,9 +66,9 @@ import type {
 import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
 import {
-  assessAutoRebalanceCriteria,
+  checkAutoRebalance,
   maybeAutoRebalance,
-  type AutoRebalanceCriteriaOptions,
+  type AutoRebalanceConfig,
 } from './auto.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
@@ -225,7 +225,7 @@ export type Powers = {
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
   getYdsBalancesForPortfolio?: PortfolioBalanceReader;
-  autoRebalance: AutoRebalanceCriteriaOptions;
+  autoRebalance: AutoRebalanceConfig;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -532,8 +532,8 @@ export const processPortfolioEvents = async (
   const scanAutoRebalances = async () => {
     await null;
     for (const [portfolioKey, portfolioStatus] of portfolioStatusForKey) {
-      if (!portfolioStatus.enabledAutoFeatures?.rebalance) continue;
-      if (!portfolioStatus.targetAllocation) continue;
+      const { enabledAutoFeatures, targetAllocation } = portfolioStatus;
+      if (!enabledAutoFeatures?.rebalance || !targetAllocation) continue;
       if (Object.keys(portfolioStatus.flowsRunning || {}).length > 0) continue;
 
       try {
@@ -543,16 +543,16 @@ export const processPortfolioEvents = async (
           brand: depositBrand,
           currentBalances: cachedBalances,
           network,
-          targetAllocation: portfolioStatus.targetAllocation,
+          targetAllocation,
           instrumentBlocks,
         });
-        const candidateCriteria = assessAutoRebalanceCriteria(
+        const shouldRebalance = checkAutoRebalance(
+          targetAllocation,
           cachedBalances,
-          portfolioStatus.targetAllocation,
           candidateTargets,
           autoRebalance,
         );
-        if (!candidateCriteria.shouldRebalance) continue;
+        if (!shouldRebalance) continue;
 
         const freshBalances = await getFreshBalances(
           portfolioKey,

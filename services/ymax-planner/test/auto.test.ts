@@ -8,9 +8,8 @@ import { Far } from '@endo/pass-style';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
-  assessAutoRebalanceCriteria,
+  checkAutoRebalance,
   maybeAutoRebalance,
-  type AutoRebalanceBalanceCache,
   type MaybeAutoRebalancePowers,
 } from '../src/auto.ts';
 import { UserInputError } from '../src/support.ts';
@@ -18,13 +17,88 @@ import { UserInputError } from '../src/support.ts';
 const brand = Far('mock USDC brand') as Brand<'nat'>;
 const makeAmount = (value: bigint) => AmountMath.make(brand, value);
 
-const options = harden({
+const config = harden({
   driftBps: 100n,
   driftMinMoveUusdc: 25_000_000n,
   cashMinMoveUusdc: 25_000_000n,
 });
 
-test('assessAutoRebalanceCriteria requires drift or excess cash and minimum deposits', t => {
+test('checkAutoRebalance trigger: Position Drift', t => {
+  const targetAllocation = {
+    USDN: 50n,
+    Aave_Arbitrum: 50n,
+  };
+
+  {
+    const balancedValue = 25_000_000n * 50n;
+    const resultAtBpsThreshold = checkAutoRebalance(
+      targetAllocation,
+      {
+        USDN: makeAmount(balancedValue - 25_000_000n),
+        Aave_Arbitrum: makeAmount(balancedValue + 25_000_000n),
+      },
+      {
+        USDN: makeAmount(balancedValue),
+        Aave_Arbitrum: makeAmount(balancedValue),
+      },
+      config,
+    );
+    t.is(
+      resultAtBpsThreshold,
+      null,
+      "trigger doesn't fire at the basis-point drift threshold",
+    );
+  }
+  {
+    const balancedValue = 25_000_000n * 50n - 1n;
+    const resultOverBpsThreshold = checkAutoRebalance(
+      targetAllocation,
+      {
+        USDN: makeAmount(balancedValue - 25_000_000n),
+        Aave_Arbitrum: makeAmount(balancedValue + 25_000_000n),
+      },
+      {
+        USDN: makeAmount(balancedValue),
+        Aave_Arbitrum: makeAmount(balancedValue),
+      },
+      config,
+    );
+    const { greatestBpsDrift, ...nonFloatFields } = {
+      ...resultOverBpsThreshold,
+    } as any;
+    t.deepEqual(
+      resultOverBpsThreshold && nonFloatFields,
+      { reason: 'POSITION_DRIFT', totalMoved: 25_000_000n },
+      'trigger fires just over the basis-point drift threshold',
+    );
+    t.true(
+      100 < greatestBpsDrift && greatestBpsDrift < 101,
+      `basis-point drift: ${greatestBpsDrift}`,
+    );
+  }
+  {
+    const balancedValue = 24_999_999n * 50n - 1n;
+    const resultAtBpsThreshold = checkAutoRebalance(
+      targetAllocation,
+      {
+        USDN: makeAmount(balancedValue - 24_999_999n),
+        Aave_Arbitrum: makeAmount(balancedValue + 24_999_999n),
+      },
+      {
+        USDN: makeAmount(balancedValue),
+        Aave_Arbitrum: makeAmount(balancedValue),
+      },
+      config,
+    );
+    t.is(
+      resultAtBpsThreshold,
+      null,
+      "trigger doesn't fire below the minimum movement threshold",
+    );
+  }
+});
+
+test('checkAutoRebalance trigger: Excess Cash', t => {
   const targetAllocation = {
     USDN: 50n,
     Aave_Arbitrum: 50n,
@@ -33,90 +107,74 @@ test('assessAutoRebalanceCriteria requires drift or excess cash and minimum depo
     makeAmount(v * 1_000_000n),
   );
 
-  t.like(
-    assessAutoRebalanceCriteria(
-      {
-        USDN: makeAmount(49_500_000n),
-        Aave_Arbitrum: makeAmount(50_500_000n),
-      },
-      targetAllocation,
-      balancedTarget,
-      options,
-    ),
-    { shouldRebalance: false, positionDrift: false, excessCash: false },
-    'exactly one percentage point of drift is still below the trigger',
-  );
-
-  t.like(
-    assessAutoRebalanceCriteria(
-      {
-        USDN: makeAmount(0n),
-        Aave_Arbitrum: makeAmount(100_000_000n),
-      },
-      targetAllocation,
-      balancedTarget,
-      options,
-    ),
-    { shouldRebalance: true, positionDrift: true, excessCash: false },
-    'more than one percentage point of drift triggers with enough instrument deposits',
-  );
-
-  t.like(
-    assessAutoRebalanceCriteria(
-      {
-        '@agoric': makeAmount(25_000_000n),
-      },
+  {
+    const balancedValue = 12_500_000n;
+    const resultUnderCashThreshold = checkAutoRebalance(
       targetAllocation,
       {
-        USDN: makeAmount(12_500_000n),
-        Aave_Arbitrum: makeAmount(12_500_000n),
+        '@agoric': makeAmount(24_999_999n),
+        USDN: makeAmount(1n),
       },
-      options,
-    ),
-    { shouldRebalance: true, positionDrift: true, excessCash: true },
-    'cash with no cash target is excess',
-  );
+      {
+        USDN: makeAmount(balancedValue),
+        Aave_Arbitrum: makeAmount(balancedValue),
+      },
+      config,
+    );
+    t.is(
+      resultUnderCashThreshold,
+      null,
+      "trigger doesn't fire under the excess-cash threshold",
+    );
+  }
+  {
+    const balancedValue = 12_500_000n;
+    const resultAtCashThreshold = checkAutoRebalance(
+      targetAllocation,
+      {
+        '@agoric': makeAmount(balancedValue),
+        '@Base': makeAmount(balancedValue),
+      },
+      {
+        USDN: makeAmount(balancedValue),
+        Aave_Arbitrum: makeAmount(balancedValue),
+      },
+      config,
+    );
+    t.deepEqual(
+      resultAtCashThreshold,
+      { reason: 'EXCESS_CASH', excessCashAllocated: 25_000_000n },
+      'trigger fires at the excess-cash threshold',
+    );
+  }
 
-  t.like(
-    assessAutoRebalanceCriteria(
+  t.is(
+    checkAutoRebalance(
+      { ...targetAllocation, '@Base': 25n },
       {
         '@Base': makeAmount(25_000_000n),
         USDN: makeAmount(50_000_000n),
         Aave_Arbitrum: makeAmount(50_000_000n),
       },
-      { ...targetAllocation, '@Base': 25n },
-      balancedTarget,
-      options,
+      {
+        '@Base': makeAmount(25_000_000n),
+        USDN: makeAmount(50_000_000n),
+        Aave_Arbitrum: makeAmount(50_000_000n),
+      },
+      config,
     ),
-    { excessCash: false },
+    null,
     'cash at or below its target allocation is not excess',
   );
 
-  t.like(
-    assessAutoRebalanceCriteria(
-      {
-        USDN: makeAmount(48_000_000n),
-        Aave_Arbitrum: makeAmount(52_000_000n),
-      },
-      targetAllocation,
-      { USDN: makeAmount(72_999_999n) },
-      options,
-    ),
-    { shouldRebalance: false, positionDrift: true },
-    'target instrument deposits must meet the minimum',
-  );
-
-  t.like(
-    assessAutoRebalanceCriteria(
-      {
-        '@agoric': makeAmount(25_000_000n),
-      },
+  t.deepEqual(
+    checkAutoRebalance(
       { USDN: 0n, Aave_Arbitrum: 1n },
+      { '@agoric': makeAmount(25_000_000n) },
       { USDN: makeAmount(25_000_000n) },
-      options,
+      config,
     ),
-    { shouldRebalance: false, instrumentDeposits: 0n },
-    'deposits to zero-weight instruments do not count',
+    { reason: 'EXCESS_CASH', excessCashAllocated: 25_000_000n },
   );
 });
 
@@ -141,7 +199,7 @@ const makeMaybeAutoPowers = (
   const warns: unknown[][] = [];
   const rebalanceCalls: unknown[][] = [];
   const powers: MaybeAutoRebalancePowers = {
-    autoRebalance: options,
+    autoRebalance: config,
     console: {
       log: (...args) => logs.push(args),
       warn: (...args) => warns.push(args),

@@ -6,21 +6,23 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
-import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
-import { typedEntries } from '@agoric/internal';
+import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
 import {
   computeTargetBalances,
   TargetBalanceError,
 } from '@agoric/portfolio-api/src/target-balances.js';
-import { isInstrumentId } from '@agoric/portfolio-api/src/places.js';
+import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
 import type { FundsFlowPlan, PortfolioKey } from '@agoric/portfolio-api';
 import { annotateError } from '@endo/errors';
 import { inspect } from 'node:util';
 import type { InstrumentBlocks } from './instrument-status.ts';
 import { UserInputError } from './support.ts';
+import { getOwn } from './utils.js';
 
-export type AutoRebalanceCriteriaOptions = {
+const { keys } = Object;
+
+export type AutoRebalanceConfig = {
   /** Absolute allocation drift threshold in basis points. */
   driftBps: bigint;
   /** Minimum target-balance increase to instruments required for drift. */
@@ -29,130 +31,104 @@ export type AutoRebalanceCriteriaOptions = {
   cashMinMoveUusdc: bigint;
 };
 
-export type AutoRebalanceCriteria = {
-  shouldRebalance: boolean;
-  positionDrift: boolean;
-  excessCash: boolean;
-  instrumentDeposits: bigint;
+export type AutoRebalanceDetail =
+  | { reason: 'EXCESS_CASH'; excessCashAllocated: NatValue }
+  | {
+      reason: 'POSITION_DRIFT';
+      totalMoved: NatValue;
+      greatestBpsDrift: number;
+    };
+
+export type RebalanceSummary = {
+  currentBalances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>;
+  targetAllocation: TargetAllocation;
+  totalBalance: NatValue;
+  totalWeight: bigint;
+  increases: [AssetPlaceRef, bigint][];
 };
 
-export type AutoRebalanceBalanceCache = Map<
-  PortfolioKey,
-  {
-    expiresAt: number;
-    balances: Partial<Record<AssetPlaceRef, NatAmount>>;
+const computeExcessCashAllocated = (summary: RebalanceSummary): NatValue =>
+  summary.increases.reduce<bigint>(
+    (acc, [place, increase]) =>
+      acc + (isInterChainAccountRef(place) && increase < 0n ? -increase : 0n),
+    0n,
+  );
+
+/**
+ * Compute the fraction of a portfolio's total balance at a particular position
+ * in basis points, and return the absolute value of the difference between that
+ * result and its target allocation in basis points.
+ */
+const computeBpsDrift = (
+  place: AssetPlaceRef,
+  summary: RebalanceSummary,
+): number => {
+  const currentValue = getOwn(summary.currentBalances, place)?.value ?? 0n;
+  const targetWeight = getOwn(summary.targetAllocation, place) ?? 0n;
+  // We tolerate rounding errors in these calculations.
+  const totalBalance = Number(summary.totalBalance);
+  const totalWeight = Number(summary.totalWeight);
+  const actualBps = Number(currentValue * 10_000n) / totalBalance;
+  const targetBps = Number(targetWeight * 10_000n) / totalWeight;
+  const bpsDrift = actualBps - targetBps;
+  return Math.abs(bpsDrift);
+};
+
+export const checkAutoRebalance = (
+  targetAllocation: TargetAllocation,
+  currentBalances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
+  targetBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
+  config: AutoRebalanceConfig,
+): null | AutoRebalanceDetail => {
+  const totalBalance = Object.values<NatAmount | undefined>(
+    currentBalances,
+  ).reduce<NatValue>((acc, amount) => acc + (amount?.value ?? 0n), 0n);
+  const totalWeight = Object.values(targetAllocation).reduce<bigint>(
+    (acc, weight) => acc + weight,
+    0n,
+  );
+  const targetPlaces = keys(targetAllocation) as AssetPlaceRef[];
+  const places = [
+    ...new Set([...keys(currentBalances), ...targetPlaces]),
+  ] as AssetPlaceRef[];
+  const increases = places.map(place => {
+    const current = getOwn(currentBalances, place)?.value ?? 0n;
+    const target = getOwn(targetBalances, place)?.value ?? 0n;
+    return [place, target - current] as [AssetPlaceRef, bigint];
+  });
+  const rebalanceSummary: RebalanceSummary = {
+    currentBalances,
+    targetAllocation,
+    totalBalance,
+    totalWeight,
+    increases,
+  };
+
+  const excessCashAllocated = computeExcessCashAllocated(rebalanceSummary);
+  if (excessCashAllocated >= config.cashMinMoveUusdc) {
+    return { reason: 'EXCESS_CASH', excessCashAllocated };
   }
->;
 
-const abs = (value: bigint) => (value < 0n ? -value : value);
-
-const sumAmounts = (
-  amounts: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
-): bigint =>
-  Object.values<NatAmount | undefined>(amounts).reduce(
-    (acc, amount) => acc + (amount?.value ?? 0n),
+  const totalMoved = increases.reduce<bigint>(
+    (acc, [_place, increase]) => acc + (increase > 0n ? increase : 0n),
     0n,
   );
-
-const sumWeights = (targetAllocation: TargetAllocation): bigint =>
-  Object.values(targetAllocation).reduce<bigint>(
-    (acc, weight) => acc + (weight ?? 0n),
-    0n,
-  );
-
-const hasAllocationDrift = (
-  currentBalances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
-  targetAllocation: TargetAllocation | undefined,
-  driftBps: bigint,
-): boolean => {
-  if (!targetAllocation) return false;
-  const currentTotal = sumAmounts(currentBalances);
-  const targetWeightTotal = sumWeights(targetAllocation);
-  if (currentTotal <= 0n || targetWeightTotal <= 0n) return false;
-
-  const instrumentKeys = new Set(
-    [...Object.keys(currentBalances), ...Object.keys(targetAllocation)].filter(
-      isInstrumentId,
-    ),
-  );
-  const denominator = currentTotal * targetWeightTotal;
-  return [...instrumentKeys].some(instrument => {
-    const currentValue = currentBalances[instrument]?.value ?? 0n;
-    const targetWeight = targetAllocation[instrument] ?? 0n;
-    const numerator = abs(
-      currentValue * targetWeightTotal - targetWeight * currentTotal,
-    );
-    return numerator * 10_000n > driftBps * denominator;
-  });
-};
-
-const hasExcessCash = (
-  currentBalances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
-  targetAllocation: TargetAllocation | undefined,
-): boolean => {
-  if (!targetAllocation) return false;
-  const currentTotal = sumAmounts(currentBalances);
-  const targetWeightTotal = sumWeights(targetAllocation);
-  if (currentTotal <= 0n || targetWeightTotal <= 0n) return false;
-
-  return typedEntries(currentBalances).some(([place, amount]) => {
-    if (!place.startsWith('@')) return false;
-    const currentValue = amount?.value ?? 0n;
-    const targetWeight = targetAllocation[place] ?? 0n;
-    return currentValue * targetWeightTotal > targetWeight * currentTotal;
-  });
-};
-
-const getTargetInstrumentDeposits = (
-  currentBalances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
-  targetAllocation: TargetAllocation | undefined,
-  targetBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
-): bigint => {
-  if (!targetAllocation) return 0n;
-  return typedEntries(targetBalances).reduce((total, [place, target]) => {
-    if (
-      !target ||
-      !isInstrumentId(place) ||
-      (targetAllocation[place] ?? 0n) <= 0n
-    ) {
-      return total;
+  if (totalMoved >= config.driftMinMoveUusdc && targetPlaces.length > 0) {
+    const bpsDrift = targetPlaces.map<[AssetPlaceRef, number]>(place => [
+      place,
+      computeBpsDrift(place, rebalanceSummary),
+    ]);
+    const [, greatestBpsDrift] = bpsDrift.sort((a, b) => b[1] - a[1])[0];
+    if (greatestBpsDrift > Number(config.driftBps)) {
+      return { reason: 'POSITION_DRIFT', totalMoved, greatestBpsDrift };
     }
-    const delta = target.value - (currentBalances[place]?.value ?? 0n);
-    return delta > 0n ? total + delta : total;
-  }, 0n);
-};
+  }
 
-export const assessAutoRebalanceCriteria = (
-  currentBalances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
-  targetAllocation: TargetAllocation | undefined,
-  targetBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
-  options: AutoRebalanceCriteriaOptions,
-): AutoRebalanceCriteria => {
-  const { driftBps, driftMinMoveUusdc, cashMinMoveUusdc } = options;
-  const instrumentDeposits = getTargetInstrumentDeposits(
-    currentBalances,
-    targetAllocation,
-    targetBalances,
-  );
-  const positionDrift = hasAllocationDrift(
-    currentBalances,
-    targetAllocation,
-    driftBps,
-  );
-  const excessCash = hasExcessCash(currentBalances, targetAllocation);
-  const driftFired = positionDrift && instrumentDeposits >= driftMinMoveUusdc;
-  const cashFired = excessCash && instrumentDeposits >= cashMinMoveUusdc;
-
-  return harden({
-    shouldRebalance: driftFired || cashFired,
-    positionDrift,
-    excessCash,
-    instrumentDeposits,
-  });
+  return null;
 };
 
 export type MaybeAutoRebalancePowers = {
-  autoRebalance: AutoRebalanceCriteriaOptions;
+  autoRebalance: AutoRebalanceConfig;
   console: Pick<Console, 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
@@ -211,12 +187,13 @@ export const maybeAutoRebalance = async (
     walletStore,
   }: MaybeAutoRebalancePowers,
 ) => {
-  if (!portfolioStatus.enabledAutoFeatures?.rebalance) return;
+  const { enabledAutoFeatures, targetAllocation } = portfolioStatus;
+  if (!enabledAutoFeatures?.rebalance || !targetAllocation) return;
+
   const path = `${portfoliosPathPrefix}.${portfolioKey}`;
   const portfolioId = portfolioIdFromKey(portfolioKey);
   const logPrefix = `[${portfolioKey}.autoRebalance]`;
-  const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
-  if (!targetAllocation) return;
+  const { policyVersion, rebalanceCount } = portfolioStatus;
   const versions = [policyVersion, rebalanceCount] as const;
 
   const logContext = {
@@ -244,17 +221,17 @@ export const maybeAutoRebalance = async (
   await null;
   try {
     const targetBalances = computeTargetBalances(rebalanceDetails);
-    const criteria = assessAutoRebalanceCriteria(
-      currentBalances,
+    const shouldRebalance = checkAutoRebalance(
       targetAllocation,
+      currentBalances,
       targetBalances,
       autoRebalance,
     );
-    const plan = criteria.shouldRebalance
+    const plan = shouldRebalance
       ? await planRebalanceToAllocations(plannerContext)
       : undefined;
     if (!plan || plan.flow.length === 0) {
-      const skipDetails: Record<string, unknown> = { targetBalances, criteria };
+      const skipDetails: Record<string, unknown> = { targetBalances };
       if (plan) skipDetails.reason = 'empty plan';
       console.log(
         logPrefix,
@@ -280,8 +257,7 @@ export const maybeAutoRebalance = async (
     console.log(
       logPrefix,
       'rebalance',
-      criteria,
-      inspectForStdout({ ...logContext, plan, criteria }),
+      inspectForStdout({ ...logContext, plan }),
       tx,
     );
   } catch (err) {
