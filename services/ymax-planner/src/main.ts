@@ -277,7 +277,13 @@ export const main = async (
 
   const ydsClient =
     config.yds.url &&
-    ky.create({ fetch, headers: FETCH_HEADERS, prefixUrl: config.yds.url });
+    ky.create({
+      fetch,
+      headers: FETCH_HEADERS,
+      prefixUrl: config.yds.url,
+      timeout: config.requestLimits.timeout,
+      retry: config.requestLimits.maxRetries,
+    });
 
   let lastInstrumentBlocksString = '';
   const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
@@ -308,6 +314,8 @@ export const main = async (
         {
           ydsUrl: config.yds.url,
           ydsApiKey: config.yds.apiKey as string,
+          timeout: config.requestLimits.timeout,
+          retries: config.requestLimits.maxRetries,
         },
       )
     : undefined;
@@ -320,6 +328,8 @@ export const main = async (
           {
             ydsUrl: config.yds.url,
             ydsApiKey: config.yds.apiKey,
+            timeout: config.requestLimits.timeout,
+            retries: config.requestLimits.maxRetries,
           },
         )
       : undefined;
