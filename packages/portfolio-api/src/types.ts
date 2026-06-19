@@ -141,16 +141,9 @@ export type FlowStatus =
 
 /**
  * Per-protocol parameters for claiming external rewards.
- * Fields are optional so each protocol can use whichever subset it needs
- * (e.g. ERC4626 + Morpho uses a Merkle distributor with all four; Aave
- * and Compound use their own rewards controllers with different params).
+ * XXX: Define this in implementation PRs
  */
-export type ClaimRewardsParams = {
-  users?: EvmAddress[];
-  tokens?: EvmAddress[];
-  amounts?: bigint[];
-  proofs?: `0x${string}`[][];
-};
+export type ClaimRewardsParams = unknown;
 
 /**
  * Decomposed parameters for a same-chain, same-account reward-token -> USDC
