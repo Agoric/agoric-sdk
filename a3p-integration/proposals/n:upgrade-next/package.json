@@ -70,10 +70,10 @@
   "ava": {
     "concurrency": 1,
     "timeout": "2m",
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],
