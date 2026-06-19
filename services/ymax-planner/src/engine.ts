@@ -248,7 +248,6 @@ export type ProcessPortfolioPowers = Pick<
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   instrumentBlocks?: InstrumentBlocks;
-  portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
@@ -312,25 +311,12 @@ export const processPortfolioEvents = async (
     now,
     getYdsBalancesForPortfolio,
     autoRebalance,
-
-    portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
 ) => {
   const { deferrals, portfolioStatusForKey, balanceCache } = memory;
   const { query, marshaller } = signingSmartWalletKit;
   const { portfoliosPathPrefix } = vstoragePathPrefixes;
   const { vstorage } = query;
-  const setPortfolioKeyForDepositAddr = (addr: Bech32Address, key: string) => {
-    const oldKey = portfolioKeyForDepositAddr.get(addr);
-    if (!oldKey) {
-      console.warn(`Adding ${addr} portfolioKey ${key}`);
-    } else if (oldKey !== key) {
-      // This permanent loss of $addr->oldKey association should never happen.
-      const msg = `🚨 Overwriting ${addr} portfolioKey from ${oldKey} to ${key}`;
-      console.error(msg);
-    }
-    portfolioKeyForDepositAddr.set(addr, key);
-  };
   const balanceQueryPowers: BalanceQueryPowers = {
     spectrumBlockchain,
     spectrumChainIds,
@@ -568,13 +554,8 @@ export const processPortfolioEvents = async (
       ]);
       const status = marshaller.fromCapData(statusCapdata);
       mustMatch(status, PortfolioStatusShapeExt, path);
-      const flowKeys = new Set(flowKeysResp.result.children as string[]);
       portfolioStatusForKey.set(portfolioKey, status);
-
-      const { depositAddress } = status;
-      if (depositAddress) {
-        setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
-      }
+      const flowKeys = new Set(flowKeysResp.result.children as string[]);
 
       // If this (portfolio, flows) data hasn't changed since our last
       // successful submission, there's no point in trying again.
@@ -928,7 +909,6 @@ export const startEngine = async (
   // handled before older backlog during planner restarts.
   pendingTxKeys.sort((a: string, b: string) => naturalCompare(b, a));
 
-  const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
     ...powers,
     console,
@@ -936,7 +916,6 @@ export const startEngine = async (
     depositBrand: depositAsset.brand as Brand<'nat'>,
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
-    portfolioKeyForDepositAddr,
     evmProviders: evmCtx.evmProviders,
     instrumentBlocks,
   });

@@ -444,7 +444,6 @@ const fakePortfolioKit = async ({
     isDryRun: true,
     depositBrand,
     feeBrand,
-    portfolioKeyForDepositAddr: new Map(),
     vstoragePathPrefixes: { portfoliosPathPrefix },
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
@@ -616,7 +615,11 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
     'planner receives non-empty steps',
   );
   t.is(memory.snapshots.get(`portfolio${portfolioId}`)?.repeats, 1);
-  t.is(powers.portfolioKeyForDepositAddr.size, 0);
+  arrayIsLike(
+    t,
+    [...memory.portfolioStatusForKey.keys()],
+    [`portfolio${portfolioId}`],
+  );
 });
 
 test('processPortfolioEvents runs flows in sequence', async t => {
