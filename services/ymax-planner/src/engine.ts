@@ -40,7 +40,10 @@ import {
 import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
-import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
+import {
+  computeTargetBalances,
+  TargetBalanceError,
+} from '@agoric/portfolio-api/src/target-balances.js';
 import {
   mustMatch,
   naturalCompare,
@@ -62,7 +65,6 @@ import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
 import {
   assessAutoRebalanceCriteria,
-  computeRebalanceTargets,
   makeCachedPortfolioBalanceGetter,
   maybeAutoRebalance,
   type AutoRebalanceBalanceCache,
@@ -504,12 +506,13 @@ export const processPortfolioEvents = async (
 
       try {
         const cachedBalances = await getCachedPortfolioBalances(portfolioKey);
-        const candidateTargets = computeRebalanceTargets({
-          currentBalances: cachedBalances,
-          targetAllocation: portfolioStatus.targetAllocation,
-          network,
-          instrumentBlocks,
+        if (!portfolioStatus.targetAllocation) continue;
+        const candidateTargets = computeTargetBalances({
           brand: depositBrand,
+          currentBalances: cachedBalances,
+          network,
+          targetAllocation: portfolioStatus.targetAllocation,
+          instrumentBlocks,
         });
         const candidateCriteria = assessAutoRebalanceCriteria(
           cachedBalances,

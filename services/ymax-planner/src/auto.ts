@@ -13,7 +13,6 @@ import {
   computeTargetBalances,
   TargetBalanceError,
 } from '@agoric/portfolio-api/src/target-balances.js';
-import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
 import { isInstrumentId } from '@agoric/portfolio-api/src/places.js';
 import type { FundsFlowPlan, PortfolioKey } from '@agoric/portfolio-api';
 import { annotateError } from '@endo/errors';
@@ -45,18 +44,6 @@ export type AutoRebalanceBalanceCache = Map<
     expiresAt: number;
     balances: Partial<Record<AssetPlaceRef, NatAmount>>;
   }
->;
-
-export type RebalanceTargetContext<
-  C extends AssetPlaceRef,
-  T extends string & keyof TargetAllocation,
-> = Pick<
-  ComputeTargetBalancesOptions<C, T>,
-  | 'brand'
-  | 'currentBalances'
-  | 'targetAllocation'
-  | 'network'
-  | 'instrumentBlocks'
 >;
 
 const abs = (value: bigint) => (value < 0n ? -value : value);
@@ -115,23 +102,6 @@ const hasExcessCash = (
     const currentValue = amount?.value ?? 0n;
     const targetWeight = targetAllocation[place] ?? 0n;
     return currentValue * targetWeightTotal > targetWeight * currentTotal;
-  });
-};
-
-export const computeRebalanceTargets = <
-  C extends AssetPlaceRef,
-  T extends string & keyof TargetAllocation,
->(
-  details: RebalanceTargetContext<C, T>,
-) => {
-  const { brand, currentBalances, network, targetAllocation } = details;
-  if (!targetAllocation) return {};
-  return computeTargetBalances({
-    brand,
-    currentBalances,
-    network,
-    targetAllocation,
-    instrumentBlocks: details.instrumentBlocks,
   });
 };
 
@@ -312,6 +282,7 @@ export const maybeAutoRebalance = async (
   const portfolioId = portfolioIdFromKey(portfolioKey);
   const logPrefix = `[${portfolioKey}.autoRebalance]`;
   const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
+  if (!targetAllocation) return;
   const versions = [policyVersion, rebalanceCount] as const;
 
   const logContext = {
@@ -322,43 +293,39 @@ export const maybeAutoRebalance = async (
     rebalanceCount,
     targetAllocation,
   };
+  const rebalanceDetails = {
+    brand: depositBrand,
+    currentBalances,
+    network,
+    targetAllocation,
+    instrumentBlocks,
+  };
   const plannerContext = {
     ...logContext,
-    network,
-    instrumentBlocks,
-    brand: depositBrand,
+    ...rebalanceDetails,
     feeBrand,
     gasEstimator,
   };
 
   await null;
   try {
-    const targetBalances = computeRebalanceTargets(plannerContext);
+    const targetBalances = computeTargetBalances(rebalanceDetails);
     const criteria = assessAutoRebalanceCriteria(
       currentBalances,
       targetAllocation,
       targetBalances,
       autoRebalance,
     );
-    if (!criteria.shouldRebalance) {
+    const plan = criteria.shouldRebalance
+      ? await planRebalanceToAllocations(plannerContext)
+      : undefined;
+    if (!plan || plan.flow.length === 0) {
+      const skipDetails: Record<string, unknown> = { targetBalances, criteria };
+      if (plan) skipDetails.reason = 'empty plan';
       console.log(
         logPrefix,
         'skip',
-        inspectForStdout({ ...logContext, targetBalances, criteria }),
-      );
-      return;
-    }
-    const plan = await planRebalanceToAllocations(plannerContext);
-    if (plan.flow.length === 0) {
-      console.log(
-        logPrefix,
-        'skip',
-        inspectForStdout({
-          ...logContext,
-          targetBalances,
-          criteria,
-          reason: 'empty plan',
-        }),
+        inspectForStdout({ ...logContext, ...skipDetails }),
       );
       return;
     }
