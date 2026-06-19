@@ -257,10 +257,17 @@ export type ProcessPortfolioPowers = Pick<
 
 export type PortfoliosMemory = {
   deferrals: EventRecord[];
-  snapshots?: Map<string, { fingerprint: string; repeats: number }>;
-  portfolioStatusForKey?: Map<PortfolioKey, StatusFor['portfolio']>;
-  balanceCache?: AutoRebalanceBalanceCache;
+  snapshots: Map<string, { fingerprint: string; repeats: number }>;
+  portfolioStatusForKey: Map<PortfolioKey, StatusFor['portfolio']>;
+  balanceCache: AutoRebalanceBalanceCache;
 };
+
+export const makePortfoliosMemory = (): PortfoliosMemory => ({
+  deferrals: [],
+  snapshots: new Map(),
+  portfolioStatusForKey: new Map(),
+  balanceCache: new Map(),
+});
 
 const fingerprintPortfolioState = (
   status: StatusFor['portfolio'],
@@ -309,10 +316,7 @@ export const processPortfolioEvents = async (
     portfolioKeyForDepositAddr,
   }: ProcessPortfolioPowers,
 ) => {
-  const { deferrals } = memory;
-  memory.portfolioStatusForKey ||= new Map();
-  memory.balanceCache ||= new Map();
-  const { portfolioStatusForKey, balanceCache } = memory;
+  const { deferrals, portfolioStatusForKey, balanceCache } = memory;
   const { query, marshaller } = signingSmartWalletKit;
   const { portfoliosPathPrefix } = vstoragePathPrefixes;
   const { vstorage } = query;
@@ -574,7 +578,6 @@ export const processPortfolioEvents = async (
 
       // If this (portfolio, flows) data hasn't changed since our last
       // successful submission, there's no point in trying again.
-      memory.snapshots ||= new Map();
       const oldState = memory.snapshots.get(portfolioKey);
       const oldFingerprint = oldState?.fingerprint;
       const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
@@ -870,8 +873,8 @@ export const startEngine = async (
     vbankAssets.find(asset => asset.issuerName === feeBrandName) ||
     Fail`Could not find vbankAsset for ${q(feeBrandName)}`;
 
-  const deferrals = [] as EventRecord[];
-  const portfoliosMemory: PortfoliosMemory = { deferrals };
+  const portfoliosMemory = makePortfoliosMemory();
+  const { deferrals } = portfoliosMemory;
 
   const blockHeightFromSubscriptionResponse = (resp: SubscriptionResponse) => {
     const { type: respType, value: respData } = resp;

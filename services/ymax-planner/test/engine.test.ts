@@ -48,6 +48,7 @@ import type { Marshal } from '@endo/marshal';
 import { Far } from '@endo/pass-style';
 import type { Passable } from '@endo/pass-style';
 import {
+  makePortfoliosMemory,
   makeVstorageEvent,
   pickBalance,
   processPortfolioEvents,
@@ -562,7 +563,7 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
   };
   writePortfolioStatus();
 
-  const memory: any = { deferrals: [] as any[] };
+  const memory = makePortfoliosMemory();
   const processNextBlock = async () => {
     const blockHeight = updateBlockHeight();
     portfolioStatus.rebalanceCount += 1;
@@ -614,7 +615,7 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
     (message.args[2] as unknown[]).length > 0,
     'planner receives non-empty steps',
   );
-  t.is(memory.snapshots?.get(`portfolio${portfolioId}`)?.repeats, 1);
+  t.is(memory.snapshots.get(`portfolio${portfolioId}`)?.repeats, 1);
   t.is(powers.portfolioKeyForDepositAddr.size, 0);
 });
 
@@ -669,7 +670,7 @@ test('processPortfolioEvents runs flows in sequence', async t => {
       portfolioPath,
       harden({ ...portfolioStatus }),
     );
-    const memory: PortfoliosMemory = { deferrals: [] };
+    const memory = makePortfoliosMemory();
     await processPortfolioEvents(
       [vstorageEventDetail],
       blockHeight,
@@ -696,7 +697,7 @@ test('processPortfolioEvents runs flows in sequence', async t => {
       portfolioPath,
       harden({ ...portfolioStatus }),
     );
-    const memory: PortfoliosMemory = { deferrals: [] };
+    const memory = makePortfoliosMemory();
     await processPortfolioEvents(
       [vstorageEventDetail],
       blockHeight,
@@ -761,7 +762,7 @@ test('processPortfolioEvents does not defer when a flow key exists only via flow
     portfolioPath,
     harden({ ...portfolioStatus }),
   );
-  const memory: PortfoliosMemory = { deferrals: [] };
+  const memory = makePortfoliosMemory();
   await processPortfolioEvents(
     [vstorageEventDetail],
     blockHeight,
@@ -807,7 +808,7 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
   });
 
   const blockHeight = updateBlockHeight();
-  const memory: PortfoliosMemory = { deferrals: [] };
+  const memory = makePortfoliosMemory();
   await processPortfolioEvents(
     [makeVstorageEventDetail(blockHeight, portfolioPath, portfolioStatus)],
     blockHeight,
@@ -861,10 +862,8 @@ test('processPortfolioEvents scans remembered portfolios when there are no event
     targetAllocation: { USDN: 1n },
     enabledAutoFeatures: { rebalance: true },
   });
-  const memory: PortfoliosMemory = {
-    deferrals: [],
-    portfolioStatusForKey: new Map([[portfolioKey, portfolioStatus]]),
-  };
+  const memory = makePortfoliosMemory();
+  memory.portfolioStatusForKey.set(portfolioKey, portfolioStatus);
 
   await processPortfolioEvents([], blockHeight, memory, powers);
 
@@ -891,10 +890,8 @@ test('processPortfolioEvents rechecks YDS candidates with fresh balances', async
   powers.getYdsBalancesForPortfolio = async () => ({
     '@noble': makeDeposit(25_000_000n),
   });
-  const memory: PortfoliosMemory = {
-    deferrals: [],
-    portfolioStatusForKey: new Map([[portfolioKey, portfolioStatus]]),
-  };
+  const memory = makePortfoliosMemory();
+  memory.portfolioStatusForKey.set(portfolioKey, portfolioStatus);
 
   await processPortfolioEvents([], blockHeight, memory, powers);
 
@@ -931,13 +928,9 @@ test('processPortfolioEvents continues auto scan after portfolio error', async t
   powers.getYdsBalancesForPortfolio = async () => ({
     '@noble': makeDeposit(25_000_000n),
   });
-  const memory: PortfoliosMemory = {
-    deferrals: [],
-    portfolioStatusForKey: new Map([
-      [badPortfolioKey, badPortfolioStatus],
-      [goodPortfolioKey, goodPortfolioStatus],
-    ]),
-  };
+  const memory = makePortfoliosMemory();
+  memory.portfolioStatusForKey.set(badPortfolioKey, badPortfolioStatus);
+  memory.portfolioStatusForKey.set(goodPortfolioKey, goodPortfolioStatus);
 
   await processPortfolioEvents([], blockHeight, memory, powers);
 
@@ -1013,7 +1006,7 @@ test('startFlow logs include traceId prefix', async t => {
       makeVstorageEventDetail(blockHeight, portfolioPath2, portfolioStatus2),
     ],
     blockHeight,
-    { deferrals: [] },
+    makePortfoliosMemory(),
     powers,
   );
 
@@ -1099,7 +1092,7 @@ const testRejection = test.macro(
       portfolioPath,
       portfolioStatus,
     );
-    const memory: PortfoliosMemory = { deferrals: [] };
+    const memory = makePortfoliosMemory();
     await processPortfolioEvents(
       [vstorageEventDetail],
       blockHeight,
@@ -1213,7 +1206,7 @@ test('excessive withdrawal is clamped', async t => {
     portfolioPath,
     portfolioStatus,
   );
-  const memory: PortfoliosMemory = { deferrals: [] };
+  const memory = makePortfoliosMemory();
   await processPortfolioEvents(
     [vstorageEventDetail],
     blockHeight,
