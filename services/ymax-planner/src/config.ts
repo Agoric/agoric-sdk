@@ -80,20 +80,27 @@ const getMnemonicFromGCP = async (
   return payload;
 };
 
+// XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
+const positiveIntegerFromString = (
+  value: string,
+  fieldName: string,
+): number => {
+  const number = /[0-9]/.test(value) ? Number(value) : NaN;
+  if (!Number.isInteger(number) || number <= 0) {
+    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
+  }
+  return number;
+};
+
 const parsePositiveInteger = (
   env: Record<string, string | undefined>,
   fieldName: string,
   defaultValue: number,
 ): number => {
   const value = env[fieldName]?.trim();
-  if (value === undefined) return defaultValue;
-
-  // XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
-  const number = /[0-9]/.test(value) ? Number(value) : NaN;
-  if (!Number.isInteger(number) || number <= 0) {
-    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
-  }
-  return number;
+  return value === undefined
+    ? defaultValue
+    : positiveIntegerFromString(value, fieldName);
 };
 
 const parsePositiveBigint = (
@@ -102,15 +109,9 @@ const parsePositiveBigint = (
   defaultValue: bigint,
 ): bigint => {
   const value = env[fieldName]?.trim();
-  if (value === undefined) return defaultValue;
-  if (!/^[0-9]+$/.test(value)) {
-    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
-  }
-  const bigint = BigInt(value);
-  if (bigint <= 0n) {
-    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
-  }
-  return bigint;
+  return value === undefined
+    ? defaultValue
+    : BigInt(positiveIntegerFromString(value, fieldName));
 };
 
 const validateRequired = (
