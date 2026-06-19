@@ -340,23 +340,21 @@ export const processPortfolioEvents = async (
     ReadStorageMetaOptions<'data'>,
     'minBlockHeight' | 'retries'
   >;
-  const isActiveFlow = async (
+  const getFlowStatus = async (
     portfolioKey: PortfolioKey,
     flowKey: FlowKey,
     opts?: ReadVstorageSimpleOpts,
-  ) => {
+  ): Promise<StatusFor['flow']['state'] | undefined> => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}.flows.${flowKey}`;
     const metaResponse = await readStorageMeta(vstorage, path, 'data', opts);
-    if (metaResponse.result.value === '') {
-      // A flow key may exist only as a parent of children such as `.agent`,
-      // with no published flow-status payload at the flow node itself yet.
-      return undefined;
-    }
+    // If the flow's vstorage node exists only as an empty non-terminal (e.g.
+    // for a child such as `agent`), then it has no status.
+    if (metaResponse.result.value === '') return undefined;
     const streamCell = parseStreamCell(metaResponse.result.value, path);
     const capdata = parseStreamCellValue(streamCell, -1, path);
     const flowStatus = marshaller.fromCapData(capdata);
     mustMatch(flowStatus, FlowStatusShape, path);
-    return flowStatus.state === 'run';
+    return flowStatus.state;
   };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
@@ -556,38 +554,32 @@ export const processPortfolioEvents = async (
       mustMatch(status, PortfolioStatusShapeExt, path);
       portfolioStatusForKey.set(portfolioKey, status);
       const flowKeys = new Set(flowKeysResp.result.children as string[]);
+      const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
 
       // If this (portfolio, flows) data hasn't changed since our last
       // successful submission, there's no point in trying again.
       const oldState = memory.snapshots.get(portfolioKey);
-      const oldFingerprint = oldState?.fingerprint;
-      const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
-      if (fingerprint === oldFingerprint) {
-        assert(oldState);
+      if (oldState && fingerprint === oldState.fingerprint) {
         if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
         oldState.repeats += 1;
         return;
       }
 
-      // If any in-progress flows need activation (as indicated by lacking a
-      // dedicated vstorage node) and there is not already a running flow, then
-      // find the first such flow and respond to it. Responding to the rest now
-      // is pointless because acceptance of the first submission would
-      // invalidate the others as stale, but we'll see them again when such
-      // acceptance prompts changes to the portfolio status.
-      for (const [flowKey, flowDetail] of typedEntries(status.flowsRunning || {})) {
-        // If vstorage has a node for this flow then we've already responded.
-        if (flowKeys.has(flowKey)) {
-          const isActive = await isActiveFlow(portfolioKey, flowKey, readOpts);
-          if (isActive === undefined) {
-            // Treat empty flow nodes like missing status nodes: tolerate the
-            // goofy publish shape and submit the flow instead of deferring.
-            await startFlow(status, portfolioKey, flowKey, flowDetail);
-            break;
-          }
-          if (isActive) return;
-          continue;
-        }
+      // Scan flows in order, aborting upon encountering one that is already
+      // running but otherwise initiating the first one that needs it.
+      // Responding to later ones is pointless because acceptance of the first
+      // submission would invalidate the others as stale, but we'll see them
+      // again when such acceptance prompts changes to the portfolio status.
+      const flowsEntries = typedEntries(status.flowsRunning || {}).sort(
+        ([a], [b]) => naturalCompare(a, b),
+      );
+      for (const [flowKey, flowDetail] of flowsEntries) {
+        const flowStatus = flowKeys.has(flowKey)
+          ? await getFlowStatus(portfolioKey, flowKey, readOpts)
+          : undefined;
+        // 'run' is the only non-terminal status.
+        if (flowStatus === 'run') return;
+        if (flowStatus !== undefined) continue;
         await startFlow(status, portfolioKey, flowKey, flowDetail);
         break;
       }
