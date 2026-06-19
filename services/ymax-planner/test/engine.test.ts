@@ -792,9 +792,11 @@ test('processPortfolioEvents does not defer when a flow key exists only via flow
 });
 
 test('processPortfolioEvents starts auto rebalance when criteria fire', async t => {
+  const nobleBalance = makeDeposit(25_000_000n);
+  const usdnBalance = makeDeposit(0n);
   const kit = await fakePortfolioKit({
-    accounts: { noble: makeDeposit(25_000_000n) },
-    otherBalances: { usdn: makeDeposit(0n) },
+    accounts: { noble: nobleBalance },
+    otherBalances: { usdn: usdnBalance },
   });
   const { portfolioId, portfolioPath, initialPortfolioStatus, powers } = kit;
   const { getBridgeSends, updateBlockHeight, updateVstorage } = kit.testPowers;
@@ -812,6 +814,10 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
 
   const blockHeight = updateBlockHeight();
   const memory = makePortfoliosMemory();
+  memory.balanceCache.set(`portfolio${portfolioId}`, {
+    '@noble': nobleBalance,
+    USDN: usdnBalance,
+  });
   await processPortfolioEvents(
     [makeVstorageEventDetail(blockHeight, portfolioPath, portfolioStatus)],
     blockHeight,
@@ -852,9 +858,11 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
 });
 
 test('processPortfolioEvents scans remembered portfolios when there are no events', async t => {
+  const nobleBalance = makeDeposit(25_000_000n);
+  const usdnBalance = makeDeposit(0n);
   const kit = await fakePortfolioKit({
-    accounts: { noble: makeDeposit(25_000_000n) },
-    otherBalances: { usdn: makeDeposit(0n) },
+    accounts: { noble: nobleBalance },
+    otherBalances: { usdn: usdnBalance },
   });
   const { blockHeight, portfolioId, initialPortfolioStatus, powers } = kit;
   const { getBridgeSends } = kit.testPowers;
@@ -867,6 +875,10 @@ test('processPortfolioEvents scans remembered portfolios when there are no event
   });
   const memory = makePortfoliosMemory();
   memory.portfolioStatusForKey.set(portfolioKey, portfolioStatus);
+  memory.balanceCache.set(portfolioKey, {
+    '@noble': nobleBalance,
+    USDN: usdnBalance,
+  });
 
   await processPortfolioEvents([], blockHeight, memory, powers);
 

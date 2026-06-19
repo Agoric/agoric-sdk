@@ -9,7 +9,6 @@ import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-net
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
   assessAutoRebalanceCriteria,
-  makeCachedPortfolioBalanceGetter,
   maybeAutoRebalance,
   type AutoRebalanceBalanceCache,
   type MaybeAutoRebalancePowers,
@@ -118,68 +117,6 @@ test('assessAutoRebalanceCriteria requires drift or excess cash and minimum depo
     ),
     { shouldRebalance: false, instrumentDeposits: 0n },
     'deposits to zero-weight instruments do not count',
-  );
-});
-
-test('makeCachedPortfolioBalanceGetter uses cached, YDS, and fallback balances', async t => {
-  let now = 1_000;
-  const balanceCache: AutoRebalanceBalanceCache = new Map();
-  const warnings: unknown[][] = [];
-  const ydsBalances = {
-    '@agoric': makeAmount(25_000_000n),
-  } as Partial<Record<AssetPlaceRef, NatAmount>>;
-  const freshBalances = {
-    '@noble': makeAmount(30_000_000n),
-  } as Partial<Record<AssetPlaceRef, NatAmount>>;
-  let ydsCalls = 0;
-  let freshCalls = 0;
-
-  const getBalances = makeCachedPortfolioBalanceGetter({
-    balanceCache,
-    brand,
-    console: {
-      warn: (...args) => warnings.push(args),
-    },
-    getFreshBalances: async () => {
-      freshCalls += 1;
-      return freshBalances;
-    },
-    getYdsBalancesForPortfolio: async () => {
-      ydsCalls += 1;
-      return ydsBalances;
-    },
-    now: () => now,
-  });
-
-  t.is(await getBalances('portfolio1'), ydsBalances);
-  t.is(await getBalances('portfolio1'), ydsBalances);
-  t.is(ydsCalls, 1, 'unexpired cache avoids YDS reread');
-  t.is(freshCalls, 0);
-
-  now += 60 * 60 * 1000 + 1;
-  t.is(await getBalances('portfolio1'), ydsBalances);
-  t.is(ydsCalls, 2, 'expired cache rereads YDS');
-
-  const getFallbackBalances = makeCachedPortfolioBalanceGetter({
-    balanceCache: new Map(),
-    brand,
-    console: {
-      warn: (...args) => warnings.push(args),
-    },
-    getFreshBalances: async () => {
-      freshCalls += 1;
-      return freshBalances;
-    },
-    getYdsBalancesForPortfolio: async () => {
-      throw Error('YDS unavailable');
-    },
-    now: () => now,
-  });
-
-  t.is(await getFallbackBalances('portfolio2'), freshBalances);
-  t.is(freshCalls, 1);
-  t.true(
-    warnings.some(args => String(args[0]).includes('YDS balance query failed')),
   );
 });
 

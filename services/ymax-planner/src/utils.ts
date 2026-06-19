@@ -6,6 +6,7 @@
 import { typedEntries } from '@agoric/internal/src/js-utils.js';
 
 const { hasOwn } = Object;
+const { apply } = Reflect;
 
 export const getOwn = <O, K extends PropertyKey>(
   obj: O,
@@ -13,6 +14,73 @@ export const getOwn = <O, K extends PropertyKey>(
 ): K extends keyof O ? O[K] : undefined =>
   // @ts-expect-error TS doesn't let `hasOwn(obj, key)` support `obj[key]`.
   hasOwn(obj, key) ? obj[key] : undefined;
+
+export const makeExpiringMap = <K, V>(
+  ttl: number,
+  { now }: { now: () => number },
+): Map<K, V> => {
+  if (!now) throw TypeError('Missing required power `now`');
+
+  const internalMap = new Map<K, { expiresAt: number; value: V }>();
+  const entries = function* entries() {
+    for (const [key, { expiresAt, value }] of internalMap.entries()) {
+      if (expiresAt > now()) yield [key, value];
+    }
+  } as () => MapIterator<[K, V]>;
+  const set = (key: K, value: V) => {
+    internalMap.set(key, { expiresAt: now() + ttl, value });
+    return expiringMap;
+  };
+
+  const expiringMap: Map<K, V> = {
+    [Symbol.toStringTag]: 'ExpiringMap',
+    [Symbol.iterator]: entries,
+    clear: () => internalMap.clear(),
+    delete: key => internalMap.delete(key),
+    entries,
+    forEach: (fn, receiver = undefined) => {
+      internalMap.forEach(({ expiresAt, value }, key) => {
+        if (expiresAt > now()) apply(fn, receiver, [value, key, expiringMap]);
+      });
+    },
+    get: key => {
+      const found = internalMap.get(key);
+      return found && found.expiresAt > now() ? found.value : undefined;
+    },
+    getOrInsert: (key, value) => {
+      const found = internalMap.get(key);
+      if (found && found.expiresAt > now()) return found.value;
+      set(key, value);
+      return value;
+    },
+    getOrInsertComputed: (key, makeValue) => {
+      if (typeof makeValue !== 'function') {
+        throw TypeError('Callback must be a function');
+      }
+      const found = internalMap.get(key);
+      if (found && found.expiresAt > now()) return found.value;
+      const value = apply(makeValue, undefined, [key]);
+      set(key, value);
+      return value;
+    },
+    has: key => {
+      const found = internalMap.get(key);
+      return !!(found && found.expiresAt > now());
+    },
+    keys: function* keys() {
+      for (const [key] of entries()) yield key;
+    } as () => MapIterator<K>,
+    set,
+    get size() {
+      const T = now();
+      return [...internalMap.values()].filter(v => v.expiresAt > T).length;
+    },
+    values: function* values() {
+      for (const [, value] of entries()) yield value;
+    } as () => MapIterator<V>,
+  };
+  return expiringMap;
+};
 
 export const makeNowISO = (now: typeof Date.now): (() => string) => {
   const nowISO = () => new Date(now()).toISOString();

@@ -53,7 +53,10 @@ import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
-import { makeYdsPortfolioBalanceReader } from './yds-portfolio-balances.ts';
+import {
+  makeYdsPortfolioBalanceReader,
+  YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+} from './yds-portfolio-balances.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
 import { makeNowISO } from './utils.ts';
 
@@ -387,6 +390,7 @@ export const main = async (
       contractInstance: config.contractInstance,
       depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
       feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+      balanceCacheTtlMs: YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
     });
   });
 };

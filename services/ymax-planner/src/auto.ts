@@ -19,8 +19,6 @@ import { annotateError } from '@endo/errors';
 import { inspect } from 'node:util';
 import type { InstrumentBlocks } from './instrument-status.ts';
 import { UserInputError } from './support.ts';
-import type { PortfolioBalanceReader } from './yds-portfolio-balances.ts';
-import { YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS } from './yds-portfolio-balances.ts';
 
 export type AutoRebalanceCriteriaOptions = {
   /** Absolute allocation drift threshold in basis points. */
@@ -151,70 +149,6 @@ export const assessAutoRebalanceCriteria = (
     excessCash,
     instrumentDeposits,
   });
-};
-
-const mapValueCompareAndSwap = <K, V>(
-  map: Map<K, V>,
-  key: K,
-  oldValue: V | undefined,
-  newValue: V,
-): V | undefined => {
-  const currentValue = map.get(key);
-  if (currentValue !== oldValue) return currentValue;
-  map.set(key, newValue);
-  return newValue;
-};
-
-export const makeCachedPortfolioBalanceGetter = ({
-  balanceCache,
-  brand,
-  console,
-  getFreshBalances,
-  getYdsBalancesForPortfolio,
-  now,
-}: {
-  balanceCache: AutoRebalanceBalanceCache;
-  brand: Brand<'nat'>;
-  console: Pick<Console, 'warn'>;
-  getFreshBalances: (
-    portfolioKey: PortfolioKey,
-  ) => Promise<Partial<Record<AssetPlaceRef, NatAmount>>>;
-  getYdsBalancesForPortfolio?: PortfolioBalanceReader;
-  now: () => number;
-}) => {
-  return async (portfolioKey: PortfolioKey) => {
-    const cached = balanceCache.get(portfolioKey);
-    if (cached && cached.expiresAt > now()) return cached.balances;
-    await null;
-    try {
-      const balances =
-        getYdsBalancesForPortfolio &&
-        (await getYdsBalancesForPortfolio(portfolioKey, brand));
-      if (balances) {
-        const stored = mapValueCompareAndSwap(
-          balanceCache,
-          portfolioKey,
-          cached,
-          {
-            expiresAt: now() + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
-            balances,
-          },
-        );
-        return stored?.balances ?? balances;
-      }
-    } catch (err) {
-      console.warn(
-        `[${portfolioKey}.autoRebalance] ⚠️ YDS balance query failed; using direct balances`,
-        err,
-      );
-    }
-    const balances = await getFreshBalances(portfolioKey);
-    const stored = mapValueCompareAndSwap(balanceCache, portfolioKey, cached, {
-      expiresAt: now() + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
-      balances,
-    });
-    return stored?.balances ?? balances;
-  };
 };
 
 export type MaybeAutoRebalancePowers = {

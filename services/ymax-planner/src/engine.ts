@@ -7,6 +7,7 @@ import { inspect } from 'node:util';
 import type { Coin } from '@cosmjs/stargate';
 
 import { Fail, annotateError, q } from '@endo/errors';
+import type { ERef } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -37,6 +38,7 @@ import {
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
@@ -65,9 +67,7 @@ import type { EvmAddress } from '@agoric/fast-usdc';
 import type { WebSocketProvider } from 'ethers';
 import {
   assessAutoRebalanceCriteria,
-  makeCachedPortfolioBalanceGetter,
   maybeAutoRebalance,
-  type AutoRebalanceBalanceCache,
   type AutoRebalanceCriteriaOptions,
 } from './auto.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
@@ -95,6 +95,7 @@ import {
   setResolvedTx,
 } from './kv-store.ts';
 import { UserInputError } from './support.ts';
+import { makeExpiringMap } from './utils.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -108,8 +109,6 @@ import {
 } from './vstorage-utils.ts';
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 import type { PortfolioBalanceReader } from './yds-portfolio-balances.ts';
-
-const { values } = Object;
 
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
@@ -241,7 +240,6 @@ export type ProcessPortfolioPowers = Pick<
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
-  | 'now'
   | 'getYdsBalancesForPortfolio'
   | 'autoRebalance'
 > & {
@@ -260,15 +258,27 @@ export type PortfoliosMemory = {
   deferrals: EventRecord[];
   snapshots: Map<string, { fingerprint: string; repeats: number }>;
   portfolioStatusForKey: Map<PortfolioKey, StatusFor['portfolio']>;
-  balanceCache: AutoRebalanceBalanceCache;
+  balanceCache: Map<
+    PortfolioKey,
+    ERef<Partial<Record<AssetPlaceRef, NatAmount>>>
+  >;
 };
 
-export const makePortfoliosMemory = (): PortfoliosMemory => ({
-  deferrals: [],
-  snapshots: new Map(),
-  portfolioStatusForKey: new Map(),
-  balanceCache: new Map(),
-});
+export const makePortfoliosMemory = (options?: {
+  balanceCacheTtlMs?: number;
+  now?: () => number;
+}): PortfoliosMemory => {
+  const { balanceCacheTtlMs, now } = options || {};
+  return {
+    deferrals: [],
+    snapshots: new Map(),
+    portfolioStatusForKey: new Map(),
+    balanceCache:
+      balanceCacheTtlMs !== undefined
+        ? makeExpiringMap(balanceCacheTtlMs, { now } as any)
+        : new Map(),
+  };
+};
 
 const fingerprintPortfolioState = (
   status: StatusFor['portfolio'],
@@ -310,7 +320,6 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
-    now,
     getYdsBalancesForPortfolio,
     autoRebalance,
   }: ProcessPortfolioPowers,
@@ -327,17 +336,36 @@ export const processPortfolioEvents = async (
     evmProviders,
     chainNameToChainIdMap,
   };
-  const getFreshBalances = (portfolioStatus: StatusFor['portfolio']) =>
-    getNonDustBalances(portfolioStatus, depositBrand, balanceQueryPowers);
-  const getCachedPortfolioBalances = makeCachedPortfolioBalanceGetter({
-    balanceCache,
-    brand: depositBrand,
-    console,
-    getFreshBalances: portfolioKey =>
-      getFreshBalances(portfolioStatusForKey.get(portfolioKey)!),
-    getYdsBalancesForPortfolio,
-    now,
-  });
+  const getFreshBalances = async (
+    portfolioKey: PortfolioKey,
+    portfolioStatus: StatusFor['portfolio'],
+  ) => {
+    const balances = await getNonDustBalances(
+      portfolioStatus,
+      depositBrand,
+      balanceQueryPowers,
+    );
+    balanceCache.set(portfolioKey, balances);
+    return balances;
+  };
+  const getCachedBalances = async (
+    portfolioKey: PortfolioKey,
+  ): Promise<Partial<Record<AssetPlaceRef, NatAmount>> | undefined> => {
+    const found = await balanceCache.get(portfolioKey);
+    if (found) return found;
+    const balancesP = getYdsBalancesForPortfolio?.(portfolioKey, depositBrand);
+    if (!balancesP) return undefined;
+    balanceCache.set(portfolioKey, balancesP);
+    try {
+      const balances = await balancesP;
+      balanceCache.set(portfolioKey, balances); // refreshes the TTL
+      return balances;
+    } catch (err) {
+      const refound = balanceCache.get(portfolioKey);
+      if (refound === balancesP) balanceCache.delete(portfolioKey);
+      throw err;
+    }
+  };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
     'minBlockHeight' | 'retries'
@@ -372,7 +400,10 @@ export const processPortfolioEvents = async (
     const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
     const versions = [policyVersion, rebalanceCount] as const;
 
-    const currentBalances = await getFreshBalances(portfolioStatus);
+    const currentBalances = await getFreshBalances(
+      portfolioKey,
+      portfolioStatus,
+    );
     const logContext = {
       path,
       flowKey,
@@ -502,11 +533,12 @@ export const processPortfolioEvents = async (
     await null;
     for (const [portfolioKey, portfolioStatus] of portfolioStatusForKey) {
       if (!portfolioStatus.enabledAutoFeatures?.rebalance) continue;
+      if (!portfolioStatus.targetAllocation) continue;
       if (Object.keys(portfolioStatus.flowsRunning || {}).length > 0) continue;
 
       try {
-        const cachedBalances = await getCachedPortfolioBalances(portfolioKey);
-        if (!portfolioStatus.targetAllocation) continue;
+        const cachedBalances = await getCachedBalances(portfolioKey);
+        if (!cachedBalances) continue;
         const candidateTargets = computeTargetBalances({
           brand: depositBrand,
           currentBalances: cachedBalances,
@@ -522,7 +554,10 @@ export const processPortfolioEvents = async (
         );
         if (!candidateCriteria.shouldRebalance) continue;
 
-        const freshBalances = await getFreshBalances(portfolioStatus);
+        const freshBalances = await getFreshBalances(
+          portfolioKey,
+          portfolioStatus,
+        );
         await maybeAutoRebalance(
           portfolioStatus,
           portfolioKey,
@@ -805,11 +840,13 @@ export const startEngine = async (
     contractInstance,
     depositBrandName,
     feeBrandName,
+    balanceCacheTtlMs,
   }: {
     isDryRun?: boolean;
     contractInstance: string;
     depositBrandName: string;
     feeBrandName: string;
+    balanceCacheTtlMs?: number;
   },
 ) => {
   const {
@@ -819,6 +856,7 @@ export const startEngine = async (
     signingSmartWalletKit,
     makeNonce,
     getInstrumentBlocks,
+    now,
   } = powers;
   const { kvStore } = evmCtx;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
@@ -849,7 +887,7 @@ export const startEngine = async (
     vbankAssets.find(asset => asset.issuerName === feeBrandName) ||
     Fail`Could not find vbankAsset for ${q(feeBrandName)}`;
 
-  const portfoliosMemory = makePortfoliosMemory();
+  const portfoliosMemory = makePortfoliosMemory({ balanceCacheTtlMs, now });
   const { deferrals } = portfoliosMemory;
 
   const blockHeightFromSubscriptionResponse = (resp: SubscriptionResponse) => {
@@ -865,7 +903,7 @@ export const startEngine = async (
           `🚨 Attempting to read block height from unexpected response type ${respType}`,
           respData,
         );
-        const obj = values(respData)[0];
+        const obj = Object.values(respData)[0];
         // @ts-expect-error
         return BigInt(obj.height ?? obj.blockHeight ?? obj.block_height);
       }
@@ -965,7 +1003,7 @@ export const startEngine = async (
   );
   const throttledPendingTxKeys = rateLimitedSource({
     policy: { quota: capacity, windowMs: 1000 },
-    powers: { now: powers.now, setTimeout: powers.setTimeout },
+    powers: { now, setTimeout: powers.setTimeout },
     source: pendingTxKeysToRead,
   });
 
