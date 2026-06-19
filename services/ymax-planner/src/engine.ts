@@ -558,6 +558,7 @@ export const processPortfolioEvents = async (
           portfolioKey,
           portfolioStatus,
         );
+        // TODO: Fingerprint to avoid redundant submissions.
         await maybeAutoRebalance(
           portfolioStatus,
           portfolioKey,
