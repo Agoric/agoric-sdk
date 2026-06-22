@@ -97,6 +97,9 @@ else
 
   docker pull "$IMAGE"
 
+  docker ps --all --filter "name=klt-" --quiet | \
+  xargs --no-run-if-empty docker rm --force
+
   docker rm --force "$CONTAINER_NAME" > "$VOID" 2>&1 || true
 
   docker run \
