@@ -48,6 +48,7 @@ export interface YmaxPlannerConfig {
     readonly url?: string;
     readonly apiKey?: string;
   };
+  readonly autoRebalancePeriodS: number;
 }
 
 export type SecretManager = Pick<
@@ -172,6 +173,11 @@ export const loadConfig = async (
   const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
   const ydsApiKey = env.YDS_API_KEY?.trim();
   !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
+  const autoRebalancePeriodS = parsePositiveInteger(
+    env,
+    'AUTO_REBALANCE_PERIOD_S',
+    7 * 24 * 60 * 60,
+  );
 
   const config: YmaxPlannerConfig = harden({
     clusterName,
@@ -192,6 +198,7 @@ export const loadConfig = async (
       url: ydsUrl,
       apiKey: ydsApiKey,
     },
+    autoRebalancePeriodS,
   });
 
   return config;

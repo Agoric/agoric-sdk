@@ -43,6 +43,7 @@ import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-block
 import { startEngine } from './engine.ts';
 import { calculateInstrumentBlocks } from './instrument-status.ts';
 import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
+import { parseChainsGasResponse } from './gas-prices.ts';
 import {
   createEVMContext,
   prepareAbortController,
@@ -300,6 +301,12 @@ export const main = async (
         return undefined;
       }
     : undefined;
+  const getGasPrices = ydsClient
+    ? async () => {
+        const gasResponse = await ydsClient.get('chains/gas').json();
+        return parseChainsGasResponse(gasResponse);
+      }
+    : undefined;
 
   const ydsNotifier = config.yds.url
     ? new YdsNotifier(
@@ -310,7 +317,6 @@ export const main = async (
         },
       )
     : undefined;
-
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
       caip,
@@ -336,6 +342,7 @@ export const main = async (
     spectrumBlockchain,
     network: PROD_NETWORK,
     getInstrumentBlocks,
+    getGasPrices,
     signingSmartWalletKit,
     makeNonce,
     walletStore,
@@ -348,6 +355,9 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    ...(ydsClient && {
+      autoRebalancePeriodS: config.autoRebalancePeriodS,
+    }),
   };
 
   await withDeferredCleanup(async addCleanup => {

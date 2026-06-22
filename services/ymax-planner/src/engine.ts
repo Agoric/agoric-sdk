@@ -70,7 +70,6 @@ import type {
 } from './pending-tx-manager.ts';
 import { handlePendingTx } from './pending-tx-manager.ts';
 import rateLimitedSource from './rate-limited-source.ts';
-import type { BalanceQueryPowers } from './plan-deposit.ts';
 import {
   getNonDustBalances,
   planDepositToAllocations,
@@ -85,6 +84,10 @@ import {
   setResolvedTx,
 } from './kv-store.ts';
 import { UserInputError } from './support.ts';
+import { BlockCalculator } from './utils.ts';
+import { rebalancePortfolios, shouldRunRebalance } from './rebalancer.ts';
+import type { YdsGasStateResponse } from './gas-prices.ts';
+import { stringifyGasPrices } from './gas-prices.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -201,6 +204,7 @@ export type Powers = {
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
   getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
+  getGasPrices?: () => Promise<YdsGasStateResponse | undefined>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
   makeNonce: () => string;
@@ -214,6 +218,7 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
+  autoRebalancePeriodS?: number;
 };
 
 export type ProcessPortfolioPowers = Pick<
@@ -225,6 +230,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'signingSmartWalletKit'
   | 'walletStore'
   | 'getWalletInvocationUpdate'
+  | 'now'
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
@@ -234,11 +240,40 @@ export type ProcessPortfolioPowers = Pick<
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   instrumentBlocks?: InstrumentBlocks;
+  gasPrices?: YdsGasStateResponse;
+  gasPricesChanged?: boolean;
   portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
   evmProviders: Record<CaipChainId, WebSocketProvider>;
+  blockCalculator: BlockCalculator;
+  portfoliosToRebalance: Map<
+    string,
+    StatusFor['portfolio'] & { atBlockHeight?: bigint }
+  >;
+  autoRebalancePeriodS?: number;
+};
+
+export type StartFlowPowers = Pick<
+  ProcessPortfolioPowers,
+  | 'console'
+  | 'network'
+  | 'spectrumBlockchain'
+  | 'spectrumChainIds'
+  | 'evmTokenAddresses'
+  | 'signingSmartWalletKit'
+  | 'walletStore'
+  | 'getWalletInvocationUpdate'
+  | 'gasEstimator'
+  | 'usdcTokensByChain'
+  | 'chainNameToChainIdMap'
+  | 'evmProviders'
+  | 'depositBrand'
+  | 'feeBrand'
+  | 'instrumentBlocks'
+> & {
+  isDryRun?: boolean;
 };
 
 export type PortfoliosMemory = {
@@ -264,6 +299,93 @@ const fingerprintPortfolioState = (
   return fingerprint.body;
 };
 
+export const makePortfolioFlowPlan = async (
+  portfolioStatus: StatusFor['portfolio'],
+  flowDetail: FlowDetail,
+  {
+    depositBrand,
+    feeBrand,
+    gasEstimator,
+    network,
+    spectrumBlockchain,
+    spectrumChainIds,
+    evmTokenAddresses,
+    usdcTokensByChain,
+    evmProviders,
+    chainNameToChainIdMap,
+    instrumentBlocks,
+  }: StartFlowPowers,
+) => {
+  const currentBalances = await getNonDustBalances(
+    portfolioStatus,
+    depositBrand,
+    {
+      spectrumBlockchain,
+      spectrumChainIds,
+      evmTokenAddresses,
+      usdcTokensByChain,
+      evmProviders,
+      chainNameToChainIdMap,
+    },
+  );
+  const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
+  const logContext = {
+    flowDetail,
+    currentBalances,
+    policyVersion,
+    rebalanceCount,
+    targetAllocation,
+  };
+  const plannerContext = {
+    ...logContext,
+    // @ts-expect-error "amount" is not present on all varieties of
+    // FlowDetail, but we need it here when it is present (i.e., for types
+    // "deposit" and "withdraw" and it's harmless otherwise.
+    amount: flowDetail.amount,
+    network,
+    instrumentBlocks,
+    brand: depositBrand,
+    feeBrand,
+    gasEstimator,
+  };
+
+  let plan: FundsFlowPlan;
+  const { type } = flowDetail;
+  switch (type) {
+    case 'deposit':
+      plan = await planDepositToAllocations({
+        ...plannerContext,
+        fromChain: flowDetail.fromChain,
+      });
+      break;
+    case 'rebalance':
+      plan = await planRebalanceToAllocations(plannerContext);
+      break;
+    case 'withdraw': {
+      const currentTotal = Object.values<NatAmount>(currentBalances).reduce(
+        (acc, amount) => acc + amount.value,
+        0n,
+      );
+      const { amount } = flowDetail;
+      plan = await planWithdrawFromAllocations({
+        ...plannerContext,
+        // Clamp withdrawals to the total current balance.
+        amount:
+          currentTotal < amount.value
+            ? AmountMath.make(amount.brand, currentTotal)
+            : amount,
+        toChain: flowDetail.toChain,
+      });
+      break;
+    }
+    default:
+      throw Error(`Unknown flow type ${type}`);
+  }
+  return { plan, currentBalances, logContext };
+};
+harden(makePortfolioFlowPlan);
+
+let rebalanceMutex = Promise.resolve();
 export const processPortfolioEvents = async (
   portfolioEvents: VstorageEventDetail[],
   blockHeight: bigint,
@@ -276,6 +398,9 @@ export const processPortfolioEvents = async (
     gasEstimator,
     network,
     instrumentBlocks,
+    gasPrices,
+    gasPricesChanged = false,
+    now,
     signingSmartWalletKit,
     walletStore,
     getWalletInvocationUpdate,
@@ -286,8 +411,10 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
-
+    blockCalculator,
     portfolioKeyForDepositAddr,
+    portfoliosToRebalance,
+    autoRebalancePeriodS,
   }: ProcessPortfolioPowers,
 ) => {
   const { deferrals } = memory;
@@ -304,14 +431,6 @@ export const processPortfolioEvents = async (
       console.error(msg);
     }
     portfolioKeyForDepositAddr.set(addr, key);
-  };
-  const balanceQueryPowers: BalanceQueryPowers = {
-    spectrumBlockchain,
-    spectrumChainIds,
-    evmTokenAddresses,
-    usdcTokensByChain,
-    evmProviders,
-    chainNameToChainIdMap,
   };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
@@ -348,21 +467,8 @@ export const processPortfolioEvents = async (
     const scope = [portfolioId, flowId] as const;
     const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
     const versions = [policyVersion, rebalanceCount] as const;
+    await null;
 
-    const currentBalances = await getNonDustBalances(
-      portfolioStatus,
-      depositBrand,
-      balanceQueryPowers,
-    );
-    const logContext = {
-      path,
-      flowKey,
-      flowDetail,
-      currentBalances,
-      policyVersion,
-      rebalanceCount,
-      targetAllocation,
-    };
     const settle = async <M extends string & keyof PortfolioPlanner>(
       methodName: M,
       args: PortfolioPlanner[M] extends (...args: infer Args) => any
@@ -384,58 +490,45 @@ export const processPortfolioEvents = async (
         logPrefix,
         methodName,
         flowDetail,
-        currentBalances,
+        logContext.currentBalances,
         details,
         tx,
       );
     };
 
-    const plannerContext = {
-      ...logContext,
-      // @ts-expect-error "amount" is not present on all varieties of
-      // FlowDetail, but we need it here when it is present (i.e., for types
-      // "deposit" and "withdraw" and it's harmless otherwise.
-      amount: flowDetail.amount,
-      network,
-      instrumentBlocks,
-      brand: depositBrand,
-      feeBrand,
-      gasEstimator,
-    };
+    let logContext = {
+      path,
+      flowKey,
+      flowDetail,
+      currentBalances: undefined,
+      policyVersion,
+      rebalanceCount,
+      targetAllocation,
+    } as any;
     try {
-      let plan: FundsFlowPlan;
-      const { type } = flowDetail;
-      switch (type) {
-        case 'deposit':
-          plan = await planDepositToAllocations({
-            ...plannerContext,
-            fromChain: flowDetail.fromChain,
-          });
-          break;
-        case 'rebalance':
-          plan = await planRebalanceToAllocations(plannerContext);
-          break;
-        case 'withdraw': {
-          const currentTotal = Object.values<NatAmount>(currentBalances).reduce(
-            (acc, amount) => acc + amount.value,
-            0n,
-          );
-          const { amount } = flowDetail;
-          plan = await planWithdrawFromAllocations({
-            ...plannerContext,
-            // Clamp withdrawals to the total current balance.
-            amount:
-              currentTotal < amount.value
-                ? AmountMath.make(amount.brand, currentTotal)
-                : amount,
-            toChain: flowDetail.toChain,
-          });
-          break;
-        }
-        default:
-          console.warn(logPrefix, `⚠️  Unknown flow type ${type}`);
-          return;
-      }
+      const { plan, logContext: planLogContext } = await makePortfolioFlowPlan(
+        portfolioStatus,
+        flowDetail,
+        {
+          console,
+          isDryRun,
+          depositBrand,
+          feeBrand,
+          gasEstimator,
+          network,
+          signingSmartWalletKit,
+          walletStore,
+          getWalletInvocationUpdate,
+          spectrumBlockchain,
+          spectrumChainIds,
+          evmTokenAddresses,
+          usdcTokensByChain,
+          evmProviders,
+          chainNameToChainIdMap,
+          instrumentBlocks,
+        },
+      );
+      logContext = { path, flowKey, ...planLogContext };
       (logContext as any).plan = plan;
 
       if (plan.flow.length > 0) {
@@ -465,6 +558,10 @@ export const processPortfolioEvents = async (
     }
   };
   const handledPortfolioKeys = new Set<string>();
+  const statusForPortfolioKey = new Map<
+    string,
+    StatusFor['portfolio'] & { atBlockHeight?: bigint }
+  >();
   // prettier-ignore
   const handlePortfolio = async (portfolioKey: PortfolioKey, eventRecord: EventRecord) => {
     if (handledPortfolioKeys.has(portfolioKey)) return;
@@ -476,14 +573,19 @@ export const processPortfolioEvents = async (
     };
     await null;
     try {
-      const [statusCapdata, flowKeysResp] = await Promise.all([
-        readStreamCellValue(vstorage, path, readOpts),
+      const [statusResp, flowKeysResp] = await Promise.all([
+        readStorageMeta(vstorage, path, 'data', readOpts),
         readStorageMeta(vstorage, `${path}.flows`, 'children', readOpts),
       ]);
-      const status = marshaller.fromCapData(statusCapdata);
+      const streamCell = parseStreamCell(statusResp.result.value, path);
+      const statusCapData = parseStreamCellValue(streamCell, -1, path);
+
+      const status = marshaller.fromCapData(statusCapData);
       mustMatch(status, PortfolioStatusShapeExt, path);
       const flowKeys = new Set(flowKeysResp.result.children as string[]);
 
+      statusForPortfolioKey.set(portfolioKey, { atBlockHeight: statusResp.blockHeight, ...status });
+      
       const { depositAddress } = status;
       if (depositAddress) {
         setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
@@ -575,6 +677,71 @@ export const processPortfolioEvents = async (
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
+
+  rebalanceMutex = rebalanceMutex
+    .catch(err => console.error('🚨 rebalance mutex chain failed:', err))
+    .then(async () => {
+      if (!autoRebalancePeriodS) {
+        return;
+      }
+      const rebalanceExpiredHeight: bigint = blockCalculator.heightForTime(
+        now() - autoRebalancePeriodS * 1000,
+      );
+
+      if (!gasPrices) {
+        console.warn(
+          '⚠️ Gas prices not available for rebalance check, skipping rebalance',
+        );
+        return;
+      }
+
+      for (const [portfolioKey, status] of statusForPortfolioKey.entries()) {
+        const { enabledAutoFeatures } = status;
+        if (
+          !shouldRunRebalance({
+            enabledAutoFeatures,
+            hasGasPrices: !!gasPrices,
+            gasPricesChanged,
+            // `atBlockHeight` is not included because initial queueing should not
+            // be dependent on the event's block height.
+            rebalanceExpiredHeight,
+          })
+        )
+          continue;
+        portfoliosToRebalance.set(portfolioKey, status);
+      }
+
+      if (portfoliosToRebalance.size === 0) {
+        return;
+      }
+      console.info(`Rebalancing`, portfoliosToRebalance.size, `portfolios`);
+      await rebalancePortfolios(
+        portfoliosToRebalance,
+        {
+          console,
+          isDryRun,
+          depositBrand,
+          feeBrand,
+          gasEstimator,
+          network,
+          instrumentBlocks,
+          signingSmartWalletKit,
+          walletStore,
+          getWalletInvocationUpdate,
+          spectrumBlockchain,
+          spectrumChainIds,
+          evmTokenAddresses,
+          usdcTokensByChain,
+          evmProviders,
+          chainNameToChainIdMap,
+          gasPrices,
+          now,
+        },
+        rebalanceExpiredHeight,
+      ).catch(err => {
+        console.error('🚨 rebalancePortfolios failed:', err);
+      });
+    });
 };
 
 export const processPendingTxEvents = async (
@@ -756,6 +923,8 @@ export const startEngine = async (
     signingSmartWalletKit,
     makeNonce,
     getInstrumentBlocks,
+    getGasPrices,
+    autoRebalancePeriodS,
   } = powers;
   const { kvStore } = evmCtx;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
@@ -766,6 +935,18 @@ export const startEngine = async (
   let instrumentBlocks: InstrumentBlocks | undefined;
   const updateInstrumentBlocks = async () => {
     instrumentBlocks = await getInstrumentBlocks?.();
+  };
+  let gasPrices = null as unknown as YdsGasStateResponse;
+  let gasPricesString = '';
+  const updateGasPrices = async () => {
+    const newGasPrices = await getGasPrices?.();
+    if (!newGasPrices) return false;
+
+    const newGasPricesString = stringifyGasPrices(newGasPrices);
+    const changed = newGasPricesString !== gasPricesString;
+    gasPrices = newGasPrices;
+    gasPricesString = newGasPricesString;
+    return changed;
   };
 
   const [vbankAssetCapData] = await Promise.all([
@@ -842,6 +1023,7 @@ export const startEngine = async (
   pendingTxKeys.sort((a: string, b: string) => naturalCompare(b, a));
 
   const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
+  const blockCalculator = new BlockCalculator();
   const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
     ...powers,
     console,
@@ -852,6 +1034,8 @@ export const startEngine = async (
     portfolioKeyForDepositAddr,
     evmProviders: evmCtx.evmProviders,
     instrumentBlocks,
+    blockCalculator,
+    portfoliosToRebalance: new Map(),
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(
@@ -972,6 +1156,24 @@ export const startEngine = async (
     }
 
     const respHeight = blockHeightFromSubscriptionResponse(resp);
+    const blockHeader = (respData as any).block?.header;
+    let blockTimeMs = blockHeader?.time ? Date.parse(blockHeader.time) : NaN;
+    if (!Number.isFinite(blockTimeMs)) {
+      console.warn('missing on-chain block time', respType);
+      blockTimeMs = Date.now();
+    }
+
+    blockCalculator.append(respHeight, blockTimeMs);
+    // We prune old block history using the longest of the task triggers,
+    // in this case, the autoRebalancePeriod in milliseconds.
+    autoRebalancePeriodS && blockCalculator.prune(autoRebalancePeriodS * 1000);
+
+    let gasPricesChanged = false;
+    await updateGasPrices()
+      .then(changed => {
+        gasPricesChanged = changed;
+      })
+      .catch(err => console.error('⚠️ Failed to update gas prices', err));
 
     // Capture vstorage updates.
     const oldEventRecords = deferrals.splice(0).filter(deferral => {
@@ -1039,7 +1241,12 @@ export const startEngine = async (
               portfolioEvents,
               respHeight,
               portfoliosMemory,
-              { ...processPortfolioPowers, instrumentBlocks },
+              {
+                ...processPortfolioPowers,
+                instrumentBlocks,
+                gasPrices,
+                gasPricesChanged,
+              },
             ),
           ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),

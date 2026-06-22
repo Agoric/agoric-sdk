@@ -63,6 +63,7 @@ import {
   mockEvmCtx,
   mockGasEstimator,
 } from './mocks.ts';
+import { shouldRunRebalance } from '../src/rebalancer.ts';
 
 // #region client-utils mocks
 // XXX these helpers belong somewhere else; maybe *in* packages/client-utils?
@@ -446,6 +447,8 @@ const fakePortfolioKit = async ({
     vstoragePathPrefixes: { portfoliosPathPrefix },
     chainNameToChainIdMap: CaipChainIds.testnet,
     evmProviders: mockEvmCtx.evmProviders,
+    blockCalculator: { heightForTime: () => 0n } as any,
+    portfoliosToRebalance: new Map(),
   };
 
   const initialPortfolioStatus: StatusFor['portfolio'] = {
@@ -526,6 +529,53 @@ test('ignore additional balances', t => {
 
   const actual = pickBalance(balances, depositAsset);
   t.deepEqual(actual, { brand: depositBrand, value: 50n });
+});
+
+test('shouldRunRebalance gates on gas prices and activity', t => {
+  const ready = {
+    hasGasPrices: true,
+    gasPricesChanged: true,
+    enabledAutoFeatures: { rebalance: true },
+    rebalanceExpiredHeight: 10n,
+  };
+
+  t.false(
+    shouldRunRebalance({
+      ...ready,
+      hasGasPrices: false,
+    }),
+  );
+  t.false(
+    shouldRunRebalance({
+      ...ready,
+      gasPricesChanged: false,
+    }),
+  );
+  t.false(
+    shouldRunRebalance({
+      ...ready,
+      enabledAutoFeatures: undefined,
+    }),
+  );
+  t.false(
+    shouldRunRebalance({
+      ...ready,
+      enabledAutoFeatures: { rebalance: false },
+    }),
+  );
+  t.true(shouldRunRebalance(ready));
+  t.true(
+    shouldRunRebalance({
+      ...ready,
+      atBlockHeight: 10n,
+    }),
+  );
+  t.false(
+    shouldRunRebalance({
+      ...ready,
+      atBlockHeight: 11n,
+    }),
+  );
 });
 
 // #region processPortfolioEvents

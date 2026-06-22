@@ -19,6 +19,59 @@ export const makeNowISO = (now: typeof Date.now): (() => string) => {
   return nowISO;
 };
 
+export class BlockCalculator {
+  #blockTimeRange = 0;
+
+  #blockHeightRange = 0n;
+
+  #blockHistory = [] as Array<{ blockHeight: bigint; blockTimeMs: number }>;
+
+  get meanBlockTimeMs() {
+    return this.#blockHeightRange > 0n
+      ? Number(this.#blockTimeRange) / Number(this.#blockHeightRange)
+      : 0;
+  }
+
+  timeMsAt(index: number, dflt = 0) {
+    return this.#blockHistory.at(index)?.blockTimeMs ?? dflt;
+  }
+
+  heightAt(index: number, dflt = 0n) {
+    return this.#blockHistory.at(index)?.blockHeight ?? dflt;
+  }
+
+  append(blockHeight: bigint, blockTimeMs: number) {
+    this.#blockHistory.push(Object.freeze({ blockHeight, blockTimeMs }));
+    this.#blockTimeRange = this.timeMsAt(-1) - this.timeMsAt(0);
+    this.#blockHeightRange = this.heightAt(-1) - this.heightAt(0);
+  }
+
+  prune(maxRangeMs: number) {
+    while (this.timeMsAt(-1) - this.timeMsAt(0) > maxRangeMs) {
+      const removed = this.#blockHistory.shift();
+      if (!removed) break;
+    }
+    this.#blockTimeRange = this.timeMsAt(-1) - this.timeMsAt(0);
+    this.#blockHeightRange = this.heightAt(-1) - this.heightAt(0);
+  }
+
+  heightForTime(targetTimeMs: number) {
+    if (targetTimeMs < this.timeMsAt(0)) {
+      // Extrapolate based on the mean block time if the target time is older
+      // than our window.
+      const mean = this.meanBlockTimeMs;
+      if (!(mean > 0 && Number.isFinite(mean))) return this.heightAt(0);
+      const deltaTimeMs = this.timeMsAt(0) - targetTimeMs;
+      return this.heightAt(0) - BigInt(Math.floor(deltaTimeMs / mean));
+    }
+
+    const targetEntry = this.#blockHistory.findLast(
+      ({ blockTimeMs }) => blockTimeMs <= targetTimeMs,
+    );
+    return targetEntry ? targetEntry.blockHeight : this.heightAt(0);
+  }
+}
+
 /**
  * Parse the contents of a GRAPHQL_ENDPOINTS environment variable.
  * @see {@link ../README.md}

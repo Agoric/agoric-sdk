@@ -170,6 +170,7 @@ Environment variables:
 - `MNEMONIC`: For the private key used to sign transactions (optional, but if not provided then it will be retrieved from the Google Cloud Secret Manager using `GCP_PROJECT_ID` and `GCP_SECRET_NAME`)
 - `DEPOSIT_BRAND_NAME`: For identifying funds to manage by matching against `issuerName` in vstorage data at path "published.agoricNames.vbankAsset" (default "USDC")
 - `FEE_BRAND_NAME`: For identifying how to pay [Axelar Cosmos–EVM] transfer fees by matching against `issuerName` in vstorage data at path "published.agoricNames.vbankAsset" (default "BLD")
+- `AUTO_REBALANCE_PERIOD_S`: for portfolios opted into Auto-Rebalance, this is roughly the number of seconds of inactivity after which the Auto-Rebalance service begins attempting gas-sensitive rebalancing of your accounts and positions back to the target allocations (default 1 week, i.e. `7 * 24 * 60 * 60 === 604800` seconds)
 - `REQUEST_TIMEOUT`: Milliseconds to wait for each external request (default "10000" = 10 seconds)
 - `REQUEST_RETRIES`: Retry count for external requests (default "3")
 - `GRAPHQL_ENDPOINTS`: JSON text for a Record\<dirname, url[]> object describing endpoints associated with each api-\* GraphQL API directory under [graphql](./src/graphql) (optional)
