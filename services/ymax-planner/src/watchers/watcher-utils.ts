@@ -28,13 +28,9 @@ export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
 /** Scope tag for failed-transaction lookback searches. */
 export const FAILED_TX_SCOPE = 'failedTx';
 
-/**
- * Signals that a watcher's underlying transport (WebSocket) failed.
- * Distinct from a transaction-level failure: the watch could not continue,
- * so the caller may safely restart it.
- */
-export const WatcherTransportError = class WatcherTransportError extends Error {};
-WatcherTransportError.prototype.name = WatcherTransportError.name;
+// Re-exported from its canonical leaf module (avoids an import cycle with the
+// RPC layer, which also throws it).
+export { WatcherTransportError } from '../errors.ts';
 
 /**
  * Sleep for `ms` milliseconds or until `signal` aborts (whichever comes first).
