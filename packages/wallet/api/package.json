@@ -42,7 +42,7 @@
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/agoric"
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
