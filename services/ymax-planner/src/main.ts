@@ -47,6 +47,7 @@ import {
   createEVMContext,
   prepareAbortController,
   spectrumChainIdsByCluster,
+  WS_HEARTBEAT_INTERVAL_MS,
 } from './support.ts';
 import type { MakeAbortController } from './support.ts';
 import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
@@ -252,16 +253,21 @@ export const main = async (
   const evmCtx = await createEVMContext({
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
+    makeHeartbeat: () => generateInterval(WS_HEARTBEAT_INTERVAL_MS),
+    log: (...args) => console.warn('EVM provider:', ...args),
   });
 
   // Verify Alchemy chain availability.
   const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
   const evmHeights = await deeplyFulfilledObject(
     objectMap(evmCtx.evmProviders, (provider, chainId) =>
-      provider.getBlockNumber().catch(err => {
-        failedEvmChains.push(chainId);
-        return { error: err.message };
-      }),
+      provider
+        .getProvider()
+        .getBlockNumber()
+        .catch(err => {
+          failedEvmChains.push(chainId);
+          return { error: err.message };
+        }),
     ),
   );
   console.warn('EVM chain heights:', evmHeights);
@@ -340,7 +346,9 @@ export const main = async (
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
       caip,
-      makeEvmRpc(provider, setTimeout),
+      makeEvmRpc(provider, setTimeout, {
+        log: (...args) => console.warn(`EVM RPC [${caip}]:`, ...args),
+      }),
     ]),
   ) as Record<CaipChainId, EvmRpc>;
 

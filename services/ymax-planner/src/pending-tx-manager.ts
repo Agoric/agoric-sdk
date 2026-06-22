@@ -16,7 +16,6 @@ import type {
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
-import type { WebSocketProvider } from 'ethers';
 import {
   deleteDerivedOutcome,
   getDerivedOutcome,
@@ -26,7 +25,11 @@ import {
 import { resolvePendingTx } from './resolver.ts';
 import { withRetriesForAlerting } from './retries.ts';
 import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
-import type { MakeAbortController, UsdcAddresses } from './support.ts';
+import type {
+  MakeAbortController,
+  ReconnectingProvider,
+  UsdcAddresses,
+} from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
 import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
 import {
@@ -59,7 +62,7 @@ export type EvmContext = {
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   // XXX eliminate evmProviders from EvmContext and use retryProviders for the
   // balance-checking path too.
-  evmProviders: Record<CaipChainId, WebSocketProvider>;
+  evmProviders: Record<CaipChainId, ReconnectingProvider>;
   retryProviders: Record<CaipChainId, EvmRpc>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */

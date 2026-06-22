@@ -2,7 +2,12 @@ import { WebSocketProvider, Log, toQuantity, isError } from 'ethers';
 import type { Filter, TransactionReceipt, TransactionResponse } from 'ethers';
 import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
-import { getBlockTimeMs, prepareAbortController } from './support.ts';
+import {
+  getBlockTimeMs,
+  prepareAbortController,
+  type ReconnectingProvider,
+} from './support.ts';
+import { WatcherTransportError } from './errors.ts';
 
 export const DEFAULT_CONFIRMATION_POLL_INTERVAL_MS = 5_000;
 
@@ -55,35 +60,84 @@ type BinarySearch = {
 };
 
 /**
- * A provider facade whose methods automatically retry on Alchemy 429
- * rate-limit errors using exponential backoff with jitter.
+ * Per-call timeout. A zombie socket (open but neither responding nor faulting)
+ * makes a request/response call hang indefinitely; bounding it turns that
+ * silent stall into a fast, retryable {@link WatcherTransportError} and reports
+ * the socket as unhealthy so it gets reconnected (see PAK-517).
+ */
+export const RPC_CALL_TIMEOUT_MS = 20_000;
+
+/**
+ * A provider facade whose methods retry on Alchemy 429 rate-limit errors
+ * (exponential backoff with jitter) and are bounded by a per-call timeout.
+ *
+ * It delegates to the {@link ReconnectingProvider}'s *current* provider on every
+ * call, so after a reconnect the facade (held by long-lived watchers) keeps
+ * working against the fresh socket.
  */
 export const makeEvmRpc = (
-  provider: WebSocketProvider,
+  reconnecting: ReconnectingProvider,
   setTimeout: typeof globalThis.setTimeout,
-) => ({
-  // RPC calls with retry
-  getBlock: (n: number) =>
-    withRateLimitRetry(() => provider.getBlock(n), setTimeout),
-  getBlockNumber: () =>
-    withRateLimitRetry(() => provider.getBlockNumber(), setTimeout),
-  getLogs: (filter: Filter) =>
-    withRateLimitRetry(() => provider.getLogs(filter), setTimeout),
-  getNetwork: () => withRateLimitRetry(() => provider.getNetwork(), setTimeout),
-  getTransactionReceipt: (txHash: string) =>
-    withRateLimitRetry(
-      () => provider.getTransactionReceipt(txHash),
-      setTimeout,
-    ),
-  send: (...args: Parameters<WebSocketProvider['send']>) =>
-    withRateLimitRetry(() => provider.send(...args), setTimeout),
-  // Subscription pass-throughs (no retry needed)
-  on: provider.on.bind(provider) as WebSocketProvider['on'],
-  off: provider.off.bind(provider) as WebSocketProvider['off'],
-  get websocket() {
-    return (provider as any).websocket;
-  },
-});
+  {
+    timeoutMs = RPC_CALL_TIMEOUT_MS,
+    log = (..._args: unknown[]) => {},
+  }: { timeoutMs?: number; log?: (...args: unknown[]) => void } = {},
+) => {
+  const withTimeout = <T>(label: string, op: () => Promise<T>): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        log(`RPC ${label} timed out after ${timeoutMs}ms; cycling socket`);
+        reconnecting.reportUnhealthy(`${label} timeout`);
+        reject(
+          new WatcherTransportError(
+            `RPC ${label} timed out after ${timeoutMs}ms`,
+          ),
+        );
+      }, timeoutMs);
+      op().then(
+        value => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        },
+        err => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          reject(err);
+        },
+      );
+    });
+
+  const call = <T>(label: string, op: () => Promise<T>): Promise<T> =>
+    withRateLimitRetry(() => withTimeout(label, op), setTimeout);
+
+  const p = () => reconnecting.getProvider();
+
+  return {
+    // RPC calls with rate-limit retry and per-call timeout
+    getBlock: (n: number) => call('getBlock', () => p().getBlock(n)),
+    getBlockNumber: () => call('getBlockNumber', () => p().getBlockNumber()),
+    getLogs: (filter: Filter) => call('getLogs', () => p().getLogs(filter)),
+    getNetwork: () => call('getNetwork', () => p().getNetwork()),
+    getTransactionReceipt: (txHash: string) =>
+      call('getTransactionReceipt', () => p().getTransactionReceipt(txHash)),
+    send: (...args: Parameters<WebSocketProvider['send']>) =>
+      call('send', () => p().send(...args)),
+    // Subscription pass-throughs (delegate to the current provider; no retry)
+    on: ((...args: Parameters<WebSocketProvider['on']>) =>
+      p().on(...args)) as WebSocketProvider['on'],
+    off: ((...args: Parameters<WebSocketProvider['off']>) =>
+      p().off(...args)) as WebSocketProvider['off'],
+    get websocket() {
+      return reconnecting.websocket;
+    },
+  };
+};
 
 export type EvmRpc = ReturnType<typeof makeEvmRpc>;
 

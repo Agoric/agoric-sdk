@@ -16,6 +16,7 @@ import { fromUniqueEntries, partialMap, typedEntries } from '@agoric/internal';
 import type { axelarConfig } from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 import type { EVMContractAddresses } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import type { EvmChain } from './pending-tx-manager.ts';
+import type { ReconnectingProvider } from './support.ts';
 
 /**
  * Build a unified map of pool/instrument IDs to their on-chain token contract
@@ -210,7 +211,7 @@ export type EvmBalancePowers = {
     Record<InterChainAccountRef | PoolKey, EvmAddress>
   >;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
-  evmProviders: Record<CaipChainId, WebSocketProvider>;
+  evmProviders: Record<CaipChainId, ReconnectingProvider>;
 };
 
 /**
@@ -236,10 +237,11 @@ export const getErc20Balances = async (
           Fail`No token address configured for instrument ${q(place)}`;
 
         const chainId: CaipChainId = chainNameToChainIdMap[chainName];
-        const provider = evmProviders[chainId];
-        if (!provider) {
+        const reconnecting = evmProviders[chainId];
+        if (!reconnecting) {
           throw Error(`No provider found for chain: ${chainId}`);
         }
+        const provider = reconnecting.getProvider();
 
         let balance: bigint;
         if (isBeefyInstrumentId(place)) {

@@ -1,4 +1,5 @@
 import { WebSocketProvider } from 'ethers';
+import type { WebSocket as WsWebSocket } from 'ws';
 import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
@@ -262,14 +263,137 @@ export const getEvmRpcMap = (
       throw Error(`Unsupported cluster name ${clusterName}`);
   }
 };
+/** Interval between WebSocket liveness pings. */
+export const WS_HEARTBEAT_INTERVAL_MS = 30_000;
+
+/**
+ * A reconnecting wrapper around an ethers {@link WebSocketProvider}. ethers v6
+ * does not reconnect on its own, so a dropped or zombie (open-but-dead) socket
+ * otherwise stays broken for the whole process lifetime, leaving watchers
+ * silently stalled until a manual restart (see PAK-517).
+ *
+ * Liveness is detected two ways: ping/pong heartbeats catch an idle socket that
+ * has gone dead, and {@link reportUnhealthy} lets the RPC layer report a call
+ * that timed out (an in-use zombie). On either, the underlying provider is
+ * recreated. The previous socket is `terminate`d, which surfaces a `close`
+ * event to any active watchers; their existing
+ * `onWsClose → WatcherTransportError → watchWithRetry` path then re-subscribes
+ * on the fresh socket.
+ */
+export type ReconnectingProvider = {
+  /** The current live provider; never a destroyed one. */
+  getProvider: () => WebSocketProvider;
+  /** The current underlying socket. */
+  readonly websocket: WebSocketProvider['websocket'];
+  /** Force an immediate reconnect (e.g. an RPC call timed out). */
+  reportUnhealthy: (reason?: string) => void;
+  /** Permanently close: stop heartbeats and reconnection. */
+  close: () => void;
+};
+
+export const makeReconnectingProvider = ({
+  wsUrl,
+  makeProvider = url => new WebSocketProvider(url),
+  makeHeartbeat,
+  log = () => {},
+}: {
+  wsUrl: string;
+  makeProvider?: (url: string) => WebSocketProvider;
+  /** Yields once per heartbeat interval; a fresh one is taken per socket. */
+  makeHeartbeat?: () => AsyncIterable<unknown>;
+  log?: (...args: unknown[]) => void;
+}): ReconnectingProvider => {
+  let current: WebSocketProvider;
+  // Monotonic id of the live socket. Stale listeners (from a prior socket)
+  // compare against it to avoid cycling a provider that is no longer current.
+  let generation = 0;
+  let closed = false;
+
+  const attach = (provider: WebSocketProvider, gen: number) => {
+    const ws = provider.websocket as unknown as WsWebSocket;
+
+    ws.on('close', (code?: number, reason?: unknown) => {
+      if (gen !== generation || closed) return;
+      cycle(gen, `socket close (code=${code}, reason=${reason})`);
+    });
+    ws.on('error', (err: unknown) => {
+      if (gen !== generation || closed) return;
+      cycle(gen, `socket error: ${(err as Error)?.message ?? err}`);
+    });
+
+    if (!makeHeartbeat) return;
+    let gotPong = true;
+    ws.on('pong', () => {
+      gotPong = true;
+    });
+    void (async () => {
+      for await (const _ of makeHeartbeat()) {
+        if (gen !== generation || closed) break;
+        if (ws.readyState !== 1 /* OPEN */) continue;
+        if (!gotPong) {
+          cycle(gen, 'pong timeout');
+          break;
+        }
+        gotPong = false;
+        try {
+          ws.ping();
+        } catch (err) {
+          log('error sending ping', err);
+        }
+      }
+    })();
+  };
+
+  const cycle = (fromGen: number, reason: string) => {
+    // Ignore stale triggers: only the current generation may cycle.
+    if (closed || fromGen !== generation) return;
+    generation += 1;
+    const old = current;
+    log(`cycling WebSocket (gen ${fromGen}→${generation}): ${reason}`);
+    current = makeProvider(wsUrl);
+    attach(current, generation);
+    // `terminate` (vs a graceful close) dislodges a zombie/half-open socket and
+    // emits `close`, prompting active watchers to re-subscribe on the new one.
+    try {
+      (old.websocket as unknown as WsWebSocket).terminate();
+    } catch (err) {
+      log('error terminating old socket', err);
+    }
+    void old.destroy().catch(err => log('error destroying old provider', err));
+  };
+
+  current = makeProvider(wsUrl);
+  attach(current, generation);
+
+  return {
+    getProvider: () => current,
+    get websocket() {
+      return current.websocket;
+    },
+    reportUnhealthy: (reason = 'reported unhealthy') =>
+      cycle(generation, reason),
+    close: () => {
+      closed = true;
+      void current
+        .destroy()
+        .catch(err => log('error destroying provider', err));
+    },
+  };
+};
+
 type CreateContextParams = {
   clusterName: ClusterName;
   alchemyApiKey: string;
+  /** Yields once per heartbeat interval; a fresh one is taken per socket. */
+  makeHeartbeat?: () => AsyncIterable<unknown>;
+  log?: (...args: unknown[]) => void;
 };
 
 export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
+  makeHeartbeat,
+  log = () => {},
 }: CreateContextParams): Promise<
   Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
@@ -280,9 +404,13 @@ export const createEVMContext = async ({
   const evmProviders = Object.fromEntries(
     Object.entries(wssUrls).map(([caip, wsUrl]) => [
       caip,
-      new WebSocketProvider(wsUrl),
+      makeReconnectingProvider({
+        wsUrl,
+        makeHeartbeat,
+        log: (...args) => log(`[${caip}]`, ...args),
+      }),
     ]),
-  ) as Record<CaipChainId, WebSocketProvider>;
+  ) as Record<CaipChainId, ReconnectingProvider>;
 
   return {
     evmProviders,

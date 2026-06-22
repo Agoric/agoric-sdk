@@ -1,11 +1,11 @@
 import test from 'ava';
 import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
 import { objectMap } from '@endo/patterns';
-import type { WebSocketProvider } from 'ethers';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { CaipChainId } from '@agoric/orchestration';
 import { createMockPendingTxOpts } from './mocks.ts';
+import type { ReconnectingProvider } from '../src/support.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
@@ -350,13 +350,13 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
           blockNumber: latestBlock,
           transactionHash: failedTxHash,
         }),
-      }) as unknown as WebSocketProvider,
+      }) as unknown as ReconnectingProvider,
   );
 
   const ctxWithFetch = harden({
     ...opts,
     evmProviders: newEvmProviders,
-    retryProviders: newEvmProviders as Record<CaipChainId, EvmRpc>,
+    retryProviders: newEvmProviders as unknown as Record<CaipChainId, EvmRpc>,
     fetch: async () => ({}) as Response,
   });
 

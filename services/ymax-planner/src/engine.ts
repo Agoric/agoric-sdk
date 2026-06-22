@@ -64,7 +64,6 @@ import type {
 } from '@agoric/portfolio-api';
 
 import type { EvmAddress } from '@agoric/fast-usdc';
-import type { WebSocketProvider } from 'ethers';
 import {
   checkAutoRebalance,
   maybeAutoRebalance,
@@ -94,7 +93,7 @@ import {
   setIgnoredTx,
   setResolvedTx,
 } from './kv-store.ts';
-import { UserInputError } from './support.ts';
+import { UserInputError, type ReconnectingProvider } from './support.ts';
 import { makeExpiringMap } from './utils.ts';
 import {
   encodedKeyToPath,
@@ -251,7 +250,7 @@ export type ProcessPortfolioPowers = Pick<
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
-  evmProviders: Record<CaipChainId, WebSocketProvider>;
+  evmProviders: Record<CaipChainId, ReconnectingProvider>;
 };
 
 export type PortfoliosMemory = {
