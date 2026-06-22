@@ -138,6 +138,10 @@ export const preparePortfolioReadyContext = async (
     buildProposal('@aglocal/portfolio-deploy/src/usdc-resolve.build.js'),
   );
 
+  await evalProposal(
+    buildProposal('@aglocal/portfolio-deploy/src/postal-service.build.js'),
+  );
+
   bridgeUtils.setAckBehavior(
     BridgeId.DIBC,
     'startChannelOpenInit',
@@ -155,7 +159,6 @@ export const preparePortfolioReadyContext = async (
     await walletFactoryDriver.provideSmartWallet(controllerAddr);
   await evalProposal(
     Promise.all([
-      buildProposal('@aglocal/portfolio-deploy/src/postal-service.build.js'),
       buildProposal(
         '@agoric/deploy-script-support/src/control/contract-control.build.js',
       ),
@@ -221,6 +224,10 @@ export const preparePortfolioNewContractContext = async (
   const oldBoardId = (instancePre as any).getBoardId();
   const controllerWallet =
     await walletFactoryDriver.provideSmartWallet(controllerAddr);
+  const postalServiceInstance = agoricNamesRemotes.instance.postalService;
+  if (!postalServiceInstance) {
+    throw Error('postalService instance missing before contract replacement');
+  }
 
   await controllerWallet.invokeEntry({
     id: 'snapshot-terminate-ymax0',
@@ -236,6 +243,7 @@ export const preparePortfolioNewContractContext = async (
     contracts: privateArgs.contracts,
     gmpAddresses: privateArgs.gmpAddresses,
     walletBytecode: privateArgs.walletBytecode,
+    postalServiceInstance,
   });
 
   await controllerWallet.invokeEntry({

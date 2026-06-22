@@ -66,13 +66,37 @@ harden(inspectMapStore);
  * For each step, run to just before that point and pause for continuation after
  * interrupt.
  *
+ * `allSteps` should contain only steps that are meaningful interruption
+ * boundaries — i.e. that leave durable in-flight state whose recovery across an
+ * interrupt is worth asserting. Each step in `allSteps` runs `allSteps.length +
+ * 2` times, so the total work is quadratic in the number of steps; keep the
+ * list to the genuinely mutating steps. Use `options.setup` for non-mutating
+ * fixtures and `options.postcondition` for non-mutating outcome assertions so
+ * they don't inflate the boundary count.
+ *
  * @template [Input=any]
  * @template [Context=unknown]
  * @param {AvaT<Context>} t
  * @param {readonly TestStep<Input>[]} allSteps
  * @param {(t: AvaT<Context>) => ERef<void>} [doInterrupt]
+ * @param {object} [options]
+ * @param {(t: AvaT<Context>) => Partial<Input> | PromiseLike<Partial<Input>>} [options.setup]
+ *   Produce the initial accumulator at the start of each run. Runs are never
+ *   interrupted around setup, so use it for fixtures (e.g. funding a wallet)
+ *   that are not themselves part of the interruption-resilience contract. It is
+ *   invoked once per run, so it may create per-run state (e.g. a single-use
+ *   actor) safely.
+ * @param {(t: AvaT<Context>, accum: Partial<Input>, label: string) => ERef<void>} [options.postcondition]
+ *   Assert the outcome after each run that completes all of its steps (the
+ *   pre-interrupt run, the post-interrupt run, and each resumed run). Use for
+ *   non-mutating outcome checks that need not be interruption boundaries.
  */
-export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
+export const testInterruptedSteps = async (
+  t,
+  allSteps,
+  doInterrupt,
+  { setup, postcondition } = {},
+) => {
   /**
    * @typedef {{
    *   label: string;
@@ -80,16 +104,20 @@ export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
    * }} RunState
    */
 
+  /** @returns {Promise<Partial<Input>>} */
+  const freshAccum = async () => (setup ? setup(t) : {});
+
   /**
    * @param {string} label
    * @param {readonly TestStep<Input>[]} steps
-   * @param {RunState} [runState]
+   * @param {RunState} [runState] when omitted, a fresh run is started, seeding
+   *   the accumulator from `setup`.
    * @returns {Promise<RunState>}
    */
-  const runSteps = async (label, steps, runState = { label, accum: {} }) => {
+  const runSteps = async (label, steps, runState) => {
     await null;
-    let accum = runState.accum;
-    const runLabel = runState.label;
+    let accum = runState ? runState.accum : await freshAccum();
+    const runLabel = runState ? runState.label : label;
     for (const [stepName, fn] of steps) {
       await t.notThrowsAsync(async () => {
         accum = await fn(accum, runLabel);
@@ -98,8 +126,20 @@ export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
     return { label: runLabel, accum };
   };
 
+  /**
+   * @param {RunState} runState
+   * @returns {Promise<RunState>}
+   */
+  const complete = async runState => {
+    await null;
+    if (postcondition) {
+      await postcondition(t, runState.accum, runState.label);
+    }
+    return runState;
+  };
+
   // Sanity check
-  await runSteps('pre-interrupt', allSteps);
+  await complete(await runSteps('pre-interrupt', allSteps));
   if (!doInterrupt) {
     return;
   }
@@ -116,7 +156,7 @@ export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
     const runState = await runSteps(
       `pre-${beforeStepName}`,
       allSteps.slice(0, i),
-      { label: `pause-before-${beforeStepName}`, accum: {} },
+      { label: `pause-before-${beforeStepName}`, accum: await freshAccum() },
     );
     pausedRuns.push({ runState, remainingSteps: allSteps.slice(i) });
   }
@@ -125,12 +165,14 @@ export const testInterruptedSteps = async (t, allSteps, doInterrupt) => {
   await doInterrupt(t);
 
   // Verify a complete run post-interrupt.
-  await runSteps('post-interrupt', allSteps);
+  await complete(await runSteps('post-interrupt', allSteps));
 
   // Verify completion of each paused step.
   for (const { runState, remainingSteps } of pausedRuns) {
     const [beforeStepName] = remainingSteps[0];
-    await runSteps(`resumed-${beforeStepName}`, remainingSteps, runState);
+    await complete(
+      await runSteps(`resumed-${beforeStepName}`, remainingSteps, runState),
+    );
   }
 };
 harden(testInterruptedSteps);

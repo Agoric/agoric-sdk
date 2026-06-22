@@ -351,7 +351,7 @@ export interface OrchestrationAccountCommon {
    * When returned as part of a continuing invitation, it will appear
    * in the {@link CurrentWalletRecord} in vstorage.
    */
-  getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<unknown>>>;
+  getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<any>>>;
 }
 
 /**

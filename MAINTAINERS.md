@@ -189,13 +189,13 @@ the release process can be aborted.
   ```sh
   # Create a release branch.
   now=`date -u +%Y%m%dT%H%M%S`
-  git checkout -b prepare-release-$now
+  git switch -c prepare-release-$now
   ```
 
 - [ ] Do a `yarn install` to generate tooling needed for the release.
   ```sh
   # yarn install to build release tools
-  yarn install --force
+  yarn install
   ```
 
 - [ ] <a id="generate-sdk-version"></a>Generate new SDK version and per-package CHANGELOG.md files.
@@ -450,6 +450,28 @@ cd packages/SwingSet
 yarn test test/xsnap-store.test.js --update-snapshots
 git add test/snapshots/xsnap-store.*
 git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
+cd ../..
+```
+
+The Endo bump also shifts how many computrons `dispatch.startVat` consumes, which
+breaks `packages/SwingSet/test/metering/dynamic-vat-metered.test.js`. That test
+creates a dynamic vat with a meter sized to sit just above the startup cost: if
+the cost grows past the allocation, the vat overflows during creation or the
+first "normal" crank (`vat.dynamicIDs` length asserts `0` instead of `1`) rather
+than during the deliberate explosion. Re-fit the `cmargs` remaining-computrons
+figure in `overflowCrank()` to the new `consumedByStartVat` (printed by the
+`meter decrements` test as `-- consumedByStartVat`) plus one `run()` crank, with
+a little headroom. The test pins `xs-worker`, so the cost is deterministic and
+local matches CI — but measure it only after every `ses`/`@endo` patch is in
+place (including any `.yarn/patches/ses-*.patch`). A figure measured mid-rebase,
+before the ses patch is applied, will under-account for the patch's lockdown cost
+and overflow once the patch lands earlier in history.
+
+```sh
+cd packages/SwingSet
+# read the `-- consumedByStartVat` value, then update cmargs in the test
+yarn test test/metering/dynamic-vat-metered.test.js
+git commit -am 'chore(swingset-vat): increase meter allocation for Endo update'
 cd ../..
 ```
 

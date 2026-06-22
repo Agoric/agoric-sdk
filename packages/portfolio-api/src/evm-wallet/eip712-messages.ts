@@ -84,6 +84,28 @@ const OperationTypes = {
    * - token: ERC-20 token contract address (must be USDC contract on the destination chain)
    */
   Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],
+  /**
+   * Grant portfolio permissions on a portfolio to another Agoric address
+   * (e.g. an automation agent). The contract delivers an invitation whose
+   * redeemed result can be saved in the grantee's wallet store and used via
+   * wallet invocation.
+   *
+   * - accountHolder: bech32 Agoric address that will receive the invitation
+   * - permissions: encoded portfolio permissions (see PortfolioPermissions)
+   */
+  Grant: [
+    { name: 'accountHolder', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    PortfolioIdParam,
+  ],
+  /**
+   * Update which auto-features are enabled for a portfolio. The contract will
+   * generate a permissioned delegation as necessary and deliver it to the planner.
+   */
+  SetAutoFeatures: [
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+    PortfolioIdParam,
+  ],
 } as const satisfies TypedData;
 type OperationTypes = typeof OperationTypes;
 export type OperationTypeNames = keyof OperationTypes;
@@ -94,6 +116,10 @@ const OperationSubTypes = {
     { name: 'portion', type: 'uint256' },
   ],
   Asset: TokenPermissionsComponents,
+  /** @see {@link PortfolioPermissions} */
+  PortfolioPermissions: [{ name: 'allocation', type: 'bool' }],
+  /** @see {@link PortfolioAutoFeatures} */
+  PortfolioAutoFeatures: [{ name: 'rebalance', type: 'bool' }],
 } as const satisfies TypedData;
 
 /**
@@ -114,6 +140,14 @@ type YmaxOperationTypesWithSubTypes<
 > = {
   [K in T]: P;
 } & typeof OperationSubTypes;
+
+export type PortfolioPermissionsEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioPermissions'];
+
+export type PortfolioAutoFeaturesEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioAutoFeatures'];
 
 /**
  * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.

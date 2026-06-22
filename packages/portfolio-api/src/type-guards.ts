@@ -1,7 +1,11 @@
+import type { TypedPattern } from '@agoric/internal';
+import { M } from '@endo/patterns';
 import type { BeefyInstrumentId, ERC4626InstrumentId } from './places.ts';
 import type {
   DepositFromChainRef,
+  FlowAgent,
   LocalChainAccountRef,
+  PortfolioAgentId,
   InterChainAccountRef,
   WithdrawToChainRef,
 } from './types.js';
@@ -59,3 +63,13 @@ harden(isERC4626InstrumentId);
 export const isBeefyInstrumentId = (ref: string): ref is BeefyInstrumentId =>
   ref.startsWith('Beefy_');
 harden(isBeefyInstrumentId);
+
+export const PortfolioAgentIdShape: TypedPattern<PortfolioAgentId> = M.string();
+
+export const FlowAgentShape: TypedPattern<FlowAgent> = M.splitRecord(
+  {
+    id: PortfolioAgentIdShape,
+  },
+  {},
+  M.record(),
+);

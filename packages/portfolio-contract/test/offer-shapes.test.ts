@@ -3,10 +3,18 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
+  type PortfolioAgentStatus,
+  type PortfolioPermissions,
+  type PortfolioPermissionsExt,
+  PortfolioPermissionsExtShape,
+  PortfolioPermissionsShape,
+} from '@agoric/portfolio-api';
+import {
   TxStatus,
   TxType,
   type PublishedTx,
 } from '@agoric/portfolio-api/src/resolver.js';
+import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { PublishedTxShape } from '../src/resolver/types.ts';
@@ -17,6 +25,7 @@ import {
   FlowStepsShape,
   makeProposalShapes,
   PoolKeyShapeExt,
+  PortfolioAgentStatusShape,
   PortfolioStatusShapeExt,
   PositionStatusShape,
   TargetAllocationShape,
@@ -129,6 +138,30 @@ test('offerArgs can carry usdnOut', t => {
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
+test('offerArgs can carry 1inch swap params', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc(200n);
+  const specimen = harden({
+    flow: [
+      {
+        src: '@Avalanche',
+        dest: '@Avalanche',
+        amount,
+        swap: {
+          provider: '1inch',
+          tokenIn: '0x0000000000000000000000000000000000000abc',
+          amountIn: 5_000_000n,
+          flags: 0n,
+          executor: '0x2222222222222222222222222222222222222222',
+          srcReceiver: '0x3333333333333333333333333333333333333333',
+          data: '0xdeadbeef',
+        },
+      },
+    ],
+  });
+  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
 test('movementDescShape allows unknown additional properties', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const { movementDescShape } = shapes;
@@ -171,6 +204,111 @@ test('PoolKeyExt shapes accept future pool keys', t => {
   });
 
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
+});
+
+test('PortfolioPermissionsShape', t => {
+  const passCases = harden({
+    empty: {},
+    allocationOnly: {
+      allocation: true,
+    },
+    rebalanceOnly: {
+      rebalance: true,
+    },
+  } satisfies Record<string, PortfolioPermissions>);
+  const failCases = harden({
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  }) satisfies Record<string, PortfolioPermissionsExt>;
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsShape), name);
+  }
+});
+
+test('PortfolioPermissionsExtShape', t => {
+  const passCases = harden({
+    empty: {},
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  }) satisfies Record<string, PortfolioPermissionsExt>;
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsExtShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsExtShape), name);
+  }
+});
+
+test('PortfolioAgentStatusShape allows upgraded permission bags', t => {
+  const passCases = harden({
+    futurePermission: {
+      grantee: 'agoric1test',
+      permissions: { futurePermission: true },
+      state: 'active',
+    },
+  } satisfies Record<string, PortfolioAgentStatus>);
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioAgentStatusShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioAgentStatusShape), name);
+  }
+});
+
+test('flow agent shape allows future attribution fields', t => {
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          id: 'agent2',
+          grantee: 'agoric1future',
+          scope: 'setTargetAllocation',
+        }),
+        FlowAgentShape,
+      ),
+    'flow agent shape should allow additional attribution fields',
+  );
+});
+
+test('portfolio agent status shape allows future top-level fields', t => {
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          grantee: 'agoric1test',
+          permissions: { allocation: true },
+          state: 'active',
+          expiresAt: 1234567890,
+          revokedBy: 'agoric1admin',
+        }),
+        PortfolioAgentStatusShape,
+      ),
+    'agent status should allow additional top-level fields',
+  );
 });
 
 test('numeric position references are rejected', t => {

@@ -30,24 +30,27 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
+  PortfolioAgentIdShape,
+  PortfolioPermissionsExtShape,
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
+  type PortfolioAgentStatus,
   type PortfolioPublishedPathTypes,
   type ProposalType,
   type StatusFor,
   type TargetAllocation,
 } from '@agoric/portfolio-api';
-import {
-  BeefyPoolPlaces,
-  ERC4626PoolPlaces,
-  PoolPlaces,
-} from '@agoric/portfolio-api/src/places.js';
 import type {
   BeefyInstrumentId,
   ERC4626InstrumentId,
   PoolKey,
   PoolPlaceInfo,
+} from '@agoric/portfolio-api/src/places.js';
+import {
+  BeefyPoolPlaces,
+  ERC4626PoolPlaces,
+  PoolPlaces,
 } from '@agoric/portfolio-api/src/places.js';
 import type {
   ContinuingInvitationSpec,
@@ -113,6 +116,8 @@ export const makeProposalShapes = (
   return harden({ openPortfolio, rebalance, withdraw, deposit });
 };
 harden(makeProposalShapes);
+// XXX avoid ReturnType - make an inline type and assert that it matches in a type test
+export type ProposalShapes = ReturnType<typeof makeProposalShapes>;
 // #endregion
 
 // #region Offer Args
@@ -205,6 +210,9 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
   { type: 'rebalance' },
 );
 
+export const FlowKeyShape: TypedPattern<`flow${number}`> =
+  AnyString<`flow${number}`>();
+
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(
     {
@@ -219,9 +227,19 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       nobleForwardingAddress: AnyString<Bech32Address>(),
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
-      flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
+      flowsRunning: M.recordOf(FlowKeyShape, FlowDetailShape),
     },
   );
+
+export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
+  M.splitRecord({
+    grantee: AnyString<Bech32Address>(),
+    permissions: PortfolioPermissionsExtShape,
+    state: M.or('active', 'revoked', 'expired'),
+  });
+
+export const PortfolioAgentsShape: TypedPattern<StatusFor['portfolioAgents']> =
+  M.recordOf(PortfolioAgentIdShape, PortfolioAgentStatusShape);
 
 /**
  * Creates vstorage path for position transfer history.
@@ -268,6 +286,20 @@ export const makeFlowPath = (parent: number, id: number) => [
   `flow${id}`,
 ];
 
+export const makePortfolioAgentsPath = (
+  parent: number,
+): [`portfolio${number}`, 'agents'] => [`portfolio${parent}`, 'agents'];
+
+export const makeFlowAgentPath = (
+  parent: number,
+  id: number,
+): [`portfolio${number}`, 'flows', `flow${number}`, 'agent'] => [
+  `portfolio${parent}`,
+  'flows',
+  `flow${id}`,
+  'agent',
+];
+
 export const makeFlowStepsPath = (
   parent: number,
   id: number,
@@ -297,12 +329,20 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
   ),
 );
 
-export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
-  how: M.string(),
-  amount: AnyNatAmountShape,
-  src: AnyString<AssetPlaceRef>(),
-  dest: AnyString<AssetPlaceRef>(),
-});
+export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf(
+  M.splitRecord(
+    {
+      how: M.string(),
+      amount: AnyNatAmountShape,
+      src: AnyString<AssetPlaceRef>(),
+      dest: AnyString<AssetPlaceRef>(),
+    },
+    {
+      phases: M.recordOf(M.string(), M.arrayOf(M.string())),
+      swap: M.record(),
+    },
+  ),
+);
 // #endregion
 
 // XXX deployment concern, not part of contract external interface

@@ -10,7 +10,7 @@ import type {
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
 import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
-import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
+import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
@@ -248,12 +248,15 @@ export const getNonDustBalances = async <C extends AssetPlaceRef>(
 
 export type PlannerContext<
   C extends AssetPlaceRef,
-  T extends keyof TargetAllocation,
-> = {
-  currentBalances: Record<C, NatAmount>;
-  targetAllocation?: Partial<Pick<TargetAllocation, T>>;
-  network: NetworkSpec;
-  brand: Brand<'nat'>;
+  T extends string & keyof TargetAllocation,
+> = Pick<
+  ComputeTargetBalancesOptions<C, T>,
+  | 'brand'
+  | 'currentBalances'
+  | 'targetAllocation'
+  | 'network'
+  | 'instrumentBlocks'
+> & {
   feeBrand: Brand<'nat'>;
   gasEstimator: GasEstimator;
 };
@@ -286,6 +289,7 @@ export const planDepositToAllocations: PlanMaker<{
     network,
     targetAllocation,
     depositFromChain: fromChain,
+    instrumentBlocks: details.instrumentBlocks,
   });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
@@ -316,6 +320,7 @@ export const planRebalanceToAllocations: PlanMaker = async details => {
     currentBalances,
     network,
     targetAllocation,
+    instrumentBlocks: details.instrumentBlocks,
   });
   if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
@@ -343,6 +348,7 @@ export const planWithdrawFromAllocations: PlanMaker<{
     network,
     balanceDelta: -amount.value,
     targetAllocation,
+    instrumentBlocks: details.instrumentBlocks,
   });
 
   const { feeBrand, gasEstimator, toChain = 'agoric' } = details;

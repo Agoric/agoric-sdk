@@ -32,7 +32,9 @@ export const upgradeZcf = async (
 
   await E(adminNode).upgrade(zoeBundleCap, {});
 
-  const zoeConfigFacet = await E(zoeRoot).getZoeConfigFacet();
+  const zoeConfigFacet = await E(
+    /** @type {any} */ (zoeRoot),
+  ).getZoeConfigFacet();
   await E(zoeConfigFacet).updateZcfBundleId(zcfRef.bundleID);
   console.log(`ZCF BUNDLE ID: `, zcfRef.bundleID);
 };

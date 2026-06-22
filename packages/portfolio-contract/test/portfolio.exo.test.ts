@@ -10,8 +10,10 @@ import {
   type Callable,
 } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
 import type { AxelarChain } from '@agoric/portfolio-api';
 import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
@@ -26,13 +28,13 @@ import {
   preparePortfolioKit,
   type AccountInfoFor,
 } from '../src/portfolio.exo.ts';
+import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
 import type { StatusFor } from '../src/type-guards.ts';
-import { contractsMock } from './mocks.ts';
-import { axelarCCTPConfig } from './supports.ts';
-import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
 import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
+import { contractsMock } from './mocks.ts';
+import { axelarCCTPConfig, makeStorageTools } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -63,17 +65,27 @@ const makeSpies = <T extends Record<string, Callable>>(
   return { spies, log };
 };
 
-const makeTestSetup = () => {
+const makeTestSetup = (
+  opts: {
+    storage?: ReturnType<typeof makeFakeStorageKit>;
+  } = {},
+) => {
   const zone = makeHeapZone();
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
   const vowTools = prepareVowTools(zone);
 
-  const depStubs: Pick<PortfolioKitDeps, 'rebalance' | 'executePlan'> = {
+  const depStubs: Pick<
+    PortfolioKitDeps,
+    'rebalance' | 'executePlan' | 'deliverDelegation'
+  > = {
     rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) =>
       vowTools.asVow(() => {}),
     executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
       vowTools.asVow(() => {}),
+    deliverDelegation: async (
+      ..._args: Parameters<PortfolioKitDeps['deliverDelegation']>
+    ) => {},
   };
 
   const { spies, log: callLog } = makeSpies(depStubs);
@@ -132,8 +144,12 @@ const makeTestSetup = () => {
     axelar: agoricConns[fetchedChainInfo.axelar.chainId].transferChannel,
   } as const;
 
+  const portfoliosNode = opts.storage
+    ? opts.storage.rootNode.makeChildNode('ymax0').makeChildNode('portfolios')
+    : makeMockNode('published.ymax0.portfolios');
+
   const makePortfolioKit = preparePortfolioKit(zone, {
-    portfoliosNode: makeMockNode('published.ymax0.portfolios'),
+    portfoliosNode,
     marshaller,
     usdcBrand: USDC,
     vowTools,
@@ -156,6 +172,7 @@ const makeTestSetup = () => {
     predictMockRemoteAccountAddress,
     vowTools,
     getCallLog: () => callLog.slice(),
+    ...(opts.storage ? makeStorageTools(opts.storage) : {}),
   };
 };
 
@@ -1014,5 +1031,266 @@ test('evmHandler rebalance without allocations fails without current target allo
 
   t.throws(() => evmHandler.rebalance(), {
     message: /rebalance requires targetAllocation to be set/,
+  });
+});
+
+test('evmHandler grant passes only the delegation client to delivery', async t => {
+  const ownerAddress = '0x1212121212121212121212121212121212121212' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler, delegationHelper } = makePortfolioKit({
+    portfolioId: 14,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+  t.truthy(delegationHelper);
+
+  await evmHandler.grant('agoric1delegate', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+  const [, client, portfolioId, agentId, grantee, permissions] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+  t.truthy(client);
+  t.is(portfolioId, 14);
+  t.is(agentId, 1);
+  t.is(grantee, 'agoric1delegate');
+  t.deepEqual(permissions, { allocation: true });
+});
+
+test('evmHandler grant allocates sequential agent ids', async t => {
+  const ownerAddress = '0x3434343434343434343434343434343434343434' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 18,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  await evmHandler.grant('agoric1delegatea', { allocation: true });
+  await evmHandler.grant('agoric1delegateb', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 2);
+  t.is(callLog[0][3], 1);
+  t.is(callLog[1][3], 2);
+
+  await Promise.all([
+    evmHandler.grant('agoric1delegatec', { allocation: true }),
+    evmHandler.grant('agoric1delegated', { allocation: true }),
+  ]);
+
+  const callLogRaced = getCallLog();
+  t.is(callLogRaced.length, 4);
+  t.is(callLogRaced[2][3], 3);
+  t.is(callLogRaced[3][3], 4);
+});
+
+test('delegation rebalance creates flow and calls executePlan', async t => {
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { manager } = makePortfolioKit({ portfolioId: 20 });
+
+  const agentId = await manager.grantDelegation('agoric1delegate', {
+    allocation: false,
+    rebalance: true,
+  });
+
+  t.is(agentId, 1);
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+
+  const [, client] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
+  t.like(getCallLog()[1], [
+    'executePlan',
+    ,
+    {},
+    ,
+    { type: 'rebalance' },
+    { flowId: 1 },
+  ]);
+});
+
+test('allocation delegation cannot use rebalance', async t => {
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { manager } = makePortfolioKit({ portfolioId: 21 });
+
+  const agentId = await manager.grantDelegation('agoric1delegate', {
+    allocation: true,
+  });
+
+  t.is(agentId, 1);
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+
+  const [, client] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.throws(() => client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), {
+    message: /delegation agent1 does not have required permission "rebalance"/,
+  });
+  t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
+});
+
+test('revoked delegation client is no longer usable', async t => {
+  const ownerAddress = '0x4545454545454545454545454545454545454545' as const;
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioAgents } = makeTestSetup({
+    storage,
+  });
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 19,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  manager.setTargetAllocation({ USDN: 100n });
+  await evmHandler.grant('agoric1delegate', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+  const [, client, , agentId] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.true(client.getReader().isActive());
+  t.like(await getPortfolioAgents!(19), {
+    agent1: { state: 'active' },
+  });
+
+  manager.revokeDelegation(agentId);
+
+  t.false(client.getReader().isActive());
+  t.like(await getPortfolioAgents!(19), {
+    agent1: { state: 'revoked' },
+  });
+  t.throws(
+    () =>
+      client.setTargetAllocation(
+        { USDN: 100n },
+        { policyVersion: 1, rebalanceCount: 0 },
+      ),
+    {
+      message: /delegation client is not active for agent1/,
+    },
+  );
+});
+
+test('setAutoFeatures grants, updates, and regrants planner delegation and publishes status', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const {
+    makePortfolioKit,
+    getCallLog,
+    getPortfolioStatus,
+    getPortfolioAgents,
+  } = makeTestSetup({
+    storage,
+  });
+
+  const { manager } = makePortfolioKit({ portfolioId: 22 });
+
+  await manager.setAutoFeatures({ rebalance: false });
+  t.is(
+    getCallLog().length,
+    0,
+    'no planner delegation is granted without permissions',
+  );
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: false },
+  });
+
+  await manager.setAutoFeatures({ rebalance: true });
+  t.like(getCallLog(), [
+    ['deliverDelegation', , 22, 1, PortfolioPlannerAgent, { rebalance: true }],
+  ]);
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: true },
+  });
+  t.like(await getPortfolioAgents!(22), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: true },
+      state: 'active',
+    },
+  });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
+  t.is(getCallLog().length, 2);
+  t.like(getCallLog(), [
+    ['deliverDelegation'],
+    ['executePlan', , {}, , { type: 'rebalance' }, { flowId: 1 }],
+  ]);
+
+  await manager.setAutoFeatures({ rebalance: false });
+  t.is(getCallLog().length, 2, 'active planner delegation is updated in place');
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: false },
+  });
+  t.like(await getPortfolioAgents!(22), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false },
+      state: 'active',
+    },
+  });
+  t.throws(() => client.rebalance({ policyVersion: 1, rebalanceCount: 0 }), {
+    message: /delegation agent1 does not have required permission "rebalance"/,
+  });
+
+  manager.revokeDelegation(1);
+
+  await manager.setAutoFeatures({ rebalance: false });
+  t.is(
+    getCallLog().length,
+    2,
+    'revoked planner delegation is not regranted without permissions',
+  );
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: false },
+  });
+  t.like(await getPortfolioAgents!(22), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false },
+      state: 'revoked',
+    },
+  });
+
+  await manager.setAutoFeatures({ rebalance: true });
+  t.is(getCallLog().length, 3);
+  t.like(getCallLog(), [
+    ['deliverDelegation'],
+    ['executePlan'],
+    ['deliverDelegation', , 22, 2, PortfolioPlannerAgent, { rebalance: true }],
+  ]);
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: true },
+  });
+  t.like(await getPortfolioAgents!(22), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false },
+      state: 'revoked',
+    },
+    agent2: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: true },
+      state: 'active',
+    },
   });
 });

@@ -3,9 +3,16 @@
  * and holding portfolios for EVM accounts.
  * @see {@link prepareEVMWalletHandlerKit}
  */
-import { makeTracer, type ERemote, type Remote } from '@agoric/internal';
+import {
+  makeTracer,
+  type ERemote,
+  type Remote,
+  type TypedPattern,
+} from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import type { Bech32Address } from '@agoric/orchestration';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
+import { getAddress } from '@agoric/orchestration/src/vendor/viem/viem-address.js';
 import {
   encodeType,
   getTypesForEIP712Domain,
@@ -14,7 +21,6 @@ import {
   recoverTypedDataAddress,
   validateTypedData,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
-import { getAddress } from '@agoric/orchestration/src/vendor/viem/viem-address.js';
 import type { StatusFor } from '@agoric/portfolio-api';
 import type {
   YmaxFullDomain,
@@ -371,6 +377,31 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
+          case 'Grant': {
+            const {
+              data: { accountHolder, permissions },
+            } = operationDetails;
+
+            const result = E(portfolio!).grant(
+              // cast from EIP-712 string to agoric1 Bech32 address
+              // The Bech32Address type helps with static checking but
+              // we don't rely on it for correctness: the string will
+              // be looked up in NamesByAddress.
+              accountHolder as Bech32Address,
+              permissions,
+            );
+
+            return watch(result, BasicOutcomeWatcher);
+          }
+          case 'SetAutoFeatures': {
+            const {
+              data: { features },
+            } = operationDetails;
+
+            const result = E(portfolio!).setAutoFeatures(features);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
           default:
             // @ts-expect-error exhaustiveness check
             Fail`Unsupported operation: ${q(operationDetails.operation)}`;
@@ -386,7 +417,7 @@ type EVMPortfolioOperationManager = ReturnType<
   typeof prepareEVMPortfolioOperationManager
 >;
 
-export const EIP712DataShape = M.splitRecord(
+export const EIP712DataShape: TypedPattern<EIP712Data> = M.splitRecord(
   {
     domain: M.any(),
     types: M.record(),
@@ -397,7 +428,7 @@ export const EIP712DataShape = M.splitRecord(
   {
     verifiedSigner: M.string(),
   },
-);
+) as TypedPattern<EIP712Data>;
 
 /**
  * Prepare an EVM Wallet message handler exoClass. This is the inner factory

@@ -175,7 +175,7 @@ Environment variables:
 - `GRAPHQL_ENDPOINTS`: JSON text for a Record\<dirname, url[]> object describing endpoints associated with each api-\* GraphQL API directory under [graphql](./src/graphql) (optional)
 - `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided (relative to the cwd),
 an absolute path is recommended
-- `YDS_URL`: Base URL of the YMax Data Service API, for sending transaction settlement notifications (optional)
+- `YDS_URL`: Base URL of the YMax Data Service API, for fetching dynamic instrument status and sending transaction settlement notifications (optional)
 - `YDS_API_KEY`: API key for authenticating with YDS (required with `YDS_URL`)
 - `DOTENV`: Path to environment file containing defaults of above (default ".env")
 

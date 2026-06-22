@@ -78,7 +78,8 @@ jobs:
           # Prevent `lerna publish` from failing due to uncommitted changes.
           git stash || true
           # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-          yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
+          AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON=1 \
+            yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
             --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
             --no-push --no-verify-access --yes
           # restore any stashed changes for caching

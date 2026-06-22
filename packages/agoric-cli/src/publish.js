@@ -109,7 +109,7 @@ const choose = (array, randomNumber) => {
  * @param {unknown} connectionSpec
  * @returns {asserts connectionSpec is HttpConnectionSpec}
  */
-const assertHttpConnectionSpec = connectionSpec => {
+function assertHttpConnectionSpec(connectionSpec) {
   assert.typeof(
     connectionSpec,
     'object',
@@ -130,13 +130,13 @@ const assertHttpConnectionSpec = connectionSpec => {
   );
   Number.isInteger(port) ||
     Fail`Expected integer "port" on "http" type connectionSpec, ${connectionSpec}`;
-};
+}
 
 /**
  * @param {unknown} connectionSpec
  * @returns {asserts connectionSpec is CosmosConnectionSpec}
  */
-const assertCosmosConnectionSpec = connectionSpec => {
+function assertCosmosConnectionSpec(connectionSpec) {
   assert.typeof(
     connectionSpec,
     'object',
@@ -178,7 +178,7 @@ const assertCosmosConnectionSpec = connectionSpec => {
       `every connection rpcAddress must be a string, got one ${rpcAddress}`,
     );
   }
-};
+}
 
 /**
  * @param {object} powers

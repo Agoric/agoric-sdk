@@ -44,6 +44,11 @@ export const vatsSourceSpecRegistry = {
     packagePath: '@agoric/vats/src/mintHolder.js',
     sourceSpec: resolveSourceSpec('@agoric/vats/src/mintHolder.js'),
   },
+  provisionPool: {
+    bundleName: 'provisionPool',
+    packagePath: '@agoric/vats/src/provisionPool.js',
+    sourceSpec: resolveSourceSpec('@agoric/vats/src/provisionPool.js'),
+  },
   vatMints: {
     packagePath: '@agoric/vats/src/vat-mints.js',
     sourceSpec: resolveSourceSpec('@agoric/vats/src/vat-mints.js'),

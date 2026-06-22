@@ -10,7 +10,7 @@
  * There are separate data structures to map them to functional interfaces for
  * interoperation.
  *
- * @enum {(typeof InstrumentId)[keyof typeof InstrumentId]}
+ * @typedef {(typeof InstrumentId)[keyof typeof InstrumentId]} InstrumentId
  */
 export const InstrumentId = /** @type {const} */ ({
   Aave_Arbitrum: 'Aave_Arbitrum',

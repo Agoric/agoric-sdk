@@ -29,8 +29,7 @@ export const makeEphemeraProvider = init => {
    */
   return key => {
     if (extant.has(key)) {
-      // @ts-expect-error cast
-      return extant.get(key);
+      return /** @type {E} */ (extant.get(key));
     }
     const newEph = init(key);
     extant.set(key, newEph);

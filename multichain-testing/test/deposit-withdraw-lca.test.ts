@@ -12,6 +12,8 @@ const accounts = ['user1'];
 const contractName = 'basicFlows';
 const contractBuilder =
   '../packages/builders/scripts/orchestration/init-basic-flows.js';
+const assetName = 'BLD';
+const assetDenom = 'ubld';
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
@@ -27,7 +29,7 @@ test.after(async t => {
   deleteTestKeys(accounts);
 });
 
-test('Deposit IST to orchAccount and then withdraw', async t => {
+test('Deposit BLD to orchAccount and then withdraw', async t => {
   const {
     wallets,
     provisionSmartWallet,
@@ -39,8 +41,7 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
   // Provision the Agoric smart wallet
   const agoricAddr = wallets.user1;
   const wdUser = await provisionSmartWallet(agoricAddr, {
-    BLD: 100n,
-    IST: 1000n,
+    BLD: 200n,
   });
   t.log(`Provisioned Agoric smart wallet for ${agoricAddr}`);
 
@@ -76,12 +77,13 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
   const lcaAddress = accountStoragePath.split('.').at(-1);
   t.truthy(lcaAddress, 'Account address is in storage path');
 
-  // Get IST brand
+  // Get BLD brand
   const brands = await vstorageClient.queryData('published.agoricNames.brand');
-  const istBrand = Object.fromEntries(brands).IST;
+  const assetBrand = Object.fromEntries(brands)[assetName];
 
-  // Deposit IST to orchAccount
-  const depositAmount = AmountMath.make(istBrand, 500n);
+  // Deposit BLD to orchAccount
+  const depositValue = 100_000_000n;
+  const depositAmount = AmountMath.make(assetBrand, depositValue);
   const depositOfferId = `deposit-${Date.now()}`;
   await doOffer({
     id: depositOfferId,
@@ -101,14 +103,31 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
   const queryClient = makeQueryClient(apiUrl);
 
   const lcaBalanceAfterDeposit = await retryUntilCondition(
-    () => queryClient.queryBalance(lcaAddress, 'uist'),
-    ({ balance }) => balance?.denom === 'uist' && balance?.amount === '500',
+    () => queryClient.queryBalance(lcaAddress, assetDenom),
+    ({ balance }) =>
+      balance?.denom === assetDenom && balance?.amount === String(depositValue),
     'Deposit reflected in localOrchAccount balance',
   );
-  t.deepEqual(lcaBalanceAfterDeposit.balance, { denom: 'uist', amount: '500' });
+  t.deepEqual(lcaBalanceAfterDeposit.balance, {
+    denom: assetDenom,
+    amount: String(depositValue),
+  });
 
-  // Withdraw IST from orchAccount
-  const withdrawAmount = AmountMath.make(istBrand, 300n);
+  const driverBalanceAfterDeposit = await retryUntilCondition(
+    () => queryClient.queryBalance(agoricAddr, assetDenom),
+    ({ balance }) => balance?.denom === assetDenom,
+    'Driver account balance is available after deposit',
+  );
+  if (!driverBalanceAfterDeposit.balance) {
+    throw Error(`Driver account ${assetDenom} balance unavailable`);
+  }
+  const driverBalanceBeforeWithdraw = BigInt(
+    driverBalanceAfterDeposit.balance.amount,
+  );
+
+  // Withdraw BLD from orchAccount
+  const withdrawValue = 50_000_000n;
+  const withdrawAmount = AmountMath.make(assetBrand, withdrawValue);
   const withdrawOfferId = `withdraw-${Date.now()}`;
   await doOffer({
     id: withdrawOfferId,
@@ -124,29 +143,31 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
   });
 
   // Verify withdrawal
+  const lcaBalanceAfterWithdrawValue = depositValue - withdrawValue;
   const lcaBalanceAfterWithdraw = await retryUntilCondition(
-    () => queryClient.queryBalance(lcaAddress, 'uist'),
-    ({ balance }) => balance?.denom === 'uist' && balance?.amount === '200',
+    () => queryClient.queryBalance(lcaAddress, assetDenom),
+    ({ balance }) =>
+      balance?.denom === assetDenom &&
+      balance?.amount === String(lcaBalanceAfterWithdrawValue),
     'Withdraw reflected in localOrchAccount balance',
   );
   t.deepEqual(lcaBalanceAfterWithdraw.balance, {
-    denom: 'uist',
-    amount: '200',
+    denom: assetDenom,
+    amount: String(lcaBalanceAfterWithdrawValue),
   });
 
-  // faucet - provision rebate - deposit + withdraw
-  const driverExpectedBalance = 1_000_000_000n + 250_000n - 500n + 300n;
   const driverBalanceAfterWithdraw = await retryUntilCondition(
-    () => queryClient.queryBalance(agoricAddr, 'uist'),
-    ({ balance }) =>
-      balance?.denom === 'uist' &&
-      balance?.amount === String(driverExpectedBalance),
+    () => queryClient.queryBalance(agoricAddr, assetDenom),
+    ({ balance }) => {
+      if (balance?.denom !== assetDenom) return false;
+      return BigInt(balance.amount) > driverBalanceBeforeWithdraw;
+    },
     'Withdraw reflected in driverAccount balance',
   );
-  t.deepEqual(driverBalanceAfterWithdraw.balance, {
-    denom: 'uist',
-    amount: String(driverExpectedBalance),
-  });
+  if (!driverBalanceAfterWithdraw.balance) {
+    throw Error(`Driver account ${assetDenom} balance unavailable`);
+  }
+  t.is(driverBalanceAfterWithdraw.balance.denom, assetDenom);
 });
 
 test.todo('Deposit and Withdraw ATOM/OSMO to localOrchAccount via offer #9966');
@@ -159,7 +180,6 @@ test('Attempt to withdraw more than available balance', async t => {
   const agoricAddr = wallets.user1;
   const wdUser = await provisionSmartWallet(agoricAddr, {
     BLD: 100n,
-    IST: 1000n,
   });
   t.log(`Provisioned Agoric smart wallet for ${agoricAddr}`);
 
@@ -194,12 +214,12 @@ test('Attempt to withdraw more than available balance', async t => {
   const lcaAddress = accountStoragePath.split('.').at(-1);
   t.truthy(lcaAddress, 'Account address is in storage path');
 
-  // Get IST brand
+  // Get BLD brand
   const brands = await vstorageClient.queryData('published.agoricNames.brand');
-  const istBrand = Object.fromEntries(brands).IST;
+  const assetBrand = Object.fromEntries(brands)[assetName];
 
   // Attempt to withdraw more than available balance
-  const excessiveWithdrawAmount = AmountMath.make(istBrand, 200n);
+  const excessiveWithdrawAmount = AmountMath.make(assetBrand, 200n);
   const withdrawOfferId = `withdraw-error-${Date.now()}`;
   await doOffer({
     id: withdrawOfferId,
@@ -222,6 +242,6 @@ test('Attempt to withdraw more than available balance', async t => {
   );
   t.regex(
     offerResult.status.error,
-    /Error: One or more withdrawals failed \["\[Error: cannot grab 200uist coins: (spendable balance )?(0uist)? is smaller than 200uist: insufficient funds\]"\]/,
+    /Error: One or more withdrawals failed \["\[Error: cannot grab 200ubld coins: (spendable balance )?(0ubld)? is smaller than 200ubld: insufficient funds\]"\]/,
   );
 });

@@ -25,6 +25,10 @@ export type RequestLimits = {
   maxBackoff: number;
 };
 
+export const FETCH_HEADERS = harden({
+  'User-Agent': 'Agoric-YMax-Planner/1.0.0',
+});
+
 export interface YmaxPlannerConfig {
   readonly clusterName: ClusterName;
   readonly contractInstance: string;

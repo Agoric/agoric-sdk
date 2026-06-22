@@ -7,7 +7,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {start} from '@agoric/zoe/src/contracts/valueVow.contract.js';
+ * @typedef {typeof import('@agoric/zoe/src/contracts/valueVow.contract.js').start} start
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';

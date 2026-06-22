@@ -53,10 +53,9 @@ const allValues = async obj => {
   return fromEntries(zip(keys(obj), vs));
 };
 
+/** @type {(rel: string) => Promise<EndoZipBase64Bundle>} */
 const bundleRelative = rel =>
-  bundleSource(new URL(rel, import.meta.url).pathname, {
-    byteLimit: Infinity,
-  });
+  bundleSource(new URL(rel, import.meta.url).pathname);
 
 /**
  * Build the source bundles for the kernel. makeSwingsetController()
@@ -284,11 +283,12 @@ export async function buildSwingsetKernelConfig(
    * @param {Record<string, *>} [nameToBundle]
    */
   async function getBundle(desc, nameToBundle) {
+    const descProps = /** @type {Record<string, any>} */ (desc);
     trace(
       'getBundle',
       Object.keys(desc),
-      desc.moduleFormat,
-      desc.endoZipBase64Sha512 || desc.sourceSpec,
+      descProps.moduleFormat,
+      descProps.endoZipBase64Sha512 || descProps.sourceSpec,
     );
 
     // shape validated by caller

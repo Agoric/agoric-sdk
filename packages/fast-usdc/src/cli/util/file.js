@@ -1,9 +1,9 @@
 import { dirname } from 'node:path';
 
-/** @import { readFile as readAsync } from 'node:fs/promises' */
-/** @import { writeFile as writeAsync } from 'node:fs/promises' */
-/** @import { mkdirSync } from 'node:fs' */
-/** @import { existsSync } from 'node:fs' */
+/** @typedef {typeof import('node:fs/promises').readFile} readAsync */
+/** @typedef {typeof import('node:fs/promises').writeFile} writeAsync */
+/** @typedef {typeof import('node:fs').mkdirSync} mkdirSync */
+/** @typedef {typeof import('node:fs').existsSync} existsSync */
 
 export const makeFile = (
   /** @type {string} */ path,

@@ -5,10 +5,22 @@ import { spawn } from 'node:child_process';
 import { type as osType } from 'node:os';
 import { promises as fsp } from 'node:fs';
 import path from 'node:path';
-import { glob } from 'glob';
+import globCallback from 'glob';
 import bundleSource from '@endo/bundle-source';
 
 import { main, makeBundleResolve } from './avaXS.js';
+
+/** @type {(pattern: string) => Promise<string[]>} */
+const glob = pattern =>
+  new Promise((resolve, reject) => {
+    globCallback(pattern, (err, matches) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      resolve(matches);
+    });
+  });
 
 Promise.resolve()
   .then(_ =>

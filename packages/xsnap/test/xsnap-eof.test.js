@@ -129,7 +129,7 @@ async function spawnReflectiveWorker(handleCommand) {
 }
 
 /**
- * @typedef {Awaited<ReturnType<spawnReflectiveWorker>>} ReflectiveWorker
+ * @typedef {Awaited<ReturnType<typeof spawnReflectiveWorker>>} ReflectiveWorker
  */
 
 /**
@@ -198,7 +198,7 @@ const testInterruption = test.macro(
    * @param {(worker: ReflectiveWorker) => Promise<unknown>} beforeWait
    * @param {(worker: ReflectiveWorker, message: Uint8Array) => Promise<Uint8Array>} onRequest
    * @param {(worker: ReflectiveWorker) => Promise<unknown>} afterWait
-   * @param {(t: ExecutionContext, results: Awaited<ReturnType<expectTermination>>) => void} verifyResults
+   * @param {(t: ExecutionContext, results: Awaited<ReturnType<typeof expectTermination>>) => void} verifyResults
    */
   async (t, beforeWait, onRequest, afterWait, verifyResults) => {
     const handleCommand = message => {

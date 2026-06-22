@@ -22,9 +22,15 @@ const installAndStartYmax = async ({
   const { contract, bundle: bundleId, overrides } = values;
   if (!bundleId) throw Error('--bundle missing');
 
-  const privateArgsOverrides = await (overrides
+  const fileOverrides = await (overrides
     ? cwd.readOnly().join(overrides).readJSON()
     : {});
+  const { postalService } = walletKit.agoricNames.instance;
+  postalService || assert.fail('missing postalService instance in agoricNames');
+  const privateArgsOverrides = harden({
+    ...fileOverrides,
+    postalServiceInstance: postalService,
+  });
 
   const { BLD, USDC } = walletKit.agoricNames.issuer;
   const vbankAssets = walletKit.agoricNames.vbankAsset;

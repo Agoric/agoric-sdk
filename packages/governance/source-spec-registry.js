@@ -22,6 +22,13 @@ export const governanceSourceSpecRegistry = {
     packagePath: '@agoric/governance/src/contractGovernor.js',
     sourceSpec: resolveSourceSpec('@agoric/governance/src/contractGovernor.js'),
   },
+  econCommitteeCharter: {
+    bundleName: 'econCommitteeCharter',
+    packagePath: '@agoric/governance/src/econCommitteeCharter.js',
+    sourceSpec: resolveSourceSpec(
+      '@agoric/governance/src/econCommitteeCharter.js',
+    ),
+  },
   puppetContractGovernor: {
     bundleName: 'puppetContractGovernor',
     packagePath: '@agoric/governance/tools/puppetContractGovernor.js',

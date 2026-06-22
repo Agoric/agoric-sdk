@@ -232,9 +232,10 @@ jobs:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # it only actually deploys if there is a change in the Docker digest
+  # and only autodeploys for master.
   deploy-ymax0-planner:
     needs: docker-ymax
-    if: needs.docker-ymax.result == 'success'
+    if: needs.docker-ymax.result == 'success' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:

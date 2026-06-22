@@ -16,8 +16,8 @@ const trace = makeTracer('ymax-admin');
 export const netOfConfig = (c: { chainName: string }) =>
   c.chainName === 'agoric-3' ? 'main' : 'devnet';
 
-export const getCreatorFacetKey = (contract: string): string =>
-  contract === 'ymax0' ? 'creatorFacet' : `creatorFacet-${contract}`;
+/** @deprecated Creator facets are now always stored under `creatorFacet`. */
+export const getCreatorFacetKey = (_contract: string): string => 'creatorFacet';
 
 export const checkContract = (
   contract: string,

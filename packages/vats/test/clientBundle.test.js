@@ -68,20 +68,21 @@ test('connectFaucet produces payments', async t => {
 
   produce.vatAdminSvc.resolve(vatAdminSvc);
 
-  /** @type {VatLoader<'mints' | 'board'>} */
-  const vatLoader = async (name, _sourceRef) => {
-    /** @typedef {Awaited<WellKnownVats[typeof name]>} ReturnedVat */
-    switch (name) {
-      case 'mints':
-        return /** @type {ReturnedVat} */ (mintsRoot());
-      case 'board': {
-        const baggage = makeScalarBigMapStore('baggage');
-        return /** @type {ReturnedVat} */ (boardRoot({}, {}, baggage));
+  const vatLoader = /** @type {VatLoader<'mints' | 'board'>} */ (
+    async (name, _sourceRef) => {
+      /** @typedef {Awaited<WellKnownVats[typeof name]>} ReturnedVat */
+      switch (name) {
+        case 'mints':
+          return /** @type {ReturnedVat} */ (mintsRoot());
+        case 'board': {
+          const baggage = makeScalarBigMapStore('baggage');
+          return /** @type {ReturnedVat} */ (boardRoot({}, {}, baggage));
+        }
+        default:
+          throw Error('unknown loadVat name');
       }
-      default:
-        throw Error('unknown loadVat name');
     }
-  };
+  );
   produce.loadVat.resolve(vatLoader);
   produce.loadCriticalVat.resolve(vatLoader);
 

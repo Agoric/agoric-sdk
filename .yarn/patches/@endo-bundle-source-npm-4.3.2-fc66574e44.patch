@@ -1,0 +1,255 @@
+diff --git a/cache.js b/cache.js
+index a660844ab12bba5b6116fa9b0720dc5cdc818b8d..8c7425c3932224f9b5a970b678762949e7d5b0f0 100644
+--- a/cache.js
++++ b/cache.js
+@@ -101,12 +101,17 @@ export const makeBundleCache = (wr, cwd, readPowers, opts) => {
+ 
+     const bundleFileName = toBundleName(targetName);
+     const bundleWr = wr.neighbor(bundleFileName);
++    const esbuildRd = wr
++      .neighbor(jsOpts.toBundleName(`${targetName}-esbuild`))
++      .readOnly();
++    const esbuildPath = cwd.relative(esbuildRd.absolute());
+     const metaWr = wr.neighbor(toBundleMeta(targetName));
+ 
+     const bundle = await bundleSource(
+       rootPath,
+       /** @type {BundleOptions<ModuleFormat>} */ ({
+         ...bundleOptions,
++        esbuildPath,
+         noTransforms,
+         elideComments,
+         format,
+diff --git a/package.json b/package.json
+index 9cf59f699238c1e52333720ed90127570f64ad68..9efdb2a5bdb4f1f51419b009c0fe742c21e4580c 100644
+--- a/package.json
++++ b/package.json
+@@ -19,7 +19,8 @@
+     "@endo/init": "^1.1.13",
+     "@endo/promise-kit": "^1.2.1",
+     "@endo/where": "^1.0.11",
+-    "amaro": "^1.1.9"
++    "amaro": "^1.1.9",
++    "esbuild": "^0.25.2"
+   },
+   "keywords": [],
+   "files": [
+diff --git a/src/bundle-source.js b/src/bundle-source.js
+index 5e73f2bdad73b2daca9485a9ef5b2ef03526d668..9e39cfef700e00e775ba7c75c5345364afcca71d 100644
+--- a/src/bundle-source.js
++++ b/src/bundle-source.js
+@@ -1,4 +1,19 @@
+ // @ts-check
++/**
++ * CometBFT RPC Node default max_body_bytes is 1,000,000 , and we hex encode the
++ * bundle before POSTing (2 hex chars per input byte), with an ample size
++ * reserved for overhead (10,000 bytes).
++ */
++export const AGORIC_MAX_BYTE_LIMIT = 1_000_000 / 2 - 10_000;
++/**
++ * We really only need externals to prune these particular dynamic imports.
++ */
++export const AGORIC_SDK_EXTERNALS = [
++  '@agoric/deploy-script-support',
++  '@agoric/internal/src/module-utils.js',
++];
++
++export const DEFAULT_OUT_DIR = 'bundles';
+ export const DEFAULT_MODULE_FORMAT = 'endoZipBase64';
+ export const SUPPORTED_FORMATS = [
+   'getExport',
+@@ -9,6 +24,144 @@ export const SUPPORTED_FORMATS = [
+ 
+ /** @import {BundleOptions, BundleSource, ModuleFormat} from './types.js' */
+ 
++/**
++ * @param {string} input
++ * @returns {Promise<number>}
++ */
++const calculateUploadSize = async input => {
++  // Calculate the size of the input after compression.
++  const avoidBundling = 'zlib';
++  const zlib = await import(avoidBundling);
++  const compressed = zlib.gzipSync(input);
++  return compressed.length;
++};
++
++/**
++ * Derive a stable, collision-resistant esbuild output path from the entry
++ * filename. It must be deterministic: a previous implementation embedded a
++ * timestamp, which leaked into the resulting bundle and made its hash
++ * non-reproducible, breaking hash-based snapshot/upload caches.
++ *
++ * @param {string} startFilename
++ * @returns {Promise<string>}
++ */
++const defaultEsbuildPath = async startFilename => {
++  const avoidBundlingPath = 'path';
++  const path = await import(avoidBundlingPath);
++  const avoidBundlingCrypto = 'crypto';
++  const crypto = await import(avoidBundlingCrypto);
++  const digest = crypto
++    .createHash('sha256')
++    .update(startFilename)
++    .digest('hex')
++    .slice(0, 16);
++  const safeBase = path
++    .basename(startFilename)
++    .replace(/[^a-zA-Z0-9._-]/g, '_');
++  const esbuildFileName = `esbuild-bundle-${safeBase}-${digest}.js`;
++  return path.join(DEFAULT_OUT_DIR, esbuildFileName);
++};
++
++/**
++ * @param {string[]} initialExternals
++ * @returns {Promise<string[]>}
++ */
++const allExternals = async (initialExternals = []) => {
++  try {
++    const avoidBundlingModule = 'module';
++    const module = await import(avoidBundlingModule);
++    const builtins = ['node:*', ...module.builtinModules];
++    return [...initialExternals, ...builtins];
++  } catch (e) {
++    // Fallback for environments without 'module' builtin
++    return initialExternals;
++  }
++};
++
++/**
++ * Ensure that the input directory has a package.json above it.
++ *
++ * @param {string} startFilename
++ */
++const prepareInputDirectory = async startFilename => {
++  const avoidBundlingPath = 'path';
++  const path = await import(avoidBundlingPath);
++  const inDir = path.dirname(startFilename);
++
++  const avoidBundlingUrl = 'url';
++  const url = await import(avoidBundlingUrl);
++  const avoidBundlingModule = 'module';
++  const module = await import(avoidBundlingModule);
++  try {
++    const origPJfile = module.findPackageJSON(url.pathToFileURL(startFilename));
++    if (origPJfile) {
++      // We have a package.json, so no need to create one.
++      return;
++    }
++  } catch (_e) {
++    // continue to create one
++  }
++
++  // Create a minimal package.json
++  const avoidBundlingFs = 'fs';
++  const fsp = await import(avoidBundlingFs).then(mod => mod.promises);
++  const pjFile = path.join(inDir, 'package.json');
++  const packageJson = JSON.stringify(
++    {
++      name: '@aglocal/temp-bundle-input',
++      type: 'module',
++    },
++    null,
++    2,
++  );
++  const tmpFile = `${pjFile}.${Date.now()}`;
++  try {
++    await fsp.writeFile(tmpFile, `${packageJson}\n`);
++    await fsp.rename(tmpFile, pjFile);
++  } catch (e) {
++    try {
++      await fsp.unlink(tmpFile);
++    } catch (_e) {
++      // ignore
++    }
++  }
++};
++
++/**
++ * @param {string} startFilename
++ * @param {string} outfile
++ * @param {string[]} [initialExternals]
++ */
++const esbuildBundle = async (startFilename, outfile, initialExternals = []) => {
++  const avoidBundling = 'esbuild';
++  const esbuild = await import(avoidBundling);
++  const avoidBundlingFs = 'fs';
++  const fsp = await import(avoidBundlingFs).then(mod => mod.promises);
++
++  // Now that outfile is deterministic, concurrent bundling of the same entry
++  // (e.g. parallel test workers, including worker threads sharing this pid)
++  // targets the same path. Write to a temp file that is unique per invocation
++  // and atomically rename, so no reader observes a partial write and
++  // concurrent writers never rename the same temp out from under each other.
++  // The temp name need not be deterministic — only the final outfile (which
++  // determines the bundle hash) does.
++  const avoidBundlingCrypto = 'crypto';
++  const crypto = await import(avoidBundlingCrypto);
++  const tmpfile = `${outfile}.${process.pid}.${crypto
++    .randomBytes(8)
++    .toString('hex')}.tmp`;
++  await esbuild.build({
++    entryPoints: [startFilename],
++    bundle: true,
++    platform: 'neutral',
++    external: await allExternals([...initialExternals, ...AGORIC_SDK_EXTERNALS]),
++    mainFields: ['main'],
++    minifyWhitespace: true,
++    outfile: tmpfile,
++  });
++  await fsp.rename(tmpfile, outfile);
++};
++
+ /**
+  * @param {string} startFilename
+  * @param {ModuleFormat | BundleOptions<ModuleFormat>} [options]
+@@ -23,11 +176,35 @@ const bundleSourceImpl = async (
+   const bundleOptions =
+     typeof options === 'string' ? { format: options } : options;
+   const moduleFormat = bundleOptions.format || DEFAULT_MODULE_FORMAT;
++  const { byteLimit = AGORIC_MAX_BYTE_LIMIT } = bundleOptions;
+ 
+   switch (moduleFormat) {
+     case 'endoZipBase64': {
+       const { bundleZipBase64 } = await import('./zip-base64.js');
+-      return bundleZipBase64(startFilename, bundleOptions, powers);
++      const simpleBundle = await bundleZipBase64(
++        startFilename,
++        bundleOptions,
++        powers,
++      );
++      if ((await calculateUploadSize(simpleBundle.endoZipBase64)) < byteLimit) {
++        return simpleBundle;
++      }
++
++      // When the Endo bundle is too big, fallback to esbuild-based bundling.
++      const { esbuildPath = await defaultEsbuildPath(startFilename) } =
++        bundleOptions;
++      await esbuildBundle(startFilename, esbuildPath, powers?.externals);
++
++      await prepareInputDirectory(esbuildPath);
++      const esbuilt = await bundleZipBase64(esbuildPath, bundleOptions, powers);
++      if ((await calculateUploadSize(esbuilt.endoZipBase64)) > byteLimit) {
++        const warning = RangeError(
++          `Bundled source ${startFilename} still exceeds byteLimit of ${byteLimit} after minimizing; got ${esbuilt.endoZipBase64.length} bytes`,
++        );
++        console.warn(`⚠️  AGORIC_SDK_WARNING:`, warning);
++      }
++
++      return esbuilt;
+     }
+     case 'getExport':
+     case 'nestedEvaluate':
+diff --git a/src/types.d.ts b/src/types.d.ts
+index 764386d28a96aaeefe69ab15544e794f420f4e52..e94b34b37b3e71fb621a89491dc736651925cab0 100644
+--- a/src/types.d.ts
++++ b/src/types.d.ts
+@@ -177,6 +177,8 @@ export type BundleOptions<T extends ModuleFormat> = {
+      * common dependencies for the entry package.
+      */
+     commonDependencies?: Record<string, string> | undefined;
++    byteLimit?: number | undefined;
++    esbuildPath?: string | undefined;
+ } & (T extends 'endoZipBase64' ? {
+     /**
+      * import hook for exit modules, only honored

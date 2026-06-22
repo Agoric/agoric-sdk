@@ -15,7 +15,7 @@
     "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
-    "lint:types": "yarn run -T tsc",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "lint-fix": "yarn lint:eslint --fix"
   },
   "dependencies": {
@@ -45,6 +45,6 @@
     "atLeast": 92.3
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

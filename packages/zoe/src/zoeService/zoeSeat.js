@@ -90,9 +90,6 @@ export const makeZoeSeatAdminFactory = baggage => {
   // the kit here. When resolveExitAndResult() is called, it saves
   // state.offerResult and resolves the promise if it exists, then removes the
   // table entry.
-  /**
-   * @typedef {WeakMap<ZCFSeat, unknown>}
-   */
   const ephemeralOfferResultStore = new WeakMap();
 
   const makeZoeSeatAdmin = prepareExoClassKit(

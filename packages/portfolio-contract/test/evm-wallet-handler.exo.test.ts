@@ -48,12 +48,15 @@ type DepositArgs = Parameters<PortfolioEVMFacet['deposit']>;
 
 type RebalanceArgs = Parameters<PortfolioEVMFacet['rebalance']>;
 
+type SetAutoFeatureArgs = Parameters<PortfolioEVMFacet['setAutoFeatures']>;
+
 type MockPortfolioCalls = {
   openPortfolioFromEVM: OpenPortfolioArgs[];
   validateEVMMessageDomain: ValidateEVMMessageDomainArgs[];
   withdraw: WithdrawArgs[];
   deposit: DepositArgs[];
   rebalance: RebalanceArgs[];
+  setAutoFeatures: SetAutoFeatureArgs[];
 };
 
 /**
@@ -107,6 +110,17 @@ const makeMockPortfolioEvmHandler = ({
     withdraw(...args: WithdrawArgs) {
       calls.withdraw.push(args);
       return 'withdraw-flow';
+    },
+    grant(..._args: Parameters<PortfolioEVMFacet['grant']>) {
+      // Not exercised by existing tests; present so the mock satisfies the
+      // facet type after the security fix moved delegation onto evmHandler.
+      return vowTools.asVow(() => {});
+    },
+    setAutoFeatures(
+      ..._args: Parameters<PortfolioEVMFacet['setAutoFeatures']>
+    ) {
+      calls.setAutoFeatures.push(_args);
+      return vowTools.asVow(() => {});
     },
   });
 };
@@ -248,6 +262,7 @@ const makeHandleOperationTestSetup = (
     withdraw: [],
     deposit: [],
     rebalance: [],
+    setAutoFeatures: [],
   };
 
   let nextPortfolioId = 1;
@@ -699,6 +714,52 @@ test('handleOperation invokes setTargetAllocation with correct parameters', asyn
     address: '0xEvmWalletAddress',
     operationDetails: harden(setAllocationDetails),
     nonce: 99n,
+    deadline: 1700000000n,
+  });
+
+  await vowTools.when(resultVow);
+
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation invokes setAutoFeatures with correct parameters', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow7b', {
+    portfolios: [{ id: 9 }],
+    namePrefix: 'test7b_',
+  });
+
+  const setAutoFeaturesDetails: YmaxOperationDetails<'SetAutoFeatures'> = {
+    operation: 'SetAutoFeatures',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      features: {
+        rebalance: true,
+      },
+      portfolio: 9n,
+    },
+  };
+
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
+    operationDetails: harden(setAutoFeaturesDetails),
+    nonce: 100n,
     deadline: 1700000000n,
   });
 

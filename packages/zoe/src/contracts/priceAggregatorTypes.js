@@ -1,5 +1,5 @@
 /**
- * @template {object} R Result type
+ * @template R Result type
  * @typedef {object} OracleAdmin
  * @property {() => Promise<void>} delete
  * Remove the oracle from the aggregator

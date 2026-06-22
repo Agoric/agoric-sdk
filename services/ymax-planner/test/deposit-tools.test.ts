@@ -1,6 +1,6 @@
 /** @file test for deposit tools */
 import test from 'ava';
-import type { Assertions } from 'ava';
+import type { ExecutionContext } from 'ava';
 
 import type { PartialDeep } from 'type-fest';
 
@@ -23,8 +23,10 @@ import {
 } from '@aglocal/portfolio-contract/test/supports.js';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type {
+  BlockWithdrawReason,
   NetworkSpec,
   PoolKey,
+  PoolSpec,
 } from '@agoric/portfolio-api/src/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
@@ -38,6 +40,7 @@ import { Far } from '@endo/pass-style';
 import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.js';
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
+import type { InstrumentBlocks } from '../src/instrument-status.ts';
 import {
   getNonDustBalances,
   planDepositToAllocations,
@@ -53,6 +56,7 @@ import {
 } from './mocks.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import PROD_NETWORK_202604 from '../tools/network-snapshots/prod-network-2026-04.ts';
+import PROD_NETWORK_202606 from '../tools/network-snapshots/prod-network-2026-06.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
@@ -90,13 +94,17 @@ const makeMovementDesc = (
 };
 
 /** A helper to support prettier-friendly plan flow assertions. */
-const assertPlanFlow = (
-  t: Assertions,
+const assertPlanFlow = async (
+  t: ExecutionContext,
   label: string,
   flow: MovementDesc[],
   expectedFlow: PartialDeep<MovementDesc>[],
 ) => {
-  arrayIsLike(t, flow, expectedFlow, label);
+  const result = await t.try(tt => arrayIsLike(tt, flow, expectedFlow, label));
+  if (!result.passed) {
+    t.log(`${label} actual flow`, readableSteps(flow, depositBrand));
+  }
+  result.commit();
 };
 
 /**
@@ -737,7 +745,7 @@ test('solver regressions', async t => {
     },
     amount: makeDeposit(223560027n),
   });
-  assertPlanFlow(t, 'portfolio90 flow9', portfolio90Flow9.flow, [
+  await assertPlanFlow(t, 'portfolio90 flow9', portfolio90Flow9.flow, [
     makeMovementDesc('Aave_Ethereum', '@Ethereum', 108975753n),
     makeMovementDesc('Compound_Ethereum', '@Ethereum', 114584274n),
     makeMovementDesc('@Ethereum', '@agoric', 223560027n),
@@ -755,11 +763,16 @@ test('solver regressions', async t => {
     amount: makeDeposit(999999n),
     toChain: 'Avalanche',
   });
-  assertPlanFlow(t, 'portfolio176 flow{2,3,4,8}', portfolio176FlowX.flow, [
-    makeMovementDesc('Aave_Base', '@Base', 999999n),
-    makeMovementDesc('@Base', '@Avalanche', 999999n),
-    makeMovementDesc('@Avalanche', '-Avalanche', 999999n),
-  ]);
+  await assertPlanFlow(
+    t,
+    'portfolio176 flow{2,3,4,8}',
+    portfolio176FlowX.flow,
+    [
+      makeMovementDesc('Aave_Base', '@Base', 999999n),
+      makeMovementDesc('@Base', '@Avalanche', 999999n),
+      makeMovementDesc('@Avalanche', '-Avalanche', 999999n),
+    ],
+  );
 
   // 2026-04-21T16:31Z
   const portfolio81Flow23 = await planDepositToAllocations({
@@ -775,7 +788,7 @@ test('solver regressions', async t => {
     amount: makeDeposit(1000000000n),
     fromChain: 'Ethereum',
   });
-  assertPlanFlow(t, 'portfolio81 flow23', portfolio81Flow23.flow, [
+  await assertPlanFlow(t, 'portfolio81 flow23', portfolio81Flow23.flow, [
     makeMovementDesc('+Ethereum', '@Ethereum', 1000000000n),
     makeMovementDesc('@Ethereum', 'Aave_Ethereum', 499989607n),
     makeMovementDesc('@Ethereum', 'Compound_Ethereum', 500010393n),
@@ -793,7 +806,7 @@ test('solver regressions', async t => {
     amount: makeDeposit(scale6(25_000)),
     fromChain: 'Ethereum',
   });
-  assertPlanFlow(t, 'portfolio177 flow1', portfolio177Flow1.flow, [
+  await assertPlanFlow(t, 'portfolio177 flow1', portfolio177Flow1.flow, [
     makeMovementDesc('+Ethereum', '@Ethereum', scale6(25_000)),
     makeMovementDesc('@Ethereum', 'Aave_Ethereum', scale6(8500)),
     makeMovementDesc('@Ethereum', 'Compound_Ethereum', scale6(8250)),
@@ -817,9 +830,12 @@ test('solver regressions', async t => {
     },
     currentBalances: { '@Avalanche': makeDeposit(3900011n) },
   });
-  assertPlanFlow(t, 'ymax0 portfolio35 flow76', ymax0Portfolio35Flow76.flow, [
-    makeMovementDesc('@Avalanche', 'Aave_Avalanche', 3900011n),
-  ]);
+  await assertPlanFlow(
+    t,
+    'ymax0 portfolio35 flow76',
+    ymax0Portfolio35Flow76.flow,
+    [makeMovementDesc('@Avalanche', 'Aave_Avalanche', 3900011n)],
+  );
 
   // 2026-05-13T17:42Z
   const portfolio195Flow2 = await planDepositToAllocations({
@@ -833,7 +849,7 @@ test('solver regressions', async t => {
     amount: makeDeposit(1500000000n),
     fromChain: 'Ethereum',
   });
-  assertPlanFlow(t, 'portfolio195 flow2', portfolio195Flow2.flow, [
+  await assertPlanFlow(t, 'portfolio195 flow2', portfolio195Flow2.flow, [
     makeMovementDesc('+Ethereum', '@Ethereum', scale6(1500)),
     makeMovementDesc('@Ethereum', '@agoric', scale6(1500)),
     makeMovementDesc('@agoric', '@noble', scale6(1500)),
@@ -844,6 +860,38 @@ test('solver regressions', async t => {
     makeMovementDesc('@Optimism', 'Compound_Optimism', scale6(495)),
     makeMovementDesc('@Base', 'Compound_Base', scale6(495)),
   ]);
+
+  // 2026-06-15 (simulated)
+  const portfolio145Rebalance202606 = await planRebalanceToAllocations({
+    ...plannerContext,
+    network: PROD_NETWORK_202606,
+    targetAllocation: {
+      ERC4626_morphoAlphaUsdcCore_Ethereum: 1515152n,
+      ERC4626_morphoClearstarHighYieldUsdc_Ethereum: 2525253n,
+      ERC4626_morphoGauntletUsdcCore_Arbitrum: 1515152n,
+      ERC4626_morphoGauntletUsdcRwa_Ethereum: 1414141n,
+      ERC4626_morphoSeamlessUsdcVault_Base: 1515152n,
+      ERC4626_morphoSteakhousePrimeUsdc_Base: 1515152n,
+    },
+    currentBalances: {
+      Compound_Arbitrum: makeDeposit(37n),
+      ERC4626_morphoAlphaUsdcCore_Ethereum: makeDeposit(15465311n),
+      ERC4626_morphoClearstarHighYieldUsdc_Ethereum: makeDeposit(69299093n),
+      ERC4626_morphoGauntletUsdcCore_Arbitrum: makeDeposit(15372933n),
+      ERC4626_morphoGauntletUsdcRwa_Ethereum: makeDeposit(14394083n),
+      ERC4626_morphoSeamlessUsdcVault_Base: makeDeposit(13870033n),
+      ERC4626_morphoSteakhousePrimeUsdc_Base: makeDeposit(15387391n),
+      '@Base': makeDeposit(1402522n),
+      '@Arbitrum': makeDeposit(0n),
+      '@Ethereum': makeDeposit(4633698n),
+    },
+  });
+  await assertPlanFlow(
+    t,
+    'portfolio145 simulated rebalance',
+    portfolio145Rebalance202606.flow,
+    [],
+  );
 });
 
 test('planRebalanceToAllocations regression - multiple sources', async t => {
@@ -1052,7 +1100,7 @@ test('@<ChainName> USDC target allocations', async t => {
     targetAllocation: objectMap(currentBalances, amt => amt.value),
     amount: makeDeposit(scale6(10)),
   });
-  assertPlanFlow(t, 'withdraw from mixed targets', withdrawPlan.flow, [
+  await assertPlanFlow(t, 'withdraw from mixed targets', withdrawPlan.flow, [
     makeMovementDesc('Aave_Base', '@Base', scale6(5)),
     makeMovementDesc('@Base', '@agoric', scale6(10)),
     makeMovementDesc('@agoric', '<Cash>', scale6(10)),
@@ -1064,7 +1112,7 @@ test('@<ChainName> USDC target allocations', async t => {
     targetAllocation: objectMap(currentBalances, amt => amt.value),
     amount: makeDeposit(scale6(10)),
   });
-  assertPlanFlow(t, 'deposit to mixed targets', depositPlan.flow, [
+  await assertPlanFlow(t, 'deposit to mixed targets', depositPlan.flow, [
     makeMovementDesc('<Deposit>', '@agoric', scale6(10)),
     makeMovementDesc('@agoric', '@noble', scale6(10)),
     makeMovementDesc('@noble', '@Base', scale6(10)),
@@ -1077,19 +1125,24 @@ test('@<ChainName> USDC target allocations', async t => {
     targetAllocation: { '@Base': 100n },
     amount: makeDeposit(scale6(10)),
   });
-  assertPlanFlow(t, 'deposit and consolidate', depositAndRebalancePlan.flow, [
-    makeMovementDesc('Aave_Base', '@Base', scale6(10)),
-    makeMovementDesc('<Deposit>', '@agoric', scale6(10)),
-    makeMovementDesc('@agoric', '@noble', scale6(10)),
-    makeMovementDesc('@noble', '@Base', scale6(10)),
-  ]);
+  await assertPlanFlow(
+    t,
+    'deposit and consolidate',
+    depositAndRebalancePlan.flow,
+    [
+      makeMovementDesc('Aave_Base', '@Base', scale6(10)),
+      makeMovementDesc('<Deposit>', '@agoric', scale6(10)),
+      makeMovementDesc('@agoric', '@noble', scale6(10)),
+      makeMovementDesc('@noble', '@Base', scale6(10)),
+    ],
+  );
 
   const rebalancePlan = await planRebalanceToAllocations({
     ...plannerContext,
     currentBalances,
     targetAllocation: { '@Base': 100n },
   });
-  assertPlanFlow(t, 'rebalance into chain', rebalancePlan.flow, [
+  await assertPlanFlow(t, 'rebalance into chain', rebalancePlan.flow, [
     makeMovementDesc('Aave_Base', '@Base', scale6(10)),
   ]);
 
@@ -1098,7 +1151,7 @@ test('@<ChainName> USDC target allocations', async t => {
     currentBalances,
     targetAllocation: { '@Base': 50n, '@Optimism': 50n },
   });
-  assertPlanFlow(t, 'rebalance into chains', rerebalancePlan.flow, [
+  await assertPlanFlow(t, 'rebalance into chains', rerebalancePlan.flow, [
     makeMovementDesc('Aave_Base', '@Base', scale6(10)),
     makeMovementDesc('@Base', '@agoric', scale6(10)),
     makeMovementDesc('@agoric', '@noble', scale6(10)),
@@ -1361,9 +1414,12 @@ test('@<ChainName> USDC target allocations', async t => {
 // |       A is no-withdraw | *$20* |  $16  |  $16  |  $16  |  $16  |  $16  |
 // |       D is no-withdraw |  $20  |  $15  |  $15  | *$20* |  $15  |  $15  |
 // |  chain min delta is $6 |  $20  |  $14  | *$18* |  $20  |  $14  |  $14  |
-test('computeTargetBalances cascades blocked/suppressed sources', async t => {
-  const blockWithdrawReason = 'LOW_LIQUIDITY';
-  const blockDepositReason = 'AT_CAPACITY';
+//
+// We run this scenario over multiple tests to cover both static and dynamic
+// instrument blocking (cf. `cases` below).
+{
+  const blockWithdrawReason = 'LOW_LIQUIDITY' as const;
+  const blockDepositReason = 'AT_CAPACITY' as const;
   const chain = 'Ethereum';
   const atChain = `@${chain}` as AssetPlaceRef;
   const fromChain = `+${chain}` as AssetPlaceRef;
@@ -1374,124 +1430,161 @@ test('computeTargetBalances cascades blocked/suppressed sources', async t => {
   const E = `E_${chain}` as AssetPlaceRef;
   const F = `F_${chain}` as AssetPlaceRef;
   const X = `X_${chain}` as AssetPlaceRef;
-  const network: NetworkSpec = harden({
-    ...plannerContext.network,
-    chains: [
-      ...plannerContext.network.chains.map(c =>
-        c.name === chain ? { ...c, deltaSoftMin: 6_000_000n } : c,
-      ),
-    ] as NetworkSpec['chains'],
-    pools: [
-      ...plannerContext.network.pools,
-      { pool: A, chain, protocol: 'A', blockWithdrawReason },
-      { pool: B, chain, protocol: 'B' },
-      { pool: C, chain, protocol: 'C' },
-      { pool: D, chain, protocol: 'D', blockWithdrawReason },
-      { pool: E, chain, protocol: 'E' },
-      { pool: F, chain, protocol: 'F' },
-      { pool: X, chain, protocol: 'X', blockDepositReason },
-    ] as NetworkSpec['pools'],
-  });
-  const currentBalances = {
-    [A]: makeDeposit(scale6(20)),
-    [B]: makeDeposit(scale6(20)),
-    [C]: makeDeposit(scale6(18)),
-    [D]: makeDeposit(scale6(20)),
-    [E]: makeDeposit(scale6(8)),
-    [F]: makeDeposit(scale6(2)),
-  } as any;
-  const targetAllocation: TargetAllocation = {
-    [A]: 0n,
-    [B]: 20n,
-    [C]: 20n,
-    [D]: 20n,
-    [E]: 20n,
-    [F]: 20n,
-  };
-  {
-    const plan = await planDepositToAllocations({
-      ...plannerContext,
-      network,
-      currentBalances,
-      targetAllocation,
-      amount: makeDeposit(scale6(12)),
-      fromChain: chain,
-    });
-    // t.log(readableSteps(plan.flow, depositBrand));
-    arrayIsLike(t, plan?.flow, [
-      makeMovementDesc(B, atChain, scale6(6)),
-      makeMovementDesc(atChain, E, scale6(6)),
-      makeMovementDesc(fromChain, atChain, scale6(12)),
-      makeMovementDesc(atChain, F, scale6(12)),
-    ]);
-  }
+  const chains = [
+    ...plannerContext.network.chains.map(c =>
+      c.name === chain ? { ...c, deltaSoftMin: 6_000_000n } : c,
+    ),
+  ] as NetworkSpec['chains'];
 
-  // Now replace F with the deposit-blocked X.
-  currentBalances[X] = currentBalances[F];
-  delete currentBalances[F];
-  targetAllocation[X] = targetAllocation[F];
-  delete targetAllocation[F];
-  {
-    const plan = await planDepositToAllocations({
-      ...plannerContext,
-      network,
-      currentBalances,
-      targetAllocation,
-      amount: makeDeposit(scale6(12)),
-      fromChain: chain,
+  const staticBlocks = [
+    { pool: A, chain, protocol: 'A' as any, blockWithdrawReason },
+    { pool: B, chain, protocol: 'B' as any },
+    { pool: C, chain, protocol: 'C' as any },
+    { pool: D, chain, protocol: 'D' as any, blockWithdrawReason },
+    { pool: E, chain, protocol: 'E' as any },
+    { pool: F, chain, protocol: 'F' as any },
+    { pool: X, chain, protocol: 'X' as any, blockDepositReason },
+  ] as PoolSpec[];
+  // Dynamic equivalent of `staticBlocks`:
+  // * D remains statically no-withdraw
+  // * X is dynamically no-deposit and A is dynamically no-withdraw
+  // * dynamic blocks of B and E are statically overridden
+  const dynamicBlocks = {
+    noDepositInstruments: new Set([B, E, X]),
+    noWithdrawInstruments: new Set([B, E, A]),
+  } as InstrumentBlocks;
+  const overrides = { [B]: null, [E]: null };
+  const blockDepositOverrides = { ...overrides };
+  const blockWithdrawOverrides = { ...overrides, [D]: blockWithdrawReason };
+
+  const cases: [string, PoolSpec[], InstrumentBlocks?][] = [
+    ['static', staticBlocks, undefined],
+    [
+      'dynamic',
+      staticBlocks.map<PoolSpec>(poolSpec => ({
+        ...poolSpec,
+        blockDepositReason: blockDepositOverrides[poolSpec.pool],
+        blockWithdrawReason: blockWithdrawOverrides[poolSpec.pool],
+      })),
+      dynamicBlocks,
+    ],
+  ];
+  for (const [kind, extraPools, instrumentBlocks] of cases) {
+    test(`computeTargetBalances cascades blocked/suppressed sources, ${kind}`, async t => {
+      const network: NetworkSpec = harden({
+        ...plannerContext.network,
+        chains,
+        pools: [...plannerContext.network.pools, ...extraPools],
+      });
+      const currentBalances = {
+        [A]: makeDeposit(scale6(20)),
+        [B]: makeDeposit(scale6(20)),
+        [C]: makeDeposit(scale6(18)),
+        [D]: makeDeposit(scale6(20)),
+        [E]: makeDeposit(scale6(8)),
+        [F]: makeDeposit(scale6(2)),
+      } as any;
+      const targetAllocation: TargetAllocation = {
+        [A]: 0n,
+        [B]: 20n,
+        [C]: 20n,
+        [D]: 20n,
+        [E]: 20n,
+        [F]: 20n,
+      };
+      const assertPlan = async (
+        label: string,
+        expectSteps: ReturnType<typeof makeMovementDesc>[],
+      ) => {
+        const plan = await planDepositToAllocations({
+          ...plannerContext,
+          network,
+          currentBalances,
+          targetAllocation,
+          amount: makeDeposit(scale6(12)),
+          fromChain: chain,
+          instrumentBlocks,
+        });
+        // t.log(readableSteps(plan.flow, depositBrand));
+        arrayIsLike(t, plan?.flow, expectSteps, label);
+      };
+      await assertPlan('without deposit blocking', [
+        makeMovementDesc(B, atChain, scale6(6)),
+        makeMovementDesc(atChain, E, scale6(6)),
+        makeMovementDesc(fromChain, atChain, scale6(12)),
+        makeMovementDesc(atChain, F, scale6(12)),
+      ]);
+
+      // Now replace F with the deposit-blocked X.
+      currentBalances[X] = currentBalances[F];
+      delete currentBalances[F];
+      targetAllocation[X] = targetAllocation[F];
+      delete targetAllocation[F];
+      await assertPlan('with deposit blocking', [
+        makeMovementDesc(B, atChain, scale6(6)),
+        makeMovementDesc(atChain, E, scale6(6)),
+        makeMovementDesc(fromChain, atChain, scale6(12)),
+      ]);
     });
-    // t.log(readableSteps(plan.flow, depositBrand));
-    arrayIsLike(t, plan?.flow, [
-      makeMovementDesc(B, atChain, scale6(6)),
-      makeMovementDesc(atChain, E, scale6(6)),
-      makeMovementDesc(fromChain, atChain, scale6(12)),
-    ]);
   }
-});
+}
 
 for (const [title, usdcOverdraft] of Object.entries({
   'planWithdrawFromAllocations works around withdraw-blocked pools': 0,
   'planWithdrawFromAllocations clamps to withdrawable amounts': 10,
 })) {
-  // TODO(AGO-535): Both of these scenarios should withdraw 50 USDC.
-  const testFn = usdcOverdraft === 0 ? test : test.failing;
-  testFn(title, async t => {
-    const network: NetworkSpec = harden({
-      ...plannerContext.network,
-      pools: [
-        ...plannerContext.network.pools.filter(p => p.pool !== 'Aave_Base'),
-        {
-          pool: 'Aave_Base',
-          chain: 'Base',
-          protocol: 'Aave',
-          blockWithdrawReason: 'LOW_LIQUIDITY',
-        },
-      ] as NetworkSpec['pools'],
-    });
-    const currentBalances = {
-      Aave_Base: makeDeposit(scale6(50)),
-      Aave_Ethereum: makeDeposit(scale6(25)),
-      Compound_Ethereum: makeDeposit(scale6(25)),
-    };
-    const targetAllocation: TargetAllocation = {
-      Aave_Base: 50n,
-      Aave_Ethereum: 25n,
-      Compound_Ethereum: 25n,
-    };
+  // Each of these scenarios is also covered by equivalent testing against both
+  // static and dynamic instrument blocking.
+  const dynamicBlocks = {
+    noDepositInstruments: new Set([]),
+    noWithdrawInstruments: new Set(['Aave_Base']),
+  } as InstrumentBlocks;
+  const cases: [string, BlockWithdrawReason?, InstrumentBlocks?][] = [
+    ['static', 'LOW_LIQUIDITY', undefined],
+    ['dynamic', undefined, dynamicBlocks],
+  ];
+  for (const [kind, staticBlockWithdrawReason, instrumentBlocks] of cases) {
+    // TODO(AGO-535): Both of these scenarios should withdraw 50 USDC.
+    const testFn = usdcOverdraft === 0 ? test : test.failing;
+    testFn(`${title}, ${kind}`, async t => {
+      const network: NetworkSpec = harden({
+        ...plannerContext.network,
+        pools: [
+          ...plannerContext.network.pools.filter(p => p.pool !== 'Aave_Base'),
+          {
+            pool: 'Aave_Base',
+            chain: 'Base',
+            protocol: 'Aave',
+            blockWithdrawReason: staticBlockWithdrawReason,
+          },
+        ] as NetworkSpec['pools'],
+      });
+      const currentBalances = {
+        Aave_Base: makeDeposit(scale6(50)),
+        Aave_Ethereum: makeDeposit(scale6(25)),
+        Compound_Ethereum: makeDeposit(scale6(25)),
+      };
+      const targetAllocation: TargetAllocation = {
+        Aave_Base: 50n,
+        Aave_Ethereum: 25n,
+        Compound_Ethereum: 25n,
+      };
 
-    const plan = await planWithdrawFromAllocations({
-      ...plannerContext,
-      network,
-      currentBalances,
-      targetAllocation,
-      amount: makeDeposit(scale6(50 + usdcOverdraft)),
-      toChain: 'Ethereum',
+      const plan = await planWithdrawFromAllocations({
+        ...plannerContext,
+        network,
+        currentBalances,
+        targetAllocation,
+        amount: makeDeposit(scale6(50 + usdcOverdraft)),
+        toChain: 'Ethereum',
+        instrumentBlocks,
+      });
+      // t.log(readableSteps(plan.flow, depositBrand));
+      arrayIsLike(t, plan?.flow, [
+        makeMovementDesc('Aave_Ethereum', '@Ethereum', scale6(25)),
+        makeMovementDesc('Compound_Ethereum', '@Ethereum', scale6(25)),
+        makeMovementDesc('@Ethereum', '-Ethereum', scale6(50)),
+      ]);
     });
-    // t.log(readableSteps(plan.flow, depositBrand));
-    arrayIsLike(t, plan?.flow, [
-      makeMovementDesc('Aave_Ethereum', '@Ethereum', scale6(25)),
-      makeMovementDesc('Compound_Ethereum', '@Ethereum', scale6(25)),
-      makeMovementDesc('@Ethereum', '-Ethereum', scale6(50)),
-    ]);
-  });
+  }
 }

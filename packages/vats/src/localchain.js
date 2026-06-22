@@ -33,8 +33,14 @@ const { Vow$ } = NetworkShape;
  * @import {IBCEvent, IBCPacket, ScopedBridgeManager} from './types.js';
  * @import {TransferMiddleware} from './transfer.js';
  * @import {Zone} from '@agoric/base-zone';
- * @import {Bech32Address} from '@agoric/orchestration';
  * @import {WeakMapStore} from '@agoric/store';
+ */
+
+/**
+ * Duplicated from @agoric/orchestration to avoid pulling that package's
+ * source files into vats's type-check graph (vats does not depend on it).
+ *
+ * @typedef {`${string}1${string}`} Bech32Address
  */
 
 /**
@@ -510,7 +516,7 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
         async query(request) {
           const requests = harden([request]);
           return watch(
-            E(this.facets.public).queryMany(requests),
+            E(this.facets.public).queryMany(/** @type {any} */ (requests)),
             this.facets.extractFirstQueryResultWatcher,
           );
         },

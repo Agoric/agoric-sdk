@@ -13,9 +13,9 @@ per https://agents.md/
 - `yarn build`: Build all workspaces (generates kernel bundles where needed).
 - `yarn test`: Run unit tests across all packages (AVA).
 - `yarn lint` | `yarn lint-fix`: Check or auto-fix lint issues across packages.
-- `yarn run -T tsc --noEmit --incremental`: Fast typecheck within a package; do this after changes.
-    - Watch mode for type errors in active workspaces: run `yarn run -T tsc --noEmit --incremental --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
-- `yarn typecheck-quick` to do a fast typecheck over the whole repo (4-7 seconds)
+- `yarn lint:types`: Fast typecheck within a package (uses tsgo, the TypeScript 7 native preview); do this after changes.
+    - Watch mode for type errors in active workspaces: run `yarn lint:types --watch --preserveWatchOutput` in the workspace(s) being edited, and keep the terminal output visible so Codex can monitor errors.
+- `yarn typecheck-all` to do a fast typecheck over the whole repo (a few seconds, using tsgo)
 - `yarn format`: Format code via dprint; `yarn lint:format` to check only.
 - Git hooks: installed by `scripts/install-git-hooks.sh`.
   - Install or refresh hooks with `yarn hooks:install`.
@@ -29,7 +29,7 @@ per https://agents.md/
   - After any prepack run, clean generated artifacts and restore package trees with: `yarn lerna run --reject-cycles --concurrency 1 postpack`
 
 ## Coding Style & Naming Conventions
-- ESM by default; JS and TypeScript both used. Target Node ^20.9 or ^22.11.
+- ESM by default; JS and TypeScript both used. Target Node ^22.11.
 - dprint enforced (Prettier-compatible options include single quotes and trailing commas).
 - ESLint configured via `eslint.config.mjs` (includes AVA, TypeScript, JSDoc, and repository-specific rules).
 - Package names: publishable packages use `@agoric/*`; private/local packages use `@aglocal/*` (verify with `yarn lint:package-names`).
@@ -39,6 +39,19 @@ per https://agents.md/
     - Keep ambient authority (e.g., `process.env`, `console`, filesystem, network) in entrypoints
     - pass explicit capabilities (e.g., `io.console`) into shared JS modules.
     - Never `@endo/init` in modules; best practice is at the beginning of an entrypoint
+
+## Capability Security & POLA
+
+This is a capability-security codebase. Apply the [Principle of Least Authority](https://docs.agoric.com/guides/js-programming/hardened-js.html#the-principle-of-least-authority-pola) by default: every object — facet, capability, callback — should hold and expose only the authority needed to do its legitimate job. POLA "limits the damage that can happen if there is an exploitable bug."
+
+When you add a method or pass a capability, ask **"who can reach this, and what stops an unauthorized caller?"** Use the answer to decide placement:
+
+- Per-principal operations (acting on one portfolio, account, vault, …) belong on that principal's facet, not on the public facet. Zoe exposes a contract's `publicFacet` to anyone with the instance (`E(zoe).getPublicFacet(instance)`), so a method placed there is reachable by anyone — only acceptable when it creates new state owned by a verifiable principal, returns pure info, or carries its own proof of authority.
+- A dispatch lookup that throws on miss (e.g., `wallet.foo.get(id)`) is often the entire enforcement mechanism for "the caller must own this thing." Don't sidestep that pattern when adding a new op — route through the same per-principal reference.
+- Pass narrowed capabilities into modules, not whole objects. Inline adapters like `{ publish: node.setValue }` are cheap; over-broad refs are expensive when they leak. The "Entrypoints vs modules" rule above is one instance of this.
+- Default to read-only first; split (e.g., `agoricNames` / `agoricNamesAdmin`) before exposing write access.
+
+The facet splits in contracts like `packages/portfolio-contract/src/portfolio.exo.ts` (`reader`, `reporter`, `manager`, `planner`, `evmHandler`, …) are textbook POLA — study a few before adding a method.
 
 ## Testing Guidelines
 - Framework: AVA. Test files follow `**/test/**/*.test.*` within each package.

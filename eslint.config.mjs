@@ -344,10 +344,10 @@ export default [
     .map(config => ({
       ...config,
       files: [
-        '**/exported.*',
-        '**/types-index.*',
-        '**/types-ambient.*',
-        '**/types.*',
+        '**/exported.{js,cjs,mjs,ts,mts}',
+        '**/types-index.{js,cjs,mjs,ts,mts}',
+        '**/types-ambient.{js,cjs,mjs,ts,mts}',
+        '**/types.{js,cjs,mjs,ts,mts}',
       ],
     })),
   {

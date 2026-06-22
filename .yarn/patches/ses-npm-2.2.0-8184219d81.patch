@@ -1,0 +1,304 @@
+diff --git a/dist/lockdown.cjs b/dist/lockdown.cjs
+index 4448858529167d7979b02b631ae985760815a109..af826fca8e3d03db1e87a80b4ddc06069ab452d4 100644
+--- a/dist/lockdown.cjs
++++ b/dist/lockdown.cjs
+@@ -4430,6 +4430,9 @@ const freezeTypedArray = array => {
+   Int8Array: 'Int8Array',
+   Int16Array: 'Int16Array',
+   Int32Array: 'Int32Array',
++  Float16Array: 'Float16Array',
++  Float32Array: 'Float32Array',
++  Float64Array: 'Float64Array',
+   Map: 'Map',
+   Number: 'Number',
+   Object: 'Object',
+@@ -4509,17 +4512,12 @@ const freezeTypedArray = array => {
+   Math: '%InitialMath%',
+   Temporal: '%InitialTemporal%',
+ 
+-  // We move these from universalPropertyNames because the NaN side channel
+-  // means that they are not quite harmless.
+-  // We move them to initialGlobalPropertyNames so that they'll still be
+-  // included in the primordials, repaired, and hardened. Thus, they
+-  // can be endowed into compartments without hazard beyond the
+-  // NaN side channel.
+-  //
+-  // // https://github.com/tc39/proposal-float16array
+-  Float16Array: 'Float16Array',
+-  Float32Array: 'Float32Array',
+-  Float64Array: 'Float64Array',
++  // NOTE(agoric-sdk Endo sync, endojs/endo#3153): upstream SES 2.x moved
++  // Float{16,32,64}Array out of universalPropertyNames to close the NaN
++  // side channel, but that breaks already-deployed vat bundles whose
++  // marshal constructs Float64Array. This patch restores them as universal
++  // compartment globals (see universalPropertyNames above), deferring the
++  // side-channel mitigation.
+ 
+   // ESNext
+ 
+diff --git a/dist/lockdown.mjs b/dist/lockdown.mjs
+index 4448858529167d7979b02b631ae985760815a109..af826fca8e3d03db1e87a80b4ddc06069ab452d4 100644
+--- a/dist/lockdown.mjs
++++ b/dist/lockdown.mjs
+@@ -4430,6 +4430,9 @@ const freezeTypedArray = array => {
+   Int8Array: 'Int8Array',
+   Int16Array: 'Int16Array',
+   Int32Array: 'Int32Array',
++  Float16Array: 'Float16Array',
++  Float32Array: 'Float32Array',
++  Float64Array: 'Float64Array',
+   Map: 'Map',
+   Number: 'Number',
+   Object: 'Object',
+@@ -4509,17 +4512,12 @@ const freezeTypedArray = array => {
+   Math: '%InitialMath%',
+   Temporal: '%InitialTemporal%',
+ 
+-  // We move these from universalPropertyNames because the NaN side channel
+-  // means that they are not quite harmless.
+-  // We move them to initialGlobalPropertyNames so that they'll still be
+-  // included in the primordials, repaired, and hardened. Thus, they
+-  // can be endowed into compartments without hazard beyond the
+-  // NaN side channel.
+-  //
+-  // // https://github.com/tc39/proposal-float16array
+-  Float16Array: 'Float16Array',
+-  Float32Array: 'Float32Array',
+-  Float64Array: 'Float64Array',
++  // NOTE(agoric-sdk Endo sync, endojs/endo#3153): upstream SES 2.x moved
++  // Float{16,32,64}Array out of universalPropertyNames to close the NaN
++  // side channel, but that breaks already-deployed vat bundles whose
++  // marshal constructs Float64Array. This patch restores them as universal
++  // compartment globals (see universalPropertyNames above), deferring the
++  // side-channel mitigation.
+ 
+   // ESNext
+ 
+diff --git a/dist/lockdown.umd.js b/dist/lockdown.umd.js
+index 4448858529167d7979b02b631ae985760815a109..af826fca8e3d03db1e87a80b4ddc06069ab452d4 100644
+--- a/dist/lockdown.umd.js
++++ b/dist/lockdown.umd.js
+@@ -4430,6 +4430,9 @@ const freezeTypedArray = array => {
+   Int8Array: 'Int8Array',
+   Int16Array: 'Int16Array',
+   Int32Array: 'Int32Array',
++  Float16Array: 'Float16Array',
++  Float32Array: 'Float32Array',
++  Float64Array: 'Float64Array',
+   Map: 'Map',
+   Number: 'Number',
+   Object: 'Object',
+@@ -4509,17 +4512,12 @@ const freezeTypedArray = array => {
+   Math: '%InitialMath%',
+   Temporal: '%InitialTemporal%',
+ 
+-  // We move these from universalPropertyNames because the NaN side channel
+-  // means that they are not quite harmless.
+-  // We move them to initialGlobalPropertyNames so that they'll still be
+-  // included in the primordials, repaired, and hardened. Thus, they
+-  // can be endowed into compartments without hazard beyond the
+-  // NaN side channel.
+-  //
+-  // // https://github.com/tc39/proposal-float16array
+-  Float16Array: 'Float16Array',
+-  Float32Array: 'Float32Array',
+-  Float64Array: 'Float64Array',
++  // NOTE(agoric-sdk Endo sync, endojs/endo#3153): upstream SES 2.x moved
++  // Float{16,32,64}Array out of universalPropertyNames to close the NaN
++  // side channel, but that breaks already-deployed vat bundles whose
++  // marshal constructs Float64Array. This patch restores them as universal
++  // compartment globals (see universalPropertyNames above), deferring the
++  // side-channel mitigation.
+ 
+   // ESNext
+ 
+diff --git a/dist/ses-hermes.cjs b/dist/ses-hermes.cjs
+index cf6bb438e0b1f28bbd27e0516aedc6e670e93040..3a9e68c03421780d62530e9db20abef8f3821120 100644
+--- a/dist/ses-hermes.cjs
++++ b/dist/ses-hermes.cjs
+@@ -4430,6 +4430,9 @@ const freezeTypedArray = array => {
+   Int8Array: 'Int8Array',
+   Int16Array: 'Int16Array',
+   Int32Array: 'Int32Array',
++  Float16Array: 'Float16Array',
++  Float32Array: 'Float32Array',
++  Float64Array: 'Float64Array',
+   Map: 'Map',
+   Number: 'Number',
+   Object: 'Object',
+@@ -4509,17 +4512,12 @@ const freezeTypedArray = array => {
+   Math: '%InitialMath%',
+   Temporal: '%InitialTemporal%',
+ 
+-  // We move these from universalPropertyNames because the NaN side channel
+-  // means that they are not quite harmless.
+-  // We move them to initialGlobalPropertyNames so that they'll still be
+-  // included in the primordials, repaired, and hardened. Thus, they
+-  // can be endowed into compartments without hazard beyond the
+-  // NaN side channel.
+-  //
+-  // // https://github.com/tc39/proposal-float16array
+-  Float16Array: 'Float16Array',
+-  Float32Array: 'Float32Array',
+-  Float64Array: 'Float64Array',
++  // NOTE(agoric-sdk Endo sync, endojs/endo#3153): upstream SES 2.x moved
++  // Float{16,32,64}Array out of universalPropertyNames to close the NaN
++  // side channel, but that breaks already-deployed vat bundles whose
++  // marshal constructs Float64Array. This patch restores them as universal
++  // compartment globals (see universalPropertyNames above), deferring the
++  // side-channel mitigation.
+ 
+   // ESNext
+ 
+diff --git a/dist/ses.cjs b/dist/ses.cjs
+index 4448858529167d7979b02b631ae985760815a109..af826fca8e3d03db1e87a80b4ddc06069ab452d4 100644
+--- a/dist/ses.cjs
++++ b/dist/ses.cjs
+@@ -4430,6 +4430,9 @@ const freezeTypedArray = array => {
+   Int8Array: 'Int8Array',
+   Int16Array: 'Int16Array',
+   Int32Array: 'Int32Array',
++  Float16Array: 'Float16Array',
++  Float32Array: 'Float32Array',
++  Float64Array: 'Float64Array',
+   Map: 'Map',
+   Number: 'Number',
+   Object: 'Object',
+@@ -4509,17 +4512,12 @@ const freezeTypedArray = array => {
+   Math: '%InitialMath%',
+   Temporal: '%InitialTemporal%',
+ 
+-  // We move these from universalPropertyNames because the NaN side channel
+-  // means that they are not quite harmless.
+-  // We move them to initialGlobalPropertyNames so that they'll still be
+-  // included in the primordials, repaired, and hardened. Thus, they
+-  // can be endowed into compartments without hazard beyond the
+-  // NaN side channel.
+-  //
+-  // // https://github.com/tc39/proposal-float16array
+-  Float16Array: 'Float16Array',
+-  Float32Array: 'Float32Array',
+-  Float64Array: 'Float64Array',
++  // NOTE(agoric-sdk Endo sync, endojs/endo#3153): upstream SES 2.x moved
++  // Float{16,32,64}Array out of universalPropertyNames to close the NaN
++  // side channel, but that breaks already-deployed vat bundles whose
++  // marshal constructs Float64Array. This patch restores them as universal
++  // compartment globals (see universalPropertyNames above), deferring the
++  // side-channel mitigation.
+ 
+   // ESNext
+ 
+diff --git a/dist/ses.mjs b/dist/ses.mjs
+index 4448858529167d7979b02b631ae985760815a109..af826fca8e3d03db1e87a80b4ddc06069ab452d4 100644
+--- a/dist/ses.mjs
++++ b/dist/ses.mjs
+@@ -4430,6 +4430,9 @@ const freezeTypedArray = array => {
+   Int8Array: 'Int8Array',
+   Int16Array: 'Int16Array',
+   Int32Array: 'Int32Array',
++  Float16Array: 'Float16Array',
++  Float32Array: 'Float32Array',
++  Float64Array: 'Float64Array',
+   Map: 'Map',
+   Number: 'Number',
+   Object: 'Object',
+@@ -4509,17 +4512,12 @@ const freezeTypedArray = array => {
+   Math: '%InitialMath%',
+   Temporal: '%InitialTemporal%',
+ 
+-  // We move these from universalPropertyNames because the NaN side channel
+-  // means that they are not quite harmless.
+-  // We move them to initialGlobalPropertyNames so that they'll still be
+-  // included in the primordials, repaired, and hardened. Thus, they
+-  // can be endowed into compartments without hazard beyond the
+-  // NaN side channel.
+-  //
+-  // // https://github.com/tc39/proposal-float16array
+-  Float16Array: 'Float16Array',
+-  Float32Array: 'Float32Array',
+-  Float64Array: 'Float64Array',
++  // NOTE(agoric-sdk Endo sync, endojs/endo#3153): upstream SES 2.x moved
++  // Float{16,32,64}Array out of universalPropertyNames to close the NaN
++  // side channel, but that breaks already-deployed vat bundles whose
++  // marshal constructs Float64Array. This patch restores them as universal
++  // compartment globals (see universalPropertyNames above), deferring the
++  // side-channel mitigation.
+ 
+   // ESNext
+ 
+diff --git a/dist/ses.umd.js b/dist/ses.umd.js
+index 4448858529167d7979b02b631ae985760815a109..af826fca8e3d03db1e87a80b4ddc06069ab452d4 100644
+--- a/dist/ses.umd.js
++++ b/dist/ses.umd.js
+@@ -4430,6 +4430,9 @@ const freezeTypedArray = array => {
+   Int8Array: 'Int8Array',
+   Int16Array: 'Int16Array',
+   Int32Array: 'Int32Array',
++  Float16Array: 'Float16Array',
++  Float32Array: 'Float32Array',
++  Float64Array: 'Float64Array',
+   Map: 'Map',
+   Number: 'Number',
+   Object: 'Object',
+@@ -4509,17 +4512,12 @@ const freezeTypedArray = array => {
+   Math: '%InitialMath%',
+   Temporal: '%InitialTemporal%',
+ 
+-  // We move these from universalPropertyNames because the NaN side channel
+-  // means that they are not quite harmless.
+-  // We move them to initialGlobalPropertyNames so that they'll still be
+-  // included in the primordials, repaired, and hardened. Thus, they
+-  // can be endowed into compartments without hazard beyond the
+-  // NaN side channel.
+-  //
+-  // // https://github.com/tc39/proposal-float16array
+-  Float16Array: 'Float16Array',
+-  Float32Array: 'Float32Array',
+-  Float64Array: 'Float64Array',
++  // NOTE(agoric-sdk Endo sync, endojs/endo#3153): upstream SES 2.x moved
++  // Float{16,32,64}Array out of universalPropertyNames to close the NaN
++  // side channel, but that breaks already-deployed vat bundles whose
++  // marshal constructs Float64Array. This patch restores them as universal
++  // compartment globals (see universalPropertyNames above), deferring the
++  // side-channel mitigation.
+ 
+   // ESNext
+ 
+diff --git a/src/permits.js b/src/permits.js
+index dde4e12c4f20a9e2fe88d9bb8b3cf140c3644518..dad407d4a2857d75eda19e5cff2aaeb3d396cedf 100644
+--- a/src/permits.js
++++ b/src/permits.js
+@@ -63,6 +63,9 @@ export const universalPropertyNames = {
+   Int8Array: 'Int8Array',
+   Int16Array: 'Int16Array',
+   Int32Array: 'Int32Array',
++  Float16Array: 'Float16Array',
++  Float32Array: 'Float32Array',
++  Float64Array: 'Float64Array',
+   Map: 'Map',
+   Number: 'Number',
+   Object: 'Object',
+@@ -142,17 +145,12 @@ export const initialGlobalPropertyNames = {
+   Math: '%InitialMath%',
+   Temporal: '%InitialTemporal%',
+ 
+-  // We move these from universalPropertyNames because the NaN side channel
+-  // means that they are not quite harmless.
+-  // We move them to initialGlobalPropertyNames so that they'll still be
+-  // included in the primordials, repaired, and hardened. Thus, they
+-  // can be endowed into compartments without hazard beyond the
+-  // NaN side channel.
+-  //
+-  // // https://github.com/tc39/proposal-float16array
+-  Float16Array: 'Float16Array',
+-  Float32Array: 'Float32Array',
+-  Float64Array: 'Float64Array',
++  // NOTE(agoric-sdk Endo sync, endojs/endo#3153): upstream SES 2.x moved
++  // Float{16,32,64}Array out of universalPropertyNames to close the NaN
++  // side channel, but that breaks already-deployed vat bundles whose
++  // marshal constructs Float64Array. This patch restores them as universal
++  // compartment globals (see universalPropertyNames above), deferring the
++  // side-channel mitigation.
+ 
+   // ESNext
+ 
