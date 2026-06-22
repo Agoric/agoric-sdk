@@ -55,7 +55,6 @@ import {
 } from '../src/engine.ts';
 import type {
   Powers,
-  PortfoliosMemory,
   ProcessPortfolioPowers,
   VstorageEventDetail,
 } from '../src/engine.ts';
@@ -617,7 +616,7 @@ test('processPortfolioEvents only resolves flows for new portfolio states', asyn
   t.is(memory.snapshots.get(`portfolio${portfolioId}`)?.repeats, 1);
   arrayIsLike(
     t,
-    [...memory.portfolioStatusForKey.keys()],
+    [...memory.portfolioRecordForKey.keys()],
     [`portfolio${portfolioId}`],
   );
 });
@@ -851,7 +850,7 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
     'auto rebalance deposits at least the minimum into instruments',
   );
   t.deepEqual(
-    memory.portfolioStatusForKey?.get(`portfolio${portfolioId}`),
+    memory.portfolioRecordForKey?.get(`portfolio${portfolioId}`)?.status,
     portfolioStatus,
     'portfolio status memory is updated',
   );
@@ -874,7 +873,10 @@ test('processPortfolioEvents scans remembered portfolios when there are no event
     enabledAutoFeatures: { rebalance: true },
   });
   const memory = makePortfoliosMemory();
-  memory.portfolioStatusForKey.set(portfolioKey, portfolioStatus);
+  memory.portfolioRecordForKey.set(portfolioKey, {
+    atBlockHeight: 0n,
+    status: portfolioStatus,
+  });
   memory.balanceCache.set(portfolioKey, {
     '@noble': nobleBalance,
     USDN: usdnBalance,
@@ -906,7 +908,10 @@ test('processPortfolioEvents rechecks YDS candidates with fresh balances', async
     '@noble': makeDeposit(25_000_000n),
   });
   const memory = makePortfoliosMemory();
-  memory.portfolioStatusForKey.set(portfolioKey, portfolioStatus);
+  memory.portfolioRecordForKey.set(portfolioKey, {
+    atBlockHeight: 0n,
+    status: portfolioStatus,
+  });
 
   await processPortfolioEvents([], blockHeight, memory, powers);
 
@@ -944,8 +949,14 @@ test('processPortfolioEvents continues auto scan after portfolio error', async t
     '@noble': makeDeposit(25_000_000n),
   });
   const memory = makePortfoliosMemory();
-  memory.portfolioStatusForKey.set(badPortfolioKey, badPortfolioStatus);
-  memory.portfolioStatusForKey.set(goodPortfolioKey, goodPortfolioStatus);
+  memory.portfolioRecordForKey.set(badPortfolioKey, {
+    atBlockHeight: 0n,
+    status: badPortfolioStatus,
+  });
+  memory.portfolioRecordForKey.set(goodPortfolioKey, {
+    atBlockHeight: 0n,
+    status: goodPortfolioStatus,
+  });
 
   await processPortfolioEvents([], blockHeight, memory, powers);
 

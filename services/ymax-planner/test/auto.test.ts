@@ -230,6 +230,9 @@ const makeMaybeAutoPowers = (
             return { tx: 'mock-tx', id: 'mock-id' };
           },
         }) as any,
+      saveOfferResult: () => {
+        throw new Error('unexpected call to walletStore.saveOfferResult');
+      }
     },
     ...overrides,
   };

@@ -1,3 +1,4 @@
+import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
   portfolioIdFromKey,
@@ -6,6 +7,7 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import type { reflectWalletStore } from '@agoric/client-utils';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
 import {
@@ -152,19 +154,7 @@ export type MaybeAutoRebalancePowers = {
     gasEstimator: GasEstimator;
   }) => Promise<FundsFlowPlan>;
   portfoliosPathPrefix: string;
-  walletStore: {
-    get(
-      targetName: 'planner',
-      opts: { sendOnly: true },
-    ): {
-      rebalance: (
-        portfolioId: number,
-        planOrSteps: FundsFlowPlan | FundsFlowPlan['flow'],
-        policyVersion: number,
-        rebalanceCount: number,
-      ) => Promise<{ tx: unknown; id: string | number }>;
-    };
-  };
+  walletStore: ReturnType<typeof reflectWalletStore>;
 };
 
 export const maybeAutoRebalance = async (
@@ -186,7 +176,7 @@ export const maybeAutoRebalance = async (
     portfoliosPathPrefix,
     walletStore,
   }: MaybeAutoRebalancePowers,
-) => {
+): Promise<string | undefined> => {
   const { enabledAutoFeatures, targetAllocation } = portfolioStatus;
   if (!enabledAutoFeatures?.rebalance || !targetAllocation) return;
 
@@ -243,7 +233,7 @@ export const maybeAutoRebalance = async (
 
     const planOrSteps = plan.order ? plan : plan.flow;
     const txOpts = { sendOnly: true } as const;
-    const planReceiver = walletStore.get('planner', txOpts);
+    const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
     const { tx, id } = await planReceiver.rebalance(
       portfolioId,
       planOrSteps,
@@ -260,6 +250,7 @@ export const maybeAutoRebalance = async (
       inspectForStdout({ ...logContext, plan }),
       tx,
     );
+    return tx.transactionHash;
   } catch (err) {
     annotateError(err, inspect(logContext, { depth: 4 }));
     if (

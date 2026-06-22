@@ -256,8 +256,15 @@ export type ProcessPortfolioPowers = Pick<
 
 export type PortfoliosMemory = {
   deferrals: EventRecord[];
-  snapshots: Map<string, { fingerprint: string; repeats: number }>;
-  portfolioStatusForKey: Map<PortfolioKey, StatusFor['portfolio']>;
+  // TODO: Combine snapshots and portfolioRecordForKey.
+  snapshots: Map<
+    string,
+    { fingerprint: string; txHash?: null | string; repeats: number }
+  >;
+  portfolioRecordForKey: Map<
+    PortfolioKey,
+    { atBlockHeight: bigint; status: StatusFor['portfolio'] }
+  >;
   balanceCache: Map<
     PortfolioKey,
     ERef<Partial<Record<AssetPlaceRef, NatAmount>>>
@@ -272,7 +279,7 @@ export const makePortfoliosMemory = (options?: {
   return {
     deferrals: [],
     snapshots: new Map(),
-    portfolioStatusForKey: new Map(),
+    portfolioRecordForKey: new Map(),
     balanceCache:
       balanceCacheTtlMs !== undefined
         ? makeExpiringMap(balanceCacheTtlMs, { now } as any)
@@ -324,7 +331,7 @@ export const processPortfolioEvents = async (
     autoRebalance,
   }: ProcessPortfolioPowers,
 ) => {
-  const { deferrals, portfolioStatusForKey, balanceCache } = memory;
+  const { deferrals, portfolioRecordForKey, balanceCache } = memory;
   const { query, marshaller } = signingSmartWalletKit;
   const { portfoliosPathPrefix } = vstoragePathPrefixes;
   const { vstorage } = query;
@@ -391,7 +398,7 @@ export const processPortfolioEvents = async (
     portfolioKey: PortfolioKey,
     flowKey: FlowKey,
     flowDetail: FlowDetail,
-  ) => {
+  ): Promise<string | undefined> => {
     const logPrefix = `[${portfolioKey}.${flowKey}]`;
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
     const portfolioId = portfolioIdFromKey(portfolioKey);
@@ -419,7 +426,7 @@ export const processPortfolioEvents = async (
         ? Args
         : never,
       extraDetails?: object,
-    ) => {
+    ): Promise<string> => {
       const txOpts = { sendOnly: true };
       const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
       const { tx, id } = await planReceiver[methodName]!(...(args as any[]));
@@ -438,6 +445,7 @@ export const processPortfolioEvents = async (
         details,
         tx,
       );
+      return tx.transactionHash;
     };
 
     const plannerContext = {
@@ -490,12 +498,12 @@ export const processPortfolioEvents = async (
 
       if (plan.flow.length > 0) {
         const planOrSteps = plan.order ? plan : plan.flow;
-        await settle('resolvePlan', [...scope, planOrSteps, ...versions], {
+        return settle('resolvePlan', [...scope, planOrSteps, ...versions], {
           plan,
         });
       } else {
         const reason = 'Nothing to do for this operation.';
-        await settle('rejectPlan', [...scope, reason, ...versions]);
+        return settle('rejectPlan', [...scope, reason, ...versions]);
       }
     } catch (err) {
       annotateError(err, inspect(logContext, { depth: 4 }));
@@ -504,7 +512,7 @@ export const processPortfolioEvents = async (
         err instanceof NoSolutionError ||
         err instanceof TargetBalanceError
       ) {
-        await settle('rejectPlan', [...scope, err.message, ...versions], {
+        return settle('rejectPlan', [...scope, err.message, ...versions], {
           cause: err,
         }).catch(err2 => {
           throw AggregateError([err, err2]);
@@ -531,12 +539,39 @@ export const processPortfolioEvents = async (
   };
   const scanAutoRebalances = async () => {
     await null;
-    for (const [portfolioKey, portfolioStatus] of portfolioStatusForKey) {
-      const { enabledAutoFeatures, targetAllocation } = portfolioStatus;
+    for (const [portfolioKey, portfolioRecord] of portfolioRecordForKey) {
+      const { atBlockHeight, status } = portfolioRecord;
+      const { enabledAutoFeatures, targetAllocation } = status;
       if (!enabledAutoFeatures?.rebalance || !targetAllocation) continue;
-      if (Object.keys(portfolioStatus.flowsRunning || {}).length > 0) continue;
+      if (Object.keys(status.flowsRunning || {}).length > 0) continue;
 
+      const path = `${portfoliosPathPrefix}.${portfolioKey}`;
+      const readOpts: ReadVstorageSimpleOpts = {
+        minBlockHeight: atBlockHeight,
+        retries: 4,
+      };
       try {
+        // If this (portfolio, flows) data hasn't changed since our last
+        // successful submission, there's no point in trying again.
+        const flowKeysResp = await readStorageMeta(
+          vstorage,
+          `${path}.flows`,
+          'children',
+          readOpts,
+        );
+        const flowKeys = new Set(flowKeysResp.result.children as string[]);
+        const fingerprint = fingerprintPortfolioState(status, flowKeys, {
+          marshaller,
+        });
+        const oldState = memory.snapshots.get(portfolioKey);
+        if (oldState?.txHash && fingerprint === oldState.fingerprint) {
+          if (!oldState.repeats) {
+            console.warn(`⚠️  Ignoring unchanged auto-rebalance ${path}`);
+          }
+          oldState.repeats += 1;
+          continue;
+        }
+
         const cachedBalances = await getCachedBalances(portfolioKey);
         if (!cachedBalances) continue;
         const candidateTargets = computeTargetBalances({
@@ -554,17 +589,17 @@ export const processPortfolioEvents = async (
         );
         if (!shouldRebalance) continue;
 
-        const freshBalances = await getFreshBalances(
-          portfolioKey,
-          portfolioStatus,
-        );
-        // TODO: Fingerprint to avoid redundant submissions.
-        await maybeAutoRebalance(
-          portfolioStatus,
+        const freshBalances = await getFreshBalances(portfolioKey, status);
+        const txHash = await maybeAutoRebalance(
+          status,
           portfolioKey,
           freshBalances,
           maybeAutoRebalancePowers,
         );
+        if (txHash) {
+          const snapshot = { fingerprint, txHash, repeats: 0 };
+          memory.snapshots.set(portfolioKey, snapshot);
+        }
       } catch (err) {
         console.warn(
           `[${portfolioKey}.autoRebalance] ⚠️ Skipping auto rebalance scan`,
@@ -579,20 +614,18 @@ export const processPortfolioEvents = async (
     if (handledPortfolioKeys.has(portfolioKey)) return;
     handledPortfolioKeys.add(portfolioKey);
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const readOpts: ReadVstorageSimpleOpts = {
-      minBlockHeight: eventRecord.blockHeight,
-      retries: 4,
-    };
+    const readOpts: ReadVstorageSimpleOpts =
+      { minBlockHeight: eventRecord.blockHeight, retries: 4 };
     await null;
     try {
       const [statusCapdata, flowKeysResp] = await Promise.all([
         readStreamCellValue(vstorage, path, readOpts),
         readStorageMeta(vstorage, `${path}.flows`, 'children', readOpts),
       ]);
-      const status = marshaller.fromCapData(statusCapdata);
+      const status = marshaller.fromCapData(statusCapdata) as StatusFor['portfolio'];
       mustMatch(status, PortfolioStatusShapeExt, path);
-      portfolioStatusForKey.set(portfolioKey, status);
-      const flowKeys = new Set(flowKeysResp.result.children as string[]);
+      portfolioRecordForKey.set(portfolioKey, { status, atBlockHeight: eventRecord.blockHeight });
+      const flowKeys = new Set(flowKeysResp.result.children);
       const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
 
       // If this (portfolio, flows) data hasn't changed since our last
@@ -612,6 +645,7 @@ export const processPortfolioEvents = async (
       const flowsEntries = typedEntries(status.flowsRunning || {}).sort(
         ([a], [b]) => naturalCompare(a, b),
       );
+      let txHash: string | undefined;
       for (const [flowKey, flowDetail] of flowsEntries) {
         const flowStatus = flowKeys.has(flowKey)
           ? await getFlowStatus(portfolioKey, flowKey, readOpts)
@@ -619,10 +653,10 @@ export const processPortfolioEvents = async (
         // 'run' is the only non-terminal status.
         if (flowStatus === 'run') return;
         if (flowStatus !== undefined) continue;
-        await startFlow(status, portfolioKey, flowKey, flowDetail);
+        txHash = await startFlow(status, portfolioKey, flowKey, flowDetail);
         break;
       }
-      memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
+      memory.snapshots.set(portfolioKey, { fingerprint, txHash: txHash ?? null, repeats: 0 });
     } catch (err) {
       const age = blockHeight - eventRecord.blockHeight;
       if (err.code === STALE_RESPONSE) {
