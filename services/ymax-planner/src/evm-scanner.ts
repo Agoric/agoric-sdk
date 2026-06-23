@@ -4,6 +4,8 @@ import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import { getBlockTimeMs, prepareAbortController } from './support.ts';
 
+export const DEFAULT_CONFIRMATION_POLL_INTERVAL_MS = 5_000;
+
 export type WatcherTimeoutOptions = {
   timeoutMs?: number;
   setTimeout?: typeof globalThis.setTimeout;
@@ -544,8 +546,6 @@ export const waitForBlock = async (provider: EvmRpc, targetBlock: number) => {
     void provider.on('block', listener);
   });
 };
-
-export const DEFAULT_CONFIRMATION_POLL_INTERVAL_MS = 5_000;
 
 export type WaitForConfirmationsOpts = {
   provider: EvmRpc;

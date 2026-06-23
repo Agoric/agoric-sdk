@@ -13,6 +13,18 @@ import {
   type MakeAbortController,
 } from '../support.ts';
 
+export type RetryOptions = {
+  /** Maximum number of retry attempts */
+  limit: number;
+  /** Maximum delay between retries in milliseconds */
+  backoffLimit: number;
+};
+
+export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
+  limit: 5,
+  backoffLimit: 3000,
+};
+
 /** Scope tag for failed-transaction lookback searches. */
 export const FAILED_TX_SCOPE = 'failedTx';
 
@@ -236,18 +248,6 @@ export type AlchemySubscriptionMessage = {
   };
 };
 //#endregion
-
-export type RetryOptions = {
-  /** Maximum number of retry attempts */
-  limit: number;
-  /** Maximum delay between retries in milliseconds */
-  backoffLimit: number;
-};
-
-export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  limit: 5,
-  backoffLimit: 3000,
-};
 
 /**
  * Fetch transaction receipt with retry logic for freshly mined transactions.

@@ -1,7 +1,7 @@
 /* global process */
 
 import timersPromises from 'node:timers/promises';
-import { inspect } from 'node:util';
+import { inspect, parseArgs } from 'node:util';
 
 import { SigningStargateClient, StargateClient } from '@cosmjs/stargate';
 import type { GraphQLClient } from 'graphql-request';
@@ -53,6 +53,10 @@ import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
+import {
+  makeYdsPortfolioBalanceReader,
+  YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+} from './yds-portfolio-balances.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
 import { makeNowISO } from './utils.ts';
 
@@ -104,10 +108,10 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const dashIdx = [...cliArgs, '--'].indexOf('--');
-  const maybeOpts = cliArgs.slice(0, dashIdx);
-  const isDryRun = maybeOpts.includes('--dry-run');
-  const isVerbose = maybeOpts.includes('--verbose');
+  const { 'dry-run': isDryRun, verbose: isVerbose } = parseArgs({
+    args: cliArgs,
+    options: { 'dry-run': { type: 'boolean' }, verbose: { type: 'boolean' } },
+  }).values;
   const makeMaybeLogger = (prefix: string): ((...args: unknown[]) => void) =>
     isVerbose ? (...args) => console.log(prefix, ...args) : () => {};
 
@@ -276,7 +280,13 @@ export const main = async (
 
   const ydsClient =
     config.yds.url &&
-    ky.create({ fetch, headers: FETCH_HEADERS, prefixUrl: config.yds.url });
+    ky.create({
+      fetch,
+      headers: FETCH_HEADERS,
+      prefixUrl: config.yds.url,
+      timeout: config.requestLimits.timeout,
+      retry: config.requestLimits.maxRetries,
+    });
 
   let lastInstrumentBlocksString = '';
   const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
@@ -307,9 +317,25 @@ export const main = async (
         {
           ydsUrl: config.yds.url,
           ydsApiKey: config.yds.apiKey as string,
+          timeout: config.requestLimits.timeout,
+          retries: config.requestLimits.maxRetries,
         },
       )
     : undefined;
+  // TODO(https://github.com/Agoric/ymax-web/pull/782): make this more like
+  // getInstrumentBlocks
+  const getYdsBalancesForPortfolio =
+    config.yds.url && config.yds.apiKey
+      ? makeYdsPortfolioBalanceReader(
+          { fetch },
+          {
+            ydsUrl: config.yds.url,
+            ydsApiKey: config.yds.apiKey,
+            timeout: config.requestLimits.timeout,
+            retries: config.requestLimits.maxRetries,
+          },
+        )
+      : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -348,6 +374,8 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    getYdsBalancesForPortfolio,
+    autoRebalance: config.autoRebalance,
   };
 
   await withDeferredCleanup(async addCleanup => {
@@ -362,6 +390,7 @@ export const main = async (
       contractInstance: config.contractInstance,
       depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
       feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+      balanceCacheTtlMs: YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
     });
   });
 };

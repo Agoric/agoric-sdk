@@ -113,6 +113,11 @@ export const createMockEnginePowers = (): EnginePowers => ({
   gasEstimator: {} as any,
   usdcTokensByChain: {},
   chainNameToChainIdMap: CaipChainIds.testnet,
+  autoRebalance: {
+    driftBps: 100n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
+  },
 });
 
 const mockFetchForGasEstimate = async (_, options?: any) => {
