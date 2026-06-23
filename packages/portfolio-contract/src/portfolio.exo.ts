@@ -158,6 +158,10 @@ const PortfolioAgentInfoShape: TypedPattern<PortfolioAgentInfo> = M.and(
   ),
 );
 
+type MaybeResolvedVowKit<T> =
+  | VowKit<T>
+  | (Omit<VowKit<T>, 'resolver'> & { resolver?: undefined });
+
 type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
@@ -165,7 +169,7 @@ type PortfolioKitState = {
   positions: MapStore<PoolKey, Position>;
   flowsRunning: MapStore<
     number,
-    { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
+    { sync: MaybeResolvedVowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
   >;
   delegations?: MapStore<number, PortfolioAgentInfo>;
   plannerAgentId?: number;
@@ -801,19 +805,30 @@ export const preparePortfolioKit = (
         resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
           const { flowsRunning } = this.state;
           const detail = flowsRunning.get(flowId);
-          detail.sync.resolver.resolve(steps);
+          const { resolver, ...sync } = detail.sync;
+          if (!resolver) {
+            throw Fail`flow${flowId} has already been resolved`;
+          }
+          resolver.resolve(steps);
+          flowsRunning.set(flowId, { ...detail, sync });
         },
         rejectFlowPlan(flowId: number, reason: string) {
           const { flowsRunning } = this.state;
+          const traceFlow = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(`flow${flowId}`);
           if (!flowsRunning.has(flowId)) {
-            const traceFlow = trace
-              .sub(`portfolio${this.state.portfolioId}`)
-              .sub(`flow${flowId}`);
             traceFlow('flowsRunning has nothing to reject');
             return;
           }
           const detail = flowsRunning.get(flowId);
-          detail.sync.resolver.reject(new Error(reason));
+          const { resolver, ...sync } = detail.sync;
+          if (!resolver) {
+            traceFlow('flow has already been resolved');
+            return;
+          }
+          resolver.reject(new Error(reason));
+          flowsRunning.set(flowId, { ...detail, sync });
         },
       },
       /**
@@ -958,8 +973,11 @@ export const preparePortfolioKit = (
             accountsPending,
           } = this.state;
           this.state.nextFlowId = flowId + 1;
-          const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
-          if (steps) sync.resolver.resolve(steps);
+          let sync: MaybeResolvedVowKit<MovementDesc[]> = vowTools.makeVowKit();
+          if (steps) {
+            sync.resolver.resolve(steps);
+            sync = { ...sync, resolver: undefined };
+          }
           flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();
           if (accountsPending.getSize() > 0) {
