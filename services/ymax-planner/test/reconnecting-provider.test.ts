@@ -11,35 +11,40 @@ import { makeEvmRpc } from '../src/evm-scanner.ts';
 /** Flush pending microtasks/timers so heartbeat loop bodies run. */
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 
-class FakeSocket extends EventEmitter {
-  readyState = 1; // OPEN
-  pings = 0;
-  terminated = false;
+const makeFakeSocket = () => {
+  const socket = Object.assign(new EventEmitter(), {
+    readyState: 1, // OPEN
+    pings: 0,
+    terminated: false,
+    ping: () => {
+      socket.pings += 1;
+    },
+    terminate: () => {
+      socket.terminated = true;
+      socket.readyState = 3; // CLOSED
+      socket.emit('close', 1006, 'terminated');
+    },
+  });
+  return socket;
+};
 
-  ping() {
-    this.pings += 1;
-  }
+const makeFakeProvider = () => {
+  const provider = {
+    websocket: makeFakeSocket(),
+    destroyed: false,
+    destroy: async () => {
+      provider.destroyed = true;
+    },
+  };
+  return provider;
+};
 
-  terminate() {
-    this.terminated = true;
-    this.readyState = 3; // CLOSED
-    this.emit('close', 1006, 'terminated');
-  }
-}
-
-class FakeProvider {
-  websocket = new FakeSocket();
-  destroyed = false;
-
-  async destroy() {
-    this.destroyed = true;
-  }
-}
+type FakeProvider = ReturnType<typeof makeFakeProvider>;
 
 const makeFakeProviders = () => {
   const created: FakeProvider[] = [];
   const makeProvider = () => {
-    const provider = new FakeProvider();
+    const provider = makeFakeProvider();
     created.push(provider);
     return provider as unknown as WebSocketProvider;
   };
