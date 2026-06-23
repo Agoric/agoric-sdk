@@ -207,7 +207,7 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
     { type: 'deposit', amount: AnyNatAmountShape },
     { fromChain: ChainNameExtShape },
   ),
-  { type: 'rebalance' },
+  M.splitRecord({ type: 'rebalance' }),
 );
 
 export const FlowKeyShape: TypedPattern<`flow${number}`> =
@@ -227,7 +227,13 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       nobleForwardingAddress: AnyString<Bech32Address>(),
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
-      flowsRunning: M.recordOf(FlowKeyShape, FlowDetailShape),
+      flowsRunning: M.recordOf(
+        FlowKeyShape,
+        M.and(
+          FlowDetailShape,
+          M.splitRecord({}, { planResolved: M.boolean() }),
+        ),
+      ),
     },
   );
 

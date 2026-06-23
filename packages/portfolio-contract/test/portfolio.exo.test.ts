@@ -1294,3 +1294,82 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
     },
   });
 });
+
+test('planResolved is published in flowsRunning and reflects resolution state', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
+    storage,
+  });
+  const { manager, planner } = makePortfolioKit({ portfolioId: 1 });
+
+  const amount = { brand: USDC, value: 100n };
+  const steps = [{ src: '@agoric' as const, dest: '@noble' as const, amount }];
+
+  // Flow started without pre-resolved steps: plan is pending
+  const { flowId } = manager.startFlow({ type: 'withdraw', amount });
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(Object.keys(flowsRunning).length, 1, 'one flow running');
+    t.is(
+      flowsRunning[`flow${flowId}`].planResolved,
+      false,
+      'planResolved is false before resolveFlowPlan',
+    );
+  }
+
+  // resolveFlowPlan publishes status immediately
+  planner.resolveFlowPlan(flowId, steps);
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId}`].planResolved,
+      true,
+      'planResolved is true after resolveFlowPlan',
+    );
+  }
+
+  // Flow started with pre-resolved steps: planResolved is true immediately
+  const { flowId: flowId2 } = manager.startFlow(
+    { type: 'withdraw', amount },
+    steps,
+  );
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId2}`].planResolved,
+      true,
+      'planResolved is true immediately when steps are provided at startFlow',
+    );
+  }
+
+  // rejectFlowPlan also publishes status immediately
+  const { flowId: flowId3, stepsP } = manager.startFlow({
+    type: 'withdraw',
+    amount,
+  });
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId3}`].planResolved,
+      false,
+      'planResolved is false before rejectFlowPlan',
+    );
+  }
+
+  planner.rejectFlowPlan(flowId3, 'insufficient funds');
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId3}`].planResolved,
+      true,
+      'planResolved is true after rejectFlowPlan',
+    );
+  }
+
+  await t.throwsAsync(vowTools.when(stepsP), { message: 'insufficient funds' });
+});

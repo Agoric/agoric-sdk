@@ -138,9 +138,10 @@ expectNotAssignable<PortfolioKey>('portfolio');
 expectType<PortfolioAgentId>('agent3');
 expectNotAssignable<PortfolioAgentId>('portfolio2agent3');
 
-const flowsRunning: Record<FlowKey, FlowDetail> = {
+const flowsRunning = {
   flow1: { type: 'withdraw', amount: natAmount },
-};
+  flow2: { type: 'rebalance', planResolved: false },
+} as const;
 
 const flowAgent: FlowAgent = { id: 'agent3' };
 

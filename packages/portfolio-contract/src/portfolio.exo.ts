@@ -348,10 +348,15 @@ const makeFlowsRunningRecord = (
 ): StatusFor['portfolio']['flowsRunning'] =>
   harden(
     fromEntries(
-      [...flowsRunning.entries()].map(([num, { sync: _s, ...data }]) => [
-        `flow${num}`,
-        data,
-      ]),
+      [...flowsRunning.entries()].map(
+        ([
+          num,
+          {
+            sync: { resolver },
+            ...data
+          },
+        ]) => [`flow${num}`, { ...data, planResolved: !resolver }],
+      ),
     ),
   );
 
@@ -811,6 +816,7 @@ export const preparePortfolioKit = (
           }
           resolver.resolve(steps);
           flowsRunning.set(flowId, { ...detail, sync });
+          this.facets.reporter.publishStatus();
         },
         rejectFlowPlan(flowId: number, reason: string) {
           const { flowsRunning } = this.state;
@@ -829,6 +835,7 @@ export const preparePortfolioKit = (
           }
           resolver.reject(new Error(reason));
           flowsRunning.set(flowId, { ...detail, sync });
+          this.facets.reporter.publishStatus();
         },
       },
       /**
