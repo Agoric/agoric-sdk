@@ -163,8 +163,8 @@ test('loadConfig validates positive integers', async t => {
 test('loadConfig accepts auto rebalance environment overrides', async t => {
   const config = await callLoadConfig({
     AUTO_REBALANCE_DRIFT_BPS: '250',
-    AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC: '50000000',
-    AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC: '30000000',
+    AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC: '50_000_000',
+    AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC: '30_000_000',
   });
 
   t.deepEqual(config.autoRebalance, {

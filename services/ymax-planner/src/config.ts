@@ -85,7 +85,9 @@ const positiveIntegerFromString = (
   value: string,
   fieldName: string,
 ): number => {
-  const number = /[0-9]/.test(value) ? Number(value) : NaN;
+  const number = /[0-9]/.test(value)
+    ? Number(value.replace(/([0-9a-f])_([0-9a-f])(_(?=[0-9a-f]))?/gi, '$1$2'))
+    : NaN;
   if (!Number.isInteger(number) || number <= 0) {
     throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
   }
