@@ -14,7 +14,6 @@ import {
   TxType,
   type PublishedTx,
 } from '@agoric/portfolio-api/src/resolver.js';
-import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { PublishedTxShape } from '../src/resolver/types.ts';
@@ -279,21 +278,6 @@ test('PortfolioAgentStatusShape allows upgraded permission bags', t => {
   }
 });
 
-test('flow agent shape allows future attribution fields', t => {
-  t.notThrows(
-    () =>
-      mustMatch(
-        harden({
-          id: 'agent2',
-          grantee: 'agoric1future',
-          scope: 'setTargetAllocation',
-        }),
-        FlowAgentShape,
-      ),
-    'flow agent shape should allow additional attribution fields',
-  );
-});
-
 test('portfolio agent status shape allows future top-level fields', t => {
   t.notThrows(
     () =>
@@ -356,6 +340,11 @@ test('vstorage flow type matches shape', t => {
       where: '@Arbitrum',
       type: 'deposit',
       amount,
+    },
+    rebalanceWithAgent: {
+      state: 'done',
+      type: 'rebalance',
+      agent: 'agent1',
     },
   });
 
@@ -483,6 +472,10 @@ test('vstorage flow detail type matches shape', t => {
       type: 'withdraw',
       amount: usdc(1n),
       toChain: 'noble',
+    },
+    rebalanceWithAgent: {
+      type: 'rebalance',
+      agent: 'agent1',
     },
   });
 

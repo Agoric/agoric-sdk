@@ -26,7 +26,6 @@ import {
 import {
   PortfolioPermissionsShape,
   PortfolioAutoFeaturesShape,
-  type FlowAgent,
   type FlowConfig,
   type FlowKey,
   type FlowStatus,
@@ -52,7 +51,6 @@ import type {
   YmaxFullDomain,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
-import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
@@ -74,7 +72,6 @@ import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
-  makeFlowAgentPath,
   makeFlowPath,
   makeFlowStepsPath,
   makePortfolioAgentsPath,
@@ -673,7 +670,7 @@ export const preparePortfolioKit = (
           this.facets.delegationHelper.assertActive(client, agentId, {
             allocation: true,
           });
-          const { reader, reporter, manager } = this.facets;
+          const { reader, manager } = this.facets;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
@@ -681,15 +678,13 @@ export const preparePortfolioKit = (
           manager.setTargetAllocation(targetAllocation);
           const flowDetail: FlowDetail = {
             type: 'rebalance',
+            agent: `agent${agentId}`,
           };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
           void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
-          reporter.publishFlowAgent(flowId, {
-            id: `agent${agentId}`,
-          });
           return `flow${flowId}`;
         },
         submitRebalance(
@@ -700,21 +695,21 @@ export const preparePortfolioKit = (
           this.facets.delegationHelper.assertActive(client, agentId, {
             rebalance: true,
           });
-          const { reader, reporter, manager } = this.facets;
+          const { reader, manager } = this.facets;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
 
-          const flowDetail = { type: 'rebalance' } as FlowDetail;
+          const flowDetail: FlowDetail = {
+            type: 'rebalance',
+            agent: `agent${agentId}`,
+          };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
           void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
-          reporter.publishFlowAgent(flowId, {
-            id: `agent${agentId}`,
-          });
           return `flow${flowId}`;
         },
       },
@@ -806,11 +801,6 @@ export const preparePortfolioKit = (
             ...status,
             ...detail,
           });
-        },
-        publishFlowAgent(id: number, agent: FlowAgent) {
-          mustMatch(agent, FlowAgentShape);
-          const { portfolioId } = this.state;
-          publishStatus(makeFlowAgentPath(portfolioId, id), agent);
         },
       },
       planner: {

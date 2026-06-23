@@ -30,7 +30,7 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
-  PortfolioAgentIdShape,
+  PortfolioAgentKeyShape,
   PortfolioPermissionsExtShape,
   YieldProtocol,
   type AssetPlaceRef,
@@ -207,7 +207,7 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
     { type: 'deposit', amount: AnyNatAmountShape },
     { fromChain: ChainNameExtShape },
   ),
-  M.splitRecord({ type: 'rebalance' }),
+  M.splitRecord({ type: 'rebalance' }, { agent: PortfolioAgentKeyShape }),
 );
 
 export const FlowKeyShape: TypedPattern<`flow${number}`> =
@@ -245,7 +245,7 @@ export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
   });
 
 export const PortfolioAgentsShape: TypedPattern<StatusFor['portfolioAgents']> =
-  M.recordOf(PortfolioAgentIdShape, PortfolioAgentStatusShape);
+  M.recordOf(PortfolioAgentKeyShape, PortfolioAgentStatusShape);
 
 /**
  * Creates vstorage path for position transfer history.
@@ -295,16 +295,6 @@ export const makeFlowPath = (parent: number, id: number) => [
 export const makePortfolioAgentsPath = (
   parent: number,
 ): [`portfolio${number}`, 'agents'] => [`portfolio${parent}`, 'agents'];
-
-export const makeFlowAgentPath = (
-  parent: number,
-  id: number,
-): [`portfolio${number}`, 'flows', `flow${number}`, 'agent'] => [
-  `portfolio${parent}`,
-  'flows',
-  `flow${id}`,
-  'agent',
-];
 
 export const makeFlowStepsPath = (
   parent: number,

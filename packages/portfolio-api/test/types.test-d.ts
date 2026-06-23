@@ -14,12 +14,11 @@ import type { PublishedTx } from '../src/resolver.js';
 import type {
   AssetPlaceRef,
   FlowDetail,
-  FlowAgent,
   FlowKey,
   FlowStatus,
   FlowStep,
   InterChainAccountRef,
-  PortfolioAgentId,
+  PortfolioAgentKey,
   LocalChainAccountRef,
   PortfolioKey,
   ProposalType,
@@ -135,15 +134,14 @@ expectNotAssignable<FlowKey>('flow');
 expectType<PortfolioKey>('portfolio2');
 expectNotAssignable<PortfolioKey>('portfolio');
 
-expectType<PortfolioAgentId>('agent3');
-expectNotAssignable<PortfolioAgentId>('portfolio2agent3');
+expectType<PortfolioAgentKey>('agent3');
+expectNotAssignable<PortfolioAgentKey>('portfolio2agent3');
 
 const flowsRunning = {
   flow1: { type: 'withdraw', amount: natAmount },
   flow2: { type: 'rebalance', planResolved: false },
+  flow3: { type: 'rebalance', planResolved: true, agent: 'agent3' },
 } as const;
-
-const flowAgent: FlowAgent = { id: 'agent3' };
 
 const status: StatusFor = {
   contract: {
@@ -222,7 +220,6 @@ const status: StatusFor = {
     totalOut: natAmount,
   },
   flow: { state: 'done', type: 'rebalance' },
-  flowAgent,
   flowSteps,
   flowOrder: [
     [4, [2, 3]],
