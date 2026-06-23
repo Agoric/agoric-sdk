@@ -1,9 +1,7 @@
 import test from 'ava';
 
-import type { AssetPlaceRef } from '@agoric/portfolio-api';
 import { AmountMath } from '@agoric/ertp';
-import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
-import { objectMap } from '@agoric/internal';
+import type { Brand } from '@agoric/ertp/src/types.js';
 import { Far } from '@endo/pass-style';
 import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
 import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
@@ -72,7 +70,7 @@ test('checkAutoRebalance trigger: Position Drift', t => {
       'trigger fires just over the basis-point drift threshold',
     );
     t.true(
-      100 < greatestBpsDrift && greatestBpsDrift < 101,
+      greatestBpsDrift > 100 && greatestBpsDrift < 101,
       `basis-point drift: ${greatestBpsDrift}`,
     );
   }
@@ -103,9 +101,6 @@ test('checkAutoRebalance trigger: Excess Cash', t => {
     USDN: 50n,
     Aave_Arbitrum: 50n,
   };
-  const balancedTarget = objectMap(targetAllocation, v =>
-    makeAmount(v * 1_000_000n),
-  );
 
   {
     const balancedValue = 12_500_000n;
@@ -232,7 +227,7 @@ const makeMaybeAutoPowers = (
         }) as any,
       saveOfferResult: () => {
         throw new Error('unexpected call to walletStore.saveOfferResult');
-      }
+      },
     },
     ...overrides,
   };
