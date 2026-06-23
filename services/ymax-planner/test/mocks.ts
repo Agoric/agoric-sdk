@@ -26,7 +26,7 @@ import { makeGasEstimator } from '../src/gas-estimation.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import {
   prepareAbortController,
-  type ReconnectingProvider,
+  type ReconnectingEvmProvider,
 } from '../src/support.ts';
 import type { YdsNotifier } from '../src/yds-notifier.ts';
 import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
@@ -375,19 +375,19 @@ export const createMockProviderSets = ({
     'eip155:11155111',
     'eip155:43113',
   ];
-  const evmProviders = {} as Record<CaipChainId, ReconnectingProvider>;
+  const evmProviders = {} as Record<CaipChainId, ReconnectingEvmProvider>;
   const retryProviders = {} as Record<CaipChainId, EvmRpc>;
   for (const chainId of chainIds) {
     const provider = createMockProvider(latestBlock, events, balances);
     // Augment the mock provider in place with a no-op reconnecting surface
     // (the mock socket never dies in tests), so it satisfies both
-    // ReconnectingProvider and the raw-provider shape some tests poke at.
+    // ReconnectingEvmProvider and the raw-provider shape some tests poke at.
     const reconnecting = Object.assign(provider, {
       getProvider: () => provider,
       reportUnhealthy: () => {},
       close: () => {},
     });
-    evmProviders[chainId] = reconnecting as unknown as ReconnectingProvider;
+    evmProviders[chainId] = reconnecting as unknown as ReconnectingEvmProvider;
     // Mock providers already satisfy the EvmRpc shape.
     retryProviders[chainId] = provider as unknown as ReturnType<
       typeof makeEvmRpc

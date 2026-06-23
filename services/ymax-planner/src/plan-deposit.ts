@@ -26,7 +26,7 @@ import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 
 import type { EvmAddress } from '@agoric/fast-usdc';
 import { getErc20Balances } from './evm-utils.ts';
-import type { ReconnectingProvider } from './support.ts';
+import type { ReconnectingEvmProvider } from './support.ts';
 import type {
   ChainAddressTokenBalance as SpectrumGetAddressBalanceResult,
   ChainAddressTokenInput as SpectrumGetAddressBalanceInput,
@@ -55,7 +55,7 @@ export type BalanceQueryPowers = {
     Record<InterChainAccountRef | PoolKey, EvmAddress>
   >;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  evmProviders: Record<CaipChainId, ReconnectingProvider>;
+  evmProviders: Record<CaipChainId, ReconnectingEvmProvider>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
 

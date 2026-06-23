@@ -2,8 +2,8 @@ import test from 'ava';
 import { EventEmitter } from 'node:events';
 import type { WebSocketProvider } from 'ethers';
 import {
-  makeReconnectingProvider,
-  type ReconnectingProvider,
+  makeReconnectingEvmProvider,
+  type ReconnectingEvmProvider,
 } from '../src/support.ts';
 import { WatcherTransportError } from '../src/errors.ts';
 import { makeEvmRpc } from '../src/evm-scanner.ts';
@@ -88,7 +88,7 @@ const makeManualHeartbeats = () => {
 
 test('reportUnhealthy recreates the provider and terminates the old socket', t => {
   const { created, makeProvider } = makeFakeProviders();
-  const sh = makeReconnectingProvider({ wsUrl: 'ws://x', makeProvider });
+  const sh = makeReconnectingEvmProvider({ wsUrl: 'ws://x', makeProvider });
 
   t.is(sh.getProvider(), created[0] as unknown as WebSocketProvider);
 
@@ -102,7 +102,7 @@ test('reportUnhealthy recreates the provider and terminates the old socket', t =
 
 test('a socket close triggers a reconnect', t => {
   const { created, makeProvider } = makeFakeProviders();
-  const sh = makeReconnectingProvider({ wsUrl: 'ws://x', makeProvider });
+  const sh = makeReconnectingEvmProvider({ wsUrl: 'ws://x', makeProvider });
 
   created[0].websocket.emit('close', 1006, 'boom');
 
@@ -112,7 +112,7 @@ test('a socket close triggers a reconnect', t => {
 
 test('a stale socket close does not cycle the current provider', t => {
   const { created, makeProvider } = makeFakeProviders();
-  const sh = makeReconnectingProvider({ wsUrl: 'ws://x', makeProvider });
+  const sh = makeReconnectingEvmProvider({ wsUrl: 'ws://x', makeProvider });
 
   sh.reportUnhealthy('first'); // gen 0 → 1
   t.is(created.length, 2);
@@ -125,7 +125,7 @@ test('a stale socket close does not cycle the current provider', t => {
 test('heartbeat reconnects on a missed pong but not while ponging', async t => {
   const { created, makeProvider } = makeFakeProviders();
   const { makeHeartbeat, tick } = makeManualHeartbeats();
-  makeReconnectingProvider({ wsUrl: 'ws://x', makeProvider, makeHeartbeat });
+  makeReconnectingEvmProvider({ wsUrl: 'ws://x', makeProvider, makeHeartbeat });
 
   // Tick once: pings, awaits pong.
   tick();
@@ -158,7 +158,7 @@ test('makeEvmRpc bounds a hanging call and reports the socket unhealthy', async 
       unhealthyReason = reason;
     },
     close: () => {},
-  } as unknown as ReconnectingProvider;
+  } as unknown as ReconnectingEvmProvider;
 
   const rpc = makeEvmRpc(sh, globalThis.setTimeout, { timeoutMs: 50 });
   const err = await t.throwsAsync(() => rpc.getBlockNumber());
@@ -173,7 +173,7 @@ test('makeEvmRpc passes a fast call through and clears the timeout', async t => 
     websocket: {},
     reportUnhealthy: () => t.fail('should not cycle on a fast call'),
     close: () => {},
-  } as unknown as ReconnectingProvider;
+  } as unknown as ReconnectingEvmProvider;
 
   const rpc = makeEvmRpc(sh, globalThis.setTimeout, { timeoutMs: 1000 });
   t.is(await rpc.getBlockNumber(), 123);

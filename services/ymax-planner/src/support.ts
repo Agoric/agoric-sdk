@@ -280,7 +280,7 @@ export const WS_HEARTBEAT_INTERVAL_MS = 30_000;
  * `onWsClose → WatcherTransportError → watchWithRetry` path then re-subscribes
  * on the fresh socket.
  */
-export type ReconnectingProvider = {
+export type ReconnectingEvmProvider = {
   /** The current live provider; never a destroyed one. */
   getProvider: () => WebSocketProvider;
   /** The current underlying socket. */
@@ -291,7 +291,7 @@ export type ReconnectingProvider = {
   close: () => void;
 };
 
-export const makeReconnectingProvider = ({
+export const makeReconnectingEvmProvider = ({
   wsUrl,
   makeProvider = url => new WebSocketProvider(url),
   makeHeartbeat,
@@ -302,7 +302,7 @@ export const makeReconnectingProvider = ({
   /** Yields once per heartbeat interval; a fresh one is taken per socket. */
   makeHeartbeat?: () => AsyncIterable<unknown>;
   log?: (...args: unknown[]) => void;
-}): ReconnectingProvider => {
+}): ReconnectingEvmProvider => {
   let current: WebSocketProvider;
   // Monotonic id of the live socket. Stale listeners (from a prior socket)
   // compare against it to avoid cycling a provider that is no longer current.
@@ -404,13 +404,13 @@ export const createEVMContext = async ({
   const evmProviders = Object.fromEntries(
     Object.entries(wssUrls).map(([caip, wsUrl]) => [
       caip,
-      makeReconnectingProvider({
+      makeReconnectingEvmProvider({
         wsUrl,
         makeHeartbeat,
         log: (...args) => log(`[${caip}]`, ...args),
       }),
     ]),
-  ) as Record<CaipChainId, ReconnectingProvider>;
+  ) as Record<CaipChainId, ReconnectingEvmProvider>;
 
   return {
     evmProviders,

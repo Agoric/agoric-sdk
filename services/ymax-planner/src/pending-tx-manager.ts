@@ -27,7 +27,7 @@ import { withRetriesForAlerting } from './retries.ts';
 import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
 import type {
   MakeAbortController,
-  ReconnectingProvider,
+  ReconnectingEvmProvider,
   UsdcAddresses,
 } from './support.ts';
 import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
@@ -62,7 +62,7 @@ export type EvmContext = {
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
   // XXX eliminate evmProviders from EvmContext and use retryProviders for the
   // balance-checking path too.
-  evmProviders: Record<CaipChainId, ReconnectingProvider>;
+  evmProviders: Record<CaipChainId, ReconnectingEvmProvider>;
   retryProviders: Record<CaipChainId, EvmRpc>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */

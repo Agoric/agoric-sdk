@@ -93,7 +93,7 @@ import {
   setIgnoredTx,
   setResolvedTx,
 } from './kv-store.ts';
-import { UserInputError, type ReconnectingProvider } from './support.ts';
+import { UserInputError, type ReconnectingEvmProvider } from './support.ts';
 import { makeExpiringMap } from './utils.ts';
 import {
   encodedKeyToPath,
@@ -250,7 +250,7 @@ export type ProcessPortfolioPowers = Pick<
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
-  evmProviders: Record<CaipChainId, ReconnectingProvider>;
+  evmProviders: Record<CaipChainId, ReconnectingEvmProvider>;
 };
 
 export type PortfoliosMemory = {

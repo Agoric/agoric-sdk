@@ -5,7 +5,7 @@ import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import type { CaipChainId } from '@agoric/orchestration';
 import { createMockPendingTxOpts } from './mocks.ts';
-import type { ReconnectingProvider } from '../src/support.ts';
+import type { ReconnectingEvmProvider } from '../src/support.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
@@ -350,7 +350,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
           blockNumber: latestBlock,
           transactionHash: failedTxHash,
         }),
-      }) as unknown as ReconnectingProvider,
+      }) as unknown as ReconnectingEvmProvider,
   );
 
   const ctxWithFetch = harden({

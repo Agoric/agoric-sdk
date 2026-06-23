@@ -5,7 +5,7 @@ import type { CaipChainId } from '@agoric/orchestration';
 import {
   getBlockTimeMs,
   prepareAbortController,
-  type ReconnectingProvider,
+  type ReconnectingEvmProvider,
 } from './support.ts';
 import { WatcherTransportError } from './errors.ts';
 
@@ -71,12 +71,12 @@ export const RPC_CALL_TIMEOUT_MS = 20_000;
  * A provider facade whose methods retry on Alchemy 429 rate-limit errors
  * (exponential backoff with jitter) and are bounded by a per-call timeout.
  *
- * It delegates to the {@link ReconnectingProvider}'s *current* provider on every
+ * It delegates to the {@link ReconnectingEvmProvider}'s *current* provider on every
  * call, so after a reconnect the facade (held by long-lived watchers) keeps
  * working against the fresh socket.
  */
 export const makeEvmRpc = (
-  reconnecting: ReconnectingProvider,
+  reconnectingProvider: ReconnectingEvmProvider,
   setTimeout: typeof globalThis.setTimeout,
   {
     timeoutMs = RPC_CALL_TIMEOUT_MS,
@@ -90,7 +90,7 @@ export const makeEvmRpc = (
         if (settled) return;
         settled = true;
         log(`RPC ${label} timed out after ${timeoutMs}ms; cycling socket`);
-        reconnecting.reportUnhealthy(`${label} timeout`);
+        reconnectingProvider.reportUnhealthy(`${label} timeout`);
         reject(
           new WatcherTransportError(
             `RPC ${label} timed out after ${timeoutMs}ms`,
@@ -116,7 +116,7 @@ export const makeEvmRpc = (
   const call = <T>(label: string, op: () => Promise<T>): Promise<T> =>
     withRateLimitRetry(() => withTimeout(label, op), setTimeout);
 
-  const p = () => reconnecting.getProvider();
+  const p = () => reconnectingProvider.getProvider();
 
   return {
     // RPC calls with rate-limit retry and per-call timeout
@@ -134,7 +134,7 @@ export const makeEvmRpc = (
     off: ((...args: Parameters<WebSocketProvider['off']>) =>
       p().off(...args)) as WebSocketProvider['off'],
     get websocket() {
-      return reconnecting.websocket;
+      return reconnectingProvider.websocket;
     },
   };
 };

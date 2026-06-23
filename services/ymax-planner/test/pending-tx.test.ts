@@ -17,7 +17,7 @@ import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
 import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
 import {
   prepareAbortController,
-  type ReconnectingProvider,
+  type ReconnectingEvmProvider,
 } from '../src/support.ts';
 import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
@@ -1106,7 +1106,7 @@ const makeFailedTxTestContext = ({
           transactionHash: failedTxHash,
         }),
         ...extra,
-      }) as unknown as ReconnectingProvider,
+      }) as unknown as ReconnectingEvmProvider,
   );
 
   const ctxWithFetch = harden({
