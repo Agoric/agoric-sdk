@@ -673,18 +673,24 @@ export const preparePortfolioKit = (
           this.facets.delegationHelper.assertActive(client, agentId, {
             allocation: true,
           });
-          const { reader, reporter, simpleRebalanceHandler } = this.facets;
+          const { reader, reporter, manager } = this.facets;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-          const flowId = simpleRebalanceHandler.handle(emptySeat, {
-            targetAllocation,
-          });
-          reporter.publishFlowAgent(Number(flowId.replace(/^flow/, '')), {
+          manager.setTargetAllocation(targetAllocation);
+          const flowDetail: FlowDetail = {
+            type: 'rebalance',
+          };
+          const startedFlow = manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
+
+          const { flowId } = startedFlow;
+          reporter.publishFlowAgent(flowId, {
             id: `agent${agentId}`,
           });
-          return flowId;
+          return `flow${flowId}`;
         },
         submitRebalance(
           client: PortfolioDelegationClient,
