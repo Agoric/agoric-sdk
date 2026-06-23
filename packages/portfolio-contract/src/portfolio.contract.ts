@@ -711,7 +711,11 @@ export const contract = async (
     offerArgs,
     kit,
     config = defaultFlowConfig,
-  ) => orchFns2.openPortfolio(seat, offerArgs, kit, ...flowCfg(config));
+  ) =>
+    orchFns2.openPortfolio(seat, offerArgs, kit, {
+      ...config,
+      explicitStartFlow: true,
+    });
 
   const usedAccessTokens = zone.makeOnce(
     'usedAccessTokens',

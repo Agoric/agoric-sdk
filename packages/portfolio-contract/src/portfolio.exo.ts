@@ -29,6 +29,7 @@ import {
   type FlowAgent,
   type FlowConfig,
   type FlowKey,
+  type FlowStatus,
   type FundsFlowPlan,
   type PortfolioAgentGrantee,
   type PortfolioAgentStatus,
@@ -397,7 +398,7 @@ export const preparePortfolioKit = (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
-      flowDetail: FlowDetail,
+      flowDetail?: FlowDetail,
       startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
       config?: FlowConfig,
       options?: unknown,
@@ -702,7 +703,7 @@ export const preparePortfolioKit = (
           const flowDetail = { type: 'rebalance' } as FlowDetail;
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
-          void executePlan(emptySeat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
           reporter.publishFlowAgent(flowId, {
@@ -787,9 +788,18 @@ export const preparePortfolioKit = (
             publishStatus(makeFlowStepsPath(portfolioId, id, 'order'), order);
           }
         },
-        publishFlowStatus(id: number, status: StatusFor['flow']) {
-          const { portfolioId } = this.state;
-          publishStatus(makeFlowPath(portfolioId, id), status);
+        /**
+         * Merge the given status with the flow's detail and publish to vstorage.
+         *
+         * Will throw if the flow is not running
+         */
+        publishFlowStatus(id: number, status: FlowStatus) {
+          const { portfolioId, flowsRunning } = this.state;
+          const { sync: _s, ...detail } = flowsRunning.get(id);
+          publishStatus(makeFlowPath(portfolioId, id), {
+            ...status,
+            ...detail,
+          });
         },
         publishFlowAgent(id: number, agent: FlowAgent) {
           mustMatch(agent, FlowAgentShape);
@@ -1398,7 +1408,7 @@ export const preparePortfolioKit = (
             seat,
             {},
             this.facets,
-            flowDetail,
+            undefined,
             startedFlow,
             undefined,
             { evmDepositDetail: { ...depositDetails, fromChain } },
@@ -1442,7 +1452,7 @@ export const preparePortfolioKit = (
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           const seat = zcf.makeEmptySeatKit().zcfSeat;
 
-          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(seat, {}, this.facets, undefined, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
         /**
@@ -1498,7 +1508,7 @@ export const preparePortfolioKit = (
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           const seat = zcf.makeEmptySeatKit().zcfSeat;
 
-          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(seat, {}, this.facets, undefined, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
         /**
@@ -1546,6 +1556,7 @@ export const preparePortfolioKit = (
           );
 
           // This flow does its own error handling and always exits the seat
+          // XXX: rewrite to use executePlan instead of rebalance, which is legacy and broken
           void rebalance(seat, offerArgs, this.facets, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
@@ -1568,7 +1579,7 @@ export const preparePortfolioKit = (
             seat,
             offerArgs,
             this.facets,
-            flowDetail,
+            undefined,
             startedFlow,
           );
           return `flow${startedFlow.flowId}`;
@@ -1589,7 +1600,7 @@ export const preparePortfolioKit = (
             seat,
             offerArgs,
             this.facets,
-            flowDetail,
+            undefined,
             startedFlow,
           );
           return `flow${startedFlow.flowId}`;
@@ -1605,7 +1616,7 @@ export const preparePortfolioKit = (
           } as FlowDetail;
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
-          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(seat, {}, this.facets, undefined, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
       },
