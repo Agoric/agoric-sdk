@@ -1109,9 +1109,9 @@ export const preparePortfolioKit = (
             throw Fail`portfolio pre-dates auto features support`;
           }
 
-          const permissions: PortfolioPermissions = features.rebalance
-            ? harden({ rebalance: true })
-            : harden({});
+          const permissions: PortfolioPermissions = harden({
+            ...(features.rebalance ? { rebalance: true } : {}),
+          });
 
           const hasAnyPermission = Object.keys(permissions).length > 0;
 
