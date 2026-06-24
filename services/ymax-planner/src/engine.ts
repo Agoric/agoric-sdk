@@ -96,6 +96,7 @@ import {
 import { UserInputError, type ReconnectingEvmProvider } from './support.ts';
 import { makeExpiringMap, normalizeIsoTimestamp } from './utils.ts';
 import type { IsoTimestamp } from './utils.ts';
+import type { YdsTransactions } from './yds-transactions.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -218,6 +219,8 @@ export type Powers = {
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
   makeNonce: () => string;
+  chainName: string;
+  ymaxInstance: string;
   walletStore: ReturnType<typeof reflectWalletStore>;
   getWalletInvocationUpdate: (
     messageId: string | number,
@@ -229,6 +232,7 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
+  ydsTransactions?: Pick<YdsTransactions, 'postTransaction'>;
   autoRebalance: AutoRebalanceConfig;
 };
 
@@ -241,10 +245,14 @@ export type ProcessPortfolioPowers = Pick<
   | 'evmTokenAddresses'
   | 'signingSmartWalletKit'
   | 'walletStore'
+  | 'makeNonce'
+  | 'chainName'
+  | 'ymaxInstance'
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
+  | 'ydsTransactions'
   | 'autoRebalance'
 > & {
   console: Required<Powers>['console'];
@@ -326,6 +334,9 @@ export const processPortfolioEvents = async (
     instrumentBlocks,
     signingSmartWalletKit,
     walletStore,
+    makeNonce,
+    chainName,
+    ymaxInstance,
     getWalletInvocationUpdate,
     spectrumBlockchain,
     spectrumChainIds,
@@ -334,6 +345,7 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
+    ydsTransactions,
     autoRebalance,
   }: ProcessPortfolioPowers,
 ) => {
@@ -515,6 +527,7 @@ export const processPortfolioEvents = async (
   };
   const maybeAutoRebalancePowers = {
     autoRebalance,
+    chainName,
     console,
     depositBrand,
     feeBrand,
@@ -523,10 +536,13 @@ export const processPortfolioEvents = async (
     inspectForStdout,
     instrumentBlocks,
     isDryRun,
+    makeNonce,
     network,
     planRebalanceToAllocations,
     portfoliosPathPrefix,
     walletStore,
+    ymaxInstance,
+    ydsTransactions,
   };
   // TODO(AGO-660)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars

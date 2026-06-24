@@ -21,6 +21,10 @@ import { inspect } from 'node:util';
 import type { InstrumentBlocks } from './instrument-status.ts';
 import { UserInputError } from './support.ts';
 import { getOwn } from './utils.js';
+import {
+  makePlannerAgentOptions,
+  type YdsTransactions,
+} from './yds-transactions.ts';
 
 const { keys } = Object;
 
@@ -131,6 +135,7 @@ export const checkAutoRebalance = (
 
 export type MaybeAutoRebalancePowers = {
   autoRebalance: AutoRebalanceConfig;
+  chainName: string;
   console: Pick<Console, 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
@@ -139,6 +144,7 @@ export type MaybeAutoRebalancePowers = {
   inspectForStdout: (obj: unknown) => string;
   instrumentBlocks?: InstrumentBlocks;
   isDryRun?: boolean;
+  makeNonce: () => string;
   network: NetworkSpec;
   planRebalanceToAllocations: (details: {
     path: string;
@@ -155,6 +161,8 @@ export type MaybeAutoRebalancePowers = {
   }) => Promise<FundsFlowPlan>;
   portfoliosPathPrefix: string;
   walletStore: ReturnType<typeof reflectWalletStore>;
+  ymaxInstance: string;
+  ydsTransactions?: Pick<YdsTransactions, 'postTransaction'>;
 };
 
 export const maybeAutoRebalance = async (
@@ -163,6 +171,7 @@ export const maybeAutoRebalance = async (
   currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
   {
     autoRebalance,
+    chainName,
     console,
     depositBrand,
     feeBrand,
@@ -171,10 +180,13 @@ export const maybeAutoRebalance = async (
     inspectForStdout,
     instrumentBlocks,
     isDryRun,
+    makeNonce,
     network,
     planRebalanceToAllocations,
     portfoliosPathPrefix,
     walletStore,
+    ymaxInstance,
+    ydsTransactions,
   }: MaybeAutoRebalancePowers,
 ): Promise<string | undefined> => {
   const { enabledAutoFeatures, targetAllocation } = portfolioStatus;
@@ -234,15 +246,26 @@ export const maybeAutoRebalance = async (
     const planOrSteps = plan.order ? plan : plan.flow;
     const txOpts = { sendOnly: true } as const;
     const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
+    const { agentMemo } = makePlannerAgentOptions(makeNonce);
     const { tx, id } = await planReceiver.rebalance(
       portfolioId,
-      { syncState },
+      { syncState, agentMemo },
       planOrSteps,
     );
     if (!isDryRun) {
       void getWalletInvocationUpdate(id as any).catch(err => {
         console.warn(logPrefix, '⚠️ Failure for rebalance', err);
       });
+      void ydsTransactions
+        ?.postTransaction({
+          txHash: tx.transactionHash,
+          chain: chainName,
+          ymaxInstance,
+          agentMemo,
+        })
+        .catch(err => {
+          console.warn(logPrefix, '⚠️ Failure posting transaction to YDS', err);
+        });
     }
     console.log(
       logPrefix,

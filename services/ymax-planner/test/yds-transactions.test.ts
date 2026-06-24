@@ -8,9 +8,12 @@ import {
 const txHash = `0x${'a'.repeat(64)}`;
 
 test('makePlannerAgentOptions uses trimmed nonce as agentMemo', t => {
-  t.deepEqual(makePlannerAgentOptions(() => '  memo-123  '), {
-    agentMemo: 'memo-123',
-  });
+  t.deepEqual(
+    makePlannerAgentOptions(() => '  memo-123  '),
+    {
+      agentMemo: 'memo-123',
+    },
+  );
 });
 
 test('makePlannerAgentOptions rejects empty nonce', t => {
@@ -34,7 +37,9 @@ test('YdsTransactions posts transaction endpoint with auth', async t => {
           input instanceof Request ? input.headers : init?.headers,
         );
         const request = input instanceof Request ? input : undefined;
-        const bodyText = request ? await request.text() : (init?.body as string);
+        const bodyText = request
+          ? await request.text()
+          : (init?.body as string);
         calls.push({
           url,
           headers,
@@ -72,7 +77,9 @@ test('YdsTransactions posts transaction endpoint with auth', async t => {
     agentMemo: 'memo-123',
   });
   t.true(String(logs[0]?.[0]).includes(`Sending transaction ${txHash}`));
-  t.true(String(logs[1]?.[0]).includes(`Successfully sent transaction ${txHash}`));
+  t.true(
+    String(logs[1]?.[0]).includes(`Successfully sent transaction ${txHash}`),
+  );
 });
 
 test('YdsTransactions returns false and logs when YDS rejects request', async t => {
@@ -97,7 +104,9 @@ test('YdsTransactions returns false and logs when YDS rejects request', async t 
   });
 
   t.false(ok);
-  t.true(String(logs.at(-1)?.[0]).includes(`Failed to send transaction ${txHash}`));
+  t.true(
+    String(logs.at(-1)?.[0]).includes(`Failed to send transaction ${txHash}`),
+  );
 });
 
 test('YdsTransactions validates required transaction data', async t => {

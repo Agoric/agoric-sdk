@@ -854,6 +854,7 @@ test.failing(
           policyVersion: portfolioStatus.policyVersion,
           rebalanceCount: portfolioStatus.rebalanceCount,
         },
+        agentMemo: 'mock-nonce',
       },
       planOrSteps,
     ]);
