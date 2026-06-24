@@ -26,9 +26,9 @@ import {
 import {
   PortfolioPermissionsShape,
   PortfolioAutoFeaturesShape,
-  type FlowAgent,
   type FlowConfig,
   type FlowKey,
+  type FlowStatus,
   type FundsFlowPlan,
   type PortfolioAgentGrantee,
   type PortfolioAgentStatus,
@@ -51,7 +51,6 @@ import type {
   YmaxFullDomain,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
-import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import type { MapStore } from '@agoric/store';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
@@ -73,7 +72,6 @@ import { type LocalAccount, type NobleAccount } from './portfolio.flows.js';
 import { preparePosition, type Position } from './pos.exo.js';
 import type { makeOfferArgsShapes, MovementDesc } from './type-guards-steps.js';
 import {
-  makeFlowAgentPath,
   makeFlowPath,
   makeFlowStepsPath,
   makePortfolioAgentsPath,
@@ -158,6 +156,10 @@ const PortfolioAgentInfoShape: TypedPattern<PortfolioAgentInfo> = M.and(
   ),
 );
 
+type MaybeResolvedVowKit<T> =
+  | VowKit<T>
+  | (Omit<VowKit<T>, 'resolver'> & { resolver?: undefined });
+
 type PortfolioKitState = {
   portfolioId: number;
   accountsPending: MapStore<SupportedChain, VowKit<AccountInfo>>;
@@ -165,7 +167,7 @@ type PortfolioKitState = {
   positions: MapStore<PoolKey, Position>;
   flowsRunning: MapStore<
     number,
-    { sync: VowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
+    { sync: MaybeResolvedVowKit<MovementDesc[] | FundsFlowPlan> } & FlowDetail
   >;
   delegations?: MapStore<number, PortfolioAgentInfo>;
   plannerAgentId?: number;
@@ -344,10 +346,15 @@ const makeFlowsRunningRecord = (
 ): StatusFor['portfolio']['flowsRunning'] =>
   harden(
     fromEntries(
-      [...flowsRunning.entries()].map(([num, { sync: _s, ...data }]) => [
-        `flow${num}`,
-        data,
-      ]),
+      [...flowsRunning.entries()].map(
+        ([
+          num,
+          {
+            sync: { resolver },
+            ...data
+          },
+        ]) => [`flow${num}`, { ...data, planResolved: !resolver }],
+      ),
     ),
   );
 
@@ -388,7 +395,7 @@ export const preparePortfolioKit = (
       seat: ZCFSeat,
       offerArgs: unknown,
       kit: PortfolioKitCycleBreaker,
-      flowDetail: FlowDetail,
+      flowDetail?: FlowDetail,
       startedFlow?: { stepsP: Vow<MovementDesc[]>; flowId: number },
       config?: FlowConfig,
       options?: unknown,
@@ -663,18 +670,22 @@ export const preparePortfolioKit = (
           this.facets.delegationHelper.assertActive(client, agentId, {
             allocation: true,
           });
-          const { reader, reporter, simpleRebalanceHandler } = this.facets;
+          const { reader, manager } = this.facets;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-          const flowId = simpleRebalanceHandler.handle(emptySeat, {
-            targetAllocation,
-          });
-          reporter.publishFlowAgent(Number(flowId.replace(/^flow/, '')), {
-            id: `agent${agentId}`,
-          });
-          return flowId;
+          manager.setTargetAllocation(targetAllocation);
+          const flowDetail: FlowDetail = {
+            type: 'rebalance',
+            agent: `agent${agentId}`,
+          };
+          const startedFlow = manager.startFlow(flowDetail);
+          // This flow does its own error handling and always exits the seat
+          void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
+
+          const { flowId } = startedFlow;
+          return `flow${flowId}`;
         },
         submitRebalance(
           client: PortfolioDelegationClient,
@@ -684,21 +695,21 @@ export const preparePortfolioKit = (
           this.facets.delegationHelper.assertActive(client, agentId, {
             rebalance: true,
           });
-          const { reader, reporter, manager } = this.facets;
+          const { reader, manager } = this.facets;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
           const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
 
-          const flowDetail = { type: 'rebalance' } as FlowDetail;
+          const flowDetail: FlowDetail = {
+            type: 'rebalance',
+            agent: `agent${agentId}`,
+          };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
-          void executePlan(emptySeat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(emptySeat, {}, this.facets, undefined, startedFlow);
 
           const { flowId } = startedFlow;
-          reporter.publishFlowAgent(flowId, {
-            id: `agent${agentId}`,
-          });
           return `flow${flowId}`;
         },
       },
@@ -778,14 +789,18 @@ export const preparePortfolioKit = (
             publishStatus(makeFlowStepsPath(portfolioId, id, 'order'), order);
           }
         },
-        publishFlowStatus(id: number, status: StatusFor['flow']) {
-          const { portfolioId } = this.state;
-          publishStatus(makeFlowPath(portfolioId, id), status);
-        },
-        publishFlowAgent(id: number, agent: FlowAgent) {
-          mustMatch(agent, FlowAgentShape);
-          const { portfolioId } = this.state;
-          publishStatus(makeFlowAgentPath(portfolioId, id), agent);
+        /**
+         * Merge the given status with the flow's detail and publish to vstorage.
+         *
+         * Will throw if the flow is not running
+         */
+        publishFlowStatus(id: number, status: FlowStatus) {
+          const { portfolioId, flowsRunning } = this.state;
+          const { sync: _s, ...detail } = flowsRunning.get(id);
+          publishStatus(makeFlowPath(portfolioId, id), {
+            ...status,
+            ...detail,
+          });
         },
       },
       planner: {
@@ -801,19 +816,32 @@ export const preparePortfolioKit = (
         resolveFlowPlan(flowId: number, steps: MovementDesc[] | FundsFlowPlan) {
           const { flowsRunning } = this.state;
           const detail = flowsRunning.get(flowId);
-          detail.sync.resolver.resolve(steps);
+          const { resolver, ...sync } = detail.sync;
+          if (!resolver) {
+            throw Fail`flow${flowId} has already been resolved`;
+          }
+          resolver.resolve(steps);
+          flowsRunning.set(flowId, { ...detail, sync });
+          this.facets.reporter.publishStatus();
         },
         rejectFlowPlan(flowId: number, reason: string) {
           const { flowsRunning } = this.state;
+          const traceFlow = trace
+            .sub(`portfolio${this.state.portfolioId}`)
+            .sub(`flow${flowId}`);
           if (!flowsRunning.has(flowId)) {
-            const traceFlow = trace
-              .sub(`portfolio${this.state.portfolioId}`)
-              .sub(`flow${flowId}`);
             traceFlow('flowsRunning has nothing to reject');
             return;
           }
           const detail = flowsRunning.get(flowId);
-          detail.sync.resolver.reject(new Error(reason));
+          const { resolver, ...sync } = detail.sync;
+          if (!resolver) {
+            traceFlow('flow has already been resolved');
+            return;
+          }
+          resolver.reject(new Error(reason));
+          flowsRunning.set(flowId, { ...detail, sync });
+          this.facets.reporter.publishStatus();
         },
       },
       /**
@@ -958,8 +986,11 @@ export const preparePortfolioKit = (
             accountsPending,
           } = this.state;
           this.state.nextFlowId = flowId + 1;
-          const sync: VowKit<MovementDesc[]> = vowTools.makeVowKit();
-          if (steps) sync.resolver.resolve(steps);
+          let sync: MaybeResolvedVowKit<MovementDesc[]> = vowTools.makeVowKit();
+          if (steps) {
+            sync.resolver.resolve(steps);
+            sync = { ...sync, resolver: undefined };
+          }
           flowsRunning.init(flowId, harden({ sync, ...detail }));
           this.facets.reporter.publishStatus();
           if (accountsPending.getSize() > 0) {
@@ -1373,7 +1404,7 @@ export const preparePortfolioKit = (
             seat,
             {},
             this.facets,
-            flowDetail,
+            undefined,
             startedFlow,
             undefined,
             { evmDepositDetail: { ...depositDetails, fromChain } },
@@ -1417,7 +1448,7 @@ export const preparePortfolioKit = (
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           const seat = zcf.makeEmptySeatKit().zcfSeat;
 
-          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(seat, {}, this.facets, undefined, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
         /**
@@ -1473,7 +1504,7 @@ export const preparePortfolioKit = (
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           const seat = zcf.makeEmptySeatKit().zcfSeat;
 
-          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(seat, {}, this.facets, undefined, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
         /**
@@ -1521,6 +1552,7 @@ export const preparePortfolioKit = (
           );
 
           // This flow does its own error handling and always exits the seat
+          // XXX: rewrite to use executePlan instead of rebalance, which is legacy and broken
           void rebalance(seat, offerArgs, this.facets, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
@@ -1543,7 +1575,7 @@ export const preparePortfolioKit = (
             seat,
             offerArgs,
             this.facets,
-            flowDetail,
+            undefined,
             startedFlow,
           );
           return `flow${startedFlow.flowId}`;
@@ -1564,7 +1596,7 @@ export const preparePortfolioKit = (
             seat,
             offerArgs,
             this.facets,
-            flowDetail,
+            undefined,
             startedFlow,
           );
           return `flow${startedFlow.flowId}`;
@@ -1580,7 +1612,7 @@ export const preparePortfolioKit = (
           } as FlowDetail;
           const startedFlow = this.facets.manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
-          void executePlan(seat, {}, this.facets, flowDetail, startedFlow);
+          void executePlan(seat, {}, this.facets, undefined, startedFlow);
           return `flow${startedFlow.flowId}`;
         },
       },

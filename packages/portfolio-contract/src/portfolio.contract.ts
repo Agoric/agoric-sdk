@@ -36,9 +36,9 @@ import {
 } from '@agoric/orchestration';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
-  FlowAgent,
   FlowConfig,
   PortfolioAgentGrantee,
+  PortfolioAgentKey,
   PortfolioPermissionsExt,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
@@ -649,7 +649,7 @@ export const contract = async (
       'portfolioMandate',
       harden({
         portfolioId,
-        agentId: `agent${agentId}` satisfies FlowAgent['id'],
+        agentId: `agent${agentId}` satisfies PortfolioAgentKey,
         permissions,
       }),
     );
@@ -711,7 +711,11 @@ export const contract = async (
     offerArgs,
     kit,
     config = defaultFlowConfig,
-  ) => orchFns2.openPortfolio(seat, offerArgs, kit, ...flowCfg(config));
+  ) =>
+    orchFns2.openPortfolio(seat, offerArgs, kit, {
+      ...config,
+      explicitStartFlow: true,
+    });
 
   const usedAccessTokens = zone.makeOnce(
     'usedAccessTokens',

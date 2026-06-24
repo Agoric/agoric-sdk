@@ -113,9 +113,22 @@ export type TargetAllocation = Partial<
 >;
 
 export type FlowDetail =
-  | { type: 'withdraw'; amount: NatAmount; toChain?: SupportedChain }
-  | { type: 'deposit'; amount: NatAmount; fromChain?: SupportedChain }
-  | { type: 'rebalance' }; // aka simpleRebalance
+  | {
+      type: 'withdraw';
+      amount: NatAmount;
+      toChain?: SupportedChain;
+      agent?: undefined;
+    }
+  | {
+      type: 'deposit';
+      amount: NatAmount;
+      fromChain?: SupportedChain;
+      agent?: undefined;
+    }
+  | {
+      type: 'rebalance'; // aka simpleRebalance
+      agent?: PortfolioAgentKey;
+    };
 
 /** linked list of concurrent failures, including dependencies */
 export type FlowErrors = {
@@ -244,15 +257,7 @@ export type TrafficReport = {
 
 export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
-export type PortfolioAgentId = `agent${number}`;
-
-/**
- * attribute a flow to an agent that initiated it.
- * @see {StatusFor['flowAgent']}
- */
-export type FlowAgent = {
-  id: PortfolioAgentId;
-};
+export type PortfolioAgentKey = `agent${number}`;
 
 export type PortfolioAgentState = 'active' | 'revoked' | 'expired';
 
@@ -355,10 +360,10 @@ export type StatusFor = {
     rebalanceCount: number;
     /** @deprecated in favor of flowsRunning */
     flowCount: number;
-    flowsRunning?: Record<FlowKey, FlowDetail>;
+    flowsRunning?: Record<FlowKey, FlowDetail & { planResolved?: boolean }>;
     enabledAutoFeatures?: PortfolioAutoFeaturesExt;
   };
-  portfolioAgents: Record<PortfolioAgentId, PortfolioAgentStatus>;
+  portfolioAgents: Record<PortfolioAgentKey, PortfolioAgentStatus>;
   position: {
     protocol: YieldProtocol;
     accountId: AccountId;
@@ -366,7 +371,6 @@ export type StatusFor = {
     totalOut: NatAmount;
   };
   flow: FlowStatus & FlowDetail;
-  flowAgent: FlowAgent;
   flowSteps: FlowStep[];
   flowOrder: FundsFlowPlan['order'];
 };
@@ -394,8 +398,6 @@ export type PortfolioPublishedPathTypes = {
   [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`]: StatusFor['pendingTx'];
 } & {
   [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`]: StatusFor['flow'];
-} & {
-  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.agent`]: StatusFor['flowAgent'];
 } & {
   [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`]: StatusFor['flowSteps'];
 } & {

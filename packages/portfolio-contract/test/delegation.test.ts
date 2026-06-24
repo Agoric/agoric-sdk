@@ -43,6 +43,9 @@ const delegationDocOpts = {
   showValue: defaultSerializer.parse,
 };
 
+const stripRootStoragePath = (path: string) =>
+  path.replace(new RegExp(`^(${ROOT_STORAGE_PATH}|published)\\.`), '');
+
 const snapshotVstorage = (
   t: ExecutionContext,
   value: unknown,
@@ -177,13 +180,11 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   t.regex(String(rebalanceFlowId), /^flow\d+$/);
 
   await eventLoopIteration();
-  const portfolioPath = peteKit.evmTrader
-    .getPortfolioPath()
-    .replace(/^[^.]+\./, '');
-  const flowAgent = await peteKit.readPublished(
-    `${portfolioPath}.flows.${rebalanceFlowId}.agent`,
-  );
-  t.deepEqual(flowAgent, { id: 'agent1' });
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  const portfolioStatus = await peteKit.evmTrader.getPortfolioStatus();
+  t.is(portfolioStatus.flowsRunning?.[rebalanceFlowId]?.agent, 'agent1');
   const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
   t.deepEqual(agents, {
     agent1: {
@@ -306,9 +307,9 @@ test('Delegation is active only while registered on the portfolio', async t => {
     },
   });
 
-  const portfolioPath = peteKit.evmTrader
-    .getPortfolioPath()
-    .replace(/^[^.]+\./, '');
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
   const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
   t.deepEqual(agents, {
     agent1: {

@@ -140,6 +140,10 @@ type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
+type PortfolioStartedFlow = ReturnType<
+  GuestInterface<PortfolioKit>['manager']['startFlow']
+>;
+
 type EVMAccounts = Partial<Record<AxelarChain, GMPAccountStatus>>;
 type AccountsByChain = {
   agoric: AccountInfoFor['agoric'];
@@ -401,7 +405,7 @@ const trackFlow = async (
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
   order: Job['order'],
-  detail: FlowDetail,
+  detail?: object, // formerly FlowDetail
   progressPowers?: {
     resolverClient: GuestInterface<ResolverKit['client']>;
     phasesForStep: Map<TxPhase, TxId[]>[];
@@ -780,7 +784,7 @@ const stepFlow = async (
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
   flowId: number,
-  flowDetail: FlowDetail,
+  flowDetail?: object, // formerly FlowDetail
   config?: FlowConfig,
   options?: Pick<ExecutePlanOptions, 'queuedSteps' | 'evmDepositDetail'>,
 ) => {
@@ -1582,9 +1586,7 @@ export const rebalance = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
-  startedFlow?: ReturnType<
-    GuestInterface<PortfolioKit>['manager']['startFlow']
-  >,
+  startedFlow?: PortfolioStartedFlow,
   config?: FlowConfig,
 ) => {
   const id = kit.reader.getPortfolioId();
@@ -1754,13 +1756,21 @@ export const openPortfolio = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['openPortfolio'],
   madeKit?: GuestInterface<PortfolioKit>,
-  config?: FlowConfig,
+  openConfig?: FlowConfig & {
+    /**
+     * A config flag for new invocations of `openPortfolio` to call `startFlow`
+     * and provide `executePlan` with a `startedFlow`.
+     */
+    explicitStartFlow?: boolean;
+  },
   evmDepositDetails?: {
     fromChain: AxelarChain;
     amount: NatAmount;
     permitDetails: PermitDetails;
   },
 ) => {
+  const { explicitStartFlow, ...flowConfig } = openConfig ?? {};
+  const config = openConfig !== undefined ? flowConfig : undefined;
   const features = config?.features;
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const trace = makeTracer('openPortfolio');
@@ -1800,14 +1810,26 @@ export const openPortfolio = (async (
         }
 
         if (depositFlowDetail) {
+          // Historical openPortfolio flows would rely on the backwards compatibility of
+          // `executePlan` to call `startFlow`. For new invocations (`explicitStartFlow`
+          // set to `true`), we instead call `startFlow` here.
+          // This approach is needed to maintain replay compatibility of historical invocations.
+          const flowArgs: [
+            FlowDetail | undefined,
+            PortfolioStartedFlow | undefined,
+          ] = explicitStartFlow
+            ? [
+                undefined,
+                kit.manager.startFlow(depositFlowDetail, offerArgs.flow),
+              ]
+            : [depositFlowDetail, undefined];
           await executePlan(
             orch,
             ctxI,
             seat,
             offerArgs,
             kit,
-            depositFlowDetail,
-            undefined,
+            ...flowArgs,
             config,
             depositOptions,
           );
@@ -1940,19 +1962,20 @@ export const executePlan = (async (
   seat: ZCFSeat,
   offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
-  flowDetail: FlowDetail,
-  startedFlow?: ReturnType<
-    GuestInterface<PortfolioKit>['manager']['startFlow']
-  >,
+  flowDetail?: FlowDetail,
+  startedFlow?: PortfolioStartedFlow,
   config?: FlowConfig,
   options?: ExecutePlanOptions,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
-  const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
+  const traceP = makeTracer(`portfolio${pId}`);
 
   // XXX for backwards compatibility, startedFlow may be undefined
   const { stepsP, flowId } =
-    startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
+    startedFlow ??
+    (flowDetail
+      ? pKit.manager.startFlow(flowDetail, offerArgs.flow)
+      : Fail`executePlan requires either startedFlow or flowDetail`);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   await null;
