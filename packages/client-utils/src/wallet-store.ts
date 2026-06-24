@@ -2,7 +2,7 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { ECallable } from '@agoric/vow/src/E.js';
 import type { EUnwrap } from '@agoric/vow/src/types.js';
 import type { Instance } from '@agoric/zoe';
-import type { DeliverTxResponse, StdFee } from '@cosmjs/stargate';
+import type { DeliverTxResponse, SignerData, StdFee } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
 import type { SigningSmartWalletKit } from './signing-smart-wallet-kit.ts';
 import { getInvocationUpdate, getOfferResult } from './smart-wallet-utils.js';
@@ -34,6 +34,8 @@ export type WalletStoreEntryProxy<T> = {
 
 type TxOptions = RetryOptionsAndPowers & {
   fee?: StdFee;
+  memo?: string;
+  signerData?: SignerData;
   sendOnly?: boolean;
   makeNonce?: () => string;
 };
@@ -72,7 +74,8 @@ export const reflectWalletStore = (
   ) => {
     const combinedOpts = { ...baseTxOpts, ...overrides } as TxOptions;
     combinedOpts.setTimeout || Fail`missing setTimeout`;
-    const { fee, sendOnly, makeNonce, ...retryOpts } = combinedOpts;
+    const { fee, memo, signerData, sendOnly, makeNonce, ...retryOpts } =
+      combinedOpts;
     if (saveTo && !makeNonce && !sendOnly) {
       throw Fail`makeNonce is required without sendOnly: true (to create an awaitable message id)`;
     }
@@ -107,6 +110,8 @@ export const reflectWalletStore = (
           const tx = await sswk.sendBridgeAction(
             { method: 'invokeEntry', message },
             fee,
+            memo,
+            signerData,
           );
           if (tx.code !== 0) {
             throw Error(tx.rawLog);
@@ -138,6 +143,8 @@ export const reflectWalletStore = (
     };
     const {
       fee,
+      memo,
+      signerData,
       sendOnly: _sendOnly,
       makeNonce,
       overwrite = true,
@@ -154,6 +161,8 @@ export const reflectWalletStore = (
     const tx = await sswk.sendBridgeAction(
       { method: 'executeOffer', offer },
       fee,
+      memo,
+      signerData,
     );
     const status = await getOfferResult(
       id,
