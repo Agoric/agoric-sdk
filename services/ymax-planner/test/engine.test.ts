@@ -850,6 +850,7 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
         policyVersion: portfolioStatus.policyVersion,
         rebalanceCount: portfolioStatus.rebalanceCount,
       },
+      agentMemo: 'mock-nonce',
     },
     planOrSteps,
   ]);

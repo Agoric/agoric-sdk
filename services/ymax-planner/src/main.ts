@@ -438,6 +438,18 @@ export const main = async (
         },
       )
     : undefined;
+  const postYdsTransaction = ydsClient
+    ? async (txHash: string): Promise<void> => {
+        const json: YdsTransactionSubmitBody = {
+          txHash,
+          chain: networkConfig.chainName,
+          ymaxInstance: config.contractInstance,
+        };
+        await ydsClient.post('transactions', {
+          json,
+        });
+      }
+    : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -480,6 +492,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    postYdsTransaction,
     autoRebalance: config.autoRebalance,
   };
 
