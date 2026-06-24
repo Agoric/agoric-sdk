@@ -31,7 +31,10 @@ type Receiver<R> = ReturnType<typeof makeDepositFacetSpy<R>>;
 type ExpectedDelegationDetails = {
   portfolioId: number;
   agentId: `agent${number}`;
-  permissions: { allocation: true };
+  permissions: {
+    allocation?: true | { capBps?: number };
+    rebalance?: true;
+  };
 };
 
 const emptyProposal = harden({ give: {}, want: {} }) as Proposal;
@@ -97,7 +100,7 @@ const openPetePortfolio = async (
   allocations = [
     { instrument: 'Aave_Arbitrum', portion: 60n },
     { instrument: 'Compound_Arbitrum', portion: 40n },
-  ] as const,
+  ] as { instrument: string; portion: bigint }[],
   depositAmount = 10_000_000n,
 ) => {
   const receiver = await registerDepositFacet(
@@ -151,7 +154,9 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
     await openPetePortfolio(deployed);
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
-    harden({ allocation: true }),
+    harden({
+      allocation: true,
+    }),
   );
   const { delegationClient } = await redeemAndCheckDelegation({
     t,
@@ -210,7 +215,9 @@ test('Granted rebalance cannot introduce a new instrument', async t => {
   const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
-    harden({ allocation: true }),
+    harden({
+      allocation: true,
+    }),
   );
   const { delegationClient } = await redeemAndCheckDelegation({
     t,
@@ -252,7 +259,9 @@ test('Granted rebalance may retain an instrument key with zero portion', async t
   const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
-    harden({ allocation: true }),
+    harden({
+      allocation: true,
+    }),
   );
   const { delegationClient } = await redeemAndCheckDelegation({
     t,
@@ -286,13 +295,136 @@ test('Granted rebalance may retain an instrument key with zero portion', async t
   });
 });
 
+test('delegated setTargetAllocation rejects a position above allocation cap', async t => {
+  const deployed = await deploy(t);
+  const { zoe } = deployed;
+  const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({
+      allocation: { capBps: 3000 },
+    }),
+  );
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId: peteKit.evmTrader.getPortfolioId(),
+      agentId: 'agent1',
+      permissions: { allocation: { capBps: 3000 } },
+    },
+  });
+
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const { policyVersion, rebalanceCount } = before;
+  const rebalanceP = E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 31n,
+      Compound_Arbitrum: 69n,
+    },
+    { policyVersion, rebalanceCount },
+  );
+
+  await t.throwsAsync(() => rebalanceP, {
+    message: /target allocation exceeds allocation cap/,
+  });
+});
+
+test('delegated setTargetAllocation ignores allocation cap for cash pseudo positions', async t => {
+  const deployed = await deploy(t);
+  const { zoe } = deployed;
+  const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(
+    deployed,
+    PETE_AGENT,
+    [
+      { instrument: 'Aave_Arbitrum', portion: 60n },
+      { instrument: '@Base', portion: 40n },
+    ],
+  );
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({
+      allocation: { capBps: 3000 },
+    }),
+  );
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId: peteKit.evmTrader.getPortfolioId(),
+      agentId: 'agent1',
+      permissions: { allocation: { capBps: 3000 } },
+    },
+  });
+
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const { policyVersion, rebalanceCount } = before;
+  const rebalanceFlowId = await E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 30n,
+      '@Base': 70n,
+    },
+    { policyVersion, rebalanceCount },
+  );
+
+  t.regex(String(rebalanceFlowId), /^flow\d+$/);
+
+  await eventLoopIteration();
+  const after = await peteKit.evmTrader.getPortfolioStatus();
+  t.deepEqual(after.targetAllocation, {
+    Aave_Arbitrum: 30n,
+    '@Base': 70n,
+  });
+});
+
+test('delegated setTargetAllocation remains uncapped when allocation cap is absent', async t => {
+  const deployed = await deploy(t);
+  const { zoe } = deployed;
+  const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({
+      allocation: true,
+    }),
+  );
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId: peteKit.evmTrader.getPortfolioId(),
+      agentId: 'agent1',
+      permissions: { allocation: true },
+    },
+  });
+
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const { policyVersion, rebalanceCount } = before;
+  const rebalanceFlowId = await E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 100n,
+      Compound_Arbitrum: 0n,
+    },
+    { policyVersion, rebalanceCount },
+  );
+
+  t.regex(String(rebalanceFlowId), /^flow\d+$/);
+});
+
 test('Delegation is active only while registered on the portfolio', async t => {
   const deployed = await deploy(t);
   const { zoe } = deployed;
   const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
-    harden({ allocation: true }),
+    harden({
+      allocation: true,
+    }),
   );
   const { delegationClient } = await redeemAndCheckDelegation({
     t,
@@ -330,21 +462,24 @@ test('Delegation is active only while registered on the portfolio', async t => {
   t.regex(String(rebalanceFlowId), /^flow\d+$/);
 });
 
-test('Grant rejects allocation permission set to false', async t => {
+test('Grant allows empty permissions', async t => {
   const deployed = await deploy(t);
-  const { peteArbitrum } = await openPetePortfolio(deployed);
+  const { zoe } = deployed;
+  const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
 
-  const grantStatus = await peteArbitrum.grant(
-    PETE_AGENT,
-    harden({ allocation: false }),
-  );
+  const grantStatus = await peteArbitrum.grant(PETE_AGENT, harden({}));
 
-  t.is(grantStatus.status, 'error');
-  if (!('error' in grantStatus)) {
-    t.fail('expected error detail on failed grant');
-    return;
-  }
-  t.regex(grantStatus.error || '', /grant requires allocation permission/);
+  await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId: peteKit.evmTrader.getPortfolioId(),
+      agentId: 'agent1',
+      permissions: {},
+    },
+  });
 });
 
 test('Grant delivery failure is surfaced in wallet vstorage without publishing an unusable agent', async t => {
@@ -363,7 +498,9 @@ test('Grant delivery failure is surfaced in wallet vstorage without publishing a
 
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
-    harden({ allocation: true }),
+    harden({
+      allocation: true,
+    }),
   );
 
   t.is(grantStatus.status, 'error');

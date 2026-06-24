@@ -7,9 +7,12 @@
  * @see {@link preparePortfolioDelegationKit}
  */
 import type { TypedPattern } from '@agoric/internal';
+import { partialMap } from '@agoric/internal/src/js-utils.js';
 import {
   PortfolioAutoFeaturesExtShape,
+  isInstrumentId,
   type FlowKey,
+  type PortfolioPermissions,
   type PortfolioSyncState,
 } from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
@@ -48,6 +51,31 @@ const auditKeys = (
   const extra = actualKeys.filter(key => !expectedSet.has(key));
   const missing = expectedKeys.filter(key => !actualSet.has(key));
   return harden({ extra, missing });
+};
+
+const assertWithinAllocationCap = (
+  targetAllocation: TargetAllocation,
+  permissions: PortfolioPermissions,
+) => {
+  const { allocation } = permissions;
+  const capBps = typeof allocation === 'object' ? allocation.capBps : undefined;
+  if (capBps === undefined) {
+    return;
+  }
+  // `capBps` comes from the validated permission shape, so BigInt() is safe.
+  const scaledCap =
+    BigInt(capBps) *
+    Object.values(targetAllocation).reduce((sum, weight) => sum + weight, 0n);
+  if (scaledCap === 0n) {
+    return;
+  }
+  const overCap = partialMap(
+    Object.entries(targetAllocation),
+    ([key, weight]) =>
+      weight * 10_000n > scaledCap && isInstrumentId(key) ? key : undefined,
+  );
+  overCap.length === 0 ||
+    Fail`target allocation exceeds allocation cap for ${q(overCap)}`;
 };
 
 const DelegationReaderI = M.interface('PortfolioDelegationReader', {
@@ -119,6 +147,11 @@ export const preparePortfolioDelegationKit = (
           const { extra, missing } = auditKeys(current, targetAllocation);
           extra.length === 0 || Fail`unauthorized allocations for ${q(extra)}`;
           missing.length === 0 || Fail`missing allocations for ${q(missing)}`;
+          const permissions = portfolioAccess.getPermissions(
+            this.facets.client,
+            agentId,
+          );
+          assertWithinAllocationCap(targetAllocation, permissions);
 
           return portfolioAccess.submitTargetAllocation(
             this.facets.client,

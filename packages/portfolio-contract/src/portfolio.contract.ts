@@ -39,7 +39,7 @@ import type {
   FlowAgent,
   FlowConfig,
   PortfolioAgentGrantee,
-  PortfolioPermissionsExt,
+  PortfolioPermissions,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
@@ -631,7 +631,7 @@ export const contract = async (
     portfolioId: number,
     agentId: number,
     grantee: PortfolioAgentGrantee,
-    permissions: PortfolioPermissionsExt,
+    permissions: PortfolioPermissions,
   ): Promise<void> => {
     if (grantee === PortfolioPlannerAgent) {
       const planner = getPortfolio(portfolioId)!.planner;

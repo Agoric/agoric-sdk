@@ -158,7 +158,7 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
       permissions,
     ) {
       t.is(grantee, PortfolioPlannerAgent);
-      t.like(permissions, { rebalance: true });
+      t.deepEqual(permissions, { rebalance: true });
       plannerDelegations.set(aPortfolio.planner, client);
     },
     ...({} as any),

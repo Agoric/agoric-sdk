@@ -117,7 +117,11 @@ const OperationSubTypes = {
   ],
   Asset: TokenPermissionsComponents,
   /** @see {@link PortfolioPermissions} */
-  PortfolioPermissions: [{ name: 'allocation', type: 'bool' }],
+  PortfolioPermissions: [
+    { name: 'mayAllocate', type: 'bool' },
+    { name: 'allocationCapBps', type: 'uint16' },
+    { name: 'mayRebalance', type: 'bool' },
+  ],
   /** @see {@link PortfolioAutoFeatures} */
   PortfolioAutoFeatures: [{ name: 'rebalance', type: 'bool' }],
 } as const satisfies TypedData;

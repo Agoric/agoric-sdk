@@ -23,6 +23,7 @@ import type { PublishedTx } from './resolver.js';
 import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
 import type {
   PortfolioAutoFeaturesExt,
+  PortfolioPermissions,
   PortfolioPermissionsExt,
 } from './portfolio-permissions.js';
 

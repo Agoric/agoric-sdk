@@ -21,8 +21,9 @@ import {
   recoverTypedDataAddress,
   validateTypedData,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
-import type { StatusFor } from '@agoric/portfolio-api';
+import type { PortfolioPermissions, StatusFor } from '@agoric/portfolio-api';
 import type {
+  PortfolioPermissionsEIP712,
   YmaxFullDomain,
   YmaxPermitWitnessTransferFromData,
   YmaxStandaloneOperationData,
@@ -388,7 +389,7 @@ export const prepareEVMPortfolioOperationManager = (
               // we don't rely on it for correctness: the string will
               // be looked up in NamesByAddress.
               accountHolder as Bech32Address,
-              permissions,
+              fromPortfolioPermissionsEIP712(permissions),
             );
 
             return watch(result, BasicOutcomeWatcher);
@@ -638,3 +639,19 @@ export const prepareEVMWalletHandlerKit = (
 export type EVMWalletMessageHandler = ReturnType<
   ReturnType<typeof prepareEVMWalletHandlerKit>['makeEVMWalletMessageHandler']
 >;
+export const fromPortfolioPermissionsEIP712 = (
+  permissions: PortfolioPermissionsEIP712,
+): PortfolioPermissions => {
+  const { mayAllocate, allocationCapBps, mayRebalance } = permissions;
+
+  const appPermissions: PortfolioPermissions = harden({
+    ...(mayAllocate
+      ? {
+          allocation:
+            allocationCapBps > 0 ? harden({ capBps: allocationCapBps }) : true,
+        }
+      : {}),
+    ...(mayRebalance ? { rebalance: true } : {}),
+  });
+  return appPermissions;
+};

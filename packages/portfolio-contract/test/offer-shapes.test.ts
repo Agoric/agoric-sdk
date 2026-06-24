@@ -5,7 +5,6 @@ import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
   type PortfolioAgentStatus,
   type PortfolioPermissions,
-  type PortfolioPermissionsExt,
   PortfolioPermissionsExtShape,
   PortfolioPermissionsShape,
 } from '@agoric/portfolio-api';
@@ -209,22 +208,21 @@ test('PoolKeyExt shapes accept future pool keys', t => {
 test('PortfolioPermissionsShape', t => {
   const passCases = harden({
     empty: {},
-    allocationOnly: {
-      allocation: true,
-    },
-    rebalanceOnly: {
-      rebalance: true,
-    },
+    allocateOnly: { allocation: true },
+    allocateObjectOnly: { allocation: {} },
+    allocateFalse: { allocation: false },
+    allocateZeroCap: { allocation: { capBps: 0 } },
+    allocateCap: { allocation: { capBps: 3000 } },
+    allocateFullCap: { allocation: { capBps: 10_000 } },
+    rebalanceOnly: { rebalance: true },
+    rebalanceFalse: { rebalance: false },
   } satisfies Record<string, PortfolioPermissions>);
   const failCases = harden({
-    futurePermission: {
-      allocation: true,
-      futurePermission: false,
-    },
-    futureObject: {
-      future: { size: 1 },
-    },
-  }) satisfies Record<string, PortfolioPermissionsExt>;
+    allocationCapTooLow: { allocation: { capBps: -1 } },
+    allocationCapTooHigh: { allocation: { capBps: 10_001 } },
+    allocationCapExtraField: { allocation: { capBps: 3000, future: true } },
+    futurePermission: { futurePermission: true },
+  }) satisfies Record<string, unknown>;
 
   t.log('good:', Object.keys(passCases).join(', '));
   t.log('bad:', Object.keys(failCases).join(', '));
@@ -239,15 +237,11 @@ test('PortfolioPermissionsShape', t => {
 test('PortfolioPermissionsExtShape', t => {
   const passCases = harden({
     empty: {},
-    futurePermission: {
-      allocation: true,
-      futurePermission: false,
-    },
-    futureObject: {
-      future: { size: 1 },
-    },
-  }) satisfies Record<string, PortfolioPermissionsExt>;
-  const failCases = harden({});
+    allocateCap: { allocation: { capBps: 3000 } },
+    futurePermission: { allocation: true, futurePermission: false },
+    badAllocation: { allocation: { future: { size: 1 } } },
+  });
+  const failCases = harden({}) satisfies Record<string, unknown>;
 
   t.log('good:', Object.keys(passCases).join(', '));
   t.log('bad:', Object.keys(failCases).join(', '));
