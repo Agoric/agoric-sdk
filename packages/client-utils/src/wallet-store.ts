@@ -16,6 +16,18 @@ import type { RetryOptionsAndPowers } from './sync-tools.js';
  * to save results back into the wallet store and responses for such saved
  * results also include a WalletStoreEntryProxy `result` representing those
  * results.
+ *
+ * XXX We should replace special treatment of "saveAs" and "overwrite"
+ * pseudo-methods with a generic pattern for invocation-with-options, such as
+ * the parameter-prepending `getForSavingResults` that was removed by
+ * https://github.com/Agoric/agoric-sdk/pull/12413 and if re-introduced would
+ * look something like
+ * ```
+ * walletStore.getForInvocationWithOptions(savedName).method(
+ *   { name: resultName, memo },
+ *   ...args,
+ * );
+ * ```
  */
 export type WalletStoreEntryProxy<T> = {
   readonly [M in keyof T]: T[M] extends (...args: infer P) => infer R
@@ -180,8 +192,9 @@ export const reflectWalletStore = (
      * confirmation in vstorage when sent with an `id` (e.g., derived from a
      * `makeNonce` option) unless overridden by a `sendOnly: true` option.
      *
-     * Use `.save(name)` or `.overwrite(name)` to persist a method result
-     * without changing the method's argument signature.
+     * Use `.saveAs(name)` or `.overwrite(name)` to persist a method result
+     * without changing the method's argument signature (but see
+     * {@link WalletStoreEntryProxy} about changing that.
      *
      * @param name The wallet store name of the saved entry to retrieve.
      */
