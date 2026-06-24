@@ -6,7 +6,7 @@ import type {
   PortfolioPermissionsEIP712,
 } from './evm-wallet/eip712-messages.ts';
 
-const PercentShape = M.and(M.number(), M.gte(0), M.lte(100));
+const BasisPointsShape = M.and(M.number(), M.gte(0), M.lte(10_000));
 
 /**
  * Portfolio permissions granted to an automation agent.
@@ -20,10 +20,10 @@ export type PortfolioPermissions = {
     | boolean
     | {
         /**
-         * optional maximum integer percentage for any non-cash position in a
+         * optional maximum allocation in basis points for any non-cash position in a
          * delegated `setTargetAllocation` request.
          */
-        capPct?: number;
+        capBps?: number;
       };
   /** whether the agent may trigger a rebalance using the current policy. */
   rebalance?: boolean;
@@ -37,7 +37,7 @@ export type PortfolioPermissionsExt = PortfolioPermissions & CopyRecord<any>;
 const permissionProperties = harden({
   allocation: M.or(
     M.boolean(),
-    M.splitRecord({}, { capPct: PercentShape }, {}),
+    M.splitRecord({}, { capBps: BasisPointsShape }, {}),
   ),
   rebalance: M.boolean(),
 });
@@ -54,7 +54,7 @@ export const PortfolioPermissionsShape: TypedPattern<PortfolioPermissions> =
 export const PortfolioPermissionsEIP712Shape: TypedPattern<PortfolioPermissionsEIP712> =
   harden({
     mayAllocate: M.boolean(),
-    allocationCapPct: PercentShape,
+    allocationCapBps: BasisPointsShape,
     mayRebalance: M.boolean(),
   });
 

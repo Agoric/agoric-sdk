@@ -197,7 +197,7 @@ test('getYmaxStandaloneOperationData for Grant', t => {
     accountHolder: 'agoric1delegate',
     permissions: {
       mayAllocate: true,
-      allocationCapPct: 30,
+      allocationCapBps: 3000,
       mayRebalance: false,
     },
     portfolio: 9n,
@@ -223,7 +223,7 @@ test('getYmaxStandaloneOperationData for Grant', t => {
   ]);
   t.deepEqual(result.types.PortfolioPermissions, [
     { name: 'mayAllocate', type: 'bool' },
-    { name: 'allocationCapPct', type: 'uint8' },
+    { name: 'allocationCapBps', type: 'uint16' },
     { name: 'mayRebalance', type: 'bool' },
   ]);
 });

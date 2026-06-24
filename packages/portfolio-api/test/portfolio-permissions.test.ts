@@ -13,17 +13,17 @@ test('PortfolioPermissionsShape', t => {
     allocateOnly: { allocation: true },
     allocateObjectOnly: { allocation: {} },
     allocateFalse: { allocation: false },
-    allocateZeroCap: { allocation: { capPct: 0 } },
-    allocateCap: { allocation: { capPct: 30 } },
-    allocateFullCap: { allocation: { capPct: 100 } },
+    allocateZeroCap: { allocation: { capBps: 0 } },
+    allocateCap: { allocation: { capBps: 3000 } },
+    allocateFullCap: { allocation: { capBps: 10_000 } },
     rebalanceOnly: { rebalance: true },
     rebalanceFalse: { rebalance: false },
     both: { allocation: true, rebalance: true },
   } satisfies Record<string, PortfolioPermissions>);
   const failCases = harden({
-    allocationCapTooLow: { allocation: { capPct: -1 } },
-    allocationCapTooHigh: { allocation: { capPct: 101 } },
-    allocationCapExtraField: { allocation: { capPct: 30, future: true } },
+    allocationCapTooLow: { allocation: { capBps: -1 } },
+    allocationCapTooHigh: { allocation: { capBps: 10_001 } },
+    allocationCapExtraField: { allocation: { capBps: 3000, future: true } },
     futurePermission: { futurePermission: true },
   }) satisfies Record<string, unknown>;
 
@@ -42,7 +42,7 @@ test('PortfolioPermissionsExtShape remains forward compatible', t => {
   t.notThrows(() =>
     mustMatch(
       harden({
-        allocation: { capPct: 30, futureFlag: false },
+        allocation: { capBps: 3000, futureFlag: false },
         futurePermission: false,
       }),
       PortfolioPermissionsExtShape,
