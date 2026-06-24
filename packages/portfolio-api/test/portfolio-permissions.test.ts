@@ -16,6 +16,10 @@ test('PortfolioPermissionsShape', t => {
     allocateZeroCap: { allocation: { capBps: 0 } },
     allocateCap: { allocation: { capBps: 3000 } },
     allocateFullCap: { allocation: { capBps: 10_000 } },
+    allocateMaxPerDay: { allocation: { maxBpsPerDay: 2000 } },
+    allocateCapAndMaxPerDay: {
+      allocation: { capBps: 3000, maxBpsPerDay: 2000 },
+    },
     rebalanceOnly: { rebalance: true },
     rebalanceFalse: { rebalance: false },
     both: { allocation: true, rebalance: true },
@@ -23,6 +27,9 @@ test('PortfolioPermissionsShape', t => {
   const failCases = harden({
     allocationCapTooLow: { allocation: { capBps: -1 } },
     allocationCapTooHigh: { allocation: { capBps: 10_001 } },
+    allocationMaxPerDayZero: { allocation: { maxBpsPerDay: 0 } },
+    allocationMaxPerDayTooLow: { allocation: { maxBpsPerDay: -1 } },
+    allocationMaxPerDayTooHigh: { allocation: { maxBpsPerDay: 10_001 } },
     allocationCapExtraField: { allocation: { capBps: 3000, future: true } },
     futurePermission: { futurePermission: true },
   }) satisfies Record<string, unknown>;

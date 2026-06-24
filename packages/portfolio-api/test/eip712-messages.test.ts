@@ -15,6 +15,8 @@ const MOCK_CONTRACT_ADDRESS =
   '0x1234567890123456789012345678901234567890' as const;
 const MOCK_TOKEN_ADDRESS =
   '0xabcdefabcdefabcdefabcdefabcdefabcdefabcd' as const;
+const peteSays = harden({ percentPerDay: 25 });
+const DAILY_MOVE_LIMIT_BPS = peteSays.percentPerDay * 100;
 
 type DomainThrowCase = {
   title: string;
@@ -198,6 +200,7 @@ test('getYmaxStandaloneOperationData for Grant', t => {
     permissions: {
       mayAllocate: true,
       allocationCapBps: 3000,
+      allocationMaxBpsPerDay: DAILY_MOVE_LIMIT_BPS,
       mayRebalance: false,
     },
     portfolio: 9n,
@@ -224,6 +227,7 @@ test('getYmaxStandaloneOperationData for Grant', t => {
   t.deepEqual(result.types.PortfolioPermissions, [
     { name: 'mayAllocate', type: 'bool' },
     { name: 'allocationCapBps', type: 'uint16' },
+    { name: 'allocationMaxBpsPerDay', type: 'uint16' },
     { name: 'mayRebalance', type: 'bool' },
   ]);
 });
