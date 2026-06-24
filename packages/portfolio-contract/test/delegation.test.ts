@@ -32,7 +32,7 @@ type ExpectedDelegationDetails = {
   portfolioId: number;
   agentId: `agent${number}`;
   permissions: {
-    allocation?: true | { capPct?: number };
+    allocation?: true | { capBps?: number };
     rebalance?: true;
   };
 };
@@ -302,7 +302,7 @@ test('delegated setTargetAllocation rejects a position above allocation cap', as
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
     harden({
-      allocation: { capPct: 30 },
+      allocation: { capBps: 3000 },
     }),
   );
   const { delegationClient } = await redeemAndCheckDelegation({
@@ -313,7 +313,7 @@ test('delegated setTargetAllocation rejects a position above allocation cap', as
     expectedDetails: {
       portfolioId: peteKit.evmTrader.getPortfolioId(),
       agentId: 'agent1',
-      permissions: { allocation: { capPct: 30 } },
+      permissions: { allocation: { capBps: 3000 } },
     },
   });
 
@@ -346,7 +346,7 @@ test('delegated setTargetAllocation ignores allocation cap for cash pseudo posit
   const grantStatus = await peteArbitrum.grant(
     PETE_AGENT,
     harden({
-      allocation: { capPct: 30 },
+      allocation: { capBps: 3000 },
     }),
   );
   const { delegationClient } = await redeemAndCheckDelegation({
@@ -357,7 +357,7 @@ test('delegated setTargetAllocation ignores allocation cap for cash pseudo posit
     expectedDetails: {
       portfolioId: peteKit.evmTrader.getPortfolioId(),
       agentId: 'agent1',
-      permissions: { allocation: { capPct: 30 } },
+      permissions: { allocation: { capBps: 3000 } },
     },
   });
 

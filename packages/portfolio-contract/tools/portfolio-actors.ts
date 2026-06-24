@@ -598,8 +598,8 @@ export const toPortfolioPermissionsEIP712 = (
   const { allocation, rebalance } = permissions;
   return harden({
     mayAllocate: !!allocation,
-    allocationCapPct:
-      typeof allocation === 'object' ? (allocation.capPct ?? 0) : 0,
+    allocationCapBps:
+      typeof allocation === 'object' ? (allocation.capBps ?? 0) : 0,
     mayRebalance: !!rebalance,
   });
 };

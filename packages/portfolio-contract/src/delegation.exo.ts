@@ -58,13 +58,13 @@ const assertWithinAllocationCap = (
   permissions: PortfolioPermissions,
 ) => {
   const { allocation } = permissions;
-  const capPct = typeof allocation === 'object' ? allocation.capPct : undefined;
-  if (capPct === undefined) {
+  const capBps = typeof allocation === 'object' ? allocation.capBps : undefined;
+  if (capBps === undefined) {
     return;
   }
-  // `capPct` comes from the validated permission shape, so BigInt() is safe.
+  // `capBps` comes from the validated permission shape, so BigInt() is safe.
   const scaledCap =
-    BigInt(capPct) *
+    BigInt(capBps) *
     Object.values(targetAllocation).reduce((sum, weight) => sum + weight, 0n);
   if (scaledCap === 0n) {
     return;
@@ -72,7 +72,7 @@ const assertWithinAllocationCap = (
   const overCap = partialMap(
     Object.entries(targetAllocation),
     ([key, weight]) =>
-      weight * 100n > scaledCap && isInstrumentId(key) ? key : undefined,
+      weight * 10_000n > scaledCap && isInstrumentId(key) ? key : undefined,
   );
   overCap.length === 0 ||
     Fail`target allocation exceeds allocation cap for ${q(overCap)}`;

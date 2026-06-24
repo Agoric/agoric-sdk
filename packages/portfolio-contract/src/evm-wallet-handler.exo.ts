@@ -642,13 +642,13 @@ export type EVMWalletMessageHandler = ReturnType<
 export const fromPortfolioPermissionsEIP712 = (
   permissions: PortfolioPermissionsEIP712,
 ): PortfolioPermissions => {
-  const { mayAllocate, allocationCapPct, mayRebalance } = permissions;
+  const { mayAllocate, allocationCapBps, mayRebalance } = permissions;
 
   const appPermissions: PortfolioPermissions = harden({
     ...(mayAllocate
       ? {
           allocation:
-            allocationCapPct > 0 ? harden({ capPct: allocationCapPct }) : true,
+            allocationCapBps > 0 ? harden({ capBps: allocationCapBps }) : true,
         }
       : {}),
     ...(mayRebalance ? { rebalance: true } : {}),
