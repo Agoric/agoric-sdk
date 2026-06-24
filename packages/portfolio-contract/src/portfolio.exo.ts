@@ -343,20 +343,17 @@ const makePortfolioAgentsRecord = (
 /** publish everyting about flowsRunning but the sync VowKit */
 const makeFlowsRunningRecord = (
   flowsRunning: PortfolioKitState['flowsRunning'],
-): StatusFor['portfolio']['flowsRunning'] =>
-  harden(
-    fromEntries(
-      [...flowsRunning.entries()].map(
-        ([
-          num,
-          {
-            sync: { resolver },
-            ...data
-          },
-        ]) => [`flow${num}`, { ...data, awaitingSteps: !!resolver }],
-      ),
-    ),
-  );
+): StatusFor['portfolio']['flowsRunning'] => {
+  const storedEntries = [...flowsRunning.entries()];
+  const statusEntries = storedEntries.map(([num, stored]) => {
+    const {
+      sync: { resolver },
+      ...data
+    } = stored;
+    return [`flow${num}`, { ...data, awaitingSteps: !!resolver }];
+  });
+  return harden(fromEntries(statusEntries));
+};
 
 export type PublishStatusFn = <K extends keyof StatusFor>(
   path: string[],
