@@ -26,7 +26,7 @@
  * @property {(value: unknown) => unknown} [renderResult]
  *
  * @typedef {object} RetryPowers
- * @property {typeof globalThis.setTimeout} setTimeout
+ * @property {<T extends (...args: unknown[]) => unknown>(fn: T, timeout?: number, ...args: Parameters<T>) => unknown} setTimeout
  * @property {(...args: unknown[]) => void} [log]
  *
  * @typedef {RetryOptions & RetryPowers} RetryOptionsAndPowers mixes ocaps with configuration
@@ -47,7 +47,7 @@
 export const sleep = (ms, { log = () => {}, setTimeout }) =>
   new Promise(resolve => {
     log(`Sleeping for ${ms}ms...`);
-    setTimeout(resolve, ms);
+    setTimeout(() => resolve(undefined), ms);
   });
 
 /**
