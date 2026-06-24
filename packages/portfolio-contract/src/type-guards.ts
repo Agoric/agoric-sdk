@@ -231,7 +231,7 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
         FlowKeyShape,
         M.and(
           FlowDetailShape,
-          M.splitRecord({}, { planResolved: M.boolean() }),
+          M.splitRecord({}, { awaitingSteps: M.boolean() }),
         ),
       ),
     },

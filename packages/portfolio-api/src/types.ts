@@ -360,7 +360,7 @@ export type StatusFor = {
     rebalanceCount: number;
     /** @deprecated in favor of flowsRunning */
     flowCount: number;
-    flowsRunning?: Record<FlowKey, FlowDetail & { planResolved?: boolean }>;
+    flowsRunning?: Record<FlowKey, FlowDetail & { awaitingSteps?: boolean }>;
     enabledAutoFeatures?: PortfolioAutoFeaturesExt;
   };
   portfolioAgents: Record<PortfolioAgentKey, PortfolioAgentStatus>;

@@ -353,7 +353,7 @@ const makeFlowsRunningRecord = (
             sync: { resolver },
             ...data
           },
-        ]) => [`flow${num}`, { ...data, planResolved: !resolver }],
+        ]) => [`flow${num}`, { ...data, awaitingSteps: !!resolver }],
       ),
     ),
   );

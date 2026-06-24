@@ -1302,7 +1302,7 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
   });
 });
 
-test('planResolved is published in flowsRunning and reflects resolution state', async t => {
+test('awaitingSteps is published in flowsRunning and reflects resolution state', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
     storage,
@@ -1319,9 +1319,9 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(Object.keys(flowsRunning).length, 1, 'one flow running');
     t.is(
-      flowsRunning[`flow${flowId}`].planResolved,
-      false,
-      'planResolved is false before resolveFlowPlan',
+      flowsRunning[`flow${flowId}`].awaitingSteps,
+      true,
+      'awaitingSteps is true before resolveFlowPlan',
     );
   }
 
@@ -1331,13 +1331,13 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
   {
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(
-      flowsRunning[`flow${flowId}`].planResolved,
-      true,
-      'planResolved is true after resolveFlowPlan',
+      flowsRunning[`flow${flowId}`].awaitingSteps,
+      false,
+      'awaitingSteps is false after resolveFlowPlan',
     );
   }
 
-  // Flow started with pre-resolved steps: planResolved is true immediately
+  // Flow started with pre-resolved steps: awaitingSteps is false immediately
   const { flowId: flowId2 } = manager.startFlow(
     { type: 'withdraw', amount },
     steps,
@@ -1346,9 +1346,9 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
   {
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(
-      flowsRunning[`flow${flowId2}`].planResolved,
-      true,
-      'planResolved is true immediately when steps are provided at startFlow',
+      flowsRunning[`flow${flowId2}`].awaitingSteps,
+      false,
+      'awaitingSteps is false immediately when steps are provided at startFlow',
     );
   }
 
@@ -1361,9 +1361,9 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
   {
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(
-      flowsRunning[`flow${flowId3}`].planResolved,
-      false,
-      'planResolved is false before rejectFlowPlan',
+      flowsRunning[`flow${flowId3}`].awaitingSteps,
+      true,
+      'awaitingSteps is true before rejectFlowPlan',
     );
   }
 
@@ -1372,9 +1372,9 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
   {
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(
-      flowsRunning[`flow${flowId3}`].planResolved,
-      true,
-      'planResolved is true after rejectFlowPlan',
+      flowsRunning[`flow${flowId3}`].awaitingSteps,
+      false,
+      'awaitingSteps is false after rejectFlowPlan',
     );
   }
 
