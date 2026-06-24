@@ -10,7 +10,6 @@ import type { TypedPattern } from '@agoric/internal';
 import { partialMap } from '@agoric/internal/src/js-utils.js';
 import {
   PortfolioAutoFeaturesExtShape,
-  PortfolioPermissionsExtShape,
   isInstrumentId,
   type FlowKey,
   type PortfolioPermissions,
@@ -31,14 +30,12 @@ export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
 
 type DelegationState = {
   agentId: number;
-  permissions: PortfolioPermissions;
   portfolioAccess: PortfolioKit['delegationHelper'];
 };
 
 // exoClassKit expects a plain state-shape record, not a TypedPattern wrapper.
 export const DelegationStateShape = {
   agentId: M.number(),
-  permissions: PortfolioPermissionsExtShape,
   portfolioAccess: M.remotable('PortfolioDelegationHelper'),
 };
 harden(DelegationStateShape);
@@ -143,13 +140,17 @@ export const preparePortfolioDelegationKit = (
           targetAllocation: TargetAllocation,
           syncState: PortfolioSyncState,
         ): FlowKey {
-          const { portfolioAccess, agentId, permissions } = this.state;
+          const { portfolioAccess, agentId } = this.state;
           const current =
             portfolioAccess.getTargetAllocation(this.facets.client, agentId) ||
             {};
           const { extra, missing } = auditKeys(current, targetAllocation);
           extra.length === 0 || Fail`unauthorized allocations for ${q(extra)}`;
           missing.length === 0 || Fail`missing allocations for ${q(missing)}`;
+          const permissions = portfolioAccess.getPermissions(
+            this.facets.client,
+            agentId,
+          );
           assertWithinAllocationCap(targetAllocation, permissions);
 
           return portfolioAccess.submitTargetAllocation(

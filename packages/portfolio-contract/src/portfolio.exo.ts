@@ -643,6 +643,10 @@ export const preparePortfolioKit = (
           const { enabledAutoFeatures } = this.state;
           return enabledAutoFeatures;
         },
+        getPermissions(client: PortfolioDelegationClient, agentId: number) {
+          this.facets.delegationHelper.assertActive(client, agentId);
+          return this.state.delegations!.get(agentId).permissions;
+        },
         getTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
@@ -1030,7 +1034,6 @@ export const preparePortfolioKit = (
           const nextAgentId = delegations.getSize() + 1;
           const delegationKit = makeDelegationKit({
             agentId: nextAgentId,
-            permissions,
             portfolioAccess: this.facets.delegationHelper,
           });
           // Initialize the delegation record first to avoid any race claiming
