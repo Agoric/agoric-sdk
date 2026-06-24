@@ -139,6 +139,7 @@ export type MaybeAutoRebalancePowers = {
   inspectForStdout: (obj: unknown) => string;
   instrumentBlocks?: InstrumentBlocks;
   isDryRun?: boolean;
+  makeNonce: () => string;
   network: NetworkSpec;
   planRebalanceToAllocations: (details: {
     path: string;
@@ -171,6 +172,7 @@ export const maybeAutoRebalance = async (
     inspectForStdout,
     instrumentBlocks,
     isDryRun,
+    makeNonce,
     network,
     planRebalanceToAllocations,
     portfoliosPathPrefix,
@@ -234,14 +236,19 @@ export const maybeAutoRebalance = async (
     const planOrSteps = plan.order ? plan : plan.flow;
     const txOpts = { sendOnly: true } as const;
     const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
+    const agentMemo = makeNonce().trim();
+    agentMemo || Fail`makeNonce returned an empty agentMemo`;
     const { tx, id } = await planReceiver.rebalance(
       portfolioId,
-      { syncState },
+      { syncState, agentMemo },
       planOrSteps,
     );
     if (!isDryRun) {
       void getWalletInvocationUpdate(id as any).catch(err => {
         console.warn(logPrefix, '⚠️ Failure for rebalance', err);
+      });
+      void postYdsTransaction?.(tx.transactionHash).catch(err => {
+        console.warn(logPrefix, '⚠️ Failure posting transaction to YDS', err);
       });
     }
     console.log(

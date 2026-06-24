@@ -108,7 +108,7 @@ export const createMockEnginePowers = (): EnginePowers => ({
   evmTokenAddresses: {},
   network: TEST_NETWORK,
   signingSmartWalletKit: {} as any,
-  makeNonce: () => '',
+  makeNonce: () => 'mock-nonce',
   walletStore: {} as any,
   getWalletInvocationUpdate: async () => undefined,
   now: () => NaN,

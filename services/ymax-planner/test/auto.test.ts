@@ -193,6 +193,8 @@ const makeMaybeAutoPowers = (
   const logs: unknown[][] = [];
   const warns: unknown[][] = [];
   const rebalanceCalls: unknown[][] = [];
+  const ydsTransactionCalls: unknown[] = [];
+  const transactionHash = `0x${'b'.repeat(64)}`;
   const powers: MaybeAutoRebalancePowers = {
     autoRebalance: config,
     console: {
@@ -205,6 +207,7 @@ const makeMaybeAutoPowers = (
     getWalletInvocationUpdate: async () => undefined,
     inspectForStdout: () => '<details>',
     isDryRun: true,
+    makeNonce: () => 'memo-123',
     network: TEST_NETWORK,
     planRebalanceToAllocations: async () => ({
       flow: [
@@ -222,7 +225,7 @@ const makeMaybeAutoPowers = (
         ({
           rebalance: (...args: unknown[]) => {
             rebalanceCalls.push(args);
-            return { tx: 'mock-tx', id: 'mock-id' };
+            return { tx: { transactionHash }, id: 'mock-id' };
           },
         }) as any,
       saveOfferResult: () => {
@@ -231,7 +234,7 @@ const makeMaybeAutoPowers = (
     },
     ...overrides,
   };
-  return { logs, powers, rebalanceCalls, warns };
+  return { logs, powers, rebalanceCalls, txHash, ydsTransactionCalls, warns };
 };
 
 test('maybeAutoRebalance submits planner rebalance when criteria fire', async t => {
@@ -247,9 +250,29 @@ test('maybeAutoRebalance submits planner rebalance when criteria fire', async t 
   t.deepEqual(rebalanceCalls, [
     [
       7,
-      { syncState: { policyVersion: 3, rebalanceCount: 4 } },
+      {
+        syncState: { policyVersion: 3, rebalanceCount: 4 },
+        agentMemo: 'memo-123',
+      },
       [{ src: '@noble', dest: 'USDN', amount: makeAmount(25_000_000n) }],
     ],
+  ]);
+});
+
+test('maybeAutoRebalance posts submitted transaction to YDS outside dry run', async t => {
+  const { powers, txHash, ydsTransactionCalls } = makeMaybeAutoPowers({
+    isDryRun: false,
+  });
+
+  await maybeAutoRebalance(
+    makeAutoPortfolioStatus(),
+    'portfolio7',
+    { '@noble': makeAmount(25_000_000n) },
+    powers,
+  );
+
+  t.deepEqual(ydsTransactionCalls, [
+    txHash,
   ]);
 });
 
