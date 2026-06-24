@@ -17,7 +17,7 @@ import {
 } from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
-import { Fail, q } from '@endo/errors';
+import { assert, Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { TargetAllocationShape, type TargetAllocation } from './type-guards.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
@@ -27,6 +27,10 @@ export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
     policyVersion: M.number(),
     rebalanceCount: M.number(),
   });
+
+export const checkTurnoverBudget = (_detail: unknown) =>
+  assert.fail('not implemented');
+harden(checkTurnoverBudget);
 
 type DelegationState = {
   agentId: number;
