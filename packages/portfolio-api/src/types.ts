@@ -118,16 +118,19 @@ export type FlowDetail =
       amount: NatAmount;
       toChain?: SupportedChain;
       agent?: undefined;
+      agentMemo?: undefined;
     }
   | {
       type: 'deposit';
       amount: NatAmount;
       fromChain?: SupportedChain;
       agent?: undefined;
+      agentMemo?: undefined;
     }
   | {
       type: 'rebalance'; // aka simpleRebalance
       agent?: PortfolioAgentKey;
+      agentMemo?: string;
     };
 
 /** linked list of concurrent failures, including dependencies */
@@ -382,11 +385,13 @@ export type PortfolioSyncState = Pick<
 
 export type PortfolioDelegatedRebalanceParams = {
   syncState: PortfolioSyncState;
+  agentMemo?: string;
 };
 
 export type PortfolioDelegatedSetTargetAllocationParams = {
   syncState: PortfolioSyncState;
   targetAllocation: TargetAllocation;
+  agentMemo?: string;
 };
 
 /**

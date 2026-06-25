@@ -669,7 +669,7 @@ export const preparePortfolioKit = (
             allocation: true,
           });
           const { reader, manager } = this.facets;
-          const { syncState, targetAllocation } =
+          const { syncState, targetAllocation, agentMemo } =
             delegatedSetTargetAllocationParams;
 
           const { policyVersion, rebalanceCount } = syncState;
@@ -679,6 +679,7 @@ export const preparePortfolioKit = (
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
+            ...(agentMemo != null && { agentMemo }),
           };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
@@ -696,7 +697,7 @@ export const preparePortfolioKit = (
             rebalance: true,
           });
           const { reader, manager } = this.facets;
-          const { syncState } = delegatedRebalanceParams;
+          const { syncState, agentMemo } = delegatedRebalanceParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
@@ -705,6 +706,7 @@ export const preparePortfolioKit = (
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
+            ...(agentMemo != null && { agentMemo }),
           };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat

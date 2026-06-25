@@ -548,7 +548,7 @@ test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t =
 
     const rebalanceFlowKey = await E(planner1.stub).rebalance(
       evmTrader.getPortfolioId(),
-      { syncState },
+      { syncState, agentMemo: '12345' },
       steps,
     );
     t.regex(
@@ -582,10 +582,17 @@ test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t =
     );
     const flowHistory =
       contents[`${evmTrader.getPortfolioPath()}.flows.${rebalanceFlowKey}`];
-    t.truthy(
-      Array.isArray(flowHistory) &&
-        flowHistory.some(entry => entry?.state === 'done'),
-      `${label} planner rebalance flow history includes a done entry`,
+    const doneFlowEntry = Array.isArray(flowHistory)
+      ? flowHistory.find(entry => entry?.state === 'done')
+      : undefined;
+    t.like(
+      doneFlowEntry,
+      {
+        agent: 'agent1',
+        agentMemo: '12345',
+        type: 'rebalance',
+      },
+      `${label} planner rebalance done flow designates agent and memo`,
     );
 
     snapshotTimed(t, contents, `vstorage (${label})`);

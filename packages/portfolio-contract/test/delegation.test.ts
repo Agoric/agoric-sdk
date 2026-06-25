@@ -182,6 +182,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
       Compound_Arbitrum: 50n,
     },
     syncState: getSyncState(before),
+    agentMemo: '12345',
   });
   t.regex(String(rebalanceFlowId), /^flow\d+$/);
 
@@ -191,6 +192,7 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
   const portfolioStatus = await peteKit.evmTrader.getPortfolioStatus();
   t.is(portfolioStatus.flowsRunning?.[rebalanceFlowId]?.agent, 'agent1');
+  t.is(portfolioStatus.flowsRunning?.[rebalanceFlowId]?.agentMemo, '12345');
   const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
   t.deepEqual(agents, {
     agent1: {

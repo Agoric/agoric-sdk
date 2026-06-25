@@ -9,6 +9,7 @@
 import type { TypedPattern } from '@agoric/internal';
 import {
   PortfolioAutoFeaturesExtShape,
+  PortfolioFlowAgentMemoShape,
   type FlowKey,
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
@@ -28,7 +29,11 @@ export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
   });
 
 export const PortfolioDelegatedRebalanceParamsShape: TypedPattern<PortfolioDelegatedRebalanceParams> =
-  M.splitRecord({ syncState: PortfolioSyncStateShape }, {}, {});
+  M.splitRecord(
+    { syncState: PortfolioSyncStateShape },
+    { agentMemo: PortfolioFlowAgentMemoShape },
+    {},
+  );
 
 export const PortfolioDelegatedSetTargetAllocationParamsShape: TypedPattern<PortfolioDelegatedSetTargetAllocationParams> =
   M.splitRecord(
@@ -36,7 +41,7 @@ export const PortfolioDelegatedSetTargetAllocationParamsShape: TypedPattern<Port
       syncState: PortfolioSyncStateShape,
       targetAllocation: TargetAllocationShape,
     },
-    {},
+    { agentMemo: PortfolioFlowAgentMemoShape },
     {},
   );
 

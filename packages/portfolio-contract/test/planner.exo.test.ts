@@ -196,6 +196,7 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
       policyVersion: 1,
       rebalanceCount: 0,
     },
+    agentMemo: '12345',
   };
 
   const flowKey = planner.rebalance(1, rebalanceParams, plan);
@@ -205,7 +206,13 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
   t.deepEqual(await vt.when(startedFlow!.stepsP as any), plan);
 
   const portfolioStatus = await getPortfolioStatus(1);
-  t.like(portfolioStatus, { policyVersion: 1, rebalanceCount: 1 });
+  t.like(portfolioStatus, {
+    policyVersion: 1,
+    rebalanceCount: 1,
+    flowsRunning: {
+      flow1: { type: 'rebalance', agent: 'agent1', agentMemo: '12345' },
+    },
+  });
 });
 
 test('planner cannot start rebalance without features enabled', async t => {
