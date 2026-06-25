@@ -1049,9 +1049,6 @@ export const preparePortfolioKit = (
           permissions: PortfolioPermissionsExt,
         ) {
           const { portfolioId } = this.state;
-          if (!('delegations' in this.state)) {
-            throw Fail`portfolio pre-dates delegation support`;
-          }
           if (!this.state.delegations) {
             this.state.delegations = makeDelegationsStore(portfolioId);
           }
@@ -1135,10 +1132,6 @@ export const preparePortfolioKit = (
          * @param features
          */
         async setAutoFeatures(features: PortfolioAutoFeatures) {
-          if (!('enabledAutoFeatures' in this.state)) {
-            throw Fail`portfolio pre-dates auto features support`;
-          }
-
           const permissions: PortfolioPermissions = {
             allocation: false,
             rebalance: !!features.rebalance,
