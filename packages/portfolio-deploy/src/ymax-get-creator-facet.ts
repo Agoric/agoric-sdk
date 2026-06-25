@@ -11,7 +11,7 @@ const getCreatorFacet = async ({ scriptArgs, makeAccount }: RunTools) => {
   const { contract } = parseArgs({ args: scriptArgs, options }).values;
   const { ymaxControl } = await getYmaxControlKit(makeAccount, contract);
   const creatorFacetKey = getCreatorFacetKey(contract);
-  await ymaxControl.saveAs(creatorFacetKey).getCreatorFacet();
+  await ymaxControl.getCreatorFacet.once({ saveAs: creatorFacetKey })();
 };
 
 export default getCreatorFacet;
