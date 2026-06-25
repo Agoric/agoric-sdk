@@ -1114,7 +1114,10 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    'flow1',
+  );
   t.like(getCallLog()[1], ['executePlan', , {}, , undefined, { flowId: 1 }]);
   t.like(await getPortfolioStatus!(20), {
     flowsRunning: { flow1: { type: 'rebalance' } },
@@ -1140,9 +1143,14 @@ test('allocation delegation cannot use rebalance', async t => {
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.throws(() => client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), {
-    message: /delegation agent1 does not have required permission "rebalance"/,
-  });
+  t.throws(
+    () =>
+      client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    {
+      message:
+        /delegation agent1 does not have required permission "rebalance"/,
+    },
+  );
   t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
 });
 
@@ -1181,10 +1189,10 @@ test('revoked delegation client is no longer usable', async t => {
   });
   t.throws(
     () =>
-      client.setTargetAllocation(
-        { USDN: 100n },
-        { policyVersion: 1, rebalanceCount: 0 },
-      ),
+      client.setTargetAllocation({
+        targetAllocation: { USDN: 100n },
+        syncState: { policyVersion: 1, rebalanceCount: 0 },
+      }),
     {
       message: /delegation client is not active for agent1/,
     },
@@ -1233,7 +1241,10 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    'flow1',
+  );
   t.is(getCallLog().length, 2);
   t.like(getCallLog(), [
     ['deliverDelegation'],
@@ -1255,9 +1266,14 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
       state: 'active',
     },
   });
-  t.throws(() => client.rebalance({ policyVersion: 1, rebalanceCount: 0 }), {
-    message: /delegation agent1 does not have required permission "rebalance"/,
-  });
+  t.throws(
+    () =>
+      client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
+    {
+      message:
+        /delegation agent1 does not have required permission "rebalance"/,
+    },
+  );
 
   manager.revokeDelegation(1);
 

@@ -10,13 +10,15 @@ import type { TypedPattern } from '@agoric/internal';
 import {
   PortfolioAutoFeaturesExtShape,
   type FlowKey,
+  type PortfolioDelegatedRebalanceParams,
+  type PortfolioDelegatedSetTargetAllocationParams,
   type PortfolioSyncState,
 } from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { TargetAllocationShape, type TargetAllocation } from './type-guards.ts';
+import { TargetAllocationShape } from './type-guards.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
 
 export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
@@ -24,6 +26,19 @@ export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
     policyVersion: M.number(),
     rebalanceCount: M.number(),
   });
+
+export const PortfolioDelegatedRebalanceParamsShape: TypedPattern<PortfolioDelegatedRebalanceParams> =
+  M.splitRecord({ syncState: PortfolioSyncStateShape }, {}, {});
+
+export const PortfolioDelegatedSetTargetAllocationParamsShape: TypedPattern<PortfolioDelegatedSetTargetAllocationParams> =
+  M.splitRecord(
+    {
+      syncState: PortfolioSyncStateShape,
+      targetAllocation: TargetAllocationShape,
+    },
+    {},
+    {},
+  );
 
 type DelegationState = {
   agentId: number;
@@ -58,10 +73,9 @@ const DelegationReaderI = M.interface('PortfolioDelegationReader', {
 
 const DelegationClientI = M.interface('PortfolioDelegationClient', {
   getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
-  rebalance: M.call(PortfolioSyncStateShape).returns(M.string()),
+  rebalance: M.call(PortfolioDelegatedRebalanceParamsShape).returns(M.string()),
   setTargetAllocation: M.call(
-    TargetAllocationShape,
-    PortfolioSyncStateShape,
+    PortfolioDelegatedSetTargetAllocationParamsShape,
   ).returns(M.string()),
 });
 
@@ -100,31 +114,32 @@ export const preparePortfolioDelegationKit = (
         getReader() {
           return this.facets.reader;
         },
-        rebalance(syncState: PortfolioSyncState): FlowKey {
+        rebalance(params: PortfolioDelegatedRebalanceParams): FlowKey {
           const { portfolioAccess, agentId } = this.state;
           return portfolioAccess.submitRebalance(
             this.facets.client,
             agentId,
-            syncState,
+            params,
           );
         },
         setTargetAllocation(
-          targetAllocation: TargetAllocation,
-          syncState: PortfolioSyncState,
+          params: PortfolioDelegatedSetTargetAllocationParams,
         ): FlowKey {
           const { portfolioAccess, agentId } = this.state;
           const current =
             portfolioAccess.getTargetAllocation(this.facets.client, agentId) ||
             {};
-          const { extra, missing } = auditKeys(current, targetAllocation);
+          const { extra, missing } = auditKeys(
+            current,
+            params.targetAllocation,
+          );
           extra.length === 0 || Fail`unauthorized allocations for ${q(extra)}`;
           missing.length === 0 || Fail`missing allocations for ${q(missing)}`;
 
           return portfolioAccess.submitTargetAllocation(
             this.facets.client,
             agentId,
-            targetAllocation,
-            syncState,
+            params,
           );
         },
       },

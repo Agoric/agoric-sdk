@@ -380,6 +380,15 @@ export type PortfolioSyncState = Pick<
   'policyVersion' | 'rebalanceCount'
 >;
 
+export type PortfolioDelegatedRebalanceParams = {
+  syncState: PortfolioSyncState;
+};
+
+export type PortfolioDelegatedSetTargetAllocationParams = {
+  syncState: PortfolioSyncState;
+  targetAllocation: TargetAllocation;
+};
+
 /**
  * Published vstorage values produced by the portfolio contract.
  */

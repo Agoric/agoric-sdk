@@ -190,7 +190,15 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
     { src: '@agoric', dest: '@noble', amount },
     { src: '@noble', dest: 'USDN', amount },
   ];
-  const flowKey = planner.rebalance(0, plan, 1, 0);
+
+  const rebalanceParams = {
+    syncState: {
+      policyVersion: 1,
+      rebalanceCount: 0,
+    },
+  };
+
+  const flowKey = planner.rebalance(1, rebalanceParams, plan);
 
   t.is(flowKey, 'flow1');
   t.truthy(startedFlow);

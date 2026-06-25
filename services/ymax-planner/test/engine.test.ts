@@ -832,17 +832,21 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
     method: 'invokeEntry',
     message: { targetName: 'planner', method: 'rebalance' },
   });
-  arrayIsLike(t, action.message.args, [
-    portfolioId,
-    action.message.args[1],
-    portfolioStatus.policyVersion,
-    portfolioStatus.rebalanceCount,
-  ]);
-  const planOrSteps = action.message.args[1] as Array<{
+  const planOrSteps = action.message.args[2] as Array<{
     dest: string;
     amount: NatAmount;
   }>;
   t.true(Array.isArray(planOrSteps));
+  arrayIsLike(t, action.message.args, [
+    portfolioId,
+    {
+      syncState: {
+        policyVersion: portfolioStatus.policyVersion,
+        rebalanceCount: portfolioStatus.rebalanceCount,
+      },
+    },
+    planOrSteps,
+  ]);
   t.true(
     planOrSteps.some(
       step => step.dest === 'USDN' && step.amount.value >= 25_000_000n,

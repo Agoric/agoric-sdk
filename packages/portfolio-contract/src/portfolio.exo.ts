@@ -38,6 +38,8 @@ import {
   type PortfolioAutoFeatures,
   type PortfolioRemoteAccountState,
   type PortfolioAutoFeaturesExt,
+  type PortfolioDelegatedRebalanceParams,
+  type PortfolioDelegatedSetTargetAllocationParams,
   PortfolioAutoFeaturesExtShape,
 } from '@agoric/portfolio-api';
 import {
@@ -661,13 +663,14 @@ export const preparePortfolioKit = (
         submitTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
-          targetAllocation: TargetAllocation,
-          syncState: { policyVersion: number; rebalanceCount: number },
+          delegatedSetTargetAllocationParams: PortfolioDelegatedSetTargetAllocationParams,
         ): FlowKey {
           this.facets.delegationHelper.assertActive(client, agentId, {
             allocation: true,
           });
           const { reader, manager } = this.facets;
+          const { syncState, targetAllocation } =
+            delegatedSetTargetAllocationParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
@@ -687,12 +690,13 @@ export const preparePortfolioKit = (
         submitRebalance(
           client: PortfolioDelegationClient,
           agentId: number,
-          syncState: { policyVersion: number; rebalanceCount: number },
+          delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
         ): FlowKey {
           this.facets.delegationHelper.assertActive(client, agentId, {
             rebalance: true,
           });
           const { reader, manager } = this.facets;
+          const { syncState } = delegatedRebalanceParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);

@@ -541,11 +541,15 @@ test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t =
       },
     ];
 
+    const syncState = {
+      policyVersion: statusBefore.policyVersion,
+      rebalanceCount: statusBefore.rebalanceCount,
+    };
+
     const rebalanceFlowKey = await E(planner1.stub).rebalance(
       evmTrader.getPortfolioId(),
+      { syncState },
       steps,
-      statusBefore.policyVersion,
-      statusBefore.rebalanceCount,
     );
     t.regex(
       rebalanceFlowKey,
