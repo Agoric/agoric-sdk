@@ -17,7 +17,6 @@ import {
   PortfolioAutoFeaturesExtShape,
   isInstrumentId,
   type FlowKey,
-  type PortfolioPermissions,
   type PortfolioSyncState,
 } from '@agoric/portfolio-api';
 import type { ZCF } from '@agoric/zoe';
