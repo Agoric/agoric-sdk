@@ -2,7 +2,7 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { ECallable } from '@agoric/vow/src/E.js';
 import type { EUnwrap } from '@agoric/vow/src/types.js';
 import type { Instance } from '@agoric/zoe';
-import type { DeliverTxResponse, StdFee } from '@cosmjs/stargate';
+import type { DeliverTxResponse, SignerData, StdFee } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
 import type { SigningSmartWalletKit } from './signing-smart-wallet-kit.ts';
 import { getInvocationUpdate, getOfferResult } from './smart-wallet-utils.js';
@@ -16,6 +16,18 @@ import type { RetryOptionsAndPowers } from './sync-tools.js';
  * to save results back into the wallet store and responses for such saved
  * results also include a WalletStoreEntryProxy `result` representing those
  * results.
+ *
+ * XXX We should replace special treatment of "saveAs" and "overwrite"
+ * pseudo-methods with a generic pattern for invocation-with-options, such as
+ * the parameter-prepending `getForSavingResults` that was removed by
+ * https://github.com/Agoric/agoric-sdk/pull/12413 and if re-introduced would
+ * look something like
+ * ```
+ * walletStore.getForInvocationWithOptions(savedName).method(
+ *   { name: resultName, memo },
+ *   ...args,
+ * );
+ * ```
  */
 export type WalletStoreEntryProxy<T> = {
   readonly [M in keyof T]: T[M] extends (...args: infer P) => infer R
@@ -34,6 +46,8 @@ export type WalletStoreEntryProxy<T> = {
 
 type TxOptions = RetryOptionsAndPowers & {
   fee?: StdFee;
+  memo?: string;
+  signerData?: SignerData;
   sendOnly?: boolean;
   makeNonce?: () => string;
 };
@@ -72,7 +86,8 @@ export const reflectWalletStore = (
   ) => {
     const combinedOpts = { ...baseTxOpts, ...overrides } as TxOptions;
     combinedOpts.setTimeout || Fail`missing setTimeout`;
-    const { fee, sendOnly, makeNonce, ...retryOpts } = combinedOpts;
+    const { fee, memo, signerData, sendOnly, makeNonce, ...retryOpts } =
+      combinedOpts;
     if (saveTo && !makeNonce && !sendOnly) {
       throw Fail`makeNonce is required without sendOnly: true (to create an awaitable message id)`;
     }
@@ -107,6 +122,8 @@ export const reflectWalletStore = (
           const tx = await sswk.sendBridgeAction(
             { method: 'invokeEntry', message },
             fee,
+            memo,
+            signerData,
           );
           if (tx.code !== 0) {
             throw Error(tx.rawLog);
@@ -138,6 +155,8 @@ export const reflectWalletStore = (
     };
     const {
       fee,
+      memo,
+      signerData,
       sendOnly: _sendOnly,
       makeNonce,
       overwrite = true,
@@ -154,6 +173,8 @@ export const reflectWalletStore = (
     const tx = await sswk.sendBridgeAction(
       { method: 'executeOffer', offer },
       fee,
+      memo,
+      signerData,
     );
     const status = await getOfferResult(
       id,
@@ -171,8 +192,9 @@ export const reflectWalletStore = (
      * confirmation in vstorage when sent with an `id` (e.g., derived from a
      * `makeNonce` option) unless overridden by a `sendOnly: true` option.
      *
-     * Use `.save(name)` or `.overwrite(name)` to persist a method result
-     * without changing the method's argument signature.
+     * Use `.saveAs(name)` or `.overwrite(name)` to persist a method result
+     * without changing the method's argument signature (but see
+     * {@link WalletStoreEntryProxy} about changing that.
      *
      * @param name The wallet store name of the saved entry to retrieve.
      */
