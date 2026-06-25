@@ -1121,6 +1121,10 @@ export const preparePortfolioKit = (
               activeClient: undefined,
             }),
           );
+          if (this.state.plannerAgentId === agentId) {
+            this.state.plannerAgentId = undefined;
+            this.state.enabledAutoFeatures = undefined;
+          }
           this.facets.reporter.publishAgents();
         },
         /**
