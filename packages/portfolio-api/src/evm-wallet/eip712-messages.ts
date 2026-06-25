@@ -120,6 +120,7 @@ const OperationSubTypes = {
   PortfolioPermissions: [
     { name: 'mayAllocate', type: 'bool' },
     { name: 'allocationCapBps', type: 'uint16' },
+    { name: 'allocationMaxBpsPerDay', type: 'uint16' },
     { name: 'mayRebalance', type: 'bool' },
   ],
   /** @see {@link PortfolioAutoFeatures} */

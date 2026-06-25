@@ -21,7 +21,10 @@ import type { NameAdmin } from '@agoric/vats';
 import type { Invitation, Proposal, ZoeService } from '@agoric/zoe';
 import { E, Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
+import {
+  checkTurnoverBudget,
+  type PortfolioDelegationClient,
+} from '../src/delegation.exo.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
 import { evmTrader0PrivateKey } from './mocks.ts';
 
@@ -32,7 +35,7 @@ type ExpectedDelegationDetails = {
   portfolioId: number;
   agentId: `agent${number}`;
   permissions: {
-    allocation?: true | { capBps?: number };
+    allocation?: true | { capBps?: number; maxBpsPerDay?: number };
     rebalance?: true;
   };
 };
@@ -115,6 +118,243 @@ const openPetePortfolio = async (
   const portfolioId = peteKit.evmTrader.getPortfolioId();
   return { receiver, peteKit, peteArbitrum, portfolioId };
 };
+
+test('turnover budget cost = half-sum(abs(delta)); cash and zeroed positions count', t => {
+  for (const {
+    name,
+    args,
+    consumedBps,
+    availableBpsBeforeSpend,
+    remainingBps,
+    allowed,
+    refilledBps,
+  } of [
+    {
+      name: 'unchanged target',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
+        nextAllocation: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
+        maxBpsPerDay: 2400,
+        remainingBps: 2400,
+        secondsElapsedSinceLastUpdate: 0,
+      },
+      consumedBps: 0,
+      availableBpsBeforeSpend: 2400,
+      remainingBps: 2400,
+      allowed: true,
+      refilledBps: 0,
+    },
+    {
+      name: '10 points moved between two positions',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
+        nextAllocation: { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+        maxBpsPerDay: 2400,
+        remainingBps: 2400,
+        secondsElapsedSinceLastUpdate: 0,
+      },
+      consumedBps: 1000,
+      availableBpsBeforeSpend: 2400,
+      remainingBps: 1400,
+      allowed: true,
+      refilledBps: 0,
+    },
+    {
+      name: 'arbitrary ratio units should price by normalized weights, not raw point moves',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 3n, Compound_Arbitrum: 4n },
+        nextAllocation: { Aave_Arbitrum: 2n, Compound_Arbitrum: 3n },
+        maxBpsPerDay: 2400,
+        remainingBps: 2400,
+        secondsElapsedSinceLastUpdate: 0,
+      },
+      consumedBps: 286,
+      availableBpsBeforeSpend: 2400,
+      remainingBps: 2114,
+      allowed: true,
+      refilledBps: 0,
+    },
+    {
+      name: 'zeroing a position still counts',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
+        nextAllocation: { Aave_Arbitrum: 100n, Compound_Arbitrum: 0n },
+        maxBpsPerDay: 4800,
+        remainingBps: 4800,
+        secondsElapsedSinceLastUpdate: 0,
+      },
+      consumedBps: 4000,
+      availableBpsBeforeSpend: 4800,
+      remainingBps: 800,
+      allowed: true,
+      refilledBps: 0,
+    },
+    {
+      name: 'cash pseudo-position counts toward turnover',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 60n, '@Base': 40n },
+        nextAllocation: { Aave_Arbitrum: 30n, '@Base': 70n },
+        maxBpsPerDay: 3600,
+        remainingBps: 3600,
+        secondsElapsedSinceLastUpdate: 0,
+      },
+      consumedBps: 3000,
+      availableBpsBeforeSpend: 3600,
+      remainingBps: 600,
+      allowed: true,
+      refilledBps: 0,
+    },
+    {
+      name: 'spend fails when remaining budget is too small',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+        nextAllocation: { Aave_Arbitrum: 35n, Compound_Arbitrum: 65n },
+        maxBpsPerDay: 2400,
+        remainingBps: 1000,
+        secondsElapsedSinceLastUpdate: 0,
+      },
+      consumedBps: 1500,
+      availableBpsBeforeSpend: 1000,
+      remainingBps: 1000,
+      allowed: false,
+      refilledBps: 0,
+    },
+    {
+      name: 'without prior state, first use starts with a full 24-hour budget',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
+        nextAllocation: { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+        maxBpsPerDay: 2400,
+      },
+      consumedBps: 1000,
+      availableBpsBeforeSpend: 2400,
+      remainingBps: 1400,
+      allowed: true,
+      refilledBps: 0,
+    },
+    {
+      name: 'with prior state, elapsed time refills budget up to the 24-hour cap',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+        nextAllocation: { Aave_Arbitrum: 35n, Compound_Arbitrum: 65n },
+        maxBpsPerDay: 2400,
+        currentTimeAbsValue: 9_200n,
+        priorTurnoverBudgetState: {
+          lastUpdatedAt: 2_000n,
+          remainingBpSeconds: 1800n * 24n * 3600n,
+        },
+      },
+      consumedBps: 1500,
+      availableBpsBeforeSpend: 2000,
+      remainingBps: 500,
+      allowed: true,
+      refilledBps: 200,
+    },
+    {
+      name: 'refill caps at a full 24-hour budget',
+      args: {
+        currentAllocation: { Aave_Arbitrum: 60n, Compound_Arbitrum: 40n },
+        nextAllocation: { Aave_Arbitrum: 59n, Compound_Arbitrum: 41n },
+        maxBpsPerDay: 2400,
+        currentTimeAbsValue: 38_000n,
+        priorTurnoverBudgetState: {
+          lastUpdatedAt: 2_000n,
+          remainingBpSeconds: 2_350n * 24n * 3600n,
+        },
+      },
+      consumedBps: 100,
+      availableBpsBeforeSpend: 2400,
+      remainingBps: 2300,
+      allowed: true,
+      refilledBps: 1000,
+    },
+  ]) {
+    const result = checkTurnoverBudget(args);
+
+    t.is(result.consumedBps, consumedBps, `${name}: consumedBps`);
+    t.is(
+      result.availableBpsBeforeSpend,
+      availableBpsBeforeSpend,
+      `${name}: availableBpsBeforeSpend`,
+    );
+    t.is(result.refilledBps, refilledBps, `${name}: refilledBps`);
+    t.is(result.remainingBps, remainingBps, `${name}: remainingBps`);
+    t.is(result.allowed, allowed, `${name}: allowed`);
+  }
+});
+
+test('turnover budget refills continuously over time', t => {
+  for (const {
+    secondsElapsedSinceLastUpdate,
+    availableBpsBeforeSpend,
+    allowed,
+    name,
+  } of [
+    {
+      secondsElapsedSinceLastUpdate: 1800,
+      availableBpsBeforeSpend: 50,
+      allowed: false,
+      name: '1800s',
+    },
+    {
+      secondsElapsedSinceLastUpdate: 3600,
+      availableBpsBeforeSpend: 100,
+      allowed: true,
+      name: '3600s',
+    },
+  ]) {
+    const result = checkTurnoverBudget({
+      currentAllocation: { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+      nextAllocation: { Aave_Arbitrum: 49n, Compound_Arbitrum: 51n },
+      maxBpsPerDay: 2400,
+      remainingBps: 0,
+      secondsElapsedSinceLastUpdate,
+    });
+
+    t.is(result.consumedBps, 100, `${name}: consumedBps`);
+    t.is(
+      result.availableBpsBeforeSpend,
+      availableBpsBeforeSpend,
+      `${name}: availableBpsBeforeSpend`,
+    );
+    t.is(result.allowed, allowed, `${name}: allowed`);
+  }
+});
+
+test('turnover budget preserves fractional refill across successful actions', t => {
+  let priorTurnoverBudgetState = harden({
+    lastUpdatedAt: 0n,
+    remainingBpSeconds: 0n,
+  });
+
+  for (const hour of [1, 2, 3, 4, 5]) {
+    const result = checkTurnoverBudget({
+      currentAllocation: { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+      nextAllocation: { Aave_Arbitrum: 49n, Compound_Arbitrum: 51n },
+      maxBpsPerDay: 2500,
+      currentTimeAbsValue: BigInt(hour * 3600),
+      priorTurnoverBudgetState,
+    });
+
+    t.true(result.allowed, `hour ${hour}: allowed`);
+    priorTurnoverBudgetState = result.nextTurnoverBudgetState!;
+  }
+
+  const sixthHour = checkTurnoverBudget({
+    currentAllocation: { Aave_Arbitrum: 50n, Compound_Arbitrum: 50n },
+    nextAllocation: { Aave_Arbitrum: 49n, Compound_Arbitrum: 51n },
+    maxBpsPerDay: 2500,
+    currentTimeAbsValue: 21_600n,
+    priorTurnoverBudgetState,
+  });
+
+  t.is(
+    sixthHour.availableBpsBeforeSpend,
+    125,
+    'sixth hourly move keeps prior fractional refill instead of dropping it',
+  );
+  t.is(sixthHour.remainingBps, 25, 'sixth hourly move leaves 25 bps');
+});
 
 const redeemAndCheckDelegation = async ({
   t,
@@ -415,6 +655,189 @@ test('delegated setTargetAllocation remains uncapped when allocation cap is abse
 
   t.regex(String(rebalanceFlowId), /^flow\d+$/);
 });
+
+test('delegated setTargetAllocation requires allocation permission', async t => {
+  const deployed = await deploy(t);
+  const { zoe } = deployed;
+  const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
+  const grantStatus = await peteArbitrum.grant(PETE_AGENT, harden({}));
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId: peteKit.evmTrader.getPortfolioId(),
+      agentId: 'agent1',
+      permissions: {},
+    },
+  });
+
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const rebalanceP = E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 50n,
+      Compound_Arbitrum: 50n,
+    },
+    {
+      policyVersion: before.policyVersion,
+      rebalanceCount: before.rebalanceCount,
+    },
+  );
+
+  await t.throwsAsync(() => rebalanceP, {
+    message: /delegated action requires allocation permission/,
+  });
+});
+
+test('delegated setTargetAllocation starts with a full 24-hour budget and refills over time', async t => {
+  const deployed = await deploy(t);
+  const { zoe } = deployed;
+  const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
+
+  // The protocol/API takes `maxBpsPerDay`; the human-facing percent/day
+  // phrasing here is just the agent-side translation step.
+  const peteSays = harden({ percentPerDay: 25 });
+  const maxBpsPerDay = peteSays.percentPerDay * 100;
+
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({ allocation: { maxBpsPerDay } }),
+  );
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId: peteKit.evmTrader.getPortfolioId(),
+      agentId: 'agent1',
+      permissions: { allocation: { maxBpsPerDay } },
+    },
+  });
+
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const firstFlowId = await E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 36n,
+      Compound_Arbitrum: 64n,
+    },
+    {
+      policyVersion: before.policyVersion,
+      rebalanceCount: before.rebalanceCount,
+    },
+  );
+  t.regex(String(firstFlowId), /^flow\d+$/);
+
+  const afterFirst = await peteKit.evmTrader.getPortfolioStatus();
+  const rebalanceP = E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 34n,
+      Compound_Arbitrum: 66n,
+    },
+    {
+      policyVersion: afterFirst.policyVersion,
+      rebalanceCount: afterFirst.rebalanceCount,
+    },
+  );
+
+  await t.throwsAsync(() => rebalanceP, {
+    message: /delegated move exceeds delegated turnover budget/,
+  });
+
+  await deployed.timerService.tickN(3600, 'advance one hour for delegation');
+
+  const afterFailedSecond = await peteKit.evmTrader.getPortfolioStatus();
+  const thirdFlowId = await E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 34n,
+      Compound_Arbitrum: 66n,
+    },
+    {
+      policyVersion: afterFailedSecond.policyVersion,
+      rebalanceCount: afterFailedSecond.rebalanceCount,
+    },
+  );
+
+  t.regex(String(thirdFlowId), /^flow\d+$/);
+});
+
+test('stale delegated setTargetAllocation must not consume turnover budget before version checks', async t => {
+  const deployed = await deploy(t);
+  const { zoe } = deployed;
+  const { receiver, peteKit, peteArbitrum } = await openPetePortfolio(deployed);
+
+  const maxBpsPerDay = 2500;
+  const grantStatus = await peteArbitrum.grant(
+    PETE_AGENT,
+    harden({ allocation: { maxBpsPerDay } }),
+  );
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus,
+    receiver,
+    expectedDetails: {
+      portfolioId: peteKit.evmTrader.getPortfolioId(),
+      agentId: 'agent1',
+      permissions: { allocation: { maxBpsPerDay } },
+    },
+  });
+
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const firstFlowId = await E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 37n,
+      Compound_Arbitrum: 63n,
+    },
+    {
+      policyVersion: before.policyVersion,
+      rebalanceCount: before.rebalanceCount,
+    },
+  );
+  t.regex(String(firstFlowId), /^flow\d+$/);
+
+  const afterFirst = await peteKit.evmTrader.getPortfolioStatus();
+  const ownerFlowId = await peteArbitrum.setTargetAllocation([
+    { instrument: 'Aave_Arbitrum', portion: 37n },
+    { instrument: 'Compound_Arbitrum', portion: 63n },
+  ]);
+  t.regex(String(ownerFlowId), /^flow\d+$/);
+
+  const staleSync = {
+    policyVersion: afterFirst.policyVersion,
+    rebalanceCount: afterFirst.rebalanceCount,
+  };
+  const staleMoveP = E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 35n,
+      Compound_Arbitrum: 65n,
+    },
+    staleSync,
+  );
+  await t.throwsAsync(() => staleMoveP, {
+    message: /expected policyVersion/,
+  });
+
+  await deployed.timerService.tickN(3600, 'advance one hour after stale sync');
+
+  const fresh = await peteKit.evmTrader.getPortfolioStatus();
+  const retryFlowId = await E(delegationClient).setTargetAllocation(
+    {
+      Aave_Arbitrum: 35n,
+      Compound_Arbitrum: 65n,
+    },
+    {
+      policyVersion: fresh.policyVersion,
+      rebalanceCount: fresh.rebalanceCount,
+    },
+  );
+  t.regex(String(retryFlowId), /^flow\d+$/);
+});
+
+test.todo(
+  'portfolio-wide turnover budgets: two delegates on one portfolio can each stay within their own budget while exceeding a shared per-portfolio budget',
+);
 
 test('Delegation is active only while registered on the portfolio', async t => {
   const deployed = await deploy(t);

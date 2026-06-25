@@ -52,6 +52,7 @@ import type {
 import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import type { MapStore } from '@agoric/store';
+import type { Clock } from '@agoric/time';
 import type { VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import { type Vow, type VowKit, type VowTools } from '@agoric/vow';
@@ -373,6 +374,7 @@ export const preparePortfolioKit = (
     portfoliosNode,
     marshaller,
     usdcBrand,
+    clock,
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
@@ -408,6 +410,7 @@ export const preparePortfolioKit = (
     portfoliosNode: ERemote<StorageNode>;
     marshaller: ERemote<EMarshaller>;
     usdcBrand: Brand<'nat'>;
+    clock: ERemote<Clock>;
     eip155ChainIdToAxelarChain: {
       [chainId in `${number | bigint}`]?: AxelarChain;
     };
@@ -612,6 +615,12 @@ export const preparePortfolioKit = (
             Fail`expected rebalanceCount ${rebalanceCount}; got ${countPre}`;
         },
       },
+      /**
+       * This helper is the narrow execution authority for a delegation. It
+       * serves portfolio-owned data and capabilities to the delegation exo,
+       * while the delegation exo remains the place that enforces delegated
+       * permissions and constraints before invoking these methods.
+       */
       delegationHelper: {
         assertActive(
           client: PortfolioDelegationClient,
@@ -643,8 +652,16 @@ export const preparePortfolioKit = (
           const { enabledAutoFeatures } = this.state;
           return enabledAutoFeatures;
         },
-        getPermissions(client: PortfolioDelegationClient, agentId: number) {
+        getPermissions(
+          client: PortfolioDelegationClient,
+          agentId: number,
+          syncState?: { policyVersion: number; rebalanceCount: number },
+        ) {
           this.facets.delegationHelper.assertActive(client, agentId);
+          if (syncState) {
+            const { policyVersion, rebalanceCount } = syncState;
+            this.facets.reader.checkVersion(policyVersion, rebalanceCount);
+          }
           return this.state.delegations!.get(agentId).permissions;
         },
         getTargetAllocation(
@@ -654,6 +671,13 @@ export const preparePortfolioKit = (
           this.facets.delegationHelper.assertActive(client, agentId);
           const { reader } = this.facets;
           return reader.getTargetAllocation();
+        },
+        getCurrentTimestamp(
+          client: PortfolioDelegationClient,
+          agentId: number,
+        ) {
+          this.facets.delegationHelper.assertActive(client, agentId);
+          return E(clock).getCurrentTimestamp();
         },
         submitTargetAllocation(
           client: PortfolioDelegationClient,

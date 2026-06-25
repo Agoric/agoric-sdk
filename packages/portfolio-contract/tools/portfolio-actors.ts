@@ -600,6 +600,8 @@ export const toPortfolioPermissionsEIP712 = (
     mayAllocate: !!allocation,
     allocationCapBps:
       typeof allocation === 'object' ? (allocation.capBps ?? 0) : 0,
+    allocationMaxBpsPerDay:
+      typeof allocation === 'object' ? (allocation.maxBpsPerDay ?? 0) : 0,
     mayRebalance: !!rebalance,
   });
 };

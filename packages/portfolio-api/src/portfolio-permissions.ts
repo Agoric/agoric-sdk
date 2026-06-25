@@ -7,6 +7,7 @@ import type {
 } from './evm-wallet/eip712-messages.ts';
 
 const BasisPointsShape = M.and(M.number(), M.gte(0), M.lte(10_000));
+const PositiveBasisPointsShape = M.and(M.number(), M.gte(1), M.lte(10_000));
 
 /**
  * Portfolio permissions granted to an automation agent.
@@ -24,6 +25,15 @@ export type PortfolioPermissions = {
          * delegated `setTargetAllocation` request.
          */
         capBps?: number;
+        /**
+         * optional delegated turnover budget in basis points per day. The
+         * delegate starts with the full daily budget on first use, then refills
+         * continuously over time up to that same cap.
+         *
+         * `0` is excluded here because the EIP-712 wire encoding uses zero as
+         * the sentinel for "no maxBpsPerDay constraint".
+         */
+        maxBpsPerDay?: number;
       };
   /** whether the agent may trigger a rebalance using the current policy. */
   rebalance?: boolean;
@@ -37,7 +47,14 @@ export type PortfolioPermissionsExt = PortfolioPermissions & CopyRecord<any>;
 const permissionProperties = harden({
   allocation: M.or(
     M.boolean(),
-    M.splitRecord({}, { capBps: BasisPointsShape }, {}),
+    M.splitRecord(
+      {},
+      {
+        capBps: BasisPointsShape,
+        maxBpsPerDay: PositiveBasisPointsShape,
+      },
+      {},
+    ),
   ),
   rebalance: M.boolean(),
 });
@@ -55,6 +72,7 @@ export const PortfolioPermissionsEIP712Shape: TypedPattern<PortfolioPermissionsE
   harden({
     mayAllocate: M.boolean(),
     allocationCapBps: BasisPointsShape,
+    allocationMaxBpsPerDay: BasisPointsShape,
     mayRebalance: M.boolean(),
   });
 
