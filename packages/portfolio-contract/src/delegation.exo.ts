@@ -2,6 +2,11 @@
  * @file Delegation wrapper exo. A portfolio owner may grant constrained
  * authority to the holder of another Agoric account (e.g. an automation agent).
  *
+ * This layer is responsible for delegated permission and constraint
+ * enforcement. The portfolio helper facet is the narrower execution authority:
+ * it exposes portfolio state reads, current time, and the ability to submit an
+ * already-authorized delegated action.
+ *
  * @see {@link PortfolioPermissions} for the currently supported permissions
  *
  * @see {@link preparePortfolioDelegationKit}
@@ -28,19 +33,148 @@ export const PortfolioSyncStateShape: TypedPattern<PortfolioSyncState> =
     rebalanceCount: M.number(),
   });
 
-export const checkTurnoverBudget = (_detail: unknown) =>
-  assert.fail('not implemented');
-harden(checkTurnoverBudget);
-
 type DelegationState = {
   agentId: number;
   portfolioAccess: PortfolioKit['delegationHelper'];
+  turnoverBudgetState?: {
+    lastUpdatedAt: bigint;
+    remainingBpSeconds: bigint;
+  };
 };
+
+const DAY_SECONDS = 24n * 3600n;
+
+export const checkTurnoverBudget = ({
+  currentAllocation,
+  nextAllocation,
+  maxBpsPerDay,
+  remainingBps,
+  secondsElapsedSinceLastUpdate,
+  currentTimeAbsValue,
+  priorTurnoverBudgetState,
+}: {
+  currentAllocation: TargetAllocation;
+  nextAllocation: TargetAllocation;
+  maxBpsPerDay: number;
+  remainingBps?: number;
+  secondsElapsedSinceLastUpdate?: number;
+  currentTimeAbsValue?: bigint;
+  priorTurnoverBudgetState?: {
+    lastUpdatedAt: bigint;
+    remainingBpSeconds: bigint;
+  };
+}): {
+  allowed: boolean;
+  consumedBps: number;
+  remainingBps: number;
+  availableBpsBeforeSpend: number;
+  refilledBps: number;
+  nextTurnoverBudgetState?:
+    | {
+        lastUpdatedAt: bigint;
+        remainingBpSeconds: bigint;
+      }
+    | undefined;
+} => {
+  const currentTotal = Object.values(currentAllocation).reduce(
+    (sum, weight) => sum + weight,
+    0n,
+  );
+  const nextTotal = Object.values(nextAllocation).reduce(
+    (sum, weight) => sum + weight,
+    0n,
+  );
+  assert(currentTotal > 0n);
+  assert(nextTotal > 0n);
+
+  const totalDeltaNumerator = Array.from(
+    new Set([
+      ...Object.keys(currentAllocation),
+      ...Object.keys(nextAllocation),
+    ]),
+  ).reduce((sum, key) => {
+    const currentWeight = currentAllocation[key] ?? 0n;
+    const nextWeight = nextAllocation[key] ?? 0n;
+    const delta = currentWeight * nextTotal - nextWeight * currentTotal;
+    return sum + (delta < 0n ? -delta : delta);
+  }, 0n);
+  const consumedBpsDenominator = 2n * currentTotal * nextTotal;
+  const consumedBpsQuotient =
+    (totalDeltaNumerator * 10_000n) / consumedBpsDenominator;
+  const consumedBpsRemainder =
+    (totalDeltaNumerator * 10_000n) % consumedBpsDenominator;
+  const consumedBps = Number(
+    consumedBpsQuotient +
+      (2n * consumedBpsRemainder > consumedBpsDenominator ||
+      (2n * consumedBpsRemainder === consumedBpsDenominator &&
+        consumedBpsQuotient % 2n === 1n)
+        ? 1n
+        : 0n),
+  );
+
+  const maxBudgetBpSeconds = BigInt(maxBpsPerDay) * DAY_SECONDS;
+  const effectiveSecondsElapsedSinceLastUpdate =
+    secondsElapsedSinceLastUpdate ??
+    (priorTurnoverBudgetState && currentTimeAbsValue !== undefined
+      ? Number(currentTimeAbsValue - priorTurnoverBudgetState.lastUpdatedAt)
+      : 0);
+  const effectiveRemainingBpSeconds =
+    remainingBps === undefined
+      ? (priorTurnoverBudgetState?.remainingBpSeconds ?? maxBudgetBpSeconds)
+      : BigInt(remainingBps) * DAY_SECONDS;
+  const refilledBpSeconds =
+    BigInt(maxBpsPerDay) * BigInt(effectiveSecondsElapsedSinceLastUpdate);
+  const availableBpSecondsBeforeSpend =
+    effectiveRemainingBpSeconds + refilledBpSeconds <= maxBudgetBpSeconds
+      ? effectiveRemainingBpSeconds + refilledBpSeconds
+      : maxBudgetBpSeconds;
+  const consumedBpSeconds = BigInt(consumedBps) * DAY_SECONDS;
+  const allowed = consumedBpSeconds <= availableBpSecondsBeforeSpend;
+  const remainingAfterSpendBpSeconds = allowed
+    ? availableBpSecondsBeforeSpend - consumedBpSeconds
+    : availableBpSecondsBeforeSpend;
+
+  return harden({
+    allowed,
+    consumedBps,
+    availableBpsBeforeSpend: Number(
+      availableBpSecondsBeforeSpend / DAY_SECONDS,
+    ),
+    refilledBps: Number(refilledBpSeconds / DAY_SECONDS),
+    remainingBps: Number(remainingAfterSpendBpSeconds / DAY_SECONDS),
+    nextTurnoverBudgetState:
+      currentTimeAbsValue === undefined
+        ? undefined
+        : consumedBps === 0
+          ? priorTurnoverBudgetState
+          : harden({
+              lastUpdatedAt: currentTimeAbsValue,
+              remainingBpSeconds: remainingAfterSpendBpSeconds,
+            }),
+  });
+};
+harden(checkTurnoverBudget);
+
+export const assertWithinTurnoverBudget = (
+  args: Parameters<typeof checkTurnoverBudget>[0],
+) => {
+  const result = checkTurnoverBudget(args);
+  result.allowed || Fail`delegated move exceeds delegated turnover budget`;
+  return result;
+};
+harden(assertWithinTurnoverBudget);
 
 // exoClassKit expects a plain state-shape record, not a TypedPattern wrapper.
 export const DelegationStateShape = {
   agentId: M.number(),
   portfolioAccess: M.remotable('PortfolioDelegationHelper'),
+  turnoverBudgetState: M.opt(
+    M.splitRecord(
+      { lastUpdatedAt: M.nat(), remainingBpSeconds: M.nat() },
+      {},
+      {},
+    ),
+  ),
 };
 harden(DelegationStateShape);
 
@@ -57,12 +191,20 @@ const auditKeys = (
   return harden({ extra, missing });
 };
 
+const assertAuthorizedAllocationKeys = (
+  expected: Record<string, unknown>,
+  actual: Record<string, unknown>,
+) => {
+  const { extra, missing } = auditKeys(expected, actual);
+  extra.length === 0 || Fail`unauthorized allocations for ${q(extra)}`;
+  missing.length === 0 || Fail`missing allocations for ${q(missing)}`;
+};
+harden(assertAuthorizedAllocationKeys);
+
 const assertWithinAllocationCap = (
   targetAllocation: TargetAllocation,
-  permissions: PortfolioPermissions,
+  capBps: number | undefined,
 ) => {
-  const { allocation } = permissions;
-  const capBps = typeof allocation === 'object' ? allocation.capBps : undefined;
   if (capBps === undefined) {
     return;
   }
@@ -91,7 +233,7 @@ const DelegationReaderI = M.interface('PortfolioDelegationReader', {
 const DelegationClientI = M.interface('PortfolioDelegationClient', {
   getReader: M.call().returns(M.remotable('PortfolioDelegationReader')),
   rebalance: M.call(PortfolioSyncStateShape).returns(M.string()),
-  setTargetAllocation: M.call(
+  setTargetAllocation: M.callWhen(
     TargetAllocationShape,
     PortfolioSyncStateShape,
   ).returns(M.string()),
@@ -140,23 +282,47 @@ export const preparePortfolioDelegationKit = (
             syncState,
           );
         },
-        setTargetAllocation(
+        /**
+         * Returns FlowKey promptly, before orchestration begins
+         */
+        async setTargetAllocation(
           targetAllocation: TargetAllocation,
           syncState: PortfolioSyncState,
-        ): FlowKey {
+        ): Promise<FlowKey> {
           const { portfolioAccess, agentId } = this.state;
-          const current =
-            portfolioAccess.getTargetAllocation(this.facets.client, agentId) ||
-            {};
-          const { extra, missing } = auditKeys(current, targetAllocation);
-          extra.length === 0 || Fail`unauthorized allocations for ${q(extra)}`;
-          missing.length === 0 || Fail`missing allocations for ${q(missing)}`;
+          const { client } = this.facets;
+
           const permissions = portfolioAccess.getPermissions(
             this.facets.client,
             agentId,
+            syncState,
           );
-          assertWithinAllocationCap(targetAllocation, permissions);
+          const { allocation } = permissions;
+          allocation || Fail`delegated action requires allocation permission`;
 
+          const current =
+            portfolioAccess.getTargetAllocation(client, agentId) || {};
+          assertAuthorizedAllocationKeys(current, targetAllocation);
+          const refinements = allocation === true ? {} : allocation || {};
+          const { capBps, maxBpsPerDay } = refinements;
+          assertWithinAllocationCap(targetAllocation, capBps);
+
+          await null;
+          if (maxBpsPerDay !== undefined) {
+            // `getCurrentTimestamp()` is prompt.
+            const { absValue: now } = await portfolioAccess.getCurrentTimestamp(
+              this.facets.client,
+              agentId,
+            );
+            const { nextTurnoverBudgetState } = assertWithinTurnoverBudget({
+              currentAllocation: current,
+              nextAllocation: targetAllocation,
+              maxBpsPerDay,
+              currentTimeAbsValue: now,
+              priorTurnoverBudgetState: this.state.turnoverBudgetState,
+            });
+            this.state.turnoverBudgetState = nextTurnoverBudgetState;
+          }
           return portfolioAccess.submitTargetAllocation(
             this.facets.client,
             agentId,

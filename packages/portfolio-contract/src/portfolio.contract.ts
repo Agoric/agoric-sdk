@@ -669,6 +669,7 @@ export const contract = async (
     portfoliosNode: E(storageNode).makeChildNode('portfolios'),
     marshaller: cachingMarshaller,
     usdcBrand: brands.USDC,
+    clock: E(timerService).getClock(),
     eip155ChainIdToAxelarChain,
     contracts,
     deliverDelegation,
