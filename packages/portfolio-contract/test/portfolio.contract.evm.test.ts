@@ -15,6 +15,7 @@ import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
+  PortfolioPlannerAgent,
   TxType,
   type FundsFlowPlan,
   type PublishedPortfolioTxDetails,
@@ -403,6 +404,80 @@ test('open portfolio from Arbitrum, 1000 USDC deposit', async t => {
       Compound: contents[`${posKey}.Compound_Arbitrum`]?.totalIn,
     };
     t.deepEqual(posBalances, expected.positions, `${label} position balances`);
+  }
+});
+
+test('open portfolio with auto-features', async t => {
+  const shared = await setupPlanner(t);
+  const { common } = shared;
+  const { usdc } = common.brands;
+  const inputs = {
+    fromChain: 'Arbitrum' as const,
+    depositAmount: usdc.units(1000),
+    allocations: [{ instrument: 'Compound_Arbitrum', portion: 10000n }],
+    features: {
+      rebalance: true,
+    },
+  };
+
+  for (const [ix, useRouter] of [false, true].entries()) {
+    const useVerifiedSigner = useRouter;
+    const { label, powers } = await makeEvmPlannerPowers(
+      t,
+      shared,
+      ix,
+      useRouter,
+      useVerifiedSigner,
+    );
+    const { evmTrader } = powers;
+    const openResult = await doOpenEvmPortfolio(shared, inputs, powers);
+
+    t.is(
+      openResult.storagePath,
+      evmTrader.getPortfolioPath(),
+      `${label} storage path matches`,
+    );
+    t.is(
+      openResult.portfolioId,
+      evmTrader.getPortfolioId(),
+      `${label} portfolio id matches`,
+    );
+
+    const status = await evmTrader.getPortfolioStatus();
+    t.deepEqual(
+      status.enabledAutoFeatures,
+      inputs.features,
+      `${label} autoFeatures should have been set`,
+    );
+
+    const { contents } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+
+    snapshotTimed(t, contents, `vstorage (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+
+    const agents = contents[
+      `${evmTrader.getPortfolioPath()}.agents`
+    ] as StatusFor['portfolioAgents'];
+
+    t.like(
+      agents,
+      {
+        agent1: {
+          grantee: PortfolioPlannerAgent,
+          permissions: { rebalance: true },
+          state: 'active',
+        },
+      },
+      `${label} - agents should include a planner delegation`,
+    );
   }
 });
 

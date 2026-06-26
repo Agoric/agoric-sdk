@@ -26,6 +26,7 @@ import {
   AxelarChain,
   InstrumentId,
   type FundsFlowPlan,
+  type PortfolioAutoFeatures,
 } from '@agoric/portfolio-api';
 import { type TargetAllocation as PermittedAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import { E, passStyleOf } from '@endo/far';
@@ -423,6 +424,7 @@ const doOpenEvmPortfolio = async (
     fromChain: AxelarChain;
     depositAmount: NatAmount;
     allocations: PermittedAllocation[];
+    features?: Required<PortfolioAutoFeatures>;
   },
   powers: Awaited<ReturnType<typeof makeEvmPlannerPowers>>['powers'],
 ) => {
@@ -431,7 +433,11 @@ const doOpenEvmPortfolio = async (
   await planner1.redeem();
   const result = await evmTrader
     .forChain(inputs.fromChain)
-    .openPortfolio(inputs.allocations, inputs.depositAmount.value);
+    .openPortfolio(
+      inputs.allocations,
+      inputs.depositAmount.value,
+      inputs.features,
+    );
   await ackNFA(shared.common.utils, -1);
   await eventLoopIteration();
   const flowNum = await resolveDepositPlan(

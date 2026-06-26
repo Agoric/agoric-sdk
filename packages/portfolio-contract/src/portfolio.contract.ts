@@ -795,7 +795,9 @@ export const contract = async (
      * @see {@link openPortfolio} for the flow implementation
      */
     async openPortfolioFromEVM(
-      { allocations }: YmaxOperationDetails<'OpenPortfolio'>['data'],
+      data:
+        | YmaxOperationDetails<'OpenPortfolio'>['data']
+        | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data'],
       permitDetails: PermitDetails,
     ): Promise<{
       storagePath: string;
@@ -808,7 +810,10 @@ export const contract = async (
 
       // XXX: validate instruments
       const targetAllocation: TargetAllocation = Object.fromEntries(
-        allocations.map(({ instrument, portion }) => [instrument, portion]),
+        data.allocations.map(({ instrument, portion }) => [
+          instrument,
+          portion,
+        ]),
       );
 
       const fromChain =
@@ -824,6 +829,12 @@ export const contract = async (
       const sourceAccountId =
         `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
+
+      await null;
+      if ('features' in data && data.features !== undefined) {
+        // setAutoFeatures is promptly resolved
+        await vowTools.asPromise(kit.evmHandler.setAutoFeatures(data.features));
+      }
 
       const seat = zcf.makeEmptySeatKit().zcfSeat;
 
