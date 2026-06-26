@@ -247,9 +247,8 @@ test('maybeAutoRebalance submits planner rebalance when criteria fire', async t 
   t.deepEqual(rebalanceCalls, [
     [
       7,
+      { syncState: { policyVersion: 3, rebalanceCount: 4 } },
       [{ src: '@noble', dest: 'USDN', amount: makeAmount(25_000_000n) }],
-      3,
-      4,
     ],
   ]);
 });

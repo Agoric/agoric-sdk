@@ -139,8 +139,8 @@ expectNotAssignable<PortfolioAgentKey>('portfolio2agent3');
 
 const flowsRunning = {
   flow1: { type: 'withdraw', amount: natAmount },
-  flow2: { type: 'rebalance', planResolved: false },
-  flow3: { type: 'rebalance', planResolved: true, agent: 'agent3' },
+  flow2: { type: 'rebalance', awaitingSteps: true },
+  flow3: { type: 'rebalance', awaitingSteps: false, agent: 'agent3' },
 } as const;
 
 const status: StatusFor = {

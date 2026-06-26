@@ -1114,7 +1114,10 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    'flow1',
+  );
   t.like(getCallLog()[1], ['executePlan', , {}, , undefined, { flowId: 1 }]);
   t.like(await getPortfolioStatus!(20), {
     flowsRunning: { flow1: { type: 'rebalance' } },
@@ -1140,9 +1143,14 @@ test('allocation delegation cannot use rebalance', async t => {
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.throws(() => client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), {
-    message: /delegation agent1 does not have required permission "rebalance"/,
-  });
+  t.throws(
+    () =>
+      client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    {
+      message:
+        /delegation agent1 does not have required permission "rebalance"/,
+    },
+  );
   t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
 });
 
@@ -1181,10 +1189,10 @@ test('revoked delegation client is no longer usable', async t => {
   });
   t.throws(
     () =>
-      client.setTargetAllocation(
-        { USDN: 100n },
-        { policyVersion: 1, rebalanceCount: 0 },
-      ),
+      client.setTargetAllocation({
+        targetAllocation: { USDN: 100n },
+        syncState: { policyVersion: 1, rebalanceCount: 0 },
+      }),
     {
       message: /delegation client is not active for agent1/,
     },
@@ -1233,7 +1241,10 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    'flow1',
+  );
   t.is(getCallLog().length, 2);
   t.like(getCallLog(), [
     ['deliverDelegation'],
@@ -1255,9 +1266,14 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
       state: 'active',
     },
   });
-  t.throws(() => client.rebalance({ policyVersion: 1, rebalanceCount: 0 }), {
-    message: /delegation agent1 does not have required permission "rebalance"/,
-  });
+  t.throws(
+    () =>
+      client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
+    {
+      message:
+        /delegation agent1 does not have required permission "rebalance"/,
+    },
+  );
 
   manager.revokeDelegation(1);
 
@@ -1302,7 +1318,7 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
   });
 });
 
-test('planResolved is published in flowsRunning and reflects resolution state', async t => {
+test('awaitingSteps is published in flowsRunning and reflects resolution state', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
     storage,
@@ -1319,9 +1335,9 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(Object.keys(flowsRunning).length, 1, 'one flow running');
     t.is(
-      flowsRunning[`flow${flowId}`].planResolved,
-      false,
-      'planResolved is false before resolveFlowPlan',
+      flowsRunning[`flow${flowId}`].awaitingSteps,
+      true,
+      'awaitingSteps is true before resolveFlowPlan',
     );
   }
 
@@ -1331,13 +1347,13 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
   {
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(
-      flowsRunning[`flow${flowId}`].planResolved,
-      true,
-      'planResolved is true after resolveFlowPlan',
+      flowsRunning[`flow${flowId}`].awaitingSteps,
+      false,
+      'awaitingSteps is false after resolveFlowPlan',
     );
   }
 
-  // Flow started with pre-resolved steps: planResolved is true immediately
+  // Flow started with pre-resolved steps: awaitingSteps is false immediately
   const { flowId: flowId2 } = manager.startFlow(
     { type: 'withdraw', amount },
     steps,
@@ -1346,9 +1362,9 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
   {
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(
-      flowsRunning[`flow${flowId2}`].planResolved,
-      true,
-      'planResolved is true immediately when steps are provided at startFlow',
+      flowsRunning[`flow${flowId2}`].awaitingSteps,
+      false,
+      'awaitingSteps is false immediately when steps are provided at startFlow',
     );
   }
 
@@ -1361,9 +1377,9 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
   {
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(
-      flowsRunning[`flow${flowId3}`].planResolved,
-      false,
-      'planResolved is false before rejectFlowPlan',
+      flowsRunning[`flow${flowId3}`].awaitingSteps,
+      true,
+      'awaitingSteps is true before rejectFlowPlan',
     );
   }
 
@@ -1372,9 +1388,9 @@ test('planResolved is published in flowsRunning and reflects resolution state', 
   {
     const { flowsRunning = {} } = await getPortfolioStatus!(1);
     t.is(
-      flowsRunning[`flow${flowId3}`].planResolved,
-      true,
-      'planResolved is true after rejectFlowPlan',
+      flowsRunning[`flow${flowId3}`].awaitingSteps,
+      false,
+      'awaitingSteps is false after rejectFlowPlan',
     );
   }
 

@@ -38,6 +38,8 @@ import {
   type PortfolioAutoFeatures,
   type PortfolioRemoteAccountState,
   type PortfolioAutoFeaturesExt,
+  type PortfolioDelegatedRebalanceParams,
+  type PortfolioDelegatedSetTargetAllocationParams,
   PortfolioAutoFeaturesExtShape,
 } from '@agoric/portfolio-api';
 import {
@@ -343,20 +345,17 @@ const makePortfolioAgentsRecord = (
 /** publish everyting about flowsRunning but the sync VowKit */
 const makeFlowsRunningRecord = (
   flowsRunning: PortfolioKitState['flowsRunning'],
-): StatusFor['portfolio']['flowsRunning'] =>
-  harden(
-    fromEntries(
-      [...flowsRunning.entries()].map(
-        ([
-          num,
-          {
-            sync: { resolver },
-            ...data
-          },
-        ]) => [`flow${num}`, { ...data, planResolved: !resolver }],
-      ),
-    ),
-  );
+): StatusFor['portfolio']['flowsRunning'] => {
+  const storedEntries = [...flowsRunning.entries()];
+  const statusEntries = storedEntries.map(([num, stored]) => {
+    const {
+      sync: { resolver },
+      ...data
+    } = stored;
+    return [`flow${num}`, { ...data, awaitingSteps: !!resolver }];
+  });
+  return harden(fromEntries(statusEntries));
+};
 
 export type PublishStatusFn = <K extends keyof StatusFor>(
   path: string[],
@@ -664,13 +663,14 @@ export const preparePortfolioKit = (
         submitTargetAllocation(
           client: PortfolioDelegationClient,
           agentId: number,
-          targetAllocation: TargetAllocation,
-          syncState: { policyVersion: number; rebalanceCount: number },
+          delegatedSetTargetAllocationParams: PortfolioDelegatedSetTargetAllocationParams,
         ): FlowKey {
           this.facets.delegationHelper.assertActive(client, agentId, {
             allocation: true,
           });
           const { reader, manager } = this.facets;
+          const { syncState, targetAllocation, agentMemo } =
+            delegatedSetTargetAllocationParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
@@ -679,6 +679,7 @@ export const preparePortfolioKit = (
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
+            ...(agentMemo != null && { agentMemo }),
           };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
@@ -690,12 +691,13 @@ export const preparePortfolioKit = (
         submitRebalance(
           client: PortfolioDelegationClient,
           agentId: number,
-          syncState: { policyVersion: number; rebalanceCount: number },
+          delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
         ): FlowKey {
           this.facets.delegationHelper.assertActive(client, agentId, {
             rebalance: true,
           });
           const { reader, manager } = this.facets;
+          const { syncState, agentMemo } = delegatedRebalanceParams;
 
           const { policyVersion, rebalanceCount } = syncState;
           reader.checkVersion(policyVersion, rebalanceCount);
@@ -704,6 +706,7 @@ export const preparePortfolioKit = (
           const flowDetail: FlowDetail = {
             type: 'rebalance',
             agent: `agent${agentId}`,
+            ...(agentMemo != null && { agentMemo }),
           };
           const startedFlow = manager.startFlow(flowDetail);
           // This flow does its own error handling and always exits the seat
@@ -1052,9 +1055,6 @@ export const preparePortfolioKit = (
           permissions: PortfolioPermissionsExt,
         ) {
           const { portfolioId } = this.state;
-          if (!('delegations' in this.state)) {
-            throw Fail`portfolio pre-dates delegation support`;
-          }
           if (!this.state.delegations) {
             this.state.delegations = makeDelegationsStore(portfolioId);
           }
@@ -1127,6 +1127,10 @@ export const preparePortfolioKit = (
               activeClient: undefined,
             }),
           );
+          if (this.state.plannerAgentId === agentId) {
+            this.state.plannerAgentId = undefined;
+            this.state.enabledAutoFeatures = undefined;
+          }
           this.facets.reporter.publishAgents();
         },
         /**
@@ -1138,10 +1142,6 @@ export const preparePortfolioKit = (
          * @param features
          */
         async setAutoFeatures(features: PortfolioAutoFeatures) {
-          if (!('enabledAutoFeatures' in this.state)) {
-            throw Fail`portfolio pre-dates auto features support`;
-          }
-
           const permissions: PortfolioPermissions = {
             allocation: false,
             rebalance: !!features.rebalance,

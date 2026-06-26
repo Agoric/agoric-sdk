@@ -184,7 +184,7 @@ export const maybeAutoRebalance = async (
   const portfolioId = portfolioIdFromKey(portfolioKey);
   const logPrefix = `[${portfolioKey}.autoRebalance]`;
   const { policyVersion, rebalanceCount } = portfolioStatus;
-  const versions = [policyVersion, rebalanceCount] as const;
+  const syncState = { policyVersion, rebalanceCount } as const;
 
   const logContext = {
     path,
@@ -236,8 +236,8 @@ export const maybeAutoRebalance = async (
     const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
     const { tx, id } = await planReceiver.rebalance(
       portfolioId,
+      { syncState },
       planOrSteps,
-      ...versions,
     );
     if (!isDryRun) {
       void getWalletInvocationUpdate(id as any).catch(err => {

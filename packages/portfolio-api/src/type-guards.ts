@@ -65,3 +65,8 @@ harden(isBeefyInstrumentId);
 
 export const PortfolioAgentKeyShape: TypedPattern<PortfolioAgentKey> =
   M.string();
+
+/** The shape for the optional `agentMemo` field for flows started by an agent */
+export const PortfolioFlowAgentMemoShape: TypedPattern<string> = M.string({
+  stringLengthLimit: 64,
+});
