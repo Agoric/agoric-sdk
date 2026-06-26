@@ -10,7 +10,7 @@ import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import {
   makeGrantEncodeObject,
   makeUpgradeExecEncodeObject,
-} from '../src/ymax-authz-helpers.ts';
+} from '../src/ymax-authz-msgs.ts';
 import { WALLET_KEY } from '../src/ymax-admin-helpers.ts';
 
 test('makeGrantEncodeObject grants MsgWalletSpendAction for 4 hours', t => {
