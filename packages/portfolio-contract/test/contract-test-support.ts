@@ -133,9 +133,14 @@ const getPortfolioInfo = (key: string, storage: FakeStorage) => {
   const posPaths = positionKeys.map(k => `${key}.positions.${k}`);
   const posEntries = posPaths.map(p => [p, storage.getDeserialized(p).at(-1)]);
   const { flowPaths, byFlow } = getFlowHistory(key, flowCount, storage);
+  const agentsPath = `${key}.agents`;
+  const agentsEntries = storage.data.has(agentsPath)
+    ? [[agentsPath, storage.getDeserialized(agentsPath).at(-1)]]
+    : [];
   const contents = {
     ...fromEntries([[key, info], ...posEntries]),
     ...byFlow,
+    ...fromEntries(agentsEntries),
   };
   return { contents, positionPaths: posPaths, flowPaths };
 };
