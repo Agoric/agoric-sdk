@@ -11,25 +11,28 @@ const encodings = Array.from({ length: 256 }, (_, b) =>
 );
 
 /**
- * Create map entries for all four permutations of lowercase and uppercase
- * transformations of the two hex digits per byte. The map is keyed by the hex
- * string and the value is the byte value. This allows for fast lookups when
- * decoding hex strings.
+ * Map every hex string to its byte value, keyed by all four permutations of
+ * lowercase and uppercase transformations of the two hex digits per byte. This
+ * allows for fast lookups when decoding hex strings.
+ *
+ * Built with a bounded `for` loop that inserts entries incrementally, rather
+ * than `encodings.flatMap(...)` feeding a 1024-element pair array into
+ * `new Map(...)`. On XS, constructing and spreading large intermediate arrays
+ * this way is a metered-stack hazard; incremental `set` keeps stack depth O(1)
+ * in the table size.
  *
  * @type {Map<string, number>}
  */
-const decodings = new Map(
-  encodings.flatMap((hexdigits, b) => {
-    const lo = hexdigits.toLowerCase();
-    const UP = hexdigits.toUpperCase();
-    return [
-      [lo, b],
-      [`${lo[0]}${UP[1]}`, b],
-      [`${UP[0]}${lo[1]}`, b],
-      [UP, b],
-    ];
-  }),
-);
+const decodings = new Map();
+for (let b = 0; b < encodings.length; b += 1) {
+  const hexdigits = encodings[b];
+  const lo = hexdigits.toLowerCase();
+  const UP = hexdigits.toUpperCase();
+  decodings.set(lo, b);
+  decodings.set(`${lo[0]}${UP[1]}`, b);
+  decodings.set(`${UP[0]}${lo[1]}`, b);
+  decodings.set(UP, b);
+}
 
 /**
  * Create a hex codec that is portable across standard JS environments.
