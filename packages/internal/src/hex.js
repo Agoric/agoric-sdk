@@ -81,7 +81,21 @@ export const makeBufferishHexCodec = Bufferish => {
     encodeHex: buf =>
       (Bufferish.isBuffer?.(buf) ? buf : Bufferish.from(buf)).toString('hex'),
     decodeHex: hex => {
+      // `Bufferish.from(hex, 'hex')` silently drops invalid input rather than
+      // throwing: it ignores an odd-length trailing nibble and stops at the
+      // first non-hex character, returning the bytes parsed so far. Validate
+      // up front so this codec rejects the same inputs as the portable codec,
+      // throwing the identical `Invalid hex string: ${hex}` error.
+      if (hex.length % 2 !== 0) {
+        throw new Error(`Invalid hex string: ${hex}`);
+      }
       const buf = Bufferish.from(hex, 'hex');
+      // A complete parse consumes the whole string, yielding one byte per two
+      // input characters. A shorter result means a non-hex character was
+      // encountered and the tail was silently dropped.
+      if (buf.byteLength !== hex.length / 2) {
+        throw new Error(`Invalid hex string: ${hex}`);
+      }
 
       // Coerce to Uint8Array to avoid leaking the abstraction.
       const u8a = new Uint8Array(
