@@ -61,6 +61,7 @@ import {
   type YdsPortfolioSummary,
 } from './yds-portfolio-balances.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
+import { generateDiff } from './ses-utils.ts';
 import { makeNowISO } from './utils.ts';
 
 const { fromEntries, entries } = Object;
@@ -359,33 +360,19 @@ export const main = async (
             const elapsed = Number.isFinite(seconds)
               ? `overwriting after ${seconds} seconds`
               : 'initializing';
-            const diff: string[] = [];
-            const iters = [
-              JSON.parse(lastPortfolios.portfolioIdsString),
-              [...portfolioIds],
-            ].map(arr => arr.sort(naturalCompare)[Symbol.iterator]());
-            for (let pair = iters.map(iter => iter.next()); ; ) {
-              const [oldR, newR] = pair;
-              const forceCmp = oldR.done || newR.done ? NaN : undefined;
-              const cmp = forceCmp ?? naturalCompare(oldR.value, newR.value);
-              if (cmp === 0) {
-                diff.push(` ${oldR.value}`);
-                pair = iters.map(iter => iter.next());
-              } else if (!oldR.done && (newR.done || cmp < 0)) {
-                diff.push(`-${oldR.value}`);
-                pair[0] = iters[0].next();
-              } else if (!newR.done && (oldR.done || cmp > 0)) {
-                diff.push(`+${newR.value}`);
-                pair[1] = iters[1].next();
-              } else {
-                if (!Number.isNaN(cmp)) {
-                  const details = { oldR, newR, cmp };
-                  console.error(logPrefix, 'bad comparison', details);
-                }
-                break;
+            const idsDiff: string[] = [];
+            const sigilsByState = { common: ' ', removed: '-', added: '+' };
+            try {
+              const oldIdsString = lastPortfolios.portfolioIdsString;
+              const oldIds = JSON.parse(oldIdsString).sort(naturalCompare);
+              const diff = generateDiff(oldIds, portfolioIds, naturalCompare);
+              for (const { state, value } of diff) {
+                idsDiff.push(`${sigilsByState[state]}${value}`);
               }
+            } catch (err) {
+              console.error(logPrefix, err);
             }
-            const diffStr = diff.length ? `\n${diff.join('\n')}\n` : '';
+            const diffStr = idsDiff.length ? `\n${idsDiff.join('\n')}\n` : '';
             console.warn(logPrefix, elapsed, diffStr, summaries);
           }
 
