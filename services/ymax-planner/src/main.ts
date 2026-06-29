@@ -353,6 +353,42 @@ export const main = async (
             (a, b) => naturalCompare(a.portfolioId, b.portfolioId),
           );
 
+          if (isVerbose) {
+            const logPrefix = '[getPortfolioSummaries]';
+            const seconds = (timestamp - lastPortfolios.timestamp) / 1000;
+            const elapsed = Number.isFinite(seconds)
+              ? `overwriting after ${seconds} seconds`
+              : 'initializing';
+            const diff: string[] = [];
+            const iters = [
+              JSON.parse(lastPortfolios.portfolioIdsString),
+              [...portfolioIds],
+            ].map(arr => arr.sort(naturalCompare)[Symbol.iterator]());
+            for (let pair = iters.map(iter => iter.next()); ; ) {
+              const [oldR, newR] = pair;
+              const forceCmp = oldR.done || newR.done ? NaN : undefined;
+              const cmp = forceCmp ?? naturalCompare(oldR.value, newR.value);
+              if (cmp === 0) {
+                diff.push(` ${oldR.value}`);
+                pair = iters.map(iter => iter.next());
+              } else if (!oldR.done && (newR.done || cmp < 0)) {
+                diff.push(`-${oldR.value}`);
+                pair[0] = iters[0].next();
+              } else if (!newR.done && (oldR.done || cmp > 0)) {
+                diff.push(`+${newR.value}`);
+                pair[1] = iters[1].next();
+              } else {
+                if (!Number.isNaN(cmp)) {
+                  const details = { oldR, newR, cmp };
+                  console.error(logPrefix, 'bad comparison', details);
+                }
+                break;
+              }
+            }
+            const diffStr = diff.length ? `\n${diff.join('\n')}\n` : '';
+            console.warn(logPrefix, elapsed, diffStr, summaries);
+          }
+
           lastPortfolios = { timestamp, portfolioIdsString, summaries };
           return summaries;
         }
