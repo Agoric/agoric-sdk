@@ -375,8 +375,8 @@ export const processPortfolioEvents = async (
   ): Promise<StatusFor['flow']['state'] | undefined> => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}.flows.${flowKey}`;
     const metaResponse = await readStorageMeta(vstorage, path, 'data', opts);
-    // If the flow's vstorage node exists only as an empty non-terminal (e.g.
-    // for a child such as `agent`), then it has no status.
+    // If the flow's vstorage node does not exist or exists only as an empty
+    // non-terminal (e.g. for a child such as `agent`), then it has no status.
     if (metaResponse.result.value === '') return undefined;
     const streamCell = parseStreamCell(metaResponse.result.value, path);
     const capdata = parseStreamCellValue(streamCell, -1, path);
@@ -610,14 +610,10 @@ export const processPortfolioEvents = async (
       { minBlockHeight: eventRecord.blockHeight, retries: 4 };
     await null;
     try {
-      const [statusCapdata, flowKeysResp] = await Promise.all([
-        readStreamCellValue(vstorage, path, readOpts),
-        readStorageMeta(vstorage, `${path}.flows`, 'children', readOpts),
-      ]);
+      const statusCapdata = await readStreamCellValue(vstorage, path, readOpts);
       const status = marshaller.fromCapData(statusCapdata) as StatusFor['portfolio'];
       mustMatch(status, PortfolioStatusShapeExt, path);
       portfolioRecordForKey.set(portfolioKey, { status, atBlockHeight: eventRecord.blockHeight });
-      const flowKeys = new Set(flowKeysResp.result.children);
       const fingerprint = fingerprintPortfolioState(status, { marshaller });
 
       // If status hasn't changed, there's no point in trying anything.
@@ -633,20 +629,24 @@ export const processPortfolioEvents = async (
       // Responding to later ones is pointless because acceptance of the first
       // submission would invalidate the others as stale, but we'll see them
       // again when such acceptance prompts changes to the portfolio status.
-      // TODO(https://github.com/Agoric/agoric-sdk/pull/12753): Use
-      // StatusFor['portfolio']['flowsRunning'][string]['planResolved'] rather
-      // than scanning vstorage child nodes.
       const flowsEntries = typedEntries(status.flowsRunning || {}).sort(
         ([a], [b]) => naturalCompare(a, b),
       );
       let txHash: string | undefined;
       for (const [flowKey, flowDetail] of flowsEntries) {
-        const flowStatus = flowKeys.has(flowKey)
-          ? await getFlowStatus(portfolioKey, flowKey, readOpts)
-          : undefined;
+        const { awaitingSteps } = flowDetail;
+        const flowStatus: StatusFor['flow']['state'] | 'INIT' =
+          { __proto__: null, true: 'INIT', false: 'run' }[`${awaitingSteps}`] ??
+          // TODO(https://github.com/Agoric/agoric-sdk/pull/12753): This
+          // fallback can be removed once we're certain that every entry in
+          // `flowsRunning` is guaranteed to have a boolean `awaitingSteps`.
+          (await getFlowStatus(portfolioKey, flowKey, readOpts)) ??
+          'INIT';
+
         // 'run' is the only non-terminal status.
         if (flowStatus === 'run') return;
-        if (flowStatus !== undefined) continue;
+        if (flowStatus !== 'INIT') continue;
+
         txHash = await startFlow(status, portfolioKey, flowKey, flowDetail);
         break;
       }
