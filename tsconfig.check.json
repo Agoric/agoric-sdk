@@ -27,7 +27,10 @@
         "**/dist",
         "**/docs",
         "**/vendor",
-        "**/*.umd.js"
+        "**/*.umd.js",
+        // Standalone benchmark scripts (engine-agnostic, intentionally untyped;
+        // run by hand, not part of the package's tsconfig project).
+        "packages/internal/benchmark"
     ],
     "include": [
         // .ts/.mts anywhere in the repo
