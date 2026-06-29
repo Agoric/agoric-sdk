@@ -7,7 +7,6 @@ import { inspect } from 'node:util';
 import type { Coin } from '@cosmjs/stargate';
 
 import { Fail, annotateError, q } from '@endo/errors';
-import type { ERef } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -49,6 +48,7 @@ import {
 import {
   mustMatch,
   naturalCompare,
+  partialMap,
   provideLazyMap,
   stripPrefix,
   tryNow,
@@ -94,7 +94,8 @@ import {
   setResolvedTx,
 } from './kv-store.ts';
 import { UserInputError, type ReconnectingEvmProvider } from './support.ts';
-import { makeExpiringMap } from './utils.ts';
+import { makeExpiringMap, normalizeIsoTimestamp } from './utils.ts';
+import type { IsoTimestamp } from './utils.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -107,7 +108,8 @@ import {
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
-import type { PortfolioBalanceReader } from './yds-portfolio-balances.ts';
+import { normalizeYdsPortfolioBalances } from './yds-portfolio-balances.ts';
+import type { YdsPortfolioSummary } from './yds-portfolio-balances.ts';
 
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
@@ -210,6 +212,9 @@ export type Powers = {
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
   getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
+  getPortfolioSummaries?: (
+    portfolioKeys: PortfolioKey[],
+  ) => Promise<YdsPortfolioSummary[] | undefined>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
   makeNonce: () => string;
@@ -220,16 +225,17 @@ export type Powers = {
   ) => ReturnType<typeof getInvocationUpdate>;
   /** Prefer monotonicity (e.g., `performance.now` rather than `Date.now`). */
   now: () => number;
+  nowISO: () => string;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
-  getYdsBalancesForPortfolio?: PortfolioBalanceReader;
   autoRebalance: AutoRebalanceConfig;
 };
 
 export type ProcessPortfolioPowers = Pick<
   Powers,
   | 'network'
+  | 'nowISO'
   | 'spectrumBlockchain'
   | 'spectrumChainIds'
   | 'evmTokenAddresses'
@@ -239,7 +245,6 @@ export type ProcessPortfolioPowers = Pick<
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
-  | 'getYdsBalancesForPortfolio'
   | 'autoRebalance'
 > & {
   console: Required<Powers>['console'];
@@ -258,7 +263,12 @@ export type PortfoliosMemory = {
   // TODO: Combine snapshots and portfolioRecordForKey.
   snapshots: Map<
     string,
-    { fingerprint: string; txHash?: null | string; repeats: number }
+    {
+      fingerprint: string;
+      repeats: number;
+      txHash?: null | string;
+      balancesTimestamp?: IsoTimestamp;
+    }
   >;
   portfolioRecordForKey: Map<
     PortfolioKey,
@@ -266,7 +276,10 @@ export type PortfoliosMemory = {
   >;
   balanceCache: Map<
     PortfolioKey,
-    ERef<Partial<Record<AssetPlaceRef, NatAmount>>>
+    {
+      isoTimestamp: IsoTimestamp;
+      balances: Partial<Record<AssetPlaceRef, NatAmount>>;
+    }
   >;
 };
 
@@ -288,20 +301,14 @@ export const makePortfoliosMemory = (options?: {
 
 const fingerprintPortfolioState = (
   status: StatusFor['portfolio'],
-  activeFlowKeys: Set<string>,
   { marshaller }: { marshaller: SigningSmartWalletKit['marshaller'] },
 ): string => {
   // Ignore rebalanceCount, which can increment from one of our submissions even
   // if nothing actually changes.
   const { rebalanceCount: _rebalanceCount, ...statusFields } = status;
-  const sortedFlowKeys = [...activeFlowKeys].sort((a, b) =>
-    naturalCompare(a, b),
-  );
   // Rely on the determinism of @endo/marshal.
-  const fingerprint = marshaller.toCapData(
-    harden({ statusFields, activeFlowKeys: sortedFlowKeys }),
-  );
-  return fingerprint.body;
+  const fingerprint = marshaller.toCapData(harden(statusFields)).body;
+  return fingerprint;
 };
 
 export const processPortfolioEvents = async (
@@ -315,6 +322,7 @@ export const processPortfolioEvents = async (
     feeBrand,
     gasEstimator,
     network,
+    nowISO,
     instrumentBlocks,
     signingSmartWalletKit,
     walletStore,
@@ -326,7 +334,6 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
-    getYdsBalancesForPortfolio,
     autoRebalance,
   }: ProcessPortfolioPowers,
 ) => {
@@ -351,26 +358,11 @@ export const processPortfolioEvents = async (
       depositBrand,
       balanceQueryPowers,
     );
-    balanceCache.set(portfolioKey, balances);
+    balanceCache.set(portfolioKey, {
+      isoTimestamp: normalizeIsoTimestamp(nowISO()),
+      balances,
+    });
     return balances;
-  };
-  const getCachedBalances = async (
-    portfolioKey: PortfolioKey,
-  ): Promise<Partial<Record<AssetPlaceRef, NatAmount>> | undefined> => {
-    const found = await balanceCache.get(portfolioKey);
-    if (found) return found;
-    const balancesP = getYdsBalancesForPortfolio?.(portfolioKey, depositBrand);
-    if (!balancesP) return undefined;
-    balanceCache.set(portfolioKey, balancesP);
-    try {
-      const balances = await balancesP;
-      balanceCache.set(portfolioKey, balances); // refreshes the TTL
-      return balances;
-    } catch (err) {
-      const refound = balanceCache.get(portfolioKey);
-      if (refound === balancesP) balanceCache.delete(portfolioKey);
-      throw err;
-    }
   };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
@@ -383,8 +375,8 @@ export const processPortfolioEvents = async (
   ): Promise<StatusFor['flow']['state'] | undefined> => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}.flows.${flowKey}`;
     const metaResponse = await readStorageMeta(vstorage, path, 'data', opts);
-    // If the flow's vstorage node exists only as an empty non-terminal (e.g.
-    // for a child such as `agent`), then it has no status.
+    // If the flow's vstorage node does not exist or exists only as an empty
+    // non-terminal (e.g. for a child such as `agent`), then it has no status.
     if (metaResponse.result.value === '') return undefined;
     const streamCell = parseStreamCell(metaResponse.result.value, path);
     const capdata = parseStreamCellValue(streamCell, -1, path);
@@ -539,56 +531,53 @@ export const processPortfolioEvents = async (
   const scanAutoRebalances = async () => {
     await null;
     for (const [portfolioKey, portfolioRecord] of portfolioRecordForKey) {
-      const { atBlockHeight, status } = portfolioRecord;
+      const { status } = portfolioRecord;
       const { enabledAutoFeatures, targetAllocation } = status;
       if (!enabledAutoFeatures?.rebalance || !targetAllocation) continue;
       if (Object.keys(status.flowsRunning || {}).length > 0) continue;
 
-      const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-      const readOpts: ReadVstorageSimpleOpts = {
-        minBlockHeight: atBlockHeight,
-        retries: 4,
-      };
       try {
-        // If this (portfolio, flows) data hasn't changed since our last
-        // successful submission, there's no point in trying again.
-        const flowKeysResp = await readStorageMeta(
-          vstorage,
-          `${path}.flows`,
-          'children',
-          readOpts,
-        );
-        const flowKeys = new Set(flowKeysResp.result.children as string[]);
-        const fingerprint = fingerprintPortfolioState(status, flowKeys, {
-          marshaller,
-        });
-        const oldState = memory.snapshots.get(portfolioKey);
-        if (oldState?.txHash && fingerprint === oldState.fingerprint) {
-          if (!oldState.repeats) {
-            console.warn(`⚠️  Ignoring unchanged auto-rebalance ${path}`);
-          }
-          oldState.repeats += 1;
+        // If status hasn't changed since our last successful submission,
+        // there's no point in checking.
+        const fingerprint = fingerprintPortfolioState(status, { marshaller });
+        const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
+          fingerprint,
+          repeats: 0,
+          txHash: null,
+        }));
+        if (oldState.txHash && fingerprint === oldState.fingerprint) {
           continue;
         }
 
-        const cachedBalances = await getCachedBalances(portfolioKey);
-        if (!cachedBalances) continue;
-        const candidateTargets = computeTargetBalances({
-          brand: depositBrand,
-          currentBalances: cachedBalances,
-          network,
-          targetAllocation,
-          instrumentBlocks,
-        });
+        // Likewise if we don't have new balance information.
+        const cachedBalanceData = await balanceCache.get(portfolioKey);
+        if (!cachedBalanceData) continue;
+        const { isoTimestamp, balances } = cachedBalanceData;
+        if (oldState.balancesTimestamp === isoTimestamp) continue;
+        oldState.balancesTimestamp = isoTimestamp;
+
+        // XXX We should refactor to avoid adding back unchanged balances.
+        const candidateTargets = {
+          ...balances,
+          ...computeTargetBalances({
+            brand: depositBrand,
+            currentBalances: balances,
+            network,
+            targetAllocation,
+            instrumentBlocks,
+          }),
+        };
         const shouldRebalance = checkAutoRebalance(
           targetAllocation,
-          cachedBalances,
+          balances,
           candidateTargets,
           autoRebalance,
         );
         if (!shouldRebalance) continue;
 
         const freshBalances = await getFreshBalances(portfolioKey, status);
+        const freshTimestamp = balanceCache.get(portfolioKey)!.isoTimestamp;
+        oldState.balancesTimestamp = freshTimestamp;
         const txHash = await maybeAutoRebalance(
           status,
           portfolioKey,
@@ -596,8 +585,12 @@ export const processPortfolioEvents = async (
           maybeAutoRebalancePowers,
         );
         if (txHash) {
-          const snapshot = { fingerprint, txHash, repeats: 0 };
-          memory.snapshots.set(portfolioKey, snapshot);
+          memory.snapshots.set(portfolioKey, {
+            fingerprint,
+            txHash,
+            repeats: 0,
+            balancesTimestamp: freshTimestamp,
+          });
         }
       } catch (err) {
         console.warn(
@@ -617,18 +610,13 @@ export const processPortfolioEvents = async (
       { minBlockHeight: eventRecord.blockHeight, retries: 4 };
     await null;
     try {
-      const [statusCapdata, flowKeysResp] = await Promise.all([
-        readStreamCellValue(vstorage, path, readOpts),
-        readStorageMeta(vstorage, `${path}.flows`, 'children', readOpts),
-      ]);
+      const statusCapdata = await readStreamCellValue(vstorage, path, readOpts);
       const status = marshaller.fromCapData(statusCapdata) as StatusFor['portfolio'];
       mustMatch(status, PortfolioStatusShapeExt, path);
       portfolioRecordForKey.set(portfolioKey, { status, atBlockHeight: eventRecord.blockHeight });
-      const flowKeys = new Set(flowKeysResp.result.children);
-      const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
+      const fingerprint = fingerprintPortfolioState(status, { marshaller });
 
-      // If this (portfolio, flows) data hasn't changed since our last
-      // successful submission, there's no point in trying again.
+      // If status hasn't changed, there's no point in trying anything.
       const oldState = memory.snapshots.get(portfolioKey);
       if (oldState && fingerprint === oldState.fingerprint) {
         if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
@@ -646,12 +634,19 @@ export const processPortfolioEvents = async (
       );
       let txHash: string | undefined;
       for (const [flowKey, flowDetail] of flowsEntries) {
-        const flowStatus = flowKeys.has(flowKey)
-          ? await getFlowStatus(portfolioKey, flowKey, readOpts)
-          : undefined;
+        const { awaitingSteps } = flowDetail;
+        const flowStatus: StatusFor['flow']['state'] | 'INIT' =
+          { __proto__: null, true: 'INIT', false: 'run' }[`${awaitingSteps}`] ??
+          // TODO(https://github.com/Agoric/agoric-sdk/pull/12753): This
+          // fallback can be removed once we're certain that every entry in
+          // `flowsRunning` is guaranteed to have a boolean `awaitingSteps`.
+          (await getFlowStatus(portfolioKey, flowKey, readOpts)) ??
+          'INIT';
+
         // 'run' is the only non-terminal status.
         if (flowStatus === 'run') return;
-        if (flowStatus !== undefined) continue;
+        if (flowStatus !== 'INIT') continue;
+
         txHash = await startFlow(status, portfolioKey, flowKey, flowDetail);
         break;
       }
@@ -890,6 +885,7 @@ export const startEngine = async (
     signingSmartWalletKit,
     makeNonce,
     getInstrumentBlocks,
+    getPortfolioSummaries,
     now,
   } = powers;
   const { kvStore } = evmCtx;
@@ -917,12 +913,37 @@ export const startEngine = async (
   const depositAsset =
     vbankAssets.find(asset => asset.issuerName === depositBrandName) ||
     Fail`Could not find vbankAsset for ${q(depositBrandName)}`;
+  const depositBrand = depositAsset.brand as Brand<'nat'>;
   const feeAsset =
     vbankAssets.find(asset => asset.issuerName === feeBrandName) ||
     Fail`Could not find vbankAsset for ${q(feeBrandName)}`;
 
   const portfoliosMemory = makePortfoliosMemory({ balanceCacheTtlMs, now });
-  const { deferrals } = portfoliosMemory;
+  const { balanceCache, deferrals, portfolioRecordForKey } = portfoliosMemory;
+
+  const updatePortfolioBalances = async () => {
+    const autoRebalancers = partialMap(
+      [...portfolioRecordForKey],
+      ([portfolioKey, record]) =>
+        record.status.enabledAutoFeatures?.rebalance && portfolioKey,
+    );
+    const summaries = await getPortfolioSummaries?.(autoRebalancers);
+    if (!summaries) return;
+    for (const { portfolioId, latestSnapshot } of summaries) {
+      if (!latestSnapshot) continue;
+
+      // This data might be more stale than that of our own balance queries.
+      const isoTimestamp = normalizeIsoTimestamp(latestSnapshot.ts);
+      const found = balanceCache.get(portfolioId);
+      if (found && found.isoTimestamp >= isoTimestamp) continue;
+
+      const balances = normalizeYdsPortfolioBalances(
+        latestSnapshot,
+        depositBrand,
+      );
+      balanceCache.set(portfolioId, { isoTimestamp, balances });
+    }
+  };
 
   const blockHeightFromSubscriptionResponse = (resp: SubscriptionResponse) => {
     const { type: respType, value: respData } = resp;
@@ -980,7 +1001,7 @@ export const startEngine = async (
     ...powers,
     console,
     isDryRun,
-    depositBrand: depositAsset.brand as Brand<'nat'>,
+    depositBrand,
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
     evmProviders: evmCtx.evmProviders,
@@ -1159,18 +1180,19 @@ export const startEngine = async (
     // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
     // transactions, so process them concurrently with portfolio events.
     await Promise.all([
-      updateInstrumentBlocks()
-        .catch(err =>
+      Promise.all([
+        updateInstrumentBlocks().catch(err =>
           console.error('⚠️ Failed to update instrument blocks', err),
-        )
-        .then(() =>
-          processPortfolioEvents(
-            portfolioEvents,
-            respHeight,
-            portfoliosMemory,
-            { ...processPortfolioPowers, instrumentBlocks },
-          ),
         ),
+        updatePortfolioBalances().catch(err =>
+          console.error('⚠️ Failed to update portfolio balances', err),
+        ),
+      ]).then(() =>
+        processPortfolioEvents(portfolioEvents, respHeight, portfoliosMemory, {
+          ...processPortfolioPowers,
+          instrumentBlocks,
+        }),
+      ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
 

@@ -1,31 +1,51 @@
-import ky, { type KyInstance } from 'ky';
-
+import type { PoolKey } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import type { EvmAddress } from '@agoric/fast-usdc';
+import type { Bech32Address, CaipChainId } from '@agoric/orchestration';
 import { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import { PoolPlaces } from '@agoric/portfolio-api/src/places.js';
 import { Fail, bare, q } from '@endo/errors';
+import type { PortfolioKey } from '@agoric/portfolio-api';
 import { Nat } from '@endo/nat';
-import { FETCH_HEADERS } from './config.ts';
+import type { UsdcNumber } from './support.ts';
 
 export const YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS = 60 * 60 * 1000;
 const USDC_DECIMALS = 6;
 
-export type PortfolioBalanceReader = (
-  portfolioKey: string,
-  brand: Brand<'nat'>,
-) => Promise<Partial<Record<AssetPlaceRef, NatAmount>>>;
+/** cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/api-schemas.ts: PortfolioSummary */
+export type YdsPortfolioSummary = {
+  portfolioId: PortfolioKey;
+  targetAllocation: Record<string, number>;
+  positionStatus?: { pendingDelta: Partial<Record<AssetPlaceRef, UsdcNumber>> };
+  latestSnapshot: null | {
+    ts: `${string}Z`;
+    balances: {
+      positions: Partial<Record<PoolKey, null | UsdcNumber>>;
+      accounts: Partial<Record<SupportedChain, null | UsdcNumber>>;
+    };
+    totalValueUsdc: UsdcNumber;
+  };
+  reserved: UsdcNumber;
+  atBlockHeight: number;
 
-export type YdsPortfolioBalanceConfig = {
-  ydsUrl: string;
-  ydsApiKey: string;
-  timeout?: number;
-  retries?: number;
-};
-
-export type YdsPortfolioBalancePowers = {
-  fetch: typeof fetch;
+  walletAddress: null | string;
+  creationOfferId: null | string;
+  depositAddress: null | string;
+  accountStateByChain: Partial<
+    Record<
+      SupportedChain,
+      | { state: 'provisioning' | 'failed' | 'unknown' }
+      | {
+          state: 'active' | 'provisioning' | 'failed';
+          chainId: CaipChainId;
+          address: Bech32Address | EvmAddress;
+          routerFactory?: EvmAddress;
+        }
+    >
+  >;
+  vstorage: { structure: Record<string, unknown>; slots: string[] };
 };
 
 // TODO: Use something less open-coded, e.g. Zod or @endo/patterns.
@@ -64,21 +84,11 @@ const scaleToNat = (
   }
 };
 
-const getYdsBalances = (payload: unknown): Record<string, unknown> => {
-  const root = assertRecord(payload, 'portfolio response');
-  const data = assertRecord(root.data, 'portfolio response data');
-  const latestSnapshot = assertRecord(
-    data.latestSnapshot,
-    'portfolio latestSnapshot',
-  );
-  return assertRecord(latestSnapshot.balances, 'portfolio balances');
-};
-
 export const normalizeYdsPortfolioBalances = (
-  payload: unknown,
+  snapshot: NonNullable<YdsPortfolioSummary['latestSnapshot']>,
   brand: Brand<'nat'>,
 ): Partial<Record<AssetPlaceRef, NatAmount>> => {
-  const ydsBalances = getYdsBalances(payload);
+  const ydsBalances = assertRecord(snapshot.balances, 'portfolio balances');
   const positions = assertRecord(ydsBalances.positions, 'positions balances');
   const accounts = assertRecord(ydsBalances.accounts, 'accounts balances');
 
@@ -103,26 +113,4 @@ export const normalizeYdsPortfolioBalances = (
     balances[place] = AmountMath.make(brand, balance);
   }
   return harden(balances);
-};
-
-export const makeYdsPortfolioBalanceReader = (
-  { fetch }: YdsPortfolioBalancePowers,
-  config: YdsPortfolioBalanceConfig,
-): PortfolioBalanceReader => {
-  const http: KyInstance = ky.create({
-    fetch,
-    timeout: config.timeout,
-    retry: config.retries,
-    prefixUrl: config.ydsUrl,
-    headers: {
-      ...FETCH_HEADERS,
-      'x-resolver-auth-key': config.ydsApiKey,
-    },
-  });
-
-  const getYdsBalancesForPortfolio = async (portfolioKey, brand) => {
-    const payload = await http.get(`portfolios/${portfolioKey}`).json();
-    return normalizeYdsPortfolioBalances(payload, brand);
-  };
-  return getYdsBalancesForPortfolio;
 };

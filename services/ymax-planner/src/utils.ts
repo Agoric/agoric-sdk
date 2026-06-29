@@ -88,6 +88,33 @@ export const makeNowISO = (now: typeof Date.now): (() => string) => {
 };
 
 /**
+ * An ECMAScript-compatible Z-offset ISO 8601 calendar date and time of day
+ * representation that uses a six-digit expanded year and three fractional
+ * seconds digits.
+ * https://tc39.es/ecma262/multipage/numbers-and-dates.html#sec-date-time-string-format
+ */
+export type IsoTimestamp = `+${string}T${string}.${string}Z`;
+
+const isoTimestampPatt =
+  /^((?:[0-9]{4}|[+][0-9]{6})-(?:0[1-9]|1[012])-(?:0[1-9]|[12][0-9]|3[01]))T((?:[01][0-9]|2[0-3]):(?:[0-5][0-9]):(?:[0-5][0-9]))(?:[.]([0-9]+))?Z$/;
+
+/**
+ * Normalize a trivial Z-offset ISO 8601 string into an expanded form in which
+ * string comparison corresponds with temporal comparison.
+ */
+export const normalizeIsoTimestamp = (timestamp: string): IsoTimestamp => {
+  const parts = timestamp.match(isoTimestampPatt);
+  if (!parts) throw TypeError(`timestamp cannot be normalized: ${timestamp}`);
+
+  // eslint-disable-next-line prefer-const
+  let [, ymd, hms, frac = ''] = parts;
+  if (!ymd.startsWith('+')) ymd = `+00${ymd}`;
+  frac = frac.padEnd(3, '0');
+
+  return `${ymd as `+${string}`}T${hms}.${frac.substring(0, 3)}Z`;
+};
+
+/**
  * Parse the contents of a GRAPHQL_ENDPOINTS environment variable.
  * @see {@link ../README.md}
  */
