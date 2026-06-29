@@ -112,6 +112,7 @@ export const createMockEnginePowers = (): EnginePowers => ({
   walletStore: {} as any,
   getWalletInvocationUpdate: async () => undefined,
   now: () => NaN,
+  nowISO: () => '1970-01-01T00:00:00.000Z',
   setTimeout: globalThis.setTimeout,
   gasEstimator: {} as any,
   usdcTokensByChain: {},

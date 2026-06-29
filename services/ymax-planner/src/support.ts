@@ -13,6 +13,12 @@ import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
 
+/**
+ * USDC value in floating-point major units (i.e., nominally corresponding with
+ * USD)
+ */
+export type UsdcNumber = number;
+
 export const UserInputError = class extends Error {} as ErrorConstructor;
 harden(UserInputError);
 

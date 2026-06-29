@@ -7,7 +7,6 @@ import { inspect } from 'node:util';
 import type { Coin } from '@cosmjs/stargate';
 
 import { Fail, annotateError, q } from '@endo/errors';
-import type { ERef } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { reflectWalletStore, getInvocationUpdate } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
@@ -49,6 +48,7 @@ import {
 import {
   mustMatch,
   naturalCompare,
+  partialMap,
   provideLazyMap,
   stripPrefix,
   tryNow,
@@ -94,7 +94,8 @@ import {
   setResolvedTx,
 } from './kv-store.ts';
 import { UserInputError, type ReconnectingEvmProvider } from './support.ts';
-import { makeExpiringMap } from './utils.ts';
+import { makeExpiringMap, normalizeIsoTimestamp } from './utils.ts';
+import type { IsoTimestamp } from './utils.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -107,7 +108,8 @@ import {
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
-import type { PortfolioBalanceReader } from './yds-portfolio-balances.ts';
+import { normalizeYdsPortfolioBalances } from './yds-portfolio-balances.ts';
+import type { YdsPortfolioSummary } from './yds-portfolio-balances.ts';
 
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
@@ -210,6 +212,9 @@ export type Powers = {
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
   getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
+  getPortfolioSummaries?: (
+    portfolioKeys: PortfolioKey[],
+  ) => Promise<YdsPortfolioSummary[] | undefined>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
   makeNonce: () => string;
@@ -220,16 +225,17 @@ export type Powers = {
   ) => ReturnType<typeof getInvocationUpdate>;
   /** Prefer monotonicity (e.g., `performance.now` rather than `Date.now`). */
   now: () => number;
+  nowISO: () => string;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
-  getYdsBalancesForPortfolio?: PortfolioBalanceReader;
   autoRebalance: AutoRebalanceConfig;
 };
 
 export type ProcessPortfolioPowers = Pick<
   Powers,
   | 'network'
+  | 'nowISO'
   | 'spectrumBlockchain'
   | 'spectrumChainIds'
   | 'evmTokenAddresses'
@@ -239,7 +245,6 @@ export type ProcessPortfolioPowers = Pick<
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
-  | 'getYdsBalancesForPortfolio'
   | 'autoRebalance'
 > & {
   console: Required<Powers>['console'];
@@ -258,7 +263,12 @@ export type PortfoliosMemory = {
   // TODO: Combine snapshots and portfolioRecordForKey.
   snapshots: Map<
     string,
-    { fingerprint: string; txHash?: null | string; repeats: number }
+    {
+      fingerprint: string;
+      repeats: number;
+      txHash?: null | string;
+      balancesTimestamp?: IsoTimestamp;
+    }
   >;
   portfolioRecordForKey: Map<
     PortfolioKey,
@@ -266,7 +276,10 @@ export type PortfoliosMemory = {
   >;
   balanceCache: Map<
     PortfolioKey,
-    ERef<Partial<Record<AssetPlaceRef, NatAmount>>>
+    {
+      isoTimestamp: IsoTimestamp;
+      balances: Partial<Record<AssetPlaceRef, NatAmount>>;
+    }
   >;
 };
 
@@ -309,6 +322,7 @@ export const processPortfolioEvents = async (
     feeBrand,
     gasEstimator,
     network,
+    nowISO,
     instrumentBlocks,
     signingSmartWalletKit,
     walletStore,
@@ -320,7 +334,6 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
-    getYdsBalancesForPortfolio,
     autoRebalance,
   }: ProcessPortfolioPowers,
 ) => {
@@ -345,26 +358,11 @@ export const processPortfolioEvents = async (
       depositBrand,
       balanceQueryPowers,
     );
-    balanceCache.set(portfolioKey, balances);
+    balanceCache.set(portfolioKey, {
+      isoTimestamp: normalizeIsoTimestamp(nowISO()),
+      balances,
+    });
     return balances;
-  };
-  const getCachedBalances = async (
-    portfolioKey: PortfolioKey,
-  ): Promise<Partial<Record<AssetPlaceRef, NatAmount>> | undefined> => {
-    const found = await balanceCache.get(portfolioKey);
-    if (found) return found;
-    const balancesP = getYdsBalancesForPortfolio?.(portfolioKey, depositBrand);
-    if (!balancesP) return undefined;
-    balanceCache.set(portfolioKey, balancesP);
-    try {
-      const balances = await balancesP;
-      balanceCache.set(portfolioKey, balances); // refreshes the TTL
-      return balances;
-    } catch (err) {
-      const refound = balanceCache.get(portfolioKey);
-      if (refound === balancesP) balanceCache.delete(portfolioKey);
-      throw err;
-    }
   };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
@@ -552,15 +550,18 @@ export const processPortfolioEvents = async (
         }
 
         // Likewise if we don't have new balance information.
-        const cachedBalances = await getCachedBalances(portfolioKey);
-        if (!cachedBalances) continue;
+        const cachedBalanceData = await balanceCache.get(portfolioKey);
+        if (!cachedBalanceData) continue;
+        const { isoTimestamp, balances } = cachedBalanceData;
+        if (oldState.balancesTimestamp === isoTimestamp) continue;
+        oldState.balancesTimestamp = isoTimestamp;
 
         // XXX We should refactor to avoid adding back unchanged balances.
         const candidateTargets = {
-          ...cachedBalances,
+          ...balances,
           ...computeTargetBalances({
             brand: depositBrand,
-            currentBalances: cachedBalances,
+            currentBalances: balances,
             network,
             targetAllocation,
             instrumentBlocks,
@@ -568,13 +569,15 @@ export const processPortfolioEvents = async (
         };
         const shouldRebalance = checkAutoRebalance(
           targetAllocation,
-          cachedBalances,
+          balances,
           candidateTargets,
           autoRebalance,
         );
         if (!shouldRebalance) continue;
 
         const freshBalances = await getFreshBalances(portfolioKey, status);
+        const freshTimestamp = balanceCache.get(portfolioKey)!.isoTimestamp;
+        oldState.balancesTimestamp = freshTimestamp;
         const txHash = await maybeAutoRebalance(
           status,
           portfolioKey,
@@ -582,8 +585,12 @@ export const processPortfolioEvents = async (
           maybeAutoRebalancePowers,
         );
         if (txHash) {
-          const snapshot = { fingerprint, txHash, repeats: 0 };
-          memory.snapshots.set(portfolioKey, snapshot);
+          memory.snapshots.set(portfolioKey, {
+            fingerprint,
+            txHash,
+            repeats: 0,
+            balancesTimestamp: freshTimestamp,
+          });
         }
       } catch (err) {
         console.warn(
@@ -878,6 +885,7 @@ export const startEngine = async (
     signingSmartWalletKit,
     makeNonce,
     getInstrumentBlocks,
+    getPortfolioSummaries,
     now,
   } = powers;
   const { kvStore } = evmCtx;
@@ -905,12 +913,37 @@ export const startEngine = async (
   const depositAsset =
     vbankAssets.find(asset => asset.issuerName === depositBrandName) ||
     Fail`Could not find vbankAsset for ${q(depositBrandName)}`;
+  const depositBrand = depositAsset.brand as Brand<'nat'>;
   const feeAsset =
     vbankAssets.find(asset => asset.issuerName === feeBrandName) ||
     Fail`Could not find vbankAsset for ${q(feeBrandName)}`;
 
   const portfoliosMemory = makePortfoliosMemory({ balanceCacheTtlMs, now });
-  const { deferrals } = portfoliosMemory;
+  const { balanceCache, deferrals, portfolioRecordForKey } = portfoliosMemory;
+
+  const updatePortfolioBalances = async () => {
+    const autoRebalancers = partialMap(
+      [...portfolioRecordForKey],
+      ([portfolioKey, record]) =>
+        record.status.enabledAutoFeatures?.rebalance && portfolioKey,
+    );
+    const summaries = await getPortfolioSummaries?.(autoRebalancers);
+    if (!summaries) return;
+    for (const { portfolioId, latestSnapshot } of summaries) {
+      if (!latestSnapshot) continue;
+
+      // This data might be more stale than that of our own balance queries.
+      const isoTimestamp = normalizeIsoTimestamp(latestSnapshot.ts);
+      const found = balanceCache.get(portfolioId);
+      if (found && found.isoTimestamp >= isoTimestamp) continue;
+
+      const balances = normalizeYdsPortfolioBalances(
+        latestSnapshot,
+        depositBrand,
+      );
+      balanceCache.set(portfolioId, { isoTimestamp, balances });
+    }
+  };
 
   const blockHeightFromSubscriptionResponse = (resp: SubscriptionResponse) => {
     const { type: respType, value: respData } = resp;
@@ -968,7 +1001,7 @@ export const startEngine = async (
     ...powers,
     console,
     isDryRun,
-    depositBrand: depositAsset.brand as Brand<'nat'>,
+    depositBrand,
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
     evmProviders: evmCtx.evmProviders,
@@ -1147,18 +1180,19 @@ export const startEngine = async (
     // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
     // transactions, so process them concurrently with portfolio events.
     await Promise.all([
-      updateInstrumentBlocks()
-        .catch(err =>
+      Promise.all([
+        updateInstrumentBlocks().catch(err =>
           console.error('⚠️ Failed to update instrument blocks', err),
-        )
-        .then(() =>
-          processPortfolioEvents(
-            portfolioEvents,
-            respHeight,
-            portfoliosMemory,
-            { ...processPortfolioPowers, instrumentBlocks },
-          ),
         ),
+        updatePortfolioBalances().catch(err =>
+          console.error('⚠️ Failed to update portfolio balances', err),
+        ),
+      ]).then(() =>
+        processPortfolioEvents(portfolioEvents, respHeight, portfoliosMemory, {
+          ...processPortfolioPowers,
+          instrumentBlocks,
+        }),
+      ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
 

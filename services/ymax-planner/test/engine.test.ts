@@ -58,12 +58,15 @@ import type {
   ProcessPortfolioPowers,
   VstorageEventDetail,
 } from '../src/engine.ts';
+import { normalizeIsoTimestamp } from '../src/utils.ts';
 import {
   createMockEnginePowers,
   makeNotImplemented,
   mockEvmCtx,
   mockGasEstimator,
 } from './mocks.ts';
+
+const EPOCH_TIMESTAMP = normalizeIsoTimestamp(new Date(0).toISOString());
 
 // #region client-utils mocks
 // XXX these helpers belong somewhere else; maybe *in* packages/client-utils?
@@ -814,8 +817,11 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
   const blockHeight = updateBlockHeight();
   const memory = makePortfoliosMemory();
   memory.balanceCache.set(`portfolio${portfolioId}`, {
-    '@noble': nobleBalance,
-    USDN: usdnBalance,
+    isoTimestamp: EPOCH_TIMESTAMP,
+    balances: {
+      '@noble': nobleBalance,
+      USDN: usdnBalance,
+    },
   });
   await processPortfolioEvents(
     [makeVstorageEventDetail(blockHeight, portfolioPath, portfolioStatus)],
@@ -881,9 +887,13 @@ test('processPortfolioEvents scans remembered portfolios when there are no event
     atBlockHeight: 0n,
     status: portfolioStatus,
   });
+  memory.snapshots.set(portfolioKey, { fingerprint: '', repeats: 0 });
   memory.balanceCache.set(portfolioKey, {
-    '@noble': nobleBalance,
-    USDN: usdnBalance,
+    isoTimestamp: EPOCH_TIMESTAMP,
+    balances: {
+      '@noble': nobleBalance,
+      USDN: usdnBalance,
+    },
   });
 
   await processPortfolioEvents([], blockHeight, memory, powers);
@@ -894,7 +904,7 @@ test('processPortfolioEvents scans remembered portfolios when there are no event
   ]);
 });
 
-test('processPortfolioEvents rechecks YDS candidates with fresh balances', async t => {
+test('processPortfolioEvents rebalances against latest balances', async t => {
   const kit = await fakePortfolioKit({
     accounts: { noble: makeDeposit(0n) },
     otherBalances: { usdn: makeDeposit(0n) },
@@ -908,13 +918,16 @@ test('processPortfolioEvents rechecks YDS candidates with fresh balances', async
     targetAllocation: { USDN: 1n },
     enabledAutoFeatures: { rebalance: true },
   });
-  powers.getYdsBalancesForPortfolio = async () => ({
-    '@noble': makeDeposit(25_000_000n),
-  });
   const memory = makePortfoliosMemory();
   memory.portfolioRecordForKey.set(portfolioKey, {
     atBlockHeight: 0n,
     status: portfolioStatus,
+  });
+  memory.balanceCache.set(portfolioKey, {
+    isoTimestamp: EPOCH_TIMESTAMP,
+    balances: {
+      '@noble': makeDeposit(25_000_000n),
+    },
   });
 
   await processPortfolioEvents([], blockHeight, memory, powers);
@@ -922,7 +935,6 @@ test('processPortfolioEvents rechecks YDS candidates with fresh balances', async
   t.deepEqual(
     getBridgeSends().map(invocation => invocation.action),
     [],
-    'stale YDS candidate is skipped after fresh direct balance recheck',
   );
 });
 
@@ -949,9 +961,6 @@ test('processPortfolioEvents continues auto scan after portfolio error', async t
     ...commonStatus,
     targetAllocation: { USDN: 1n },
   });
-  powers.getYdsBalancesForPortfolio = async () => ({
-    '@noble': makeDeposit(25_000_000n),
-  });
   const memory = makePortfoliosMemory();
   memory.portfolioRecordForKey.set(badPortfolioKey, {
     atBlockHeight: 0n,
@@ -961,6 +970,15 @@ test('processPortfolioEvents continues auto scan after portfolio error', async t
     atBlockHeight: 0n,
     status: goodPortfolioStatus,
   });
+  for (const portfolioKey of [badPortfolioKey, goodPortfolioKey]) {
+    memory.snapshots.set(portfolioKey, { fingerprint: '', repeats: 0 });
+    memory.balanceCache.set(portfolioKey, {
+      isoTimestamp: EPOCH_TIMESTAMP,
+      balances: {
+        '@noble': makeDeposit(25_000_000n),
+      },
+    });
+  }
 
   await processPortfolioEvents([], blockHeight, memory, powers);
 

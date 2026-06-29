@@ -24,9 +24,11 @@ import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import {
   deeplyFulfilledObject,
+  naturalCompare,
   objectMap,
   withDeferredCleanup,
 } from '@agoric/internal';
+import type { PortfolioKey } from '@agoric/portfolio-api';
 import {
   CaipChainIds,
   UsdcTokenIds,
@@ -55,8 +57,8 @@ import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
 import {
-  makeYdsPortfolioBalanceReader,
   YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+  type YdsPortfolioSummary,
 } from './yds-portfolio-balances.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
 import { makeNowISO } from './utils.ts';
@@ -91,8 +93,7 @@ export type SimplePowers = {
   makeAbortController: MakeAbortController;
 };
 
-/** `makeNonce` defaults to the wall clock for debugging sent transactions. */
-const defaultMakeNonce = makeNowISO(Date.now);
+const nowISO = makeNowISO(Date.now);
 
 export const main = async (
   cliArgs: string[],
@@ -100,7 +101,8 @@ export const main = async (
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
-    makeNonce = defaultMakeNonce,
+    /** `makeNonce` defaults to wall-clock timestamps for debugging sent transactions. */
+    makeNonce = nowISO,
     now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
@@ -284,12 +286,16 @@ export const main = async (
     trace: () => {},
   });
 
+  const ydsApiKey = config.yds.apiKey;
   const ydsClient =
     config.yds.url &&
     ky.create({
       fetch,
-      headers: FETCH_HEADERS,
       prefixUrl: config.yds.url,
+      headers: {
+        ...FETCH_HEADERS,
+        ...(ydsApiKey ? { 'x-resolver-auth-key': ydsApiKey } : undefined),
+      },
       timeout: config.requestLimits.timeout,
       retry: config.requestLimits.maxRetries,
     });
@@ -317,6 +323,41 @@ export const main = async (
       }
     : undefined;
 
+  let lastPortfolios: {
+    timestamp: number;
+    portfolioIdsString: string;
+    summaries: YdsPortfolioSummary[];
+  } = { timestamp: -Infinity, portfolioIdsString: '[]', summaries: [] };
+  const getPortfolioSummaries =
+    ydsClient && ydsApiKey
+      ? async (
+          portfolioIds: PortfolioKey[],
+        ): Promise<YdsPortfolioSummary[] | undefined> => {
+          if (!portfolioIds.length) return [];
+
+          portfolioIds = portfolioIds.toSorted(naturalCompare);
+          const portfolioIdsString = JSON.stringify(portfolioIds);
+          const timestamp = now();
+          if (
+            portfolioIdsString === lastPortfolios.portfolioIdsString &&
+            timestamp <
+              lastPortfolios.timestamp + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS
+          ) {
+            return lastPortfolios.summaries;
+          }
+
+          const resp = await ydsClient
+            .post('portfolios:list', { json: { portfolioIds } })
+            .json();
+          const summaries = ((resp as any).data as YdsPortfolioSummary[]).sort(
+            (a, b) => naturalCompare(a.portfolioId, b.portfolioId),
+          );
+
+          lastPortfolios = { timestamp, portfolioIdsString, summaries };
+          return summaries;
+        }
+      : undefined;
+
   const ydsNotifier = config.yds.url
     ? new YdsNotifier(
         { fetch, log: console.log.bind(console) },
@@ -328,20 +369,6 @@ export const main = async (
         },
       )
     : undefined;
-  // TODO(https://github.com/Agoric/ymax-web/pull/782): make this more like
-  // getInstrumentBlocks
-  const getYdsBalancesForPortfolio =
-    config.yds.url && config.yds.apiKey
-      ? makeYdsPortfolioBalanceReader(
-          { fetch },
-          {
-            ydsUrl: config.yds.url,
-            ydsApiKey: config.yds.apiKey,
-            timeout: config.requestLimits.timeout,
-            retries: config.requestLimits.maxRetries,
-          },
-        )
-      : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -370,6 +397,7 @@ export const main = async (
     spectrumBlockchain,
     network: PROD_NETWORK,
     getInstrumentBlocks,
+    getPortfolioSummaries,
     signingSmartWalletKit,
     makeNonce,
     walletStore,
@@ -379,10 +407,10 @@ export const main = async (
       return getInvocationUpdate(messageId, getLastUpdate, retryOpts);
     },
     now,
+    nowISO,
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
-    getYdsBalancesForPortfolio,
     autoRebalance: config.autoRebalance,
   };
 
