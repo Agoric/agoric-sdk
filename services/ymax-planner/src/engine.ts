@@ -528,6 +528,8 @@ export const processPortfolioEvents = async (
     portfoliosPathPrefix,
     walletStore,
   };
+  // TODO(AGO-660)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const scanAutoRebalances = async () => {
     await null;
     for (const [portfolioKey, portfolioRecord] of portfolioRecordForKey) {
@@ -701,7 +703,7 @@ export const processPortfolioEvents = async (
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
-  await scanAutoRebalances();
+  // TODO(AGO-660): await scanAutoRebalances();
 };
 
 export const processPendingTxEvents = async (
