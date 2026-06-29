@@ -66,7 +66,17 @@ const makeWorker = ({ meteringLimit }) => {
   const args = ['hexbench'];
   if (meteringLimit) args.push('-l', `${meteringLimit}`);
   const child = spawn(WORKER, args, {
-    stdio: ['ignore', 'inherit', 'inherit', 'pipe', 'pipe', 'ignore', 'ignore', 'ignore', 'ignore'],
+    stdio: [
+      'ignore',
+      'inherit',
+      'inherit',
+      'pipe',
+      'pipe',
+      'ignore',
+      'ignore',
+      'ignore',
+      'ignore',
+    ],
   });
   let pending = null;
   const reader = makeReader(msg => {
@@ -129,7 +139,11 @@ const buildRes = must(await w.evaluate(coreSrc));
 const tableBuildCompute = buildRes.meter ? buildRes.meter.compute : null;
 // xsnap's `e` reply carries the meter but not the completion value, so confirm
 // the table size by asserting inside XS (throws -> non-ok if it is not 484).
-must(await w.evaluate('if (hexbench.tableSize !== 484) throw Error("table size " + hexbench.tableSize)'));
+must(
+  await w.evaluate(
+    'if (hexbench.tableSize !== 484) throw Error("table size " + hexbench.tableSize)',
+  ),
+);
 const tableSize = 484;
 
 // Build + correctness-check every corpus before timing. checkCorrectness
@@ -137,8 +151,16 @@ const tableSize = 484;
 for (const { name, bytes } of SIZES) {
   for (const mode of MODES) {
     const key = `${name}-${mode}`;
-    must(await w.evaluate(`hexbench.makeCorpus(${JSON.stringify(key)}, ${bytes}, ${JSON.stringify(mode)}, ${SEED})`));
-    must(await w.evaluate(`hexbench.checkCorrectness(${JSON.stringify(key)}, ${bytes}, ${SEED})`));
+    must(
+      await w.evaluate(
+        `hexbench.makeCorpus(${JSON.stringify(key)}, ${bytes}, ${JSON.stringify(mode)}, ${SEED})`,
+      ),
+    );
+    must(
+      await w.evaluate(
+        `hexbench.checkCorrectness(${JSON.stringify(key)}, ${bytes}, ${SEED})`,
+      ),
+    );
   }
 }
 
@@ -170,7 +192,9 @@ for (const { name, bytes, iters } of SIZES) {
       const m = await measure(approach, key, iters);
       const wallPerOp = (m.wall - base.wall) / iters;
       const computePerOp =
-        m.compute != null && base.compute != null ? (m.compute - base.compute) / iters : null;
+        m.compute != null && base.compute != null
+          ? (m.compute - base.compute) / iters
+          : null;
       results.push({
         size: name,
         bytes,
@@ -191,14 +215,20 @@ w.close();
 
 const pad = (s, n) => String(s).padEnd(n);
 const find = (size, mode, approach) =>
-  results.find(r => r.size === size && r.mode === mode && r.approach === approach);
+  results.find(
+    r => r.size === size && r.mode === mode && r.approach === approach,
+  );
 
 // eslint-disable-next-line no-console
-console.log(`# XS (xsnap) hex decode\nworker: ${WORKER}\ntable: ${tableSize}-entry Map\n`);
+console.log(
+  `# XS (xsnap) hex decode\nworker: ${WORKER}\ntable: ${tableSize}-entry Map\n`,
+);
 // eslint-disable-next-line no-console
 console.log(`# Table build cost (one-time, at module instantiation)`);
 // eslint-disable-next-line no-console
-console.log(`  metered compute to build the 484-entry Map accelerator: ${tableBuildCompute}\n`);
+console.log(
+  `  metered compute to build the 484-entry Map accelerator: ${tableBuildCompute}\n`,
+);
 
 const APPROACHES = ['map', 'arith', 'lut'];
 const head = `${pad('size', 8)}${pad('mode', 7)}${APPROACHES.map(a => pad(a, 12)).join('')}${pad('map/arith', 10)}`;
@@ -209,10 +239,16 @@ console.log('# XS metered compute per decode (lower is better)\n');
 console.log(head);
 for (const { name } of SIZES) {
   for (const mode of MODES) {
-    const cells = APPROACHES.map(a => pad(find(name, mode, a).computePerOp.toFixed(0), 12)).join('');
-    const ratio = find(name, mode, 'map').computePerOp / find(name, mode, 'arith').computePerOp;
+    const cells = APPROACHES.map(a =>
+      pad(find(name, mode, a).computePerOp.toFixed(0), 12),
+    ).join('');
+    const ratio =
+      find(name, mode, 'map').computePerOp /
+      find(name, mode, 'arith').computePerOp;
     // eslint-disable-next-line no-console
-    console.log(`${pad(name, 8)}${pad(mode, 7)}${cells}${pad(`${ratio.toFixed(2)}x`, 10)}`);
+    console.log(
+      `${pad(name, 8)}${pad(mode, 7)}${cells}${pad(`${ratio.toFixed(2)}x`, 10)}`,
+    );
   }
 }
 
@@ -222,10 +258,16 @@ console.log('\n# XS wall-clock per decode, ns (lower is better)\n');
 console.log(head);
 for (const { name } of SIZES) {
   for (const mode of MODES) {
-    const cells = APPROACHES.map(a => pad(find(name, mode, a).wallPerOpNs.toFixed(0), 12)).join('');
-    const ratio = find(name, mode, 'map').wallPerOpNs / find(name, mode, 'arith').wallPerOpNs;
+    const cells = APPROACHES.map(a =>
+      pad(find(name, mode, a).wallPerOpNs.toFixed(0), 12),
+    ).join('');
+    const ratio =
+      find(name, mode, 'map').wallPerOpNs /
+      find(name, mode, 'arith').wallPerOpNs;
     // eslint-disable-next-line no-console
-    console.log(`${pad(name, 8)}${pad(mode, 7)}${cells}${pad(`${ratio.toFixed(2)}x`, 10)}`);
+    console.log(
+      `${pad(name, 8)}${pad(mode, 7)}${cells}${pad(`${ratio.toFixed(2)}x`, 10)}`,
+    );
   }
 }
 

@@ -65,7 +65,9 @@
   // Verbatim algorithm from packages/hex/src/decode.js.
   const arithDecodeHex = string => {
     if (string.length % 2 !== 0) {
-      throw new Error(`Hex string must have an even length, got ${string.length}`);
+      throw new Error(
+        `Hex string must have an even length, got ${string.length}`,
+      );
     }
     const bytes = new Uint8Array(string.length / 2);
     for (let i = 0; i < bytes.length; i += 1) {
@@ -86,7 +88,9 @@
         if (x >= 97 && x <= 102) lo = x - 87;
       }
       if (hi < 0 || lo < 0) {
-        throw new Error(`Invalid hex character at offset ${hi < 0 ? i * 2 : i * 2 + 1}`);
+        throw new Error(
+          `Invalid hex character at offset ${hi < 0 ? i * 2 : i * 2 + 1}`,
+        );
       }
       bytes[i] = (hi << 4) | lo;
     }
@@ -114,7 +118,9 @@
       const hi = cHi < 256 ? nibbleLut[cHi] : 0xff;
       const lo = cLo < 256 ? nibbleLut[cLo] : 0xff;
       if (hi === 0xff || lo === 0xff) {
-        throw new Error(`invalid hex char at ${hi === 0xff ? i * 2 : i * 2 + 1}`);
+        throw new Error(
+          `invalid hex char at ${hi === 0xff ? i * 2 : i * 2 + 1}`,
+        );
       }
       bytes[i] = (hi << 4) | lo;
     }
@@ -182,13 +188,20 @@
       const a = mapDecodeHex(decodings, hex);
       const b = arithDecodeHex(hex);
       const c = lutDecodeHex(hex);
-      if (a.length !== expected.length || b.length !== expected.length || c.length !== expected.length) {
+      if (
+        a.length !== expected.length ||
+        b.length !== expected.length ||
+        c.length !== expected.length
+      ) {
         throw new Error(`length mismatch on ${key}`);
       }
       for (let i = 0; i < expected.length; i += 1) {
-        if (a[i] !== expected[i]) throw new Error(`map decode wrong at ${i} on ${key}`);
-        if (b[i] !== expected[i]) throw new Error(`arith decode wrong at ${i} on ${key}`);
-        if (c[i] !== expected[i]) throw new Error(`lut decode wrong at ${i} on ${key}`);
+        if (a[i] !== expected[i])
+          throw new Error(`map decode wrong at ${i} on ${key}`);
+        if (b[i] !== expected[i])
+          throw new Error(`arith decode wrong at ${i} on ${key}`);
+        if (c[i] !== expected[i])
+          throw new Error(`lut decode wrong at ${i} on ${key}`);
       }
       return 'OK';
     },

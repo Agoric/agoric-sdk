@@ -72,7 +72,8 @@ const localCorpus = Object.create(null);
     if (mode === 'lower') return s;
     if (mode === 'upper') return s.toUpperCase();
     let out = '';
-    for (let i = 0; i < s.length; i += 1) out += i % 2 === 0 ? s[i].toUpperCase() : s[i];
+    for (let i = 0; i < s.length; i += 1)
+      out += i % 2 === 0 ? s[i].toUpperCase() : s[i];
     return out;
   };
   for (const { name, bytes } of SIZES) {
@@ -127,10 +128,26 @@ const timeOp = run => {
 };
 
 const APPROACHES = [
-  { key: 'map', label: 'Map accelerator (internal)', run: (key, n) => hexbench.decodeLoop('map', key, n) },
-  { key: 'arith', label: 'Arithmetic (@endo/hex jsDecodeHex)', run: (key, n) => hexbench.decodeLoop('arith', key, n) },
-  { key: 'lut', label: 'charCode Uint8Array LUT', run: (key, n) => hexbench.decodeLoop('lut', key, n) },
-  { key: 'buffer', label: 'Buffer.from (internal on Node)', run: (key, n) => localLoop(bufferDecodeHex, key, n) },
+  {
+    key: 'map',
+    label: 'Map accelerator (internal)',
+    run: (key, n) => hexbench.decodeLoop('map', key, n),
+  },
+  {
+    key: 'arith',
+    label: 'Arithmetic (@endo/hex jsDecodeHex)',
+    run: (key, n) => hexbench.decodeLoop('arith', key, n),
+  },
+  {
+    key: 'lut',
+    label: 'charCode Uint8Array LUT',
+    run: (key, n) => hexbench.decodeLoop('lut', key, n),
+  },
+  {
+    key: 'buffer',
+    label: 'Buffer.from (internal on Node)',
+    run: (key, n) => localLoop(bufferDecodeHex, key, n),
+  },
 ];
 if (nativeFromHex) {
   APPROACHES.push({
@@ -154,12 +171,17 @@ const buildReps = 200;
   // Restore the canonical hexbench after the rebuild loop.
   (0, eval)(coreSrc);
   for (const { name, bytes } of SIZES) {
-    for (const mode of MODES) globalThis.hexbench.makeCorpus(`${name}-${mode}`, bytes, mode, SEED);
+    for (const mode of MODES)
+      globalThis.hexbench.makeCorpus(`${name}-${mode}`, bytes, mode, SEED);
   }
   // eslint-disable-next-line no-console
-  console.log(`\n# Table build cost (Map accelerator, ${globalThis.hexbench.tableSize}-entry Map)`);
+  console.log(
+    `\n# Table build cost (Map accelerator, ${globalThis.hexbench.tableSize}-entry Map)`,
+  );
   // eslint-disable-next-line no-console
-  console.log(`  core-eval incl. 484-entry table build: ~${(best / 1000).toFixed(1)} us per realm init\n`);
+  console.log(
+    `  core-eval incl. 484-entry table build: ~${(best / 1000).toFixed(1)} us per realm init\n`,
+  );
 }
 
 // --- Run ---------------------------------------------------------------------
@@ -172,7 +194,16 @@ for (const { name, bytes } of SIZES) {
       const { nsPerOp, iters } = timeOp(n => a.run(key, n));
       const nsPerByte = nsPerOp / bytes;
       const mbPerSec = 1e3 / nsPerByte; // bytes/ns -> MB/s
-      results.push({ size: name, bytes, mode, approach: a.key, nsPerOp, nsPerByte, mbPerSec, iters });
+      results.push({
+        size: name,
+        bytes,
+        mode,
+        approach: a.key,
+        nsPerOp,
+        nsPerByte,
+        mbPerSec,
+        iters,
+      });
     }
   }
 }
@@ -182,7 +213,9 @@ for (const { name, bytes } of SIZES) {
 const fmt = (n, w) => String(n).padStart(w);
 const pad = (s, w) => String(s).padEnd(w);
 // eslint-disable-next-line no-console
-console.log('# Node.js hex decode (ns/op, lower is better; MB/s, higher is better)\n');
+console.log(
+  '# Node.js hex decode (ns/op, lower is better; MB/s, higher is better)\n',
+);
 // eslint-disable-next-line no-console
 console.log(`node ${process.version}, V8 ${process.versions.v8}\n`);
 let header = `${pad('size', 8)}${pad('mode', 7)}`;
@@ -193,7 +226,9 @@ for (const { name } of SIZES) {
   for (const mode of MODES) {
     let row = `${pad(name, 8)}${pad(mode, 7)}`;
     for (const a of APPROACHES) {
-      const r = results.find(x => x.size === name && x.mode === mode && x.approach === a.key);
+      const r = results.find(
+        x => x.size === name && x.mode === mode && x.approach === a.key,
+      );
       row += pad(`${r.nsPerOp.toFixed(0)}`, 12);
     }
     // eslint-disable-next-line no-console
@@ -208,7 +243,9 @@ for (const { name } of SIZES) {
   for (const mode of MODES) {
     let row = `${pad(name, 8)}${pad(mode, 7)}`;
     for (const a of APPROACHES) {
-      const r = results.find(x => x.size === name && x.mode === mode && x.approach === a.key);
+      const r = results.find(
+        x => x.size === name && x.mode === mode && x.approach === a.key,
+      );
       row += pad(`${r.mbPerSec.toFixed(1)}`, 12);
     }
     // eslint-disable-next-line no-console
@@ -218,5 +255,7 @@ for (const { name } of SIZES) {
 
 // Machine-readable for the report.
 // eslint-disable-next-line no-console
-console.log(`\n#JSON ${JSON.stringify({ engine: 'node', version: process.version, tableSize: globalThis.hexbench.tableSize, results })}`);
+console.log(
+  `\n#JSON ${JSON.stringify({ engine: 'node', version: process.version, tableSize: globalThis.hexbench.tableSize, results })}`,
+);
 void fmt;
