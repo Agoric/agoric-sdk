@@ -555,13 +555,17 @@ export const processPortfolioEvents = async (
         const cachedBalances = await getCachedBalances(portfolioKey);
         if (!cachedBalances) continue;
 
-        const candidateTargets = computeTargetBalances({
-          brand: depositBrand,
-          currentBalances: cachedBalances,
-          network,
-          targetAllocation,
-          instrumentBlocks,
-        });
+        // XXX We should refactor to avoid adding back unchanged balances.
+        const candidateTargets = {
+          ...cachedBalances,
+          ...computeTargetBalances({
+            brand: depositBrand,
+            currentBalances: cachedBalances,
+            network,
+            targetAllocation,
+            instrumentBlocks,
+          }),
+        };
         const shouldRebalance = checkAutoRebalance(
           targetAllocation,
           cachedBalances,
