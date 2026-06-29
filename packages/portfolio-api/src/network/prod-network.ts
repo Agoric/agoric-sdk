@@ -55,6 +55,12 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       protocol: 'Beefy',
     },
     {
+      pool: 'ERC4626_morphoAlphaUsdcCore_Ethereum',
+      chain: 'Ethereum',
+      protocol: 'ERC4626',
+      blockDepositReason: 'AT_CAPACITY',
+    },
+    {
       pool: 'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
       chain: 'Ethereum',
       protocol: 'ERC4626',
