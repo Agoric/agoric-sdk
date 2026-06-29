@@ -82,7 +82,19 @@ export const makeEvmRpc = (
     timeoutMs = RPC_CALL_TIMEOUT_MS,
     log = (..._args: unknown[]) => {},
   }: { timeoutMs?: number; log?: (...args: unknown[]) => void } = {},
-) => {
+): Pick<
+  WebSocketProvider,
+  | 'getBlockNumber'
+  | 'getNetwork'
+  | 'getTransactionReceipt'
+  | 'send'
+  | 'on'
+  | 'off'
+  | 'websocket'
+> & {
+  getBlock: (n: number) => ReturnType<WebSocketProvider['getBlock']>;
+  getLogs: (filter: Filter) => ReturnType<WebSocketProvider['getLogs']>;
+} => {
   const withTimeout = <T>(label: string, op: () => Promise<T>): Promise<T> =>
     new Promise<T>((resolve, reject) => {
       let settled = false;
