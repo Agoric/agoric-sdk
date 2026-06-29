@@ -285,7 +285,7 @@ export type ReconnectingEvmProvider = {
   getProvider: () => WebSocketProvider;
   /** The current underlying socket. */
   readonly websocket: WebSocketProvider['websocket'];
-  /** Force an immediate reconnect (e.g. an RPC call timed out). */
+  /** Force an immediate reconnect (e.g. because an RPC call timed out). */
   reportUnhealthy: (reason?: string) => void;
   /** Permanently close: stop heartbeats and reconnection. */
   close: () => void;
@@ -299,11 +299,14 @@ export const makeReconnectingEvmProvider = ({
 }: {
   wsUrl: string;
   makeProvider?: (url: string) => WebSocketProvider;
-  /** Yields once per heartbeat interval; a fresh one is taken per socket. */
+  /**
+   * Must yield once per heartbeat interval; a fresh iterator is created for
+   * each successive provider.
+   */
   makeHeartbeat?: () => AsyncIterable<unknown>;
   log?: (...args: unknown[]) => void;
 }): ReconnectingEvmProvider => {
-  let current: WebSocketProvider;
+  let currentProvider: WebSocketProvider;
   // Monotonic id of the live socket. Stale listeners (from a prior socket)
   // compare against it to avoid cycling a provider that is no longer current.
   let generation = 0;
@@ -312,14 +315,12 @@ export const makeReconnectingEvmProvider = ({
   const attach = (provider: WebSocketProvider, gen: number) => {
     const ws = provider.websocket as unknown as WsWebSocket;
 
-    ws.on('close', (code?: number, reason?: unknown) => {
-      if (gen !== generation || closed) return;
-      cycle(gen, `socket close (code=${code}, reason=${reason})`);
-    });
-    ws.on('error', (err: unknown) => {
-      if (gen !== generation || closed) return;
-      cycle(gen, `socket error: ${(err as Error)?.message ?? err}`);
-    });
+    ws.on('close', (code?: number, reason?: unknown) =>
+      cycle(gen, `socket close (code=${code}, reason=${reason})`),
+    );
+    ws.on('error', (err: unknown) =>
+      cycle(gen, `socket error: ${(err as Error)?.message ?? err}`),
+    );
 
     if (!makeHeartbeat) return;
     let gotPong = true;
@@ -328,7 +329,7 @@ export const makeReconnectingEvmProvider = ({
     });
     void (async () => {
       for await (const _ of makeHeartbeat()) {
-        if (gen !== generation || closed) break;
+        if (closed || gen !== generation) break;
         if (ws.readyState !== 1 /* OPEN */) continue;
         if (!gotPong) {
           cycle(gen, 'pong timeout');
@@ -348,10 +349,10 @@ export const makeReconnectingEvmProvider = ({
     // Ignore stale triggers: only the current generation may cycle.
     if (closed || fromGen !== generation) return;
     generation += 1;
-    const old = current;
+    const old = currentProvider;
     log(`cycling WebSocket (gen ${fromGen}→${generation}): ${reason}`);
-    current = makeProvider(wsUrl);
-    attach(current, generation);
+    currentProvider = makeProvider(wsUrl);
+    attach(currentProvider, generation);
     // `terminate` (vs a graceful close) dislodges a zombie/half-open socket and
     // emits `close`, prompting active watchers to re-subscribe on the new one.
     try {
@@ -362,19 +363,19 @@ export const makeReconnectingEvmProvider = ({
     void old.destroy().catch(err => log('error destroying old provider', err));
   };
 
-  current = makeProvider(wsUrl);
-  attach(current, generation);
+  currentProvider = makeProvider(wsUrl);
+  attach(currentProvider, generation);
 
   return {
-    getProvider: () => current,
+    getProvider: () => currentProvider,
     get websocket() {
-      return current.websocket;
+      return currentProvider.websocket;
     },
     reportUnhealthy: (reason = 'reported unhealthy') =>
       cycle(generation, reason),
     close: () => {
       closed = true;
-      void current
+      void currentProvider
         .destroy()
         .catch(err => log('error destroying provider', err));
     },
@@ -384,7 +385,10 @@ export const makeReconnectingEvmProvider = ({
 type CreateContextParams = {
   clusterName: ClusterName;
   alchemyApiKey: string;
-  /** Yields once per heartbeat interval; a fresh one is taken per socket. */
+  /**
+   * Must yield once per heartbeat interval; a fresh iterator is created for
+   * each EVM provider (including providers created by automatic reconnections).
+   */
   makeHeartbeat?: () => AsyncIterable<unknown>;
   log?: (...args: unknown[]) => void;
 };

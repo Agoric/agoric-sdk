@@ -237,11 +237,10 @@ export const getErc20Balances = async (
           Fail`No token address configured for instrument ${q(place)}`;
 
         const chainId: CaipChainId = chainNameToChainIdMap[chainName];
-        const reconnecting = evmProviders[chainId];
-        if (!reconnecting) {
+        const provider = evmProviders[chainId]?.getProvider();
+        if (!provider) {
           throw Error(`No provider found for chain: ${chainId}`);
         }
-        const provider = reconnecting.getProvider();
 
         let balance: bigint;
         if (isBeefyInstrumentId(place)) {
