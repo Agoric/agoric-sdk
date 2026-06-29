@@ -288,20 +288,14 @@ export const makePortfoliosMemory = (options?: {
 
 const fingerprintPortfolioState = (
   status: StatusFor['portfolio'],
-  activeFlowKeys: Set<string>,
   { marshaller }: { marshaller: SigningSmartWalletKit['marshaller'] },
 ): string => {
   // Ignore rebalanceCount, which can increment from one of our submissions even
   // if nothing actually changes.
   const { rebalanceCount: _rebalanceCount, ...statusFields } = status;
-  const sortedFlowKeys = [...activeFlowKeys].sort((a, b) =>
-    naturalCompare(a, b),
-  );
   // Rely on the determinism of @endo/marshal.
-  const fingerprint = marshaller.toCapData(
-    harden({ statusFields, activeFlowKeys: sortedFlowKeys }),
-  );
-  return fingerprint.body;
+  const fingerprint = marshaller.toCapData(harden(statusFields)).body;
+  return fingerprint;
 };
 
 export const processPortfolioEvents = async (
@@ -539,40 +533,28 @@ export const processPortfolioEvents = async (
   const scanAutoRebalances = async () => {
     await null;
     for (const [portfolioKey, portfolioRecord] of portfolioRecordForKey) {
-      const { atBlockHeight, status } = portfolioRecord;
+      const { status } = portfolioRecord;
       const { enabledAutoFeatures, targetAllocation } = status;
       if (!enabledAutoFeatures?.rebalance || !targetAllocation) continue;
       if (Object.keys(status.flowsRunning || {}).length > 0) continue;
 
-      const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-      const readOpts: ReadVstorageSimpleOpts = {
-        minBlockHeight: atBlockHeight,
-        retries: 4,
-      };
       try {
-        // If this (portfolio, flows) data hasn't changed since our last
-        // successful submission, there's no point in trying again.
-        const flowKeysResp = await readStorageMeta(
-          vstorage,
-          `${path}.flows`,
-          'children',
-          readOpts,
-        );
-        const flowKeys = new Set(flowKeysResp.result.children as string[]);
-        const fingerprint = fingerprintPortfolioState(status, flowKeys, {
-          marshaller,
-        });
-        const oldState = memory.snapshots.get(portfolioKey);
-        if (oldState?.txHash && fingerprint === oldState.fingerprint) {
-          if (!oldState.repeats) {
-            console.warn(`⚠️  Ignoring unchanged auto-rebalance ${path}`);
-          }
-          oldState.repeats += 1;
+        // If status hasn't changed since our last successful submission,
+        // there's no point in checking.
+        const fingerprint = fingerprintPortfolioState(status, { marshaller });
+        const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
+          fingerprint,
+          repeats: 0,
+          txHash: null,
+        }));
+        if (oldState.txHash && fingerprint === oldState.fingerprint) {
           continue;
         }
 
+        // Likewise if we don't have new balance information.
         const cachedBalances = await getCachedBalances(portfolioKey);
         if (!cachedBalances) continue;
+
         const candidateTargets = computeTargetBalances({
           brand: depositBrand,
           currentBalances: cachedBalances,
@@ -625,10 +607,9 @@ export const processPortfolioEvents = async (
       mustMatch(status, PortfolioStatusShapeExt, path);
       portfolioRecordForKey.set(portfolioKey, { status, atBlockHeight: eventRecord.blockHeight });
       const flowKeys = new Set(flowKeysResp.result.children);
-      const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
+      const fingerprint = fingerprintPortfolioState(status, { marshaller });
 
-      // If this (portfolio, flows) data hasn't changed since our last
-      // successful submission, there's no point in trying again.
+      // If status hasn't changed, there's no point in trying anything.
       const oldState = memory.snapshots.get(portfolioKey);
       if (oldState && fingerprint === oldState.fingerprint) {
         if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
@@ -641,6 +622,9 @@ export const processPortfolioEvents = async (
       // Responding to later ones is pointless because acceptance of the first
       // submission would invalidate the others as stale, but we'll see them
       // again when such acceptance prompts changes to the portfolio status.
+      // TODO(https://github.com/Agoric/agoric-sdk/pull/12753): Use
+      // StatusFor['portfolio']['flowsRunning'][string]['planResolved'] rather
+      // than scanning vstorage child nodes.
       const flowsEntries = typedEntries(status.flowsRunning || {}).sort(
         ([a], [b]) => naturalCompare(a, b),
       );
