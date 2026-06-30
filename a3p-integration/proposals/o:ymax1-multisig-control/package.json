@@ -1,0 +1,68 @@
+{
+  "name": "o:ymax1-multisig-control",
+  "agoricProposal": {
+    "source": "subdir",
+    "sdk-generate": [
+      "../../portfolio-deploy/src/portfolio-control.build.js submission --contractName=ymax1 --ymaxControlAddress=agoric1c0eq3m8sze9cj8lxr7h66fu3jgqtevqxv8svcm"
+    ],
+    "type": "/agoric.swingset.CoreEvalProposal"
+  },
+  "vendorPackages": [
+    "@agoric/client-utils",
+    "@agoric/cosmic-proto",
+    "@agoric/deploy-script-support",
+    "@agoric/portfolio-api",
+    "@aglocal/portfolio-contract",
+    "@aglocal/portfolio-deploy"
+  ],
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@aglocal/portfolio-deploy": "dev",
+    "@agoric/client-utils": "dev",
+    "@agoric/deploy-script-support": "dev",
+    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
+    "@agoric/synthetic-chain": "^0.7.1",
+    "@endo/init": "^1.1.12",
+    "@endo/promise-kit": "^1.2.1",
+    "ava": "^6.4.1",
+    "execa": "^9.6.0"
+  },
+  "devDependencies": {
+    "ts-blank-space": "^0.7.0"
+  },
+  "resolutions": {
+    "@agoric/client-utils": "portal:./local-packages/client-utils",
+    "@agoric/cosmic-proto": "portal:./local-packages/cosmic-proto",
+    "@agoric/deploy-script-support": "portal:./local-packages/deploy-script-support",
+    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
+    "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",
+    "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy",
+    "@cosmjs/amino": "^0.36.0",
+    "@cosmjs/encoding": "^0.36.0",
+    "@cosmjs/proto-signing": "^0.36.0",
+    "@cosmjs/stargate": "^0.36.0",
+    "@cosmjs/tendermint-rpc": "^0.36.0"
+  },
+  "ava": {
+    "concurrency": 1,
+    "timeout": "2m",
+    "files": [
+      "test/**/*.test.*",
+      "!submission"
+    ],
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
+    ]
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ agops",
+    "make:ledger-multisig": "node scripts/make-ledger-multisig.js"
+  },
+  "packageManager": "yarn@4.12.0"
+}
