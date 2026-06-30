@@ -22,6 +22,7 @@ Core ideas:
   operator improvisation
 - require evidence and gating before promotion into higher-risk
   environments
+- reduce operator work during lower-risk test deployments
 
 ## Non-Goals
 
@@ -74,6 +75,13 @@ When an operator manually starts
   - `ymax1-main`
 - `releaseTag`
 - optional `privateArgsOverrides` JSON string
+- `signingKey`
+  Allowed values:
+  - `ci-secret`
+  - `detached-control`
+  - `detached-grantee`
+- `authzGrantee`
+  Required only when `signingKey == "detached-grantee"`
 - `branch`
   Required only when `target == "ymax0-devnet"`
 - `ymax1Planner`
@@ -101,6 +109,30 @@ Suggested default rule:
 
 - `v0.3.YYMM-betaN`
 
+## Detached Signing
+
+In order to keep keys out of CI for higher-risk deployments, detached signing
+splits upgrade generation from final signing.
+
+Detached signing supports direct control-wallet signing and `authz`-delegated
+signing.
+
+In the workflow UI:
+
+- `signingKey == "ci-secret"` keeps signing in CI with the control mnemonic
+- `signingKey == "detached-control"` generates or consumes detached artifacts
+  for the control address
+- `signingKey == "detached-grantee"` generates or consumes detached `authz`
+  artifacts for the supplied `authzGrantee`
+
+### Authz Delegation
+
+Direct signing uses the control address to sign the generated
+`MsgWalletSpendAction`.
+
+With `authz` delegation, the control address delegates to a grantee, and the
+grantee signs a generated `MsgExec` that wraps the wallet-spend action.
+
 ## Release Model
 
 Each deployment lineage gets one tag and one prerelease GitHub release.
@@ -114,15 +146,22 @@ Primary assets:
 
 - `bundle-ymax0.json`
 - `ymax0-devnet-install.json`
+- `ymax0-devnet-upgrade-pending.json`
 - `ymax0-devnet-upgrade.json`
 - `ymax0-main-install.json`
+- `ymax0-main-upgrade-pending.json`
 - `ymax0-main-upgrade.json`
+- `ymax1-main-upgrade-pending.json`
 - `ymax1-main-upgrade.json`
+- `TARGET-unsigned-tx.json` or `TARGET-authz-unsigned-tx.json`
+- `TARGET-signed-tx.json` or `TARGET-authz-signed-tx.json`
 - `TARGET-upgrade-logs.ndjson`
 - `TARGET-upgrade-logs.norm.txt`
 - `TARGET-privateArgsOverrides-<sha>.json`
 
-## Common Asset Rules
+## Deployment Records as Release Artifacts
+
+Progress of the deployment is captured in release artifacts.
 
 ### Install Record
 
@@ -131,6 +170,17 @@ and deployment target (`target`, `contract`, `network`, `chainId`) to the
 installed bundle and chain transaction (`bundleId`, `installTxHash`), plus the
 chain confirmation details (`installBlockHeight`, `installBlockTime`) and
 whether the installBundle transaction succeeded (`confirmedInBundles`).
+
+### Pending Upgrade Record
+
+The broadcast RPC may report failure even though the upgrade succeeds, so
+pending state must be recorded before trying to prove the result.
+
+The pending upgrade record (`TARGET-upgrade-pending.json`) ties the deployment
+target (`target`, `contract`, `network`, `chainId`) and release lineage
+(`releaseTag`) to the intended upgraded bundle (`bundleId`), the applied
+private-args overrides (`privateArgsOverridesPath`), and the submission attempt
+(`submitTime`, `invocationId`) before final confirmation data is available.
 
 ### Upgrade Record
 
@@ -200,19 +250,59 @@ Otherwise:
 - resolve block height and block time
 - write and upload `TARGET-install.json`
 
-### Upgrade Phase
+### Upgrade Generate
+
+If the upgrade path is detached from signing:
+
+- create any detached signing artifacts needed for the chosen submit path
+- validate that they match the intended target, bundle, and overrides
+
+For detached direct signing, the generated artifacts bind the target, bundle,
+overrides, control-wallet signer data, and exact unsigned transaction bytes
+before any operator signing happens.
+
+For detached `authz` signing, the generated artifacts bind the target, bundle,
+overrides, grantee signer data, and exact unsigned transaction bytes before any
+operator signing happens.
+
+### Upgrade Submit
 
 If `TARGET-upgrade.json` already exists:
 
 - download it
 - validate target, network, chain ID, bundle ID, and post-upgrade proof
-- skip upgrade
+- skip submit and confirm
 
 Otherwise:
 
 - create the active target’s overrides asset
-- run `wallet-admin.ts ... ymax-upgrade.ts`
-- collect the machine-readable result file
+- write `TARGET-upgrade-pending.json` before waiting on flaky confirmation
+- either:
+  - run `wallet-admin.ts ... ymax-upgrade.ts` directly when GitHub holds the
+    active signing key
+  - or broadcast the already-generated operator-signed tx when the signing path
+    is detached
+- stop after submission if confirmation is split to a later job
+
+The split is deliberate. Direct GitHub signing can collapse generation and
+submission into one CI job. Operator signing cannot; signable material must be
+generated first, signed out of band, and only then submitted. For detached
+workflow runs, the first run may stop after generating unsigned artifacts; a
+later rerun continues once the signed tx asset has been uploaded to the
+release.
+
+### Upgrade Confirm
+
+If `TARGET-upgrade.json` already exists:
+
+- download it
+- validate target, network, chain ID, bundle ID, and post-upgrade proof
+- skip confirm
+
+Otherwise:
+
+- read `TARGET-upgrade-pending.json`
+- reconcile chain state from the pending record
 - fetch upgrade slogs
 - upload:
   - `TARGET-upgrade-logs.ndjson`
@@ -221,6 +311,7 @@ Otherwise:
 - extract `incarnationNumber`
 - collect two post-upgrade health blocks
 - write and upload `TARGET-upgrade.json`
+- treat "submitted but could not yet confirm" differently from "did not submit"
 
 ## Target Matrix
 
@@ -239,12 +330,16 @@ Phases:
 - resolve release
 - build bundle if needed
 - install on devnet if needed
-- upgrade `ymax0` on devnet if needed
+- generate detached signing artifacts if needed
+- submit upgrade for `ymax0` on devnet if needed
+- confirm upgrade for `ymax0` on devnet if needed
 
 Key checks:
 
 - local bundle may be used as the install source
 - upgrade uses the devnet `ymax0` control key
+- GitHub signing is acceptable here to reduce operator work
+- detached direct or `authz` operator signing can also be exercised here
 
 ### `ymax0-main`
 
@@ -265,13 +360,16 @@ Phases:
 
 - resolve release and validate prerequisites
 - install on mainnet if needed
-- upgrade `ymax0` on mainnet if needed
+- generate detached signing artifacts if needed
+- submit upgrade for `ymax0` on mainnet if needed
+- confirm upgrade for `ymax0` on mainnet if needed
 
 Key checks:
 
 - `ymax0-devnet-upgrade.json.bundleId` must match the release bundle
 - `ymax0-devnet-install.json.confirmedInBundles == true`
 - approval gate applies before upgrade
+- detached direct or `authz` operator signing is supported here for rehearsal
 
 ### `ymax1-main`
 
@@ -294,7 +392,9 @@ Prerequisites already in the release:
 Phases:
 
 - resolve release and validate prerequisites
-- upgrade `ymax1` on mainnet if needed
+- generate detached signing artifacts if needed
+- submit upgrade for `ymax1` on mainnet if needed
+- confirm upgrade for `ymax1` on mainnet if needed
 
 Key checks:
 
@@ -302,6 +402,7 @@ Key checks:
 - `ymax0-main-install.json.confirmedInBundles == true`
 - protected-environment approval is required before upgrade
 - planner-down is a human attestation, not a machine check
+- operator-held signing is the intended high-safety path here
 
 ## Secrets and Environments
 
@@ -314,6 +415,8 @@ Install:
 Upgrade:
 
 - `YMAX_CONTROL_MNEMONIC`
+- or, for detached flows, signing happens out of band and CI only needs the
+  submission/broadcast capability
 
 The `ymax1-mainnet` environment should hold the `ymax1` control mnemonic and
 be protected by a small allowlist.
@@ -332,6 +435,8 @@ Rules:
 Examples:
 
 - build succeeded, install failed: rerun skips build
-- install succeeded, upgrade failed: rerun skips build and install
+- install succeeded, submit failed before confirmation: rerun skips build and
+  install and should reconcile pending upgrade state before any resubmission
+- submit succeeded, confirm failed: rerun should retry confirmation without
+  assuming a fresh submission is safe
 - earlier valid install or upgrade assets can let the planner skip entire jobs
-
