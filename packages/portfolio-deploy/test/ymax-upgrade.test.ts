@@ -12,9 +12,9 @@ import type {
   SigningStargateClient,
 } from '@cosmjs/stargate';
 import type { EncodeObject } from '@cosmjs/proto-signing';
-import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import { LOCAL_CONFIG } from '../../client-utils/src/network-config.js';
 import { makeSmartWalletKit } from '../../client-utils/src/smart-wallet-kit.js';
+import { makeUpgradeEncodeObject } from '../src/ymax-authz-msgs.ts';
 import { WALLET_KEY } from '../src/ymax-admin-helpers.ts';
 
 const notImplemented = () => {
@@ -100,30 +100,21 @@ test('upgrade tx generation captures exact sign input and broadcast bytes', asyn
   t.is(signCalls.length, 1);
   t.is(broadcastCalls.length, 1);
 
-  const expectedAction = harden({
-    method: 'invokeEntry',
-    message: {
-      id: 'upgrade.nonce-123',
-      targetName: WALLET_KEY,
-      method: 'upgrade',
-      args: [upgradeArgs],
+  const expectedMessage = makeUpgradeEncodeObject(
+    {
+      bundleId: 'b1-abc123',
+      privateArgsOverrides: upgradeArgs.privateArgsOverrides,
     },
-  });
-  const expectedSpendAction = JSON.stringify(
-    walletUtils.marshaller.toCapData(expectedAction),
+    {
+      marshaller: walletUtils.marshaller,
+      controlAddress: CONTROL_ADDRESSES.ymax0.main,
+      invocationId: 'upgrade.nonce-123',
+    },
   );
 
   t.deepEqual(signCalls[0], {
     signerAddress: CONTROL_ADDRESSES.ymax0.main,
-    messages: [
-      {
-        typeUrl: MsgWalletSpendAction.typeUrl,
-        value: {
-          owner: toAccAddress(CONTROL_ADDRESSES.ymax0.main),
-          spendAction: expectedSpendAction,
-        },
-      },
-    ],
+    messages: [expectedMessage],
     fee: {
       amount: [{ denom: 'ubld', amount: '10000' }],
       gas: '400000',

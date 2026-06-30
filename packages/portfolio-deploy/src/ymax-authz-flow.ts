@@ -824,14 +824,18 @@ export const makeUpgradeSigner = ({
         ...overrides,
         postalServiceInstance: postalService,
       });
-      const execMsg = makeUpgradeExecEncodeObject({
-        marshaller: walletKit.marshaller,
-        controlAddress,
-        grantee,
-        bundleId,
-        invocationId,
-        privateArgsOverrides,
-      });
+      const execMsg = makeUpgradeExecEncodeObject(
+        {
+          bundleId,
+          privateArgsOverrides,
+        },
+        {
+          marshaller: walletKit.marshaller,
+          controlAddress,
+          grantee,
+          invocationId,
+        },
+      );
       const { accountNumber, sequence } =
         await queryClient.getSequence(grantee);
       const signerData: SignerData = {
