@@ -1,3 +1,5 @@
+name: Post-merge publishes/checks
+
 # Run after merge to trunk
 # Note that this relies on branch protection having:
 #  Require branches to be up to date before merging
