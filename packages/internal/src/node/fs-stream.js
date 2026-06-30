@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
 
 /** @typedef {ReadStream | WriteStream | Socket} StreamLike */
 /** @typedef {'drain' | 'ready'} EventName */
+/** @typedef {boolean} WriteBufferIsFull */
 
 /**
  * @param {StreamLike} stream
@@ -134,7 +135,7 @@ const onceWithError = makeMemoizedOnceWithError(subscribeOnceWithError);
 /**
  * @param {WriteStream | Socket} stream
  * @param {string | Uint8Array} data
- * @returns {Promise<boolean>} whether caller must await drain
+ * @returns {Promise<WriteBufferIsFull>} whether caller must await drain
  */
 const writeChunk = (stream, data) =>
   new Promise((resolve, reject) => {
@@ -173,11 +174,11 @@ export const makeFsStreamWriter = async filePath => {
       ? undefined
       : promisify(/** @type {WriteStream} */ (stream).close.bind(stream));
 
-  /** @type {Promise<boolean>} */
-  let flushed = Promise.resolve();
+  /** @type {Promise<WriteBufferIsFull>} */
+  let flushed = Promise.resolve(false);
   let closed = false;
 
-  /** @param {Promise<boolean>} p */
+  /** @param {Promise<WriteBufferIsFull>} p */
   const updateFlushed = p => {
     flushed = flushed.then(
       () => p,
