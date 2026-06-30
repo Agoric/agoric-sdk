@@ -1611,6 +1611,207 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
   t.falsy(assets?.has('ymax0-main-upgrade.json'));
 });
 
+test('detached direct-sign path generates and broadcasts for ymax0-main without authz', async t => {
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+  const broadcastCalls: Uint8Array[] = [];
+  const { execFile: baseExecFile } = ctx;
+  const graph = makeGraph(
+    'ymax0-main',
+    releaseTag,
+    undefined,
+    '',
+    '{"oracle":"value"}',
+    true,
+    {
+      deployPackage: {
+        distDir: ctx.agoricSdk.join('packages/portfolio-deploy/dist'),
+        bundleFile: ctx.agoricSdk.join(
+          'packages/portfolio-deploy/dist/bundle-ymax0.json',
+        ),
+      },
+      release: null,
+      installBundle: null,
+      upgradeLogs: null,
+      walletAdmin: null,
+      connectTargetRpc: async () => assert.fail('mock'),
+      makeUpgradeSigner: async () => assert.fail('mock'),
+      makeTxApiForTarget: async () => assert.fail('mock'),
+      makeVstorageApiForTarget: async () => assert.fail('mock'),
+      setTimeout: () => assert.fail('mock'),
+      now: () => Date.parse('2026-04-16T10:00:00.000Z'),
+      grantee: undefined,
+    } as unknown as Parameters<typeof makeGraph>[6],
+  );
+  t.snapshot(
+    renderGraphTree(graph.nodes, 'ymax0-main-upgrade.json'),
+    'ymax0-main direct-sign confirm graph',
+  );
+
+  const execFile = async (
+    cmd: string,
+    args: string[],
+    opts?: Parameters<typeof baseExecFile>[2],
+    ...rest: unknown[]
+  ) => {
+    const logResult = fakeUpgradeLogs(
+      ctx.execs,
+      ctx.normalize,
+      cmd,
+      args,
+      opts,
+      {
+        contract: 'ymax0',
+        bundleId: 'b1-abc123',
+        incarnationNumber: examples.upgrade.main0.incarnationNumber,
+      },
+    );
+    if (logResult) {
+      return logResult;
+    }
+    return baseExecFile(cmd, args, opts, ...rest);
+  };
+
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+  });
+
+  const connectRpc = (async (_rpcAddr: string) => ({
+    getSequence: async () => ({
+      accountNumber: 12,
+      sequence: 34,
+    }),
+    broadcastTx: async (txBytes: Uint8Array) => {
+      broadcastCalls.push(txBytes);
+      return {
+        transactionHash: 'DIRECTSUBMIT123',
+        height: 91,
+      };
+    },
+  })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
+  const makeWalletKit = async () =>
+    ({
+      marshaller: {
+        toCapData: (specimen: unknown) => ({
+          body: `#${JSON.stringify(specimen)}`,
+          slots: [],
+        }),
+      },
+      agoricNames: {
+        instance: {
+          postalService: 'board0371',
+        },
+      },
+    }) as unknown as Awaited<
+      ReturnType<typeof import('@agoric/client-utils').makeSmartWalletKit>
+    >;
+
+  await runPhase(
+    {
+      agoricSdk: ctx.agoricSdk,
+      execFile,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      stdout: ctx.stdout,
+    },
+    'phase-upgrade-generate',
+    { target: 'ymax0-main', tag: releaseTag },
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE_ADDRESS: undefined,
+      PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+    },
+  );
+
+  const assets = ctx.releases.get(releaseTag)?.assets;
+  t.falsy(assets?.get('ymax0-main-upgrade-pending.json'));
+  t.truthy(assets?.get('ymax0-main-unsigned-tx.json'));
+  t.falsy(assets?.get('ymax0-main-authz-unsigned-tx.json'));
+
+  const unsignedTx = JSON.parse(
+    assets?.get('ymax0-main-unsigned-tx.json') || 'null',
+  );
+  t.is(
+    unsignedTx.body.messages[0]['@type'],
+    '/agoric.swingset.MsgWalletSpendAction',
+  );
+  t.truthy(unsignedTx.body.messages[0].owner);
+  t.like(JSON.parse(ctx.stdoutChunks[0]), {
+    target: 'ymax0-main',
+    phase: 'upgrade-generate',
+    record: 'ymax0-main-unsigned-tx.json',
+    detail: {
+      unsignedTxAssetName: 'ymax0-main-unsigned-tx.json',
+      pending: {
+        bundleId: 'b1-abc123',
+      },
+    },
+  });
+  clearTrace(ctx);
+
+  const signedTx = {
+    ...unsignedTx,
+    auth_info: {
+      ...unsignedTx.auth_info,
+      signer_infos: [
+        {
+          ...unsignedTx.auth_info.signer_infos[0],
+          public_key: {
+            '@type': '/cosmos.crypto.secp256k1.PubKey',
+            key: Buffer.from([2, 3, 4]).toString('base64'),
+          },
+        },
+      ],
+    },
+    signatures: [Buffer.from([7, 8, 9]).toString('base64')],
+  };
+  assets?.set(
+    'ymax0-main-signed-tx.json',
+    `${JSON.stringify(signedTx, null, 2)}\n`,
+  );
+
+  await runPhase(
+    {
+      agoricSdk: ctx.agoricSdk,
+      execFile,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      stdout: ctx.stdout,
+    },
+    'phase-upgrade-submit',
+    { target: 'ymax0-main', tag: releaseTag },
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE_ADDRESS: undefined,
+      PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+    },
+  );
+
+  t.is(broadcastCalls.length, 1);
+  const submitReport = JSON.parse(ctx.stdoutChunks[0]);
+  t.is(submitReport.target, 'ymax0-main');
+  t.is(submitReport.phase, 'upgrade-submit');
+  t.is(submitReport.record, 'ymax0-main-upgrade-pending.json');
+  t.is(submitReport.detail.bundleId, 'b1-abc123');
+  t.truthy(assets?.get('ymax0-main-upgrade-pending.json'));
+  t.falsy(assets?.has('ymax0-main-upgrade-submit.json'));
+  t.falsy(assets?.has('ymax0-main-upgrade.json'));
+  t.false(
+    ctx.execs.some(
+      event =>
+        typeof event.command === 'string' &&
+        event.command.includes('/wallet-admin.ts'),
+    ),
+  );
+});
+
 test('operator must remove upgrade artifact to change privateArgsOverrides', async t => {
   const {
     agoricSdk,

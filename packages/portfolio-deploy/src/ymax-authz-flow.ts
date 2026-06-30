@@ -35,6 +35,7 @@ import { parseArgs } from 'node:util';
 import { netOfConfig } from './ymax-admin-helpers.ts';
 import {
   makeGrantEncodeObject,
+  makeUpgradeEncodeObject,
   makeUpgradeExecEncodeObject,
 } from './ymax-authz-msgs.ts';
 
@@ -114,7 +115,7 @@ export type UnsignedUpgradeArtifact = {
   kind: typeof unsignedUpgradeKind;
   contract: typeof defaultContract;
   controlAddress: string;
-  grantee: string;
+  grantee?: string;
   bundleId: string;
   invocationId: string;
   chainId: string;
@@ -132,7 +133,7 @@ export type SignedUpgradeArtifact = {
   kind: typeof signedUpgradeKind;
   contract: typeof defaultContract;
   controlAddress: string;
-  grantee: string;
+  grantee?: string;
   bundleId: string;
   invocationId: string;
   chainId: string;
@@ -529,7 +530,7 @@ export const makeUnsignedUpgradeArtifact = ({
 }: {
   contract: typeof defaultContract;
   controlAddress: string;
-  grantee: string;
+  grantee?: string;
   bundleId: string;
   invocationId: string;
   chainId: string;
@@ -726,7 +727,7 @@ export const makeSignedUpgradeArtifact = ({
     kind: signedUpgradeKind,
     contract: request.contract,
     controlAddress: request.controlAddress,
-    grantee: request.grantee,
+    ...(request.grantee ? { grantee: request.grantee } : {}),
     bundleId: request.bundleId,
     invocationId: request.invocationId,
     chainId: request.chainId,
@@ -797,7 +798,7 @@ export const makeUpgradeSigner = ({
   clock,
 }: {
   networkConfig: NetworkConfigShape;
-  grantee: string;
+  grantee?: string;
   queryClient: Pick<RpcClient, 'getSequence'>;
   walletKit: WalletKitShape;
   clock: Clock;
@@ -824,27 +825,40 @@ export const makeUpgradeSigner = ({
         ...overrides,
         postalServiceInstance: postalService,
       });
-      const execMsg = makeUpgradeExecEncodeObject(
-        {
-          bundleId,
-          privateArgsOverrides,
-        },
-        {
-          marshaller: walletKit.marshaller,
-          controlAddress,
-          grantee,
-          invocationId,
-        },
-      );
+      const signerAddress = grantee || controlAddress;
+      const txMsg = grantee
+        ? makeUpgradeExecEncodeObject(
+            {
+              bundleId,
+              privateArgsOverrides,
+            },
+            {
+              marshaller: walletKit.marshaller,
+              controlAddress,
+              grantee,
+              invocationId,
+            },
+          )
+        : makeUpgradeEncodeObject(
+            {
+              bundleId,
+              privateArgsOverrides,
+            },
+            {
+              marshaller: walletKit.marshaller,
+              controlAddress,
+              invocationId,
+            },
+          );
       const { accountNumber, sequence } =
-        await queryClient.getSequence(grantee);
+        await queryClient.getSequence(signerAddress);
       const signerData: SignerData = {
         accountNumber,
         sequence,
         chainId: networkConfig.chainName,
       };
       const bodyBytes = registry.encodeTxBody({
-        messages: [execMsg],
+        messages: [txMsg],
         memo,
       });
       const authInfoBytes = makeAuthInfoBytes(
@@ -857,7 +871,7 @@ export const makeUpgradeSigner = ({
       return makeUnsignedUpgradeArtifact({
         contract: defaultContract,
         controlAddress,
-        grantee,
+        ...(grantee ? { grantee } : {}),
         bundleId,
         invocationId,
         chainId: networkConfig.chainName,
@@ -923,7 +937,7 @@ export const makeBroadcastArtifactFromFiles = async ({
       kind: signedUpgradeKind,
       contract: parsed.contract,
       controlAddress: parsed.controlAddress,
-      grantee: parsed.grantee,
+      ...(parsed.grantee ? { grantee: parsed.grantee } : {}),
       bundleId: parsed.bundleId,
       invocationId: parsed.invocationId,
       chainId: parsed.chainId,

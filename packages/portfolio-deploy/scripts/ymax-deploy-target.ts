@@ -994,14 +994,9 @@ const generateAuthzOperatorUpgrade = async (
     makeUpgradeSigner: (upgradeTarget: Target) => Promise<UpgradeSigner>;
   },
 ) => {
-  expectMissing(
-    cause,
-    `missing required release asset ${upgradeTarget}-authz-unsigned-tx.json`,
-  );
+  expectMissing(cause, `missing required release asset ${unsignedTxAssetName}`);
   if (target !== upgradeTarget) {
-    throw Error(
-      `missing required release asset ${upgradeTarget}-authz-unsigned-tx.json`,
-    );
+    throw Error(`missing required release asset ${unsignedTxAssetName}`);
   }
   const submitTime = new Date(now()).toISOString();
   const invocationId = makeInvocationId(upgradeTarget, submitTime);
@@ -1039,6 +1034,16 @@ const generateAuthzOperatorUpgrade = async (
   };
 };
 
+const detachedUnsignedTxAssetName = (
+  target: Target,
+  grantee: string | undefined,
+) => `${target}${grantee ? '-authz' : ''}-unsigned-tx.json`;
+
+const detachedSignedTxAssetName = (
+  target: Target,
+  grantee: string | undefined,
+) => `${target}${grantee ? '-authz' : ''}-signed-tx.json`;
+
 const submitAuthzOperatorUpgrade = async (
   upgradeTarget: Target,
   txBytes: Uint8Array,
@@ -1051,12 +1056,11 @@ const submitAuthzOperatorUpgrade = async (
   return (await connectRpc(upgradeTarget)).broadcastTx(txBytes);
 };
 
-const findUnsignedAuthzTx = async (
-  target: Target,
+const findUnsignedTx = async (
+  name: string,
   asset: AssetRd,
   release: ReleaseInfo,
 ) => {
-  const name = `${target}-authz-unsigned-tx.json`;
   if (!hasAsset(release, name)) {
     throw Error(`missing required release asset ${name}`);
   }
@@ -1064,12 +1068,11 @@ const findUnsignedAuthzTx = async (
   return { unsignedTxAssetName: name };
 };
 
-const findSignedAuthzTx = async (
-  target: Target,
+const findSignedTx = async (
+  name: string,
   asset: AssetRd,
   release: ReleaseInfo,
 ) => {
-  const name = `${target}-authz-signed-tx.json`;
   if (!hasAsset(release, name)) {
     throw Error(`missing required release asset ${name}`);
   }
@@ -1275,6 +1278,15 @@ export const makeGraph = (
   const cache = new Map<string, Promise<unknown>>();
 
   const devBranch = branch === 'main' ? undefined : branch;
+  const detachedTxDeps = (upgradeTarget: Target): Record<string, string> => {
+    if (!detached) {
+      return {};
+    }
+    return {
+      unsignedTx: detachedUnsignedTxAssetName(upgradeTarget, grantee),
+      signedTx: detachedSignedTxAssetName(upgradeTarget, grantee),
+    };
+  };
 
   const tools = {
     releaseTag: tag,
@@ -1421,12 +1433,7 @@ export const makeGraph = (
       deps: {
         release: 'release',
         install: 'ymax0-devnet-install.json',
-        ...(detached
-          ? {
-              unsignedTx: 'ymax0-devnet-authz-unsigned-tx.json',
-              signedTx: 'ymax0-devnet-authz-signed-tx.json',
-            }
-          : {}),
+        ...detachedTxDeps('ymax0-devnet'),
       },
       find: (asset, { release: relInfo, install }) =>
         findPendingUpgrade(
@@ -1506,12 +1513,7 @@ export const makeGraph = (
         devnetInstall: 'ymax0-devnet-install.json',
         devnetUpgrade: 'ymax0-devnet-upgrade.json',
         install: 'ymax0-main-install.json',
-        ...(detached
-          ? {
-              unsignedTx: 'ymax0-main-authz-unsigned-tx.json',
-              signedTx: 'ymax0-main-authz-signed-tx.json',
-            }
-          : {}),
+        ...detachedTxDeps('ymax0-main'),
       },
       find: (asset, { release: relInfo, install }) =>
         findPendingUpgrade(
@@ -1589,12 +1591,7 @@ export const makeGraph = (
         release: 'release',
         install: 'ymax0-main-install.json',
         priorUpgrade: 'ymax0-main-upgrade.json',
-        ...(detached
-          ? {
-              unsignedTx: 'ymax1-main-authz-unsigned-tx.json',
-              signedTx: 'ymax1-main-authz-signed-tx.json',
-            }
-          : {}),
+        ...detachedTxDeps('ymax1-main'),
       },
       find: (asset, { release: relInfo, install }) =>
         findPendingUpgrade(
@@ -1640,7 +1637,11 @@ export const makeGraph = (
         install: 'ymax0-devnet-install.json',
       },
       find: (asset, { release: relInfo }) =>
-        findUnsignedAuthzTx('ymax0-devnet', asset, relInfo as ReleaseInfo),
+        findUnsignedTx(
+          'ymax0-devnet-authz-unsigned-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
           throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
@@ -1672,7 +1673,11 @@ export const makeGraph = (
         release: 'release',
       },
       find: (asset, { release: relInfo }) =>
-        findSignedAuthzTx('ymax0-devnet', asset, relInfo as ReleaseInfo),
+        findSignedTx(
+          'ymax0-devnet-authz-signed-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
       create: async () => {
         throw Error(
           'missing required release asset ymax0-devnet-authz-signed-tx.json',
@@ -1687,7 +1692,11 @@ export const makeGraph = (
         install: 'ymax0-main-install.json',
       },
       find: (asset, { release: relInfo }) =>
-        findUnsignedAuthzTx('ymax0-main', asset, relInfo as ReleaseInfo),
+        findUnsignedTx(
+          'ymax0-main-authz-unsigned-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
           throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
@@ -1719,7 +1728,11 @@ export const makeGraph = (
         release: 'release',
       },
       find: (asset, { release: relInfo }) =>
-        findSignedAuthzTx('ymax0-main', asset, relInfo as ReleaseInfo),
+        findSignedTx(
+          'ymax0-main-authz-signed-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
       create: async () => {
         throw Error(
           'missing required release asset ymax0-main-authz-signed-tx.json',
@@ -1733,7 +1746,11 @@ export const makeGraph = (
         priorUpgrade: 'ymax0-main-upgrade.json',
       },
       find: (asset, { release: relInfo }) =>
-        findUnsignedAuthzTx('ymax1-main', asset, relInfo as ReleaseInfo),
+        findUnsignedTx(
+          'ymax1-main-authz-unsigned-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
           throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
@@ -1765,11 +1782,164 @@ export const makeGraph = (
         release: 'release',
       },
       find: (asset, { release: relInfo }) =>
-        findSignedAuthzTx('ymax1-main', asset, relInfo as ReleaseInfo),
+        findSignedTx(
+          'ymax1-main-authz-signed-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
       create: async () => {
         throw Error(
           'missing required release asset ymax1-main-authz-signed-tx.json',
         );
+      },
+    },
+    'ymax0-devnet-unsigned-tx.json': {
+      deps: {
+        release: 'release',
+        install: 'ymax0-devnet-install.json',
+      },
+      find: (asset, { release: relInfo }) =>
+        findUnsignedTx(
+          'ymax0-devnet-unsigned-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
+      create: async ({ install }, asset, cause) => {
+        const overrides = await createOverrides('ymax0-devnet', privateArgs, {
+          distDir: deployPackage.distDir,
+          release,
+        });
+        return generateAuthzOperatorUpgrade(
+          'ymax0-devnet',
+          install as InstallRecord,
+          {
+            overrides,
+            unsignedTxAsset: asset!,
+            unsignedTxAssetName: 'ymax0-devnet-unsigned-tx.json',
+          },
+          {
+            cause,
+            target,
+            releaseTag: tag,
+            now,
+            makeUpgradeSigner,
+          },
+        );
+      },
+    },
+    'ymax0-devnet-signed-tx.json': {
+      deps: {
+        release: 'release',
+      },
+      find: (asset, { release: relInfo }) =>
+        findSignedTx(
+          'ymax0-devnet-signed-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
+      create: async () => {
+        throw Error(
+          'missing required release asset ymax0-devnet-signed-tx.json',
+        );
+      },
+    },
+    'ymax0-main-unsigned-tx.json': {
+      deps: {
+        release: 'release',
+        devnetInstall: 'ymax0-devnet-install.json',
+        devnetUpgrade: 'ymax0-devnet-upgrade.json',
+        install: 'ymax0-main-install.json',
+      },
+      find: (asset, { release: relInfo }) =>
+        findUnsignedTx(
+          'ymax0-main-unsigned-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
+      create: async ({ install }, asset, cause) => {
+        const overrides = await createOverrides('ymax0-main', privateArgs, {
+          distDir: deployPackage.distDir,
+          release,
+        });
+        return generateAuthzOperatorUpgrade(
+          'ymax0-main',
+          install as InstallRecord,
+          {
+            overrides,
+            unsignedTxAsset: asset!,
+            unsignedTxAssetName: 'ymax0-main-unsigned-tx.json',
+          },
+          {
+            cause,
+            target,
+            releaseTag: tag,
+            now,
+            makeUpgradeSigner,
+          },
+        );
+      },
+    },
+    'ymax0-main-signed-tx.json': {
+      deps: {
+        release: 'release',
+      },
+      find: (asset, { release: relInfo }) =>
+        findSignedTx(
+          'ymax0-main-signed-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
+      create: async () => {
+        throw Error('missing required release asset ymax0-main-signed-tx.json');
+      },
+    },
+    'ymax1-main-unsigned-tx.json': {
+      deps: {
+        release: 'release',
+        install: 'ymax0-main-install.json',
+        priorUpgrade: 'ymax0-main-upgrade.json',
+      },
+      find: (asset, { release: relInfo }) =>
+        findUnsignedTx(
+          'ymax1-main-unsigned-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
+      create: async ({ install }, asset, cause) => {
+        const overrides = await createOverrides('ymax1-main', privateArgs, {
+          distDir: deployPackage.distDir,
+          release,
+        });
+        return generateAuthzOperatorUpgrade(
+          'ymax1-main',
+          install as InstallRecord,
+          {
+            overrides,
+            unsignedTxAsset: asset!,
+            unsignedTxAssetName: 'ymax1-main-unsigned-tx.json',
+          },
+          {
+            cause,
+            target,
+            releaseTag: tag,
+            now,
+            makeUpgradeSigner,
+          },
+        );
+      },
+    },
+    'ymax1-main-signed-tx.json': {
+      deps: {
+        release: 'release',
+      },
+      find: (asset, { release: relInfo }) =>
+        findSignedTx(
+          'ymax1-main-signed-tx.json',
+          asset,
+          relInfo as ReleaseInfo,
+        ),
+      create: async () => {
+        throw Error('missing required release asset ymax1-main-signed-tx.json');
       },
     },
   };
@@ -1909,9 +2079,6 @@ export const main = async (
     return makeAgoricVstorageApi(apiAddrs, { fetchFn, setTimeout });
   };
   const makeUpgradeSigner = async (upgradeTarget: Target) => {
-    if (!GRANTEE_ADDRESS) {
-      throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
-    }
     const { network } = getTargetInfo(upgradeTarget);
     const config = await fetchNetworkConfig(network, { fetch });
     const rpcAddr = config.rpcAddrs?.[0];
@@ -1933,7 +2100,9 @@ export const main = async (
       clock: () => new Date(now()),
     });
   };
-  const detached = subcommand === 'phase-upgrade-submit' ? !MNEMONIC : false;
+  const detached =
+    subcommand === 'phase-upgrade-generate' ||
+    (subcommand === 'phase-upgrade-submit' && !MNEMONIC);
   const submitWalletAdmin =
     subcommand === 'phase-upgrade-submit'
       ? walletAdmin
@@ -1975,7 +2144,7 @@ export const main = async (
       break;
     }
     case 'phase-upgrade-generate': {
-      const record = `${target}-authz-unsigned-tx.json`;
+      const record = detachedUnsignedTxAssetName(target, GRANTEE_ADDRESS);
       const generated = await graph.ensureNode<object>(record);
       writeJson(stdout, {
         target,
