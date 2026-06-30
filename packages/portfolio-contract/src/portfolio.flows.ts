@@ -13,6 +13,8 @@ import {
   fromTypedEntries,
   makeTracer,
   objectMap,
+  partialMap,
+  typedEntries,
   type TraceLogger,
 } from '@agoric/internal';
 import type {
@@ -1378,14 +1380,13 @@ const stepFlow = async (
     }
   }
 
-  const acctsDone = keys(kit.reader.accountIdByChain());
+  const acctsDone = new Set(keys(kit.reader.accountIdByChain()));
   const acctsToDo = [
     ...new Set(
-      (
-        moves
-          .map(({ dest }) => getChainNameOfPlaceRef(dest))
-          .filter(Boolean) as string[]
-      ).filter(ch => !acctsDone.includes(ch)),
+      partialMap(moves, ({ dest }) => {
+        const chainName = getChainNameOfPlaceRef(dest);
+        return chainName && !acctsDone.has(chainName) ? chainName : undefined;
+      }),
     ),
   ];
 
@@ -1453,53 +1454,51 @@ const stepFlow = async (
     const evmChains = keys(AxelarChain) as unknown[];
 
     const seen = new Set<AxelarChain>();
-    const chainToAcctStatusP: [AxelarChain, Promise<GMPAccountStatus>][] =
-      moves.flatMap((move, moveIndex) =>
-        [move.src, move.dest].flatMap((ref, isDest) => {
-          const maybeChain = getChainNameOfPlaceRef(ref);
-          if (!evmChains.includes(maybeChain)) return [];
-          const chain = maybeChain as AxelarChain;
-          if (seen.has(chain)) return [];
-          seen.add(chain);
+    const chainToAcctStatusP: [AxelarChain, Promise<GMPAccountStatus>][] = [];
+    for (const [moveIndex, move] of moves.entries()) {
+      const step = moveIndex + 1;
+      const phased = { makeSrcAccount: move.src, makeDestAccount: move.dest };
+      for (const [phase, ref] of typedEntries(phased)) {
+        const maybeChain = getChainNameOfPlaceRef(ref);
+        if (!evmChains.includes(maybeChain)) continue;
+        const chain = maybeChain as AxelarChain;
+        if (seen.has(chain)) continue;
+        seen.add(chain);
 
-          const gmp = {
-            ...gmpCommon,
-            fee: move.fee?.value || 0n,
-          };
+        const gmp = {
+          ...gmpCommon,
+          fee: move.fee?.value || 0n,
+        };
 
-          const progressTracker = features?.useProgressTracker
-            ? agoric.lca.makeProgressTracker()
-            : undefined;
-          const acctP = forChain(chain, async () => {
-            await null;
-            const optsArgs = progressTracker ? [{ progressTracker }] : [];
-            void publishProvideAccountProgress(
-              progressTracker,
-              moveIndex + 1,
-              isDest ? 'makeDestAccount' : 'makeSrcAccount',
-            );
-            const acctInfo = await provideEVMAccount(
-              chain,
-              infoFor[chain],
-              gmp,
-              agoric.lca,
-              ctx,
-              kit,
-              { orchOpts: optsArgs[0] },
-            );
+        const progressTracker = features?.useProgressTracker
+          ? agoric.lca.makeProgressTracker()
+          : undefined;
+        const acctP = forChain(chain, async () => {
+          await null;
+          const optsArgs = progressTracker ? [{ progressTracker }] : [];
+          void publishProvideAccountProgress(progressTracker, step, phase);
+          const acctInfo = await provideEVMAccount(
+            chain,
+            infoFor[chain],
+            gmp,
+            agoric.lca,
+            ctx,
+            kit,
+            { orchOpts: optsArgs[0] },
+          );
 
-            // Finalize only after the account has settled.
-            progressTracker &&
-              acctInfo.ready
-                .finally(() => progressTracker.finish())
-                .catch(() => {});
+          // Finalize only after the account has settled.
+          progressTracker &&
+            acctInfo.ready
+              .finally(() => progressTracker.finish())
+              .catch(() => {});
 
-            return acctInfo;
-          });
+          return acctInfo;
+        });
 
-          return [asEntry(chain, acctP)];
-        }),
-      );
+        chainToAcctStatusP.push(asEntry(chain, acctP));
+      }
+    }
     const chainToAcctStatus = await Promise.all(
       chainToAcctStatusP.map(async ([chain, acctP]) => {
         const acct = await acctP;
