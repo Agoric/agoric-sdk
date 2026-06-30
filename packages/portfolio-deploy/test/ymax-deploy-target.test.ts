@@ -1539,6 +1539,8 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
     phase: 'upgrade-generate',
     record: 'ymax0-main-authz-unsigned-tx.json',
     detail: {
+      agdSignCommand:
+        "agd tx sign 'ymax0-main-authz-unsigned-tx.json' --offline --sign-mode direct --from 'agoric1operator0000000000000000000000000000000' --account-number 12 --sequence 34 --chain-id 'agoric-3' --overwrite --output-document 'ymax0-main-authz-signed-tx.json'",
       unsignedTxAssetName: 'ymax0-main-authz-unsigned-tx.json',
       pending: {
         bundleId: 'b1-abc123',
@@ -1746,6 +1748,8 @@ test('detached direct-sign path generates and broadcasts for ymax0-main without 
     phase: 'upgrade-generate',
     record: 'ymax0-main-unsigned-tx.json',
     detail: {
+      agdSignCommand:
+        "agd tx sign 'ymax0-main-unsigned-tx.json' --offline --sign-mode direct --from 'agoric1e80twfutmrm3wrk3fysjcnef4j82mq8dn6nmcq' --account-number 12 --sequence 34 --chain-id 'agoric-3' --overwrite --output-document 'ymax0-main-signed-tx.json'",
       unsignedTxAssetName: 'ymax0-main-unsigned-tx.json',
       pending: {
         bundleId: 'b1-abc123',

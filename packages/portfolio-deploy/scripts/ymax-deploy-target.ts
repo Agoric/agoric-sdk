@@ -30,6 +30,7 @@ import {
   makeAgdUnsignedTx,
   makeUpgradeSigner as buildUpgradeSigner,
   parseSignedTxBytes,
+  type UnsignedUpgradeArtifact,
 } from '../src/ymax-authz-flow.ts';
 import {
   bundleIdFromBundleRecord,
@@ -971,6 +972,37 @@ const preparePendingUpgrade = async (
   return { pending, overrides };
 };
 
+const shQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
+
+const formatAgdSignCommand = ({
+  request,
+  unsignedTxAssetName,
+  signedTxAssetName,
+}: {
+  request: UnsignedUpgradeArtifact;
+  unsignedTxAssetName: string;
+  signedTxAssetName: string;
+}) => {
+  const signerAddress = request.grantee || request.controlAddress;
+  return [
+    'agd tx sign',
+    shQuote(unsignedTxAssetName),
+    '--offline',
+    '--sign-mode direct',
+    '--from',
+    shQuote(signerAddress),
+    '--account-number',
+    String(request.signerData.accountNumber),
+    '--sequence',
+    String(request.signerData.sequence),
+    '--chain-id',
+    shQuote(request.signerData.chainId),
+    '--overwrite',
+    '--output-document',
+    shQuote(signedTxAssetName),
+  ].join(' ');
+};
+
 const generateAuthzOperatorUpgrade = async (
   upgradeTarget: Target,
   install: InstallRecord,
@@ -1029,6 +1061,14 @@ const generateAuthzOperatorUpgrade = async (
   );
 
   return {
+    agdSignCommand: formatAgdSignCommand({
+      request,
+      unsignedTxAssetName,
+      signedTxAssetName: detachedSignedTxAssetName(
+        upgradeTarget,
+        request.grantee,
+      ),
+    }),
     pending,
     unsignedTxAssetName,
   };

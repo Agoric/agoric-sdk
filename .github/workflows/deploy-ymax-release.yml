@@ -203,10 +203,11 @@ jobs:
               ;;
             detached-control|detached-grantee)
               export GRANTEE_ADDRESS="$AUTHZ_GRANTEE"
-              packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+              generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
                 phase-upgrade-generate \
                 --target "$TARGET" \
-                --tag "$RELEASE_TAG"
+                --tag "$RELEASE_TAG")"
+              printf '%s\n' "$generate_output"
 
               if [ "$SIGNING_KEY" = 'detached-grantee' ]; then
                 signed_asset="${TARGET}-authz-signed-tx.json"
@@ -222,6 +223,7 @@ jobs:
                 upgrade_submitted=true
               else
                 echo "Detached signing pending: generated or validated unsigned tx; upload $signed_asset to the release and rerun this workflow."
+                jq -r '.detail.agdSignCommand' <<<"$generate_output"
               fi
               ;;
           esac
