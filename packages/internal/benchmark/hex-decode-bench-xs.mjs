@@ -10,21 +10,48 @@
  * a contract pays, so it is the number that decides whether the 484-entry Map
  * accelerator earns its keep.
  *
- * The worker path defaults to the cached agoric prebuilt; override with
- * XSNAP_WORKER. NOTE: many sandboxes mount /tmp noexec, so copy the worker to
- * an exec-capable path (for example under ~/.cache) before pointing this here.
+ * The worker path is resolved portably through `@agoric/xsnap`: we resolve the
+ * package via `import.meta.resolve` and then point at the prebuilt
+ * `xsnap-worker` in its dist layout (the same location `install-prebuilt`
+ * populates), so the benchmark finds the worker wherever `@agoric/xsnap` is
+ * installed in the workspace. Set XSNAP_WORKER to override with an explicit
+ * path. NOTE: many sandboxes mount /tmp noexec, so an overriding XSNAP_WORKER
+ * should point at an exec-capable location (for example under ~/.cache).
  *
- * Run: XSNAP_WORKER=/path/to/xsnap-worker \
+ * We resolve only the package's path (not its module graph) to avoid pulling
+ * the SES-dependent @agoric/xsnap runtime into this plain benchmark process.
+ *
+ * Run: node packages/internal/benchmark/hex-decode-bench-xs.mjs
+ *   or: XSNAP_WORKER=/path/to/xsnap-worker \
  *        node packages/internal/benchmark/hex-decode-bench-xs.mjs
  */
 
 import { spawn } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { type as osType } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
-const WORKER =
-  process.env.XSNAP_WORKER ||
-  '/home/kris/.cache/agoric-sdk/xsnap/prebuilt/0.14.2/bundle/dist/linux-x64/release/xsnap-worker';
+// Platform directory under @agoric/xsnap's dist layout (matches the package's
+// own resolveXsnapWorkerPath mapping).
+const XSNAP_PLATFORM = { Linux: 'lin', Darwin: 'mac' }[osType()];
+if (XSNAP_PLATFORM === undefined) {
+  throw Error(`xsnap does not support platform ${osType()}`);
+}
+
+const resolveWorkerPath = () => {
+  if (process.env.XSNAP_WORKER) return process.env.XSNAP_WORKER;
+  // import.meta.resolve gives the URL of @agoric/xsnap's package.json; the
+  // prebuilt worker lives at xsnap-native/.../xsnap-worker beside it.
+  const pkgJsonUrl = import.meta.resolve('@agoric/xsnap/package.json');
+  return fileURLToPath(
+    new URL(
+      `./xsnap-native/xsnap/build/bin/${XSNAP_PLATFORM}/release/xsnap-worker`,
+      pkgJsonUrl,
+    ),
+  );
+};
+
+const WORKER = resolveWorkerPath();
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const coreSrc = readFileSync(`${here}hex-decode-bench-core.js`, 'utf8');
