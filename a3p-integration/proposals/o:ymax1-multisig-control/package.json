@@ -3,7 +3,7 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
-      "../../portfolio-deploy/src/portfolio-control.build.js submission --contractName=ymax1 --ymaxControlAddress=agoric1c0eq3m8sze9cj8lxr7h66fu3jgqtevqxv8svcm"
+      "../../portfolio-deploy/src/portfolio-control.build.js submission --contractName=ymax1 --ymaxControlAddress=agoric15x7cnyqs59we6e3dndlnzkwsmnxw0er2r5r0ak"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
@@ -29,6 +29,7 @@
     "execa": "^9.6.0"
   },
   "devDependencies": {
+    "@cosmjs/proto-signing": "^0.36.0",
     "ts-blank-space": "^0.7.0"
   },
   "resolutions": {
@@ -61,8 +62,7 @@
     ]
   },
   "scripts": {
-    "agops": "yarn --cwd /usr/src/agoric-sdk/ agops",
-    "make:ledger-multisig": "node scripts/make-ledger-multisig.js"
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
   "packageManager": "yarn@4.12.0"
 }
