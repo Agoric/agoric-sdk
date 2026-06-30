@@ -35,10 +35,12 @@ import {
   bundleIdFromBundleRecord,
   canonicalizePrivateArgs,
   expectedOverridesAssetName,
+  requireAsset,
   targetInfo,
-  validateBaseRecord,
-  validateInstallRecord,
-  validateUpgradeRecord,
+  validateExpectedOverridesAsset,
+  validateNamedInstallRecord,
+  validateNamedPendingUpgradeRecord,
+  validateNamedUpgradeRecord,
 } from '../src/ymax-release-policy.mjs';
 
 const usage = `Usage:
@@ -47,7 +49,7 @@ const usage = `Usage:
   ymax-deploy-target.ts phase-upgrade-submit --target <target> --tag <tag>
   ymax-deploy-target.ts phase-upgrade-confirm --target <target> --tag <tag>`;
 
-type Target = 'ymax0-devnet' | 'ymax0-main' | 'ymax1-main';
+export type Target = 'ymax0-devnet' | 'ymax0-main' | 'ymax1-main';
 type Env = Record<string, string | undefined>;
 type FileRd = ReturnType<typeof makeFileRd>;
 type FileRW = ReturnType<typeof makeFileRW>;
@@ -64,17 +66,17 @@ type AssetRW = AssetRd & {
   readOnly: () => AssetRd;
 };
 type CmdRunner = ReturnType<typeof makeCmdRunner>;
-type BaseRecord = {
+export type BaseRecord = {
   target: Target;
   contract: string;
   network: string;
   chainId: string;
   bundleId: string;
 };
-type InstallRecord = BaseRecord & {
+export type InstallRecord = BaseRecord & {
   confirmedInBundles: boolean;
 };
-type UpgradeRecord = BaseRecord & {
+export type UpgradeRecord = BaseRecord & {
   upgradeTxHash: string;
   upgradeBlockHeight: number;
   upgradeBlockTime: string;
@@ -82,13 +84,13 @@ type UpgradeRecord = BaseRecord & {
   privateArgsOverridesPath: string;
   healthBlocks: Array<{ height: number; hash: string; time: string }>;
 };
-type PendingUpgradeRecord = BaseRecord & {
+export type PendingUpgradeRecord = BaseRecord & {
   releaseTag: string;
   invocationId: string;
   privateArgsOverridesPath: string;
   submitTime: string;
 };
-type ReleaseAssetInfo = { name: string };
+export type ReleaseAssetInfo = { name: string };
 type ReleaseInfo = { assets: ReleaseAssetInfo[]; url: string };
 type UpgradeSigner = ReturnType<typeof buildUpgradeSigner>;
 type StepTools = {
@@ -362,7 +364,7 @@ const createRelease = async (
 };
 
 const createOverrides = async (
-  target: string,
+  target: Target,
   privateArgs: string | undefined,
   {
     distDir,
@@ -704,36 +706,16 @@ const findUpgradeIncarnation = ({
   return Number.parseInt(match[1], 10);
 };
 
-export const validateInstallPrecondition = async (
-  target: Target,
-  bundleId: string,
-  assets: Array<{ name: string }>,
-  recordAsset: AssetRd,
-) => {
-  const name = `${target}-install.json`;
-  const assetNames = new Set(assets.map(asset => asset.name));
-  if (!assetNames.has(name)) {
-    throw Error(`missing required release asset ${name}`);
-  }
-  validateInstallRecord(
-    target,
-    bundleId,
-    (await recordAsset.readJSON()) as InstallRecord,
-  );
-};
-
 export const validateUpgradePrecondition = async (
   target: Target,
   bundleId: string,
   assets: ReleaseAssetInfo[],
   recordAsset: AssetRd,
 ) => {
-  const name = `${target}-upgrade.json`;
-  const assetNames = new Set(assets.map(asset => asset.name));
-  if (!assetNames.has(name)) {
-    throw Error(`missing required release asset ${name}`);
-  }
-  validateUpgradeRecord(
+  const assetNames = new Set(assets.map(({ name }) => name));
+  requireAsset(assetNames, `${target}-upgrade.json`);
+  validateNamedUpgradeRecord(
+    assetNames,
     target,
     bundleId,
     (await recordAsset.readJSON()) as UpgradeRecord,
@@ -844,14 +826,10 @@ const findInstall = async (
   asset: AssetRd,
   release: ReleaseInfo,
 ) => {
-  if (!hasAsset(release, `${target}-install.json`)) {
-    throw Error(`missing required release asset ${target}-install.json`);
-  }
+  const assetNames = new Set(release.assets.map(({ name }) => name));
+  requireAsset(assetNames, `${target}-install.json`);
   const record = (await asset.readJSON()) as InstallRecord;
-  validateBaseRecord(target, record.bundleId, record);
-  if (record.confirmedInBundles !== true) {
-    throw Error('confirmedInBundles must be true');
-  }
+  validateNamedInstallRecord(assetNames, target, record.bundleId, record);
   return record;
 };
 
@@ -863,20 +841,19 @@ const findUpgrade = async (
   currentTarget: Target,
   privateArgs: string | undefined,
 ) => {
-  if (!hasAsset(release, `${target}-upgrade.json`)) {
-    throw Error(`missing required release asset ${target}-upgrade.json`);
-  }
+  const assetNames = new Set(release.assets.map(({ name }) => name));
+  requireAsset(assetNames, `${target}-upgrade.json`);
   const record = (await asset.readJSON()) as UpgradeRecord;
-  validateUpgradeRecord(target, install.bundleId, record);
+  validateNamedUpgradeRecord(assetNames, target, install.bundleId, record);
   if (target !== currentTarget) {
     return record;
   }
-  const assetName = expectedOverridesAssetName(target, privateArgs);
-  if (record.privateArgsOverridesPath !== assetName) {
-    throw Error(
-      `existing ${target}-upgrade.json uses ${record.privateArgsOverridesPath}, not ${assetName}; remove or rename ${target}-upgrade.json to change private args`,
-    );
-  }
+  validateExpectedOverridesAsset(
+    `${target}-upgrade.json`,
+    target,
+    privateArgs,
+    record,
+  );
   return record;
 };
 
@@ -886,19 +863,19 @@ const findPendingUpgrade = async (
   release: ReleaseInfo,
   bundleId: string,
   privateArgs: string | undefined,
+  releaseTag: string,
 ) => {
-  const name = `${target}-upgrade-pending.json`;
-  if (!hasAsset(release, name)) {
-    throw Error(`missing required release asset ${name}`);
-  }
+  const assetNames = new Set(release.assets.map(({ name }) => name));
+  requireAsset(assetNames, `${target}-upgrade-pending.json`);
   const record = (await asset.readJSON()) as PendingUpgradeRecord;
-  validateBaseRecord(target, bundleId, record);
-  const assetName = expectedOverridesAssetName(target, privateArgs);
-  if (record.privateArgsOverridesPath !== assetName) {
-    throw Error(
-      `existing ${name} uses ${record.privateArgsOverridesPath}, not ${assetName}; remove or rename ${name} to change private args`,
-    );
-  }
+  validateNamedPendingUpgradeRecord(
+    assetNames,
+    target,
+    bundleId,
+    record,
+    privateArgs,
+    releaseTag,
+  );
   return record;
 };
 
@@ -1017,9 +994,14 @@ const generateAuthzOperatorUpgrade = async (
     makeUpgradeSigner: (upgradeTarget: Target) => Promise<UpgradeSigner>;
   },
 ) => {
-  expectMissing(cause, `missing required release asset ${upgradeTarget}-authz-unsigned-tx.json`);
+  expectMissing(
+    cause,
+    `missing required release asset ${upgradeTarget}-authz-unsigned-tx.json`,
+  );
   if (target !== upgradeTarget) {
-    throw Error(`missing required release asset ${upgradeTarget}-authz-unsigned-tx.json`);
+    throw Error(
+      `missing required release asset ${upgradeTarget}-authz-unsigned-tx.json`,
+    );
   }
   const submitTime = new Date(now()).toISOString();
   const invocationId = makeInvocationId(upgradeTarget, submitTime);
@@ -1453,6 +1435,7 @@ export const makeGraph = (
           relInfo as ReleaseInfo,
           (install as InstallRecord).bundleId,
           privateArgs,
+          tag,
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
@@ -1469,12 +1452,17 @@ export const makeGraph = (
           );
           return pending;
         }
-        return submitUpgradeContract('ymax0-devnet', install as InstallRecord, asset!, {
-          cause,
-          privateArgs,
-          walletAdmin,
-          ...tools,
-        });
+        return submitUpgradeContract(
+          'ymax0-devnet',
+          install as InstallRecord,
+          asset!,
+          {
+            cause,
+            privateArgs,
+            walletAdmin,
+            ...tools,
+          },
+        );
       },
     },
     'ymax0-main-upgrade.json': {
@@ -1532,6 +1520,7 @@ export const makeGraph = (
           relInfo as ReleaseInfo,
           (install as InstallRecord).bundleId,
           privateArgs,
+          tag,
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
@@ -1548,12 +1537,17 @@ export const makeGraph = (
           );
           return pending;
         }
-        return submitUpgradeContract('ymax0-main', install as InstallRecord, asset!, {
-          cause,
-          privateArgs,
-          walletAdmin,
-          ...tools,
-        });
+        return submitUpgradeContract(
+          'ymax0-main',
+          install as InstallRecord,
+          asset!,
+          {
+            cause,
+            privateArgs,
+            walletAdmin,
+            ...tools,
+          },
+        );
       },
     },
     'ymax1-main-upgrade.json': {
@@ -1609,6 +1603,7 @@ export const makeGraph = (
           relInfo as ReleaseInfo,
           (install as InstallRecord).bundleId,
           privateArgs,
+          tag,
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
@@ -1625,12 +1620,17 @@ export const makeGraph = (
           );
           return pending;
         }
-        return submitUpgradeContract('ymax1-main', install as InstallRecord, asset!, {
-          cause,
-          privateArgs,
-          walletAdmin,
-          ...tools,
-        });
+        return submitUpgradeContract(
+          'ymax1-main',
+          install as InstallRecord,
+          asset!,
+          {
+            cause,
+            privateArgs,
+            walletAdmin,
+            ...tools,
+          },
+        );
       },
     },
 
@@ -1944,7 +1944,7 @@ export const main = async (
   const submitTargetRpc =
     subcommand === 'phase-upgrade-submit'
       ? connectTargetRpc
-      : (async (_upgradeTarget: Target) => assert.fail('unauthorized'));
+      : async (_upgradeTarget: Target) => assert.fail('unauthorized');
 
   const graph = makeGraph(
     target,
@@ -1989,15 +1989,12 @@ export const main = async (
       const pending = await graph.ensureNode<PendingUpgradeRecord>(
         `${target}-upgrade-pending.json`,
       );
-      writeJson(
-        stdout,
-        {
-          target,
-          phase: 'upgrade-submit',
-          record: `${target}-upgrade-pending.json`,
-          detail: pending,
-        },
-      );
+      writeJson(stdout, {
+        target,
+        phase: 'upgrade-submit',
+        record: `${target}-upgrade-pending.json`,
+        detail: pending,
+      });
       break;
     }
     case 'phase-upgrade-confirm': {

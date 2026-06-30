@@ -4,95 +4,181 @@ import path from 'node:path';
 import { makeFileRW } from '@agoric/pola-io';
 
 import {
+  expectedOverridesAssetName,
+  makeReleasePlan,
+  validateNamedInstallRecord,
+  validateNamedPendingUpgradeRecord,
+  validateNamedUpgradeRecord,
+} from '../src/ymax-release-policy.mjs';
+import {
   main,
   makeGraph,
-  validateInstallPrecondition,
   validateUpgradePrecondition,
 } from '../scripts/ymax-deploy-target.ts';
 
-test('policy prerequisite checks are enforced', async t => {
-  await t.throwsAsync(
-    validateInstallPrecondition('ymax0-devnet', 'b1-abc123', [], null as any),
+test('policy prerequisite checks are enforced', t => {
+  const e = new Set<string>();
+  t.throws(
+    () =>
+      validateNamedInstallRecord(e, 'ymax0-devnet', 'b1-abc123', null as any),
     { message: 'missing required release asset ymax0-devnet-install.json' },
     'ymax0-main pre-upgrade requires ymax0-devnet install evidence',
   );
-  await t.throwsAsync(
-    validateUpgradePrecondition('ymax0-devnet', 'b1-abc123', [], null as any),
+  t.throws(
+    () =>
+      validateNamedUpgradeRecord(e, 'ymax0-devnet', 'b1-abc123', null as any),
     { message: 'missing required release asset ymax0-devnet-upgrade.json' },
     'ymax0-main pre-upgrade requires ymax0-devnet upgrade evidence',
   );
-  await t.throwsAsync(
-    validateInstallPrecondition('ymax0-devnet', 'b1-abc123', [], null as any),
+  t.throws(
+    () =>
+      validateNamedInstallRecord(e, 'ymax0-devnet', 'b1-abc123', null as any),
     { message: 'missing required release asset ymax0-devnet-install.json' },
     'ymax0-main upgrade requires ymax0-devnet install evidence',
   );
-  await t.throwsAsync(
-    validateUpgradePrecondition('ymax0-devnet', 'b1-abc123', [], null as any),
+  t.throws(
+    () =>
+      validateNamedUpgradeRecord(e, 'ymax0-devnet', 'b1-abc123', null as any),
     { message: 'missing required release asset ymax0-devnet-upgrade.json' },
     'ymax0-main upgrade requires ymax0-devnet upgrade evidence',
   );
-  await t.throwsAsync(
-    validateInstallPrecondition('ymax0-main', 'b1-abc123', [], null as any),
+  t.throws(
+    () => validateNamedInstallRecord(e, 'ymax0-main', 'b1-abc123', null as any),
     { message: 'missing required release asset ymax0-main-install.json' },
     'ymax1-main pre-upgrade requires ymax0-main install evidence',
   );
-  await t.throwsAsync(
-    validateUpgradePrecondition('ymax0-main', 'b1-abc123', [], null as any),
+  t.throws(
+    () => validateNamedUpgradeRecord(e, 'ymax0-main', 'b1-abc123', null as any),
     { message: 'missing required release asset ymax0-main-upgrade.json' },
     'ymax1-main pre-upgrade requires ymax0-main upgrade evidence',
   );
-  await t.throwsAsync(
-    validateInstallPrecondition('ymax0-main', 'b1-abc123', [], null as any),
+  t.throws(
+    () => validateNamedInstallRecord(e, 'ymax0-main', 'b1-abc123', null as any),
     { message: 'missing required release asset ymax0-main-install.json' },
     'ymax1-main upgrade requires ymax0-main install evidence',
   );
 });
 
-test('policy evidence validation checks are enforced', async t => {
-  await t.throwsAsync(
-    validateInstallPrecondition(
-      'ymax0-devnet',
-      'b1-abc123',
-      [{ name: 'ymax0-devnet-install.json' }],
-      assetRdFromJSON({
-        ...examples.install.devnet0,
-        releaseTag: undefined,
-        commit: undefined,
-        bundleId: 'b1-wrong',
-        installTxHash: 'TX123',
-        installBlockHeight: 77,
-        installBlockTime: '2026-04-16T12:00:00.000Z',
-      }),
-    ),
+test('policy evidence validation checks are enforced', t => {
+  t.throws(
+    () =>
+      validateNamedInstallRecord(
+        new Set(['ymax0-devnet-install.json']),
+        'ymax0-devnet',
+        'b1-abc123',
+        {
+          ...examples.install.devnet0,
+          releaseTag: undefined,
+          commit: undefined,
+          bundleId: 'b1-wrong',
+          installTxHash: 'TX123',
+          installBlockHeight: 77,
+          installBlockTime: '2026-04-16T12:00:00.000Z',
+        } as any,
+      ),
     { message: 'expected bundleId=b1-abc123, got b1-wrong' },
     'install evidence must match bundleId',
   );
-  await t.throwsAsync(
-    validateInstallPrecondition(
-      'ymax0-main',
-      'b1-abc123',
-      [{ name: 'ymax0-main-install.json' }],
-      assetRdFromJSON({
-        ...examples.install.main0,
-        confirmedInBundles: false,
-      }),
-    ),
+  t.throws(
+    () =>
+      validateNamedInstallRecord(
+        new Set(['ymax0-main-install.json']),
+        'ymax0-main',
+        'b1-abc123',
+        {
+          ...examples.install.main0,
+          confirmedInBundles: false,
+        } as any,
+      ),
     { message: 'confirmedInBundles must be true' },
     'install evidence must prove bundle confirmation',
   );
-  await t.throwsAsync(
-    validateUpgradePrecondition(
-      'ymax0-main',
-      'b1-abc123',
-      [{ name: 'ymax0-main-upgrade.json' }],
-      assetRdFromJSON({
-        ...examples.upgrade.main0,
-        privateArgsOverridesPath: 'overrides.json',
-        healthBlocks: [{ height: 1, hash: 'h1', time: 't1' }],
-      }),
-    ),
+  t.throws(
+    () =>
+      validateNamedUpgradeRecord(
+        new Set(['ymax0-main-upgrade.json']),
+        'ymax0-main',
+        'b1-abc123',
+        {
+          ...examples.upgrade.main0,
+          privateArgsOverridesPath: 'overrides.json',
+          healthBlocks: [{ height: 1, hash: 'h1', time: 't1' }],
+        } as any,
+      ),
     { message: 'invalid upgrade record' },
     'upgrade evidence must validate proof',
+  );
+});
+
+test('policy pending upgrade validation checks are enforced', t => {
+  t.throws(
+    () =>
+      validateNamedPendingUpgradeRecord(
+        new Set(['ymax0-main-upgrade-pending.json']),
+        'ymax0-main',
+        'b1-abc123',
+        {
+          ...examples.install.main0,
+          privateArgsOverridesPath: expectedOverridesAssetName(
+            'ymax0-main',
+            '',
+          ),
+          releaseTag: 'v0.3.2604-beta1',
+          invocationId: 'invocation-1',
+          submitTime: '',
+        } as any,
+        '',
+      ),
+    { message: 'invalid pending upgrade record' },
+  );
+  t.throws(
+    () =>
+      validateNamedPendingUpgradeRecord(
+        new Set(['ymax0-main-upgrade-pending.json']),
+        'ymax0-main',
+        'b1-abc123',
+        {
+          ...examples.install.main0,
+          privateArgsOverridesPath: 'wrong.json',
+          releaseTag: 'v0.3.2604-beta1',
+          invocationId: 'invocation-1',
+          submitTime: '2026-04-16T12:05:00.000Z',
+        } as any,
+        '',
+      ),
+    {
+      message:
+        /^existing ymax0-main-upgrade-pending\.json uses wrong\.json, not ymax0-main-privateArgsOverrides-.*; remove or rename ymax0-main-upgrade-pending\.json to change private args$/,
+    },
+  );
+  t.throws(
+    () =>
+      validateNamedPendingUpgradeRecord(
+        new Set(['ymax0-main-upgrade-pending.json']),
+        'ymax0-main',
+        'b1-abc123',
+        {
+          ...examples.install.main0,
+          privateArgsOverridesPath: expectedOverridesAssetName(
+            'ymax0-main',
+            '',
+          ),
+          releaseTag: 'v0.3.2604-beta2',
+          invocationId: 'invocation-1',
+          submitTime: '2026-04-16T12:05:00.000Z',
+        } as any,
+        '',
+        'v0.3.2604-beta1',
+      ),
+    { message: 'expected releaseTag=v0.3.2604-beta1, got v0.3.2604-beta2' },
+    'pending upgrade evidence must match the current release lineage',
+  );
+});
+
+test('ymax1-main upgrade precondition requires ymax0-main upgrade asset', async t => {
+  await t.throwsAsync(
+    validateUpgradePrecondition('ymax0-main', 'b1-abc123', [], null as any),
+    { message: 'missing required release asset ymax0-main-upgrade.json' },
   );
 });
 
@@ -206,16 +292,28 @@ const mockDeployPackage = (repoRoot = '/agoric-sdk') => {
   return { agoricSdk, files };
 };
 
-const assetRdFromJSON = (specimen: unknown) => ({
-  exists: async () => null as never,
-  copyTo: async () => null as never,
-  read: async () => null as never,
-  readText: async () => null as never,
-  readJSON: async () => specimen as any,
-});
-
 const jsonText = (specimen: unknown) =>
   `${JSON.stringify(specimen, null, 2)}\n`;
+
+const makePlanReader = (
+  assets: Record<string, string>,
+  releaseUrl = 'https://example.invalid/releases/v0.3.2604-beta1',
+) => {
+  const assetNames = new Set(Object.keys(assets));
+  const getAssetText = (name: string) => {
+    const text = assets[name];
+    if (text === undefined) {
+      throw Error(`missing required release asset ${name}`);
+    }
+    return text;
+  };
+  return {
+    assetNames,
+    getAssetText,
+    getAssetJson: (name: string) => JSON.parse(getAssetText(name)),
+    release: { url: releaseUrl },
+  };
+};
 
 const makeUpgradeLogsNdjson = ({
   contract,
@@ -337,6 +435,48 @@ const examples = {
     },
   },
 };
+
+test('pending upgrade evidence suppresses submit but still requires confirm', t => {
+  const releaseTag = happyPathReleaseTag;
+  const privateArgs = '{"oracle":"value"}';
+  const pending = {
+    ...examples.install.main0,
+    privateArgsOverridesPath: expectedOverridesAssetName(
+      'ymax0-main',
+      privateArgs,
+    ),
+    releaseTag,
+    invocationId: 'invocation-1',
+    submitTime: '2026-04-16T12:05:00.000Z',
+  };
+  const plan = makeReleasePlan({
+    bundleIdArg: '',
+    mode: 'deploy',
+    privateArgs,
+    reader: makePlanReader({
+      'bundle-ymax0.json': jsonText(examples.bundle),
+      'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+      'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+      'ymax0-main-install.json': jsonText(examples.install.main0),
+      'ymax0-main-upgrade-pending.json': jsonText(pending),
+    }),
+    releaseTag,
+    target: 'ymax0-main',
+    ymax1Planner: '',
+  });
+  t.like(plan, {
+    mode: 'deploy',
+    target: 'ymax0-main',
+    releaseTag,
+    releaseExists: true,
+    bundleId: 'b1-abc123',
+    needBundleBuild: false,
+    needPreUpgrade: false,
+    needUpgradeSubmit: false,
+    needUpgradeConfirm: true,
+    needUpgrade: true,
+  });
+});
 
 const seedRelease = (
   releases: Map<string, { url: string; assets: Map<string, string> }>,
@@ -920,13 +1060,11 @@ test('ymax0-devnet phase-upgrade-submit does not require local bundle', async t 
     },
   );
 
-  t.true(
-    releases.get(releaseTag)?.assets.has('ymax0-devnet-upgrade-pending.json') ??
-      false,
+  t.truthy(
+    releases.get(releaseTag)?.assets.has('ymax0-devnet-upgrade-pending.json'),
   );
-  t.false(
-    releases.get(releaseTag)?.assets.has('ymax0-devnet-upgrade-submit.json') ??
-      false,
+  t.falsy(
+    releases.get(releaseTag)?.assets.has('ymax0-devnet-upgrade-submit.json'),
   );
   t.false(releases.get(releaseTag)?.assets.has('ymax0-devnet-upgrade.json'));
   t.false(
@@ -976,9 +1114,7 @@ test('ymax0-devnet pre-upgrade requires local bundle even if release asset exist
       },
       { ...env, AGORIC_NET: 'devnet' },
     ),
-    {
-      message: 'missing local bundle-ymax0.json',
-    },
+    { message: 'missing local bundle-ymax0.json' },
   );
 
   t.false(
@@ -989,9 +1125,7 @@ test('ymax0-devnet pre-upgrade requires local bundle even if release asset exist
         event.command.includes('#bundle-ymax0.json'),
     ),
   );
-  t.false(
-    releases.get(releaseTag)?.assets.has('ymax0-devnet-install.json') ?? false,
-  );
+  t.falsy(releases.get(releaseTag)?.assets.has('ymax0-devnet-install.json'));
   t.deepEqual(stdoutChunks, []);
 });
 
@@ -1037,9 +1171,7 @@ test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t =>
         stdout,
       },
     ),
-    {
-      message: 'missing required release asset ymax0-main-install.json',
-    },
+    { message: 'missing required release asset ymax0-main-install.json' },
   );
   t.deepEqual(stdoutChunks, []);
   t.false(
@@ -1048,6 +1180,23 @@ test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t =>
         typeof event.command === 'string' &&
         event.command.includes('/wallet-admin.ts'),
     ),
+  );
+
+  const releaseTag = happyPathReleaseTag;
+  t.throws(
+    () =>
+      makeReleasePlan({
+        bundleIdArg: '',
+        mode: 'deploy',
+        privateArgs: '',
+        reader: makePlanReader({
+          'bundle-ymax0.json': jsonText(examples.bundle),
+        }),
+        releaseTag,
+        target: 'ymax1-main',
+        ymax1Planner: 'down',
+      }),
+    { message: 'missing required release asset ymax0-main-install.json' },
   );
 });
 
@@ -1161,13 +1310,9 @@ test.serial('deploy ymax0-main', async t => {
     { ...ctx.env, PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}' },
   );
 
-  t.true(
-    ctx.releases.get(releaseTag)?.assets.has('ymax0-main-install.json') ??
-      false,
-  );
-  t.true(
-    ctx.releases.get(releaseTag)?.assets.has('ymax0-main-upgrade-pending.json') ??
-      false,
+  t.truthy(ctx.releases.get(releaseTag)?.assets.has('ymax0-main-install.json'));
+  t.truthy(
+    ctx.releases.get(releaseTag)?.assets.has('ymax0-main-upgrade-pending.json'),
   );
   t.false(ctx.releases.get(releaseTag)?.assets.has('ymax0-main-upgrade.json'));
   snapshotPhase(t, {
@@ -1181,13 +1326,6 @@ test.serial('deploy ymax0-main', async t => {
     releases: ctx.releases,
     releaseTag,
   });
-});
-
-test('ymax1-main upgrade precondition requires ymax0-main upgrade asset', async t => {
-  await t.throwsAsync(
-    validateUpgradePrecondition('ymax0-main', 'b1-abc123', [], null as any),
-    { message: 'missing required release asset ymax0-main-upgrade.json' },
-  );
 });
 
 test('existing invalid step record fails hard instead of being overwritten', async t => {
@@ -1250,9 +1388,7 @@ test('existing invalid step record fails hard instead of being overwritten', asy
         stdout,
       },
     ),
-    {
-      message: 'confirmedInBundles must be true',
-    },
+    { message: 'confirmedInBundles must be true' },
   );
 
   t.deepEqual(stdoutChunks, []);
@@ -1281,11 +1417,18 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
     opts?: Parameters<typeof baseExecFile>[2],
     ...rest: unknown[]
   ) => {
-    const logResult = fakeUpgradeLogs(ctx.execs, ctx.normalize, cmd, args, opts, {
-      contract: 'ymax0',
-      bundleId: 'b1-abc123',
-      incarnationNumber: examples.upgrade.main0.incarnationNumber,
-    });
+    const logResult = fakeUpgradeLogs(
+      ctx.execs,
+      ctx.normalize,
+      cmd,
+      args,
+      opts,
+      {
+        contract: 'ymax0',
+        bundleId: 'b1-abc123',
+        incarnationNumber: examples.upgrade.main0.incarnationNumber,
+      },
+    );
     if (logResult) {
       return logResult;
     }
@@ -1464,8 +1607,8 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
       'ymax0-main-privateArgsOverrides-',
     ),
   );
-  t.false(assets?.has('ymax0-main-upgrade-submit.json') ?? false);
-  t.false(assets?.has('ymax0-main-upgrade.json') ?? false);
+  t.falsy(assets?.has('ymax0-main-upgrade-submit.json'));
+  t.falsy(assets?.has('ymax0-main-upgrade.json'));
 });
 
 test('operator must remove upgrade artifact to change privateArgsOverrides', async t => {
@@ -1693,9 +1836,8 @@ test.serial('deploy ymax1-main', async t => {
     { ...ctx.env, PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}' },
   );
 
-  t.true(
-    ctx.releases.get(releaseTag)?.assets.has('ymax1-main-upgrade-pending.json') ??
-      false,
+  t.truthy(
+    ctx.releases.get(releaseTag)?.assets.has('ymax1-main-upgrade-pending.json'),
   );
   t.false(ctx.releases.get(releaseTag)?.assets.has('ymax1-main-upgrade.json'));
   snapshotPhase(t, {
@@ -1763,9 +1905,7 @@ test('ymax1-main upgrade requires ymax0-main upgrade evidence', async t => {
       { target: 'ymax1-main', tag: 'v0.3.2604-beta1' },
       { ...env, MNEMONIC: 'not-used' },
     ),
-    {
-      message: 'missing required release asset ymax0-main-upgrade.json',
-    },
+    { message: 'missing required release asset ymax0-main-upgrade.json' },
   );
   t.deepEqual(stdoutChunks, []);
   t.false(
