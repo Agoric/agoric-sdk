@@ -83,12 +83,12 @@ export const makeBufferishHexCodec = Bufferish => {
     decodeHex: hex => {
       const buf = Bufferish.from(hex, 'hex');
 
+      if (buf.byteLength * 2 !== hex.length) {
+        throw new Error(`Invalid hex string: ${hex}`);
+      }
+
       // Coerce to Uint8Array to avoid leaking the abstraction.
-      const u8a = new Uint8Array(
-        buf.buffer,
-        buf.byteOffset,
-        buf.byteLength / Uint8Array.BYTES_PER_ELEMENT,
-      );
+      const u8a = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
       return u8a;
     },
   };

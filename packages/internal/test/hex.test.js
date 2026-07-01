@@ -4,19 +4,6 @@ import test from 'ava';
 import { fc, testProp } from '@fast-check/ava';
 import { makePortableHexCodec, makeBufferishHexCodec } from '../src/hex.js';
 
-// The portable codec is strict and throws on invalid input; the Buffer-based
-// codec silently truncates odd trailing nibbles and skips unrecognized chars
-// (documented Node.js Buffer.from('...', 'hex') behavior).
-test('portable: decodeHex rejects odd-length input', t => {
-  const { decodeHex } = makePortableHexCodec();
-  t.throws(() => decodeHex('abc'), { message: /Invalid hex string/ });
-});
-
-test('portable: decodeHex rejects non-hex characters', t => {
-  const { decodeHex } = makePortableHexCodec();
-  t.throws(() => decodeHex('gg'), { message: /Invalid hex string/ });
-});
-
 const codecs = /** @type {const} */ ([
   ['portable', makePortableHexCodec()],
   ['bufferish', makeBufferishHexCodec(Buffer)],
@@ -48,6 +35,18 @@ for (const [name, { encodeHex, decodeHex }] of codecs) {
       decodeHex('aAbBcCdDeEfF'),
       new Uint8Array([0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff]),
     );
+  });
+
+  test(`${name}: decodeHex rejects odd-length input`, t => {
+    t.throws(() => decodeHex('abc'), { message: /Invalid hex string/ });
+  });
+
+  test(`${name}: decodeHex rejects non-hex characters`, t => {
+    t.throws(() => decodeHex('gg'), { message: /Invalid hex string/ });
+  });
+
+  test(`${name}: decodeHex rejects invalid chars mid-string`, t => {
+    t.throws(() => decodeHex('00gg00'), { message: /Invalid hex string/ });
   });
 
   test(`${name}: round-trip encodeHex -> decodeHex`, t => {
