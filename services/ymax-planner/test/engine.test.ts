@@ -793,125 +793,116 @@ test('processPortfolioEvents does not defer when a flow key exists only via flow
   ]);
 });
 
-// TODO(AGO-660)
-test.failing(
-  'processPortfolioEvents starts auto rebalance when criteria fire',
-  async t => {
-    const nobleBalance = makeDeposit(25_000_000n);
-    const usdnBalance = makeDeposit(0n);
-    const kit = await fakePortfolioKit({
-      accounts: { noble: nobleBalance },
-      otherBalances: { usdn: usdnBalance },
-    });
-    const { portfolioId, portfolioPath, initialPortfolioStatus, powers } = kit;
-    const { getBridgeSends, updateBlockHeight, updateVstorage } =
-      kit.testPowers;
+test('processPortfolioEvents starts auto rebalance when criteria fire', async t => {
+  const nobleBalance = makeDeposit(25_000_000n);
+  const usdnBalance = makeDeposit(0n);
+  const kit = await fakePortfolioKit({
+    accounts: { noble: nobleBalance },
+    otherBalances: { usdn: usdnBalance },
+  });
+  const { portfolioId, portfolioPath, initialPortfolioStatus, powers } = kit;
+  const { getBridgeSends, updateBlockHeight, updateVstorage } = kit.testPowers;
 
-    const portfolioStatus: StatusFor['portfolio'] = harden({
-      ...initialPortfolioStatus,
-      positionKeys: ['USDN'],
-      targetAllocation: { USDN: 1n },
-      enabledAutoFeatures: { rebalance: true },
-    });
-    updateVstorage(portfolioPath, 'set', {
-      object: portfolioStatus,
-      wrap: true,
-    });
+  const portfolioStatus: StatusFor['portfolio'] = harden({
+    ...initialPortfolioStatus,
+    positionKeys: ['USDN'],
+    targetAllocation: { USDN: 1n },
+    enabledAutoFeatures: { rebalance: true },
+  });
+  updateVstorage(portfolioPath, 'set', {
+    object: portfolioStatus,
+    wrap: true,
+  });
 
-    const blockHeight = updateBlockHeight();
-    const memory = makePortfoliosMemory();
-    memory.balanceCache.set(`portfolio${portfolioId}`, {
-      isoTimestamp: EPOCH_TIMESTAMP,
-      balances: {
-        '@noble': nobleBalance,
-        USDN: usdnBalance,
+  const blockHeight = updateBlockHeight();
+  const memory = makePortfoliosMemory();
+  memory.balanceCache.set(`portfolio${portfolioId}`, {
+    isoTimestamp: EPOCH_TIMESTAMP,
+    balances: {
+      '@noble': nobleBalance,
+      USDN: usdnBalance,
+    },
+  });
+  await processPortfolioEvents(
+    [makeVstorageEventDetail(blockHeight, portfolioPath, portfolioStatus)],
+    blockHeight,
+    memory,
+    powers,
+  );
+
+  t.deepEqual(memory.deferrals, []);
+  const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+  arrayIsLike(t, bridgeActions, [{ method: 'invokeEntry' }]);
+  const action = bridgeActions[0] as InvokeStoreEntryAction;
+  t.like(action, {
+    method: 'invokeEntry',
+    message: { targetName: 'planner', method: 'rebalance' },
+  });
+  const planOrSteps = action.message.args[2] as Array<{
+    dest: string;
+    amount: NatAmount;
+  }>;
+  t.true(Array.isArray(planOrSteps));
+  arrayIsLike(t, action.message.args, [
+    portfolioId,
+    {
+      syncState: {
+        policyVersion: portfolioStatus.policyVersion,
+        rebalanceCount: portfolioStatus.rebalanceCount,
       },
-    });
-    await processPortfolioEvents(
-      [makeVstorageEventDetail(blockHeight, portfolioPath, portfolioStatus)],
-      blockHeight,
-      memory,
-      powers,
-    );
+    },
+    planOrSteps,
+  ]);
+  t.true(
+    planOrSteps.some(
+      step => step.dest === 'USDN' && step.amount.value >= 25_000_000n,
+    ),
+    'auto rebalance deposits at least the minimum into instruments',
+  );
+  t.deepEqual(
+    memory.portfolioRecordForKey?.get(`portfolio${portfolioId}`)?.status,
+    portfolioStatus,
+    'portfolio status memory is updated',
+  );
+});
 
-    t.deepEqual(memory.deferrals, []);
-    const bridgeActions = getBridgeSends().map(invocation => invocation.action);
-    arrayIsLike(t, bridgeActions, [{ method: 'invokeEntry' }]);
-    const action = bridgeActions[0] as InvokeStoreEntryAction;
-    t.like(action, {
-      method: 'invokeEntry',
-      message: { targetName: 'planner', method: 'rebalance' },
-    });
-    const planOrSteps = action.message.args[2] as Array<{
-      dest: string;
-      amount: NatAmount;
-    }>;
-    t.true(Array.isArray(planOrSteps));
-    arrayIsLike(t, action.message.args, [
-      portfolioId,
-      {
-        syncState: {
-          policyVersion: portfolioStatus.policyVersion,
-          rebalanceCount: portfolioStatus.rebalanceCount,
-        },
-      },
-      planOrSteps,
-    ]);
-    t.true(
-      planOrSteps.some(
-        step => step.dest === 'USDN' && step.amount.value >= 25_000_000n,
-      ),
-      'auto rebalance deposits at least the minimum into instruments',
-    );
-    t.deepEqual(
-      memory.portfolioRecordForKey?.get(`portfolio${portfolioId}`)?.status,
-      portfolioStatus,
-      'portfolio status memory is updated',
-    );
-  },
-);
+test('processPortfolioEvents scans remembered portfolios when there are no events', async t => {
+  const nobleBalance = makeDeposit(25_000_000n);
+  const usdnBalance = makeDeposit(0n);
+  const kit = await fakePortfolioKit({
+    accounts: { noble: nobleBalance },
+    otherBalances: { usdn: usdnBalance },
+  });
+  const { blockHeight, portfolioId, initialPortfolioStatus, powers } = kit;
+  const { getBridgeSends } = kit.testPowers;
+  const portfolioKey = `portfolio${portfolioId}` as const;
+  const portfolioStatus: StatusFor['portfolio'] = harden({
+    ...initialPortfolioStatus,
+    positionKeys: ['USDN'],
+    targetAllocation: { USDN: 1n },
+    enabledAutoFeatures: { rebalance: true },
+  });
+  const memory = makePortfoliosMemory();
+  memory.portfolioRecordForKey.set(portfolioKey, {
+    atBlockHeight: 0n,
+    status: portfolioStatus,
+  });
+  memory.snapshots.set(portfolioKey, { fingerprint: '', repeats: 0 });
+  memory.balanceCache.set(portfolioKey, {
+    isoTimestamp: EPOCH_TIMESTAMP,
+    balances: {
+      '@noble': nobleBalance,
+      USDN: usdnBalance,
+    },
+  });
 
-// TODO(AGO-660)
-test.failing(
-  'processPortfolioEvents scans remembered portfolios when there are no events',
-  async t => {
-    const nobleBalance = makeDeposit(25_000_000n);
-    const usdnBalance = makeDeposit(0n);
-    const kit = await fakePortfolioKit({
-      accounts: { noble: nobleBalance },
-      otherBalances: { usdn: usdnBalance },
-    });
-    const { blockHeight, portfolioId, initialPortfolioStatus, powers } = kit;
-    const { getBridgeSends } = kit.testPowers;
-    const portfolioKey = `portfolio${portfolioId}` as const;
-    const portfolioStatus: StatusFor['portfolio'] = harden({
-      ...initialPortfolioStatus,
-      positionKeys: ['USDN'],
-      targetAllocation: { USDN: 1n },
-      enabledAutoFeatures: { rebalance: true },
-    });
-    const memory = makePortfoliosMemory();
-    memory.portfolioRecordForKey.set(portfolioKey, {
-      atBlockHeight: 0n,
-      status: portfolioStatus,
-    });
-    memory.snapshots.set(portfolioKey, { fingerprint: '', repeats: 0 });
-    memory.balanceCache.set(portfolioKey, {
-      isoTimestamp: EPOCH_TIMESTAMP,
-      balances: {
-        '@noble': nobleBalance,
-        USDN: usdnBalance,
-      },
-    });
+  await processPortfolioEvents([], blockHeight, memory, powers);
 
-    await processPortfolioEvents([], blockHeight, memory, powers);
-
-    const bridgeActions = getBridgeSends().map(invocation => invocation.action);
-    arrayIsLike(t, bridgeActions, [
-      { method: 'invokeEntry', message: { method: 'rebalance' } },
-    ]);
-  },
-);
+  const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+  arrayIsLike(t, bridgeActions, [
+    { method: 'invokeEntry', message: { method: 'rebalance' } },
+  ]);
+});
 
 test('processPortfolioEvents rebalances against latest balances', async t => {
   const kit = await fakePortfolioKit({
@@ -947,70 +938,66 @@ test('processPortfolioEvents rebalances against latest balances', async t => {
   );
 });
 
-// TODO(AGO-660)
-test.failing(
-  'processPortfolioEvents continues auto scan after portfolio error',
-  async t => {
-    const kit = await fakePortfolioKit({
-      accounts: { noble: makeDeposit(25_000_000n) },
-      otherBalances: { usdn: makeDeposit(0n) },
+test('processPortfolioEvents continues auto scan after portfolio error', async t => {
+  const kit = await fakePortfolioKit({
+    accounts: { noble: makeDeposit(25_000_000n) },
+    otherBalances: { usdn: makeDeposit(0n) },
+  });
+  const { blockHeight, portfolioId, initialPortfolioStatus, powers } = kit;
+  const { consoleWrites, getBridgeSends } = kit.testPowers;
+  const badPortfolioKey = `portfolio${portfolioId}` as const;
+  const goodPortfolioId = portfolioId + 1;
+  const goodPortfolioKey = `portfolio${goodPortfolioId}` as const;
+  const commonStatus = {
+    ...initialPortfolioStatus,
+    positionKeys: ['USDN'] as InstrumentId[],
+    enabledAutoFeatures: { rebalance: true },
+  };
+  const badPortfolioStatus: StatusFor['portfolio'] = harden({
+    ...commonStatus,
+    targetAllocation: { USDN: 0n },
+  });
+  const goodPortfolioStatus: StatusFor['portfolio'] = harden({
+    ...commonStatus,
+    targetAllocation: { USDN: 1n },
+  });
+  const memory = makePortfoliosMemory();
+  memory.portfolioRecordForKey.set(badPortfolioKey, {
+    atBlockHeight: 0n,
+    status: badPortfolioStatus,
+  });
+  memory.portfolioRecordForKey.set(goodPortfolioKey, {
+    atBlockHeight: 0n,
+    status: goodPortfolioStatus,
+  });
+  for (const portfolioKey of [badPortfolioKey, goodPortfolioKey]) {
+    memory.snapshots.set(portfolioKey, { fingerprint: '', repeats: 0 });
+    memory.balanceCache.set(portfolioKey, {
+      isoTimestamp: EPOCH_TIMESTAMP,
+      balances: {
+        '@noble': makeDeposit(25_000_000n),
+      },
     });
-    const { blockHeight, portfolioId, initialPortfolioStatus, powers } = kit;
-    const { consoleWrites, getBridgeSends } = kit.testPowers;
-    const badPortfolioKey = `portfolio${portfolioId}` as const;
-    const goodPortfolioId = portfolioId + 1;
-    const goodPortfolioKey = `portfolio${goodPortfolioId}` as const;
-    const commonStatus = {
-      ...initialPortfolioStatus,
-      positionKeys: ['USDN'] as InstrumentId[],
-      enabledAutoFeatures: { rebalance: true },
-    };
-    const badPortfolioStatus: StatusFor['portfolio'] = harden({
-      ...commonStatus,
-      targetAllocation: { USDN: 0n },
-    });
-    const goodPortfolioStatus: StatusFor['portfolio'] = harden({
-      ...commonStatus,
-      targetAllocation: { USDN: 1n },
-    });
-    const memory = makePortfoliosMemory();
-    memory.portfolioRecordForKey.set(badPortfolioKey, {
-      atBlockHeight: 0n,
-      status: badPortfolioStatus,
-    });
-    memory.portfolioRecordForKey.set(goodPortfolioKey, {
-      atBlockHeight: 0n,
-      status: goodPortfolioStatus,
-    });
-    for (const portfolioKey of [badPortfolioKey, goodPortfolioKey]) {
-      memory.snapshots.set(portfolioKey, { fingerprint: '', repeats: 0 });
-      memory.balanceCache.set(portfolioKey, {
-        isoTimestamp: EPOCH_TIMESTAMP,
-        balances: {
-          '@noble': makeDeposit(25_000_000n),
-        },
-      });
-    }
+  }
 
-    await processPortfolioEvents([], blockHeight, memory, powers);
+  await processPortfolioEvents([], blockHeight, memory, powers);
 
-    t.true(
-      consoleWrites.some(
-        ({ level, args }) =>
-          level === 'warn' &&
-          args[0] ===
-            `[${badPortfolioKey}.autoRebalance] ⚠️ Skipping auto rebalance scan`,
-      ),
-      'bad portfolio scan error is logged',
-    );
-    const bridgeActions = getBridgeSends().map(invocation => invocation.action);
-    arrayIsLike(t, bridgeActions, [
-      { method: 'invokeEntry', message: { method: 'rebalance' } },
-    ]);
-    const action = bridgeActions[0] as InvokeStoreEntryAction;
-    t.is(action.message.args[0], goodPortfolioId);
-  },
-);
+  t.true(
+    consoleWrites.some(
+      ({ level, args }) =>
+        level === 'warn' &&
+        args[0] ===
+          `[${badPortfolioKey}.autoRebalance] ⚠️ Skipping auto rebalance scan`,
+    ),
+    'bad portfolio scan error is logged',
+  );
+  const bridgeActions = getBridgeSends().map(invocation => invocation.action);
+  arrayIsLike(t, bridgeActions, [
+    { method: 'invokeEntry', message: { method: 'rebalance' } },
+  ]);
+  const action = bridgeActions[0] as InvokeStoreEntryAction;
+  t.is(action.message.args[0], goodPortfolioId);
+});
 
 test('startFlow logs include traceId prefix', async t => {
   const kit = await fakePortfolioKit({
