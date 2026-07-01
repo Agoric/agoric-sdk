@@ -384,9 +384,11 @@ const snapshotAssets = (
     snapshot: (expected: unknown, message?: string) => void;
   },
   {
+    normalize,
     releases,
     releaseTag,
   }: {
+    normalize: (value: unknown) => unknown;
     releases: Map<string, { url: string; assets: Map<string, string> }>;
     releaseTag: string;
   },
@@ -397,7 +399,21 @@ const snapshotAssets = (
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([name, text]) => [
           name,
-          name === 'bundle-ymax0.json' ? '<bundle>' : text,
+          name === 'bundle-ymax0.json'
+            ? '<bundle>'
+            : name.endsWith('-upgrade-pending.json')
+              ? `${JSON.stringify(
+                  {
+                    ...JSON.parse(text),
+                    invocationId: normalize(
+                      JSON.parse(text).invocationId,
+                    ) as string,
+                    submitTime: '<timestamp>',
+                  },
+                  null,
+                  2,
+                )}\n`
+              : normalize(text),
         ]),
     ),
     `assets ${releaseTag}`,
@@ -454,6 +470,7 @@ const fakeYmaxUpgrade = (
   const event = makeExecEvent(normalize, cmd, args, opts as ExecOpts);
   const resultText = `${JSON.stringify(
     {
+      invocationId: args[args.indexOf('--invocation-id') + 1],
       upgradeTxHash: payload.upgradeTxHash,
       upgradeBlockHeight: payload.upgradeBlockHeight,
       upgradeBlockTime: payload.upgradeBlockTime,
@@ -511,7 +528,109 @@ const makeScenario = (repoRoot = '/agoric-sdk') => {
   const ghExecFile = mockGh(releases, files);
 
   const normalize = (value: unknown): unknown =>
-    typeof value === 'string' ? value.replaceAll(repoRoot, '<repo>') : value;
+    typeof value === 'string'
+      ? value
+          .replaceAll(repoRoot, '<repo>')
+          .replace(
+            /upgrade\.(ymax[01]-(?:devnet|main))\.\d{4}-\d{2}-\d{2}T[^ \n"]+/g,
+            'upgrade.$1.<timestamp>',
+          )
+      : value;
+  const fetchFn = async (url: string) => {
+    if (url.endsWith('/network-config')) {
+      const network = url.includes('devnet.') ? 'devnet' : 'main';
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          apiAddrs: [`https://${network}.api.agoric.net:443`],
+        }),
+      } as Response;
+    }
+    const release = [...releases.values()][0];
+    const pendingText =
+      release?.assets.get('ymax0-devnet-upgrade-pending.json') ||
+      release?.assets.get('ymax0-main-upgrade-pending.json') ||
+      release?.assets.get('ymax1-main-upgrade-pending.json');
+    if (!pendingText) {
+      throw Error(`unexpected fetch before pending exists: ${url}`);
+    }
+    const pending = JSON.parse(pendingText) as {
+      target: string;
+      invocationId: string;
+      bundleId: string;
+      network: 'devnet' | 'main';
+      contract: 'ymax0' | 'ymax1';
+    };
+    const payload =
+      pending.target === 'ymax0-devnet'
+        ? examples.upgrade.devnet0
+        : examples.upgrade.main0;
+    const sender =
+      pending.network === 'devnet'
+        ? 'agoric10utru593dspjwfewcgdak8lvp9tkz0xttvcnxv'
+        : pending.contract === 'ymax1'
+          ? 'agoric18dx5f8ck5xy2dgkgeyp2w478dztxv3z2mnz928'
+          : 'agoric1e80twfutmrm3wrk3fysjcnef4j82mq8dn6nmcq';
+    const messageId = `upgrade.${payload.upgradeBlockTime}`;
+    const tx = {
+      height: `${payload.upgradeBlockHeight}`,
+      txhash: payload.upgradeTxHash,
+      code: 0,
+      timestamp: payload.upgradeBlockTime,
+      tx: {
+        body: {
+          messages: [
+            {
+              '@type': '/agoric.swingset.MsgWalletSpendAction',
+              owner: sender,
+              spend_action: JSON.stringify({
+                body: `#${JSON.stringify({
+                  method: 'invokeEntry',
+                  message: {
+                    id: messageId,
+                    method: 'upgrade',
+                    args: [{ bundleId: pending.bundleId }],
+                  },
+                })}`,
+              }),
+            },
+          ],
+        },
+      },
+    };
+    // fetchJsonResilient reads the body via text(), so provide both.
+    const jsonRes = (data: unknown) =>
+      ({
+        ok: true,
+        status: 200,
+        json: async () => data,
+        text: async () => JSON.stringify(data),
+      }) as Response;
+    if (url.includes('/cosmos/tx/v1beta1/txs?')) {
+      return jsonRes({ tx_responses: [tx] });
+    }
+    if (url.includes('/cosmos/tx/v1beta1/txs/')) {
+      return jsonRes({ tx_response: tx });
+    }
+    if (url.includes(`/agoric/vstorage/data/published.wallet.${sender}`)) {
+      const update = {
+        body: `#${JSON.stringify({
+          updated: 'invocation',
+          id: messageId,
+          result: { incarnationNumber: payload.incarnationNumber },
+        })}`,
+        slots: [],
+      };
+      return jsonRes({
+        value: JSON.stringify({
+          blockHeight: tx.height,
+          values: [JSON.stringify(update)],
+        }),
+      });
+    }
+    throw Error(`unexpected fetch url: ${url}`);
+  };
   const env = {
     GITHUB_TOKEN: 'fake-token',
     AGORIC_NET: 'main',
@@ -592,6 +711,7 @@ const makeScenario = (repoRoot = '/agoric-sdk') => {
       },
     },
     execFile,
+    fetchFn,
   };
 };
 
@@ -599,9 +719,17 @@ const runPhase = async (
   {
     agoricSdk,
     execFile,
+    fetchFn,
     stdout,
-  }: Pick<ReturnType<typeof makeScenario>, 'agoricSdk' | 'execFile' | 'stdout'>,
-  phase: 'phase-pre-upgrade' | 'phase-upgrade',
+  }: Pick<
+    ReturnType<typeof makeScenario>,
+    'agoricSdk' | 'execFile' | 'fetchFn' | 'stdout'
+  >,
+  phase:
+    | 'phase-pre-upgrade'
+    | 'phase-upgrade'
+    | 'phase-upgrade-submit'
+    | 'phase-upgrade-confirm',
   args: Record<string, string | undefined>,
   env: Record<string, string | undefined>,
 ) =>
@@ -616,8 +744,12 @@ const runPhase = async (
     {
       execFile: execFile as unknown as typeof import('execa').execa,
       agoricSdk,
+      fetchFn,
       path,
       stdout,
+      // Deterministic submit clock, before the example upgrade block times,
+      // so confirm's submitTime window accepts the fixture txs.
+      now: () => Date.parse('2026-04-16T10:00:00.000Z'),
     },
   );
 
@@ -638,6 +770,7 @@ test('ymax0-devnet phase-upgrade does not require local bundle', async t => {
     env,
     execs,
     normalize,
+    fetchFn,
     execFile: baseExecFile,
   } = makeScenario();
   const execFile = async (
@@ -675,6 +808,7 @@ test('ymax0-devnet phase-upgrade does not require local bundle', async t => {
     {
       agoricSdk,
       execFile,
+      fetchFn,
       stdout,
     },
     'phase-upgrade',
@@ -705,6 +839,7 @@ test('ymax0-devnet pre-upgrade requires local bundle even if release asset exist
     stdoutChunks,
     stdout,
     env,
+    fetchFn,
     execFile,
   } = makeScenario();
   const releaseTag = 'v0.3.2604-beta1';
@@ -722,6 +857,7 @@ test('ymax0-devnet pre-upgrade requires local bundle even if release asset exist
       {
         agoricSdk,
         execFile,
+        fetchFn,
         stdout,
       },
       'phase-pre-upgrade',
@@ -752,8 +888,16 @@ test('ymax0-devnet pre-upgrade requires local bundle even if release asset exist
 });
 
 test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t => {
-  const { agoricSdk, releases, execs, stdoutChunks, stdout, env, execFile } =
-    makeScenario();
+  const {
+    agoricSdk,
+    releases,
+    execs,
+    stdoutChunks,
+    stdout,
+    env,
+    fetchFn,
+    execFile,
+  } = makeScenario();
 
   releases.set('v0.3.2604-beta1', {
     url: 'https://example.invalid/releases/v0.3.2604-beta1',
@@ -780,6 +924,7 @@ test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t =>
       {
         execFile: execFile as unknown as typeof import('execa').execa,
         agoricSdk,
+        fetchFn,
         path,
         stdout,
       },
@@ -850,6 +995,7 @@ test.serial('deploy ymax0-main', async t => {
     {
       agoricSdk: ctx.agoricSdk,
       execFile: baseExecFile,
+      fetchFn: ctx.fetchFn,
       stdout: ctx.stdout,
     },
     'phase-pre-upgrade',
@@ -868,6 +1014,7 @@ test.serial('deploy ymax0-main', async t => {
     {
       agoricSdk: ctx.agoricSdk,
       execFile: baseExecFile,
+      fetchFn: ctx.fetchFn,
       stdout: ctx.stdout,
     },
     'phase-pre-upgrade',
@@ -898,6 +1045,7 @@ test.serial('deploy ymax0-main', async t => {
     {
       agoricSdk: ctx.agoricSdk,
       execFile,
+      fetchFn: ctx.fetchFn,
       stdout: ctx.stdout,
     },
     'phase-upgrade',
@@ -919,7 +1067,11 @@ test.serial('deploy ymax0-main', async t => {
     normalize: ctx.normalize,
     stdoutChunks: ctx.stdoutChunks,
   });
-  snapshotAssets(t, { releases: ctx.releases, releaseTag });
+  snapshotAssets(t, {
+    normalize: ctx.normalize,
+    releases: ctx.releases,
+    releaseTag,
+  });
 });
 
 test('ymax1-main upgrade precondition requires ymax0-main upgrade asset', async t => {
@@ -930,8 +1082,16 @@ test('ymax1-main upgrade precondition requires ymax0-main upgrade asset', async 
 });
 
 test('existing invalid step record fails hard instead of being overwritten', async t => {
-  const { agoricSdk, releases, execs, stdoutChunks, stdout, env, execFile } =
-    makeScenario();
+  const {
+    agoricSdk,
+    releases,
+    execs,
+    stdoutChunks,
+    stdout,
+    env,
+    fetchFn,
+    execFile,
+  } = makeScenario();
 
   const badInstallRecord = `${JSON.stringify(
     {
@@ -976,6 +1136,7 @@ test('existing invalid step record fails hard instead of being overwritten', asy
       {
         execFile: execFile as unknown as typeof import('execa').execa,
         agoricSdk,
+        fetchFn,
         path,
         stdout,
       },
@@ -1009,6 +1170,7 @@ test('operator must remove upgrade artifact to change privateArgsOverrides', asy
     stdout,
     normalize,
     env,
+    fetchFn,
     execFile: baseExecFile,
   } = makeScenario();
 
@@ -1044,6 +1206,7 @@ test('operator must remove upgrade artifact to change privateArgsOverrides', asy
     {
       agoricSdk,
       execFile,
+      fetchFn,
       stdout,
     },
     'phase-upgrade',
@@ -1090,16 +1253,17 @@ test('operator must remove upgrade artifact to change privateArgsOverrides', asy
       {
         execFile: execFile as unknown as typeof import('execa').execa,
         agoricSdk,
+        fetchFn,
         path,
         stdout,
       },
     ),
     {
       message: new RegExp(
-        `^existing ymax0-main-upgrade\\.json uses ${firstOverridesName.replaceAll(
+        `^existing ymax0-main-upgrade(?:-pending)?\\.json uses ${firstOverridesName.replaceAll(
           /[.*+?^${}()|[\]\\]/g,
           '\\$&',
-        )}, not ymax0-main-privateArgsOverrides-.*; remove or rename ymax0-main-upgrade\\.json to change private args$`,
+        )}, not ymax0-main-privateArgsOverrides-.*; remove or rename ymax0-main-upgrade(?:-pending)?\\.json to change private args$`,
       ),
     },
   );
@@ -1194,6 +1358,7 @@ test.serial('deploy ymax1-main', async t => {
     {
       agoricSdk: ctx.agoricSdk,
       execFile: baseExecFile,
+      fetchFn: ctx.fetchFn,
       stdout: ctx.stdout,
     },
     'phase-pre-upgrade',
@@ -1212,6 +1377,7 @@ test.serial('deploy ymax1-main', async t => {
     {
       agoricSdk: ctx.agoricSdk,
       execFile,
+      fetchFn: ctx.fetchFn,
       stdout: ctx.stdout,
     },
     'phase-upgrade',
@@ -1229,12 +1395,24 @@ test.serial('deploy ymax1-main', async t => {
     normalize: ctx.normalize,
     stdoutChunks: ctx.stdoutChunks,
   });
-  snapshotAssets(t, { releases: ctx.releases, releaseTag });
+  snapshotAssets(t, {
+    normalize: ctx.normalize,
+    releases: ctx.releases,
+    releaseTag,
+  });
 });
 
 test('ymax1-main upgrade requires ymax0-main upgrade evidence', async t => {
-  const { agoricSdk, releases, execs, stdoutChunks, stdout, env, execFile } =
-    makeScenario();
+  const {
+    agoricSdk,
+    releases,
+    execs,
+    stdoutChunks,
+    stdout,
+    env,
+    fetchFn,
+    execFile,
+  } = makeScenario();
 
   releases.set('v0.3.2604-beta1', {
     url: 'https://example.invalid/releases/v0.3.2604-beta1',
@@ -1269,6 +1447,7 @@ test('ymax1-main upgrade requires ymax0-main upgrade evidence', async t => {
       {
         agoricSdk,
         execFile,
+        fetchFn,
         stdout,
       },
       'phase-upgrade',
@@ -1292,7 +1471,7 @@ test('ymax1-main upgrade requires ymax0-main upgrade evidence', async t => {
 test('phase-upgrade materializes default overrides', async t => {
   const { agoricSdk, files, releases, stdout, normalize, ...other } =
     makeScenario();
-  const { env, execs, execFile: baseExecFile } = other;
+  const { env, execs, fetchFn, execFile: baseExecFile } = other;
 
   const execFile = async (
     cmd: string,
@@ -1326,6 +1505,7 @@ test('phase-upgrade materializes default overrides', async t => {
     {
       agoricSdk,
       execFile,
+      fetchFn,
       stdout,
     },
     'phase-upgrade',
@@ -1339,3 +1519,85 @@ test('phase-upgrade materializes default overrides', async t => {
   t.is(overridesAssets.length, 1);
   t.is(overridesAssets[0]?.[1], '{}\n');
 });
+
+test.serial(
+  'confirm fails fast when the upgrade invocation errored',
+  async t => {
+    const ctx = makeScenario();
+    const releaseTag = happyPathReleaseTag;
+    const { execFile: baseExecFile, files } = ctx;
+
+    const execFile = async (
+      cmd: string,
+      args: string[],
+      opts?: Parameters<typeof baseExecFile>[2],
+      ...rest: unknown[]
+    ) => {
+      if (
+        cmd.endsWith('/wallet-admin.ts') &&
+        args[0] === './packages/portfolio-deploy/src/ymax-upgrade.ts'
+      ) {
+        const resultFile = args[args.indexOf('--result-file') + 1];
+        files.set(resultFile, '{}\n');
+        return { stdout: '' };
+      }
+      return baseExecFile(cmd, args, opts, ...rest);
+    };
+
+    // Serve an `invocation` update carrying the interface-guard error that a
+    // landed-but-rejected upgrade produces (the tx code is still 0).
+    const invocationError =
+      'In "upgrade" method of (ContractControl): arg 0: (an object) - Must match one of (a string)';
+    const messageId = `upgrade.${examples.upgrade.main0.upgradeBlockTime}`;
+    const fetchFn = async (url: string) => {
+      if (url.includes('/agoric/vstorage/data/published.wallet.')) {
+        const update = {
+          body: `#${JSON.stringify({
+            updated: 'invocation',
+            id: messageId,
+            error: invocationError,
+          })}`,
+          slots: [],
+        };
+        const data = {
+          value: JSON.stringify({
+            blockHeight: '78',
+            values: [JSON.stringify(update)],
+          }),
+        };
+        return {
+          ok: true,
+          status: 200,
+          json: async () => data,
+          text: async () => JSON.stringify(data),
+        } as Response;
+      }
+      return ctx.fetchFn(url);
+    };
+
+    seedRelease(ctx.releases, releaseTag, {
+      'bundle-ymax0.json': jsonText(examples.bundle),
+      'ymax0-main-install.json': jsonText({
+        ...examples.install.main0,
+        releaseTag,
+      }),
+      'ymax0-main-upgrade.json': jsonText(examples.upgrade.main0),
+    });
+
+    const err = await t.throwsAsync(
+      runPhase(
+        { agoricSdk: ctx.agoricSdk, execFile, fetchFn, stdout: ctx.stdout },
+        'phase-upgrade',
+        { target: 'ymax1-main', tag: releaseTag },
+        { ...ctx.env, PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}' },
+      ),
+    );
+    t.true(err?.message.includes('failed on chain'), err?.message);
+    t.true(err?.message.includes(invocationError), err?.message);
+    t.false(
+      ctx.releases.get(releaseTag)?.assets.has('ymax1-main-upgrade.json') ??
+        false,
+      'no upgrade record is written for a failed invocation',
+    );
+  },
+);
