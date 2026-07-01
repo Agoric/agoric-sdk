@@ -56,6 +56,7 @@ import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
+import { YdsTransactions } from './yds-transactions.ts';
 import {
   YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
   type YdsPortfolioSummary,
@@ -392,6 +393,18 @@ export const main = async (
         },
       )
     : undefined;
+  const ydsTransactions =
+    config.yds.url && config.yds.apiKey
+      ? new YdsTransactions(
+          { fetch, log: console.log.bind(console) },
+          {
+            ydsUrl: config.yds.url,
+            ydsApiKey: config.yds.apiKey,
+            timeout: config.requestLimits.timeout,
+            retries: config.requestLimits.maxRetries,
+          },
+        )
+      : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -423,6 +436,8 @@ export const main = async (
     getPortfolioSummaries,
     signingSmartWalletKit,
     makeNonce,
+    chainName: networkConfig.chainName,
+    ymaxInstance: config.contractInstance,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;
@@ -434,6 +449,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    ydsTransactions,
     autoRebalance: config.autoRebalance,
   };
 
