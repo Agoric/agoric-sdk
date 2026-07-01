@@ -20,6 +20,7 @@ export const makeDirectoryLock = powers => {
     acquireTimeoutMs,
     onEvent = () => {},
   } = powers;
+  /** @param {BuildCacheEvent} event */
   const safeEmit = event => {
     try {
       onEvent(event);

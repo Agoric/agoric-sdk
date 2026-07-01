@@ -64,6 +64,7 @@
  * dummy pre-resolved Promise.
  */
 
+/** @param {(() => void) | false} gcPower */
 export function makeGcAndFinalize(gcPower) {
   if (typeof gcPower !== 'function') {
     if (gcPower !== false) {

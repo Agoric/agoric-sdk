@@ -96,8 +96,7 @@ export const coerceAmountKeywordRecord = (
     getAssetKindByBrand,
   );
   assertKey(result);
-  // @ts-expect-error checked cast
-  return result;
+  return /** @type {AmountKeywordRecord} */ (result);
 };
 
 /**
