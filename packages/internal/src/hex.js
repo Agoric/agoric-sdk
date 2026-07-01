@@ -18,18 +18,15 @@ const encodings = Array.from({ length: 256 }, (_, b) =>
  *
  * @type {Map<string, number>}
  */
-const decodings = new Map(
-  encodings.flatMap((hexdigits, b) => {
-    const lo = hexdigits.toLowerCase();
-    const UP = hexdigits.toUpperCase();
-    return [
-      [lo, b],
-      [`${lo[0]}${UP[1]}`, b],
-      [`${UP[0]}${lo[1]}`, b],
-      [UP, b],
-    ];
-  }),
-);
+const decodings = new Map();
+for (const [b, hexdigits] of encodings.entries()) {
+  const lo = hexdigits.toLowerCase();
+  const UP = hexdigits.toUpperCase();
+  decodings.set(lo, b);
+  decodings.set(`${lo[0]}${UP[1]}`, b);
+  decodings.set(`${UP[0]}${lo[1]}`, b);
+  decodings.set(UP, b);
+}
 
 /**
  * Create a hex codec that is portable across standard JS environments.
@@ -83,12 +80,12 @@ export const makeBufferishHexCodec = Bufferish => {
     decodeHex: hex => {
       const buf = Bufferish.from(hex, 'hex');
 
+      if (buf.byteLength * 2 !== hex.length) {
+        throw new Error(`Invalid hex string: ${hex}`);
+      }
+
       // Coerce to Uint8Array to avoid leaking the abstraction.
-      const u8a = new Uint8Array(
-        buf.buffer,
-        buf.byteOffset,
-        buf.byteLength / Uint8Array.BYTES_PER_ELEMENT,
-      );
+      const u8a = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
       return u8a;
     },
   };
