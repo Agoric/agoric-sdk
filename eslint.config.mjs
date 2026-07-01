@@ -32,6 +32,8 @@ export default [
       // XXX outside the project service
       'packages/eslint-config',
       'packages/eslint-plugin',
+      // Standalone benchmark scripts, not part of the package's tsconfig project
+      'packages/internal/benchmark/',
       'services/ymax-planner/esbuild.config.mjs',
       '.github',
       '.yarn',

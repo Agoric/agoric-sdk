@@ -11,25 +11,28 @@ const encodings = Array.from({ length: 256 }, (_, b) =>
 );
 
 /**
- * Create map entries for all four permutations of lowercase and uppercase
- * transformations of the two hex digits per byte. The map is keyed by the hex
- * string and the value is the byte value. This allows for fast lookups when
- * decoding hex strings.
+ * Map every hex string to its byte value, keyed by all four permutations of
+ * lowercase and uppercase transformations of the two hex digits per byte. This
+ * allows for fast lookups when decoding hex strings.
+ *
+ * Built with a bounded `for` loop that inserts entries incrementally, rather
+ * than `encodings.flatMap(...)` feeding a 1024-element pair array into
+ * `new Map(...)`. On XS, constructing and spreading large intermediate arrays
+ * this way is a metered-stack hazard; incremental `set` keeps stack depth O(1)
+ * in the table size.
  *
  * @type {Map<string, number>}
  */
-const decodings = new Map(
-  encodings.flatMap((hexdigits, b) => {
-    const lo = hexdigits.toLowerCase();
-    const UP = hexdigits.toUpperCase();
-    return [
-      [lo, b],
-      [`${lo[0]}${UP[1]}`, b],
-      [`${UP[0]}${lo[1]}`, b],
-      [UP, b],
-    ];
-  }),
-);
+const decodings = new Map();
+for (let b = 0; b < encodings.length; b += 1) {
+  const hexdigits = encodings[b];
+  const lo = hexdigits.toLowerCase();
+  const UP = hexdigits.toUpperCase();
+  decodings.set(lo, b);
+  decodings.set(`${lo[0]}${UP[1]}`, b);
+  decodings.set(`${UP[0]}${lo[1]}`, b);
+  decodings.set(UP, b);
+}
 
 /**
  * Create a hex codec that is portable across standard JS environments.
@@ -81,7 +84,21 @@ export const makeBufferishHexCodec = Bufferish => {
     encodeHex: buf =>
       (Bufferish.isBuffer?.(buf) ? buf : Bufferish.from(buf)).toString('hex'),
     decodeHex: hex => {
+      // `Bufferish.from(hex, 'hex')` silently drops invalid input rather than
+      // throwing: it ignores an odd-length trailing nibble and stops at the
+      // first non-hex character, returning the bytes parsed so far. Validate
+      // up front so this codec rejects the same inputs as the portable codec,
+      // throwing the identical `Invalid hex string: ${hex}` error.
+      if (hex.length % 2 !== 0) {
+        throw new Error(`Invalid hex string: ${hex}`);
+      }
       const buf = Bufferish.from(hex, 'hex');
+      // A complete parse consumes the whole string, yielding one byte per two
+      // input characters. A shorter result means a non-hex character was
+      // encountered and the tail was silently dropped.
+      if (buf.byteLength !== hex.length / 2) {
+        throw new Error(`Invalid hex string: ${hex}`);
+      }
 
       // Coerce to Uint8Array to avoid leaking the abstraction.
       const u8a = new Uint8Array(
