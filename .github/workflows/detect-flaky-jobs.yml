@@ -37,6 +37,7 @@ jobs:
             // Track all failed workflow attempts and their failed jobs
             const failedWorkflowAttempts = [];
             const allFailedJobs = new Map(); // job name -> array of attempt numbers where it failed
+            let hadErrors = false;
 
             // Loop through ALL previous attempts to gather complete flaky history
             for (let attemptNum = 1; attemptNum < currentAttempt; attemptNum++) {
@@ -82,8 +83,13 @@ jobs:
                 }
               } catch (error) {
                 console.log(`Warning: Failed to fetch attempt ${attemptNum}: ${error.message}`);
+                hadErrors = true;
                 continue;
               }
+            }
+
+            if (hadErrors) {
+              core.setOutput('had_errors', 'true');
             }
 
             // If no previous workflow attempts failed, this isn't a flaky recovery
@@ -195,6 +201,58 @@ jobs:
                         "emoji": true
                       },
                       "url": "${{ steps.check-flaky.outputs.run_url }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_FLAKY_JOBS }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify on workflow failure
+        if: steps.check-flaky.outputs.had_errors != ''
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚨 Flaky job detection workflow failed!",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "🚨 Flaky Job Detection Failed!",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "The flaky job detection workflow itself encountered an error while processing *${{ github.event.workflow_run.name }}*."
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Detection Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Triggering Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.event.workflow_run.html_url }}"
                     }
                   ]
                 }
