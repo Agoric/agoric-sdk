@@ -18,18 +18,15 @@ const encodings = Array.from({ length: 256 }, (_, b) =>
  *
  * @type {Map<string, number>}
  */
-const decodings = new Map(
-  encodings.flatMap((hexdigits, b) => {
-    const lo = hexdigits.toLowerCase();
-    const UP = hexdigits.toUpperCase();
-    return [
-      [lo, b],
-      [`${lo[0]}${UP[1]}`, b],
-      [`${UP[0]}${lo[1]}`, b],
-      [UP, b],
-    ];
-  }),
-);
+const decodings = new Map();
+for (const [b, hexdigits] of encodings.entries()) {
+  const lo = hexdigits.toLowerCase();
+  const UP = hexdigits.toUpperCase();
+  decodings.set(lo, b);
+  decodings.set(`${lo[0]}${UP[1]}`, b);
+  decodings.set(`${UP[0]}${lo[1]}`, b);
+  decodings.set(UP, b);
+}
 
 /**
  * Create a hex codec that is portable across standard JS environments.
