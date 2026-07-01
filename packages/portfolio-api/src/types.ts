@@ -361,7 +361,7 @@ export type StatusFor = {
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
     rebalanceCount: number;
-    /** @deprecated in favor of flowsRunning */
+    /** The count of all flows associated with this portfolio */
     flowCount: number;
     flowsRunning?: Record<FlowKey, FlowDetail & { awaitingSteps?: boolean }>;
     enabledAutoFeatures?: PortfolioAutoFeaturesExt;
