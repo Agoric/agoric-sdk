@@ -156,6 +156,12 @@ export type FlowStatus =
   | ({ state: 'fail' } & FlowErrors);
 
 /**
+ * Per-protocol parameters for claiming external rewards.
+ * XXX: Define this in implementation PRs
+ */
+export type ClaimRewardsParams = unknown;
+
+/**
  * Decomposed parameters for a same-chain, same-account reward-token -> USDC
  * swap (src === dest === `@{chain}`) routed through 1inch.
  *
@@ -201,7 +207,7 @@ export type MovementDesc = {
   fee?: NatAmount;
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
-  claim?: boolean;
+  claimRewards?: ClaimRewardsParams;
   swap?: SwapDesc;
 };
 

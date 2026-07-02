@@ -29,12 +29,9 @@ import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
-import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
+import { aavePoolABI } from './interfaces/aave.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
-import {
-  compoundABI,
-  compoundRewardsControllerABI,
-} from './interfaces/compound.ts';
+import { compoundABI } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
 import { getOneInchSwapArgs, oneInchRouterABI } from './interfaces/one-inch.ts';
@@ -415,18 +412,11 @@ export const AaveProtocol = {
 
     return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { remoteAddress } = dest;
     const { addresses: a } = ctx;
 
     const session = makeEvmAbiCallBatch();
-    if (claim) {
-      const aaveRewardsController = session.makeContract(
-        a.aaveRewardsController,
-        aaveRewardsControllerABI,
-      );
-      aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
-    }
     const aave = session.makeContract(a.aavePool, aavePoolABI);
     aave.withdraw(a.usdc, amount.value, remoteAddress);
     const calls = session.finish();
@@ -449,16 +439,9 @@ export const CompoundProtocol = {
 
     return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, claim, ...optsArgs) => {
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { addresses: a } = ctx;
     const session = makeEvmAbiCallBatch();
-    if (claim) {
-      const compoundRewardsController = session.makeContract(
-        a.compoundRewardsController,
-        compoundRewardsControllerABI,
-      );
-      compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
-    }
     const compound = session.makeContract(a.compound, compoundABI);
     compound.withdraw(a.usdc, amount.value);
     const calls = session.finish();
@@ -484,7 +467,7 @@ export const BeefyProtocol = {
 
     return sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const session = makeEvmAbiCallBatch();
     const vaultAddress =
@@ -526,7 +509,7 @@ export const ERC4626Protocol = {
 
     await sendGMPContractCall(ctx, src, calls, ...optsArgs);
   },
-  withdraw: async (ctx, amount, dest, _claim, ...optsArgs) => {
+  withdraw: async (ctx, amount, dest, ...optsArgs) => {
     const { addresses: a, poolKey } = ctx;
     const { remoteAddress } = dest;
     const session = makeEvmAbiCallBatch();

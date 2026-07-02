@@ -127,7 +127,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
     {
       fee: AnyNatAmountShape,
       detail: M.recordOf(M.string(), M.nat()),
-      claim: M.boolean(),
+      claimRewards: M.or(M.boolean(), M.splitRecord({}, {}, {})),
       swap: M.splitRecord({
         provider: '1inch',
         tokenIn: M.string(),
