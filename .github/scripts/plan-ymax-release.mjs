@@ -3,17 +3,7 @@
 import { spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import {
-  bundleIdFromBundleText,
-  expectedOverridesAssetName,
-  prerequisiteTargets,
-  targetInfo,
-  validateInstallRecord,
-  validateUpgradeRecord,
-} from '../../packages/portfolio-deploy/src/ymax-release-policy.mjs';
-
-const toOutputName = name =>
-  name.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+import { makeReleasePlan } from '../../packages/portfolio-deploy/src/ymax-release-policy.mjs';
 
 const makeReleaseReader = ({ gh, releaseTag }) => {
   const release = (() => {
@@ -48,117 +38,6 @@ const makeReleaseReader = ({ gh, releaseTag }) => {
   return { assetNames, getAssetJson, getAssetText, release };
 };
 
-const makePlan = ({
-  bundleIdArg,
-  mode,
-  privateArgs,
-  releaseTag,
-  target,
-  ymax1Planner,
-  gh,
-}) => {
-  if (!(target in targetInfo)) throw Error(`unsupported target: ${target}`);
-  if (!['bundle-only', 'deploy'].includes(mode)) {
-    throw Error(`unsupported --mode: ${mode}`);
-  }
-
-  const { assetNames, getAssetJson, getAssetText, release } = makeReleaseReader(
-    {
-      gh,
-      releaseTag,
-    },
-  );
-  const needBundleBuild =
-    target === 'ymax0-devnet' && !assetNames.has('bundle-ymax0.json');
-  const bundleId =
-    bundleIdArg ||
-    (assetNames.has('bundle-ymax0.json')
-      ? bundleIdFromBundleText(getAssetText('bundle-ymax0.json'))
-      : '');
-
-  const plan = {
-    mode,
-    target,
-    releaseTag,
-    releaseExists: Boolean(release.url),
-    bundleId,
-    needBundleBuild,
-    needPreUpgrade: true,
-    needUpgradeSubmit: true,
-    needUpgradeConfirm: true,
-  };
-
-  if (mode === 'bundle-only') {
-    return { ...plan, needUpgrade: true };
-  }
-
-  if (!bundleId) {
-    if (!needBundleBuild) {
-      throw Error(
-        `bundle id unavailable for ${target}; build or upload bundle-ymax0.json first`,
-      );
-    }
-    // bundleId is unknown until build-bundle runs; skip record validation.
-    // The downstream pre-upgrade job derives bundleId from the built file
-    // and writes the install/upgrade records itself.
-    return {
-      ...plan,
-      needUpgrade: plan.needUpgradeSubmit || plan.needUpgradeConfirm,
-    };
-  }
-
-  for (const priorTarget of prerequisiteTargets[target]) {
-    validateInstallRecord(
-      priorTarget,
-      bundleId,
-      getAssetJson(`${priorTarget}-install.json`),
-    );
-    validateUpgradeRecord(
-      priorTarget,
-      bundleId,
-      getAssetJson(`${priorTarget}-upgrade.json`),
-    );
-  }
-
-  const installAssetName = `${target}-install.json`;
-  if (assetNames.has(installAssetName)) {
-    validateInstallRecord(target, bundleId, getAssetJson(installAssetName));
-    plan.needPreUpgrade = false;
-  }
-
-  const upgradeAssetName = `${target}-upgrade.json`;
-  if (assetNames.has(upgradeAssetName)) {
-    const record = getAssetJson(upgradeAssetName);
-    validateUpgradeRecord(target, bundleId, record);
-    const expectedOverrides = expectedOverridesAssetName(target, privateArgs);
-    if (record.privateArgsOverridesPath !== expectedOverrides) {
-      throw Error(
-        `existing ${upgradeAssetName} uses ${record.privateArgsOverridesPath}, not ${expectedOverrides}; remove or rename ${upgradeAssetName} to change private args`,
-      );
-    }
-    plan.needUpgradeSubmit = false;
-    plan.needUpgradeConfirm = false;
-  }
-
-  const pendingAssetName = `${target}-upgrade-pending.json`;
-  if (assetNames.has(pendingAssetName)) {
-    plan.needUpgradeSubmit = false;
-  }
-
-  if (
-    target === 'ymax1-main' &&
-    (plan.needUpgradeSubmit || plan.needUpgradeConfirm) &&
-    ymax1Planner !== 'down'
-  ) {
-    throw Error('ymax1Planner must be down for ymax1-main');
-  }
-
-  return {
-    ...plan,
-    needUpgrade: plan.needUpgradeSubmit || plan.needUpgradeConfirm,
-  };
-};
-
 const makeGh =
   ({ env, spawn }) =>
   (args, { allowFailure = false, encoding = 'utf8' } = {}) => {
@@ -172,12 +51,6 @@ const makeGh =
         .join('\n'),
     );
   };
-
-const writePlanOutputs = ({ plan, writeOutput }) => {
-  for (const [key, value] of Object.entries(plan)) {
-    writeOutput(toOutputName(key), String(value));
-  }
-};
 
 const fail = message => {
   throw Error(message);
@@ -193,21 +66,22 @@ export const main = async ({
   const releaseTag = env.RELEASE_TAG || fail('$RELEASE_TAG missing');
   const target = env.TARGET || fail('--target missing');
   const gh = makeGh({ env, spawn });
-  const plan = makePlan({
+  const plan = makeReleasePlan({
     bundleIdArg: env.BUNDLE_ID || '',
     mode,
     privateArgs: env.PRIVATE_ARGS_OVERRIDES || '',
+    reader: makeReleaseReader({ gh, releaseTag }),
     releaseTag,
     target,
     ymax1Planner: env.YMAX1_PLANNER || '',
-    gh,
   });
 
-  const writeOutput = (name, value) => {
-    if (!env.GITHUB_OUTPUT) return;
-    appendFile(env.GITHUB_OUTPUT, `${name}=${value}\n`);
-  };
-  writePlanOutputs({ plan, writeOutput });
+  if (env.GITHUB_OUTPUT) {
+    for (const [key, value] of Object.entries(plan)) {
+      const name = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      appendFile(env.GITHUB_OUTPUT, `${name}=${value}\n`);
+    }
+  }
   stdout.write(`${JSON.stringify(plan, null, 2)}\n`);
 };
 
