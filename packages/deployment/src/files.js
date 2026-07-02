@@ -1,9 +1,8 @@
-import { promisify } from 'node:util';
+import { promisify, styleText } from 'node:util';
 import { Readable } from 'node:stream';
 import { mkdtemp } from 'node:fs/promises';
 import fs from 'node:fs';
 import path from 'node:path';
-import chalk from 'chalk';
 
 import { Fail } from '@endo/errors';
 
@@ -41,7 +40,10 @@ export const writing = (
     rename: promisify(rename),
 
     createFile: async (filePath, contents) => {
-      console.error(chalk.yellow(`Creating ${chalk.underline(filePath)}`));
+      console.error(
+        styleText('yellow', 'Creating ') +
+          styleText(['yellow', 'underline'], filePath),
+      );
 
       const name = basename(filePath);
       const tempDir = await mkdtemp(

@@ -2,8 +2,7 @@
 // @ts-nocheck
 import djson from 'deterministic-json';
 import { createHash } from 'node:crypto';
-import chalk from 'chalk';
-import { parseArgs } from 'node:util';
+import { parseArgs, styleText } from 'node:util';
 import { Fail } from '@endo/errors';
 import { doInit } from './init.js';
 import { shellMetaRegexp, shellEscape } from './run.js';
@@ -533,7 +532,8 @@ show-config      display the client connection parameters
       }
 
       console.error(
-        chalk.black.bgGreenBright.bold(
+        styleText(
+          ['black', 'bgGreenBright', 'bold'],
           'Your Agoric Cosmos chain is now running!',
         ),
       );
@@ -544,7 +544,7 @@ show-config      display the client connection parameters
     case 'dweb': {
       await inited();
       const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
-      stdout.write(`${chalk.yellow(cfg)}\n`);
+      stdout.write(`${styleText('yellow', cfg)}\n`);
 
       await wr.mkdir(`${DWEB_DIR}/data`, { recursive: true });
       await wr.createFile(`${DWEB_DIR}/data/cosmos-chain.json`, cfg);
@@ -591,7 +591,7 @@ show-config      display the client connection parameters
 
       console.error(
         `Use the following to provision:
-${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
+${styleText(['yellow', 'bold'], `ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 `,
       );
       break;
@@ -711,7 +711,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         _retries =>
           setup.sleep(
             SECONDS_BETWEEN_BLOCKS + 1,
-            `to check if ${chalk.underline(host)} has committed a block`,
+            `to check if ${styleText('underline', host)} has committed a block`,
           ),
         (buf, code) => {
           if (buf === '' && code === 1) {
@@ -730,11 +730,12 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
       const atLeast = host.match(/^node\d+/) ? '' : `At least one of `;
       console.error(
-        chalk.greenBright(
-          `${atLeast}${chalk.underline(
-            host,
-          )} is up-and-running (committed block height=${height})`,
-        ),
+        styleText('greenBright', atLeast) +
+          styleText(['greenBright', 'underline'], host) +
+          styleText(
+            'greenBright',
+            ` is up-and-running (committed block height=${height})`,
+          ),
       );
       break;
     }
