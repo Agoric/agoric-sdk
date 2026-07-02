@@ -340,7 +340,7 @@ __metadata:
     tmp: "npm:^0.2.1"
   peerDependencies:
     "@agoric/xsnap": "workspace:*"
-    ava: ^5.3.0 || ^6.0.0 || ^7.0.0
+    ava: "*"
   bin:
     vat: bin/vat
   languageName: node
