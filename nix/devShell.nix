@@ -8,7 +8,7 @@
       name = "agoric-devShell";
       buildInputs = with unstablePkgs; [
         git
-        go_1_24
+        go_1_25
         gopls
         (python3.withPackages (ps: [ ps.distutils ]))
         pkg-config

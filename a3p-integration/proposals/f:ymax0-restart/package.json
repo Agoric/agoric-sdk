@@ -20,7 +20,7 @@
     "@agoric/cosmic-proto": "dev",
     "@agoric/deploy-script-support": "dev",
     "@agoric/portfolio-api": "dev",
-    "@agoric/synthetic-chain": "^0.7.1",
+    "@agoric/synthetic-chain": "^0.7.2",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",

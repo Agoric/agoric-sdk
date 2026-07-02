@@ -1069,11 +1069,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:^0.7.1":
-  version: 0.7.1
-  resolution: "@agoric/synthetic-chain@npm:0.7.1"
+"@agoric/synthetic-chain@npm:^0.7.2":
+  version: 0.7.2
+  resolution: "@agoric/synthetic-chain@npm:0.7.2"
   dependencies:
-    "@agoric/client-utils": "npm:0.1.1-dev-c393dc4.0.c393dc4"
+    "@agoric/client-utils": "npm:0.1.1-dev-04baeed.0.04baeed"
     "@endo/zip": "npm:^1.0.11"
     better-sqlite3: "npm:^12.6.2"
     chalk: "npm:^5.6.2"
@@ -1083,7 +1083,7 @@ __metadata:
     tmp: "npm:0.2.5"
   bin:
     synthetic-chain: dist/cli/cli.mjs
-  checksum: 10c0/933743040cb5f2b4c3b37163e801bebecdac6459effcf8f669672a92747cbdc567a1bb84368559eac39e35e9cff61cb251514b3fa61822c8bcdb69ee73a030a2
+  checksum: 10c0/792e229db6bf2264fb2f27fedceecc9a1caa024862e67b6a0c7bb76641eaf959d35b070ac939e8db0a28cc1120b31122361c63b6e09db6d8a657bfb4542e0414
   languageName: node
   linkType: hard
 
@@ -3849,7 +3849,7 @@ __metadata:
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/deploy-script-support": "npm:dev"
     "@agoric/portfolio-api": "npm:dev"
-    "@agoric/synthetic-chain": "npm:^0.7.1"
+    "@agoric/synthetic-chain": "npm:^0.7.2"
     "@endo/far": "npm:^1.1.14"
     "@endo/init": "npm:^1.1.12"
     "@endo/pass-style": "npm:^1.6.3"
