@@ -59,7 +59,7 @@ export const main = async (
 
   const networkConfig0 = await fetchEnvNetworkConfig({ env, fetch });
   const networkConfig =
-    env.AGORIC_NET === 'devnet'
+    !env.AGORIC_NET || env.AGORIC_NET === 'local' || env.AGORIC_NET === 'devnet'
       ? networkConfig0
       : {
           ...networkConfig0,
