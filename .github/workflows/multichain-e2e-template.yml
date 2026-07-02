@@ -51,6 +51,7 @@ jobs:
           # Create logs directory with unique path per run/job
           LOG_DIR="$GITHUB_WORKSPACE/agoric-sdk/multichain-testing/logs/$GITHUB_RUN_ID/$GITHUB_JOB"
           mkdir -p "$LOG_DIR/validators"
+          mkdir -p "$LOG_DIR/describes"
           mkdir -p "$LOG_DIR/relayers"
           echo "LOG_DIR=${LOG_DIR}" >> $GITHUB_ENV
 
@@ -162,8 +163,11 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           for pod in ${VALIDATOR_PODS}; do
+            echo "Capturing pod description for ${pod}"
+            kubectl describe pod ${pod} > "${LOG_DIR}/describes/${pod}.txt" 2>&1 || true
             echo "Capturing validator logs for ${pod}"
             kubectl logs ${pod} --container=validator > "${LOG_DIR}/validators/${pod}.log" 2>&1 || true
+            kubectl logs ${pod} --container=validator --previous > "${LOG_DIR}/validators/${pod}.previous.log" 2>&1 || true
           done
 
       - name: Capture relayer logs
@@ -171,8 +175,11 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE
           for pod in ${RELAYER_PODS}; do
+            echo "Capturing pod description for ${pod}"
+            kubectl describe pod ${pod} > "${LOG_DIR}/describes/${pod}.txt" 2>&1 || true
             echo "Capturing relayer logs for ${pod}"
             kubectl logs ${pod} --container=relayer > "${LOG_DIR}/relayers/${pod}.log" 2>&1 || true
+            kubectl logs ${pod} --container=relayer --previous > "${LOG_DIR}/relayers/${pod}.previous.log" 2>&1 || true
           done
 
       - name: Upload validator and relayer logs

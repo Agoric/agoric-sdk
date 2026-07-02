@@ -132,7 +132,7 @@ index 5e73f2bdad73b2daca9485a9ef5b2ef03526d668..9e39cfef700e00e775ba7c75c5345364
 +  const module = await import(avoidBundlingModule);
 +  try {
 +    const origPJfile = module.findPackageJSON(url.pathToFileURL(startFilename));
-+    if (origPJfile) {
++    if (origPJfile && path.basename(origPJfile) === 'package.json') {
 +      // We have a package.json, so no need to create one.
 +      return;
 +    }
