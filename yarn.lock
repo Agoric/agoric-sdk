@@ -2373,7 +2373,7 @@ __metadata:
 
 "@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.3.2#~/.yarn/patches/@endo-bundle-source-npm-4.3.2-fc66574e44.patch":
   version: 4.3.2
-  resolution: "@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.3.2#~/.yarn/patches/@endo-bundle-source-npm-4.3.2-fc66574e44.patch::version=4.3.2&hash=656ba5"
+  resolution: "@endo/bundle-source@patch:@endo/bundle-source@npm%3A4.3.2#~/.yarn/patches/@endo-bundle-source-npm-4.3.2-fc66574e44.patch::version=4.3.2&hash=a6d3b2"
   dependencies:
     "@endo/base64": "npm:^1.1.1"
     "@endo/compartment-mapper": "npm:^2.3.0"
@@ -2385,7 +2385,7 @@ __metadata:
     amaro: "npm:^1.1.9"
   bin:
     bundle-source: src/tool.js
-  checksum: 10c0/a895c22b9f292f12530200d6fc3c09ca332adfa97ee04661ec4751f32b7f8a05c9a7c6f54d4c08702419a4241f002b001613ce6ed7b1d8d713798cb896317eb5
+  checksum: 10c0/93576f15271a3715ceec1e23f307aa88f01e04ba6ff47eb35d0f3b5810e785652b7f708b365172f520c37041f9c0a4833726559b26d19df76dc397daae23cb19
   languageName: node
   linkType: hard
 
