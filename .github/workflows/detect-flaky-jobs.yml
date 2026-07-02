@@ -127,85 +127,52 @@ jobs:
             console.log(`Failed workflow attempts: ${failedWorkflowAttempts.join(', ')}`);
             console.log(`Unique flaky jobs: ${uniqueFailedJobs.join(', ')}`);
 
-            // Set outputs for Slack notification
-            core.setOutput('workflow_name', workflowName);
-            core.setOutput('run_url', runUrl);
-            core.setOutput('current_attempt', currentAttempt.toString());
-            core.setOutput('total_retries', totalRetries.toString());
-            core.setOutput('failed_workflow_attempts', failedWorkflowAttempts.join(', '));
-            core.setOutput('failed_workflow_attempts_count', failedWorkflowAttemptsCount.toString());
+            // Build the Slack payload via JSON.stringify so all values are safely encoded
+            const slackPayload = JSON.stringify({
+              text: '⚠️ Flaky Job Detected!',
+              blocks: [
+                {
+                  type: 'header',
+                  text: { type: 'plain_text', text: '⚠️ Flaky Job Detected!', emoji: true }
+                },
+                {
+                  type: 'section',
+                  fields: [
+                    { type: 'mrkdwn', text: `*Workflow:*\n${workflowName}` },
+                    { type: 'mrkdwn', text: `*Branch:*\n${headBranch}` },
+                    { type: 'mrkdwn', text: `*Commit:*\n${headSha}` },
+                    { type: 'mrkdwn', text: `*Retries needed:*\n${totalRetries} (${failedWorkflowAttemptsCount} failed)` }
+                  ]
+                },
+                {
+                  type: 'section',
+                  text: { type: 'mrkdwn', text: `*Recovery:*\n✅ Passed on attempt #${currentAttempt} after failing on workflow attempt(s) #${failedWorkflowAttempts.join(', ')}` }
+                },
+                {
+                  type: 'section',
+                  text: { type: 'mrkdwn', text: `*Flaky jobs breakdown:*\n${jobFailureSummary}` }
+                },
+                {
+                  type: 'actions',
+                  elements: [
+                    {
+                      type: 'button',
+                      text: { type: 'plain_text', text: 'View Run', emoji: true },
+                      url: runUrl
+                    }
+                  ]
+                }
+              ]
+            });
+
             core.setOutput('failed_jobs', uniqueFailedJobs.join(', '));
-            core.setOutput('job_failure_details', jobFailureSummary);
-            core.setOutput('head_branch', headBranch);
-            core.setOutput('head_sha', headSha);
+            core.setOutput('slack_payload', slackPayload);
 
       - name: Send Slack notification for flaky job
         if: steps.check-flaky.outputs.failed_jobs != ''
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          payload: |
-            {
-              "text": "⚠️ Flaky Job Detected!",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "⚠️ Flaky Job Detected!",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Workflow:*\n${{ steps.check-flaky.outputs.workflow_name }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Branch:*\n${{ steps.check-flaky.outputs.head_branch }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Commit:*\n${{ steps.check-flaky.outputs.head_sha }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Retries needed:*\n${{ steps.check-flaky.outputs.total_retries }} (${{ steps.check-flaky.outputs.failed_workflow_attempts_count }} failed)"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Recovery:*\n✅ Passed on attempt #${{ steps.check-flaky.outputs.current_attempt }} after failing on workflow attempt(s) #${{ steps.check-flaky.outputs.failed_workflow_attempts }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Flaky jobs breakdown:*\n${{ steps.check-flaky.outputs.job_failure_details }}"
-                  }
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Run",
-                        "emoji": true
-                      },
-                      "url": "${{ steps.check-flaky.outputs.run_url }}"
-                    }
-                  ]
-                }
-              ]
-            }
+          payload: ${{ steps.check-flaky.outputs.slack_payload }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_FLAKY_JOBS }}
           SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
