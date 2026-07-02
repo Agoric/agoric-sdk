@@ -599,6 +599,7 @@ func NewAgoricApp(
 		runtime.NewTransientStoreService(tkeys[vbanktypes.TStoreKey]),
 		app.GetSubspace(vbank.ModuleName),
 		app.AccountKeeper, app.BankKeeper, authtypes.FeeCollectorName,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 		app.SwingSetKeeper.PushAction,
 	)
 	vbankModule := vbank.NewAppModule(app.VbankKeeper)
