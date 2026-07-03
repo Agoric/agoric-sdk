@@ -190,6 +190,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       toAddress: accountAddress as `0x${string}`,
       expectedAmount: amount,
       provider: rpc,
+      chainId: caipId,
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
 
@@ -243,7 +244,6 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       transferResult = await lookBackCctp({
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
-        chainId: caipId,
         setTimeout: ctx.setTimeout,
         signal: abortController.signal,
         kvStore: ctx.kvStore,
