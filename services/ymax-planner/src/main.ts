@@ -66,6 +66,41 @@ import { makeNowISO } from './utils.ts';
 
 const { fromEntries, entries } = Object;
 
+// exported for testing
+export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
+  const health = new Map<string, 'ok' | 'failed'>();
+  const withHealthLogging = async <T>(
+    key: string,
+    promise: Promise<T>,
+    logContext?: unknown,
+  ): Promise<T | undefined> => {
+    await null;
+    try {
+      const result = await promise;
+      if (health.get(key) === 'failed') console.warn(`Recovered ${key}`);
+      health.set(key, 'ok');
+      return result;
+    } catch (err) {
+      const { name, message } = err ?? {};
+      let alertMessage = health.has(key)
+        ? `⚠️ Failed to update ${key}`
+        : `🚨 Failed to initialize ${key}`;
+      // Include sufficient detail for line-oriented log propagation.
+      if (name && message) {
+        alertMessage = `${alertMessage}: [${name}] ${message}`;
+      }
+      if (logContext) {
+        console.error(alertMessage, logContext, err);
+      } else {
+        console.error(alertMessage, err);
+      }
+      health.set(key, 'failed');
+      return undefined;
+    }
+  };
+  return withHealthLogging;
+};
+
 const assertChainId = async (
   rpc: CosmosRPCClient,
   chainId: string,
@@ -99,6 +134,7 @@ const nowISO = makeNowISO(Date.now);
 export const main = async (
   cliArgs: string[],
   {
+    console = globalThis.console,
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
@@ -118,6 +154,7 @@ export const main = async (
   }).values;
   const makeMaybeLogger = (prefix: string): ((...args: unknown[]) => void) =>
     isVerbose ? (...args) => console.log(prefix, ...args) : () => {};
+  const withHealthLogging = makeHealthLogger(console);
 
   const makeAbortController = prepareAbortController({
     setTimeout,
@@ -288,18 +325,18 @@ export const main = async (
   });
 
   const ydsApiKey = config.yds.apiKey;
-  const ydsClient =
-    config.yds.url &&
-    ky.create({
-      fetch,
-      prefixUrl: config.yds.url,
-      headers: {
-        ...FETCH_HEADERS,
-        ...(ydsApiKey ? { 'x-resolver-auth-key': ydsApiKey } : undefined),
-      },
-      timeout: config.requestLimits.timeout,
-      retry: config.requestLimits.maxRetries,
-    });
+  const ydsClient = config.yds.url
+    ? ky.create({
+        fetch,
+        prefixUrl: config.yds.url,
+        headers: {
+          ...FETCH_HEADERS,
+          ...(ydsApiKey ? { 'x-resolver-auth-key': ydsApiKey } : undefined),
+        },
+        timeout: config.requestLimits.timeout,
+        retry: config.requestLimits.maxRetries,
+      })
+    : undefined;
 
   let lastInstrumentBlocksString = '';
   const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
@@ -309,7 +346,12 @@ export const main = async (
   };
   const getInstrumentBlocks = ydsClient
     ? async (): Promise<InstrumentBlocks | undefined> => {
-        const resp = await ydsClient.get('instruments?includeAll=true').json();
+        const resp = await withHealthLogging(
+          'instruments',
+          ydsClient.get('instruments?includeAll=true').json(),
+          config.requestLimits,
+        );
+        if (!resp) return undefined;
         const instruments = (resp as any).data as YdsInstrument[];
         const instrumentBlocks = calculateInstrumentBlocks(instruments);
 
@@ -347,9 +389,13 @@ export const main = async (
             return lastPortfolios.summaries;
           }
 
-          const resp = await ydsClient
-            .post('portfolios:list', { json: { portfolioIds } })
-            .json();
+          const reqBody = { portfolioIds };
+          const resp = await withHealthLogging(
+            'portfolios',
+            ydsClient.post('portfolios:list', { json: reqBody }).json(),
+            config.requestLimits,
+          );
+          if (!resp) return undefined;
           const summaries = ((resp as any).data as YdsPortfolioSummary[]).sort(
             (a, b) => naturalCompare(a.portfolioId, b.portfolioId),
           );
