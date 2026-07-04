@@ -898,16 +898,19 @@ export const startEngine = async (
 
   let instrumentBlocks: InstrumentBlocks | undefined;
   const updateInstrumentBlocks = async () => {
-    instrumentBlocks = await getInstrumentBlocks?.();
+    await null;
+    try {
+      instrumentBlocks = await getInstrumentBlocks?.();
+    } catch (err) {
+      console.error('🚨 [updateInstrumentBlocks]', err);
+    }
   };
 
   const [vbankAssetCapData] = await Promise.all([
     readStreamCellValue(query.vstorage, 'published.agoricNames.vbankAsset', {
       retries: 4,
     }),
-    updateInstrumentBlocks().catch(err =>
-      console.error('🚨 Failed to initialize instrument blocks', err),
-    ),
+    updateInstrumentBlocks(),
   ]);
   const vbankAssets: AssetInfo[] = marshaller
     .fromCapData(vbankAssetCapData)
@@ -924,26 +927,31 @@ export const startEngine = async (
   const { balanceCache, deferrals, portfolioRecordForKey } = portfoliosMemory;
 
   const updatePortfolioBalances = async () => {
-    const autoRebalancers = partialMap(
-      [...portfolioRecordForKey],
-      ([portfolioKey, record]) =>
-        record.status.enabledAutoFeatures?.rebalance && portfolioKey,
-    );
-    const summaries = await getPortfolioSummaries?.(autoRebalancers);
-    if (!summaries) return;
-    for (const { portfolioId, latestSnapshot } of summaries) {
-      if (!latestSnapshot) continue;
-
-      // This data might be more stale than that of our own balance queries.
-      const isoTimestamp = normalizeIsoTimestamp(latestSnapshot.ts);
-      const found = balanceCache.get(portfolioId);
-      if (found && found.isoTimestamp >= isoTimestamp) continue;
-
-      const balances = normalizeYdsPortfolioBalances(
-        latestSnapshot,
-        depositBrand,
+    await null;
+    try {
+      const autoRebalancers = partialMap(
+        [...portfolioRecordForKey],
+        ([portfolioKey, record]) =>
+          record.status.enabledAutoFeatures?.rebalance && portfolioKey,
       );
-      balanceCache.set(portfolioId, { isoTimestamp, balances });
+      const summaries = await getPortfolioSummaries?.(autoRebalancers);
+      if (!summaries) return;
+      for (const { portfolioId, latestSnapshot } of summaries) {
+        if (!latestSnapshot) continue;
+
+        // This data might be more stale than that of our own balance queries.
+        const isoTimestamp = normalizeIsoTimestamp(latestSnapshot.ts);
+        const found = balanceCache.get(portfolioId);
+        if (found && found.isoTimestamp >= isoTimestamp) continue;
+
+        const balances = normalizeYdsPortfolioBalances(
+          latestSnapshot,
+          depositBrand,
+        );
+        balanceCache.set(portfolioId, { isoTimestamp, balances });
+      }
+    } catch (err) {
+      console.error('🚨 [updatePortfolioBalances]', err);
     }
   };
 
@@ -1182,18 +1190,17 @@ export const startEngine = async (
     // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
     // transactions, so process them concurrently with portfolio events.
     await Promise.all([
-      Promise.all([
-        updateInstrumentBlocks().catch(err =>
-          console.error('⚠️ Failed to update instrument blocks', err),
-        ),
-        updatePortfolioBalances().catch(err =>
-          console.error('⚠️ Failed to update portfolio balances', err),
-        ),
-      ]).then(() =>
-        processPortfolioEvents(portfolioEvents, respHeight, portfoliosMemory, {
-          ...processPortfolioPowers,
-          instrumentBlocks,
-        }),
+      Promise.all([updateInstrumentBlocks(), updatePortfolioBalances()]).then(
+        () =>
+          processPortfolioEvents(
+            portfolioEvents,
+            respHeight,
+            portfoliosMemory,
+            {
+              ...processPortfolioPowers,
+              instrumentBlocks,
+            },
+          ),
       ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
