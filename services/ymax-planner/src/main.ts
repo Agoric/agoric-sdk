@@ -146,6 +146,22 @@ export type SimplePowers = {
 
 const nowISO = makeNowISO(Date.now);
 
+/**
+ * For debugging transactions sent at the same time, `makeNonce` defaults to
+ * wall-clock timestamps plus a counter.
+ */
+const lastNonce = { timestamp: '', counter: 0 };
+const defaultMakeNonce = () => {
+  const timestamp = nowISO();
+  if (timestamp !== lastNonce.timestamp) {
+    lastNonce.timestamp = timestamp;
+    lastNonce.counter = 1;
+  } else {
+    lastNonce.counter += 1;
+  }
+  return `${timestamp}.${lastNonce.counter}`;
+};
+
 export const main = async (
   cliArgs: string[],
   {
@@ -153,8 +169,7 @@ export const main = async (
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
-    /** `makeNonce` defaults to wall-clock timestamps for debugging sent transactions. */
-    makeNonce = nowISO,
+    makeNonce = defaultMakeNonce,
     now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
