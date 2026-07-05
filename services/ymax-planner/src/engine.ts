@@ -535,77 +535,48 @@ export const processPortfolioEvents = async (
     postYdsTransaction,
     walletStore,
   };
-  const scanAutoRebalances = async () => {
-    await null;
-    for (const [portfolioKey, portfolioRecord] of portfolioRecordForKey) {
-      const { status } = portfolioRecord;
-      const { enabledAutoFeatures, targetAllocation } = status;
-      if (!enabledAutoFeatures?.rebalance || !targetAllocation) continue;
-      if (Object.keys(status.flowsRunning || {}).length > 0) continue;
+  const shouldRebalance = (
+    portfolioKey: PortfolioKey,
+    status: StatusFor['portfolio'],
+  ): boolean => {
+    const { enabledAutoFeatures, targetAllocation } = status;
+    if (!enabledAutoFeatures?.rebalance || !targetAllocation) return false;
 
-      try {
-        // If status hasn't changed since our last successful submission,
-        // there's no point in checking.
-        const fingerprint = fingerprintPortfolioState(status, { marshaller });
-        const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
-          fingerprint,
-          repeats: 0,
-          txHash: null,
-        }));
-        if (oldState.txHash && fingerprint === oldState.fingerprint) {
-          continue;
-        }
+    // If status hasn't changed since our last successful submission,
+    // there's no point in checking.
+    const fingerprint = fingerprintPortfolioState(status, { marshaller });
+    const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
+      fingerprint,
+      repeats: 0,
+      txHash: null,
+    }));
+    if (oldState.txHash && fingerprint === oldState.fingerprint) return false;
 
-        // Likewise if we don't have new balance information.
-        const cachedBalanceData = await balanceCache.get(portfolioKey);
-        if (!cachedBalanceData) continue;
-        const { isoTimestamp, balances } = cachedBalanceData;
-        if (oldState.balancesTimestamp === isoTimestamp) continue;
-        oldState.balancesTimestamp = isoTimestamp;
+    // Likewise if we don't have new balance information.
+    const cachedBalanceData = balanceCache.get(portfolioKey);
+    if (!cachedBalanceData) return false;
+    const { isoTimestamp, balances } = cachedBalanceData;
+    if (oldState.balancesTimestamp === isoTimestamp) return false;
+    oldState.balancesTimestamp = isoTimestamp;
 
-        // XXX We should refactor to avoid adding back unchanged balances.
-        const candidateTargets = {
-          ...balances,
-          ...computeTargetBalances({
-            brand: depositBrand,
-            currentBalances: balances,
-            network,
-            targetAllocation,
-            instrumentBlocks,
-          }),
-        };
-        const shouldRebalance = checkAutoRebalance(
-          targetAllocation,
-          balances,
-          candidateTargets,
-          autoRebalance,
-        );
-        if (!shouldRebalance) continue;
-
-        const freshBalances = await getFreshBalances(portfolioKey, status);
-        const freshTimestamp = balanceCache.get(portfolioKey)!.isoTimestamp;
-        oldState.balancesTimestamp = freshTimestamp;
-        const txHash = await maybeAutoRebalance(
-          status,
-          portfolioKey,
-          freshBalances,
-          maybeAutoRebalancePowers,
-        );
-        if (txHash) {
-          memory.snapshots.set(portfolioKey, {
-            fingerprint,
-            txHash,
-            repeats: 0,
-            balancesTimestamp: freshTimestamp,
-          });
-        }
-      } catch (err) {
-        console.warn(
-          `[${portfolioKey}.autoRebalance] ⚠️ Skipping auto rebalance scan`,
-          err,
-        );
-      }
-    }
+    // XXX We should refactor to avoid adding back unchanged balances.
+    const candidateTargets = {
+      ...balances,
+      ...computeTargetBalances({
+        brand: depositBrand,
+        currentBalances: balances,
+        network,
+        targetAllocation,
+        instrumentBlocks,
+      }),
+    };
+    const rebalanceDetail = checkAutoRebalance(
+      targetAllocation,
+      balances,
+      candidateTargets,
+      autoRebalance,
+    );
+    return !!rebalanceDetail;
   };
   const handledPortfolioKeys = new Set<string>();
   // prettier-ignore
@@ -651,7 +622,7 @@ export const processPortfolioEvents = async (
           'INIT';
 
         // 'run' is the only non-terminal status.
-        if (flowStatus === 'run') return;
+        if (flowStatus === 'run') break;
         if (flowStatus !== 'INIT') continue;
 
         txHash = await startFlow(status, portfolioKey, flowKey, flowDetail);
@@ -708,7 +679,36 @@ export const processPortfolioEvents = async (
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
-  await scanAutoRebalances();
+  await makeWorkPool(portfolioRecordForKey, undefined, async entry => {
+    const [portfolioKey, portfolioRecord] = entry;
+    const { status } = portfolioRecord;
+    if (Object.keys(status.flowsRunning || {}).length > 0) return;
+
+    await null;
+    try {
+      if (!shouldRebalance(portfolioKey, status)) return;
+      const freshBalances = await getFreshBalances(portfolioKey, status);
+      const freshTimestamp = balanceCache.get(portfolioKey)!.isoTimestamp;
+      const oldState = memory.snapshots.get(portfolioKey)!;
+      oldState.balancesTimestamp = freshTimestamp;
+      const txHash = await maybeAutoRebalance(
+        status,
+        portfolioKey,
+        freshBalances,
+        maybeAutoRebalancePowers,
+      );
+      if (!txHash) return;
+      memory.snapshots.set(portfolioKey, {
+        fingerprint: fingerprintPortfolioState(status, { marshaller }),
+        txHash,
+        repeats: 0,
+        balancesTimestamp: freshTimestamp,
+      });
+    } catch (err) {
+      const msg = `[${portfolioKey}.autoRebalance] ⚠️ Failure ${err?.name}: ${err?.message}`;
+      console.warn(msg, err);
+    }
+  }).done;
 };
 
 export const processPendingTxEvents = async (
