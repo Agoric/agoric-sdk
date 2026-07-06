@@ -16,7 +16,7 @@ import {
 } from '@agoric/portfolio-api/src/target-balances.js';
 import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
 import type { FundsFlowPlan, PortfolioKey } from '@agoric/portfolio-api';
-import { annotateError } from '@endo/errors';
+import { annotateError, Fail } from '@endo/errors';
 import { inspect } from 'node:util';
 import type { InstrumentBlocks } from './instrument-status.ts';
 import { UserInputError } from './support.ts';
@@ -155,6 +155,7 @@ export type MaybeAutoRebalancePowers = {
     gasEstimator: GasEstimator;
   }) => Promise<FundsFlowPlan>;
   portfoliosPathPrefix: string;
+  postYdsTransaction?: (txHash: string) => Promise<void>;
   walletStore: ReturnType<typeof reflectWalletStore>;
 };
 
@@ -176,6 +177,7 @@ export const maybeAutoRebalance = async (
     network,
     planRebalanceToAllocations,
     portfoliosPathPrefix,
+    postYdsTransaction,
     walletStore,
   }: MaybeAutoRebalancePowers,
 ): Promise<string | undefined> => {

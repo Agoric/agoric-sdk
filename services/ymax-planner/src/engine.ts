@@ -532,6 +532,7 @@ export const processPortfolioEvents = async (
     network,
     planRebalanceToAllocations,
     portfoliosPathPrefix,
+    postYdsTransaction,
     walletStore,
   };
   const scanAutoRebalances = async () => {
