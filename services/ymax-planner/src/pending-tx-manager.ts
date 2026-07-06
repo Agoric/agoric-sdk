@@ -40,10 +40,7 @@ import {
   watchOperationResult,
   lookBackOperationResult,
 } from './watchers/operation-watcher.ts';
-import {
-  abortableSleep,
-  WatcherTransportError,
-} from './watchers/watcher-utils.ts';
+import { WatcherTransportError } from './watchers/watcher-utils.ts';
 import type { YdsNotifier } from './yds-notifier.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
@@ -705,7 +702,7 @@ export const watchWithRetry = async <T>(
         `⚠️  Watcher transport failure (attempt ${attempt}/${limit}), retrying in ${delay}ms`,
         err,
       );
-      await abortableSleep(makeAbortController, delay, signal);
+      await makeAbortController(delay, [signal]).abortedP;
       if (signal?.aborted) return undefined;
     }
   }

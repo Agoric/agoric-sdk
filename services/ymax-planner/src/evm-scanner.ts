@@ -663,10 +663,6 @@ export const waitForConfirmations = async ({
       return null;
     }
 
-    await new Promise(resolve => {
-      const { signal: timeoutSignal } = makeAbortController(sleepMs, [signal]);
-      if (timeoutSignal.aborted) return resolve(undefined);
-      timeoutSignal.addEventListener('abort', () => resolve(undefined));
-    });
+    await makeAbortController(sleepMs, [signal]).abortedP;
   }
 };

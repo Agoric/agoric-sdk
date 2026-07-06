@@ -2,7 +2,6 @@ import type { TransactionReceipt, Filter, Log } from 'ethers';
 import { Interface, AbiCoder, getAddress, keccak256 } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
-import { makePromiseKit } from '@endo/promise-kit';
 import { decodeAbiParameters } from 'viem';
 import type { EvmRpc } from '../evm-scanner.ts';
 import { waitForConfirmations } from '../evm-scanner.ts';
@@ -10,7 +9,6 @@ import {
   getBlockTimeMs,
   getConfirmationsRequired,
   getRevertConfirmationsRequired,
-  type MakeAbortController,
 } from '../support.ts';
 
 export type RetryOptions = {
@@ -31,21 +29,6 @@ export const FAILED_TX_SCOPE = 'failedTx';
 // Re-exported from its canonical leaf module (avoids an import cycle with the
 // RPC layer, which also throws it).
 export { WatcherTransportError } from '../errors.ts';
-
-/**
- * Sleep for `ms` milliseconds or until `signal` aborts (whichever comes first).
- */
-export const abortableSleep = async (
-  makeAbortController: MakeAbortController,
-  ms: number,
-  signal?: AbortSignal,
-): Promise<void> => {
-  if (signal?.aborted) return;
-  const { promise, resolve } = makePromiseKit<void>();
-  const { signal: timeout } = makeAbortController(ms, [signal]);
-  timeout.addEventListener('abort', () => resolve());
-  return promise;
-};
 
 //#region Axelar execute calldata extraction
 // AxelarExecutable entrypoint (standard)
