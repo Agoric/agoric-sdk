@@ -195,52 +195,47 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
     };
 
     let transferResult: WatcherResult | undefined;
-
-    if (opts.mode === 'live') {
-      transferResult = await watchCctpTransfer({
+    const getLiveResult = (signal?: AbortSignal) =>
+      watchCctpTransfer({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
-        signal: opts.signal,
+        signal,
         kvStore: ctx.kvStore,
         txId,
       });
+
+    if (opts.mode === 'live') {
+      transferResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
-      // Start live mode now in case the txId has not yet appeared
       const abortController = ctx.makeAbortController(
         undefined,
         opts.signal ? [opts.signal] : undefined,
       );
+      const finish = (reason: string) => {
+        log(reason);
+        abortController.abort(reason);
+      };
 
+      // Start live mode now in case the txId has not yet appeared
       const liveResultP = liveWatchWithRetry(
-        () =>
-          watchCctpTransfer({
-            ...watchArgs,
-            timeoutMs: opts.timeoutMs,
-            signal: abortController.signal,
-            kvStore: ctx.kvStore,
-            txId,
-          }),
+        () => getLiveResult(abortController.signal),
         {
           makeAbortController: ctx.makeAbortController,
           signal: abortController.signal,
           log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
         },
-        e => log(`${logPrefix} Live watcher failed:`, e),
+        err => log(`${logPrefix} Live watcher failed:`, err),
       );
       void liveResultP.then(result => {
-        if (result.settled) {
-          log(`${logPrefix} Live mode completed`);
-          abortController.abort();
-        }
+        if (result.settled) finish(`${logPrefix} Live mode completed`);
       });
 
-      await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
+      await null;
       const currentBlock = await rpc.getBlockNumber();
       await waitForBlock(rpc, currentBlock + 1);
 
-      // Scan historical blocks
       transferResult = await lookBackCctp({
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
@@ -251,12 +246,8 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       });
 
       if (transferResult.settled) {
-        // Found in lookback, cancel live mode
-        const reason = `${logPrefix} Lookback found transaction`;
-        log(reason);
-        abortController.abort(reason);
+        finish(`${logPrefix} Lookback found transaction`);
       } else {
-        // Not found in lookback, rely on live mode
         log(
           `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
         );
@@ -317,32 +308,31 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
     };
 
     let transferResult: GmpWatcherResult | undefined;
-
-    if (opts.mode === 'live') {
-      transferResult = await watchGmp({
+    const getLiveResult = (signal?: AbortSignal) =>
+      watchGmp({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
-        signal: opts.signal,
+        signal,
         kvStore: ctx.kvStore,
         makeAbortController: ctx.makeAbortController,
       });
+
+    if (opts.mode === 'live') {
+      transferResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
-      // Start live mode now in case the txId has not yet appeared
       const abortController = ctx.makeAbortController(
         undefined,
         opts.signal ? [opts.signal] : undefined,
       );
+      const finish = (reason: string) => {
+        log(reason);
+        abortController.abort(reason);
+      };
 
+      // Start live mode now in case the txId has not yet appeared
       const liveResultP = liveWatchWithRetry(
-        () =>
-          watchGmp({
-            ...watchArgs,
-            timeoutMs: opts.timeoutMs,
-            signal: abortController.signal,
-            kvStore: ctx.kvStore,
-            makeAbortController: ctx.makeAbortController,
-          }),
+        () => getLiveResult(abortController.signal),
         {
           makeAbortController: ctx.makeAbortController,
           signal: abortController.signal,
@@ -350,25 +340,16 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
         },
         err => log(`${logPrefix} Live watcher failed:`, err),
       );
-
-      // Attach handler to abort lookback if live mode completes first with
-      // a definitive result. This handler does NOT resolve the transaction -
-      // resolution happens once at the end to prevent duplicate resolutions.
       void liveResultP.then(result => {
-        if (result.settled) {
-          const reason = `${logPrefix} Live mode completed`;
-          log(reason);
-          abortController.abort(reason);
-        }
+        if (result.settled) finish(`${logPrefix} Live mode completed`);
       });
 
-      await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
+      await null;
       const currentBlock = await rpc.getBlockNumber();
       await waitForBlock(rpc, currentBlock + 1);
 
-      // Scan historical blocks
-      const lookBackResult = await lookBackGmp({
+      transferResult = await lookBackGmp({
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
         chainId: caipId,
@@ -378,15 +359,9 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
         makeAbortController: ctx.makeAbortController,
       });
 
-      // Determine which result to use based on what completed successfully
-      if (lookBackResult.settled) {
-        // Found in lookback, cancel live mode
-        transferResult = lookBackResult;
-        const reason = `${logPrefix} Lookback found transaction`;
-        log(reason);
-        abortController.abort(reason);
+      if (transferResult.settled) {
+        finish(`${logPrefix} Lookback found transaction`);
       } else {
-        // Not found in lookback, rely on live mode
         log(
           `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
         );
@@ -466,28 +441,30 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
     };
 
     let walletResult: WatcherResult | undefined;
-
-    if (opts.mode === 'live') {
-      walletResult = await watchSmartWalletTx({
+    const getLiveResult = (signal?: AbortSignal) =>
+      watchSmartWalletTx({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
-        signal: opts.signal,
+        signal,
         txId,
       });
+
+    if (opts.mode === 'live') {
+      walletResult = await getLiveResult(opts.signal);
     } else {
+      // Lookback mode with concurrent live watching
       const abortController = ctx.makeAbortController(
         undefined,
         opts.signal ? [opts.signal] : undefined,
       );
+      const finish = (reason: string) => {
+        log(reason);
+        abortController.abort(reason);
+      };
 
+      // Start live mode now in case the txId has not yet appeared
       const liveResultP = liveWatchWithRetry(
-        () =>
-          watchSmartWalletTx({
-            ...watchArgs,
-            timeoutMs: opts.timeoutMs,
-            signal: abortController.signal,
-            txId,
-          }),
+        () => getLiveResult(abortController.signal),
         {
           makeAbortController: ctx.makeAbortController,
           signal: abortController.signal,
@@ -496,14 +473,11 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
         err => log(`${logPrefix} Live watcher failed:`, err),
       );
       void liveResultP.then(result => {
-        if (result.settled) {
-          log(`${logPrefix} Live mode completed`);
-          abortController.abort();
-        }
+        if (result.settled) finish(`${logPrefix} Live mode completed`);
       });
 
+      // Wait for at least one block to ensure overlap between lookback and live mode
       await null;
-
       const currentBlock = await rpc.getBlockNumber();
       await waitForBlock(rpc, currentBlock + 1);
 
@@ -519,8 +493,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
       });
 
       if (walletResult.settled) {
-        log(`${logPrefix} Lookback found wallet creation`);
-        abortController.abort();
+        finish(`${logPrefix} Lookback found wallet creation`);
       } else {
         log(
           `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
@@ -586,27 +559,29 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
     };
 
     let transferResult: WatcherResult | undefined;
-
-    if (opts.mode === 'live') {
-      transferResult = await watchOperationResult({
+    const getLiveResult = (signal?: AbortSignal) =>
+      watchOperationResult({
         ...watchArgs,
         timeoutMs: opts.timeoutMs,
-        signal: opts.signal,
+        signal,
       });
+
+    if (opts.mode === 'live') {
+      transferResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
       const abortController = ctx.makeAbortController(
         undefined,
         opts.signal ? [opts.signal] : undefined,
       );
+      const finish = (reason: string) => {
+        log(reason);
+        abortController.abort(reason);
+      };
 
+      // Start live mode now in case the txId has not yet appeared
       const liveResultP = liveWatchWithRetry(
-        () =>
-          watchOperationResult({
-            ...watchArgs,
-            timeoutMs: opts.timeoutMs,
-            signal: abortController.signal,
-          }),
+        () => getLiveResult(abortController.signal),
         {
           makeAbortController: ctx.makeAbortController,
           signal: abortController.signal,
@@ -614,22 +589,16 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
         },
         err => log(`${logPrefix} Live watcher failed:`, err),
       );
-
       void liveResultP.then(result => {
-        if (result.settled) {
-          const reason = `${logPrefix} Live mode completed`;
-          log(reason);
-          abortController.abort(reason);
-        }
+        if (result.settled) finish(`${logPrefix} Live mode completed`);
       });
 
-      await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
+      await null;
       const currentBlock = await rpc.getBlockNumber();
       await waitForBlock(rpc, currentBlock + 1);
 
-      // Scan historical blocks
-      const lookBackResult = await lookBackOperationResult({
+      transferResult = await lookBackOperationResult({
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
         signal: abortController.signal,
@@ -637,11 +606,8 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
         makeAbortController: ctx.makeAbortController,
       });
 
-      if (lookBackResult.settled) {
-        transferResult = lookBackResult;
-        const reason = `${logPrefix} Lookback found transaction`;
-        log(reason);
-        abortController.abort(reason);
+      if (transferResult.settled) {
+        finish(`${logPrefix} Lookback found transaction`);
       } else {
         log(
           `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
