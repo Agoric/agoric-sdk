@@ -195,7 +195,7 @@ const makeMaybeAutoPowers = (
   const errors: unknown[][] = [];
   const rebalanceCalls: unknown[][] = [];
   const ydsTransactionCalls: unknown[] = [];
-  const txHash = `0x${'b'.repeat(64)}`;
+  const transactionHash = `0x${'b'.repeat(64)}`;
   const powers: MaybeAutoRebalancePowers = {
     autoRebalance: config,
     console: {
