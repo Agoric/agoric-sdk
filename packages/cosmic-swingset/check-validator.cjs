@@ -1,5 +1,4 @@
 #! /usr/bin/env node
-/* eslint-env node */
 
 // check-validator - Find if there is a validator that matches the current ag-chain-cosmos
 // Michael FIG <mfig@agoric.com>, 2021-06-25

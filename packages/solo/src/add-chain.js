@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-env node */
 import crypto from 'node:crypto';
 import djson from 'deterministic-json';
 import path from 'node:path';

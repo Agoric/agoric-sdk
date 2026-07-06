@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 /**
  * Build a function that reads and parses a JSON file.
  *

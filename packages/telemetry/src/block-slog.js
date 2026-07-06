@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { open } from 'node:fs/promises';
 import { createGzip } from 'node:zlib';
 import { SLOG_TYPES } from './context-aware-slog.js';

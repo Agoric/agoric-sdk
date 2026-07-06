@@ -1,4 +1,3 @@
-/* eslint-env node */
 /**
  * @import {Command} from 'commander';
  * @import {Amount, Brand} from '@agoric/ertp';

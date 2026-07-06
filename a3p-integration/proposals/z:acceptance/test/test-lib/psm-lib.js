@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { execa } from 'execa';
 import { getNetworkConfig } from 'agoric/src/helpers.js';
 import {

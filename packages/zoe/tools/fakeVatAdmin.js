@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
