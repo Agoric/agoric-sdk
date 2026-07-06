@@ -131,7 +131,7 @@ export const checkAutoRebalance = (
 
 export type MaybeAutoRebalancePowers = {
   autoRebalance: AutoRebalanceConfig;
-  console: Pick<Console, 'log' | 'warn'>;
+  console: Pick<Console, 'error' | 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   gasEstimator: GasEstimator;
@@ -250,7 +250,12 @@ export const maybeAutoRebalance = async (
         console.warn(logPrefix, '⚠️ Failure for rebalance', err);
       });
       void postYdsTransaction?.(tx.transactionHash).catch(err => {
-        console.warn(logPrefix, '⚠️ Failure posting transaction to YDS', err);
+        console.error(
+          logPrefix,
+          '🚨 Failure posting transaction to YDS',
+          { txHash: tx.transactionHash, agentMemo },
+          err,
+        );
       });
     }
     console.log(

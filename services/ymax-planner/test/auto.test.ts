@@ -192,12 +192,14 @@ const makeMaybeAutoPowers = (
 ) => {
   const logs: unknown[][] = [];
   const warns: unknown[][] = [];
+  const errors: unknown[][] = [];
   const rebalanceCalls: unknown[][] = [];
   const ydsTransactionCalls: unknown[] = [];
   const transactionHash = `0x${'b'.repeat(64)}`;
   const powers: MaybeAutoRebalancePowers = {
     autoRebalance: config,
     console: {
+      error: (...args) => errors.push(args),
       log: (...args) => logs.push(args),
       warn: (...args) => warns.push(args),
     },
@@ -237,7 +239,15 @@ const makeMaybeAutoPowers = (
     },
     ...overrides,
   };
-  return { logs, powers, rebalanceCalls, txHash, ydsTransactionCalls, warns };
+  return {
+    errors,
+    logs,
+    powers,
+    rebalanceCalls,
+    txHash: transactionHash,
+    ydsTransactionCalls,
+    warns,
+  };
 };
 
 test('maybeAutoRebalance submits planner rebalance when criteria fire', async t => {
@@ -274,8 +284,33 @@ test('maybeAutoRebalance posts submitted transaction to YDS outside dry run', as
     powers,
   );
 
-  t.deepEqual(ydsTransactionCalls, [
-    txHash,
+  t.deepEqual(ydsTransactionCalls, [txHash]);
+});
+
+test('maybeAutoRebalance logs YDS post failures with transaction context', async t => {
+  const postError = Error('YDS unavailable');
+  const { errors, powers, txHash } = makeMaybeAutoPowers({
+    isDryRun: false,
+    postYdsTransaction: async () => {
+      throw postError;
+    },
+  });
+
+  await maybeAutoRebalance(
+    makeAutoPortfolioStatus(),
+    'portfolio7',
+    { '@noble': makeAmount(25_000_000n) },
+    powers,
+  );
+  await Promise.resolve();
+
+  t.deepEqual(errors, [
+    [
+      '[portfolio7.autoRebalance]',
+      '🚨 Failure posting transaction to YDS',
+      { txHash, agentMemo: 'memo-123' },
+      postError,
+    ],
   ]);
 });
 

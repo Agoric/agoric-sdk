@@ -455,9 +455,17 @@ export const main = async (
           chain: networkConfig.chainName,
           ymaxInstance: config.contractInstance,
         };
-        await ydsClient.post('transactions', {
-          json,
-        });
+        await null;
+        try {
+          await ydsClient.post('transactions', {
+            json,
+          });
+        } catch (cause) {
+          throw Error(
+            `While posting transaction to YDS ${JSON.stringify(json)}`,
+            { cause },
+          );
+        }
       }
     : undefined;
 
