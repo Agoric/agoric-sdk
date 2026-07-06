@@ -459,7 +459,7 @@ export const prepareAbortController = ({
    */
   const makeAbortController = (
     timeoutMillisec?: number,
-    racingSignals?: Iterable<AbortSignal>,
+    racingSignals?: Iterable<AbortSignal | undefined>,
   ): AbortController => {
     let controller: AbortController | null = new AbortController();
     const abort: AbortController['abort'] = reason => {
@@ -472,10 +472,12 @@ export const prepareAbortController = ({
     if (timeoutMillisec !== undefined) {
       setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
     }
-    if (!racingSignals) {
+    const racingArray: AbortSignal[] | undefined =
+      racingSignals && [...racingSignals].filter(x => !!x);
+    if (!racingArray?.length) {
       return { abort, signal: controller.signal };
     }
-    const signal = AbortSignal.any([controller.signal, ...racingSignals]);
+    const signal = AbortSignal.any([controller.signal, ...racingArray]);
     signal.addEventListener('abort', _event => abort());
     return { abort, signal };
   };

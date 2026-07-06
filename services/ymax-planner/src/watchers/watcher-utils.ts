@@ -42,7 +42,7 @@ export const abortableSleep = async (
 ): Promise<void> => {
   if (signal?.aborted) return;
   const { promise, resolve } = makePromiseKit<void>();
-  const { signal: timeout } = makeAbortController(ms, signal ? [signal] : []);
+  const { signal: timeout } = makeAbortController(ms, [signal]);
   timeout.addEventListener('abort', () => resolve());
   return promise;
 };

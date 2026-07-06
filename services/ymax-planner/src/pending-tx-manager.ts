@@ -208,10 +208,7 @@ const cctpMonitor: PendingTxMonitor<CctpTx> = {
       transferResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
-      const abortController = ctx.makeAbortController(
-        undefined,
-        opts.signal ? [opts.signal] : undefined,
-      );
+      const abortController = ctx.makeAbortController(undefined, [opts.signal]);
       const finish = (reason: string) => {
         log(reason);
         abortController.abort(reason);
@@ -321,10 +318,7 @@ const gmpMonitor: PendingTxMonitor<GmpTx> = {
       transferResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
-      const abortController = ctx.makeAbortController(
-        undefined,
-        opts.signal ? [opts.signal] : undefined,
-      );
+      const abortController = ctx.makeAbortController(undefined, [opts.signal]);
       const finish = (reason: string) => {
         log(reason);
         abortController.abort(reason);
@@ -453,10 +447,7 @@ const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
       walletResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
-      const abortController = ctx.makeAbortController(
-        undefined,
-        opts.signal ? [opts.signal] : undefined,
-      );
+      const abortController = ctx.makeAbortController(undefined, [opts.signal]);
       const finish = (reason: string) => {
         log(reason);
         abortController.abort(reason);
@@ -570,10 +561,7 @@ const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
       transferResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
-      const abortController = ctx.makeAbortController(
-        undefined,
-        opts.signal ? [opts.signal] : undefined,
-      );
+      const abortController = ctx.makeAbortController(undefined, [opts.signal]);
       const finish = (reason: string) => {
         log(reason);
         abortController.abort(reason);
