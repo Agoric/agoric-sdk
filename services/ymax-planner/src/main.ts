@@ -101,6 +101,12 @@ export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
   return withHealthLogging;
 };
 
+type YdsTransactionSubmitBody = {
+  txHash: string;
+  chain: string;
+  ymaxInstance: string;
+};
+
 const assertChainId = async (
   rpc: CosmosRPCClient,
   chainId: string,

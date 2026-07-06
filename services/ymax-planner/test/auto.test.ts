@@ -220,6 +220,9 @@ const makeMaybeAutoPowers = (
       order: undefined,
     }),
     portfoliosPathPrefix: 'published.ymax0.portfolios',
+    postYdsTransaction: async txHash => {
+      ydsTransactionCalls.push(txHash);
+    },
     walletStore: {
       get: () =>
         ({
