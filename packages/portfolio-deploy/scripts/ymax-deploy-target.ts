@@ -518,6 +518,28 @@ const makeCosmosTxApi = (
         setTimeout,
       )
     ).tx_response,
+  blockByHeight: async (height: number) => {
+    type BlockResponse = {
+      block_id?: { hash?: string };
+      block?: { header?: { height?: string; time?: string } };
+    };
+    const [apiAddr] = apiAddrs;
+    const data = await fetchJsonResilient<BlockResponse>(
+      fetchFn,
+      `${apiAddr}/cosmos/base/tendermint/v1beta1/blocks/${height}`,
+      setTimeout,
+    );
+    const b64hash = data.block_id?.hash;
+    const header = data.block?.header;
+    if (!b64hash || !header?.height || !header?.time) {
+      throw Error(`incomplete block data at height ${height}`);
+    }
+    return {
+      height: Number.parseInt(header.height, 10),
+      hash: Buffer.from(b64hash, 'base64').toString('hex'),
+      time: header.time,
+    };
+  },
 });
 
 const makeAgoricVstorageApi = (
@@ -1317,12 +1339,25 @@ const confirmUpgradeContract = async (
     .join(normLogsAssetName)
     .writeText(makeNormText(sortedLogEntries));
 
+  const fetchHealthBlock = (height: number) =>
+    retryUntilCondition(
+      () => txApi.blockByHeight(height),
+      () => true,
+      `block at height ${height}`,
+      { setTimeout, retryIntervalMs: 5_000 },
+    );
+  const healthBlocks = await Promise.all([
+    fetchHealthBlock(result.upgradeBlockHeight + 1),
+    fetchHealthBlock(result.upgradeBlockHeight + 2),
+  ]);
+
   const record = await makeUpgradeRecord(
     upgradeTarget,
     install.bundleId,
     {
       ...result,
       incarnationNumber,
+      healthBlocks,
     },
     pending.privateArgsOverridesPath,
   );

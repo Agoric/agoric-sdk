@@ -772,6 +772,20 @@ const makeScenario = (repoRoot = '/agoric-sdk') => {
         }),
       });
     }
+    if (url.includes('/cosmos/base/tendermint/v1beta1/blocks/')) {
+      const height = Number(url.split('/').pop());
+      return jsonRes({
+        block_id: {
+          hash: Buffer.from(`block-hash-${height}`).toString('base64'),
+        },
+        block: {
+          header: {
+            height: `${height}`,
+            time: new Date(height * 1000).toISOString(),
+          },
+        },
+      });
+    }
     throw Error(`unexpected fetch url: ${url}`);
   };
   const env = {
@@ -2288,6 +2302,20 @@ test.serial(
             blockHeight: `${examples.upgrade.devnet0.upgradeBlockHeight}`,
             values: [JSON.stringify(update)],
           }),
+        });
+      }
+      if (url.includes('/cosmos/base/tendermint/v1beta1/blocks/')) {
+        const height = Number(url.split('/').pop());
+        return jsonRes({
+          block_id: {
+            hash: Buffer.from(`block-hash-${height}`).toString('base64'),
+          },
+          block: {
+            header: {
+              height: `${height}`,
+              time: new Date(height * 1000).toISOString(),
+            },
+          },
         });
       }
       throw Error(`unexpected fetch url: ${url}`);
