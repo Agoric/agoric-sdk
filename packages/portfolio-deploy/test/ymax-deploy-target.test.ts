@@ -2175,6 +2175,166 @@ test('phase-upgrade-submit materializes default overrides', async t => {
 });
 
 test.serial(
+  'phase-upgrade-confirm finds authz-submitted upgrades from release artifacts',
+  async t => {
+    const ctx = makeScenario();
+    const releaseTag = happyPathReleaseTag;
+    const pending = {
+      target: 'ymax0-devnet',
+      releaseTag,
+      contract: 'ymax0',
+      network: 'devnet',
+      chainId: 'agoricdev-25',
+      bundleId: examples.upgrade.devnet0.bundleId,
+      privateArgsOverridesPath: expectedOverridesAssetName('ymax0-devnet', ''),
+      invocationId: 'upgrade.ymax0-devnet.2026-07-06T21:59:57.180Z',
+      submitTime: '2026-04-16T10:00:00.000Z',
+    } as const;
+    const grantee = 'agoric1w376w9ws44d7l5cp7g5jjqn45mp5teldt5dhg9';
+    const owner = 'agoric10utru593dspjwfewcgdak8lvp9tkz0xttvcnxv';
+    const messageId = 'upgrade.ymax0-devnet.2026-07-06T20:11:53.933Z';
+    const authzTx = {
+      height: `${examples.upgrade.devnet0.upgradeBlockHeight}`,
+      txhash: examples.upgrade.devnet0.upgradeTxHash,
+      code: 0,
+      timestamp: examples.upgrade.devnet0.upgradeBlockTime,
+      tx: {
+        body: {
+          messages: [
+            {
+              '@type': '/cosmos.authz.v1beta1.MsgExec',
+              grantee,
+              msgs: [
+                {
+                  '@type': '/agoric.swingset.MsgWalletSpendAction',
+                  owner,
+                  spend_action: JSON.stringify({
+                    body: `#${JSON.stringify({
+                      method: 'invokeEntry',
+                      message: {
+                        id: messageId,
+                        method: 'upgrade',
+                        args: [{ bundleId: pending.bundleId }],
+                      },
+                    })}`,
+                  }),
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    const { execFile: baseExecFile } = ctx;
+    const execFile = async (
+      cmd: string,
+      args: string[],
+      opts?: Parameters<typeof baseExecFile>[2],
+      ...rest: unknown[]
+    ) => {
+      const logResult = fakeUpgradeLogs(
+        ctx.execs,
+        ctx.normalize,
+        cmd,
+        args,
+        opts,
+        {
+          contract: 'ymax0',
+          bundleId: pending.bundleId,
+          incarnationNumber: examples.upgrade.devnet0.incarnationNumber,
+        },
+      );
+      if (logResult) {
+        return logResult;
+      }
+      return baseExecFile(cmd, args, opts, ...rest);
+    };
+
+    const fetchFn = async (url: string) => {
+      if (url.endsWith('/network-config')) {
+        return ctx.fetchFn(url);
+      }
+      const jsonRes = (data: unknown) =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => data,
+          text: async () => JSON.stringify(data),
+        }) as Response;
+      if (url.includes('/cosmos/tx/v1beta1/txs?')) {
+        const query = new URL(url).searchParams.get('query');
+        return jsonRes({
+          tx_responses:
+            query === `message.sender='${grantee}'` ? [authzTx] : [],
+        });
+      }
+      if (url.includes('/cosmos/tx/v1beta1/txs/')) {
+        return jsonRes({ tx_response: authzTx });
+      }
+      if (url.includes(`/agoric/vstorage/data/published.wallet.${owner}`)) {
+        const update = {
+          body: `#${JSON.stringify({
+            updated: 'invocation',
+            id: messageId,
+            result: {
+              incarnationNumber: examples.upgrade.devnet0.incarnationNumber,
+            },
+          })}`,
+          slots: [],
+        };
+        return jsonRes({
+          value: JSON.stringify({
+            blockHeight: `${examples.upgrade.devnet0.upgradeBlockHeight}`,
+            values: [JSON.stringify(update)],
+          }),
+        });
+      }
+      throw Error(`unexpected fetch url: ${url}`);
+    };
+
+    seedRelease(ctx.releases, releaseTag, {
+      'bundle-ymax0.json': jsonText(examples.bundle),
+      'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+      'ymax0-devnet-upgrade-pending.json': jsonText(pending),
+      'ymax0-devnet-authz-signed-tx.json': jsonText({
+        body: {
+          messages: [
+            {
+              '@type': '/cosmos.authz.v1beta1.MsgExec',
+              grantee,
+              msgs: [],
+            },
+          ],
+        },
+      }),
+    });
+
+    await runPhase(
+      {
+        agoricSdk: ctx.agoricSdk,
+        execFile,
+        fetchFn,
+        stdout: ctx.stdout,
+      },
+      'phase-upgrade-confirm',
+      { target: 'ymax0-devnet', tag: releaseTag },
+      { ...ctx.env, AGORIC_NET: 'devnet', GRANTEE_ADDRESS: undefined },
+    );
+
+    const written = ctx.releases
+      .get(releaseTag)
+      ?.assets.get('ymax0-devnet-upgrade.json');
+    t.truthy(written);
+    t.like(JSON.parse(written || '{}'), {
+      target: 'ymax0-devnet',
+      upgradeTxHash: examples.upgrade.devnet0.upgradeTxHash,
+      incarnationNumber: examples.upgrade.devnet0.incarnationNumber,
+    });
+  },
+);
+
+test.serial(
   'confirm fails fast when the upgrade invocation errored',
   async t => {
     const ctx = makeScenario();

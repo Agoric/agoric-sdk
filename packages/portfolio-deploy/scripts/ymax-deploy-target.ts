@@ -10,6 +10,7 @@ import {
   retryUntilCondition,
 } from '@agoric/client-utils';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
+import { MsgExec } from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
 import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
 import { getControlAddress } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import type {
@@ -123,6 +124,11 @@ type AnyJson = { '@type': string };
 type WalletSpendActionMessage = AnyJson & {
   owner: string;
   spend_action: string;
+};
+
+type AuthzExecMessage = AnyJson & {
+  grantee?: string;
+  msgs?: AnyJson[];
 };
 
 /**
@@ -556,13 +562,29 @@ const makeAgoricVstorageApi = (
 // and chain consensus time, when matching an upgrade tx to its submit.
 const SUBMIT_TIME_SKEW_MS = 20 * 1_000;
 
+const extractWalletSpendActions = (
+  message: AnyJson | undefined,
+): WalletSpendActionMessage[] => {
+  if (!message) {
+    return [];
+  }
+  if (message['@type'] === MsgWalletSpendAction.typeUrl) {
+    return [message as WalletSpendActionMessage];
+  }
+  if (message['@type'] === MsgExec.typeUrl) {
+    const execMessage = message as AuthzExecMessage;
+    return (execMessage.msgs || []).flatMap(extractWalletSpendActions);
+  }
+  return [];
+};
+
 const findInvocationTx = ({
   pending,
-  sender,
+  owner,
   txs,
 }: {
   pending: PendingUpgradeRecord;
-  sender: string;
+  owner: string;
   txs: CosmosTxResponse[];
 }) => {
   // submitTime is recorded just before broadcast, so the block timestamp must
@@ -576,20 +598,23 @@ const findInvocationTx = ({
   // Returns the upgrade message (for its id) when `message` is this bundle's
   // upgrade invocation, else undefined; doubles as a predicate.
   const bundleUpgrade = (message: AnyJson) => {
-    if (!(message['@type'] === MsgWalletSpendAction.typeUrl)) return undefined;
-    const walletMessage = message as WalletSpendActionMessage;
-    if (!(walletMessage.owner === sender)) return undefined;
-    try {
-      const action = grokCapData(walletMessage.spend_action) as BridgeAction;
-      if (!(action.method === 'invokeEntry')) return undefined;
-      const msg = action.message;
-      if (!(msg.method === 'upgrade')) return undefined;
-      const [{ bundleId }] = msg.args as [{ bundleId: string }];
-      if (!(bundleId === pending.bundleId)) return undefined;
-      return msg;
-    } catch {
-      return undefined;
+    for (const walletMessage of extractWalletSpendActions(message)) {
+      if (walletMessage.owner !== owner) {
+        continue;
+      }
+      try {
+        const action = grokCapData(walletMessage.spend_action) as BridgeAction;
+        if (!(action.method === 'invokeEntry')) continue;
+        const msg = action.message;
+        if (!(msg.method === 'upgrade')) continue;
+        const [{ bundleId }] = msg.args as [{ bundleId: string }];
+        if (!(bundleId === pending.bundleId)) continue;
+        return msg;
+      } catch {
+        // Ignore malformed nested messages while scanning recent txs.
+      }
     }
+    return undefined;
   };
   const tx = txs.find(
     candidate =>
@@ -606,6 +631,36 @@ const findInvocationTx = ({
     ?.map(bundleUpgrade)
     .find(msg => msg)?.id;
   return { tx, messageId };
+};
+
+const findDetachedAuthzGrantee = async (
+  release: ReleaseRW,
+  upgradeTarget: Target,
+) => {
+  for (const name of [
+    `${upgradeTarget}-authz-signed-tx.json`,
+    `${upgradeTarget}-authz-unsigned-tx.json`,
+  ]) {
+    const asset = release.join(name).readOnly();
+    if (!(await asset.exists())) {
+      continue;
+    }
+    const txJson = (await asset.readJSON()) as {
+      body?: { messages?: AnyJson[] };
+    };
+    const messages = Array.isArray(txJson.body?.messages)
+      ? txJson.body.messages
+      : [];
+    const execMessage = messages.find(
+      (message): message is AuthzExecMessage =>
+        message?.['@type'] === MsgExec.typeUrl &&
+        typeof (message as AuthzExecMessage).grantee === 'string',
+    );
+    if (execMessage?.grantee) {
+      return execMessage.grantee;
+    }
+  }
+  return undefined;
 };
 
 type DecodedUpgradeLog = {
@@ -1137,6 +1192,7 @@ const confirmUpgradeContract = async (
     upgradeLogs,
     makeTxApiForTarget,
     makeVstorageApiForTarget,
+    grantee,
   }: StepTools & {
     upgradeLogs: CmdRunner;
     makeTxApiForTarget: (
@@ -1145,6 +1201,7 @@ const confirmUpgradeContract = async (
     makeVstorageApiForTarget: (
       upgradeTarget: Target,
     ) => Promise<ReturnType<typeof makeAgoricVstorageApi>>;
+    grantee?: string;
   },
 ) => {
   expectMissing(
@@ -1157,18 +1214,29 @@ const confirmUpgradeContract = async (
   const txApi = await makeTxApiForTarget(upgradeTarget);
   const vstorageApi = await makeVstorageApiForTarget(upgradeTarget);
   const info = getTargetInfo(upgradeTarget);
-  const sender = getControlAddress(
+  const owner = getControlAddress(
     pending.contract as 'ymax0' | 'ymax1',
     pending.network as 'devnet' | 'main',
   );
-  const txs = await txApi.txs({
-    query: `message.sender='${sender}'`,
-    orderBy: 'ORDER_BY_DESC',
-    pagination: { limit: 50 },
-  });
+  const detachedGrantee =
+    grantee || (await findDetachedAuthzGrantee(release, upgradeTarget));
+  const candidateSenders = [
+    ...new Set([owner, detachedGrantee].filter(Boolean)),
+  ];
+  const txs = (
+    await Promise.all(
+      candidateSenders.map(sender =>
+        txApi.txs({
+          query: `message.sender='${sender}'`,
+          orderBy: 'ORDER_BY_DESC',
+          pagination: { limit: 50 },
+        }),
+      ),
+    )
+  ).flat();
   const { tx: invocationTx, messageId } = findInvocationTx({
     pending,
-    sender,
+    owner,
     txs,
   });
   // The list page can be truncated, so resolve the full tx by hash. A landed
@@ -1189,7 +1257,7 @@ const confirmUpgradeContract = async (
     // dies later in the getGoodLogs retry with a vague "missing upgrade
     // result". Poll (retryUntilCondition) until the invocation update appears,
     // then check .error — mirroring getGoodLogs / client-utils pollOffer.
-    const updates = await vstorageApi.wallet(sender).readUpdates();
+    const updates = await vstorageApi.wallet(owner).readUpdates();
     const invocation = [...updates]
       .reverse()
       .find(
@@ -1335,6 +1403,7 @@ export const makeGraph = (
     release,
     setTimeout,
     now,
+    grantee,
   };
 
   const nodes: Record<string, GraphNode> = {
