@@ -244,7 +244,7 @@ const makeMaybeAutoPowers = (
     logs,
     powers,
     rebalanceCalls,
-    txHash,
+    txHash: transactionHash,
     ydsTransactionCalls,
     warns,
   };
