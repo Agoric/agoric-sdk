@@ -230,7 +230,7 @@ const makeMaybeAutoPowers = (
         ({
           rebalance: (...args: unknown[]) => {
             rebalanceCalls.push(args);
-            return { tx: { transactionHash: txHash }, id: 'mock-id' };
+            return { tx: { transactionHash }, id: 'mock-id' };
           },
         }) as any,
       saveOfferResult: () => {
