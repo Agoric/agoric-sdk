@@ -257,24 +257,26 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 			// (packages/SwingSet/src/controller/upgradeSwingset.js) that rides
 			// this same software upgrade's binary and runs at reboot.
 			//
-			// The target is pinned by explicit vatID, resolved HERE by chainID
-			// (following the `terminationTargets` precedent above), because that
-			// is the only place the chainID is known: upgradeSwingset runs during
-			// launch(), before AG_COSMOS_INIT delivers the chainID, so it cannot
-			// self-gate by chain — and it must not select by label, since a Zoe
-			// contract vat is named `zcf-<bundleLabel>[-<label>]` (so "ymax" need
-			// not appear) and mainnet runs both ymax0 and ymax1. The resolved
-			// vatID(s) are handed to the migration via the swing-store key
+			// The target is pinned by explicit vatID, NOT selected by label: a
+			// Zoe contract vat is named `zcf-<bundleLabel>[-<label>]` (so "ymax"
+			// need not appear) and mainnet runs both ymax0 and ymax1, so no
+			// label heuristic can identify or disambiguate the target. The pin
+			// is chainID-gated, following the `terminationTargets` precedent
+			// above. The migration reads it from the swing-store key
 			// `upgrade.promoteCriticalVats` (CRITICAL_PROMOTION_DIRECTIVE_KEY),
 			// which it consumes and clears; absent that key the migration is a
-			// no-op. NOTE: wiring this Go-resolved pin into that swing-store key
-			// ahead of the reboot is the remaining integration step (see #29) —
-			// candidates are a direct swingStore write from the upgrade keeper or
-			// carrying it on the upgrade plan info; for now this records the pin
-			// for operator visibility and audit.
+			// no-op.
+			//
+			// The directive is armed host-side by launch-chain.js
+			// (writeCriticalPromotionDirective) at the same reboot point, from
+			// the chainID carried on the AG_COSMOS_INIT boot message — which IS
+			// available there — using the authoritative per-chain table
+			// CRITICAL_PROMOTION_VAT_IDS in upgradeSwingset.js. This switch is
+			// the operator-visibility/audit mirror of that table and must stay
+			// in sync with it.
 			var criticalPromotionVatIDs []string
 			switch ctx.ChainID() {
-			case "agoric-mainfork-1", "agoric-3": // MAINNET (ymax1)
+			case "agoric-3": // MAINNET (ymax1)
 				criticalPromotionVatIDs = []string{"v288"}
 			case "agoricdev-25": // DEVNET (ymax0)
 				criticalPromotionVatIDs = []string{"v320"}

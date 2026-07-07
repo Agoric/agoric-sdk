@@ -14,7 +14,12 @@ export {
   loadSwingsetConfigFile,
   normalizeConfig,
 } from './controller/swingset-config-node.js';
-export { upgradeSwingset } from './controller/upgradeSwingset.js';
+export {
+  upgradeSwingset,
+  writeCriticalPromotionDirective,
+  CRITICAL_PROMOTION_VAT_IDS,
+  CRITICAL_PROMOTION_DIRECTIVE_KEY,
+} from './controller/upgradeSwingset.js';
 export {
   buildMailboxStateMap,
   buildMailbox,

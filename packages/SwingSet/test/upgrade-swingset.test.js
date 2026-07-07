@@ -9,6 +9,8 @@ import { kser } from '@agoric/kmarshal';
 import {
   makeSwingsetController,
   upgradeSwingset,
+  writeCriticalPromotionDirective,
+  CRITICAL_PROMOTION_VAT_IDS,
   buildKernelBundles,
 } from '../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
@@ -222,6 +224,51 @@ test('v4 rejects a directive pin that is not a live contract vat', async t => {
   t.throws(() => upgradeSwingset(kernelStorage), {
     message: /is terminated/,
   });
+});
+
+test('writeCriticalPromotionDirective arms the pin from the chainID and drives promotion', async t => {
+  const { hostStorage, kernelStorage } = initSwingStore();
+  const { commit } = hostStorage;
+  const { kvStore } = kernelStorage;
+  const config = {};
+  await initializeSwingset(config, [], kernelStorage, t.context.data);
+  await commit();
+
+  // The pinned agoric-3 target (v288/ymax1). Its on-chain name is a `zcf`
+  // label that does NOT carry the contract identity — the whole reason the pin
+  // is a vatID, not a label.
+  const [pin] = CRITICAL_PROMOTION_VAT_IDS['agoric-3'];
+  t.is(kvStore.get('version'), '4');
+  fabricateV3WithContractVats(kvStore, [
+    { vatID: pin, name: 'zcf-b1-abc12' },
+    { vatID: 'v71', name: 'zcf-b1-def34' },
+  ]);
+  await commit();
+
+  // A chainID with no pin (or absent chainID) arms nothing.
+  t.deepEqual(writeCriticalPromotionDirective(kvStore, 'some-other-chain'), []);
+  t.deepEqual(writeCriticalPromotionDirective(kvStore, undefined), []);
+  t.false(kvStore.has(CRITICAL_PROMOTION_DIRECTIVE_KEY));
+
+  // The chain-gated host arms the directive from the (available) chainID...
+  t.deepEqual(writeCriticalPromotionDirective(kvStore, 'agoric-3'), [pin]);
+  t.deepEqual(
+    JSON.parse(kvStore.get(CRITICAL_PROMOTION_DIRECTIVE_KEY)),
+    [pin],
+  );
+  await commit();
+
+  // ...and the migration promotes exactly that vat and consumes the directive.
+  const { modified } = upgradeSwingset(kernelStorage);
+  await commit();
+  t.is(modified, true);
+  t.is(JSON.parse(kvStore.get(`${pin}.options`)).critical, true);
+  t.is(JSON.parse(kvStore.get('v71.options')).critical, false);
+  t.false(kvStore.has(CRITICAL_PROMOTION_DIRECTIVE_KEY));
+
+  // Post-migration (version now 4) the helper never leaves a stale directive.
+  t.deepEqual(writeCriticalPromotionDirective(kvStore, 'agoric-3'), []);
+  t.false(kvStore.has(CRITICAL_PROMOTION_DIRECTIVE_KEY));
 });
 
 test('upgrade kernel state', async t => {

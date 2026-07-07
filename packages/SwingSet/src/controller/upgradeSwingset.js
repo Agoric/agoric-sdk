@@ -18,16 +18,58 @@ import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
 //     zoeStorageManager.js and zoe.js `createZCFVat`), so the contract's own
 //     name ("ymax") need not appear in it at all; and
 //   * mainnet runs BOTH ymax0 and ymax1, so any "ymax" match is ambiguous.
-// A vatID is chain-specific and unforgeable, so the pin must be resolved by the
-// chainID-gated host — the cosmos upgrade handler (golang/cosmos/app/upgrade.go)
-// already resolves per-chain vat targets under `switch ctx.ChainID()` (the
-// `terminationTargets` precedent), e.g. v288=ymax1 on agoric-3, v320=ymax0 on
-// agoricdev-25. It cannot be resolved here: upgradeSwingset runs during
-// launch(), BEFORE AG_COSMOS_INIT delivers the chainID, so this step has no way
-// to self-gate by chain — which is exactly why an earlier draft reached for a
-// label match. The host writes the resolved vatID(s) into this key before the
-// reboot; absent the key the v4 step is a clean no-op.
+// A vatID is chain-specific and unforgeable, so the pin is resolved by the
+// chainID-gated host and handed to this migration via this key, which the v4
+// step consumes and clears; absent the key the v4 step is a clean no-op.
 export const CRITICAL_PROMOTION_DIRECTIVE_KEY = 'upgrade.promoteCriticalVats';
+
+// The per-chain critical-promotion pins, resolved by the host at the reboot
+// point (writeCriticalPromotionDirective below) from the chainID carried on the
+// AG_COSMOS_INIT boot message. The cosmos upgrade handler
+// (golang/cosmos/app/upgrade.go) records the same targets under
+// `switch ctx.ChainID()` for operator visibility/audit, following the
+// `terminationTargets` precedent; this table is the authoritative source the
+// host consults to arm the directive, and the two must stay in sync.
+//
+//   agoric-3     -> v288 (ymax1)
+//   agoricdev-25 -> v320 (ymax0)
+//
+// A freshly-provisioned test environment (e.g. a3p) assigns its own vatID not
+// known ahead of time; a test there arms the directive with whatever vatID the
+// harness assigned rather than a real-chain constant.
+export const CRITICAL_PROMOTION_VAT_IDS = {
+  'agoric-3': ['v288'],
+  'agoricdev-25': ['v320'],
+};
+
+/**
+ * Arm the v4 critical-promotion directive for the chain being upgraded.
+ *
+ * Called by the host (packages/cosmic-swingset/src/launch-chain.js) at the
+ * reboot point, immediately before upgradeSwingset(), using the chainID carried
+ * on the AG_COSMOS_INIT boot message. That chainID IS available there
+ * (argv.bootMsg.chainID): upgradeSwingset runs inside launch(), which the
+ * AG_COSMOS_INIT handler invokes with the init action already in hand — so the
+ * Go-resolved pin does not need a separate swing-store write. A chainID with no
+ * pinned target (or absent chainID: ag-solo, unit tests) writes nothing.
+ *
+ * Only arms the directive when the v4 migration is still pending (version < 4),
+ * so a later reboot never leaves a stale directive that nothing consumes.
+ *
+ * @param {KVStore} kvStore
+ * @param {string} [chainID]
+ * @returns {string[]} the vatIDs written (empty when nothing was armed)
+ */
+export const writeCriticalPromotionDirective = (kvStore, chainID) => {
+  const vatIDs = (chainID && CRITICAL_PROMOTION_VAT_IDS[chainID]) || [];
+  const version = Number(kvStore.get('version')) || 0;
+  if (vatIDs.length && version < 4) {
+    kvStore.set(CRITICAL_PROMOTION_DIRECTIVE_KEY, JSON.stringify(vatIDs));
+    return vatIDs;
+  }
+  return [];
+};
+harden(writeCriticalPromotionDirective);
 
 /**
  * @import {ReapDirtThreshold, RunQueueEvent} from '../types-internal.js';

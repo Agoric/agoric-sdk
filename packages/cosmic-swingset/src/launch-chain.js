@@ -24,6 +24,7 @@ import {
   loadSwingsetConfigFile,
   normalizeConfig,
   upgradeSwingset,
+  writeCriticalPromotionDirective,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
 import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
@@ -288,6 +289,14 @@ export async function buildSwingset(
   }
 
   const pendingCoreProposals = await ensureSwingsetInitialized();
+  // Arm the v4 critical-promotion directive for the chain being upgraded, from
+  // the chainID carried on the AG_COSMOS_INIT boot message (argv.bootMsg.chainID)
+  // — which IS available at this reboot point (see garden#29). A no-op for a
+  // chainID with no pin, and for chainID-less hosts (ag-solo, unit tests).
+  const chainID =
+    /** @type {{ bootMsg?: { chainID?: string } }} */ (bootstrapArgs || {})
+      .bootMsg?.chainID;
+  writeCriticalPromotionDirective(kernelStorage.kvStore, chainID);
   const { modified } = upgradeSwingset(kernelStorage);
   const controller = await makeSwingsetController(
     kernelStorage,
