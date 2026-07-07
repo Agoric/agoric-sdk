@@ -247,7 +247,7 @@ export const maybeAutoRebalance = async (
     );
     if (!isDryRun) {
       void getWalletInvocationUpdate(id as any).catch(err => {
-        console.warn(logPrefix, '🚨 Failure for rebalance', err);
+        console.warn(logPrefix, '⚠️ Failure for rebalance', err);
       });
       void postYdsTransaction?.(tx.transactionHash).catch(err => {
         console.error(
