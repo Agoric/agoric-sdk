@@ -101,6 +101,10 @@ export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
   return withHealthLogging;
 };
 
+/**
+ * cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/routes/transactions.ts:
+ * TransactionSubmitBodySchema
+ */
 type YdsTransactionSubmitBody = {
   txHash: string;
   chain: string;
