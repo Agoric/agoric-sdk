@@ -2440,6 +2440,14 @@ test('swap reward token to USDC via 1inch', async t => {
       ],
     },
     kit,
+    undefined,
+    {
+      ...DEFAULT_FLOW_CONFIG,
+      features: {
+        ...DEFAULT_FLOW_CONFIG?.features,
+        experimentalSwap: true,
+      },
+    },
   );
   await Promise.all([swapP, txResolver.settleUntil(swapP)]);
 

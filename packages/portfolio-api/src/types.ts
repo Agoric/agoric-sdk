@@ -32,6 +32,8 @@ import type {
 export type FlowFeatures = {
   /** Control `ProgressTracker` support. */
   useProgressTracker?: boolean;
+  /** Enable experimental swap feature. */
+  experimentalSwap?: boolean;
 };
 
 /**
