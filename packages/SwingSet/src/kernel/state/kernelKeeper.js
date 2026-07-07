@@ -183,10 +183,12 @@ export const CURRENT_SCHEMA_VERSION = 4;
 //   * perform remediation for bug #9039
 // v4:
 //   * change `version` to `'4'`
-//   * promote designated running contract vats to `critical` in place, by
-//     setting `.critical = true` in each matching `vNN.options` blob (see
-//     upgradeSwingset.js). Like v3 this is a one-shot content migration, a
-//     no-op on kernels with no matching vat, and it adds no new keys.
+//   * promote the host-designated running contract vats (the vatIDs listed in
+//     the `upgrade.promoteCriticalVats` directive key, written by the
+//     chain-gated host) to `critical` in place, by setting `.critical = true`
+//     in each named `vNN.options` blob, then consuming the directive key (see
+//     upgradeSwingset.js). Like v3 this is a one-shot content migration; absent
+//     a directive it is a no-op, and it adds no persistent new keys.
 // (after v4, does not get its own version)
 //   * `upgradeEvents` recognized, but omitted if empty
 

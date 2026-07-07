@@ -255,24 +255,35 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 			// changeOptions whitelists only reapInterval). The actual write
 			// happens kernel-side, in the SwingSet v3->v4 schema migration
 			// (packages/SwingSet/src/controller/upgradeSwingset.js) that rides
-			// this same software upgrade's binary and runs at reboot. That
-			// migration locates the ymax contract vat by its options.name
-			// (ending in `-ymax0`/`-ymax1`), so it adapts to each chain's vatID
-			// without one being hardcoded here. This switch only records, for
-			// operator visibility and audit, which vat is expected to be
-			// promoted on the chain being upgraded.
-			var criticalPromotionTarget string
+			// this same software upgrade's binary and runs at reboot.
+			//
+			// The target is pinned by explicit vatID, resolved HERE by chainID
+			// (following the `terminationTargets` precedent above), because that
+			// is the only place the chainID is known: upgradeSwingset runs during
+			// launch(), before AG_COSMOS_INIT delivers the chainID, so it cannot
+			// self-gate by chain — and it must not select by label, since a Zoe
+			// contract vat is named `zcf-<bundleLabel>[-<label>]` (so "ymax" need
+			// not appear) and mainnet runs both ymax0 and ymax1. The resolved
+			// vatID(s) are handed to the migration via the swing-store key
+			// `upgrade.promoteCriticalVats` (CRITICAL_PROMOTION_DIRECTIVE_KEY),
+			// which it consumes and clears; absent that key the migration is a
+			// no-op. NOTE: wiring this Go-resolved pin into that swing-store key
+			// ahead of the reboot is the remaining integration step (see #29) —
+			// candidates are a direct swingStore write from the upgrade keeper or
+			// carrying it on the upgrade plan info; for now this records the pin
+			// for operator visibility and audit.
+			var criticalPromotionVatIDs []string
 			switch ctx.ChainID() {
-			case "agoric-mainfork-1", "agoric-3": // MAINNET
-				criticalPromotionTarget = "v288 (ymax1)"
-			case "agoricdev-25": // DEVNET
-				criticalPromotionTarget = "v320 (ymax0)"
+			case "agoric-mainfork-1", "agoric-3": // MAINNET (ymax1)
+				criticalPromotionVatIDs = []string{"v288"}
+			case "agoricdev-25": // DEVNET (ymax0)
+				criticalPromotionVatIDs = []string{"v320"}
 			}
-			if criticalPromotionTarget != "" {
+			if len(criticalPromotionVatIDs) > 0 {
 				ctx.Logger().Info(
-					"SwingSet v4 migration will promote ymax contract vat to critical",
+					"SwingSet v4 migration will promote contract vat(s) to critical",
 					"chainID", ctx.ChainID(),
-					"expectedVat", criticalPromotionTarget,
+					"vatIDs", criticalPromotionVatIDs,
 				)
 			}
 		}

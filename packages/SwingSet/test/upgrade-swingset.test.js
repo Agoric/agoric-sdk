@@ -107,7 +107,30 @@ test('kernel refuses to run with out-of-date DB - v3', async t => {
   });
 });
 
-test('v4 promotes designated contract vats to critical', async t => {
+// Must match CRITICAL_PROMOTION_DIRECTIVE_KEY in
+// ../src/controller/upgradeSwingset.js.
+const CRITICAL_PROMOTION_DIRECTIVE_KEY = 'upgrade.promoteCriticalVats';
+
+// Contract vats have no `vat.name.*` entry; the human name lives only in
+// `${vatID}.options.name`, shaped `zcf-<bundleLabel>[-<label>]` — which is why
+// the migration selects by explicit vatID, not by label. See garden#29.
+const mkContractOptions = (name, critical) =>
+  JSON.stringify({
+    name,
+    workerOptions: { type: 'local' },
+    critical,
+  });
+
+const fabricateV3WithContractVats = (kvStore, vats, terminatedIDs = []) => {
+  kvStore.set('version', '3');
+  for (const { vatID, name } of vats) {
+    kvStore.set(`${vatID}.options`, mkContractOptions(name, false));
+  }
+  kvStore.set('vat.dynamicIDs', JSON.stringify(vats.map(v => v.vatID)));
+  kvStore.set('vats.terminated', JSON.stringify(terminatedIDs));
+};
+
+test('v4 promotes the directive-designated contract vat to critical', async t => {
   const { hostStorage, kernelStorage } = initSwingStore();
   const { commit } = hostStorage;
   const { kvStore } = kernelStorage;
@@ -115,30 +138,17 @@ test('v4 promotes designated contract vats to critical', async t => {
   await initializeSwingset(config, [], kernelStorage, t.context.data);
   await commit();
 
-  // Fabricate a v3 kernel DB with a few dynamic (contract) vats: the live
-  // ymax vat we want promoted, a same-named-but-terminated prior incarnation
-  // that must be left alone, and an unrelated contract that must be left
-  // alone. Contract vats have no `vat.name.*` entry; the human name lives only
-  // in `${vatID}.options.name`, shaped `zcf-<bundleLabel>-<label>`.
+  // Fabricate a v3 kernel DB with a few dynamic (contract) vats. v70 is the
+  // chain-resolved ymax target (analog of v288/ymax1 on mainnet, v320/ymax0 on
+  // devnet); note its name carries no "ymax" at all — the whole reason we pin a
+  // vatID. v71 is an unrelated live contract that must be left alone.
   t.is(kvStore.get('version'), '4');
-  kvStore.set('version', '3');
-
-  const mkOptions = (name, critical) =>
-    JSON.stringify({
-      name,
-      workerOptions: { type: 'local' },
-      critical,
-    });
-
-  // live ymax (analog of v288/ymax1 on mainnet, v320/ymax0 on devnet)
-  kvStore.set('v70.options', mkOptions('zcf-b1-abc12-ymax0', false));
-  // terminated prior ymax incarnation — must stay non-critical
-  kvStore.set('v69.options', mkOptions('zcf-b1-abc12-ymax0', false));
-  // unrelated live contract — must stay non-critical
-  kvStore.set('v71.options', mkOptions('zcf-b1-def34-someOther', false));
-
-  kvStore.set('vat.dynamicIDs', JSON.stringify(['v69', 'v70', 'v71']));
-  kvStore.set('vats.terminated', JSON.stringify(['v69']));
+  fabricateV3WithContractVats(kvStore, [
+    { vatID: 'v70', name: 'zcf-b1-abc12' },
+    { vatID: 'v71', name: 'zcf-b1-def34' },
+  ]);
+  // the chain-gated host wrote the resolved pin before this reboot
+  kvStore.set(CRITICAL_PROMOTION_DIRECTIVE_KEY, JSON.stringify(['v70']));
   await commit();
 
   const { modified } = upgradeSwingset(kernelStorage);
@@ -147,16 +157,71 @@ test('v4 promotes designated contract vats to critical', async t => {
   t.is(modified, true);
   t.is(kvStore.get('version'), '4');
 
-  // the live ymax vat is now critical...
+  // the designated vat is now critical...
   t.is(JSON.parse(kvStore.get('v70.options')).critical, true);
-  // ...the terminated incarnation is untouched...
-  t.is(JSON.parse(kvStore.get('v69.options')).critical, false);
-  // ...and the unrelated contract is untouched.
+  // ...the unrelated contract is untouched...
   t.is(JSON.parse(kvStore.get('v71.options')).critical, false);
+  // ...and the one-shot directive was consumed.
+  t.false(kvStore.has(CRITICAL_PROMOTION_DIRECTIVE_KEY));
 
   // idempotent: re-running finds nothing to do (already at v4)
   const again = upgradeSwingset(kernelStorage);
   t.is(again.modified, false);
+});
+
+test('v4 with no directive is a clean no-op', async t => {
+  const { hostStorage, kernelStorage } = initSwingStore();
+  const { commit } = hostStorage;
+  const { kvStore } = kernelStorage;
+  const config = {};
+  await initializeSwingset(config, [], kernelStorage, t.context.data);
+  await commit();
+
+  t.is(kvStore.get('version'), '4');
+  fabricateV3WithContractVats(kvStore, [{ vatID: 'v70', name: 'zcf-b1-abc12' }]);
+  await commit();
+
+  const { modified } = upgradeSwingset(kernelStorage);
+  await commit();
+
+  // version still advances, but nothing was promoted
+  t.is(modified, true);
+  t.is(kvStore.get('version'), '4');
+  t.is(JSON.parse(kvStore.get('v70.options')).critical, false);
+});
+
+test('v4 rejects a directive pin that is not a live contract vat', async t => {
+  const { hostStorage, kernelStorage } = initSwingStore();
+  const { commit } = hostStorage;
+  const { kvStore } = kernelStorage;
+  const config = {};
+  await initializeSwingset(config, [], kernelStorage, t.context.data);
+  await commit();
+
+  t.is(kvStore.get('version'), '4');
+  fabricateV3WithContractVats(
+    kvStore,
+    [
+      { vatID: 'v70', name: 'zcf-b1-abc12' },
+      { vatID: 'v69', name: 'zcf-b1-abc12' },
+    ],
+    ['v69'], // v69 is terminated
+  );
+  await commit();
+
+  // a pin naming a vatID absent on this chain fails loudly (host mis-resolution)
+  kvStore.set(CRITICAL_PROMOTION_DIRECTIVE_KEY, JSON.stringify(['v999']));
+  await commit();
+  t.throws(() => upgradeSwingset(kernelStorage), {
+    message: /is not a live dynamic vat/,
+  });
+
+  // a pin naming a terminated vat also fails
+  kvStore.set(CRITICAL_PROMOTION_DIRECTIVE_KEY, JSON.stringify(['v69']));
+  await commit();
+  t.throws(() => upgradeSwingset(kernelStorage), {
+    message: /is terminated/,
+  });
 });
 
 test('upgrade kernel state', async t => {
