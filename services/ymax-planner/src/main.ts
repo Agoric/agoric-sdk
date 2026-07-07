@@ -101,14 +101,19 @@ export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
   return withHealthLogging;
 };
 
+// XXX better yet: Tagged<string, 'CosmosTxId'> and
+// Tagged<string, 'CosmosChainId'>
+type CosmosTxId = string;
+type CosmosChainId = string;
+
 /**
  * cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/routes/transactions.ts:
  * TransactionSubmitBodySchema
  */
 type YdsTransactionSubmitBody = {
-  txHash: string;
-  chain: string;
-  ymaxInstance: string;
+  txHash: CosmosTxId;
+  chain: CosmosChainId;
+  ymaxInstance: 'ymax0' | 'ymax1';
 };
 
 const assertChainId = async (
@@ -449,7 +454,7 @@ export const main = async (
       )
     : undefined;
   const postYdsTransaction = ydsClient
-    ? async (txHash: string): Promise<void> => {
+    ? async (txHash: CosmosTxId): Promise<void> => {
         const json: YdsTransactionSubmitBody = {
           txHash,
           chain: networkConfig.chainName,
