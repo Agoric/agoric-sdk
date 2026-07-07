@@ -9,6 +9,17 @@ import {
 } from '../kernel/state/kernelKeeper.js';
 import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
 
+// The contract-vat labels promoted to `critical` by the v4 migration
+// (see upgradeSwingset below and issue kriskowal/garden#29). A contract
+// (dynamic) vat's kernel-level `options.name` is `zcf-<bundleLabel>-<label>`
+// (packages/zoe/src/zoeService/zoeStorageManager.js), so the migration matches
+// on the trailing `-<label>` rather than a hardcoded vatID. ymax's live
+// incarnation is `ymax1` on agoric-3 mainnet (v288) and `ymax0` on
+// agoricdev-25 devnet (v320); matching by label lets one migration promote the
+// right vat on each chain without knowing either vatID in advance — which is
+// the whole point, since the vatID differs per chain (and per test env).
+export const CRITICAL_PROMOTION_LABELS = ['ymax0', 'ymax1'];
+
 /**
  * @import {ReapDirtThreshold, RunQueueEvent} from '../types-internal.js';
  * @import {KVStore} from '../types-external.js';
@@ -335,6 +346,54 @@ export const upgradeSwingset = kernelStorage => {
 
     console.log(` - #9039 remediation complete, ${count} notifies to inject`);
     newVersion = 3;
+  }
+
+  if (version < 4) {
+    // schema v4: promote designated running contract vats to `critical`.
+    //
+    // A vat's `critical` flag is fixed at createVat time behind an unforgeable
+    // key, and no runtime path (upgradeVat / changeOptions) can flip it on an
+    // already-running vat (vat-vat-admin.js changeOptions whitelists only
+    // reapInterval). But the flag is ultimately just a boolean persisted in
+    // `${vatID}.options`, read fresh by kernel.js terminateVat() at
+    // termination time (`if (critical) panic(...)`). So a one-shot kvStore
+    // rewrite here promotes a vat *in place* — preserving all of its state and
+    // capabilities — to the "halt the kernel instead of severing the vat"
+    // behavior wanted for ymax. See issue kriskowal/garden#29.
+    //
+    // This runs kernel-side (not as a core-eval): a core-eval executes
+    // in-consensus at the vat level and cannot reach kernel kvStore, so the
+    // write must ship in the kernel migration that rides the chain software
+    // upgrade — which is exactly what upgradeSwingset is. Like the v3 #9039
+    // step this is a one-shot content migration: on a kernel with no matching
+    // vat (most chains, and every non-Agoric SwingSet) it is a clean no-op
+    // that only bumps the version.
+    const terminated = new Set(
+      JSON.parse(kvStore.get('vats.terminated') || '[]'),
+    );
+    const isTarget = name =>
+      typeof name === 'string' &&
+      CRITICAL_PROMOTION_LABELS.some(label => name.endsWith(`-${label}`));
+
+    const promoted = [];
+    for (const vatID of getAllDynamicVats(getRequired)) {
+      if (terminated.has(vatID)) {
+        continue;
+      }
+      const optionsKey = `${vatID}.options`;
+      const options = JSON.parse(getRequired(optionsKey));
+      if (isTarget(options.name) && !options.critical) {
+        options.critical = true;
+        kvStore.set(optionsKey, JSON.stringify(options));
+        promoted.push(`${vatID} (${options.name})`);
+      }
+    }
+    console.log(
+      `v4 critical-promotion: promoted ${promoted.length} vat(s): ${
+        promoted.join(', ') || '(none)'
+      }`,
+    );
+    newVersion = 4;
   }
 
   const modified = newVersion !== undefined;

@@ -243,6 +243,38 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 				}
 				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
 			}
+
+			// Promote the running ymax contract vat to `critical`, so that its
+			// termination panics (halts) the chain instead of severing the vat
+			// and its exports. See issue kriskowal/garden#29.
+			//
+			// Unlike the termination targets above, this is NOT a core-eval: a
+			// core-eval runs in-consensus at the vat level and cannot reach the
+			// kernel kvStore, and there is no supported runtime path to flip an
+			// already-running vat's `critical` flag (vat-vat-admin.js
+			// changeOptions whitelists only reapInterval). The actual write
+			// happens kernel-side, in the SwingSet v3->v4 schema migration
+			// (packages/SwingSet/src/controller/upgradeSwingset.js) that rides
+			// this same software upgrade's binary and runs at reboot. That
+			// migration locates the ymax contract vat by its options.name
+			// (ending in `-ymax0`/`-ymax1`), so it adapts to each chain's vatID
+			// without one being hardcoded here. This switch only records, for
+			// operator visibility and audit, which vat is expected to be
+			// promoted on the chain being upgraded.
+			var criticalPromotionTarget string
+			switch ctx.ChainID() {
+			case "agoric-mainfork-1", "agoric-3": // MAINNET
+				criticalPromotionTarget = "v288 (ymax1)"
+			case "agoricdev-25": // DEVNET
+				criticalPromotionTarget = "v320 (ymax0)"
+			}
+			if criticalPromotionTarget != "" {
+				ctx.Logger().Info(
+					"SwingSet v4 migration will promote ymax contract vat to critical",
+					"chainID", ctx.ChainID(),
+					"expectedVat", criticalPromotionTarget,
+				)
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{

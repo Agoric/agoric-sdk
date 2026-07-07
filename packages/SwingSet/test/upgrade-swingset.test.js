@@ -30,7 +30,7 @@ test('kernel refuses to run with out-of-date DB - v0', async t => {
   // kernelkeeper v0 schema, just deleting the version key and adding
   // 'initialized'
 
-  t.is(kvStore.get('version'), '3');
+  t.is(kvStore.get('version'), '4');
   kvStore.delete(`version`);
   kvStore.set('initialized', 'true');
   await commit();
@@ -53,7 +53,7 @@ test('kernel refuses to run with out-of-date DB - v1', async t => {
   // kernelkeeper v1 schema, by reducing the version key and removing
   // vats.terminated
 
-  t.is(kvStore.get('version'), '3');
+  t.is(kvStore.get('version'), '4');
   kvStore.set(`version`, '1');
   kvStore.delete('vats.terminated');
   await commit();
@@ -76,7 +76,7 @@ test('kernel refuses to run with out-of-date DB - v2', async t => {
   // kernelkeeper v2 schema, by reducing the version key and removing
   // vats.terminated
 
-  t.is(kvStore.get('version'), '3');
+  t.is(kvStore.get('version'), '4');
   kvStore.set(`version`, '2');
   await commit();
 
@@ -84,6 +84,79 @@ test('kernel refuses to run with out-of-date DB - v2', async t => {
   await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
     message: /kernel DB is too old/,
   });
+});
+
+test('kernel refuses to run with out-of-date DB - v3', async t => {
+  const { hostStorage, kernelStorage } = initSwingStore();
+  const { commit } = hostStorage;
+  const { kvStore } = kernelStorage;
+  const config = {};
+  await initializeSwingset(config, [], kernelStorage, t.context.data);
+  await commit();
+
+  // now doctor the initial state to make it look like the kernelkeeper v3
+  // schema, by reducing the version key (v4 promotes vats to critical)
+
+  t.is(kvStore.get('version'), '4');
+  kvStore.set(`version`, '3');
+  await commit();
+
+  // Now build a controller around this modified state, which should fail.
+  await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
+    message: /kernel DB is too old/,
+  });
+});
+
+test('v4 promotes designated contract vats to critical', async t => {
+  const { hostStorage, kernelStorage } = initSwingStore();
+  const { commit } = hostStorage;
+  const { kvStore } = kernelStorage;
+  const config = {};
+  await initializeSwingset(config, [], kernelStorage, t.context.data);
+  await commit();
+
+  // Fabricate a v3 kernel DB with a few dynamic (contract) vats: the live
+  // ymax vat we want promoted, a same-named-but-terminated prior incarnation
+  // that must be left alone, and an unrelated contract that must be left
+  // alone. Contract vats have no `vat.name.*` entry; the human name lives only
+  // in `${vatID}.options.name`, shaped `zcf-<bundleLabel>-<label>`.
+  t.is(kvStore.get('version'), '4');
+  kvStore.set('version', '3');
+
+  const mkOptions = (name, critical) =>
+    JSON.stringify({
+      name,
+      workerOptions: { type: 'local' },
+      critical,
+    });
+
+  // live ymax (analog of v288/ymax1 on mainnet, v320/ymax0 on devnet)
+  kvStore.set('v70.options', mkOptions('zcf-b1-abc12-ymax0', false));
+  // terminated prior ymax incarnation — must stay non-critical
+  kvStore.set('v69.options', mkOptions('zcf-b1-abc12-ymax0', false));
+  // unrelated live contract — must stay non-critical
+  kvStore.set('v71.options', mkOptions('zcf-b1-def34-someOther', false));
+
+  kvStore.set('vat.dynamicIDs', JSON.stringify(['v69', 'v70', 'v71']));
+  kvStore.set('vats.terminated', JSON.stringify(['v69']));
+  await commit();
+
+  const { modified } = upgradeSwingset(kernelStorage);
+  await commit();
+
+  t.is(modified, true);
+  t.is(kvStore.get('version'), '4');
+
+  // the live ymax vat is now critical...
+  t.is(JSON.parse(kvStore.get('v70.options')).critical, true);
+  // ...the terminated incarnation is untouched...
+  t.is(JSON.parse(kvStore.get('v69.options')).critical, false);
+  // ...and the unrelated contract is untouched.
+  t.is(JSON.parse(kvStore.get('v71.options')).critical, false);
+
+  // idempotent: re-running finds nothing to do (already at v4)
+  const again = upgradeSwingset(kernelStorage);
+  t.is(again.modified, false);
 });
 
 test('upgrade kernel state', async t => {
@@ -120,7 +193,7 @@ test('upgrade kernel state', async t => {
 
   t.true(kvStore.has('kernel.defaultReapDirtThreshold'));
 
-  t.is(kvStore.get('version'), '3');
+  t.is(kvStore.get('version'), '4');
   kvStore.delete('version'); // i.e. revert to v0
   kvStore.set('initialized', 'true');
   kvStore.delete('vats.terminated');
@@ -211,7 +284,7 @@ test('upgrade non-reaping kernel state', async t => {
 
   t.true(kvStore.has('kernel.defaultReapDirtThreshold'));
 
-  t.is(kvStore.get('version'), '3');
+  t.is(kvStore.get('version'), '4');
   kvStore.delete('version'); // i.e. revert to v0
   kvStore.set('initialized', 'true');
   kvStore.delete('vats.terminated');
@@ -279,7 +352,7 @@ test('v3 upgrade', async t => {
   };
   const dccd = kser(disconnectionObject);
 
-  t.is(kvStore.get('version'), '3');
+  t.is(kvStore.get('version'), '4');
   kvStore.set('version', '2'); // revert to v2
   const runQueue = [];
   const acceptanceQueue = [];
@@ -455,8 +528,10 @@ test('v3 upgrade', async t => {
 
   // the version is bumped, indicating we don't need to perform this
   // remediation again (because the bug is fixed and we won't be
-  // creating similar corruption in the future)
-  data.version = '3';
+  // creating similar corruption in the future). upgradeSwingset also runs the
+  // v4 step, which finds no ymax contract vat here and so changes nothing but
+  // the version.
+  data.version = '4';
 
   // no other state changes are expected
 

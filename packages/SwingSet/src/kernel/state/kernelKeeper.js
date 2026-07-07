@@ -47,7 +47,7 @@ const enableKernelGC = true;
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 
 // most recent DB schema version
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 // Kernel state lives in a key-value store supporting key retrieval by
 // lexicographic range. All keys and values are strings.
@@ -66,9 +66,9 @@ export const CURRENT_SCHEMA_VERSION = 3;
 // only modified by a call to upgradeSwingset(). See below for
 // deltas/upgrades from one version to the next.
 //
-// The current ("v3") schema keys/values are:
+// The current ("v4") schema keys/values are:
 //
-// version = '3'
+// version = '4'
 // vat.names = JSON([names..])
 // vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
@@ -100,6 +100,9 @@ export const CURRENT_SCHEMA_VERSION = 3;
 //       .reapDirtThreshold = JSON({ thresholds })
 //         thresholds (all optional, default to kernel-wide defaultReapDirtThreshold)
 //       (leave room for .snapshotDirtThreshold for #6786)
+//       .critical = boolean // when true, termination of this vat panics the
+//                           // kernel instead of severing it (read by
+//                           // kernel.js terminateVat)
 // v$NN.o.nextID = $NN
 // v$NN.p.nextID = $NN
 // v$NN.d.nextID = $NN
@@ -178,7 +181,13 @@ export const CURRENT_SCHEMA_VERSION = 3;
 // v3:
 //   * change `version` to `'3'`
 //   * perform remediation for bug #9039
-// (after v3, does not get its own version)
+// v4:
+//   * change `version` to `'4'`
+//   * promote designated running contract vats to `critical` in place, by
+//     setting `.critical = true` in each matching `vNN.options` blob (see
+//     upgradeSwingset.js). Like v3 this is a one-shot content migration, a
+//     no-op on kernels with no matching vat, and it adds no new keys.
+// (after v4, does not get its own version)
 //   * `upgradeEvents` recognized, but omitted if empty
 
 /** @type {(s: string) => string[]} s */
