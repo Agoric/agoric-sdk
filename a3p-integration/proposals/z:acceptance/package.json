@@ -78,6 +78,7 @@
     "@agoric/xsnap-lockdown": "portal:../../agoric-sdk/packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
     "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
+    "@endo/lockdown": "patch:@endo/lockdown@npm%3A1.0.19#~/.yarn/patches/@endo-lockdown-npm-1.0.19-5484a05dce.patch",
     "@cosmjs/amino@^0.35.0-rc": "^0.36.0",
     "@cosmjs/proto-signing@^0.35.0-rc": "^0.36.0",
     "@cosmjs/stargate@npm:^0.35.0-rc": "^0.36.0",

@@ -2600,12 +2600,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/lockdown@npm:^1.0.18, @endo/lockdown@npm:^1.0.19":
+"@endo/lockdown@npm:1.0.19":
   version: 1.0.19
   resolution: "@endo/lockdown@npm:1.0.19"
   dependencies:
     ses: "npm:^2.0.0"
   checksum: 10c0/df1166f35e8a64ced5c710a7ddb5fe938909ce400bd037be62898b63662277e2ef404c5d678dea5b6d5e62cdfb7fa4eeefe6c38e58f2b95b745696a6e37a9971
+  languageName: node
+  linkType: hard
+
+"@endo/lockdown@patch:@endo/lockdown@npm%3A1.0.19#~/.yarn/patches/@endo-lockdown-npm-1.0.19-5484a05dce.patch":
+  version: 1.0.19
+  resolution: "@endo/lockdown@patch:@endo/lockdown@npm%3A1.0.19#~/.yarn/patches/@endo-lockdown-npm-1.0.19-5484a05dce.patch::version=1.0.19&hash=4ee658"
+  dependencies:
+    ses: "npm:^2.0.0"
+  checksum: 10c0/f10b78062a386b484fbfa3a7dd71a01386a787912809c82f910a38c8d249a196997ee554223a763d8654cd9534129773c32acefd80891c388c312a33abfd5231
   languageName: node
   linkType: hard
 
