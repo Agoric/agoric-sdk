@@ -9,13 +9,12 @@ name: Notify Github Actions status
 
 runs:
   steps:
-    - env:
-        SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
-        SLACK_WEBHOOK_URL: ${{ inputs.webhook }}
-      id: slack
+    - id: slack
       name: Send GitHub trigger payload
-      uses: slackapi/slack-github-action@v1.24.0
+      uses: slackapi/slack-github-action@v3.0.3
       with:
+        webhook: ${{ inputs.webhook }}
+        webhook-type: incoming-webhook
         payload: |
           {
             "text": "Job ${{ github.job }} in workflow ${{ github.workflow }} of ${{ github.repository }} status ${{ job.status }}\nDetails at ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",

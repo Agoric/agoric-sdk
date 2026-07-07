@@ -41,7 +41,7 @@ jobs:
       matrix:
         node-version: ['node-new', 'node-old']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -50,7 +50,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install graphviz
         run: sudo apt install -y graphviz
 
@@ -97,7 +97,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -167,7 +167,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -201,7 +201,7 @@ jobs:
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -288,7 +288,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: ./.github/actions/restore-node
         with:
@@ -316,7 +316,7 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -448,7 +448,7 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -483,7 +483,7 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -518,7 +518,7 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -553,7 +553,7 @@ jobs:
         id: vars
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -589,7 +589,7 @@ jobs:
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -632,7 +632,7 @@ jobs:
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
           echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -655,7 +655,7 @@ jobs:
           EOF
       - name: Restore demo-base snapshot cache
         id: demo_base_cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: packages/boot/test/cache/runutils/demo-base
           key: ${{ steps.boot-snapshot-keys.outputs.demo_base }}
@@ -663,7 +663,7 @@ jobs:
             boot-runutils-snapshot-demo-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
       - name: Restore main-vaults-base snapshot cache
         id: main_vaults_base_cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: packages/boot/test/cache/runutils/main-vaults-base
           key: ${{ steps.boot-snapshot-keys.outputs.main_vaults_base }}
@@ -671,7 +671,7 @@ jobs:
             boot-runutils-snapshot-main-vaults-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
       - name: Restore itest-vaults-base snapshot cache
         id: itest_vaults_base_cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: packages/boot/test/cache/runutils/itest-vaults-base
           key: ${{ steps.boot-snapshot-keys.outputs.itest_vaults_base }}
@@ -679,7 +679,7 @@ jobs:
             boot-runutils-snapshot-itest-vaults-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
       - name: Restore orchestration-base snapshot cache
         id: orchestration_base_cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: packages/boot/test/cache/runutils/orchestration-base
           key: ${{ steps.boot-snapshot-keys.outputs.orchestration_base }}
@@ -690,25 +690,25 @@ jobs:
         run: cd packages/boot && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: Save demo-base snapshot cache
         if: always() && steps.demo_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/demo-base') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: packages/boot/test/cache/runutils/demo-base
           key: ${{ steps.boot-snapshot-keys.outputs.demo_base }}
       - name: Save main-vaults-base snapshot cache
         if: always() && steps.main_vaults_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/main-vaults-base') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: packages/boot/test/cache/runutils/main-vaults-base
           key: ${{ steps.boot-snapshot-keys.outputs.main_vaults_base }}
       - name: Save itest-vaults-base snapshot cache
         if: always() && steps.itest_vaults_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/itest-vaults-base') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: packages/boot/test/cache/runutils/itest-vaults-base
           key: ${{ steps.boot-snapshot-keys.outputs.itest_vaults_base }}
       - name: Save orchestration-base snapshot cache
         if: always() && steps.orchestration_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/orchestration-base') != ''
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: packages/boot/test/cache/runutils/orchestration-base
           key: ${{ steps.boot-snapshot-keys.outputs.orchestration_base }}
@@ -744,7 +744,7 @@ jobs:
           echo "CI_NODE_INDEX=${{ matrix.node_index }}" >> $GITHUB_ENV
           echo "CI_NODE_TOTAL=${{ matrix.total_nodes }}" >> $GITHUB_ENV
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -787,7 +787,7 @@ jobs:
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs-unit' || 'test:unit' }}" >> $GITHUB_OUTPUT
         # BEGIN-TEST-BOILERPLATE
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
@@ -824,7 +824,7 @@ jobs:
         run: |
           echo "test=${{ matrix.engine == 'xs' && 'test:xs-worker' || 'test:swingset' }}" >> $GITHUB_OUTPUT
         # BEGIN-TEST-BOILERPLATE
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.engine }}
