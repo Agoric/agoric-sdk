@@ -1,6 +1,5 @@
 // @ts-check
 /* eslint-disable func-names */
-/* eslint-env node */
 import {
   iterateEach,
   makeCastingSpec,

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 
 /**
  * Help us workaround a limitation in Cloudflare Pages that prevents us from

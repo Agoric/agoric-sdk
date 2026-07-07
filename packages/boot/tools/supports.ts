@@ -1,5 +1,4 @@
 /* eslint-disable @jessie.js/safe-await-separator */
-/* eslint-env node */
 
 import childProcessAmbient from 'node:child_process';
 import { createHash } from 'node:crypto';

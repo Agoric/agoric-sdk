@@ -1,4 +1,3 @@
-/* eslint-env node */
 // @ts-nocheck unsupported module
 import fs from 'node:fs';
 import path from 'node:path';

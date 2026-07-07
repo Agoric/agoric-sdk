@@ -1,6 +1,5 @@
 #! /usr/bin/env node
 /* global globalThis */
-/* eslint-env node */
 import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
 import { isEntrypoint } from '../src/helpers/is-entrypoint.js';

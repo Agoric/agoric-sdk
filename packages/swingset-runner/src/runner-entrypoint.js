@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 
 // #!/usr/bin/env -S node --inspect-brk
 

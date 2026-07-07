@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 // @ts-check
 
 import '@endo/init';

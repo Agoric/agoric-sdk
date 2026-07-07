@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 
 import '@endo/init/debug.js';
 

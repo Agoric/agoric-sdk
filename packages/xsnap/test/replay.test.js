@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import test from 'ava';
 
 import * as proc from 'node:child_process';

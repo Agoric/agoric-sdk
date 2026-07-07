@@ -1,4 +1,3 @@
-/* eslint-env node */
 /**
  * @file Run as a child process of {@link ./slog-sender-pipe.js} to isolate an
  *   aggregate slog sender (@see {@link ./make-slog-sender.js}). Communicates
