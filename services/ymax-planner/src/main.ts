@@ -101,6 +101,21 @@ export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
   return withHealthLogging;
 };
 
+// XXX better yet: Tagged<string, 'CosmosTxId'> and
+// Tagged<string, 'CosmosChainId'>
+type CosmosTxId = string;
+type CosmosChainId = string;
+
+/**
+ * cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/routes/transactions.ts:
+ * TransactionSubmitBodySchema
+ */
+type YdsTransactionSubmitBody = {
+  txHash: CosmosTxId;
+  chain: CosmosChainId;
+  ymaxInstance: 'ymax0' | 'ymax1';
+};
+
 const assertChainId = async (
   rpc: CosmosRPCClient,
   chainId: string,
@@ -438,6 +453,26 @@ export const main = async (
         },
       )
     : undefined;
+  const postYdsTransaction = ydsClient
+    ? async (txHash: CosmosTxId): Promise<void> => {
+        const json: YdsTransactionSubmitBody = {
+          txHash,
+          chain: networkConfig.chainName,
+          ymaxInstance: config.contractInstance,
+        };
+        await null;
+        try {
+          await ydsClient.post('transactions', {
+            json,
+          });
+        } catch (cause) {
+          throw Error(
+            `While posting transaction to YDS ${JSON.stringify(json)}`,
+            { cause },
+          );
+        }
+      }
+    : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -480,6 +515,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    postYdsTransaction,
     autoRebalance: config.autoRebalance,
   };
 

@@ -229,6 +229,7 @@ export type Powers = {
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
+  postYdsTransaction?: (txHash: string) => Promise<void>;
   autoRebalance: AutoRebalanceConfig;
 };
 
@@ -241,10 +242,12 @@ export type ProcessPortfolioPowers = Pick<
   | 'evmTokenAddresses'
   | 'signingSmartWalletKit'
   | 'walletStore'
+  | 'makeNonce'
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
+  | 'postYdsTransaction'
   | 'autoRebalance'
 > & {
   console: Required<Powers>['console'];
@@ -326,6 +329,7 @@ export const processPortfolioEvents = async (
     instrumentBlocks,
     signingSmartWalletKit,
     walletStore,
+    makeNonce,
     getWalletInvocationUpdate,
     spectrumBlockchain,
     spectrumChainIds,
@@ -334,6 +338,7 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
+    postYdsTransaction,
     autoRebalance,
   }: ProcessPortfolioPowers,
 ) => {
@@ -523,9 +528,11 @@ export const processPortfolioEvents = async (
     inspectForStdout,
     instrumentBlocks,
     isDryRun,
+    makeNonce,
     network,
     planRebalanceToAllocations,
     portfoliosPathPrefix,
+    postYdsTransaction,
     walletStore,
   };
   const scanAutoRebalances = async () => {
