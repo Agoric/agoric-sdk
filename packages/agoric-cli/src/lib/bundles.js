@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

@@ -10,6 +10,7 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import { makePromiseKit } from '@endo/promise-kit';
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
 
@@ -456,28 +457,43 @@ export const prepareAbortController = ({
    * Make a new manually-abortable AbortSignal with optional timeout and/or
    * optional signals whose own aborts should propagate (as with
    * `AbortSignal.any`).
+   * As a convenience, the returned value includes an `abortedP` promise that
+   * promptly fulfills to undefined after the returned signal is aborted.
    */
   const makeAbortController = (
     timeoutMillisec?: number,
-    racingSignals?: Iterable<AbortSignal>,
-  ): AbortController => {
+    racingSignals?: Iterable<AbortSignal | undefined>,
+  ): AbortController & { abortedP: Promise<void> } => {
     let controller: AbortController | null = new AbortController();
     const abort: AbortController['abort'] = reason => {
-      try {
-        return controller?.abort(reason);
-      } finally {
-        controller = null;
-      }
+      const controllerRef = controller;
+      controller = null;
+      return controllerRef?.abort(reason);
     };
     if (timeoutMillisec !== undefined) {
       setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
     }
-    if (!racingSignals) {
-      return { abort, signal: controller.signal };
-    }
-    const signal = AbortSignal.any([controller.signal, ...racingSignals]);
-    signal.addEventListener('abort', _event => abort());
-    return { abort, signal };
+    const racingArray: AbortSignal[] | undefined =
+      racingSignals && [...racingSignals].filter((x): x is AbortSignal => !!x);
+
+    let signal: AbortSignal | null = racingArray?.length
+      ? AbortSignal.any([controller.signal, ...racingArray])
+      : controller.signal;
+    const { promise: abortedP, resolve } = makePromiseKit<void>();
+    const finish = async () => {
+      resolve();
+      signal?.removeEventListener('abort', onSignalAbort);
+      // Forget `signal`, but not before returning it to the caller.
+      signal = await null;
+    };
+    const onSignalAbort = _event => {
+      abort(signal?.reason);
+      void finish();
+    };
+    signal.addEventListener('abort', onSignalAbort);
+    if (signal?.aborted) void finish();
+
+    return { abort, signal: signal as AbortSignal, abortedP };
   };
   return makeAbortController;
 };

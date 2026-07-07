@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { b, Fail } from '@endo/errors';
 import url from 'node:url';
 

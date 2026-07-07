@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 
 /**
  * Simple boilerplate program providing linkage to launch an application written using modules within the

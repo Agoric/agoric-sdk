@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-env node */
 import { spawn } from 'node:child_process';
 import WebSocket from 'ws';
 import { makeCapTP, E } from '@endo/captp';

@@ -440,10 +440,7 @@ export const lookBackOperationResult = async ({
 
     // Options shared by both scans. The abort signal propagates external
     // cancellation.
-    const { signal: sharedSignal } = makeAbortController(
-      undefined,
-      signal ? [signal] : [],
-    );
+    const { signal: sharedSignal } = makeAbortController(undefined, [signal]);
 
     // Phase 1: Scan for OperationResult events (cheap: uses eth_getLogs)
     const matchingEvent = await scanEvmLogsInChunks({

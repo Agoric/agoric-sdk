@@ -101,6 +101,21 @@ export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
   return withHealthLogging;
 };
 
+// XXX better yet: Tagged<string, 'CosmosTxId'> and
+// Tagged<string, 'CosmosChainId'>
+type CosmosTxId = string;
+type CosmosChainId = string;
+
+/**
+ * cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/routes/transactions.ts:
+ * TransactionSubmitBodySchema
+ */
+type YdsTransactionSubmitBody = {
+  txHash: CosmosTxId;
+  chain: CosmosChainId;
+  ymaxInstance: 'ymax0' | 'ymax1';
+};
+
 const assertChainId = async (
   rpc: CosmosRPCClient,
   chainId: string,
@@ -131,6 +146,22 @@ export type SimplePowers = {
 
 const nowISO = makeNowISO(Date.now);
 
+/**
+ * For debugging transactions sent at the same time, `makeNonce` defaults to
+ * wall-clock timestamps plus a counter.
+ */
+const lastNonce = { timestamp: '', counter: 0 };
+const defaultMakeNonce = () => {
+  const timestamp = nowISO();
+  if (timestamp !== lastNonce.timestamp) {
+    lastNonce.timestamp = timestamp;
+    lastNonce.counter = 1;
+  } else {
+    lastNonce.counter += 1;
+  }
+  return `${timestamp}.${lastNonce.counter}`;
+};
+
 export const main = async (
   cliArgs: string[],
   {
@@ -138,8 +169,7 @@ export const main = async (
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
-    /** `makeNonce` defaults to wall-clock timestamps for debugging sent transactions. */
-    makeNonce = nowISO,
+    makeNonce = defaultMakeNonce,
     now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
@@ -438,6 +468,26 @@ export const main = async (
         },
       )
     : undefined;
+  const postYdsTransaction = ydsClient
+    ? async (txHash: CosmosTxId): Promise<void> => {
+        const json: YdsTransactionSubmitBody = {
+          txHash,
+          chain: networkConfig.chainName,
+          ymaxInstance: config.contractInstance,
+        };
+        await null;
+        try {
+          await ydsClient.post('transactions', {
+            json,
+          });
+        } catch (cause) {
+          throw Error(
+            `While posting transaction to YDS ${JSON.stringify(json)}`,
+            { cause },
+          );
+        }
+      }
+    : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
@@ -480,6 +530,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    postYdsTransaction,
     autoRebalance: config.autoRebalance,
   };
 

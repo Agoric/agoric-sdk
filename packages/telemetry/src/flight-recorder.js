@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 /// <reference types="ses" />
 
 import fsp from 'node:fs/promises';
