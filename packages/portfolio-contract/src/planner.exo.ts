@@ -8,8 +8,6 @@ import type {
   FundsFlowPlan,
   PortfolioDelegatedRebalanceParams,
 } from '@agoric/portfolio-api';
-import { type Vow, VowShape, type VowTools } from '@agoric/vow';
-import type { ZCF, ZCFSeat } from '@agoric/zoe';
 import type { Zone } from '@agoric/zone';
 import { M } from '@endo/patterns';
 import {
@@ -17,7 +15,7 @@ import {
   type PortfolioDelegationClient,
 } from './delegation.exo.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
-import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
+import type { MovementDesc } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
 import { flowIdFromKey, FlowKeyShape } from './type-guards.ts';
 
@@ -38,25 +36,15 @@ const OrderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
 export const preparePlanner = (
   zone: Zone,
   {
-    rebalance,
-    zcf,
-    getPortfolio,
+    getPortfolioPlanner,
     getPlannerDelegation,
     shapes,
-    vowTools,
   }: {
-    rebalance: (
-      seat: ZCFSeat,
-      offerArgs: OfferArgsFor['rebalance'],
-      kit: unknown, // XXX avoid circular reference
-    ) => Vow<any>; // XXX HostForGuest???
-    zcf: ZCF;
-    getPortfolio: (id: number) => PortfolioKit;
+    getPortfolioPlanner: (id: number) => PortfolioKit['planner'];
     getPlannerDelegation: (
       portfolioPlanner: PortfolioKit['planner'],
     ) => PortfolioDelegationClient | undefined;
     shapes: ReturnType<typeof makeOfferArgsShapes>;
-    vowTools: Pick<VowTools, 'asVow'>;
   },
 ) => {
   const { movementDescShape } = shapes;
@@ -72,13 +60,6 @@ export const preparePlanner = (
   const rebalanceCountShape = M.number();
 
   const PlannerI = M.interface('Planner', {
-    submit: M.call(
-      portfolioIdShape,
-      M.arrayOf(movementDescShape),
-      policyVersionShape,
-    )
-      .optional(rebalanceCountShape)
-      .returns(VowShape),
     resolvePlan: M.call(
       portfolioIdShape,
       flowIdShape,
@@ -102,36 +83,6 @@ export const preparePlanner = (
     PlannerI,
     () => ({ etc: undefined }),
     {
-      /**
-       * Submit a plan (sequence of moves) for execution in a new flow.
-       *
-       * Used by off-chain planning services to carry out expressed wishes
-       * of a portfolio owner.
-       *
-       * @deprecated
-       * @see resolvePlan
-       *
-       * @param portfolioId - Target portfolio identifier
-       * @param plan - Array of asset movements to execute
-       * @param policyVersion - on which plan is based
-       * @param rebalanceCount - presumed current count
-       * @throws i.e. Vow rejects if portfolio not found, policyVersion is not current,
-       *   or plan validation or execution fails
-       */
-      submit(
-        portfolioId: number,
-        plan: MovementDesc[],
-        policyVersion: number,
-        rebalanceCount = 0,
-      ): Vow<void> {
-        return vowTools.asVow(async () => {
-          trace('TODO(#11782): vet plan', { portfolioId, plan });
-          const pKit = getPortfolio(portfolioId);
-          pKit.planner.submitVersion(policyVersion, rebalanceCount);
-          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-          return rebalance(emptySeat, { flow: plan }, pKit);
-        });
-      },
       resolvePlan(
         portfolioId: number,
         flowId: number,
@@ -143,7 +94,7 @@ export const preparePlanner = (
           .sub(`portfolio${portfolioId}`)
           .sub(`flow${flowId}`);
         traceFlow('TODO(#11782): vet plan', planOrSteps);
-        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
       },
@@ -155,7 +106,7 @@ export const preparePlanner = (
         rebalanceCount: number,
       ) {
         trace('reject plan', { portfolioId, flowId, reason });
-        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.rejectFlowPlan(flowId, reason);
       },
@@ -164,8 +115,7 @@ export const preparePlanner = (
         delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
         planOrSteps: FundsFlowPlan | MovementDesc[],
       ): FlowKey {
-        const portfolioKit = getPortfolio(portfolioId);
-        const { planner: portfolioPlanner } = portfolioKit;
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
         const delegationClient = getPlannerDelegation(portfolioPlanner);
         assert(
           delegationClient && delegationClient.getReader().isActive(),

@@ -11,7 +11,11 @@ import { AmountMath } from '@agoric/ertp';
 import { multiplyBy, parseRatio } from '@agoric/ertp/src/ratio.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
-import { type FundsFlowPlan } from '@agoric/portfolio-api';
+import {
+  type FlowDetail,
+  type FundsFlowPlan,
+  type MovementDesc,
+} from '@agoric/portfolio-api';
 import { E } from '@endo/far';
 import { type TargetAllocation } from '../src/type-guards.ts';
 import { setupTrader } from './contract-setup.ts';
@@ -22,31 +26,6 @@ import {
   makeCreateAndDepositScenarioRunner,
   keys,
 } from './contract-test-support.ts';
-
-test('redeem, use planner invitation', async t => {
-  const { common, trader1, planner1 } = await setupPlanner(t);
-
-  await planner1.redeem();
-
-  await Promise.all([trader1.openPortfolio(t, {}, {}), ackNFA(common.utils)]);
-  const { usdc } = common.brands;
-  const Deposit = usdc.units(3_333.33);
-  await trader1.rebalance(
-    t,
-    { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '+agoric', amount: Deposit }] },
-  );
-  t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 1,
-    rebalanceCount: 0,
-  });
-
-  await E(planner1.stub).submit(0, [], 1);
-  t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 1,
-    rebalanceCount: 1,
-  });
-});
 
 test('request rebalance - send same targetAllocation', async t => {
   const { common, trader1, planner1 } = await setupPlanner(t);
@@ -65,36 +44,64 @@ test('request rebalance - send same targetAllocation', async t => {
     policyVersion: 1,
     rebalanceCount: 0,
   });
+
+  const pId: number = trader1.getPortfolioId();
+  const resolveNextPlan = async (
+    flowType?: FlowDetail['type'],
+    plan: MovementDesc[] = [],
+  ) => {
+    const {
+      flowsRunning = {},
+      policyVersion,
+      rebalanceCount,
+    } = await trader1.getPortfolioStatus();
+    t.is(keys(flowsRunning).length, 1);
+    const [[flowId, detail]] = getRunningFlowEntries(flowsRunning);
+    const fId = Number(flowId.replace('flow', ''));
+
+    // narrow the type
+    if (flowType !== undefined && detail.type !== flowType)
+      throw t.fail(detail.type);
+
+    await E(planner1.stub).resolvePlan(
+      pId,
+      fId,
+      plan,
+      policyVersion,
+      rebalanceCount,
+    );
+    t.log('planner resolved plan');
+  };
+
   const { usdc } = common.brands;
   const Deposit = usdc.units(3_333.33);
   t.log('trader1 deposits', Deposit, targetAllocation);
-  await trader1.rebalance(
-    t,
-    { give: { Deposit }, want: {} },
-    { flow: [{ src: '<Deposit>', dest: '+agoric', amount: Deposit }] },
-  );
+  await Promise.all([
+    trader1.deposit(t, Deposit),
+    resolveNextPlan('deposit', [
+      { src: '<Deposit>', dest: '+agoric', amount: Deposit },
+    ]),
+  ]);
   t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 2,
-    rebalanceCount: 0,
+    policyVersion: 1,
+    rebalanceCount: 1,
   });
 
-  t.log('planner carries out (empty) deposit plan');
-  const mockPlan = [];
-  await E(planner1.stub).submit(0, mockPlan, 2);
+  t.log('user requests rebalance after yield makes things unbalanced');
+  await Promise.all([
+    trader1.simpleRebalance(t, { give: {}, want: {} }, { targetAllocation }),
+    resolveNextPlan('rebalance', []),
+  ]);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 2,
     rebalanceCount: 1,
   });
 
-  t.log('user requests rebalance after yield makes things unbalanced');
-  await trader1.rebalance(t, { give: {}, want: {} }, { targetAllocation });
-  t.like(await trader1.getPortfolioStatus(), {
-    policyVersion: 3,
-    rebalanceCount: 0,
-  });
-
-  t.log('planner carries out (empty) rebalance plan');
-  await E(planner1.stub).submit(0, mockPlan, 3);
+  t.log('trader re-sends the *same* targetAllocation as before');
+  await Promise.all([
+    trader1.simpleRebalance(t, { give: {}, want: {} }, { targetAllocation }),
+    resolveNextPlan('rebalance', []),
+  ]);
   t.like(await trader1.getPortfolioStatus(), {
     policyVersion: 3,
     rebalanceCount: 1,
