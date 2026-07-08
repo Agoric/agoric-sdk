@@ -413,7 +413,7 @@ test.serial('delegate ymax control; invite planner; submit plan', async t => {
   });
 
   t.log('make a portfolio');
-  const { poc26 } = common.brands;
+  const { usdc, poc26 } = common.brands;
   const accessToken = poc26.mint.mintPayment(poc26.make(1n));
   const [walletTrader] = await provisionSmartWallet('agoric1trader1');
   await E(E(walletTrader).getDepositFacet()).receive(accessToken);
@@ -430,10 +430,35 @@ test.serial('delegate ymax control; invite planner; submit plan', async t => {
 
   await Promise.all([openP, ackNFA(common.utils, -1)]);
 
-  t.log('invoke planner');
+  t.log('trader deposits, awaiting planner');
+  const Deposit = usdc.units(1_000);
+  await E(E(walletTrader).getDepositFacet()).receive(
+    await common.utils.pourPayment(Deposit),
+  );
+  const depositP = E(E(walletTrader).getOffersFacet()).executeOffer({
+    id: 2,
+    invitationSpec: {
+      source: 'continuing',
+      invitationMakerName: 'Deposit',
+      previousOffer: 1,
+    },
+    proposal: { give: { Deposit }, want: {} },
+    offerArgs: {},
+  });
+  await eventLoopIteration(); // wait for startFlow before resolving it
+
+  t.log('invoke planner to resolve the deposit plan');
   await E(E(walletPl).getInvokeFacet()).invokeEntry({
     targetName: 'planner',
-    method: 'submit',
-    args: [0, [], 0, 0],
+    method: 'resolvePlan',
+    args: [
+      0,
+      1,
+      [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }],
+      0,
+      0,
+    ],
   });
+
+  await depositP;
 });

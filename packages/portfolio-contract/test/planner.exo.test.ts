@@ -21,102 +21,6 @@ import { makeStorageTools } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
-test('planner exo submit method', async t => {
-  const zone = makeHeapZone();
-
-  const vt = prepareVowTools(zone);
-  // Mock dependencies with minimal implementation
-  const mockRebalance = (_seat, offerArgs, _kit) => {
-    t.log('rebalance called with', offerArgs);
-    return vt.asVow(() => undefined);
-  };
-
-  const mockZcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
-  const board = makeFakeBoard();
-  const storage = makeFakeStorageKit('published', { sequence: true });
-  const { getPortfolioStatus } = makeStorageTools(storage);
-  const marshaller = board.getReadonlyMarshaller();
-  const makePortfolio = preparePortfolioKit(zone, {
-    usdcBrand: USDC,
-    marshaller,
-    portfoliosNode: storage.rootNode
-      .makeChildNode('ymax0')
-      .makeChildNode('portfolios'),
-    vowTools: vt,
-    ...({} as any),
-  });
-  const aPortfolio = makePortfolio({ portfolioId: 1 });
-  const mockGetPortfolio = _id => aPortfolio;
-
-  // Create planner exo
-  const makePlanner = preparePlanner(zone, {
-    rebalance: mockRebalance,
-    zcf: mockZcf,
-    getPortfolio: mockGetPortfolio,
-    getPlannerDelegation: () => undefined,
-    shapes: makeOfferArgsShapes(USDC),
-    vowTools: vt,
-  });
-
-  const planner = makePlanner();
-
-  // Test submit method
-  aPortfolio.manager.setTargetAllocation({ USDN: 100n });
-
-  {
-    const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
-    t.log('targetAllocation', aPortfolio.reader.getTargetAllocation(), {
-      policyVersion,
-      rebalanceCount,
-    });
-    t.deepEqual(
-      { policyVersion, rebalanceCount },
-      { policyVersion: 1, rebalanceCount: 0 },
-      'version 1 after setTargetAllocation',
-    );
-  }
-
-  const portfolioId = 0;
-  const amount = { brand: USDC, value: 100n };
-  const plan: MovementDesc[] = [
-    { src: '+agoric', dest: '@agoric', amount },
-    { src: '@agoric', dest: '@noble', amount },
-    { src: '@noble', dest: 'USDN', amount },
-  ];
-
-  await t.throwsAsync(vt.when(planner.submit(portfolioId, plan, 0, 0)), {
-    message: /expected policyVersion 1; got 0/,
-  });
-
-  await vt.when(planner.submit(portfolioId, plan, 1, 0));
-
-  {
-    const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
-    t.log({ policyVersion, rebalanceCount });
-    t.deepEqual(
-      { policyVersion, rebalanceCount },
-      { policyVersion: 1, rebalanceCount: 1 },
-      'rebalanceCount 1 after .submit(plan, ...)',
-    );
-  }
-
-  const mockRebalancePlan = [];
-  await t.notThrowsAsync(
-    vt.when(planner.submit(portfolioId, mockRebalancePlan, 1, 1)),
-    'planner may rebalance >1 times at same policyVersion',
-  );
-
-  aPortfolio.manager.startFlow({ type: 'withdraw', amount });
-  await t.notThrowsAsync(
-    vt.when(planner.resolvePlan(portfolioId, 1, plan, 1, 2)),
-  );
-});
-
 test('planner starts delegated rebalance and resolves its plan', async t => {
   const zone = makeHeapZone();
   const vt = prepareVowTools(zone);
@@ -167,16 +71,13 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
     portfolioId: 1,
     sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
   });
-  const mockGetPortfolio = _id => aPortfolio;
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
 
   const makePlanner = preparePlanner(zone, {
-    zcf: mockZcf,
-    getPortfolio: mockGetPortfolio,
+    getPortfolioPlanner: mockGetPortfolioPlanner,
     getPlannerDelegation: portfolioPlanner =>
       plannerDelegations.get(portfolioPlanner),
     shapes: makeOfferArgsShapes(USDC),
-    vowTools: vt,
-    ...({} as any),
   });
   const planner = makePlanner();
 
@@ -262,16 +163,13 @@ test('planner cannot start rebalance without features enabled', async t => {
     portfolioId: 1,
     sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
   });
-  const mockGetPortfolio = _id => aPortfolio;
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
 
   const makePlanner = preparePlanner(zone, {
-    zcf: mockZcf,
-    getPortfolio: mockGetPortfolio,
+    getPortfolioPlanner: mockGetPortfolioPlanner,
     getPlannerDelegation: portfolioPlanner =>
       plannerDelegations.get(portfolioPlanner),
     shapes: makeOfferArgsShapes(USDC),
-    vowTools: vt,
-    ...({} as any),
   });
   const planner = makePlanner();
 
@@ -312,18 +210,6 @@ test('planner can reject a plan due to insufficient funds', async t => {
   const zone = makeHeapZone();
 
   const vt = prepareVowTools(zone);
-  // Mock dependencies with minimal implementation
-  const mockRebalance = (_seat, offerArgs, _kit) => {
-    t.log('rebalance called with', offerArgs);
-    return vt.asVow(() => undefined);
-  };
-
-  const mockZcf = {
-    makeEmptySeatKit: () => ({
-      zcfSeat: null as any,
-    }),
-  } as ZCF;
-
   const board = makeFakeBoard();
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { getPortfolioStatus } = makeStorageTools(storage);
@@ -338,16 +224,13 @@ test('planner can reject a plan due to insufficient funds', async t => {
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });
-  const mockGetPortfolio = _id => aPortfolio;
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
 
   // Create planner exo
   const makePlanner = preparePlanner(zone, {
-    rebalance: mockRebalance,
-    zcf: mockZcf,
-    getPortfolio: mockGetPortfolio,
+    getPortfolioPlanner: mockGetPortfolioPlanner,
     getPlannerDelegation: () => undefined,
     shapes: makeOfferArgsShapes(USDC),
-    vowTools: vt,
   });
 
   const planner = makePlanner();
