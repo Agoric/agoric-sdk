@@ -1,0 +1,85 @@
+name: Confirm YMax Upgrade
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deployment target
+        required: true
+        type: choice
+        options:
+          - ymax0-devnet
+          - ymax0-main
+          - ymax1-main
+      releaseTag:
+        description: Release tag to confirm
+        required: true
+        type: string
+      privateArgsOverrides:
+        description: Optional JSON string used for the original upgrade
+        required: false
+        type: string
+      ymax1Planner:
+        description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades).'
+        required: false
+        type: choice
+        options:
+          - up
+          - down
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      need_upgrade_confirm: ${{ steps.plan.outputs.need_upgrade_confirm }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Plan confirm work
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MODE: deploy
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+          YMAX1_PLANNER: ${{ inputs.ymax1Planner }}
+        run: node .github/scripts/plan-ymax-release.mjs
+
+  confirm:
+    needs: plan
+    if: needs.plan.outputs.need_upgrade_confirm == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Require ymax1 planner down
+        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        run: |
+          echo 'ymax1Planner must be down for ymax1-main' >&2
+          exit 1
+
+      - name: Run upgrade confirm phase
+        env:
+          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+            phase-upgrade-confirm \
+            --target "$TARGET" \
+            --tag "$RELEASE_TAG"

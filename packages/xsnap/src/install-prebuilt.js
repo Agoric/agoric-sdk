@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 
 import { createHash } from 'node:crypto';
 import fsTop from 'node:fs';

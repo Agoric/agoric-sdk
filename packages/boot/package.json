@@ -82,6 +82,6 @@
     "node": "^22.11"
   },
   "typeCoverage": {
-    "atLeast": 89.91
+    "atLeast": 92.21
   }
 }

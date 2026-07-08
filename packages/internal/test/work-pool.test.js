@@ -4,7 +4,10 @@ import test from 'ava';
 import { makeWorkPool } from '../src/work-pool.js';
 import { arrayIsLike } from '../tools/ava-assertions.js';
 
+/** @param {number} ms */
 const delay = async ms => new Promise(resolve => setTimeout(resolve, ms, ms));
+
+/** @typedef {{ idx: number | undefined, take?: number, fulfill?: number, reject?: string }} LogRecord */
 
 test('makeWorkPool', async t => {
   const delays = [100, 20, 20, 80, 1];
@@ -22,6 +25,7 @@ test('makeWorkPool', async t => {
     { idx: 3, fulfill: 80 },
   ];
 
+  /** @type {LogRecord[]} */
   const log = [];
   const workPool = makeWorkPool(delays, capacity, async (ms, idx) => {
     log.push({ idx, take: ms });
@@ -33,6 +37,7 @@ test('makeWorkPool', async t => {
   await workPool.done;
   arrayIsLike(t, log, expect);
 
+  /** @type {LogRecord[]} */
   const results = [];
   for await (const [result, idx] of workPool) {
     results.push({ idx, fulfill: result });
@@ -59,6 +64,7 @@ test('makeWorkPool errors', async t => {
     { idx: 4, reject: 'invalid ms: -1' },
   ];
 
+  /** @type {LogRecord[]} */
   const log = [];
   const workPool = makeWorkPool(delays, capacity, async (ms, idx) => {
     log.push({ idx, take: ms });
@@ -75,9 +81,10 @@ test('makeWorkPool errors', async t => {
   const truncatedLog = log.reduce((arr, rec) => {
     if (!arr.at(-1)?.reject) arr.push(rec);
     return arr;
-  }, []);
+  }, /** @type {LogRecord[]} */ ([]));
   arrayIsLike(t, truncatedLog, expect);
 
+  /** @type {LogRecord[]} */
   const results = [];
   await t.throwsAsync(
     async () => {
@@ -110,6 +117,7 @@ test('makeWorkPool mode "allSettled"', async t => {
     { idx: 3, fulfill: 80 },
   ];
 
+  /** @type {LogRecord[]} */
   const log = [];
   const config = /** @type {const} */ ({ capacity, mode: 'allSettled' });
   const workPool = makeWorkPool(delays, config, async (ms, idx) => {
@@ -127,9 +135,10 @@ test('makeWorkPool mode "allSettled"', async t => {
   const truncatedLog = log.reduce((arr, rec) => {
     if (!arr.at(-1)?.reject) arr.push(rec);
     return arr;
-  }, []);
+  }, /** @type {LogRecord[]} */ ([]));
   arrayIsLike(t, truncatedLog, expect.slice(0, -1));
 
+  /** @type {LogRecord[]} */
   const results = [];
   for await (const [result, idx] of workPool) {
     if (result.status === 'rejected') {

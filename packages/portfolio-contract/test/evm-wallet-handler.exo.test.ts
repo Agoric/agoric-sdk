@@ -428,6 +428,73 @@ test('handleOperation - openPortfolio', async t => {
   t.snapshot(getStatuses(), 'Published Statuses');
 });
 
+test('handleOperation - openPortfolio with auto-features', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow1', {
+    namePrefix: 'test1b_',
+  });
+
+  // Create an OpenPortfolioWithAutoFeatures operation
+  const openPortfolioOperationDetails: YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'> &
+    Required<Pick<FullMessageDetails, 'permitDetails'>> = {
+    operation: 'OpenPortfolioWithAutoFeatures',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      allocations: [{ instrument: 'inst1', portion: 100n }],
+      features: { rebalance: true },
+    },
+    permitDetails: {
+      chainId: 42161n,
+      token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+      amount: 1_000_000n,
+      spender: '0xSpenderAddress' as const,
+      permit2Payload: {
+        owner: '0xOwnerAddress' as const,
+        witness: '0xWitnessData' as const,
+        witnessTypeString: 'WitnessTypeString' as const,
+        permit: {
+          permitted: {
+            token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+            amount: 1_000_000n,
+          },
+          nonce: 123n,
+          deadline: 1700000000n,
+        },
+        signature: '0xSignatureData' as const,
+      },
+    },
+  };
+
+  // Call handleOperation
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: openPortfolioOperationDetails.permitDetails.permit2Payload.owner,
+    operationDetails: harden(openPortfolioOperationDetails),
+    nonce: 123n,
+    deadline: 1700000000n,
+  });
+
+  // Wait for the vow to settle
+  await vowTools.when(resultVow);
+
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
 test('handleOperation - openPortfolio requires permitDetails', async t => {
   const { zone } = t.context;
   const {

@@ -71,6 +71,11 @@ test('loadConfig accepts valid configuration', async t => {
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
   t.is(config.agoricNetworkSpec, 'devnet,myChainId');
+  t.deepEqual(config.autoRebalance, {
+    driftBps: 100n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
+  });
 });
 
 test('loadConfig uses default values when optional fields are missing', async t => {
@@ -81,6 +86,11 @@ test('loadConfig uses default values when optional fields are missing', async t 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
   t.is(config.agoricNetworkSpec, 'local');
+  t.deepEqual(config.autoRebalance, {
+    driftBps: 100n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
+  });
 });
 
 test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
@@ -141,14 +151,39 @@ test('loadConfig validates positive integers', async t => {
   await t.throwsAsync(() => callLoadConfig({ REQUEST_TIMEOUT: '0' }), {
     message: /"REQUEST_TIMEOUT" must be a positive integer/,
   });
+  await t.throwsAsync(
+    () => callLoadConfig({ AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC: '-1' }),
+    {
+      message:
+        /"AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC" must be a positive integer/,
+    },
+  );
+});
+
+test('loadConfig accepts auto rebalance environment overrides', async t => {
+  const config = await callLoadConfig({
+    AUTO_REBALANCE_DRIFT_BPS: '250',
+    AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC: '50_000_000',
+    AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC: '30_000_000',
+  });
+
+  t.deepEqual(config.autoRebalance, {
+    driftBps: 250n,
+    driftMinMoveUusdc: 50_000_000n,
+    cashMinMoveUusdc: 30_000_000n,
+  });
 });
 
 test('loadConfig trims whitespace from values', async t => {
-  const config = await callLoadConfig({ AGORIC_NET: '  devnet  ' });
+  const config = await callLoadConfig({
+    AGORIC_NET: '  devnet  ',
+    AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC: ' 30000000 ',
+  });
 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
   t.is(config.agoricNetworkSpec, 'devnet');
+  t.is(config.autoRebalance.cashMinMoveUusdc, 30_000_000n);
 });
 
 test('loadConfig rejects empty required values', async t => {

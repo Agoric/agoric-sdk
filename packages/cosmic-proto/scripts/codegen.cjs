@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 // @ts-check
 
-/* eslint-env node */
 const { spawnSync } = require('child_process');
 const fsp = require('fs/promises');
 const path = require('path');

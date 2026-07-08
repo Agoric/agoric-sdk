@@ -5,7 +5,6 @@
  *   as a standalone interactive or non-interactive script. See
  *   "Check for CLI invocation" below for usage detail about the latter.
  */
-/* eslint-env node */
 /* global globalThis */
 /* eslint-disable no-empty */
 

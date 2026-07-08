@@ -15,6 +15,7 @@
 
 /**
  * @import {RemotableObject} from '@endo/marshal';
+ * @import {OfferStatus} from '@agoric/smart-wallet/src/offers.js';
  * @import {VstorageKit} from './types.js';
  */
 
@@ -26,7 +27,7 @@
  * @property {(value: unknown) => unknown} [renderResult]
  *
  * @typedef {object} RetryPowers
- * @property {typeof globalThis.setTimeout} setTimeout
+ * @property {<T extends (...args: unknown[]) => unknown>(fn: T, timeout?: number, ...args: Parameters<T>) => unknown} setTimeout
  * @property {(...args: unknown[]) => void} [log]
  *
  * @typedef {RetryOptions & RetryPowers} RetryOptionsAndPowers mixes ocaps with configuration
@@ -47,7 +48,7 @@
 export const sleep = (ms, { log = () => {}, setTimeout }) =>
   new Promise(resolve => {
     log(`Sleeping for ${ms}ms...`);
-    setTimeout(resolve, ms);
+    setTimeout(() => resolve(undefined), ms);
   });
 
 /**
@@ -224,7 +225,7 @@ const makeQueryWallet = follow => async (/** @type {string} */ addr) => {
 
 /**
  *
- * @param {Record<string, any>} offerStatus
+ * @param {{ updated?: string, status?: OfferStatus }} offerStatus
  * @param {boolean} waitForPayouts
  * @param {string} offerId
  */
@@ -271,8 +272,12 @@ export const waitUntilOfferResult = (
 /// ////////// Making sure a core-eval successfully sent zoe invitations to committee members for governance /////////////
 
 /**
+ * Check if a capabilities-as-pure-data representation (specifically replacing
+ * each Remotable with a string containing its alleged interface name) of a
+ * smart-wallet UpdateRecord indicates that it is a balance update whose
+ * `currentAmount` `brand` looks like a Zoe Invitation.
  *
- * @param {{ updated: string, currentAmount: any }} update
+ * @param {{ updated?: string, currentAmount?: { brand?: string } }} update
  * @returns {boolean}
  */
 const checkForInvitation = update => {
@@ -285,6 +290,10 @@ const checkForInvitation = update => {
 };
 
 /**
+ * Wait for the specified address's wallet to publish a balance update with a
+ * `currentAmount` whose `brand` looks like a Zoe Invitation.
+ * @deprecated because it requires io.follow to map Amount `brand` references
+ * into strings
  *
  * @param {string} addr
  * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof globalThis.setTimeout}} io
@@ -309,12 +318,12 @@ const makeQueryWalletCurrent = follow => (/** @type {string} */ addr) =>
   follow('-lF', `:published.wallet.${addr}.current`);
 
 /**
- * @param {Record<string, any>} update
+ * @param {Record<string, unknown>} update
  * @param {string} offerId
  * @returns {boolean}
  */
 const checkLiveOffers = (update, offerId) => {
-  const liveOffers = update.liveOffers;
+  const liveOffers = /** @type {string[][] | undefined} */ (update.liveOffers);
   if (!liveOffers) {
     return false;
   }

@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import {
   getOffFlags,
   loadParsedConfig,
-  tscArgsForFlag,
+  typecheckArgsForFlag,
 } from './tsconfig-flags-lib.mjs';
 
 const ERROR_RE = /error TS\d+:/g;
@@ -14,7 +14,7 @@ const ERROR_RE = /error TS\d+:/g;
  */
 const countErrorsForFlag = (configPath, flagName) =>
   new Promise(resolve => {
-    const args = tscArgsForFlag(configPath, flagName);
+    const args = typecheckArgsForFlag(configPath, flagName);
     const child = spawn('yarn', args, {
       cwd: process.cwd(),
       stdio: ['ignore', 'pipe', 'pipe'],
@@ -50,7 +50,7 @@ if (offFlags.length === 0) {
 
 console.log(`Typecheck strictness report for ${configPath}`);
 console.log(
-  `Found ${offFlags.length} OFF flags. Running one tsc pass per flag...`,
+  `Found ${offFlags.length} OFF flags. Running one typecheck pass per flag...`,
 );
 
 const results = [];

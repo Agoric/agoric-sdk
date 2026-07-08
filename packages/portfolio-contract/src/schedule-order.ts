@@ -2,6 +2,7 @@
  * @file schedule async tasks based on partial order
  * @see {runJob}
  */
+import { partialMap } from '@agoric/internal/src/js-utils.js';
 
 /** zero based index */
 type Ix = number;
@@ -35,9 +36,9 @@ const cycleCheck = (
 
   /** keys with empty dependencies are omitted */
   const order: Map<Ix, Set<Ix>> = new Map(
-    orderArray.flatMap(([ix, deps]) =>
-      deps.length > 0 ? [[checkNode(ix), new Set(deps.map(checkNode))]] : [],
-    ),
+    partialMap(orderArray, ([ix, deps]) => {
+      return deps.length > 0 && [checkNode(ix), new Set(deps.map(checkNode))];
+    }),
   );
 
   const hasCycle = (node: Ix): boolean => {

@@ -1,4 +1,3 @@
-/* eslint-env node */
 import test from 'ava';
 
 import { toCLIOptions } from '../src/cli-utils.js';

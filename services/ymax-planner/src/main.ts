@@ -1,7 +1,7 @@
 /* global process */
 
 import timersPromises from 'node:timers/promises';
-import { inspect } from 'node:util';
+import { inspect, parseArgs } from 'node:util';
 
 import { SigningStargateClient, StargateClient } from '@cosmjs/stargate';
 import type { GraphQLClient } from 'graphql-request';
@@ -24,9 +24,11 @@ import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import {
   deeplyFulfilledObject,
+  naturalCompare,
   objectMap,
   withDeferredCleanup,
 } from '@agoric/internal';
+import type { PortfolioKey } from '@agoric/portfolio-api';
 import {
   CaipChainIds,
   UsdcTokenIds,
@@ -47,16 +49,72 @@ import {
   createEVMContext,
   prepareAbortController,
   spectrumChainIdsByCluster,
+  WS_HEARTBEAT_INTERVAL_MS,
 } from './support.ts';
 import type { MakeAbortController } from './support.ts';
 import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
 import { makeSQLiteKeyValueStore } from './kv-store.ts';
 import { YdsNotifier } from './yds-notifier.ts';
+import {
+  YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+  type YdsPortfolioSummary,
+} from './yds-portfolio-balances.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
+import { generateDiff } from './ses-utils.ts';
 import { makeNowISO } from './utils.ts';
 
 const { fromEntries, entries } = Object;
+
+// exported for testing
+export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
+  const health = new Map<string, 'ok' | 'failed'>();
+  const withHealthLogging = async <T>(
+    key: string,
+    promise: Promise<T>,
+    logContext?: unknown,
+  ): Promise<T | undefined> => {
+    await null;
+    try {
+      const result = await promise;
+      if (health.get(key) === 'failed') console.warn(`Recovered ${key}`);
+      health.set(key, 'ok');
+      return result;
+    } catch (err) {
+      const { name, message } = err ?? {};
+      let alertMessage = health.has(key)
+        ? `⚠️ Failed to update ${key}`
+        : `🚨 Failed to initialize ${key}`;
+      // Include sufficient detail for line-oriented log propagation.
+      if (name && message) {
+        alertMessage = `${alertMessage}: [${name}] ${message}`;
+      }
+      if (logContext) {
+        console.error(alertMessage, logContext, err);
+      } else {
+        console.error(alertMessage, err);
+      }
+      health.set(key, 'failed');
+      return undefined;
+    }
+  };
+  return withHealthLogging;
+};
+
+// XXX better yet: Tagged<string, 'CosmosTxId'> and
+// Tagged<string, 'CosmosChainId'>
+type CosmosTxId = string;
+type CosmosChainId = string;
+
+/**
+ * cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/routes/transactions.ts:
+ * TransactionSubmitBodySchema
+ */
+type YdsTransactionSubmitBody = {
+  txHash: CosmosTxId;
+  chain: CosmosChainId;
+  ymaxInstance: 'ymax0' | 'ymax1';
+};
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -86,12 +144,28 @@ export type SimplePowers = {
   makeAbortController: MakeAbortController;
 };
 
-/** `makeNonce` defaults to the wall clock for debugging sent transactions. */
-const defaultMakeNonce = makeNowISO(Date.now);
+const nowISO = makeNowISO(Date.now);
+
+/**
+ * For debugging transactions sent at the same time, `makeNonce` defaults to
+ * wall-clock timestamps plus a counter.
+ */
+const lastNonce = { timestamp: '', counter: 0 };
+const defaultMakeNonce = () => {
+  const timestamp = nowISO();
+  if (timestamp !== lastNonce.timestamp) {
+    lastNonce.timestamp = timestamp;
+    lastNonce.counter = 1;
+  } else {
+    lastNonce.counter += 1;
+  }
+  return `${timestamp}.${lastNonce.counter}`;
+};
 
 export const main = async (
   cliArgs: string[],
   {
+    console = globalThis.console,
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
@@ -104,12 +178,13 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const dashIdx = [...cliArgs, '--'].indexOf('--');
-  const maybeOpts = cliArgs.slice(0, dashIdx);
-  const isDryRun = maybeOpts.includes('--dry-run');
-  const isVerbose = maybeOpts.includes('--verbose');
+  const { 'dry-run': isDryRun, verbose: isVerbose } = parseArgs({
+    args: cliArgs,
+    options: { 'dry-run': { type: 'boolean' }, verbose: { type: 'boolean' } },
+  }).values;
   const makeMaybeLogger = (prefix: string): ((...args: unknown[]) => void) =>
     isVerbose ? (...args) => console.log(prefix, ...args) : () => {};
+  const withHealthLogging = makeHealthLogger(console);
 
   const makeAbortController = prepareAbortController({
     setTimeout,
@@ -248,16 +323,21 @@ export const main = async (
   const evmCtx = await createEVMContext({
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
+    makeHeartbeat: () => generateInterval(WS_HEARTBEAT_INTERVAL_MS),
+    log: (...args) => console.warn('EVM provider:', ...args),
   });
 
   // Verify Alchemy chain availability.
   const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
   const evmHeights = await deeplyFulfilledObject(
     objectMap(evmCtx.evmProviders, (provider, chainId) =>
-      provider.getBlockNumber().catch(err => {
-        failedEvmChains.push(chainId);
-        return { error: err.message };
-      }),
+      provider
+        .getProvider()
+        .getBlockNumber()
+        .catch(err => {
+          failedEvmChains.push(chainId);
+          return { error: err.message };
+        }),
     ),
   );
   console.warn('EVM chain heights:', evmHeights);
@@ -274,9 +354,19 @@ export const main = async (
     trace: () => {},
   });
 
-  const ydsClient =
-    config.yds.url &&
-    ky.create({ fetch, headers: FETCH_HEADERS, prefixUrl: config.yds.url });
+  const ydsApiKey = config.yds.apiKey;
+  const ydsClient = config.yds.url
+    ? ky.create({
+        fetch,
+        prefixUrl: config.yds.url,
+        headers: {
+          ...FETCH_HEADERS,
+          ...(ydsApiKey ? { 'x-resolver-auth-key': ydsApiKey } : undefined),
+        },
+        timeout: config.requestLimits.timeout,
+        retry: config.requestLimits.maxRetries,
+      })
+    : undefined;
 
   let lastInstrumentBlocksString = '';
   const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
@@ -286,7 +376,12 @@ export const main = async (
   };
   const getInstrumentBlocks = ydsClient
     ? async (): Promise<InstrumentBlocks | undefined> => {
-        const resp = await ydsClient.get('instruments?includeAll=true').json();
+        const resp = await withHealthLogging(
+          'instruments',
+          ydsClient.get('instruments?includeAll=true').json(),
+          config.requestLimits,
+        );
+        if (!resp) return undefined;
         const instruments = (resp as any).data as YdsInstrument[];
         const instrumentBlocks = calculateInstrumentBlocks(instruments);
 
@@ -301,20 +396,105 @@ export const main = async (
       }
     : undefined;
 
+  let lastPortfolios: {
+    timestamp: number;
+    portfolioIdsString: string;
+    summaries: YdsPortfolioSummary[];
+  } = { timestamp: -Infinity, portfolioIdsString: '[]', summaries: [] };
+  const getPortfolioSummaries =
+    ydsClient && ydsApiKey
+      ? async (
+          portfolioIds: PortfolioKey[],
+        ): Promise<YdsPortfolioSummary[] | undefined> => {
+          if (!portfolioIds.length) return [];
+
+          portfolioIds = portfolioIds.toSorted(naturalCompare);
+          const portfolioIdsString = JSON.stringify(portfolioIds);
+          const timestamp = now();
+          if (
+            portfolioIdsString === lastPortfolios.portfolioIdsString &&
+            timestamp <
+              lastPortfolios.timestamp + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS
+          ) {
+            return lastPortfolios.summaries;
+          }
+
+          const reqBody = { portfolioIds };
+          const resp = await withHealthLogging(
+            'portfolios',
+            ydsClient.post('portfolios:list', { json: reqBody }).json(),
+            config.requestLimits,
+          );
+          if (!resp) return undefined;
+          const summaries = ((resp as any).data as YdsPortfolioSummary[]).sort(
+            (a, b) => naturalCompare(a.portfolioId, b.portfolioId),
+          );
+
+          if (isVerbose) {
+            const logPrefix = '[getPortfolioSummaries]';
+            const seconds = (timestamp - lastPortfolios.timestamp) / 1000;
+            const elapsed = Number.isFinite(seconds)
+              ? `overwriting after ${seconds} seconds`
+              : 'initializing';
+            const idsDiff: string[] = [];
+            const sigilsByState = { common: ' ', removed: '-', added: '+' };
+            try {
+              const oldIdsString = lastPortfolios.portfolioIdsString;
+              const oldIds = JSON.parse(oldIdsString).sort(naturalCompare);
+              const diff = generateDiff(oldIds, portfolioIds, naturalCompare);
+              for (const { state, value } of diff) {
+                idsDiff.push(`${sigilsByState[state]}${value}`);
+              }
+            } catch (err) {
+              console.error(logPrefix, err);
+            }
+            const diffStr = idsDiff.length ? `\n${idsDiff.join('\n')}\n` : '';
+            console.warn(logPrefix, elapsed, diffStr, summaries);
+          }
+
+          lastPortfolios = { timestamp, portfolioIdsString, summaries };
+          return summaries;
+        }
+      : undefined;
+
   const ydsNotifier = config.yds.url
     ? new YdsNotifier(
         { fetch, log: console.log.bind(console) },
         {
           ydsUrl: config.yds.url,
           ydsApiKey: config.yds.apiKey as string,
+          timeout: config.requestLimits.timeout,
+          retries: config.requestLimits.maxRetries,
         },
       )
+    : undefined;
+  const postYdsTransaction = ydsClient
+    ? async (txHash: CosmosTxId): Promise<void> => {
+        const json: YdsTransactionSubmitBody = {
+          txHash,
+          chain: networkConfig.chainName,
+          ymaxInstance: config.contractInstance,
+        };
+        await null;
+        try {
+          await ydsClient.post('transactions', {
+            json,
+          });
+        } catch (cause) {
+          throw Error(
+            `While posting transaction to YDS ${JSON.stringify(json)}`,
+            { cause },
+          );
+        }
+      }
     : undefined;
 
   const retryProviders = fromEntries(
     entries(evmCtx.evmProviders).map(([caip, provider]) => [
       caip,
-      makeEvmRpc(provider, setTimeout),
+      makeEvmRpc(provider, setTimeout, {
+        log: (...args) => console.warn(`EVM RPC [${caip}]:`, ...args),
+      }),
     ]),
   ) as Record<CaipChainId, EvmRpc>;
 
@@ -336,6 +516,7 @@ export const main = async (
     spectrumBlockchain,
     network: PROD_NETWORK,
     getInstrumentBlocks,
+    getPortfolioSummaries,
     signingSmartWalletKit,
     makeNonce,
     walletStore,
@@ -345,9 +526,12 @@ export const main = async (
       return getInvocationUpdate(messageId, getLastUpdate, retryOpts);
     },
     now,
+    nowISO,
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    postYdsTransaction,
+    autoRebalance: config.autoRebalance,
   };
 
   await withDeferredCleanup(async addCleanup => {
@@ -362,6 +546,7 @@ export const main = async (
       contractInstance: config.contractInstance,
       depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
       feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+      balanceCacheTtlMs: YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
     });
   });
 };

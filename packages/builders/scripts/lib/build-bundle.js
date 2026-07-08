@@ -1,4 +1,3 @@
-/* eslint-env node */
 import { dirname, resolve as pathResolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

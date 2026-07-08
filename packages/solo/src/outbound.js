@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-env node */
 import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { Fail } from '@endo/errors';
 import { exportMailboxData } from '@agoric/swingset-vat';

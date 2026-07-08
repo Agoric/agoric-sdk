@@ -9,6 +9,7 @@ import { promisify } from 'node:util';
 
 /** @typedef {ReadStream | WriteStream | Socket} StreamLike */
 /** @typedef {'drain' | 'ready'} EventName */
+/** @typedef {boolean} WriteBufferIsFull */
 
 /**
  * @param {StreamLike} stream
@@ -134,13 +135,12 @@ const onceWithError = makeMemoizedOnceWithError(subscribeOnceWithError);
 /**
  * @param {WriteStream | Socket} stream
  * @param {string | Uint8Array} data
- * @returns {Promise<boolean>} whether caller must await drain
+ * @returns {Promise<WriteBufferIsFull>} whether caller must await drain
  */
 const writeChunk = (stream, data) =>
   new Promise((resolve, reject) => {
-    let waitForDrain;
     try {
-      waitForDrain = !stream.write(data, err => {
+      const waitForDrain = !stream.write(data, err => {
         if (err) {
           reject(err);
           return;
@@ -174,15 +174,18 @@ export const makeFsStreamWriter = async filePath => {
       ? undefined
       : promisify(/** @type {WriteStream} */ (stream).close.bind(stream));
 
-  let flushed = Promise.resolve();
+  /** @type {Promise<WriteBufferIsFull>} */
+  let flushed = Promise.resolve(false);
   let closed = false;
 
+  /** @param {Promise<WriteBufferIsFull>} p */
   const updateFlushed = p => {
     flushed = flushed.then(
       () => p,
       err =>
         p.then(
           () => Promise.reject(err),
+          /** @param {Error} pError */
           pError =>
             Promise.reject(
               pError !== err ? AggregateError([err, pError]) : err,
@@ -192,6 +195,7 @@ export const makeFsStreamWriter = async filePath => {
     flushed.catch(() => {});
   };
 
+  /** @param {string | Uint8Array} data */
   const write = async data => {
     const written = closed
       ? Promise.reject(Error('Stream closed'))

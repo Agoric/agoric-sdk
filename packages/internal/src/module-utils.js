@@ -15,6 +15,7 @@ import { Fail } from '@endo/errors';
 export const getSpecifier = async fileUrl => {
   // eslint-disable-next-line no-new
   new URL(fileUrl); // validates fileUrl
+  /** @param {string} location */
   const read = async location => {
     const path = fileURLToPath(new URL(location, fileUrl));
     return readFile(path);
