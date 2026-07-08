@@ -1140,6 +1140,7 @@ const stepFlow = async (
 
       case 'swap': {
         const { chain } = way;
+        features?.experimentalSwap || Fail`swap not supported: ${q(move)}`;
         todo.push({
           how: 'swap',
           amount,
