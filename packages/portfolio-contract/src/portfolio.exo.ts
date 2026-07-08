@@ -846,6 +846,10 @@ export const preparePortfolioKit = (
           flowsRunning.set(flowId, { ...detail, sync });
           this.facets.reporter.publishStatus();
         },
+        getTargetAllocation() {
+          const { reader } = this.facets;
+          return reader.getTargetAllocation();
+        },
       },
       /**
        * Manages a cooperative reservation protocol for per-chain accounts.
