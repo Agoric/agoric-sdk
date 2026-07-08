@@ -200,6 +200,7 @@ export const FlowFeaturesShape = M.splitRecord(
   {},
   {
     useProgressTracker: M.boolean(),
+    experimentalSwap: M.boolean(),
   },
 );
 
