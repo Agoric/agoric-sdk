@@ -412,10 +412,7 @@ export const lookBackSmartWalletTx = async ({
 
     // Options shared by all scans. The abort signal propagates external
     // cancellation.
-    const { signal: sharedSignal } = makeAbortController(
-      undefined,
-      signal ? [signal] : [],
-    );
+    const { signal: sharedSignal } = makeAbortController(undefined, [signal]);
     const sharedOpts = {
       provider,
       toBlock,

@@ -35,7 +35,7 @@ export const FETCH_HEADERS = harden({
 
 export interface YmaxPlannerConfig {
   readonly clusterName: ClusterName;
-  readonly contractInstance: string;
+  readonly contractInstance: 'ymax0' | 'ymax1';
   readonly mnemonic: string;
   readonly alchemyApiKey: string;
   readonly requestLimits: Partial<RequestLimits>;

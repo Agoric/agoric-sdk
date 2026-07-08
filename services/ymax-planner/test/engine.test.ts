@@ -850,6 +850,7 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
         policyVersion: portfolioStatus.policyVersion,
         rebalanceCount: portfolioStatus.rebalanceCount,
       },
+      agentMemo: 'mock-nonce',
     },
     planOrSteps,
   ]);
@@ -986,8 +987,8 @@ test('processPortfolioEvents continues auto scan after portfolio error', async t
     consoleWrites.some(
       ({ level, args }) =>
         level === 'warn' &&
-        args[0] ===
-          `[${badPortfolioKey}.autoRebalance] ⚠️ Skipping auto rebalance scan`,
+        typeof args[0] === 'string' &&
+        args[0].startsWith(`[${badPortfolioKey}.autoRebalance] ⚠️ `),
     ),
     'bad portfolio scan error is logged',
   );

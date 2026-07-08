@@ -16,7 +16,7 @@ import {
 } from '@agoric/portfolio-api/src/target-balances.js';
 import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
 import type { FundsFlowPlan, PortfolioKey } from '@agoric/portfolio-api';
-import { annotateError } from '@endo/errors';
+import { annotateError, Fail } from '@endo/errors';
 import { inspect } from 'node:util';
 import type { InstrumentBlocks } from './instrument-status.ts';
 import { UserInputError } from './support.ts';
@@ -131,7 +131,7 @@ export const checkAutoRebalance = (
 
 export type MaybeAutoRebalancePowers = {
   autoRebalance: AutoRebalanceConfig;
-  console: Pick<Console, 'log' | 'warn'>;
+  console: Pick<Console, 'error' | 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   gasEstimator: GasEstimator;
@@ -139,6 +139,7 @@ export type MaybeAutoRebalancePowers = {
   inspectForStdout: (obj: unknown) => string;
   instrumentBlocks?: InstrumentBlocks;
   isDryRun?: boolean;
+  makeNonce: () => string;
   network: NetworkSpec;
   planRebalanceToAllocations: (details: {
     path: string;
@@ -154,6 +155,7 @@ export type MaybeAutoRebalancePowers = {
     gasEstimator: GasEstimator;
   }) => Promise<FundsFlowPlan>;
   portfoliosPathPrefix: string;
+  postYdsTransaction?: (txHash: string) => Promise<void>;
   walletStore: ReturnType<typeof reflectWalletStore>;
 };
 
@@ -171,9 +173,11 @@ export const maybeAutoRebalance = async (
     inspectForStdout,
     instrumentBlocks,
     isDryRun,
+    makeNonce,
     network,
     planRebalanceToAllocations,
     portfoliosPathPrefix,
+    postYdsTransaction,
     walletStore,
   }: MaybeAutoRebalancePowers,
 ): Promise<string | undefined> => {
@@ -234,14 +238,24 @@ export const maybeAutoRebalance = async (
     const planOrSteps = plan.order ? plan : plan.flow;
     const txOpts = { sendOnly: true } as const;
     const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
+    const agentMemo = makeNonce().trim();
+    agentMemo || Fail`makeNonce returned an empty agentMemo`;
     const { tx, id } = await planReceiver.rebalance(
       portfolioId,
-      { syncState },
+      { syncState, agentMemo },
       planOrSteps,
     );
     if (!isDryRun) {
       void getWalletInvocationUpdate(id as any).catch(err => {
         console.warn(logPrefix, '⚠️ Failure for rebalance', err);
+      });
+      void postYdsTransaction?.(tx.transactionHash).catch(err => {
+        console.error(
+          logPrefix,
+          '🚨 Failure posting transaction to YDS',
+          { txHash: tx.transactionHash, agentMemo },
+          err,
+        );
       });
     }
     console.log(

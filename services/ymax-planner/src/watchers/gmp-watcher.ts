@@ -323,11 +323,7 @@ export const lookBackGmp = async ({
 
     // Options shared by both scans. The abort signal propagates external
     // cancellation.
-    // see `prepareAbortController` in services/ymax-planner/src/main.ts
-    const { signal: sharedSignal } = makeAbortController(
-      undefined,
-      signal ? [signal] : [],
-    );
+    const { signal: sharedSignal } = makeAbortController(undefined, [signal]);
     const sharedOpts = {
       provider,
       toBlock,
