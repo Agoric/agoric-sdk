@@ -9,8 +9,7 @@ import { kser } from '@agoric/kmarshal';
 import {
   makeSwingsetController,
   upgradeSwingset,
-  writeCriticalPromotionDirective,
-  CRITICAL_PROMOTION_VAT_IDS,
+  applyVatOptionUpdates,
   buildKernelBundles,
 } from '../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
@@ -32,7 +31,7 @@ test('kernel refuses to run with out-of-date DB - v0', async t => {
   // kernelkeeper v0 schema, just deleting the version key and adding
   // 'initialized'
 
-  t.is(kvStore.get('version'), '4');
+  t.is(kvStore.get('version'), '3');
   kvStore.delete(`version`);
   kvStore.set('initialized', 'true');
   await commit();
@@ -55,7 +54,7 @@ test('kernel refuses to run with out-of-date DB - v1', async t => {
   // kernelkeeper v1 schema, by reducing the version key and removing
   // vats.terminated
 
-  t.is(kvStore.get('version'), '4');
+  t.is(kvStore.get('version'), '3');
   kvStore.set(`version`, '1');
   kvStore.delete('vats.terminated');
   await commit();
@@ -78,7 +77,7 @@ test('kernel refuses to run with out-of-date DB - v2', async t => {
   // kernelkeeper v2 schema, by reducing the version key and removing
   // vats.terminated
 
-  t.is(kvStore.get('version'), '4');
+  t.is(kvStore.get('version'), '3');
   kvStore.set(`version`, '2');
   await commit();
 
@@ -86,189 +85,6 @@ test('kernel refuses to run with out-of-date DB - v2', async t => {
   await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
     message: /kernel DB is too old/,
   });
-});
-
-test('kernel refuses to run with out-of-date DB - v3', async t => {
-  const { hostStorage, kernelStorage } = initSwingStore();
-  const { commit } = hostStorage;
-  const { kvStore } = kernelStorage;
-  const config = {};
-  await initializeSwingset(config, [], kernelStorage, t.context.data);
-  await commit();
-
-  // now doctor the initial state to make it look like the kernelkeeper v3
-  // schema, by reducing the version key (v4 promotes vats to critical)
-
-  t.is(kvStore.get('version'), '4');
-  kvStore.set(`version`, '3');
-  await commit();
-
-  // Now build a controller around this modified state, which should fail.
-  await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
-    message: /kernel DB is too old/,
-  });
-});
-
-// Must match CRITICAL_PROMOTION_DIRECTIVE_KEY in
-// ../src/controller/upgradeSwingset.js.
-const CRITICAL_PROMOTION_DIRECTIVE_KEY = 'upgrade.promoteCriticalVats';
-
-// Contract vats have no `vat.name.*` entry; the human name lives only in
-// `${vatID}.options.name`, shaped `zcf-<bundleLabel>[-<label>]` — which is why
-// the migration selects by explicit vatID, not by label. See garden#29.
-const mkContractOptions = (name, critical) =>
-  JSON.stringify({
-    name,
-    workerOptions: { type: 'local' },
-    critical,
-  });
-
-const fabricateV3WithContractVats = (kvStore, vats, terminatedIDs = []) => {
-  kvStore.set('version', '3');
-  for (const { vatID, name } of vats) {
-    kvStore.set(`${vatID}.options`, mkContractOptions(name, false));
-  }
-  kvStore.set('vat.dynamicIDs', JSON.stringify(vats.map(v => v.vatID)));
-  kvStore.set('vats.terminated', JSON.stringify(terminatedIDs));
-};
-
-test('v4 promotes the directive-designated contract vat to critical', async t => {
-  const { hostStorage, kernelStorage } = initSwingStore();
-  const { commit } = hostStorage;
-  const { kvStore } = kernelStorage;
-  const config = {};
-  await initializeSwingset(config, [], kernelStorage, t.context.data);
-  await commit();
-
-  // Fabricate a v3 kernel DB with a few dynamic (contract) vats. v70 is the
-  // chain-resolved ymax target (analog of v288/ymax1 on mainnet, v320/ymax0 on
-  // devnet); note its name carries no "ymax" at all — the whole reason we pin a
-  // vatID. v71 is an unrelated live contract that must be left alone.
-  t.is(kvStore.get('version'), '4');
-  fabricateV3WithContractVats(kvStore, [
-    { vatID: 'v70', name: 'zcf-b1-abc12' },
-    { vatID: 'v71', name: 'zcf-b1-def34' },
-  ]);
-  // the chain-gated host wrote the resolved pin before this reboot
-  kvStore.set(CRITICAL_PROMOTION_DIRECTIVE_KEY, JSON.stringify(['v70']));
-  await commit();
-
-  const { modified } = upgradeSwingset(kernelStorage);
-  await commit();
-
-  t.is(modified, true);
-  t.is(kvStore.get('version'), '4');
-
-  // the designated vat is now critical...
-  t.is(JSON.parse(kvStore.get('v70.options')).critical, true);
-  // ...the unrelated contract is untouched...
-  t.is(JSON.parse(kvStore.get('v71.options')).critical, false);
-  // ...and the one-shot directive was consumed.
-  t.false(kvStore.has(CRITICAL_PROMOTION_DIRECTIVE_KEY));
-
-  // idempotent: re-running finds nothing to do (already at v4)
-  const again = upgradeSwingset(kernelStorage);
-  t.is(again.modified, false);
-});
-
-test('v4 with no directive is a clean no-op', async t => {
-  const { hostStorage, kernelStorage } = initSwingStore();
-  const { commit } = hostStorage;
-  const { kvStore } = kernelStorage;
-  const config = {};
-  await initializeSwingset(config, [], kernelStorage, t.context.data);
-  await commit();
-
-  t.is(kvStore.get('version'), '4');
-  fabricateV3WithContractVats(kvStore, [{ vatID: 'v70', name: 'zcf-b1-abc12' }]);
-  await commit();
-
-  const { modified } = upgradeSwingset(kernelStorage);
-  await commit();
-
-  // version still advances, but nothing was promoted
-  t.is(modified, true);
-  t.is(kvStore.get('version'), '4');
-  t.is(JSON.parse(kvStore.get('v70.options')).critical, false);
-});
-
-test('v4 rejects a directive pin that is not a live contract vat', async t => {
-  const { hostStorage, kernelStorage } = initSwingStore();
-  const { commit } = hostStorage;
-  const { kvStore } = kernelStorage;
-  const config = {};
-  await initializeSwingset(config, [], kernelStorage, t.context.data);
-  await commit();
-
-  t.is(kvStore.get('version'), '4');
-  fabricateV3WithContractVats(
-    kvStore,
-    [
-      { vatID: 'v70', name: 'zcf-b1-abc12' },
-      { vatID: 'v69', name: 'zcf-b1-abc12' },
-    ],
-    ['v69'], // v69 is terminated
-  );
-  await commit();
-
-  // a pin naming a vatID absent on this chain fails loudly (host mis-resolution)
-  kvStore.set(CRITICAL_PROMOTION_DIRECTIVE_KEY, JSON.stringify(['v999']));
-  await commit();
-  t.throws(() => upgradeSwingset(kernelStorage), {
-    message: /is not a live dynamic vat/,
-  });
-
-  // a pin naming a terminated vat also fails
-  kvStore.set(CRITICAL_PROMOTION_DIRECTIVE_KEY, JSON.stringify(['v69']));
-  await commit();
-  t.throws(() => upgradeSwingset(kernelStorage), {
-    message: /is terminated/,
-  });
-});
-
-test('writeCriticalPromotionDirective arms the pin from the chainID and drives promotion', async t => {
-  const { hostStorage, kernelStorage } = initSwingStore();
-  const { commit } = hostStorage;
-  const { kvStore } = kernelStorage;
-  const config = {};
-  await initializeSwingset(config, [], kernelStorage, t.context.data);
-  await commit();
-
-  // The pinned agoric-3 target (v288/ymax1). Its on-chain name is a `zcf`
-  // label that does NOT carry the contract identity — the whole reason the pin
-  // is a vatID, not a label.
-  const [pin] = CRITICAL_PROMOTION_VAT_IDS['agoric-3'];
-  t.is(kvStore.get('version'), '4');
-  fabricateV3WithContractVats(kvStore, [
-    { vatID: pin, name: 'zcf-b1-abc12' },
-    { vatID: 'v71', name: 'zcf-b1-def34' },
-  ]);
-  await commit();
-
-  // A chainID with no pin (or absent chainID) arms nothing.
-  t.deepEqual(writeCriticalPromotionDirective(kvStore, 'some-other-chain'), []);
-  t.deepEqual(writeCriticalPromotionDirective(kvStore, undefined), []);
-  t.false(kvStore.has(CRITICAL_PROMOTION_DIRECTIVE_KEY));
-
-  // The chain-gated host arms the directive from the (available) chainID...
-  t.deepEqual(writeCriticalPromotionDirective(kvStore, 'agoric-3'), [pin]);
-  t.deepEqual(
-    JSON.parse(kvStore.get(CRITICAL_PROMOTION_DIRECTIVE_KEY)),
-    [pin],
-  );
-  await commit();
-
-  // ...and the migration promotes exactly that vat and consumes the directive.
-  const { modified } = upgradeSwingset(kernelStorage);
-  await commit();
-  t.is(modified, true);
-  t.is(JSON.parse(kvStore.get(`${pin}.options`)).critical, true);
-  t.is(JSON.parse(kvStore.get('v71.options')).critical, false);
-  t.false(kvStore.has(CRITICAL_PROMOTION_DIRECTIVE_KEY));
-
-  // Post-migration (version now 4) the helper never leaves a stale directive.
-  t.deepEqual(writeCriticalPromotionDirective(kvStore, 'agoric-3'), []);
-  t.false(kvStore.has(CRITICAL_PROMOTION_DIRECTIVE_KEY));
 });
 
 test('upgrade kernel state', async t => {
@@ -305,7 +121,7 @@ test('upgrade kernel state', async t => {
 
   t.true(kvStore.has('kernel.defaultReapDirtThreshold'));
 
-  t.is(kvStore.get('version'), '4');
+  t.is(kvStore.get('version'), '3');
   kvStore.delete('version'); // i.e. revert to v0
   kvStore.set('initialized', 'true');
   kvStore.delete('vats.terminated');
@@ -396,7 +212,7 @@ test('upgrade non-reaping kernel state', async t => {
 
   t.true(kvStore.has('kernel.defaultReapDirtThreshold'));
 
-  t.is(kvStore.get('version'), '4');
+  t.is(kvStore.get('version'), '3');
   kvStore.delete('version'); // i.e. revert to v0
   kvStore.set('initialized', 'true');
   kvStore.delete('vats.terminated');
@@ -464,7 +280,7 @@ test('v3 upgrade', async t => {
   };
   const dccd = kser(disconnectionObject);
 
-  t.is(kvStore.get('version'), '4');
+  t.is(kvStore.get('version'), '3');
   kvStore.set('version', '2'); // revert to v2
   const runQueue = [];
   const acceptanceQueue = [];
@@ -640,13 +456,87 @@ test('v3 upgrade', async t => {
 
   // the version is bumped, indicating we don't need to perform this
   // remediation again (because the bug is fixed and we won't be
-  // creating similar corruption in the future). upgradeSwingset also runs the
-  // v4 step, which finds no ymax contract vat here and so changes nothing but
-  // the version.
-  data.version = '4';
+  // creating similar corruption in the future)
+  data.version = '3';
 
   // no other state changes are expected
 
   const newData = { ...debug.dump().kvEntries };
   t.deepEqual(data, newData);
+});
+
+// applyVatOptionUpdates (issue kriskowal/garden#29) — the migration-less,
+// host-injected in-place vat option change. It is NOT a schema step: it bumps
+// no `version` and only rewrites data in an existing `${vatID}.options` blob.
+const mkContractOptions = (name, extra = {}) =>
+  JSON.stringify({ name, workerOptions: { type: 'local' }, ...extra });
+
+test('applyVatOptionUpdates promotes a designated contract vat in place', async t => {
+  const { hostStorage, kernelStorage } = initSwingStore();
+  const { commit } = hostStorage;
+  const { kvStore } = kernelStorage;
+
+  // A live ymax target (v10), an unrelated live contract (v11), and a
+  // terminated incarnation (v12).
+  kvStore.set('vat.dynamicIDs', JSON.stringify(['v10', 'v11', 'v12']));
+  kvStore.set('vats.terminated', JSON.stringify(['v12']));
+  kvStore.set('v10.options', mkContractOptions('zcf-b1-abcde-ymax1'));
+  kvStore.set('v11.options', mkContractOptions('zcf-b1-fghij-other'));
+  kvStore.set('v12.options', mkContractOptions('zcf-b1-klmno-ymax0'));
+  await commit();
+
+  const changed = applyVatOptionUpdates(kvStore, [
+    { vatID: 'v10', critical: true },
+  ]);
+  await commit();
+
+  t.deepEqual(changed, ['v10 (zcf-b1-abcde-ymax1)']);
+  t.true(JSON.parse(kvStore.get('v10.options')).critical);
+  // the unrelated vat is untouched, and no `version` key was written
+  t.is(JSON.parse(kvStore.get('v11.options')).critical, undefined);
+  t.false(kvStore.has('version'));
+
+  // idempotent: re-applying changes nothing
+  const changed2 = applyVatOptionUpdates(kvStore, [
+    { vatID: 'v10', critical: true },
+  ]);
+  t.deepEqual(changed2, []);
+});
+
+test('applyVatOptionUpdates guards stale / mis-chained / wrong-kind vatIDs', async t => {
+  const { kernelStorage } = initSwingStore();
+  const { kvStore } = kernelStorage;
+  kvStore.set('vat.dynamicIDs', JSON.stringify(['v10', 'v12']));
+  kvStore.set('vats.terminated', JSON.stringify(['v12']));
+  kvStore.set('v10.options', mkContractOptions('zcf-b1-abcde-ymax1'));
+  kvStore.set('v12.options', mkContractOptions('zcf-b1-klmno-ymax0'));
+
+  t.throws(
+    () => applyVatOptionUpdates(kvStore, [{ vatID: 'v12', critical: true }]),
+    { message: /is terminated/ },
+  );
+  t.throws(
+    () => applyVatOptionUpdates(kvStore, [{ vatID: 'v99', critical: true }]),
+    { message: /is not a live dynamic vat/ },
+  );
+});
+
+test('applyVatOptionUpdates rejects a non-contract vat', async t => {
+  const { kernelStorage } = initSwingStore();
+  const { kvStore } = kernelStorage;
+  kvStore.set('vat.dynamicIDs', JSON.stringify(['v10']));
+  kvStore.set('vats.terminated', JSON.stringify([]));
+  kvStore.set('v10.options', mkContractOptions('bootstrap'));
+  t.throws(
+    () => applyVatOptionUpdates(kvStore, [{ vatID: 'v10', critical: true }]),
+    { message: /is not a contract vat/ },
+  );
+});
+
+test('applyVatOptionUpdates with no updates is a no-op', async t => {
+  const { kernelStorage } = initSwingStore();
+  const { kvStore } = kernelStorage;
+  t.deepEqual(applyVatOptionUpdates(kvStore, []), []);
+  t.deepEqual(applyVatOptionUpdates(kvStore), []);
+  t.false(kvStore.has('version'));
 });

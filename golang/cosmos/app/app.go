@@ -1008,9 +1008,26 @@ func normalizeModuleAccount(ctx sdk.Context, ak authkeeper.AccountKeeper, name s
 	ak.SetModuleAccount(ctx, ma)
 }
 
+// vatOptionUpdate is an in-place change to a single running vat's persisted
+// options, applied by cosmic-swingset at the reboot point of a software upgrade
+// (issue kriskowal/garden#29). Selection is by exact VatID, resolved cosmos-side
+// per chain; the JavaScript side makes no chainID decision and applies whatever
+// it is handed. Currently only Critical is supported (promote a contract vat so
+// its termination halts the chain instead of severing it).
+type vatOptionUpdate struct {
+	VatID    string `json:"vatID"`
+	Critical *bool  `json:"critical,omitempty"`
+}
+
 type upgradeDetails struct {
 	Plan          upgradetypes.Plan `json:"plan"`
 	CoreProposals *vm.CoreProposals `json:"coreProposals,omitempty"`
+	// VatOptionUpdates are in-place per-vat option changes to apply at this
+	// upgrade's reboot point, hard-coded per chain in the upgrade handler (see
+	// makeUnreleasedUpgradeHandler in upgrade.go). The more flexible
+	// proposer-supplied channel is upgradePlan.info.vatOptionUpdates, parsed
+	// JS-side.
+	VatOptionUpdates []vatOptionUpdate `json:"vatOptionUpdates,omitempty"`
 }
 
 type cosmosInitAction struct {

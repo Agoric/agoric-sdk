@@ -9,73 +9,101 @@ import {
 } from '../kernel/state/kernelKeeper.js';
 import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
 
-// kvStore key holding the v4 migration's promotion directive: a JSON array of
-// vatIDs to promote to `critical` (see the v4 step in upgradeSwingset below and
-// issue kriskowal/garden#29). Selection is by explicit vatID, NOT by label,
-// because:
-//   * a Zoe contract vat's kernel-level `options.name` is
-//     `zcf-<bundleLabel>[-<instanceLabel>]` (packages/zoe/src/zoeService/
-//     zoeStorageManager.js and zoe.js `createZCFVat`), so the contract's own
-//     name ("ymax") need not appear in it at all; and
-//   * mainnet runs BOTH ymax0 and ymax1, so any "ymax" match is ambiguous.
-// A vatID is chain-specific and unforgeable, so the pin is resolved by the
-// chainID-gated host and handed to this migration via this key, which the v4
-// step consumes and clears; absent the key the v4 step is a clean no-op.
-export const CRITICAL_PROMOTION_DIRECTIVE_KEY = 'upgrade.promoteCriticalVats';
-
-// The per-chain critical-promotion pins, resolved by the host at the reboot
-// point (writeCriticalPromotionDirective below) from the chainID carried on the
-// AG_COSMOS_INIT boot message. The cosmos upgrade handler
-// (golang/cosmos/app/upgrade.go) records the same targets under
-// `switch ctx.ChainID()` for operator visibility/audit, following the
-// `terminationTargets` precedent; this table is the authoritative source the
-// host consults to arm the directive, and the two must stay in sync.
-//
-//   agoric-3     -> v288 (ymax1)
-//   agoricdev-25 -> v320 (ymax0)
-//
-// A freshly-provisioned test environment (e.g. a3p) assigns its own vatID not
-// known ahead of time; a test there arms the directive with whatever vatID the
-// harness assigned rather than a real-chain constant.
-export const CRITICAL_PROMOTION_VAT_IDS = {
-  'agoric-3': ['v288'],
-  'agoricdev-25': ['v320'],
-};
-
-/**
- * Arm the v4 critical-promotion directive for the chain being upgraded.
- *
- * Called by the host (packages/cosmic-swingset/src/launch-chain.js) at the
- * reboot point, immediately before upgradeSwingset(), using the chainID carried
- * on the AG_COSMOS_INIT boot message. That chainID IS available there
- * (argv.bootMsg.chainID): upgradeSwingset runs inside launch(), which the
- * AG_COSMOS_INIT handler invokes with the init action already in hand — so the
- * Go-resolved pin does not need a separate swing-store write. A chainID with no
- * pinned target (or absent chainID: ag-solo, unit tests) writes nothing.
- *
- * Only arms the directive when the v4 migration is still pending (version < 4),
- * so a later reboot never leaves a stale directive that nothing consumes.
- *
- * @param {KVStore} kvStore
- * @param {string} [chainID]
- * @returns {string[]} the vatIDs written (empty when nothing was armed)
- */
-export const writeCriticalPromotionDirective = (kvStore, chainID) => {
-  const vatIDs = (chainID && CRITICAL_PROMOTION_VAT_IDS[chainID]) || [];
-  const version = Number(kvStore.get('version')) || 0;
-  if (vatIDs.length && version < 4) {
-    kvStore.set(CRITICAL_PROMOTION_DIRECTIVE_KEY, JSON.stringify(vatIDs));
-    return vatIDs;
-  }
-  return [];
-};
-harden(writeCriticalPromotionDirective);
-
 /**
  * @import {ReapDirtThreshold, RunQueueEvent} from '../types-internal.js';
  * @import {KVStore} from '../types-external.js';
  * @import {SwingStoreKernelStorage} from '../types-external.js';
  */
+
+/**
+ * A host-injected, in-place change to a single running vat's persisted options,
+ * applied at a chain software upgrade. See issue kriskowal/garden#29.
+ *
+ * @typedef {object} VatOptionUpdate
+ * @property {string} vatID  the exact vatID to update (e.g. 'v288'). Selection
+ *   is by vatID, NOT by name/label: a Zoe contract vat's kernel-level
+ *   `options.name` is `zcf-<bundleLabel>[-<instanceLabel>]`
+ *   (packages/zoe/src/zoeService/{zoeStorageManager,zoe}.js), so the contract's
+ *   own label ("ymax") need not appear in it at all, and a chain may run several
+ *   incarnations (e.g. both ymax0 and ymax1), so a name match is ambiguous.
+ * @property {boolean} [critical]  when set, promote/demote the vat's `critical`
+ *   flag. `critical` is a plain boolean persisted only in `${vatID}.options` and
+ *   read fresh by kernel.js `terminateVat()` (`if (critical) panic(...)`) — the
+ *   sole consensus-relevant reader, with no RAM cache or derived copy — so
+ *   flipping it here promotes the vat *in place*, preserving all of its state
+ *   and capabilities.
+ */
+
+/**
+ * Apply host-injected per-vat option updates in place, by read-modify-writing
+ * each named vat's `${vatID}.options` blob. This is deliberately NOT a schema
+ * migration and bumps no `version`: the *shape* of the options record is
+ * unchanged, only a data value on one already-running vat flips (issue
+ * kriskowal/garden#29). It is idempotent, and every target is guarded so a stale
+ * or mis-chained vatID is a loud failure rather than a silent wrong-vat write.
+ *
+ * All chain-specific SELECTION happens on the cosmos (host) side, which resolves
+ * the concrete vatIDs per chain and injects them via the AG_COSMOS_INIT
+ * upgradeDetails / upgradeInfo; this function makes no chain-ID decisions.
+ *
+ * There is no supported in-band path to flip `critical` on a running vat
+ * (`upgradeVat` preserves it, and vat-admin `changeOptions` whitelists only
+ * `reapInterval`); the only lever is host code rewriting the kvStore blob, the
+ * same read-modify-write `upgradeSwingset` and `vatKeeper.setReapDirtThreshold`
+ * already perform. Writing through `kernelStorage.kvStore` keeps the write on a
+ * consensus key and folds it into the export-data / activityhash, deterministic
+ * across validators.
+ *
+ * @param {KVStore} kvStore  the kernel kvStore (kernelStorage.kvStore)
+ * @param {VatOptionUpdate[]} [vatOptionUpdates]
+ * @returns {string[]}  human-readable descriptions of the vats actually changed
+ */
+export const applyVatOptionUpdates = (kvStore, vatOptionUpdates = []) => {
+  if (!vatOptionUpdates.length) return [];
+
+  /** @type {(key: string) => string} */
+  const getRequired = key => {
+    kvStore.has(key) || Fail`storage lacks required key ${key}`;
+    return /** @type {string} */ (kvStore.get(key));
+  };
+
+  const terminated = new Set(JSON.parse(kvStore.get('vats.terminated') || '[]'));
+  const dynamicVats = new Set(getAllDynamicVats(getRequired));
+
+  const changed = [];
+  for (const update of vatOptionUpdates) {
+    const { vatID, critical } = update;
+    // Guard the pin: it must name a live, non-terminated dynamic (contract)
+    // vat. The host resolves these per chain, so a vatID absent on this chain
+    // is a host/proposal error, not something to skip silently.
+    dynamicVats.has(vatID) ||
+      Fail`vat-option-update: ${vatID} is not a live dynamic vat`;
+    !terminated.has(vatID) ||
+      Fail`vat-option-update: ${vatID} is terminated`;
+    const optionsKey = `${vatID}.options`;
+    const options = JSON.parse(getRequired(optionsKey));
+    // Defense in depth: only a Zoe contract vat (name `zcf...`) is a valid
+    // target here. This is an assertion guard, never the selector.
+    (typeof options.name === 'string' && options.name.startsWith('zcf')) ||
+      Fail`vat-option-update: ${vatID} (${options.name}) is not a contract vat`;
+    let dirty = false;
+    if (critical !== undefined && !!options.critical !== critical) {
+      options.critical = critical;
+      dirty = true;
+    }
+    if (dirty) {
+      kvStore.set(optionsKey, JSON.stringify(options));
+      changed.push(`${vatID} (${options.name})`);
+    }
+  }
+  console.log(
+    `vat-option-update: changed ${changed.length} vat(s): ${
+      changed.join(', ') || '(none)'
+    }`,
+  );
+  return changed;
+};
+harden(applyVatOptionUpdates);
 
 /**
  * Parse a string of decimal digits into a number.
@@ -397,72 +425,6 @@ export const upgradeSwingset = kernelStorage => {
 
     console.log(` - #9039 remediation complete, ${count} notifies to inject`);
     newVersion = 3;
-  }
-
-  if (version < 4) {
-    // schema v4: promote host-designated running contract vats to `critical`,
-    // so termination of such a vat panics (halts) the kernel instead of
-    // silently severing the vat and its exports. See issue kriskowal/garden#29.
-    //
-    // Why kernel-side, and why here: `critical` is fixed at createVat time
-    // behind an unforgeable key, and no runtime path (upgradeVat, or
-    // changeOptions which whitelists only reapInterval) can flip it on an
-    // already-running vat. But it is ultimately just a boolean persisted in
-    // `${vatID}.options`, read fresh by kernel.js terminateVat()
-    // (`if (critical) panic(...)`). Rewriting that blob here promotes the vat
-    // *in place*, preserving all of its state and capabilities. A core-eval
-    // can't do this (it runs in-consensus at the vat level and can't reach
-    // kernel kvStore); this migration, riding the chain software upgrade's
-    // binary and running at the reboot point before the controller is built,
-    // can.
-    //
-    // Target SELECTION is by explicit vatID supplied by the chain-gated host in
-    // CRITICAL_PROMOTION_DIRECTIVE_KEY (see its definition above) — NOT by
-    // label, which is neither reliable (the name may not contain the contract's
-    // own label) nor unambiguous (mainnet runs both ymax0 and ymax1). Absent a
-    // directive this is a clean no-op that only bumps the version — the case on
-    // every non-Agoric SwingSet and every chain not being promoted. The vatID
-    // guards below turn a stale or mis-chained pin into a loud failure rather
-    // than a silent wrong-vat promotion.
-    const directive = kvStore.get(CRITICAL_PROMOTION_DIRECTIVE_KEY);
-    const targetVatIDs = directive ? JSON.parse(directive) : [];
-    const terminated = new Set(
-      JSON.parse(kvStore.get('vats.terminated') || '[]'),
-    );
-    const dynamicVats = new Set(getAllDynamicVats(getRequired));
-
-    const promoted = [];
-    for (const vatID of targetVatIDs) {
-      // Guard the pin: it must name a live, non-terminated dynamic (contract)
-      // vat. A directive is chain-resolved, so a vatID absent on this chain is
-      // a host error, not something to skip silently.
-      dynamicVats.has(vatID) ||
-        Fail`v4 critical-promotion: ${vatID} is not a live dynamic vat`;
-      !terminated.has(vatID) ||
-        Fail`v4 critical-promotion: ${vatID} is terminated`;
-      const optionsKey = `${vatID}.options`;
-      const options = JSON.parse(getRequired(optionsKey));
-      // Defense in depth: only a Zoe contract vat (name `zcf...`) is a valid
-      // target here. This is an assertion guard, never the selector — per
-      // garden#29 the name may not carry the contract's own label.
-      (typeof options.name === 'string' && options.name.startsWith('zcf')) ||
-        Fail`v4 critical-promotion: ${vatID} (${options.name}) is not a contract vat`;
-      if (!options.critical) {
-        options.critical = true;
-        kvStore.set(optionsKey, JSON.stringify(options));
-        promoted.push(`${vatID} (${options.name})`);
-      }
-    }
-    // Consume the one-shot directive so any later replay is a no-op.
-    if (directive) {
-      kvStore.delete(CRITICAL_PROMOTION_DIRECTIVE_KEY);
-    }
-    console.log(
-      `v4 critical-promotion: promoted ${promoted.length} vat(s): ${
-        promoted.join(', ') || '(none)'
-      }`,
-    );
-    newVersion = 4;
   }
 
   const modified = newVersion !== undefined;

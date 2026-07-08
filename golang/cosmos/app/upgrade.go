@@ -193,6 +193,19 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
+		// vatOptionUpdates are in-place per-vat option changes handed to
+		// cosmic-swingset to apply at this upgrade's reboot point (issue
+		// kriskowal/garden#29). Unlike the CoreProposalSteps below they are NOT
+		// core-evals: a core-eval runs in-consensus at the vat level and cannot
+		// reach the kernel kvStore, and there is no supported runtime path to
+		// flip an already-running vat's `critical` flag. The write happens
+		// kernel-side (applyVatOptionUpdates, packages/SwingSet/src/controller/
+		// upgradeSwingset.js), which rewrites `${vatID}.options` in place —
+		// preserving all of the vat's state — before any termination can read
+		// the flag. All chain selection lives HERE, cosmos-side; the JS side
+		// applies whatever it is handed and makes no chainID decision.
+		var vatOptionUpdates []vatOptionUpdate
+
 		// These CoreProposalSteps are not idempotent and should only be executed
 		// as part of the first upgrade using this handler on any given chain.
 		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
@@ -244,48 +257,25 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
 			}
 
-			// Promote the running ymax contract vat to `critical`, so that its
-			// termination panics (halts) the chain instead of severing the vat
-			// and its exports. See issue kriskowal/garden#29.
-			//
-			// Unlike the termination targets above, this is NOT a core-eval: a
-			// core-eval runs in-consensus at the vat level and cannot reach the
-			// kernel kvStore, and there is no supported runtime path to flip an
-			// already-running vat's `critical` flag (vat-vat-admin.js
-			// changeOptions whitelists only reapInterval). The actual write
-			// happens kernel-side, in the SwingSet v3->v4 schema migration
-			// (packages/SwingSet/src/controller/upgradeSwingset.js) that rides
-			// this same software upgrade's binary and runs at reboot.
-			//
-			// The target is pinned by explicit vatID, NOT selected by label: a
-			// Zoe contract vat is named `zcf-<bundleLabel>[-<label>]` (so "ymax"
-			// need not appear) and mainnet runs both ymax0 and ymax1, so no
-			// label heuristic can identify or disambiguate the target. The pin
-			// is chainID-gated, following the `terminationTargets` precedent
-			// above. The migration reads it from the swing-store key
-			// `upgrade.promoteCriticalVats` (CRITICAL_PROMOTION_DIRECTIVE_KEY),
-			// which it consumes and clears; absent that key the migration is a
-			// no-op.
-			//
-			// The directive is armed host-side by launch-chain.js
-			// (writeCriticalPromotionDirective) at the same reboot point, from
-			// the chainID carried on the AG_COSMOS_INIT boot message — which IS
-			// available there — using the authoritative per-chain table
-			// CRITICAL_PROMOTION_VAT_IDS in upgradeSwingset.js. This switch is
-			// the operator-visibility/audit mirror of that table and must stay
-			// in sync with it.
-			var criticalPromotionVatIDs []string
+			// Promote the running ymax contract vat to `critical` (issue
+			// kriskowal/garden#29). The vatID is pinned per chain, because a
+			// Zoe contract vat's kernel name is `zcf-<bundleLabel>[-<label>]` (so
+			// "ymax" need not appear) and mainnet runs both ymax0 and ymax1, so
+			// no name heuristic can identify or disambiguate the target. The
+			// pins are read off the running chain at upgrade-authoring time,
+			// gated by ChainID like terminationTargets above.
+			promote := true
 			switch ctx.ChainID() {
 			case "agoric-3": // MAINNET (ymax1)
-				criticalPromotionVatIDs = []string{"v288"}
+				vatOptionUpdates = []vatOptionUpdate{{VatID: "v288", Critical: &promote}}
 			case "agoricdev-25": // DEVNET (ymax0)
-				criticalPromotionVatIDs = []string{"v320"}
+				vatOptionUpdates = []vatOptionUpdate{{VatID: "v320", Critical: &promote}}
 			}
-			if len(criticalPromotionVatIDs) > 0 {
+			if len(vatOptionUpdates) > 0 {
 				ctx.Logger().Info(
-					"SwingSet v4 migration will promote contract vat(s) to critical",
+					"upgrade will apply in-place vat option updates",
 					"chainID", ctx.ChainID(),
-					"vatIDs", criticalPromotionVatIDs,
+					"vatOptionUpdates", vatOptionUpdates,
 				)
 			}
 		}
@@ -297,6 +287,8 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 			// These will be merged with any coreProposals specified in the
 			// upgradeInfo field of the upgrade plan ran as subsequent steps
 			CoreProposals: vm.CoreProposalsFromSteps(CoreProposalSteps...),
+			// In-place vat option updates applied at the reboot point (see above)
+			VatOptionUpdates: vatOptionUpdates,
 		}
 
 		// Always run module migrations

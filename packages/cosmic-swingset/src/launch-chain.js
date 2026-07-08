@@ -24,7 +24,7 @@ import {
   loadSwingsetConfigFile,
   normalizeConfig,
   upgradeSwingset,
-  writeCriticalPromotionDirective,
+  applyVatOptionUpdates,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
 import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
@@ -289,14 +289,6 @@ export async function buildSwingset(
   }
 
   const pendingCoreProposals = await ensureSwingsetInitialized();
-  // Arm the v4 critical-promotion directive for the chain being upgraded, from
-  // the chainID carried on the AG_COSMOS_INIT boot message (argv.bootMsg.chainID)
-  // — which IS available at this reboot point (see garden#29). A no-op for a
-  // chainID with no pin, and for chainID-less hosts (ag-solo, unit tests).
-  const chainID =
-    /** @type {{ bootMsg?: { chainID?: string } }} */ (bootstrapArgs || {})
-      .bootMsg?.chainID;
-  writeCriticalPromotionDirective(kernelStorage.kvStore, chainID);
   const { modified } = upgradeSwingset(kernelStorage);
   const controller = await makeSwingsetController(
     kernelStorage,
@@ -1177,8 +1169,34 @@ export async function launchAndShareInternals({
 
         const softwareUpgradeCoreProposals = upgradeDetails?.coreProposals;
 
-        const { coreProposals: upgradeInfoCoreProposals } =
-          parseUpgradePlanInfo(upgradeDetails?.plan, ActionType.AG_COSMOS_INIT);
+        const {
+          coreProposals: upgradeInfoCoreProposals,
+          vatOptionUpdates: upgradeInfoVatOptionUpdates,
+        } = parseUpgradePlanInfo(upgradeDetails?.plan, ActionType.AG_COSMOS_INIT);
+
+        // Apply any host-injected in-place vat option updates for this software
+        // upgrade (issue kriskowal/garden#29). This mirrors coreProposals
+        // handling: two channels, merged and applied at the upgrade block —
+        //   * upgradeDetails.vatOptionUpdates: structured, hard-coded per chain
+        //     in the cosmos upgrade handler (golang/cosmos/app/upgrade.go) —
+        //     the bulletproof path; and
+        //   * upgradePlan.info.vatOptionUpdates: proposer-supplied via the
+        //     upgrade proposal's info JSON — the more flexible path.
+        // All chain selection is done cosmos-side; cosmic-swingset makes no
+        // chainID decision. The write must land before the affected vat could
+        // be terminated; `critical` is read fresh from kvStore by terminateVat
+        // (no RAM cache) and no terminate runs during init, so applying it here
+        // — and committing it at COMMIT_BLOCK — is durably in effect for every
+        // later block.
+        const vatOptionUpdates = [
+          ...(upgradeDetails?.vatOptionUpdates || []),
+          ...(upgradeInfoVatOptionUpdates || []),
+        ];
+        if (vatOptionUpdates.length) {
+          upgradeDetails ||
+            Fail`Unexpected vat option updates outside of a software upgrade`;
+          applyVatOptionUpdates(kernelStorage.kvStore, vatOptionUpdates);
+        }
 
         if (isBootstrap) {
           // This only runs for the very first block on the chain.
