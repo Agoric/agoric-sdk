@@ -119,6 +119,57 @@ test('planner exo resolvePlan method', async t => {
   }
 });
 
+test('planner allows cosmos-based portfolio to withdraw to <Cash> via @chain account', async t => {
+  const zone = makeHeapZone();
+
+  const vt = prepareVowTools(zone);
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const marshaller = board.getReadonlyMarshaller();
+  const makePortfolio = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    ...({} as any),
+  });
+  // cosmos-based portfolio: no sourceAccountId
+  const aPortfolio = makePortfolio({ portfolioId: 1 });
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
+
+  const makePlanner = preparePlanner(zone, {
+    getPortfolioPlanner: mockGetPortfolioPlanner,
+    getPlannerDelegation: () => undefined,
+    shapes: makeOfferArgsShapes(USDC),
+  });
+
+  const planner = makePlanner();
+
+  // target allocation no longer includes USDN; the plan fully exits it
+  aPortfolio.manager.setTargetAllocation({ Aave_Arbitrum: 100n });
+
+  const portfolioId = 0;
+  const amount = { brand: USDC, value: 10_000_000n };
+  const withdrawPlan: MovementDesc[] = [
+    { src: 'USDN', dest: '@noble', amount },
+    { src: '@noble', dest: '<Cash>', amount },
+  ];
+
+  const { stepsP, flowId } = aPortfolio.manager.startFlow({
+    type: 'withdraw',
+    amount,
+  });
+
+  t.notThrows(
+    () => planner.resolvePlan(portfolioId, flowId, withdrawPlan, 1, 0),
+    'withdrawing via @noble to <Cash> is not a new position, even though USDN is absent from target allocation',
+  );
+  t.deepEqual(await vt.when(stepsP), withdrawPlan);
+});
+
 test('planner starts delegated rebalance and resolves its plan', async t => {
   const zone = makeHeapZone();
   const vt = prepareVowTools(zone);
@@ -212,6 +263,58 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
       flow1: { type: 'rebalance', agent: 'agent1', agentMemo: '12345' },
     },
   });
+});
+
+test('planner allows EVM-based portfolio to withdraw to -Chain via @chain account', async t => {
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone);
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const marshaller = board.getReadonlyMarshaller();
+  const makePortfolioKit = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    ...({} as any),
+  });
+  // EVM-based portfolio: sourceAccountId is set
+  const aPortfolio = makePortfolioKit({
+    portfolioId: 1,
+    sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
+  });
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
+
+  const makePlanner = preparePlanner(zone, {
+    getPortfolioPlanner: mockGetPortfolioPlanner,
+    getPlannerDelegation: () => undefined,
+    shapes: makeOfferArgsShapes(USDC),
+  });
+  const planner = makePlanner();
+
+  // target allocation no longer includes Aave_Arbitrum; the plan fully exits it
+  aPortfolio.manager.setTargetAllocation({ USDN: 100n });
+
+  const portfolioId = 0;
+  const amount = { brand: USDC, value: 10_000_000n };
+  const withdrawPlan: MovementDesc[] = [
+    { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount },
+    { src: '@Arbitrum', dest: '-Arbitrum', amount },
+  ];
+
+  const { stepsP, flowId } = aPortfolio.manager.startFlow({
+    type: 'withdraw',
+    amount,
+  });
+
+  t.notThrows(
+    () => planner.resolvePlan(portfolioId, flowId, withdrawPlan, 1, 0),
+    'withdrawing via @Arbitrum to -Arbitrum is not a new position, even though Aave_Arbitrum is absent from target allocation',
+  );
+  t.deepEqual(await vt.when(stepsP), withdrawPlan);
 });
 
 test('planner cannot start rebalance without features enabled', async t => {
