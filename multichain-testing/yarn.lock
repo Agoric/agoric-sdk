@@ -19,9 +19,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aglocal/fast-usdc-deploy@portal:../packages/fast-usdc-deploy::locator=root-workspace-0b6124%40workspace%3A.":
+"@aglocal/fast-usdc-deploy@portal:../packages/fast-usdc-deploy::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/fast-usdc-deploy@portal:../packages/fast-usdc-deploy::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@aglocal/fast-usdc-deploy@portal:../packages/fast-usdc-deploy::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
@@ -48,9 +48,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@aglocal/portfolio-contract@portal:../packages/portfolio-contract::locator=root-workspace-0b6124%40workspace%3A.":
+"@aglocal/portfolio-contract@portal:../packages/portfolio-contract::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/portfolio-contract@portal:../packages/portfolio-contract::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@aglocal/portfolio-contract@portal:../packages/portfolio-contract::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
@@ -77,9 +77,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@aglocal/portfolio-deploy@portal:../packages/portfolio-deploy::locator=root-workspace-0b6124%40workspace%3A.":
+"@aglocal/portfolio-deploy@portal:../packages/portfolio-deploy::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@aglocal/portfolio-deploy@portal:../packages/portfolio-deploy::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@aglocal/portfolio-deploy@portal:../packages/portfolio-deploy::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@aglocal/portfolio-contract": "workspace:*"
     "@agoric/client-utils": "workspace:*"
@@ -112,9 +112,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/async-flow@portal:../packages/async-flow::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/async-flow@portal:../packages/async-flow::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/async-flow@portal:../packages/async-flow::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/async-flow@portal:../packages/async-flow::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -130,9 +130,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/base-zone@portal:../packages/base-zone::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/base-zone@portal:../packages/base-zone::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/base-zone@portal:../packages/base-zone::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/base-zone@portal:../packages/base-zone::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/store": "workspace:*"
     "@endo/common": "npm:^1.4.0"
@@ -144,9 +144,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/casting@portal:../packages/casting::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/casting@portal:../packages/casting::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/casting@portal:../packages/casting::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/casting@portal:../packages/casting::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/notifier": "workspace:*"
@@ -164,9 +164,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/client-utils@portal:../packages/client-utils::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/client-utils@portal:../packages/client-utils::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/client-utils@portal:../packages/client-utils::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/client-utils@portal:../packages/client-utils::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/casting": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
@@ -188,9 +188,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/cosmic-proto@portal:../packages/cosmic-proto::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/cosmic-proto@portal:../packages/cosmic-proto::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/cosmic-proto@portal:../packages/cosmic-proto::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/cosmic-proto@portal:../packages/cosmic-proto::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@chain-registry/v2": "npm:^1.71.186"
     "@chain-registry/v2-types": "npm:^0.53.115"
@@ -203,9 +203,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/deploy-script-support@portal:../packages/deploy-script-support::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/deploy-script-support@portal:../packages/deploy-script-support::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/deploy-script-support@portal:../packages/deploy-script-support::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/deploy-script-support@portal:../packages/deploy-script-support::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "workspace:*"
     "@agoric/ertp": "workspace:*"
@@ -234,9 +234,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/ertp@portal:../packages/ERTP::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/ertp@portal:../packages/ERTP::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/ertp@portal:../packages/ERTP::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/ertp@portal:../packages/ERTP::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/notifier": "workspace:*"
     "@agoric/store": "workspace:*"
@@ -252,9 +252,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/eslint-config@portal:../packages/eslint-config::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/eslint-config@portal:../packages/eslint-config::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/eslint-config@portal:../packages/eslint-config::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/eslint-config@portal:../packages/eslint-config::locator=multichain-testing%40workspace%3A."
   peerDependencies:
     "@agoric/eslint-plugin": ^0.1.0
     "@endo/eslint-plugin": ^2.4.0
@@ -271,9 +271,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/fast-usdc@portal:../packages/fast-usdc::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/fast-usdc@portal:../packages/fast-usdc::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/fast-usdc@portal:../packages/fast-usdc::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/fast-usdc@portal:../packages/fast-usdc::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/client-utils": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
@@ -304,9 +304,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/governance@portal:../packages/governance::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/governance@portal:../packages/governance::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/governance@portal:../packages/governance::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/governance@portal:../packages/governance::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -327,15 +327,15 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/import-manager@portal:../packages/import-manager::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/import-manager@portal:../packages/import-manager::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/import-manager@portal:../packages/import-manager::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/import-manager@portal:../packages/import-manager::locator=multichain-testing%40workspace%3A."
   languageName: node
   linkType: soft
 
-"@agoric/internal@portal:../packages/internal::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/internal@portal:../packages/internal::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/internal@portal:../packages/internal::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/internal@portal:../packages/internal::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@endo/cache-map": "npm:^1.1.0"
@@ -356,9 +356,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/kmarshal@portal:../packages/kmarshal::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/kmarshal@portal:../packages/kmarshal::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/kmarshal@portal:../packages/kmarshal::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/kmarshal@portal:../packages/kmarshal::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@endo/errors": "npm:^1.3.1"
     "@endo/far": "npm:^1.1.14"
@@ -366,9 +366,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/network@portal:../packages/network::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/network@portal:../packages/network::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/network@portal:../packages/network::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/network@portal:../packages/network::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/store": "workspace:*"
@@ -382,9 +382,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/notifier@portal:../packages/notifier::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/notifier@portal:../packages/notifier::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/notifier@portal:../packages/notifier::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/notifier@portal:../packages/notifier::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/vat-data": "workspace:*"
@@ -396,9 +396,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/orchestration@portal:../packages/orchestration::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/orchestration@portal:../packages/orchestration::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/orchestration@portal:../packages/orchestration::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/orchestration@portal:../packages/orchestration::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/async-flow": "workspace:*"
     "@agoric/cosmic-proto": "workspace:*"
@@ -432,17 +432,17 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/pola-io@portal:../packages/pola-io::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/pola-io@portal:../packages/pola-io::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/pola-io@portal:../packages/pola-io::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/pola-io@portal:../packages/pola-io::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
   languageName: node
   linkType: soft
 
-"@agoric/portfolio-api@portal:../packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/portfolio-api@portal:../packages/portfolio-api::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/portfolio-api@portal:../packages/portfolio-api::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/portfolio-api@portal:../packages/portfolio-api::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/orchestration": "workspace:*"
@@ -454,9 +454,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/smart-wallet@portal:../packages/smart-wallet::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/smart-wallet@portal:../packages/smart-wallet::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/smart-wallet@portal:../packages/smart-wallet::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/smart-wallet@portal:../packages/smart-wallet::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/ertp": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -477,9 +477,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/store@portal:../packages/store::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/store@portal:../packages/store::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/store@portal:../packages/store::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/store@portal:../packages/store::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@endo/errors": "npm:^1.3.1"
     "@endo/exo": "npm:^1.7.0"
@@ -489,9 +489,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/swing-store@portal:../packages/swing-store::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/swing-store@portal:../packages/swing-store::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/swing-store@portal:../packages/swing-store::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/swing-store@portal:../packages/swing-store::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
     "@endo/base64": "npm:^1.1.1"
@@ -503,9 +503,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/swingset-liveslots@portal:../packages/swingset-liveslots::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/swingset-liveslots@portal:../packages/swingset-liveslots::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/swingset-liveslots@portal:../packages/swingset-liveslots::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/swingset-liveslots@portal:../packages/swingset-liveslots::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/store": "workspace:*"
@@ -523,9 +523,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/swingset-vat@portal:../packages/SwingSet::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/swingset-vat@portal:../packages/SwingSet::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/swingset-vat@portal:../packages/SwingSet::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/swingset-vat@portal:../packages/SwingSet::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/internal": "workspace:*"
     "@agoric/kmarshal": "workspace:*"
@@ -568,9 +568,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/swingset-xsnap-supervisor@portal:../packages/swingset-xsnap-supervisor::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/swingset-xsnap-supervisor@portal:../packages/swingset-xsnap-supervisor::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/swingset-xsnap-supervisor@portal:../packages/swingset-xsnap-supervisor::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/swingset-xsnap-supervisor@portal:../packages/swingset-xsnap-supervisor::locator=multichain-testing%40workspace%3A."
   peerDependencies:
     "@agoric/swingset-liveslots": "workspace:*"
     "@endo/errors": ^1.2.13
@@ -579,9 +579,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/time@portal:../packages/time::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/time@portal:../packages/time::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/time@portal:../packages/time::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/time@portal:../packages/time::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/store": "workspace:*"
     "@endo/errors": "npm:^1.3.1"
@@ -590,9 +590,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/vat-data@portal:../packages/vat-data::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/vat-data@portal:../packages/vat-data::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/vat-data@portal:../packages/vat-data::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/vat-data@portal:../packages/vat-data::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/store": "workspace:*"
@@ -603,9 +603,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/vats@portal:../packages/vats::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/vats@portal:../packages/vats::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/vats@portal:../packages/vats::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/vats@portal:../packages/vats::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/cosmic-proto": "workspace:*"
     "@agoric/ertp": "workspace:*"
@@ -633,9 +633,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/vow@portal:../packages/vow::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/vow@portal:../packages/vow::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/vow@portal:../packages/vow::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/vow@portal:../packages/vow::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/internal": "workspace:*"
@@ -648,15 +648,15 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/xsnap-lockdown@portal:../packages/xsnap-lockdown::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/xsnap-lockdown@portal:../packages/xsnap-lockdown::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/xsnap-lockdown@portal:../packages/xsnap-lockdown::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/xsnap-lockdown@portal:../packages/xsnap-lockdown::locator=multichain-testing%40workspace%3A."
   languageName: node
   linkType: soft
 
-"@agoric/zoe@portal:../packages/zoe::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/zoe@portal:../packages/zoe::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/zoe@portal:../packages/zoe::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/zoe@portal:../packages/zoe::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/ertp": "workspace:*"
@@ -686,9 +686,9 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/zone@portal:../packages/zone::locator=root-workspace-0b6124%40workspace%3A.":
+"@agoric/zone@portal:../packages/zone::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@agoric/zone@portal:../packages/zone::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@agoric/zone@portal:../packages/zone::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@agoric/base-zone": "workspace:*"
     "@agoric/vat-data": "workspace:*"
@@ -1045,9 +1045,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/bundle-source@portal:../node_modules/@endo/bundle-source::locator=root-workspace-0b6124%40workspace%3A.":
+"@endo/bundle-source@portal:../node_modules/@endo/bundle-source::locator=multichain-testing%40workspace%3A.":
   version: 0.0.0-use.local
-  resolution: "@endo/bundle-source@portal:../node_modules/@endo/bundle-source::locator=root-workspace-0b6124%40workspace%3A."
+  resolution: "@endo/bundle-source@portal:../node_modules/@endo/bundle-source::locator=multichain-testing%40workspace%3A."
   dependencies:
     "@endo/base64": "npm:^1.1.1"
     "@endo/compartment-mapper": "npm:^2.3.0"
@@ -4740,6 +4740,64 @@ __metadata:
   languageName: node
   linkType: hard
 
+"multichain-testing@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "multichain-testing@workspace:."
+  dependencies:
+    "@aglocal/fast-usdc-deploy": "npm:MULTICHAIN_TESTING"
+    "@aglocal/portfolio-contract": "npm:MULTICHAIN_TESTING"
+    "@aglocal/portfolio-deploy": "npm:MULTICHAIN_TESTING"
+    "@agoric/client-utils": "npm:MULTICHAIN_TESTING"
+    "@agoric/cosmic-proto": "npm:MULTICHAIN_TESTING"
+    "@agoric/deploy-script-support": "npm:MULTICHAIN_TESTING"
+    "@agoric/ertp": "npm:MULTICHAIN_TESTING"
+    "@agoric/eslint-config": "npm:MULTICHAIN_TESTING"
+    "@agoric/fast-usdc": "npm:MULTICHAIN_TESTING"
+    "@agoric/internal": "npm:MULTICHAIN_TESTING"
+    "@agoric/orchestration": "npm:MULTICHAIN_TESTING"
+    "@agoric/pola-io": "npm:MULTICHAIN_TESTING"
+    "@agoric/portfolio-api": "npm:MULTICHAIN_TESTING"
+    "@agoric/store": "npm:MULTICHAIN_TESTING"
+    "@agoric/swingset-vat": "npm:MULTICHAIN_TESTING"
+    "@cosmjs/amino": "npm:^0.36.0"
+    "@cosmjs/cosmwasm-stargate": "npm:^0.36.0"
+    "@cosmjs/crypto": "npm:^0.36.0"
+    "@cosmjs/encoding": "npm:^0.36.0"
+    "@cosmjs/proto-signing": "npm:^0.36.0"
+    "@cosmjs/stargate": "npm:^0.36.0"
+    "@endo/base64": "npm:^1.1.1"
+    "@endo/bundle-source": "npm:MULTICHAIN_TESTING"
+    "@endo/errors": "npm:^1.3.1"
+    "@endo/far": "npm:^1.1.14"
+    "@endo/init": "npm:^1.1.13"
+    "@endo/marshal": "npm:^1.10.0"
+    "@endo/nat": "npm:^5.2.0"
+    "@endo/patterns": "npm:^1.9.1"
+    "@endo/promise-kit": "npm:^1.2.1"
+    "@endo/ses-ava": "npm:^1.4.2"
+    "@eslint/compat": "npm:^2.0.3"
+    "@starship-ci/cli": "npm:^3.10.0"
+    "@types/eslint": "npm:^9.6.1"
+    "@types/fs-extra": "npm:^11"
+    "@types/node": "npm:^22.0.0"
+    "@typescript-eslint/eslint-plugin": "npm:^8.26.1"
+    "@typescript-eslint/parser": "npm:^8.26.1"
+    ava: "npm:^8.0.1"
+    cosmjs-types: "npm:^0.10.1"
+    eslint: "npm:^9.39.4"
+    eslint-config-prettier: "npm:^10.1.1"
+    ethers: "npm:^6.13.4"
+    execa: "npm:^9.5.2"
+    fs-extra: "npm:^11.2.0"
+    osmojs: "npm:^16.15.0"
+    prettier: "npm:^3.7.4"
+    starshipjs: "npm:^3.3.0"
+    ts-blank-space: "npm:^0.4.4"
+    typescript: "npm:~6.0.3"
+    viem: "npm:^2.43.4"
+  languageName: unknown
+  linkType: soft
+
 "napi-build-utils@npm:^2.0.0":
   version: 2.0.0
   resolution: "napi-build-utils@npm:2.0.0"
@@ -5282,64 +5340,6 @@ __metadata:
   checksum: 10c0/4eff0d4a5f9383566c7d7ec437b671cc51b25963bd61bf127c3f3d3f68e44a026d99b8d2f1ad344afff8d278a8fe70a8ea092650a716d22287e8bef7126bb2fa
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@aglocal/fast-usdc-deploy": "npm:MULTICHAIN_TESTING"
-    "@aglocal/portfolio-contract": "npm:MULTICHAIN_TESTING"
-    "@aglocal/portfolio-deploy": "npm:MULTICHAIN_TESTING"
-    "@agoric/client-utils": "npm:MULTICHAIN_TESTING"
-    "@agoric/cosmic-proto": "npm:MULTICHAIN_TESTING"
-    "@agoric/deploy-script-support": "npm:MULTICHAIN_TESTING"
-    "@agoric/ertp": "npm:MULTICHAIN_TESTING"
-    "@agoric/eslint-config": "npm:MULTICHAIN_TESTING"
-    "@agoric/fast-usdc": "npm:MULTICHAIN_TESTING"
-    "@agoric/internal": "npm:MULTICHAIN_TESTING"
-    "@agoric/orchestration": "npm:MULTICHAIN_TESTING"
-    "@agoric/pola-io": "npm:MULTICHAIN_TESTING"
-    "@agoric/portfolio-api": "npm:MULTICHAIN_TESTING"
-    "@agoric/store": "npm:MULTICHAIN_TESTING"
-    "@agoric/swingset-vat": "npm:MULTICHAIN_TESTING"
-    "@cosmjs/amino": "npm:^0.36.0"
-    "@cosmjs/cosmwasm-stargate": "npm:^0.36.0"
-    "@cosmjs/crypto": "npm:^0.36.0"
-    "@cosmjs/encoding": "npm:^0.36.0"
-    "@cosmjs/proto-signing": "npm:^0.36.0"
-    "@cosmjs/stargate": "npm:^0.36.0"
-    "@endo/base64": "npm:^1.1.1"
-    "@endo/bundle-source": "npm:MULTICHAIN_TESTING"
-    "@endo/errors": "npm:^1.3.1"
-    "@endo/far": "npm:^1.1.14"
-    "@endo/init": "npm:^1.1.13"
-    "@endo/marshal": "npm:^1.10.0"
-    "@endo/nat": "npm:^5.2.0"
-    "@endo/patterns": "npm:^1.9.1"
-    "@endo/promise-kit": "npm:^1.2.1"
-    "@endo/ses-ava": "npm:^1.4.2"
-    "@eslint/compat": "npm:^2.0.3"
-    "@starship-ci/cli": "npm:^3.10.0"
-    "@types/eslint": "npm:^9.6.1"
-    "@types/fs-extra": "npm:^11"
-    "@types/node": "npm:^22.0.0"
-    "@typescript-eslint/eslint-plugin": "npm:^8.26.1"
-    "@typescript-eslint/parser": "npm:^8.26.1"
-    ava: "npm:^8.0.1"
-    cosmjs-types: "npm:^0.10.1"
-    eslint: "npm:^9.39.4"
-    eslint-config-prettier: "npm:^10.1.1"
-    ethers: "npm:^6.13.4"
-    execa: "npm:^9.5.2"
-    fs-extra: "npm:^11.2.0"
-    osmojs: "npm:^16.15.0"
-    prettier: "npm:^3.7.4"
-    starshipjs: "npm:^3.3.0"
-    ts-blank-space: "npm:^0.4.4"
-    typescript: "npm:~6.0.3"
-    viem: "npm:^2.43.4"
-  languageName: unknown
-  linkType: soft
 
 "run-parallel@npm:^1.1.9":
   version: 1.2.0
