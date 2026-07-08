@@ -71,10 +71,10 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
     portfolioId: 1,
     sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
   });
-  const mockGetPortfolio = _id => aPortfolio;
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
 
   const makePlanner = preparePlanner(zone, {
-    getPortfolio: mockGetPortfolio,
+    getPortfolioPlanner: mockGetPortfolioPlanner,
     getPlannerDelegation: portfolioPlanner =>
       plannerDelegations.get(portfolioPlanner),
     shapes: makeOfferArgsShapes(USDC),
@@ -163,10 +163,10 @@ test('planner cannot start rebalance without features enabled', async t => {
     portfolioId: 1,
     sourceAccountId: 'eip155:42161:0x7878787878787878787878787878787878787878',
   });
-  const mockGetPortfolio = _id => aPortfolio;
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
 
   const makePlanner = preparePlanner(zone, {
-    getPortfolio: mockGetPortfolio,
+    getPortfolioPlanner: mockGetPortfolioPlanner,
     getPlannerDelegation: portfolioPlanner =>
       plannerDelegations.get(portfolioPlanner),
     shapes: makeOfferArgsShapes(USDC),
@@ -224,11 +224,11 @@ test('planner can reject a plan due to insufficient funds', async t => {
     ...({} as any),
   });
   const aPortfolio = makePortfolio({ portfolioId: 1 });
-  const mockGetPortfolio = _id => aPortfolio;
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
 
   // Create planner exo
   const makePlanner = preparePlanner(zone, {
-    getPortfolio: mockGetPortfolio,
+    getPortfolioPlanner: mockGetPortfolioPlanner,
     getPlannerDelegation: () => undefined,
     shapes: makeOfferArgsShapes(USDC),
   });

@@ -897,7 +897,7 @@ export const contract = async (
   );
 
   const makePlanner = preparePlanner(zone.subZone('planner'), {
-    getPortfolio,
+    getPortfolioPlanner: id => getPortfolio(id).planner,
     getPlannerDelegation,
     shapes: offerArgsShapes,
   });

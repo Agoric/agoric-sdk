@@ -36,11 +36,11 @@ const OrderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
 export const preparePlanner = (
   zone: Zone,
   {
-    getPortfolio,
+    getPortfolioPlanner,
     getPlannerDelegation,
     shapes,
   }: {
-    getPortfolio: (id: number) => PortfolioKit;
+    getPortfolioPlanner: (id: number) => PortfolioKit['planner'];
     getPlannerDelegation: (
       portfolioPlanner: PortfolioKit['planner'],
     ) => PortfolioDelegationClient | undefined;
@@ -94,7 +94,7 @@ export const preparePlanner = (
           .sub(`portfolio${portfolioId}`)
           .sub(`flow${flowId}`);
         traceFlow('TODO(#11782): vet plan', planOrSteps);
-        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
       },
@@ -106,7 +106,7 @@ export const preparePlanner = (
         rebalanceCount: number,
       ) {
         trace('reject plan', { portfolioId, flowId, reason });
-        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.rejectFlowPlan(flowId, reason);
       },
@@ -115,8 +115,7 @@ export const preparePlanner = (
         delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
         planOrSteps: FundsFlowPlan | MovementDesc[],
       ): FlowKey {
-        const portfolioKit = getPortfolio(portfolioId);
-        const { planner: portfolioPlanner } = portfolioKit;
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
         const delegationClient = getPlannerDelegation(portfolioPlanner);
         assert(
           delegationClient && delegationClient.getReader().isActive(),
