@@ -21,6 +21,104 @@ import { makeStorageTools } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
+test('planner exo resolvePlan method', async t => {
+  const zone = makeHeapZone();
+
+  const vt = prepareVowTools(zone);
+
+  const board = makeFakeBoard();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const marshaller = board.getReadonlyMarshaller();
+  const makePortfolio = preparePortfolioKit(zone, {
+    usdcBrand: USDC,
+    marshaller,
+    portfoliosNode: storage.rootNode
+      .makeChildNode('ymax0')
+      .makeChildNode('portfolios'),
+    vowTools: vt,
+    ...({} as any),
+  });
+  const aPortfolio = makePortfolio({ portfolioId: 1 });
+  const mockGetPortfolioPlanner = _id => aPortfolio.planner;
+
+  // Create planner exo
+  const makePlanner = preparePlanner(zone, {
+    getPortfolioPlanner: mockGetPortfolioPlanner,
+    getPlannerDelegation: () => undefined,
+    shapes: makeOfferArgsShapes(USDC),
+  });
+
+  const planner = makePlanner();
+
+  aPortfolio.manager.setTargetAllocation({ USDN: 100n });
+
+  {
+    const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
+    t.log('targetAllocation', aPortfolio.reader.getTargetAllocation(), {
+      policyVersion,
+      rebalanceCount,
+    });
+    t.deepEqual(
+      { policyVersion, rebalanceCount },
+      { policyVersion: 1, rebalanceCount: 0 },
+      'version 1 after setTargetAllocation',
+    );
+  }
+
+  const portfolioId = 0;
+  const amount = { brand: USDC, value: 100n };
+
+  {
+    const { stepsP, flowId } = aPortfolio.manager.startFlow({
+      type: 'rebalance',
+    });
+
+    const plan: MovementDesc[] = [
+      { src: '+agoric', dest: '@agoric', amount },
+      { src: '@agoric', dest: '@noble', amount },
+      { src: '@noble', dest: 'USDN', amount },
+    ];
+
+    t.throws(() => planner.resolvePlan(portfolioId, flowId, plan, 0, 0), {
+      message: /expected policyVersion 1; got 0/,
+    });
+
+    planner.resolvePlan(portfolioId, flowId, plan, 1, 0);
+    t.deepEqual(await vt.when(stepsP), plan);
+
+    const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
+    t.log({ policyVersion, rebalanceCount });
+    t.deepEqual(
+      { policyVersion, rebalanceCount },
+      { policyVersion: 1, rebalanceCount: 1 },
+      'rebalanceCount 1 after .resolvePlan(plan, ...)',
+    );
+  }
+
+  {
+    const { stepsP, flowId } = aPortfolio.manager.startFlow({
+      type: 'rebalance',
+    });
+
+    const mockRebalancePlan = [];
+    t.notThrows(
+      () => planner.resolvePlan(portfolioId, flowId, mockRebalancePlan, 1, 1),
+      'planner may rebalance >1 times at same policyVersion',
+    );
+
+    t.deepEqual(await vt.when(stepsP), mockRebalancePlan);
+
+    const { policyVersion, rebalanceCount } = await getPortfolioStatus(1);
+    t.log({ policyVersion, rebalanceCount });
+    t.deepEqual(
+      { policyVersion, rebalanceCount },
+      { policyVersion: 1, rebalanceCount: 2 },
+      'rebalanceCount 2 after second resolvePlan',
+    );
+  }
+});
+
 test('planner starts delegated rebalance and resolves its plan', async t => {
   const zone = makeHeapZone();
   const vt = prepareVowTools(zone);
