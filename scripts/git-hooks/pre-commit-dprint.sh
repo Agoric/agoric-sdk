@@ -8,7 +8,7 @@ set -euo pipefail
 # longer part of the active hook chain.
 #
 # If you are seeing this message, your local .git/hooks/pre-commit is a stale
-# shim left over from the old install that still exec's this file. Re-run the
+# shim left over from the old install that still execs this file. Re-run the
 # installer to migrate to core.hooksPath:
 #
 #   scripts/install-git-hooks.sh

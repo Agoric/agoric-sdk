@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#! /usr/bin/env bash
+set -o errexit -o nounset -o pipefail
 
 # We intentionally install hooks directly instead of using a hook manager.
 # Managers add dependency/runtime overhead, and most rely on package-manager
@@ -15,7 +15,7 @@ set -euo pipefail
 # changing what they do is a normal commit -- developers only need to re-run
 # this script when this installation contract itself changes.
 
-repo_root=$(git rev-parse --show-toplevel)
+repo_root="$(git rev-parse --show-toplevel)"
 hooks_dir_rel="scripts/git-hooks"
 hooks_dir="$repo_root/$hooks_dir_rel"
 
@@ -31,7 +31,7 @@ git config core.hooksPath "$hooks_dir_rel"
 # the old script. We resolve the *default* hooks location via --git-common-dir
 # (shared across worktrees) rather than --git-path, which would follow the
 # core.hooksPath we just set and point back at this repo's tracked hook.
-git_common_dir=$(cd "$repo_root" && git rev-parse --git-common-dir)
+git_common_dir="$(cd "$repo_root" && git rev-parse --git-common-dir)"
 [[ "$git_common_dir" = /* ]] || git_common_dir="$repo_root/$git_common_dir"
 legacy_shim="$git_common_dir/hooks/pre-commit"
 if [[ -f "$legacy_shim" ]] && grep -q 'pre-commit-dprint.sh' "$legacy_shim" 2>/dev/null; then
