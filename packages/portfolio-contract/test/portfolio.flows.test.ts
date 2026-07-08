@@ -2518,6 +2518,60 @@ test('swap reward token to USDC via 1inch', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+test('swap fails when experimentalSwap feature is disabled', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, ctx, offer } = mocks({}, { Deposit: amount });
+  const { log } = offer;
+
+  const kit = await ctx.makePortfolioKit();
+
+  const swapParams = {
+    provider: '1inch',
+    tokenIn: '0x0000000000000000000000000000000000000abc',
+    amountIn: 5_000_000n,
+    flags: 0n,
+    executor: '0x2222222222222222222222222222222222222222',
+    srcReceiver: '0x3333333333333333333333333333333333333333',
+    data: '0xdeadbeef',
+  } as const;
+
+  const seat = makeMockSeat({ Deposit: amount }, undefined, log);
+  // DEFAULT_FLOW_CONFIG has no `experimentalSwap` feature flag set, so the
+  // swap step must be rejected before any GMP calls are made.
+  await rebalance(
+    orch,
+    ctx,
+    seat,
+    {
+      flow: [
+        {
+          src: '@Avalanche',
+          dest: '@Avalanche',
+          amount,
+          fee: feeCall,
+          swap: swapParams,
+        },
+      ],
+    },
+    kit,
+    undefined,
+    DEFAULT_FLOW_CONFIG,
+  );
+
+  t.falsy(
+    log.some((e: any) => e._method === 'transfer'),
+    'no GMP transfer should be attempted',
+  );
+
+  const failCall = log.find((e: any) => e._method === 'fail');
+  t.truthy(
+    failCall,
+    'seat.fail() should be called when experimentalSwap is disabled',
+  );
+  t.regex(`${failCall?.reason}`, /swap not supported/);
+});
+
 // EVM wallet integration flow
 test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => {
   // Use a mixed-case spender to ensure case-insensitive address checks.
