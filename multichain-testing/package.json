@@ -1,4 +1,5 @@
 {
+  "name": "multichain-testing",
   "private": true,
   "description": "E2E Interchain testing environment for Agoric smart contracts.",
   "type": "module",
