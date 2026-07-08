@@ -110,8 +110,7 @@ const assertValueGetAssetKind = value => {
  * @returns {MathHelpers<V>}
  */
 export const assertValueGetHelpers = value =>
-  // @ts-expect-error cast
-  helpers[assertValueGetAssetKind(value)];
+  /** @type {MathHelpers<V>} */ (helpers[assertValueGetAssetKind(value)]);
 
 /**
  * @type {(allegedBrand: Brand<any>, brand?: Brand<any>) => void}
@@ -238,8 +237,7 @@ export const AmountMath = {
     brand === allegedBrand ||
       Fail`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`;
     // Will throw on inappropriate value
-    // @ts-expect-error cast
-    return AmountMath.make(brand, allegedValue);
+    return /** @type {A} */ (AmountMath.make(brand, allegedValue));
   },
   /**
    * Extract and return the value.
@@ -278,8 +276,7 @@ export const AmountMath = {
     assertRecord(amount, 'amount');
     const { brand, value } = amount;
     const assetKind = assertValueGetAssetKind(value);
-    // @ts-expect-error different subtype
-    return AmountMath.makeEmpty(brand, assetKind);
+    return /** @type {A} */ (AmountMath.makeEmpty(brand, assetKind));
   },
   /**
    * Return true if the Amount is empty. Otherwise false.

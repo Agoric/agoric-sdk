@@ -24,6 +24,7 @@ import type { ExecutionContext } from 'ava';
 import type { PortfolioDelegationClient } from '../src/delegation.exo.ts';
 import { deploy, makeEvmTraderKit } from './contract-setup.ts';
 import { evmTrader0PrivateKey } from './mocks.ts';
+import type { PortfolioStatus } from './contract-test-support.ts';
 
 const PETE_AGENT = 'agoric1petesAgent' as const;
 type Deployed = Awaited<ReturnType<typeof deploy>>;
@@ -42,6 +43,15 @@ const delegationDocOpts = {
   owner: 'ymax',
   showValue: defaultSerializer.parse,
 };
+
+const getSyncState = ({
+  policyVersion,
+  rebalanceCount,
+}: Pick<PortfolioStatus, 'policyVersion' | 'rebalanceCount'>) =>
+  harden({ policyVersion, rebalanceCount });
+
+const stripRootStoragePath = (path: string) =>
+  path.replace(new RegExp(`^(${ROOT_STORAGE_PATH}|published)\\.`), '');
 
 const snapshotVstorage = (
   t: ExecutionContext,
@@ -166,24 +176,23 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
   });
 
   const before = await peteKit.evmTrader.getPortfolioStatus();
-  const { policyVersion, rebalanceCount } = before;
-  const rebalanceFlowId = await E(delegationClient).setTargetAllocation(
-    {
+  const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
+    targetAllocation: {
       Aave_Arbitrum: 50n,
       Compound_Arbitrum: 50n,
     },
-    { policyVersion, rebalanceCount },
-  );
+    syncState: getSyncState(before),
+    agentMemo: '12345',
+  });
   t.regex(String(rebalanceFlowId), /^flow\d+$/);
 
   await eventLoopIteration();
-  const portfolioPath = peteKit.evmTrader
-    .getPortfolioPath()
-    .replace(/^[^.]+\./, '');
-  const flowAgent = await peteKit.readPublished(
-    `${portfolioPath}.flows.${rebalanceFlowId}.agent`,
-  );
-  t.deepEqual(flowAgent, { id: 'agent1' });
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  const portfolioStatus = await peteKit.evmTrader.getPortfolioStatus();
+  t.is(portfolioStatus.flowsRunning?.[rebalanceFlowId]?.agent, 'agent1');
+  t.is(portfolioStatus.flowsRunning?.[rebalanceFlowId]?.agentMemo, '12345');
   const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
   t.deepEqual(agents, {
     agent1: {
@@ -225,14 +234,13 @@ test('Granted rebalance cannot introduce a new instrument', async t => {
   });
 
   const before = await peteKit.evmTrader.getPortfolioStatus();
-  const { policyVersion, rebalanceCount } = before;
-  const rebalanceP = E(delegationClient).setTargetAllocation(
-    {
+  const rebalanceP = E(delegationClient).setTargetAllocation({
+    targetAllocation: {
       Aave_Arbitrum: 60n,
       Aave_Base: 40n,
     },
-    { policyVersion, rebalanceCount },
-  );
+    syncState: getSyncState(before),
+  });
 
   await t.throwsAsync(() => rebalanceP, {
     message: /unauthorized allocations for/,
@@ -267,14 +275,13 @@ test('Granted rebalance may retain an instrument key with zero portion', async t
   });
 
   const before = await peteKit.evmTrader.getPortfolioStatus();
-  const { policyVersion, rebalanceCount } = before;
-  const rebalanceFlowId = await E(delegationClient).setTargetAllocation(
-    {
+  const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
+    targetAllocation: {
       Aave_Arbitrum: 100n,
       Compound_Arbitrum: 0n,
     },
-    { policyVersion, rebalanceCount },
-  );
+    syncState: getSyncState(before),
+  });
 
   t.regex(String(rebalanceFlowId), /^flow\d+$/);
 
@@ -306,9 +313,9 @@ test('Delegation is active only while registered on the portfolio', async t => {
     },
   });
 
-  const portfolioPath = peteKit.evmTrader
-    .getPortfolioPath()
-    .replace(/^[^.]+\./, '');
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
   const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
   t.deepEqual(agents, {
     agent1: {
@@ -319,14 +326,13 @@ test('Delegation is active only while registered on the portfolio', async t => {
   });
 
   const before = await peteKit.evmTrader.getPortfolioStatus();
-  const { policyVersion, rebalanceCount } = before;
-  const rebalanceFlowId = await E(delegationClient).setTargetAllocation(
-    {
+  const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
+    targetAllocation: {
       Aave_Arbitrum: 50n,
       Compound_Arbitrum: 50n,
     },
-    { policyVersion, rebalanceCount },
-  );
+    syncState: getSyncState(before),
+  });
   t.regex(String(rebalanceFlowId), /^flow\d+$/);
 });
 

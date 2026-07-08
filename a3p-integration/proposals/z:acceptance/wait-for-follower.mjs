@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { watch, readFileSync } from 'node:fs';
 
 /**

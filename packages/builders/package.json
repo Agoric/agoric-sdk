@@ -43,7 +43,6 @@
   "devDependencies": {
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/governance": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/orchestration": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/swing-store": "workspace:*",
@@ -77,6 +76,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 89.7
+    "atLeast": 90.27
   }
 }

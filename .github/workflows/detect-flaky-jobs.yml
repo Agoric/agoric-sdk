@@ -37,6 +37,7 @@ jobs:
             // Track all failed workflow attempts and their failed jobs
             const failedWorkflowAttempts = [];
             const allFailedJobs = new Map(); // job name -> array of attempt numbers where it failed
+            let hadErrors = false;
 
             // Loop through ALL previous attempts to gather complete flaky history
             for (let attemptNum = 1; attemptNum < currentAttempt; attemptNum++) {
@@ -54,15 +55,19 @@ jobs:
                   failedWorkflowAttempts.push(attemptNum);
 
                   // Get failed jobs for this attempt
-                  const jobs = await github.rest.actions.listJobsForWorkflowRunAttempt({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    run_id: runId,
-                    attempt_number: attemptNum
-                  });
+                  const jobs = await github.paginate(
+                    github.rest.actions.listJobsForWorkflowRunAttempt,
+                    {
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      run_id: runId,
+                      attempt_number: attemptNum,
+                      per_page: 100
+                    }
+                  );
 
                   const failedJobsInAttempt = [];
-                  for (const job of jobs.data.jobs) {
+                  for (const job of jobs) {
                     if (job.conclusion === 'failure' || job.conclusion === 'timed_out') {
                       failedJobsInAttempt.push(job.name);
                       if (!allFailedJobs.has(job.name)) {
@@ -78,8 +83,13 @@ jobs:
                 }
               } catch (error) {
                 console.log(`Warning: Failed to fetch attempt ${attemptNum}: ${error.message}`);
+                hadErrors = true;
                 continue;
               }
+            }
+
+            if (hadErrors) {
+              core.setOutput('had_errors', 'true');
             }
 
             // If no previous workflow attempts failed, this isn't a flaky recovery
@@ -117,67 +127,77 @@ jobs:
             console.log(`Failed workflow attempts: ${failedWorkflowAttempts.join(', ')}`);
             console.log(`Unique flaky jobs: ${uniqueFailedJobs.join(', ')}`);
 
-            // Set outputs for Slack notification
-            core.setOutput('workflow_name', workflowName);
-            core.setOutput('run_url', runUrl);
-            core.setOutput('current_attempt', currentAttempt.toString());
-            core.setOutput('total_retries', totalRetries.toString());
-            core.setOutput('failed_workflow_attempts', failedWorkflowAttempts.join(', '));
-            core.setOutput('failed_workflow_attempts_count', failedWorkflowAttemptsCount.toString());
+            // Build the Slack payload via JSON.stringify so all values are safely encoded
+            const slackPayload = JSON.stringify({
+              text: '⚠️ Flaky Job Detected!',
+              blocks: [
+                {
+                  type: 'header',
+                  text: { type: 'plain_text', text: '⚠️ Flaky Job Detected!', emoji: true }
+                },
+                {
+                  type: 'section',
+                  fields: [
+                    { type: 'mrkdwn', text: `*Workflow:*\n${workflowName}` },
+                    { type: 'mrkdwn', text: `*Branch:*\n${headBranch}` },
+                    { type: 'mrkdwn', text: `*Commit:*\n${headSha}` },
+                    { type: 'mrkdwn', text: `*Retries needed:*\n${totalRetries} (${failedWorkflowAttemptsCount} failed)` }
+                  ]
+                },
+                {
+                  type: 'section',
+                  text: { type: 'mrkdwn', text: `*Recovery:*\n✅ Passed on attempt #${currentAttempt} after failing on workflow attempt(s) #${failedWorkflowAttempts.join(', ')}` }
+                },
+                {
+                  type: 'section',
+                  text: { type: 'mrkdwn', text: `*Flaky jobs breakdown:*\n${jobFailureSummary}` }
+                },
+                {
+                  type: 'actions',
+                  elements: [
+                    {
+                      type: 'button',
+                      text: { type: 'plain_text', text: 'View Run', emoji: true },
+                      url: runUrl
+                    }
+                  ]
+                }
+              ]
+            });
+
             core.setOutput('failed_jobs', uniqueFailedJobs.join(', '));
-            core.setOutput('job_failure_details', jobFailureSummary);
-            core.setOutput('head_branch', headBranch);
-            core.setOutput('head_sha', headSha);
+            core.setOutput('slack_payload', slackPayload);
 
       - name: Send Slack notification for flaky job
         if: steps.check-flaky.outputs.failed_jobs != ''
         uses: slackapi/slack-github-action@v1.24.0
         with:
+          payload: ${{ steps.check-flaky.outputs.slack_payload }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_FLAKY_JOBS }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify on workflow failure
+        if: steps.check-flaky.outputs.had_errors != ''
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
           payload: |
             {
-              "text": "⚠️ Flaky Job Detected!",
+              "text": "🚨 Flaky job detection workflow failed!",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "⚠️ Flaky Job Detected!",
+                    "text": "🚨 Flaky Job Detection Failed!",
                     "emoji": true
                   }
                 },
                 {
                   "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Workflow:*\n${{ steps.check-flaky.outputs.workflow_name }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Branch:*\n${{ steps.check-flaky.outputs.head_branch }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Commit:*\n${{ steps.check-flaky.outputs.head_sha }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Retries needed:*\n${{ steps.check-flaky.outputs.total_retries }} (${{ steps.check-flaky.outputs.failed_workflow_attempts_count }} failed)"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "*Recovery:*\n✅ Passed on attempt #${{ steps.check-flaky.outputs.current_attempt }} after failing on workflow attempt(s) #${{ steps.check-flaky.outputs.failed_workflow_attempts }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Flaky jobs breakdown:*\n${{ steps.check-flaky.outputs.job_failure_details }}"
+                    "text": "The flaky job detection workflow itself encountered an error while processing *${{ github.event.workflow_run.name }}*."
                   }
                 },
                 {
@@ -187,10 +207,19 @@ jobs:
                       "type": "button",
                       "text": {
                         "type": "plain_text",
-                        "text": "View Run",
+                        "text": "View Detection Run",
                         "emoji": true
                       },
-                      "url": "${{ steps.check-flaky.outputs.run_url }}"
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    },
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Triggering Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.event.workflow_run.html_url }}"
                     }
                   ]
                 }

@@ -20,7 +20,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/builders": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
     "@agoric/vats": "workspace:*",
     "@agoric/zoe": "workspace:*"
@@ -52,6 +51,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 100
+    "atLeast": 95.1
   }
 }

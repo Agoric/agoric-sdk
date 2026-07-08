@@ -1,4 +1,3 @@
-/* eslint-env node */
 import path from 'node:path';
 import chalk from 'chalk';
 import { execFileSync } from 'node:child_process';

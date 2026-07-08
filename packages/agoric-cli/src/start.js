@@ -1,4 +1,3 @@
-/* eslint-env node */
 import chalk from 'chalk';
 import { createHash } from 'node:crypto';
 import path from 'node:path';

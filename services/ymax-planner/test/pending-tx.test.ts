@@ -3,7 +3,6 @@ import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { objectMap } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
-import type { WebSocketProvider } from 'ethers';
 import {
   TxStatus,
   TxType,
@@ -16,7 +15,10 @@ import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks
 import type { CaipChainId } from '@agoric/orchestration';
 import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
 import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
-import { prepareAbortController } from '../src/support.ts';
+import {
+  prepareAbortController,
+  type ReconnectingEvmProvider,
+} from '../src/support.ts';
 import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
   processPendingTxEvents,
@@ -1104,7 +1106,7 @@ const makeFailedTxTestContext = ({
           transactionHash: failedTxHash,
         }),
         ...extra,
-      }) as unknown as WebSocketProvider,
+      }) as unknown as ReconnectingEvmProvider,
   );
 
   const ctxWithFetch = harden({

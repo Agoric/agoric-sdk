@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 
 import { iterateReverse } from '@agoric/casting';
 import {

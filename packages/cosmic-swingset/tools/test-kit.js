@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
 import nativePath from 'node:path';

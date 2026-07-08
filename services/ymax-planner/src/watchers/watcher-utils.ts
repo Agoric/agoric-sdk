@@ -2,7 +2,6 @@ import type { TransactionReceipt, Filter, Log } from 'ethers';
 import { Interface, AbiCoder, getAddress, keccak256 } from 'ethers';
 import type { CaipChainId } from '@agoric/orchestration';
 import { depositFactoryCreateAndDepositInputs } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
-import { makePromiseKit } from '@endo/promise-kit';
 import { decodeAbiParameters } from 'viem';
 import type { EvmRpc } from '../evm-scanner.ts';
 import { waitForConfirmations } from '../evm-scanner.ts';
@@ -10,34 +9,26 @@ import {
   getBlockTimeMs,
   getConfirmationsRequired,
   getRevertConfirmationsRequired,
-  type MakeAbortController,
 } from '../support.ts';
+
+export type RetryOptions = {
+  /** Maximum number of retry attempts */
+  limit: number;
+  /** Maximum delay between retries in milliseconds */
+  backoffLimit: number;
+};
+
+export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
+  limit: 5,
+  backoffLimit: 3000,
+};
 
 /** Scope tag for failed-transaction lookback searches. */
 export const FAILED_TX_SCOPE = 'failedTx';
 
-/**
- * Signals that a watcher's underlying transport (WebSocket) failed.
- * Distinct from a transaction-level failure: the watch could not continue,
- * so the caller may safely restart it.
- */
-export const WatcherTransportError = class WatcherTransportError extends Error {};
-WatcherTransportError.prototype.name = WatcherTransportError.name;
-
-/**
- * Sleep for `ms` milliseconds or until `signal` aborts (whichever comes first).
- */
-export const abortableSleep = async (
-  makeAbortController: MakeAbortController,
-  ms: number,
-  signal?: AbortSignal,
-): Promise<void> => {
-  if (signal?.aborted) return;
-  const { promise, resolve } = makePromiseKit<void>();
-  const { signal: timeout } = makeAbortController(ms, signal ? [signal] : []);
-  timeout.addEventListener('abort', () => resolve());
-  return promise;
-};
+// Re-exported from its canonical leaf module (avoids an import cycle with the
+// RPC layer, which also throws it).
+export { WatcherTransportError } from '../errors.ts';
 
 //#region Axelar execute calldata extraction
 // AxelarExecutable entrypoint (standard)
@@ -236,18 +227,6 @@ export type AlchemySubscriptionMessage = {
   };
 };
 //#endregion
-
-export type RetryOptions = {
-  /** Maximum number of retry attempts */
-  limit: number;
-  /** Maximum delay between retries in milliseconds */
-  backoffLimit: number;
-};
-
-export const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  limit: 5,
-  backoffLimit: 3000,
-};
 
 /**
  * Fetch transaction receipt with retry logic for freshly mined transactions.

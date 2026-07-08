@@ -43,7 +43,6 @@
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/governance": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/network": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
@@ -97,7 +96,7 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 77.09
+    "atLeast": 78.4
   },
   "engines": {
     "node": "^22.11"

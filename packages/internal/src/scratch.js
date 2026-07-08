@@ -9,14 +9,17 @@ export default function makeScratchPad() {
   };
 
   const scratch = Far('scratchPad', {
+    /** @param {import('@endo/far').ERef<unknown>} keyP */
     delete: async keyP => {
       const key = await keyP;
       map.delete(key);
     },
+    /** @param {import('@endo/far').ERef<unknown>} keyP */
     get: async keyP => {
       const key = await keyP;
       return map.get(key);
     },
+    /** @param {...unknown} path */
     lookup: (...path) => {
       if (path.length === 0) {
         return scratch;
@@ -30,6 +33,10 @@ export default function makeScratchPad() {
     },
     // Initialize a key only if it doesn't already exist.  Needed for atomicity
     // between multiple invocations.
+    /**
+     * @param {import('@endo/far').ERef<unknown>} keyP
+     * @param {import('@endo/far').ERef<unknown>} objP
+     */
     init: async (keyP, objP) => {
       const [key, obj] = await Promise.all([keyP, objP]);
       if (map.has(key)) {
@@ -41,6 +48,10 @@ export default function makeScratchPad() {
     keys,
     // Legacy alias for `keys`.
     list: keys,
+    /**
+     * @param {import('@endo/far').ERef<unknown>} keyP
+     * @param {import('@endo/far').ERef<unknown>} objP
+     */
     set: async (keyP, objP) => {
       const [key, obj] = await Promise.all([keyP, objP]);
       map.set(key, obj);

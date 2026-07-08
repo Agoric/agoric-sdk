@@ -106,7 +106,7 @@ test.before(async t => {
   await t.context.applyProposals([
     {
       builderPath:
-        '../../../multichain-testing/src/register-interchain-bank-assets.builder.js',
+        '@agoric/builders/scripts/testing/register-interchain-bank-assets.builder.js',
       args: [
         '--assets',
         JSON.stringify([

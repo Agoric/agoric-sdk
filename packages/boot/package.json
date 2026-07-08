@@ -29,7 +29,6 @@
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/governance": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/kmarshal": "workspace:*",
     "@agoric/network": "workspace:*",
@@ -83,6 +82,6 @@
     "node": "^22.11"
   },
   "typeCoverage": {
-    "atLeast": 89.91
+    "atLeast": 92.21
   }
 }

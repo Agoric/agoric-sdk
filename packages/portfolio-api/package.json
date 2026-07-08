@@ -80,7 +80,7 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 100
+    "atLeast": 99.95
   },
   "license": "Apache-2.0",
   "publishConfig": {

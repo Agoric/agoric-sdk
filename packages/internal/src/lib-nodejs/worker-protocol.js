@@ -1,4 +1,3 @@
-/* eslint-env node */
 import { Transform } from 'node:stream';
 
 // Transform objects which convert from hardened Arrays of JSON-serializable

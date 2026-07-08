@@ -37,13 +37,18 @@ import {
   portfolioIdFromKey,
   PortfolioStatusShapeExt,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
-import { TargetBalanceError } from '@agoric/portfolio-api/src/target-balances.js';
+import {
+  computeTargetBalances,
+  TargetBalanceError,
+} from '@agoric/portfolio-api/src/target-balances.js';
 import {
   mustMatch,
   naturalCompare,
+  partialMap,
   provideLazyMap,
   stripPrefix,
   tryNow,
@@ -59,7 +64,11 @@ import type {
 } from '@agoric/portfolio-api';
 
 import type { EvmAddress } from '@agoric/fast-usdc';
-import type { WebSocketProvider } from 'ethers';
+import {
+  checkAutoRebalance,
+  maybeAutoRebalance,
+  type AutoRebalanceConfig,
+} from './auto.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { InstrumentBlocks } from './instrument-status.ts';
@@ -84,7 +93,9 @@ import {
   setIgnoredTx,
   setResolvedTx,
 } from './kv-store.ts';
-import { UserInputError } from './support.ts';
+import { UserInputError, type ReconnectingEvmProvider } from './support.ts';
+import { makeExpiringMap, normalizeIsoTimestamp } from './utils.ts';
+import type { IsoTimestamp } from './utils.ts';
 import {
   encodedKeyToPath,
   pathToEncodedKey,
@@ -97,8 +108,8 @@ import {
   vstoragePathIsParentOf,
 } from './vstorage-utils.ts';
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
-
-const { values } = Object;
+import { normalizeYdsPortfolioBalances } from './yds-portfolio-balances.ts';
+import type { YdsPortfolioSummary } from './yds-portfolio-balances.ts';
 
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
@@ -201,6 +212,9 @@ export type Powers = {
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
   getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
+  getPortfolioSummaries?: (
+    portfolioKeys: PortfolioKey[],
+  ) => Promise<YdsPortfolioSummary[] | undefined>;
   signingSmartWalletKit: SigningSmartWalletKit;
   /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
   makeNonce: () => string;
@@ -211,57 +225,93 @@ export type Powers = {
   ) => ReturnType<typeof getInvocationUpdate>;
   /** Prefer monotonicity (e.g., `performance.now` rather than `Date.now`). */
   now: () => number;
+  nowISO: () => string;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
+  postYdsTransaction?: (txHash: string) => Promise<void>;
+  autoRebalance: AutoRebalanceConfig;
 };
 
 export type ProcessPortfolioPowers = Pick<
   Powers,
   | 'network'
+  | 'nowISO'
   | 'spectrumBlockchain'
   | 'spectrumChainIds'
   | 'evmTokenAddresses'
   | 'signingSmartWalletKit'
   | 'walletStore'
+  | 'makeNonce'
   | 'getWalletInvocationUpdate'
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
+  | 'postYdsTransaction'
+  | 'autoRebalance'
 > & {
   console: Required<Powers>['console'];
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
   instrumentBlocks?: InstrumentBlocks;
-  portfolioKeyForDepositAddr: Map<Bech32Address, string>;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
   };
-  evmProviders: Record<CaipChainId, WebSocketProvider>;
+  evmProviders: Record<CaipChainId, ReconnectingEvmProvider>;
 };
 
 export type PortfoliosMemory = {
   deferrals: EventRecord[];
-  snapshots?: Map<string, { fingerprint: string; repeats: number }>;
+  // TODO: Combine snapshots and portfolioRecordForKey.
+  snapshots: Map<
+    string,
+    {
+      fingerprint: string;
+      repeats: number;
+      txHash?: null | string;
+      balancesTimestamp?: IsoTimestamp;
+    }
+  >;
+  portfolioRecordForKey: Map<
+    PortfolioKey,
+    { atBlockHeight: bigint; status: StatusFor['portfolio'] }
+  >;
+  balanceCache: Map<
+    PortfolioKey,
+    {
+      isoTimestamp: IsoTimestamp;
+      balances: Partial<Record<AssetPlaceRef, NatAmount>>;
+    }
+  >;
+};
+
+export const makePortfoliosMemory = (options?: {
+  balanceCacheTtlMs?: number;
+  now?: () => number;
+}): PortfoliosMemory => {
+  const { balanceCacheTtlMs, now } = options || {};
+  return {
+    deferrals: [],
+    snapshots: new Map(),
+    portfolioRecordForKey: new Map(),
+    balanceCache:
+      balanceCacheTtlMs !== undefined
+        ? makeExpiringMap(balanceCacheTtlMs, { now } as any)
+        : new Map(),
+  };
 };
 
 const fingerprintPortfolioState = (
   status: StatusFor['portfolio'],
-  activeFlowKeys: Set<string>,
   { marshaller }: { marshaller: SigningSmartWalletKit['marshaller'] },
 ): string => {
   // Ignore rebalanceCount, which can increment from one of our submissions even
   // if nothing actually changes.
   const { rebalanceCount: _rebalanceCount, ...statusFields } = status;
-  const sortedFlowKeys = [...activeFlowKeys].sort((a, b) =>
-    naturalCompare(a, b),
-  );
   // Rely on the determinism of @endo/marshal.
-  const fingerprint = marshaller.toCapData(
-    harden({ statusFields, activeFlowKeys: sortedFlowKeys }),
-  );
-  return fingerprint.body;
+  const fingerprint = marshaller.toCapData(harden(statusFields)).body;
+  return fingerprint;
 };
 
 export const processPortfolioEvents = async (
@@ -275,9 +325,11 @@ export const processPortfolioEvents = async (
     feeBrand,
     gasEstimator,
     network,
+    nowISO,
     instrumentBlocks,
     signingSmartWalletKit,
     walletStore,
+    makeNonce,
     getWalletInvocationUpdate,
     spectrumBlockchain,
     spectrumChainIds,
@@ -286,25 +338,14 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
-
-    portfolioKeyForDepositAddr,
+    postYdsTransaction,
+    autoRebalance,
   }: ProcessPortfolioPowers,
 ) => {
-  const { deferrals } = memory;
+  const { deferrals, portfolioRecordForKey, balanceCache } = memory;
   const { query, marshaller } = signingSmartWalletKit;
   const { portfoliosPathPrefix } = vstoragePathPrefixes;
   const { vstorage } = query;
-  const setPortfolioKeyForDepositAddr = (addr: Bech32Address, key: string) => {
-    const oldKey = portfolioKeyForDepositAddr.get(addr);
-    if (!oldKey) {
-      console.warn(`Adding ${addr} portfolioKey ${key}`);
-    } else if (oldKey !== key) {
-      // This permanent loss of $addr->oldKey association should never happen.
-      const msg = `🚨 Overwriting ${addr} portfolioKey from ${oldKey} to ${key}`;
-      console.error(msg);
-    }
-    portfolioKeyForDepositAddr.set(addr, key);
-  };
   const balanceQueryPowers: BalanceQueryPowers = {
     spectrumBlockchain,
     spectrumChainIds,
@@ -313,34 +354,47 @@ export const processPortfolioEvents = async (
     evmProviders,
     chainNameToChainIdMap,
   };
+  const getFreshBalances = async (
+    portfolioKey: PortfolioKey,
+    portfolioStatus: StatusFor['portfolio'],
+  ) => {
+    const balances = await getNonDustBalances(
+      portfolioStatus,
+      depositBrand,
+      balanceQueryPowers,
+    );
+    balanceCache.set(portfolioKey, {
+      isoTimestamp: normalizeIsoTimestamp(nowISO()),
+      balances,
+    });
+    return balances;
+  };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
     'minBlockHeight' | 'retries'
   >;
-  const isActiveFlow = async (
+  const getFlowStatus = async (
     portfolioKey: PortfolioKey,
     flowKey: FlowKey,
     opts?: ReadVstorageSimpleOpts,
-  ) => {
+  ): Promise<StatusFor['flow']['state'] | undefined> => {
     const path = `${portfoliosPathPrefix}.${portfolioKey}.flows.${flowKey}`;
     const metaResponse = await readStorageMeta(vstorage, path, 'data', opts);
-    if (metaResponse.result.value === '') {
-      // A flow key may exist only as a parent of children such as `.agent`,
-      // with no published flow-status payload at the flow node itself yet.
-      return undefined;
-    }
+    // If the flow's vstorage node does not exist or exists only as an empty
+    // non-terminal (e.g. for a child such as `agent`), then it has no status.
+    if (metaResponse.result.value === '') return undefined;
     const streamCell = parseStreamCell(metaResponse.result.value, path);
     const capdata = parseStreamCellValue(streamCell, -1, path);
     const flowStatus = marshaller.fromCapData(capdata);
     mustMatch(flowStatus, FlowStatusShape, path);
-    return flowStatus.state === 'run';
+    return flowStatus.state;
   };
   const startFlow = async (
     portfolioStatus: StatusFor['portfolio'],
     portfolioKey: PortfolioKey,
     flowKey: FlowKey,
     flowDetail: FlowDetail,
-  ) => {
+  ): Promise<string | undefined> => {
     const logPrefix = `[${portfolioKey}.${flowKey}]`;
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
     const portfolioId = portfolioIdFromKey(portfolioKey);
@@ -349,10 +403,9 @@ export const processPortfolioEvents = async (
     const { policyVersion, rebalanceCount, targetAllocation } = portfolioStatus;
     const versions = [policyVersion, rebalanceCount] as const;
 
-    const currentBalances = await getNonDustBalances(
+    const currentBalances = await getFreshBalances(
+      portfolioKey,
       portfolioStatus,
-      depositBrand,
-      balanceQueryPowers,
     );
     const logContext = {
       path,
@@ -369,7 +422,7 @@ export const processPortfolioEvents = async (
         ? Args
         : never,
       extraDetails?: object,
-    ) => {
+    ): Promise<string> => {
       const txOpts = { sendOnly: true };
       const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
       const { tx, id } = await planReceiver[methodName]!(...(args as any[]));
@@ -388,6 +441,7 @@ export const processPortfolioEvents = async (
         details,
         tx,
       );
+      return tx.transactionHash;
     };
 
     const plannerContext = {
@@ -440,12 +494,12 @@ export const processPortfolioEvents = async (
 
       if (plan.flow.length > 0) {
         const planOrSteps = plan.order ? plan : plan.flow;
-        await settle('resolvePlan', [...scope, planOrSteps, ...versions], {
+        return settle('resolvePlan', [...scope, planOrSteps, ...versions], {
           plan,
         });
       } else {
         const reason = 'Nothing to do for this operation.';
-        await settle('rejectPlan', [...scope, reason, ...versions]);
+        return settle('rejectPlan', [...scope, reason, ...versions]);
       }
     } catch (err) {
       annotateError(err, inspect(logContext, { depth: 4 }));
@@ -454,7 +508,7 @@ export const processPortfolioEvents = async (
         err instanceof NoSolutionError ||
         err instanceof TargetBalanceError
       ) {
-        await settle('rejectPlan', [...scope, err.message, ...versions], {
+        return settle('rejectPlan', [...scope, err.message, ...versions], {
           cause: err,
         }).catch(err2 => {
           throw AggregateError([err, err2]);
@@ -464,67 +518,117 @@ export const processPortfolioEvents = async (
       }
     }
   };
+  const maybeAutoRebalancePowers = {
+    autoRebalance,
+    console,
+    depositBrand,
+    feeBrand,
+    gasEstimator,
+    getWalletInvocationUpdate,
+    inspectForStdout,
+    instrumentBlocks,
+    isDryRun,
+    makeNonce,
+    network,
+    planRebalanceToAllocations,
+    portfoliosPathPrefix,
+    postYdsTransaction,
+    walletStore,
+  };
+  const shouldRebalance = (
+    portfolioKey: PortfolioKey,
+    status: StatusFor['portfolio'],
+  ): boolean => {
+    const { enabledAutoFeatures, targetAllocation } = status;
+    if (!enabledAutoFeatures?.rebalance || !targetAllocation) return false;
+
+    // If status hasn't changed since our last successful submission,
+    // there's no point in checking.
+    const fingerprint = fingerprintPortfolioState(status, { marshaller });
+    const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
+      fingerprint,
+      repeats: 0,
+      txHash: null,
+    }));
+    if (oldState.txHash && fingerprint === oldState.fingerprint) return false;
+
+    // Likewise if we don't have new balance information.
+    const cachedBalanceData = balanceCache.get(portfolioKey);
+    if (!cachedBalanceData) return false;
+    const { isoTimestamp, balances } = cachedBalanceData;
+    if (oldState.balancesTimestamp === isoTimestamp) return false;
+    oldState.balancesTimestamp = isoTimestamp;
+
+    // XXX We should refactor to avoid adding back unchanged balances.
+    const candidateTargets = {
+      ...balances,
+      ...computeTargetBalances({
+        brand: depositBrand,
+        currentBalances: balances,
+        network,
+        targetAllocation,
+        instrumentBlocks,
+      }),
+    };
+    const rebalanceDetail = checkAutoRebalance(
+      targetAllocation,
+      balances,
+      candidateTargets,
+      autoRebalance,
+    );
+    return !!rebalanceDetail;
+  };
   const handledPortfolioKeys = new Set<string>();
   // prettier-ignore
   const handlePortfolio = async (portfolioKey: PortfolioKey, eventRecord: EventRecord) => {
     if (handledPortfolioKeys.has(portfolioKey)) return;
     handledPortfolioKeys.add(portfolioKey);
     const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-    const readOpts: ReadVstorageSimpleOpts = {
-      minBlockHeight: eventRecord.blockHeight,
-      retries: 4,
-    };
+    const readOpts: ReadVstorageSimpleOpts =
+      { minBlockHeight: eventRecord.blockHeight, retries: 4 };
     await null;
     try {
-      const [statusCapdata, flowKeysResp] = await Promise.all([
-        readStreamCellValue(vstorage, path, readOpts),
-        readStorageMeta(vstorage, `${path}.flows`, 'children', readOpts),
-      ]);
-      const status = marshaller.fromCapData(statusCapdata);
+      const statusCapdata = await readStreamCellValue(vstorage, path, readOpts);
+      const status = marshaller.fromCapData(statusCapdata) as StatusFor['portfolio'];
       mustMatch(status, PortfolioStatusShapeExt, path);
-      const flowKeys = new Set(flowKeysResp.result.children as string[]);
+      portfolioRecordForKey.set(portfolioKey, { status, atBlockHeight: eventRecord.blockHeight });
+      const fingerprint = fingerprintPortfolioState(status, { marshaller });
 
-      const { depositAddress } = status;
-      if (depositAddress) {
-        setPortfolioKeyForDepositAddr(depositAddress, portfolioKey);
-      }
-
-      // If this (portfolio, flows) data hasn't changed since our last
-      // successful submission, there's no point in trying again.
-      memory.snapshots ||= new Map();
+      // If status hasn't changed, there's no point in trying anything.
       const oldState = memory.snapshots.get(portfolioKey);
-      const oldFingerprint = oldState?.fingerprint;
-      const fingerprint = fingerprintPortfolioState(status, flowKeys, { marshaller });
-      if (fingerprint === oldFingerprint) {
-        assert(oldState);
+      if (oldState && fingerprint === oldState.fingerprint) {
         if (!oldState.repeats) console.warn(`⚠️  Ignoring unchanged ${path}`);
         oldState.repeats += 1;
         return;
       }
 
-      // If any in-progress flows need activation (as indicated by lacking a
-      // dedicated vstorage node) and there is not already a running flow, then
-      // find the first such flow and respond to it. Responding to the rest now
-      // is pointless because acceptance of the first submission would
-      // invalidate the others as stale, but we'll see them again when such
-      // acceptance prompts changes to the portfolio status.
-      for (const [flowKey, flowDetail] of typedEntries(status.flowsRunning || {})) {
-        // If vstorage has a node for this flow then we've already responded.
-        if (flowKeys.has(flowKey)) {
-          const isActive = await isActiveFlow(portfolioKey, flowKey, readOpts);
-          if (isActive === undefined) {
-            // Treat empty flow nodes like missing status nodes: tolerate the
-            // goofy publish shape and submit the flow instead of deferring.
-            await startFlow(status, portfolioKey, flowKey, flowDetail);
-            break;
-          }
-          if (isActive) return;
-          continue;
-        }
-        await startFlow(status, portfolioKey, flowKey, flowDetail);
+      // Scan flows in order, aborting upon encountering one that is already
+      // running but otherwise initiating the first one that needs it.
+      // Responding to later ones is pointless because acceptance of the first
+      // submission would invalidate the others as stale, but we'll see them
+      // again when such acceptance prompts changes to the portfolio status.
+      const flowsEntries = typedEntries(status.flowsRunning || {}).sort(
+        ([a], [b]) => naturalCompare(a, b),
+      );
+      let txHash: string | undefined;
+      for (const [flowKey, flowDetail] of flowsEntries) {
+        const { awaitingSteps } = flowDetail;
+        const flowStatus: StatusFor['flow']['state'] | 'INIT' =
+          { __proto__: null, true: 'INIT', false: 'run' }[`${awaitingSteps}`] ??
+          // TODO(https://github.com/Agoric/agoric-sdk/pull/12753): This
+          // fallback can be removed once we're certain that every entry in
+          // `flowsRunning` is guaranteed to have a boolean `awaitingSteps`.
+          (await getFlowStatus(portfolioKey, flowKey, readOpts)) ??
+          'INIT';
+
+        // 'run' is the only non-terminal status.
+        if (flowStatus === 'run') break;
+        if (flowStatus !== 'INIT') continue;
+
+        txHash = await startFlow(status, portfolioKey, flowKey, flowDetail);
         break;
       }
-      memory.snapshots.set(portfolioKey, { fingerprint, repeats: 0 });
+      memory.snapshots.set(portfolioKey, { fingerprint, txHash: txHash ?? null, repeats: 0 });
     } catch (err) {
       const age = blockHeight - eventRecord.blockHeight;
       if (err.code === STALE_RESPONSE) {
@@ -575,6 +679,36 @@ export const processPortfolioEvents = async (
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
+  await makeWorkPool(portfolioRecordForKey, undefined, async entry => {
+    const [portfolioKey, portfolioRecord] = entry;
+    const { status } = portfolioRecord;
+    if (Object.keys(status.flowsRunning || {}).length > 0) return;
+
+    await null;
+    try {
+      if (!shouldRebalance(portfolioKey, status)) return;
+      const freshBalances = await getFreshBalances(portfolioKey, status);
+      const freshTimestamp = balanceCache.get(portfolioKey)!.isoTimestamp;
+      const oldState = memory.snapshots.get(portfolioKey)!;
+      oldState.balancesTimestamp = freshTimestamp;
+      const txHash = await maybeAutoRebalance(
+        status,
+        portfolioKey,
+        freshBalances,
+        maybeAutoRebalancePowers,
+      );
+      if (!txHash) return;
+      memory.snapshots.set(portfolioKey, {
+        fingerprint: fingerprintPortfolioState(status, { marshaller }),
+        txHash,
+        repeats: 0,
+        balancesTimestamp: freshTimestamp,
+      });
+    } catch (err) {
+      const msg = `[${portfolioKey}.autoRebalance] ⚠️ Failure ${err?.name}: ${err?.message}`;
+      console.warn(msg, err);
+    }
+  }).done;
 };
 
 export const processPendingTxEvents = async (
@@ -742,11 +876,13 @@ export const startEngine = async (
     contractInstance,
     depositBrandName,
     feeBrandName,
+    balanceCacheTtlMs,
   }: {
     isDryRun?: boolean;
     contractInstance: string;
     depositBrandName: string;
     feeBrandName: string;
+    balanceCacheTtlMs?: number;
   },
 ) => {
   const {
@@ -756,6 +892,8 @@ export const startEngine = async (
     signingSmartWalletKit,
     makeNonce,
     getInstrumentBlocks,
+    getPortfolioSummaries,
+    now,
   } = powers;
   const { kvStore } = evmCtx;
   const vstoragePathPrefixes = makeVstoragePathPrefixes(contractInstance);
@@ -765,16 +903,19 @@ export const startEngine = async (
 
   let instrumentBlocks: InstrumentBlocks | undefined;
   const updateInstrumentBlocks = async () => {
-    instrumentBlocks = await getInstrumentBlocks?.();
+    await null;
+    try {
+      instrumentBlocks = await getInstrumentBlocks?.();
+    } catch (err) {
+      console.error('🚨 [updateInstrumentBlocks]', err);
+    }
   };
 
   const [vbankAssetCapData] = await Promise.all([
     readStreamCellValue(query.vstorage, 'published.agoricNames.vbankAsset', {
       retries: 4,
     }),
-    updateInstrumentBlocks().catch(err =>
-      console.error('🚨 Failed to initialize instrument blocks', err),
-    ),
+    updateInstrumentBlocks(),
   ]);
   const vbankAssets: AssetInfo[] = marshaller
     .fromCapData(vbankAssetCapData)
@@ -782,12 +923,42 @@ export const startEngine = async (
   const depositAsset =
     vbankAssets.find(asset => asset.issuerName === depositBrandName) ||
     Fail`Could not find vbankAsset for ${q(depositBrandName)}`;
+  const depositBrand = depositAsset.brand as Brand<'nat'>;
   const feeAsset =
     vbankAssets.find(asset => asset.issuerName === feeBrandName) ||
     Fail`Could not find vbankAsset for ${q(feeBrandName)}`;
 
-  const deferrals = [] as EventRecord[];
-  const portfoliosMemory: PortfoliosMemory = { deferrals };
+  const portfoliosMemory = makePortfoliosMemory({ balanceCacheTtlMs, now });
+  const { balanceCache, deferrals, portfolioRecordForKey } = portfoliosMemory;
+
+  const updatePortfolioBalances = async () => {
+    await null;
+    try {
+      const autoRebalancers = partialMap(
+        [...portfolioRecordForKey],
+        ([portfolioKey, record]) =>
+          record.status.enabledAutoFeatures?.rebalance && portfolioKey,
+      );
+      const summaries = await getPortfolioSummaries?.(autoRebalancers);
+      if (!summaries) return;
+      for (const { portfolioId, latestSnapshot } of summaries) {
+        if (!latestSnapshot) continue;
+
+        // This data might be more stale than that of our own balance queries.
+        const isoTimestamp = normalizeIsoTimestamp(latestSnapshot.ts);
+        const found = balanceCache.get(portfolioId);
+        if (found && found.isoTimestamp >= isoTimestamp) continue;
+
+        const balances = normalizeYdsPortfolioBalances(
+          latestSnapshot,
+          depositBrand,
+        );
+        balanceCache.set(portfolioId, { isoTimestamp, balances });
+      }
+    } catch (err) {
+      console.error('🚨 [updatePortfolioBalances]', err);
+    }
+  };
 
   const blockHeightFromSubscriptionResponse = (resp: SubscriptionResponse) => {
     const { type: respType, value: respData } = resp;
@@ -802,7 +973,7 @@ export const startEngine = async (
           `🚨 Attempting to read block height from unexpected response type ${respType}`,
           respData,
         );
-        const obj = values(respData)[0];
+        const obj = Object.values(respData)[0];
         // @ts-expect-error
         return BigInt(obj.height ?? obj.blockHeight ?? obj.block_height);
       }
@@ -841,15 +1012,13 @@ export const startEngine = async (
   // handled before older backlog during planner restarts.
   pendingTxKeys.sort((a: string, b: string) => naturalCompare(b, a));
 
-  const portfolioKeyForDepositAddr = new Map() as Map<Bech32Address, string>;
   const processPortfolioPowers: ProcessPortfolioPowers = Object.freeze({
     ...powers,
     console,
     isDryRun,
-    depositBrand: depositAsset.brand as Brand<'nat'>,
+    depositBrand,
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
-    portfolioKeyForDepositAddr,
     evmProviders: evmCtx.evmProviders,
     instrumentBlocks,
   });
@@ -904,7 +1073,7 @@ export const startEngine = async (
   );
   const throttledPendingTxKeys = rateLimitedSource({
     policy: { quota: capacity, windowMs: 1000 },
-    powers: { now: powers.now, setTimeout: powers.setTimeout },
+    powers: { now, setTimeout: powers.setTimeout },
     source: pendingTxKeysToRead,
   });
 
@@ -1023,25 +1192,21 @@ export const startEngine = async (
         compareBigints(a.eventRecord.blockHeight, b.eventRecord.blockHeight) ||
         naturalCompare(a.path, b.path),
     );
-    // Process concurrently: pending tx watchers must subscribe to EVM events
-    // ASAP to avoid missing transactions that settle while portfolio
-    // processing (balance queries, planning, tx submission) is in progress.
+    // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
+    // transactions, so process them concurrently with portfolio events.
     await Promise.all([
-      portfolioEvents.length &&
-        // Update blocked-instrument sets at most once per chain block, and only
-        // when there are portfolio events to process.
-        updateInstrumentBlocks()
-          .catch(err =>
-            console.error('⚠️ Failed to update instrument blocks', err),
-          )
-          .then(() =>
-            processPortfolioEvents(
-              portfolioEvents,
-              respHeight,
-              portfoliosMemory,
-              { ...processPortfolioPowers, instrumentBlocks },
-            ),
+      Promise.all([updateInstrumentBlocks(), updatePortfolioBalances()]).then(
+        () =>
+          processPortfolioEvents(
+            portfolioEvents,
+            respHeight,
+            portfoliosMemory,
+            {
+              ...processPortfolioPowers,
+              instrumentBlocks,
+            },
           ),
+      ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);
 

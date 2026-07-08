@@ -14,7 +14,6 @@
  * - The CLI adapter is tuned for terminal UX (e.g., colored prefixes) and does
  *   not apply cosmic-swingset suppression semantics.
  */
-/* eslint-env node */
 import {
   getEnvironmentOptionsList,
   getEnvironmentOption,

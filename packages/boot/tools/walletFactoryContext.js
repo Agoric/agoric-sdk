@@ -1,4 +1,3 @@
-import { Fail } from '@endo/errors';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { fetchCoreEvalRelease, makeSwingsetTestKit } from './supports.js';
 import { makeWalletFactoryDriver } from './drivers.js';
@@ -17,9 +16,10 @@ export const makeWalletFactoryContext = async (
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
   const { EV } = runUtils;
 
-  // Wait for ATOM to make it into agoricNames
-  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
-  console.timeLog('DefaultTestContext', 'vaultFactoryKit');
+  // Proxy for "bootstrap done": provisionPool is among the last things started
+  // and exists in every config (it is committee-governed).
+  await EV.vat('bootstrap').consumeItem('provisionPoolStartResult');
+  console.timeLog('DefaultTestContext', 'provisionPoolStartResult');
 
   // has to be late enough for agoricNames data to have been published
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
@@ -31,7 +31,6 @@ export const makeWalletFactoryContext = async (
       makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage),
     );
   };
-  agoricNamesRemotes.brand.ATOM || Fail`ATOM missing from agoricNames`;
   console.timeLog('DefaultTestContext', 'agoricNamesRemotes');
 
   const evalReleasedProposal = async (release, name) => {

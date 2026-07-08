@@ -187,3 +187,40 @@ export const deleteDerivedOutcome = (
 ): void => {
   store.delete(getDerivedOutcomeKey(txId));
 };
+
+const getConsumedTransferKey = (
+  chainId: string | undefined,
+  txHash: string,
+  logIndex: number | undefined,
+) => `consumedTransfer.${chainId}.${txHash}.${logIndex}`;
+
+/**
+ * Claim an on-chain transfer, identified by its unique `(chainId, txHash,
+ * logIndex)` fingerprint, for a single pending tx. This ensures that one
+ * physical transfer can never settle more than one pending tx: when several
+ * pending txs share the same `(destination, amount)` (e.g. two 5-USDC CCTP
+ * legs of one withdrawal), each must claim a distinct transfer before it may
+ * settle.
+ *
+ * Returns `true` if the caller now owns the transfer (it was unclaimed, or
+ * already claimed by the same `txId` — the re-watch-after-crash case), or
+ * `false` if a different `txId` already claimed it, in which case the caller
+ * must keep watching for the next matching transfer.
+ *
+ * Persisted so the "one transfer, one owner" guarantee survives planner
+ * restarts and lookback rescans; without persistence a restart would let a
+ * still-pending leg re-consume a transfer an already-settled leg had taken.
+ */
+export const claimTransferLog = (
+  store: KVStore,
+  chainId: string | undefined,
+  txHash: string,
+  logIndex: number | undefined,
+  txId: `tx${number}`,
+): boolean => {
+  const key = getConsumedTransferKey(chainId, txHash, logIndex);
+  const owner = store.get(key);
+  if (owner !== undefined && owner !== txId) return false;
+  store.set(key, txId);
+  return true;
+};

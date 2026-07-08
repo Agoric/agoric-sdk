@@ -218,9 +218,6 @@ jobs:
       - name: yarn test (access-token)
         if: (success() || failure())
         run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (benchmark)
-        if: (success() || failure())
-        run: cd packages/benchmark && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deployment)
         if: (success() || failure())
         run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -603,41 +600,6 @@ jobs:
       - name: yarn test (cosmic-swingset)
         if: (success() || failure())
         run: cd packages/cosmic-swingset && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
-          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-
-  test-inter-protocol:
-    # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # test:xs is noop in inter-protocol/package.json
-        engine: ['node-new', 'node-old']
-    steps:
-      - name: set vars
-        id: vars
-        run: |
-          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.engine }}
-      # END-TEST-BOILERPLATE
-      - name: yarn test (inter-protocol)
-        if: (success() || failure())
-        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
