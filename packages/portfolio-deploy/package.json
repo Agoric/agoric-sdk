@@ -80,9 +80,6 @@
       "--import=ts-blank-space/register",
       "--no-warnings"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {

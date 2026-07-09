@@ -91,7 +91,6 @@ export default {
   extensions: ['js', 'ts'],
   files: ['test/**/*.test.*'],
   nodeArguments: ['--import=ts-blank-space/register', '--no-warnings'],
-  require: ['@endo/init/debug.js'],
   timeout: '20m',
   sortTestFiles: byExplicitBootOrder,
   workerThreads: false,

@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';

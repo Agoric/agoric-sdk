@@ -1,3 +1,5 @@
+import '@endo/init/legacy.js';
+
 import test from 'ava';
 
 import { decodeHex } from '@agoric/internal/src/hex.js';

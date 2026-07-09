@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test, { type ExecutionContext } from 'ava';
 import {
   mkdtemp,

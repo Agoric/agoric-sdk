@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import { Far } from '@endo/pass-style';

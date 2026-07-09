@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import fs from 'node:fs';
 import vm from 'node:vm';
 

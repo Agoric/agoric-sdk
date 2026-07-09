@@ -1,5 +1,7 @@
 // JavaScript correctness tests
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import * as proc from 'node:child_process';
 import fs from 'node:fs';

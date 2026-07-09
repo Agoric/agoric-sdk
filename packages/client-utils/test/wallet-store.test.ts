@@ -1,3 +1,5 @@
+import '@endo/init/legacy.js';
+
 import test from 'ava';
 
 import type { SignerData, StdFee } from '@cosmjs/stargate';

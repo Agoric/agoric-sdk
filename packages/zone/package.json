@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
+    "@endo/init": "^1.1.13",
     "@endo/patterns": "^1.9.1",
     "ava": "^8.0.1"
   },
@@ -47,9 +48,6 @@
   "ava": {
     "files": [
       "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
     ],
     "timeout": "20m"
   },

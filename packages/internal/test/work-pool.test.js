@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { makeWorkPool } from '../src/work-pool.js';
