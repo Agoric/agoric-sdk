@@ -1,6 +1,6 @@
+// @ts-check
 import '@endo/init/debug.js';
 
-// @ts-check
 import test from 'ava';
 import { EventEmitter } from 'node:events';
 import { open, rm, mkdtemp } from 'node:fs/promises';

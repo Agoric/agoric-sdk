@@ -1,6 +1,5 @@
-import '@endo/init/debug.js';
-
 // @ts-check
+import '@endo/init/debug.js';
 
 import path from 'node:path';
 import { createGunzip } from 'node:zlib';

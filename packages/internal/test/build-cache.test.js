@@ -1,6 +1,6 @@
+// @ts-check
 import '@endo/init/debug.js';
 
-// @ts-check
 import test from 'ava';
 
 import os from 'node:os';

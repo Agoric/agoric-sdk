@@ -2,7 +2,7 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 8
+  version: 10
   cacheKey: 10c0
 
 "@agoric/access-token@npm:0.4.22-dev-777e6a4.0+777e6a4":

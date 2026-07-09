@@ -1,6 +1,6 @@
+// @ts-nocheck
 import '@endo/init/debug.js';
 
-// @ts-nocheck
 import test from 'ava';
 
 import anylogger from '../vendor/anylogger.js';
