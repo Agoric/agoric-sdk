@@ -7,6 +7,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const SloggerContextKey sdk.ContextKey = "slogger"
+
 // Sender makes a request of our associated VM.
 type Sender func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error)
 
@@ -32,6 +34,8 @@ type protectedPortHandler struct {
 	inner PortHandler
 }
 
+type SloggerType = func(sdk.Context, string)
+
 func (h protectedPortHandler) Receive(ctx context.Context, str string) (ret string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -42,6 +46,31 @@ func (h protectedPortHandler) Receive(ctx context.Context, str string) (ret stri
 	}()
 	ret, err = h.inner.Receive(ctx, str)
 	return
+}
+
+func GetContextWithSlogger(ctx sdk.Context, sloggerOutput *[]string) context.Context {
+	return ctx.WithValue(
+		SloggerContextKey,
+		makeSlogger(sloggerOutput),
+	)
+}
+
+func GetSloggerFromContext(ctx context.Context) (SloggerType, error) {
+	slogger, ok := ctx.Value(SloggerContextKey).(SloggerType)
+	if !ok {
+		return nil, fmt.Errorf(
+			"invalid type inside context key '%s'",
+			SloggerContextKey,
+		)
+	} else {
+		return slogger, nil
+	}
+}
+
+func makeSlogger(sloggerOutput *[]string) SloggerType {
+	return func(ctx sdk.Context, str string) {
+		*sloggerOutput = append(*sloggerOutput, str)
+	}
 }
 
 func NewProtectedPortHandler(inner PortHandler) PortHandler {
