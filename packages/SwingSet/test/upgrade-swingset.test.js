@@ -1,5 +1,7 @@
 // @ts-nocheck
 
+import '@agoric/internal/src/ava-force-exit.mjs';
+
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
