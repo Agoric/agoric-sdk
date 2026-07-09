@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+reviews:
+  auto_review:
+    # only manual requests
+    enabled: false
+  # to stop it from posting comments about not posting (review) comments
+  review_status: false

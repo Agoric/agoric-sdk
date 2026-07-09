@@ -1,15 +1,18 @@
 //@ts-nocheck
-import { type Rpc } from '../../helpers.js';
-import { BinaryReader } from '../../binary.js';
-import { MsgSendPacket, MsgSendPacketResponse } from './msgs.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
+import {
+  MsgSendPacket,
+  MsgSendPacketResponse,
+} from '@agoric/cosmic-proto/codegen/agoric/vibc/msgs.js';
 /** The module transactions. */
 export interface Msg {
   /** Force sending an arbitrary packet on a channel. */
   sendPacket(request: MsgSendPacket): Promise<MsgSendPacketResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.sendPacket = this.sendPacket.bind(this);
   }
@@ -21,3 +24,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

@@ -14,8 +14,8 @@ export type MultichainRegistry = Awaited<
 export const makeSetupRegistry = (getFile: GetFilePathFn) => {
   let initialized = false;
   /**
-   * @param {Object} opts
-   * @param {string} [opts.config='../config.yaml'] - The path to the starship configuration file.
+   * @param {object} opts
+   * @param {string} [opts.config] - The path to the starship configuration file.
    * @example
    * ```js
    * const { useChain } = await setupRegistry();

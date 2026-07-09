@@ -5,32 +5,67 @@ import {
 } from '../../../google/protobuf/descriptor.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
-/** FileDescriptorsRequest is the Query/FileDescriptors request type. */
+/**
+ * FileDescriptorsRequest is the Query/FileDescriptors request type.
+ * @name FileDescriptorsRequest
+ * @package cosmos.reflection.v1
+ * @see proto type: cosmos.reflection.v1.FileDescriptorsRequest
+ */
 export interface FileDescriptorsRequest {}
 export interface FileDescriptorsRequestProtoMsg {
   typeUrl: '/cosmos.reflection.v1.FileDescriptorsRequest';
   value: Uint8Array;
 }
-/** FileDescriptorsRequest is the Query/FileDescriptors request type. */
+/**
+ * FileDescriptorsRequest is the Query/FileDescriptors request type.
+ * @name FileDescriptorsRequestSDKType
+ * @package cosmos.reflection.v1
+ * @see proto type: cosmos.reflection.v1.FileDescriptorsRequest
+ */
 export interface FileDescriptorsRequestSDKType {}
-/** FileDescriptorsResponse is the Query/FileDescriptors response type. */
+/**
+ * FileDescriptorsResponse is the Query/FileDescriptors response type.
+ * @name FileDescriptorsResponse
+ * @package cosmos.reflection.v1
+ * @see proto type: cosmos.reflection.v1.FileDescriptorsResponse
+ */
 export interface FileDescriptorsResponse {
-  /** files is the file descriptors. */
+  /**
+   * files is the file descriptors.
+   */
   files: FileDescriptorProto[];
 }
 export interface FileDescriptorsResponseProtoMsg {
   typeUrl: '/cosmos.reflection.v1.FileDescriptorsResponse';
   value: Uint8Array;
 }
-/** FileDescriptorsResponse is the Query/FileDescriptors response type. */
+/**
+ * FileDescriptorsResponse is the Query/FileDescriptors response type.
+ * @name FileDescriptorsResponseSDKType
+ * @package cosmos.reflection.v1
+ * @see proto type: cosmos.reflection.v1.FileDescriptorsResponse
+ */
 export interface FileDescriptorsResponseSDKType {
   files: FileDescriptorProtoSDKType[];
 }
 function createBaseFileDescriptorsRequest(): FileDescriptorsRequest {
   return {};
 }
+/**
+ * FileDescriptorsRequest is the Query/FileDescriptors request type.
+ * @name FileDescriptorsRequest
+ * @package cosmos.reflection.v1
+ * @see proto type: cosmos.reflection.v1.FileDescriptorsRequest
+ */
 export const FileDescriptorsRequest = {
   typeUrl: '/cosmos.reflection.v1.FileDescriptorsRequest' as const,
+  aminoType: 'cosmos-sdk/FileDescriptorsRequest' as const,
+  is(o: any): o is FileDescriptorsRequest {
+    return o && o.$typeUrl === FileDescriptorsRequest.typeUrl;
+  },
+  isSDK(o: any): o is FileDescriptorsRequestSDKType {
+    return o && o.$typeUrl === FileDescriptorsRequest.typeUrl;
+  },
   encode(
     _: FileDescriptorsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -86,8 +121,31 @@ function createBaseFileDescriptorsResponse(): FileDescriptorsResponse {
     files: [],
   };
 }
+/**
+ * FileDescriptorsResponse is the Query/FileDescriptors response type.
+ * @name FileDescriptorsResponse
+ * @package cosmos.reflection.v1
+ * @see proto type: cosmos.reflection.v1.FileDescriptorsResponse
+ */
 export const FileDescriptorsResponse = {
   typeUrl: '/cosmos.reflection.v1.FileDescriptorsResponse' as const,
+  aminoType: 'cosmos-sdk/FileDescriptorsResponse' as const,
+  is(o: any): o is FileDescriptorsResponse {
+    return (
+      o &&
+      (o.$typeUrl === FileDescriptorsResponse.typeUrl ||
+        (Array.isArray(o.files) &&
+          (!o.files.length || FileDescriptorProto.is(o.files[0]))))
+    );
+  },
+  isSDK(o: any): o is FileDescriptorsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === FileDescriptorsResponse.typeUrl ||
+        (Array.isArray(o.files) &&
+          (!o.files.length || FileDescriptorProto.isSDK(o.files[0]))))
+    );
+  },
   encode(
     message: FileDescriptorsResponse,
     writer: BinaryWriter = BinaryWriter.create(),

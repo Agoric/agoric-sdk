@@ -6,15 +6,15 @@
   "main": "index.js",
   "types": "index.js",
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "scripts": {
     "build": "exit 0",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:types": "yarn run -T tsc",
-    "lint:eslint": "yarn run -T eslint .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
     "lint-fix": "yarn lint:eslint --fix"
   },
   "repository": {
@@ -32,14 +32,14 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/store": "workspace:*",
-    "@endo/errors": "^1.2.13",
-    "@endo/nat": "^5.1.3",
-    "@endo/patterns": "^1.7.0"
+    "@endo/errors": "^1.3.1",
+    "@endo/nat": "^5.2.0",
+    "@endo/patterns": "^1.9.1"
   },
   "devDependencies": {
     "@endo/far": "^1.1.14",
-    "@endo/init": "^1.1.12",
-    "ava": "^6.4.1"
+    "@endo/init": "^1.1.13",
+    "ava": "^8.0.1"
   },
   "ava": {
     "files": [
@@ -55,6 +55,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 88.75
+    "atLeast": 88.17
   }
 }

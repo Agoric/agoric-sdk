@@ -1,8 +1,8 @@
 // @ts-nocheck
-import fs from 'fs';
-import zlib from 'zlib';
-import readline from 'readline';
-import process from 'process';
+import fs from 'node:fs';
+import zlib from 'node:zlib';
+import readline from 'node:readline';
+import process from 'node:process';
 import '@endo/init';
 
 import { decodeBase64 } from '@endo/base64';

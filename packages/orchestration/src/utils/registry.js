@@ -6,10 +6,10 @@ import { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/conne
 import assert from 'node:assert';
 
 /**
- * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
+ * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
  * @import {Chain, IBCInfo} from '@chain-registry/types';
  * @import {ChainRegistryClient} from '@chain-registry/client';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
+ * @import {CosmosChainInfo} from '../cosmos-api.js';
  */
 
 /**
@@ -25,11 +25,13 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
     ? [ibcInfo.chain_1, ibcInfo.chain_2]
     : [ibcInfo.chain_2, ibcInfo.chain_1];
   assert.equal(from.chain_name, name);
-  const transferChannels = ibcInfo.channels.filter(
-    c =>
-      c.chain_1.port_id === 'transfer' &&
-      // @ts-expect-error tags does not specify keys
-      c.tags?.preferred,
+  // Upstream types `tags` as a bare `object`; narrow it to the `preferred` flag we read.
+  const channels =
+    /** @type {(Omit<IBCInfo['channels'][number], 'tags'> & { tags?: { preferred?: boolean } })[]} */ (
+      ibcInfo.channels
+    );
+  const transferChannels = channels.filter(
+    c => c.chain_1.port_id === 'transfer' && c.tags?.preferred,
   );
   if (transferChannels.length === 0) {
     console.warn(

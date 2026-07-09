@@ -20,7 +20,7 @@ import type {
 } from 'viem';
 import type { TypedDataParameter } from '../abitype.ts';
 
-const PERMIT2_DOMAIN_NAME = 'Permit2';
+export const PERMIT2_DOMAIN_NAME = 'Permit2';
 
 // TODO: disallow witness type field being another Permit field name
 interface WitnessDefinition<
@@ -99,7 +99,7 @@ export const PermitBatchTransferFromTypeParams = [
   { name: 'deadline', type: 'uint256' },
 ] as const satisfies TypedDataParameter[];
 
-const TokenPermissionTypeParams = [
+export const TokenPermissionTypeParams = [
   { name: 'token', type: 'address' },
   { name: 'amount', type: 'uint256' },
 ] as const satisfies TypedDataParameter[];
@@ -186,14 +186,16 @@ export function permit2Domain(
 ) {
   return {
     name: PERMIT2_DOMAIN_NAME,
-    chainId,
+    chainId: BigInt(chainId),
     verifyingContract: permit2Address,
   } as const satisfies TypedDataDomain;
 }
+export type Permit2Domain = ReturnType<typeof permit2Domain>;
 
 // XXX: restore permit to be either PermitTransferFrom or PermitBatchTransferFrom
 // and remove duplication between the two functions below
 // Original method was `SignatureTransfer.getPermitData`
+// XXX: Typing: consider supporting a union of Witness types
 export function getPermitWitnessTransferFromData<
   T extends TypedData,
   TD extends TypedDataParameter<string, Extract<keyof T, string>> =

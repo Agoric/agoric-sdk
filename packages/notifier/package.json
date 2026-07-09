@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "scripts": {
     "build": "exit 0",
@@ -16,8 +16,8 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "yarn run -T eslint .",
-    "lint:types": "yarn run -T tsc"
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo"
   },
   "repository": {
     "type": "git",
@@ -35,20 +35,20 @@
   "dependencies": {
     "@agoric/internal": "workspace:*",
     "@agoric/vat-data": "workspace:*",
-    "@endo/errors": "^1.2.13",
+    "@endo/errors": "^1.3.1",
     "@endo/far": "^1.1.14",
-    "@endo/marshal": "^1.8.0",
-    "@endo/patterns": "^1.7.0",
-    "@endo/promise-kit": "^1.1.13"
+    "@endo/marshal": "^1.10.0",
+    "@endo/patterns": "^1.9.1",
+    "@endo/promise-kit": "^1.2.1"
   },
   "devDependencies": {
     "@agoric/kmarshal": "workspace:*",
     "@agoric/swing-store": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
     "@agoric/swingset-vat": "workspace:*",
-    "@endo/init": "^1.1.12",
-    "@endo/ses-ava": "^1.3.2",
-    "ava": "^6.4.1",
+    "@endo/init": "^1.1.13",
+    "@endo/ses-ava": "^1.4.2",
+    "ava": "^8.0.1",
     "c8": "^10.1.3"
   },
   "exports": {
@@ -72,6 +72,6 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 90.92
+    "atLeast": 86.14
   }
 }

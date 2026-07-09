@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 
 /**
  * Help us workaround a limitation in Cloudflare Pages that prevents us from
@@ -12,9 +11,6 @@
  * 2. updates generated urls in html files to reference new url path
  * 3. updates base64 encoded navigation and search data to reference new url path
  *
- * If an `md` argument is supplied - versus the optional default `html` document -
- * a different set of logic will run to update paths are links for markdown files.
- *
  * See https://github.com/TypeStrong/typedoc/issues/2111 for more solutions
  * on how to workaround this.
  *
@@ -23,10 +19,12 @@
  * this file and the accompanying `yarn docs:update-functions-path`.
  */
 
-const fsp = require('fs').promises;
-const path = require('path');
-const zlib = require('zlib');
-const process = require('process');
+const fsp = require('node:fs').promises;
+const path = require('node:path');
+const zlib = require('node:zlib');
+const process = require('node:process');
+
+const dataUriPrefix = 'data:application/octet-stream;base64,';
 
 const config = {
   oldDirName: 'functions',
@@ -44,46 +42,59 @@ const config = {
   ],
 };
 
-// Decodes and decompresses the TypeDoc data
-function decodeTypeDocData(encodedData) {
+function zlibAsync(operation, buffer, errorLabel) {
   return new Promise((resolve, reject) => {
-    const base64Data = encodedData.replace(
-      /^data:application\/octet-stream;base64,/,
-      '',
-    );
-    const buffer = Buffer.from(base64Data, 'base64');
-
-    zlib.gunzip(buffer, (err, decompressed) => {
+    operation(buffer, (err, data) => {
       if (err) {
-        reject(new Error(`Failed to decompress data: ${err.message}`));
+        reject(new Error(`Failed to ${errorLabel} data: ${err.message}`));
         return;
       }
-
-      try {
-        const jsonData = JSON.parse(decompressed.toString('utf-8'));
-        resolve(jsonData);
-      } catch (parseError) {
-        reject(new Error(`Failed to parse JSON: ${parseError.message}`));
-      }
+      resolve(data);
     });
   });
 }
 
+function getTypeDocDataFormat(encodedData) {
+  return encodedData.startsWith(dataUriPrefix)
+    ? 'gzip-data-uri'
+    : 'deflate-base64';
+}
+
+// Decodes and decompresses the TypeDoc data
+async function decodeTypeDocData(encodedData) {
+  const format = getTypeDocDataFormat(encodedData);
+  const base64Data =
+    format === 'gzip-data-uri'
+      ? encodedData.slice(dataUriPrefix.length)
+      : encodedData;
+  const buffer = Buffer.from(base64Data, 'base64');
+  const operation = format === 'gzip-data-uri' ? zlib.gunzip : zlib.inflate;
+  const decompressed = await zlibAsync(operation, buffer, 'decompress');
+
+  try {
+    return {
+      data: JSON.parse(decompressed.toString('utf-8')),
+      format,
+    };
+  } catch (parseError) {
+    throw new Error(`Failed to parse JSON: ${parseError.message}`);
+  }
+}
+
 // Compresses and encodes the TypeDoc data
-function encodeTypeDocData(jsonData) {
-  return new Promise((resolve, reject) => {
-    const jsonString = JSON.stringify(jsonData);
+async function encodeTypeDocData(jsonData, format) {
+  const jsonString = JSON.stringify(jsonData);
+  const operation = format === 'gzip-data-uri' ? zlib.gzip : zlib.deflate;
+  const compressed = await zlibAsync(
+    operation,
+    Buffer.from(jsonString),
+    'compress',
+  );
+  const base64Data = compressed.toString('base64');
 
-    zlib.gzip(jsonString, (err, compressed) => {
-      if (err) {
-        reject(new Error(`Failed to compress data: ${err.message}`));
-        return;
-      }
-
-      const base64Data = compressed.toString('base64');
-      resolve(`data:application/octet-stream;base64,${base64Data}`);
-    });
-  });
+  return format === 'gzip-data-uri'
+    ? `${dataUriPrefix}${base64Data}`
+    : base64Data;
 }
 
 // Recursively updates URLs in the data
@@ -117,13 +128,13 @@ async function updateDataFile(filePath, windowKey) {
   }
   const encodedData = match[1];
 
-  const decodedData = await decodeTypeDocData(encodedData);
+  const { data: decodedData, format } = await decodeTypeDocData(encodedData);
   const updatedData = updateUrls(
     decodedData,
     config.oldDirName,
     config.newDirName,
   );
-  const newEncodedData = await encodeTypeDocData(updatedData);
+  const newEncodedData = await encodeTypeDocData(updatedData, format);
   const newFileContent = `window.${windowKey} = "${newEncodedData}"`;
   await fsp.writeFile(filePath, newFileContent);
   console.log(`${windowKey} updated successfully`);
@@ -133,7 +144,7 @@ async function updateDataFile(filePath, windowKey) {
  * Updates files in a directory
  * @param {string} dir - Directory to update
  * @param {string} fileExtension - File extension to process
- * @param {Function} updateFunction - Function to update file content
+ * @param {(content: string) => string} updateFunction - Function to update file content
  */
 async function updateFiles(dir, fileExtension, updateFunction) {
   const files = await fsp.readdir(dir);
@@ -161,27 +172,6 @@ async function updateFiles(dir, fileExtension, updateFunction) {
 }
 
 /**
- * Updates content in Markdown files
- * @param {string} content - The Markdown content to update
- * @returns {string} - The updated Markdown content
- */
-function updateMarkdownContentLinks(content) {
-  return (
-    content
-      // Update links like [text](functions/file.md)
-      .replace(
-        new RegExp(`\\[(.*?)\\]\\(${config.oldDirName}/`, 'g'),
-        `[$1](${config.newDirName}/`,
-      )
-      // Update links like [text](../functions/file.md)
-      .replace(
-        new RegExp(`\\[(.*?)\\]\\(\\.\\./${config.oldDirName}/`, 'g'),
-        `[$1](../${config.newDirName}/`,
-      )
-  );
-}
-
-/**
  * Updates content in HTML files
  * @param {string} content - The HTML content to update
  * @returns {string} - The updated HTML content
@@ -197,23 +187,22 @@ function updateHtmlContentLinks(content) {
  * Main function to run the script
  */
 async function main() {
-  const fileType = process.argv[2] || 'html';
-  await null;
-  switch (fileType) {
-    case 'html':
-      await updateFiles(config.apiDocsDir, '.html', updateHtmlContentLinks);
-      for (const dataFile of config.dataFiles) {
-        await updateDataFile(dataFile.path, dataFile.windowKey);
-      }
-      return;
-    case 'md':
-      return updateFiles(config.apiDocsDir, '.md', updateMarkdownContentLinks);
-    default:
-      throw new Error('Invalid file type. Use "html" or "md".');
+  await updateFiles(config.apiDocsDir, '.html', updateHtmlContentLinks);
+  for (const dataFile of config.dataFiles) {
+    await updateDataFile(dataFile.path, dataFile.windowKey);
   }
 }
 
-main().catch(e => {
-  console.error(`Error: ${e.message}`);
-  process.exit(1);
-});
+module.exports = {
+  decodeTypeDocData,
+  encodeTypeDocData,
+  updateHtmlContentLinks,
+  updateUrls,
+};
+
+if (require.main === module) {
+  main().catch(e => {
+    console.error(`Error: ${e.message}`);
+    process.exit(1);
+  });
+}

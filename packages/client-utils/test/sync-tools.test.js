@@ -1,4 +1,3 @@
-/* eslint-env node */
 // @ts-check
 import '@endo/init/legacy.js';
 

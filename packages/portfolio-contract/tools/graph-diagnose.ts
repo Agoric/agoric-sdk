@@ -6,7 +6,12 @@ import { Fail, q } from '@endo/errors';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
 import { tryNow } from '@agoric/internal/src/ses-utils.js';
-import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
+import {
+  isDepositFromChainRef,
+  isInstrumentId,
+  isInterChainAccountRef,
+  isWithdrawToChainRef,
+} from '@agoric/portfolio-api/src/type-guards.js';
 import type {
   AssetPlaceRef,
   InterChainAccountRef,
@@ -42,7 +47,7 @@ const bfs = <T>(start: T, adj: Map<T, T[]>): Set<T> => {
  * Heuristics only: checks supply balance and reachability of sinks from sources.
  *
  * Example output (when graph.debug is true):
- *   No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs present: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum
+ * `No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum`
  *
  * How to enable:
  *   - Set `debug: true` on the NetworkSpec used to build the graph.
@@ -109,7 +114,7 @@ export const diagnoseInfeasible = (
       `sources with no path to any sink (${stranded.length}): ${sample}`,
     );
   }
-  lines.push(`hubs present: ${[...hubSet].sort().join(', ')}`);
+  lines.push(`hubs: ${[...hubSet].sort().join(', ')}`);
   lines.push(
     `inter-hub edges: ${hubEdges.length ? hubEdges.join(', ') : '(none)'}`,
   );
@@ -155,8 +160,16 @@ export const preflightValidateNetworkPlan = (
     const tgt = target[k]?.value ?? 0n;
     if (cur === tgt) continue;
 
-    const placeInfo = PoolPlaces[k as PoolKey];
-    placeInfo || declared.has(k) || Fail`Unsupported position key: ${q(k)}`;
+    if (isInstrumentId(k)) {
+      const placeInfo = PoolPlaces[k as PoolKey];
+      placeInfo || declared.has(k) || Fail`Unsupported position key: ${q(k)}`;
+    } else {
+      [
+        isInterChainAccountRef,
+        isDepositFromChainRef,
+        isWithdrawToChainRef,
+      ].some(p => p(k)) || Fail`Unsupported key: ${q(k)}`;
+    }
     const chain = tryNow(
       () => chainOf(k),
       () => undefined,
@@ -344,7 +357,7 @@ export const diagnoseNearMisses = (graph: FlowGraph) => {
         if (!interHubEdges.includes(cand))
           hint = `consider adding inter-hub ${cand}`;
       }
-      // eslint-disable-next-line no-nested-ternary
+
       const category = !reachDir.has(t)
         ? 'no-directed-path'
         : !reachCap.has(t)
@@ -359,7 +372,7 @@ export const diagnoseNearMisses = (graph: FlowGraph) => {
 
 /** Build a canonical leaf/hub -> hub/leaf path skeleton between two nodes. */
 export const canonicalPathBetween = (
-  graph: FlowGraph,
+  _graph: FlowGraph,
   src: string,
   dest: string,
 ): string[] => {
@@ -434,12 +447,8 @@ export const formatInfeasibleDiagnostics = (
 
 /**
  * Validate solved flows for consistency.
- * Checks:
- * 1. Total supply sums to 0 (conservation)
- * 2. Each flow has sufficient supply at its source
- * 3. Hub chains end with zero balance (proper routing)
  *
- * @param graph - The rebalance graph with initial supplies
+ * @param graph - The rebalance graph with initial signed supplies
  * @param flows - Solved flows from the optimizer
  * @returns Validation result with ok flag and details
  */
@@ -454,11 +463,18 @@ export const validateSolvedFlows = (
 } => {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const supplies = typedEntries(
+    graph.supplies as { [K in AssetPlaceRef]: number },
+  );
+  const sources = new Map(supplies.filter(([_place, supply]) => supply > 0));
 
   // Check 1: Total supply sums to 0
   let totalSupply = 0;
-  for (const node of graph.nodes) {
-    totalSupply += graph.supplies[node] || 0;
+  for (const [place, supply] of supplies) {
+    totalSupply += supply;
+    if (!graph.nodes.has(place)) {
+      warnings.push(`Unknown place ${place} supplies ${supply}`);
+    }
   }
   if (totalSupply !== 0) {
     errors.push(
@@ -467,7 +483,7 @@ export const validateSolvedFlows = (
   }
 
   // Check 2: Simulate flow execution to verify supply sufficiency
-  const balances = new Map(typedEntries(graph.supplies));
+  const balances = new Map(sources);
   for (const { edge, flow } of flows) {
     const srcBalance = balances.get(edge.src) || 0;
 
@@ -485,13 +501,13 @@ export const validateSolvedFlows = (
     balances.set(edge.dest, destBalance + flow);
   }
 
-  // Check 3: Hub chains should end with 0 balance
-  for (const hub of graph.nodes) {
-    if (!isInterChainAccountRef(hub)) continue;
-    const finalBalance = balances.get(hub) || 0;
-    if (finalBalance !== 0) {
-      warnings.push(`Hub ${hub} has non-zero final balance: ${finalBalance}`);
-    }
+  // Check 3: Negative supplies should exactly consume ending balances
+  for (const [place, finalBalance] of balances) {
+    const supply = graph.supplies[place] || 0;
+    if (finalBalance > 0 ? supply === -finalBalance : supply >= 0) continue;
+    errors.push(
+      `Final balance mismatch at ${place}. ${finalBalance} should have balanced ${supply}`,
+    );
   }
 
   return {

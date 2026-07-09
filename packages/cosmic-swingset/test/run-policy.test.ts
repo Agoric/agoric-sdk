@@ -1,7 +1,7 @@
-/* eslint-env node */
 import '@endo/init/debug.js';
 
 import type { ParamsSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import type { JsonSafe } from '@agoric/cosmic-proto/json-safe';
 import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
 import type { BlockInfo } from '@agoric/internal/src/chain-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
@@ -36,9 +36,14 @@ const makeSourceDescriptors = (
   return deepCopyJsonable(hardened);
 };
 
+/**
+ * Build swingset params with a custom vat cleanup budget.
+ * @param budget - Vat cleanup budget keywords.
+ * @returns Params with vat_cleanup_budget overrides applied.
+ */
 const makeCleanupBudgetParams = (
   budget: VatCleanupKeywordsRecord,
-): ParamsSDKType => {
+): JsonSafe<ParamsSDKType> => {
   return {
     ...DEFAULT_SIM_SWINGSET_PARAMS,
     vat_cleanup_budget: makeVatCleanupBudgetFromKeywords(budget),
@@ -57,7 +62,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
         return handleVstorage(msg);
       }
       default:
-        Fail`port ${q(destPortName)} not implemented for message ${msg}`;
+        throw Fail`port ${q(destPortName)} not implemented for message ${msg}`;
     }
   };
   const options = {

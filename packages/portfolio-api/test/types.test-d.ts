@@ -2,8 +2,10 @@ import type { NatAmount } from '@agoric/ertp';
 import type {
   AccountId,
   Bech32Address,
+  CaipChainId,
   CosmosChainAddress,
 } from '@agoric/orchestration';
+import type { Address as EvmAddress } from 'abitype';
 import { expectAssignable, expectNotAssignable, expectType } from 'tsd';
 import type { SupportedChain, YieldProtocol } from '../src/constants.js';
 import { AxelarChain } from '../src/constants.js';
@@ -16,6 +18,7 @@ import type {
   FlowStatus,
   FlowStep,
   InterChainAccountRef,
+  PortfolioAgentKey,
   LocalChainAccountRef,
   PortfolioKey,
   ProposalType,
@@ -25,7 +28,9 @@ import type {
 } from '../src/types.js';
 
 declare const natAmount: NatAmount;
+declare const chainId: CaipChainId;
 declare const accountId: AccountId;
+declare const address: EvmAddress;
 declare const bech32Address: Bech32Address;
 declare const cosmosAddress: CosmosChainAddress;
 declare const publishedTx: PublishedTx;
@@ -129,9 +134,14 @@ expectNotAssignable<FlowKey>('flow');
 expectType<PortfolioKey>('portfolio2');
 expectNotAssignable<PortfolioKey>('portfolio');
 
-const flowsRunning: Record<FlowKey, FlowDetail> = {
+expectType<PortfolioAgentKey>('agent3');
+expectNotAssignable<PortfolioAgentKey>('portfolio2agent3');
+
+const flowsRunning = {
   flow1: { type: 'withdraw', amount: natAmount },
-};
+  flow2: { type: 'rebalance', awaitingSteps: true },
+  flow3: { type: 'rebalance', awaitingSteps: false, agent: 'agent3' },
+} as const;
 
 const status: StatusFor = {
   contract: {
@@ -142,6 +152,27 @@ const status: StatusFor = {
       Base: `eip155:1111:0x2222`,
       Ethereum: `eip155:1:0x3333`,
       Optimism: `eip155:10:0x4444`,
+    },
+    evmRemoteAccountConfig: {
+      remoteAccountImplementationAddresses: {
+        Arbitrum: `eip155:1234:0xaaaa`,
+        Avalanche: `eip155:4321:0xbbbb`,
+        Base: `eip155:1111:0xcccc`,
+        Ethereum: `eip155:1:0xdddd`,
+        Optimism: `eip155:10:0xeeee`,
+      },
+      currentRouterAddresses: {
+        Arbitrum: `eip155:1234:0xabcd`,
+        Base: `eip155:1111:0xbbbb`,
+        Ethereum: `eip155:1:0xcccc`,
+      },
+      factoryAddresses: {
+        Arbitrum: `eip155:1234:0x1a2b`,
+        Avalanche: `eip155:4321:0x9f8e`,
+        Base: `eip155:1111:0x2b2b`,
+        Ethereum: `eip155:1:0x3c3c`,
+        Optimism: `eip155:10:0x4d4d`,
+      },
     },
   },
   evmWallet: {
@@ -160,6 +191,13 @@ const status: StatusFor = {
     positionKeys: [instrumentId],
     accountIdByChain: { [supportedChain]: accountId },
     accountsPending: [supportedChain],
+    accountStateByChain: {
+      [supportedChain]: {
+        chainId,
+        address,
+        state: 'provisioning',
+      },
+    },
     depositAddress: bech32Address,
     nobleForwardingAddress: bech32Address,
     targetAllocation,
@@ -167,6 +205,13 @@ const status: StatusFor = {
     rebalanceCount: 0,
     flowCount: 0,
     flowsRunning,
+  },
+  portfolioAgents: {
+    agent3: {
+      grantee: bech32Address,
+      permissions: { allocation: true },
+      state: 'active',
+    },
   },
   position: {
     protocol: yieldProtocol,

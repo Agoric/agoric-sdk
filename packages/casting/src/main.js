@@ -1,5 +1,3 @@
-// @jessie-check
-
 // eslint-disable-next-line import/export
 export * from './types.js'; // no named exports
 export * from './defaults.js';

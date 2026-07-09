@@ -7,6 +7,8 @@
 # the destination repository.
 set -xueo pipefail
 
+SDK_SCRIPTS=$(cd -- "$(dirname -- "$0")" && pwd)
+
 cache_bust=true
 case $1 in
   --no-cache-bust)
@@ -19,7 +21,7 @@ WORKDIR=${1:-.}
 cd -- "$WORKDIR" 1>&2
 
 # Install and build the source directory.
-./scripts/ensure-corepack-yarn.sh "$PWD"
+"$SDK_SCRIPTS/ensure-corepack-yarn.sh" "$PWD"
 yarn install 1>&2
 yarn build 1>&2
 

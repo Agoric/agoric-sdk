@@ -25,7 +25,7 @@ import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
 /**
  * Well-known namespaces supported by the Orchestration SDK
  *
- * @enum {(typeof KnownNamespace)[keyof typeof KnownNamespace]}
+ * @typedef {(typeof KnownNamespace)[keyof typeof KnownNamespace]} KnownNamespace
  * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/c599f7601d0ce83e6dd9f350c6c21d158d56fd6d/CAIPs/caip-2.md}
  */
 export const KnownNamespace = keyMirror({

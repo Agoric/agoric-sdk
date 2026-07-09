@@ -15,7 +15,10 @@ const arbBagContents = fc
   .nat(7)
   .chain(size =>
     fc.array(
-      fc.tuple(fc.string(), fc.bigUint({ max: 1_000_000_000_000_000n })),
+      fc.tuple(
+        fc.string(),
+        fc.bigInt({ min: 0n, max: 1_000_000_000_000_000n }),
+      ),
       { minLength: size, maxLength: size },
     ),
   )

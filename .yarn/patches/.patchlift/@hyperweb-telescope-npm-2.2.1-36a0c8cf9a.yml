@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:7566dbbdd65a378489ba1571d3db7d55c3c218f7b694815b238d8b65d18e3124
+package:
+  name: "@hyperweb/telescope"
+  version: 2.2.1
+upstream:
+  repo: hyperweb-io/telescope
+  issue:
+  pr:
+status: localonly
+notes:
+createdAt: 2026-04-16T20:32:02.371Z
+updatedAt: 2026-04-16T20:32:02.371Z

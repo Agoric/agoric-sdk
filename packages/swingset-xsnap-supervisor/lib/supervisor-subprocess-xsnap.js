@@ -30,9 +30,8 @@ import {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-// eslint-disable-next-line no-unused-vars
-function workerLog(first, ...args) {
-  // console.log(`---worker: ${first}`, ...args);
+function workerLog(_first, ..._args) {
+  // console.log(`---worker: ${_first}`, ..._args);
 }
 
 workerLog(`supervisor started`);
@@ -139,11 +138,12 @@ function managerPort(issueCommand) {
     /**
      * Wrap an async Tagged handler in the xsnap async reporting idiom.
      *
+     * @template T
+     * @typedef {{ result?: T }} Report report T when idle
+     */
+    /**
      * @param {(item: Tagged) => Promise<Tagged>} f async Tagged handler
      * @returns {(msg: ArrayBuffer) => Report<ArrayBuffer>} xsnap style handleCommand
-     *
-     * @typedef { { result?: T } } Report<T> report T when idle
-     * @template T
      */
     handlerFrom(f) {
       const lastResort = encoder.encode(`exception from ${f.name}`).buffer;

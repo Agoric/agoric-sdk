@@ -19,12 +19,8 @@ import {
   IBC_EVENT,
   VTRANSFER_IBC_EVENT,
 } from '@agoric/internal/src/action-types.js';
-import type {
-  IBCChannelID,
-  IBCEvent,
-  IBCPacket,
-  VTransferIBCEvent,
-} from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
+import type { IBCEvent, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
 import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
 import type { CosmosChainAddress, Denom } from '../src/orchestration-api.js';
@@ -37,7 +33,8 @@ const FungibleTokenPacketData = CodecHelper(FungibleTokenPacketDataType);
 const CosmosResponse = CodecHelper(CosmosResponseType);
 const ResponseQuery = CodecHelper(ResponseQueryType);
 
-type EncoderCommon<T> = Proto3Codec<string, T>;
+type EncoderCommon<T> =
+  T extends Proto3Codec<infer TU> ? Proto3Codec<TU> : Proto3Codec<string>;
 
 const toPacket = (obj: Record<string, any>): string =>
   btoa(JSON.stringify(obj));
@@ -69,7 +66,11 @@ export function buildTxResponseString<T extends EncoderMessage<any>[]>(
   messages: T,
 ): string {
   const msgResponses = messages.map(({ encoder, message }) => {
-    return Any.fromPartial(CodecHelper(encoder).toProtoMsg(message));
+    const protoMsg = CodecHelper(encoder).toProtoMsg(message);
+    return Any.fromPartial({
+      typeUrl: String(protoMsg.typeUrl),
+      value: protoMsg.value,
+    });
   });
 
   const txMsgData = TxMsgData.toProto({

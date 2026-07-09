@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { mustMatch } from '@agoric/store';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';

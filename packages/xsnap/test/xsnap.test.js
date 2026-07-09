@@ -4,11 +4,11 @@ import '@endo/init/debug.js';
 
 import test from 'ava';
 
-import { createHash } from 'crypto';
-import * as proc from 'child_process';
-import * as os from 'os';
-import fs from 'fs';
-import path from 'path';
+import { createHash } from 'node:crypto';
+import * as proc from 'node:child_process';
+import * as os from 'node:os';
+import fs from 'node:fs';
+import path from 'node:path';
 import { tmpName } from 'tmp';
 
 import { xsnap } from '../src/xsnap.js';

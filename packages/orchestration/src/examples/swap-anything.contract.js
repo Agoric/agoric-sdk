@@ -123,15 +123,13 @@ export const contract = async (
 
         const { baseAddress, query } = decodeAddressHook(origReceiver);
 
-        /**
+        const { destAddr, receiverAddr, outDenom } = /**
          * @type {{
          *   destAddr: string;
          *   receiverAddr: string;
          *   outDenom: string;
          * }}
-         */
-        // @ts-expect-error
-        const { destAddr, receiverAddr, outDenom } = query;
+         */ (query);
 
         trace({
           baseAddress,

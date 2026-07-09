@@ -8,7 +8,7 @@ make reference to the configuration object:
 - `loadSwingsetConfigFile` reads a configuration object from a JSON
   file, parses and verifies it and then returns it in canonical form.
 
-- `loadBaseDir` scans a directory for the files named `bootstrap.js`
+- `loadBasedir` scans a directory for the files named `bootstrap.js`
   and `vat-*.js` and then composes and returns a corresponding
   configuration object.
 

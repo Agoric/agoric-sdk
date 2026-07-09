@@ -1,11 +1,11 @@
-// @ts-check
-
 import '@endo/init/debug.js';
 
-import path from 'path';
-import { createGunzip } from 'zlib';
-import { Readable } from 'stream';
-import { Buffer } from 'buffer';
+// @ts-check
+
+import path from 'node:path';
+import { createGunzip } from 'node:zlib';
+import { Readable } from 'node:stream';
+import { Buffer } from 'node:buffer';
 
 import sqlite3 from 'better-sqlite3';
 import test from 'ava';
@@ -64,8 +64,8 @@ test('import empty', async t => {
 });
 
 const importTest = test.macro(async (t, mode) => {
-  /** @import {ArtifactMode} from '../src/internal.js' */
-  const artifactMode = /** @type {ArtifactMode} */ (mode);
+  const artifactMode =
+    /** @type {import('../src/internal.js').ArtifactMode} */ (mode);
 
   const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);

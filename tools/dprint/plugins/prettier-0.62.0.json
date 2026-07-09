@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 2,
+  "kind": "process",
+  "name": "dprint-plugin-prettier",
+  "version": "0.62.0",
+  "darwin-x86_64": {
+    "reference": "https://github.com/dprint/dprint-plugin-prettier/releases/download/0.62.0/dprint-plugin-prettier-x86_64-apple-darwin.zip",
+    "checksum": "13267ff781fc09bebd20eea0333cc2fce6dc83bd9560e0b9cd409350a891921c"
+  },
+  "darwin-aarch64": {
+    "reference": "https://github.com/dprint/dprint-plugin-prettier/releases/download/0.62.0/dprint-plugin-prettier-aarch64-apple-darwin.zip",
+    "checksum": "082f52e3a9a3732dee4e1e471417bcbeb7347abcf367dfbe5755c704d27f3ff6"
+  },
+  "linux-x86_64": {
+    "reference": "https://github.com/dprint/dprint-plugin-prettier/releases/download/0.62.0/dprint-plugin-prettier-x86_64-unknown-linux-gnu.zip",
+    "checksum": "6cadbd117ba2b0c5c60222294f236d86fd5420dbc3d3064ea2983a22ba7a2083"
+  },
+  "linux-aarch64": {
+    "reference": "https://github.com/dprint/dprint-plugin-prettier/releases/download/0.62.0/dprint-plugin-prettier-aarch64-unknown-linux-gnu.zip",
+    "checksum": "a79adc94b2557316e76c7cd2b23d677e04accd99b4882599fb2fb51b00a4c3b2"
+  },
+  "windows-x86_64": {
+    "reference": "https://github.com/dprint/dprint-plugin-prettier/releases/download/0.62.0/dprint-plugin-prettier-x86_64-pc-windows-msvc.zip",
+    "checksum": "b33fedcd2c236df96a89bd3adf53206539828f3b11d0703db00b1750948e66d4"
+  }
+}

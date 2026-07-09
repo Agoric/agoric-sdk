@@ -1,7 +1,4 @@
-// @jessie-check
-
 /**
- * @import {DefineKindOptions} from '@agoric/swingset-liveslots';
  * @import {MapStore} from '@agoric/swingset-liveslots';
  */
 
@@ -49,7 +46,7 @@ export {
 
 // TODO re-export these
 /**
- * @template T @typedef {DefineKindOptions<T>} DefineKindOptions
+ * @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions
  */
 // Copy this type because aliasing it by `import('@agoric/swingset-liveslots').Baggage`
 // causes this error in typedoc: Expected a symbol for node with kind Identifier

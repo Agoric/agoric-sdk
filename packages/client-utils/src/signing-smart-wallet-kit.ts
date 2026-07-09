@@ -11,8 +11,8 @@ import type {
 } from '@cosmjs/stargate';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import type { EReturn } from '@endo/far';
-import { MsgWalletSpendAction } from './codegen/agoric/swingset/msgs.js';
-import { TxRaw } from './codegen/cosmos/tx/v1beta1/tx.js';
+import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
+import { TxRaw } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeStargateClientKit } from './signing-client.js';
 import type { SmartWalletKit } from './smart-wallet-kit.js';
 
@@ -44,6 +44,12 @@ export const makeSigningSmartWalletKitFromClient = async ({
   address: string;
   client: SigningStargateClient;
 }) => {
+  type PollOfferWithoutAddressArgs = [
+    id: Parameters<SmartWalletKit['pollOffer']>[1],
+    minHeight?: Parameters<SmartWalletKit['pollOffer']>[2],
+    untilNumWantsSatisfied?: Parameters<SmartWalletKit['pollOffer']>[3],
+  ];
+
   // Omit deprecated utilities
   const { storedWalletState: _, ...swk } = walletUtils;
 
@@ -52,14 +58,8 @@ export const makeSigningSmartWalletKitFromClient = async ({
     vstorage: swk.vstorage,
     getLastUpdate: () => swk.getLastUpdate(address),
     getCurrentWalletRecord: () => swk.getCurrentWalletRecord(address),
-    pollOffer: (
-      ...args: Parameters<SmartWalletKit['pollOffer']> extends [
-        any,
-        ...infer Rest,
-      ]
-        ? Rest
-        : never
-    ) => swk.pollOffer(address, ...args),
+    pollOffer: (...args: PollOfferWithoutAddressArgs) =>
+      swk.pollOffer(address, ...args),
   };
 
   const sendBridgeAction = async (

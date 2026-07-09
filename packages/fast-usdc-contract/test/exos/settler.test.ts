@@ -1255,6 +1255,11 @@ test('forward via cctp failed (MsgTransfer)', async t => {
     ],
     'Should attempt transfer to intermediate recipient',
   );
+  t.deepEqual(
+    accounts.intermediate.callLog,
+    [],
+    'Should not attempt depositForBurn after intermediate transfer rejection',
+  );
 
   // Verify error was logged
   t.deepEqual(inspectLogs().at(-1), [

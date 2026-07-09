@@ -15,9 +15,9 @@ import {
 const { Vow$ } = NetworkShape; // TODO #9611
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
- * @import {IBCEndpoint} from '@agoric/vats/tools/ibc-utils.js';
- * @import {CaipChainId, IBCConnectionInfo, TrafficEntry} from '../types.js';
+ * @import {CastedPattern} from '@endo/patterns';
+ * @import {IBCEndpoint, IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CaipChainId, TrafficEntry} from '../types.js';
  */
 
 /**
@@ -25,7 +25,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
  * @property {number} start beginning index of the range (inclusive)
  * @property {number} end ending index of the range (exclusive)
  */
-/** @type {TypedPattern<SliceDescriptor>} */
+/** @type {CastedPattern<SliceDescriptor>} */
 export const SliceDescriptorShape = M.splitRecord({
   start: M.number(),
   end: M.number(),

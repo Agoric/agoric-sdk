@@ -3,7 +3,7 @@ import '@agoric/internal/src/ava-force-exit.mjs';
 import '@endo/init/debug.js';
 
 import test from 'ava';
-import { createHash } from 'crypto';
+import { createHash } from 'node:crypto';
 
 import { initSwingStore } from '@agoric/swing-store';
 import {
@@ -14,11 +14,8 @@ import {
   getSupervisorBundleSHA256,
   getSupervisorBundle,
 } from '@agoric/swingset-xsnap-supervisor';
-import {
-  initializeSwingset,
-  makeSwingsetController,
-  buildKernelBundles,
-} from '../../src/index.js';
+import { makeSwingsetController, buildKernelBundles } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 
 function sha256(s) {
   const h = createHash('sha256');

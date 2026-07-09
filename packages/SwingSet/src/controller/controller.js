@@ -1,12 +1,12 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 
-import process from 'process';
-import crypto from 'crypto';
-import { performance } from 'perf_hooks';
-import { spawn as ambientSpawn } from 'child_process';
-import fs from 'fs';
+import process from 'node:process';
+import crypto from 'node:crypto';
+import { performance } from 'node:perf_hooks';
+import { spawn as ambientSpawn } from 'node:child_process';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import microtime from 'microtime';
 
 import { assert, q, Fail } from '@endo/errors';
@@ -25,9 +25,10 @@ import { kslot, krefOf } from '@agoric/kmarshal';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { insistCapData } from '../lib/capdata.js';
 import {
+  buildSwingsetKernelConfig,
   buildKernelBundle,
+  initializeSwingsetKernel,
   swingsetIsInitialized,
-  initializeSwingset,
 } from './initializeSwingset.js';
 import {
   makeWorkerBundleHandler,
@@ -176,6 +177,15 @@ export async function makeSwingsetController(
     ),
   } = runtimeOptions;
 
+  const shouldProfileStartup = env.SWINGSET_STARTUP_PROFILE === '1';
+  /** @type {Array<{ label: string, ms: number }>} */
+  const startupPhases = [];
+  const noteStartupPhase = (label, ms) => {
+    if (shouldProfileStartup) {
+      startupPhases.push({ label, ms });
+    }
+  };
+
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
   }
@@ -306,7 +316,17 @@ export async function makeSwingsetController(
     const kernelBundle = await slogDuration(
       ['bundle-kernel-start', 'bundle-kernel-finish'],
       {},
-      async () => runtimeOptions.kernelBundle ?? buildKernelBundle(),
+      async () => {
+        await null;
+        const t0 = performance.now();
+        const resolved =
+          (await runtimeOptions.kernelBundle) ?? (await buildKernelBundle());
+        noteStartupPhase(
+          'controller.buildKernelBundle',
+          performance.now() - t0,
+        );
+        return resolved;
+      },
     );
 
     // FIXME: Put this somewhere better.
@@ -326,6 +346,7 @@ export async function makeSwingsetController(
       ['import-kernel-start', 'import-kernel-finish'],
       {},
       async () => {
+        const t0 = performance.now();
         const kernelNS = await importBundle(kernelBundle, {
           filePrefix: 'kernel/...',
           endowments: {
@@ -340,12 +361,17 @@ export async function makeSwingsetController(
             Base64: globalThis.Base64, // Available only on XSnap
           },
         });
+        noteStartupPhase(
+          'controller.importKernelBundle',
+          performance.now() - t0,
+        );
         return /** @type {typeof kernelDefault} */ (kernelNS.default);
       },
     );
 
     const kernelEndowments = {
       waitUntilQuiescent,
+      now: () => performance.now(),
       kernelStorage,
       debugPrefix,
       // all vats get these in their global scope, plus a vat-specific 'console'
@@ -365,6 +391,7 @@ export async function makeSwingsetController(
       verbose,
       warehousePolicy,
       overrideVatManagerOptions,
+      startupProfiler: noteStartupPhase,
     };
 
     const kernel = buildKernel(
@@ -373,7 +400,11 @@ export async function makeSwingsetController(
       kernelRuntimeOptions,
     );
 
-    await kernel.start();
+    {
+      const t0 = performance.now();
+      await kernel.start();
+      noteStartupPhase('controller.kernel.start', performance.now() - t0);
+    }
 
     /**
      * Validate and install a code bundle.
@@ -614,6 +645,14 @@ export async function makeSwingsetController(
       },
     });
   });
+  if (shouldProfileStartup) {
+    const rows = startupPhases
+      .sort((a, b) => b.ms - a.ms)
+      .map(({ label, ms }) => `${label}=${ms.toFixed(1)}ms`)
+      .join(', ');
+    // Use ambient console so profiling output is visible regardless of logger levels.
+    console.error(`startup-profile: ${rows}`);
+  }
 
   return controller;
 }
@@ -683,11 +722,15 @@ export async function buildVatController(
   let bootstrapResult;
   await null;
   if (!swingsetIsInitialized(kernelStorage)) {
-    bootstrapResult = await initializeSwingset(
+    const kernelConfig = await buildSwingsetKernelConfig(
       config,
       bootstrapArgs,
-      kernelStorage,
       initializationOptions,
+      runtimeOptions,
+    );
+    bootstrapResult = await initializeSwingsetKernel(
+      kernelConfig,
+      kernelStorage,
       runtimeOptions,
     );
   }

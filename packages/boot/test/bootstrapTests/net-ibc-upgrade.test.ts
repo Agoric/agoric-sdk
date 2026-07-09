@@ -2,17 +2,19 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { ExecutionContext, TestFn } from 'ava';
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
 
 import { typedEntries } from '@agoric/internal';
 import {
   testInterruptedSteps,
   type TestStep,
 } from '@agoric/internal/src/testing-utils.js';
+import { sharedBundleCachePath } from '@agoric/swingset-vat/tools/bundleTool.js';
 import type { EVProxy } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { Installation, ZoeService } from '@agoric/zoe';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const { entries, assign } = Object;
 
@@ -27,14 +29,19 @@ const asset = {
 export const makeTestContext = async t => {
   console.time('DefaultTestContext');
 
-  const bundleDir = 'bundles';
+  const bundleDir = sharedBundleCachePath;
   const bundleCache = await makeNodeBundleCache(
     bundleDir,
     { cacheSourceMaps: false },
     s => import(s),
   );
+  const snapshot = await loadOrCreateRunUtilsSnapshot(
+    'itest-vaults-base',
+    t.log,
+  );
   const swingsetTestKit = await makeSwingsetTestKit(t.log, bundleDir, {
     configSpecifier: PLATFORM_CONFIG,
+    snapshot,
   });
   console.timeLog('DefaultTestContext', 'swingsetTestKit');
 

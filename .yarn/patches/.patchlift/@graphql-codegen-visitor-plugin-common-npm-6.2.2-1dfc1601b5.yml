@@ -1,0 +1,12 @@
+schemaVersion: 1
+patchHash: sha256:a137244653301344859ba90ec0ebe3a5b46aab71976805bb011b31e692462974
+package:
+  name: "@graphql-codegen/visitor-plugin-common"
+  version: 6.2.2
+upstream:
+  repo: dotansimha/graphql-code-generator
+  pr: https://github.com/dotansimha/graphql-code-generator/pull/10482
+status: proposed
+notes:
+createdAt: 2026-04-16T20:30:35.481Z
+updatedAt: 2026-04-16T20:30:35.481Z

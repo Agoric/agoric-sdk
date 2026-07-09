@@ -16,14 +16,14 @@ const { log } = console;
 
 /**
  *
- * @param {ZCF} zcf
+ * @param {ZCF} _zcf
  * @param {{
  *   address: string,
  *   portAllocator: ERef<PortAllocator>;
  * }} privateArgs
  * @param {Baggage} _baggage
  */
-export const start = async (zcf, privateArgs, _baggage) => {
+export const start = async (_zcf, privateArgs, _baggage) => {
   const { portAllocator } = privateArgs;
 
   const boundPort = await E(portAllocator).allocateCustomIBCPort();

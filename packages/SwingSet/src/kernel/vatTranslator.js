@@ -77,6 +77,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const inputSlots = msg.methargs.slots.map(slot =>
       mapKernelSlotToVatSlot(slot),
     );
+    /** @type {string | null} */
     let resultSlot = null;
     if (msg.result) {
       insistKernelType('promise', msg.result);
@@ -318,6 +319,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       mapVatSlotToKernelSlot(slot),
     );
     const kernelArgs = harden({ ...methargs, slots: kernelSlots });
+    /** @type {string | null} */
     let result = null;
     if (resultSlot) {
       insistVatType('promise', resultSlot);

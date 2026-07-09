@@ -2,8 +2,8 @@ import '@endo/init/debug.js';
 
 import test from 'ava';
 import spawn from 'nano-spawn';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { initProgram } from '../../src/cli/cli.js';
 
 const dir = dirname(fileURLToPath(import.meta.url));

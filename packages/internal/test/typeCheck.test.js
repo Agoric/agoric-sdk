@@ -8,15 +8,15 @@ import { M } from '@endo/patterns';
 import { cast, mustMatch } from '../src/typeCheck.js';
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {RemotableObject} from '@endo/marshal';
  */
 
-const Mstring = /** @type {TypedPattern<string>} */ (M.string());
-const MremotableFoo = /** @type {TypedPattern<RemotableObject<'Foo'>>} */ (
+const Mstring = /** @type {CastedPattern<string>} */ (M.string());
+const MremotableFoo = /** @type {CastedPattern<RemotableObject<'Foo'>>} */ (
   M.remotable('Foo')
 );
-const MremotableBar = /** @type {TypedPattern<RemotableObject<'Bar'>>} */ (
+const MremotableBar = /** @type {CastedPattern<RemotableObject<'Bar'>>} */ (
   M.remotable('Bar')
 );
 

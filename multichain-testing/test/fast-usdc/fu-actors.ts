@@ -89,7 +89,8 @@ export const makeTxOracle = (
     getName: () => name,
     getAddress: () => address,
     acceptInvitation: async () => {
-      if ((await self.checkInvitation()).usedInvitation) {
+      const invitation = await self.checkInvitation();
+      if (invitation.usedInvitation) {
         trace('Invitation already accepted in ', acceptOfferId);
         return;
       }

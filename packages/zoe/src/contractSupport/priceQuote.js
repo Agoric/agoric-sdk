@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';

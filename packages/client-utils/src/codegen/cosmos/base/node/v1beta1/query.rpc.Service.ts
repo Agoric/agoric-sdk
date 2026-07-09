@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { type Rpc } from '../../../../helpers.js';
-import { BinaryReader } from '../../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   ConfigRequest,
   ConfigResponse,
   StatusRequest,
   StatusResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/base/node/v1beta1/query.js';
 /** Service defines the gRPC querier service for node related queries. */
 export interface Service {
   /** Config queries for the operator configuration. */
@@ -16,8 +16,8 @@ export interface Service {
   status(request?: StatusRequest): Promise<StatusResponse>;
 }
 export class ServiceClientImpl implements Service {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.config = this.config.bind(this);
     this.status = this.status.bind(this);

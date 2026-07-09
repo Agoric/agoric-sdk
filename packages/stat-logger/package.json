@@ -13,10 +13,10 @@
     "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "dependencies": {
-    "@endo/errors": "^1.2.13"
+    "@endo/errors": "^1.3.1"
   },
   "peerDependencies": {
     "canvas": "^2.6.1",
@@ -41,6 +41,6 @@
     "atLeast": 63.11
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

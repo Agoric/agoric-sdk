@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 import bundleSource from '@endo/bundle-source';
 import {
   buildKernelBundles,
@@ -20,6 +20,10 @@ test.before(async t => {
 
 async function main(t, mode) {
   const config = await loadBasedir(dirname);
+  config.bundles = {
+    ...config.bundles,
+    spawn: { sourceSpec: `${dirname}/../../../src/vat-spawned.js` },
+  };
   config.defaultManagerType = 'xs-worker';
   const { kernelBundles, trivialBundle } = t.context.data;
   const argv = [mode, trivialBundle];

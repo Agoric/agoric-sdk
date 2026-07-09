@@ -5,12 +5,15 @@ import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import type { TestFn } from 'ava';
 
 import { keyArrayEqual, makeSwingsetTestKit } from '../../tools/supports.js';
+import { loadOrCreateRunUtilsSnapshot } from '../tools/runutils-snapshots.js';
 
 const { keys } = Object;
 
 const makeDefaultTestContext = async t => {
+  const snapshot = await loadOrCreateRunUtilsSnapshot('demo-base', t.log);
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier: '@agoric/vm-config/decentral-demo-config.json',
+    snapshot,
   });
   return swingsetTestKit;
 };
@@ -36,13 +39,7 @@ const makeHomeFor = async (addr, EV) => {
 };
 
 test('sim/demo config provides home with .myAddressNameAdmin', async t => {
-  const devToolKeys = [
-    'behaviors',
-    'chainTimerService',
-    'faucet',
-    'priceAuthorityAdminFacet',
-    'vaultFactoryCreatorFacet',
-  ];
+  const devToolKeys = ['behaviors', 'chainTimerService', 'faucet'];
 
   // TODO: cross-check these with docs and/or deploy-script-support
   const homeKeys = [
@@ -76,16 +73,6 @@ test('namesByAddress contains provisioned account', async t => {
   const namesByAddress =
     await EV.vat('bootstrap').consumeItem('namesByAddress');
   await t.notThrowsAsync(EV(namesByAddress).lookup(addr));
-});
-
-test('sim/demo config launches Vaults as expected by loadgen', async t => {
-  const { EV } = t.context.runUtils;
-  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-  const vaultsInstance = await EV(agoricNames).lookup(
-    'instance',
-    'VaultFactory',
-  );
-  t.truthy(vaultsInstance);
 });
 
 /**

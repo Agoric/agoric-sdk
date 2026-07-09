@@ -7,7 +7,7 @@ import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/far';
-import path from 'path';
+import path from 'node:path';
 
 import {
   ChoiceMethod,
@@ -21,7 +21,9 @@ import { remoteNullMarshaller } from '../swingsetTests/utils.js';
 /**
  * @import {SimpleIssue} from '../../src/types.js';
  * @import {start} from '../../src/binaryVoteCounter.js';
- * @import {CommitteeStartResult} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {start as committeeStart} from '../../src/committee.js';
+ * @typedef {StartedInstanceKit<typeof committeeStart>} CommitteeStartResult
  * @import {Installation} from '@agoric/zoe';
  */
 

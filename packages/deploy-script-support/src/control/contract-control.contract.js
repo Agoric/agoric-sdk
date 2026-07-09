@@ -377,8 +377,10 @@ harden(prepareContractControl);
 
 // Hack to allow extracting the generic result of MakeContractControl
 // See https://github.com/microsoft/TypeScript/issues/62524
-/** @type {MakeContractControl} */
-const maker = /** @type {any} */ (undefined);
+
+const maker = /** @type {MakeContractControl} */ (
+  /** @type {unknown} */ (undefined)
+);
 harden(maker);
 
 /** @template {ContractStartFunction} [SF=ContractStartFunction] @typedef {ReturnType<typeof maker<SF>>} ContractControl */

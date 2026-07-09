@@ -26,7 +26,7 @@ export const pollBlocks = opts => async lookup => {
       // see await null above
       const result = await lookup({ time, height });
       return result;
-    } catch (_err) {
+    } catch {
       console.error(
         time,
         retryMessage || 'not in block',

@@ -42,7 +42,7 @@ const setup = (t, zone, escrowValue = 0n) => {
   const kit = makeIssuerKit('fungible');
   const { brand } = kit;
 
-  /** @type {NotifierRecord<Amount>} */
+  /** @type {NotifierRecord<Amount<'nat'>>} */
   const { notifier: balanceNotifier, updater: balanceUpdater } =
     makeNotifierKit();
 

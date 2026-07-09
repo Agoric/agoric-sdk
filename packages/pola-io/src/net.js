@@ -19,7 +19,7 @@ const dbg = label => x => {
  *
  * @param {string} root
  * @param {object} io
- * @param {typeof fetch} io.fetch
+ * @param {typeof globalThis.fetch} io.fetch
  * @param {(...msgs: any[]) => void} [io.log]
  * @returns {TextRd}
  */

@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   SimulateRequest,
@@ -21,7 +21,7 @@ import {
   TxEncodeAminoResponse,
   TxDecodeAminoRequest,
   TxDecodeAminoResponse,
-} from './service.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/tx/v1beta1/service.js';
 /** Service defines a gRPC service for interacting with transactions. */
 export interface Service {
   /** Simulate simulates executing a transaction for estimating gas usage. */
@@ -32,42 +32,22 @@ export interface Service {
   broadcastTx(request: BroadcastTxRequest): Promise<BroadcastTxResponse>;
   /** GetTxsEvent fetches txs by event. */
   getTxsEvent(request: GetTxsEventRequest): Promise<GetTxsEventResponse>;
-  /**
-   * GetBlockWithTxs fetches a block with decoded txs.
-   *
-   * Since: cosmos-sdk 0.45.2
-   */
+  /** GetBlockWithTxs fetches a block with decoded txs. */
   getBlockWithTxs(
     request: GetBlockWithTxsRequest,
   ): Promise<GetBlockWithTxsResponse>;
-  /**
-   * TxDecode decodes the transaction.
-   *
-   * Since: cosmos-sdk 0.47
-   */
+  /** TxDecode decodes the transaction. */
   txDecode(request: TxDecodeRequest): Promise<TxDecodeResponse>;
-  /**
-   * TxEncode encodes the transaction.
-   *
-   * Since: cosmos-sdk 0.47
-   */
+  /** TxEncode encodes the transaction. */
   txEncode(request: TxEncodeRequest): Promise<TxEncodeResponse>;
-  /**
-   * TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes.
-   *
-   * Since: cosmos-sdk 0.47
-   */
+  /** TxEncodeAmino encodes an Amino transaction from JSON to encoded bytes. */
   txEncodeAmino(request: TxEncodeAminoRequest): Promise<TxEncodeAminoResponse>;
-  /**
-   * TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON.
-   *
-   * Since: cosmos-sdk 0.47
-   */
+  /** TxDecodeAmino decodes an Amino transaction from encoded bytes to JSON. */
   txDecodeAmino(request: TxDecodeAminoRequest): Promise<TxDecodeAminoResponse>;
 }
 export class ServiceClientImpl implements Service {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.simulate = this.simulate.bind(this);
     this.getTx = this.getTx.bind(this);

@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 /**
  * @file Pure JavaScript utility functions that are compatible with but not
  *   dependent upon a hardened environment.
@@ -50,7 +49,7 @@ export const logLevels = /** @type {const} */ ([
 ]);
 Object.freeze(logLevels);
 
-/** @typedef {(typeof logLevels)[keyof logLevels & number]} LogLevel */
+/** @typedef {(typeof logLevels)[keyof typeof logLevels & number]} LogLevel */
 
 /** @typedef {Pick<Console, LogLevel>} LimitedConsole */
 

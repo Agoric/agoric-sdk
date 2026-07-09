@@ -1,7 +1,6 @@
-/* eslint-env node */
-import path from 'path';
+import path from 'node:path';
 import chalk from 'chalk';
-import { execFileSync } from 'child_process';
+import { execFileSync } from 'node:child_process';
 import { makePspawn } from './helpers.js';
 import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
 import { listWorkspaces } from './lib/packageManager.js';
@@ -13,7 +12,7 @@ const REQUIRED_AGORIC_START_PACKAGES = [
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-export default async function installMain(progname, rawArgs, powers, opts) {
+export default async function installMain(_progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
   const log = anylogger('agoric:install');
 

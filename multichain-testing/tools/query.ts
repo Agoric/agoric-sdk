@@ -30,6 +30,7 @@ export function makeQueryClient(apiUrl: string) {
     const retryDelayMS = 500;
     return new Promise<T>((resolve, reject) => {
       const doFetch = async retries => {
+        await null;
         try {
           const response = await fetch(`${apiUrl}${path}`);
           const json = await response.json();

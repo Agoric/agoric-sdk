@@ -1,9 +1,9 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
-import path from 'path';
 import { makeScopedBridge } from '@agoric/vats';
+import { smartWalletSourceSpecRegistry } from '../source-spec-registry.js';
 import { withAmountUtils } from './supports.js';
 
 /**
@@ -14,23 +14,19 @@ import { withAmountUtils } from './supports.js';
  */
 
 /**
- * @param {ExecutionContext} t
+ * @param {ExecutionContext} _t
  * @param {(logger) => Promise<ChainBootstrapSpace>} makeSpace
  */
-export const makeDefaultTestContext = async (t, makeSpace) => {
+export const makeDefaultTestContext = async (_t, makeSpace) => {
   // To debug, pass t.log instead of null logger
   const log = () => null;
   const { consume } = await makeSpace(log);
   const { agoricNames, zoe } = consume;
 
   //#region Installs
-  const pathname = new URL(import.meta.url).pathname;
-  const dirname = path.dirname(pathname);
-
-  const bundleCache = await unsafeMakeBundleCache('bundles/');
-  const bundle = await bundleCache.load(
-    `${dirname}/../src/walletFactory.js`,
-    'walletFactory',
+  const bundleCache = await unsafeSharedBundleCache;
+  const { walletFactoryBundle: bundle } = await bundleCache.loadRegistry(
+    smartWalletSourceSpecRegistry,
   );
   /** @type {Promise<Installation<StartWalletFactory>>} */
   const installation = E(zoe).install(bundle);

@@ -6,12 +6,15 @@ import { type CosmosChainInfo } from '@agoric/orchestration';
 import { Far } from '@endo/pass-style';
 import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import {
+  axelarConfig,
+  gmpAddresses as gmpAddressesByEnv,
+} from '../src/axelar-configs.js';
 import { makeAssetInfo } from '../src/chain-name-service.js';
 import {
   chainInfoDevNet,
   chainInfoProposal100,
-  ethOverridesDevNet,
-  ethOverridesMainNet,
+  instanceOverrides,
 } from './chain-info.fixture.js';
 
 const nodeRequire = createRequire(import.meta.url);
@@ -128,52 +131,120 @@ const stubPowers = {
   timerService: Far('TimerService'),
 };
 
-test('devnet overrides match ymax privateArgsShape', async t => {
+const computeOverrides = async (tag: string = 'ymax0') => {
   const { bytecode: walletBytecode } = JSON.parse(
     await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
   );
-  const bidirectional = complementConnections(chainInfoDevNet);
-  const assetInfo = makeAssetInfo(bidirectional, tokenMap);
-
-  /** include connection info */
-  const chainInfo = { ...ethOverridesDevNet.chainInfo, ...bidirectional };
-  const privateArgsData = {
-    ...ethOverridesDevNet,
+  let contracts = fromEntries(
+    entries(axelarConfig).map(([name, config]) => [name, config.contracts]),
+  );
+  // Apply per-instance address overrides
+  const overrides = (instanceOverrides as any)[tag];
+  if (overrides) {
+    contracts = fromEntries(
+      entries(contracts).map(([name, addrs]) => [
+        name,
+        overrides[name]
+          ? { ...(addrs as any), ...(overrides as any)[name] }
+          : addrs,
+      ]),
+    );
+  }
+  const axelarIds = fromEntries(
+    entries(axelarConfig).map(([name, config]) => [name, config.axelarId]),
+  );
+  const bidirectional = complementConnections(chainInfoProposal100);
+  const chainInfo = {
+    ...fromEntries(
+      entries(axelarConfig).map(([name, config]) => [name, config.chainInfo]),
+    ),
+    ...bidirectional,
+  };
+  const assetInfo = harden(makeAssetInfo(bidirectional, tokenMap));
+  return {
+    axelarIds,
+    contracts,
     chainInfo,
     assetInfo,
+    gmpAddresses: gmpAddressesByEnv.mainnet,
     walletBytecode,
   };
-  t.notThrows(() =>
-    mustMatch(harden({ ...stubPowers, ...privateArgsData }), privateArgsShape),
-  );
+};
 
-  t.snapshot(
-    JSON.stringify(privateArgsData, null, 2),
-    'devnet privateArgs data',
+const addStubPowers = (data: any) => harden({ ...stubPowers, ...data });
+
+const checkContracts = (
+  t: any,
+  golden: any,
+  computed: any,
+  fields: string[],
+  tag: string,
+) => {
+  for (const [chain, addrs] of Object.entries(golden.contracts || {})) {
+    for (const field of fields) {
+      const gv = (addrs as any)[field];
+      if (gv === undefined) continue; // field not in golden, skip
+      const cv = (computed.contracts as any)[chain]?.[field];
+      t.is(cv, gv, `${tag} ${chain}.${field} matches golden`);
+    }
+  }
+};
+
+test('ymax0 computed overrides match shape', async t => {
+  const computed = await computeOverrides('ymax0');
+  t.notThrows(
+    () => mustMatch(addStubPowers(computed), privateArgsShape),
+    'ymax0 computed overrides match shape',
   );
 });
 
-test('mainnet overrides match ymax privateArgsShape', async t => {
-  const { bytecode: walletBytecode } = JSON.parse(
-    await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
-  );
-  const bidirectional = complementConnections(chainInfoProposal100);
-  const assetInfo = makeAssetInfo(bidirectional, tokenMap);
+test('ymax0 contract addresses match golden snapshot', async t => {
+  const computed = await computeOverrides('ymax0');
+  const golden = JSON.parse(await asset('./privateArgs-ymax0.json'));
+  const shareFields = [
+    'aavePool',
+    'compound',
+    'usdc',
+    'permit2',
+    'gateway',
+    'gasService',
+    'tokenMessenger',
+    'tokenMessengerV2',
+    'oneInchRouter',
+  ];
+  checkContracts(t, golden, computed, shareFields, 'ymax0');
+});
 
-  /** include connection info */
-  const chainInfo = { ...ethOverridesMainNet.chainInfo, ...bidirectional };
-  const privateArgsData = {
-    ...ethOverridesMainNet,
-    chainInfo,
-    assetInfo,
-    walletBytecode,
-  };
-  t.notThrows(() =>
-    mustMatch(harden({ ...stubPowers, ...privateArgsData }), privateArgsShape),
+test('ymax1 computed overrides match shape', async t => {
+  const computed = await computeOverrides('ymax1');
+  t.notThrows(
+    () => mustMatch(addStubPowers(computed), privateArgsShape),
+    'ymax1 computed overrides match shape',
   );
+});
 
-  t.snapshot(
-    JSON.stringify(privateArgsData, null, 2),
-    'mainnet privateArgs data',
-  );
+test('ymax1 contract addresses match golden snapshot', async t => {
+  const computed = await computeOverrides('ymax1');
+  const golden = JSON.parse(await asset('./privateArgs-ymax1.json'));
+  const instanceFields = [
+    'depositFactory',
+    'remoteAccountFactory',
+    'remoteAccountImplementation',
+    'remoteAccountRouter',
+  ];
+  checkContracts(t, golden, computed, instanceFields, 'ymax1');
+});
+
+test('ymax0 overrides include cctpRelayer', async t => {
+  const expected: any = JSON.parse(await asset('./privateArgs-ymax0.json'));
+  for (const [chain, addrs] of Object.entries(expected.contracts || {})) {
+    t.truthy((addrs as any).cctpRelayer, `ymax0 ${chain} has cctpRelayer`);
+  }
+});
+
+test('ymax1 overrides include cctpRelayer', async t => {
+  const expected: any = JSON.parse(await asset('./privateArgs-ymax1.json'));
+  for (const [chain, addrs] of Object.entries(expected.contracts || {})) {
+    t.truthy((addrs as any).cctpRelayer, `ymax1 ${chain} has cctpRelayer`);
+  }
 });

@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { initEmpty } from '@agoric/store';
 
 /**

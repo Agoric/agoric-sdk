@@ -2,9 +2,9 @@ import test from '@endo/ses-ava/prepare-endo.js';
 
 import type { Bech32Address } from '@agoric/cosmic-proto/address-hooks.js';
 import type { NobleAddress } from '@agoric/fast-usdc';
-import { prepareCctpTxEvidence } from './mocks.ts';
 import { mustMatch } from '@agoric/internal';
 import { CctpTxEvidenceShape } from '@agoric/fast-usdc/src/type-guards.js';
+import { prepareCctpTxEvidence } from './mocks.ts';
 
 test('prepareCctpTxEvidence generates valid evidence', t => {
   const nobleAgoricChannelId = 'channel-123';

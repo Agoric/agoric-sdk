@@ -26,6 +26,7 @@ export const prepareCctpTxEvidence = (
       blockTimestamp: 1632340000n,
       // Standard prefix to make it easier to find this code from logs
       // but add `callCount` so it is unique per test.
+      // eslint-disable-next-line no-plusplus
       txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${String(callCount++).padStart(2, '0')}`,
       tx: {
         amount: mintAmt,
