@@ -56,10 +56,12 @@ jobs:
     outputs:
       build_id: ${{ steps.build.outputs.build-id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: depot/setup-action@v1
         with:
           oidc: true
+
       - id: build
         name: Build and save shared SDK CI image
         uses: depot/build-push-action@v1
@@ -107,9 +109,10 @@ jobs:
         cli: [link-cli/yarn, registry/npm, registry/npx]
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
       - name: Reconfigure git to use HTTP authentication
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
         shell: bash
@@ -127,7 +130,7 @@ jobs:
       # lines like `#getting-started-branch: zoe-release-0.7.0`
       - name: Get the appropriate dapp branch
         id: get-branch
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           result-encoding: string
           script: |
@@ -155,7 +158,7 @@ jobs:
 
       - name: run agoric-cli integration-test
         # These integration tests can be flaky so retry automatically
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           # This step usually takes <4 minutes (after 6m setup). The
           # deployment-test running in parallel takes 35 minutes so 20 minutes
@@ -178,7 +181,7 @@ jobs:
 
     runs-on: 'depot-ubuntu-22.04-8'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ./agoric-sdk
       - run: sudo packages/deployment/scripts/install-deps.sh
@@ -230,7 +233,7 @@ jobs:
           echo yes | ../agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
         env:
           NETWORK_NAME: chaintest
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: deployment-test-results-${{ env.NOW }}
@@ -281,7 +284,7 @@ jobs:
           echo "=== After cleanup:"
           df -h
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ./agoric-sdk
 
@@ -344,7 +347,7 @@ jobs:
 
       - id: get-loadgen-branch
         name: Get the appropriate loadgen branch
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           result-encoding: string
           script: |
@@ -362,7 +365,7 @@ jobs:
 
       - id: checkout-loadgen
         name: Check out loadgen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ./${{ env.LOADGEN_REPO_NAME }}
           ref: ${{ steps.get-loadgen-branch.outputs.result }}
@@ -409,7 +412,7 @@ jobs:
       # Ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#where-does-the-upload-go
       - name: archive a3p-integration
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: a3p-integration
           path: |
@@ -420,7 +423,7 @@ jobs:
 
       - name: archive slogfile
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: slogfile
           path: ${{ env.SLOGFILE }}
@@ -459,7 +462,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # Use Depot so this validation build shares the same remote builder cache
       # and Dockerfile build path as the publishing workflow, even though this
       # check is single-platform and does not exercise the multi-arch push path.
@@ -488,10 +491,10 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Final integration-test-result
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};

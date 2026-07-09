@@ -52,24 +52,30 @@ jobs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: depot/setup-action@v1
         with:
           oidc: true # to set DEPOT_TOKEN for later steps
+
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         # see https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
         with:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY }}
+
       - name: Save BUILD_TAG
         run: |
           echo "BUILD_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
+
       - name: Save GIT_REVISION
         run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
       - name: Save GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Compute tags
         id: docker-tags
         run: |
@@ -104,6 +110,7 @@ jobs:
           esac
           DOCKER_TAGS="$DOCKER_TAGS $BUILD_TAG"
           echo "tags=$DOCKER_TAGS" >> $GITHUB_OUTPUT
+
       - name: Prefix tags
         id: prefix-tags
         run: |
@@ -113,6 +120,7 @@ jobs:
             sep=,
           done
           echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
+
       - name: Build and Push release images
         # Use depot bake so the release images build as one batch and can share
         # work across targets on the same remote builder cache.
@@ -124,6 +132,7 @@ jobs:
             --set setup.args.TAG=${{ env.BUILD_TAG }} \
             --set sdk.args.GIT_COMMIT=${{ env.GIT_COMMIT }} \
             --set sdk.args.GIT_REVISION=${{ env.GIT_REVISION }}
+
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -144,9 +153,11 @@ jobs:
       # to push the resulting images
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - name: Save SDK_TAG
         run: echo "SDK_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
+
       - name: Prefix tags
         id: prefix-tags
         run: |
@@ -156,15 +167,18 @@ jobs:
             sep=,
           done
           echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
+
       - uses: depot/setup-action@v1
         with:
           oidc: true # to set DEPOT_TOKEN for later steps
+
       - name: Login to Docker Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY }}
+
       - name: Build and Push
         uses: depot/build-push-action@v1
         with:
@@ -175,6 +189,7 @@ jobs:
           tags: '${{ steps.prefix-tags.outputs.tags }}'
           build-args: |
             TAG=${{env.SDK_TAG}}
+
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -200,20 +215,24 @@ jobs:
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
       digest: ${{ steps.build.outputs.digest }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: depot/setup-action@v1
         with:
           oidc: true # to set DEPOT_TOKEN for later steps
+
       - name: Log in to the Container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         # see https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
         with:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY }}
+
       - name: Save BUILD_TAG
         run: |
           echo "BUILD_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
+
       - name: Build and Push ymax-planner
         uses: depot/build-push-action@v1
         id: build
@@ -225,6 +244,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/agoric/agoric-sdk:ymax-planner
             ${{ env.REGISTRY }}/agoric/agoric-sdk:${{ env.BUILD_TAG }}
+
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -239,15 +259,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Auth to Google Cloud (SA key)
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
 
       - name: Check if VM already has docker image digest
         id: decide
