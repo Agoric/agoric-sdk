@@ -40,7 +40,7 @@ jobs:
       - id: build_from_input
         if: inputs.sdk_build_id != ''
         run: echo "build_id=${{ inputs.sdk_build_id }}" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: inputs.sdk_build_id == ''
       - uses: depot/setup-action@v1
         if: inputs.sdk_build_id == ''
