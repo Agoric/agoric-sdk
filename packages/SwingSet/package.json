@@ -25,7 +25,7 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/microtime": "^2.1.0",
     "@types/tmp": "^0.2.0",
-    "ava": "^7.0.0"
+    "ava": "^8.0.1"
   },
   "dependencies": {
     "@agoric/internal": "workspace:*",
@@ -64,7 +64,7 @@
   },
   "peerDependencies": {
     "@agoric/xsnap": "workspace:*",
-    "ava": "^5.3.0 || ^6.0.0 || ^7.0.0"
+    "ava": "*"
   },
   "files": [
     "bin/vat",
@@ -86,10 +86,10 @@
     "example": "examples"
   },
   "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "workerThreads": false,
     "files": [
       "test/**/*.test.*"
