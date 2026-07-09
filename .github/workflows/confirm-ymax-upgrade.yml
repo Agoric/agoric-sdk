@@ -37,11 +37,14 @@ jobs:
     outputs:
       need_upgrade_confirm: ${{ steps.plan.outputs.need_upgrade_confirm }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          # Corepack is not enabled yet, so setup-node must not try to detect
+          # the yarn cache.
+          package-manager-cache: false
 
       - name: Plan confirm work
         id: plan
@@ -61,7 +64,7 @@ jobs:
     environment:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 

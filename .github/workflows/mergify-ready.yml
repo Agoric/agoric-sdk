@@ -53,7 +53,7 @@ jobs:
       ) &&
       !contains(github.event.pull_request.labels.*.name, 'bypass:linear-history')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - shell: bash
@@ -104,7 +104,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - name: Check for fixup commits

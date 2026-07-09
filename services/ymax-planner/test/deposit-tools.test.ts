@@ -895,7 +895,9 @@ test('solver regressions', async t => {
 
   // 2026-07-03T21:09Z
   {
-    const bigDeposit = scale6(2_000_000);
+    // $10M is the limit on a single depositForBurn transaction
+    // Ref: https://developers.circle.com/cctp/references/contract-interfaces#depositforburn
+    const bigDeposit = scale6(10_000_000);
     const portfolio239Flow1 = await planDepositToAllocations({
       ...plannerContext,
       network: PROD_NETWORK_202606,

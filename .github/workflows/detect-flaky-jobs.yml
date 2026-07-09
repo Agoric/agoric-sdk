@@ -20,7 +20,7 @@ jobs:
       github.event.workflow_run.conclusion == 'success'
     steps:
       - name: Check for flaky job recovery
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         id: check-flaky
         with:
           script: |
@@ -170,17 +170,18 @@ jobs:
 
       - name: Send Slack notification for flaky job
         if: steps.check-flaky.outputs.failed_jobs != ''
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v3.0.3
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_FLAKY_JOBS }}
+          webhook-type: incoming-webhook
           payload: ${{ steps.check-flaky.outputs.slack_payload }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_FLAKY_JOBS }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
 
       - name: Notify on workflow failure
         if: steps.check-flaky.outputs.had_errors != ''
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v3.0.3
         with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL_FLAKY_JOBS }}
+          webhook-type: incoming-webhook
           payload: |
             {
               "text": "🚨 Flaky job detection workflow failed!",
@@ -225,6 +226,3 @@ jobs:
                 }
               ]
             }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_FLAKY_JOBS }}
-          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
