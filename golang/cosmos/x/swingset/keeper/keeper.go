@@ -45,8 +45,11 @@ const (
 )
 
 const (
-	stateKey            = "state"
-	swingStoreKeyPrefix = "swingStore."
+	stateKey                      = "state"
+	pendingChunkDataKeyPrefix     = "pendingChunkData."
+	pendingBundleInstallKeyPrefix = "pendingBundleInstall."
+	pendingNodeKeyPrefix          = "pending."
+	swingStoreKeyPrefix           = "swingStore."
 )
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
@@ -487,6 +490,211 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	path := StoragePathMailbox + "." + peer
 	// FIXME: We should use just SetStorageAndNotify here, but solo needs legacy for now.
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
+}
+
+func (k Keeper) GetPendingChunkData(ctx sdk.Context, chunkedArtifactId uint64, chunkIndex uint64) []byte {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	pendingChunkData := prefix.NewStore(store, []byte(pendingChunkDataKeyPrefix))
+
+	key := append(sdk.Uint64ToBigEndian(chunkedArtifactId), sdk.Uint64ToBigEndian(chunkIndex)...)
+	if !pendingChunkData.Has(key) {
+		return nil
+	}
+	return pendingChunkData.Get(key)
+}
+
+func (k Keeper) SetPendingChunkData(ctx sdk.Context, chunkedArtifactId uint64, chunkIndex uint64, data []byte) {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	pendingChunkData := prefix.NewStore(store, []byte(pendingChunkDataKeyPrefix))
+
+	key := append(sdk.Uint64ToBigEndian(chunkedArtifactId), sdk.Uint64ToBigEndian(chunkIndex)...)
+	if len(data) == 0 {
+		pendingChunkData.Delete(key)
+		return
+	}
+	pendingChunkData.Set(key, data)
+}
+
+func (k Keeper) GetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint64) *types.MsgInstallBundle {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	pendingStore := prefix.NewStore(store, []byte(pendingBundleInstallKeyPrefix))
+	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
+	if !pendingStore.Has(key) {
+		return nil
+	}
+	bz := pendingStore.Get(key)
+	msg := &types.MsgInstallBundle{}
+	k.cdc.MustUnmarshal(bz, msg)
+	return msg
+}
+
+func (k Keeper) AddPendingBundleInstall(ctx sdk.Context, msg *types.MsgInstallBundle) (uint64, error) {
+	state := k.GetState(ctx)
+	if state.NextChunkedArtifactId < state.LastChunkedArtifactId {
+		// Handle legacy state that predates the monotonic counter.
+		state.NextChunkedArtifactId = state.LastChunkedArtifactId
+	}
+	state.NextChunkedArtifactId++
+	chunkedArtifactId := state.NextChunkedArtifactId
+
+	// Create and store the pending install node. The list is non-circular;
+	// PrevId/NextId use 0 to indicate the start/end, and State tracks endpoints
+	// separately from the monotonically increasing allocation counter.
+	node := &types.ChunkedArtifactNode{
+		ChunkedArtifactId: chunkedArtifactId,
+		StartTimeUnix:     ctx.BlockTime().Unix(),
+		StartBlockHeight:  ctx.BlockHeight(),
+	}
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	startStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
+	if state.FirstChunkedArtifactId == 0 {
+		if state.LastChunkedArtifactId != 0 {
+			return 0, fmt.Errorf("inconsistent chunked artifact list: first=0 last=%d", state.LastChunkedArtifactId)
+		}
+		state.FirstChunkedArtifactId = chunkedArtifactId
+	} else {
+		prevId := state.LastChunkedArtifactId
+		if prevId == 0 {
+			return 0, fmt.Errorf("missing last chunked artifact id for non-empty list")
+		}
+		prevKey := sdk.Uint64ToBigEndian(prevId)
+		if !startStore.Has(prevKey) {
+			return 0, fmt.Errorf("missing chunked artifact node id=%d during add", prevId)
+		}
+		prevNode := &types.ChunkedArtifactNode{}
+		k.cdc.MustUnmarshal(startStore.Get(prevKey), prevNode)
+		prevNode.NextId = chunkedArtifactId
+		startStore.Set(prevKey, k.cdc.MustMarshal(prevNode))
+		node.PrevId = prevId
+	}
+	state.LastChunkedArtifactId = chunkedArtifactId
+	k.SetState(ctx, state)
+	if err := k.SetPendingBundleInstall(ctx, chunkedArtifactId, msg); err != nil {
+		return 0, err
+	}
+	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
+	startStore.Set(key, k.cdc.MustMarshal(node))
+
+	return chunkedArtifactId, nil
+}
+
+// PruneExpiredBundleInstalls removes pending bundle installs that have passed
+// their deadline, as set by the keeper parameters.
+func (k Keeper) PruneExpiredBundleInstalls(ctx sdk.Context) error {
+	params := k.GetParams(ctx)
+	currentSeconds := ctx.BlockTime().Unix()
+	currentBlocks := ctx.BlockHeight()
+	deadlineSeconds := params.InstallationDeadlineSeconds
+	deadlineBlocks := params.InstallationDeadlineBlocks
+
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	startStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
+
+	state := k.GetState(ctx)
+	for state.FirstChunkedArtifactId != 0 {
+		chunkedArtifactId := state.FirstChunkedArtifactId
+		key := sdk.Uint64ToBigEndian(chunkedArtifactId)
+		bz := startStore.Get(key)
+		node := &types.ChunkedArtifactNode{}
+		k.cdc.MustUnmarshal(bz, node)
+
+		if deadlineSeconds < 0 || currentSeconds-node.StartTimeUnix < deadlineSeconds {
+			if deadlineBlocks < 0 || currentBlocks-node.StartBlockHeight < deadlineBlocks {
+				// Still alive.  Stop the search.
+				break
+			}
+		}
+
+		// This pending bundle install is dead.  Remove it.
+		if err := k.SetPendingBundleInstall(ctx, chunkedArtifactId, nil); err != nil {
+			return err
+		}
+
+		// Advance to the next node.
+		state.FirstChunkedArtifactId = node.NextId
+		if node.NextId == 0 {
+			state.LastChunkedArtifactId = 0
+		}
+	}
+
+	k.SetState(ctx, state)
+	return nil
+}
+
+func (k Keeper) makeListTools(ctx sdk.Context) *types.ListTools {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	listStore := prefix.NewStore(store, []byte(pendingNodeKeyPrefix))
+	return types.NewListTools(ctx, listStore, k.cdc)
+}
+
+func (k Keeper) SetPendingBundleInstall(ctx sdk.Context, chunkedArtifactId uint64, newMsg *types.MsgInstallBundle) error {
+	kvstore := k.storeService.OpenKVStore(ctx)
+	store := runtime.KVStoreAdapter(kvstore)
+	pendingStore := prefix.NewStore(store, []byte(pendingBundleInstallKeyPrefix))
+
+	key := sdk.Uint64ToBigEndian(chunkedArtifactId)
+	if newMsg != nil {
+		bz := k.cdc.MustMarshal(newMsg)
+		pendingStore.Set(key, bz)
+		return nil
+	}
+
+	var msg types.MsgInstallBundle
+	k.cdc.MustUnmarshal(pendingStore.Get(key), &msg)
+	if msg.ChunkedArtifact != nil && len(msg.ChunkedArtifact.Chunks) > 0 {
+		// Remove the chunks.
+		for i := range msg.ChunkedArtifact.Chunks {
+			k.SetPendingChunkData(ctx, chunkedArtifactId, uint64(i), nil)
+		}
+	}
+	pendingStore.Delete(key)
+
+	// Remove auxilliary data structure entries.
+	if err := k.RemoveChunkedArtifactNode(ctx, chunkedArtifactId); err != nil {
+		return err
+	}
+	return nil
+}
+
+// RemoveChunkedArtifactNode removes this pending install from the keeper's
+// ordered linked list structures, and deletes it from the store.
+func (k Keeper) RemoveChunkedArtifactNode(ctx sdk.Context, chunkedArtifactId uint64) error {
+	lt := k.makeListTools(ctx)
+
+	victimKey := lt.Key(chunkedArtifactId)
+	victimNode := lt.Fetch(victimKey)
+	if victimNode == nil {
+		return fmt.Errorf("missing chunked artifact node id=%d during unlink", chunkedArtifactId)
+	}
+
+	// Remove the victim from the linked list, keeping the structure intact.
+	if err := lt.Unlink(victimNode, func(firstp, lastp *uint64) {
+		state := k.GetState(ctx)
+		if firstp != nil {
+			state.FirstChunkedArtifactId = *firstp
+		}
+		if lastp != nil {
+			state.LastChunkedArtifactId = *lastp
+		}
+		k.SetState(ctx, state)
+	}); err != nil {
+		return err
+	}
+
+	// Finally, delete the victim node's storage.
+	lt.Delete(victimKey)
+	return nil
+}
+
+func (k Keeper) GetChunkedArtifactNode(ctx sdk.Context, chunkedArtifactId uint64) *types.ChunkedArtifactNode {
+	lt := k.makeListTools(ctx)
+	return lt.Fetch(lt.Key(chunkedArtifactId))
 }
 
 func (k Keeper) GetSwingStore(ctx sdk.Context) storetypes.KVStore {

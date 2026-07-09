@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package ibc.lightclients.solomachine.v2;
 
-option go_package = "github.com/cosmos/ibc-go/v8/modules/core/02-client/migrations/v7";
+option go_package = "github.com/cosmos/ibc-go/v10/modules/core/02-client/migrations/v7";
 
 import "ibc/core/connection/v1/connection.proto";
 import "ibc/core/channel/v1/channel.proto";
@@ -30,7 +30,7 @@ message ConsensusState {
   option (gogoproto.goproto_getters) = false;
   // public key of the solo machine
   google.protobuf.Any public_key = 1;
-  // diversifier allows the same public key to be re-used across different solo
+  // diversifier allows the same public key to be reused across different solo
   // machine clients (potentially on different chains) without being considered
   // misbehaviour.
   string diversifier = 2;

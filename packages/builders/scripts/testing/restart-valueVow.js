@@ -7,7 +7,7 @@ import { E } from '@endo/far';
 
 /**
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
- * @import {start} from '@agoric/zoe/src/contracts/valueVow.contract.js';
+ * @typedef {typeof import('@agoric/zoe/src/contracts/valueVow.contract.js').start} start
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
@@ -41,8 +41,7 @@ export const restartValueVow = async ({
 };
 harden(restartValueVow);
 
-export const getManifestForValueVow = ({ restoreRef }, { valueVowRef }) => {
-  console.log('valueVowRef', valueVowRef);
+export const getManifestForValueVow = () => {
   return {
     manifest: {
       [restartValueVow.name]: {
@@ -54,25 +53,15 @@ export const getManifestForValueVow = ({ restoreRef }, { valueVowRef }) => {
         },
       },
     },
-    installations: {
-      valueVow: restoreRef(valueVowRef),
-    },
   };
 };
 
 /** @type {CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }) =>
+export const defaultProposalBuilder = async () =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
     sourceSpec: '@agoric/builders/scripts/testing/restart-valueVow.js',
-    getManifestCall: [
-      'getManifestForValueVow',
-      {
-        valueVowRef: publishRef(
-          install('@agoric/zoe/src/contracts/valueVow.contract.js'),
-        ),
-      },
-    ],
+    getManifestCall: ['getManifestForValueVow'],
   });
 
 /** @type {DeployScriptFunction} */

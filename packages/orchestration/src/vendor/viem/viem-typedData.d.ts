@@ -1,4 +1,5 @@
 export { hashStruct, hashTypedData, isHex, recoverTypedDataAddress, serializeTypedData, validateTypedData, verifyTypedData } from 'viem/utils';
+export { getTypesForEIP712Domain } from 'viem';
 
 /**
  * @file viem internal typedData utils exported for direct usage
@@ -11,6 +12,10 @@ type MessageTypeProperty = {
     name: string;
     type: string;
 };
+/**
+ * Serialize an EIP-712 struct definition to a string per
+ * https://eips.ethereum.org/EIPS/eip-712#definition-of-encodetype
+ */
 declare function encodeType({ primaryType, types, }: {
     primaryType: string;
     types: Record<string, readonly MessageTypeProperty[]>;

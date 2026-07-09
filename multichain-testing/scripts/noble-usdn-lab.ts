@@ -158,9 +158,9 @@ const signArgsFor = (from: Who, config: typeof configs.testnet.noble) =>
   ].flat();
 
 const parseTx = stdout => {
-  const { code, raw_log, txhash } = JSON.parse(stdout);
+  const { code, raw_log: log, txhash } = JSON.parse(stdout);
   if (code !== 0) {
-    throw Error(raw_log);
+    throw Error(log);
   }
   return txhash;
 };
@@ -348,6 +348,7 @@ const main = async ({
   configFile = 'config.ymax.yaml',
   connectWithSigner = SigningStargateClient.connectWithSigner,
 } = {}) => {
+  await null;
   if ((env.NET || 'starship') === 'starship') {
     const fetcher = await useRegistry(configFile);
     await ConfigContext.init(configFile, fetcher);
@@ -389,6 +390,7 @@ const main = async ({
   }
   if (env.POOL) {
     throw Error('does not work; needs to use authority exec');
+    // eslint-disable-next-line no-unreachable
     const { stdout } = await createPool($v, config);
     console.log(JSON.parse(stdout));
   }

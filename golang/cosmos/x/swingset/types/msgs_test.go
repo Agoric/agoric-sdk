@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"math"
 	"testing"
 
 	"github.com/cosmos/cosmos-sdk/crypto/keys/secp256k1"
@@ -121,6 +120,16 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 			},
 		},
 		{
+			name: "compressed with empty chunked artifact",
+			msg: &MsgInstallBundle{
+				Submitter:        addr,
+				CompressedBundle: []byte{1, 2, 3},
+				UncompressedSize: 4,
+				ChunkedArtifact:  &ChunkedArtifact{},
+			},
+			shouldErr: true,
+		},
+		{
 			name: "both",
 			msg: &MsgInstallBundle{
 				Bundle:           "foo",
@@ -151,27 +160,8 @@ func TestInstallBundle_ValidateBasic(t *testing.T) {
 			msg: &MsgInstallBundle{
 				Submitter:        addr,
 				CompressedBundle: []byte{1, 2, 3},
-				UncompressedSize: bundleUncompressedSizeLimit - 1,
+				UncompressedSize: int64(DefaultBundleUncompressedSizeLimitBytes - 1),
 			},
-		},
-
-		{
-			name: "limit",
-			msg: &MsgInstallBundle{
-				Submitter:        addr,
-				CompressedBundle: []byte{1, 2, 3},
-				UncompressedSize: bundleUncompressedSizeLimit,
-			},
-			shouldErr: true,
-		},
-		{
-			name: "max",
-			msg: &MsgInstallBundle{
-				Submitter:        addr,
-				CompressedBundle: []byte{1, 2, 3},
-				UncompressedSize: math.MaxInt64,
-			},
-			shouldErr: true,
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

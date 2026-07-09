@@ -34,8 +34,11 @@ export const slotToBoardRemote = (boardId, iface) =>
   makeBoardRemote({ boardId, iface });
 
 /**
+ * The result is cast to `ConvertValToSlot` at the sole call site
+ * (`boardSlottingMarshaller`), so the return type is left to inference rather
+ * than restated as a conditional type over the value `val`.
+ *
  * @param {BoardRemote<any> | object} val
- * @returns {val extends BoardRemote<infer BoardId> ? BoardId : never}
  */
 const boardValToSlot = val => {
   if ('getBoardId' in val) {

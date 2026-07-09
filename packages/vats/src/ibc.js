@@ -13,7 +13,7 @@ import {
   encodeRemoteIbcAddress,
   decodeIbcEndpoint,
   encodeIbcEndpoint,
-} from '../tools/ibc-utils.js';
+} from '@agoric/network/ibc/utils.js';
 
 const trace = makeTracer('IBC', false);
 
@@ -268,8 +268,9 @@ export const prepareIBCProtocol = (zone, powers) => {
           const { util } = this.facets;
           const { portToPendingConns } = this.state;
 
-          // @ts-expect-error may not be LocalIbcAddress
-          const portID = localAddrToPortID(localAddr);
+          const portID = localAddrToPortID(
+            /** @type {`/ibc-port/${string}`} */ (localAddr),
+          );
           portToPendingConns.init(portID, detached.setStore('pendingConns'));
           const packet = {
             source_port: portID,
@@ -282,8 +283,9 @@ export const prepareIBCProtocol = (zone, powers) => {
           const { portToPendingConns, srcPortToOutbounds } = this.state;
 
           trace('onConnect', localAddr, remoteAddr);
-          // @ts-expect-error may not be LocalIbcAddress
-          const portID = localAddrToPortID(localAddr);
+          const portID = localAddrToPortID(
+            /** @type {`/ibc-port/${string}`} */ (localAddr),
+          );
           const pendingConns = portToPendingConns.get(portID);
 
           const { rPortID, hops, order, version } =
@@ -337,8 +339,9 @@ export const prepareIBCProtocol = (zone, powers) => {
         async onRevoke(_port, localAddr) {
           const { portToPendingConns } = this.state;
           trace('onRevoke', localAddr);
-          // @ts-expect-error may not be LocalIbcAddress
-          const portID = localAddrToPortID(localAddr);
+          const portID = localAddrToPortID(
+            /** @type {`/ibc-port/${string}`} */ (localAddr),
+          );
 
           const pendingConns = portToPendingConns.get(portID);
           portToPendingConns.delete(portID);
@@ -651,6 +654,7 @@ export const prepareIBCProtocol = (zone, powers) => {
               console.error('Unexpected IBC_EVENT', obj.event);
               assert.fail(X`unrecognized method ${obj.event}`, TypeError);
           }
+          return undefined;
         },
       },
       util: {
@@ -830,6 +834,7 @@ export const prepareIBCProtocol = (zone, powers) => {
                 `${channelKey}: async negotiated version was ${negotiatedVersion} but synchronous version was ${version}`,
               );
             }
+            return undefined;
           } catch (e) {
             // Clean up after our failed attempt.
             channelKeyToAttempt.delete(channelKey);

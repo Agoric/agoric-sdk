@@ -10,7 +10,7 @@
  * There are separate data structures to map them to functional interfaces for
  * interoperation.
  *
- * @enum {(typeof InstrumentId)[keyof typeof InstrumentId]}
+ * @typedef {(typeof InstrumentId)[keyof typeof InstrumentId]} InstrumentId
  */
 export const InstrumentId = /** @type {const} */ ({
   Aave_Arbitrum: 'Aave_Arbitrum',
@@ -63,6 +63,11 @@ export const InstrumentId = /** @type {const} */ ({
   ERC4626_morphoHyperithmUsdc_Arbitrum: 'ERC4626_morphoHyperithmUsdc_Arbitrum',
   ERC4626_morphoGauntletUsdcPrime_Optimism:
     'ERC4626_morphoGauntletUsdcPrime_Optimism',
+  ERC4626_morphoGauntletUsdcPrime_Ethereum:
+    'ERC4626_morphoGauntletUsdcPrime_Ethereum',
+  ERC4626_morphoEthenaSteakhouseUsdc_Base:
+    'ERC4626_morphoEthenaSteakhouseUsdc_Base',
+  ERC4626_morphoKpkUsdcPrime_Ethereum: 'ERC4626_morphoKpkUsdcPrime_Ethereum',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });

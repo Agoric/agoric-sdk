@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { keyMirror } from './keyMirror.js';
 
 /**
@@ -14,7 +12,7 @@ import { keyMirror } from './keyMirror.js';
  * - ../../cosmic-swingset/src/chain-main.js
  * - ../../cosmic-swingset/src/launch-chain.js
  *
- * @enum {(typeof SwingsetMessageType)[keyof typeof SwingsetMessageType]}
+ * @typedef {(typeof SwingsetMessageType)[keyof typeof SwingsetMessageType]} SwingsetMessageType
  */
 export const SwingsetMessageType = keyMirror({
   AG_COSMOS_INIT: null, // used to synchronize at process launch
@@ -47,7 +45,7 @@ export const {
  * - ../../../golang/cosmos/x/vibc/keeper/triggers.go
  * - ../../../golang/cosmos/x/vibc/types/ibc_module.go
  *
- * @enum {(typeof QueuedActionType)[keyof typeof QueuedActionType]}
+ * @typedef {(typeof QueuedActionType)[keyof typeof QueuedActionType]} QueuedActionType
  */
 export const QueuedActionType = keyMirror({
   CORE_EVAL: null,

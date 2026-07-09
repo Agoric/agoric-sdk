@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { TxRpc } from '@agoric/cosmic-proto/codegen/types.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import {
   MsgSubmitProposal,
   MsgSubmitProposalResponse,
@@ -16,7 +16,7 @@ import {
   MsgUpdateParamsResponse,
   MsgCancelProposal,
   MsgCancelProposalResponse,
-} from './tx.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/gov/v1/tx.js';
 /** Msg defines the gov Msg service. */
 export interface Msg {
   /** SubmitProposal defines a method to create new proposal given the messages. */
@@ -39,22 +39,16 @@ export interface Msg {
   /**
    * UpdateParams defines a governance operation for updating the x/gov module
    * parameters. The authority is defined in the keeper.
-   *
-   * Since: cosmos-sdk 0.47
    */
   updateParams(request: MsgUpdateParams): Promise<MsgUpdateParamsResponse>;
-  /**
-   * CancelProposal defines a method to cancel governance proposal
-   *
-   * Since: cosmos-sdk 0.50
-   */
+  /** CancelProposal defines a method to cancel governance proposal */
   cancelProposal(
     request: MsgCancelProposal,
   ): Promise<MsgCancelProposalResponse>;
 }
 export class MsgClientImpl implements Msg {
-  private readonly rpc: Rpc;
-  constructor(rpc: Rpc) {
+  private readonly rpc: TxRpc;
+  constructor(rpc: TxRpc) {
     this.rpc = rpc;
     this.submitProposal = this.submitProposal.bind(this);
     this.execLegacyContent = this.execLegacyContent.bind(this);
@@ -130,3 +124,6 @@ export class MsgClientImpl implements Msg {
     );
   }
 }
+export const createClientImpl = (rpc: TxRpc) => {
+  return new MsgClientImpl(rpc);
+};

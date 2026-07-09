@@ -10,7 +10,7 @@ import type {
   DenomDetail,
   KnownNamespace,
 } from '@agoric/orchestration';
-import type { IBCChannelID } from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
 import type { CopyRecord } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { RepayAmountKWR } from './utils/fees.js';
@@ -129,6 +129,17 @@ export interface PoolMetrics extends PoolStats {
   encumberedBalance: Amount<'nat'>;
   shareWorth: Ratio;
 }
+
+/**
+ * Published vstorage values under the `fastUsdc.` hierarchy.
+ */
+export type FastUsdcPublishedPathTypes = {
+  fastUsdc: ContractRecord;
+  'fastUsdc.feeConfig': FeeConfig;
+  'fastUsdc.poolMetrics': PoolMetrics;
+} & {
+  [K in `fastUsdc.txns.${string}`]: TransactionRecord;
+};
 
 export interface ChainPolicy {
   /** `msg.sender` of DepositAndBurn to TokenMessenger must be an attenuated wrapper contract that does not contain `replaceDepositForBurn` */

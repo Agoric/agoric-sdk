@@ -20,7 +20,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { CosmosChainAddress } from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
-import type { IBCChannelID } from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
 import { makePromiseKit } from '@endo/promise-kit';
 import { configurations } from '../src/utils/deploy-config.js';
 import { type WalletFactoryTestContext } from './walletFactory.js';
@@ -39,7 +39,7 @@ const nobleAgoricChannelId = 'channel-21';
 
 const makeTxOracle = (
   ctx: WalletFactoryTestContext,
-  name: string,
+  _name: string,
   addr: string,
 ) => {
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;

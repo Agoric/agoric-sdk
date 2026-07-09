@@ -6,11 +6,15 @@ AGORIC_NET ?= devnet
 CONTRACT ?= ymax0
 
 YMAX_TOOL=../scripts/ymax-tool.ts
+WALLET_ADMIN=../../packages/portfolio-deploy/scripts/wallet-admin.ts
 AGD=agd
 AGORIC=agoric
 JQ=jq
 
 DEPLOY=../../packages/portfolio-deploy
+# Optional operator-supplied JSON file; omitted means privateArgsOverrides = {}
+PRIVATE_ARGS_OVERRIDES ?=
+OVERRIDES_ARG=$(if $(PRIVATE_ARGS_OVERRIDES),--overrides $(PRIVATE_ARGS_OVERRIDES),)
 
 ##
 # default make target: no chain interaction
@@ -67,22 +71,18 @@ redeem-ymaxControl:
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see 1password"; false)
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --redeem --contract 'postalService' --description 'deliver ymaxControl'
+		$(WALLET_ADMIN) $(DEPLOY)/src/redeem-invitation.ts --contract postalService --description 'deliver ymaxControl'
 
 REASON ?=
 $(CONTRACT)-terminate:
 	@test -n "$(REASON)" || { echo "REASON not set."; exit 1; }
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --terminate "$(REASON)"
-
-,privateArgsOverrides.json:
-	@echo "Using AGORIC_NET=$(AGORIC_NET)"
-	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --buildEthOverrides >$@ || (rm $@; false)
+		$(WALLET_ADMIN) $(DEPLOY)/src/ymax-terminate.ts --contract $(CONTRACT) --message "$(REASON)"
 
 NETCONFIG=https://$(AGORIC_NET).agoric.net/network-config
-,$(CONTRACT)-deployed: ,ymax-bundle-id ,privateArgsOverrides.json ,ymax-installed
+,$(CONTRACT)-deployed: ,ymax-bundle-id ,ymax-installed
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --installAndStart $$(cat ,ymax-bundle-id) <,privateArgsOverrides.json
+		$(WALLET_ADMIN) $(DEPLOY)/src/ymax-install-and-start.ts --contract $(CONTRACT) --bundle "$$(cat ,ymax-bundle-id)" $(OVERRIDES_ARG)
 	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 	tail $@
 
@@ -93,24 +93,24 @@ NETCONFIG=https://$(AGORIC_NET).agoric.net/network-config
 
 ,creatorFacet-$(CONTRACT): ,$(CONTRACT)-deployed
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --getCreatorFacet
+		$(WALLET_ADMIN) $(DEPLOY)/src/ymax-get-creator-facet.ts --contract $(CONTRACT)
 	touch $@
 
 PLANNER ?= agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
 ,invitePlanner-$(CONTRACT): ,creatorFacet-$(CONTRACT) ,$(CONTRACT)-planner-provisioned.json
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --invitePlanner $(PLANNER) >$@ || \
+		$(WALLET_ADMIN) $(DEPLOY)/src/ymax-deliver-invitation.ts --contract $(CONTRACT) --kind planner --to $(PLANNER) >$@ || \
 		(rm $@; false)
 	tail $@
-	@echo now use planner MNEMONIC: ymax-tool.ts --redeem
+	@echo now use planner MNEMONIC: $(WALLET_ADMIN) $(DEPLOY)/src/redeem-invitation.ts --contract $(CONTRACT) --description planner
 
 RESOLVER ?= agoric1y3e3mlnrkuh6j2qcnlrtap42j8mzw240vwr74j
 ,inviteResolver-$(CONTRACT): ,creatorFacet-$(CONTRACT)
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --inviteResolver $(RESOLVER) >$@ || \
+		$(WALLET_ADMIN) $(DEPLOY)/src/ymax-deliver-invitation.ts --contract $(CONTRACT) --kind resolver --to $(RESOLVER) >$@ || \
 		(rm $@; false)
 	tail $@
-	@echo now use resolver MNEMONIC: ymax-tool.ts --redeem
+	@echo now use resolver MNEMONIC: $(WALLET_ADMIN) $(DEPLOY)/src/redeem-invitation.ts --contract $(CONTRACT) --description resolver --no-save
 
 check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 
@@ -123,7 +123,7 @@ prune-vstorage: ,vstorage-pruned
 
 ,vstorage-pruned: ,vstorage-outdated-$(AGORIC_NET).json
 	@echo "Using AGORIC_NET=$(AGORIC_NET)"
-	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --pruneStorage < $<
+	AGORIC_NET=$(AGORIC_NET) $(WALLET_ADMIN) $(DEPLOY)/src/ymax-prune-storage.ts --contract $(CONTRACT) --input $<
 	touch $@
 
 NODE=https://main.rpc.agoric.net:443
@@ -145,15 +145,15 @@ fund-fee-acct: ,$(CONTRACT)-node.json
 
 # check that the account we're using matches the contract we're upgrading...
 check-control-account:
-	$(YMAX_TOOL) --repl </dev/null | grep $(YMAX_CONTROL_ADDR)
+	$(WALLET_ADMIN) $(DEPLOY)/src/ymax-repl.ts </dev/null | grep $(YMAX_CONTROL_ADDR)
 
-,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed ,privateArgsOverrides.json check-control-account
+,$(CONTRACT)-upgraded: ,ymax-bundle-id ,ymax-installed
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --upgrade <,privateArgsOverrides.json $$(cat ,ymax-bundle-id) >$@ || (rm $@; false)
+		$(WALLET_ADMIN) $(DEPLOY)/src/ymax-upgrade.ts --contract $(CONTRACT) $(OVERRIDES_ARG) --bundle "$$(cat ,ymax-bundle-id)" >$@ || (mv $@ $(@)_ERR; false)
 
 ,$(CONTRACT)-upgraded-repl: ,ymax-upgrade.js ,ymax-installed
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) --repl <,ymax-upgrade.js >$@ || (rm $@; false)
+		$(WALLET_ADMIN) $(DEPLOY)/src/ymax-repl.ts <,ymax-upgrade.js >$@ || (mv $@ $(@)_ERR; false)
 
 clean:
 	rm -rf ,* $(DEPLOY)/dist/

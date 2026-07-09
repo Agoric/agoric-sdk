@@ -1,19 +1,22 @@
 /** @file tests for PortfolioKit exo */
 /* eslint-disable no-sparse-arrays */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import type { ThrowsExpectation } from 'ava';
 
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import {
   fromTypedEntries,
   typedEntries,
   type Callable,
 } from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { PortfolioPlannerAgent } from '@agoric/portfolio-api';
 import type { AxelarChain } from '@agoric/portfolio-api';
-import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
-import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.ts';
+import type { TargetAllocation as EIP712Allocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
@@ -25,12 +28,13 @@ import {
   preparePortfolioKit,
   type AccountInfoFor,
 } from '../src/portfolio.exo.ts';
+import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { PositionStateShape } from '../src/pos.exo.ts';
 import type { StatusFor } from '../src/type-guards.ts';
-import { contractsMock } from './mocks.ts';
-import { axelarCCTPConfig } from './supports.ts';
-import type { LocalAccount } from '../src/portfolio.flows.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
+import { predictRemoteAccountAddress } from '../src/utils/evm-orch-router.ts';
+import { contractsMock } from './mocks.ts';
+import { axelarCCTPConfig, makeStorageTools } from './supports.ts';
 
 const { brand: USDC } = makeIssuerKit('USDC');
 
@@ -61,17 +65,27 @@ const makeSpies = <T extends Record<string, Callable>>(
   return { spies, log };
 };
 
-const makeTestSetup = () => {
+const makeTestSetup = (
+  opts: {
+    storage?: ReturnType<typeof makeFakeStorageKit>;
+  } = {},
+) => {
   const zone = makeHeapZone();
   const board = makeFakeBoard();
   const marshaller = board.getReadonlyMarshaller();
   const vowTools = prepareVowTools(zone);
 
-  const depStubs: Pick<PortfolioKitDeps, 'rebalance' | 'executePlan'> = {
+  const depStubs: Pick<
+    PortfolioKitDeps,
+    'rebalance' | 'executePlan' | 'deliverDelegation'
+  > = {
     rebalance: (..._args: Parameters<PortfolioKitDeps['rebalance']>) =>
       vowTools.asVow(() => {}),
     executePlan: (..._args: Parameters<PortfolioKitDeps['executePlan']>) =>
       vowTools.asVow(() => {}),
+    deliverDelegation: async (
+      ..._args: Parameters<PortfolioKitDeps['deliverDelegation']>
+    ) => {},
   };
 
   const { spies, log: callLog } = makeSpies(depStubs);
@@ -108,7 +122,7 @@ const makeTestSetup = () => {
 
   const walletBytecode = '0x1234';
 
-  const predictMockAddress = (lca: LocalAccount) =>
+  const predictMockWalletAddress = (lca: LocalAccount) =>
     predictWalletAddress({
       owner: lca.getAddress().value,
       factoryAddress: contractsMock.Arbitrum.factory,
@@ -117,14 +131,25 @@ const makeTestSetup = () => {
       walletBytecode: hexToBytes(walletBytecode.replace(/^0x/, '')),
     });
 
+  const predictMockRemoteAccountAddress = (lca: LocalAccount) =>
+    predictRemoteAccountAddress({
+      factoryAddress: contractsMock.Arbitrum.remoteAccountFactory,
+      implementationAddress: contractsMock.Arbitrum.remoteAccountImplementation,
+      owner: lca.getAddress().value,
+    });
+
   const agoricConns = fetchedChainInfo.agoric.connections;
   const transferChannels = {
     noble: agoricConns[fetchedChainInfo.noble.chainId].transferChannel,
     axelar: agoricConns[fetchedChainInfo.axelar.chainId].transferChannel,
   } as const;
 
+  const portfoliosNode = opts.storage
+    ? opts.storage.rootNode.makeChildNode('ymax0').makeChildNode('portfolios')
+    : makeMockNode('published.ymax0.portfolios');
+
   const makePortfolioKit = preparePortfolioKit(zone, {
-    portfoliosNode: makeMockNode('published.ymax0.portfolios'),
+    portfoliosNode,
     marshaller,
     usdcBrand: USDC,
     vowTools,
@@ -143,9 +168,11 @@ const makeTestSetup = () => {
   return {
     makePortfolioKit,
     makeMockLCA,
-    predictMockAddress,
+    predictMockWalletAddress,
+    predictMockRemoteAccountAddress,
     vowTools,
     getCallLog: () => callLog.slice(),
+    ...(opts.storage ? makeStorageTools(opts.storage) : {}),
   };
 };
 
@@ -287,6 +314,39 @@ test('capture stateShape to be intentional about changes', t => {
   t.snapshot(PositionStateShape, 'PositionStateShape');
 });
 
+test('manager releases evm pending accounts when starting a new flow', async t => {
+  const { makePortfolioKit } = makeTestSetup();
+  const { manager, reader } = makePortfolioKit({ portfolioId: 1 });
+
+  manager.reserveAccount('noble');
+  const { state: arbitrumStateBefore } =
+    manager.reserveAccountState('Arbitrum');
+  t.is(arbitrumStateBefore, 'new');
+  manager.initAccountInfo({
+    chainName: 'Arbitrum',
+    chainId: 'eip155:42161',
+    namespace: 'eip155',
+    remoteAddress: '0x1234',
+  });
+
+  const { state: arbitrumStateAfterInit } =
+    manager.reserveAccountState('Arbitrum');
+  t.is(arbitrumStateAfterInit, 'pending');
+
+  manager.startFlow({ type: 'deposit', amount: { brand: USDC, value: 100n } });
+
+  const accountInfoAfterStart = reader.getGMPInfo('Arbitrum');
+  t.truthy(accountInfoAfterStart.err);
+  const { state: arbitrumStateAfterStart } =
+    manager.reserveAccountState('Arbitrum');
+  t.is(arbitrumStateAfterStart, 'failed');
+
+  const { noble } = reader.accountIdByChain();
+  t.is(noble, undefined, 'no noble info');
+  const { state: nobleStateAfterStart } = manager.reserveAccountState('noble');
+  t.is(nobleStateAfterStart, 'pending');
+});
+
 test('evmHandler deposit fails if owner does not match', async t => {
   const ownerAddress = '0x2222222222222222222222222222222222222222' as Address;
   const wrongOwnerAddress =
@@ -388,280 +448,295 @@ test('evmHandler deposit rejects unknown chainId', t => {
   });
 });
 
-test('evmHandler deposit handles depositFactory spender without existing remote account', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
-  const { evmHandler } = makePortfolioKit({
-    portfolioId: 454,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
+type EVMDepositRemoteAccountConfig = {
+  remoteAddress: Address | 'deriveDepositFactory' | 'deriveRouter';
+  routerFactory?: Address;
+};
 
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 1_000n,
-    spender: contractsMock.Arbitrum.depositFactory,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+const doEVMDeposit = test.macro(
+  async (
+    t,
+    params: {
+      remoteAccount?: EVMDepositRemoteAccountConfig | undefined;
+      otherRemoteAccount?: EVMDepositRemoteAccountConfig | undefined;
+      spender?: Address | 'deriveDepositFactory' | 'deriveRouter';
+      expectFail?: ThrowsExpectation<any> | boolean;
     },
-  };
+  ) => {
+    const ownerAddress =
+      '0x6666666666666666666666666666666666666666' as Address;
+    const storage = makeFakeStorageKit('published', { sequence: true });
+    const {
+      makePortfolioKit,
+      makeMockLCA,
+      predictMockWalletAddress,
+      predictMockRemoteAccountAddress,
+      getCallLog,
+      getPortfolioStatus,
+    } = makeTestSetup({ storage });
+    const { evmHandler, manager, reader } = makePortfolioKit({
+      portfolioId: 454,
+      sourceAccountId: `eip155:42161:${ownerAddress}`,
+    });
+    const agoricInfo: AccountInfoFor['agoric'] = {
+      namespace: 'cosmos',
+      chainName: 'agoric',
+      lca: makeMockLCA(),
+      lcaIn: makeMockLCA(),
+      reg: undefined as any,
+    };
+    manager.resolveAccount(agoricInfo);
 
-  t.is(evmHandler.deposit(permitDetails), 'flow1');
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
-        type: 'deposit',
-        amount: AmountMath.make(USDC, 1_000n),
-        fromChain: 'Arbitrum',
+    const expectedRemoteAccountAddress = predictMockRemoteAccountAddress(
+      agoricInfo.lca,
+    );
+    const expectedWalletAddress = predictMockWalletAddress(agoricInfo.lca);
+
+    if (params.remoteAccount) {
+      const { remoteAddress, ...otherRemoteAccountInfo } = params.remoteAccount;
+      const resolvedRemoteAddress =
+        remoteAddress === 'deriveDepositFactory'
+          ? expectedWalletAddress
+          : remoteAddress === 'deriveRouter'
+            ? expectedRemoteAccountAddress
+            : remoteAddress;
+
+      const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
+        namespace: 'eip155',
+        chainName: 'Arbitrum',
+        chainId: 'eip155:42161',
+        remoteAddress: resolvedRemoteAddress,
+        ...otherRemoteAccountInfo,
+      };
+      manager.resolveAccount(arbitrumInfo);
+    }
+
+    if (params.otherRemoteAccount) {
+      const { remoteAddress, ...otherRemoteAccountInfo } =
+        params.otherRemoteAccount;
+      const resolvedRemoteAddress =
+        remoteAddress === 'deriveDepositFactory'
+          ? expectedWalletAddress
+          : remoteAddress === 'deriveRouter'
+            ? expectedRemoteAccountAddress
+            : remoteAddress;
+
+      const baseInfo: AccountInfoFor['Base'] = {
+        namespace: 'eip155',
+        chainName: 'Base',
+        chainId: 'eip155:8453',
+        remoteAddress: resolvedRemoteAddress,
+        ...otherRemoteAccountInfo,
+      };
+      manager.resolveAccount(baseInfo);
+    }
+
+    const permitDetails: PermitDetails = {
+      chainId: 42161n,
+      token: contractsMock.Arbitrum.usdc,
+      amount: 1_000n,
+      spender:
+        params.spender === 'deriveDepositFactory'
+          ? expectedWalletAddress
+          : params.spender === 'deriveRouter'
+            ? expectedRemoteAccountAddress
+            : (params.spender ?? reader.getGMPInfo('Arbitrum').remoteAddress),
+      permit2Payload: {
+        owner: ownerAddress,
+        witness: '0xWitnessData',
+        witnessTypeString: 'WitnessTypeString',
+        permit: {
+          permitted: {
+            token: contractsMock.Arbitrum.usdc,
+            amount: 1_000n,
+          },
+          nonce: 123n,
+          deadline: 1700000000n,
+        },
+        signature: '0xSignatureData',
       },
-      { flowId: 1 },
-      ,
-      {
-        evmDepositDetail: {
+    };
+
+    if (params.expectFail) {
+      const assertion =
+        params.expectFail === true ? undefined : params.expectFail;
+      t.throws(() => evmHandler.deposit(permitDetails), assertion);
+      return;
+    }
+
+    t.is(evmHandler.deposit(permitDetails), 'flow1');
+    t.like(getCallLog(), [
+      [
+        'executePlan',
+        ,
+        {},
+        ,
+        undefined,
+        { flowId: 1 },
+        ,
+        {
+          evmDepositDetail: {
+            fromChain: 'Arbitrum',
+            ...permitDetails,
+          },
+        },
+      ],
+    ]);
+    t.like(await getPortfolioStatus!(454), {
+      flowsRunning: {
+        flow1: {
+          type: 'deposit',
           fromChain: 'Arbitrum',
-          ...permitDetails,
+          amount: { value: 1_000n },
         },
       },
-    ],
-  ]);
-});
+    });
+  },
+);
 
-test('evmHandler deposit handles depositFactory spender with existing remote account', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
-  const { makePortfolioKit, makeMockLCA, predictMockAddress, getCallLog } =
-    makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 454,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
-  const agoricInfo: AccountInfoFor['agoric'] = {
-    namespace: 'cosmos',
-    chainName: 'agoric',
-    lca: makeMockLCA(),
-    lcaIn: makeMockLCA(),
-    reg: undefined as any,
-  };
-  manager.resolveAccount(agoricInfo);
+test(
+  'evmHandler deposit handles depositFactory spender without existing remote account',
+  doEVMDeposit,
+  { spender: contractsMock.Arbitrum.depositFactory },
+);
 
-  const expectedRemoteAddress = predictMockAddress(agoricInfo.lca);
-  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: expectedRemoteAddress,
-  };
-  manager.resolveAccount(arbitrumInfo);
+test(
+  'evmHandler deposit handles router spender without existing remote account',
+  doEVMDeposit,
+  { spender: contractsMock.Arbitrum.remoteAccountRouter },
+);
 
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 1_000n,
+test(
+  'evmHandler deposit handles depositFactory spender with existing remote account',
+  doEVMDeposit,
+  {
     spender: contractsMock.Arbitrum.depositFactory,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+    remoteAccount: { remoteAddress: 'deriveDepositFactory' },
+  },
+);
+
+test(
+  'evmHandler deposit handles router spender with existing remote account',
+  doEVMDeposit,
+  {
+    spender: contractsMock.Arbitrum.remoteAccountRouter,
+    remoteAccount: {
+      remoteAddress: 'deriveRouter',
+      routerFactory: contractsMock.Arbitrum.remoteAccountFactory,
     },
-  };
+  },
+);
 
-  t.is(evmHandler.deposit(permitDetails), 'flow1');
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
-        type: 'deposit',
-        amount: AmountMath.make(USDC, 1_000n),
-        fromChain: 'Arbitrum',
-      },
-      { flowId: 1 },
-      ,
-      {
-        evmDepositDetail: {
-          fromChain: 'Arbitrum',
-          ...permitDetails,
-        },
-      },
-    ],
-  ]);
-});
-
-test('evmHandler deposit rejects depositFactory spender if existing remote account is not factory generated', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as Address;
-  const { makePortfolioKit, makeMockLCA } = makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 454,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
-  const agoricInfo: AccountInfoFor['agoric'] = {
-    namespace: 'cosmos',
-    chainName: 'agoric',
-    lca: makeMockLCA(),
-    lcaIn: makeMockLCA(),
-    reg: undefined as any,
-  };
-  manager.resolveAccount(agoricInfo);
-
-  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  };
-  manager.resolveAccount(arbitrumInfo);
-
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 1_000n,
+test(
+  'evmHandler deposit rejects depositFactory spender if existing remote account is not factory generated',
+  doEVMDeposit,
+  {
     spender: contractsMock.Arbitrum.depositFactory,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+    remoteAccount: {
+      remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     },
-  };
+    expectFail: true,
+  },
+);
 
-  t.throws(() => evmHandler.deposit(permitDetails));
-});
-
-test('evmHandler deposit handles remote account spender', t => {
-  const ownerAddress = '0x8888888888888888888888888888888888888888' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 456,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
-
-  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: '0x9999999999999999999999999999999999999999',
-  };
-  manager.resolveAccount(arbitrumInfo);
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 2_500n,
-    spender: arbitrumInfo.remoteAddress,
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 2_500n,
-        },
-        nonce: 456n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+test(
+  'evmHandler deposit rejects router spender if existing remote account is not factory generated',
+  doEVMDeposit,
+  {
+    spender: contractsMock.Arbitrum.remoteAccountRouter,
+    remoteAccount: {
+      remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     },
-  };
+    expectFail: true,
+  },
+);
 
-  t.is(evmHandler.deposit(permitDetails), 'flow1');
+test(
+  'evmHandler deposit handles non-router based arbitrary remote account spender',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: '0x9999999999999999999999999999999999999999',
+    },
+  },
+);
 
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
-        type: 'deposit',
-        amount: AmountMath.make(USDC, 2_500n),
-        fromChain: 'Arbitrum',
-      },
-      { flowId: 1 },
-      ,
-      {
-        evmDepositDetail: {
-          fromChain: 'Arbitrum',
-          ...permitDetails,
-        },
-      },
-    ],
-  ]);
-});
+test(
+  'evmHandler deposit handles deposit factory derived remote account spender',
+  doEVMDeposit,
+  { remoteAccount: { remoteAddress: 'deriveDepositFactory' } },
+);
 
-test('evmHandler deposit rejects spender mismatch', t => {
-  const ownerAddress = '0x6666666666666666666666666666666666666666' as const;
-  const { makePortfolioKit } = makeTestSetup();
-  const { evmHandler, manager } = makePortfolioKit({
-    portfolioId: 454,
-    sourceAccountId: `eip155:42161:${ownerAddress}`,
-  });
+test(
+  'evmHandler deposit handles router-based remote account spender',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: 'deriveRouter',
+      routerFactory: contractsMock.Arbitrum.remoteAccountFactory,
+    },
+  },
+);
 
-  const arbitrumInfo: AccountInfoFor['Arbitrum'] = {
-    namespace: 'eip155',
-    chainName: 'Arbitrum',
-    chainId: 'eip155:42161',
-    remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  };
-  manager.resolveAccount(arbitrumInfo);
+test(
+  'evmHandler deposit rejects misconfigured router based remote account spender',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: '0x9999999999999999999999999999999999999999',
+      routerFactory: contractsMock.Arbitrum.remoteAccountFactory,
+    },
+    expectFail: true,
+  },
+);
 
-  const permitDetails: PermitDetails = {
-    chainId: 42161n,
-    token: contractsMock.Arbitrum.usdc,
-    amount: 1_000n,
+test(
+  'evmHandler deposit rejects spender mismatch with non-router based remote account',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
     spender: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
-    permit2Payload: {
-      owner: ownerAddress,
-      witness: '0xWitnessData',
-      witnessTypeString: 'WitnessTypeString',
-      permit: {
-        permitted: {
-          token: contractsMock.Arbitrum.usdc,
-          amount: 1_000n,
-        },
-        nonce: 123n,
-        deadline: 1700000000n,
-      },
-      signature: '0xSignatureData',
+    expectFail: true,
+  },
+);
+test(
+  'evmHandler deposit rejects spender mismatch with router based remote account',
+  doEVMDeposit,
+  {
+    remoteAccount: {
+      remoteAddress: 'deriveRouter',
+      routerFactory: contractsMock.Arbitrum.remoteAccountFactory,
     },
-  };
+    spender: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    expectFail: {
+      message: /permit spender .* does not match/,
+    },
+  },
+);
 
-  t.throws(() => evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match expected account/,
-  });
-});
+test(
+  'evmHandler deposit rejects spender mismatch with expected deposit factory derived remote account',
+  doEVMDeposit,
+  {
+    spender: 'deriveRouter',
+    expectFail: true,
+  },
+);
+
+test(
+  'evmHandler deposit rejects spender mismatch with expected router based remote account',
+  doEVMDeposit,
+  {
+    otherRemoteAccount: {
+      remoteAddress: 'deriveRouter',
+      routerFactory: contractsMock.Base.remoteAccountFactory,
+    },
+    spender: 'deriveDepositFactory',
+    expectFail: true,
+  },
+);
 
 test('evmHandler deposit rejects token mismatch', t => {
   const ownerAddress = '0x7777777777777777777777777777777777777777' as Address;
@@ -743,9 +818,12 @@ test('evmHandler withdraw check address', t => {
   );
 });
 
-test('evmHandler withdraw uses chainId from domain', t => {
+test('evmHandler withdraw uses chainId from domain', async t => {
   const ownerAddress = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
   const { evmHandler } = makePortfolioKit({
     portfolioId: 4,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
@@ -761,25 +839,20 @@ test('evmHandler withdraw uses chainId from domain', t => {
   });
 
   t.is(result, 'flow1');
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
-        type: 'withdraw',
-        amount: AmountMath.make(USDC, amount),
-        toChain: 'Base',
-      },
-      { flowId: 1 },
-    ],
-  ]);
+  t.like(getCallLog(), [['executePlan', , {}, , undefined, { flowId: 1 }]]);
+  t.like(await getPortfolioStatus!(4), {
+    flowsRunning: {
+      flow1: { type: 'withdraw', toChain: 'Base', amount: { value: amount } },
+    },
+  });
 });
 
-test('evmHandler withdraw defaults to source chainId if domain missing', t => {
+test('evmHandler withdraw defaults to source chainId if domain missing', async t => {
   const ownerAddress = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
   const { evmHandler } = makePortfolioKit({
     portfolioId: 5,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
@@ -794,20 +867,16 @@ test('evmHandler withdraw defaults to source chainId if domain missing', t => {
   });
 
   t.is(result, 'flow1');
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
+  t.like(getCallLog(), [['executePlan', , {}, , undefined, { flowId: 1 }]]);
+  t.like(await getPortfolioStatus!(5), {
+    flowsRunning: {
+      flow1: {
         type: 'withdraw',
-        amount: AmountMath.make(USDC, amount),
         toChain: 'Arbitrum',
+        amount: { value: amount },
       },
-      { flowId: 1 },
-    ],
-  ]);
+    },
+  });
 });
 
 test('evmHandler withdraw fails for unsupported chainId', t => {
@@ -896,9 +965,12 @@ test('evmHandler rebalance does not yet support deposit', t => {
   });
 });
 
-test('evmHandler rebalance with allocations sets new target allocation', t => {
+test('evmHandler rebalance with allocations sets new target allocation', async t => {
   const ownerAddress = '0xffffffffffffffffffffffffffffffffffffffff' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
   const { evmHandler, reader } = makePortfolioKit({
     portfolioId: 10,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
@@ -917,9 +989,10 @@ test('evmHandler rebalance with allocations sets new target allocation', t => {
     Beefy_compoundUsdc_Arbitrum: 40n,
   });
 
-  t.like(getCallLog(), [
-    ['executePlan', , {}, , { type: 'rebalance' }, { flowId: 1 }],
-  ]);
+  t.like(getCallLog(), [['executePlan', , {}, , undefined, { flowId: 1 }]]);
+  t.like(await getPortfolioStatus!(10), {
+    flowsRunning: { flow1: { type: 'rebalance' } },
+  });
 });
 
 test('evmHandler rebalance with allocations requires non-empty allocations', t => {
@@ -964,4 +1037,362 @@ test('evmHandler rebalance without allocations fails without current target allo
   t.throws(() => evmHandler.rebalance(), {
     message: /rebalance requires targetAllocation to be set/,
   });
+});
+
+test('evmHandler grant passes only the delegation client to delivery', async t => {
+  const ownerAddress = '0x1212121212121212121212121212121212121212' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler, delegationHelper } = makePortfolioKit({
+    portfolioId: 14,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+  t.truthy(delegationHelper);
+
+  await evmHandler.grant('agoric1delegate', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+  const [, client, portfolioId, agentId, grantee, permissions] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+  t.truthy(client);
+  t.is(portfolioId, 14);
+  t.is(agentId, 1);
+  t.is(grantee, 'agoric1delegate');
+  t.deepEqual(permissions, { allocation: true });
+});
+
+test('evmHandler grant allocates sequential agent ids', async t => {
+  const ownerAddress = '0x3434343434343434343434343434343434343434' as const;
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 18,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  await evmHandler.grant('agoric1delegatea', { allocation: true });
+  await evmHandler.grant('agoric1delegateb', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 2);
+  t.is(callLog[0][3], 1);
+  t.is(callLog[1][3], 2);
+
+  await Promise.all([
+    evmHandler.grant('agoric1delegatec', { allocation: true }),
+    evmHandler.grant('agoric1delegated', { allocation: true }),
+  ]);
+
+  const callLogRaced = getCallLog();
+  t.is(callLogRaced.length, 4);
+  t.is(callLogRaced[2][3], 3);
+  t.is(callLogRaced[3][3], 4);
+});
+
+test('delegation rebalance creates flow and calls executePlan', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
+  const { manager } = makePortfolioKit({ portfolioId: 20 });
+
+  const agentId = await manager.grantDelegation('agoric1delegate', {
+    allocation: false,
+    rebalance: true,
+  });
+
+  t.is(agentId, 1);
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+
+  const [, client] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    'flow1',
+  );
+  t.like(getCallLog()[1], ['executePlan', , {}, , undefined, { flowId: 1 }]);
+  t.like(await getPortfolioStatus!(20), {
+    flowsRunning: { flow1: { type: 'rebalance' } },
+  });
+});
+
+test('allocation delegation cannot use rebalance', async t => {
+  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { manager } = makePortfolioKit({ portfolioId: 21 });
+
+  const agentId = await manager.grantDelegation('agoric1delegate', {
+    allocation: true,
+  });
+
+  t.is(agentId, 1);
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+
+  const [, client] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.throws(
+    () =>
+      client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    {
+      message:
+        /delegation agent1 does not have required permission "rebalance"/,
+    },
+  );
+  t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
+});
+
+test('revoked delegation client is no longer usable', async t => {
+  const ownerAddress = '0x4545454545454545454545454545454545454545' as const;
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioAgents } = makeTestSetup({
+    storage,
+  });
+  const { evmHandler, manager } = makePortfolioKit({
+    portfolioId: 19,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  manager.setTargetAllocation({ USDN: 100n });
+  await evmHandler.grant('agoric1delegate', { allocation: true });
+
+  const callLog = getCallLog();
+  t.is(callLog.length, 1);
+  t.is(callLog[0][0], 'deliverDelegation');
+  const [, client, , agentId] = callLog[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.true(client.getReader().isActive());
+  t.like(await getPortfolioAgents!(19), {
+    agent1: { state: 'active' },
+  });
+
+  manager.revokeDelegation(agentId);
+
+  t.false(client.getReader().isActive());
+  t.like(await getPortfolioAgents!(19), {
+    agent1: { state: 'revoked' },
+  });
+  t.throws(
+    () =>
+      client.setTargetAllocation({
+        targetAllocation: { USDN: 100n },
+        syncState: { policyVersion: 1, rebalanceCount: 0 },
+      }),
+    {
+      message: /delegation client is not active for agent1/,
+    },
+  );
+});
+
+test('setAutoFeatures grants, updates, and regrants planner delegation and publishes status', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const {
+    makePortfolioKit,
+    getCallLog,
+    getPortfolioStatus,
+    getPortfolioAgents,
+  } = makeTestSetup({
+    storage,
+  });
+
+  const { manager } = makePortfolioKit({ portfolioId: 22 });
+
+  await manager.setAutoFeatures({ rebalance: false });
+  t.is(
+    getCallLog().length,
+    0,
+    'no planner delegation is granted without permissions',
+  );
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: false },
+  });
+
+  await manager.setAutoFeatures({ rebalance: true });
+  t.like(getCallLog(), [
+    ['deliverDelegation', , 22, 1, PortfolioPlannerAgent, { rebalance: true }],
+  ]);
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: true },
+  });
+  t.like(await getPortfolioAgents!(22), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: true },
+      state: 'active',
+    },
+  });
+  const [, client] = getCallLog()[0] as [
+    'deliverDelegation',
+    ...Parameters<PortfolioKitDeps['deliverDelegation']>,
+  ];
+
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    'flow1',
+  );
+  t.is(getCallLog().length, 2);
+  t.like(getCallLog(), [
+    ['deliverDelegation'],
+    ['executePlan', , {}, , undefined, { flowId: 1 }],
+  ]);
+  t.like(await getPortfolioStatus!(22), {
+    flowsRunning: { flow1: { type: 'rebalance' } },
+  });
+
+  await manager.setAutoFeatures({ rebalance: false });
+  t.is(getCallLog().length, 2, 'active planner delegation is updated in place');
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: false },
+  });
+  t.like(await getPortfolioAgents!(22), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false },
+      state: 'active',
+    },
+  });
+  t.throws(
+    () =>
+      client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
+    {
+      message:
+        /delegation agent1 does not have required permission "rebalance"/,
+    },
+  );
+
+  manager.revokeDelegation(1);
+
+  await manager.setAutoFeatures({ rebalance: false });
+  t.is(
+    getCallLog().length,
+    2,
+    'revoked planner delegation is not regranted without permissions',
+  );
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: false },
+  });
+  t.like(await getPortfolioAgents!(22), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false },
+      state: 'revoked',
+    },
+  });
+
+  await manager.setAutoFeatures({ rebalance: true });
+  t.is(getCallLog().length, 3);
+  t.like(getCallLog(), [
+    ['deliverDelegation'],
+    ['executePlan'],
+    ['deliverDelegation', , 22, 2, PortfolioPlannerAgent, { rebalance: true }],
+  ]);
+  t.like(await getPortfolioStatus!(22), {
+    enabledAutoFeatures: { rebalance: true },
+  });
+  t.like(await getPortfolioAgents!(22), {
+    agent1: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: false },
+      state: 'revoked',
+    },
+    agent2: {
+      grantee: PortfolioPlannerAgent,
+      permissions: { rebalance: true },
+      state: 'active',
+    },
+  });
+});
+
+test('awaitingSteps is published in flowsRunning and reflects resolution state', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
+    storage,
+  });
+  const { manager, planner } = makePortfolioKit({ portfolioId: 1 });
+
+  const amount = { brand: USDC, value: 100n };
+  const steps = [{ src: '@agoric' as const, dest: '@noble' as const, amount }];
+
+  // Flow started without pre-resolved steps: plan is pending
+  const { flowId } = manager.startFlow({ type: 'withdraw', amount });
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(Object.keys(flowsRunning).length, 1, 'one flow running');
+    t.is(
+      flowsRunning[`flow${flowId}`].awaitingSteps,
+      true,
+      'awaitingSteps is true before resolveFlowPlan',
+    );
+  }
+
+  // resolveFlowPlan publishes status immediately
+  planner.resolveFlowPlan(flowId, steps);
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId}`].awaitingSteps,
+      false,
+      'awaitingSteps is false after resolveFlowPlan',
+    );
+  }
+
+  // Flow started with pre-resolved steps: awaitingSteps is false immediately
+  const { flowId: flowId2 } = manager.startFlow(
+    { type: 'withdraw', amount },
+    steps,
+  );
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId2}`].awaitingSteps,
+      false,
+      'awaitingSteps is false immediately when steps are provided at startFlow',
+    );
+  }
+
+  // rejectFlowPlan also publishes status immediately
+  const { flowId: flowId3, stepsP } = manager.startFlow({
+    type: 'withdraw',
+    amount,
+  });
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId3}`].awaitingSteps,
+      true,
+      'awaitingSteps is true before rejectFlowPlan',
+    );
+  }
+
+  planner.rejectFlowPlan(flowId3, 'insufficient funds');
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId3}`].awaitingSteps,
+      false,
+      'awaitingSteps is false after rejectFlowPlan',
+    );
+  }
+
+  await t.throwsAsync(vowTools.when(stepsP), { message: 'insufficient funds' });
 });

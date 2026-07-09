@@ -1,4 +1,5 @@
 import ky, { type KyInstance } from 'ky';
+import { FETCH_HEADERS } from './config.ts';
 
 export type YdsNotificationData = {
   txNum: `tx${number}`;
@@ -47,8 +48,7 @@ export class YdsNotifier {
       timeout: this.#config.timeout,
       retry: this.#config.retries,
       headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Agoric-YMax-Planner/1.0.0',
+        ...FETCH_HEADERS,
         'x-resolver-auth-key': this.#config.ydsApiKey,
       },
     });
@@ -76,9 +76,7 @@ export class YdsNotifier {
     );
 
     try {
-      await this.#http.post(endpoint, {
-        json: payload,
-      });
+      await this.#http.post(endpoint, { json: payload });
       this.#log(`[YdsNotifier] Successfully sent notification for ${txNum}`);
       return true;
     } catch (err) {

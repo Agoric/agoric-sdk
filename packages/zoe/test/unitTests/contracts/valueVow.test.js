@@ -1,6 +1,6 @@
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { heapVowTools } from '@agoric/vow/vat.js';
 
@@ -27,7 +27,7 @@ test.before(async t => {
   const bundleCache = await unsafeSharedBundleCache;
   const zoe = makeZoeForTest();
   const installation = await E(zoe).install(
-    await bundleCache.load(contractFile),
+    /** @type {any} */ (await bundleCache.load(contractFile)),
   );
 
   t.context = {
@@ -73,8 +73,7 @@ test('baggage', async t => {
   });
 
   await E(zoe).startInstance(
-    /** @type {Installation<typeof startValueVow>} */
-    (await bundleAndInstall(contractFile)),
+    await bundleAndInstall(/** @type {any} */ (contractFile)),
   );
 
   // @ts-expect-error setJig may not have been called

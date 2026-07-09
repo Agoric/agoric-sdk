@@ -21,7 +21,8 @@ const makeRatio = (numerator, numeratorBrand, denominator = 100n) =>
 /**
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {Brand, Ratio} from '@agoric/ertp';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CosmosChainInfo} from '@agoric/orchestration';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';

@@ -8,8 +8,8 @@ Usage:
 
 import '@endo/init';
 
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { tmpName } from 'tmp';
 
 import { assert, q, Fail } from '@endo/errors';
@@ -92,8 +92,8 @@ function isMatch(specimen, pattern) {
  *   spawnXSnap: (opts: object) => XSnap,
  *   bundleSource: BundleSource,
  *   resolve: ResolveFn,
- *   dirname: typeof dirname,
- *   basename: typeof basename,
+ *   dirname: typeof import('path').dirname,
+ *   basename: typeof import('path').basename,
  * }} io
  * @returns {Promise<TestResults>}
  *
@@ -224,7 +224,7 @@ async function runTestScript(
  * @param {string} [options.packageFilename]
  * @param {{
  *   readFile: typeof promises.readFile,
- *   glob: typeof import('glob')
+ *   glob: (pattern: string) => Promise<string[]>
  * }} io
  * @returns {Promise<AvaXSConfig>}
  *
@@ -237,15 +237,6 @@ async function runTestScript(
  * @property {string} [titleMatch]
  */
 async function avaConfig(args, options, { glob, readFile }) {
-  /**
-   * @param {string} pattern
-   * @returns {Promise<string[]>}
-   */
-  const globFiles = pattern =>
-    new Promise((res, rej) =>
-      glob(pattern, {}, (err, matches) => (err ? rej(err) : res(matches))),
-    );
-
   /** @type {string[]} */
   let files = [];
   let debug = false;
@@ -269,7 +260,7 @@ async function avaConfig(args, options, { glob, readFile }) {
         break;
       default: {
         // The argument is a glob for tests to run.
-        const argFiles = await globFiles(arg);
+        const argFiles = await glob(arg);
         files.push(...argFiles);
       }
     }
@@ -299,7 +290,7 @@ async function avaConfig(args, options, { glob, readFile }) {
   if (!files.length) {
     Array.isArray(filePatterns) ||
       Fail`ava.files: expected Array: ${q(filePatterns)}`;
-    files = (await Promise.all(filePatterns.map(globFiles))).flat();
+    files = (await Promise.all(filePatterns.map(glob))).flat();
   }
   Array.isArray(require) || Fail`ava.requires: expected Array: ${q(require)}`;
   const config = { files, require, exclude, debug, verbose, titleMatch };
@@ -313,10 +304,10 @@ async function avaConfig(args, options, { glob, readFile }) {
  *   spawn: typeof import('child_process')['spawn'],
  *   osType: typeof import('os')['type'],
  *   readFile: typeof import('fs')['promises']['readFile'],
- *   resolve: typeof resolve,
- *   dirname: typeof dirname,
- *   basename: typeof basename,
- *   glob: typeof import('glob'),
+ *   resolve: typeof import('path').resolve,
+ *   dirname: typeof import('path').dirname,
+ *   basename: typeof import('path').basename,
+ *   glob: (pattern: string) => Promise<string[]>,
  * }} io
  */
 export async function main(
@@ -413,7 +404,7 @@ export async function main(
  *
  * @param {typeof import('path')} path
  * @returns {ResolveFn}
- * @typedef {typeof resolve } ResolveFn
+ * @typedef {typeof import('path').resolve } ResolveFn
  */
 export function makeBundleResolve(path) {
   const bundleRoots = [

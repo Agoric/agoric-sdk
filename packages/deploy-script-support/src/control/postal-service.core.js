@@ -26,7 +26,8 @@ const trace = makeTracer('CCtrlCore');
 /** @param {BootstrapPowers & PostalServiceBoot} permitted */
 export const deployPostalService = async permitted => {
   permitted.instance.produce.postalService.reset();
-  const { startUpgradable, namesByAddress } = permitted.consume;
+  const { agoricNamesAdmin, startUpgradable, namesByAddress } =
+    permitted.consume;
   const { postalService: installationP } = permitted.installation.consume;
   trace('await: installation.postalService');
   const installation = await installationP;
@@ -41,6 +42,8 @@ export const deployPostalService = async permitted => {
     privateArgs,
   });
   trace('kit', objectMap(kit, passStyleOf));
+  const instanceAdmin = E(agoricNamesAdmin).lookupAdmin('instance');
+  await E(instanceAdmin).update(contractName, kit.instance);
   permitted.instance.produce.postalService.resolve(kit.instance);
 };
 
@@ -50,7 +53,11 @@ export const getManifestForPostalService = (
 ) => ({
   manifest: {
     [deployPostalService.name]: {
-      consume: { startUpgradable: true, namesByAddress: true },
+      consume: {
+        agoricNamesAdmin: true,
+        startUpgradable: true,
+        namesByAddress: true,
+      },
       installation: { consume: { postalService: true } },
       instance: { produce: { postalService: true } },
     },

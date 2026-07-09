@@ -1,5 +1,4 @@
 #! /usr/bin/env node
-// @jessie-check
 
 import '@endo/init/pre.js';
 
@@ -7,9 +6,9 @@ import agcc from '@agoric/cosmos';
 
 import '@endo/init/unsafe-fast.js';
 
-import os from 'os';
-import path from 'path';
-import process from 'process';
+import os from 'node:os';
+import path from 'node:path';
+import process from 'node:process';
 
 import './anylogger-agoric.js';
 import anylogger from '@agoric/internal/vendor/anylogger.js';

@@ -5,6 +5,7 @@ import { E } from '@endo/far';
 /**
  * @import {ERef} from '@endo/far';
  * @import {FromCapData} from '@endo/marshal';
+ * @import {LCD} from './makeHttpClient.js';
  */
 
 /** @typedef {'children' | 'data'} AgoricChainStoragePathKind */
@@ -38,7 +39,7 @@ async function* mapHistory(f, chunks) {
 }
 
 /**
- * @param {ERef<import('./makeHttpClient.js').LCD>} lcd
+ * @param {ERef<LCD>} lcd
  */
 export const makeVStorage = lcd => {
   // height=0 is the same as omitting height and implies the highest block

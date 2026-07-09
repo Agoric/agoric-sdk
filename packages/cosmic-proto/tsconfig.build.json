@@ -6,6 +6,7 @@
     ],
     "compilerOptions": {
         "noEmit": false,
+        "rootDir": "src",
         "outDir": "dist",
         "emitDeclarationOnly": false,
         "declaration": true,
@@ -19,8 +20,8 @@
         ],
         "sourceMap": true,
         "isolatedModules": true,
-        "downlevelIteration": true,
     },
+    "include": ["src"],
     "exclude": [
         "scripts",
         "test",

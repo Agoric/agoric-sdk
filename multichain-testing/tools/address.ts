@@ -1,10 +1,12 @@
-import type { IBCChannelID, IBCConnectionID, IBCPortID } from '@agoric/vats';
 import {
+  type IBCChannelID,
+  type IBCConnectionID,
+  type IBCPortID,
   type LocalIbcAddress,
   type RemoteIbcAddress,
-} from '@agoric/vats/tools/ibc-utils.js';
+} from '@agoric/network/ibc';
 
-// XXX consider moving to vats/tools/ibc-utils by updating current values or renaming as `NEGOTIATED_...`
+// XXX consider moving into network/src/ibc/utils by updating current values or renaming as `NEGOTIATED_...`
 // These take those values and build off of them
 const REMOTE_ADDR_RE =
   /^(?<hops>(?:\/ibc-hop\/[^/]+)*)\/ibc-port\/(?<portID>[^/]+)\/(?<order>ordered|unordered)\/(?<version>{[^}]+})\/ibc-channel\/(?<channelID>[^/]+)$/;

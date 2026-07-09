@@ -14,16 +14,29 @@ on:
         required: true
         type: string
         description: 'Identifier for the test suite that will be used as part of the filename name for logs'
+      sdk_build_id:
+        required: true
+        type: string
+        description: 'Depot build ID for the prebuilt linux/amd64 SDK image to pull and load into kind'
 
 jobs:
   multichain-e2e:
     name: Multichain E2E (${{ inputs.test_command }})
+    # Keep this on a Depot runner because the job builds via Depot, loads the
+    # resulting image into kind, and then does substantial local Docker/K8s work.
     runs-on: 'depot-ubuntu-24.04-16'
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DEPOT_PROJECT_ID: '0gtvlr9g8j'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: depot/setup-action@v1
         with:
-          submodules: 'true'
+          oidc: true
+      - uses: actions/checkout@v5
+        with:
           path: ./agoric-sdk
 
       - uses: ./agoric-sdk/.github/actions/restore-node
@@ -76,19 +89,14 @@ jobs:
         run: yarn install
         working-directory: ./agoric-sdk/multichain-testing
 
-      - name: Lint @agoric/multichain-testing
-        # include testing imports to check package patches
-        run: yarn lint && yarn ava test/imports.test.ts
-        working-directory: ./agoric-sdk/multichain-testing
-
-      - name: docker build (sdk)
-        # Produces local ghcr.io/agoric/agoric-sdk:dev used in Kind.
-        run: |
-          make docker-build-sdk TAG=dev
-        working-directory: ./agoric-sdk/packages/deployment
+      - name: Import prebuilt SDK image
+        uses: depot/pull-action@v1
+        with:
+          build-id: ${{ inputs.sdk_build_id }}
+          tags: ghcr.io/agoric/agoric-sdk:dev
 
       - name: Setup kind cluster
-        uses: helm/kind-action@v1.8.0
+        uses: helm/kind-action@v1.14.0
         with:
           cluster_name: kind-starship
 
@@ -107,9 +115,11 @@ jobs:
 
       - name: Setup Starship Infrastructure
         id: starship-infra
-        # `inputs.name` is fixed in this commit (hyperweb-io/starship-action#43).
-        # TODO: Adopt an official tag of `starship-action` when it is released
-        uses: hyperweb-io/starship-action@d854f77ccefe7fc3dfe05b0500931ff2563d1406
+        # starship-action 1.1.0 (commit ca7de52). Earlier versions ran their own
+        # `setup-node` pinned to Node 20.x, downgrading the PATH for the rest of
+        # the job and breaking AVA 8 / emittery 2 (which need Node >=22). 1.1.0
+        # removed that step, so the test steps keep the job's node-new (Node 22).
+        uses: hyperweb-io/starship-action@ca7de52c22a3b932e4f87fb0389f3ac174853d5f
         timeout-minutes: 20
         with:
           config: ./agoric-sdk/multichain-testing/${{ inputs.config }}
@@ -169,7 +179,7 @@ jobs:
 
       - name: Upload validator and relayer logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ inputs.test_suite_name }}-${{ github.run_id }}-${{ github.job }}
           path: ${{ env.LOG_DIR }}

@@ -4,8 +4,8 @@
 import '@endo/init';
 
 import anylogger from '@agoric/internal/vendor/anylogger.js';
-import fs from 'fs';
-import { Buffer } from 'buffer';
+import fs from 'node:fs';
+import { Buffer } from 'node:buffer';
 import process from 'node:process';
 
 import { assert, X, Fail } from '@endo/errors';
@@ -31,9 +31,8 @@ import {
  * @import {Bundle} from '../../types-external.js';
  */
 
-// eslint-disable-next-line no-unused-vars
-function workerLog(first, ...args) {
-  // console.error(`---worker: ${first}`, ...args);
+function workerLog(_first, ..._args) {
+  // console.error(`---worker: ${_first}`, ..._args);
 }
 
 workerLog(`supervisor started`);

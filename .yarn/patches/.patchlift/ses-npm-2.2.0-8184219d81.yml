@@ -1,0 +1,20 @@
+schemaVersion: 1
+patchHash: sha256:99a0ba679eeac00e4bbaba09d7a1bf1db8bc9e104a9c563d3ffd0b82ca0c1597
+package:
+  name: ses
+  version: 2.2.0
+upstream:
+  repo: endojs/endo
+  issue:
+  pr: https://github.com/endojs/endo/pull/3153
+status: localonly
+notes: "Defers endo#3153: SES 2.x removed Float{16,32,64}Array from
+  universalPropertyNames (NaN side channel); this patch restores them as
+  universal compartment globals. Needed because already-deployed vat bundles
+  construct Float64Array (e.g. older @endo/marshal number encoding) and
+  otherwise throw 'Float64Array is not a constructor' at deploy. Adopting the
+  side-channel mitigation is non-trivial (must re-endow across
+  kernel/liveslots/supervisors/core-eval) and is logically separable from the
+  Endo sync; tracked separately."
+createdAt: 2026-06-16T19:39:58.288Z
+updatedAt: 2026-06-16T19:42:28.695Z

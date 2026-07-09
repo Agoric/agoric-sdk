@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { makeScalarBigWeakMapStore } from '@agoric/vat-data';
 import { provideLazy } from '@agoric/store';
 import { makeNotifierKit } from '@agoric/notifier';

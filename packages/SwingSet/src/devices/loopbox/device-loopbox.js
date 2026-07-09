@@ -8,7 +8,7 @@ export function buildRootDeviceNode(tools) {
 
   function makeSender(sender) {
     return Far('sender', {
-      add(peer, msgnum, body) {
+      add(peer, _msgnum, body) {
         const oldDS = getDeviceState();
         oldDS.inboundHandlers[peer] || Fail`unregistered peer '${peer}'`;
         const h = oldDS.inboundHandlers[peer];

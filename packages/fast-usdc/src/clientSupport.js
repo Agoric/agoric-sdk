@@ -29,22 +29,24 @@ const makeDepositOffer = ({ brand }, { offerId, fastLPAmount, usdcAmount }) => {
       instancePath: ['fastUsdc'],
       callPipe: [['makeDepositInvitation']],
     },
-    /** @type {USDCProposalShapes['deposit']} */
-    // @ts-expect-error https://github.com/Agoric/agoric-sdk/issues/10491
-    proposal: {
-      give: {
-        USDC: {
-          brand: brand.USDC,
-          value: usdcAmount,
+    // brand.USDC/FastLP are BoardRemotes standing in for Brands; cast through
+    // unknown. See https://github.com/Agoric/agoric-sdk/issues/10491
+    proposal: /** @type {USDCProposalShapes['deposit']} */ (
+      /** @type {unknown} */ ({
+        give: {
+          USDC: {
+            brand: brand.USDC,
+            value: usdcAmount,
+          },
         },
-      },
-      want: {
-        PoolShare: {
-          brand: brand.FastLP,
-          value: fastLPAmount,
+        want: {
+          PoolShare: {
+            brand: brand.FastLP,
+            value: fastLPAmount,
+          },
         },
-      },
-    },
+      })
+    ),
   };
 };
 

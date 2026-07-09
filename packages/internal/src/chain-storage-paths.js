@@ -1,5 +1,3 @@
-// @jessie-check
-
 /**
  * These identify top-level paths for SwingSet chain storage (and serve as
  * prefixes). To avoid collisions, they should remain synchronized with

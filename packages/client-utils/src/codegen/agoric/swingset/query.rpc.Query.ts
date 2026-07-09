@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../helpers.js';
-import { BinaryReader } from '../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryParamsRequest,
@@ -9,7 +9,9 @@ import {
   QueryEgressResponse,
   QueryMailboxRequest,
   QueryMailboxResponse,
-} from './query.js';
+  QueryChunkedArtifactStatusRequest,
+  QueryChunkedArtifactStatusResponse,
+} from '@agoric/cosmic-proto/codegen/agoric/swingset/query.js';
 /** Query provides defines the gRPC querier service */
 export interface Query {
   /** Params queries params of the swingset module. */
@@ -18,6 +20,10 @@ export interface Query {
   egress(request: QueryEgressRequest): Promise<QueryEgressResponse>;
   /** Return the contents of a peer's outbound mailbox. */
   mailbox(request: QueryMailboxRequest): Promise<QueryMailboxResponse>;
+  /** Return the state of a pending installation. */
+  chunkedArtifactStatus(
+    request: QueryChunkedArtifactStatusRequest,
+  ): Promise<QueryChunkedArtifactStatusResponse>;
 }
 export class QueryClientImpl implements Query {
   private readonly rpc: Rpc;
@@ -26,6 +32,7 @@ export class QueryClientImpl implements Query {
     this.params = this.params.bind(this);
     this.egress = this.egress.bind(this);
     this.mailbox = this.mailbox.bind(this);
+    this.chunkedArtifactStatus = this.chunkedArtifactStatus.bind(this);
   }
   params(request: QueryParamsRequest = {}): Promise<QueryParamsResponse> {
     const data = QueryParamsRequest.encode(request).finish();
@@ -48,6 +55,19 @@ export class QueryClientImpl implements Query {
       QueryMailboxResponse.decode(new BinaryReader(data)),
     );
   }
+  chunkedArtifactStatus(
+    request: QueryChunkedArtifactStatusRequest,
+  ): Promise<QueryChunkedArtifactStatusResponse> {
+    const data = QueryChunkedArtifactStatusRequest.encode(request).finish();
+    const promise = this.rpc.request(
+      'agoric.swingset.Query',
+      'ChunkedArtifactStatus',
+      data,
+    );
+    return promise.then(data =>
+      QueryChunkedArtifactStatusResponse.decode(new BinaryReader(data)),
+    );
+  }
 }
 export const createRpcQueryExtension = (base: QueryClient) => {
   const rpc = createProtobufRpcClient(base);
@@ -61,6 +81,11 @@ export const createRpcQueryExtension = (base: QueryClient) => {
     },
     mailbox(request: QueryMailboxRequest): Promise<QueryMailboxResponse> {
       return queryService.mailbox(request);
+    },
+    chunkedArtifactStatus(
+      request: QueryChunkedArtifactStatusRequest,
+    ): Promise<QueryChunkedArtifactStatusResponse> {
+      return queryService.chunkedArtifactStatus(request);
     },
   };
 };

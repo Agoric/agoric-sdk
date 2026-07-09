@@ -1,5 +1,3 @@
-// @jessie-check
-
 export default {
   failFast: true,
   files: ['integration-tests/*.test.*'],

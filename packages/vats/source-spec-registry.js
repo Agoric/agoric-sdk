@@ -1,4 +1,4 @@
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 
 /** @param {string} packagePath */
 const resolveSourceSpec = packagePath =>
@@ -43,6 +43,11 @@ export const vatsSourceSpecRegistry = {
     bundleName: 'mintHolder',
     packagePath: '@agoric/vats/src/mintHolder.js',
     sourceSpec: resolveSourceSpec('@agoric/vats/src/mintHolder.js'),
+  },
+  provisionPool: {
+    bundleName: 'provisionPool',
+    packagePath: '@agoric/vats/src/provisionPool.js',
+    sourceSpec: resolveSourceSpec('@agoric/vats/src/provisionPool.js'),
   },
   vatMints: {
     packagePath: '@agoric/vats/src/vat-mints.js',

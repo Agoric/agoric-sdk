@@ -48,7 +48,7 @@ You must also prepare a `ConnectionHandler` object to manage the connection you'
 Then you will call the `connect()` method on your local `Port`. This will return a `Promise` that will fire with a new `Connection` object, on which you can send data. Your `ConnectionHandler` will be notified about the new channel, and will receive inbound data from the other side.
 
 ```js
-import { encodeIbcEndpoint } from '@agoric/vats/tools/ibc-utils.js';
+import { encodeIbcEndpoint } from '@agoric/network/ibc/utils.js';
 const remoteEndpoint = encodeIbcEndpoint({
   hops: [connectionID],
   portID,

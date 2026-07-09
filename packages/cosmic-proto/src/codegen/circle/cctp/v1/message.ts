@@ -19,6 +19,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * @param recipient address of recipient on destination chain as bytes32
  * @param destination_caller address of caller on destination chain as bytes32
  * @param message_body raw bytes of message body
+ * @name Message
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Message
  */
 export interface Message {
   version: number;
@@ -49,6 +52,9 @@ export interface MessageProtoMsg {
  * @param recipient address of recipient on destination chain as bytes32
  * @param destination_caller address of caller on destination chain as bytes32
  * @param message_body raw bytes of message body
+ * @name MessageSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Message
  */
 export interface MessageSDKType {
   version: number;
@@ -72,8 +78,61 @@ function createBaseMessage(): Message {
     messageBody: new Uint8Array(),
   };
 }
+/**
+ * Generic message header for all messages passing through CCTP
+ * The message body is dynamically-sized to support custom message body
+ * formats. Other fields must be fixed-size to avoid hash collisions.
+ *
+ * Padding: uintNN fields are left-padded, and bytesNN fields are right-padded.
+ *
+ * @param version the version of the message format
+ * @param source_domain domain of home chain
+ * @param destination_domain domain of destination chain
+ * @param nonce destination-specific nonce
+ * @param sender address of sender on source chain as bytes32
+ * @param recipient address of recipient on destination chain as bytes32
+ * @param destination_caller address of caller on destination chain as bytes32
+ * @param message_body raw bytes of message body
+ * @name Message
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.Message
+ */
 export const Message = {
   typeUrl: '/circle.cctp.v1.Message' as const,
+  is(o: any): o is Message {
+    return (
+      o &&
+      (o.$typeUrl === Message.typeUrl ||
+        (typeof o.version === 'number' &&
+          typeof o.sourceDomain === 'number' &&
+          typeof o.destinationDomain === 'number' &&
+          typeof o.nonce === 'bigint' &&
+          (o.sender instanceof Uint8Array || typeof o.sender === 'string') &&
+          (o.recipient instanceof Uint8Array ||
+            typeof o.recipient === 'string') &&
+          (o.destinationCaller instanceof Uint8Array ||
+            typeof o.destinationCaller === 'string') &&
+          (o.messageBody instanceof Uint8Array ||
+            typeof o.messageBody === 'string')))
+    );
+  },
+  isSDK(o: any): o is MessageSDKType {
+    return (
+      o &&
+      (o.$typeUrl === Message.typeUrl ||
+        (typeof o.version === 'number' &&
+          typeof o.source_domain === 'number' &&
+          typeof o.destination_domain === 'number' &&
+          typeof o.nonce === 'bigint' &&
+          (o.sender instanceof Uint8Array || typeof o.sender === 'string') &&
+          (o.recipient instanceof Uint8Array ||
+            typeof o.recipient === 'string') &&
+          (o.destination_caller instanceof Uint8Array ||
+            typeof o.destination_caller === 'string') &&
+          (o.message_body instanceof Uint8Array ||
+            typeof o.message_body === 'string')))
+    );
+  },
   encode(
     message: Message,
     writer: BinaryWriter = BinaryWriter.create(),

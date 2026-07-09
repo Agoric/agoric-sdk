@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
@@ -159,7 +159,10 @@ test(`offerTo - basic usage`, async t => {
   });
 
   // The offerResult is as expected
-  t.is(await E(contractBUserSeat).getOfferResult(), successMsg);
+  t.is(
+    /** @type {any} */ (await E(contractBUserSeat).getOfferResult()),
+    successMsg,
+  );
 });
 
 test(`offerTo - violates offer safety of fromSeat`, async t => {
@@ -293,9 +296,7 @@ test(`throws handler errors during getOfferResult`, async t => {
   await contractBUserSeat;
 
   // only getOfferResult calls the broken handler
-  try {
-    await E(contractBUserSeat).getOfferResult();
-  } catch (e) {
-    t.is(e.message, '🚨');
-  }
+  await t.throwsAsync(() => E(contractBUserSeat).getOfferResult(), {
+    message: '🚨',
+  });
 });

@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryGrantsRequest,
@@ -9,24 +9,16 @@ import {
   QueryGranterGrantsResponse,
   QueryGranteeGrantsRequest,
   QueryGranteeGrantsResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** Returns list of `Authorization`, granted to the grantee by the granter. */
   grants(request: QueryGrantsRequest): Promise<QueryGrantsResponse>;
-  /**
-   * GranterGrants returns list of `GrantAuthorization`, granted by granter.
-   *
-   * Since: cosmos-sdk 0.46
-   */
+  /** GranterGrants returns list of `GrantAuthorization`, granted by granter. */
   granterGrants(
     request: QueryGranterGrantsRequest,
   ): Promise<QueryGranterGrantsResponse>;
-  /**
-   * GranteeGrants returns a list of `GrantAuthorization` by grantee.
-   *
-   * Since: cosmos-sdk 0.46
-   */
+  /** GranteeGrants returns a list of `GrantAuthorization` by grantee. */
   granteeGrants(
     request: QueryGranteeGrantsRequest,
   ): Promise<QueryGranteeGrantsResponse>;

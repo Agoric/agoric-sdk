@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:6a2ded14b520a9942ed0de8cb46392f55ed035b1495e44dcb9ff07cd179515d8
+package:
+  name: rxjs
+  version: 7.5.5
+upstream:
+  repo: reactivex/rxjs
+  issue: null
+  pr: https://github.com/ReactiveX/rxjs/pull/6991
+status: rejected
+notes: null
+createdAt: 2026-04-16T05:06:29.861Z
+updatedAt: 2026-04-16T05:06:29.861Z

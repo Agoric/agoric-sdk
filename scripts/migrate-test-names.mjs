@@ -1,5 +1,4 @@
 #!/usr/bin/env zx
-/* eslint-disable @jessie.js/safe-await-separator */
 // @ts-nocheck typecheck would require a package.json with zx
 /* global chalk, fs, $ -- provided by zx */
 

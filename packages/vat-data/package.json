@@ -11,8 +11,8 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "yarn run -T eslint .",
-    "lint:types": "yarn run -T tsc"
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo"
   },
   "keywords": [],
   "author": "Agoric",
@@ -21,15 +21,15 @@
     "@agoric/base-zone": "workspace:*",
     "@agoric/store": "workspace:*",
     "@agoric/swingset-liveslots": "workspace:*",
-    "@endo/errors": "^1.2.13",
-    "@endo/exo": "^1.5.12",
-    "@endo/patterns": "^1.7.0"
+    "@endo/errors": "^1.3.1",
+    "@endo/exo": "^1.7.0",
+    "@endo/patterns": "^1.9.1"
   },
   "devDependencies": {
     "@endo/far": "^1.1.14",
-    "@endo/init": "^1.1.12",
-    "@endo/ses-ava": "^1.3.2",
-    "ava": "^6.4.1",
+    "@endo/init": "^1.1.13",
+    "@endo/ses-ava": "^1.4.2",
+    "ava": "^8.0.1",
     "tsd": "^0.33.0"
   },
   "files": [
@@ -47,9 +47,9 @@
     "access": "public"
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "typeCoverage": {
-    "atLeast": 99.33
+    "atLeast": 99.06
   }
 }

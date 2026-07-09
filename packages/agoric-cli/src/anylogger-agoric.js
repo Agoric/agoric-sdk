@@ -16,7 +16,6 @@
  * - Keeping separate adapters avoids coupling CLI output behavior to
  *   cosmic-swingset operational logging requirements.
  */
-/* eslint-env node */
 import {
   getEnvironmentOption,
   getEnvironmentOptionsList,

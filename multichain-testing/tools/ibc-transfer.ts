@@ -47,13 +47,15 @@ export const DEFAULT_TIMEOUT_NS =
 
 /**
  * @param {number} [ms] current time in ms (e.g. Date.now())
- * @param {bigint} [minutes=5n] number of minutes in the future
- * @returns {bigint} nanosecond timestamp absolute since Unix epoch */
+ * @param {bigint} [minutes] number of minutes in the future
+ * @returns {bigint} nanosecond timestamp absolute since Unix epoch
+ */
 export const getTimeout = (ms: number = 0, minutes = 5n) => {
   // UNTIL #9200. timestamps are getting clobbered somewhere along the way
   // and we are observing failed transfers with timeouts years in the past.
   // see https://github.com/Agoric/agoric-sdk/actions/runs/9967903776/job/27542288963#step:12:336
   return DEFAULT_TIMEOUT_NS;
+  // eslint-disable-next-line no-unreachable
   const timeoutMS =
     BigInt(ms) + MILLISECONDS_PER_SECOND * SECONDS_PER_MINUTE * minutes;
   const timeoutNS = timeoutMS * NANOSECONDS_PER_MILLISECOND;
@@ -96,21 +98,21 @@ export const makeIBCTransferMsg = (
       : (timeoutTimestamp ?? getTimeout(currentTime)),
     memo,
   });
-  const { fee_tokens } = senderChainInfo.chain.fees ?? {};
-  if (!fee_tokens || !fee_tokens.length) {
-    throw Error('no fee tokens in chain config for' + sender.chainName);
+  const { fee_tokens: feeTokens } = senderChainInfo.chain.fees ?? {};
+  if (!feeTokens || !feeTokens.length) {
+    throw Error(`no fee tokens in chain config for ${sender.chainName}`);
   }
-  if (fee_tokens.length > 1) {
+  if (feeTokens.length > 1) {
     console.warn(
       `Multiple fee tokens found for ${sender.chainName}, using the first one`,
     );
   }
-  const { high_gas_price, denom } = fee_tokens[0];
-  if (!high_gas_price) throw Error('no high gas price in chain config');
+  const { high_gas_price: highGasPrice, denom } = feeTokens[0];
+  if (!highGasPrice) throw Error('no high gas price in chain config');
   const fee = makeFeeObject({
-    denom: denom,
+    denom,
     gas: 197000,
-    gasPrice: high_gas_price,
+    gasPrice: highGasPrice,
   });
 
   const message0 = {
@@ -172,7 +174,7 @@ export const makeFundAndTransfer = (
     const transferArgs = makeIBCTransferMsg(
       { denom: denomToTransfer, value: amount },
       { address: agoricAddr, chainName: 'agoric' },
-      { address: address, chainName },
+      { address, chainName },
       Date.now(),
       useChain,
     );

@@ -3,14 +3,23 @@
  * @see {@link preparePlanner}
  */
 import { makeTracer, type TypedPattern } from '@agoric/internal';
-import type { FundsFlowPlan } from '@agoric/portfolio-api';
-import { type Vow, VowShape, type VowTools } from '@agoric/vow';
-import type { ZCF, ZCFSeat } from '@agoric/zoe';
+import type {
+  FlowKey,
+  FundsFlowPlan,
+  PortfolioDelegatedRebalanceParams,
+} from '@agoric/portfolio-api';
+import { isInstrumentId } from '@agoric/portfolio-api/src/type-guards.js';
 import type { Zone } from '@agoric/zone';
+import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
+import {
+  PortfolioDelegatedRebalanceParamsShape,
+  type PortfolioDelegationClient,
+} from './delegation.exo.ts';
 import type { PortfolioKit } from './portfolio.exo.ts';
-import type { MovementDesc, OfferArgsFor } from './type-guards-steps.ts';
+import type { MovementDesc } from './type-guards-steps.ts';
 import { makeOfferArgsShapes } from './type-guards-steps.ts';
+import { flowIdFromKey, FlowKeyShape } from './type-guards.ts';
 
 const trace = makeTracer('PPLN');
 
@@ -29,21 +38,15 @@ const OrderShape: TypedPattern<FundsFlowPlan['order']> = M.arrayOf([
 export const preparePlanner = (
   zone: Zone,
   {
-    rebalance,
-    zcf,
-    getPortfolio,
+    getPortfolioPlanner,
+    getPlannerDelegation,
     shapes,
-    vowTools,
   }: {
-    rebalance: (
-      seat: ZCFSeat,
-      offerArgs: OfferArgsFor['rebalance'],
-      kit: unknown, // XXX avoid circular reference
-    ) => Vow<any>; // XXX HostForGuest???
-    zcf: ZCF;
-    getPortfolio: (id: number) => PortfolioKit;
+    getPortfolioPlanner: (id: number) => PortfolioKit['planner'];
+    getPlannerDelegation: (
+      portfolioPlanner: PortfolioKit['planner'],
+    ) => PortfolioDelegationClient | undefined;
     shapes: ReturnType<typeof makeOfferArgsShapes>;
-    vowTools: Pick<VowTools, 'asVow'>;
   },
 ) => {
   const { movementDescShape } = shapes;
@@ -52,17 +55,46 @@ export const preparePlanner = (
     { order: OrderShape },
   );
   const planCompatShape = M.or(planShape, M.arrayOf(movementDescShape));
+  // TODO(#11782): vet more of plan semantics; currently only enforces
+  // delegate-style "no new positions".
+  const vetNoNewPositions = (
+    portfolioPlanner: PortfolioKit['planner'],
+    planOrSteps: FundsFlowPlan | MovementDesc[],
+  ) => {
+    const allowedPositions = Object.keys(
+      portfolioPlanner.getTargetAllocation() ?? {},
+    );
+    const steps = Array.isArray(planOrSteps) ? planOrSteps : planOrSteps.flow;
+    const destinations = [...new Set(steps.map(({ dest }) => dest))];
+    const unexpected = destinations.filter(
+      dest => isInstrumentId(dest) && !allowedPositions.includes(dest),
+    );
+    unexpected.length === 0 ||
+      Fail`planner cannot add positions: ${unexpected.join(', ')}`;
+  };
+
+  const portfolioIdShape = M.number();
+  const flowIdShape = M.number();
+  const policyVersionShape = M.number();
+  const rebalanceCountShape = M.number();
 
   const PlannerI = M.interface('Planner', {
-    submit: M.call(M.number(), M.arrayOf(movementDescShape), M.number())
-      .optional(M.number())
-      .returns(VowShape),
-    resolvePlan: M.call(M.number(), M.number(), planCompatShape, M.number())
-      .optional(M.number())
+    resolvePlan: M.call(
+      portfolioIdShape,
+      flowIdShape,
+      planCompatShape,
+      policyVersionShape,
+    )
+      .optional(rebalanceCountShape)
       .returns(),
-    rejectPlan: M.call(M.number(), M.number(), M.string())
-      .optional(M.number(), M.number())
+    rejectPlan: M.call(portfolioIdShape, flowIdShape, M.string())
+      .optional(policyVersionShape, rebalanceCountShape)
       .returns(),
+    rebalance: M.call(
+      portfolioIdShape,
+      PortfolioDelegatedRebalanceParamsShape,
+      planCompatShape,
+    ).returns(FlowKeyShape),
   });
 
   return zone.exoClass(
@@ -70,36 +102,6 @@ export const preparePlanner = (
     PlannerI,
     () => ({ etc: undefined }),
     {
-      /**
-       * Submit a plan (sequence of moves) for execution in a new flow.
-       *
-       * Used by off-chain planning services to carry out expressed wishes
-       * of a portfolio owner.
-       *
-       * @deprecated
-       * @see resolvePlan
-       *
-       * @param portfolioId - Target portfolio identifier
-       * @param plan - Array of asset movements to execute
-       * @param policyVersion - on which plan is based
-       * @param rebalanceCount - presumed current count
-       * @throws i.e. Vow rejects if portfolio not found, policyVersion is not current,
-       *   or plan validation or execution fails
-       */
-      submit(
-        portfolioId: number,
-        plan: MovementDesc[],
-        policyVersion: number,
-        rebalanceCount = 0,
-      ): Vow<void> {
-        return vowTools.asVow(async () => {
-          trace('TODO(#11782): vet plan', { portfolioId, plan });
-          const pKit = getPortfolio(portfolioId);
-          pKit.planner.submitVersion(policyVersion, rebalanceCount);
-          const { zcfSeat: emptySeat } = zcf.makeEmptySeatKit();
-          return rebalance(emptySeat, { flow: plan }, pKit);
-        });
-      },
       resolvePlan(
         portfolioId: number,
         flowId: number,
@@ -111,7 +113,8 @@ export const preparePlanner = (
           .sub(`portfolio${portfolioId}`)
           .sub(`flow${flowId}`);
         traceFlow('TODO(#11782): vet plan', planOrSteps);
-        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
+        vetNoNewPositions(portfolioPlanner, planOrSteps);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
       },
@@ -123,9 +126,43 @@ export const preparePlanner = (
         rebalanceCount: number,
       ) {
         trace('reject plan', { portfolioId, flowId, reason });
-        const { planner: portfolioPlanner } = getPortfolio(portfolioId);
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
         portfolioPlanner.submitVersion(policyVersion, rebalanceCount);
         portfolioPlanner.rejectFlowPlan(flowId, reason);
+      },
+      rebalance(
+        portfolioId: number,
+        delegatedRebalanceParams: PortfolioDelegatedRebalanceParams,
+        planOrSteps: FundsFlowPlan | MovementDesc[],
+      ): FlowKey {
+        const portfolioPlanner = getPortfolioPlanner(portfolioId);
+        const delegationClient = getPlannerDelegation(portfolioPlanner);
+        assert(
+          delegationClient && delegationClient.getReader().isActive(),
+          `planner delegation must be active for portfolio ${portfolioId}`,
+        );
+
+        const autoFeatures = delegationClient.getReader().getAutoFeatures();
+        assert(
+          autoFeatures?.rebalance,
+          `portfolio ${portfolioId} auto-feature "rebalance" must be enabled`,
+        );
+
+        // The flow created by rebalance is guaranteed to have its plan sync kit
+        // fully ready.
+        const flowKey = delegationClient.rebalance(delegatedRebalanceParams);
+        const flowId = flowIdFromKey(flowKey);
+        trace.sub(`portfolio${portfolioId}`).sub(flowKey)(
+          'TODO(#11782): vet delegated plan',
+          planOrSteps,
+        );
+        vetNoNewPositions(portfolioPlanner, planOrSteps);
+        portfolioPlanner.submitVersion(
+          delegatedRebalanceParams.syncState.policyVersion,
+          delegatedRebalanceParams.syncState.rebalanceCount,
+        );
+        portfolioPlanner.resolveFlowPlan(flowId, planOrSteps);
+        return flowKey;
       },
     },
     {

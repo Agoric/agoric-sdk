@@ -1,20 +1,21 @@
 import type { Hex } from 'viem';
 import type { HostInterface } from '@agoric/async-flow';
+import { CodecHelper } from '@agoric/cosmic-proto';
 import {
-  MsgDepositForBurn,
-  MsgDepositForBurnResponse,
+  MsgDepositForBurn as MsgDepositForBurnType,
+  MsgDepositForBurnResponse as MsgDepositForBurnResponseType,
 } from '@agoric/cosmic-proto/circle/cctp/v1/tx.js';
 import {
-  MsgTransfer,
-  MsgTransferResponse,
+  MsgTransfer as MsgTransferType,
+  MsgTransferResponse as MsgTransferResponseType,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import {
-  MsgLock,
-  MsgLockResponse,
+  MsgLock as MsgLockType,
+  MsgLockResponse as MsgLockResponseType,
 } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/tx.js';
 import {
-  MsgSwap,
-  MsgSwapResponse,
+  MsgSwap as MsgSwapType,
+  MsgSwapResponse as MsgSwapResponseType,
 } from '@agoric/cosmic-proto/noble/swap/v1/tx.js';
 import type { Brand, Issuer, NatAmount, Payment } from '@agoric/ertp';
 import { makeRatio } from '@agoric/ertp/src/ratio.js';
@@ -38,12 +39,25 @@ import { makePromiseKit } from '@endo/promise-kit';
 import type { AxelarId, GmpAddresses } from '../src/portfolio.contract.ts';
 import type { EVMContractAddressesMap } from '../src/type-guards.ts';
 
+const MsgDepositForBurn = CodecHelper(MsgDepositForBurnType);
+const MsgDepositForBurnResponse = CodecHelper(MsgDepositForBurnResponseType);
+const MsgTransfer = CodecHelper(MsgTransferType);
+const MsgTransferResponse = CodecHelper(MsgTransferResponseType);
+const MsgLock = CodecHelper(MsgLockType);
+const MsgLockResponse = CodecHelper(MsgLockResponseType);
+const MsgSwap = CodecHelper(MsgSwapType);
+const MsgSwapResponse = CodecHelper(MsgSwapResponseType);
+
 /** address of orch LCA for portfolio0, after contract/fee LCA */
 export const portfolio0lcaOrch = makeTestAddress(1); // agoric1q...c09z0g';
 
-/** Private key for EVM address 0x3f4ae329c7fb2d39c7a0d786df25c32a45691f88 */
+/** Private key for EVM address 0x3F4AE329c7FB2d39C7a0d786df25c32a45691f88 */
 export const evmTrader0PrivateKey =
   '0x59c6995e998f97a5a0044966f094538c5f68e0c4e42e20b1e6f8a9a4f9f3d0b0' as Hex;
+
+/** Private key for EVM address 0x86F960bcCABc12306aEf894AdF52c5a146f47B90 */
+export const evmTrader1PrivateKey =
+  '0x8b3a350cf5c34c9194ca3a545d6fcf38e6f2d5d63f8f87be0c1e98e4b8c8f6d1' as Hex;
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -228,13 +242,14 @@ export const makeCCTPTraffic = (
   money = `${3_333.33 * 1000000}`,
   // This default matches the predicted addresss computed during tests
   dest = '0x8fcc8340520552c3cc861acaaa752e2d38bff2bb',
+  destinationDomain = 3,
 ) => ({
   depositForBurn: {
     msg: buildTxPacketString([
       MsgDepositForBurn.toProtoMsg({
         amount: money,
         burnToken: 'uusdc',
-        destinationDomain: 3,
+        destinationDomain,
         from,
         mintRecipient: leftPadEthAddressTo32Bytes(dest),
       }),
@@ -280,6 +295,9 @@ export const contractsMock = {
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
     gateway: '0xC249632c2D40b9001FE907806902f63038B737Ab',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
@@ -290,12 +308,16 @@ export const contractsMock = {
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_re7_Avalanche: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
   Ethereum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
@@ -310,12 +332,16 @@ export const contractsMock = {
     Beefy_morphoSmokehouseUsdc_Ethereum:
       '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
   Optimism: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
@@ -326,13 +352,18 @@ export const contractsMock = {
     aaveRewardsController: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
+    cctpRelayer: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
   Arbitrum: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
     gateway: '0xe1cE95479C84e9809269227C7F8524aE051Ae77a',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
@@ -351,12 +382,16 @@ export const contractsMock = {
     Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     ERC4626_vaultU2_Ethereum: '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
   Base: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
     compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
     factory: '0xef8651dD30cF990A1e831224f2E0996023163A81',
+    remoteAccountImplementation: '0x19b1c8917bd8A51CD25FCB43c50E4184EDA29c13',
+    remoteAccountFactory: '0x7F649a200382A9b909989168A7fF5a87B8aea189',
+    remoteAccountRouter: '0x4028686122Ae547e6B551C85962C5dA52db69743',
     gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
     gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
     usdc: '0xCaC7Ffa82c0f43EBB0FC11FCd32123EcA46626cf',
@@ -368,6 +403,7 @@ export const contractsMock = {
     compoundRewardsController: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
     Beefy_morphoSeamlessUsdc_Base: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
     walletHelper: '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+    oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
   },
 } as const satisfies EVMContractAddressesMap;
 
@@ -384,28 +420,26 @@ export const explored = [
   {
     txhash: '50D671D1D56CF5041CBE7C3483EF461765196ECD7D7571CCEF0A612B46FC7A3B',
     messages: [
-      {
-        '@type': '/noble.swap.v1.MsgSwap',
+      MsgSwap.toProtoMsg({
         signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
         amount: { denom: 'uusdc', amount: '111000000' },
         // routes: [{ pool_id: '0', denom_to: 'uusdn' }],
         routes: [{ poolId: 0n, denomTo: 'uusdn' }],
         min: { denom: 'uusdn', amount: '110858936' },
-      } satisfies MsgSwap & { '@type': string },
+      }),
     ],
   },
   {
     txhash: 'BD97D42915C9185B11B14FEDC2EF6BCE0677E6720472DC6E1B51CCD504534237',
     messages: [
-      {
-        '@type': '/noble.dollar.vaults.v1.MsgLock',
+      MsgLock.toProtoMsg({
         signer: 'noble1wtwydxverrrc673anqddyg3cmq3vhpu7yxy838',
         vault: 1, // 'STAKED',
         amount: '110818936',
-      } satisfies MsgLock & { '@type': string },
+      }),
     ],
   },
-];
+] as const;
 harden(explored);
 
 export const gmpAddresses: GmpAddresses = harden({

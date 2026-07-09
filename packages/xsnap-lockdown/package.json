@@ -2,6 +2,10 @@
   "name": "@agoric/xsnap-lockdown",
   "version": "0.14.0",
   "description": "Endo/lockdown initialization bundle for xsnap workers",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "author": "Agoric",
   "license": "Apache-2.0",
   "type": "module",
@@ -10,17 +14,17 @@
     "build": "node scripts/build-bundle.js",
     "clean": "rm -rf dist",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:js": "eslint 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
-    "lint:types": "yarn run -T tsc",
-    "lint-fix": "eslint --fix 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
+    "lint-fix": "yarn lint:eslint --fix",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
     "test:xs": "exit 0"
   },
   "devDependencies": {
-    "@endo/bundle-source": "^4.1.2",
-    "@endo/init": "^1.1.12",
-    "ava": "^6.4.1",
+    "@endo/bundle-source": "^4.3.2",
+    "@endo/init": "^1.1.13",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "source-map": "^0.7.4"
   },
@@ -43,9 +47,9 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 73.54
+    "atLeast": 74.81
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

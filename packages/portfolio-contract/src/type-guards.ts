@@ -30,14 +30,28 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
+  PortfolioAgentKeyShape,
+  PortfolioPermissionsExtShape,
   YieldProtocol,
   type AssetPlaceRef,
   type FlowDetail,
-  type InstrumentId,
+  type PortfolioAgentStatus,
+  type PortfolioPublishedPathTypes,
   type ProposalType,
   type StatusFor,
   type TargetAllocation,
 } from '@agoric/portfolio-api';
+import type {
+  BeefyInstrumentId,
+  ERC4626InstrumentId,
+  PoolKey,
+  PoolPlaceInfo,
+} from '@agoric/portfolio-api/src/places.js';
+import {
+  BeefyPoolPlaces,
+  ERC4626PoolPlaces,
+  PoolPlaces,
+} from '@agoric/portfolio-api/src/places.js';
 import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
@@ -102,152 +116,13 @@ export const makeProposalShapes = (
   return harden({ openPortfolio, rebalance, withdraw, deposit });
 };
 harden(makeProposalShapes);
+// XXX avoid ReturnType - make an inline type and assert that it matches in a type test
+export type ProposalShapes = ReturnType<typeof makeProposalShapes>;
 // #endregion
 
 // #region Offer Args
-
-export type PoolPlaceInfo =
-  | { protocol: 'USDN'; vault: null | 1; chainName: 'noble' }
-  | { protocol: YieldProtocol; chainName: AxelarChain };
-
-// XXX special handling. What's the functional difference from other places?
-export const BeefyPoolPlaces = {
-  Beefy_re7_Avalanche: {
-    protocol: 'Beefy',
-    chainName: 'Avalanche',
-  },
-  Beefy_morphoGauntletUsdc_Ethereum: {
-    protocol: 'Beefy',
-    chainName: 'Ethereum',
-  },
-  Beefy_morphoSmokehouseUsdc_Ethereum: {
-    protocol: 'Beefy',
-    chainName: 'Ethereum',
-  },
-  Beefy_morphoSeamlessUsdc_Base: {
-    protocol: 'Beefy',
-    chainName: 'Base',
-  },
-  Beefy_compoundUsdc_Optimism: {
-    protocol: 'Beefy',
-    chainName: 'Optimism',
-  },
-  Beefy_compoundUsdc_Arbitrum: {
-    protocol: 'Beefy',
-    chainName: 'Arbitrum',
-  },
-} as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
-
-export const ERC4626PoolPlaces = {
-  ERC4626_vaultU2_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoClearstarHighYieldUsdc_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoClearstarUsdcCore_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoGauntletUsdcRwa_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoSteakhouseHighYieldInstant_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoClearstarInstitutionalUsdc_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoClearstarUsdcReactor_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoAlphaUsdcCore_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoResolvUsdc_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoGauntletUsdcFrontier_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoHyperithmUsdcMidcurve_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoHyperithmUsdcDegen_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoGauntletUsdcCore_Ethereum: {
-    protocol: 'ERC4626',
-    chainName: 'Ethereum',
-  },
-  ERC4626_morphoSteakhousePrimeUsdc_Base: {
-    protocol: 'ERC4626',
-    chainName: 'Base',
-  },
-  ERC4626_morphoSteakhouseUsdc_Base: {
-    protocol: 'ERC4626',
-    chainName: 'Base',
-  },
-  ERC4626_morphoGauntletUsdcPrime_Base: {
-    protocol: 'ERC4626',
-    chainName: 'Base',
-  },
-  ERC4626_morphoSeamlessUsdcVault_Base: {
-    protocol: 'ERC4626',
-    chainName: 'Base',
-  },
-  ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum: {
-    protocol: 'ERC4626',
-    chainName: 'Arbitrum',
-  },
-  ERC4626_morphoGauntletUsdcCore_Arbitrum: {
-    protocol: 'ERC4626',
-    chainName: 'Arbitrum',
-  },
-  ERC4626_morphoHyperithmUsdc_Arbitrum: {
-    protocol: 'ERC4626',
-    chainName: 'Arbitrum',
-  },
-  ERC4626_morphoGauntletUsdcPrime_Optimism: {
-    protocol: 'ERC4626',
-    chainName: 'Optimism',
-  },
-} as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
-
-export type ERC4626InstrumentId = keyof typeof ERC4626PoolPlaces;
-
-export const PoolPlaces = {
-  USDN: { protocol: 'USDN', vault: null, chainName: 'noble' }, // MsgSwap only
-  USDNVault: { protocol: 'USDN', vault: 1, chainName: 'noble' }, // MsgSwap, MsgLock
-  Aave_Avalanche: { protocol: 'Aave', chainName: 'Avalanche' },
-  Aave_Ethereum: { protocol: 'Aave', chainName: 'Ethereum' },
-  Aave_Optimism: { protocol: 'Aave', chainName: 'Optimism' },
-  Aave_Arbitrum: { protocol: 'Aave', chainName: 'Arbitrum' },
-  Aave_Base: { protocol: 'Aave', chainName: 'Base' },
-  Compound_Ethereum: { protocol: 'Compound', chainName: 'Ethereum' },
-  Compound_Optimism: { protocol: 'Compound', chainName: 'Optimism' },
-  Compound_Arbitrum: { protocol: 'Compound', chainName: 'Arbitrum' },
-  Compound_Base: { protocol: 'Compound', chainName: 'Base' },
-  ...BeefyPoolPlaces,
-  ...ERC4626PoolPlaces,
-} as const satisfies Record<InstrumentId, PoolPlaceInfo>;
-harden(PoolPlaces);
-
-/**
- * Names of places where a portfolio may have a position.
- */
-export type PoolKey = InstrumentId;
+export { BeefyPoolPlaces, ERC4626PoolPlaces, PoolPlaces };
+export type { BeefyInstrumentId, ERC4626InstrumentId, PoolKey, PoolPlaceInfo };
 
 /** Ext for Extensible: includes PoolKeys in future upgrades */
 export type PoolKeyExt = string;
@@ -256,7 +131,7 @@ export type PoolKeyExt = string;
 export const PoolKeyShapeExt = M.string();
 
 export const TargetAllocationShape: TypedPattern<TargetAllocation> = M.recordOf(
-  M.or(...keys(PoolPlaces)),
+  M.or(...keys(PoolPlaces), ...keys(AxelarChain).map(c => `@${c}`)),
   M.nat(),
 );
 
@@ -332,8 +207,11 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
     { type: 'deposit', amount: AnyNatAmountShape },
     { fromChain: ChainNameExtShape },
   ),
-  { type: 'rebalance' },
+  M.splitRecord({ type: 'rebalance' }, { agent: PortfolioAgentKeyShape }),
 );
+
+export const FlowKeyShape: TypedPattern<`flow${number}`> =
+  AnyString<`flow${number}`>();
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(
@@ -349,9 +227,25 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       nobleForwardingAddress: AnyString<Bech32Address>(),
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
-      flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
+      flowsRunning: M.recordOf(
+        FlowKeyShape,
+        M.and(
+          FlowDetailShape,
+          M.splitRecord({}, { awaitingSteps: M.boolean() }),
+        ),
+      ),
     },
   );
+
+export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
+  M.splitRecord({
+    grantee: AnyString<Bech32Address>(),
+    permissions: PortfolioPermissionsExtShape,
+    state: M.or('active', 'revoked', 'expired'),
+  });
+
+export const PortfolioAgentsShape: TypedPattern<StatusFor['portfolioAgents']> =
+  M.recordOf(PortfolioAgentKeyShape, PortfolioAgentStatusShape);
 
 /**
  * Creates vstorage path for position transfer history.
@@ -398,6 +292,10 @@ export const makeFlowPath = (parent: number, id: number) => [
   `flow${id}`,
 ];
 
+export const makePortfolioAgentsPath = (
+  parent: number,
+): [`portfolio${number}`, 'agents'] => [`portfolio${parent}`, 'agents'];
+
 export const makeFlowStepsPath = (
   parent: number,
   id: number,
@@ -427,12 +325,20 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
   ),
 );
 
-export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
-  how: M.string(),
-  amount: AnyNatAmountShape,
-  src: AnyString<AssetPlaceRef>(),
-  dest: AnyString<AssetPlaceRef>(),
-});
+export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf(
+  M.splitRecord(
+    {
+      how: M.string(),
+      amount: AnyNatAmountShape,
+      src: AnyString<AssetPlaceRef>(),
+      dest: AnyString<AssetPlaceRef>(),
+    },
+    {
+      phases: M.recordOf(M.string(), M.arrayOf(M.string())),
+      swap: M.record(),
+    },
+  ),
+);
 // #endregion
 
 // XXX deployment concern, not part of contract external interface
@@ -443,6 +349,7 @@ export type EVMContractAddressesMap = {
 };
 
 // keep these types imported for IDE navigation
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const keepDocsTypesImported:
   | undefined
@@ -450,4 +357,10 @@ const keepDocsTypesImported:
   | ContractInvitationSpec = undefined;
 
 // Backwards compat
-export type { FlowDetail, ProposalType, StatusFor, TargetAllocation };
+export type {
+  FlowDetail,
+  PortfolioPublishedPathTypes,
+  ProposalType,
+  StatusFor,
+  TargetAllocation,
+};

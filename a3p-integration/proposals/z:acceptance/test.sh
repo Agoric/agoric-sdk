@@ -3,6 +3,9 @@ set -euo pipefail
 
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
+pid=
+trap 'test -n "$pid" && kill "$pid" 2>/dev/null || true; pid=' EXIT
+
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
 
@@ -26,11 +29,25 @@ echo ACCEPTANCE TESTING wallet
 yarn ava wallet.test.js
 
 if ! test -z "$MESSAGE_FILE_PATH"; then
-  echo "Waiting for 'ready' message from follower"
+  (while echo "Waiting for 'ready' message from follower"; do sleep 5; done) &
+  pid=$!
   # make sure the follower has not crashed
-  node "$DIRECTORY_PATH/wait-for-follower.mjs" '^(ready)|(exit code \d+)$' | grep --extended-regexp --silent "^ready$"
+  node "$DIRECTORY_PATH/wait-for-follower.mjs" '^(ready)|(exit code \d+)$' | tee /dev/stderr | grep --silent "^ready$"
   echo "Follower is ready"
+  kill "$pid" 2>/dev/null || true; pid=
 fi
+
+# The psm/oracle/vaults/reserve `agops` subcommands were removed from agoric-sdk
+# (#12719), but the psm/oracles/governance acceptance tests below still exercise
+# those contracts, which remain live on chains upgraded before the removal.
+# @agoric/synthetic-chain resolves agops from $AGORIC_SDK/node_modules/.bin/agops
+# (the in-repo, de-Inter-Protocol CLI), so repoint it at the published `agoric`
+# pinned by this proposal, which retains those subcommands.
+SDK_AGOPS="${AGORIC_SDK:-/usr/src/agoric-sdk}/node_modules/.bin/agops"
+PUBLISHED_AGOPS="$DIRECTORY_PATH/node_modules/.bin/agops"
+test -x "$PUBLISHED_AGOPS" || { echo "missing published agops at $PUBLISHED_AGOPS" >&2; exit 1; }
+ln -sf "$PUBLISHED_AGOPS" "$SDK_AGOPS"
+echo "Repointed $SDK_AGOPS -> $PUBLISHED_AGOPS ($("$SDK_AGOPS" --version 2>/dev/null || echo '?'))"
 
 echo ACCEPTANCE TESTING psm
 yarn ava psm.test.js

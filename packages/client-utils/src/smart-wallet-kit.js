@@ -9,13 +9,12 @@ import {
 /**
  * @import {EReturn} from '@endo/far';
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
- * @import {OfferId, OfferStatus} from '@agoric/smart-wallet/src/offers.js';
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
- * @import {RetryOptionsAndPowers} from './sync-tools.js';
- * @import {VstorageKit} from './vstorage-kit.js';
+ * @import {VstorageKit} from './types.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
- * @import {Instance, InvitationDetails} from '@agoric/zoe';
+ * @import {PublishedPathTypes} from './types.js';
+ * @import {SmartWalletPublishedPathTypes} from '@agoric/smart-wallet/src/types.js';
  */
 
 /**
@@ -24,7 +23,8 @@ import {
  * pertain to a single smart wallet. (Whereas VstorageKit pertains to a single
  * vstorage tree.) It was once called WalletUtils, which is more accurate.
  *
- * @param {VstorageKit} vsk
+ * @template {PublishedPathTypes & SmartWalletPublishedPathTypes} [Ext=Record<never, never>]
+ * @param {VstorageKit<Ext>} vsk
  * @param {object} [options]
  * @param {boolean} [options.names]
  * @alpha
@@ -67,13 +67,13 @@ export const makeSmartWalletKitFromVstorageKit = async (
    *
    * @param {string} from
    * @param {string|number} id
-   * @param {number|string} [minHeight] - deprecated, start polling before broadcasting the offer
+   * @param {number|string} [_minHeight] - deprecated, start polling before broadcasting the offer
    * @param {boolean} [untilNumWantsSatisfied]
    */
   const pollOffer = async (
     from,
     id,
-    minHeight,
+    _minHeight = undefined,
     untilNumWantsSatisfied = false,
   ) => {
     const getAddrLastUpdate = () => getLastUpdate(from);
@@ -128,8 +128,8 @@ harden(makeSmartWalletKitFromVstorageKit);
 export const makeSmartWalletKit = async (
   {
     fetch,
-    // eslint-disable-next-line no-unused-vars -- keep for removing ambient authority
-    delay,
+    // unused but keep for eventually removing ambient authority
+    delay: _delay,
     names = true,
   },
   networkConfig,

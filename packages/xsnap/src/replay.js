@@ -8,12 +8,12 @@
  *     replay steps 00001 to the first snapshot step.
  *  3. For the last folder, play steps 00001 to last.
  */
-import childProcessPowers from 'child_process';
-import osPowers from 'os';
-import fsPowers from 'fs';
-import { Readable } from 'stream';
+import childProcessPowers from 'node:child_process';
+import osPowers from 'node:os';
+import fsPowers from 'node:fs';
+import { Readable } from 'node:stream';
 import { tmpName as tmpNamePower } from 'tmp';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 import { makeQueue } from '@endo/stream';
 import { xsnap, DEFAULT_CRANK_METERING_LIMIT } from './xsnap.js';
 
@@ -30,7 +30,7 @@ const filenameFromDescription = description =>
 
 /**
  * @param {string} path
- * @param {{ writeFileSync: typeof writeFileSync }} io
+ * @param {{ writeFileSync: typeof import('fs').writeFileSync }} io
  */
 function makeSyncStorage(path, { writeFileSync }) {
   const base = new URL(path, 'file://');
@@ -55,8 +55,8 @@ function makeSyncStorage(path, { writeFileSync }) {
 /**
  * @param {string} path
  * @param {{
- *   readdirSync: typeof readdirSync,
- *   readFileSync: typeof readFileSync,
+ *   readdirSync: typeof import('fs').readdirSync,
+ *   readFileSync: typeof import('fs').readFileSync,
  * }} io
  */
 function makeSyncAccess(path, { readdirSync, readFileSync }) {
@@ -97,7 +97,7 @@ function makeSyncAccess(path, { readdirSync, readFileSync }) {
  *        00002-issueCommand.dat
  *        00003-reply.dat
  * @param {{
- *   writeFileSync: typeof writeFileSync,
+ *   writeFileSync: typeof import('fs').writeFileSync,
  * }} io
  * @returns {XSnap}
  *
@@ -194,8 +194,8 @@ export async function recordXSnap(options, folderPath, { writeFileSync }) {
  * @param {XSnapOptions} opts
  * @param {string[]} folders
  * @param {{
- *   readdirSync: typeof readdirSync,
- *   readFileSync: typeof readFileSync,
+ *   readdirSync: typeof import('fs').readdirSync,
+ *   readFileSync: typeof import('fs').readFileSync,
  * }} io
  */
 export async function replayXSnap(
@@ -307,12 +307,12 @@ export async function replayXSnap(
  *
  * @param {string[]} argv
  * @param {{
- *   spawn: typeof spawn,
+ *   spawn: typeof import('child_process').spawn,
  *   fs: Omit<XSnapOptions['fs'], 'tmpName'>,
- *   tmpName: import('tmp')['tmpName'],
+ *   tmpName: (typeof import('tmp'))['tmpName'],
  *   osType: typeof type,
- *   readdirSync: typeof readdirSync,
- *   readFileSync: typeof readFileSync,
+ *   readdirSync: typeof import('fs').readdirSync,
+ *   readFileSync: typeof import('fs').readFileSync,
  * }} io
  */
 export async function main(
@@ -334,7 +334,6 @@ export async function main(
   await replayXSnap(options, folders, { readdirSync, readFileSync });
 }
 
-/* eslint-env node */
 if (process.argv[1] === fileURLToPath(new URL(import.meta.url))) {
   main([...process.argv.slice(2)], {
     spawn: childProcessPowers.spawn,

@@ -2,11 +2,10 @@
 {
   "extends": "../../tsconfig.json",
   "include": [
-    "demo/**/*.js",
-    "lib/**/*.js",
-    "misc-tools/**/*.js",
-    "src/**/*.js",
-    "src/**/*.ts",
+    "demo",
+    "lib",
+    "misc-tools",
+    "src",
     "test",
     "tools",
   ]

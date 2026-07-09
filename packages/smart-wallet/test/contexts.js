@@ -14,10 +14,10 @@ import { withAmountUtils } from './supports.js';
  */
 
 /**
- * @param {ExecutionContext} t
+ * @param {ExecutionContext} _t
  * @param {(logger) => Promise<ChainBootstrapSpace>} makeSpace
  */
-export const makeDefaultTestContext = async (t, makeSpace) => {
+export const makeDefaultTestContext = async (_t, makeSpace) => {
   // To debug, pass t.log instead of null logger
   const log = () => null;
   const { consume } = await makeSpace(log);

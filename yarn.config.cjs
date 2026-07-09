@@ -19,7 +19,7 @@ module.exports = defineConfig({
         }
       }
       if (workspace.cwd.startsWith('packages/')) {
-        workspace.set('engines.node', '^20.9 || ^22.11');
+        workspace.set('engines.node', '^22.11');
         if (workspace.ident?.startsWith('@aglocal/')) {
           workspace.set('private', true);
         } else if (

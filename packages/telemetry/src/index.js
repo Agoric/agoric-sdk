@@ -5,7 +5,6 @@ import { Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
 /**
- * @import {MakeSlogSenderOptions} from './index.js';
  * @import {ResourceAttributes} from '@opentelemetry/resources';
  * @import {View} from '@opentelemetry/sdk-metrics';
  */

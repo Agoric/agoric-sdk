@@ -7,10 +7,10 @@ import { kunser, krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
-  initializeSwingset,
   makeSwingsetController,
   loadBasedir,
 } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
 import { extractMethod } from '../../src/lib/kdebug.js';
 

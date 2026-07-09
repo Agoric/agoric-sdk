@@ -3,20 +3,36 @@
     "target": "esnext",
     "module": "nodenext",
     "moduleResolution": "nodenext",
+    "incremental": true,
     // This prevents checking of .d.ts files. We would like to check the ones we write
     // but we leave this off because of the errors in deps we don't control.
     "skipLibCheck": true,
     "allowJs": true,
     "checkJs": true,
-    "allowSyntheticDefaultImports": true,
+    // Strictness audit 2026-02-24 by scripts/maintenance/typecheck-flag-report.mjs
+    //  useUnknownInCatchVariables            128 errors
+    //  exactOptionalPropertyTypes            221 errors
+    //  noUnusedLocals                        590 errors
+    //  noPropertyAccessFromIndexSignature    983 errors
+    //  noUncheckedIndexedAccess             1584 errors
+    //  strictFunctionTypes                  1717 errors
+    //  noImplicitAny                        8869 errors
+    //  strict                              10594 errors
     "strict": false,
-    "downlevelIteration": true,
     "strictNullChecks": true,
     "noImplicitThis": true,
+    "alwaysStrict": true,
+    "strictPropertyInitialization": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noUnusedParameters": true,
+    "strictBindCallApply": true,
+    "noImplicitReturns": true,
     "noUncheckedSideEffectImports": true,
     "erasableSyntaxOnly": true,
     "verbatimModuleSyntax": true,
-    "typeRoots": ["./types", "./node_modules/@types"],
+    "types": ["node"],
+    "typeRoots": ["./node_modules/@types"],
     // .ts and rewriting relative paths allow us to include in bundles
     // files that are JS executable (with TS chars blanked) but end in .ts
     "allowImportingTsExtensions": true,
@@ -27,6 +43,5 @@
     "eslint.config.mjs",
     "dist",
     "scripts",
-    "types/**/*.d.ts"
   ]
 }

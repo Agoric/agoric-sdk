@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -108,7 +108,7 @@ const makeAlice = async (
 const makeBob = (
   t,
   zoe,
-  installation,
+  _installation,
   issuers,
   origPayments,
   coveredCallInstallation,

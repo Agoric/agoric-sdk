@@ -1,4 +1,3 @@
-/* eslint-env node */
 import test from 'ava';
 
 import {
@@ -36,6 +35,10 @@ test('setup', t => {
 });
 
 test('encode', t => {
+  /**
+   * @param {string | Buffer} input
+   * @param {string | Buffer} expected
+   */
   function eq(input, expected) {
     const encoded = encode(Buffer.from(input));
     const expBuf = Buffer.from(expected);
@@ -57,6 +60,7 @@ test('encode', t => {
 
 test('encode stream', t => {
   const e = netstringEncoderStream();
+  /** @type {Buffer[]} */
   const chunks = [];
   e.on('data', data => chunks.push(data));
   e.write(Buffer.from(''));
@@ -77,8 +81,13 @@ test('encode stream', t => {
 });
 
 test('decode', t => {
+  /**
+   * @param {string | Buffer} input
+   * @param {Array<string | Buffer>} expPayloads
+   * @param {string | Buffer} expLeftover
+   */
   function eq(input, expPayloads, expLeftover) {
-    const encPayloads = expPayloads.map(Buffer.from);
+    const encPayloads = expPayloads.map(p => Buffer.from(p));
     const encLeftover = Buffer.from(expLeftover);
 
     const { payloads, leftover } = decode(Buffer.from(input), 25);
@@ -101,6 +110,10 @@ test('decode', t => {
   expectedBuffer = Buffer.from(`25:${emoji},`, 'utf-8');
   eq(expectedBuffer, [emoji], '');
 
+  /**
+   * @param {string | Buffer} input
+   * @param {string | RegExp} message
+   */
   function bad(input, message) {
     t.throws(() => decode(Buffer.from(input), 25), { message });
   }
@@ -113,15 +126,21 @@ test('decode', t => {
 
 test('decode stream', t => {
   const d = netstringDecoderStream();
+  /** @param {string | Buffer} s */
   function write(s) {
     d.write(Buffer.from(s));
   }
 
+  /** @type {Buffer[]} */
   const msgs = [];
   d.on('data', msg => msgs.push(msg));
 
+  /** @param {Array<string | Buffer>} expectedMessages */
   function eq(expectedMessages) {
-    t.deepEqual(msgs, expectedMessages.map(Buffer.from));
+    t.deepEqual(
+      msgs,
+      expectedMessages.map(m => Buffer.from(m)),
+    );
   }
 
   write('');

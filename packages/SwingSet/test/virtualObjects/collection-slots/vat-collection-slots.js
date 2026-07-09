@@ -1,8 +1,8 @@
-/* global VatData */
+/* global globalThis */
 import { Far } from '@endo/far';
 
 // import { makeScalarBigMapStore } from '@agoric/vat-data';
-const { makeScalarBigMapStore } = VatData;
+const { makeScalarBigMapStore } = /** @type {any} */ (globalThis).VatData;
 
 function makeRemotable(imp1) {
   return Far('rem1', { get: () => imp1 });

@@ -1,6 +1,11 @@
 // @ts-check
+/* eslint-disable jsdoc/check-param-names */
 /* global harden */
-import { makeSmartWalletKit, LOCAL_CONFIG } from '@agoric/client-utils';
+import {
+  LOCAL_CONFIG,
+  makeVstorageKit,
+  makeSmartWalletKitFromVstorageKit,
+} from '@agoric/client-utils';
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
@@ -22,10 +27,22 @@ import { makeRetryUntilCondition } from './sleep.js';
  * @import {QueryTool} from './queryKit.js';
  * @import {LCD} from './makeHttpClient.js';
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {Passable} from '@endo/marshal';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Amount} from '@agoric/ertp';
  * @import {BundleCache} from '@agoric/swingset-vat/tools/bundleTool.js';
  * @import {execFileSync} from 'child_process';
+ * @import {execFile} from 'child_process';
+ * @import {VstorageKit} from '@agoric/client-utils';
+ * @import {FastUsdcPublishedPathTypes} from '@agoric/fast-usdc';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {AmountKeywordRecord} from '@agoric/zoe';
+ */
+
+/**
+ * @typedef {unknown} CachedBundle Unused placeholder for now, but we want to
+ * return something that represents the bundle we installed in case we need to
+ * refer to it later.
  */
 
 const trace = makeTracer('E2ET');
@@ -35,8 +52,10 @@ const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 const BLD = '000000ubld';
 
 export const txAbbr = tx => {
+  // eslint-disable-next-line camelcase
   const { txhash, code, height, gas_used } = tx;
 
+  // eslint-disable-next-line camelcase
   return { txhash, code, height, gas_used };
 };
 
@@ -189,7 +208,8 @@ const provisionSmartWalletAndMakeDriver = async (
    */
   const getCosmosBalances = (addr = address) =>
     lcd.getJSON(`/cosmos/bank/v1beta1/balances/${addr}`);
-  progress(`${address} before whale`, await getCosmosBalances());
+  const initialCosmosBalance = await getCosmosBalances();
+  progress(`${address} before whale`, initialCosmosBalance);
 
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
@@ -237,9 +257,9 @@ const provisionSmartWalletAndMakeDriver = async (
 
   const afterWhale = await retryUntilCondition(
     () => getCosmosBalances(),
-    ({ balances }) => {
+    ({ balances: currentBalances }) => {
       // XXX ensures there is at least some faucet but doesn't check that the balance went up
-      return balances.length >= balanceEntries.length;
+      return currentBalances.length >= balanceEntries.length;
     },
     `${address} received tokens from whale`,
   );
@@ -278,7 +298,9 @@ const provisionSmartWalletAndMakeDriver = async (
 
   /** @param {BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
-    const capData = q.toCapData(harden(bridgeAction));
+    // BridgeAction is passable at runtime but doesn't structurally satisfy the
+    // stricter Passable type (e.g. AmountKeywordRecord index signatures).
+    const capData = q.toCapData(/** @type {Passable} */ (harden(bridgeAction)));
     const offerBody = JSON.stringify(capData);
     const txInfo = await agd.tx(
       ['swingset', 'wallet-action', offerBody, '--allow-spend'],
@@ -498,7 +520,7 @@ const runCoreEval = async (
  * @param {BundleCache} bundleCache
  * @param {object} io
  * @param {typeof execFileSync} io.execFileSync
- * @param {typeof import('child_process').execFile} io.execFile
+ * @param {typeof execFile} io.execFile
  * @param {typeof window.fetch} io.fetch
  * @param {typeof window.setTimeout} io.setTimeout
  * @param {string} [io.bundleDir]
@@ -540,11 +562,12 @@ export const makeE2ETools = async (
   /**
    * @param {Iterable<string>} fullPaths
    * @param {typeof console.log} progress
+   * @returns {Promise<Record<string, CachedBundle>>} Fulfilled to an unused
+   * record when all bundles are installed.
    */
   const installBundles = async (fullPaths, progress) => {
     await null;
-    // @ts-expect-error FIXME no type
-    /** @type {Record<string, import('../test/boot-tools.js').CachedBundle>} */
+    /** @type {Record<string, CachedBundle>} */
     const bundles = {};
     // for (const [name, rootModPath] of Object.entries(bundleRoots)) {
     for (const fullPath of fullPaths) {
@@ -575,7 +598,6 @@ export const makeE2ETools = async (
    *   title?: string;
    *   description?: string;
    *   config?: unknown;
-   * } & {
    *   behavior?: Function;
    * }} info
    */
@@ -602,17 +624,14 @@ export const makeE2ETools = async (
    */
   const vstorageClient = makeQueryKit(vstorage).query;
 
-  /** @type {import('@agoric/client-utils').SmartWalletKit} */
-  const smartWalletKit = await makeSmartWalletKit(
-    {
-      fetch,
-      delay,
-    },
-    LOCAL_CONFIG,
-  );
+  /** @type {VstorageKit<FastUsdcPublishedPathTypes>} */
+  const vstorageKit = makeVstorageKit({ fetch }, LOCAL_CONFIG);
+
+  const smartWalletKit = await makeSmartWalletKitFromVstorageKit(vstorageKit);
 
   return {
     vstorageClient,
+    vstorageKit,
     smartWalletKit,
     installBundles,
     runCoreEval: buildAndRunCoreEval,
@@ -654,7 +673,7 @@ export const makeE2ETools = async (
 export const seatLike = updates => {
   const sync = {
     result: makePromiseKit(),
-    /** @type {import('@endo/promise-kit').PromiseKit<import('@agoric/zoe').AmountKeywordRecord>} */
+    /** @type {PromiseKit<AmountKeywordRecord>} */
     payouts: makePromiseKit(),
   };
   (async () => {

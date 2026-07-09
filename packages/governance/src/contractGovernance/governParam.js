@@ -52,6 +52,7 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
 
   const { parameterName, paramPath } = paramSpec;
   const { issue } = questionSpec;
+  // eslint-disable-next-line @typescript-eslint/no-floating-promises -- `yarn lint` erroneously thinks this is a promise
   issue.spec.changes[parameterName] ||
     Fail`Question (${issue.spec.changes}) does not concern ${parameterName}`;
   keyEQ(issue.spec.paramPath, paramPath) ||

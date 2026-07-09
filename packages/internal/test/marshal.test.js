@@ -90,6 +90,10 @@ const checkRemoteMarshallerValueInvariants = (t, val) => {
   t.true(hasCap);
 };
 
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {unknown} val
+ */
 const unexpectedMarshallerInvocation = (t, val) => {
   t.log('Unexpected marshalled value', val);
   t.fail('Remote marshaller should not have been invoked');
@@ -223,6 +227,7 @@ const withNullAndNonNullSlots = test.macro(async (t, { withCache }) => {
   const sharedCap = Far('shared', { sentinel() {} });
 
   const mockSotToVal = new Map();
+  /** @type {WeakMap<object, string>} */
   const mockValToSlot = new WeakMap();
 
   let valueHookCalled = false;

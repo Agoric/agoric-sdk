@@ -11,7 +11,7 @@ const Polygon: SupportedChain = 'Polygon';
 // @ts-expect-error TS2322: Type '"Compound_Polygon"' is not assignable to type 'PoolKey'.
 const Compound_Polygon: PoolKey = 'Compound_Polygon';
 
-export const TEST_NETWORK: NetworkSpec = {
+export const TEST_NETWORK: NetworkSpec = harden({
   debug: true,
   environment: 'test',
   chains: [
@@ -194,6 +194,6 @@ export const TEST_NETWORK: NetworkSpec = {
       feeMode: 'evmToEvm',
     },
   ],
-};
+});
 
 export default TEST_NETWORK;

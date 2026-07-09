@@ -1,5 +1,3 @@
-// @jessie-check
-
 /// <reference types="ses" />
 
 // NOTE: Because @endo/bundle-source does not do tree-shaking (at least as of

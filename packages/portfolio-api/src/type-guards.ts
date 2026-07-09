@@ -1,10 +1,15 @@
-import type { InstrumentId } from './instruments.js';
+import type { TypedPattern } from '@agoric/internal';
+import { M } from '@endo/patterns';
+import type { BeefyInstrumentId, ERC4626InstrumentId } from './places.ts';
 import type {
   DepositFromChainRef,
   LocalChainAccountRef,
+  PortfolioAgentKey,
   InterChainAccountRef,
   WithdrawToChainRef,
 } from './types.js';
+
+export { isInstrumentId } from './places.ts';
 
 /**
  * Without regard to supported chains, is the input plausibly a
@@ -34,14 +39,6 @@ export const isInterChainAccountRef = (
 harden(isInterChainAccountRef);
 
 /**
- * Without regard to supported chains, is the input plausibly an InstrumentId
- * (i.e., does it start with an ASCII letter)?
- */
-export const isInstrumentId = (ref: string): ref is InstrumentId =>
-  !!ref.match(/^[a-z]/i);
-harden(isInstrumentId);
-
-/**
  * Without regard to supported chains, is the input plausibly a
  * WithdrawToChainRef (i.e., does it start with `-`)?
  */
@@ -53,6 +50,23 @@ harden(isWithdrawToChainRef);
  * Is the input an ERC-4626 InstrumentId
  * (i.e., does it start with 'ERC4626_')?
  */
-export const isERC4626InstrumentId = (ref: string): boolean =>
-  ref.startsWith('ERC4626_');
+export const isERC4626InstrumentId = (
+  ref: string,
+): ref is ERC4626InstrumentId => ref.startsWith('ERC4626_');
 harden(isERC4626InstrumentId);
+
+/**
+ * Is the input an Beefy InstrumentId
+ * (i.e., does it start with 'Beefy_')?
+ */
+export const isBeefyInstrumentId = (ref: string): ref is BeefyInstrumentId =>
+  ref.startsWith('Beefy_');
+harden(isBeefyInstrumentId);
+
+export const PortfolioAgentKeyShape: TypedPattern<PortfolioAgentKey> =
+  M.string();
+
+/** The shape for the optional `agentMemo` field for flows started by an agent */
+export const PortfolioFlowAgentMemoShape: TypedPattern<string> = M.string({
+  stringLengthLimit: 64,
+});

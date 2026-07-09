@@ -171,6 +171,7 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
         },
       },
       verifyTransferSuccess: {
+        /** @param {string} ackData */
         onFulfilled(ackData) {
           let obj;
           try {
