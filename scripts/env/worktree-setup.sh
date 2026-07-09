@@ -1,5 +1,6 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#! /usr/bin/env bash
+
+set -o errexit -o nounset -o pipefail
 
 ###############################################################################
 # Worktree setup
@@ -34,27 +35,80 @@ set -euo pipefail
 
 echo "worktree setup starting..."
 
-ROOT=$(git rev-parse --show-toplevel)
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-SETUP_START_MS=$(perl -MTime::HiRes=time -e 'printf("%.0f\n", time() * 1000)')
-COWSYNC_BIN=${COWSYNC_BIN:-/Users/turadg/Code/cowsync/target/debug/cowsync}
-PRIMARY=$(git worktree list --porcelain | awk '
-/^worktree / {
-  print $2
-  exit
-}')
+BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+OS="$(uname)"
+ROOT="$(git rev-parse --show-toplevel)"
+VOID="/dev/null"
 
-phase_start() {
-  PHASE_NAME="$1"
-  PHASE_START_MS=$(perl -MTime::HiRes=time -e 'printf("%.0f\n", time() * 1000)')
-  echo "phase start: $PHASE_NAME"
+COWSYNC_BIN="${COWSYNC_BIN:-$VOID}"
+
+if command -v perl > "$VOID" 2>&1
+then
+  now_ms() {
+    perl -MTime::HiRes=time -e 'printf("%.0f\n", time() * 1000)'
+  }
+elif [[ "$(date +%s%3N 2> "$VOID")" =~ ^[0-9]+$ ]]
+then
+  now_ms() {
+    date +%s%3N
+  }
+else
+  now_ms() {
+    echo $(($(date +%s) * 1000))
+  }
+fi
+
+SETUP_START_MS="$(now_ms)"
+
+# Porcelain lines are `worktree <path>`; strip the prefix rather than split on
+# whitespace so paths containing spaces survive.
+PRIMARY="$(git worktree list --porcelain | awk '
+/^worktree / {
+  sub(/^worktree /, "")
+  print
+  exit
+}')"
+
+###############################################################################
+# Determine fastest copy command
+###############################################################################
+
+clone() {
+  local src="$1"
+  local dst="$2"
+
+  if test "$OS" = "Darwin"
+  then
+    cp -c -R "$src" "$dst" 2> "$VOID" || cp -R "$src" "$dst"
+  else
+    cp --recursive --reflink=auto "$src" "$dst" 2> "$VOID" || cp -R "$src" "$dst"
+  fi
+}
+
+# The pre-worktree-reuse setup contract: a worktree that cannot reuse another
+# worktree's artifacts must still come up fully installed and built.
+install_and_build() {
+  phase_start "yarn install"
+  yarn install
+  phase_end
+  phase_start "yarn build"
+  yarn build
+  phase_end
 }
 
 phase_end() {
-  local end_ms elapsed_ms
-  end_ms=$(perl -MTime::HiRes=time -e 'printf("%.0f\n", time() * 1000)')
+  local elapsed_ms
+  local end_ms
+
+  end_ms="$(now_ms)"
   elapsed_ms=$((end_ms - PHASE_START_MS))
   echo "phase done: $PHASE_NAME (${elapsed_ms}ms)"
+}
+
+phase_start() {
+  PHASE_NAME="$1"
+  PHASE_START_MS="$(now_ms)"
+  echo "phase start: $PHASE_NAME"
 }
 
 sync_with_cowsync() {
@@ -66,24 +120,32 @@ sync_with_cowsync() {
 ###############################################################################
 
 phase_start "select source worktree"
-SOURCE=$(git worktree list --porcelain | awk '
-/^worktree / { path=$2 }
+# BRANCH and ROOT enter via -v so they stay data: a branch name containing awk
+# syntax (quotes etc.) cannot alter the program, and paths with spaces survive.
+SOURCE="$(git worktree list --porcelain | awk -v branch="$BRANCH" -v root="$ROOT" '
+/^worktree / {
+  path = $0
+  sub(/^worktree /, "", path)
+}
 /^branch / {
-  sub("refs/heads/","",$2)
-  if ($2 == "'"$BRANCH"'" && path != "'"$ROOT"'") {
+  ref = $0
+  sub(/^branch refs\/heads\//, "", ref)
+  if (ref == branch && path != root) {
     print path
     exit
   }
-}')
+}')"
 
 # fallback to primary checkout
-if [ -z "$SOURCE" ]; then
+if test -z "$SOURCE"
+then
   SOURCE="$PRIMARY"
 fi
 phase_end
 
 # nothing to do if we are the source
-if [ "$SOURCE" = "$ROOT" ]; then
+if test "$SOURCE" = "$ROOT"
+then
   echo "primary worktree detected"
   exit 0
 fi
@@ -93,46 +155,40 @@ fi
 ###############################################################################
 
 phase_start "compare yarn.lock"
-if ! cmp -s "$SOURCE/yarn.lock" "$ROOT/yarn.lock"; then
+if ! cmp --silent "$SOURCE/yarn.lock" "$ROOT/yarn.lock"
+then
   phase_end
-  phase_start "yarn install"
-  echo "yarn.lock differs → running yarn install"
-  yarn install
-  phase_end
+  echo "yarn.lock differs → cannot reuse artifacts; falling back to full setup"
+  install_and_build
   exit 0
 fi
 phase_end
 
 ###############################################################################
-# Determine fastest copy command
-###############################################################################
-
-OS=$(uname)
-
-clone() {
-  src="$1"
-  dst="$2"
-
-  if [ "$OS" = "Darwin" ]; then
-    cp -cR "$src" "$dst" 2>/dev/null || cp -R "$src" "$dst"
-  else
-    cp -R --reflink=auto "$src" "$dst" 2>/dev/null || cp -R "$src" "$dst"
-  fi
-}
-
-###############################################################################
 # Reuse dependencies
 ###############################################################################
 
-if [ -d "$SOURCE/node_modules" ] && [ ! -d "$ROOT/node_modules" ]; then
+if test -d "$SOURCE/node_modules" && ! test -d "$ROOT/node_modules"
+then
   phase_start "copy node_modules"
   echo "reusing node_modules"
-  if [ -x "$COWSYNC_BIN" ]; then
+  if test -x "$COWSYNC_BIN"
+  then
     sync_with_cowsync --include 'node_modules/**' "$SOURCE" "$ROOT"
   else
     clone "$SOURCE/node_modules" "$ROOT/node_modules"
   fi
   phase_end
+fi
+
+# Reuse was not possible (e.g. the source worktree itself was never installed).
+# There are no artifacts worth copying from such a source, so fall back to the
+# full setup this script replaces.
+if ! test -d "$ROOT/node_modules"
+then
+  echo "no reusable node_modules → falling back to full setup"
+  install_and_build
+  exit 0
 fi
 
 ###############################################################################
@@ -141,7 +197,8 @@ fi
 
 echo "copying build caches..."
 
-if [ -x "$COWSYNC_BIN" ]; then
+if test -x "$COWSYNC_BIN"
+then
   phase_start "copy build caches"
   sync_with_cowsync \
     --include '**/*.tsbuildinfo' \
@@ -151,10 +208,14 @@ if [ -x "$COWSYNC_BIN" ]; then
     "$ROOT"
   phase_end
 else
-  # TypeScript incremental caches
+  # TypeScript incremental caches. Prune node_modules (already cloned above,
+  # and by far the largest tree to walk) and .git.
   phase_start "copy tsbuildinfo"
-  find "$SOURCE" -name "*.tsbuildinfo" -type f 2>/dev/null | while read -r f; do
-    rel=${f#"$SOURCE/"}
+  find "$SOURCE" \( -name .git -o -name node_modules \) -prune -o \
+    -name "*.tsbuildinfo" -type f -print 2> "$VOID" | \
+  while read -r f
+  do
+    rel="${f#"$SOURCE/"}"
     mkdir -p "$(dirname "$ROOT/$rel")"
     clone "$f" "$ROOT/$rel"
   done
@@ -162,13 +223,22 @@ else
 
   # dist and bundles directories
   phase_start "copy dist and bundles directories"
-  find "$SOURCE/packages" \( -type d -name dist -o -type d -name bundles \) 2>/dev/null | while read -r d; do
-    rel=${d#"$SOURCE/"}
+  find "$SOURCE/packages" -name node_modules -prune -o \
+    -type d \( -name dist -o -name bundles \) -print 2> "$VOID" | \
+  while read -r d
+  do
+    rel="${d#"$SOURCE/"}"
+    # `cp -R dir existing-dir` copies INTO the destination (nesting dist/dist),
+    # so skip destinations that already exist to keep reruns idempotent.
+    if test -e "$ROOT/$rel"
+    then
+      continue
+    fi
     mkdir -p "$(dirname "$ROOT/$rel")"
     clone "$d" "$ROOT/$rel"
   done
   phase_end
 fi
 
-SETUP_END_MS=$(perl -MTime::HiRes=time -e 'printf("%.0f\n", time() * 1000)')
+SETUP_END_MS="$(now_ms)"
 echo "worktree setup complete ($((SETUP_END_MS - SETUP_START_MS))ms total)"
