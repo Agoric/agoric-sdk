@@ -230,7 +230,35 @@ const encodeKnownMessage = (
   }
 };
 
-const parseJsonPublicKey = (publicKey: any) => {
+/** Inverse of {@link parseJsonPublicKey}: proto `Any` -> gRPC-gateway JSON. */
+export const encodeJsonPublicKey = (publicKey?: {
+  typeUrl: string;
+  value: Uint8Array;
+}): any => {
+  if (!publicKey) {
+    return undefined;
+  }
+  if (publicKey.typeUrl === Secp256k1PubKey.typeUrl) {
+    const { key } = Secp256k1PubKey.decode(publicKey.value);
+    return {
+      '@type': Secp256k1PubKey.typeUrl,
+      key: Buffer.from(key).toString('base64'),
+    };
+  }
+  if (publicKey.typeUrl === LegacyAminoPubKey.typeUrl) {
+    const { threshold, publicKeys } = LegacyAminoPubKey.decode(
+      publicKey.value,
+    );
+    return {
+      '@type': LegacyAminoPubKey.typeUrl,
+      threshold,
+      public_keys: publicKeys.map(pk => encodeJsonPublicKey(pk)),
+    };
+  }
+  throw Error(`unsupported public key type: ${publicKey.typeUrl}`);
+};
+
+export const parseJsonPublicKey = (publicKey: any) => {
   if (!publicKey) {
     return undefined;
   }
@@ -435,12 +463,7 @@ export const makeAgdUnsignedTx = ({
     auth_info: {
       signer_infos: authInfo.signerInfos.map(info => ({
         ...(info.publicKey
-          ? {
-              public_key: {
-                type_url: info.publicKey.typeUrl,
-                value: Buffer.from(info.publicKey.value).toString('base64'),
-              },
-            }
+          ? { public_key: encodeJsonPublicKey(info.publicKey) }
           : {}),
         ...(info.modeInfo
           ? {

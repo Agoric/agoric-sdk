@@ -16,6 +16,7 @@ import { netOfConfig } from './ymax-admin-helpers.ts';
 import {
   makeUpgradeEncodeObject,
   makeUpgradeExecEncodeObject,
+  parseJsonPublicKey,
   registry,
 } from './ymax-authz-msgs.ts';
 
@@ -126,6 +127,7 @@ export const makeUpgradeRequestBuilder = ({
   contract,
   networkConfig,
   grantee,
+  granteePubkey,
   queryClient,
   walletKit,
   clock,
@@ -133,6 +135,18 @@ export const makeUpgradeRequestBuilder = ({
   contract: ContractName;
   networkConfig: NetworkConfigShape;
   grantee?: string;
+  /**
+   * Grantee's public key, in the same `@type`-tagged JSON shape `agd keys
+   * show <name> --pubkey` prints (a plain secp256k1 key, or a
+   * LegacyAminoPubKey for a multisig grantee).
+   *
+   * Required when `grantee` is a multisig account: `agd tx multisign`
+   * dereferences the (would-be) unsigned tx's `signer_infos[0].public_key`
+   * unconditionally, so leaving it unset causes it to panic. Not needed for
+   * a single-key grantee, since `agd tx sign` fills in the real signer info
+   * itself when signing.
+   */
+  granteePubkey?: object;
   queryClient: SequenceQueryClient;
   walletKit: WalletKitShape;
   clock: Clock;
@@ -195,8 +209,11 @@ export const makeUpgradeRequestBuilder = ({
         messages: [txMsg],
         memo,
       });
+      const pubkey = granteePubkey
+        ? parseJsonPublicKey(granteePubkey) || Fail`invalid granteePubkey`
+        : undefined;
       const authInfoBytes = makeAuthInfoBytes(
-        [{ pubkey: undefined as never, sequence }],
+        [{ pubkey: pubkey as never, sequence }],
         defaultFee.amount,
         Number(defaultFee.gas),
         undefined,

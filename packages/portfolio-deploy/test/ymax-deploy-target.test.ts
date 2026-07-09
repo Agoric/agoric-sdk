@@ -1627,6 +1627,89 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
   t.falsy(assets?.has('ymax0-main-upgrade.json'));
 });
 
+test('authz operator-sign path embeds a multisig grantee pubkey when GRANTEE_PUBKEY is set', async t => {
+  // Regression test: `agd tx multisign` panics with a nil pointer
+  // dereference if the unsigned tx's placeholder signer_info has no
+  // public_key, which is the case whenever the grantee is a multisig
+  // account (agd tx multisign is only needed for multisig grantees).
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+  const grantee = 'agoric1operator0000000000000000000000000000000';
+  const granteePubkey = {
+    '@type': '/cosmos.crypto.multisig.LegacyAminoPubKey',
+    threshold: 2,
+    public_keys: [
+      {
+        '@type': '/cosmos.crypto.secp256k1.PubKey',
+        key: 'A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3',
+      },
+      {
+        '@type': '/cosmos.crypto.secp256k1.PubKey',
+        key: 'Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl',
+      },
+    ],
+  };
+
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+  });
+
+  const connectRpc = (async (_rpcAddr: string) => ({
+    getSequence: async () => ({
+      accountNumber: 12,
+      sequence: 34,
+    }),
+  })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
+  const makeWalletKit = async () =>
+    ({
+      marshaller: {
+        toCapData: (specimen: unknown) => ({
+          body: `#${JSON.stringify(specimen)}`,
+          slots: [],
+        }),
+      },
+      agoricNames: {
+        instance: {
+          postalService: 'board0371',
+        },
+      },
+    }) as unknown as Awaited<
+      ReturnType<typeof import('@agoric/client-utils').makeSmartWalletKit>
+    >;
+
+  await runPhase(
+    {
+      agoricSdk: ctx.agoricSdk,
+      execFile: ctx.execFile,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      stdout: ctx.stdout,
+    },
+    'phase-upgrade-generate',
+    { target: 'ymax0-main', tag: releaseTag },
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE_ADDRESS: grantee,
+      GRANTEE_PUBKEY: JSON.stringify(granteePubkey),
+      PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+    },
+  );
+
+  const assets = ctx.releases.get(releaseTag)?.assets;
+  const unsignedTx = JSON.parse(
+    assets?.get('ymax0-main-authz-unsigned-tx.json') || 'null',
+  );
+  t.deepEqual(
+    unsignedTx.auth_info.signer_infos[0].public_key,
+    granteePubkey,
+  );
+});
+
 test('detached direct-sign path generates and broadcasts for ymax0-main without authz', async t => {
   const ctx = makeScenario();
   const releaseTag = happyPathReleaseTag;

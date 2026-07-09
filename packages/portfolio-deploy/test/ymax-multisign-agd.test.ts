@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { MsgExec } from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { TxBody, TxRaw } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeCmdRunner, makeFileRW } from '@agoric/pola-io';
@@ -487,4 +488,105 @@ test.serial('control upgrade supports more than one signer', async t => {
 
   await assertSignedSpendAction(t, msg, await signed.readText());
   t.snapshot(commandRecords, 'agd operator commands');
+});
+
+test.serial('authz grantee upgrade supports a multisig grantee', async t => {
+  // Regression test for the production unsigned-tx generator
+  // (makeUpgradeRequestBuilder/generateUpgradeRequest in ymax-authz-flow.ts):
+  // when the authz grantee is a multisig account, the generated unsigned tx
+  // must carry the grantee's real public key in auth_info.signer_infos[0],
+  // or `agd tx multisign` panics with a nil pointer dereference (it
+  // unconditionally reads signer_infos[0].public_key while verifying the
+  // supplied signatures).
+  const { env } = process;
+  const commandRecords: CommandRecord[] = [];
+  const recordingExecFile = makeRecordingExecFile(execFileP, commandRecords);
+  const [aliceFiles, bobFiles] = await makeTestFiles(t, ['alice2', 'bob2']);
+
+  const alice = makeSigner(
+    'alice2',
+    'test test test test test test test test test test test junk',
+    aliceFiles,
+    makeMultiSigTool({ env, files: aliceFiles, execFile: recordingExecFile }),
+  );
+  const bob = makeSigner(
+    'bob2',
+    'zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo wrong',
+    bobFiles,
+    makeMultiSigTool({ env, files: bobFiles, execFile: recordingExecFile }),
+  );
+  await alice.addKey();
+  await bob.addKey();
+
+  const grantee = await alice.makeMultisig(
+    [await bob.showPubKey()],
+    2,
+    'ymax-grantee-ms',
+  );
+  const multisig: MultisigAccount = {
+    name: grantee.name,
+    address: grantee.address,
+    accountNumber: 789,
+    chainId: tx1.chainId,
+  };
+  await bob.addPubKey(grantee.name, grantee.pubkey);
+
+  const sequence = 12;
+  const upgradeRequestBuilder = makeUpgradeRequestBuilder({
+    contract: 'ymax1',
+    networkConfig: { chainName: tx1.chainId, rpcAddrs: [] },
+    grantee: grantee.address,
+    granteePubkey: JSON.parse(grantee.pubkey),
+    queryClient: {
+      getSequence: async () => ({
+        accountNumber: multisig.accountNumber,
+        sequence,
+      }),
+    },
+    walletKit: {
+      marshaller: marshalData,
+      agoricNames: { instance: { postalService: 'board0371' } },
+    },
+    clock: () => new Date('2026-06-26T17:39:38.685Z'),
+  });
+  const request = await upgradeRequestBuilder.generateUpgradeRequest({
+    bundleId: tx1.upgradeArgs.bundleId,
+    invocationId: tx1.invocationId,
+    memo: '',
+    overrides: tx1.upgradeArgs.privateArgsOverrides,
+  });
+  t.is(request.grantee, grantee.address);
+  t.is(request.controlAddress, CONTROL_ADDRESSES.ymax1.devnet);
+
+  const unsigned = makeAgdUnsignedTx({
+    bodyBytes: Buffer.from(request.bodyBytesBase64, 'base64'),
+    authInfoBytes: Buffer.from(request.authInfoBytesBase64, 'base64'),
+  });
+  t.deepEqual(
+    unsigned.auth_info.signer_infos[0].public_key,
+    JSON.parse(grantee.pubkey),
+  );
+  const execMsg = unsigned.body.messages[0] as {
+    '@type': string;
+    msgs: Array<{ '@type': string; owner: string }>;
+  };
+  t.is(execMsg['@type'], MsgExec.typeUrl);
+  t.is(execMsg.msgs[0]['@type'], MsgWalletSpendAction.typeUrl);
+  t.is(execMsg.msgs[0].owner, CONTROL_ADDRESSES.ymax1.devnet);
+
+  const signatures = [
+    await alice.sign(multisig, sequence, unsigned),
+    await bob.sign(multisig, sequence, unsigned),
+  ];
+  const signed = await alice.multisign(
+    multisig,
+    sequence,
+    unsigned,
+    signatures,
+  );
+
+  const signedText = await signed.readText();
+  const signedTxBytes = parseSignedTxBytes(signedText);
+  const signedTx = TxRaw.decode(signedTxBytes);
+  t.true(signedTx.signatures.length > 0);
 });

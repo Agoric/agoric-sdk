@@ -42,6 +42,13 @@ on:
         description: Grantee address for detached-grantee signing
         required: false
         type: string
+      authzGranteePubkey:
+        description: >-
+          Grantee public key JSON for detached-grantee signing, required
+          when the grantee is a multisig account (output of `agd keys show
+          <name> --pubkey`). Not needed for a single-key grantee.
+        required: false
+        type: string
       ymax1Planner:
         description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades). Operator is responsible for actually stopping the planner.'
         required: false
@@ -186,6 +193,7 @@ jobs:
         env:
           AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
           AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
+          AUTHZ_GRANTEE_PUBKEY: ${{ inputs.authzGranteePubkey }}
           GITHUB_TOKEN: ${{ github.token }}
           MNEMONIC: ${{ inputs.signingKey == 'ci-secret' && secrets.YMAX_CONTROL_MNEMONIC || '' }}
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
@@ -206,6 +214,7 @@ jobs:
               ;;
             detached-control|detached-grantee)
               export GRANTEE_ADDRESS="$AUTHZ_GRANTEE"
+              export GRANTEE_PUBKEY="$AUTHZ_GRANTEE_PUBKEY"
               generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
                 phase-upgrade-generate \
                 --target "$TARGET" \
