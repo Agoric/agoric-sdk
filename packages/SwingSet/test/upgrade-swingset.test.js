@@ -521,16 +521,22 @@ test('applyVatOptionUpdates guards stale / mis-chained / wrong-kind vatIDs', asy
   );
 });
 
-test('applyVatOptionUpdates rejects a non-contract vat', async t => {
+test('applyVatOptionUpdates does not inspect the vat name/label', async t => {
+  // Per mhofman's review on kriscendobot/agoric-sdk#9, being a live dynamic vat
+  // is the sufficient guard; the kernel does not additionally assert a Zoe `zcf`
+  // contract-name (that would couple this generic writer to a Zoe convention).
+  // A live dynamic vat whose name is not `zcf...` is therefore a valid target —
+  // the host owns the vatID↔target mapping it resolved.
   const { kernelStorage } = initSwingStore();
   const { kvStore } = kernelStorage;
   kvStore.set('vat.dynamicIDs', JSON.stringify(['v10']));
   kvStore.set('vats.terminated', JSON.stringify([]));
-  kvStore.set('v10.options', mkContractOptions('bootstrap'));
-  t.throws(
-    () => applyVatOptionUpdates(kvStore, [{ vatID: 'v10', critical: true }]),
-    { message: /is not a contract vat/ },
-  );
+  kvStore.set('v10.options', mkContractOptions('some-other-label'));
+  const changed = applyVatOptionUpdates(kvStore, [
+    { vatID: 'v10', critical: true },
+  ]);
+  t.deepEqual(changed, ['v10 (some-other-label)']);
+  t.true(JSON.parse(kvStore.get('v10.options')).critical);
 });
 
 test('applyVatOptionUpdates with no updates is a no-op', async t => {

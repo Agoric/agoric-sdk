@@ -73,19 +73,20 @@ export const applyVatOptionUpdates = (kvStore, vatOptionUpdates = []) => {
   const changed = [];
   for (const update of vatOptionUpdates) {
     const { vatID, critical } = update;
-    // Guard the pin: it must name a live, non-terminated dynamic (contract)
-    // vat. The host resolves these per chain, so a vatID absent on this chain
-    // is a host/proposal error, not something to skip silently.
+    // Guard the pin: it must name a live, non-terminated dynamic vat. The host
+    // resolves these per chain, so a vatID absent on this chain is a
+    // host/proposal error, not something to skip silently. Being a dynamic vat
+    // is the meaningful guarantee here — the kernel deliberately does NOT also
+    // assert a Zoe `zcf` contract-name, which would couple this generic option
+    // writer to a Zoe labeling convention it should not know about (per
+    // mhofman's review on kriscendobot/agoric-sdk#9); the vatID↔target mapping
+    // is owned entirely by the host that resolved it.
     dynamicVats.has(vatID) ||
       Fail`vat-option-update: ${vatID} is not a live dynamic vat`;
     !terminated.has(vatID) ||
       Fail`vat-option-update: ${vatID} is terminated`;
     const optionsKey = `${vatID}.options`;
     const options = JSON.parse(getRequired(optionsKey));
-    // Defense in depth: only a Zoe contract vat (name `zcf...`) is a valid
-    // target here. This is an assertion guard, never the selector.
-    (typeof options.name === 'string' && options.name.startsWith('zcf')) ||
-      Fail`vat-option-update: ${vatID} (${options.name}) is not a contract vat`;
     let dirty = false;
     if (critical !== undefined && !!options.critical !== critical) {
       options.critical = critical;

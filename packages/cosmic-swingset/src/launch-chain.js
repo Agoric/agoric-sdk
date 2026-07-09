@@ -1193,8 +1193,13 @@ export async function launchAndShareInternals({
           ...(upgradeInfoVatOptionUpdates || []),
         ];
         if (vatOptionUpdates.length) {
-          upgradeDetails ||
-            Fail`Unexpected vat option updates outside of a software upgrade`;
+          // Only meaningful during a software upgrade of an existing chain: the
+          // targets are already-running dynamic vats. Assert we are NOT in chain
+          // bootstrap (empty kvStore, no dynamic vats yet) — applyVatOptionUpdates
+          // would fail its per-vat guards there anyway, but be explicit rather
+          // than rely on that (per mhofman's review on kriscendobot/agoric-sdk#9).
+          (upgradeDetails && !isBootstrap) ||
+            Fail`vat option updates are only supported during a software upgrade, not chain bootstrap`;
           applyVatOptionUpdates(kernelStorage.kvStore, vatOptionUpdates);
         }
 
