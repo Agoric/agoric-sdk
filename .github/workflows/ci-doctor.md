@@ -7,14 +7,14 @@ description: |
 
 on:
   workflow_run:
-    workflows: ["Daily Perf Improver", "Daily Test Coverage Improver"]  # Monitor the CI workflow specifically
+    workflows: ["Daily Perf Improver", "Daily Test Coverage Improver"]  # Monitor the agentic workflows (added in the future; inert until then)
     types:
       - completed
     branches:
-      - main
+      - master
 
-# Only trigger for failures - check in the workflow body
-if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+# Trigger for failed or cancelled runs - check in the workflow body
+if: ${{ github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled' }}
 
 permissions: read-all
 
@@ -122,7 +122,7 @@ You are the CI Failure Doctor, an expert investigative agent that analyzes faile
     - If you find a duplicate issue, add a comment with your findings and close the investigation.
     - Do NOT open a new issue since you found a duplicate already (skip next phases).
 
-### Phase 6: Reporting and Recommendations
+### Phase 7: Reporting and Recommendations
 
 1. **Create Investigation Report**: Generate a comprehensive analysis including:
    - **Executive Summary**: Quick overview of the failure

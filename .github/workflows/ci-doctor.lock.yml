@@ -28,14 +28,14 @@
 #
 # Source: githubnext/agentics/workflows/ci-doctor.md@42d5a50bca89dfba883981429036469ab90a4758
 #
-# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"de97d52cff766d48c036019ab1f11875635bdcb94420c41e580c2bcdc8144950","compiler_version":"v0.46.1"}
+# gh-aw-metadata: {"schema_version":"v1","frontmatter_hash":"854afa42e88fdcb47068746fc9c541c9167eb6ace8acc72f5ba0f101816e8780","compiler_version":"v0.46.1"}
 
 name: "CI Failure Doctor"
 "on":
   workflow_run:
     # zizmor: ignore[dangerous-triggers] - workflow_run trigger is secured with role and fork validation
     branches:
-    - main
+    - master
     types:
     - completed
     workflows:
@@ -54,8 +54,8 @@ jobs:
     needs: pre_activation
     # zizmor: ignore[dangerous-triggers] - workflow_run trigger is secured with role and fork validation
     if: >
-      ((needs.pre_activation.outputs.activated == 'true') && (github.event.workflow_run.conclusion == 'failure')) &&
-      ((github.event_name != 'workflow_run') || ((github.event.workflow_run.repository.id == github.repository_id) &&
+      ((needs.pre_activation.outputs.activated == 'true') && (github.event.workflow_run.conclusion == 'failure' ||
+      github.event.workflow_run.conclusion == 'cancelled')) && ((github.event_name != 'workflow_run') || ((github.event.workflow_run.repository.id == github.repository_id) &&
       (!(github.event.workflow_run.repository.fork))))
     runs-on: ubuntu-slim
     permissions:
@@ -1111,7 +1111,7 @@ jobs:
           if-no-files-found: ignore
 
   pre_activation:
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    if: ${{ github.event.workflow_run.conclusion == 'failure' || github.event.workflow_run.conclusion == 'cancelled' }}
     runs-on: ubuntu-slim
     outputs:
       activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
