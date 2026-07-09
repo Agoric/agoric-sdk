@@ -3,7 +3,13 @@
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { initSwingStore } from '@agoric/swing-store';
+import tmp from 'tmp';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import {
+  initSwingStore,
+  makeSwingStoreExporter,
+  getKVStoreKeyType,
+} from '@agoric/swing-store';
 import { kser } from '@agoric/kmarshal';
 
 import {
@@ -470,6 +476,80 @@ test('v3 upgrade', async t => {
 // no `version` and only rewrites data in an existing `${vatID}.options` blob.
 const mkContractOptions = (name, extra = {}) =>
   JSON.stringify({ name, workerOptions: { type: 'local' }, ...extra });
+
+const tmpDir = makeTempDirFactory(tmp);
+
+// Accumulate the swing-store export *feed* — the sequence of export-data KVPairs
+// that swing-store hands cosmic-swingset at each commit, and that cosmic-swingset
+// forwards to the cosmos side to commit into the IAVL/DB (the consensus state
+// root). This is precisely the "data exports … reflected in the cosmos db"
+// channel mhofman asked about on kriscendobot/agoric-sdk#9.
+const makeExportLog = () => {
+  const entries = [];
+  return {
+    callback(updates) {
+      for (const pair of updates) entries.push(pair);
+    },
+    getEntries() {
+      return entries;
+    },
+  };
+};
+
+test('applyVatOptionUpdates change is carried in the swing-store data exports (→ cosmos DB)', async t => {
+  // mhofman (kriskowal/garden#29) asked us to confirm the in-place
+  // `${vatID}.options` rewrite lands in the swing-store "data exports" that get
+  // committed into the cosmos DB, not merely in the host-local SQLite. It does:
+  // `${vatID}.options` is a *consensus* kvStore key (getKVStoreKeyType — anything
+  // not prefixed `local.`/`host.`), and BOTH the per-commit export feed
+  // (exportCallback, what cosmic-swingset forwards to cosmos) and a full
+  // state-sync export (getExportData, what a fresh node restores from) carry every
+  // consensus kvStore key as a `kv.<key>` export-data record. So flipping the
+  // boolean folds into the export data and thus the consensus/activityhash.
+  const [dbDir, cleanup] = tmpDir('critical-export');
+  t.teardown(cleanup);
+
+  // The key we mutate is a consensus (hash-bearing, exported) key — not `local.`.
+  t.is(getKVStoreKeyType('v10.options'), 'consensus');
+
+  const exportLog = makeExportLog();
+  const { kernelStorage, hostStorage } = initSwingStore(dbDir, {
+    exportCallback: exportLog.callback,
+  });
+  const { kvStore } = kernelStorage;
+
+  kvStore.set('vat.dynamicIDs', JSON.stringify(['v10']));
+  kvStore.set('vats.terminated', JSON.stringify([]));
+  kvStore.set('v10.options', mkContractOptions('zcf-b1-abcde-ymax1'));
+  await hostStorage.commit();
+
+  const changed = applyVatOptionUpdates(kvStore, [{ vatID: 'v10', critical: true }]);
+  t.deepEqual(changed, ['v10 (zcf-b1-abcde-ymax1)']);
+  await hostStorage.commit();
+
+  // 1) The export FEED cosmic-swingset forwards to cosmos carries the promoted
+  //    value on the consensus key `kv.v10.options`.
+  const feed = exportLog.getEntries().filter(([key]) => key === 'kv.v10.options');
+  t.true(feed.length >= 1, 'the options change appears in the export feed');
+  t.true(
+    JSON.parse(feed.at(-1)[1]).critical,
+    'the exported feed value is critical:true',
+  );
+
+  // 2) A full state-sync EXPORT (what a fresh node / the cosmos DB restores from)
+  //    reflects it too.
+  const exporter = makeSwingStoreExporter(dbDir);
+  const exported = new Map();
+  for await (const [key, value] of exporter.getExportData()) {
+    exported.set(key, value);
+  }
+  await exporter.close();
+  t.true(exported.has('kv.v10.options'), 'export data includes the vat options');
+  t.true(
+    JSON.parse(exported.get('kv.v10.options')).critical,
+    'state-sync export carries critical:true',
+  );
+});
 
 test('applyVatOptionUpdates promotes a designated contract vat in place', async t => {
   const { hostStorage, kernelStorage } = initSwingStore();

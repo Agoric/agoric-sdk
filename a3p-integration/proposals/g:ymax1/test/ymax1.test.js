@@ -133,6 +133,20 @@ test.serial('installAndStart using ymaxControl', async t => {
   t.log(vatDetails);
 
   t.context.shared.vatID = vatDetails.vatID;
+
+  // garden#29: this ymax1 contract vatID is assigned deterministically by the
+  // synthetic-chain deployment, so it is stable across runs. The n:upgrade-next
+  // proposal promotes THIS vat to `critical` at the software upgrade, pinning the
+  // vatID in its package.json (agoricProposal.upgradeInfo.vatOptionUpdates). If
+  // deployment determinism ever shifts this value, that pin must be updated to
+  // match — see a3p-integration/proposals/n:upgrade-next/README.md. Surface it
+  // here so the value to pin is visible in the g:ymax1 test log, and assert it is
+  // a well-formed dynamic vatID.
+  t.log(
+    'garden#29 ymax1 deterministic vatID (pin into n:upgrade-next):',
+    vatDetails.vatID,
+  );
+  t.regex(vatDetails.vatID, /^v\d+$/, 'ymax1 has a dynamic vatID');
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
