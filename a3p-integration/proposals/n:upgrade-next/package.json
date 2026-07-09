@@ -70,15 +70,15 @@
   "ava": {
     "concurrency": 1,
     "timeout": "2m",
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],
     "nodeArguments": [
-      "--loader=ts-blank-space/register",
+      "--import=ts-blank-space/register",
       "--no-warnings"
     ]
   },

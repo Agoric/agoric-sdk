@@ -1,8 +1,8 @@
 schemaVersion: 1
-patchHash: sha256:2ddd8eead3473264edeb035f4a5b6264ed2764d5c7c11b609d58cf8c4ed77695
+patchHash: sha256:8af873a906557185fff5342e033f4d501fa0e49f4f0b304c90cf1dc5fc9683e0
 package:
   name: ava
-  version: 6.4.1
+  version: 8.0.1
 upstream:
   repo: avajs/ava
   issue:
@@ -10,4 +10,4 @@ upstream:
 status: localonly
 notes:
 createdAt: 2026-04-16T01:56:58.074Z
-updatedAt: 2026-04-16T05:12:10.456Z
+updatedAt: 2026-06-17T18:40:27.599Z
