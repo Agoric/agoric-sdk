@@ -1,5 +1,7 @@
 /* global FinalizationRegistry WeakRef */
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import * as proc from 'node:child_process';

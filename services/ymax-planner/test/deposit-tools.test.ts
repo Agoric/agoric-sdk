@@ -892,6 +892,30 @@ test('solver regressions', async t => {
     portfolio145Rebalance202606.flow,
     [],
   );
+
+  // 2026-07-03T21:09Z
+  {
+    // $10M is the limit on a single depositForBurn transaction
+    // Ref: https://developers.circle.com/cctp/references/contract-interfaces#depositforburn
+    const bigDeposit = scale6(10_000_000);
+    const portfolio239Flow1 = await planDepositToAllocations({
+      ...plannerContext,
+      network: PROD_NETWORK_202606,
+      targetAllocation: { ERC4626_morphoSteakhousePrimeUsdc_Base: 100n },
+      currentBalances: {},
+      amount: makeDeposit(bigDeposit),
+      fromChain: 'Ethereum',
+    });
+    await assertPlanFlow(t, 'portfolio239 flow1', portfolio239Flow1.flow, [
+      makeMovementDesc('+Ethereum', '@Ethereum', bigDeposit),
+      makeMovementDesc('@Ethereum', '@Base', bigDeposit),
+      makeMovementDesc(
+        '@Base',
+        'ERC4626_morphoSteakhousePrimeUsdc_Base',
+        bigDeposit,
+      ),
+    ]);
+  }
 });
 
 test('planRebalanceToAllocations regression - multiple sources', async t => {

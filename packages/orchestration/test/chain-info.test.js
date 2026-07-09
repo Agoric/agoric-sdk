@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { makeNameHubKit } from '@agoric/vats';

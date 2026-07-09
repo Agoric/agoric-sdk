@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { Far, getInterfaceOf, makeMarshal, passStyleOf } from '@endo/marshal';
@@ -90,6 +92,10 @@ const checkRemoteMarshallerValueInvariants = (t, val) => {
   t.true(hasCap);
 };
 
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {unknown} val
+ */
 const unexpectedMarshallerInvocation = (t, val) => {
   t.log('Unexpected marshalled value', val);
   t.fail('Remote marshaller should not have been invoked');

@@ -1,4 +1,3 @@
-/* eslint-env node */
 import path from 'node:path';
 import { styleText } from 'node:util';
 import { execFileSync } from 'node:child_process';

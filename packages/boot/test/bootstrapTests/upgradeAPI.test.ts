@@ -214,8 +214,12 @@ test.serial(`verify API governance`, async t => {
       offerIds.invite.committee,
     );
   }
-  const econCharterKit =
-    await EV.vat('bootstrap').consumeItem('econCharterKit');
+  // econCharterKit is no longer in the (now generic) bootstrap-powers type
+  const econCharterKit = (await EV.vat('bootstrap').consumeItem(
+    'econCharterKit',
+  )) as import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
+    typeof import('@agoric/governance/src/econCommitteeCharter.js').start
+  >;
 
   const charterCreatorFacet = await EV.get(econCharterKit).creatorFacet;
   await EV(charterCreatorFacet).addInstance(

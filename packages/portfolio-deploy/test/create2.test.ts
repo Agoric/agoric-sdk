@@ -1,8 +1,8 @@
 /** @file create2 test */
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { computeCreate2Address } from '@aglocal/portfolio-contract/src/utils/create2.ts';
 import { predictWalletAddress } from '@aglocal/portfolio-contract/src/utils/evm-orch-factory.ts';
 import { contractsMock } from '@aglocal/portfolio-contract/test/mocks.ts';
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { keccak_256 as keccak256 } from '@noble/hashes/sha3';
 import { hexToBytes } from '@noble/hashes/utils';
 import { readFile } from 'node:fs/promises';

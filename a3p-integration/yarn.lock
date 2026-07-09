@@ -2,7 +2,7 @@
 # Manual changes might be lost - proceed with caution!
 
 __metadata:
-  version: 8
+  version: 10
   cacheKey: 10c0
 
 "@agoric/base-zone@npm:0.1.1-dev-c393dc4.0.c393dc4":

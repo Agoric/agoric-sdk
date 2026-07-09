@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import os from 'node:os';
@@ -8,6 +10,7 @@ import * as fsPromises from 'node:fs/promises';
 
 import { makeDirectoryLock, writeFileAtomic } from '../src/build-cache.js';
 
+/** @param {import('ava').ExecutionContext} t */
 const makeFixture = async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'internal-build-cache-'));
   t.teardown(async () => rm(root, { recursive: true, force: true }));

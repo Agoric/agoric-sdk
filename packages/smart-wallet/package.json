@@ -26,7 +26,7 @@
     "@endo/bundle-source": "^4.3.2",
     "@endo/captp": "^4.5.1",
     "@endo/init": "^1.1.13",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "import-meta-resolve": "^4.1.0"
   },
   "dependencies": {
@@ -63,16 +63,13 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "2m"
   },
   "publishConfig": {
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 93.84
+    "atLeast": 94.41
   },
   "engines": {
     "node": "^22.11"

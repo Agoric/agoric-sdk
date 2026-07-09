@@ -1,3 +1,5 @@
+name: Post-merge publishes/checks
+
 # Run after merge to trunk
 # Note that this relies on branch protection having:
 #  Require branches to be up to date before merging
@@ -18,7 +20,7 @@ jobs:
       matrix:
         node-version: ['node-new', 'node-old']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version}}
@@ -38,7 +40,7 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -95,7 +97,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{github.event_name == 'push' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -104,15 +107,17 @@ jobs:
           NODE_MEMORY_SIZE: '8192'
         name: generate test coverage report
         run: ./scripts/ci/generate-test-coverage-report.sh
-      - uses: actions/upload-artifact@v4
+
+      - uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage
+
       - name: Find Netlify site ID
         run: |
           echo "NETLIFY_SITE_ID=$(cat COVERAGE_NETLIFY_SITE_ID)" >> $GITHUB_ENV
 
-      - uses: nwtgck/actions-netlify@v1.1
+      - uses: nwtgck/actions-netlify@v4.0.0
         with:
           # Production deployment if a push or merged PR.
           production-deploy: ${{ github.event_name == 'push' && github.ref_name == 'master' }}
@@ -121,6 +126,7 @@ jobs:
           # github-token: ${{ secrets.GITHUB_TOKEN }}
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -132,7 +138,8 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{github.event_name == 'push'}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - uses: ./.github/actions/restore-node
         with:
           node-version: 'node-new'
@@ -141,10 +148,12 @@ jobs:
         env:
           AUTOBENCH_METRICS_URL: ${{ secrets.AUTOBENCH_METRICS_URL }}
         run: cd packages/swingset-runner && yarn ci:autobench
-      - uses: actions/upload-artifact@v4
+
+      - uses: actions/upload-artifact@v7
         with:
           name: benchmarkstats.json
           path: packages/swingset-runner/benchstats*.json
+
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status

@@ -1,4 +1,3 @@
-/* eslint-env node */
 import {
   LOCAL_CONFIG,
   makeStargateClient,

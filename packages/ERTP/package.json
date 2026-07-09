@@ -55,7 +55,7 @@
     "@agoric/swingset-vat": "workspace:*",
     "@endo/bundle-source": "^4.3.2",
     "@fast-check/ava": "^3.0.1",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "tsd": "^0.33.0"
   },
   "files": [
@@ -66,15 +66,12 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "5m"
   },
   "publishConfig": {
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 92.99
+    "atLeast": 93.15
   }
 }

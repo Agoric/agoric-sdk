@@ -45,7 +45,6 @@
     "@agoric/eslint-config": "portal:../../agoric-sdk/packages/eslint-config",
     "@agoric/governance": "portal:../../agoric-sdk/packages/governance",
     "@agoric/import-manager": "portal:../../agoric-sdk/packages/import-manager",
-    "@agoric/inter-protocol": "portal:../../agoric-sdk/packages/inter-protocol",
     "@agoric/internal": "portal:../../agoric-sdk/packages/internal",
     "@agoric/kmarshal": "portal:../../agoric-sdk/packages/kmarshal",
     "@agoric/network": "portal:../../agoric-sdk/packages/network",
@@ -71,15 +70,15 @@
   "ava": {
     "concurrency": 1,
     "timeout": "2m",
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],
     "nodeArguments": [
-      "--loader=ts-blank-space/register",
+      "--import=ts-blank-space/register",
       "--no-warnings"
     ]
   },

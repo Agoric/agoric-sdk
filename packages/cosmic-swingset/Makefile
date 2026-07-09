@@ -58,19 +58,6 @@ $(EVAL_CLEAN): $(EVAL_CODE)
 	./scripts/clean-core-eval.js $< >$@.t || { rm -f $@.t; exit 1; }
 	mv $@.t $@
 
-INTER_PROTO=../inter-protocol
-
-start-committee: $(INTER_PROTO)/gov-econ-committee.js
-	make EVAL_CODE=$(INTER_PROTO)/gov-econ-committee.js \
-		EVAL_PERMIT=$(INTER_PROTO)/gov-econ-committee-permit.json \
-		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
-
-
-start-amm-etc: $(INTER_PROTO)/gov-amm-vaults-etc.js
-	make EVAL_CODE=$(INTER_PROTO)/gov-amm-vaults-etc.js \
-		EVAL_PERMIT=$(INTER_PROTO)/gov-amm-vaults-etc-permit.json \
-		VOTE_PROPOSAL=$(VOTE_PROPOSAL) scenario2-core-eval scenario2-vote
-
 gov-q:
 	$(AGCH) query gov proposals --output json | \
 		jq -c '.proposals[] | [if .proposal_id == null then .id else .proposal_id end,.voting_end_time,.status]'

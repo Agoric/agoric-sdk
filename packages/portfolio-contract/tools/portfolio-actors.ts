@@ -408,9 +408,18 @@ export const makeEvmTrader = ({
         async openPortfolio(
           allocations: TargetAllocation[],
           depositAmount: bigint,
+          features?: Required<PortfolioAutoFeatures>,
         ) {
           assert(contractRepresentative, 'missing contract representative');
-          const witness = getYmaxWitness('OpenPortfolio', { allocations });
+          const witness = features
+            ? (getYmaxWitness('OpenPortfolioWithAutoFeatures', {
+                allocations,
+                features,
+              }) as unknown as ReturnType<
+                // getPermitWitnessTransferFromData is not a fan of witness union types
+                typeof getYmaxWitness<'OpenPortfolio'>
+              >)
+            : getYmaxWitness('OpenPortfolio', { allocations });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
             {

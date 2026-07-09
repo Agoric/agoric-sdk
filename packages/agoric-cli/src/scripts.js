@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/captp';
 

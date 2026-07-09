@@ -1,4 +1,3 @@
-/* eslint-env node */
 import { styleText } from 'node:util';
 import { createHash } from 'node:crypto';
 import path from 'node:path';

@@ -195,6 +195,7 @@ export type Permit2Domain = ReturnType<typeof permit2Domain>;
 // XXX: restore permit to be either PermitTransferFrom or PermitBatchTransferFrom
 // and remove duplication between the two functions below
 // Original method was `SignatureTransfer.getPermitData`
+// XXX: Typing: consider supporting a union of Witness types
 export function getPermitWitnessTransferFromData<
   T extends TypedData,
   TD extends TypedDataParameter<string, Extract<keyof T, string>> =

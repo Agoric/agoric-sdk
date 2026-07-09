@@ -239,10 +239,8 @@ export const prepareNameHubKit = zone => {
           const { keyToAdmin, keyToValue } = this.state;
           if (keyToAdmin.has(key)) {
             const childAdmin = keyToAdmin.get(key);
-            /** @type {NameHub} */
-
-            // @ts-expect-error if an admin is present, it should be a namehub
-            const childHub = keyToValue.get(key);
+            // if an admin is present, the value should be a namehub
+            const childHub = /** @type {NameHub} */ (keyToValue.get(key));
             return { nameHub: childHub, nameAdmin: childAdmin };
           }
           const child = makeNameHubKit();

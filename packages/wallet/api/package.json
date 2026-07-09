@@ -16,7 +16,7 @@
     "@endo/bundle-source": "^4.3.2",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.13",
-    "ava": "^7.0.0"
+    "ava": "^8.0.1"
   },
   "dependencies": {
     "@agoric/cache": "workspace:*",
@@ -42,7 +42,7 @@
   "keywords": [],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Agoric/agoric"
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
   },
   "author": "Agoric",
   "license": "Apache-2.0",
@@ -53,9 +53,6 @@
   "ava": {
     "files": [
       "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
     ],
     "timeout": "2m"
   },

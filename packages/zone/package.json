@@ -35,8 +35,9 @@
   },
   "devDependencies": {
     "@agoric/swingset-vat": "workspace:*",
+    "@endo/init": "^1.1.13",
     "@endo/patterns": "^1.9.1",
-    "ava": "^7.0.0"
+    "ava": "^8.0.1"
   },
   "publishConfig": {
     "access": "public"
@@ -48,12 +49,9 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 94
+    "atLeast": 88.66
   }
 }

@@ -167,8 +167,7 @@ export const provideIssuerStorage = zcfBaggage => {
    */
   const getBrandForIssuer = issuer => {
     assertInstantiated();
-    // @ts-expect-error cast
-    return issuerToIssuerRecord.get(issuer).brand;
+    return /** @type {Brand<K>} */ (issuerToIssuerRecord.get(issuer).brand);
   };
 
   /**
@@ -178,8 +177,7 @@ export const provideIssuerStorage = zcfBaggage => {
    */
   const getIssuerForBrand = brand => {
     assertInstantiated();
-    // @ts-expect-error cast
-    return brandToIssuerRecord.get(brand).issuer;
+    return /** @type {Issuer<K>} */ (brandToIssuerRecord.get(brand).issuer);
   };
 
   /**

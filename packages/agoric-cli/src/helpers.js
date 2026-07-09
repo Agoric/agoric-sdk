@@ -1,4 +1,3 @@
-/* eslint-env node */
 // @ts-check
 
 import { styleText } from 'node:util';

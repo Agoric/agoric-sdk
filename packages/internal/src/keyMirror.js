@@ -30,10 +30,7 @@ export const keyMirror = record => {
   }
 
   /** @type {Record<string, string>} */
-  const mirrored = {
-    // @ts-expect-error Record confused by null prototype
-    __proto__: null,
-  };
+  const mirrored = Object.create(null);
   for (const [key, value] of entries(record)) {
     if (value !== null && value !== key) {
       throw TypeError(

@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { decodeRemoteIbcAddress, localAddrToPortID } from '../src/ibc/utils.js';
 

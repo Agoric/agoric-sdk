@@ -12,6 +12,7 @@ import {
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import {
+  claimTransferLog,
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
   setTxBlockLowerBound,
@@ -48,6 +49,7 @@ type CctpWatch = {
   log?: (...args: unknown[]) => void;
   kvStore: KVStore;
   txId: `tx${number}`;
+  chainId?: CaipChainId;
 };
 
 const parseTransferLog = log => {
@@ -81,6 +83,9 @@ export const watchCctpTransfer = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
+  kvStore,
+  txId,
+  chainId,
 }: CctpWatch & WatcherTimeoutOptions): Promise<WatcherResult> => {
   return new Promise((resolve, reject) => {
     if (signal?.aborted) {
@@ -181,6 +186,22 @@ export const watchCctpTransfer = ({
       );
 
       if (amount === expectedAmount && usdcAddress === tokenAddr) {
+        // Claim this specific transfer so a single physical transfer cannot
+        // settle more than one pending tx sharing the same (destination,
+        // amount). If another leg already claimed it, keep watching.
+        const claimed = claimTransferLog(
+          kvStore,
+          chainId,
+          eventLog.transactionHash,
+          eventLog.index,
+          txId,
+        );
+        if (!claimed) {
+          log(
+            `Transfer ${eventLog.transactionHash}:${eventLog.index} already claimed by another pending tx; continuing to watch`,
+          );
+          return;
+        }
         log(
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );
@@ -268,7 +289,24 @@ export const lookBackCctp = async ({
         try {
           const t = parseTransferLog(ev);
           log(`Check: amount=${t.amount}`);
-          return t.amount === expectedAmount;
+          if (t.amount !== expectedAmount) return false;
+          // Claim this specific transfer so a single physical transfer cannot
+          // settle more than one pending tx sharing the same (destination,
+          // amount). If another leg already claimed it, skip to the next match.
+          const claimed = claimTransferLog(
+            kvStore,
+            chainId,
+            ev.transactionHash,
+            ev.index,
+            txId,
+          );
+          if (!claimed) {
+            log(
+              `Transfer ${ev.transactionHash}:${ev.index} already claimed by another pending tx; skipping`,
+            );
+            return false;
+          }
+          return true;
         } catch (e) {
           log(`Parse error:`, e);
           return false;

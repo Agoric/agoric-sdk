@@ -3,9 +3,8 @@ import { M } from '@endo/patterns';
 import type { BeefyInstrumentId, ERC4626InstrumentId } from './places.ts';
 import type {
   DepositFromChainRef,
-  FlowAgent,
   LocalChainAccountRef,
-  PortfolioAgentId,
+  PortfolioAgentKey,
   InterChainAccountRef,
   WithdrawToChainRef,
 } from './types.js';
@@ -64,12 +63,10 @@ export const isBeefyInstrumentId = (ref: string): ref is BeefyInstrumentId =>
   ref.startsWith('Beefy_');
 harden(isBeefyInstrumentId);
 
-export const PortfolioAgentIdShape: TypedPattern<PortfolioAgentId> = M.string();
+export const PortfolioAgentKeyShape: TypedPattern<PortfolioAgentKey> =
+  M.string();
 
-export const FlowAgentShape: TypedPattern<FlowAgent> = M.splitRecord(
-  {
-    id: PortfolioAgentIdShape,
-  },
-  {},
-  M.record(),
-);
+/** The shape for the optional `agentMemo` field for flows started by an agent */
+export const PortfolioFlowAgentMemoShape: TypedPattern<string> = M.string({
+  stringLengthLimit: 64,
+});

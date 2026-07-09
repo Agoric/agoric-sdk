@@ -93,8 +93,15 @@ export const makeWorkPool = (
     throw RangeError('mode must be "all" or "allSettled"');
   }
 
-  // Normalize source into an `inputs` iterator.
-  const makeInputs = source[Symbol.asyncIterator] || source[Symbol.iterator];
+  // Normalize source into an `inputs` iterator. `source` is an async- or
+  // sync-iterable; type the fallback (`Symbol.iterator`) as present so `||`
+  // yields a defined factory.
+  const iterableSource =
+    /** @type {{ [Symbol.asyncIterator]?: () => AsyncIterator<Awaited<T>>; [Symbol.iterator]: () => Iterator<Awaited<T>> }} */ (
+      source
+    );
+  const makeInputs =
+    iterableSource[Symbol.asyncIterator] || iterableSource[Symbol.iterator];
   const inputs =
     /** @type {AsyncIterator<Awaited<T>> | Iterator<Awaited<T>>} */ (
       Reflect.apply(makeInputs, source, [])

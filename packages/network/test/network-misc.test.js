@@ -1,7 +1,7 @@
 // @ts-check
 
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';

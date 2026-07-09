@@ -58,7 +58,9 @@ type EIP712Data = WithSignature<
 type PortfolioEVMFacet = PortfolioKit['evmHandler'];
 interface PortfolioContractPublicFacet {
   openPortfolioFromEVM(
-    data: YmaxOperationDetails<'OpenPortfolio'>['data'],
+    data:
+      | YmaxOperationDetails<'OpenPortfolio'>['data']
+      | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data'],
     permitDetails: PermitDetails,
   ): Promise<{
     evmHandler: PortfolioEVMFacet;
@@ -310,7 +312,8 @@ export const prepareEVMPortfolioOperationManager = (
       await null;
       try {
         const portfolioId =
-          operationDetails.operation !== 'OpenPortfolio'
+          operationDetails.operation !== 'OpenPortfolio' &&
+          operationDetails.operation !== 'OpenPortfolioWithAutoFeatures'
             ? operationDetails.data.portfolio
             : undefined;
         const portfolio =
@@ -324,7 +327,8 @@ export const prepareEVMPortfolioOperationManager = (
         );
 
         switch (operationDetails.operation) {
-          case 'OpenPortfolio': {
+          case 'OpenPortfolio':
+          case 'OpenPortfolioWithAutoFeatures': {
             const { permitDetails, data } = operationDetails;
             if (!permitDetails) {
               throw Fail`Missing permit details for OpenPortfolio operation`;

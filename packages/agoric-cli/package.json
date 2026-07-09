@@ -32,7 +32,7 @@
   "devDependencies": {
     "@agoric/cosmic-swingset": "workspace:*",
     "@agoric/deploy-script-support": "workspace:*",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.2"
   },
   "dependencies": {
@@ -43,7 +43,6 @@
     "@agoric/cosmic-proto": "workspace:*",
     "@agoric/ertp": "workspace:*",
     "@agoric/governance": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/network": "workspace:*",
     "@agoric/smart-wallet": "workspace:*",
@@ -96,7 +95,7 @@
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 77.09
+    "atLeast": 78.4
   },
   "engines": {
     "node": "^22.11"

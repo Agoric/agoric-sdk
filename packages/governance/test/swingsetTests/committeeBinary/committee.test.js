@@ -1,5 +1,7 @@
 /* eslint-disable ava/assertion-arguments -- the standard diff is unreadable */
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
 import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';

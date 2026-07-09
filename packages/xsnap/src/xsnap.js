@@ -1,4 +1,3 @@
-/* eslint-env node */
 /* eslint no-await-in-loop: ["off"] */
 
 import { finished } from 'node:stream/promises';

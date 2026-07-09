@@ -1,4 +1,3 @@
-/* eslint-env node */
 // @ts-check
 
 import childProcessAmbient from 'node:child_process';

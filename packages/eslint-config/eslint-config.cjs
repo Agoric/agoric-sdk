@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 const orchestrationFlowRestrictions = [
   {
     selector: "Identifier[name='heapVowE']",

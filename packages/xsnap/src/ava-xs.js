@@ -9,11 +9,13 @@ import bundleSource from '@endo/bundle-source';
 
 import { main, makeBundleResolve } from './avaXS.js';
 
-// Sorted to match the `glob` package's default ordering, which node:fs glob
-// does not guarantee.
+// Sorted to match glob@7's default `alphasort` ordering (localeCompare in the
+// 'en' locale), which node:fs glob does not guarantee.
 /** @type {(pattern: string) => Promise<string[]>} */
 const glob = pattern =>
-  Array.fromAsync(fsp.glob(pattern)).then(matches => matches.sort());
+  Array.fromAsync(fsp.glob(pattern)).then(matches =>
+    matches.sort((a, b) => a.localeCompare(b, 'en')),
+  );
 
 Promise.resolve()
   .then(_ =>

@@ -1,8 +1,9 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import fs from 'node:fs';
 import path from 'node:path';
 import { vatsSourceSpecRegistry } from '@agoric/vats/source-spec-registry.js';
-import { interProtocolBundleSpecs } from '@agoric/inter-protocol/source-spec-registry.js';
 
 const vmConfigDir = new URL('..', import.meta.url).pathname;
 
@@ -15,7 +16,7 @@ const collectPackagePaths = registry =>
 
 const allowedSourceSpecs = new Set([
   ...collectPackagePaths(vatsSourceSpecRegistry),
-  ...collectPackagePaths(interProtocolBundleSpecs),
+  '@agoric/vats/src/provisionPool.js',
   '@agoric/smart-wallet/src/walletFactory.js',
   '@agoric/zoe/contractFacet.js',
 ]);
@@ -26,11 +27,12 @@ const allowedBuilderModules = new Set([
   '@agoric/builders/scripts/vats/init-localchain.js',
   '@agoric/builders/scripts/vats/init-transfer.js',
   '@agoric/builders/scripts/vats/init-orchestration.js',
+  '@agoric/builders/scripts/vats/start-econ-committee.js',
+  '@agoric/builders/scripts/vats/invite-committee.js',
   '@agoric/builders/scripts/orchestration/write-chain-info.js',
-  '@agoric/builders/scripts/inter-protocol/init-core.js',
-  '@agoric/builders/scripts/inter-protocol/add-collateral-core.js',
-  '@agoric/builders/scripts/inter-protocol/price-feed-core.js',
-  '@agoric/builders/scripts/inter-protocol/invite-committee-core.js',
+  // Registers the ATOM/USDC test assets formerly provided by inter-protocol's
+  // add-collateral core-eval (#12719); used by the itest-orchestration config.
+  '@agoric/builders/scripts/testing/register-interchain-bank-assets.builder.js',
 ]);
 
 /**

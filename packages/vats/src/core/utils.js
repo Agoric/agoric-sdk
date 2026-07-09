@@ -30,6 +30,17 @@ const { entries, fromEntries, keys } = Object;
  *   [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string };
  * }}
  */
+/**
+ * Names reserved in the agoricNames namespace at bootstrap.
+ *
+ * RETIRED (#12719): the Inter Protocol contracts removed from the repo —
+ * VaultFactory (+ VaultFactoryGovernor), reserve (+ reserveGovernor), psm,
+ * auctioneer, feeDistributor, liquidate, priceAggregator, scaledPriceAuthority —
+ * are no longer started by any boot config. Their names are kept reserved only
+ * for continuity with chains that started those instances before the removal;
+ * a fresh (committee-only) chain reserves the names but never populates them.
+ * See the "AgoricNames delta" note in PR #12744. Do not add new uses.
+ */
 export const agoricNamesReserved = harden({
   issuer: {
     [Stake.symbol]: Stake.proposedName,
