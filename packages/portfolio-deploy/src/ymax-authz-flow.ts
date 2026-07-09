@@ -1,6 +1,9 @@
 /** @file build unsigned ymax upgrade requests for release workflows */
 /* eslint-disable @jessie.js/safe-await-separator */
-import { CONTROL_ADDRESSES } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import {
+  CONTROL_ADDRESSES,
+  PORTFOLIO_CONTRACT_NAMES,
+} from '@agoric/portfolio-api/src/portfolio-constants.js';
 import {
   makeAuthInfoBytes,
   makeSignBytes,
@@ -16,7 +19,7 @@ import {
   registry,
 } from './ymax-authz-msgs.ts';
 
-const defaultContract = 'ymax0';
+export type ContractName = (typeof PORTFOLIO_CONTRACT_NAMES)[number];
 const unsignedUpgradeKind = 'ymax-authz-upgrade-request' as const;
 
 export const defaultFee: StdFee = {
@@ -28,7 +31,7 @@ export type Clock = () => Date;
 
 export type UnsignedUpgradeArtifact = {
   kind: typeof unsignedUpgradeKind;
-  contract: typeof defaultContract;
+  contract: ContractName;
   controlAddress: string;
   grantee?: string;
   bundleId: string;
@@ -71,6 +74,7 @@ export const formatJson = (specimen: unknown) =>
   `${JSON.stringify(specimen, null, 2)}\n`;
 
 const makeUnsignedUpgradeArtifact = ({
+  contract,
   controlAddress,
   grantee,
   bundleId,
@@ -83,6 +87,7 @@ const makeUnsignedUpgradeArtifact = ({
   memo,
   overridesPath,
 }: {
+  contract: ContractName;
   controlAddress: string;
   grantee?: string;
   bundleId: string;
@@ -100,7 +105,7 @@ const makeUnsignedUpgradeArtifact = ({
   );
   return {
     kind: unsignedUpgradeKind,
-    contract: defaultContract,
+    contract,
     controlAddress,
     ...(grantee ? { grantee } : {}),
     bundleId,
@@ -118,12 +123,14 @@ const makeUnsignedUpgradeArtifact = ({
 };
 
 export const makeUpgradeRequestBuilder = ({
+  contract,
   networkConfig,
   grantee,
   queryClient,
   walletKit,
   clock,
 }: {
+  contract: ContractName;
   networkConfig: NetworkConfigShape;
   grantee?: string;
   queryClient: SequenceQueryClient;
@@ -145,7 +152,7 @@ export const makeUpgradeRequestBuilder = ({
       overridesPath?: string;
     }): Promise<UnsignedUpgradeArtifact> {
       const net = netOfConfig(networkConfig);
-      const controlAddress = CONTROL_ADDRESSES[defaultContract][net];
+      const controlAddress = CONTROL_ADDRESSES[contract][net];
       const { postalService } = walletKit.agoricNames.instance;
       postalService || Fail`missing postalService instance in agoricNames`;
       const privateArgsOverrides = harden({
@@ -196,6 +203,7 @@ export const makeUpgradeRequestBuilder = ({
         undefined,
       );
       return makeUnsignedUpgradeArtifact({
+        contract,
         controlAddress,
         ...(grantee ? { grantee } : {}),
         bundleId,

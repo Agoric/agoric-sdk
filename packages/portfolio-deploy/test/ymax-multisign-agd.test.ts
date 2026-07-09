@@ -10,9 +10,11 @@ import { fileURLToPath } from 'node:url';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { TxBody, TxRaw } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeCmdRunner, makeFileRW } from '@agoric/pola-io';
+import { CONTROL_ADDRESSES } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import { makeAuthInfoBytes, type EncodeObject } from '@cosmjs/proto-signing';
 import type { ExecutionContext } from 'ava';
 import { promisify } from 'node:util';
+import { makeUpgradeRequestBuilder } from '../src/ymax-authz-flow.ts';
 import {
   makeAgdUnsignedTx,
   makeUpgradeEncodeObject,
@@ -379,6 +381,57 @@ const makeSigner = (
     showPubKey: () => showPubKey(name),
   });
 };
+
+const checkControlAddress = async (
+  t: ExecutionContext,
+  contract: 'ymax0' | 'ymax1',
+  net: 'devnet' | 'main',
+  chainName: string,
+) => {
+  const upgradeRequestBuilder = makeUpgradeRequestBuilder({
+    contract,
+    networkConfig: { chainName, rpcAddrs: [] },
+    queryClient: {
+      getSequence: async () => ({ accountNumber: 1, sequence: 7 }),
+    },
+    walletKit: {
+      marshaller: marshalData,
+      agoricNames: { instance: { postalService: 'board0371' } },
+    },
+    clock: () => new Date('2026-06-26T17:39:38.685Z'),
+  });
+  const request = await upgradeRequestBuilder.generateUpgradeRequest({
+    bundleId: tx1.upgradeArgs.bundleId,
+    invocationId: tx1.invocationId,
+    memo: '',
+    overrides: tx1.upgradeArgs.privateArgsOverrides,
+  });
+  t.is(request.contract, contract);
+  t.is(request.controlAddress, CONTROL_ADDRESSES[contract][net]);
+
+  const unsigned = makeAgdUnsignedTx({
+    bodyBytes: Buffer.from(request.bodyBytesBase64, 'base64'),
+    authInfoBytes: Buffer.from(request.authInfoBytesBase64, 'base64'),
+  });
+  const spendMsg = unsigned.body.messages[0] as {
+    '@type': string;
+    owner: string;
+  };
+  t.is(spendMsg['@type'], MsgWalletSpendAction.typeUrl);
+  t.is(spendMsg.owner, CONTROL_ADDRESSES[contract][net]);
+};
+
+test('generateUpgradeRequest resolves the ymax0 control address', async t => {
+  await checkControlAddress(t, 'ymax0', 'devnet', 'agoricdev-25');
+});
+
+test('generateUpgradeRequest resolves the ymax1 control address', async t => {
+  // Regression test: the unsigned tx's owner previously always resolved to
+  // ymax0's control address regardless of target, because
+  // generateUpgradeRequest hard-coded 'ymax0' instead of using the target's
+  // actual contract.
+  await checkControlAddress(t, 'ymax1', 'main', 'agoric-3');
+});
 
 test.serial('control upgrade supports more than one signer', async t => {
   const { env } = process;

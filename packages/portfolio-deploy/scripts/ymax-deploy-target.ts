@@ -2221,7 +2221,7 @@ export const main = async (
     return makeAgoricVstorageApi(apiAddrs, { fetchFn, setTimeout });
   };
   const makeUpgradeRequestBuilder = async (upgradeTarget: Target) => {
-    const { network } = getTargetInfo(upgradeTarget);
+    const { network, contract } = getTargetInfo(upgradeTarget);
     const config = await fetchNetworkConfig(network, { fetch });
     const rpcAddr = config.rpcAddrs?.[0];
     if (!rpcAddr) {
@@ -2235,6 +2235,7 @@ export const main = async (
       config,
     );
     return buildUpgradeRequestBuilder({
+      contract,
       networkConfig: config,
       grantee: GRANTEE_ADDRESS,
       queryClient: await connectRpc(rpcAddr),
