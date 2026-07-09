@@ -14,7 +14,7 @@
     "test:ymax": "ava --config ava.ymd.config.js",
     "test:xcs": "ava --config ava.xcs.config.js"
   },
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.17.0",
   "dependencies": {
     "@aglocal/fast-usdc-deploy": "MULTICHAIN_TESTING",
     "@aglocal/portfolio-deploy": "MULTICHAIN_TESTING",
