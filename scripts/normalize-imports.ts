@@ -12,7 +12,6 @@
  *
  * Example: node scripts/normalize-imports.ts "src/**\/*.ts" "lib/**\/*.js"
  */
-/* eslint-disable @jessie.js/safe-await-separator */
 /* eslint-disable no-underscore-dangle */
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';

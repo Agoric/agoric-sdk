@@ -11,6 +11,11 @@ import fakeVatAdmin, { makeFakeVatAdmin } from './fakeVatAdmin.js';
  * @import {FeeIssuerConfig, Installation} from '../src/types-index.js';
  */
 
+/** @type {Map<string, Promise<import('@agoric/swingset-vat').EndoZipBase64Bundle | import('@agoric/swingset-vat').TestBundle>>} */
+const bundledPathCache = new Map();
+/** @type {WeakMap<object, Promise<import('@agoric/swingset-vat').EndoZipBase64Bundle | import('@agoric/swingset-vat').TestBundle>>} */
+const bundledExportsCache = new WeakMap();
+
 /**
  * @param {VatAdminSvc} [vatAdminSvc]
  */
@@ -63,23 +68,32 @@ export const setUpZoeForTest = async ({
   );
 
   /**
-   * @param {object} pathOrExports
+   * @param {string | object} pathOrExports
    * @returns {Promise<EndoZipBase64Bundle | TestBundle>}
    */
   const bundleModule = async pathOrExports => {
     if (typeof pathOrExports === 'string') {
       const path = pathOrExports;
-      return bundleSource(path);
+      const pending = bundledPathCache.get(path) || bundleSource(path);
+      bundledPathCache.set(path, pending);
+      return pending;
     } else {
       assert.equal(
         Object.getOwnPropertyDescriptor(pathOrExports, Symbol.toStringTag)
           ?.value,
         'Module',
       );
-      // Copy all the properties so this object can be hardened.
-      const exports = { ...pathOrExports };
-      // @ts-expect-error Test bundle type needs to make 'test' const.
-      return bundleTestExports(exports);
+      const pending =
+        bundledExportsCache.get(pathOrExports) ||
+        (() => {
+          // Copy all the properties so this object can be hardened.
+          const exports = { ...pathOrExports };
+          return Promise.resolve(
+            /** @type {TestBundle} */ (bundleTestExports(exports)),
+          );
+        })();
+      bundledExportsCache.set(pathOrExports, pending);
+      return pending;
     }
   };
 
@@ -88,7 +102,7 @@ export const setUpZoeForTest = async ({
    * and return an Installation. The bundleID is random and should not be relied
    * upon in tests of this variety.
    *
-   * @param {object} pathOrExports
+   * @param {string | object} pathOrExports
    * @param {string} [bundleId]
    * @returns {Promise<Installation>}
    */

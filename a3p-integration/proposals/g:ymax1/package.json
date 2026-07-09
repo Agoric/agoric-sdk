@@ -1,4 +1,5 @@
 {
+  "name": "g:ymax1",
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
@@ -23,11 +24,15 @@
     "@aglocal/portfolio-deploy": "dev",
     "@agoric/client-utils": "dev",
     "@agoric/deploy-script-support": "dev",
-    "@agoric/synthetic-chain": "patch:@agoric/synthetic-chain@npm%3A0.6.1#~/.yarn/patches/@agoric-synthetic-chain-npm-0.6.1-f801222832.patch",
+    "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
+    "@agoric/synthetic-chain": "^0.7.1",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
     "ava": "^6.4.1"
+  },
+  "devDependencies": {
+    "ts-blank-space": "^0.7.0"
   },
   "resolutions": {
     "@agoric/client-utils": "portal:./local-packages/client-utils",

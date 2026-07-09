@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';

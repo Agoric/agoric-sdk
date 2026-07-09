@@ -1,12 +1,15 @@
+import assert from 'node:assert/strict';
+
 import { mustMatch, type ERemote } from '@agoric/internal';
 import type { VstorageKit } from '@agoric/client-utils';
 import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import type { Installation, Invitation, ZoeService } from '@agoric/zoe';
+// eslint-disable-next-line import/no-named-as-default -- buildZoeManualTimer is both the named and default export; the names match by design
 import buildZoeManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { passStyleOf } from '@endo/pass-style';
 import { M } from '@endo/patterns';
 import type { ExecutionContext } from 'ava';
@@ -28,10 +31,31 @@ import {
 } from './mocks.ts';
 import { getResolverMakers, settleTransaction } from './resolver-helpers.ts';
 import { chainInfoWithCCTP, setupPortfolioTest } from './supports.ts';
+import { timeAsync } from './test-timing.ts';
 
-const contractName = 'ymax0';
 type StartFn = typeof contractExports.start;
+type TimeAsync = <T>(label: string, fn: () => Promise<T>) => Promise<T>;
+type DeployResult = Awaited<ReturnType<typeof forkDeployBase>>;
+type DeployBase = {
+  supportsFork: boolean;
+  zoe: ZoeService;
+  installation: Installation<StartFn>;
+  bundleAndInstall: (
+    pathOrExports: object,
+    bundleId?: string,
+  ) => Promise<Installation>;
+  vatAdminState?: {
+    prepareJig?: () => Promise<any>;
+  };
+};
+type DeployFactory = ReturnType<typeof makeDeployFactory>;
 const { values } = Object;
+
+const identityTimeAsync: TimeAsync = async (_label, fn) => fn();
+const noopLog = Object.assign((..._args: any[]) => {}, {
+  skip: (..._args: any[]) => {},
+}) as ExecutionContext['log'];
+
 const makeReadPublished = (
   storage: Awaited<
     ReturnType<typeof setupPortfolioTest>
@@ -58,24 +82,12 @@ const makeEvmWalletHandler = async (
   return E(seat).getOfferResult();
 };
 
-export const deploy = async (
-  t: ExecutionContext,
-  overrides: Partial<PortfolioPrivateArgs> = {},
+export const provideMakePrivateArgs = (
+  commonPrivateArgs: Awaited<
+    ReturnType<typeof setupPortfolioTest>
+  >['commonPrivateArgs'],
+  timerService: ReturnType<typeof buildZoeManualTimer>,
 ) => {
-  const common = await setupPortfolioTest(t);
-  let testJig;
-  const setJig = jig => (testJig = jig);
-  const getTestJig = () => testJig;
-  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
-  t.log('contract deployment', contractName);
-
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractExports);
-  t.is(passStyleOf(installation), 'remotable');
-
-  const { usdc, poc26, bld } = common.brands;
-  const timerService = buildZoeManualTimer();
-
   // List of all chains whose `chainInfo` is utilized by the Portfolio contract.
   // Includes both Cosmos-based and EVM-based chains (mainnet and testnet).
   const selectedChains = [
@@ -97,7 +109,7 @@ export const deploy = async (
   const makePrivateArgs = (
     privateArgOverrides: Partial<PortfolioPrivateArgs> = {},
   ): PortfolioPrivateArgs => ({
-    ...common.commonPrivateArgs,
+    ...commonPrivateArgs,
     axelarIds: axelarIdsMock,
     contracts: contractsMock,
     walletBytecode: '0x1234',
@@ -107,13 +119,68 @@ export const deploy = async (
     ...privateArgOverrides,
   });
 
-  const started = await E(zoe).startInstance(
+  return makePrivateArgs;
+};
+
+const buildDeployBase = async (): Promise<DeployBase> => {
+  let testJig;
+  const setJig = jig => (testJig = jig);
+  void testJig;
+  const { zoe, bundleAndInstall, vatAdminState } = await setUpZoeForTest({
+    setJig,
+  });
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractExports);
+  assert.equal(passStyleOf(installation), 'remotable');
+  return {
+    supportsFork: true,
+    zoe,
     installation,
-    { USDC: usdc.issuer, Fee: bld.issuer, Access: poc26.issuer },
-    {}, // terms
-    makePrivateArgs(overrides), // privateArgs
+    bundleAndInstall,
+    vatAdminState,
+  };
+};
+
+const forkDeployBase = async (
+  base: DeployBase,
+  overrides: Partial<PortfolioPrivateArgs> = {},
+  time: TimeAsync = identityTimeAsync,
+) => {
+  const common = await time('setupPortfolioTest', () =>
+    setupPortfolioTest({ log: noopLog }),
   );
-  t.notThrows(() =>
+  const timerService = buildZoeManualTimer();
+  const makePrivateArgs = provideMakePrivateArgs(
+    common.commonPrivateArgs,
+    timerService,
+  );
+  const postalService = Far('DummyPostalServicePublicFacet', {
+    async deliverPayment(addr: string, payment: Invitation) {
+      const depositFacet = await E(common.bootstrap.namesByAddress).lookup(
+        addr,
+        'depositFacet',
+      );
+      await E(depositFacet).receive(payment);
+    },
+  });
+  const jigP = base.vatAdminState?.prepareJig?.();
+
+  const started = await time('zoe.startInstance', () =>
+    E(base.zoe).startInstance(
+      base.installation,
+      {
+        USDC: common.brands.usdc.issuer,
+        Fee: common.brands.bld.issuer,
+        Access: common.brands.poc26.issuer,
+      },
+      {},
+      makePrivateArgs({
+        postalService,
+        ...overrides,
+      }),
+    ),
+  );
+  assert.doesNotThrow(() =>
     mustMatch(
       started,
       M.splitRecord({
@@ -121,27 +188,83 @@ export const deploy = async (
         instance: M.remotable(),
         publicFacet: M.remotable(),
         creatorFacet: M.remotable(),
-        // ...others are not relevant here
       }),
     ),
   );
-  const { baggage: contractBaggage } = getTestJig();
+  const testJig = jigP ? await jigP : undefined;
+  const contractBaggage = testJig?.baggage;
   return {
     common: {
       ...common,
-      utils: { ...common.utils, bundleAndInstall, getTestJig, makePrivateArgs },
+      utils: {
+        ...common.utils,
+        bundleAndInstall: base.bundleAndInstall,
+        getTestJig: () => testJig,
+        makePrivateArgs,
+      },
     },
-    zoe,
+    zoe: base.zoe,
     contractBaggage,
+    postalService,
     started,
     timerService,
   };
 };
 
+const makeDeployFactory = () => {
+  let baseP: Promise<DeployBase> | undefined;
+
+  const ensureBase = async () => {
+    if (!baseP) {
+      baseP = buildDeployBase();
+    }
+    return baseP;
+  };
+
+  const fork = async (
+    overrides: Partial<PortfolioPrivateArgs> = {},
+    time: TimeAsync = identityTimeAsync,
+  ): Promise<DeployResult> => {
+    const base = await ensureBase();
+    return forkDeployBase(base, overrides, time);
+  };
+
+  return {
+    ensureBase,
+    fork,
+    async getFreshClone(
+      overrides: Partial<PortfolioPrivateArgs> = {},
+      time: TimeAsync = identityTimeAsync,
+    ): Promise<DeployResult> {
+      return fork(overrides, time);
+    },
+  };
+};
+
+let deployFactory: DeployFactory | undefined;
+
+const getDeployFactory = () => {
+  if (!deployFactory) {
+    deployFactory = makeDeployFactory();
+  }
+  return deployFactory;
+};
+
+export const deploy = async (
+  t: ExecutionContext,
+  overrides: Partial<PortfolioPrivateArgs> = {},
+) => {
+  const factory = getDeployFactory();
+  return timeAsync(t, 'deploy', () =>
+    factory.getFreshClone(overrides, (label, fn) => timeAsync(t, label, fn)),
+  );
+};
+
 export const setupTrader = async (
-  t,
+  t: ExecutionContext,
   initial = 10_000,
   overrides: Partial<PortfolioPrivateArgs> = {},
+  { traderCount = 1 }: { traderCount?: 1 | 2 } = {},
 ) => {
   const deployed = await deploy(t, overrides);
   const { common, zoe, started } = deployed;
@@ -151,23 +274,33 @@ export const setupTrader = async (
   const { storage } = common.bootstrap;
   const readPublished = makeReadPublished(storage);
 
-  const makeFundedTrader = async () => {
-    const myBalance = usdc.units(initial);
-    const funds = await common.utils.pourPayment(myBalance);
-    const { mint: _, ...poc26SansMint } = poc26;
-    const { mint: _b, ...bldSansMint } = bld;
-    const myWallet = makeWallet(
-      { USDC: usdc, BLD: bldSansMint, Access: poc26SansMint },
-      zoe,
-      when,
-    );
-    await E(myWallet).deposit(funds);
-    await E(myWallet).deposit(poc26.mint.mintPayment(poc26.make(1n)));
-    await E(myWallet).deposit(bld.mint.mintPayment(bld.make(10_000n)));
-    return makeTrader(myWallet, started.instance, readPublished);
-  };
+  const makeFundedTrader = async () =>
+    timeAsync(t, 'makeFundedTrader', async () => {
+      const myBalance = usdc.units(initial);
+      const funds = await common.utils.pourPayment(myBalance);
+      const { mint: _, ...poc26SansMint } = poc26;
+      const { mint: _b, ...bldSansMint } = bld;
+      const myWallet = makeWallet(
+        { USDC: usdc, BLD: bldSansMint, Access: poc26SansMint },
+        zoe,
+        when,
+      );
+      await E(myWallet).deposit(funds);
+      await E(myWallet).deposit(poc26.mint.mintPayment(poc26.make(1n)));
+      await E(myWallet).deposit(bld.mint.mintPayment(bld.make(10_000n)));
+      return makeTrader(myWallet, started.instance, readPublished);
+    });
+
+  // Create the initial traders eagerly inside setupTrader for performance,
+  // while still returning makeFundedTrader so callers can create
+  // additional funded traders after setupTrader returns when needed.
+  // Empirically the fully deferred pattern adds ~1.6s per setup
+  // invocation — measurable in test.macro files where setup runs once
+  // per scenario (e.g. ymax-scenario.test.ts × 12 scenarios → ~19s
+  // regression).
   const trader1 = await makeFundedTrader();
-  const trader2 = await makeFundedTrader();
+  const trader2 = traderCount === 2 ? await makeFundedTrader() : undefined;
+
   const { ibcBridge } = common.mocks;
   ibcBridge.setAddressPrefix('noble');
   for (const { msg, ack } of values(makeUSDNIBCTraffic())) {
@@ -177,7 +310,15 @@ export const setupTrader = async (
     ibcBridge.addMockAck(msg, ack);
   }
 
-  const resolverMakers = await getResolverMakers(zoe, started.creatorFacet);
+  let resolverMakersP: ReturnType<typeof getResolverMakers> | undefined;
+  const getResolverMakersCached = () => {
+    if (!resolverMakersP) {
+      resolverMakersP = timeAsync(t, 'getResolverMakers', () =>
+        getResolverMakers(zoe, started.creatorFacet),
+      );
+    }
+    return resolverMakersP;
+  };
 
   /**
    * Read pure data (CapData that has no slots) from the storage path
@@ -191,7 +332,12 @@ export const setupTrader = async (
     status: Exclude<TxStatus, 'pending'> = 'success',
   ) => {
     const txNum = Number(txId.replace(/^tx/, ''));
-    await settleTransaction(zoe, resolverMakers, txNum, status);
+    await settleTransaction(
+      zoe,
+      await getResolverMakersCached(),
+      txNum,
+      status,
+    );
   };
 
   const txResolver = harden({
@@ -249,15 +395,28 @@ export const setupTrader = async (
     settleTransaction: settleTx,
   });
 
-  return { ...deployed, makeFundedTrader, trader1, trader2, txResolver };
+  // Ensure any pending async operations (e.g. storage updates) are flushed before returning from setup.
+  await eventLoopIteration();
+
+  return {
+    ...deployed,
+    makeFundedTrader,
+    trader1,
+    ...(trader2 ? { trader2 } : {}),
+    txResolver,
+  };
 };
 
 export const makeEvmTraderKit = async (
   deployed: Awaited<ReturnType<typeof deploy>>,
   {
     privateKey = evmTrader0PrivateKey,
+    useRouter,
+    useVerifiedSigner,
   }: {
     privateKey?: Hex;
+    useRouter?: boolean;
+    useVerifiedSigner?: boolean;
   } = {},
 ) => {
   const { common, zoe, started, timerService } = deployed;
@@ -279,6 +438,8 @@ export const makeEvmTraderKit = async (
     timerService,
     readPublished,
     when,
+    useRouter,
+    useVerifiedSigner,
   });
   return { evmTrader, evmWalletHandler, evmAccount: account, readPublished };
 };

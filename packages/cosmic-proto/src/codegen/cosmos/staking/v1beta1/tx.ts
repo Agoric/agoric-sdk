@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   Description,
   type DescriptionSDKType,
@@ -267,8 +268,6 @@ export interface MsgUndelegateResponse {
   completionTime: Timestamp;
   /**
    * amount returns the amount of undelegated coins
-   *
-   * Since: cosmos-sdk 0.50
    */
   amount: Coin;
 }
@@ -288,8 +287,6 @@ export interface MsgUndelegateResponseSDKType {
 }
 /**
  * MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
- *
- * Since: cosmos-sdk 0.46
  * @name MsgCancelUnbondingDelegation
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgCancelUnbondingDelegation
@@ -312,8 +309,6 @@ export interface MsgCancelUnbondingDelegationProtoMsg {
 }
 /**
  * MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
- *
- * Since: cosmos-sdk 0.46
  * @name MsgCancelUnbondingDelegationSDKType
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgCancelUnbondingDelegation
@@ -326,8 +321,6 @@ export interface MsgCancelUnbondingDelegationSDKType {
 }
 /**
  * MsgCancelUnbondingDelegationResponse
- *
- * Since: cosmos-sdk 0.46
  * @name MsgCancelUnbondingDelegationResponse
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgCancelUnbondingDelegationResponse
@@ -339,8 +332,6 @@ export interface MsgCancelUnbondingDelegationResponseProtoMsg {
 }
 /**
  * MsgCancelUnbondingDelegationResponse
- *
- * Since: cosmos-sdk 0.46
  * @name MsgCancelUnbondingDelegationResponseSDKType
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgCancelUnbondingDelegationResponse
@@ -348,8 +339,6 @@ export interface MsgCancelUnbondingDelegationResponseProtoMsg {
 export interface MsgCancelUnbondingDelegationResponseSDKType {}
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgUpdateParams
@@ -372,8 +361,6 @@ export interface MsgUpdateParamsProtoMsg {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsSDKType
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgUpdateParams
@@ -385,8 +372,6 @@ export interface MsgUpdateParamsSDKType {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgUpdateParamsResponse
@@ -399,8 +384,6 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponseSDKType
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgUpdateParamsResponse
@@ -425,6 +408,26 @@ function createBaseMsgCreateValidator(): MsgCreateValidator {
  */
 export const MsgCreateValidator = {
   typeUrl: '/cosmos.staking.v1beta1.MsgCreateValidator' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      commission: true,
+      description: true,
+      minSelfDelegation: true,
+      value: true,
+    },
+    'gogoproto.nullable': {
+      commission: false,
+      description: false,
+      minSelfDelegation: false,
+      value: false,
+    },
+    typeUrlFromField: {
+      commission: () => CommissionRates,
+      description: () => Description,
+      minSelfDelegation: 'cosmos.Int',
+      value: () => Coin,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgCreateValidator' as const,
   is(o: any): o is MsgCreateValidator {
     return (
@@ -696,6 +699,11 @@ function createBaseMsgEditValidator(): MsgEditValidator {
  */
 export const MsgEditValidator = {
   typeUrl: '/cosmos.staking.v1beta1.MsgEditValidator' as const,
+  annotations: {
+    'amino.dont_omitempty': { description: true },
+    'gogoproto.nullable': { description: false },
+    typeUrlFromField: { description: () => Description },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgEditValidator' as const,
   is(o: any): o is MsgEditValidator {
     return (
@@ -910,6 +918,11 @@ function createBaseMsgDelegate(): MsgDelegate {
  */
 export const MsgDelegate = {
   typeUrl: '/cosmos.staking.v1beta1.MsgDelegate' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgDelegate' as const,
   is(o: any): o is MsgDelegate {
     return (
@@ -1095,6 +1108,11 @@ function createBaseMsgBeginRedelegate(): MsgBeginRedelegate {
  */
 export const MsgBeginRedelegate = {
   typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegate' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgBeginRedelegate' as const,
   is(o: any): o is MsgBeginRedelegate {
     return (
@@ -1227,6 +1245,11 @@ function createBaseMsgBeginRedelegateResponse(): MsgBeginRedelegateResponse {
  */
 export const MsgBeginRedelegateResponse = {
   typeUrl: '/cosmos.staking.v1beta1.MsgBeginRedelegateResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { completionTime: true },
+    'gogoproto.nullable': { completionTime: false },
+    typeUrlFromField: { completionTime: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgBeginRedelegateResponse' as const,
   is(o: any): o is MsgBeginRedelegateResponse {
     return (
@@ -1335,6 +1358,11 @@ function createBaseMsgUndelegate(): MsgUndelegate {
  */
 export const MsgUndelegate = {
   typeUrl: '/cosmos.staking.v1beta1.MsgUndelegate' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUndelegate' as const,
   is(o: any): o is MsgUndelegate {
     return (
@@ -1451,6 +1479,11 @@ function createBaseMsgUndelegateResponse(): MsgUndelegateResponse {
  */
 export const MsgUndelegateResponse = {
   typeUrl: '/cosmos.staking.v1beta1.MsgUndelegateResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true, completionTime: true },
+    'gogoproto.nullable': { amount: false, completionTime: false },
+    typeUrlFromField: { amount: () => Coin, completionTime: () => Timestamp },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUndelegateResponse' as const,
   is(o: any): o is MsgUndelegateResponse {
     return (
@@ -1558,14 +1591,17 @@ function createBaseMsgCancelUnbondingDelegation(): MsgCancelUnbondingDelegation 
 }
 /**
  * MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
- *
- * Since: cosmos-sdk 0.46
  * @name MsgCancelUnbondingDelegation
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgCancelUnbondingDelegation
  */
 export const MsgCancelUnbondingDelegation = {
   typeUrl: '/cosmos.staking.v1beta1.MsgCancelUnbondingDelegation' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgCancelUnbondingDelegation' as const,
   is(o: any): o is MsgCancelUnbondingDelegation {
     return (
@@ -1701,8 +1737,6 @@ function createBaseMsgCancelUnbondingDelegationResponse(): MsgCancelUnbondingDel
 }
 /**
  * MsgCancelUnbondingDelegationResponse
- *
- * Since: cosmos-sdk 0.46
  * @name MsgCancelUnbondingDelegationResponse
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgCancelUnbondingDelegationResponse
@@ -1781,14 +1815,17 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgUpdateParams
  */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.staking.v1beta1.MsgUpdateParams' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/staking/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (
@@ -1878,8 +1915,6 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.staking.v1beta1
  * @see proto type: cosmos.staking.v1beta1.MsgUpdateParamsResponse

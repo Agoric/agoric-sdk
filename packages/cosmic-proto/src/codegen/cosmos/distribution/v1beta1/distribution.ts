@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   DecCoin,
   type DecCoinSDKType,
@@ -407,6 +408,23 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/cosmos.distribution.v1beta1.Params' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      baseProposerReward: true,
+      bonusProposerReward: true,
+      communityTax: true,
+    },
+    'gogoproto.nullable': {
+      baseProposerReward: false,
+      bonusProposerReward: false,
+      communityTax: false,
+    },
+    typeUrlFromField: {
+      baseProposerReward: 'cosmos.Dec',
+      bonusProposerReward: 'cosmos.Dec',
+      communityTax: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/distribution/Params' as const,
   is(o: any): o is Params {
     return (
@@ -1023,6 +1041,10 @@ function createBaseValidatorSlashEvent(): ValidatorSlashEvent {
  */
 export const ValidatorSlashEvent = {
   typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEvent' as const,
+  annotations: {
+    'gogoproto.nullable': { fraction: false },
+    typeUrlFromField: { fraction: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ValidatorSlashEvent' as const,
   is(o: any): o is ValidatorSlashEvent {
     return (
@@ -1485,6 +1507,11 @@ function createBaseDelegatorStartingInfo(): DelegatorStartingInfo {
  */
 export const DelegatorStartingInfo = {
   typeUrl: '/cosmos.distribution.v1beta1.DelegatorStartingInfo' as const,
+  annotations: {
+    'amino.dont_omitempty': { stake: true },
+    'gogoproto.nullable': { stake: false },
+    typeUrlFromField: { stake: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DelegatorStartingInfo' as const,
   is(o: any): o is DelegatorStartingInfo {
     return (

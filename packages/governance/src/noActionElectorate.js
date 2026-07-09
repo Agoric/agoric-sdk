@@ -1,3 +1,5 @@
+// @ts-nocheck — under-supported package; type errors are tolerated
+
 import { makePublishKit } from '@agoric/notifier';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeExo } from '@agoric/store';

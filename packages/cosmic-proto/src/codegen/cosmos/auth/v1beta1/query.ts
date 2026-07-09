@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -22,8 +23,6 @@ import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * QueryAccountsRequest is the request type for the Query/Accounts RPC method.
- *
- * Since: cosmos-sdk 0.43
  * @name QueryAccountsRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountsRequest
@@ -40,8 +39,6 @@ export interface QueryAccountsRequestProtoMsg {
 }
 /**
  * QueryAccountsRequest is the request type for the Query/Accounts RPC method.
- *
- * Since: cosmos-sdk 0.43
  * @name QueryAccountsRequestSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountsRequest
@@ -51,8 +48,6 @@ export interface QueryAccountsRequestSDKType {
 }
 /**
  * QueryAccountsResponse is the response type for the Query/Accounts RPC method.
- *
- * Since: cosmos-sdk 0.43
  * @name QueryAccountsResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountsResponse
@@ -73,8 +68,6 @@ export interface QueryAccountsResponseProtoMsg {
 }
 /**
  * QueryAccountsResponse is the response type for the Query/Accounts RPC method.
- *
- * Since: cosmos-sdk 0.43
  * @name QueryAccountsResponseSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountsResponse
@@ -178,8 +171,6 @@ export interface QueryParamsResponseSDKType {
 }
 /**
  * QueryModuleAccountsRequest is the request type for the Query/ModuleAccounts RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryModuleAccountsRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryModuleAccountsRequest
@@ -191,8 +182,6 @@ export interface QueryModuleAccountsRequestProtoMsg {
 }
 /**
  * QueryModuleAccountsRequest is the request type for the Query/ModuleAccounts RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryModuleAccountsRequestSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryModuleAccountsRequest
@@ -200,8 +189,6 @@ export interface QueryModuleAccountsRequestProtoMsg {
 export interface QueryModuleAccountsRequestSDKType {}
 /**
  * QueryModuleAccountsResponse is the response type for the Query/ModuleAccounts RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryModuleAccountsResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryModuleAccountsResponse
@@ -215,8 +202,6 @@ export interface QueryModuleAccountsResponseProtoMsg {
 }
 /**
  * QueryModuleAccountsResponse is the response type for the Query/ModuleAccounts RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryModuleAccountsResponseSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryModuleAccountsResponse
@@ -270,8 +255,6 @@ export interface QueryModuleAccountByNameResponseSDKType {
 }
 /**
  * Bech32PrefixRequest is the request type for Bech32Prefix rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name Bech32PrefixRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.Bech32PrefixRequest
@@ -283,8 +266,6 @@ export interface Bech32PrefixRequestProtoMsg {
 }
 /**
  * Bech32PrefixRequest is the request type for Bech32Prefix rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name Bech32PrefixRequestSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.Bech32PrefixRequest
@@ -292,8 +273,6 @@ export interface Bech32PrefixRequestProtoMsg {
 export interface Bech32PrefixRequestSDKType {}
 /**
  * Bech32PrefixResponse is the response type for Bech32Prefix rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name Bech32PrefixResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.Bech32PrefixResponse
@@ -307,8 +286,6 @@ export interface Bech32PrefixResponseProtoMsg {
 }
 /**
  * Bech32PrefixResponse is the response type for Bech32Prefix rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name Bech32PrefixResponseSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.Bech32PrefixResponse
@@ -318,8 +295,6 @@ export interface Bech32PrefixResponseSDKType {
 }
 /**
  * AddressBytesToStringRequest is the request type for AddressString rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressBytesToStringRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressBytesToStringRequest
@@ -333,8 +308,6 @@ export interface AddressBytesToStringRequestProtoMsg {
 }
 /**
  * AddressBytesToStringRequest is the request type for AddressString rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressBytesToStringRequestSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressBytesToStringRequest
@@ -344,8 +317,6 @@ export interface AddressBytesToStringRequestSDKType {
 }
 /**
  * AddressBytesToStringResponse is the response type for AddressString rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressBytesToStringResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressBytesToStringResponse
@@ -359,8 +330,6 @@ export interface AddressBytesToStringResponseProtoMsg {
 }
 /**
  * AddressBytesToStringResponse is the response type for AddressString rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressBytesToStringResponseSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressBytesToStringResponse
@@ -370,8 +339,6 @@ export interface AddressBytesToStringResponseSDKType {
 }
 /**
  * AddressStringToBytesRequest is the request type for AccountBytes rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressStringToBytesRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressStringToBytesRequest
@@ -385,8 +352,6 @@ export interface AddressStringToBytesRequestProtoMsg {
 }
 /**
  * AddressStringToBytesRequest is the request type for AccountBytes rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressStringToBytesRequestSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressStringToBytesRequest
@@ -396,8 +361,6 @@ export interface AddressStringToBytesRequestSDKType {
 }
 /**
  * AddressStringToBytesResponse is the response type for AddressBytes rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressStringToBytesResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressStringToBytesResponse
@@ -411,8 +374,6 @@ export interface AddressStringToBytesResponseProtoMsg {
 }
 /**
  * AddressStringToBytesResponse is the response type for AddressBytes rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressStringToBytesResponseSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressStringToBytesResponse
@@ -422,8 +383,6 @@ export interface AddressStringToBytesResponseSDKType {
 }
 /**
  * QueryAccountAddressByIDRequest is the request type for AccountAddressByID rpc method
- *
- * Since: cosmos-sdk 0.46.2
  * @name QueryAccountAddressByIDRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountAddressByIDRequest
@@ -440,8 +399,6 @@ export interface QueryAccountAddressByIDRequest {
   id: bigint;
   /**
    * account_id is the account number of the address to be queried.
-   *
-   * Since: cosmos-sdk 0.47
    */
   accountId: bigint;
 }
@@ -451,8 +408,6 @@ export interface QueryAccountAddressByIDRequestProtoMsg {
 }
 /**
  * QueryAccountAddressByIDRequest is the request type for AccountAddressByID rpc method
- *
- * Since: cosmos-sdk 0.46.2
  * @name QueryAccountAddressByIDRequestSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountAddressByIDRequest
@@ -466,8 +421,6 @@ export interface QueryAccountAddressByIDRequestSDKType {
 }
 /**
  * QueryAccountAddressByIDResponse is the response type for AccountAddressByID rpc method
- *
- * Since: cosmos-sdk 0.46.2
  * @name QueryAccountAddressByIDResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountAddressByIDResponse
@@ -481,8 +434,6 @@ export interface QueryAccountAddressByIDResponseProtoMsg {
 }
 /**
  * QueryAccountAddressByIDResponse is the response type for AccountAddressByID rpc method
- *
- * Since: cosmos-sdk 0.46.2
  * @name QueryAccountAddressByIDResponseSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountAddressByIDResponse
@@ -492,8 +443,6 @@ export interface QueryAccountAddressByIDResponseSDKType {
 }
 /**
  * QueryAccountInfoRequest is the Query/AccountInfo request type.
- *
- * Since: cosmos-sdk 0.47
  * @name QueryAccountInfoRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountInfoRequest
@@ -510,8 +459,6 @@ export interface QueryAccountInfoRequestProtoMsg {
 }
 /**
  * QueryAccountInfoRequest is the Query/AccountInfo request type.
- *
- * Since: cosmos-sdk 0.47
  * @name QueryAccountInfoRequestSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountInfoRequest
@@ -521,8 +468,6 @@ export interface QueryAccountInfoRequestSDKType {
 }
 /**
  * QueryAccountInfoResponse is the Query/AccountInfo response type.
- *
- * Since: cosmos-sdk 0.47
  * @name QueryAccountInfoResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountInfoResponse
@@ -539,8 +484,6 @@ export interface QueryAccountInfoResponseProtoMsg {
 }
 /**
  * QueryAccountInfoResponse is the Query/AccountInfo response type.
- *
- * Since: cosmos-sdk 0.47
  * @name QueryAccountInfoResponseSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountInfoResponse
@@ -555,8 +498,6 @@ function createBaseQueryAccountsRequest(): QueryAccountsRequest {
 }
 /**
  * QueryAccountsRequest is the request type for the Query/Accounts RPC method.
- *
- * Since: cosmos-sdk 0.43
  * @name QueryAccountsRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountsRequest
@@ -644,8 +585,6 @@ function createBaseQueryAccountsResponse(): QueryAccountsResponse {
 }
 /**
  * QueryAccountsResponse is the response type for the Query/Accounts RPC method.
- *
- * Since: cosmos-sdk 0.43
  * @name QueryAccountsResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountsResponse
@@ -1018,6 +957,10 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.auth.v1beta1.QueryParamsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
     return (
@@ -1097,8 +1040,6 @@ function createBaseQueryModuleAccountsRequest(): QueryModuleAccountsRequest {
 }
 /**
  * QueryModuleAccountsRequest is the request type for the Query/ModuleAccounts RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryModuleAccountsRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryModuleAccountsRequest
@@ -1173,8 +1114,6 @@ function createBaseQueryModuleAccountsResponse(): QueryModuleAccountsResponse {
 }
 /**
  * QueryModuleAccountsResponse is the response type for the Query/ModuleAccounts RPC method.
- *
- * Since: cosmos-sdk 0.46
  * @name QueryModuleAccountsResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryModuleAccountsResponse
@@ -1477,8 +1416,6 @@ function createBaseBech32PrefixRequest(): Bech32PrefixRequest {
 }
 /**
  * Bech32PrefixRequest is the request type for Bech32Prefix rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name Bech32PrefixRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.Bech32PrefixRequest
@@ -1547,8 +1484,6 @@ function createBaseBech32PrefixResponse(): Bech32PrefixResponse {
 }
 /**
  * Bech32PrefixResponse is the response type for Bech32Prefix rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name Bech32PrefixResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.Bech32PrefixResponse
@@ -1638,8 +1573,6 @@ function createBaseAddressBytesToStringRequest(): AddressBytesToStringRequest {
 }
 /**
  * AddressBytesToStringRequest is the request type for AddressString rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressBytesToStringRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressBytesToStringRequest
@@ -1743,8 +1676,6 @@ function createBaseAddressBytesToStringResponse(): AddressBytesToStringResponse 
 }
 /**
  * AddressBytesToStringResponse is the response type for AddressString rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressBytesToStringResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressBytesToStringResponse
@@ -1842,8 +1773,6 @@ function createBaseAddressStringToBytesRequest(): AddressStringToBytesRequest {
 }
 /**
  * AddressStringToBytesRequest is the request type for AccountBytes rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressStringToBytesRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressStringToBytesRequest
@@ -1941,8 +1870,6 @@ function createBaseAddressStringToBytesResponse(): AddressStringToBytesResponse 
 }
 /**
  * AddressStringToBytesResponse is the response type for AddressBytes rpc method.
- *
- * Since: cosmos-sdk 0.46
  * @name AddressStringToBytesResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.AddressStringToBytesResponse
@@ -2047,8 +1974,6 @@ function createBaseQueryAccountAddressByIDRequest(): QueryAccountAddressByIDRequ
 }
 /**
  * QueryAccountAddressByIDRequest is the request type for AccountAddressByID rpc method
- *
- * Since: cosmos-sdk 0.46.2
  * @name QueryAccountAddressByIDRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountAddressByIDRequest
@@ -2161,8 +2086,6 @@ function createBaseQueryAccountAddressByIDResponse(): QueryAccountAddressByIDRes
 }
 /**
  * QueryAccountAddressByIDResponse is the response type for AccountAddressByID rpc method
- *
- * Since: cosmos-sdk 0.46.2
  * @name QueryAccountAddressByIDResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountAddressByIDResponse
@@ -2260,8 +2183,6 @@ function createBaseQueryAccountInfoRequest(): QueryAccountInfoRequest {
 }
 /**
  * QueryAccountInfoRequest is the Query/AccountInfo request type.
- *
- * Since: cosmos-sdk 0.47
  * @name QueryAccountInfoRequest
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountInfoRequest
@@ -2354,8 +2275,6 @@ function createBaseQueryAccountInfoResponse(): QueryAccountInfoResponse {
 }
 /**
  * QueryAccountInfoResponse is the Query/AccountInfo response type.
- *
- * Since: cosmos-sdk 0.47
  * @name QueryAccountInfoResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.QueryAccountInfoResponse

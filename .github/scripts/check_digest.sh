@@ -1,32 +1,30 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#! /usr/bin/env bash
 
-# Inputs
-GCE_INSTANCE="${1:-}"
-GCE_ZONE="${2:-}"
-TARGET_IMAGE="${3:-}"
-OUTPUT_FILE="${4:-$GITHUB_OUTPUT}"
+set -o errexit -o nounset -o pipefail
 
-if [[ -z "$GCE_INSTANCE" || -z "$GCE_ZONE" || -z "$TARGET_IMAGE" ]]; then
-  echo "Usage: $0 <GCE_INSTANCE> <GCE_ZONE> <TARGET_IMAGE> [OUTPUT_FILE]" >&2
-  exit 1
-fi
+GCE_INSTANCE="$1"
+GCE_ZONE="$2"
+TARGET_IMAGE="$3"
+OUTPUT_FILE="${4:-"$GITHUB_OUTPUT"}"
 
 echo "Target image: $TARGET_IMAGE"
 
-# Get current container declaration from instance metadata
-DECL=$(
+METADATA="$(
   gcloud compute instances describe "$GCE_INSTANCE" \
-    --zone "$GCE_ZONE" \
-    --format=json \
-    | jq -r '.metadata.items[]? | select(.key=="gce-container-declaration") | .value'
-)
+    --format "json" \
+    --zone "$GCE_ZONE"
+)"
 
-# Compare digest with deployed image
-if [[ -n "$DECL" ]] && printf '%s\n' "$DECL" | grep -F "$TARGET_IMAGE" > /dev/null 2>&1; then
-  echo "VM $GCE_INSTANCE already configured with this digest. Skipping deploy."
-  echo "should_deploy=false" >> "$OUTPUT_FILE"
-else
-  echo "Digest differs (or not set) on $GCE_INSTANCE. Will deploy."
+CURRENT_IMAGE="$(
+  printf '%s' "$METADATA" | \
+  jq '.metadata.items[]? | select(.key=="ymax-container-image") | .value' --raw-output
+)"
+
+if test "$CURRENT_IMAGE" != "$TARGET_IMAGE"
+then
+  echo "Current image is $CURRENT_IMAGE, need to deploy with $TARGET_IMAGE"
   echo "should_deploy=true" >> "$OUTPUT_FILE"
+else
+  echo "VM $GCE_INSTANCE already configured with image $CURRENT_IMAGE and matching env"
+  echo "should_deploy=false" >> "$OUTPUT_FILE"
 fi

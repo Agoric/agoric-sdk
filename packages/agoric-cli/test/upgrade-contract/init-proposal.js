@@ -7,7 +7,7 @@ import { E } from '@endo/far';
 /**
  * Initialize contractRef the first time.
  *
- * @param {{ [K in keyof BootstrapSpace]: object }} promiseSpace
+ * @param {Record<string, any>} promiseSpace
  */
 export const initContract = async ({
   consume: { zoe, myStatus },

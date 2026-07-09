@@ -22,8 +22,8 @@ with this section (e.g., [repoconfig.sh](./repoconfig.sh) defines
 `golang_version_check` and `nodejs_version_check` shell functions).
 
 * Git
-* Go ^1.24
-* Node.js ^20.9 or ^22.11
+* Go ^1.24.1
+* Node.js ^22.11
   * we generally support the latest LTS release: use
     [nvm](https://github.com/nvm-sh/nvm) to keep your local system up-to-date
 * Yarn (`npm install -g yarn`)

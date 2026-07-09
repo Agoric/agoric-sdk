@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable @jessie.js/safe-await-separator */
 /**
  * @file Unified prepack script for all packages.
  *
@@ -21,6 +20,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+// eslint-disable-next-line import/no-extraneous-dependencies -- transitive via lerna-lite; only used by repo-internal scripts
 import spawn from 'nano-spawn';
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));

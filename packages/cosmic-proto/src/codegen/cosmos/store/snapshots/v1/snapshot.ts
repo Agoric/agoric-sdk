@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -61,8 +62,6 @@ export interface MetadataSDKType {
 }
 /**
  * SnapshotItem is an item contained in a rootmulti.Store snapshot.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotItem
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotItem
@@ -79,8 +78,6 @@ export interface SnapshotItemProtoMsg {
 }
 /**
  * SnapshotItem is an item contained in a rootmulti.Store snapshot.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotItemSDKType
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotItem
@@ -93,8 +90,6 @@ export interface SnapshotItemSDKType {
 }
 /**
  * SnapshotStoreItem contains metadata about a snapshotted store.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotStoreItem
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotStoreItem
@@ -108,8 +103,6 @@ export interface SnapshotStoreItemProtoMsg {
 }
 /**
  * SnapshotStoreItem contains metadata about a snapshotted store.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotStoreItemSDKType
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotStoreItem
@@ -119,8 +112,6 @@ export interface SnapshotStoreItemSDKType {
 }
 /**
  * SnapshotIAVLItem is an exported IAVL node.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotIAVLItem
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotIAVLItem
@@ -143,8 +134,6 @@ export interface SnapshotIAVLItemProtoMsg {
 }
 /**
  * SnapshotIAVLItem is an exported IAVL node.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotIAVLItemSDKType
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotIAVLItem
@@ -157,8 +146,6 @@ export interface SnapshotIAVLItemSDKType {
 }
 /**
  * SnapshotExtensionMeta contains metadata about an external snapshotter.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotExtensionMeta
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotExtensionMeta
@@ -173,8 +160,6 @@ export interface SnapshotExtensionMetaProtoMsg {
 }
 /**
  * SnapshotExtensionMeta contains metadata about an external snapshotter.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotExtensionMetaSDKType
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotExtensionMeta
@@ -185,8 +170,6 @@ export interface SnapshotExtensionMetaSDKType {
 }
 /**
  * SnapshotExtensionPayload contains payloads of an external snapshotter.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotExtensionPayload
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotExtensionPayload
@@ -200,8 +183,6 @@ export interface SnapshotExtensionPayloadProtoMsg {
 }
 /**
  * SnapshotExtensionPayload contains payloads of an external snapshotter.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotExtensionPayloadSDKType
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotExtensionPayload
@@ -226,6 +207,10 @@ function createBaseSnapshot(): Snapshot {
  */
 export const Snapshot = {
   typeUrl: '/cosmos.store.snapshots.v1.Snapshot' as const,
+  annotations: {
+    'gogoproto.nullable': { metadata: false },
+    typeUrlFromField: { metadata: () => Metadata },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Snapshot' as const,
   is(o: any): o is Snapshot {
     return (
@@ -466,8 +451,6 @@ function createBaseSnapshotItem(): SnapshotItem {
 }
 /**
  * SnapshotItem is an item contained in a rootmulti.Store snapshot.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotItem
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotItem
@@ -617,8 +600,6 @@ function createBaseSnapshotStoreItem(): SnapshotStoreItem {
 }
 /**
  * SnapshotStoreItem contains metadata about a snapshotted store.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotStoreItem
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotStoreItem
@@ -703,8 +684,6 @@ function createBaseSnapshotIAVLItem(): SnapshotIAVLItem {
 }
 /**
  * SnapshotIAVLItem is an exported IAVL node.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotIAVLItem
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotIAVLItem
@@ -836,8 +815,6 @@ function createBaseSnapshotExtensionMeta(): SnapshotExtensionMeta {
 }
 /**
  * SnapshotExtensionMeta contains metadata about an external snapshotter.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotExtensionMeta
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotExtensionMeta
@@ -933,8 +910,6 @@ function createBaseSnapshotExtensionPayload(): SnapshotExtensionPayload {
 }
 /**
  * SnapshotExtensionPayload contains payloads of an external snapshotter.
- *
- * Since: cosmos-sdk 0.46
  * @name SnapshotExtensionPayload
  * @package cosmos.store.snapshots.v1
  * @see proto type: cosmos.store.snapshots.v1.SnapshotExtensionPayload

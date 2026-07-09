@@ -2,18 +2,34 @@ import test from 'ava';
 import { ethers } from 'ethers';
 import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { objectMap } from '@endo/patterns';
-import type { WebSocketProvider } from 'ethers';
-import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
+import { makePromiseKit } from '@endo/promise-kit';
+import {
+  TxStatus,
+  TxType,
+} from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type {
   PendingTx,
   TxId,
 } from '@aglocal/portfolio-contract/src/resolver/types.ts';
 import { createMockPendingTxData } from '@aglocal/portfolio-contract/tools/mocks.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import type { CaipChainId } from '@agoric/orchestration';
+import { handlePendingTx, watchWithRetry } from '../src/pending-tx-manager.ts';
+import { WatcherTransportError } from '../src/watchers/watcher-utils.ts';
+import {
+  prepareAbortController,
+  type ReconnectingEvmProvider,
+} from '../src/support.ts';
+import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
   processPendingTxEvents,
   processInitialPendingTransactions,
 } from '../src/engine.ts';
+import {
+  getDerivedOutcome,
+  getIgnoredTx,
+  getResolvedTx,
+  setDerivedOutcome,
+} from '../src/kv-store.ts';
 import {
   createMockPendingTxOpts,
   createMockPendingTxEvent,
@@ -127,14 +143,17 @@ test('processPendingTxEvents errors do not disrupt processing valid transactions
     ...createMockPendingTxOpts(),
     error: (...args) => errorLog.push(args),
   });
-  if (errorLog.length !== 1) {
-    t.log(errorLog);
-  }
-  t.is(errorLog.length, 1);
-  t.regex(
-    errorLog[0].at(-1).message,
-    /\btx3\b.*Must have missing properties.*blockHeight/,
-  );
+  // tx2: malformed record (status=pending but no `type`) surfaces through
+  // mustMatch(data, PublishedTxShape, ...) — previously silently skipped.
+  // tx3: streamCell missing the required `blockHeight` field.
+  const messages = errorLog.map(args => args.at(-1).message);
+  const tx2Msg = messages.find(m => /\btx2\b/.test(m));
+  const tx3Msg = messages.find(m => /\btx3\b/.test(m));
+  t.truthy(tx2Msg, 'expected an error for tx2');
+  t.truthy(tx3Msg, 'expected an error for tx3');
+  t.regex(tx2Msg!, /Must match one of/);
+  t.regex(tx3Msg!, /Must have missing properties.*blockHeight/);
+  t.is(errorLog.length, 2);
 
   t.is(handledTxs.length, 2);
 });
@@ -169,6 +188,81 @@ test('processPendingTxEvents handles only pending transactions', async t => {
   t.is(handledTxs[0].status, 'pending');
 });
 
+test('processPendingTxEvents caches resolved-tx status when status flips to non-pending', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  const settledTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: 'success',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx99',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(settledTx))]),
+      ),
+    ),
+  ];
+
+  t.is(getResolvedTx(opts.kvStore, 'tx99'), undefined);
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getResolvedTx(opts.kvStore, 'tx99'), 'success');
+});
+
+test('processPendingTxEvents caches unsupported tx types so future startups skip them', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  // IBC_FROM_AGORIC is in MONITORS but not in RESOLVER_SUPPORTED_TRANSACTIONS,
+  // so events for it should be cached as ignored and never handled.
+  const ibcTx = createMockPendingTxData({
+    type: TxType.IBC_FROM_AGORIC,
+    status: 'pending',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx101',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(ibcTx))]),
+      ),
+    ),
+  ];
+
+  t.is(getIgnoredTx(opts.kvStore, 'tx101'), undefined);
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getIgnoredTx(opts.kvStore, 'tx101'), TxType.IBC_FROM_AGORIC);
+});
+
+test('processPendingTxEvents does not cache `setup` status', async t => {
+  const { mockHandlePendingTx, handledTxs } = makeMockHandlePendingTx();
+
+  const opts = createMockPendingTxOpts();
+  const setupTx = createMockPendingTxData({
+    type: TxType.CCTP_TO_EVM,
+    status: 'setup',
+  });
+  const events = [
+    createMockPendingTxEvent(
+      'tx100',
+      JSON.stringify(
+        createMockStreamCell([JSON.stringify(marshaller.toCapData(setupTx))]),
+      ),
+    ),
+  ];
+
+  await processPendingTxEvents(events, mockHandlePendingTx, opts);
+
+  t.is(handledTxs.length, 0);
+  t.is(getResolvedTx(opts.kvStore, 'tx100'), undefined);
+});
+
 // --- Unit tests for handlePendingTx ---
 test('handlePendingTx prints error for unsupported transaction type', async t => {
   const mockLog = () => {};
@@ -194,6 +288,132 @@ test('handlePendingTx prints error for unsupported transaction type', async t =>
       `🚨 [${unsupportedTx.txId}] No monitor registered for tx type: ${unsupportedTx.type}`,
     ],
   ]);
+});
+
+test('handlePendingTx fast-paths a cached derivedOutcome and skips the watcher', async t => {
+  const opts = createMockPendingTxOpts();
+  const submittedOffers: any[] = [];
+  const originalExecuteOffer = opts.signingSmartWalletKit.executeOffer;
+  // Capture every offer submitted via the resolver path.
+  (opts.signingSmartWalletKit as any).executeOffer = async (
+    offerSpec: any,
+    fee: any,
+  ) => {
+    submittedOffers.push(offerSpec);
+    return originalExecuteOffer(offerSpec, fee);
+  };
+
+  const txId = 'tx42' as TxId;
+  setDerivedOutcome(opts.kvStore, txId, {
+    status: TxStatus.SUCCESS,
+    txHash: '0xcafef00d',
+  });
+
+  // The fast path only reads tx.txId off this record; type is irrelevant
+  // because the monitor is skipped.
+  const fakeTx = {
+    txId,
+    type: TxType.CCTP_TO_EVM,
+    status: TxStatus.PENDING,
+    amount: 1n,
+    destinationAddress: 'eip155:1:0x0000000000000000000000000000000000000000',
+  } as unknown as PendingTx;
+
+  await handlePendingTx(fakeTx, opts);
+
+  t.is(submittedOffers.length, 1, 'submitted exactly one resolver offer');
+  t.is(submittedOffers[0].offerArgs.txId, txId);
+  t.is(submittedOffers[0].offerArgs.status, TxStatus.SUCCESS);
+  // After successful settlement the cache is promoted derivedOutcome→resolved.
+  t.is(getDerivedOutcome(opts.kvStore, txId), undefined);
+  t.is(getResolvedTx(opts.kvStore, txId), TxStatus.SUCCESS);
+});
+
+const immediateSetTimeout: typeof globalThis.setTimeout = ((
+  fn: (...args: any[]) => void,
+) => {
+  void Promise.resolve().then(() => fn());
+  return 0 as unknown as ReturnType<typeof globalThis.setTimeout>;
+}) as any;
+
+const immediateMakeAbortController = prepareAbortController({
+  setTimeout: immediateSetTimeout,
+});
+
+test('watchWithRetry retries on transport error then succeeds', async t => {
+  let attempts = 0;
+  await watchWithRetry(
+    async () => {
+      attempts += 1;
+      if (attempts < 3) throw new WatcherTransportError('boom');
+    },
+    { makeAbortController: immediateMakeAbortController },
+  );
+  t.is(attempts, 3);
+});
+
+test('watchWithRetry rethrows non-transport errors immediately', async t => {
+  let attempts = 0;
+  const otherErr = new Error('not a transport failure');
+  await t.throwsAsync(
+    watchWithRetry(
+      async () => {
+        attempts += 1;
+        throw otherErr;
+      },
+      { makeAbortController: immediateMakeAbortController },
+    ),
+    { is: otherErr },
+  );
+  t.is(attempts, 1);
+});
+
+test('watchWithRetry rethrows transport error after exhausting limit', async t => {
+  let attempts = 0;
+  await t.throwsAsync(
+    watchWithRetry(
+      async () => {
+        attempts += 1;
+        throw new WatcherTransportError('boom');
+      },
+      { makeAbortController: immediateMakeAbortController, limit: 2 },
+    ),
+    { instanceOf: WatcherTransportError },
+  );
+  t.is(attempts, 3); // initial + 2 retries
+});
+
+test('watchWithRetry exits cleanly when signal aborts during backoff', async t => {
+  const ac = new AbortController();
+  let attempts = 0;
+  const { promise: sleepStarted, resolve: startSleep } = makePromiseKit();
+  const { promise: sleepEnded, resolve: endSleep } = makePromiseKit();
+  const mockSetTimeout: typeof globalThis.setTimeout = ((
+    fn: (...args: any[]) => void,
+    _ms: number,
+  ) => {
+    startSleep(null);
+    void sleepEnded.then(() => fn());
+    return 0;
+  }) as any;
+  const result = watchWithRetry(
+    async () => {
+      attempts += 1;
+      throw new WatcherTransportError('boom');
+    },
+    {
+      makeAbortController: prepareAbortController({
+        setTimeout: mockSetTimeout,
+      }),
+      signal: ac.signal,
+    },
+  );
+  // Abort inside the sleep (after it starts but before it ends).
+  await sleepStarted;
+  ac.abort();
+  endSleep(null);
+  await result; // resolves cleanly, does not throw
+  t.is(attempts, 1);
 });
 
 test('resolves a 31 min old pending CCTP transaction in lookback mode', async t => {
@@ -793,6 +1013,7 @@ const FAILED_TX_SOURCE =
   'cosmos:agoric-3:agoric18d47rcfj0g4r7j7yvypm44kqczl4jrft6up233p9zv95p8ut49mqufghzh';
 const FAILED_TX_TIME_MS = 1700000000; // 2023-11-14T22:13:20Z
 const FAILED_TX_LATEST_BLOCK = 1_450_031;
+const BLOCK_NUMBER_BUFFER = 5000;
 
 /** Hex-encode an ASCII string (e.g. 'tx553' → '7478353533'). */
 const asciiToHex = (s: string) =>
@@ -853,7 +1074,11 @@ const makeFailedTxTestContext = ({
   const opts = createMockPendingTxOpts();
   const mockProvider = opts.evmProviders[chainId] as any;
 
-  mockProvider.getBlockNumber = async () => FAILED_TX_LATEST_BLOCK;
+  // Bumped above receipt.blockNumber so the polling waitForConfirmations
+  // helper observes enough confirmations on any chain (Arbitrum needs ~2000;
+  // 5000 is a safe buffer).
+  mockProvider.getBlockNumber = async () =>
+    FAILED_TX_LATEST_BLOCK + BLOCK_NUMBER_BUFFER;
   mockProvider.getBlock = async (blockNumber: number) => {
     const blocksAgo = FAILED_TX_LATEST_BLOCK - blockNumber;
     const ts = FAILED_TX_TIME_MS - blocksAgo * avgBlockTimeMs;
@@ -870,7 +1095,9 @@ const makeFailedTxTestContext = ({
         // Emit the correct block number so waitForBlock resolves deterministically
         on: (evt: any, listener: Function) => {
           if (evt === 'block') {
-            queueMicrotask(() => listener(FAILED_TX_LATEST_BLOCK + 1));
+            queueMicrotask(() =>
+              listener(FAILED_TX_LATEST_BLOCK + BLOCK_NUMBER_BUFFER + 1),
+            );
           }
         },
         getTransactionReceipt: async () => ({
@@ -879,12 +1106,13 @@ const makeFailedTxTestContext = ({
           transactionHash: failedTxHash,
         }),
         ...extra,
-      }) as unknown as WebSocketProvider,
+      }) as unknown as ReconnectingEvmProvider,
   );
 
   const ctxWithFetch = harden({
     ...opts,
     evmProviders: newEvmProviders,
+    retryProviders: newEvmProviders as unknown as Record<CaipChainId, EvmRpc>,
     fetch: makeFetchMock({ failedTxHash }),
   });
 

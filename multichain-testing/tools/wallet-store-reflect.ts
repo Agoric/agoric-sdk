@@ -1,3 +1,4 @@
+/* global globalThis */
 import {
   type SigningSmartWalletKit,
   retryUntilCondition,
@@ -17,7 +18,7 @@ export const walletUpdates = (
 ) => {
   return harden({
     invocation: async (id: string | number) => {
-      const done = (await retryUntilCondition(
+      const doneP = retryUntilCondition(
         getLastUpdate,
         update =>
           update.updated === 'invocation' &&
@@ -25,7 +26,8 @@ export const walletUpdates = (
           !!(update.result || update.error),
         `${id}`,
         retryOpts,
-      )) as UpdateRecord & { updated: 'invocation' };
+      ) as Promise<UpdateRecord & { updated: 'invocation' }>;
+      const done = await doneP;
       if (done.error) throw Error(done.error);
       return done.result;
     },

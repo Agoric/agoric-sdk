@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -128,6 +129,11 @@ function createBaseCoin(): Coin {
  */
 export const Coin = {
   typeUrl: '/cosmos.base.v1beta1.Coin' as const,
+  annotations: {
+    'amino.dont_omitempty': { amount: true },
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: 'cosmos.Int' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Coin' as const,
   is(o: any): o is Coin {
     return (
@@ -224,6 +230,10 @@ function createBaseDecCoin(): DecCoin {
  */
 export const DecCoin = {
   typeUrl: '/cosmos.base.v1beta1.DecCoin' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DecCoin' as const,
   is(o: any): o is DecCoin {
     return (
@@ -319,6 +329,10 @@ function createBaseIntProto(): IntProto {
  */
 export const IntProto = {
   typeUrl: '/cosmos.base.v1beta1.IntProto' as const,
+  annotations: {
+    'gogoproto.nullable': { int: false },
+    typeUrlFromField: { int: 'cosmos.Int' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/IntProto' as const,
   is(o: any): o is IntProto {
     return o && (o.$typeUrl === IntProto.typeUrl || typeof o.int === 'string');
@@ -395,6 +409,10 @@ function createBaseDecProto(): DecProto {
  */
 export const DecProto = {
   typeUrl: '/cosmos.base.v1beta1.DecProto' as const,
+  annotations: {
+    'gogoproto.nullable': { dec: false },
+    typeUrlFromField: { dec: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DecProto' as const,
   is(o: any): o is DecProto {
     return o && (o.$typeUrl === DecProto.typeUrl || typeof o.dec === 'string');

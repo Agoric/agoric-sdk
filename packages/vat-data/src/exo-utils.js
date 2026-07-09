@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { initEmpty } from '@agoric/store';
 
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
@@ -12,7 +10,7 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
  * @import {VatData} from '@agoric/swingset-liveslots';
  * @import {PrepareKind} from '@agoric/swingset-liveslots';
  * @import {PrepareKindMulti} from '@agoric/swingset-liveslots';
- * @import {Guarded} from '@endo/exo';
+ * @import {Guarded, Methods} from '@endo/exo';
  * @import {GuardedKit} from '@endo/exo';
  */
 
@@ -100,7 +98,7 @@ export const makeExoUtils = VatData => {
 
   /**
    * @template {InitState} I init state function
-   * @template T behavior
+   * @template {Methods} T behavior
    * @param {string} tag
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init

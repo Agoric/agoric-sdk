@@ -1,9 +1,17 @@
 import test from '@endo/ses-ava/prepare-endo.js';
 import { makeTracer } from '../src/debug.js';
 
+/**
+ * @param {import('../src/debug.js').TraceLogger} tracer
+ * @param {...unknown} args
+ */
 const testTracer = (tracer, ...args) => {
   let capturedKey = 'none';
   const allegedT = harden({
+    /**
+     * @param {string} key
+     * @param {...unknown} _
+     */
     log(key, ..._) {
       capturedKey = key;
     },

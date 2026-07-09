@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { DecCoin, type DecCoinSDKType } from '../../base/v1beta1/coin.js';
 import {
   ValidatorAccumulatedCommission,
@@ -574,6 +575,11 @@ function createBaseValidatorAccumulatedCommissionRecord(): ValidatorAccumulatedC
 export const ValidatorAccumulatedCommissionRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorAccumulatedCommissionRecord' as const,
+  annotations: {
+    'amino.dont_omitempty': { accumulated: true },
+    'gogoproto.nullable': { accumulated: false },
+    typeUrlFromField: { accumulated: () => ValidatorAccumulatedCommission },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ValidatorAccumulatedCommissionRecord' as const,
   is(o: any): o is ValidatorAccumulatedCommissionRecord {
     return (
@@ -701,6 +707,11 @@ function createBaseValidatorHistoricalRewardsRecord(): ValidatorHistoricalReward
 export const ValidatorHistoricalRewardsRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorHistoricalRewardsRecord' as const,
+  annotations: {
+    'amino.dont_omitempty': { rewards: true },
+    'gogoproto.nullable': { rewards: false },
+    typeUrlFromField: { rewards: () => ValidatorHistoricalRewards },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ValidatorHistoricalRewardsRecord' as const,
   is(o: any): o is ValidatorHistoricalRewardsRecord {
     return (
@@ -842,6 +853,11 @@ function createBaseValidatorCurrentRewardsRecord(): ValidatorCurrentRewardsRecor
 export const ValidatorCurrentRewardsRecord = {
   typeUrl:
     '/cosmos.distribution.v1beta1.ValidatorCurrentRewardsRecord' as const,
+  annotations: {
+    'amino.dont_omitempty': { rewards: true },
+    'gogoproto.nullable': { rewards: false },
+    typeUrlFromField: { rewards: () => ValidatorCurrentRewards },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ValidatorCurrentRewardsRecord' as const,
   is(o: any): o is ValidatorCurrentRewardsRecord {
     return (
@@ -966,6 +982,11 @@ function createBaseDelegatorStartingInfoRecord(): DelegatorStartingInfoRecord {
  */
 export const DelegatorStartingInfoRecord = {
   typeUrl: '/cosmos.distribution.v1beta1.DelegatorStartingInfoRecord' as const,
+  annotations: {
+    'amino.dont_omitempty': { startingInfo: true },
+    'gogoproto.nullable': { startingInfo: false },
+    typeUrlFromField: { startingInfo: () => DelegatorStartingInfo },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DelegatorStartingInfoRecord' as const,
   is(o: any): o is DelegatorStartingInfoRecord {
     return (
@@ -1105,6 +1126,11 @@ function createBaseValidatorSlashEventRecord(): ValidatorSlashEventRecord {
  */
 export const ValidatorSlashEventRecord = {
   typeUrl: '/cosmos.distribution.v1beta1.ValidatorSlashEventRecord' as const,
+  annotations: {
+    'amino.dont_omitempty': { validatorSlashEvent: true },
+    'gogoproto.nullable': { validatorSlashEvent: false },
+    typeUrlFromField: { validatorSlashEvent: () => ValidatorSlashEvent },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ValidatorSlashEventRecord' as const,
   is(o: any): o is ValidatorSlashEventRecord {
     return (
@@ -1271,6 +1297,11 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.distribution.v1beta1.GenesisState' as const,
+  annotations: {
+    'amino.dont_omitempty': { feePool: true, params: true },
+    'gogoproto.nullable': { feePool: false, params: false },
+    typeUrlFromField: { feePool: () => FeePool, params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (

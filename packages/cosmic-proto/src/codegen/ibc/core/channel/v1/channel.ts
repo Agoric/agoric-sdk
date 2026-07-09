@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import { Height, type HeightSDKType } from '../../client/v1/client.js';
 import { isSet } from '../../../../helpers.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
@@ -7,7 +8,7 @@ import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
 import { encodeBase64 as base64FromBytes } from '@endo/base64';
 /**
  * State defines if a channel is in one of the following states:
- * CLOSED, INIT, TRYOPEN, OPEN, FLUSHING, FLUSHCOMPLETE or UNINITIALIZED.
+ * CLOSED, INIT, TRYOPEN, OPEN, or UNINITIALIZED.
  */
 export enum State {
   /** STATE_UNINITIALIZED_UNSPECIFIED - Default State */
@@ -26,10 +27,6 @@ export enum State {
    * packets.
    */
   STATE_CLOSED = 4,
-  /** STATE_FLUSHING - A channel has just accepted the upgrade handshake attempt and is flushing in-flight packets. */
-  STATE_FLUSHING = 5,
-  /** STATE_FLUSHCOMPLETE - A channel has just completed flushing any in-flight packets. */
-  STATE_FLUSHCOMPLETE = 6,
   UNRECOGNIZED = -1,
 }
 export const StateSDKType = State;
@@ -50,12 +47,6 @@ export function stateFromJSON(object: any): State {
     case 4:
     case 'STATE_CLOSED':
       return State.STATE_CLOSED;
-    case 5:
-    case 'STATE_FLUSHING':
-      return State.STATE_FLUSHING;
-    case 6:
-    case 'STATE_FLUSHCOMPLETE':
-      return State.STATE_FLUSHCOMPLETE;
     case -1:
     case 'UNRECOGNIZED':
     default:
@@ -74,10 +65,6 @@ export function stateToJSON(object: State): string {
       return 'STATE_OPEN';
     case State.STATE_CLOSED:
       return 'STATE_CLOSED';
-    case State.STATE_FLUSHING:
-      return 'STATE_FLUSHING';
-    case State.STATE_FLUSHCOMPLETE:
-      return 'STATE_FLUSHCOMPLETE';
     case State.UNRECOGNIZED:
     default:
       return 'UNRECOGNIZED';
@@ -157,11 +144,6 @@ export interface Channel {
    * opaque channel version, which is agreed upon during the handshake
    */
   version: string;
-  /**
-   * upgrade sequence indicates the latest upgrade attempt performed by this channel
-   * the value of 0 indicates the channel has never been upgraded
-   */
-  upgradeSequence: bigint;
 }
 export interface ChannelProtoMsg {
   typeUrl: '/ibc.core.channel.v1.Channel';
@@ -181,7 +163,6 @@ export interface ChannelSDKType {
   counterparty: CounterpartySDKType;
   connection_hops: string[];
   version: string;
-  upgrade_sequence: bigint;
 }
 /**
  * IdentifiedChannel defines a channel with additional port and channel
@@ -220,11 +201,6 @@ export interface IdentifiedChannel {
    * channel identifier
    */
   channelId: string;
-  /**
-   * upgrade sequence indicates the latest upgrade attempt performed by this channel
-   * the value of 0 indicates the channel has never been upgraded
-   */
-  upgradeSequence: bigint;
 }
 export interface IdentifiedChannelProtoMsg {
   typeUrl: '/ibc.core.channel.v1.IdentifiedChannel';
@@ -245,7 +221,6 @@ export interface IdentifiedChannelSDKType {
   version: string;
   port_id: string;
   channel_id: string;
-  upgrade_sequence: bigint;
 }
 /**
  * Counterparty defines a channel end counterparty
@@ -386,7 +361,7 @@ export interface PacketStateSDKType {
   data: Uint8Array;
 }
 /**
- * PacketId is an identifer for a unique Packet
+ * PacketId is an identifier for a unique Packet
  * Source chains refer to packets by source port/channel
  * Destination chains refer to packets by destination port/channel
  * @name PacketId
@@ -412,7 +387,7 @@ export interface PacketIdProtoMsg {
   value: Uint8Array;
 }
 /**
- * PacketId is an identifer for a unique Packet
+ * PacketId is an identifier for a unique Packet
  * Source chains refer to packets by source port/channel
  * Destination chains refer to packets by destination port/channel
  * @name PacketIdSDKType
@@ -462,7 +437,7 @@ export interface AcknowledgementSDKType {
 }
 /**
  * Timeout defines an execution deadline structure for 04-channel handlers.
- * This includes packet lifecycle handlers as well as the upgrade handshake handlers.
+ * This includes packet lifecycle handlers.
  * A valid Timeout contains either one or both of a timestamp and block height (sequence).
  * @name Timeout
  * @package ibc.core.channel.v1
@@ -470,11 +445,11 @@ export interface AcknowledgementSDKType {
  */
 export interface Timeout {
   /**
-   * block height after which the packet or upgrade times out
+   * block height after which the packet times out
    */
   height: Height;
   /**
-   * block timestamp (in nanoseconds) after which the packet or upgrade times out
+   * block timestamp (in nanoseconds) after which the packet times out
    */
   timestamp: bigint;
 }
@@ -484,7 +459,7 @@ export interface TimeoutProtoMsg {
 }
 /**
  * Timeout defines an execution deadline structure for 04-channel handlers.
- * This includes packet lifecycle handlers as well as the upgrade handshake handlers.
+ * This includes packet lifecycle handlers.
  * A valid Timeout contains either one or both of a timestamp and block height (sequence).
  * @name TimeoutSDKType
  * @package ibc.core.channel.v1
@@ -494,31 +469,6 @@ export interface TimeoutSDKType {
   height: HeightSDKType;
   timestamp: bigint;
 }
-/**
- * Params defines the set of IBC channel parameters.
- * @name Params
- * @package ibc.core.channel.v1
- * @see proto type: ibc.core.channel.v1.Params
- */
-export interface Params {
-  /**
-   * the relative timeout after which channel upgrades will time out.
-   */
-  upgradeTimeout: Timeout;
-}
-export interface ParamsProtoMsg {
-  typeUrl: '/ibc.core.channel.v1.Params';
-  value: Uint8Array;
-}
-/**
- * Params defines the set of IBC channel parameters.
- * @name ParamsSDKType
- * @package ibc.core.channel.v1
- * @see proto type: ibc.core.channel.v1.Params
- */
-export interface ParamsSDKType {
-  upgrade_timeout: TimeoutSDKType;
-}
 function createBaseChannel(): Channel {
   return {
     state: 0,
@@ -526,7 +476,6 @@ function createBaseChannel(): Channel {
     counterparty: Counterparty.fromPartial({}),
     connectionHops: [],
     version: '',
-    upgradeSequence: BigInt(0),
   };
 }
 /**
@@ -539,6 +488,10 @@ function createBaseChannel(): Channel {
  */
 export const Channel = {
   typeUrl: '/ibc.core.channel.v1.Channel' as const,
+  annotations: {
+    'gogoproto.nullable': { counterparty: false },
+    typeUrlFromField: { counterparty: () => Counterparty },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Channel' as const,
   is(o: any): o is Channel {
     return (
@@ -550,8 +503,7 @@ export const Channel = {
           Array.isArray(o.connectionHops) &&
           (!o.connectionHops.length ||
             typeof o.connectionHops[0] === 'string') &&
-          typeof o.version === 'string' &&
-          typeof o.upgradeSequence === 'bigint'))
+          typeof o.version === 'string'))
     );
   },
   isSDK(o: any): o is ChannelSDKType {
@@ -564,8 +516,7 @@ export const Channel = {
           Array.isArray(o.connection_hops) &&
           (!o.connection_hops.length ||
             typeof o.connection_hops[0] === 'string') &&
-          typeof o.version === 'string' &&
-          typeof o.upgrade_sequence === 'bigint'))
+          typeof o.version === 'string'))
     );
   },
   encode(
@@ -589,9 +540,6 @@ export const Channel = {
     }
     if (message.version !== '') {
       writer.uint32(42).string(message.version);
-    }
-    if (message.upgradeSequence !== BigInt(0)) {
-      writer.uint32(48).uint64(message.upgradeSequence);
     }
     return writer;
   },
@@ -618,9 +566,6 @@ export const Channel = {
         case 5:
           message.version = reader.string();
           break;
-        case 6:
-          message.upgradeSequence = reader.uint64();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -639,9 +584,6 @@ export const Channel = {
         ? object.connectionHops.map((e: any) => String(e))
         : [],
       version: isSet(object.version) ? String(object.version) : '',
-      upgradeSequence: isSet(object.upgradeSequence)
-        ? BigInt(object.upgradeSequence.toString())
-        : BigInt(0),
     };
   },
   toJSON(message: Channel): JsonSafe<Channel> {
@@ -659,8 +601,6 @@ export const Channel = {
       obj.connectionHops = [];
     }
     message.version !== undefined && (obj.version = message.version);
-    message.upgradeSequence !== undefined &&
-      (obj.upgradeSequence = (message.upgradeSequence || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<Channel>): Channel {
@@ -673,10 +613,6 @@ export const Channel = {
         : undefined;
     message.connectionHops = object.connectionHops?.map(e => e) || [];
     message.version = object.version ?? '';
-    message.upgradeSequence =
-      object.upgradeSequence !== undefined && object.upgradeSequence !== null
-        ? BigInt(object.upgradeSequence.toString())
-        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: ChannelProtoMsg): Channel {
@@ -701,7 +637,6 @@ function createBaseIdentifiedChannel(): IdentifiedChannel {
     version: '',
     portId: '',
     channelId: '',
-    upgradeSequence: BigInt(0),
   };
 }
 /**
@@ -713,6 +648,10 @@ function createBaseIdentifiedChannel(): IdentifiedChannel {
  */
 export const IdentifiedChannel = {
   typeUrl: '/ibc.core.channel.v1.IdentifiedChannel' as const,
+  annotations: {
+    'gogoproto.nullable': { counterparty: false },
+    typeUrlFromField: { counterparty: () => Counterparty },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/IdentifiedChannel' as const,
   is(o: any): o is IdentifiedChannel {
     return (
@@ -726,8 +665,7 @@ export const IdentifiedChannel = {
             typeof o.connectionHops[0] === 'string') &&
           typeof o.version === 'string' &&
           typeof o.portId === 'string' &&
-          typeof o.channelId === 'string' &&
-          typeof o.upgradeSequence === 'bigint'))
+          typeof o.channelId === 'string'))
     );
   },
   isSDK(o: any): o is IdentifiedChannelSDKType {
@@ -742,8 +680,7 @@ export const IdentifiedChannel = {
             typeof o.connection_hops[0] === 'string') &&
           typeof o.version === 'string' &&
           typeof o.port_id === 'string' &&
-          typeof o.channel_id === 'string' &&
-          typeof o.upgrade_sequence === 'bigint'))
+          typeof o.channel_id === 'string'))
     );
   },
   encode(
@@ -773,9 +710,6 @@ export const IdentifiedChannel = {
     }
     if (message.channelId !== '') {
       writer.uint32(58).string(message.channelId);
-    }
-    if (message.upgradeSequence !== BigInt(0)) {
-      writer.uint32(64).uint64(message.upgradeSequence);
     }
     return writer;
   },
@@ -808,9 +742,6 @@ export const IdentifiedChannel = {
         case 7:
           message.channelId = reader.string();
           break;
-        case 8:
-          message.upgradeSequence = reader.uint64();
-          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -831,9 +762,6 @@ export const IdentifiedChannel = {
       version: isSet(object.version) ? String(object.version) : '',
       portId: isSet(object.portId) ? String(object.portId) : '',
       channelId: isSet(object.channelId) ? String(object.channelId) : '',
-      upgradeSequence: isSet(object.upgradeSequence)
-        ? BigInt(object.upgradeSequence.toString())
-        : BigInt(0),
     };
   },
   toJSON(message: IdentifiedChannel): JsonSafe<IdentifiedChannel> {
@@ -853,8 +781,6 @@ export const IdentifiedChannel = {
     message.version !== undefined && (obj.version = message.version);
     message.portId !== undefined && (obj.portId = message.portId);
     message.channelId !== undefined && (obj.channelId = message.channelId);
-    message.upgradeSequence !== undefined &&
-      (obj.upgradeSequence = (message.upgradeSequence || BigInt(0)).toString());
     return obj;
   },
   fromPartial(object: Partial<IdentifiedChannel>): IdentifiedChannel {
@@ -869,10 +795,6 @@ export const IdentifiedChannel = {
     message.version = object.version ?? '';
     message.portId = object.portId ?? '';
     message.channelId = object.channelId ?? '';
-    message.upgradeSequence =
-      object.upgradeSequence !== undefined && object.upgradeSequence !== null
-        ? BigInt(object.upgradeSequence.toString())
-        : BigInt(0);
     return message;
   },
   fromProtoMsg(message: IdentifiedChannelProtoMsg): IdentifiedChannel {
@@ -1001,6 +923,10 @@ function createBasePacket(): Packet {
  */
 export const Packet = {
   typeUrl: '/ibc.core.channel.v1.Packet' as const,
+  annotations: {
+    'gogoproto.nullable': { timeoutHeight: false },
+    typeUrlFromField: { timeoutHeight: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Packet' as const,
   is(o: any): o is Packet {
     return (
@@ -1325,7 +1251,7 @@ function createBasePacketId(): PacketId {
   };
 }
 /**
- * PacketId is an identifer for a unique Packet
+ * PacketId is an identifier for a unique Packet
  * Source chains refer to packets by source port/channel
  * Destination chains refer to packets by destination port/channel
  * @name PacketId
@@ -1535,7 +1461,7 @@ function createBaseTimeout(): Timeout {
 }
 /**
  * Timeout defines an execution deadline structure for 04-channel handlers.
- * This includes packet lifecycle handlers as well as the upgrade handshake handlers.
+ * This includes packet lifecycle handlers.
  * A valid Timeout contains either one or both of a timestamp and block height (sequence).
  * @name Timeout
  * @package ibc.core.channel.v1
@@ -1543,6 +1469,10 @@ function createBaseTimeout(): Timeout {
  */
 export const Timeout = {
   typeUrl: '/ibc.core.channel.v1.Timeout' as const,
+  annotations: {
+    'gogoproto.nullable': { height: false },
+    typeUrlFromField: { height: () => Height },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Timeout' as const,
   is(o: any): o is Timeout {
     return (
@@ -1629,91 +1559,6 @@ export const Timeout = {
     return {
       typeUrl: '/ibc.core.channel.v1.Timeout',
       value: Timeout.encode(message).finish(),
-    };
-  },
-};
-function createBaseParams(): Params {
-  return {
-    upgradeTimeout: Timeout.fromPartial({}),
-  };
-}
-/**
- * Params defines the set of IBC channel parameters.
- * @name Params
- * @package ibc.core.channel.v1
- * @see proto type: ibc.core.channel.v1.Params
- */
-export const Params = {
-  typeUrl: '/ibc.core.channel.v1.Params' as const,
-  aminoType: 'cosmos-sdk/Params' as const,
-  is(o: any): o is Params {
-    return o && (o.$typeUrl === Params.typeUrl || Timeout.is(o.upgradeTimeout));
-  },
-  isSDK(o: any): o is ParamsSDKType {
-    return (
-      o && (o.$typeUrl === Params.typeUrl || Timeout.isSDK(o.upgrade_timeout))
-    );
-  },
-  encode(
-    message: Params,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.upgradeTimeout !== undefined) {
-      Timeout.encode(message.upgradeTimeout, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-  decode(input: BinaryReader | Uint8Array, length?: number): Params {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseParams();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.upgradeTimeout = Timeout.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(object: any): Params {
-    return {
-      upgradeTimeout: isSet(object.upgradeTimeout)
-        ? Timeout.fromJSON(object.upgradeTimeout)
-        : undefined,
-    };
-  },
-  toJSON(message: Params): JsonSafe<Params> {
-    const obj: any = {};
-    message.upgradeTimeout !== undefined &&
-      (obj.upgradeTimeout = message.upgradeTimeout
-        ? Timeout.toJSON(message.upgradeTimeout)
-        : undefined);
-    return obj;
-  },
-  fromPartial(object: Partial<Params>): Params {
-    const message = createBaseParams();
-    message.upgradeTimeout =
-      object.upgradeTimeout !== undefined && object.upgradeTimeout !== null
-        ? Timeout.fromPartial(object.upgradeTimeout)
-        : undefined;
-    return message;
-  },
-  fromProtoMsg(message: ParamsProtoMsg): Params {
-    return Params.decode(message.value);
-  },
-  toProto(message: Params): Uint8Array {
-    return Params.encode(message).finish();
-  },
-  toProtoMsg(message: Params): ParamsProtoMsg {
-    return {
-      typeUrl: '/ibc.core.channel.v1.Params',
-      value: Params.encode(message).finish(),
     };
   },
 };

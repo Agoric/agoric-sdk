@@ -1,3 +1,4 @@
+/* global globalThis */
 const ambientSetTimeout = globalThis.setTimeout;
 
 type Log = (...values: unknown[]) => void;
@@ -32,8 +33,9 @@ const retryUntilCondition = async <T>(
     setTimeout = ambientSetTimeout,
   }: RetryOptions = {},
 ): Promise<T> => {
-  let retries = 0;
+  await null;
 
+  let retries = 0;
   while (retries < maxRetries) {
     try {
       const result = await operation();
@@ -48,7 +50,7 @@ const retryUntilCondition = async <T>(
       }
     }
 
-    retries++;
+    retries += 1;
     log(
       `Retry ${retries}/${maxRetries} - Waiting for ${retryIntervalMs}ms for ${message}...`,
     );

@@ -1,4 +1,4 @@
-import type { Filter, WebSocketProvider } from 'ethers';
+import type { Filter } from 'ethers';
 import { id, zeroPadValue, getAddress, AbiCoder } from 'ethers';
 import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
@@ -9,6 +9,7 @@ import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
   scanFailedTxsInChunks,
+  type EvmRpc,
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
@@ -24,6 +25,7 @@ import {
   extractDepositFactoryExecuteData,
   DEFAULT_RETRY_OPTIONS,
   FAILED_TX_SCOPE,
+  WatcherTransportError,
   type AlchemySubscriptionMessage,
   type RetryOptions,
   handleTxRevert,
@@ -37,6 +39,10 @@ export const SMART_WALLET_CREATED_SIGNATURE = id(
 export const SMART_WALLET_CREATED_SIGNATURE_V1 = id(
   'SmartWalletCreated(address,string,string,string)',
 );
+const SMART_WALLET_CREATED_SIGNATURES = [
+  SMART_WALLET_CREATED_SIGNATURE,
+  SMART_WALLET_CREATED_SIGNATURE_V1,
+];
 const abiCoder = new AbiCoder();
 
 const extractAddress = topic => {
@@ -48,37 +54,40 @@ export const parseSmartWalletCreatedLog = (log: any) => {
     throw new Error('Malformed SmartWalletCreated log');
   }
 
-  const wallet = extractAddress(log.topics[1]);
   const eventSignature = log.topics[0];
-
-  if (eventSignature === SMART_WALLET_CREATED_SIGNATURE_V1) {
-    const [owner, sourceChain, sourceAddress] = abiCoder.decode(
-      ['string', 'string', 'string'],
-      log.data,
-    );
-    return {
-      wallet,
-      owner,
-      sourceChain,
-      sourceAddress,
-    };
-  } else {
-    const [owner, sourceChain] = abiCoder.decode(
-      ['string', 'string'],
-      log.data,
-    );
-    return {
-      wallet,
-      owner,
-      sourceChain,
-    };
+  switch (eventSignature) {
+    case SMART_WALLET_CREATED_SIGNATURE_V1: {
+      const [owner, sourceChain, sourceAddress] = abiCoder.decode(
+        ['string', 'string', 'string'],
+        log.data,
+      );
+      return {
+        wallet: extractAddress(log.topics[1]),
+        owner,
+        sourceChain,
+        sourceAddress,
+      };
+    }
+    case SMART_WALLET_CREATED_SIGNATURE: {
+      const [owner, sourceChain] = abiCoder.decode(
+        ['string', 'string'],
+        log.data,
+      );
+      return {
+        wallet: extractAddress(log.topics[1]),
+        owner,
+        sourceChain,
+      };
+    }
+    default:
+      throw new Error(`Unknown event signature ${eventSignature}`);
   }
 };
 
 type SmartWalletWatchBase = {
   factoryAddr: `0x${string}`;
   subscribeToAddr: `0x${string}`;
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   expectedAddr: `0x${string}`;
   expectedSourceAddress: string;
   chainId: CaipChainId;
@@ -113,26 +122,24 @@ export const watchSmartWalletTx = ({
       `Watching for wallet creation: subscribing to ${subscribeToAddr}, expecting event from ${factoryAddr}, expectedAddr ${expectedAddr}`,
     );
 
-    let done = false;
-    let timeoutId: NodeJS.Timeout | undefined;
-    let subId: string | null = null;
-    const cleanups: (() => void)[] = [];
-
     const ws = provider.websocket as WebSocket;
+    let done = false;
+    let subId: string | null = null;
+    const cleanups: (() => unknown)[] = [];
+    const doCleanup = async () => {
+      // Invoke all cleanups synchronously but report errors asynchronously.
+      for (const cleanup of cleanups) {
+        const result = (async () => cleanup())();
+        void result.catch(err => log('Error during cleanup:', err));
+      }
+    };
 
     const finish = (res: WatcherResult) => {
       if (done) return;
       done = true;
 
-      if (timeoutId) clearTimeout(timeoutId);
-
       resolve(res);
-      if (subId) {
-        void provider
-          .send('eth_unsubscribe', [subId])
-          .catch(e => log('Failed to unsubscribe:', e));
-      }
-      for (const cleanup of cleanups) cleanup();
+      void doCleanup();
     };
 
     /**
@@ -143,17 +150,8 @@ export const watchSmartWalletTx = ({
       if (done) return;
       done = true;
 
-      if (timeoutId) clearTimeout(timeoutId);
-
       reject(err);
-      if (subId) {
-        void provider
-          .send('eth_unsubscribe', [subId])
-          .catch(error =>
-            log('Failed to unsubscribe during error cleanup:', error),
-          );
-      }
-      for (const cleanup of cleanups) cleanup();
+      void doCleanup();
     };
 
     const onWsError = (e: any) => {
@@ -161,18 +159,23 @@ export const watchSmartWalletTx = ({
       log(
         `WebSocket error during wallet watch for expectedAddr=${expectedAddr}: ${errorMsg}`,
       );
-      fail(new Error(`WebSocket connection error: ${errorMsg}`));
+      fail(
+        new WatcherTransportError(`WebSocket connection error: ${errorMsg}`, {
+          cause: e,
+        }),
+      );
     };
 
     const onWsClose = (code?: number, reason?: any) => {
-      if (!done) {
-        log(
-          `WebSocket closed during wallet watch for expectedAddr=${expectedAddr} (code=${code}, reason=${reason})`,
-        );
-        fail(
-          new Error(`WebSocket closed unexpectedly: ${reason} (code=${code})`),
-        );
-      }
+      if (done) return;
+      log(
+        `WebSocket closed during wallet watch for expectedAddr=${expectedAddr} (code=${code}, reason=${reason})`,
+      );
+      fail(
+        new WatcherTransportError(
+          `WebSocket closed unexpectedly: ${reason} (code=${code})`,
+        ),
+      );
     };
 
     ws.on('error', onWsError);
@@ -184,46 +187,37 @@ export const watchSmartWalletTx = ({
     if (signal) {
       const onAbort = () => finish({ settled: false });
       signal.addEventListener('abort', onAbort);
-      cleanups.unshift(() => {
-        signal.removeEventListener('abort', onAbort);
-      });
+      cleanups.unshift(() => signal.removeEventListener('abort', onAbort));
     }
 
     const messageHandler = async (data: any) => {
-      await null;
       if (done) return;
 
+      await null;
       try {
         const msg = tryJsonParse(
           data.toString(),
           'alchemy_minedTransactions subscription response',
         ) as AlchemySubscriptionMessage;
-
         if (msg.method !== 'eth_subscription') return;
 
-        const tx = msg.params?.result?.transaction;
-        const removed = msg.params?.result?.removed;
+        const { result } = msg.params ?? {};
+        const { transaction: tx, removed } = result ?? {};
         if (!tx) {
-          log(
-            `Subscription message missing transaction data`,
-            msg.params?.result,
-          );
+          log(`Subscription message missing transaction data`, result);
           return;
         }
-
-        // Ignore transactions that have been removed from canonical chain (reorged)
-        if (removed === true) {
+        if (removed) {
           log(
             `⚠️  REORG: expectedAddr=${expectedAddr} txHash=${tx.hash} was removed from chain - ignoring`,
           );
           return;
         }
 
-        const txHash = tx.hash;
-        const txData = tx.input;
+        const { hash: txHash, input: txData } = tx;
         const txTo = tx.to;
         if (!txHash || !txData || !txTo) {
-          log(`Subscription message missing txHash, input, or to field`);
+          log(`Subscription message missing txHash, input data, or to field`);
           return;
         }
 
@@ -232,28 +226,26 @@ export const watchSmartWalletTx = ({
         const executeData = isFactoryPath
           ? extractFactoryExecuteData(txData)
           : extractDepositFactoryExecuteData(txData);
-
         if (!executeData) {
           log(
-            `Calldata did not match factory execute ABI for txHash=${txHash} to=${txTo}`,
+            `expectedAddr=${expectedAddr} txHash=${tx.hash} calldata did not match factory execute ABI for to=${txTo}`,
           );
           return;
         }
-
         const { sourceAddress, expectedWalletAddress } = executeData;
-
-        // Check sourceAddress and expectedWalletAddress match
-        if (
-          sourceAddress !== expectedSourceAddress ||
-          getAddress(expectedWalletAddress) !== getAddress(expectedAddr)
-        ) {
+        if (sourceAddress !== expectedSourceAddress) {
           log(
-            `Address mismatch for txHash=${txHash}: sourceAddress=${sourceAddress} expectedWallet=${expectedWalletAddress}`,
+            `expectedAddr=${expectedAddr} txHash=${tx.hash} source address mismatch: expected ${expectedSourceAddress}, got ${sourceAddress}`,
+          );
+          return;
+        }
+        if (getAddress(expectedWalletAddress) !== getAddress(expectedAddr)) {
+          log(
+            `expectedAddr=${expectedAddr} txHash=${tx.hash} wallet address mismatch: got ${expectedWalletAddress} from sourceAddress ${sourceAddress}`,
           );
           return;
         }
 
-        // Fetch receipt to check for SmartWalletCreated event
         const receipt = await fetchReceiptWithRetry(
           provider,
           txHash,
@@ -262,17 +254,14 @@ export const watchSmartWalletTx = ({
           setTimeout,
         );
         if (!receipt) {
-          log(`Transaction ${txHash} not confirmed after waiting`);
+          log(`txHash=${txHash} not confirmed after waiting`);
           return;
         }
 
         // Look for SmartWalletCreated event in logs with matching expectedAddr
         const matchingLog = receipt.logs.find(l => {
-          // Check for either v1 or v2 signature
-          if (
-            l.topics?.[0] !== SMART_WALLET_CREATED_SIGNATURE_V1 &&
-            l.topics?.[0] !== SMART_WALLET_CREATED_SIGNATURE
-          ) {
+          const eventSignature = l.topics?.[0];
+          if (!SMART_WALLET_CREATED_SIGNATURES.includes(eventSignature)) {
             return false;
           }
 
@@ -284,32 +273,33 @@ export const watchSmartWalletTx = ({
             return false;
           }
         });
-
         if (receipt.status === 1 && matchingLog) {
-          // Success case: return immediately without waiting for any confirmations (0 blocks)
-          // Rationale: Even if a reorg occurs, the transaction will likely succeed again
-          // Waiting for confirmations in success cases would hurt performance unnecessarily
+          // Success case: return immediately without waiting for any
+          // confirmations (subsequent blocks), which would hurt performance.
+          // Even if a reorg occurs, we expect the transaction to succeed again.
           log(
             `✅ SUCCESS: expectedAddr=${expectedAddr} txHash=${txHash} block=${receipt.blockNumber}`,
           );
           return finish({ settled: true, txHash, success: true });
         }
 
-        const result = await handleTxRevert(
+        // Failure case: wait for [de facto] finality in case a reorg flips it
+        // to success.
+        const watcherResult = await handleTxRevert({
           receipt,
           txHash,
-          `expectedAddr=${expectedAddr}`,
+          identifier: `expectedAddr=${expectedAddr}`,
           chainId,
-          provider,
-          log,
-        );
-        if (result) {
-          return finish(result);
+          signal,
+          powers: { provider, log, setTimeout },
+        });
+        if (watcherResult) {
+          return finish(watcherResult);
         }
       } catch (e) {
+        const errorMsg = e?.message || String(e);
         log(
-          `Error processing WebSocket message for expectedAddr=${expectedAddr}:`,
-          e instanceof Error ? e.message : String(e),
+          `Error processing WebSocket message for expectedAddr=${expectedAddr}: ${errorMsg}`,
         );
       }
     };
@@ -322,7 +312,6 @@ export const watchSmartWalletTx = ({
       ws.on('message', messageHandler);
       cleanups.unshift(() => ws.off('message', messageHandler));
 
-      log(`Attempting to subscribe to ${subscribeToAddr}...`);
       subId = await provider.send('eth_subscribe', [
         'alchemy_minedTransactions',
         {
@@ -331,7 +320,12 @@ export const watchSmartWalletTx = ({
           hashesOnly: false,
         },
       ]);
-      log(`✓ Subscribed to ${subscribeToAddr} (subscription ID: ${subId})`);
+      cleanups.unshift(() =>
+        provider
+          .send('eth_unsubscribe', [subId])
+          .catch(e => log(`Failed to unsubscribe:`, e)),
+      );
+      log(`Subscribed with subId=${subId} to ${subscribeToAddr}`);
     };
 
     if (ws.readyState === 1) {
@@ -340,15 +334,16 @@ export const watchSmartWalletTx = ({
       ws.once('open', () => subscribe().catch(fail));
     }
 
-    timeoutId = setTimeout(() => {
-      if (!done) {
-        log(
-          `[${PendingTxCode.WALLET_TX_NOT_FOUND}] ✗ No wallet creation found for expectedAddr ${expectedAddr} within ${
-            timeoutMs / 60000
-          } minutes`,
-        );
-      }
+    // Intentional: does not resolve/reject; only logs on timeout
+    const timeoutId = setTimeout(() => {
+      if (done) return;
+      log(
+        `[${PendingTxCode.WALLET_TX_NOT_FOUND}] ✗ No wallet creation found for expectedAddr ${expectedAddr} within ${
+          timeoutMs / 60000
+        } minutes`,
+      );
     }, timeoutMs);
+    cleanups.unshift(() => clearTimeout(timeoutId));
   });
 };
 
@@ -417,10 +412,7 @@ export const lookBackSmartWalletTx = async ({
 
     // Options shared by all scans. The abort signal propagates external
     // cancellation.
-    const { signal: sharedSignal } = makeAbortController(
-      undefined,
-      signal ? [signal] : [],
-    );
+    const { signal: sharedSignal } = makeAbortController(undefined, [signal]);
     const sharedOpts = {
       provider,
       toBlock,
@@ -482,14 +474,14 @@ export const lookBackSmartWalletTx = async ({
       log(`Found matching failed transaction`);
       const receipt = await provider.getTransactionReceipt(failedTx.hash);
       if (receipt) {
-        const result = await handleTxRevert(
+        const result = await handleTxRevert({
           receipt,
-          failedTx.hash,
-          `expectedAddr=${expectedAddr}`,
+          txHash: failedTx.hash,
+          identifier: `expectedAddr=${expectedAddr}`,
           chainId,
-          provider,
-          log,
-        );
+          signal: sharedSignal,
+          powers: { provider, log, setTimeout },
+        });
         if (result) {
           deleteTxBlockLowerBound(kvStore, txId);
           deleteTxBlockLowerBound(kvStore, txId, FAILED_TX_SCOPE);

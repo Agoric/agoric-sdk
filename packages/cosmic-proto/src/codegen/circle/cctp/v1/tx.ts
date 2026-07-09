@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { decodeBase64 as bytesFromBase64 } from '@endo/base64';
@@ -118,6 +119,9 @@ function createBaseMsgDepositForBurn(): MsgDepositForBurn {
  */
 export const MsgDepositForBurn = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurn' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cctp/DepositForBurn' as const,
   is(o: any): o is MsgDepositForBurn {
     return (
@@ -357,6 +361,9 @@ function createBaseMsgDepositForBurnWithCaller(): MsgDepositForBurnWithCaller {
  */
 export const MsgDepositForBurnWithCaller = {
   typeUrl: '/circle.cctp.v1.MsgDepositForBurnWithCaller' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cctp/DepositForBurnWithCaller' as const,
   is(o: any): o is MsgDepositForBurnWithCaller {
     return (

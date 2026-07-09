@@ -3,13 +3,16 @@ import process from 'node:process';
 import { promisify } from 'node:util';
 
 /**
- * @import {ReadStream} from 'fs';
- * @import {WriteStream} from 'fs';
- * @import {Socket} from 'net';
+ * @import {ReadStream, WriteStream} from 'node:fs';
+ * @import {Socket} from 'node:net';
  */
 
+/** @typedef {ReadStream | WriteStream | Socket} StreamLike */
+/** @typedef {'drain' | 'ready'} EventName */
+/** @typedef {boolean} WriteBufferIsFull */
+
 /**
- * @param {ReadStream | WriteStream | Socket} stream
+ * @param {StreamLike} stream
  * @returns {Promise<void>}
  */
 export const fsStreamReady = stream =>
@@ -45,13 +48,15 @@ export const fsStreamReady = stream =>
   });
 
 /**
- * Wait for a stream event and reject on stream error first.
+ * Subscribe fresh listeners for a single stream event and reject on stream
+ * error first.
  *
- * @param {ReadStream | WriteStream | Socket} stream
- * @param {'drain' | 'ready'} eventName
+ * @param {StreamLike} stream
+ * @param {EventName} eventName
+ * @param {() => void} [onCleanup] called when the event is emitted or an error occurs, after listeners are removed
  * @returns {Promise<void>}
  */
-const onceWithError = (stream, eventName) =>
+const subscribeOnceWithError = (stream, eventName, onCleanup = () => {}) =>
   new Promise((resolve, reject) => {
     const onEvent = () => {
       cleanup();
@@ -65,21 +70,77 @@ const onceWithError = (stream, eventName) =>
     const cleanup = () => {
       stream.off(eventName, onEvent);
       stream.off('error', onError);
+      onCleanup();
     };
     stream.on(eventName, onEvent);
     stream.on('error', onError);
   });
 
 /**
+ * Memoize promises to prevent multiple subscriptions to the same event on the
+ * same stream.  This is necessary to prevent:
+ *
+ * (node:1224) MaxListenersExceededWarning: Possible EventEmitter memory leak
+ * detected. 11 drain listeners added to [WriteStream]. MaxListeners is 10. Use
+ * emitter.setMaxListeners() to increase limit
+ *
+ * @param {(stream: StreamLike,
+ *   eventName: EventName, onDone?: () => void) => Promise<void>} doOnceWithError
+ * @returns {(stream: StreamLike,
+ *   eventName: EventName) => Promise<void>}
+ */
+const makeMemoizedOnceWithError = doOnceWithError => {
+  /**
+   * @type {Map<string, WeakMap<StreamLike, Promise<void>>>}
+   */
+  const promiseFromEventAndStream = new Map();
+
+  /**
+   * Wait for a stream event and reject on stream error first.
+   *
+   * @param {StreamLike} stream
+   * @param {EventName} eventName
+   * @returns {Promise<void>}
+   */
+  const memoizedOnceWithError = (stream, eventName) => {
+    let promiseFromStream = promiseFromEventAndStream.get(eventName);
+    if (!promiseFromStream) {
+      promiseFromStream = new WeakMap();
+      promiseFromEventAndStream.set(eventName, promiseFromStream);
+    }
+    /** @type {Promise<void> | undefined} */
+    let promise = promiseFromStream.get(stream);
+    if (promise) {
+      return promise;
+    }
+    promise = doOnceWithError(stream, eventName, () =>
+      promiseFromStream.delete(stream),
+    );
+    promiseFromStream.set(stream, promise);
+    return promise;
+  };
+
+  return memoizedOnceWithError;
+};
+
+/**
+ * Wait for a stream event and reject on stream error first.
+ *
+ * @param {StreamLike} stream
+ * @param {EventName} eventName
+ * @returns {Promise<void>}
+ */
+const onceWithError = makeMemoizedOnceWithError(subscribeOnceWithError);
+
+/**
  * @param {WriteStream | Socket} stream
  * @param {string | Uint8Array} data
- * @returns {Promise<boolean>} whether caller must await drain
+ * @returns {Promise<WriteBufferIsFull>} whether caller must await drain
  */
 const writeChunk = (stream, data) =>
   new Promise((resolve, reject) => {
-    let waitForDrain;
     try {
-      waitForDrain = !stream.write(data, err => {
+      const waitForDrain = !stream.write(data, err => {
         if (err) {
           reject(err);
           return;
@@ -113,15 +174,18 @@ export const makeFsStreamWriter = async filePath => {
       ? undefined
       : promisify(/** @type {WriteStream} */ (stream).close.bind(stream));
 
-  let flushed = Promise.resolve();
+  /** @type {Promise<WriteBufferIsFull>} */
+  let flushed = Promise.resolve(false);
   let closed = false;
 
+  /** @param {Promise<WriteBufferIsFull>} p */
   const updateFlushed = p => {
     flushed = flushed.then(
       () => p,
       err =>
         p.then(
           () => Promise.reject(err),
+          /** @param {Error} pError */
           pError =>
             Promise.reject(
               pError !== err ? AggregateError([err, pError]) : err,
@@ -131,6 +195,7 @@ export const makeFsStreamWriter = async filePath => {
     flushed.catch(() => {});
   };
 
+  /** @param {string | Uint8Array} data */
   const write = async data => {
     const written = closed
       ? Promise.reject(Error('Stream closed'))

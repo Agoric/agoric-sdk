@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
@@ -449,6 +450,9 @@ function createBaseHostZone(): HostZone {
  */
 export const HostZone = {
   typeUrl: '/stride.staketia.HostZone' as const,
+  annotations: {
+    'gogoproto.nullable': { remainingDelegatedBalance: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is HostZone {
     return (
       o &&
@@ -723,6 +727,9 @@ function createBaseDelegationRecord(): DelegationRecord {
  */
 export const DelegationRecord = {
   typeUrl: '/stride.staketia.DelegationRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is DelegationRecord {
     return (
       o &&
@@ -853,6 +860,9 @@ function createBaseUnbondingRecord(): UnbondingRecord {
  */
 export const UnbondingRecord = {
   typeUrl: '/stride.staketia.UnbondingRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false, stTokenAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is UnbondingRecord {
     return (
       o &&
@@ -1033,6 +1043,9 @@ function createBaseRedemptionRecord(): RedemptionRecord {
  */
 export const RedemptionRecord = {
   typeUrl: '/stride.staketia.RedemptionRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false, stTokenAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is RedemptionRecord {
     return (
       o &&
@@ -1166,6 +1179,9 @@ function createBaseSlashRecord(): SlashRecord {
  */
 export const SlashRecord = {
   typeUrl: '/stride.staketia.SlashRecord' as const,
+  annotations: {
+    'gogoproto.nullable': { nativeAmount: false },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is SlashRecord {
     return (
       o &&

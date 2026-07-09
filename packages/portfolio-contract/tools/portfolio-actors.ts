@@ -12,7 +12,7 @@
  */
 import { AmountMath, type NatAmount } from '@agoric/ertp';
 import type { VstorageKit } from '@agoric/client-utils';
-import type { ChainInfo } from '@agoric/orchestration';
+import type { Bech32Address, ChainInfo } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
 import {
   getPermitWitnessTransferFromData,
@@ -35,17 +35,23 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 import type {
+  PortfolioAutoFeatures,
   PortfolioPublicInvitationMaker,
   PortfolioContinuingInvitationMaker,
   AxelarChain,
+  PortfolioPermissions,
 } from '@agoric/portfolio-api';
+import {
+  PortfolioAutoFeaturesEIP712Shape,
+  PortfolioPermissionsEIP712Shape,
+} from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
-import type { ERemote } from '@agoric/internal';
+import { mustMatch, type ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
 import type { TypedDataDefinition } from 'viem';
 import type { PrivateKeyAccount } from 'viem/accounts';
@@ -280,6 +286,8 @@ type EvmTraderConfig = {
   timerService: ERemote<TimerService>;
   readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
   when: VowTools['when'];
+  useRouter?: boolean;
+  useVerifiedSigner?: boolean;
 };
 
 export const makeEvmTrader = ({
@@ -290,6 +298,8 @@ export const makeEvmTrader = ({
   timerService,
   readPublished,
   when,
+  useRouter = false,
+  useVerifiedSigner = false,
 }: EvmTraderConfig) => {
   let nonce = 0n;
   let portfolioPath: string | undefined;
@@ -301,10 +311,15 @@ export const makeEvmTrader = ({
   };
 
   const submitMessage = async (message: TypedDataDefinition) => {
-    const signature = await account.signTypedData(message);
+    // arbitrary signature for "verified signer" simulating what a smart account may use
+    const signature = await (useVerifiedSigner
+      ? '0x533487000ACC0047000516447083'
+      : account.signTypedData(message));
+    const verifiedSigner = useVerifiedSigner ? account.address : undefined;
     const vow = await E(evmWalletHandler).handleMessage({
       ...message,
       signature,
+      verifiedSigner,
     } as any);
     await when(vow);
   };
@@ -323,7 +338,11 @@ export const makeEvmTrader = ({
       StatusFor['evmWallet']
     >;
 
-  const getMessageResult = async (
+  /**
+   * Read the most-recent message status without asserting success — for tests
+   * that want to inspect failure modes.
+   */
+  const getMessageStatus = async (
     expectedNonce: bigint,
     expectedDeadline: bigint,
   ) => {
@@ -336,6 +355,14 @@ export const makeEvmTrader = ({
       assert.fail(
         `deadline mismatch: ${status.deadline} vs ${expectedDeadline}`,
       );
+    return status;
+  };
+
+  const getMessageResult = async (
+    expectedNonce: bigint,
+    expectedDeadline: bigint,
+  ) => {
+    const status = await getMessageStatus(expectedNonce, expectedDeadline);
     if (status.status === 'error') {
       assert.fail(`message failed: ${status.error}`);
     } else if (status.status !== 'ok') {
@@ -362,22 +389,37 @@ export const makeEvmTrader = ({
     return {
       chainId: BigInt(chainInfo.reference),
       usdcToken: contracts.usdc,
-      depositFactory: contracts.depositFactory,
+      contractRepresentative: useRouter
+        ? contracts.remoteAccountRouter
+        : contracts.depositFactory,
       permit2Address: contracts.permit2,
     };
   };
 
   const self = harden({
     getAddress: () => account.address,
-    forChain: (chain: AxelarChain) => {
-      const { chainId, usdcToken, depositFactory, permit2Address } =
+    forChain: (chain: AxelarChain, verifyingContract?: `0x${string}`) => {
+      const { chainId, usdcToken, contractRepresentative, permit2Address } =
         getChainConfig(chain);
+      const standaloneVerifyingContract =
+        verifyingContract ?? contractRepresentative;
+      assert(standaloneVerifyingContract, 'missing verifying contract');
       return harden({
         async openPortfolio(
           allocations: TargetAllocation[],
           depositAmount: bigint,
+          features?: Required<PortfolioAutoFeatures>,
         ) {
-          const witness = getYmaxWitness('OpenPortfolio', { allocations });
+          assert(contractRepresentative, 'missing contract representative');
+          const witness = features
+            ? (getYmaxWitness('OpenPortfolioWithAutoFeatures', {
+                allocations,
+                features,
+              }) as unknown as ReturnType<
+                // getPermitWitnessTransferFromData is not a fan of witness union types
+                typeof getYmaxWitness<'OpenPortfolio'>
+              >)
+            : getYmaxWitness('OpenPortfolio', { allocations });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
             {
@@ -385,7 +427,7 @@ export const makeEvmTrader = ({
                 token: usdcToken,
                 amount: depositAmount,
               },
-              spender: depositFactory,
+              spender: contractRepresentative,
               nonce: (nonce += 1n),
               deadline,
             },
@@ -406,7 +448,8 @@ export const makeEvmTrader = ({
           const storagePath = await updatePortfolioPath(parsedId);
           return harden({ storagePath, portfolioId: parsedId });
         },
-        async deposit(depositAmount: bigint, spender = depositFactory) {
+        async deposit(depositAmount: bigint, spender = contractRepresentative) {
+          assert(spender, 'missing spender');
           const currentPortfolioId = self.getPortfolioId();
           const witness = getYmaxWitness('Deposit', {
             portfolio: BigInt(currentPortfolioId),
@@ -442,7 +485,7 @@ export const makeEvmTrader = ({
             },
             'Withdraw',
             chainId,
-            depositFactory,
+            standaloneVerifyingContract,
           );
           const expectedNonce = nonce;
           await submitMessage(message);
@@ -459,7 +502,7 @@ export const makeEvmTrader = ({
             },
             'Rebalance',
             chainId,
-            depositFactory,
+            standaloneVerifyingContract,
           );
           const expectedNonce = nonce;
           await submitMessage(message);
@@ -477,11 +520,68 @@ export const makeEvmTrader = ({
             },
             'SetTargetAllocation',
             chainId,
-            depositFactory,
+            standaloneVerifyingContract,
           );
           const expectedNonce = nonce;
           await submitMessage(message);
           return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        /**
+         * Submit a signed Grant op and return the resulting wallet status
+         * entry for this trader's portfolio.
+         *
+         * Although the caller-facing type is {@link PortfolioPermissions},
+         * the current standalone EIP-712 `Grant` payload uses
+         * {@link PortfolioPermissionsEIP712Shape}. This helper validates that
+         * the requested permission bag fits the current wire shape before
+         * signing, so unsupported permissions fail client-side.
+         */
+        async grant(
+          granteeAddress: Bech32Address,
+          permissions: PortfolioPermissions,
+        ) {
+          const deadline = await getDeadline();
+          mustMatch(permissions, PortfolioPermissionsEIP712Shape);
+          const message = getYmaxStandaloneOperationData(
+            {
+              accountHolder: granteeAddress,
+              permissions,
+              portfolio: BigInt(self.getPortfolioId()),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Grant',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+        /**
+         * Submit a signed SetAutoFeatures op and return the resulting wallet
+         * status entry for this trader's portfolio.
+         */
+        async setAutoFeatures(features: PortfolioAutoFeatures) {
+          const deadline = await getDeadline();
+          const hardenedFeatures = harden({ ...features });
+          mustMatch(hardenedFeatures, PortfolioAutoFeaturesEIP712Shape);
+          const message = harden(
+            getYmaxStandaloneOperationData(
+              {
+                features: hardenedFeatures,
+                portfolio: BigInt(self.getPortfolioId()),
+                nonce: (nonce += 1n),
+                deadline,
+              },
+              'SetAutoFeatures',
+              chainId,
+              standaloneVerifyingContract,
+            ),
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
         },
       });
     },

@@ -41,6 +41,37 @@ jobs:
   pre_check:
     uses: ./.github/workflows/pre-check-integration.yml
 
+  build-sdk-ci-image:
+    needs: pre_check
+    if: >-
+      needs.pre_check.outputs.should_run == 'true' &&
+      (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    runs-on: 'depot-ubuntu-22.04'
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      build_id: ${{ steps.build.outputs.build-id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
+      - id: build
+        name: Build and save shared SDK CI image
+        uses: depot/build-push-action@v1
+        with:
+          context: .
+          file: packages/deployment/Dockerfile.sdk
+          platforms: linux/amd64
+          provenance: false
+          # This shared CI image is only a cross-job handoff artifact, so keep
+          # the Depot Registry retention for this project at 1 day.
+          save: true
+
   getting-started-flag:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
@@ -140,9 +171,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   deployment-test:
     needs: pre_check
@@ -152,7 +180,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
           path: ./agoric-sdk
       - run: sudo packages/deployment/scripts/install-deps.sh
         working-directory: ./agoric-sdk
@@ -165,7 +192,7 @@ jobs:
           # NB the Dockerfile.sdk based images must match this node version
           # The node version inside ansible deployment (prepare-machine.yml)
           # should also match this node version
-          node-version: 20
+          node-version: 22
           path: ./agoric-sdk
       - name: Build cosmic-swingset dependencies
         working-directory: ./agoric-sdk
@@ -214,16 +241,24 @@ jobs:
         uses: ./agoric-sdk/.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   test-docker-build:
-    needs: pre_check
+    needs:
+      - pre_check
+      - build-sdk-ci-image
     if: needs.pre_check.outputs.should_run == 'true'
+    # Keep this validation job on a Depot runner because it builds through Depot
+    # and then uses the loaded image locally for follow-on Docker-heavy checks.
     runs-on: 'depot-ubuntu-22.04-16'
-    timeout-minutes: 60
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: update job environment
         run: |
           if [ ":$HOME" = : ]; then
@@ -250,11 +285,19 @@ jobs:
         with:
           path: ./agoric-sdk
 
+      - name: Pull shared SDK CI image
+        if: needs.build-sdk-ci-image.outputs.build_id != ''
+        uses: depot/pull-action@v1
+        with:
+          build-id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
+          tags: ghcr.io/agoric/agoric-sdk:unreleased
+
       - name: docker build (sdk)
+        if: needs.build-sdk-ci-image.outputs.build_id == ''
         # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
-        run: make docker-build-sdk
+        run: DOCKER_BUILD='depot build --platform linux/amd64 --load --provenance=false' make docker-build-sdk
         working-directory: agoric-sdk/packages/deployment
 
       - id: restore-golang
@@ -343,7 +386,10 @@ jobs:
           echo "LOADGEN_PATH=$GITHUB_WORKSPACE/${{ env.LOADGEN_REPO_NAME }}" >> "$GITHUB_ENV"
 
       - name: build proposals tests
-        run: yarn build
+        # Skip build:sdk because the "docker build (sdk)" step above already
+        # produced ghcr.io/agoric/agoric-sdk:unreleased. Running `yarn build`
+        # would rebuild it redundantly via build:sdk (~4-5 min with layer cache).
+        run: yarn build:submissions && yarn build:synthetic-chain
         working-directory: agoric-sdk/a3p-integration
 
       - name: run proposals tests
@@ -385,9 +431,6 @@ jobs:
         uses: ./agoric-sdk/.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
       - uses: ./agoric-sdk/.github/actions/post-test
         if: always()
@@ -397,18 +440,34 @@ jobs:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
 
   test-multichain-e2e:
-    needs: pre_check
+    needs:
+      - pre_check
+      - build-sdk-ci-image
     if: needs.pre_check.outputs.should_run == 'true'
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/multichain-e2e.yml
+    with:
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
 
   test-ymax-planner-build:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
+      # Use Depot so this validation build shares the same remote builder cache
+      # and Dockerfile build path as the publishing workflow, even though this
+      # check is single-platform and does not exercise the multi-arch push path.
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: Build ymax-planner Docker image
-        run: docker build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
+        run: depot build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
 
   finalize-integration-result:
     needs:

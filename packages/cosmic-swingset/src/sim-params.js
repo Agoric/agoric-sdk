@@ -1,4 +1,3 @@
-// @jessie-check
 // @ts-check
 
 import { Fail } from '@endo/errors';
@@ -97,7 +96,7 @@ export const defaultQueueMax = [
 ];
 
 /**
- * @enum {(typeof VatCleanupPhase)[keyof typeof VatCleanupPhase]}
+ * @typedef {(typeof VatCleanupPhase)[keyof typeof VatCleanupPhase]} VatCleanupPhase
  */
 export const VatCleanupPhase = /** @type {const} */ ({
   Default: 'default',

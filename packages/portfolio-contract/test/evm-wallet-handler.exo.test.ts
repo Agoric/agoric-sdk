@@ -7,18 +7,26 @@ import type {
   FullMessageDetails,
   YmaxOperationDetails,
 } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import {
+  getYmaxStandaloneOperationData,
+  getYmaxWitness,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import { getPermitWitnessTransferFromData } from '@agoric/orchestration/src/utils/permit2.js';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
 import type { VowTools } from '@agoric/vow';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { privateKeyToAccount } from 'viem/accounts';
 import {
   makeNonceManager,
   prepareEVMPortfolioOperationManager,
+  prepareEVMWalletMessageHandler,
   type EVMWallet,
 } from '../src/evm-wallet-handler.exo.ts';
 import type { contract, PublishStatus } from '../src/portfolio.contract.ts';
 import type { PortfolioKit } from '../src/portfolio.exo.ts';
+import { evmTrader0PrivateKey } from './mocks.ts';
 
 // ==================== Test Mocking Helpers ====================
 
@@ -40,12 +48,15 @@ type DepositArgs = Parameters<PortfolioEVMFacet['deposit']>;
 
 type RebalanceArgs = Parameters<PortfolioEVMFacet['rebalance']>;
 
+type SetAutoFeatureArgs = Parameters<PortfolioEVMFacet['setAutoFeatures']>;
+
 type MockPortfolioCalls = {
   openPortfolioFromEVM: OpenPortfolioArgs[];
   validateEVMMessageDomain: ValidateEVMMessageDomainArgs[];
   withdraw: WithdrawArgs[];
   deposit: DepositArgs[];
   rebalance: RebalanceArgs[];
+  setAutoFeatures: SetAutoFeatureArgs[];
 };
 
 /**
@@ -90,15 +101,26 @@ const makeMockPortfolioEvmHandler = ({
     },
     deposit(...args: DepositArgs) {
       calls.deposit.push(args);
-      throw Error('Not implemented');
+      return 'deposit-flow';
     },
     rebalance(...args: RebalanceArgs) {
       calls.rebalance.push(args);
-      throw Error('Not implemented');
+      return 'rebalance-flow';
     },
     withdraw(...args: WithdrawArgs) {
       calls.withdraw.push(args);
       return 'withdraw-flow';
+    },
+    grant(..._args: Parameters<PortfolioEVMFacet['grant']>) {
+      // Not exercised by existing tests; present so the mock satisfies the
+      // facet type after the security fix moved delegation onto evmHandler.
+      return vowTools.asVow(() => {});
+    },
+    setAutoFeatures(
+      ..._args: Parameters<PortfolioEVMFacet['setAutoFeatures']>
+    ) {
+      calls.setAutoFeatures.push(_args);
+      return vowTools.asVow(() => {});
     },
   });
 };
@@ -240,6 +262,7 @@ const makeHandleOperationTestSetup = (
     withdraw: [],
     deposit: [],
     rebalance: [],
+    setAutoFeatures: [],
   };
 
   let nextPortfolioId = 1;
@@ -364,6 +387,73 @@ test('handleOperation - openPortfolio', async t => {
     },
     data: {
       allocations: [{ instrument: 'inst1', portion: 100n }],
+    },
+    permitDetails: {
+      chainId: 42161n,
+      token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+      amount: 1_000_000n,
+      spender: '0xSpenderAddress' as const,
+      permit2Payload: {
+        owner: '0xOwnerAddress' as const,
+        witness: '0xWitnessData' as const,
+        witnessTypeString: 'WitnessTypeString' as const,
+        permit: {
+          permitted: {
+            token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+            amount: 1_000_000n,
+          },
+          nonce: 123n,
+          deadline: 1700000000n,
+        },
+        signature: '0xSignatureData' as const,
+      },
+    },
+  };
+
+  // Call handleOperation
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: openPortfolioOperationDetails.permitDetails.permit2Payload.owner,
+    operationDetails: harden(openPortfolioOperationDetails),
+    nonce: 123n,
+    deadline: 1700000000n,
+  });
+
+  // Wait for the vow to settle
+  await vowTools.when(resultVow);
+
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation - openPortfolio with auto-features', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow1', {
+    namePrefix: 'test1b_',
+  });
+
+  // Create an OpenPortfolioWithAutoFeatures operation
+  const openPortfolioOperationDetails: YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'> &
+    Required<Pick<FullMessageDetails, 'permitDetails'>> = {
+    operation: 'OpenPortfolioWithAutoFeatures',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      allocations: [{ instrument: 'inst1', portion: 100n }],
+      features: { rebalance: true },
     },
     permitDetails: {
       chainId: 42161n,
@@ -545,4 +635,567 @@ test('handleOperation fails for unknown portfolio', async t => {
   t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
   t.snapshot(getCalls(), 'Calls');
   t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation invokes deposit with correct parameters', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow5', {
+    portfolios: [{ id: 7 }],
+    namePrefix: 'test5_',
+  });
+
+  const depositOperationDetails: YmaxOperationDetails<'Deposit'> &
+    Required<Pick<FullMessageDetails, 'permitDetails'>> = {
+    operation: 'Deposit',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      portfolio: 7n,
+    },
+    permitDetails: {
+      chainId: 42161n,
+      token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+      amount: 500_000n,
+      spender: '0xSpenderAddress' as const,
+      permit2Payload: {
+        owner: '0xOwnerAddress' as const,
+        witness: '0xWitnessData' as const,
+        witnessTypeString: 'WitnessTypeString' as const,
+        permit: {
+          permitted: {
+            token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+            amount: 500_000n,
+          },
+          nonce: 10n,
+          deadline: 1700000000n,
+        },
+        signature: '0xSignatureData' as const,
+      },
+    },
+  };
+
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
+    operationDetails: harden(depositOperationDetails),
+    nonce: 10n,
+    deadline: 1700000000n,
+  });
+
+  await vowTools.when(resultVow);
+
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation invokes rebalance with correct parameters', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow6', {
+    portfolios: [{ id: 3 }],
+    namePrefix: 'test6_',
+  });
+
+  const rebalanceOperationDetails: YmaxOperationDetails<'Rebalance'> = {
+    operation: 'Rebalance',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      portfolio: 3n,
+    },
+  };
+
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
+    operationDetails: harden(rebalanceOperationDetails),
+    nonce: 50n,
+    deadline: 1700000000n,
+  });
+
+  await vowTools.when(resultVow);
+
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation invokes setTargetAllocation with correct parameters', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow7', {
+    portfolios: [{ id: 5 }],
+    namePrefix: 'test7_',
+  });
+
+  const setAllocationDetails: YmaxOperationDetails<'SetTargetAllocation'> = {
+    operation: 'SetTargetAllocation',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      allocations: [
+        { instrument: 'Aave_Arbitrum', portion: 6000n },
+        { instrument: 'Compound_Base', portion: 4000n },
+      ],
+      portfolio: 5n,
+    },
+  };
+
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
+    operationDetails: harden(setAllocationDetails),
+    nonce: 99n,
+    deadline: 1700000000n,
+  });
+
+  await vowTools.when(resultVow);
+
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation invokes setAutoFeatures with correct parameters', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow7b', {
+    portfolios: [{ id: 9 }],
+    namePrefix: 'test7b_',
+  });
+
+  const setAutoFeaturesDetails: YmaxOperationDetails<'SetAutoFeatures'> = {
+    operation: 'SetAutoFeatures',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      features: {
+        rebalance: true,
+      },
+      portfolio: 9n,
+    },
+  };
+
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
+    operationDetails: harden(setAutoFeaturesDetails),
+    nonce: 100n,
+    deadline: 1700000000n,
+  });
+
+  await vowTools.when(resultVow);
+
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
+  t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+// ==================== handleMessage Tests ====================
+
+const ecdsaAccount = privateKeyToAccount(evmTrader0PrivateKey);
+const testSigner = ecdsaAccount.address;
+
+const MOCK_VERIFYING_CONTRACT =
+  '0x1234567890abcdef1234567890abcdef12345678' as const;
+const MOCK_PERMIT2_ADDRESS =
+  '0x000000000022D473030F116dDEE9F6B43aC78BA3' as const;
+const MOCK_TOKEN_ADDRESS =
+  '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const;
+const CHAIN_ID = 42161n;
+
+const CURRENT_TIME = 1_700_000_000n;
+
+type HandleOperationArgs = Parameters<
+  Parameters<typeof prepareEVMWalletMessageHandler>[1]['handleOperation']
+>[0];
+
+/**
+ * Creates a test setup for handleMessage tests with mock dependencies.
+ */
+const makeMessageHandlerTestSetup = (
+  zone: Zone,
+  vowZoneName: string,
+  options: {
+    namePrefix?: string;
+    /** Current chain time returned by the mock timer */
+    currentTime?: bigint;
+  } = {},
+) => {
+  const { namePrefix = '', currentTime = CURRENT_TIME } = options;
+  const vowTools = prepareVowTools(zone.subZone(vowZoneName));
+
+  const handleOperationCalls: HandleOperationArgs[] = [];
+  const handleOperation = (args: HandleOperationArgs) => {
+    handleOperationCalls.push(args);
+    return vowTools.asVow(() => {});
+  };
+
+  const { insertNonce, removeExpiredNonces } = makeNonceManager(zone);
+
+  const mockStorageNode = makeMockStorageNode(zone, namePrefix);
+
+  const mockWallet = makeMockWallet(zone, [], namePrefix);
+  const walletByAddress = zone.mapStore<string, EVMWallet>(
+    `${namePrefix}walletByAddress`,
+  );
+  const getWalletForAddress = (address: string) => {
+    if (walletByAddress.has(address)) return walletByAddress.get(address);
+    walletByAddress.init(address, mockWallet);
+    return mockWallet;
+  };
+
+  const mockTimerService = zone.exo(
+    `${namePrefix}MockTimerService`,
+    undefined,
+    {
+      getCurrentTimestamp() {
+        return harden({ absValue: currentTime });
+      },
+    },
+  );
+
+  const makeEVMWalletMessageHandler = prepareEVMWalletMessageHandler(zone, {
+    vowTools,
+    storageNode: mockStorageNode,
+    timerService: mockTimerService as any,
+    permit2Addresses: {
+      [`${CHAIN_ID}`]: MOCK_PERMIT2_ADDRESS,
+    },
+    handleOperation,
+    insertNonce,
+    removeExpiredNonces,
+    getWalletForAddress,
+  });
+
+  const handler = makeEVMWalletMessageHandler();
+
+  return {
+    vowTools,
+    handler,
+    getHandleOperationCalls: () => harden([...handleOperationCalls]),
+  };
+};
+
+test('handleMessage extracts standalone details and delegates to handleOperation', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vow8', { namePrefix: 'test8_' });
+
+  const deadline = CURRENT_TIME + 3600n;
+  const message = getYmaxStandaloneOperationData(
+    {
+      allocations: [{ instrument: 'Aave_Arbitrum', portion: 100n }],
+      portfolio: 1n,
+      nonce: 1n,
+      deadline,
+    },
+    'SetTargetAllocation',
+    CHAIN_ID,
+    MOCK_VERIFYING_CONTRACT,
+  );
+
+  const signature = await ecdsaAccount.signTypedData(message);
+
+  const vow = handler.handleMessage(
+    harden({
+      ...message,
+      signature,
+    }) as any,
+  );
+  await vowTools.when(vow);
+
+  const calls = getHandleOperationCalls();
+  t.is(calls.length, 1);
+  t.is(calls[0].address, ecdsaAccount.address);
+  t.is(calls[0].nonce, 1n);
+  t.is(calls[0].deadline, deadline);
+  t.is(calls[0].operationDetails.operation, 'SetTargetAllocation');
+  t.deepEqual(calls[0].operationDetails.domain, {
+    name: 'Ymax',
+    version: '1',
+    chainId: CHAIN_ID,
+    verifyingContract: MOCK_VERIFYING_CONTRACT,
+  });
+});
+
+test('handleMessage extracts permit2 details and delegates to handleOperation', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vow9', {
+      namePrefix: 'test9_',
+    });
+
+  const deadline = CURRENT_TIME + 3600n;
+  const witness = getYmaxWitness('Deposit', {
+    portfolio: 1n,
+  });
+
+  const permit2Message = getPermitWitnessTransferFromData(
+    {
+      permitted: { token: MOCK_TOKEN_ADDRESS, amount: 500_000n },
+      nonce: 1n,
+      deadline,
+      spender: MOCK_VERIFYING_CONTRACT,
+    },
+    MOCK_PERMIT2_ADDRESS,
+    CHAIN_ID,
+    witness,
+  );
+
+  const signature = await ecdsaAccount.signTypedData(permit2Message);
+
+  const vow = handler.handleMessage(
+    harden({
+      ...permit2Message,
+      signature,
+    }) as any,
+  );
+  await vowTools.when(vow);
+
+  const calls = getHandleOperationCalls();
+  t.is(calls.length, 1);
+  t.is(calls[0].address, ecdsaAccount.address);
+  t.is(calls[0].nonce, 1n);
+  t.is(calls[0].deadline, deadline);
+  t.is(calls[0].operationDetails.operation, 'Deposit');
+  t.truthy(calls[0].operationDetails.permitDetails);
+  t.deepEqual(calls[0].operationDetails.domain, {
+    name: 'Ymax',
+    version: '1',
+    chainId: CHAIN_ID,
+    verifyingContract: MOCK_VERIFYING_CONTRACT,
+  });
+});
+
+test('handleMessage normalizes verifiedSigner to checksum format and accepts non ECDSA signatures', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vow13', { namePrefix: 'test13_' });
+
+  const deadline = CURRENT_TIME + 3600n;
+  const message = getYmaxStandaloneOperationData(
+    {
+      portfolio: 1n,
+      nonce: 2n,
+      deadline,
+    },
+    'Rebalance',
+    CHAIN_ID,
+    MOCK_VERIFYING_CONTRACT,
+  );
+
+  // Pass a lowercase address; handleMessage should normalize to checksum
+  const vow = handler.handleMessage(
+    harden({
+      ...message,
+      signature: '0x00',
+      verifiedSigner: testSigner.toLowerCase() as `0x${string}`,
+    }) as any,
+  );
+  await vowTools.when(vow);
+
+  const calls = getHandleOperationCalls();
+  t.is(calls.length, 1);
+  // The address should be checksummed, not lowercase
+  t.is(calls[0].address, testSigner);
+});
+
+test('handleMessage rejects expired deadline', async t => {
+  const { zone } = t.context;
+  const currentTime = CURRENT_TIME;
+  const { vowTools, handler } = makeMessageHandlerTestSetup(zone, 'vow10', {
+    namePrefix: 'test10_',
+    currentTime,
+  });
+
+  const expiredDeadline = currentTime - 1n;
+  const message = getYmaxStandaloneOperationData(
+    {
+      portfolio: 1n,
+      nonce: 1n,
+      deadline: expiredDeadline,
+    },
+    'Rebalance',
+    CHAIN_ID,
+    MOCK_VERIFYING_CONTRACT,
+  );
+
+  const signature = await ecdsaAccount.signTypedData(message);
+
+  const vow = handler.handleMessage(
+    harden({
+      ...message,
+      signature,
+    }) as any,
+  );
+
+  await t.throwsAsync(() => vowTools.when(vow), {
+    message: /Deadline has already passed/,
+  });
+});
+
+test('handleMessage rejects deadline too far in the future', async t => {
+  const { zone } = t.context;
+  const currentTime = CURRENT_TIME;
+  const { vowTools, handler } = makeMessageHandlerTestSetup(zone, 'vow11', {
+    namePrefix: 'test11_',
+    currentTime,
+  });
+
+  // MAX_DEADLINE_OFFSET is 1 day = 86400 seconds
+  const tooFarDeadline = currentTime + 86_400n + 1n;
+  const message = getYmaxStandaloneOperationData(
+    {
+      portfolio: 1n,
+      nonce: 1n,
+      deadline: tooFarDeadline,
+    },
+    'Rebalance',
+    CHAIN_ID,
+    MOCK_VERIFYING_CONTRACT,
+  );
+
+  const signature = await ecdsaAccount.signTypedData(message);
+
+  const vow = handler.handleMessage(
+    harden({
+      ...message,
+      signature,
+    }) as any,
+  );
+
+  await t.throwsAsync(() => vowTools.when(vow), {
+    message: /Deadline too far in the future/,
+  });
+});
+
+test('handleMessage rejects replayed nonce', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler } = makeMessageHandlerTestSetup(zone, 'vow12', {
+    namePrefix: 'test12_',
+  });
+
+  const deadline = CURRENT_TIME + 3600n;
+  const makeMsg = async (nonce: bigint) => {
+    const data = getYmaxStandaloneOperationData(
+      {
+        portfolio: 1n,
+        nonce,
+        deadline,
+      },
+      'Rebalance',
+      CHAIN_ID,
+      MOCK_VERIFYING_CONTRACT,
+    );
+    const signature = await ecdsaAccount.signTypedData(data);
+    return harden({
+      ...data,
+      signature,
+    }) as any;
+  };
+
+  // First submission should succeed
+  await vowTools.when(handler.handleMessage(await makeMsg(1n)));
+
+  // Same nonce should be rejected
+  const vow2 = handler.handleMessage(await makeMsg(1n));
+  await t.throwsAsync(() => vowTools.when(vow2), {
+    message: /already used/,
+  });
+
+  // Different nonce should succeed
+  await vowTools.when(handler.handleMessage(await makeMsg(2n)));
+});
+
+test('handleMessage rejects permit2 message with wrong verifying contract', async t => {
+  const { zone } = t.context;
+  const { vowTools, handler, getHandleOperationCalls } =
+    makeMessageHandlerTestSetup(zone, 'vow14', {
+      namePrefix: 'test14_',
+    });
+
+  const deadline = CURRENT_TIME + 3600n;
+  const witness = getYmaxWitness('Deposit', {
+    portfolio: 1n,
+  });
+
+  // Use a WRONG permit2 address as verifyingContract (valid address, wrong contract)
+  const wrongPermit2Address =
+    '0x0000000000000000000000000000000000000001' as const;
+
+  const permit2Message = getPermitWitnessTransferFromData(
+    {
+      permitted: { token: MOCK_TOKEN_ADDRESS, amount: 500_000n },
+      nonce: 1n,
+      deadline,
+      spender: MOCK_VERIFYING_CONTRACT,
+    },
+    wrongPermit2Address,
+    CHAIN_ID,
+    witness,
+  );
+
+  const vow = handler.handleMessage(
+    harden({
+      ...permit2Message,
+      signature: '0x00',
+      verifiedSigner: testSigner,
+    }) as any,
+  );
+
+  await t.throwsAsync(() => vowTools.when(vow), {
+    message: /Invalid verifying contract/,
+  });
+  t.is(
+    getHandleOperationCalls().length,
+    0,
+    'handleOperation should not be called',
+  );
 });

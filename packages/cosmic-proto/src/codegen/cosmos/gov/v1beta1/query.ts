@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   ProposalStatus,
   Proposal,
@@ -592,6 +593,11 @@ function createBaseQueryProposalResponse(): QueryProposalResponse {
  */
 export const QueryProposalResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryProposalResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { proposal: true },
+    'gogoproto.nullable': { proposal: false },
+    typeUrlFromField: { proposal: () => Proposal },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryProposalResponse' as const,
   is(o: any): o is QueryProposalResponse {
     return (
@@ -1036,6 +1042,11 @@ function createBaseQueryVoteResponse(): QueryVoteResponse {
  */
 export const QueryVoteResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryVoteResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { vote: true },
+    'gogoproto.nullable': { vote: false },
+    typeUrlFromField: { vote: () => Vote },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryVoteResponse' as const,
   is(o: any): o is QueryVoteResponse {
     return o && (o.$typeUrl === QueryVoteResponse.typeUrl || Vote.is(o.vote));
@@ -1425,6 +1436,23 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryParamsResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      depositParams: true,
+      tallyParams: true,
+      votingParams: true,
+    },
+    'gogoproto.nullable': {
+      depositParams: false,
+      tallyParams: false,
+      votingParams: false,
+    },
+    typeUrlFromField: {
+      depositParams: () => DepositParams,
+      tallyParams: () => TallyParams,
+      votingParams: () => VotingParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
     return (
@@ -1668,6 +1696,11 @@ function createBaseQueryDepositResponse(): QueryDepositResponse {
  */
 export const QueryDepositResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryDepositResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { deposit: true },
+    'gogoproto.nullable': { deposit: false },
+    typeUrlFromField: { deposit: () => Deposit },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryDepositResponse' as const,
   is(o: any): o is QueryDepositResponse {
     return (
@@ -2085,6 +2118,11 @@ function createBaseQueryTallyResultResponse(): QueryTallyResultResponse {
  */
 export const QueryTallyResultResponse = {
   typeUrl: '/cosmos.gov.v1beta1.QueryTallyResultResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { tally: true },
+    'gogoproto.nullable': { tally: false },
+    typeUrlFromField: { tally: () => TallyResult },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryTallyResultResponse' as const,
   is(o: any): o is QueryTallyResultResponse {
     return (

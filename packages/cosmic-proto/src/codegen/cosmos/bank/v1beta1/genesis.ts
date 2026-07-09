@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   Params,
   type ParamsSDKType,
@@ -37,8 +38,6 @@ export interface GenesisState {
   denomMetadata: Metadata[];
   /**
    * send_enabled defines the denoms where send is enabled or disabled.
-   *
-   * Since: cosmos-sdk 0.47
    */
   sendEnabled: SendEnabled[];
 }
@@ -108,6 +107,11 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.bank.v1beta1.GenesisState' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (

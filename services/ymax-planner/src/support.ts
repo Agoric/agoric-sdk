@@ -1,24 +1,24 @@
 import { WebSocketProvider } from 'ethers';
+import type { WebSocket as WsWebSocket } from 'ws';
 import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
-import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 import {
   CaipChainIds,
   EvmWalletOperationType,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
-import type {
-  PoolKey as InstrumentId,
-  PoolPlaceInfo,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
-import {
-  aaveRewardsControllerAddresses,
-  compoundAddresses,
-} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import { makePromiseKit } from '@endo/promise-kit';
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
+
+/**
+ * USDC value in floating-point major units (i.e., nominally corresponding with
+ * USD)
+ */
+export type UsdcNumber = number;
 
 export const UserInputError = class extends Error {} as ErrorConstructor;
 harden(UserInputError);
@@ -26,8 +26,8 @@ harden(UserInputError);
 type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
 /**
- * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
- *   or @agoric/orchestration
+ * @deprecated should come from e.g. \@agoric/portfolio-api/src/constants.js
+ *   or \@agoric/orchestration
  */
 export type UsdcAddresses = {
   mainnet: Record<CaipChainId, EvmAddress>;
@@ -53,74 +53,25 @@ const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
   'cosmos:grand-1 noble': 'grand-1',
 };
 
-// Note that lookupValueForKey throws when the key is not found.
+// Throws when the key is not found.  The cast pins
+// `lookupValueForKey`'s generic K to the concrete
+// `${CaipChainId} ${SupportedChain}` union so TypeScript can unify
+// it with `spectrumChainIds`'s keys.
+const lookupSpectrumChainId = (
+  chainId: CaipChainId,
+  chainLabel: SupportedChain,
+): string =>
+  lookupValueForKey(
+    spectrumChainIds,
+    `${chainId} ${chainLabel}` as `${CaipChainId} ${SupportedChain}`,
+  );
+
 export const spectrumChainIdsByCluster: Readonly<
   Record<ClusterName, ROPartial<SupportedChain, string>>
 > = {
-  mainnet: {
-    ...objectMap(CaipChainIds.mainnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-  testnet: {
-    ...objectMap(CaipChainIds.testnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-  local: {
-    ...objectMap(CaipChainIds.local, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-};
-
-export const spectrumPoolIdsByCluster: Readonly<
-  Record<ClusterName, ROPartial<InstrumentId, string>>
-> = {
-  mainnet: {
-    ...fromTypedEntries(
-      typedEntries(aaveRewardsControllerAddresses.mainnet).map(
-        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
-      ),
-    ),
-    ...fromTypedEntries(
-      typedEntries(compoundAddresses.mainnet).map(([chainName, addr]) => [
-        `Compound_${chainName}` as InstrumentId,
-        addr,
-      ]),
-    ),
-    Beefy_re7_Avalanche: 'euler-avax-re7labs-usdc',
-    Beefy_morphoGauntletUsdc_Ethereum: 'morpho-gauntlet-usdc',
-    Beefy_morphoSmokehouseUsdc_Ethereum: 'morpho-smokehouse-usdc',
-    Beefy_morphoSeamlessUsdc_Base: 'morpho-seamless-usdc',
-    Beefy_compoundUsdc_Optimism: 'compound-op-usdc',
-    Beefy_compoundUsdc_Arbitrum: 'compound-arbitrum-usdc',
-  },
-  testnet: {
-    ...fromTypedEntries(
-      typedEntries(aaveRewardsControllerAddresses.testnet).map(
-        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
-      ),
-    ),
-    ...fromTypedEntries(
-      typedEntries(compoundAddresses.testnet).map(([chainName, addr]) => [
-        `Compound_${chainName}` as InstrumentId,
-        addr,
-      ]),
-    ),
-  },
-  local: {},
-};
-
-// Not a keyMirror because some values change casing from keys
-export const spectrumProtocols: Readonly<
-  Record<PoolPlaceInfo['protocol'], string>
-> = {
-  Aave: 'aave',
-  Beefy: 'beefy',
-  Compound: 'compound',
-  USDN: 'USDN',
-  ERC4626: 'ERC4626',
+  mainnet: { ...objectMap(CaipChainIds.mainnet, lookupSpectrumChainId) },
+  testnet: { ...objectMap(CaipChainIds.testnet, lookupSpectrumChainId) },
+  local: { ...objectMap(CaipChainIds.local, lookupSpectrumChainId) },
 };
 
 /**
@@ -131,8 +82,8 @@ export const spectrumProtocols: Readonly<
  * - https://developers.circle.com/cctp/evm-smart-contracts
  * - https://developers.circle.com/stablecoins/usdc-contract-addresses
  *
- * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
- *   or @agoric/orchestration
+ * @deprecated should come from e.g. \@agoric/portfolio-api/src/constants.js
+ *   or \@agoric/orchestration
  * @see {@link ../../../packages/orchestration/src/cctp-chain-info.js}
  */
 export const usdcAddresses: UsdcAddresses = {
@@ -185,8 +136,8 @@ export const walletOperationFallbackGasLimit = 276_809n;
  * Testnet data: https://eth.blockscout.com/ (except Avalanche),
  *   https://subnets-test.avax.network/c-chain
  *
- * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
- *   or @agoric/orchestration
+ * @deprecated should come from e.g. \@agoric/portfolio-api/src/constants.js
+ *   or \@agoric/orchestration
  */
 const chainBlockTimesMs: Record<CaipChainId, number> = harden({
   // ========= Mainnet =========
@@ -255,8 +206,33 @@ export const getConfirmationsRequired = (chainId: CaipChainId): number => {
 };
 
 /**
- * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
- *   or @agoric/orchestration
+ * Time to wait before confirming a transaction revert, in milliseconds.
+ * This gives Axelar relayers a window to retry the transaction
+ * (observed ~6 min retries for SubcallOutOfGas cases).
+ */
+const REVERT_WAIT_TIME_MS = 10 * 60 * 1_000; // 10 minutes
+
+/**
+ * Get the number of confirmations required before confirming a transaction
+ * revert. Uses a higher threshold than normal confirmations to give Axelar
+ * relayers time to retry reverted transactions.
+ *
+ * The value is computed from {@link REVERT_WAIT_TIME_MS} and the chain's
+ * block time, floored at the normal confirmation requirement.
+ */
+export const getRevertConfirmationsRequired = (
+  chainId: CaipChainId,
+): number => {
+  const blockTimeMs = getBlockTimeMs(chainId);
+  return Math.max(
+    getConfirmationsRequired(chainId),
+    Math.ceil(REVERT_WAIT_TIME_MS / blockTimeMs),
+  );
+};
+
+/**
+ * @deprecated should come from e.g. \@agoric/portfolio-api/src/constants.js
+ *   or \@agoric/orchestration
  */
 export const getEvmRpcMap = (
   clusterName: ClusterName,
@@ -294,16 +270,141 @@ export const getEvmRpcMap = (
       throw Error(`Unsupported cluster name ${clusterName}`);
   }
 };
+/** Interval between WebSocket liveness pings. */
+export const WS_HEARTBEAT_INTERVAL_MS = 30_000;
+
+/**
+ * A reconnecting wrapper around an ethers {@link WebSocketProvider}. ethers v6
+ * does not reconnect on its own, so a dropped or zombie (open-but-dead) socket
+ * otherwise stays broken for the whole process lifetime, leaving watchers
+ * silently stalled until a manual restart (see PAK-517).
+ *
+ * Liveness is detected two ways: ping/pong heartbeats catch an idle socket that
+ * has gone dead, and {@link reportUnhealthy} lets the RPC layer report a call
+ * that timed out (an in-use zombie). On either, the underlying provider is
+ * recreated. The previous socket is `terminate`d, which surfaces a `close`
+ * event to any active watchers; their existing
+ * `onWsClose → WatcherTransportError → watchWithRetry` path then re-subscribes
+ * on the fresh socket.
+ */
+export type ReconnectingEvmProvider = {
+  /** The current live provider; never a destroyed one. */
+  getProvider: () => WebSocketProvider;
+  /** The current underlying socket. */
+  readonly websocket: WebSocketProvider['websocket'];
+  /** Force an immediate reconnect (e.g. because an RPC call timed out). */
+  reportUnhealthy: (reason?: string) => void;
+  /** Permanently close: stop heartbeats and reconnection. */
+  close: () => void;
+};
+
+export const makeReconnectingEvmProvider = ({
+  wsUrl,
+  makeProvider = url => new WebSocketProvider(url),
+  makeHeartbeat,
+  log = () => {},
+}: {
+  wsUrl: string;
+  makeProvider?: (url: string) => WebSocketProvider;
+  /**
+   * Must yield once per heartbeat interval; a fresh iterator is created for
+   * each successive provider.
+   */
+  makeHeartbeat?: () => AsyncIterable<unknown>;
+  log?: (...args: unknown[]) => void;
+}): ReconnectingEvmProvider => {
+  let currentProvider: WebSocketProvider;
+  // Monotonic id of the live socket. Stale listeners (from a prior socket)
+  // compare against it to avoid cycling a provider that is no longer current.
+  let generation = 0;
+  let closed = false;
+
+  const attach = (provider: WebSocketProvider, gen: number) => {
+    const ws = provider.websocket as unknown as WsWebSocket;
+
+    ws.on('close', (code?: number, reason?: unknown) =>
+      cycle(gen, `socket close (code=${code}, reason=${reason})`),
+    );
+    ws.on('error', (err: unknown) =>
+      cycle(gen, `socket error: ${(err as Error)?.message ?? err}`),
+    );
+
+    if (!makeHeartbeat) return;
+    let gotPong = true;
+    ws.on('pong', () => {
+      gotPong = true;
+    });
+    void (async () => {
+      for await (const _ of makeHeartbeat()) {
+        if (closed || gen !== generation) break;
+        if (ws.readyState !== 1 /* OPEN */) continue;
+        if (!gotPong) {
+          cycle(gen, 'pong timeout');
+          break;
+        }
+        gotPong = false;
+        try {
+          ws.ping();
+        } catch (err) {
+          log('error sending ping', err);
+        }
+      }
+    })();
+  };
+
+  const cycle = (fromGen: number, reason: string) => {
+    // Ignore stale triggers: only the current generation may cycle.
+    if (closed || fromGen !== generation) return;
+    generation += 1;
+    const old = currentProvider;
+    log(`cycling WebSocket (gen ${fromGen}→${generation}): ${reason}`);
+    currentProvider = makeProvider(wsUrl);
+    attach(currentProvider, generation);
+    // `terminate` (vs a graceful close) dislodges a zombie/half-open socket and
+    // emits `close`, prompting active watchers to re-subscribe on the new one.
+    try {
+      (old.websocket as unknown as WsWebSocket).terminate();
+    } catch (err) {
+      log('error terminating old socket', err);
+    }
+    void old.destroy().catch(err => log('error destroying old provider', err));
+  };
+
+  currentProvider = makeProvider(wsUrl);
+  attach(currentProvider, generation);
+
+  return {
+    getProvider: () => currentProvider,
+    get websocket() {
+      return currentProvider.websocket;
+    },
+    reportUnhealthy: (reason = 'reported unhealthy') =>
+      cycle(generation, reason),
+    close: () => {
+      closed = true;
+      void currentProvider
+        .destroy()
+        .catch(err => log('error destroying provider', err));
+    },
+  };
+};
+
 type CreateContextParams = {
   clusterName: ClusterName;
   alchemyApiKey: string;
+  /**
+   * Must yield once per heartbeat interval; a fresh iterator is created for
+   * each EVM provider (including providers created by automatic reconnections).
+   */
+  makeHeartbeat?: () => AsyncIterable<unknown>;
+  log?: (...args: unknown[]) => void;
 };
-
-export type EvmProviders = Record<CaipChainId, WebSocketProvider>;
 
 export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
+  makeHeartbeat,
+  log = () => {},
 }: CreateContextParams): Promise<
   Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
@@ -314,13 +415,17 @@ export const createEVMContext = async ({
   const evmProviders = Object.fromEntries(
     Object.entries(wssUrls).map(([caip, wsUrl]) => [
       caip,
-      new WebSocketProvider(wsUrl),
+      makeReconnectingEvmProvider({
+        wsUrl,
+        makeHeartbeat,
+        log: (...args) => log(`[${caip}]`, ...args),
+      }),
     ]),
-  ) as EvmProviders;
+  ) as Record<CaipChainId, ReconnectingEvmProvider>;
 
   return {
     evmProviders,
-    // XXX Remove now that @agoric/portfolio-api/src/constants.js
+    // XXX Remove now that \@agoric/portfolio-api/src/constants.js
     // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
   };
@@ -352,28 +457,43 @@ export const prepareAbortController = ({
    * Make a new manually-abortable AbortSignal with optional timeout and/or
    * optional signals whose own aborts should propagate (as with
    * `AbortSignal.any`).
+   * As a convenience, the returned value includes an `abortedP` promise that
+   * promptly fulfills to undefined after the returned signal is aborted.
    */
   const makeAbortController = (
     timeoutMillisec?: number,
-    racingSignals?: Iterable<AbortSignal>,
-  ): AbortController => {
+    racingSignals?: Iterable<AbortSignal | undefined>,
+  ): AbortController & { abortedP: Promise<void> } => {
     let controller: AbortController | null = new AbortController();
     const abort: AbortController['abort'] = reason => {
-      try {
-        return controller?.abort(reason);
-      } finally {
-        controller = null;
-      }
+      const controllerRef = controller;
+      controller = null;
+      return controllerRef?.abort(reason);
     };
     if (timeoutMillisec !== undefined) {
       setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
     }
-    if (!racingSignals) {
-      return { abort, signal: controller.signal };
-    }
-    const signal = AbortSignal.any([controller.signal, ...racingSignals]);
-    signal.addEventListener('abort', _event => abort());
-    return { abort, signal };
+    const racingArray: AbortSignal[] | undefined =
+      racingSignals && [...racingSignals].filter((x): x is AbortSignal => !!x);
+
+    let signal: AbortSignal | null = racingArray?.length
+      ? AbortSignal.any([controller.signal, ...racingArray])
+      : controller.signal;
+    const { promise: abortedP, resolve } = makePromiseKit<void>();
+    const finish = async () => {
+      resolve();
+      signal?.removeEventListener('abort', onSignalAbort);
+      // Forget `signal`, but not before returning it to the caller.
+      signal = await null;
+    };
+    const onSignalAbort = _event => {
+      abort(signal?.reason);
+      void finish();
+    };
+    signal.addEventListener('abort', onSignalAbort);
+    if (signal?.aborted) void finish();
+
+    return { abort, signal: signal as AbortSignal, abortedP };
   };
   return makeAbortController;
 };

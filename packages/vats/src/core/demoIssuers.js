@@ -13,7 +13,6 @@ import { Stake, Stable } from '@agoric/internal/src/tokens.js';
 
 /**
  * @import {FeeMintAccess, Installation, ZoeService} from '@agoric/zoe'
- * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  * @import {Payment} from '@agoric/ertp';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Brand} from '@agoric/ertp';
@@ -472,9 +471,3 @@ export const poolRates = (issuerName, record, kits, central) => {
   };
   return { rates, initialValue: inCollateral(config.collateralValue) };
 };
-
-/**
- * @param {EconomyBootstrapPowers & {
- *   consume: { mints };
- * }} powers
- */

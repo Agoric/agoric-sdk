@@ -2,7 +2,7 @@ import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
 
-import path from 'path';
+import path from 'node:path';
 
 import { makeZoeKitForTest } from '../../../tools/setup-zoe.js';
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
@@ -18,7 +18,7 @@ const contractRoot = `${dirname}/zcfTesterContract.js`;
 /**
  * Test setup utility
  *
- * @template {object} [T=object] terms
+ * @template {object} [T=Record<string, unknown>] terms
  * @param {IssuerKeywordRecord} [issuerKeywordRecord]
  * @param {T} [terms]
  */
@@ -41,8 +41,7 @@ export const setupZCFTest = async (issuerKeywordRecord, terms) => {
   const startInstanceResult = await E(zoe).startInstance(
     installation,
     issuerKeywordRecord,
-    // @ts-expect-error TS is confused between <T> above and Omit<> in utils.d.ts
-    terms,
+    /** @type {any} */ (terms),
   );
   const { vatAdminState } = fakeVatAdmin;
   // @ts-expect-error setZCF may not have been called yet

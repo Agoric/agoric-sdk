@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
 import { dirname } from 'node:path';
-import yargsParser from 'yargs-parser';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
-import process from 'process';
-import repl from 'repl';
-import util from 'util';
+import process from 'node:process';
+import repl from 'node:repl';
+import { inspect, parseArgs } from 'node:util';
 import {
   loadSwingsetConfigFile,
   loadBasedir,
@@ -27,19 +26,43 @@ const showUsage = (message, exitCode = 64) => {
 };
 
 function deepLog(item) {
-  console.log(util.inspect(item, false, null, true));
+  console.log(inspect(item, false, null, true));
 }
+
+const parseVatArgs = rawArgs => {
+  const separator = rawArgs.indexOf('--');
+  const cliArgs = separator < 0 ? rawArgs : rawArgs.slice(0, separator);
+  const extraArgs = separator < 0 ? [] : rawArgs.slice(separator + 1);
+  const { values: options, tokens } = parseArgs({
+    args: cliArgs,
+    options: {
+      config: { type: 'string', short: 'c' },
+    },
+    allowPositionals: true,
+    strict: false,
+    tokens: true,
+  });
+  const argv = [];
+  for (const token of tokens) {
+    if (token.kind === 'positional') {
+      argv.push(token.value);
+    } else if (token.kind === 'option' && token.name !== 'config') {
+      argv.push(
+        token.inlineValue ? `${token.rawName}=${token.value}` : token.rawName,
+      );
+    }
+  }
+  const config =
+    typeof options.config === 'string' ? options.config : undefined;
+  return { argv, extraArgs, config };
+};
 
 async function main() {
   const {
-    _: argv,
-    '--': extraArgs = [],
-    ...options
-  } = yargsParser(process.argv.slice(2), {
-    configuration: { 'populate--': true, 'unknown-options-as-args': true },
-    string: ['config'],
-    alias: { config: ['c'] },
-  });
+    argv,
+    extraArgs,
+    config: configPath,
+  } = parseVatArgs(process.argv.slice(2));
   const command = argv.shift();
   if (command === undefined) {
     if (argv.includes('--help')) return showUsage();
@@ -49,15 +72,14 @@ async function main() {
       command === 'help' ? undefined : `Unrecognized command: ${command}`,
     );
   }
-  const configPath = options.config;
   let basedir = /** @type {string | undefined} */ (argv.shift());
   if (basedir === undefined) {
     basedir = configPath ? dirname(configPath) : '.';
   }
   const vatArgv = /** @type {string[]} */ ([...argv, ...extraArgs]);
 
-  const config = await (options.config
-    ? loadSwingsetConfigFile(options.config)
+  const config = await (configPath
+    ? loadSwingsetConfigFile(configPath)
     : loadBasedir(basedir));
   assert(config);
   config.devices ||= {};

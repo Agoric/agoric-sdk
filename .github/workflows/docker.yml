@@ -44,7 +44,10 @@ jobs:
       # to push the resulting images
       packages: write
     needs: snapshot
-    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
+    # This repository is public, so standard GitHub-hosted Linux runners are free.
+    # Keep the job on GitHub-hosted compute and use Depot only for the remote image
+    # builds so we retain Depot's layer cache without paying for a Depot runner here.
+    runs-on: ubuntu-latest
     outputs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
@@ -53,7 +56,6 @@ jobs:
       - uses: depot/setup-action@v1
         with:
           oidc: true # to set DEPOT_TOKEN for later steps
-      - run: depot configure-docker
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         # see https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
@@ -68,17 +70,6 @@ jobs:
         run: echo "GIT_REVISION=$(git rev-parse HEAD)" >> $GITHUB_ENV
       - name: Save GIT_COMMIT
         run: echo "GIT_COMMIT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-      - name: Save commit hash, url of submodules to environment
-        run: |
-          node packages/xsnap/src/build.js --show-env >> $GITHUB_ENV
-      - name: Build and Push ssh-node
-        uses: depot/build-push-action@v1
-        with:
-          file: packages/deployment/Dockerfile.ssh-node
-          context: packages/deployment/docker
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: true
-          tags: '${{ env.REGISTRY }}/agoric/ssh-node:${{ env.BUILD_TAG }}'
       - name: Compute tags
         id: docker-tags
         run: |
@@ -122,45 +113,29 @@ jobs:
             sep=,
           done
           echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
-      - name: Build and Push sdk
-        uses: depot/build-push-action@v1
-        with:
-          file: packages/deployment/Dockerfile.sdk
-          context: ./
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: true
-          tags: '${{ steps.prefix-tags.outputs.tags }}'
-          # When changing/adding entries here, make sure to search the whole
-          # project for `@@AGORIC_DOCKER_SUBMODULES@@`
-          build-args: |
-            GIT_COMMIT=${{env.GIT_COMMIT}}
-            MODDABLE_COMMIT_HASH=${{env.MODDABLE_COMMIT_HASH}}
-            MODDABLE_URL=${{env.MODDABLE_URL}}
-            XSNAP_NATIVE_COMMIT_HASH=${{env.XSNAP_NATIVE_COMMIT_HASH}}
-            XSNAP_NATIVE_URL=${{env.XSNAP_NATIVE_URL}}
-            GIT_REVISION=${{env.GIT_REVISION}}
-      - name: Build and Push setup
-        uses: depot/build-push-action@v1
-        with:
-          file: packages/deployment/Dockerfile
-          context: packages/deployment
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          tags: '${{ env.REGISTRY }}/agoric/cosmic-swingset-setup:${{ env.BUILD_TAG }}'
-          push: true
-          build-args: |
-            TAG=${{ env.BUILD_TAG }}
+      - name: Build and Push release images
+        # Use depot bake so the release images build as one batch and can share
+        # work across targets on the same remote builder cache.
+        run: |
+          depot bake -f docker-bake.hcl docker-sdk-release --push \
+            --set ssh-node.tags=${{ env.REGISTRY }}/agoric/ssh-node:${{ env.BUILD_TAG }} \
+            --set sdk.tags=${{ steps.prefix-tags.outputs.tags }} \
+            --set setup.tags=${{ env.REGISTRY }}/agoric/cosmic-swingset-setup:${{ env.BUILD_TAG }} \
+            --set setup.args.TAG=${{ env.BUILD_TAG }} \
+            --set sdk.args.GIT_COMMIT=${{ env.GIT_COMMIT }} \
+            --set sdk.args.GIT_REVISION=${{ env.GIT_REVISION }}
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   docker-solo:
     needs: [docker-sdk, snapshot]
-    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
+    # This repository is public, so standard GitHub-hosted Linux runners are free.
+    # Keep the job on GitHub-hosted compute and use Depot only for the remote image
+    # builds so we retain Depot's layer cache without paying for a Depot runner here.
+    runs-on: ubuntu-latest
     permissions:
       # allow issuing OIDC tokens for this workflow run
       id-token: write
@@ -184,7 +159,6 @@ jobs:
       - uses: depot/setup-action@v1
         with:
           oidc: true # to set DEPOT_TOKEN for later steps
-      - run: depot configure-docker
       - name: Login to Docker Registry
         uses: docker/login-action@v3
         with:
@@ -206,9 +180,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   docker-ymax:
     if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
@@ -220,7 +191,10 @@ jobs:
       # to push the resulting images
       packages: write
     needs: snapshot
-    runs-on: 'depot-ubuntu-latest'
+    # This repository is public, so standard GitHub-hosted Linux runners are free.
+    # Keep the job on GitHub-hosted compute and use Depot only for the remote image
+    # builds so we retain Depot's layer cache without paying for a Depot runner here.
+    runs-on: ubuntu-latest
     outputs:
       tag: '${{ steps.docker-tags.outputs.tags }}'
       tags: '${{ steps.docker-tags.outputs.tags }} ${{ needs.snapshot.outputs.tag }}'
@@ -230,7 +204,6 @@ jobs:
       - uses: depot/setup-action@v1
         with:
           oidc: true # to set DEPOT_TOKEN for later steps
-      - run: depot configure-docker
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         # see https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
@@ -257,14 +230,12 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   # it only actually deploys if there is a change in the Docker digest
+  # and only autodeploys for master.
   deploy-ymax0-planner:
     needs: docker-ymax
-    if: needs.docker-ymax.result == 'success'
+    if: needs.docker-ymax.result == 'success' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
 
     steps:
@@ -278,12 +249,6 @@ jobs:
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Write .env file from JSON
-        shell: bash
-        run: |
-          jq -r 'to_entries[] | "\(.key)=\(.value)"' \
-            <<< '${{ secrets.YMAX0_PLANNER_ENV }}' > .env.gcp
-
       - name: Check if VM already has docker image digest
         id: decide
         shell: bash
@@ -293,7 +258,7 @@ jobs:
           GCE_ZONE: ${{ env.GCE_ZONE }}
         run: |
           TARGET="ghcr.io/agoric/agoric-sdk:ymax-planner@${{ needs.docker-ymax.outputs.digest }}"
-          .github/scripts/check_digest.sh "$GCE_INSTANCE" "$GCE_ZONE" "$TARGET"
+          .github/scripts/check_digest.sh "$GCE_INSTANCE" "$GCE_ZONE" "$TARGET" "$GITHUB_OUTPUT"
 
       - name: Update GCE Ymax0 container (by digest)
         if: steps.decide.outputs.should_deploy == 'true'
@@ -303,13 +268,10 @@ jobs:
           GCE_ZONE: ${{ env.GCE_ZONE }}
         run: |
           IMAGE="ghcr.io/agoric/agoric-sdk:ymax-planner@${{ needs.docker-ymax.outputs.digest }}"
-          .github/scripts/deploy_vm.sh "$GCE_INSTANCE" "$GCE_ZONE" "$IMAGE" "./.env.gcp"
+          .github/scripts/deploy_vm.sh "$GCE_INSTANCE" "$GCE_ZONE" "$IMAGE"
 
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}

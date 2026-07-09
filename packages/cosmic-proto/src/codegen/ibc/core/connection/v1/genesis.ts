@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   IdentifiedConnection,
   type IdentifiedConnectionSDKType,
@@ -57,6 +58,10 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/ibc.core.connection.v1.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (

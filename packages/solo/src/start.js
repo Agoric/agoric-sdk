@@ -1,11 +1,10 @@
 // @ts-check
-/* eslint-env node */
-import fs from 'fs';
-import url from 'url';
-import path from 'path';
-import temp from 'temp';
-import { fork } from 'child_process';
-import { promisify } from 'util';
+import fs from 'node:fs';
+import url from 'node:url';
+import path from 'node:path';
+import { mkdtemp, writeFile, unlink } from 'node:fs/promises';
+import { fork } from 'node:child_process';
+import { promisify } from 'node:util';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 // import { createHash } from 'crypto';
 
@@ -53,40 +52,32 @@ const log = anylogger('start');
 
 let swingSetRunning = false;
 
-const fsWrite = promisify(fs.write);
-const fsClose = promisify(fs.close);
 const rename = promisify(fs.rename);
-const unlink = promisify(fs.unlink);
 
 const atomicReplaceFile = async (filename, contents) => {
-  const info = await new Promise((resolve, reject) => {
-    temp.open(
-      {
-        dir: path.dirname(filename),
-        prefix: `${path.basename(filename)}.`,
-      },
-      (err, inf) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(inf);
-      },
-    );
-  });
+  const basename = path.basename(filename);
+  const tempDir = await mkdtemp(
+    path.join(path.dirname(filename), `${basename}.`),
+  );
+  const tempPath = path.join(tempDir, basename);
+
   try {
-    // Write the contents, close, and rename.
-    await fsWrite(info.fd, contents);
-    await fsClose(info.fd);
-    await rename(info.path, filename);
+    await writeFile(tempPath, contents);
+    await rename(tempPath, filename);
   } catch (e) {
-    // Unlink on error.
     try {
-      await unlink(info.path);
+      await unlink(tempPath);
+      await fs.promises.rmdir(tempDir);
     } catch (e2) {
       // do nothing, we're already failing
     }
     throw e;
+  }
+
+  try {
+    await fs.promises.rmdir(tempDir);
+  } catch (e) {
+    // Ignore cleanup errors
   }
 };
 

@@ -1,10 +1,11 @@
 /* eslint-disable @jessie.js/safe-await-separator */
-/* eslint-env node */
 
 import childProcessAmbient from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { promises as fsAmbientPromises } from 'node:fs';
 import { createRequire } from 'node:module';
-import { basename, join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { basename, dirname, join, resolve as pathResolve } from 'node:path';
 import { inspect } from 'node:util';
 import tmp from 'tmp';
 
@@ -21,13 +22,18 @@ import {
   VBankAccount,
   type Remote,
 } from '@agoric/internal';
+import type { BuildCacheEvent } from '@agoric/internal/src/build-cache-types.js';
+import {
+  makeDirectoryLock,
+  writeFileAtomic,
+} from '@agoric/internal/src/build-cache.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal/board-client-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { krefOf } from '@agoric/kmarshal';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { decodeProtobufBase64 } from '@agoric/orchestration/tools/protobuf-decoder.js';
-import { initSwingStore } from '@agoric/swing-store';
+import { initSwingStore, openSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, type Timestamp } from '@agoric/time';
@@ -44,6 +50,11 @@ import type {
   SwingSetConfig,
 } from '@agoric/swingset-vat';
 import {
+  makeAmbientBundleToolPowers,
+  makeNodeBundleCache,
+  sharedBundleCachePath,
+} from '@agoric/swingset-vat/tools/bundleTool.js';
+import {
   makeRunUtils,
   type RunHarness,
   type RunUtils,
@@ -58,31 +69,74 @@ import type { ExecutionContext as AvaT } from 'ava';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { defaultBeansPerVatCreation } from '@agoric/cosmic-swingset/src/sim-params.js';
-import type { GovernancePublishedPathTypes } from '@agoric/governance/src/types.js';
-import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import type { GovernancePublishedPathTypes } from '@agoric/governance';
+import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
 import { base64ToBytes } from '@agoric/network';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { IBCDowncallMethod, IBCMethod } from '@agoric/vats';
+import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
+import type { ERef } from '@agoric/vow';
 import type { EProxy } from '@endo/eventual-send';
 import { FileSystemCache, NodeFetchCache } from 'node-fetch-cache';
-import type { ERef } from '@agoric/vow';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
+import {
+  type TraceCompleteEvent,
+  type TraceFile,
+  type TraceMetadataEvent,
+} from './profiling-types.js';
 
 const tmpDir = makeTempDirFactory(tmp);
 
 const trace = makeTracer('BSTSupport', false);
 
+const configFileCache = new Map<
+  string,
+  SwingSetConfig & { coreProposals?: any[] }
+>();
+
+const loadCachedSwingsetConfig = async (
+  path: string,
+): Promise<SwingSetConfig & { coreProposals?: any[] }> => {
+  let cached = configFileCache.get(path);
+  if (!cached) {
+    cached = NonNullish(await loadSwingsetConfigFile(path));
+    configFileCache.set(path, harden(cached));
+  }
+  return structuredClone(cached);
+};
+
+const configCache = new Map<string, string>();
+
+const makeConfigCacheKey = ({
+  bundleDir,
+  configPath,
+  defaultManagerType,
+  discriminator,
+  configOverrides,
+}: {
+  bundleDir: string;
+  configPath: string;
+  defaultManagerType: ManagerType;
+  discriminator: string;
+  configOverrides: Partial<SwingSetConfig>;
+}) =>
+  JSON.stringify({
+    bundleDir,
+    configPath,
+    defaultManagerType,
+    discriminator,
+    configOverrides: configOverrides ?? {},
+  });
+
 // Releases are immutable, so we can cache them.
 // Doesn't help in CI but speeds up local development.
 // CI is on Github Actions, so fetching is reliable.
 // Files appear in a .cache directory.
-export const fetchCached = NodeFetchCache.create({
+const fetchCached = NodeFetchCache.create({
   cache: new FileSystemCache(),
 }) as unknown as typeof globalThis.fetch;
 
-type BootstrapVatItemMap = EconomyBootstrapPowers['consume'] &
-  Record<string, unknown>;
+type BootstrapVatItemMap = BootstrapPowers['consume'] & Record<string, unknown>;
 
 type ConsumeBootstrapItem<BootstrapVatItems extends BootstrapVatItemMap> = {
   <N extends keyof BootstrapVatItems>(name: N): BootstrapVatItems[N];
@@ -96,8 +150,7 @@ type BootstrapPublishedPathTypes = GovernancePublishedPathTypes;
  * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
  */
 export type BootstrapEV<
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 > = EProxy & {
   sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
   vat: <N extends string>(
@@ -111,8 +164,7 @@ export type BootstrapEV<
 };
 
 const makeBootstrapRunUtils = <
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 >(
   controller: SwingsetController,
   harness?: RunHarness,
@@ -120,7 +172,6 @@ const makeBootstrapRunUtils = <
   makeRunUtils(controller, harness) as Omit<RunUtils, 'EV'> & {
     EV: BootstrapEV<BootstrapVatItems>;
   };
-
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
   valueMaker: (key: K, i: number) => V,
@@ -128,10 +179,6 @@ const keysToObject = <K extends PropertyKey, V>(
   return Object.fromEntries(keys.map((key, i) => [key, valueMaker(key, i)]));
 };
 
-/**
- * AVA's default t.deepEqual() is nearly unreadable for sorted arrays of
- * strings.
- */
 /**
  * Compare two arrays of property keys for equality in a way that's more readable
  * in AVA test output than the default t.deepEqual().
@@ -166,16 +213,26 @@ export const keyArrayEqual = (
    `defaultManagerType`)
  * @returns Path to the generated config file
  */
-export const getNodeTestVaultsConfig = async ({
-  bundleDir,
+const getNodeTestVaultsConfig = async ({
+  bundleDir = sharedBundleCachePath,
   configPath,
   defaultManagerType = 'local' as ManagerType,
   discriminator = '',
   configOverrides = {},
 }) => {
-  const configFromFile: SwingSetConfig & { coreProposals?: any[] } = NonNullish(
-    await loadSwingsetConfigFile(configPath),
-  );
+  const cacheKey = makeConfigCacheKey({
+    bundleDir,
+    configPath,
+    defaultManagerType,
+    discriminator,
+    configOverrides,
+  });
+  const cached = configCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+  const configFromFile: SwingSetConfig & { coreProposals?: any[] } =
+    await loadCachedSwingsetConfig(configPath);
 
   const config: SwingSetConfig & { coreProposals?: any[] } = {
     ...configFromFile,
@@ -212,13 +269,424 @@ export const getNodeTestVaultsConfig = async ({
     JSON.stringify(config),
     'utf-8',
   );
+  configCache.set(cacheKey, testConfigPath);
   return testConfigPath;
 };
 
+type ProposalBuildMode = 'prefer-in-process' | 'in-process-only' | 'shell-only';
+
+export interface ProposalBuilderResult {
+  bundles: EndoZipBase64Bundle[];
+  dependencies?: string[];
+  evals: CoreEvalSDKType[];
+  modeUsed?: 'in-process' | 'shell';
+  resolvedBuilderPath?: string;
+}
+
 interface Powers {
+  buildCoreEvalProposal?: (opts: {
+    args?: string[];
+    builderPath: string;
+    cacheDir?: string;
+    childProcess?: Pick<typeof import('node:child_process'), 'execFileSync'>;
+    console?: Pick<Console, 'warn'>;
+    cwd?: string;
+    fs?: typeof import('node:fs/promises');
+    mode?: ProposalBuildMode;
+    now?: () => number;
+  }) => Promise<ProposalBuilderResult>;
   childProcess: Pick<typeof import('node:child_process'), 'execFileSync'>;
   fs: typeof import('node:fs/promises');
+  now?: () => number;
 }
+
+interface ProposalCacheDependency {
+  fingerprint: string;
+  path: string;
+  source: 'bundle-cache' | 'file';
+}
+
+interface ProposalCacheMetadata {
+  args: string[];
+  builderPath: string;
+  createdAt: string;
+  dependencies: ProposalCacheDependency[];
+  mode: ProposalBuildMode;
+  schemaVersion: string;
+  toolVersion: string;
+}
+
+interface ProposalExtractorOptions {
+  cacheRoot?: string;
+  mode?: ProposalBuildMode;
+  onCacheEvent?: (event: ProposalExtractorEvent) => void;
+  schemaVersion?: string;
+}
+
+type ProposalExtractorEvent =
+  | BuildCacheEvent
+  | {
+      args: string[];
+      builderPath: string;
+      cacheKey: string;
+      type: 'proposal-cache-hit' | 'proposal-cache-miss';
+    };
+
+const PROPOSAL_CACHE_TOOL_VERSION = 'boot-proposal-cache-v1';
+// Profiling env vars are documented in packages/boot/README.md.
+const BOOT_PROFILE_ENV = 'AGORIC_BOOT_TEST_PROFILE';
+const BOOT_PROFILE_FILE_ENV = 'AGORIC_BOOT_TEST_PROFILE_FILE';
+
+// Chrome Trace Event format:
+// https://chromium.googlesource.com/catapult/+/HEAD/tracing/README.md
+interface BootProfileCompleteEvent extends TraceCompleteEvent {
+  cat: 'agoric.boot.test-supports';
+}
+
+interface BootProfileMetadataEvent extends TraceMetadataEvent {
+  args: { name: string };
+  pid: number;
+  tid: number;
+  ts: 0;
+}
+
+interface BootProfileTraceFile extends TraceFile {
+  displayTimeUnit: 'ms';
+  traceEvents: Array<BootProfileMetadataEvent | BootProfileCompleteEvent>;
+}
+
+interface BootProfiler {
+  measure: <T>(
+    name: string,
+    op: () => ERef<T>,
+    args?: Record<string, unknown>,
+  ) => Promise<T>;
+}
+
+const bootProfileSessions = new Map<
+  string,
+  {
+    events: BootProfileCompleteEvent[];
+    writeQueue: Promise<void>;
+  }
+>();
+
+const isEnabledProfileSetting = (value: string | undefined) => {
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized !== '0' && normalized !== 'false' && normalized !== 'off';
+};
+
+const makeBootProfiler = ({
+  cwd = process.cwd(),
+  env = process.env,
+  fs = fsAmbientPromises,
+  pid = process.pid,
+}: {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+  fs?: typeof import('node:fs/promises');
+  pid?: number;
+} = {}): BootProfiler => {
+  const enabled = isEnabledProfileSetting(env[BOOT_PROFILE_ENV]);
+  if (!enabled) {
+    return harden({
+      measure: async (_name, op) => op(),
+    });
+  }
+
+  const configuredPath = env[BOOT_PROFILE_FILE_ENV];
+  const profilePath = configuredPath
+    ? pathResolve(configuredPath)
+    : join(
+        cwd,
+        '.cache',
+        'boot-test-profiles',
+        `bootstrap-supports-${pid}.trace.json`,
+      );
+  const session =
+    bootProfileSessions.get(profilePath) ||
+    (() => {
+      const next = { events: [], writeQueue: Promise.resolve() };
+      bootProfileSessions.set(profilePath, next);
+      return next;
+    })();
+  const origin = performance.now();
+
+  const queueWrite = () => {
+    session.writeQueue = session.writeQueue
+      .catch(err => {
+        console.error('boot profiler previous trace write failed', err);
+      })
+      .then(async () => {
+        const metadataEvents: BootProfileMetadataEvent[] = [
+          {
+            name: 'process_name',
+            ph: 'M',
+            pid,
+            tid: 0,
+            ts: 0,
+            args: { name: 'agoric-boot-tests' },
+          },
+          {
+            name: 'thread_name',
+            ph: 'M',
+            pid,
+            tid: 0,
+            ts: 0,
+            args: { name: 'main' },
+          },
+        ];
+        const traceFile: BootProfileTraceFile = {
+          displayTimeUnit: 'ms',
+          traceEvents: [...metadataEvents, ...session.events],
+        };
+        await fs.mkdir(dirname(profilePath), { recursive: true });
+        await fs.writeFile(
+          `${profilePath}`,
+          `${JSON.stringify(traceFile, null, 2)}\n`,
+          'utf8',
+        );
+      })
+      .catch(err => {
+        console.error('boot profiler trace write failed', err);
+      });
+  };
+
+  return harden({
+    measure: async (name, op, args) => {
+      const start = performance.now();
+      try {
+        return await op();
+      } finally {
+        const end = performance.now();
+        session.events.push({
+          name,
+          args,
+          cat: 'agoric.boot.test-supports',
+          ph: 'X',
+          pid,
+          tid: 0,
+          ts: (start - origin) * 1000,
+          dur: (end - start) * 1000,
+        });
+        queueWrite();
+      }
+    },
+  });
+};
+
+const hashText = (text: string) =>
+  createHash('sha256').update(text).digest('hex');
+
+const hashBuffer = (content: string | Uint8Array) =>
+  createHash('sha256').update(content).digest('hex');
+
+const isPidAlive = (pid: number) => {
+  if (!Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const cachePathsForKey = (cacheRoot: string, key: string) => {
+  const entryDir = join(cacheRoot, key);
+  return {
+    entryDir,
+    metadataPath: join(entryDir, 'metadata.json'),
+    materialsPath: join(entryDir, 'materials.json'),
+  };
+};
+
+interface ProposalCacheStore {
+  ensureBuildDirs: () => Promise<void>;
+  fingerprintDependencies: (
+    dependencyPaths: string[],
+  ) => Promise<ProposalCacheDependency[]>;
+  loadCachedMaterials: (
+    cacheKey: string,
+  ) => Promise<ProposalBuilderResult | undefined>;
+  normalizeDependencyPaths: (dependencyPaths: string[]) => string[];
+  persistMaterials: (
+    cacheKey: string,
+    metadata: ProposalCacheMetadata,
+    materials: ProposalBuilderResult,
+  ) => Promise<void>;
+  withCacheLock: <T>(cacheKey: string, body: () => Promise<T>) => Promise<T>;
+}
+
+const makeProposalCacheStore = ({
+  cacheRoot,
+  depFingerprintCacheDir,
+  fs,
+  mode,
+  now,
+  onCacheEvent,
+  schemaVersion,
+  scriptCacheDir,
+}: {
+  cacheRoot: string;
+  depFingerprintCacheDir: string;
+  fs: typeof import('node:fs/promises');
+  mode: ProposalBuildMode;
+  now: () => number;
+  onCacheEvent: (event: ProposalExtractorEvent) => void;
+  schemaVersion: string;
+  scriptCacheDir: string;
+}): ProposalCacheStore => {
+  const lockAcquireTimeoutMs = 5 * 60_000;
+  const staleLockMs = 60_000;
+  const lockRoot = join(cacheRoot, '.locks');
+  let bundleCacheP: ReturnType<typeof makeNodeBundleCache> | undefined;
+  const getBundleCache = () => {
+    if (!bundleCacheP) {
+      bundleCacheP = makeNodeBundleCache(
+        depFingerprintCacheDir,
+        makeAmbientBundleToolPowers({
+          loadModule: s => import(s),
+          eventSink: { onBundleToolEvent: () => {} },
+        }),
+      );
+    }
+    return bundleCacheP;
+  };
+  const readJSONFile = async <T>(filePath: string) =>
+    harden(JSON.parse(await fs.readFile(filePath, 'utf8')) as T);
+  const sameDependencies = (
+    a: ProposalCacheDependency[],
+    b: ProposalCacheDependency[],
+  ) => JSON.stringify(a) === JSON.stringify(b);
+  const normalizeDependencyPaths = (dependencyPaths: string[]) =>
+    [...new Set(dependencyPaths.map(spec => pathResolve(spec)))].sort();
+  const fingerprintDependency = async (
+    dependencyPath: string,
+  ): Promise<ProposalCacheDependency> => {
+    try {
+      const bundleCache = await getBundleCache();
+      const targetName = `dep-${hashText(dependencyPath).slice(0, 16)}`;
+      const { bundleFileName } = await bundleCache.validateOrAdd(
+        dependencyPath,
+        targetName,
+      );
+      const bundleText = await fs.readFile(
+        join(depFingerprintCacheDir, bundleFileName),
+        'utf8',
+      );
+      return {
+        path: dependencyPath,
+        fingerprint: hashText(bundleText),
+        source: 'bundle-cache',
+      };
+    } catch {
+      const fileContent = await fs.readFile(dependencyPath);
+      return {
+        path: dependencyPath,
+        fingerprint: hashBuffer(fileContent),
+        source: 'file',
+      };
+    }
+  };
+  const fingerprintDependencies = async (dependencyPaths: string[]) =>
+    Promise.all(dependencyPaths.map(path => fingerprintDependency(path)));
+  const { withLock } = makeDirectoryLock({
+    fs,
+    delayMs: ms => new Promise(resolve => setTimeout(resolve, ms)),
+    now,
+    pid: process.pid,
+    isPidAlive,
+    lockRoot,
+    staleLockMs,
+    acquireTimeoutMs: lockAcquireTimeoutMs,
+    onEvent: onCacheEvent,
+  });
+  const loadCachedMaterials = async (
+    cacheKey: string,
+  ): Promise<ProposalBuilderResult | undefined> => {
+    const { metadataPath, materialsPath } = cachePathsForKey(
+      cacheRoot,
+      cacheKey,
+    );
+    try {
+      const [metadata, materials] = await Promise.all([
+        readJSONFile<ProposalCacheMetadata>(metadataPath),
+        readJSONFile<ProposalBuilderResult>(materialsPath),
+      ]);
+
+      if (
+        metadata.schemaVersion !== schemaVersion ||
+        metadata.toolVersion !== PROPOSAL_CACHE_TOOL_VERSION ||
+        metadata.mode !== mode
+      ) {
+        return undefined;
+      }
+
+      const dependencyPaths = metadata.dependencies.map(dep => dep.path);
+      const currentDependencies =
+        await fingerprintDependencies(dependencyPaths);
+      if (!sameDependencies(metadata.dependencies, currentDependencies)) {
+        return undefined;
+      }
+
+      return harden(materials);
+    } catch {
+      return undefined;
+    }
+  };
+  const persistMaterials = async (
+    cacheKey: string,
+    metadata: ProposalCacheMetadata,
+    materials: ProposalBuilderResult,
+  ) => {
+    const { entryDir, metadataPath, materialsPath } = cachePathsForKey(
+      cacheRoot,
+      cacheKey,
+    );
+    await fs.mkdir(entryDir, { recursive: true });
+    await Promise.all([
+      writeFileAtomic({
+        fs,
+        filePath: `${metadataPath}`,
+        data: `${JSON.stringify(metadata, null, 2)}\n`,
+        now,
+        pid: process.pid,
+      }),
+      writeFileAtomic({
+        fs,
+        filePath: `${materialsPath}`,
+        data: `${JSON.stringify(
+          {
+            evals: materials.evals,
+            bundles: materials.bundles,
+          },
+          null,
+          2,
+        )}\n`,
+        now,
+        pid: process.pid,
+      }),
+    ]);
+  };
+  const ensureBuildDirs = async () => {
+    await fs.mkdir(cacheRoot, { recursive: true });
+    await fs.mkdir(scriptCacheDir, { recursive: true });
+  };
+
+  return harden({
+    ensureBuildDirs,
+    fingerprintDependencies,
+    loadCachedMaterials,
+    normalizeDependencyPaths,
+    persistMaterials,
+    withCacheLock: withLock,
+  });
+};
 
 /**
  * Creates a function that can build and extract proposal data from package scripts.
@@ -226,87 +694,177 @@ interface Powers {
  * @param powers - Object containing required capabilities
  * @param powers.childProcess - Node child_process module for executing commands
  * @param powers.fs - Node fs/promises module for file operations
+ * @param powers.now - Optional wall-clock function used for cache metadata and lock timing
+ * @param powers.buildCoreEvalProposal - Optional in-process proposal builder implementation
  * @returns A function that builds and extracts proposal data
  */
 export const makeProposalExtractor = (
-  { childProcess, fs }: Powers,
+  { childProcess, fs, now = Date.now, buildCoreEvalProposal }: Powers,
   resolveBase = import.meta.url,
+  options: ProposalExtractorOptions = {},
 ) => {
   const importSpec = createRequire(resolveBase).resolve;
-
-  const readJSONFile = async filePath =>
-    harden(JSON.parse(await fs.readFile(filePath, 'utf8')));
-
-  // XXX parses the output to find the files but could write them to a path that can be traversed
-  const parseProposalParts = (agoricRunOutput: string) => {
-    const evals = [
-      ...agoricRunOutput.matchAll(
-        /swingset-core-eval (?<permit>\S+) (?<script>\S+)/g,
-      ),
-    ].map(m => {
-      if (!m.groups) throw Fail`Invalid proposal output ${m[0]}`;
-      const { permit, script } = m.groups;
-      return { permit, script };
+  const mode = options.mode || 'prefer-in-process';
+  const onCacheEvent = options.onCacheEvent || (() => {});
+  const schemaVersion = options.schemaVersion || 'v1';
+  const cacheRoot =
+    options.cacheRoot ||
+    join(process.cwd(), '.cache', 'boot-proposal-build', schemaVersion);
+  const scriptCacheDir = join(cacheRoot, 'script-bundle-cache');
+  const depFingerprintCacheDir = join(
+    cacheRoot,
+    'dependency-fingerprint-cache',
+  );
+  const dedupe = new Map<string, Promise<ProposalBuilderResult>>();
+  const cacheStore = makeProposalCacheStore({
+    cacheRoot,
+    depFingerprintCacheDir,
+    fs,
+    mode,
+    now,
+    onCacheEvent,
+    schemaVersion,
+    scriptCacheDir,
+  });
+  const buildProposal =
+    buildCoreEvalProposal ||
+    (async (opts: {
+      args?: string[];
+      builderPath: string;
+      cacheDir?: string;
+      childProcess?: Pick<typeof import('node:child_process'), 'execFileSync'>;
+      console?: Pick<Console, 'warn'>;
+      cwd?: string;
+      fs?: typeof import('node:fs/promises');
+      mode?: ProposalBuildMode;
+      now?: () => number;
+    }) => {
+      const proposalsMod = (await import(
+        importSpec('agoric/src/proposals.js')
+      )) as {
+        buildCoreEvalProposal: (
+          o: typeof opts,
+        ) => Promise<ProposalBuilderResult>;
+      };
+      return proposalsMod.buildCoreEvalProposal(opts);
     });
-    evals.length ||
-      Fail`No swingset-core-eval found in proposal output: ${agoricRunOutput}`;
 
-    const bundles = [
-      ...agoricRunOutput.matchAll(/swingset install-bundle @([^\n]+)/g),
-    ].map(([, bundle]) => bundle);
-    bundles.length ||
-      Fail`No bundles found in proposal output: ${agoricRunOutput}`;
+  const buildAndExtract = async (builderPath: string, args: string[] = []) => {
+    const scriptPath = importSpec(builderPath);
+    const cacheKeyPayload = {
+      args,
+      builderPath: scriptPath,
+      mode,
+      schemaVersion,
+    };
+    const cacheKey = hashText(JSON.stringify(cacheKeyPayload));
 
-    return { evals, bundles };
+    const found = dedupe.get(cacheKey);
+    if (found) {
+      return found;
+    }
+
+    const pending = cacheStore.withCacheLock(cacheKey, async () => {
+      const cached = await cacheStore.loadCachedMaterials(cacheKey);
+      if (cached) {
+        onCacheEvent({
+          type: 'proposal-cache-hit',
+          builderPath: scriptPath,
+          args: [...args],
+          cacheKey,
+        });
+        return cached;
+      }
+      onCacheEvent({
+        type: 'proposal-cache-miss',
+        builderPath: scriptPath,
+        args: [...args],
+        cacheKey,
+      });
+
+      const [builtDir, cleanup] = tmpDir('agoric-proposal');
+      await cacheStore.ensureBuildDirs();
+
+      try {
+        const built = await buildProposal({
+          builderPath: scriptPath,
+          args,
+          cacheDir: scriptCacheDir,
+          childProcess,
+          console,
+          cwd: builtDir,
+          fs,
+          mode,
+          now,
+        });
+        const dependencyPaths = cacheStore.normalizeDependencyPaths([
+          scriptPath,
+          ...(built.dependencies || []),
+        ]);
+        const dependencies =
+          await cacheStore.fingerprintDependencies(dependencyPaths);
+        const metadata: ProposalCacheMetadata = {
+          args: [...args],
+          builderPath: built.resolvedBuilderPath || scriptPath,
+          createdAt: new Date(now()).toISOString(),
+          dependencies,
+          mode,
+          schemaVersion,
+          toolVersion: PROPOSAL_CACHE_TOOL_VERSION,
+        };
+        const materials = harden({
+          evals: built.evals,
+          bundles: built.bundles,
+        });
+
+        await cacheStore.persistMaterials(cacheKey, metadata, materials);
+        return materials;
+      } finally {
+        await cleanup();
+      }
+    });
+
+    dedupe.set(cacheKey, pending);
+    void pending
+      .finally(() => {
+        if (dedupe.get(cacheKey) === pending) {
+          dedupe.delete(cacheKey);
+        }
+      })
+      .catch(() => {});
+    return pending;
   };
 
-  // XXX rebuilds every time
-  const buildAndExtract = async (builderPath: string, args: string[] = []) => {
-    const [builtDir, cleanup] = tmpDir('agoric-proposal');
-
-    const readPkgFile = fileName =>
-      fs.readFile(join(builtDir, fileName), 'utf8');
-
-    await null;
+  return async (builderPath: string, args: string[] = []) => {
     try {
-      const scriptPath = importSpec(builderPath);
-
-      console.info('running package script:', scriptPath);
-      const agoricRunOutput = childProcess.execFileSync(
-        importSpec('agoric/src/entrypoint.js'),
-        ['run', scriptPath, ...args],
-        { cwd: builtDir },
+      return await buildAndExtract(builderPath, args);
+    } catch (err) {
+      if (mode !== 'prefer-in-process') {
+        throw err;
+      }
+      console.warn(
+        'proposal extraction failed in cache/in-process path, retrying shell-only build',
+        err,
       );
-      const built = parseProposalParts(agoricRunOutput.toString());
-
-      const evalsP = Promise.all(
-        built.evals.map(async ({ permit, script }) => {
-          const [permits, code] = await Promise.all(
-            [permit, script].map(path => readPkgFile(path)),
-          );
-          return { json_permits: permits, js_code: code } as CoreEvalSDKType;
-        }),
-      );
-
-      const bundlesP = Promise.all(
-        built.bundles.map(
-          async path => readJSONFile(path) as Promise<EndoZipBase64Bundle>,
-        ),
-      );
-
-      const [evals, bundles] = await Promise.all([evalsP, bundlesP]);
-      return { evals, bundles };
-    } finally {
-      // Defer `cleanup` and ignore any exception; spurious test failures would
-      // be worse than the minor inconvenience of manual temp dir removal.
-      const cleanupP = Promise.resolve().then(() => cleanup());
-      cleanupP.catch(err => {
-        console.error(err);
-        throw err; // unhandled rejection
-      });
+      const [builtDir, cleanup] = tmpDir('agoric-proposal');
+      try {
+        const fallback = await buildProposal({
+          builderPath: importSpec(builderPath),
+          args,
+          cacheDir: scriptCacheDir,
+          childProcess,
+          console,
+          cwd: builtDir,
+          fs,
+          mode: 'shell-only',
+          now,
+        });
+        return harden({ evals: fallback.evals, bundles: fallback.bundles });
+      } finally {
+        await cleanup();
+      }
     }
   };
-  return buildAndExtract;
 };
 harden(makeProposalExtractor);
 
@@ -354,7 +912,7 @@ export const matchAmount = (
  * @param value - Value object to test
  * @param ref - Reference value object to compare against
  */
-export const matchValue = (t: AvaT, value, ref) => {
+const matchValue = (t: AvaT, value, ref) => {
   matchRef(t, value.brand, ref.brand);
   t.is(value.denom, ref.denom);
   matchRef(t, value.issuer, ref.issuer);
@@ -386,6 +944,41 @@ export const AckBehavior = {
   Never: 'NEVER',
 } as const;
 type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
+type FakeStorage = ReturnType<typeof makeFakeStorageKit>;
+type FakeStorageMessage = FakeStorage['messages'][number];
+
+type SwingsetStorageSnapshot = {
+  dataEntries: [string, string][];
+  messages: FakeStorageMessage[];
+};
+
+export type SwingsetTestKitSnapshot = {
+  swingStoreSerialized?: Buffer;
+  swingStoreDir?: string;
+  kernelBundle?: EndoZipBase64Bundle;
+  storageSnapshot?: SwingsetStorageSnapshot;
+};
+
+const snapshotFakeStorage = (
+  storage: FakeStorage,
+): SwingsetStorageSnapshot => ({
+  dataEntries: [...storage.data.entries()],
+  messages: [...storage.messages],
+});
+
+const restoreFakeStorage = (
+  storageSnapshot?: SwingsetStorageSnapshot,
+): FakeStorage => {
+  const storage = makeFakeStorageKit('bootstrapTests');
+  if (!storageSnapshot) {
+    return storage;
+  }
+  for (const [key, value] of storageSnapshot.dataEntries) {
+    storage.data.set(key, value);
+  }
+  storage.messages.push(...storageSnapshot.messages);
+  return storage;
+};
 
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks.
@@ -414,6 +1007,7 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param [options.debugVats]
  * @param [options.defaultManagerType]
  * @param [options.harness]
+ * @param [options.proposalBuildMode]
  */
 /**
  * Creates a SwingSet test environment with various utilities for testing.
@@ -433,46 +1027,122 @@ type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
  * @param options.debugVats - Array of vat names to debug
  * @param options.defaultManagerType - SwingSet manager type to use
  * @param options.harness - Optional run harness
+ * @param options.proposalBuildMode - Proposal extraction mode
  * @param options.resolveBase - Base URL or path for resolving module paths
  * @param options.configOverrides - Other SwingSet options to set in the config
    (may be overridden by more specific options such as `bundleDir` and
    `defaultManagerType`)
+ * @param options.snapshot - Optional snapshot to restore SwingSet/kernel state
+ * @param options.swingStorePath - Optional persistent swing-store directory path
  * @returns A test kit with various utilities for interacting with the SwingSet
  */
+export type MakeSwingsetTestKitOptions = {
+  configSpecifier?: string;
+  label?: string | undefined;
+  storage?: FakeStorage | undefined;
+  verbose?: boolean;
+  slogFile?: string | undefined;
+  profileVats?: string[];
+  debugVats?: string[];
+  defaultManagerType?: ManagerType;
+  harness?: RunHarness | undefined;
+  proposalBuildMode?: ProposalBuildMode;
+  resolveBase?: string;
+  configOverrides?: Partial<SwingSetConfig>;
+  snapshot?: SwingsetTestKitSnapshot | undefined;
+  swingStorePath?: string | undefined;
+};
+
 export const makeSwingsetTestKit = async <
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 >(
   log: (..._: any[]) => void,
-  bundleDir = 'bundles',
+  bundleDir = sharedBundleCachePath,
   {
     configSpecifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
     label = undefined as string | undefined,
-    storage = makeFakeStorageKit('bootstrapTests'),
+    storage: storageOpt = undefined as FakeStorage | undefined,
     verbose = false,
     slogFile = undefined as string | undefined,
     profileVats = [] as string[],
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
     harness = undefined as RunHarness | undefined,
+    proposalBuildMode = 'prefer-in-process' as ProposalBuildMode,
     resolveBase = import.meta.url,
     configOverrides = {} as Partial<SwingSetConfig>,
-  } = {},
+    snapshot = undefined as SwingsetTestKitSnapshot | undefined,
+    swingStorePath = undefined as string | undefined,
+  }: MakeSwingsetTestKitOptions = {},
 ) => {
+  const storage = storageOpt || restoreFakeStorage(snapshot?.storageSnapshot);
   const importSpec = createRequire(resolveBase).resolve;
-  console.time('makeBaseSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig({
-    bundleDir,
-    configPath: importSpec(configSpecifier),
-    discriminator: label,
-    defaultManagerType,
-    configOverrides,
-  });
-  const swingStore = initSwingStore();
+  const resolvedConfigPath = importSpec(configSpecifier);
+  const profiler = makeBootProfiler();
+  const configPath = snapshot
+    ? undefined
+    : await profiler.measure(
+        'makeSwingsetTestKit.getNodeTestVaultsConfig',
+        () =>
+          getNodeTestVaultsConfig({
+            bundleDir,
+            configPath: resolvedConfigPath,
+            discriminator: label,
+            defaultManagerType,
+            configOverrides,
+          }),
+        {
+          bundleDir,
+          configSpecifier,
+          defaultManagerType,
+          label,
+        },
+      );
+  let swingStoreClonePath: string | undefined;
+  const snapshotDir = snapshot?.swingStoreDir;
+
+  const swingStore = snapshotDir
+    ? await (async () => {
+        let targetPath: string;
+        if (swingStorePath) {
+          // Caller-owned persistent location (e.g. for snapshot creation).
+          targetPath = swingStorePath;
+        } else {
+          // Anonymous clone that this kit will clean up on shutdown.
+          swingStoreClonePath = await fsAmbientPromises.mkdtemp(
+            join(tmpdir(), 'boot-swingset-snapshot-'),
+          );
+          targetPath = swingStoreClonePath;
+        }
+        await fsAmbientPromises.cp(snapshotDir, targetPath, {
+          recursive: true,
+        });
+        return openSwingStore(targetPath);
+      })()
+    : snapshot?.swingStoreSerialized
+      ? initSwingStore(null, { serialized: snapshot.swingStoreSerialized })
+      : swingStorePath
+        ? initSwingStore(swingStorePath)
+        : initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
-  const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
+  // Memoize board remotes by id so a given slot decodes to the *same* remotable
+  // across readPublished calls. Without this, slotToBoardRemote synthesizes a
+  // fresh Far per slot on every call, so brands/instances read from vstorage
+  // never share identity between reads — breaking deepEqual on amounts. (Same
+  // cache pattern as the deprecated makeFromBoard, kept inline to preserve the
+  // BoardRemote shape, i.e. getBoardId(), that agoricNamesRemotes relies on.)
+  const boardRemotes = new Map<string, ReturnType<typeof slotToBoardRemote>>();
+  const cachingSlotToBoardRemote = (boardId: string, iface?: string) => {
+    let remote = boardRemotes.get(boardId);
+    if (!remote) {
+      remote = slotToBoardRemote(boardId, iface ?? '');
+      boardRemotes.set(boardId, remote);
+    }
+    return remote;
+  };
+  const { fromCapData } = boardSlottingMarshaller(cachingSlotToBoardRemote);
 
   const readLatest = (path: string): any => {
     let data;
@@ -493,7 +1163,6 @@ export const makeSwingsetTestKit = async <
       T,
       PublishedPathTypes
     >;
-
   let lastBankNonce = 0n;
   let ibcSequenceNonce = 0;
   let lcaSequenceNonce = 0;
@@ -735,39 +1404,70 @@ export const makeSwingsetTestKit = async <
     : undefined;
 
   const mailboxStorage = new Map();
-  const { controller, timer, bridgeInbound } = await buildSwingset(
-    // @ts-expect-error missing method 'getNextKey'
-    mailboxStorage,
-    bridgeOutbound,
-    kernelStorage,
-    configPath,
-    [],
-    {},
+  const { controller, timer, bridgeInbound } = await profiler.measure(
+    'makeSwingsetTestKit.buildSwingset',
+    () =>
+      buildSwingset(
+        // @ts-expect-error missing method 'getNextKey'
+        mailboxStorage,
+        bridgeOutbound,
+        kernelStorage,
+        // Only used when kernel storage is uninitialized; snapshots are already initialized.
+        configPath || resolvedConfigPath,
+        [],
+        {
+          SWINGSET_STARTUP_PROFILE: process.env.SWINGSET_STARTUP_PROFILE,
+          XSNAP_DEBUG: process.env.XSNAP_DEBUG,
+          XSNAP_TEST_RECORD: process.env.XSNAP_TEST_RECORD,
+        },
+        {
+          callerWillEvaluateCoreProposals: false,
+          debugName: 'TESTBOOT',
+          verbose,
+          slogSender,
+          profileVats,
+          debugVats,
+          warehousePolicy: snapshot ? { maxPreloadVats: 0 } : undefined,
+          kernelBundle: snapshot?.kernelBundle,
+        },
+      ),
     {
-      callerWillEvaluateCoreProposals: false,
-      debugName: 'TESTBOOT',
+      configPath,
+      debugVatsCount: debugVats.length,
+      profileVatsCount: profileVats.length,
       verbose,
-      slogSender,
-      profileVats,
-      debugVats,
     },
   );
 
-  console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
-
-  // XXX This initial run() might not be necessary. Tests pass without it as of
-  // 2025-02, but we suspect that `makeSwingsetTestKit` just isn't being
-  // exercised in the right way.
-  await controller.run();
+  // Make sure the kernel has progressed past its initial startup work before
+  // handing the harness back to test suites so that bootstrap vats and core
+  // proposals have result slots ready right away.
+  await profiler.measure('makeSwingsetTestKit.controller.run.initial', () =>
+    controller.run(),
+  );
   const runUtils = makeBootstrapRunUtils<BootstrapVatItems>(
     controller,
     harness,
   );
 
-  const buildProposal = makeProposalExtractor({
-    childProcess: childProcessAmbient,
-    fs: fsAmbientPromises,
-  });
+  const extractProposal = makeProposalExtractor(
+    {
+      childProcess: childProcessAmbient,
+      fs: fsAmbientPromises,
+      now: Date.now,
+      // keep default proposal builder implementation
+    },
+    resolveBase,
+    {
+      mode: proposalBuildMode,
+    },
+  );
+  const buildProposal = (builderPath: string, args: string[] = []) =>
+    profiler.measure(
+      'makeSwingsetTestKit.proposal.extract',
+      () => extractProposal(builderPath, args),
+      { argsCount: args.length, builderPath, mode: proposalBuildMode },
+    );
 
   type ProposalMaterials = Awaited<ReturnType<typeof buildProposal>>;
 
@@ -775,16 +1475,47 @@ export const makeSwingsetTestKit = async <
     evals: materials.flatMap(e => e.evals),
     bundles: materials.flatMap(e => e.bundles),
   });
+  const installedProposalBundleIDs = new Set<string>();
+  let coreEvalBridgeHandlerP: Promise<BridgeHandler> | undefined;
+
+  const getProposalBundleID = (bundle: ProposalMaterials['bundles'][number]) =>
+    'endoZipBase64Sha512' in bundle
+      ? `b1-${bundle.endoZipBase64Sha512}`
+      : JSON.stringify(bundle);
 
   const evalProposal = async (proposalP: ERef<ProposalMaterials>) => {
     const { EV } = runUtils;
 
-    const proposal = harden(await proposalP);
+    const proposal = harden(
+      await profiler.measure('makeSwingsetTestKit.proposal.resolve', () =>
+        Promise.resolve(proposalP),
+      ),
+    );
 
-    for await (const bundle of proposal.bundles) {
-      await controller.validateAndInstallBundle(bundle);
-    }
-    log('installed', proposal.bundles.length, 'bundles');
+    const installedBundleCount = await profiler.measure(
+      'makeSwingsetTestKit.proposal.installBundles',
+      async () => {
+        let installed = 0;
+        for (const bundle of proposal.bundles) {
+          const bundleID = getProposalBundleID(bundle);
+          if (installedProposalBundleIDs.has(bundleID)) {
+            continue;
+          }
+          await controller.validateAndInstallBundle(bundle);
+          installedProposalBundleIDs.add(bundleID);
+          installed += 1;
+        }
+        return installed;
+      },
+      { bundleCount: proposal.bundles.length },
+    );
+    log(
+      'installed',
+      installedBundleCount,
+      'new bundles from',
+      proposal.bundles.length,
+      'proposal bundles',
+    );
 
     log('executing proposal');
     const bridgeMessage = {
@@ -792,14 +1523,20 @@ export const makeSwingsetTestKit = async <
       evals: proposal.evals,
     };
     log({ bridgeMessage });
-    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
-      'coreEvalBridgeHandler',
+    if (!coreEvalBridgeHandlerP) {
+      coreEvalBridgeHandlerP = profiler.measure(
+        'makeSwingsetTestKit.proposal.getCoreEvalBridgeHandler',
+        () => EV.vat('bootstrap').consumeItem('coreEvalBridgeHandler'),
+      );
+    }
+    const coreEvalBridgeHandler = await coreEvalBridgeHandlerP;
+    await profiler.measure(
+      'makeSwingsetTestKit.proposal.executeCoreEval',
+      () => EV(coreEvalBridgeHandler).fromBridge(bridgeMessage),
+      { evalCount: proposal.evals.length },
     );
-    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
     log(`proposal executed`);
   };
-
-  console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
   const updateTimer = async time => {
@@ -839,7 +1576,16 @@ export const makeSwingsetTestKit = async <
   };
 
   const shutdown = async () =>
-    Promise.all([controller.shutdown(), hostStorage.close()]).then(() => {});
+    Promise.all([
+      controller.shutdown(),
+      hostStorage.close(),
+      swingStoreClonePath
+        ? fsAmbientPromises.rm(swingStoreClonePath, {
+            recursive: true,
+            force: true,
+          })
+        : undefined,
+    ]).then(() => {});
 
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
@@ -910,6 +1656,15 @@ export const makeSwingsetTestKit = async <
     });
   };
 
+  const makeSnapshot = (): SwingsetTestKitSnapshot => {
+    return {
+      swingStoreSerialized: swingStore.debug.serialize(),
+      kernelBundle: snapshot?.kernelBundle,
+      storageSnapshot: snapshotFakeStorage(storage),
+    };
+  };
+  const makeStorageSnapshot = () => snapshotFakeStorage(storage);
+
   return {
     advanceTimeBy,
     advanceTimeTo,
@@ -925,6 +1680,24 @@ export const makeSwingsetTestKit = async <
     readPublished,
     runUtils,
     shutdown,
+    makeStorageSnapshot,
+    makeSnapshot,
+    forkFromSnapshot: async (
+      forkingSnapshot: SwingsetTestKitSnapshot = makeSnapshot(),
+    ) =>
+      makeSwingsetTestKit(log, bundleDir, {
+        configSpecifier,
+        label,
+        verbose,
+        slogFile,
+        profileVats,
+        debugVats,
+        defaultManagerType,
+        harness,
+        resolveBase,
+        configOverrides,
+        snapshot: forkingSnapshot,
+      }),
     storage,
     swingStore,
     timer,
@@ -934,8 +1707,7 @@ export const makeSwingsetTestKit = async <
 export type SwingsetTestKit<
   PublishedPathTypes extends ClientPublishedPathTypes =
     BootstrapPublishedPathTypes,
-  BootstrapVatItems extends BootstrapVatItemMap =
-    EconomyBootstrapPowers['consume'],
+  BootstrapVatItems extends BootstrapVatItemMap = BootstrapPowers['consume'],
 > = Awaited<
   ReturnType<typeof makeSwingsetTestKit<PublishedPathTypes, BootstrapVatItems>>
 >;
@@ -981,17 +1753,12 @@ export const makeSwingsetHarness = ({
 };
 
 /**
- *
- * @param {string} mt
- * @returns {asserts mt is ManagerType}
- */
-/**
  * Validates that a string is a valid SwingSet manager type.
  *
  * @param mt - The manager type string to validate
  * @throws If the string is not a valid manager type
  */
-export function insistManagerType(mt) {
+export function insistManagerType(mt: string): asserts mt is ManagerType {
   assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
 }
 

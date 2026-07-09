@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -624,6 +625,10 @@ function createBaseQueryEpochInfoResponse(): QueryEpochInfoResponse {
  */
 export const QueryEpochInfoResponse = {
   typeUrl: '/stride.epochs.QueryEpochInfoResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { epoch: false },
+    typeUrlFromField: { epoch: () => EpochInfo },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryEpochInfoResponse {
     return (
       o &&

@@ -10,7 +10,6 @@
     },
     "exclude": [
         "packages/agoric-cli",
-        "packages/benchmark",
         "packages/cosmic-swingset",
         "packages/deployment",
         "packages/import-manager",

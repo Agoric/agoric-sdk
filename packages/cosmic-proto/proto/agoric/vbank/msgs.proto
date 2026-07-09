@@ -1,7 +1,11 @@
 syntax = "proto3";
 package agoric.vbank;
 
+import "cosmos/msg/v1/msg.proto";
+
 option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types";
 
 // No transactions.
-service Msg {}
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+}

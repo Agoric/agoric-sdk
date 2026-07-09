@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   Params,
   type ParamsSDKType,
@@ -128,6 +129,11 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.staking.v1beta1.GenesisState' as const,
+  annotations: {
+    'amino.dont_omitempty': { lastTotalPower: true, params: true },
+    'gogoproto.nullable': { lastTotalPower: false, params: false },
+    typeUrlFromField: { lastTotalPower: 'cosmos.Int', params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (

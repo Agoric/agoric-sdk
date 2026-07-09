@@ -1,4 +1,4 @@
-import { execFile as execFileAmbient } from 'child_process';
+import { execFile as execFileAmbient } from 'node:child_process';
 import { promisify } from 'node:util';
 import * as cmd from '../cmd.js';
 

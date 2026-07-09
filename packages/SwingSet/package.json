@@ -5,7 +5,7 @@
   "type": "module",
   "main": "src/index.js",
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "bin": {
     "vat": "bin/vat"
@@ -18,15 +18,14 @@
     "test:xs-worker": "ava test/workers -m 'xsnap vat manager'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:types": "yarn run -T tsc",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/microtime": "^2.1.0",
     "@types/tmp": "^0.2.0",
-    "@types/yargs-parser": "^21.0.0",
-    "ava": "^6.4.1"
+    "ava": "^7.0.0"
   },
   "dependencies": {
     "@agoric/internal": "workspace:*",
@@ -38,35 +37,34 @@
     "@agoric/time": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@agoric/xsnap-lockdown": "workspace:*",
-    "@endo/base64": "^1.0.12",
-    "@endo/bundle-source": "^4.1.2",
-    "@endo/captp": "^4.4.8",
-    "@endo/check-bundle": "^1.0.17",
-    "@endo/compartment-mapper": "^1.6.3",
-    "@endo/errors": "^1.2.13",
-    "@endo/eventual-send": "^1.3.4",
+    "@endo/base64": "^1.1.1",
+    "@endo/bundle-source": "^4.3.2",
+    "@endo/captp": "^4.5.1",
+    "@endo/check-bundle": "^1.1.1",
+    "@endo/compartment-mapper": "^2.3.0",
+    "@endo/errors": "^1.3.1",
+    "@endo/eventual-send": "^1.5.0",
     "@endo/far": "^1.1.14",
-    "@endo/import-bundle": "^1.5.2",
-    "@endo/init": "^1.1.12",
-    "@endo/marshal": "^1.8.0",
-    "@endo/nat": "^5.1.3",
-    "@endo/pass-style": "^1.6.3",
-    "@endo/patterns": "^1.7.0",
-    "@endo/promise-kit": "^1.1.13",
-    "@endo/ses-ava": "^1.3.2",
-    "@endo/stream": "^1.2.13",
-    "@endo/zip": "^1.0.11",
+    "@endo/import-bundle": "^1.7.0",
+    "@endo/init": "^1.1.13",
+    "@endo/marshal": "^1.10.0",
+    "@endo/nat": "^5.2.0",
+    "@endo/pass-style": "^1.8.1",
+    "@endo/patterns": "^1.9.1",
+    "@endo/promise-kit": "^1.2.1",
+    "@endo/ses-ava": "^1.4.2",
+    "@endo/stream": "^1.3.1",
+    "@endo/zip": "^1.1.0",
     "ansi-styles": "^6.2.1",
-    "better-sqlite3": "^10.1.0",
+    "better-sqlite3": "^12.10.0",
     "import-meta-resolve": "^4.1.0",
     "microtime": "^3.1.0",
     "semver": "^6.3.0",
-    "tmp": "^0.2.1",
-    "yargs-parser": "^21.1.1"
+    "tmp": "^0.2.1"
   },
   "peerDependencies": {
     "@agoric/xsnap": "workspace:*",
-    "ava": "^5.3.0 || ^6.0.0"
+    "ava": "^5.3.0 || ^6.0.0 || ^7.0.0"
   },
   "files": [
     "bin/vat",
@@ -88,9 +86,17 @@
     "example": "examples"
   },
   "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "workerThreads": false,
     "files": [
       "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
     ],
     "require": [
       "@agoric/internal/src/ava-force-exit.mjs",
@@ -102,6 +108,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 76.72
+    "atLeast": 77.18
   }
 }

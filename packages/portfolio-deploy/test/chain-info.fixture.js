@@ -88,158 +88,6 @@ export const chainInfoDevNet = {
 harden(chainInfoDevNet);
 
 /**
- * built with
- *
- * AGORIC_NET=devnet ./scripts/ymax-tool.ts --buildEthOverrides
- */
-export const ethOverridesDevNet = {
-  axelarIds: {
-    Arbitrum: 'arbitrum-sepolia',
-    Avalanche: 'Avalanche',
-    Base: 'base-sepolia',
-    Ethereum: 'ethereum-sepolia',
-    Optimism: 'optimism-sepolia',
-  },
-  contracts: {
-    Arbitrum: {
-      aavePool: '0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff',
-      compound: '0x',
-      compoundRewardsController: '0x',
-      depositFactory: '0x',
-      factory: '0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9',
-      gateway: '0xe1cE95479C84e9809269227C7F8524aE051Ae77a',
-      gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d',
-      tokenMessenger: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
-      aaveUSDC: '0x460b97BD498E1157530AEb3086301d5225b91216',
-      aaveRewardsController: '0x3A203B14CF8749a1e3b7314c6c49004B77Ee667A',
-    },
-    Avalanche: {
-      aavePool: '0x8B9b2AF4afB389b4a70A474dfD4AdCD4a302bb40',
-      compound: '0x',
-      compoundRewardsController: '0x',
-      depositFactory: '0x',
-      factory: '0x8C654562C5f74eFfd24e1DE7EE43c75d0Cd36bC5',
-      gateway: '0xC249632c2D40b9001FE907806902f63038B737Ab',
-      gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0x5425890298aed601595a70AB815c96711a31Bc65',
-      tokenMessenger: '0xeb08f243E5d3FCFF26A9E38Ae5520A669f4019d0',
-      aaveUSDC: '0x9CFcc1B289E59FBe1E769f020C77315DF8473760',
-      aaveRewardsController: '0x03aFC1Dfb53eae8eB7BE0E8CB6524aa79C3F8578',
-    },
-    Base: {
-      aavePool: '0x8bAB6d1b75f19e9eD9fCe8b9BD338844fF79aE27',
-      compound: '0x571621Ce60Cebb0c1D442B5afb38B1663C6Bf017',
-      compoundRewardsController: '0x3394fa1baCC0b47dd0fF28C8573a476a161aF7BC',
-      depositFactory: '0x',
-      factory: '0xaf84964745bd4edcea4b8c474cbe423e3d2f27d9',
-      gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
-      gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0x036CbD53842c5426634e7929541eC2318f3dCF7e',
-      tokenMessenger: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
-      aaveUSDC: '0x10F1A9D11CDf50041f3f8cB7191CBE2f31750ACC',
-      aaveRewardsController: '0x71B448405c803A3982aBa448133133D2DEAFBE5F',
-    },
-    Ethereum: {
-      aavePool: '0x6Ae43d3271ff6888e7Fc43Fd7321a503ff738951',
-      compound: '0xAec1F48e02Cfb822Be958B68C7957156EB3F0b6e',
-      compoundRewardsController: '0x8bF5b658bdF0388E8b482ED51B14aef58f90abfD',
-      depositFactory: '0x209Bf441cBADFE6fBc3bB5303409Bf06656FC33c',
-      factory: '0x6b124C850407e857B7fBB9fD61cC91f379066063',
-      gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
-      gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
-      tokenMessenger: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
-      aaveUSDC: '0x16dA4541aD1807f4443d92D26044C1147406EB80',
-      aaveRewardsController: '0x4DA5c4da71C5a167171cC839487536d86e083483',
-    },
-    Optimism: {
-      aavePool: '0xb50201558B00496A145fE76f7424749556E326D8',
-      compound: '0x',
-      compoundRewardsController: '0x',
-      depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
-      factory: '0x',
-      gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
-      gasService: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7',
-      tokenMessenger: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
-      aaveUSDC: '0xa818F1B57c201E092C4A2017A91815034326Efd1',
-      aaveRewardsController: '0xaD4F91D26254B6B0C6346b390dDA2991FDE2F20d',
-    },
-  },
-  chainInfo: {
-    agoric: {
-      bech32Prefix: 'agoric',
-      chainId: 'agoricdev-25',
-      namespace: 'cosmos',
-      reference: 'agoricdev-25',
-      stakingTokens: [
-        {
-          denom: 'ubld',
-        },
-      ],
-    },
-    axelar: {
-      bech32Prefix: 'axelar',
-      chainId: 'axelar-testnet-lisbon-3',
-      namespace: 'cosmos',
-      reference: 'axelar-testnet-lisbon-3',
-      stakingTokens: [
-        {
-          denom: 'uaxl',
-        },
-      ],
-    },
-    noble: {
-      bech32Prefix: 'noble',
-      chainId: 'grand-1',
-      namespace: 'cosmos',
-      reference: 'grand-1',
-      stakingTokens: [
-        {
-          denom: 'uusdc',
-        },
-      ],
-    },
-    Arbitrum: {
-      namespace: 'eip155',
-      reference: '421614',
-      cctpDestinationDomain: 3,
-    },
-    Avalanche: {
-      namespace: 'eip155',
-      reference: '43113',
-      cctpDestinationDomain: 1,
-    },
-    Base: {
-      namespace: 'eip155',
-      reference: '84532',
-      cctpDestinationDomain: 6,
-    },
-    Ethereum: {
-      namespace: 'eip155',
-      reference: '11155111',
-      cctpDestinationDomain: 0,
-    },
-    Optimism: {
-      namespace: 'eip155',
-      reference: '11155420',
-      cctpDestinationDomain: 2,
-    },
-  },
-  gmpAddresses: {
-    AXELAR_GMP:
-      'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
-    AXELAR_GAS: 'axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd',
-  },
-};
-
-/**
  * https://www.mintscan.io/agoric/proposals/100 Jul 18th 2025
  *
  * @type {Record<string, CosmosChainInfo>}
@@ -1545,235 +1393,41 @@ export const chainInfoProposal100 = {
 };
 harden(chainInfoProposal100);
 
-export const ethOverridesMainNet = {
-  axelarIds: {
-    Arbitrum: 'arbitrum',
-    Avalanche: 'Avalanche',
-    Base: 'base',
-    Ethereum: 'Ethereum',
-    Optimism: 'optimism',
-  },
-  contracts: {
+/**
+ * Per-instance contract addresses for ymax1 that differ from the base
+ * axelar-configs addresses (which correspond to ymax0).
+ */
+export const instanceOverrides = harden({
+  ymax1: {
     Arbitrum: {
-      aavePool: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-      compound: '0x9c4ec768c28520B50860ea7a15bd7213a9fF58bf',
-      compoundRewardsController: '0x88730d254A2f7e6AC8388c3198aFd694bA9f7fae',
-      depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
-      factory: '0x51e589D94b51d01B75442AE1504cD8c50d6127C9',
-      gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
-      gasService: '0x2d5d7d31F671F86C782533cc367F14109a082712',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
-      tokenMessenger: '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
-      aaveUSDC: '0x724dc807b04555b71ed48a6896b6F41593b8C637',
-      aaveRewardsController: '0x929EC64c34a17401F460460D4B9390518E5B473e',
-      Beefy_compoundUsdc_Arbitrum: '0xb9A27ba529634017b12e3cbbbFFb6dB7908a8C8B',
+      depositFactory: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A',
+      remoteAccountFactory: '0xaf57110d2d2d4c1CAD294031505bd4A8b0F3966F',
+      remoteAccountImplementation: '0xDf90cDf5D0e1ba5640A61615dd242b771e74cfD9',
+      remoteAccountRouter: '0xb82BBf2780C4c5BC8f135EE1d4a7e33eF21Ac6b5',
     },
     Avalanche: {
-      aavePool: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-      compound: '0x',
-      compoundRewardsController: '0x',
-      depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
-      factory: '0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f',
-      gateway: '0x5029C0EFf6C34351a0CEc334542cDb22c7928f78',
-      gasService: '0x2d5d7d31F671F86C782533cc367F14109a082712',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E',
-      tokenMessenger: '0x6B25532e1060CE10cc3B0A99e5683b91BFDe6982',
-      aaveUSDC: '0x625E7708f30cA75bfd92586e17077590C60eb4cD',
-      aaveRewardsController: '0x929EC64c34a17401F460460D4B9390518E5B473e',
-      Beefy_re7_Avalanche: '0xdA640bE4588C469C9DB45D082B36913490924c08',
+      depositFactory: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A',
+      remoteAccountFactory: '0xaf57110d2d2d4c1CAD294031505bd4A8b0F3966F',
+      remoteAccountImplementation: '0xDf90cDf5D0e1ba5640A61615dd242b771e74cfD9',
+      remoteAccountRouter: '0xb82BBf2780C4c5BC8f135EE1d4a7e33eF21Ac6b5',
     },
     Base: {
-      aavePool: '0xA238Dd80C259a72e81d7e4664a9801593F98d1c5',
-      compound: '0xb125E6687d4313864e53df431d5425969c15Eb2F',
-      compoundRewardsController: '0x123964802e6ABabBE1Bc9547D72Ef1B69B00A6b1',
-      depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
-      factory: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1',
-      gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
-      gasService: '0x2d5d7d31F671F86C782533cc367F14109a082712',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-      tokenMessenger: '0x1682Ae6375C4E4A97e4B583BC394c861A46D8962',
-      aaveUSDC: '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB',
-      aaveRewardsController: '0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44',
-      Beefy_morphoSeamlessUsdc_Base:
-        '0xF3C4Db91F380963e00CaA4AC1f0508259C9a3d3A',
+      depositFactory: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A',
+      remoteAccountFactory: '0xaf57110d2d2d4c1CAD294031505bd4A8b0F3966F',
+      remoteAccountImplementation: '0xDf90cDf5D0e1ba5640A61615dd242b771e74cfD9',
+      remoteAccountRouter: '0xb82BBf2780C4c5BC8f135EE1d4a7e33eF21Ac6b5',
     },
     Ethereum: {
-      aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
-      compound: '0xc3d688B66703497DAA19211EEdff47f25384cdc3',
-      compoundRewardsController: '0x1B0e765F6224C21223AeA2af16c1C46E38885a40',
-      depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
-      factory: '0x3bF3056835f7C25b1f71aff99B734Ad07d644577',
-      gateway: '0x4F4495243837681061C4743b74B3eEdf548D56A5',
-      gasService: '0x2d5d7d31F671F86C782533cc367F14109a082712',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-      tokenMessenger: '0xBd3fa81B58Ba92a82136038B25aDec7066af3155',
-      aaveUSDC: '0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c',
-      aaveRewardsController: '0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb',
-      Beefy_morphoGauntletUsdc_Ethereum:
-        '0x16F06dE7F077A95684DBAeEdD15A5808c3E13cD0',
-      Beefy_morphoSmokehouseUsdc_Ethereum:
-        '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
+      depositFactory: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A',
+      remoteAccountFactory: '0xaf57110d2d2d4c1CAD294031505bd4A8b0F3966F',
+      remoteAccountImplementation: '0xDf90cDf5D0e1ba5640A61615dd242b771e74cfD9',
+      remoteAccountRouter: '0xb82BBf2780C4c5BC8f135EE1d4a7e33eF21Ac6b5',
     },
     Optimism: {
-      aavePool: '0x794a61358D6845594F94dc1DB02A252b5b4814aD',
-      compound: '0x2e44e174f7D53F0212823acC11C01A11d58c5bCB',
-      compoundRewardsController: '0x443EA0340cb75a160F31A440722dec7b5bc3C2E9',
-      depositFactory: '0x9524EEb5F792944a0FE929bb8Efb354438B19F7C',
-      factory: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1',
-      gateway: '0xe432150cce91c13a887f7D836923d5597adD8E31',
-      gasService: '0x2d5d7d31F671F86C782533cc367F14109a082712',
-      permit2: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
-      usdc: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',
-      tokenMessenger: '0x2B4069517957735bE00ceE0fadAE88a26365528f',
-      aaveUSDC: '0x38d693cE1dF5AaDF7bC62595A37D667aD57922e5',
-      aaveRewardsController: '0x929EC64c34a17401F460460D4B9390518E5B473e',
-      Beefy_compoundUsdc_Optimism: '0x64ceF7ac6e206944fBF50d9E50Fe934cEd9FdF5F',
+      depositFactory: '0x0F0D45A7b641C565799a68aDB41edEf4D6959E4A',
+      remoteAccountFactory: '0xaf57110d2d2d4c1CAD294031505bd4A8b0F3966F',
+      remoteAccountImplementation: '0xDf90cDf5D0e1ba5640A61615dd242b771e74cfD9',
+      remoteAccountRouter: '0xb82BBf2780C4c5BC8f135EE1d4a7e33eF21Ac6b5',
     },
   },
-  chainInfo: {
-    agoric: {
-      bech32Prefix: 'agoric',
-      chainId: 'agoric-3',
-      icqEnabled: false,
-      namespace: 'cosmos',
-      reference: 'agoric-3',
-      stakingTokens: [
-        {
-          denom: 'ubld',
-        },
-      ],
-      connections: {
-        'axelar-dojo-1': {
-          client_id: '07-tendermint-11',
-          counterparty: {
-            client_id: '07-tendermint-69',
-            connection_id: 'connection-51',
-          },
-          id: 'connection-14',
-          state: 3,
-          transferChannel: {
-            channelId: 'channel-9',
-            counterPartyChannelId: 'channel-41',
-            counterPartyPortId: 'transfer',
-            ordering: 0,
-            portId: 'transfer',
-            state: 3,
-            version: 'ics20-1',
-          },
-        },
-        'noble-1': {
-          client_id: '07-tendermint-77',
-          counterparty: {
-            client_id: '07-tendermint-32',
-            connection_id: 'connection-38',
-          },
-          id: 'connection-72',
-          state: 3,
-          transferChannel: {
-            channelId: 'channel-62',
-            counterPartyChannelId: 'channel-21',
-            counterPartyPortId: 'transfer',
-            ordering: 0,
-            portId: 'transfer',
-            state: 3,
-            version: 'ics20-1',
-          },
-        },
-      },
-    },
-    axelar: {
-      bech32Prefix: 'axelar',
-      chainId: 'axelar-dojo-1',
-      icqEnabled: false,
-      namespace: 'cosmos',
-      reference: 'axelar-dojo-1',
-      stakingTokens: [
-        {
-          denom: 'uaxl',
-        },
-      ],
-      connections: {
-        'agoric-3': {
-          id: 'connection-51',
-          client_id: '07-tendermint-69',
-          counterparty: {
-            client_id: '07-tendermint-11',
-            connection_id: 'connection-14',
-          },
-          state: 3,
-          transferChannel: {
-            channelId: 'channel-41',
-            counterPartyChannelId: 'channel-9',
-            counterPartyPortId: 'transfer',
-            ordering: 0,
-            portId: 'transfer',
-            state: 3,
-            version: 'ics20-1',
-          },
-        },
-      },
-    },
-    noble: {
-      bech32Prefix: 'noble',
-      chainId: 'noble-1',
-      icqEnabled: false,
-      namespace: 'cosmos',
-      reference: 'noble-1',
-      connections: {
-        'agoric-3': {
-          id: 'connection-38',
-          client_id: '07-tendermint-32',
-          counterparty: {
-            client_id: '07-tendermint-77',
-            connection_id: 'connection-72',
-          },
-          state: 3,
-          transferChannel: {
-            channelId: 'channel-21',
-            counterPartyChannelId: 'channel-62',
-            counterPartyPortId: 'transfer',
-            ordering: 0,
-            portId: 'transfer',
-            state: 3,
-            version: 'ics20-1',
-          },
-        },
-      },
-    },
-    Arbitrum: {
-      namespace: 'eip155',
-      reference: '42161',
-      cctpDestinationDomain: 3,
-    },
-    Avalanche: {
-      namespace: 'eip155',
-      reference: '43114',
-      cctpDestinationDomain: 1,
-    },
-    Base: {
-      namespace: 'eip155',
-      reference: '8453',
-      cctpDestinationDomain: 6,
-    },
-    Ethereum: {
-      namespace: 'eip155',
-      reference: '1',
-      cctpDestinationDomain: 0,
-    },
-    Optimism: {
-      namespace: 'eip155',
-      reference: '10',
-      cctpDestinationDomain: 2,
-    },
-  },
-  gmpAddresses: {
-    AXELAR_GMP:
-      'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
-    AXELAR_GAS: 'axelar1aythygn6z5thymj6tmzfwekzh05ewg3l7d6y89',
-  },
-};
-harden(ethOverridesMainNet);
+});

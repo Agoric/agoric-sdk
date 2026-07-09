@@ -83,7 +83,7 @@ test('makeAssetInfo', async t => {
     assetInfo.sort(([a], [b]) => a.localeCompare(b) * -1);
 
   const assetInfo = makeAssetInfo(
-    /** @ts-expect-error minified mock */
+    // @ts-expect-error minified mock
     minChainInfo,
     minTokenMap,
   );

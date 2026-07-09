@@ -14,16 +14,29 @@ on:
         required: true
         type: string
         description: 'Identifier for the test suite that will be used as part of the filename name for logs'
+      sdk_build_id:
+        required: true
+        type: string
+        description: 'Depot build ID for the prebuilt linux/amd64 SDK image to pull and load into kind'
 
 jobs:
   multichain-e2e:
     name: Multichain E2E (${{ inputs.test_command }})
+    # Keep this on a Depot runner because the job builds via Depot, loads the
+    # resulting image into kind, and then does substantial local Docker/K8s work.
     runs-on: 'depot-ubuntu-24.04-16'
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      DEPOT_PROJECT_ID: '0gtvlr9g8j'
 
     steps:
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - uses: actions/checkout@v4
         with:
-          submodules: 'true'
           path: ./agoric-sdk
 
       - uses: ./agoric-sdk/.github/actions/restore-node
@@ -76,16 +89,11 @@ jobs:
         run: yarn install
         working-directory: ./agoric-sdk/multichain-testing
 
-      - name: Lint @agoric/multichain-testing
-        # include testing imports to check package patches
-        run: yarn lint && yarn ava test/imports.test.ts
-        working-directory: ./agoric-sdk/multichain-testing
-
-      - name: docker build (sdk)
-        # Produces local ghcr.io/agoric/agoric-sdk:dev used in Kind.
-        run: |
-          make docker-build-sdk TAG=dev
-        working-directory: ./agoric-sdk/packages/deployment
+      - name: Import prebuilt SDK image
+        uses: depot/pull-action@v1
+        with:
+          build-id: ${{ inputs.sdk_build_id }}
+          tags: ghcr.io/agoric/agoric-sdk:dev
 
       - name: Setup kind cluster
         uses: helm/kind-action@v1.8.0

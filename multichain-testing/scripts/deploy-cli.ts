@@ -11,7 +11,7 @@
  *
  * For portfolio-contract (ymax) upgrades, use the safe upgrade workflow:
  * - See multichain-testing/ymax-ops/Makefile
- * - Use ymax-tool.ts --upgrade for in-place upgrades
+ * - Use wallet-admin.ts with ymax-upgrade.ts for in-place upgrades
  * - Preserves existing contract state and instances
  */
 import '@endo/init/debug.js';
@@ -42,6 +42,7 @@ async function main() {
     process.exit(1);
   }
 
+  await null;
   try {
     const agdTools = await makeAgdTools(console.log, childProcess);
     const deployBuilder = makeDeployBuilder(agdTools, fse.readJSON, execa);

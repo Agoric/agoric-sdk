@@ -7,6 +7,12 @@ on:
   merge_group:
   push:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      boot_snapshot_cache_version:
+        description: Boot snapshot cache version override for manual reruns
+        required: false
+        default: '3'
   schedule:
     # We start a little earlier to give our build cache time to populate.
     - cron: '47 5 * * *'
@@ -19,6 +25,7 @@ env:
   AGORIC_AVA_USE_TAP: true
   NODE_V8_COVERAGE: coverage
   TEST_COLLECT: 'tee -a _testoutput.txt'
+  BOOT_SNAPSHOT_CACHE_VERSION: ${{ inputs.boot_snapshot_cache_version || '3' }}
 
 # this is required, since explicitly setting bash as shell enables pipefail, which is not
 # on by default.  This is required to fail correctly when teeing output to a file to collect
@@ -31,12 +38,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node-version: ['node-new', 'node-old']
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -97,9 +103,20 @@ jobs:
         with:
           node-version: 'node-new'
 
-      # eslint and tsc
-      # XXX running tsc in every package is slow and redundant.
-      - run: yarn lint:packages
+      # Run ESLint once from the repo root so type-aware project state can be reused.
+      - run: yarn lint:eslint --quiet
+
+      # Type-check each package against its own tsconfig (tsgo via lint:types),
+      # resolving dependencies through node_modules entrypoints as a consumer
+      # would. Complements typecheck-all, which maps everything to source in
+      # one unified config.
+      - run: yarn typecheck-packages
+
+      # multichain-testing is a standalone yarn project (not a workspace), so
+      # the root lint:eslint and typecheck-packages don't cover it.
+      - name: lint multichain-testing
+        run: yarn install && yarn lint && yarn ava test/imports.test.ts
+        working-directory: multichain-testing
 
   # A second job for what's not covered in primary
   lint-rest:
@@ -118,6 +135,9 @@ jobs:
 
       - run: yarn constraints
 
+      - name: enforce tools-scope import boundaries
+        run: yarn lint:tools-scope-imports
+
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
       # master merge check
@@ -130,16 +150,18 @@ jobs:
         run: yarn run build:submissions
         working-directory: a3p-integration
 
-      # run the typecheck-quick that local dev can rely on for fast feedback
-      - name: typecheck-quick
-        run: yarn typecheck-quick
+      # run the typecheck-all that local dev can rely on for fast feedback.
+      # Uses tsgo (TypeScript 7 native preview) over the unified
+      # tsconfig.check.json, so the repo stays green for the TS7 migration
+      # and cannot regress. (tsc 6 is used only for declaration emit, which
+      # the build and prepack steps exercise.)
+      - name: typecheck-all
+        run: yarn typecheck-all
 
       # Attempt the doc generation to catch build errors before
       # landing on master
       - name: build API docs
         run: yarn docs
-      - name: build API docs in markdown
-        run: yarn docs:markdown-for-agoric-documentation-repo
 
   # Build the package lockfiles, and check that they are clean.
   check-lockfiles:
@@ -170,8 +192,9 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest-16core # avoid exit 129
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         engine: ['node-new', 'node-old', 'xs']
     steps:
@@ -197,9 +220,6 @@ jobs:
       - name: yarn test (access-token)
         if: (success() || failure())
         run: cd packages/access-token && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: yarn test (benchmark)
-        if: (success() || failure())
-        run: cd packages/benchmark && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (deployment)
         if: (success() || failure())
         run: cd packages/deployment && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
@@ -256,9 +276,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -268,15 +285,12 @@ jobs:
           gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   # Verify that running `yarn codegen` in any package that defines it
-  # does not produce changes. Only runs on pull requests.
+  # does not produce changes.
   test-codegen:
-    if: github.event_name == 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
 
       - uses: ./.github/actions/restore-node
         with:
@@ -297,6 +311,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         engine: ['node-new', 'node-old', 'xs']
     steps:
@@ -412,9 +427,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -431,6 +443,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # test:xs is noop in governance/package.json
         engine: ['node-new', 'node-old']
@@ -452,9 +465,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -469,6 +479,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # test:xs is noop in governance/package.json
         engine: ['node-new', 'node-old']
@@ -490,9 +501,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -503,10 +511,11 @@ jobs:
 
   test-portfolio-contract:
     # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
+    timeout-minutes: 40
     needs: build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # test:xs is noop in portfolio-contract/package.json
         engine: ['node-new', 'node-old']
@@ -528,9 +537,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -545,6 +551,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # test:xs is noop in solo/package.json
         engine: ['node-new', 'node-old']
@@ -566,9 +573,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -581,8 +585,9 @@ jobs:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 30
     needs: build
-    runs-on: ubuntu-latest-16core # avoid exit 129
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         # test:xs is noop in cosmic-swingset/package.json
         engine: ['node-new', 'node-old', 'xs']
@@ -608,47 +613,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          codecov-token: ${{ secrets.CODECOV_TOKEN }}
-          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
-
-  test-inter-protocol:
-    # BEGIN-TEST-BOILERPLATE
-    timeout-minutes: 30
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        # test:xs is noop in inter-protocol/package.json
-        engine: ['node-new', 'node-old']
-    steps:
-      - name: set vars
-        id: vars
-        run: |
-          echo "test=${{ matrix.engine == 'xs' && 'test:xs' || 'test' }}" >> $GITHUB_OUTPUT
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/restore-node
-        with:
-          node-version: ${{ matrix.engine }}
-      # END-TEST-BOILERPLATE
-      - name: yarn test (inter-protocol)
-        if: (success() || failure())
-        run: cd packages/inter-protocol && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
-      - name: notify on failure
-        if: failure() && github.event_name != 'pull_request'
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -660,9 +624,10 @@ jobs:
   test-boot:
     # BEGIN-TEST-BOILERPLATE
     timeout-minutes: 40
-    needs: build
+    needs: [build]
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         engine: ['node-new', 'node-old', 'xs']
         # Run parallel testing jobs, each executing a subset.
@@ -681,17 +646,86 @@ jobs:
         with:
           node-version: ${{ matrix.engine }}
       # END-TEST-BOILERPLATE
+      - name: Clear regenerated snapshot markers
+        run: rm -rf packages/boot/test/cache/runutils/.ci-regenerated
+      - name: Compute boot snapshot cache keys
+        id: boot-snapshot-keys
+        run: |
+          snapshot_keys="$(cd packages/boot && node --import ts-blank-space/register ./test/tools/create-runutils-snapshot.ts --cache-keys)"
+          SNAPSHOT_KEYS="$snapshot_keys" BOOT_SNAPSHOT_CACHE_VERSION="$BOOT_SNAPSHOT_CACHE_VERSION" node <<'EOF' >> "$GITHUB_OUTPUT"
+          const keys = JSON.parse(process.env.SNAPSHOT_KEYS);
+          const version = process.env.BOOT_SNAPSHOT_CACHE_VERSION;
+          for (const [name, fingerprint] of Object.entries(keys)) {
+            const outputName = name.replaceAll('-', '_');
+            console.log(
+              `${outputName}=boot-runutils-snapshot-${name}-${version}-${fingerprint}`,
+            );
+          }
+          EOF
+      - name: Restore demo-base snapshot cache
+        id: demo_base_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/test/cache/runutils/demo-base
+          key: ${{ steps.boot-snapshot-keys.outputs.demo_base }}
+          restore-keys: |
+            boot-runutils-snapshot-demo-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
+      - name: Restore main-vaults-base snapshot cache
+        id: main_vaults_base_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/test/cache/runutils/main-vaults-base
+          key: ${{ steps.boot-snapshot-keys.outputs.main_vaults_base }}
+          restore-keys: |
+            boot-runutils-snapshot-main-vaults-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
+      - name: Restore itest-vaults-base snapshot cache
+        id: itest_vaults_base_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/test/cache/runutils/itest-vaults-base
+          key: ${{ steps.boot-snapshot-keys.outputs.itest_vaults_base }}
+          restore-keys: |
+            boot-runutils-snapshot-itest-vaults-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
+      - name: Restore orchestration-base snapshot cache
+        id: orchestration_base_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: packages/boot/test/cache/runutils/orchestration-base
+          key: ${{ steps.boot-snapshot-keys.outputs.orchestration_base }}
+          restore-keys: |
+            boot-runutils-snapshot-orchestration-base-${{ env.BOOT_SNAPSHOT_CACHE_VERSION }}-
       - name: yarn test (boot)
         if: (success() || failure())
         run: cd packages/boot && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: Save demo-base snapshot cache
+        if: always() && steps.demo_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/demo-base') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/test/cache/runutils/demo-base
+          key: ${{ steps.boot-snapshot-keys.outputs.demo_base }}
+      - name: Save main-vaults-base snapshot cache
+        if: always() && steps.main_vaults_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/main-vaults-base') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/test/cache/runutils/main-vaults-base
+          key: ${{ steps.boot-snapshot-keys.outputs.main_vaults_base }}
+      - name: Save itest-vaults-base snapshot cache
+        if: always() && steps.itest_vaults_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/itest-vaults-base') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/test/cache/runutils/itest-vaults-base
+          key: ${{ steps.boot-snapshot-keys.outputs.itest_vaults_base }}
+      - name: Save orchestration-base snapshot cache
+        if: always() && steps.orchestration_base_cache.outputs.cache-hit != 'true' && hashFiles('packages/boot/test/cache/runutils/.ci-regenerated/orchestration-base') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: packages/boot/test/cache/runutils/orchestration-base
+          key: ${{ steps.boot-snapshot-keys.outputs.orchestration_base }}
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -706,6 +740,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         engine: ['node-new', 'node-old', 'xs']
         # Run parallel testing jobs, each executing a subset.
@@ -738,9 +773,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -755,6 +787,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         engine: ['node-new', 'node-old', 'xs']
     steps:
@@ -779,9 +812,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true
@@ -796,6 +826,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         engine: ['node-new', 'node-old', 'xs']
     steps:
@@ -819,9 +850,6 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
       - uses: ./.github/actions/post-test
         if: (success() || failure())
         continue-on-error: true

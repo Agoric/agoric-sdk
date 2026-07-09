@@ -6,9 +6,9 @@ import { initSwingStore } from '@agoric/swing-store';
 
 import {
   swingsetIsInitialized,
-  initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../../tools/test-swingset.js';
 import { buildBridge } from '../../src/devices/bridge/bridge.js';
 import { buildPlugin } from '../../src/devices/plugin/plugin.js';
 

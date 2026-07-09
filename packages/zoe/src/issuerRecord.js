@@ -1,4 +1,3 @@
-// @jessie-check
 import { Fail } from '@endo/errors';
 
 /**
@@ -28,8 +27,8 @@ export const makeIssuerRecord = (brand, issuer, displayInfo) =>
  * @param {IssuerRecord<any>} issuerRecord
  * @returns {asserts issuerRecord is Required<IssuerRecord<any>>}
  */
-export const assertFullIssuerRecord = issuerRecord => {
+export function assertFullIssuerRecord(issuerRecord) {
   if (!issuerRecord.displayInfo) {
     throw Fail`full IssuerRecord requires displayInfo`;
   }
-};
+}

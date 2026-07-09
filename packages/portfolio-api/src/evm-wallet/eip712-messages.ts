@@ -17,7 +17,6 @@ import type {
   TypedDataToPrimitiveTypes,
 } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
-import { Fail, q } from '@endo/errors';
 import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.js';
 import {
   type Witness,
@@ -25,7 +24,8 @@ import {
   type getPermitBatchWitnessTransferFromData,
   makeWitness,
   TokenPermissionsComponents,
-} from '@agoric/orchestration/src/utils/permit2.js';
+} from '@agoric/orchestration/src/utils/permit2.ts';
+import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 
 const YMAX_DOMAIN_NAME = 'Ymax';
 const YMAX_DOMAIN_VERSION = '1';
@@ -71,6 +71,10 @@ const PortfolioStandaloneTypeParams = [
  */
 const OperationTypes = {
   OpenPortfolio: [{ name: 'allocations', type: 'Allocation[]' }],
+  OpenPortfolioWithAutoFeatures: [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+  ],
   Rebalance: [PortfolioIdParam],
   SetTargetAllocation: [
     { name: 'allocations', type: 'Allocation[]' },
@@ -84,6 +88,28 @@ const OperationTypes = {
    * - token: ERC-20 token contract address (must be USDC contract on the destination chain)
    */
   Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],
+  /**
+   * Grant portfolio permissions on a portfolio to another Agoric address
+   * (e.g. an automation agent). The contract delivers an invitation whose
+   * redeemed result can be saved in the grantee's wallet store and used via
+   * wallet invocation.
+   *
+   * - accountHolder: bech32 Agoric address that will receive the invitation
+   * - permissions: encoded portfolio permissions (see PortfolioPermissions)
+   */
+  Grant: [
+    { name: 'accountHolder', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    PortfolioIdParam,
+  ],
+  /**
+   * Update which auto-features are enabled for a portfolio. The contract will
+   * generate a permissioned delegation as necessary and deliver it to the planner.
+   */
+  SetAutoFeatures: [
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+    PortfolioIdParam,
+  ],
 } as const satisfies TypedData;
 type OperationTypes = typeof OperationTypes;
 export type OperationTypeNames = keyof OperationTypes;
@@ -94,6 +120,10 @@ const OperationSubTypes = {
     { name: 'portion', type: 'uint256' },
   ],
   Asset: TokenPermissionsComponents,
+  /** @see {@link PortfolioPermissions} */
+  PortfolioPermissions: [{ name: 'allocation', type: 'bool' }],
+  /** @see {@link PortfolioAutoFeatures} */
+  PortfolioAutoFeatures: [{ name: 'rebalance', type: 'bool' }],
 } as const satisfies TypedData;
 
 /**
@@ -114,6 +144,14 @@ type YmaxOperationTypesWithSubTypes<
 > = {
   [K in T]: P;
 } & typeof OperationSubTypes;
+
+export type PortfolioPermissionsEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioPermissions'];
+
+export type PortfolioAutoFeaturesEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioAutoFeatures'];
 
 /**
  * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.
@@ -295,26 +333,37 @@ export function validateYmaxDomainBase(
 
 export function validateYmaxDomain(
   domain: TypedDataDomain,
-  validContractAddresses?: Record<number | string, Address> | undefined,
+  validContractAddresses?:
+    | Partial<Record<number | string, Address>>
+    | undefined,
 ): asserts domain is YmaxFullDomain {
   const baseDomain = domain;
   validateYmaxDomainBase(baseDomain);
 
-  typeof domain.chainId === 'bigint' || Fail`Chain ID expected to be a BigInt`;
+  if (
+    typeof domain.chainId !== 'bigint' ||
+    domain.verifyingContract === undefined
+  ) {
+    throw new Error(`Ymax domain must include chain ID and verifying contract`);
+  }
 
   if (validContractAddresses) {
     const chainIdStr = String(domain.chainId);
 
-    chainIdStr in validContractAddresses ||
-      Fail`Unknown chain ID in Ymax domain: ${q(domain.chainId)}`;
+    if (!(chainIdStr in validContractAddresses)) {
+      throw new Error(`Unknown chain ID in Ymax domain: ${domain.chainId}`);
+    }
 
-    domain.verifyingContract === validContractAddresses[chainIdStr] ||
-      Fail`Invalid verifying contract for chain ID ${q(domain.chainId)}: ${q(
+    if (
+      !sameEvmAddress(
         domain.verifyingContract,
-      )} (expected ${q(validContractAddresses[chainIdStr])})`;
-  } else {
-    (domain.chainId !== undefined && domain.verifyingContract !== undefined) ||
-      Fail`Ymax domain must include chainId and verifyingContract`;
+        validContractAddresses[chainIdStr],
+      )
+    ) {
+      throw new Error(
+        `Invalid verifying contract for chain ID ${domain.chainId}: ${domain.verifyingContract} (expected ${validContractAddresses[chainIdStr]})`,
+      );
+    }
   }
 
   // XXX: check no extra fields?

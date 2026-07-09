@@ -34,10 +34,10 @@ export function loader(url, readFile = undefined) {
 
 /**
  * @param {{
- *   spawn: typeof spawn,
+ *   spawn: typeof import('child_process').spawn,
  *   os: string,
- *   fs: import('fs'),
- *   tmpName: import('tmp')['tmpName'],
+ *   fs: typeof import('fs'),
+ *   tmpName: (typeof import('tmp'))['tmpName'],
  * }} io
  * @returns {XSnapOptions & { messages: string[]}}
  */

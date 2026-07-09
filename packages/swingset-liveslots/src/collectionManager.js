@@ -84,7 +84,7 @@ export const collectionMetaKeys = new Set([
  * @property {Pattern} keyShape
  * @property {Pattern} valueShape
  * @property {string} label
- * @property {object} schemataCapData
+ * @property {import('@endo/marshal').CapData<string>} schemataCapData
  */
 
 /*

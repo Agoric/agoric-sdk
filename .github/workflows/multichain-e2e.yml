@@ -19,10 +19,49 @@ on:
           - swap-on-osmosis
           - ymax-hermes
   workflow_call:
+    inputs:
+      sdk_build_id:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
+  build-sdk-ci-image:
+    runs-on: 'depot-ubuntu-22.04'
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      build_id: ${{ steps.build_from_input.outputs.build_id || steps.build.outputs.build-id }}
+    steps:
+      - id: build_from_input
+        if: inputs.sdk_build_id != ''
+        run: echo "build_id=${{ inputs.sdk_build_id }}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: inputs.sdk_build_id == ''
+      - uses: depot/setup-action@v1
+        if: inputs.sdk_build_id == ''
+        with:
+          oidc: true
+      - id: build
+        name: Build and save shared SDK CI image
+        if: inputs.sdk_build_id == ''
+        uses: depot/build-push-action@v1
+        with:
+          context: .
+          file: packages/deployment/Dockerfile.sdk
+          platforms: linux/amd64
+          provenance: false
+          # This shared CI image is only a cross-job handoff artifact, so keep
+          # the Depot Registry retention for this project at 1 day.
+          save: true
+
   orchestration-api-hermes:
     name: Orchestration API - Hermes
+    needs: build-sdk-ci-image
     if: |
       github.event_name == 'workflow_call' ||
       github.event_name == 'pull_request' ||
@@ -30,11 +69,13 @@ jobs:
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: yarn test:main
       test_suite_name: orchestration-api-hermes
 
   fast-usdc-hermes:
     name: Fast USDC - Hermes
+    needs: build-sdk-ci-image
     if: |
       github.event_name == 'workflow_call' ||
       github.event_name == 'pull_request' ||
@@ -42,41 +83,49 @@ jobs:
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.fusdc.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: yarn test:fast-usdc
       test_suite_name: fast-usdc-hermes
 
   orchestration-api-go-relayer:
     name: Orchestration API - Go Relayer
+    needs: build-sdk-ci-image
     # run on dispatch only
     if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-api-go-relayer'
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.go-relayer.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: RELAYER_TYPE=go-relayer yarn test:main
       test_suite_name: orchestration-api-go-relayer
 
   fast-usdc-go-relayer:
     name: Fast USDC - Go Relayer
+    needs: build-sdk-ci-image
     # run on dispatch only
     if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'fast-usdc-go-relayer'
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.fusdc.go-relayer.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: RELAYER_TYPE=go-relayer yarn test:fast-usdc
       test_suite_name: fast-usdc-api-go-relayer
 
   orchestration-staking-go-relayer:
     name: Orchestration Staking - Go Relayer
+    needs: build-sdk-ci-image
     # run on dispatch only
     if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-staking-go-relayer'
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.go-relayer.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: RELAYER_TYPE=go-relayer yarn test:staking
       test_suite_name: orchestration-staking-go-relayer
 
   orchestration-staking-hermes:
     name: Orchestration Staking - Hermes
+    needs: build-sdk-ci-image
     # TODO: Reenable when #11981 is fixed.
     if: |
       false && (
@@ -86,21 +135,25 @@ jobs:
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: yarn test:staking
       test_suite_name: orchestration-staking-hermes
 
   orchestration-queries-go-relayer:
     name: Orchestration Queries - Go Relayer
+    needs: build-sdk-ci-image
     # run on dispatch only
     if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'orchestration-queries-go-relayer'
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.go-relayer.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: RELAYER_TYPE=go-relayer yarn test:queries
       test_suite_name: orchestration-queries-go-relayer
 
   orchestration-queries-hermes:
     name: Orchestration Queries - Hermes
+    needs: build-sdk-ci-image
     # Don't run on PRs or call, only on dispatch.
     # TODO(#11788): reenable conditions once flake is understood.
     # github.event_name == 'workflow_call' ||
@@ -110,11 +163,13 @@ jobs:
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: yarn test:queries
       test_suite_name: orchestration-queries-hermes
 
   swap-on-osmosis:
     name: Swap on Osmosis XCS contract
+    needs: build-sdk-ci-image
     # Don't run on PRs or call, only on dispatch.
     # TODO(#11450): reenable conditions once dispatch is passing again.
     # github.event_name == 'workflow_call' ||
@@ -124,14 +179,17 @@ jobs:
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.xcs-swap-anything.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: yarn test:xcs
       test_suite_name: swap-on-osmosis
 
   ymax-hermes:
     name: YMax - Hermes
+    needs: build-sdk-ci-image
     if: github.event_name == 'workflow_dispatch' && inputs.test_type == 'ymax-hermes'
     uses: ./.github/workflows/multichain-e2e-template.yml
     with:
       config: config.ymax.yaml
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
       test_command: yarn test:ymd
       test_suite_name: ymax-hermes

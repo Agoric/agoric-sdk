@@ -97,7 +97,7 @@ export const makeVStorage = ({ fetch }, config) => {
   /**
    * Make a vstorage Children or Data query, returning the decoded result along
    * with response metadata derived from fields documented at
-   * https://docs.cometbft.com/v1.0/spec/abci/abci++_methods#query (for
+   * https://docs.cometbft.com/v0.38/spec/abci/abci++_methods#query (for
    * successful responses, `log` and `height` [as `blockHeight`], and for error
    * responses, `codespace` and `code`).
    *

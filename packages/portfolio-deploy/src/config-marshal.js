@@ -7,7 +7,7 @@ import { mustMatch } from '@endo/patterns';
 /**
  * @import {Marshal, CapData, Passable} from '@endo/marshal';
  * @import { RemotableBrand } from '@endo/eventual-send';
- * @import {TypedPattern} from '@agoric/internal'
+ * @import {CastedPattern} from '@endo/patterns'
  */
 const { entries } = Object;
 
@@ -103,7 +103,7 @@ export const fromLegible = ({ structure, slots }) =>
  * @template [R=RemotableBrand]
  * @param {T} config
  * @param {Record<string, Passable>} context
- * @param {TypedPattern<T>} [shape]
+ * @param {CastedPattern<T>} [shape]
  * @returns {LegibleCapData<T,R>}
  */
 export const toExternalConfig = (config, context, shape) => {
@@ -118,7 +118,7 @@ export const toExternalConfig = (config, context, shape) => {
  * @template [R=RemotableBrand]
  * @param {LegibleCapData<T,R>} repr
  * @param {Record<string, Passable>} context
- * @param {TypedPattern<T>} [shape]
+ * @param {CastedPattern<T>} [shape]
  * @returns {T}
  */
 export const fromExternalConfig = (repr, context, shape) => {

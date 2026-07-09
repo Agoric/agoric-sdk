@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { Decimal } from '../../decimals.js';
 import { isSet } from '../../helpers.js';
@@ -59,6 +60,15 @@ function createBaseValidator(): Validator {
  */
 export const Validator = {
   typeUrl: '/stride.stakeibc.Validator' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      delegation: false,
+      sharesToTokensRate: false,
+      slashQueryCheckpoint: false,
+      slashQueryProgressTracker: false,
+    },
+    typeUrlFromField: { sharesToTokensRate: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is Validator {
     return (
       o &&

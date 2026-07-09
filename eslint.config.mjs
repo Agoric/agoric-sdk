@@ -1,4 +1,4 @@
-/* eslint-disable no-underscore-dangle, import/no-extraneous-dependencies */
+/* eslint-disable -- going away soon */
 import { fixupConfigRules, fixupPluginRules } from '@eslint/compat';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
@@ -6,7 +6,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
-import { createRequire } from 'module';
+import { createRequire } from 'node:module';
+import nodePlugin from 'eslint-plugin-n';
+import { legacySrcToToolsFiles } from './scripts/ci/tools-scope-policy.mjs';
 
 // Workaround for https://github.com/anza-xyz/eslint-plugin-require-extensions/issues/18
 const require = createRequire(import.meta.url);
@@ -20,37 +22,19 @@ const compat = new FlatCompat({
   allConfig: js.configs.all,
 });
 
-const deprecatedForLoanContract = [
-  ['currency', 'brand, asset or another descriptor'],
-  ['blacklist', 'denylist'],
-  ['whitelist', 'allowlist'],
-  ['RUN', 'IST', '/RUN/'],
-];
-
-const allDeprecated = [...deprecatedForLoanContract, ['loan', 'debt']];
-
-const deprecatedTerminology = Object.fromEntries(
-  Object.entries({
-    all: allDeprecated,
-    loanContract: deprecatedForLoanContract,
-  }).map(([category, deprecated]) => [
-    category,
-    deprecated.flatMap(([bad, good, badRgx = `/${bad}/i`]) =>
-      [
-        ['Literal', 'value'],
-        ['TemplateElement', 'value.raw'],
-        ['Identifier', 'name'],
-      ].map(([selectorType, field]) => ({
-        selector: `${selectorType}[${field}=${badRgx}]`,
-        message: `Use '${good}' instead of deprecated '${bad}'`,
-      })),
-    ),
-  ]),
-);
-
 export default [
   {
     ignores: [
+      '**/*.d.ts',
+      '**/*.test-d.ts',
+      // Has its own eslint config
+      'multichain-testing/',
+      // XXX outside the project service
+      'packages/eslint-config',
+      'packages/eslint-plugin',
+      'services/ymax-planner/esbuild.config.mjs',
+      '.github',
+      '.yarn',
       '**/__generated',
       '**/codegen',
       '**/coverage/',
@@ -60,10 +44,10 @@ export default [
       '**/build/',
       '**/bundles/',
       '**/bundle-*',
+      '**/demo/',
       'examples/',
       'packages/orchestration/src/vendor/',
       'packages/orchestration/src/stubs/',
-      'test262/',
       '**/*.html',
       '**/ava*.config.js',
       '**/.ava*.config.js',
@@ -73,11 +57,15 @@ export default [
       'packages/client-utils/scripts/',
       'packages/cosmic-proto/proto/',
       'packages/cosmic-proto/scripts/',
+      'packages/xsnap/moddable/',
+      'packages/xsnap/xsnap-native/',
       // Cosmic-swingset specific ignores
       'packages/cosmic-swingset/t[0-9]/',
       'packages/cosmic-swingset/t[0-9].*/',
       // a3p-integration specific ignores
       'a3p-integration/agoric-sdk/',
+      'a3p-integration/proposals/*/local-packages/',
+      'golang/',
     ],
   },
   {
@@ -100,6 +88,7 @@ export default [
     plugins: {
       '@typescript-eslint': typescriptEslint,
       'require-extensions': fixupPluginRules(requireExtensions),
+      n: nodePlugin,
     },
 
     linterOptions: {
@@ -180,6 +169,8 @@ export default [
         },
       ],
 
+      'n/prefer-node-protocol': 'error',
+
       'jsdoc/no-defaults': 'off',
       'no-use-before-define': 'off',
       'no-nested-ternary': 'off',
@@ -198,7 +189,6 @@ export default [
     rules: {
       'no-restricted-syntax': [
         'error',
-        ...deprecatedTerminology.all,
         {
           selector:
             'CallExpression[callee.object.name="Object"][callee.property.name="fromEntries"] > CallExpression.arguments[callee.object.name="Object"][callee.property.name="entries"]',
@@ -209,11 +199,64 @@ export default [
     },
   },
   {
+    files: ['packages/**/*.{js,ts,mjs,cjs}'],
+    ignores: ['packages/*/test/**', 'packages/wallet/api/test/**'],
+
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            '**/test/**',
+            '@agoric/*/test/**',
+            '@aglocal/*/test/**',
+            '../test/**',
+            './test/**',
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: [
-      'packages/**/demo/**/*.js',
-      'packages/*/test/**/*.*s',
-      'packages/*/test/**/*.test.*s',
-      'packages/wallet/api/test/**/*.js',
+      'packages/*/src/**/*.{js,ts,mjs,cjs}',
+      'packages/wallet/api/src/**/*.{js,ts,mjs,cjs}',
+    ],
+
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            '**/tools/**',
+            '@agoric/*/tools/**',
+            '@aglocal/*/tools/**',
+            '../tools/**',
+            './tools/**',
+            '**/test/**',
+            '@agoric/*/test/**',
+            '@aglocal/*/test/**',
+            '../test/**',
+            './test/**',
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: legacySrcToToolsFiles,
+
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
+    files: [
+      'packages/*/demo/**',
+      '**/scripts/**',
+      'packages/*/test/**',
+      'packages/wallet/*/test/**',
+      'services/*/test/**',
     ],
 
     rules: {
@@ -279,14 +322,6 @@ export default [
     },
   },
   {
-    // Allow "loan" contracts to mention the word "loan".
-    files: ['packages/zoe/src/contracts/loan/*.js'],
-
-    rules: {
-      'no-restricted-syntax': ['error', ...deprecatedTerminology.loanContract],
-    },
-  },
-  {
     files: ['**/*.ts'],
 
     rules: {
@@ -304,28 +339,15 @@ export default [
       ],
     },
   },
-  {
-    files: ['**/*.d.ts'],
-
-    rules: {
-      'no-redeclare': 'off',
-    },
-  },
-  {
-    files: ['**/*.test-d.ts'],
-    rules: {
-      '@typescript-eslint/no-unused-vars': 'off',
-    },
-  },
   ...compat
     .extends('plugin:@typescript-eslint/disable-type-checked')
     .map(config => ({
       ...config,
       files: [
-        '**/exported.*',
-        '**/types-index.*',
-        '**/types-ambient.*',
-        '**/types.*',
+        '**/exported.{js,cjs,mjs,ts,mts}',
+        '**/types-index.{js,cjs,mjs,ts,mts}',
+        '**/types-ambient.{js,cjs,mjs,ts,mts}',
+        '**/types.{js,cjs,mjs,ts,mts}',
       ],
     })),
   {

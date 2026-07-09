@@ -1,7 +1,6 @@
-/* eslint-env node */
 // @ts-check
 
-import path from 'path';
+import path from 'node:path';
 
 import { SigningStargateClient } from '@cosmjs/stargate';
 

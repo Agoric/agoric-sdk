@@ -1,12 +1,17 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- fails to notice the @see uses */
+/* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { JsonSafe } from '@agoric/cosmic-proto';
 import type { Brand, Issuer } from '@agoric/ertp';
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
+import type {
+  IBCChannelID,
+  IBCChannelOrdering,
+  IBCConnectionID,
+  IBCPortID,
+} from '@agoric/network/ibc';
 import type { Guarded } from '@endo/exo';
-import type { CaipChainId } from '@agoric/orchestration';
 import type {
   Installation,
   Instance,
@@ -14,6 +19,17 @@ import type {
 import type { TargetApp } from './bridge-target.js';
 import type { LocalChainAccount } from './localchain.js';
 import type { AssetInfo } from './vat-bank.js';
+
+// Inlined to avoid pulling @agoric/orchestration's source files into vats's
+// type-check graph. vats does not depend on orchestration as a package.
+type CaipChainId = `${string}:${string}`;
+
+export type {
+  IBCChannelID,
+  IBCChannelOrdering,
+  IBCConnectionID,
+  IBCPortID,
+} from '@agoric/network/ibc';
 
 /**
  * Published vstorage values under the `agoricNames.` hierarchy.
@@ -151,11 +167,6 @@ export type BridgeManager = {
     handler?: Remote<BridgeHandler>,
   ) => ScopedBridgeManager<B>;
 };
-
-export type IBCPortID = string;
-export type IBCChannelID = `channel-${number}`;
-export type IBCConnectionID = `connection-${number}`;
-export type IBCChannelOrdering = 'ORDERED' | 'UNORDERED';
 
 export type IBCPacket = JsonSafe<{
   data: Bytes;

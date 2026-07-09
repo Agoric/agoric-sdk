@@ -1,5 +1,3 @@
-// @jessie-check
-
 /// <reference types="ses" />
 
 // Make this a module

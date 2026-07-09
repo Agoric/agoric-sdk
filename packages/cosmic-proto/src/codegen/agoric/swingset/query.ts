@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   Params,
   type ParamsSDKType,
@@ -274,6 +275,10 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/agoric.swingset.QueryParamsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryParamsResponse {
     return (
       o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))

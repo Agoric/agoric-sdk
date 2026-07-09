@@ -151,13 +151,11 @@ export const makeBootstrap = (
       return;
     }
 
-    /**
+    const { coreEvalBridgeHandler } = /**
      * @type {{
      *   coreEvalBridgeHandler: Promise<BridgeHandler>;
      * }}
-     */
-    // @ts-expect-error cast
-    const { coreEvalBridgeHandler } = consume;
+     */ (consume);
 
     // Start the governance from the core proposals.
     for await (const coreProposalCode of coreProposalCodeSteps) {

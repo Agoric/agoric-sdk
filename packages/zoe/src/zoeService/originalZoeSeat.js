@@ -111,9 +111,6 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
   // the kit here. When resolveExitAndResult() is called, it saves
   // state.offerResult and resolves the promise if it exists, then removes the
   // table entry.
-  /**
-   * @typedef {WeakMap<ZCFSeat, unknown>}
-   */
   const ephemeralOfferResultStore = new WeakMap();
 
   // notice that this returns a maker function which we drop on the floor.

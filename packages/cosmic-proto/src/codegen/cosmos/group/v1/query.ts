@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -759,8 +760,6 @@ export interface QueryTallyResultResponseSDKType {
 }
 /**
  * QueryGroupsRequest is the Query/Groups request type.
- *
- * Since: cosmos-sdk 0.47.1
  * @name QueryGroupsRequest
  * @package cosmos.group.v1
  * @see proto type: cosmos.group.v1.QueryGroupsRequest
@@ -777,8 +776,6 @@ export interface QueryGroupsRequestProtoMsg {
 }
 /**
  * QueryGroupsRequest is the Query/Groups request type.
- *
- * Since: cosmos-sdk 0.47.1
  * @name QueryGroupsRequestSDKType
  * @package cosmos.group.v1
  * @see proto type: cosmos.group.v1.QueryGroupsRequest
@@ -788,8 +785,6 @@ export interface QueryGroupsRequestSDKType {
 }
 /**
  * QueryGroupsResponse is the Query/Groups response type.
- *
- * Since: cosmos-sdk 0.47.1
  * @name QueryGroupsResponse
  * @package cosmos.group.v1
  * @see proto type: cosmos.group.v1.QueryGroupsResponse
@@ -810,8 +805,6 @@ export interface QueryGroupsResponseProtoMsg {
 }
 /**
  * QueryGroupsResponse is the Query/Groups response type.
- *
- * Since: cosmos-sdk 0.47.1
  * @name QueryGroupsResponseSDKType
  * @package cosmos.group.v1
  * @see proto type: cosmos.group.v1.QueryGroupsResponse
@@ -3589,6 +3582,11 @@ function createBaseQueryTallyResultResponse(): QueryTallyResultResponse {
  */
 export const QueryTallyResultResponse = {
   typeUrl: '/cosmos.group.v1.QueryTallyResultResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { tally: true },
+    'gogoproto.nullable': { tally: false },
+    typeUrlFromField: { tally: () => TallyResult },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryTallyResultResponse' as const,
   is(o: any): o is QueryTallyResultResponse {
     return (
@@ -3685,8 +3683,6 @@ function createBaseQueryGroupsRequest(): QueryGroupsRequest {
 }
 /**
  * QueryGroupsRequest is the Query/Groups request type.
- *
- * Since: cosmos-sdk 0.47.1
  * @name QueryGroupsRequest
  * @package cosmos.group.v1
  * @see proto type: cosmos.group.v1.QueryGroupsRequest
@@ -3774,8 +3770,6 @@ function createBaseQueryGroupsResponse(): QueryGroupsResponse {
 }
 /**
  * QueryGroupsResponse is the Query/Groups response type.
- *
- * Since: cosmos-sdk 0.47.1
  * @name QueryGroupsResponse
  * @package cosmos.group.v1
  * @see proto type: cosmos.group.v1.QueryGroupsResponse

@@ -16,11 +16,7 @@ export interface Query {
   allowance(request: QueryAllowanceRequest): Promise<QueryAllowanceResponse>;
   /** Allowances returns all the grants for the given grantee address. */
   allowances(request: QueryAllowancesRequest): Promise<QueryAllowancesResponse>;
-  /**
-   * AllowancesByGranter returns all the grants given by an address
-   *
-   * Since: cosmos-sdk 0.46
-   */
+  /** AllowancesByGranter returns all the grants given by an address */
   allowancesByGranter(
     request: QueryAllowancesByGranterRequest,
   ): Promise<QueryAllowancesByGranterResponse>;

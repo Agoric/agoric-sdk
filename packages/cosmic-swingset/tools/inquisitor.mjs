@@ -5,7 +5,6 @@
  *   as a standalone interactive or non-interactive script. See
  *   "Check for CLI invocation" below for usage detail about the latter.
  */
-/* eslint-env node */
 /* global globalThis */
 /* eslint-disable no-empty */
 
@@ -22,7 +21,7 @@ import '@endo/init/pre.js';
 // the property assignment override mistake w.r.t. _events/_eventsCount/etc.
 // https://github.com/nodejs/node/blob/v22.12.0/lib/events.js#L347
 // @ts-expect-error TS2307 Cannot find module
-import 'data:text/javascript,try { lockdown({ domainTaming: "unsafe", errorTaming: "unsafe-debug", __hardenTaming__: "unsafe" }); } catch (_err) {}';
+import 'data:text/javascript,try { lockdown({ domainTaming: "unsafe", errorTaming: "unsafe-debug", __hardenTaming__: "unsafe" }); } catch {}';
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -544,7 +543,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
     wrapTranscriptStore: transcriptStore => {
       const wrapHelpers = makeWrapHelpers();
       const pendingItemsByVat = new Map();
-      /** @type {ReturnType<makeTranscriptStore>} */
+      /** @type {ReturnType<typeof makeTranscriptStore>} */
       const transcriptStoreOverride = {
         ...transcriptStore,
         addItem: (vatID, item) => {
@@ -581,7 +580,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
             if (baseOk) {
               try {
                 yield* transcriptStore.readSpan(vatID, startPos);
-              } catch (_err) {}
+              } catch {}
             }
             if (startPos === undefined) {
               startPos = pendingItems.at(-1)?.startPos;
@@ -649,7 +648,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
        * @type {Map<string, {info: SnapshotInfo, chunks: Uint8Array[]} | null>}
        */
       const pendingSnapshotsByVat = new Map();
-      /** @type {ReturnType<makeSnapStore>} */
+      /** @type {ReturnType<typeof makeSnapStore>} */
       const snapStoreOverride = {
         ...snapStore,
         saveSnapshot: async (vatID, snapPos, dataStream) => {
@@ -730,7 +729,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
         !bundleStore.hasBundle(bundleID) ||
           Fail`base bundleStore already has ${bundleID}`;
       };
-      /** @type {ReturnType<makeBundleStore>} */
+      /** @type {ReturnType<typeof makeBundleStore>} */
       const bundleStoreOverride = {
         ...bundleStore,
         // writes
@@ -936,7 +935,7 @@ if (isCLIEntryPoint && !interactive) {
   if (!childInput) throw Fail`[inquisitor] child must have stdin`;
   process.stdin.pipe(childInput, { end: false });
   process.stdin.on('end', () => {
-    const cleanup = `\n; try { await shutdown(); } catch (_err) {}`;
+    const cleanup = `\n; try { await shutdown(); } catch {}`;
     stream.Readable.from([cleanup]).pipe(childInput);
   });
 } else if (isCLIEntryPoint || process.env.INQUISITOR_NO_REPL) {

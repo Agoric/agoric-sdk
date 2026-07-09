@@ -6,7 +6,7 @@ const MAX_SUBSCRIPTIONS = 5;
 const hasOwnProperties = (obj: unknown) =>
   typeof obj === 'object' && obj !== null && Reflect.ownKeys(obj).length > 0;
 
-/** cf. https://docs.cometbft.com/v1.0/explanation/core/subscription */
+/** cf. https://docs.cometbft.com/v0.38/core/subscription */
 export type SubscriptionResponse = {
   type: string;
   value: Record<string, unknown>;
@@ -152,7 +152,7 @@ export class CosmosRPCClient extends JSONRPCClient {
   }
 
   /**
-   * Websocket documentation: https://docs.cometbft.com/v1.0/explanation/core/subscription
+   * Websocket documentation: https://docs.cometbft.com/v0.38/core/subscription
    * Query syntax: https://pkg.go.dev/github.com/cometbft/cometbft@v1.0.1/libs/pubsub/query/syntax
    * List of events: https://pkg.go.dev/github.com/cometbft/cometbft/types#pkg-constants
    */

@@ -80,7 +80,13 @@ export const testLocalChain = async (
         },
       );
 
-    const emptyQuery = await E(localchain).queryMany([]);
+    // queryMany's generic signature can't bind through the E() membrane here,
+    // so view localchain through a minimal non-generic interface for this call.
+    const lc =
+      /** @type {{ queryMany(reqs: unknown[]): Promise<unknown[]> }} */ (
+        localchain
+      );
+    const emptyQuery = await E(lc).queryMany([]);
     console.info('emptyQuery', emptyQuery);
     if (emptyQuery.length !== 0) {
       throw Error('emptyQuery results should be empty');

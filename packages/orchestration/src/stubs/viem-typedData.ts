@@ -15,4 +15,5 @@ export {
   serializeTypedData,
   validateTypedData,
 } from 'viem/utils';
+export { getTypesForEIP712Domain } from 'viem';
 export { encodeType } from '../utils/viem-utils/hashTypedData.ts';

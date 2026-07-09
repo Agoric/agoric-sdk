@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { Header, type HeaderSDKType } from '../../../tendermint/types/types.js';
 import {
   Timestamp,
@@ -306,8 +307,6 @@ export interface Validator {
   commission: Commission;
   /**
    * min_self_delegation is the validator's self declared minimum self delegation.
-   *
-   * Since: cosmos-sdk 0.46
    */
   minSelfDelegation: string;
   /**
@@ -894,6 +893,11 @@ function createBaseHistoricalInfo(): HistoricalInfo {
  */
 export const HistoricalInfo = {
   typeUrl: '/cosmos.staking.v1beta1.HistoricalInfo' as const,
+  annotations: {
+    'amino.dont_omitempty': { header: true },
+    'gogoproto.nullable': { header: false },
+    typeUrlFromField: { header: () => Header },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/HistoricalInfo' as const,
   is(o: any): o is HistoricalInfo {
     return (
@@ -1005,6 +1009,15 @@ function createBaseCommissionRates(): CommissionRates {
  */
 export const CommissionRates = {
   typeUrl: '/cosmos.staking.v1beta1.CommissionRates' as const,
+  annotations: {
+    'amino.dont_omitempty': { maxChangeRate: true, maxRate: true, rate: true },
+    'gogoproto.nullable': { maxChangeRate: false, maxRate: false, rate: false },
+    typeUrlFromField: {
+      maxChangeRate: 'cosmos.Dec',
+      maxRate: 'cosmos.Dec',
+      rate: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/CommissionRates' as const,
   is(o: any): o is CommissionRates {
     return (
@@ -1121,6 +1134,15 @@ function createBaseCommission(): Commission {
  */
 export const Commission = {
   typeUrl: '/cosmos.staking.v1beta1.Commission' as const,
+  annotations: {
+    'amino.dont_omitempty': { commissionRates: true, updateTime: true },
+    'gogoproto.embed': { commission_rates: 'commissionRates' },
+    'gogoproto.nullable': { commissionRates: false, updateTime: false },
+    typeUrlFromField: {
+      commissionRates: () => CommissionRates,
+      updateTime: () => Timestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Commission' as const,
   is(o: any): o is Commission {
     return (
@@ -1387,6 +1409,29 @@ function createBaseValidator(): Validator {
  */
 export const Validator = {
   typeUrl: '/cosmos.staking.v1beta1.Validator' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      commission: true,
+      description: true,
+      unbondingTime: true,
+    },
+    'gogoproto.nullable': {
+      commission: false,
+      delegatorShares: false,
+      description: false,
+      minSelfDelegation: false,
+      tokens: false,
+      unbondingTime: false,
+    },
+    typeUrlFromField: {
+      commission: () => Commission,
+      delegatorShares: 'cosmos.Dec',
+      description: () => Description,
+      minSelfDelegation: 'cosmos.Int',
+      tokens: 'cosmos.Int',
+      unbondingTime: () => Timestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Validator' as const,
   is(o: any): o is Validator {
     return (
@@ -2190,6 +2235,10 @@ function createBaseDelegation(): Delegation {
  */
 export const Delegation = {
   typeUrl: '/cosmos.staking.v1beta1.Delegation' as const,
+  annotations: {
+    'gogoproto.nullable': { shares: false },
+    typeUrlFromField: { shares: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Delegation' as const,
   is(o: any): o is Delegation {
     return (
@@ -2438,6 +2487,19 @@ function createBaseUnbondingDelegationEntry(): UnbondingDelegationEntry {
  */
 export const UnbondingDelegationEntry = {
   typeUrl: '/cosmos.staking.v1beta1.UnbondingDelegationEntry' as const,
+  annotations: {
+    'amino.dont_omitempty': { completionTime: true },
+    'gogoproto.nullable': {
+      balance: false,
+      completionTime: false,
+      initialBalance: false,
+    },
+    typeUrlFromField: {
+      balance: 'cosmos.Int',
+      completionTime: () => Timestamp,
+      initialBalance: 'cosmos.Int',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/UnbondingDelegationEntry' as const,
   is(o: any): o is UnbondingDelegationEntry {
     return (
@@ -2627,6 +2689,19 @@ function createBaseRedelegationEntry(): RedelegationEntry {
  */
 export const RedelegationEntry = {
   typeUrl: '/cosmos.staking.v1beta1.RedelegationEntry' as const,
+  annotations: {
+    'amino.dont_omitempty': { completionTime: true },
+    'gogoproto.nullable': {
+      completionTime: false,
+      initialBalance: false,
+      sharesDst: false,
+    },
+    typeUrlFromField: {
+      completionTime: () => Timestamp,
+      initialBalance: 'cosmos.Int',
+      sharesDst: 'cosmos.Dec',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/RedelegationEntry' as const,
   is(o: any): o is RedelegationEntry {
     return (
@@ -2952,6 +3027,14 @@ function createBaseParams(): Params {
  */
 export const Params = {
   typeUrl: '/cosmos.staking.v1beta1.Params' as const,
+  annotations: {
+    'amino.dont_omitempty': { minCommissionRate: true, unbondingTime: true },
+    'gogoproto.nullable': { minCommissionRate: false, unbondingTime: false },
+    typeUrlFromField: {
+      minCommissionRate: 'cosmos.Dec',
+      unbondingTime: () => Duration,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/staking/Params' as const,
   is(o: any): o is Params {
     return (
@@ -3115,6 +3198,11 @@ function createBaseDelegationResponse(): DelegationResponse {
  */
 export const DelegationResponse = {
   typeUrl: '/cosmos.staking.v1beta1.DelegationResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { balance: true, delegation: true },
+    'gogoproto.nullable': { balance: false, delegation: false },
+    typeUrlFromField: { balance: () => Coin, delegation: () => Delegation },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/DelegationResponse' as const,
   is(o: any): o is DelegationResponse {
     return (
@@ -3229,6 +3317,14 @@ function createBaseRedelegationEntryResponse(): RedelegationEntryResponse {
  */
 export const RedelegationEntryResponse = {
   typeUrl: '/cosmos.staking.v1beta1.RedelegationEntryResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { redelegationEntry: true },
+    'gogoproto.nullable': { balance: false, redelegationEntry: false },
+    typeUrlFromField: {
+      balance: 'cosmos.Int',
+      redelegationEntry: () => RedelegationEntry,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/RedelegationEntryResponse' as const,
   is(o: any): o is RedelegationEntryResponse {
     return (
@@ -3352,6 +3448,11 @@ function createBaseRedelegationResponse(): RedelegationResponse {
  */
 export const RedelegationResponse = {
   typeUrl: '/cosmos.staking.v1beta1.RedelegationResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { redelegation: true },
+    'gogoproto.nullable': { redelegation: false },
+    typeUrlFromField: { redelegation: () => Redelegation },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/RedelegationResponse' as const,
   is(o: any): o is RedelegationResponse {
     return (
@@ -3475,6 +3576,14 @@ function createBasePool(): Pool {
  */
 export const Pool = {
   typeUrl: '/cosmos.staking.v1beta1.Pool' as const,
+  annotations: {
+    'amino.dont_omitempty': { bondedTokens: true, notBondedTokens: true },
+    'gogoproto.nullable': { bondedTokens: false, notBondedTokens: false },
+    typeUrlFromField: {
+      bondedTokens: 'cosmos.Int',
+      notBondedTokens: 'cosmos.Int',
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/Pool' as const,
   is(o: any): o is Pool {
     return (

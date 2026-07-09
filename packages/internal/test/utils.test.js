@@ -32,6 +32,11 @@ import { arrayIsLike } from '../tools/ava-assertions.js';
 /** @import {Arbitrary} from 'fast-check'; */
 
 const { ownKeys } = Reflect;
+/**
+ * @param {object} obj
+ * @param {string | symbol} key
+ * @param {unknown} value
+ */
 const defineDataProperty = (obj, key, value) =>
   Object.defineProperty(obj, key, {
     value,
@@ -51,7 +56,7 @@ const thrower = messageOrErr => () => {
  * category includes arrays and other built-in exotic objects.
  *
  * @param {unknown} x
- * @returns {x is (Array | Record<PropertyKey, unknown>)}
+ * @returns {x is (Array<unknown> | Record<PropertyKey, unknown>)}
  */
 const hasObjectType = x => x !== null && typeof x === 'object';
 
@@ -83,19 +88,21 @@ const arbFunction = fc
     /** @type {any} */ ({ unit: arbLowerLetter, minLength: 1, maxLength: 20 }),
   )
   .map(name => ({ [name]: () => {} })[name]);
-const { value: arbShallow } = fc.letrec(tie => ({
-  value: fc.oneof(
-    { ...fastShrink, maxDepth: 2 },
-    arbPrimitive,
-    arbFunction,
-    fc.array(tie('value')),
-    fc
-      .uniqueArray(fc.tuple(arbKey, tie('value')), {
-        selector: entry => entry[0],
-      })
-      .map(entries => Object.fromEntries(entries)),
-  ),
-}));
+const { value: arbShallow } = fc.letrec(
+  /** @param {import('fast-check').LetrecLooselyTypedTie} tie */ tie => ({
+    value: fc.oneof(
+      { ...fastShrink, maxDepth: 2 },
+      arbPrimitive,
+      arbFunction,
+      fc.array(tie('value')),
+      fc
+        .uniqueArray(fc.tuple(arbKey, tie('value')), {
+          selector: entry => entry[0],
+        })
+        .map(entries => Object.fromEntries(entries)),
+    ),
+  }),
+);
 
 // #region attenuate
 {
@@ -145,7 +152,9 @@ const { value: arbShallow } = fc.letrec(tie => ({
     arbBad = /** @type {Arbitrary<B>} */ (arbBad);
     const badBase =
       makeBad &&
-      fc.tuple(base, arbBad).map((testCase, bad) => makeBad(testCase, bad));
+      fc
+        .tuple(base, arbBad)
+        .map(([testCase, bad]) => makeBad(/** @type {T} */ (testCase), bad));
 
     const recurse = /** @type {Arbitrary<T>} */ (
       fc
@@ -197,61 +206,66 @@ const { value: arbShallow } = fc.letrec(tie => ({
     badPermit: arbBadPermit,
     badSpecimen: arbBadSpecimen,
     specimenMissingKey: arbSpecimenMissingKey,
-  } = fc.letrec(tie => ({
-    // Happy-path test cases.
-    goodCase: makeArbTestCase(tie('goodCase')),
-
-    // Test cases in which the permit is invalid.
-    badPermit: makeArbTestCase(
-      tie('badPermit'),
-      arbShallow.filter(
-        x => x !== true && typeof x !== 'string' && !hasObjectType(x),
+  } = fc.letrec(
+    /** @param {import('fast-check').LetrecLooselyTypedTie} tie */ tie => ({
+      // Happy-path test cases. `tie` is loosely typed (`Arbitrary<unknown>`),
+      // so narrow each self-reference to the recursive test-case type.
+      goodCase: makeArbTestCase(
+        /** @type {Arbitrary<AttenuateTestCase>} */ (tie('goodCase')),
       ),
-      (testCase, badPermit) => {
-        testCase.permit = badPermit;
-        testCase.problem = 'bad permit';
-        return testCase;
-      },
-    ).filter(
-      testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
-    ),
 
-    // Test cases in which the permit is an object but the specimen is not.
-    badSpecimen: makeArbTestCase(
-      tie('badSpecimen'),
-      fc.oneof(arbPrimitive, arbFunction),
-      (testCase, badSpecimen) => {
-        if (!hasObjectType(testCase.permit)) testCase.permit = {};
-        testCase.specimen = badSpecimen;
-        testCase.problem = 'bad specimen';
-        return testCase;
-      },
-    ).filter(
-      testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
-    ),
+      // Test cases in which the permit is invalid.
+      badPermit: makeArbTestCase(
+        /** @type {Arbitrary<AttenuateTestCase>} */ (tie('badPermit')),
+        arbShallow.filter(
+          x => x !== true && typeof x !== 'string' && !hasObjectType(x),
+        ),
+        (testCase, badPermit) => {
+          testCase.permit = badPermit;
+          testCase.problem = 'bad permit';
+          return testCase;
+        },
+      ).filter(
+        testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
+      ),
 
-    // Test cases in which the specimen is missing a permit property.
-    specimenMissingKey: makeArbTestCase(
-      tie('specimenMissingKey'),
-      arbString,
-      (testCase, prop) => {
-        if (!hasObjectType(testCase.specimen)) testCase.specimen = {};
-        if (!hasObjectType(testCase.permit)) {
-          testCase.permit = { [prop]: true };
-        }
-        // Some properties are not configurable (e.g., an array's `length`), so
-        // accept failure as an option.
-        try {
-          delete (/** @type {any} */ (testCase.specimen)[prop]);
-          testCase.problem = 'specimen missing key';
-          // eslint-disable-next-line no-empty
-        } catch (err) {}
-        return testCase;
-      },
-    ).filter(
-      testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
-    ),
-  }));
+      // Test cases in which the permit is an object but the specimen is not.
+      badSpecimen: makeArbTestCase(
+        /** @type {Arbitrary<AttenuateTestCase>} */ (tie('badSpecimen')),
+        fc.oneof(arbPrimitive, arbFunction),
+        (testCase, badSpecimen) => {
+          if (!hasObjectType(testCase.permit)) testCase.permit = {};
+          testCase.specimen = badSpecimen;
+          testCase.problem = 'bad specimen';
+          return testCase;
+        },
+      ).filter(
+        testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
+      ),
+
+      // Test cases in which the specimen is missing a permit property.
+      specimenMissingKey: makeArbTestCase(
+        /** @type {Arbitrary<AttenuateTestCase>} */ (tie('specimenMissingKey')),
+        arbString,
+        (testCase, prop) => {
+          if (!hasObjectType(testCase.specimen)) testCase.specimen = {};
+          if (!hasObjectType(testCase.permit)) {
+            testCase.permit = { [prop]: true };
+          }
+          // Some properties are not configurable (e.g., an array's `length`), so
+          // accept failure as an option.
+          try {
+            delete (/** @type {any} */ (testCase.specimen)[prop]);
+            testCase.problem = 'specimen missing key';
+            // eslint-disable-next-line no-empty
+          } catch (err) {}
+          return testCase;
+        },
+      ).filter(
+        testCase => !!(/** @type {AttenuateTestCase} */ (testCase).problem),
+      ),
+    }),
+  );
 
   test('attenuate static cases', t => {
     const specimen = {
@@ -331,7 +345,12 @@ const { value: arbShallow } = fc.letrec(tie => ({
     const attenuation = attenuate(
       specimen,
       { foo: true, arr: true, empty: {}, deep: true },
-      /** @type {any} */ (obj => Object.assign(obj, { marked })),
+      // `transform` must return the same type it receives, so mutate `obj`
+      // in place and return it (rather than the wider `Object.assign` result).
+      obj => {
+        Object.assign(/** @type {object} */ (obj), { marked });
+        return obj;
+      },
     );
     const expected = { marked, foo, arr, empty: { marked }, deep: deepClone };
     t.deepEqual(attenuation, expected);
@@ -357,7 +376,9 @@ const { value: arbShallow } = fc.letrec(tie => ({
       let mutationCallCount = 0;
       const mutatedAttenuation = attenuate(specimen, permit, obj => {
         mutationCallCount += 1;
-        obj[tag] = true;
+        // `obj` is the generic attenuation value; narrow for the symbol-keyed
+        // write, then return the original so the transform's `U => U` holds.
+        /** @type {Record<symbol, unknown>} */ (obj)[tag] = true;
         return obj;
       });
       let mutationOk = true;
@@ -620,7 +641,12 @@ test('throwErrorCode', t => {
     cause,
     errors,
   };
-  const actual = Object.fromEntries(Object.keys(expect).map(k => [k, err[k]]));
+  const errRecord = /** @type {Record<string, unknown>} */ (
+    /** @type {unknown} */ (err)
+  );
+  const actual = Object.fromEntries(
+    Object.keys(expect).map(k => [k, errRecord[k]]),
+  );
   t.deepEqual(actual, expect);
   t.true(err instanceof MyError);
 });
@@ -650,13 +676,15 @@ test('tryJsonParse(invalidJson, replacer)', t => {
 });
 
 /**
- * @template {(...args: unknown[]) => any} F
+ * @typedef {(...args: unknown[]) => any} TryNowFn
+ */
+/**
  * @type {Macro<
  *   [
- *     F | ((...args: Parameters<F>) => never),
+ *     TryNowFn | ((...args: Parameters<TryNowFn>) => never),
  *     ((err: Error) => any) | undefined,
  *     {
- *       args?: Parameters<F>;
+ *       args?: Parameters<TryNowFn>;
  *       catches?: ThrowsExpectation<Error>;
  *       returns?: any;
  *       throws?: ThrowsExpectation<Error> & {
@@ -673,7 +701,7 @@ const testTryNow = test.macro((t, fn, projectError, details) => {
 
   /** @type {Error[]} */
   const caught = [];
-  /** @type {(err: Error) => ReturnType<F>} */
+  /** @type {(err: Error) => ReturnType<TryNowFn>} */
   const logAndProjectError = err => {
     caught.push(err);
     if (projectError) return projectError(err);
@@ -681,7 +709,11 @@ const testTryNow = test.macro((t, fn, projectError, details) => {
   };
 
   const callTryNow = () =>
-    tryNow(fn, logAndProjectError, .../** @type {Parameters<F>} */ (args));
+    tryNow(
+      fn,
+      logAndProjectError,
+      .../** @type {Parameters<TryNowFn>} */ (args),
+    );
   const result = throws ? t.throws(callTryNow, throws) : callTryNow();
 
   if (catches || throws) {
@@ -718,7 +750,8 @@ test('tryNow(thrower, thrower)', testTryNow, thrower('foo'), thrower('bar'), {
   throws: { message: 'bar', withCause: true },
 });
 test('tryNow propagates args', t => {
-  const fn = (...args) => arrayIsLike(t, args, ['foo', 'bar']);
+  const fn = (/** @type {unknown[]} */ ...args) =>
+    arrayIsLike(t, args, ['foo', 'bar']);
   tryNow(fn, err => thrower(err)(), 'foo', 'bar');
 });
 

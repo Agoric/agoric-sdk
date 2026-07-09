@@ -3,25 +3,31 @@
  * `permitWitnessTransferFrom`.
  * @see {@link https://docs.uniswap.org/contracts/permit2/reference/signature-transfer}
  *
- * This is original code that was adapted for permit2-sdk, unlike @see ./permit2SignatureTransfer.ts
+ * This is original code that was adapted for permit2-sdk, unlike {@link ./permit2SignatureTransfer.ts}
  */
 
 import type {
   AbiFunction,
   AbiParameter,
   AbiParameterToPrimitiveType,
+  Address,
   TypedData,
+  TypedDataDomain,
 } from 'abitype';
 import { keyMirror } from '@agoric/internal/src/keyMirror.js';
 import { objectMapMutable } from '@agoric/internal/src/js-utils.js';
 import type { TypedDataParameter } from '../abitype.ts';
 import type { encodeType } from '../viem-utils/hashTypedData.ts';
 import {
+  PERMIT2_DOMAIN_NAME,
+  type Permit2Domain,
   PermitBatchTransferFromTypeParams,
   permitBatchWitnessTransferFromTypes,
   PermitTransferFromTypeParams,
   permitWitnessTransferFromTypes,
+  TokenPermissionTypeParams,
 } from './signatureTransfer.ts';
+import { sameEvmAddress } from '../address.js';
 
 const PrimaryTypes = keyMirror({
   PermitBatchWitnessTransferFrom: null,
@@ -111,6 +117,61 @@ type MapUnion<U> = {
       : never
     : never;
 };
+
+/**
+ * Validate that the TokenPermissions subtype is as expected for a
+ * `permitWitnessTransferFrom` call.
+ *
+ * @param types the types of the permit2 message
+ */
+export const validateTokenPermissionsType = ({
+  TokenPermissions,
+}: {
+  TokenPermissions: typeof TokenPermissionTypeParams;
+}) => {
+  for (const [i, { name, type }] of TokenPermissionTypeParams.entries()) {
+    if (
+      TokenPermissions[i].name !== name ||
+      TokenPermissions[i].type !== type
+    ) {
+      throw new Error(
+        `TokenPermissions field at index ${i} must be \`${type} ${name}\``,
+      );
+    }
+  }
+};
+
+export function validatePermit2Domain(
+  domain: TypedDataDomain,
+  permit2Addresses?: Partial<Record<number | string, Address>>,
+): asserts domain is Permit2Domain {
+  if (!domain) {
+    throw new Error(`Missing domain in permit2 data`);
+  }
+
+  const { chainId, verifyingContract, name } = domain;
+  if (name !== PERMIT2_DOMAIN_NAME) {
+    throw new Error(`Invalid permit2 domain name: ${name}`);
+  }
+  if (typeof chainId !== 'bigint' || !verifyingContract) {
+    throw new Error(
+      `Permit2 domain must include chainId and verifyingContract`,
+    );
+  }
+
+  if (permit2Addresses) {
+    const chainIdStr = String(chainId);
+
+    const expectedAddress = permit2Addresses[chainIdStr];
+    if (!sameEvmAddress(verifyingContract, expectedAddress)) {
+      throw new Error(
+        `Invalid verifying contract for chain ID ${chainId}: ${verifyingContract} (expected ${expectedAddress})`,
+      );
+    }
+  }
+
+  // XXX: check no extra fields?
+}
 
 /**
  * Confirm that the input is a EIP-712 `types` record with a single struct

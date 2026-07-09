@@ -4,47 +4,49 @@
  */
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { buildVatController } from '@agoric/swingset-vat';
+import {
+  forkScenario,
+  makeBootControllerFixture,
+} from '../tools/controller-fixture.js';
 
 /**
  * @import {TestFn} from 'ava';
- * @import {SwingSetConfig} from '@agoric/swingset-vat';
+ * @import {ControllerFixture} from '../tools/controller-fixture.js';
  */
 
 /**
- * @type {TestFn<{}>}
+ * @typedef {ControllerFixture} TestContext
+ */
+
+/**
+ * @type {TestFn<TestContext>}
  */
 const test = anyTest;
 
-const bfile = name => new URL(name, import.meta.url).pathname;
-const importSpec = async spec =>
-  new URL(importMetaResolve(spec, import.meta.url)).pathname;
+let baseContextP;
+const getBaseContext = () => {
+  if (!baseContextP) {
+    baseContextP = makeBootControllerFixture({
+      testModuleUrl: import.meta.url,
+      bootstrapSourceSpec: './bootstrap.js',
+      vats: {
+        zoe: '@agoric/vats/src/vat-zoe.js',
+      },
+      bundles: {
+        zcf: '@agoric/zoe/contractFacet.js',
+        mintHolder: '@agoric/vats/src/mintHolder.js',
+      },
+    });
+  }
+  return baseContextP;
+};
+
+test.before(async t => {
+  t.context = await getBaseContext();
+});
 
 test('upgrade mintHolder', async t => {
-  /** @type {SwingSetConfig} */
-  const config = harden({
-    bootstrap: 'bootstrap',
-    vats: {
-      // TODO refactor to use bootstrap-relay.js
-      bootstrap: { sourceSpec: bfile('./bootstrap.js') },
-      zoe: { sourceSpec: await importSpec('@agoric/vats/src/vat-zoe.js') },
-    },
-    bundles: {
-      zcf: {
-        sourceSpec: await importSpec('@agoric/zoe/contractFacet.js'),
-      },
-      mintHolder: {
-        sourceSpec: await importSpec('@agoric/vats/src/mintHolder.js'),
-      },
-    },
-  });
-  // console.debug('config', JSON.stringify(config, null, 2));
-
-  const c = await buildVatController(config);
-  t.teardown(c.shutdown);
-  c.pinVatRoot('bootstrap');
-  await c.run();
+  const { controller: c } = await forkScenario(t);
 
   const run = async (name, args = []) => {
     assert(Array.isArray(args));

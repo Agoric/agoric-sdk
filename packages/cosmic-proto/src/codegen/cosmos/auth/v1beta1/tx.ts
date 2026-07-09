@@ -1,12 +1,11 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { Params, type ParamsSDKType } from './auth.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.MsgUpdateParams
@@ -29,8 +28,6 @@ export interface MsgUpdateParamsProtoMsg {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.MsgUpdateParams
@@ -42,8 +39,6 @@ export interface MsgUpdateParamsSDKType {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.MsgUpdateParamsResponse
@@ -56,8 +51,6 @@ export interface MsgUpdateParamsResponseProtoMsg {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponseSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.MsgUpdateParamsResponse
@@ -71,14 +64,17 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
 }
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParams
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.MsgUpdateParams
  */
 export const MsgUpdateParams = {
   typeUrl: '/cosmos.auth.v1beta1.MsgUpdateParams' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/x/auth/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (
@@ -168,8 +164,6 @@ function createBaseMsgUpdateParamsResponse(): MsgUpdateParamsResponse {
 /**
  * MsgUpdateParamsResponse defines the response structure for executing a
  * MsgUpdateParams message.
- *
- * Since: cosmos-sdk 0.47
  * @name MsgUpdateParamsResponse
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.MsgUpdateParamsResponse

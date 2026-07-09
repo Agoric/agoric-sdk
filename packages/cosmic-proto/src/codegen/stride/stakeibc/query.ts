@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
@@ -749,6 +750,10 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/stride.stakeibc.QueryParamsResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryParamsResponse {
     return (
       o && (o.$typeUrl === QueryParamsResponse.typeUrl || Params.is(o.params))
@@ -1119,6 +1124,10 @@ function createBaseQueryGetHostZoneResponse(): QueryGetHostZoneResponse {
  */
 export const QueryGetHostZoneResponse = {
   typeUrl: '/stride.stakeibc.QueryGetHostZoneResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { hostZone: false },
+    typeUrlFromField: { hostZone: () => HostZone },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetHostZoneResponse {
     return (
       o &&
@@ -1711,6 +1720,10 @@ function createBaseQueryGetEpochTrackerResponse(): QueryGetEpochTrackerResponse 
  */
 export const QueryGetEpochTrackerResponse = {
   typeUrl: '/stride.stakeibc.QueryGetEpochTrackerResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { epochTracker: false },
+    typeUrlFromField: { epochTracker: () => EpochTracker },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is QueryGetEpochTrackerResponse {
     return (
       o &&

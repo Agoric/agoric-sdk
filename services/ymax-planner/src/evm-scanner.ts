@@ -1,8 +1,15 @@
 import { WebSocketProvider, Log, toQuantity, isError } from 'ethers';
-import type { Filter, TransactionResponse } from 'ethers';
+import type { Filter, TransactionReceipt, TransactionResponse } from 'ethers';
 import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
-import { getBlockTimeMs } from './support.ts';
+import {
+  getBlockTimeMs,
+  prepareAbortController,
+  type ReconnectingEvmProvider,
+} from './support.ts';
+import { WatcherTransportError } from './errors.ts';
+
+export const DEFAULT_CONFIRMATION_POLL_INTERVAL_MS = 5_000;
 
 export type WatcherTimeoutOptions = {
   timeoutMs?: number;
@@ -53,6 +60,100 @@ type BinarySearch = {
 };
 
 /**
+ * Per-call timeout. A zombie socket (open but neither responding nor faulting)
+ * makes a request/response call hang indefinitely; bounding it turns that
+ * silent stall into a fast, retryable {@link WatcherTransportError} and reports
+ * the socket as unhealthy so it gets reconnected (see PAK-517).
+ */
+export const RPC_CALL_TIMEOUT_MS = 20_000;
+
+/**
+ * A provider facade whose methods retry on Alchemy 429 rate-limit errors
+ * (exponential backoff with jitter) and are bounded by a per-call timeout.
+ *
+ * It delegates to the {@link ReconnectingEvmProvider}'s *current* provider on every
+ * call, so after a reconnect the facade (held by long-lived watchers) keeps
+ * working against the fresh socket.
+ */
+export const makeEvmRpc = (
+  reconnectingProvider: ReconnectingEvmProvider,
+  setTimeout: typeof globalThis.setTimeout,
+  {
+    timeoutMs = RPC_CALL_TIMEOUT_MS,
+    log = (..._args: unknown[]) => {},
+  }: { timeoutMs?: number; log?: (...args: unknown[]) => void } = {},
+): Pick<
+  WebSocketProvider,
+  | 'getBlockNumber'
+  | 'getNetwork'
+  | 'getTransactionReceipt'
+  | 'send'
+  | 'on'
+  | 'off'
+  | 'websocket'
+> & {
+  getBlock: (n: number) => ReturnType<WebSocketProvider['getBlock']>;
+  getLogs: (filter: Filter) => ReturnType<WebSocketProvider['getLogs']>;
+} => {
+  const withTimeout = <T>(label: string, op: () => Promise<T>): Promise<T> =>
+    new Promise<T>((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        log(`RPC ${label} timed out after ${timeoutMs}ms; cycling socket`);
+        reconnectingProvider.reportUnhealthy(`${label} timeout`);
+        reject(
+          new WatcherTransportError(
+            `RPC ${label} timed out after ${timeoutMs}ms`,
+          ),
+        );
+      }, timeoutMs);
+      op().then(
+        value => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve(value);
+        },
+        err => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          reject(err);
+        },
+      );
+    });
+
+  const call = <T>(label: string, op: () => Promise<T>): Promise<T> =>
+    withRateLimitRetry(() => withTimeout(label, op), setTimeout);
+
+  const p = () => reconnectingProvider.getProvider();
+
+  return {
+    // RPC calls with rate-limit retry and per-call timeout
+    getBlock: (n: number) => call('getBlock', () => p().getBlock(n)),
+    getBlockNumber: () => call('getBlockNumber', () => p().getBlockNumber()),
+    getLogs: (filter: Filter) => call('getLogs', () => p().getLogs(filter)),
+    getNetwork: () => call('getNetwork', () => p().getNetwork()),
+    getTransactionReceipt: (txHash: string) =>
+      call('getTransactionReceipt', () => p().getTransactionReceipt(txHash)),
+    send: (...args: Parameters<WebSocketProvider['send']>) =>
+      call('send', () => p().send(...args)),
+    // Subscription pass-throughs (delegate to the current provider; no retry)
+    on: ((...args: Parameters<WebSocketProvider['on']>) =>
+      p().on(...args)) as WebSocketProvider['on'],
+    off: ((...args: Parameters<WebSocketProvider['off']>) =>
+      p().off(...args)) as WebSocketProvider['off'],
+    get websocket() {
+      return reconnectingProvider.websocket;
+    },
+  };
+};
+
+export type EvmRpc = ReturnType<typeof makeEvmRpc>;
+
+/**
  * Generic binary search helper for finding the greatest value that satisfies a predicate.
  * Assumes a transition from acceptance to rejection somewhere in [start, end].
  *
@@ -94,7 +195,7 @@ export const binarySearch = (async <Index extends number | bigint>(
  * equal to targetMs.
  */
 export const getBlockNumberBeforeRealTime = async (
-  provider: WebSocketProvider,
+  rpc: EvmRpc,
   targetMs: number,
   {
     fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
@@ -108,15 +209,15 @@ export const getBlockNumberBeforeRealTime = async (
 
   // Try to find a good starting point.
   let startNumber = 0;
-  const latestNumber = await provider.getBlockNumber();
-  const latestBlock = await provider.getBlock(latestNumber);
+  const latestNumber = await rpc.getBlockNumber();
+  const latestBlock = await rpc.getBlock(latestNumber);
   const deltaSec = latestBlock!.timestamp - posixSeconds;
   if (deltaSec <= 0) return latestNumber;
   if (deltaSec > 0 && meanBlockDurationMs) {
     const deltaBlocks = Math.ceil(deltaSec / (meanBlockDurationMs / 1000));
     const pastNumber = latestNumber - deltaBlocks * 2;
     if (startNumber < pastNumber) {
-      const pastBlock = await provider.getBlock(pastNumber);
+      const pastBlock = await rpc.getBlock(pastNumber);
       if (pastBlock?.timestamp && pastBlock.timestamp <= posixSeconds) {
         startNumber = pastNumber;
       }
@@ -124,7 +225,7 @@ export const getBlockNumberBeforeRealTime = async (
   }
 
   const blockNumber = await binarySearch(startNumber, latestNumber, async n => {
-    const block = await provider.getBlock(n);
+    const block = await rpc.getBlock(n);
     return block?.timestamp ? block.timestamp <= posixSeconds : false;
   });
   return blockNumber;
@@ -140,12 +241,52 @@ const isRateLimitError = (err: unknown): boolean =>
   isError(err, 'UNKNOWN_ERROR') &&
   (err as { error?: { code?: number } }).error?.code === 429;
 
-const RATE_LIMIT_BACKOFF_MS = 1_000;
-const MAX_RATE_LIMIT_RETRIES = 3;
+/**
+ * Alchemy-recommended retry parameters for 429 rate-limit errors.
+ * Uses exponential backoff with jitter:
+ *   delay = min(2^attempt * minTimeout + random(0..1000), maxTimeout)
+ *
+ * @see https://www.alchemy.com/docs/how-to-implement-retries
+ */
+const RATE_LIMIT_RETRIES = 5;
+const RATE_LIMIT_MIN_TIMEOUT_MS = 1_000;
+const RATE_LIMIT_MAX_TIMEOUT_MS = 60_000;
+const RATE_LIMIT_FACTOR = 2;
+
+/** Compute exponential backoff delay with jitter for a given attempt. */
+const rateLimitBackoffMs = (attempt: number): number => {
+  const jitter = Math.random() * 1000;
+  return Math.min(
+    RATE_LIMIT_FACTOR ** attempt * RATE_LIMIT_MIN_TIMEOUT_MS + jitter,
+    RATE_LIMIT_MAX_TIMEOUT_MS,
+  );
+};
+
+/**
+ * Retry a provider call on Alchemy 429 rate-limit errors using exponential
+ * backoff with jitter, per Alchemy's recommended strategy.
+ *
+ * @see https://www.alchemy.com/docs/how-to-implement-retries
+ */
+export const withRateLimitRetry = async <T>(
+  fn: () => Promise<T>,
+  setTimeout: typeof globalThis.setTimeout = globalThis.setTimeout,
+): Promise<T> => {
+  await null;
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (!isRateLimitError(err) || attempt >= RATE_LIMIT_RETRIES) throw err;
+      const delay = rateLimitBackoffMs(attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+};
 
 /** Common configuration for all chunk-based EVM chain scanning. */
 type ScanOptsBase = {
-  provider: WebSocketProvider;
+  provider: EvmRpc;
   fromBlock: number;
   toBlock: number;
   chainId: CaipChainId;
@@ -225,9 +366,9 @@ const getTraces = async (
   fromBlock: string,
   toBlock: string,
   toAddress: string,
-  provider: WebSocketProvider,
+  rpc: EvmRpc,
 ): Promise<CallTraceResult[]> => {
-  const result: CallTraceResult[] | null = await provider.send('trace_filter', [
+  const result: CallTraceResult[] | null = await rpc.send('trace_filter', [
     { fromBlock, toBlock, toAddress: [toAddress] },
   ]);
   return result ?? [];
@@ -266,7 +407,6 @@ const scanEvmBlocksInChunks = async <T>(
 
   const blockTimeMs = getBlockTimeMs(chainId);
   await null;
-  let rateLimitRetries = 0;
   for (let currentBlock = -Infinity, start = fromBlock; start <= toBlock; ) {
     if (signal?.aborted) {
       log(`[${label}] Aborted`);
@@ -292,19 +432,9 @@ const scanEvmBlocksInChunks = async <T>(
       const result = await scanChunk(start, end);
       if (result) return result;
       await opts.onRejectedChunk?.(start, end);
-      rateLimitRetries = 0;
     } catch (err) {
-      if (isRateLimitError(err) && rateLimitRetries < MAX_RATE_LIMIT_RETRIES) {
-        rateLimitRetries += 1;
-        const backoffMs = RATE_LIMIT_BACKOFF_MS * rateLimitRetries;
-        log(
-          `[${label}] Rate limited on chunk ${start}–${end}, retry ${rateLimitRetries}/${MAX_RATE_LIMIT_RETRIES} after ${backoffMs}ms`,
-        );
-        await new Promise(resolve => setTimeout(resolve, backoffMs));
-        continue; // Retry same chunk
-      }
+      // Rate-limit retries are handled by EvmRpc; only log here.
       log(`[${label}] Error in chunk ${start}–${end}:`, err);
-      rateLimitRetries = 0;
     }
 
     start += chunkSize;
@@ -471,10 +601,7 @@ export const scanFailedTxsInChunks = async (
   });
 };
 
-export const waitForBlock = async (
-  provider: WebSocketProvider,
-  targetBlock: number,
-) => {
+export const waitForBlock = async (provider: EvmRpc, targetBlock: number) => {
   return new Promise(resolve => {
     const listener = blockNumber => {
       if (blockNumber >= targetBlock) {
@@ -484,4 +611,58 @@ export const waitForBlock = async (
     };
     void provider.on('block', listener);
   });
+};
+
+export type WaitForConfirmationsOpts = {
+  provider: EvmRpc;
+  txHash: string;
+  minConfirmations: number;
+  /** For avoiding intermediate RPC requests while awaiting confirmations. */
+  meanBlockTimeMs: number;
+  /** The minimum amount of time to wait between RPC requests. */
+  pollIntervalMs?: number;
+  signal?: AbortSignal;
+  setTimeout: typeof globalThis.setTimeout;
+  log?: (...args: unknown[]) => void;
+};
+
+export const waitForConfirmations = async ({
+  provider,
+  txHash,
+  minConfirmations,
+  meanBlockTimeMs,
+  pollIntervalMs = DEFAULT_CONFIRMATION_POLL_INTERVAL_MS,
+  signal,
+  setTimeout,
+  log = () => {},
+}: WaitForConfirmationsOpts): Promise<TransactionReceipt | null> => {
+  const makeAbortController = prepareAbortController({ setTimeout });
+
+  await null;
+  let everSeenReceipt = false;
+  while (true) {
+    if (signal?.aborted) return null;
+
+    let sleepMs = pollIntervalMs;
+    const receipt = await provider.getTransactionReceipt(txHash);
+    if (receipt) {
+      everSeenReceipt = true;
+      const currentBlock = await provider.getBlockNumber();
+      const confirmationCount = currentBlock - receipt.blockNumber + 1;
+      const confirmationsStillNeeded = minConfirmations - confirmationCount;
+      if (confirmationsStillNeeded <= 0) return receipt;
+      log(
+        `Waiting for more confirmations: txHash=${txHash} observed=${confirmationCount} of ${minConfirmations} currentBlock=${currentBlock} receiptBlock=${receipt.blockNumber}`,
+      );
+      sleepMs = Math.max(
+        sleepMs,
+        (confirmationsStillNeeded + 1) * meanBlockTimeMs,
+      );
+    } else if (everSeenReceipt) {
+      log(`Transaction ${txHash} receipt disappeared - likely lost in a reorg`);
+      return null;
+    }
+
+    await makeAbortController(sleepMs, [signal]).abortedP;
+  }
 };

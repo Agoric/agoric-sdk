@@ -137,6 +137,13 @@ export const makeStorageTools = (storage: FakeStorageKit) => {
     ) as StatusFor['portfolio'];
   };
 
+  const getPortfolioAgents = async (pId: number) => {
+    await vstoragePendingWrites();
+    return getDeserialized(
+      `published.ymax0.portfolios.portfolio${pId}.agents`,
+    ).at(-1) as StatusFor['portfolioAgents'];
+  };
+
   const getFlowHistory = async (pId: number, fId: number) => {
     await vstoragePendingWrites();
     return getDeserialized(
@@ -151,6 +158,7 @@ export const makeStorageTools = (storage: FakeStorageKit) => {
     readPublished,
     readLegible,
     getPortfolioStatus,
+    getPortfolioAgents,
     getFlowHistory,
     getFlowStatus,
   });

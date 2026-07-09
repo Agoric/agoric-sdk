@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { Params, type ParamsSDKType } from './auth.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
@@ -48,6 +49,11 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.auth.v1beta1.GenesisState' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (

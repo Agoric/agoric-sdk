@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
@@ -69,8 +70,6 @@ export interface ModuleAccountSDKType {
 }
 /**
  * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
- *
- * Since: cosmos-sdk 0.47
  * @name ModuleCredential
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.ModuleCredential
@@ -92,8 +91,6 @@ export interface ModuleCredentialProtoMsg {
 }
 /**
  * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
- *
- * Since: cosmos-sdk 0.47
  * @name ModuleCredentialSDKType
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.ModuleCredential
@@ -284,6 +281,10 @@ function createBaseModuleAccount(): ModuleAccount {
  */
 export const ModuleAccount = {
   typeUrl: '/cosmos.auth.v1beta1.ModuleAccount' as const,
+  annotations: {
+    'gogoproto.embed': { base_account: 'baseAccount' },
+    typeUrlFromField: { baseAccount: () => BaseAccount },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/ModuleAccount' as const,
   is(o: any): o is ModuleAccount {
     return (
@@ -401,8 +402,6 @@ function createBaseModuleCredential(): ModuleCredential {
 }
 /**
  * ModuleCredential represents a unclaimable pubkey for base accounts controlled by modules.
- *
- * Since: cosmos-sdk 0.47
  * @name ModuleCredential
  * @package cosmos.auth.v1beta1
  * @see proto type: cosmos.auth.v1beta1.ModuleCredential

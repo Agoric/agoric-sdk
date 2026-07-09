@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { Params, type ParamsSDKType } from './params.js';
 import { HostZone, type HostZoneSDKType } from './host_zone.js';
 import { EpochTracker, type EpochTrackerSDKType } from './epoch_tracker.js';
@@ -53,6 +54,10 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/stride.stakeibc.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is GenesisState {
     return (
       o &&

@@ -143,7 +143,7 @@ export function buildRootObject(vatPowers) {
 
     /**
      * @param {object} [privateObjects]
-     * @param {object} [decentralObjects]
+     * @param {Record<string, any>} [decentralObjects]
      * @param {object} [deprecatedObjects]
      */
     setPresences(

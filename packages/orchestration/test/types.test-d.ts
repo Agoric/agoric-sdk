@@ -196,7 +196,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<Vow<ChainInfo>>(chainHostInterface.getChainInfo());
 
   const publicTopicRecord: HostInterface<
-    Record<string, ResolvedPublicTopic<unknown>>
+    Record<string, ResolvedPublicTopic<any>>
   > = {
     someTopic: {
       subscriber: null as any,
@@ -204,7 +204,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     },
   };
   // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
-  expectType<Record<string, ResolvedPublicTopic<unknown>>>(publicTopicRecord);
+  expectType<Record<string, ResolvedPublicTopic<any>>>(publicTopicRecord);
 }
 
 // HostOf with TransferSteps
@@ -393,7 +393,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   >(account.executeEncodedTx);
 
   expectType<
-    <TUS extends readonly (keyof TypeFromUrl | unknown)[]>(
+    <TUS extends readonly string[]>(
       msgs: Readonly<{ [K in keyof TUS]: AnyJson<TUS[K]> }>,
       opts?: CosmosActionOptions,
     ) => Promise<{ [K in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[K]>> }>

@@ -1,11 +1,13 @@
 import test from 'ava';
 import { zeroPadValue, AbiCoder, Interface, ethers } from 'ethers';
 import { objectMap } from '@endo/patterns';
-import type { WebSocketProvider } from 'ethers';
-import { createMockPendingTxOpts } from './mocks.ts';
-import { handlePendingTx } from '../src/pending-tx-manager.ts';
 import { TxType } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { CaipChainId } from '@agoric/orchestration';
+import { createMockPendingTxOpts } from './mocks.ts';
+import type { ReconnectingEvmProvider } from '../src/support.ts';
+import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import type { EvmRpc } from '../src/evm-scanner.ts';
 import {
   SMART_WALLET_CREATED_SIGNATURE,
   parseSmartWalletCreatedLog,
@@ -108,8 +110,7 @@ test('handlePendingTx processes MAKE_ACCOUNT transaction successfully', async t 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
-    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
-    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] Subscribed with subId=mock-subscription-id to ${factoryAddress}`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${mockLog.transactionHash} block=${mockLog.blockNumber}`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
@@ -166,8 +167,7 @@ test('handlePendingTx logs timeout on MAKE_ACCOUNT transaction with no matching 
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
-    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
-    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
+    `[${txId}] Subscribed with subId=mock-subscription-id to ${factoryAddress}`,
     `[${txId}] [WALLET_TX_NOT_FOUND] ✗ No wallet creation found for expectedAddr ${expectedWalletAddr} within 0.05 minutes`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=0x123abc block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
@@ -252,9 +252,8 @@ test('handlePendingTx ignores non-matching wallet addresses', async t => {
   t.deepEqual(logMessages, [
     `[${txId}] handling ${type} tx`,
     `[${txId}] Watching for wallet creation: subscribing to ${factoryAddress}, expecting event from ${factoryAddress}, expectedAddr ${expectedWalletAddr}`,
-    `[${txId}] Attempting to subscribe to ${factoryAddress}...`,
-    `[${txId}] ✓ Subscribed to ${factoryAddress} (subscription ID: mock-subscription-id)`,
-    `[${txId}] Address mismatch for txHash=0x123abc: sourceAddress=agoric1test expectedWallet=${wrongWalletAddrChecksummed}`,
+    `[${txId}] Subscribed with subId=mock-subscription-id to ${factoryAddress}`,
+    `[${txId}] expectedAddr=0x8cb4b25e77844fc0632aca14f1f9b23bdd654ebf txHash=0x123abc wallet address mismatch: got ${wrongWalletAddrChecksummed} from sourceAddress agoric1test`,
     `[${txId}] ✅ SUCCESS: expectedAddr=${expectedWalletAddr} txHash=${correctTxHash} block=18500000`,
     `[${txId}] MAKE_ACCOUNT tx resolved`,
   ]);
@@ -299,7 +298,8 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
   const avgBlockTimeMs = 2500;
 
   const latestBlock = 1_450_031;
-  mockProvider.getBlockNumber = async () => latestBlock;
+  const blockNumberBuffer = 5000;
+  mockProvider.getBlockNumber = async () => latestBlock + blockNumberBuffer;
 
   mockProvider.getBlock = async (blockNumber: number) => {
     const blocksAgo = latestBlock - blockNumber;
@@ -318,7 +318,7 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
         // Emit the correct block number so waitForBlock resolves deterministically
         on: (event: any, listener: Function) => {
           if (event === 'block') {
-            queueMicrotask(() => listener(latestBlock + 1));
+            queueMicrotask(() => listener(latestBlock + blockNumberBuffer + 1));
           }
         },
         // trace_filter uses provider.send()
@@ -350,12 +350,13 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
           blockNumber: latestBlock,
           transactionHash: failedTxHash,
         }),
-      }) as unknown as WebSocketProvider,
+      }) as unknown as ReconnectingEvmProvider,
   );
 
   const ctxWithFetch = harden({
     ...opts,
     evmProviders: newEvmProviders,
+    retryProviders: newEvmProviders as unknown as Record<CaipChainId, EvmRpc>,
     fetch: async () => ({}) as Response,
   });
 
@@ -368,13 +369,13 @@ test('find a failed tx in MAKE_ACCOUNT lookback mode via trace_filter', async t 
     },
   );
 
-  t.true(logs.some(l => l.includes(`handling ${TxType.MAKE_ACCOUNT}`)));
-  t.true(
-    logs.some(l =>
-      l.includes(
-        `[${txId}] ❌ REVERTED (25 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock} - transaction failed`,
-      ),
-    ),
+  const logsExcerpt = logs.filter(
+    l =>
+      l.includes(TxType.MAKE_ACCOUNT) || l.match(/\b(?:handling|REVERTED)\b/),
   );
-  t.true(logs.some(l => l.includes('MAKE_ACCOUNT tx resolved')));
+  t.deepEqual(logsExcerpt, [
+    `[${txId}] handling ${TxType.MAKE_ACCOUNT} tx`,
+    `[${txId}] ❌ REVERTED (transaction failed, 240 confirmations): expectedAddr=${expectedWalletAddr} txHash=${failedTxHash} block=${latestBlock}`,
+    `[${txId}] ${TxType.MAKE_ACCOUNT} tx resolved`,
+  ]);
 });

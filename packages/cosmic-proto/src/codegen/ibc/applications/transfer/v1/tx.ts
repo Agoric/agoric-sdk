@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   Coin,
   type CoinSDKType,
@@ -30,7 +31,7 @@ export interface MsgTransfer {
    */
   sourceChannel: string;
   /**
-   * the tokens to be transferred
+   * token to be transferred
    */
   token: Coin;
   /**
@@ -43,18 +44,24 @@ export interface MsgTransfer {
   receiver: string;
   /**
    * Timeout height relative to the current block height.
-   * The timeout is disabled when set to 0.
+   * If you are sending with IBC v1 protocol, either timeout_height or timeout_timestamp must be set.
+   * If you are sending with IBC v2 protocol, timeout_timestamp must be set, and timeout_height must be omitted.
    */
   timeoutHeight: Height;
   /**
    * Timeout timestamp in absolute nanoseconds since unix epoch.
-   * The timeout is disabled when set to 0.
+   * If you are sending with IBC v1 protocol, either timeout_height or timeout_timestamp must be set.
+   * If you are sending with IBC v2 protocol, timeout_timestamp must be set.
    */
   timeoutTimestamp: bigint;
   /**
    * optional memo
    */
   memo: string;
+  /**
+   * optional encoding
+   */
+  encoding: string;
 }
 export interface MsgTransferProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.MsgTransfer';
@@ -77,6 +84,7 @@ export interface MsgTransferSDKType {
   timeout_height: HeightSDKType;
   timeout_timestamp: bigint;
   memo: string;
+  encoding: string;
 }
 /**
  * MsgTransferResponse defines the Msg/Transfer response type.
@@ -165,6 +173,7 @@ function createBaseMsgTransfer(): MsgTransfer {
     timeoutHeight: Height.fromPartial({}),
     timeoutTimestamp: BigInt(0),
     memo: '',
+    encoding: '',
   };
 }
 /**
@@ -177,6 +186,11 @@ function createBaseMsgTransfer(): MsgTransfer {
  */
 export const MsgTransfer = {
   typeUrl: '/ibc.applications.transfer.v1.MsgTransfer' as const,
+  annotations: {
+    'amino.dont_omitempty': { timeoutHeight: true, token: true },
+    'gogoproto.nullable': { timeoutHeight: false, token: false },
+    typeUrlFromField: { timeoutHeight: () => Height, token: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgTransfer' as const,
   is(o: any): o is MsgTransfer {
     return (
@@ -189,7 +203,8 @@ export const MsgTransfer = {
           typeof o.receiver === 'string' &&
           Height.is(o.timeoutHeight) &&
           typeof o.timeoutTimestamp === 'bigint' &&
-          typeof o.memo === 'string'))
+          typeof o.memo === 'string' &&
+          typeof o.encoding === 'string'))
     );
   },
   isSDK(o: any): o is MsgTransferSDKType {
@@ -203,7 +218,8 @@ export const MsgTransfer = {
           typeof o.receiver === 'string' &&
           Height.isSDK(o.timeout_height) &&
           typeof o.timeout_timestamp === 'bigint' &&
-          typeof o.memo === 'string'))
+          typeof o.memo === 'string' &&
+          typeof o.encoding === 'string'))
     );
   },
   encode(
@@ -233,6 +249,9 @@ export const MsgTransfer = {
     }
     if (message.memo !== '') {
       writer.uint32(66).string(message.memo);
+    }
+    if (message.encoding !== '') {
+      writer.uint32(74).string(message.encoding);
     }
     return writer;
   },
@@ -268,6 +287,9 @@ export const MsgTransfer = {
         case 8:
           message.memo = reader.string();
           break;
+        case 9:
+          message.encoding = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -291,6 +313,7 @@ export const MsgTransfer = {
         ? BigInt(object.timeoutTimestamp.toString())
         : BigInt(0),
       memo: isSet(object.memo) ? String(object.memo) : '',
+      encoding: isSet(object.encoding) ? String(object.encoding) : '',
     };
   },
   toJSON(message: MsgTransfer): JsonSafe<MsgTransfer> {
@@ -311,6 +334,7 @@ export const MsgTransfer = {
         message.timeoutTimestamp || BigInt(0)
       ).toString());
     message.memo !== undefined && (obj.memo = message.memo);
+    message.encoding !== undefined && (obj.encoding = message.encoding);
     return obj;
   },
   fromPartial(object: Partial<MsgTransfer>): MsgTransfer {
@@ -332,6 +356,7 @@ export const MsgTransfer = {
         ? BigInt(object.timeoutTimestamp.toString())
         : BigInt(0);
     message.memo = object.memo ?? '';
+    message.encoding = object.encoding ?? '';
     return message;
   },
   fromProtoMsg(message: MsgTransferProtoMsg): MsgTransfer {
@@ -453,6 +478,10 @@ function createBaseMsgUpdateParams(): MsgUpdateParams {
  */
 export const MsgUpdateParams = {
   typeUrl: '/ibc.applications.transfer.v1.MsgUpdateParams' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/MsgUpdateParams' as const,
   is(o: any): o is MsgUpdateParams {
     return (

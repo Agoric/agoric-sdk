@@ -78,6 +78,10 @@ export const makePrivateArgs = async (
       axelar: ['uaxl'],
     },
   );
+  const postalServiceInstance = await E(agoricNames).lookup(
+    'instance',
+    'postalService',
+  );
 
   const chainInfo = {
     ...cosmosChainInfo,
@@ -113,6 +117,7 @@ export const makePrivateArgs = async (
     gmpAddresses,
     walletBytecode,
     defaultFlowConfig,
+    postalServiceInstance,
   });
   return it;
 };

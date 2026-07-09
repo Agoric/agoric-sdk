@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { ParamChange, type ParamChangeSDKType } from './params.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
@@ -61,8 +62,6 @@ export interface QueryParamsResponseSDKType {
 /**
  * QuerySubspacesRequest defines a request type for querying for all registered
  * subspaces and all keys for a subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name QuerySubspacesRequest
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.QuerySubspacesRequest
@@ -75,8 +74,6 @@ export interface QuerySubspacesRequestProtoMsg {
 /**
  * QuerySubspacesRequest defines a request type for querying for all registered
  * subspaces and all keys for a subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name QuerySubspacesRequestSDKType
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.QuerySubspacesRequest
@@ -85,8 +82,6 @@ export interface QuerySubspacesRequestSDKType {}
 /**
  * QuerySubspacesResponse defines the response types for querying for all
  * registered subspaces and all keys for a subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name QuerySubspacesResponse
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.QuerySubspacesResponse
@@ -101,8 +96,6 @@ export interface QuerySubspacesResponseProtoMsg {
 /**
  * QuerySubspacesResponse defines the response types for querying for all
  * registered subspaces and all keys for a subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name QuerySubspacesResponseSDKType
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.QuerySubspacesResponse
@@ -113,8 +106,6 @@ export interface QuerySubspacesResponseSDKType {
 /**
  * Subspace defines a parameter subspace name and all the keys that exist for
  * the subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name Subspace
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.Subspace
@@ -130,8 +121,6 @@ export interface SubspaceProtoMsg {
 /**
  * Subspace defines a parameter subspace name and all the keys that exist for
  * the subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name SubspaceSDKType
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.Subspace
@@ -249,6 +238,11 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.params.v1beta1.QueryParamsResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { param: true },
+    'gogoproto.nullable': { param: false },
+    typeUrlFromField: { param: () => ParamChange },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
     return (
@@ -334,8 +328,6 @@ function createBaseQuerySubspacesRequest(): QuerySubspacesRequest {
 /**
  * QuerySubspacesRequest defines a request type for querying for all registered
  * subspaces and all keys for a subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name QuerySubspacesRequest
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.QuerySubspacesRequest
@@ -405,8 +397,6 @@ function createBaseQuerySubspacesResponse(): QuerySubspacesResponse {
 /**
  * QuerySubspacesResponse defines the response types for querying for all
  * registered subspaces and all keys for a subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name QuerySubspacesResponse
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.QuerySubspacesResponse
@@ -508,8 +498,6 @@ function createBaseSubspace(): Subspace {
 /**
  * Subspace defines a parameter subspace name and all the keys that exist for
  * the subspace.
- *
- * Since: cosmos-sdk 0.46
  * @name Subspace
  * @package cosmos.params.v1beta1
  * @see proto type: cosmos.params.v1beta1.Subspace

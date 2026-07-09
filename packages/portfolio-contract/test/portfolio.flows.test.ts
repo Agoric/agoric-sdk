@@ -8,104 +8,91 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { GuestInterface } from '@agoric/async-flow';
-import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import { AmountMath, makeIssuerKit, type NatAmount } from '@agoric/ertp';
-import { makeTracer, mustMatch, type TraceLogger } from '@agoric/internal';
-import { type StorageMessage } from '@agoric/internal/src/lib-chainStorage.js';
-import {
-  defaultSerializer,
-  documentStorageSchema,
-  makeAsyncQueue,
-  makeFakeStorageKit,
-} from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { AmountMath, type NatAmount } from '@agoric/ertp';
+import { makeTracer, mustMatch } from '@agoric/internal';
 import { makeExpectUnhandledRejectionMacro } from '@agoric/internal/src/lib-nodejs/ava-unhandled-rejection.js';
+import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
+import { type AccountId, type Orchestrator } from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import {
-  denomHash,
-  type AccountId,
-  type Bech32Address,
-  type TrafficEntry,
-  type Orchestrator,
-  type CaipChainId,
-  type IBCMsgTransferOptions,
-  type LegacyExecuteEncodedTxOptions,
-} from '@agoric/orchestration';
-import { prepareProgressTracker } from '@agoric/orchestration/src/utils/progress.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import {
-  parseAccountId,
-  chainOfAccount,
-} from '@agoric/orchestration/src/utils/address.js';
-import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+  decodeFunctionData,
+  getAbiItem,
+  getAddress,
+  toFunctionSelector,
+} from 'viem';
 import {
   type AxelarChain,
   type FlowDetail,
   type FundsFlowPlan,
 } from '@agoric/portfolio-api';
-import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import {
   DEFAULT_FLOW_CONFIG,
   RebalanceStrategy,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { Address } from 'abitype';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { type VowTools } from '@agoric/vow';
-import type { ZCF, ZCFSeat } from '@agoric/zoe';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { makeHeapZone } from '@agoric/zone';
-import { Far, passStyleOf } from '@endo/pass-style';
+import { passStyleOf } from '@endo/pass-style';
 import { makePromiseKit } from '@endo/promise-kit';
 import { hexToBytes } from '@noble/hashes/utils';
+import type { Address } from 'abitype';
 import type { Assertions } from 'ava';
-import {
-  preparePortfolioKit,
-  type PortfolioKit,
-} from '../src/portfolio.exo.ts';
-import {
-  executePlan as rawExecutePlan,
-  makeErrorList,
-  onAgoricTransfer,
-  openPortfolio as rawOpenPortfolio,
-  provideCosmosAccount,
-  rebalance as rawRebalance,
-  wayFromSrcToDest,
-  type OnTransferContext,
-  type PortfolioInstanceContext,
-} from '../src/portfolio.flows.ts';
+import { erc20ABI } from '../src/interfaces/erc20.ts';
+import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
   sendGMPContractCall,
   sendPermit2GMP,
-  type EVMContext,
-} from '../src/pos-evm.flows.ts';
+} from '../src/axelar-gmp-legacy.flows.ts';
 import {
+  provideEVMAccount as provideEVMRoutedAccount,
+  provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit,
+  sendPermit2GMP as sendPermit2RoutedGMP,
+  sendGMPContractCall as sendRoutedGMPContractCall,
+} from '../src/axelar-gmp-router.flows.ts';
+import { type PortfolioKit } from '../src/portfolio.exo.ts';
+import {
+  makeErrorList,
+  provideCosmosAccount,
+  executePlan as rawExecutePlan,
+  openPortfolio as rawOpenPortfolio,
+  rebalance as rawRebalance,
+  wayFromSrcToDest,
+  type PortfolioInstanceContext,
+} from '../src/portfolio.flows.ts';
+import { type EVMContext } from '../src/pos-evm.flows.ts';
+import {
+  agoricToNoble,
   makeSwapLockMessages,
   makeUnlockSwapMessages,
+  nobleToAgoric,
+  protocolUSDN,
 } from '../src/pos-usdn.flows.ts';
-import { TxStatus } from '../src/resolver/constants.js';
-import { prepareResolverKit } from '../src/resolver/resolver.exo.js';
 import {
-  PENDING_TXS_NODE_KEY,
-  type PublishedTx,
-  type TxId,
-} from '../src/resolver/types.ts';
-import {
-  makeOfferArgsShapes,
   type MovementDesc,
   type OfferArgsFor,
 } from '../src/type-guards-steps.ts';
-import { makeProposalShapes, type ProposalType } from '../src/type-guards.ts';
-import { makePortfolioSteps } from '../tools/plan-transfers.ts';
+import { makeProposalShapes } from '../src/type-guards.ts';
 import { predictWalletAddress } from '../src/utils/evm-orch-factory.ts';
+import { makePortfolioSteps } from '../tools/plan-transfers.ts';
 import {
   decodeCreateAndDepositPayload,
   decodeFunctionCall,
+  decodeMultiCalls,
 } from './abi-utils.ts';
+import {
+  BLD,
+  USDC,
+  docOpts,
+  makeMockSeat,
+  makePermitDetails,
+  mocks,
+  silent,
+  type Mocks,
+} from './flow-test-kit.ts';
 import {
   axelarIdsMock,
   contractsMock,
@@ -166,664 +153,9 @@ const rebalance: typeof rawRebalance = (
   config = DEFAULT_FLOW_CONFIG,
 ) => rawRebalance(orch, ctx, seat, offerArgs, kit, startedFlow, config);
 
-const theExit = harden(() => {}); // for ava comparison
-// @ts-expect-error mock
-const mockZCF: ZCF = Far('MockZCF', {
-  makeEmptySeatKit: () => {
-    let exited = false;
-    const exit = () => {
-      exited = true;
-      theExit();
-    };
-    const fail = () => {
-      exited = true;
-    };
-    return {
-      zcfSeat: Far('MockZCFSeat', { exit, fail, hasExited: () => exited }),
-    } as unknown as ZCF;
-  },
-});
-
-const { brand: USDC } = makeIssuerKit('USDC');
-const { brand: BLD } = makeIssuerKit('BLD');
 const { make } = AmountMath;
-
-// XXX move to mocks.ts?
-const makeVowToolsAreJustPromises = () => {
-  const vowTools = harden({
-    makeVowKit: () => {
-      const { resolve, reject, promise } = makePromiseKit();
-      const resolver = Far('FakeVowResolver', { resolve, reject });
-      return harden({
-        resolver,
-        vow: promise,
-      });
-    },
-    when: async (specimen, onFulfilled, onRejected) =>
-      Promise.resolve(specimen).then(onFulfilled, onRejected),
-    watch: (specimen, watcher, ...watcherArgs) => {
-      let onFulfilled;
-      if (watcher?.onFulfilled) {
-        onFulfilled = value => watcher.onFulfilled(value, ...watcherArgs);
-      }
-      let onRejected;
-      if (watcher?.onRejected) {
-        onRejected = err => watcher.onRejected(err, ...watcherArgs);
-      }
-      return vowTools.when(specimen, onFulfilled, onRejected);
-    },
-    asVow: async thunk => thunk(),
-  }) as any; // mock
-  return vowTools as VowTools;
-};
-
-const makeMockSeat = <M extends keyof ProposalType>(
-  give: ProposalType[M]['give'] = {},
-  want: ProposalType[M]['want'] = {},
-  buf: any[] = [],
-) => {
-  const proposal = harden({ give, want });
-  let hasExited = false;
-  return {
-    getProposal: () => proposal,
-    hasExited: () => hasExited,
-    exit(completion) {
-      if (hasExited) throw Error('already exited');
-      hasExited = true;
-      buf.push({ _cap: 'seat', _method: 'exit', completion });
-    },
-    fail(reason) {
-      if (hasExited) throw Error('already exited');
-      hasExited = true;
-      buf.push({ _cap: 'seat', _method: 'fail', reason });
-    },
-  } as any as ZCFSeat;
-};
-
-interface MockLogEvent {
-  _method: string;
-  _cap?: string;
-  opts?: Record<string, any>;
-  [key: string]: unknown;
-}
-
-// XXX move to mocks.ts for readability?
-const mocks = (
-  errs: Record<string, Error | Map<string, Error>> = {},
-  give: ProposalType['openPortfolio']['give'] = {},
-) => {
-  const throwIfErr = (key: string, name: string = '') => {
-    let err = errs[key];
-    if (err === undefined) {
-      return;
-    }
-
-    if (err instanceof Map) {
-      const suberr = err.get(name);
-      if (suberr === undefined) {
-        return;
-      }
-      err.delete(name);
-      err = suberr;
-    } else {
-      delete errs[key];
-    }
-
-    if (err instanceof Error) {
-      assert.note(
-        err,
-        assert.details`injected ${assert.quote(key)} error at ${Error('stack trace')}`,
-      );
-    } else {
-      err = assert.error(assert.details`injected ${key} error`, undefined, {
-        cause: err,
-      });
-    }
-    throw err;
-  };
-
-  const buf = [] as MockLogEvent[];
-  const log = (ev: MockLogEvent) => {
-    buf.push(ev);
-  };
-  const kinks: Set<(ev: MockLogEvent) => Promise<void>> = new Set();
-  const record = async (ev: MockLogEvent) => {
-    for (const kink of kinks) {
-      await kink(ev);
-    }
-    log(ev);
-  };
-  let nonce = 0;
-  const tapPK = makePromiseKit<TargetApp>();
-  const factoryPK = makePromiseKit();
-
-  const cosmosChainIdToName = {
-    [fetchedChainInfo.noble.chainId]: 'noble',
-    [fetchedChainInfo.axelar.chainId]: 'axelar',
-  } as const;
-
-  const agoricConns = fetchedChainInfo.agoric.connections;
-  const transferChannels = {
-    noble: agoricConns[fetchedChainInfo.noble.chainId].transferChannel,
-    axelar: agoricConns[fetchedChainInfo.axelar.chainId].transferChannel,
-  } as const;
-  const eip155ChainIdToAxelarChain = Object.fromEntries(
-    Object.entries(axelarCCTPConfig).map(([name, info]) => [
-      `${Number(info.reference)}`,
-      name,
-    ]),
-  ) as Record<`${number}`, AxelarChain>;
-
-  const chains = new Map();
-  const orch = harden({
-    async getChain(name: string) {
-      if (chains.has(name)) return chains.get(name);
-      const chainId =
-        fetchedChainInfo[name]?.chainId ?? `${name}-${name.length}`;
-      const stakingTokens = {
-        noble: undefined,
-        axelar: [{ denom: 'uaxl' }],
-      }[name];
-      const it = harden({
-        getChainInfo() {
-          if (name in axelarCCTPConfig) {
-            return axelarCCTPConfig[name];
-          }
-          return harden({ chainId, stakingTokens });
-        },
-        async makeAccount() {
-          throwIfErr('makeAccount', name);
-
-          const addr = harden({
-            chainId,
-            value: `${name}1${1000 + 7 * (nonce += 2)}`,
-          });
-          const account = {
-            makeProgressTracker() {
-              // XXX this call should be logged
-              return makeProgressTracker();
-            },
-            getAddress() {
-              return addr;
-            },
-            async send(toAccount, amount) {
-              const { send: sendErr } = errs;
-              if (sendErr && amount?.value === 13n) throw sendErr;
-              await record({
-                _cap: addr.value,
-                _method: 'send',
-                toAccount,
-                amount,
-              });
-            },
-            async transfer(address, amount, opts?: IBCMsgTransferOptions) {
-              if (!('denom' in amount)) throw Error('#10449');
-              await record({
-                _cap: addr.value,
-                _method: 'transfer',
-                address,
-                amount,
-                opts,
-              });
-              const { transfer: err } = errs;
-              if (
-                err &&
-                !(err instanceof Map) &&
-                !err.message.includes(cosmosChainIdToName[address.chainId])
-              )
-                throwIfErr('transfer');
-              const { progressTracker, memo, txOpts, sendOpts } = opts ?? {};
-              if (memo && address.value.startsWith('axelar1')) {
-                factoryPK.resolve(memo);
-              }
-              const dstChainId = chainOfAccount(address);
-
-              const traffic = [] as TrafficEntry[];
-              let lastResult = Promise.resolve({});
-              if (name !== 'agoric') {
-                const result = await account.executeEncodedTx(
-                  [
-                    {
-                      typeUrl: '/ibc.applications.transfer.v1.MsgTransfer',
-                      value: { sequence: 223n },
-                    },
-                  ],
-                  { ...txOpts, progressTracker, sendOpts },
-                );
-                lastResult = lastResult.then(() => result);
-              }
-
-              if (progressTracker) {
-                const getTransferChannel = (caipChainId: string) => {
-                  const cosmosChainId = caipChainId.replace(/^cosmos:/, '');
-                  const channel =
-                    transferChannels[cosmosChainIdToName[cosmosChainId]];
-                  return channel;
-                };
-
-                const srcChainId: CaipChainId = `cosmos:${chainId}`;
-                const transferTrafficBase = {
-                  op: 'transfer',
-                  src: ['ibc', ['chain', srcChainId]],
-                  dst: ['ibc', ['chain', dstChainId]],
-                  seq: 339n,
-                } as const satisfies TrafficEntry;
-
-                const channel = getTransferChannel(dstChainId);
-                if (channel) {
-                  const transferTraffic: TrafficEntry = {
-                    ...transferTrafficBase,
-                    src: [
-                      ...transferTrafficBase.src,
-                      ['port', channel.portId],
-                      ['channel', channel.channelId],
-                    ],
-                    dst: [
-                      ...transferTrafficBase.dst,
-                      ['port', channel.counterPartyPortId],
-                      ['channel', channel.counterPartyChannelId],
-                    ],
-                  };
-                  traffic.push(transferTraffic);
-                } else {
-                  const revChannel = getTransferChannel(srcChainId);
-                  assert(
-                    revChannel,
-                    `no transfer channel for ${dstChainId} nor ${srcChainId}`,
-                  );
-                  const transferTraffic: TrafficEntry = {
-                    ...transferTrafficBase,
-                    src: [
-                      ...transferTrafficBase.src,
-                      ['port', revChannel.counterPartyPortId],
-                      ['channel', revChannel.counterPartyChannelId],
-                    ],
-                    dst: [
-                      ...transferTrafficBase.dst,
-                      ['port', revChannel.portId],
-                      ['channel', revChannel.channelId],
-                    ],
-                  };
-                  traffic.push(transferTraffic);
-                }
-                const priorReport = progressTracker.getCurrentProgressReport();
-                const newReport = {
-                  ...priorReport,
-                  traffic: [...(priorReport.traffic ?? []), ...traffic],
-                };
-                progressTracker.update(harden(newReport));
-              }
-
-              return lastResult;
-            },
-            async executeEncodedTx(msgs, opts?: LegacyExecuteEncodedTxOptions) {
-              await record({
-                _cap: addr.value,
-                _method: 'executeEncodedTx',
-                msgs,
-              });
-              throwIfErr('executeEncodedTx');
-              const { progressTracker } = opts ?? {};
-              if (progressTracker) {
-                const agoricChain = await orch.getChain('agoric');
-                const agoricInfo = await agoricChain.getChainInfo();
-                const newTraffic = [
-                  {
-                    op: 'ICA',
-                    src: [
-                      'ibc',
-                      ['chain', `cosmos:${agoricInfo.chainId}`],
-                      ['port', 'icacontroller-2'],
-                      ['channel', 'channel-7'],
-                    ],
-                    dst: [
-                      'ibc',
-                      ['chain', `cosmos:${chainId}`],
-                      ['port', 'icahost-9'],
-                      ['channel', 'channel-1'],
-                    ],
-                    // XXX emulate an unknown sequence number, at least until the
-                    // Network API connection.sendWithMeta provides it.
-                    seq: { status: 'unknown' },
-                  },
-                ] as TrafficEntry[];
-                const priorReport = progressTracker.getCurrentProgressReport();
-                const report = {
-                  ...priorReport,
-                  traffic: [...(priorReport.traffic ?? []), ...newTraffic],
-                };
-                progressTracker.update(report);
-              }
-
-              const result = msgs.map(({ typeUrl, response = {} }) => {
-                if (typeUrl.startsWith('/')) {
-                  return response;
-                }
-                return {};
-              });
-              return result;
-            },
-          };
-          if (name === 'agoric') {
-            const { executeEncodedTx: _, ...localAccount } = account;
-            return Far('AgoricAccount', {
-              ...localAccount,
-              monitorTransfers: async tap => {
-                log({ _cap: addr.value, _method: 'monitorTransfers', tap });
-                tapPK.resolve(tap);
-                const reg = harden({});
-                return reg;
-              },
-              parseInboundTransfer: async (
-                packet: VTransferIBCEvent['packet'],
-              ) => {
-                const ftPacketData = JSON.parse(atob(packet.data));
-                const {
-                  denom: transferDenom,
-                  sender,
-                  receiver,
-                  amount,
-                } = ftPacketData as FungibleTokenPacketData;
-
-                let denomOrTrace;
-
-                const prefix = `${packet.source_port}/${packet.source_channel}/`;
-                if (transferDenom.startsWith(prefix)) {
-                  denomOrTrace = transferDenom.slice(prefix.length);
-                } else {
-                  denomOrTrace = `${packet.destination_port}/${packet.destination_channel}/${transferDenom}`;
-                }
-
-                const localDenom = denomOrTrace.match(/^([^/]+)(\/[^/]+)?$/)
-                  ? denomOrTrace
-                  : `ibc/${denomHash(denomOrTrace.match(/^(?<path>[^/]+\/[^/]+)\/(?<denom>.*)$/)?.groups)}`;
-
-                return harden({
-                  amount: {
-                    value: BigInt(amount),
-                    denom: localDenom,
-                  },
-                  extra: {
-                    ...ftPacketData,
-                  },
-                  fromAccount: sender,
-                  toAccount: receiver,
-                });
-              },
-            });
-          }
-          if (name === 'noble') {
-            return Far('NobleAccount', {
-              ...account,
-              depositForBurn: async (destinationAddress, denomAmount) => {
-                if (!('denom' in denomAmount)) throw Error('#10449');
-                log({
-                  _cap: addr.value,
-                  _method: 'depositForBurn',
-                  destinationAddress,
-                  denomAmount,
-                });
-              },
-            });
-          }
-          return Far('Account', account);
-        },
-      });
-      chains.set(name, it);
-      return it;
-    },
-  }) as unknown as Orchestrator;
-
-  const zone = makeHeapZone();
-
-  const zoeTools = harden({
-    async localTransfer(sourceSeat, localAccount, amounts) {
-      log({ _method: 'localTransfer', sourceSeat, localAccount, amounts });
-      throwIfErr('localTransfer');
-    },
-    async withdrawToSeat(localAccount, destSeat, amounts) {
-      log({ _method: 'withdrawToSeat', localAccount, destSeat, amounts });
-    },
-  }) as GuestInterface<ZoeTools>;
-
-  const vowTools: VowTools = makeVowToolsAreJustPromises();
-  const makeProgressTracker = prepareProgressTracker(zone, { vowTools });
-
-  const board = makeFakeBoard();
-  const marshaller = board.getReadonlyMarshaller();
-
-  const {
-    enqueue: eachMessage,
-    iterable: storageUpdates,
-    cancel: cancelStorageUpdates,
-  } = makeAsyncQueue<StorageMessage>();
-  const storage = makeFakeStorageKit(
-    'published',
-    { sequence: true },
-    { eachMessage },
-  );
-  const ymaxNode = storage.rootNode.makeChildNode('ymax0');
-  const pendingTxsNode = ymaxNode.makeChildNode(PENDING_TXS_NODE_KEY);
-  const portfoliosNode = ymaxNode.makeChildNode('portfolios');
-
-  const denom = `ibc/${denomHash({ channelId: 'channel-123', denom: 'uusdc' })}`;
-
-  const inertSubscriber = {} as ResolvedPublicTopic<never>['subscriber'];
-
-  const resolverZone = zone.subZone('Resolver');
-  const { client: resolverClient, service: resolverService } =
-    prepareResolverKit(resolverZone, mockZCF, {
-      vowTools,
-      pendingTxsNode,
-      marshaller,
-    })();
-
-  const txfrCtx: OnTransferContext = {
-    resolverService,
-    transferChannels,
-  };
-
-  const onAgoricTransferHost = (event, kit) =>
-    onAgoricTransfer(orch, txfrCtx, event, kit);
-
-  const ctx1: PortfolioInstanceContext = {
-    axelarIds: axelarIdsMock,
-    contracts: contractsMock,
-    walletBytecode: '0x1234',
-    gmpAddresses,
-    usdc: { brand: USDC, denom },
-    gmpFeeInfo: { brand: BLD, denom: 'uaxl' },
-    inertSubscriber,
-    zoeTools,
-    resolverClient,
-    contractAccount: orch.getChain('agoric').then(ch => ch.makeAccount()),
-    transferChannels,
-    eip155ChainIdToAxelarChain,
-  };
-
-  const rebalanceHost = (seat, offerArgs, kit) =>
-    rebalance(orch, ctx1, seat, offerArgs, kit);
-
-  const executePlanHost = (
-    seat,
-    offerArgs,
-    kit,
-    flowDetail,
-    startedFlow,
-    config,
-    options,
-  ) =>
-    executePlan(
-      orch,
-      ctx1,
-      seat,
-      offerArgs,
-      kit,
-      flowDetail,
-      startedFlow,
-      config,
-      options,
-    );
-
-  const makePortfolioKit = preparePortfolioKit(zone, {
-    zcf: mockZCF,
-    axelarIds: axelarIdsMock,
-    gmpAddresses,
-    vowTools,
-    transferChannels,
-    rebalance: rebalanceHost as any,
-    executePlan: executePlanHost as any,
-    onAgoricTransfer: onAgoricTransferHost as any,
-    proposalShapes: makeProposalShapes(USDC, BLD),
-    offerArgsShapes: makeOfferArgsShapes(USDC),
-    marshaller,
-    portfoliosNode,
-    usdcBrand: USDC,
-    eip155ChainIdToAxelarChain,
-    contracts: contractsMock,
-    walletBytecode: ctx1.walletBytecode,
-    ...(null as any),
-  });
-  const makePortfolioKitGuest = (opts?: { sourceAccountId?: AccountId }) =>
-    makePortfolioKit({
-      portfolioId: 1,
-      sourceAccountId: opts?.sourceAccountId,
-    }) as unknown as GuestInterface<PortfolioKit>;
-
-  const seat = makeMockSeat(give, undefined, buf);
-
-  /**
-   * Read pure data (CapData that has no slots) from the storage path
-   */
-  const getDeserialized = (path: string): unknown[] => {
-    return storage.getValues(path).map(defaultSerializer.parse);
-  };
-
-  const txResolver = harden({
-    getPublished: (txId: TxId) =>
-      getDeserialized(`published.ymax0.pendingTxs.${txId}`).at(-1) as
-        | PublishedTx
-        | undefined,
-    findPending: async () => {
-      await eventLoopIteration();
-      const paths = [...storage.data.keys()].filter(k =>
-        k.includes('.pendingTxs.'),
-      );
-      const txIds: TxId[] = [];
-      const txIdToNext: Map<TxId, TxId | undefined> = new Map();
-      const settledTxs: Set<TxId> = new Set();
-      for (const p of paths) {
-        const info = getDeserialized(p).at(-1) as PublishedTx;
-        const txId = p.split('.').at(-1) as TxId;
-
-        if (info.status === 'success' || info.status === 'failed') {
-          settledTxs.add(txId);
-        }
-        if (info.status !== 'pending') continue;
-
-        // IBC_FROM_REMOTE is not yet implemented in resolver.
-        if (info.type === 'IBC_FROM_REMOTE') continue;
-
-        if (info.type === 'CCTP_TO_AGORIC') {
-          console.debug('CCTP_TO_AGORIC', txId, info);
-          const { amount, destinationAddress: cctpDest } = info;
-          assert(cctpDest, 'missing destinationAddress in CCTP_TO_AGORIC tx');
-          const { accountAddress: target } = parseAccountId(cctpDest);
-          const tap = await tapPK.promise;
-          const fwdEvent = makeIncomingVTransferEvent({
-            sender: 'noble1fwd',
-            sourceChannel: 'channel-99999',
-            destinationChannel: transferChannels.noble.channelId,
-            target,
-            receiver: target as Bech32Address,
-            amount,
-            memo: '{"noteWell":"abc"}',
-          });
-          await tap.receiveUpcall(fwdEvent);
-          continue;
-        }
-
-        if (info.type === 'IBC_FROM_AGORIC' && info.nextTxId) {
-          // Chain-level support; consider it settled only when its dependents are.
-          txIdToNext.set(txId, info.nextTxId);
-          continue;
-        }
-        txIds.push(txId);
-      }
-
-      // See which of the dependencies are now eligible for settlement.
-      for (const [txId, nextId] of txIdToNext.entries()) {
-        // Check if the dependendency is settled.
-        if (!nextId || settledTxs.has(nextId)) {
-          txIds.push(txId);
-        }
-      }
-      return harden(txIds);
-    },
-    drainPending: async (status: Exclude<TxStatus, 'pending'> = 'success') => {
-      for (;;) {
-        const txIds = await txResolver.findPending();
-        if (!txIds.length) break;
-        for (const txId of txIds) {
-          resolverService.settleTransaction({ txId, status });
-        }
-      }
-    },
-    settleUntil: async (
-      done: Promise<unknown>,
-      status: Exclude<TxStatus, 'pending'> = 'success',
-      rejectionReason?: string,
-    ) => {
-      void done.then(() => cancelStorageUpdates());
-      for await (const message of storageUpdates) {
-        if (!message) continue;
-        const { method, args } = message;
-        if (method !== 'append') continue;
-        const [[key, _val]] = args;
-        if (!key.includes('.pendingTxs.')) continue;
-        const info = getDeserialized(key).at(-1) as PublishedTx;
-        if (info.status !== 'pending') continue;
-        const txId = key.split('.').at(-1) as TxId;
-        resolverService.settleTransaction({ txId, status, rejectionReason });
-      }
-    },
-  });
-
-  const cosmosId = async (name: string) => {
-    const chain = await orch.getChain(name);
-    const info = await chain.getChainInfo();
-    return info.chainId;
-  };
-
-  return {
-    orch,
-    tapPK,
-    ctx: { ...ctx1, makePortfolioKit: makePortfolioKitGuest },
-    offer: { log: buf, seat, factoryPK, kinks },
-    storage: {
-      ...storage,
-      getDeserialized,
-      updates: storageUpdates,
-    },
-    vowTools,
-    txResolver,
-    makeProgressTracker,
-    resolverClient,
-    resolverService,
-    cosmosId,
-  };
-};
-
-type Mocks = Awaited<ReturnType<typeof mocks>>;
-
 /* eslint-disable no-underscore-dangle */
 /* We use _method to get it to sort before other properties. */
-
-const docOpts = {
-  node: 'ymax0',
-  owner: 'ymax',
-  showValue: defaultSerializer.parse,
-};
 
 test('open portfolio with no positions', async t => {
   const { orch, ctx, offer, storage, cosmosId } = mocks();
@@ -881,6 +213,24 @@ test('Noble Dollar Swap, Lock messages', async t => {
     );
     t.snapshot(actual, 'un-swap 5K USDN < parity');
   }
+});
+
+test('makeSwapLockMessages uses parity amount for MsgLock when usdnOut is omitted', async t => {
+  const { cosmosId } = mocks();
+  const nobleId = await cosmosId('noble');
+
+  const actual = makeSwapLockMessages(
+    { value: 'noble1test', chainId: nobleId, encoding: 'bech32' },
+    5_000n * 1_000_000n,
+    { vault: 1 },
+  );
+
+  t.is(actual.msgSwap.min?.amount, '5000000000');
+  t.is(
+    actual.msgLock?.amount,
+    '5000000000',
+    'vaulted parity swap should not encode MsgLock amount as "undefined"',
+  );
 });
 
 test('makePortfolioSteps for USDN position', async t => {
@@ -1948,10 +1298,6 @@ test('parallel execution with scheduler', async t => {
   t.snapshot(flowHistory, 'parallel flow history');
 });
 
-const silent: TraceLogger = Object.assign(() => {}, {
-  sub: () => silent,
-});
-
 /** turn boundaries in provideEVMAccount (except awaiting feeAccount and getChainInfo) */
 const ProvideSteps = [
   'predict',
@@ -1969,39 +1315,41 @@ type ProvideEVMAccountFn = (
   ...args: Parameters<typeof provideEVMAccount>
 ) => ReturnType<typeof provideEVMAccount>;
 
-const provideEVMAccountWithPermitStub: ProvideEVMAccountFn = (
-  chainName,
-  chainInfo,
-  gmp,
-  lca,
-  ctx,
-  pk,
-  { orchOpts } = {},
-) =>
-  provideEVMAccountWithPermit(
-    chainName,
-    chainInfo,
-    gmp,
-    lca,
-    ctx,
-    pk,
-    {
-      permit: {
-        permitted: {
-          token: '0x0000000000000000000000000000000000000001',
-          amount: 1n,
+const makeProvideEVMAccountWithPermitStub =
+  (
+    provideEVMWithPermit: typeof provideEVMAccountWithPermit,
+  ): ProvideEVMAccountFn =>
+  (chainName, chainInfo, gmp, lca, ctx, pk, { orchOpts } = {}) =>
+    provideEVMWithPermit(
+      chainName,
+      chainInfo,
+      gmp,
+      lca,
+      ctx,
+      pk,
+      {
+        permit: {
+          permitted: {
+            token: '0x0000000000000000000000000000000000000001',
+            amount: 1n,
+          },
+          nonce: 1n,
+          deadline: 1n,
         },
-        nonce: 1n,
-        deadline: 1n,
+        owner: '0x1111111111111111111111111111111111111111',
+        witness:
+          '0x0000000000000000000000000000000000000000000000000000000000000000',
+        witnessTypeString: 'OpenPortfolioWitness',
+        signature: '0x1234' as `0x${string}`,
       },
-      owner: '0x1111111111111111111111111111111111111111',
-      witness:
-        '0x0000000000000000000000000000000000000000000000000000000000000000',
-      witnessTypeString: 'OpenPortfolioWitness',
-      signature: '0x1234' as `0x${string}`,
-    },
-    orchOpts,
-  );
+      orchOpts,
+    );
+
+const provideEVMAccountWithPermitStub = makeProvideEVMAccountWithPermitStub(
+  provideEVMAccountWithPermit,
+);
+const provideEVMRoutedAccountWithPermitStub =
+  makeProvideEVMAccountWithPermitStub(provideEVMRoutedAccountWithPermit);
 
 type MakeAccountEVMRaceParams = {
   provide: ProvideEVMAccountFn;
@@ -2397,6 +1745,199 @@ test('withPermit: A finishes before attempt B starts', makeAccountEVMRace, {
   headStart: 'resolve',
   BHasDeposit: true,
 });
+
+test(
+  'routed: A and B arrive together; A wins the race; B adopts',
+  makeAccountEVMRace,
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'predict',
+  },
+);
+test('routed: A pays fee; B adopts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccount,
+  headStart: 'send',
+});
+test(
+  'routed: A fails to pay fee; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'send',
+    errAt: 'send',
+  },
+);
+test('routed: A registers txN; B adopts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccount,
+  headStart: 'register',
+});
+test('routed: A transfers to axelar; B adopts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccount,
+  headStart: 'txfr',
+});
+test(
+  'routed: A times out on axelar; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  { provide: provideEVMRoutedAccount, headStart: 'register', errAt: 'txfr' },
+);
+test(
+  'routed: A times out on axelar; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  { provide: provideEVMRoutedAccount, headStart: 'txfr', errAt: 'txfr' },
+);
+test(
+  'routed: A gets rejected txN; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'txfr',
+    errAt: 'resolve',
+  },
+);
+test(
+  'routed: A gets rejected txN; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccount,
+    headStart: 'resolve',
+    errAt: 'resolve',
+  },
+);
+test('routed: A finishes before attempt B starts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccount,
+  headStart: 'resolve',
+});
+
+test(
+  'routed: withPermit: A and B arrive together; A wins the race; B adopts',
+  makeAccountEVMRace,
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    provideB: provideEVMRoutedAccount,
+    headStart: 'predict',
+  },
+);
+test('routed: withPermit: A registers txN; B adopts', makeAccountEVMRace, {
+  provide: provideEVMRoutedAccountWithPermitStub,
+  provideB: provideEVMRoutedAccount,
+  headStart: 'register',
+});
+test(
+  'routed: withPermit: A transfers to axelar; B adopts',
+  makeAccountEVMRace,
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    provideB: provideEVMRoutedAccount,
+    headStart: 'txfr',
+  },
+);
+test(
+  'routed: withPermit: A times out on axelar; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    provideB: provideEVMRoutedAccount,
+    headStart: 'register',
+    errAt: 'txfr',
+  },
+);
+test(
+  'routed: withPermit: A times out on axelar; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    headStart: 'txfr',
+    errAt: 'txfr',
+    BHasDeposit: true,
+  },
+);
+test(
+  'routed: withPermit: A gets rejected txN; B adopts',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    provideB: provideEVMRoutedAccount,
+    headStart: 'txfr',
+    errAt: 'resolve',
+  },
+);
+test(
+  'routed: withPermit: A gets rejected txN; B arrives and recovers',
+  expectUnhandled(1, makeAccountEVMRace),
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    headStart: 'resolve',
+    errAt: 'resolve',
+    BHasDeposit: true,
+  },
+);
+test(
+  'routed: withPermit: A finishes before attempt B starts',
+  makeAccountEVMRace,
+  {
+    provide: provideEVMRoutedAccountWithPermitStub,
+    headStart: 'resolve',
+    BHasDeposit: true,
+  },
+);
+
+const provideFailsOnIncompatibleAccount = test.macro({
+  title: (providedTitle = '') =>
+    `EVM makeAccount with incompatible existing account: ${providedTitle}`,
+  async exec(t, provide: ProvideEVMAccountFn, withRouter: boolean) {
+    const { orch, ctx, makeProgressTracker } = mocks({});
+
+    const pKit = await ctx.makePortfolioKit();
+    await provideCosmosAccount(orch, 'agoric', pKit, silent);
+    const lca = pKit.reader.getLocalAccount();
+
+    const chainName = 'Arbitrum';
+    const { [chainName]: chainInfo } = axelarCCTPConfig;
+    const gmp = { chain: await orch.getChain('axelar'), fee: 123n };
+
+    pKit.manager.resolveAccount({
+      chainName,
+      namespace: 'eip155',
+      chainId: `eip155:${chainInfo.reference}`,
+      remoteAddress: '0xExistingIncompatibleAccount',
+      ...(withRouter ? { routerFactory: '0xRouterFactoryAddress' } : {}),
+    });
+
+    const progressTracker = makeProgressTracker();
+
+    t.throws(() =>
+      provide(chainName, chainInfo, gmp, lca, ctx, pKit, {
+        orchOpts: { progressTracker },
+      }),
+    );
+  },
+});
+
+test(
+  'router account with legacy provide',
+  provideFailsOnIncompatibleAccount,
+  provideEVMAccount,
+  true,
+);
+test(
+  'router account with legacy provideWithPermit',
+  provideFailsOnIncompatibleAccount,
+  provideEVMAccountWithPermitStub,
+  true,
+);
+
+test(
+  'legacy account with routed provide',
+  provideFailsOnIncompatibleAccount,
+  provideEVMRoutedAccount,
+  false,
+);
+test(
+  'legacy account with routed provideWithPermit',
+  provideFailsOnIncompatibleAccount,
+  provideEVMRoutedAccountWithPermitStub,
+  false,
+);
 
 test('planner rejects plan and flow fails gracefully', async t => {
   const { orch, ctx, offer, storage } = mocks({});
@@ -2807,67 +2348,229 @@ test('withdraw from Beefy position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-type Permit2PermitOverrides = Partial<
-  Omit<PermitDetails['permit2Payload'], 'permit'>
-> & {
-  permit?: Partial<PermitDetails['permit2Payload']['permit']> & {
-    permitted?: Partial<PermitDetails['permit2Payload']['permit']['permitted']>;
-  };
-};
+test('swap reward token to USDC via 1inch', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeAcct = AmountMath.make(BLD, 50n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
+  const { log } = offer;
 
-type Permit2Overrides = Partial<
-  Omit<PermitDetails, 'permit2Payload'> & {
-    permit2Payload: Permit2PermitOverrides;
-  } & {
-    chain: AxelarChain;
-  }
->;
+  const kit = await ctx.makePortfolioKit();
 
-const makePermitDetails = (overrides: Permit2Overrides = {}): PermitDetails => {
-  const chain = overrides.chain ?? 'Arbitrum';
-  const amount = overrides.amount ?? 1_000_000_000n;
-  const token = overrides.token ?? contractsMock[chain].usdc;
-  const spender = overrides.spender ?? contractsMock[chain].depositFactory;
-  const chainId =
-    overrides.chainId ?? Number(axelarCCTPConfig[chain].reference);
-
-  const basePayload: PermitDetails['permit2Payload'] = {
-    permit: {
-      permitted: {
-        token,
-        amount,
+  // Phase 1: provision the Avalanche remote account so we know the address the
+  // swap proceeds must return to (`dstReceiver`).
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
+        ],
       },
-      nonce: 7115368379195441n,
-      deadline: 1357923600n,
-    },
-    owner: '0x1111111111111111111111111111111111111111',
-    witness:
-      '0x0000000000000000000000000000000000000000000000000000000000000000',
-    witnessTypeString: 'OpenPortfolioWitness',
-    signature: '0x1234' as `0x${string}`,
+      kit,
+    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const { accountIdByChain } = await getPortfolioStatus(1);
+  const avalancheAccountId = accountIdByChain.Avalanche;
+  assert(avalancheAccountId, 'Avalanche remote account provisioned');
+  const receiver = parseAccountId(avalancheAccountId).accountAddress;
+
+  // Phase 2: the planner supplies decomposed 1inch swap params; the contract
+  // reconstructs the swap() calldata, pinning dstToken=USDC and dstReceiver to
+  // our own account. Run the swap step and check the reconstructed call.
+  const tokenIn = '0x0000000000000000000000000000000000000abc' as const;
+  const amountIn = 5_000_000n;
+  const { oneInchRouter, usdc } = contractsMock.Avalanche;
+  const swapParams = {
+    provider: '1inch',
+    tokenIn,
+    amountIn,
+    flags: 0n,
+    executor: '0x2222222222222222222222222222222222222222', // opaque to us
+    srcReceiver: '0x3333333333333333333333333333333333333333', // opaque to us
+    data: '0xdeadbeef', // opaque executor calldata
+  } as const;
+  // The router's min USDC out is the movement amount, not part of the swap desc.
+  const minReturnAmount = amount.value;
+  // The contract must reconstruct this, filling dstToken/dstReceiver itself.
+  // viem returns checksummed addresses from decodeFunctionData.
+  const expectedSwap = {
+    functionName: 'swap',
+    args: [
+      getAddress(swapParams.executor),
+      {
+        srcToken: getAddress(tokenIn),
+        dstToken: getAddress(usdc),
+        srcReceiver: getAddress(swapParams.srcReceiver),
+        dstReceiver: getAddress(receiver as `0x${string}`),
+        amount: amountIn,
+        minReturnAmount,
+        flags: swapParams.flags,
+      },
+      swapParams.data,
+    ],
   };
 
-  const permit2Payload = {
-    ...basePayload,
-    ...overrides.permit2Payload,
-    permit: {
-      ...basePayload.permit,
-      ...overrides.permit2Payload?.permit,
-      permitted: {
-        ...basePayload.permit.permitted,
-        ...overrides.permit2Payload?.permit?.permitted,
+  const seat2 = makeMockSeat({ Deposit: amount }, undefined, log);
+  const swapP = rebalance(
+    orch,
+    ctx,
+    seat2,
+    {
+      flow: [
+        {
+          src: '@Avalanche',
+          dest: '@Avalanche',
+          amount,
+          fee: feeCall,
+          swap: swapParams,
+        },
+      ],
+    },
+    kit,
+    undefined,
+    {
+      ...DEFAULT_FLOW_CONFIG,
+      features: {
+        ...DEFAULT_FLOW_CONFIG?.features,
+        experimentalSwap: true,
       },
     },
+  );
+  await Promise.all([swapP, txResolver.settleUntil(swapP)]);
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  const router = oneInchRouter!.toLowerCase();
+
+  // Find the GMP transfer whose multicall is the approve -> 1inch swap.
+  const swapMemo = log
+    .filter((e: any) => e._method === 'transfer' && e.opts?.memo)
+    .map((e: any) => {
+      try {
+        return decodeMultiCalls(e.opts.memo);
+      } catch {
+        return undefined;
+      }
+    })
+    .find(
+      decoded =>
+        decoded?.calls.length === 3 &&
+        decoded.calls[1].target.toLowerCase() === router,
+    );
+  t.truthy(swapMemo, 'found 1inch swap multicall');
+  assert(swapMemo);
+
+  const [approveIn, swapCall, approveReset] = swapMemo.calls;
+  // approve(router, amountIn) on the reward token, the verbatim 1inch router
+  // call, then approve(router, 0) to clear any residual allowance.
+  const decodeApprove = (data: `0x${string}`) => {
+    const decoded = decodeFunctionData({ abi: erc20ABI, data });
+    assert(decoded.functionName === 'approve');
+    const [spender, value] = decoded.args;
+    return {
+      functionName: decoded.functionName,
+      spender: spender.toLowerCase(),
+      value,
+    };
   };
 
-  return {
-    chainId,
-    token,
-    amount,
-    spender,
-    permit2Payload,
-  };
-};
+  t.is(approveIn.target.toLowerCase(), tokenIn);
+  t.deepEqual(decodeApprove(approveIn.data), {
+    functionName: 'approve',
+    spender: router,
+    value: amountIn,
+  });
+
+  const decodeSwap = (data: `0x${string}`) =>
+    decodeFunctionData({ abi: oneInchRouterABI, data });
+  const swapSelector = toFunctionSelector(
+    getAbiItem({ abi: oneInchRouterABI, name: 'swap' }),
+  );
+
+  t.is(swapCall.target.toLowerCase(), router);
+  t.is(swapCall.data.slice(0, 10), swapSelector, 'swap() selector from ABI');
+  t.deepEqual(
+    decodeSwap(swapCall.data),
+    expectedSwap,
+    'contract reconstructed the swap() args with pinned dstToken/dstReceiver',
+  );
+
+  t.is(approveReset.target.toLowerCase(), tokenIn);
+  t.deepEqual(decodeApprove(approveReset.data), {
+    functionName: 'approve',
+    spender: router,
+    value: 0n,
+  });
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('swap fails when experimentalSwap feature is disabled', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, ctx, offer } = mocks({}, { Deposit: amount });
+  const { log } = offer;
+
+  const kit = await ctx.makePortfolioKit();
+
+  const swapParams = {
+    provider: '1inch',
+    tokenIn: '0x0000000000000000000000000000000000000abc',
+    amountIn: 5_000_000n,
+    flags: 0n,
+    executor: '0x2222222222222222222222222222222222222222',
+    srcReceiver: '0x3333333333333333333333333333333333333333',
+    data: '0xdeadbeef',
+  } as const;
+
+  const seat = makeMockSeat({ Deposit: amount }, undefined, log);
+  // DEFAULT_FLOW_CONFIG has no `experimentalSwap` feature flag set, so the
+  // swap step must be rejected before any GMP calls are made.
+  await rebalance(
+    orch,
+    ctx,
+    seat,
+    {
+      flow: [
+        {
+          src: '@Avalanche',
+          dest: '@Avalanche',
+          amount,
+          fee: feeCall,
+          swap: swapParams,
+        },
+      ],
+    },
+    kit,
+    undefined,
+    DEFAULT_FLOW_CONFIG,
+  );
+
+  t.falsy(
+    log.some((e: any) => e._method === 'transfer'),
+    'no GMP transfer should be attempted',
+  );
+
+  const failCall = log.find((e: any) => e._method === 'fail');
+  t.truthy(
+    failCall,
+    'seat.fail() should be called when experimentalSwap is disabled',
+  );
+  t.regex(`${failCall?.reason}`, /swap not supported/);
+});
 
 // EVM wallet integration flow
 test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => {
@@ -2875,7 +2578,7 @@ test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => 
   const mixedCaseSpender =
     contractsMock.Arbitrum.depositFactory.toUpperCase() as Address;
   const permitDetails: PermitDetails = {
-    chainId: Number(axelarCCTPConfig.Arbitrum.reference),
+    chainId: BigInt(axelarCCTPConfig.Arbitrum.reference),
     token: contractsMock.Arbitrum.usdc,
     amount: 1_000_000_000n,
     spender: mixedCaseSpender,
@@ -3037,6 +2740,37 @@ test('wayFromSrcToDest rejects @agoric -> -Arbitrum (invalid src for withdraw)',
   t.throws(
     () => wayFromSrcToDest({ src: '@agoric', dest: '-Arbitrum', amount }),
     { message: /src for withdraw to "Arbitrum" must be same chain or noble/ },
+  );
+});
+
+// #endregion
+
+// #region wayFromSrcToDest swap tests
+
+test('wayFromSrcToDest handles @Avalanche -> @Avalanche (reward swap)', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const actual = wayFromSrcToDest({
+    src: '@Avalanche',
+    dest: '@Avalanche',
+    amount,
+    swap: {
+      provider: '1inch',
+      tokenIn: '0x0000000000000000000000000000000000000abc',
+      amountIn: 5_000_000n,
+      flags: 0n,
+      executor: '0x2222222222222222222222222222222222222222',
+      srcReceiver: '0x3333333333333333333333333333333333333333',
+      data: '0xdeadbeef',
+    },
+  });
+  t.deepEqual(actual, { how: 'swap', chain: 'Avalanche' });
+});
+
+test('wayFromSrcToDest rejects @Avalanche -> @Avalanche without swap params', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  t.throws(
+    () => wayFromSrcToDest({ src: '@Avalanche', dest: '@Avalanche', amount }),
+    { message: /must be noble/ },
   );
 });
 
@@ -3305,7 +3039,7 @@ const doDeposit = async ({
   const amount = AmountMath.make(USDC, permitDetails.amount);
   const flowDetail: FlowDetail = { type: 'deposit', amount, fromChain };
   const startedFlow = kit.manager.startFlow(flowDetail);
-  const seat = mockZCF.makeEmptySeatKit().zcfSeat;
+  const seat = makeMockSeat({}, {}, []);
 
   void executePlan(
     orch,
@@ -3341,18 +3075,48 @@ const doDeposit = async ({
 };
 
 test('evmHandler.deposit via Permit2 with unknown spender is rejected', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const existingWallet =
+    '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as Address;
   const permitDetails = makePermitDetails({
     spender: '0x0000000000000000000000000000000000009999' as Address,
   });
-  const { orch, ctx } = mocks({}, {});
   const sourceAccountId =
     `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
   const kit = await ctx.makePortfolioKit({ sourceAccountId });
   await provideCosmosAccount(orch, 'agoric', kit, silent);
 
-  t.throws(() => kit.evmHandler.deposit(permitDetails), {
-    message: /permit spender .* does not match/,
+  assert(
+    axelarCCTPConfig.Arbitrum.reference === `${permitDetails.chainId}`,
+    'chainId should match axelarCCTPConfig',
+  );
+  kit.manager.resolveAccount({
+    namespace: 'eip155',
+    chainName: 'Arbitrum',
+    chainId: `eip155:${permitDetails.chainId}`,
+    remoteAddress: existingWallet,
   });
+
+  const { accountIdByChain: byChain } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // agoric and Arbitrum account have been pre-created
+  t.deepEqual(Object.keys(byChain), ['Arbitrum', 'agoric']);
+
+  await doDeposit({
+    t,
+    kit,
+    orch,
+    ctx,
+    storage,
+    txResolver,
+    permitDetails,
+    expectedFlowOutcome: 'fail',
+  });
+
+  await documentStorageSchema(t, storage, docOpts);
 });
 
 /**
@@ -3411,6 +3175,89 @@ test('evmHandler.deposit via Permit2 to missing and existing wallet with deposit
       expectedAddr: byChainAfter.Arbitrum!.split(':').at(-1),
     },
     'check second deposit goes through same flow and hits the depositFactory address again',
+  );
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+/**
+ * This test uses the router contract as the spender address.
+ */
+test('evmHandler.deposit via Permit2 to missing and existing wallet with router as spender succeeds', async t => {
+  const { orch, ctx, storage, txResolver } = mocks({}, {});
+  const { getPortfolioStatus } = makeStorageTools(storage);
+
+  const permitDetails = makePermitDetails({
+    spender: contractsMock.Arbitrum.remoteAccountRouter,
+  });
+  const destinationAccountId =
+    `eip155:${permitDetails.chainId}:${contractsMock.Arbitrum.remoteAccountRouter}` as AccountId;
+  const sourceAccountId =
+    `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
+  const kit = await ctx.makePortfolioKit({ sourceAccountId });
+  await provideCosmosAccount(orch, 'agoric', kit, silent);
+  const contractAddress = (await ctx.contractAccount).getAddress();
+  const contractAccountId =
+    `cosmos:${contractAddress.chainId}:${contractAddress.value}` as AccountId;
+
+  const { accountIdByChain: byChainBefore } = await getPortfolioStatus(
+    kit.reader.getPortfolioId(),
+  );
+  // Only agoric, no Arbitrum account yet since we haven't done any flows
+  t.deepEqual(Object.keys(byChainBefore), ['agoric']);
+
+  const lca = kit.reader.getLocalAccount();
+  const principalAccount = lca.getAddress().value;
+
+  // Do an initial deposit, then do another deposit with the same permit details
+  // to ensure we can use the provide with permit logic on an existing account.
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx0').at(-1),
+    {
+      type: 'ROUTED_GMP',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: destinationAccountId,
+      details: {
+        instructionType: 'ProvideRemoteAccount',
+        expectedRemoteTargetAddress:
+          contractsMock.Arbitrum.remoteAccountFactory,
+        principalAccount,
+      },
+    },
+    'check first deposit creates and deposits via the router',
+  );
+
+  const {
+    accountIdByChain: byChainAfter,
+    accountsPending,
+    accountStateByChain = {},
+  } = await getPortfolioStatus(kit.reader.getPortfolioId());
+  t.deepEqual(Object.keys(byChainAfter), ['Arbitrum', 'agoric', 'noble']);
+  t.deepEqual(accountsPending, []);
+  t.like(accountStateByChain.Arbitrum, {
+    state: 'active',
+    routerFactory: contractsMock.Arbitrum.remoteAccountFactory,
+  });
+
+  await doDeposit({ t, kit, orch, ctx, storage, txResolver, permitDetails });
+  t.like(
+    storage.getDeserialized('published.ymax0.pendingTxs.tx2').at(-1),
+    {
+      type: 'ROUTED_GMP',
+      status: 'success',
+      sourceAddress: contractAccountId,
+      destinationAddress: destinationAccountId,
+      details: {
+        instructionType: 'ProvideRemoteAccount',
+        expectedRemoteTargetAddress:
+          contractsMock.Arbitrum.remoteAccountFactory,
+        principalAccount,
+        remoteAccountAddress: accountStateByChain.Arbitrum!.address,
+      },
+    },
+    'check second deposit goes through same flow and hits the router address again',
   );
 
   await documentStorageSchema(t, storage, docOpts);
@@ -3669,13 +3516,68 @@ test('move Aave position Base -> Optimism via CCTPv2', async t => {
   const { log } = offer;
   t.log('calls:', log.map(msg => msg._method).join(', '));
   t.snapshot(log, 'call log');
+
+  // Verify destinationCaller in the CCTPv2 depositForBurn memo
+  const memoEntries = log.filter(
+    (e: any) => e._method === 'transfer' && e.opts?.memo,
+  );
+  let verified = false;
+  for (const entry of memoEntries) {
+    let decoded;
+    try {
+      decoded = decodeFunctionCall(entry.opts!.memo, [
+        'approve(address,uint256)',
+        'depositForBurn(uint256,uint32,bytes32,address,bytes32,uint256,uint32)',
+      ]);
+    } catch {
+      continue;
+    }
+    const depositCall = decoded.calls[1];
+    if (depositCall.functionName !== 'depositForBurn') {
+      continue;
+    }
+    // destinationCaller is arg[4] in CCTPv2 depositForBurn
+    const destCaller = depositCall.args[4];
+    const configuredCaller = contractsMock.Optimism.cctpRelayer
+      .toLowerCase()
+      .replace(/^0x/, '');
+    const expectedCaller = `0x${'0'.repeat(24)}${configuredCaller}`;
+    t.is(
+      destCaller.toLowerCase(),
+      expectedCaller,
+      'CCTPv2 depositForBurn destinationCaller matches managed relayer address',
+    );
+    verified = true;
+    break;
+  }
+  t.true(verified, 'found CCTPv2 depositForBurn call with destinationCaller');
+
+  const { remoteAddress } = kit.reader.getGMPInfo('Optimism');
+  t.is(remoteAddress, '0x817f059a7fe5b130f9a331e326f63f3edb3d8214');
+
+  const cctpV2Tx = [...storage.data.keys()]
+    .filter(k => k.includes('published.ymax0.pendingTxs.'))
+    .map(k => storage.getDeserialized(k).at(-1) as any)
+    .find(
+      tx =>
+        tx.type === 'CCTP_TO_EVM' &&
+        tx.amount === 20_000_000n &&
+        tx.sourceAddress === `eip155:8453:${remoteAddress}` &&
+        tx.destinationAddress === `eip155:10:${remoteAddress}`,
+    );
+  t.truthy(cctpV2Tx, 'found CCTPv2 pending tx metadata');
+  t.is(cctpV2Tx.cctpVersion, 2);
+  t.is(
+    cctpV2Tx.destinationCaller,
+    `eip155:10:${contractsMock.Optimism.cctpRelayer}`,
+  );
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test(
-  'sendGMPContractCall unsubscribes resolver on send failure',
-  expectUnhandled(1),
-  async t => {
+const sendGMPContractCallTest = test.macro({
+  title: (providedTitle = '', useRouter: boolean) =>
+    `sendGMPContractCall unsubscribes resolver on send failure (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
+  async exec(t, useRouter: boolean) {
     const { resolverClient, storage, makeProgressTracker } = mocks({});
     const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
     const ctx = {
@@ -3702,6 +3604,9 @@ test(
       chainName: 'Avalanche',
       remoteAddress: '0x1234567890AbcdEF1234567890aBcdef12345678',
       chainId: 'eip155:43114',
+      ...(useRouter
+        ? { routerFactory: contractsMock.Avalanche.remoteAccountFactory }
+        : {}),
     } as const;
 
     const calls = [
@@ -3717,9 +3622,11 @@ test(
       },
     ];
 
+    const send = useRouter ? sendRoutedGMPContractCall : sendGMPContractCall;
+
     await t.throwsAsync(
       () =>
-        sendGMPContractCall(ctx, gmpAcct, calls, {
+        send(ctx, gmpAcct, calls, {
           progressTracker: makeProgressTracker(),
         }),
       { message: 'fee send failed' },
@@ -3731,12 +3638,15 @@ test(
     t.is(last.status, 'failed', 'transaction settled as failed');
     t.truthy(last.rejectionReason, 'includes rejection reason');
   },
-);
+});
 
-test(
-  'sendPermit2GMP unsubscribes resolver on send failure',
-  expectUnhandled(1),
-  async t => {
+test(expectUnhandled(1, sendGMPContractCallTest), false);
+test(sendGMPContractCallTest, true);
+
+const sendPermit2GMPTest = test.macro({
+  title: (providedTitle = '', useRouter: boolean) =>
+    `sendPermit2GMP unsubscribes resolver on send failure (${providedTitle || (useRouter ? 'routed' : 'legacy')})`,
+  async exec(t, useRouter: boolean) {
     const { resolverClient, storage, makeProgressTracker } = mocks({});
     const lcaAddress = harden({ chainId: 'agoric-3', value: 'agoric1test' });
     const ctx = {
@@ -3763,6 +3673,9 @@ test(
       chainName: 'Avalanche',
       remoteAddress: '0x1234567890AbcdEF1234567890aBcdef12345678',
       chainId: 'eip155:43114',
+      ...(useRouter
+        ? { routerFactory: contractsMock.Avalanche.remoteAccountFactory }
+        : {}),
     } as const;
 
     const permit2Payload = {
@@ -3781,9 +3694,11 @@ test(
       signature: '0x1234' as `0x${string}`,
     };
 
+    const send = useRouter ? sendPermit2RoutedGMP : sendPermit2GMP;
+
     await t.throwsAsync(
       () =>
-        sendPermit2GMP(ctx, gmpAcct, permit2Payload, 1_000_000n, {
+        send(ctx, gmpAcct, permit2Payload, 1_000_000n, {
           progressTracker: makeProgressTracker(),
         }),
       { message: 'fee send failed' },
@@ -3795,4 +3710,120 @@ test(
     t.is(last.status, 'failed', 'transaction settled as failed');
     t.truthy(last.rejectionReason, 'includes rejection reason');
   },
-);
+});
+test(expectUnhandled(1, sendPermit2GMPTest), false);
+test(sendPermit2GMPTest, true);
+
+test('protocolUSDN.supply executes swap+lock on Noble ICA', async t => {
+  const calls: unknown[][] = [];
+  const ica = {
+    getAddress: () =>
+      harden({
+        value: 'noble1test',
+        chainId: 'noble-1',
+        encoding: 'bech32',
+      }),
+    executeEncodedTx: async (...args: unknown[]) => {
+      calls.push(args);
+      return undefined;
+    },
+  };
+
+  await protocolUSDN.supply(
+    { usdnOut: 9_900_000n, vault: 1 },
+    make(USDC, 10_000_000n),
+    { ica } as any,
+    { timeoutHeight: 123n } as any,
+  );
+
+  t.is(calls.length, 1);
+  const [protoMessages, options] = calls[0];
+  t.is((protoMessages as unknown[]).length, 2);
+  t.deepEqual(options, { timeoutHeight: 123n });
+});
+
+test('protocolUSDN.withdraw rejects claim mode', async t => {
+  const ica = {
+    getAddress: () =>
+      harden({
+        value: 'noble1test',
+        chainId: 'noble-1',
+        encoding: 'bech32',
+      }),
+    executeEncodedTx: async () => undefined,
+  };
+
+  await t.throwsAsync(
+    () =>
+      protocolUSDN.withdraw(
+        { usdnOut: 9_900_000n },
+        make(USDC, 10_000_000n),
+        { ica } as any,
+        true,
+      ),
+    { message: 'claiming USDN is not supported' },
+  );
+});
+
+test('agoricToNoble.apply transfers USDC denom to Noble ICA', async t => {
+  const calls: unknown[][] = [];
+  const src = {
+    lca: {
+      transfer: async (...args: unknown[]) => {
+        calls.push(args);
+      },
+    },
+  };
+  const destAddress = harden({
+    value: 'noble1dest',
+    chainId: 'noble-1',
+    encoding: 'bech32',
+  });
+
+  await agoricToNoble.apply(
+    { usdc: { denom: 'ibc/USDC' as any } },
+    make(USDC, 7_000_000n),
+    src as any,
+    { ica: { getAddress: () => destAddress } } as any,
+    { timeoutRelativeSeconds: 30 } as any,
+  );
+
+  t.deepEqual(calls, [
+    [
+      destAddress,
+      { value: 7_000_000n, denom: 'ibc/USDC' },
+      { timeoutRelativeSeconds: 30 },
+    ],
+  ]);
+});
+
+test('nobleToAgoric.apply transfers uusdc from Noble ICA', async t => {
+  const calls: unknown[][] = [];
+  const destAddress = harden({
+    value: 'agoric1dest',
+    chainId: 'agoric-3',
+    encoding: 'bech32',
+  });
+
+  await nobleToAgoric.apply(
+    {} as any,
+    make(USDC, 8_000_000n),
+    {
+      ica: {
+        transfer: async (...args: unknown[]) => {
+          calls.push(args);
+        },
+      },
+    } as any,
+    { lca: { getAddress: () => destAddress } } as any,
+    { timeoutRelativeSeconds: 60 } as any,
+  );
+
+  t.deepEqual(calls, [
+    [
+      destAddress,
+      { value: 8_000_000n, denom: 'uusdc' },
+      { timeoutRelativeSeconds: 60 },
+    ],
+  ]);
+});

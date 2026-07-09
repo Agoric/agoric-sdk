@@ -1,10 +1,10 @@
 import test from 'ava';
-import * as proc from 'child_process';
-import * as os from 'os';
-import fs from 'fs';
-import { fileURLToPath, URL } from 'url';
+import * as proc from 'node:child_process';
+import * as os from 'node:os';
+import fs from 'node:fs';
+import { fileURLToPath, URL } from 'node:url';
 import { tmpName } from 'tmp';
-import { text } from 'stream/consumers';
+import { text } from 'node:stream/consumers';
 import { makePromiseKit } from '@endo/promise-kit';
 import { options } from './message-tools.js';
 import { xsnap } from '../src/xsnap.js';
@@ -129,7 +129,7 @@ async function spawnReflectiveWorker(handleCommand) {
 }
 
 /**
- * @typedef {Awaited<ReturnType<spawnReflectiveWorker>>} ReflectiveWorker
+ * @typedef {Awaited<ReturnType<typeof spawnReflectiveWorker>>} ReflectiveWorker
  */
 
 /**
@@ -198,7 +198,7 @@ const testInterruption = test.macro(
    * @param {(worker: ReflectiveWorker) => Promise<unknown>} beforeWait
    * @param {(worker: ReflectiveWorker, message: Uint8Array) => Promise<Uint8Array>} onRequest
    * @param {(worker: ReflectiveWorker) => Promise<unknown>} afterWait
-   * @param {(t: ExecutionContext, results: Awaited<ReturnType<expectTermination>>) => void} verifyResults
+   * @param {(t: ExecutionContext, results: Awaited<ReturnType<typeof expectTermination>>) => void} verifyResults
    */
   async (t, beforeWait, onRequest, afterWait, verifyResults) => {
     const handleCommand = message => {

@@ -8,13 +8,14 @@ import { CosmosChainAddressShape } from '../typeGuards.js';
 const trace = makeTracer('AutoStakeItTap');
 
 /**
- * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
+ * @import {IBCChannelID} from '@agoric/network/ibc';
+ * @import {VTransferIBCEvent} from '@agoric/vats';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {TargetApp} from '@agoric/vats/src/bridge-target.js';
  * @import {CosmosChainAddress, CosmosValidatorAddress, Denom, OrchestrationAccount, StakingAccountActions} from '@agoric/orchestration';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {ERef} from '@agoric/vow';
  */
 
@@ -31,7 +32,7 @@ const trace = makeTracer('AutoStakeItTap');
  * }} StakingTapState
  */
 
-/** @type {TypedPattern<StakingTapState>} */
+/** @type {CastedPattern<StakingTapState>} */
 const StakingTapStateShape = {
   stakingAccount: M.remotable('CosmosOrchestrationAccount'),
   localAccount: M.remotable('LocalOrchestrationAccount'),

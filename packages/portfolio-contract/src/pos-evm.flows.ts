@@ -24,7 +24,6 @@ import {
   coerceAccountId,
   leftPadEthAddressTo32Bytes,
 } from '@agoric/orchestration/src/utils/address.js';
-import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import type { MovementDesc } from '@agoric/portfolio-api';
 import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
@@ -38,6 +37,7 @@ import {
 } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
+import { getOneInchSwapArgs, oneInchRouterABI } from './interfaces/one-inch.ts';
 import {
   tokenMessengerABI,
   tokenMessengerV2ABI,
@@ -57,23 +57,21 @@ import {
 } from './portfolio.flows.ts';
 import { TxType } from './resolver/constants.js';
 import type { ResolverKit } from './resolver/resolver.exo.ts';
-import type { PoolKey } from './type-guards.ts';
+import type { PoolKey, EVMContractAddressesMap } from './type-guards.ts';
 import { appendTxIds } from './utils/traffic.ts';
 import {
-  provideEVMAccount,
-  provideEVMAccountWithPermit,
-  sendGMPContractCall,
-  sendPermit2GMP,
+  provideEVMAccount as provideEVMLegacyAccount,
+  sendGMPContractCall as sendLegacyGMPContractCall,
+  sendPermit2GMP as sendLegacyPermit2GMP,
   type GMPAccountStatus,
 } from './axelar-gmp-legacy.flows.ts';
+import {
+  provideEVMAccount as provideEVMRoutedAccount,
+  sendGMPContractCall as sendRoutedGMPContractCall,
+  sendPermit2GMP as sendRoutedPermit2GMP,
+} from './axelar-gmp-router.flows.ts';
 
-export {
-  provideEVMAccount,
-  provideEVMAccountWithPermit,
-  sendGMPContractCall,
-  sendPermit2GMP,
-  type GMPAccountStatus,
-};
+export type { GMPAccountStatus };
 
 export type EVMContext = {
   feeAccount: LocalAccount;
@@ -81,6 +79,7 @@ export type EVMContext = {
   gmpFee: DenomAmount;
   gmpChain: Chain<{ chainId: string }>;
   addresses: EVMContractAddresses;
+  contracts: EVMContractAddressesMap;
   gmpAddresses: GmpAddresses;
   axelarIds: AxelarId;
   poolKey?: PoolKey;
@@ -92,13 +91,54 @@ export type EVMContext = {
 const trace = makeTracer('GMPF');
 const { keys } = Object;
 
+export const sendGMPContractCall: typeof sendLegacyGMPContractCall = async (
+  ctx,
+  gmpAcct,
+  ...args
+) =>
+  gmpAcct.routerFactory
+    ? sendRoutedGMPContractCall(ctx, gmpAcct, ...args)
+    : gmpAcct.routerAddress
+      ? Fail`Unsupported beta router-based account`
+      : sendLegacyGMPContractCall(ctx, gmpAcct, ...args);
+
+export const sendPermit2GMP: typeof sendLegacyPermit2GMP = async (
+  ctx,
+  gmpAcct,
+  ...args
+) =>
+  gmpAcct.routerFactory
+    ? sendRoutedPermit2GMP(ctx, gmpAcct, ...args)
+    : gmpAcct.routerAddress
+      ? Fail`Unsupported beta router-based account`
+      : sendLegacyPermit2GMP(ctx, gmpAcct, ...args);
+
+export const provideEVMAccount: typeof provideEVMLegacyAccount = (...args) => {
+  const chainName = args[0];
+  const { contracts } = args[4];
+  const pk = args[5];
+  const addresses = contracts[chainName];
+
+  // We may be replaying an old flow that didn't know about routers yet.
+  // We must not add a new interaction with host objects in that case.
+  // Use the presence of `remoteAccountRouter` in addresses as a signal.
+  if (addresses.remoteAccountRouter && pk.reader.useRouterForChain(chainName)) {
+    return provideEVMRoutedAccount(...args);
+  } else {
+    return provideEVMLegacyAccount(...args);
+  }
+};
+
 /** @see {@link https://developers.circle.com/cctp/supported-domains} */
 const nobleDomain = 4;
+
+// XXX concession to test legibility
+const TEST_NOBLE_ADDRESS = 'noble1qvqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqe6u37k';
 
 const bech32ToBytes32 = (addr: Bech32Address) => {
   if (addr === 'noble1test') {
     trace('XXX replacing test address to convert to bytes32');
-    addr = makeTestAddress(3, 'noble');
+    addr = TEST_NOBLE_ADDRESS;
   }
   const { data } = fromBech32(addr);
   const dh = encodeHex(data);
@@ -270,27 +310,38 @@ export const CCTPv2 = {
         ? FINALITY_THRESHOLD.CONFIRMED
         : FINALITY_THRESHOLD.FINALIZED;
 
+    const destAddresses = ctx.contracts[dest.chainName];
+    const destinationCallerAddress = destAddresses.cctpRelayer;
+    const destinationCaller: `0x${string}` = destinationCallerAddress
+      ? `0x${encodeHex(leftPadEthAddressTo32Bytes(destinationCallerAddress))}`
+      : ZERO_BYTES32;
+
     usdc.approve(tokenMessengerV2, amount.value);
     tm.depositForBurn(
       amount.value,
       destDomain,
       mintRecipient,
       addresses.usdc,
-      // destinationCaller: bytes32(0) = any caller allowed
-      ZERO_BYTES32,
+      destinationCaller,
       maxFee,
       minFinalityThreshold,
     );
 
     const calls = session.finish();
 
-    const { txId, result } = ctx.resolverClient.registerTransaction(
-      TxType.CCTP_TO_EVM,
-      `${dest.chainId}:${dest.remoteAddress}`,
-      amount.value,
-      undefined, // expectedAddr - not used for CCTP_V2
-      `${src.chainId}:${src.remoteAddress}`, // sourceAddress for domain mapping
-    );
+    const { txId, result } = ctx.resolverClient.createPendingTx({
+      type: TxType.CCTP_TO_EVM,
+      destinationAddress: `${dest.chainId}:${dest.remoteAddress}`,
+      amountValue: amount.value,
+      sourceAddress: `${src.chainId}:${src.remoteAddress}`,
+      cctpVersion: 2,
+      ...(destinationCallerAddress
+        ? {
+            destinationCaller:
+              `${dest.chainId}:${destinationCallerAddress}` as AccountId,
+          }
+        : {}),
+    });
 
     const sent = sendGMPContractCall(ctx, src, calls, ...optsArgs);
     appendTxIds(optsArgs[0]?.progressTracker, [txId]);
@@ -306,6 +357,47 @@ export const CCTPv2 = {
   EVMContext
 >;
 harden(CCTPv2);
+
+/**
+ * Swap a reward token to USDC on an EVM chain via 1inch
+ * @see {@link https://business.1inch.com/portal/documentation/apis/swap/classic-swap/quick-start}
+ */
+export const swapRewardToUsdc = async (
+  ctx: EVMContext,
+  gInfo: Parameters<typeof sendGMPContractCall>[1],
+  amount: MovementDesc['amount'],
+  swap: MovementDesc['swap'],
+  ...optsArgs: [OrchestrationOptions?]
+) => {
+  const { addresses: a } = ctx;
+  assert(swap, 'swap params required for reward-token swap');
+  const { provider, tokenIn, amountIn } = swap;
+  // The calldata layout and router are provider-specific; only 1inch is
+  // supported so far. Branch explicitly so a new provider must add its own
+  provider === '1inch' || Fail`unsupported swap provider ${q(provider)}`;
+  const router =
+    a.oneInchRouter ||
+    Fail`oneInchRouter not configured for ${q(gInfo.chainId)}`;
+
+  const session = makeEvmAbiCallBatch();
+  const token = session.makeContract(tokenIn, erc20ABI);
+  token.approve(router, amountIn);
+  const oneInchRouter = session.makeContract(router, oneInchRouterABI);
+  oneInchRouter.swap(
+    ...getOneInchSwapArgs(swap, {
+      usdc: a.usdc,
+      receiver: gInfo.remoteAddress,
+      minReturnAmount: amount.value,
+    }),
+  );
+  // Reset the allowance so the router cannot retain a spending grant if it
+  // consumed less than amountIn.
+  token.approve(router, 0n);
+  const calls = session.finish();
+
+  return sendGMPContractCall(ctx, gInfo, calls, ...optsArgs);
+};
+harden(swapRewardToUsdc);
 
 export const AaveProtocol = {
   protocol: 'Aave',

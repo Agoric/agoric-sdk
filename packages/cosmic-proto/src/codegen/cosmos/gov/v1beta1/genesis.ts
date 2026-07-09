@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import {
   Deposit,
   type DepositSDKType,
@@ -90,6 +91,23 @@ function createBaseGenesisState(): GenesisState {
  */
 export const GenesisState = {
   typeUrl: '/cosmos.gov.v1beta1.GenesisState' as const,
+  annotations: {
+    'amino.dont_omitempty': {
+      depositParams: true,
+      tallyParams: true,
+      votingParams: true,
+    },
+    'gogoproto.nullable': {
+      depositParams: false,
+      tallyParams: false,
+      votingParams: false,
+    },
+    typeUrlFromField: {
+      depositParams: () => DepositParams,
+      tallyParams: () => TallyParams,
+      votingParams: () => VotingParams,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/GenesisState' as const,
   is(o: any): o is GenesisState {
     return (

@@ -208,14 +208,16 @@
     "!CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && scripts/minify.cjs",
-    "clean": "rimraf dist",
+    "build": "yarn build:js && yarn build:types",
+    "build:js": "esbuild \"src/**/*.ts\" \"src/**/*.js\" --outdir=dist --outbase=src --platform=neutral --sourcemap --sources-content=false --minify",
+    "build:types": "tsc --project tsconfig.build.json --emitDeclarationOnly && echo 👩‍⚖️ type defs emitted",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "codegen": "./update-protos.sh && scripts/codegen.cjs",
     "prepare": "npm run build",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "yarn run -T eslint .",
-    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "test": "ava",
     "test:xs": "exit 0",
     "test:live": "yarn build && scripts/test-live.js"
@@ -226,21 +228,20 @@
   "devDependencies": {
     "@agoric/cosmos": "workspace:*",
     "@ava/typescript": "^6.0.0",
-    "@endo/bundle-source": "^4.1.2",
-    "@endo/import-bundle": "^1.5.2",
+    "@endo/bundle-source": "^4.3.2",
+    "@endo/import-bundle": "^1.7.0",
     "@hyperweb/telescope": "^2.2.1",
-    "ava": "^6.4.1",
-    "glob": "^11.0.3",
+    "ava": "^7.0.0",
+    "esbuild": "^0.25.2",
     "rimraf": "^5.0.0",
-    "terser": "^5.39.0",
     "tsd": "^0.33.0",
-    "typescript": "~6.0.0-beta"
+    "typescript": "~6.0.3"
   },
   "dependencies": {
     "@chain-registry/v2": "^1.71.186",
     "@chain-registry/v2-types": "^0.53.115",
-    "@endo/base64": "^1.0.12",
-    "@endo/init": "^1.1.12",
+    "@endo/base64": "^1.1.1",
+    "@endo/init": "^1.1.13",
     "@interchainjs/cosmos": "^1.19.3",
     "@interchainjs/types": "^1.19.1",
     "bech32": "^2.0.0",
@@ -258,6 +259,6 @@
     ]
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

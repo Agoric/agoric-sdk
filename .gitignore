@@ -11,6 +11,10 @@ lib-cov
 coverage
 coverage.txt
 
+# Codecov services
+/codecov
+/codecov.*
+
 # Profiling output
 *.heapsnapshot
 
@@ -62,7 +66,6 @@ _agstate
 .next
 build
 bundles
-bundle-*.js
 compiled
 dist
 api-docs
@@ -83,8 +86,10 @@ _testoutput.txt
 junit.xml
 endo-sha.txt
 
+# Test perf benchmark data
+tmp/perf/
+
 # Coding agent config
 .aider*
 !.aiderignore
 .claude
-

@@ -61,8 +61,6 @@ export interface GenesisState {
   tallyParams?: TallyParams;
   /**
    * params defines all the paramaters of x/gov module.
-   *
-   * Since: cosmos-sdk 0.47
    */
   params?: Params;
   /**
@@ -70,8 +68,6 @@ export interface GenesisState {
    * This is an immutable string set in genesis.
    * There are no amendments, to go outside of scope, just fork.
    * constitution is an immutable string in genesis for a chain builder to lay out their vision, ideas and ideals.
-   *
-   * Since: cosmos-sdk 0.50
    */
   constitution: string;
 }

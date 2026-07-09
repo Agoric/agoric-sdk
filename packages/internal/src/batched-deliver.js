@@ -1,4 +1,3 @@
-// @jessie-check
 // @ts-check
 
 /**
@@ -15,8 +14,8 @@ export const DEFAULT_BATCH_TIMEOUT_MS = 1000;
 /**
  * @param {DeliverMessages} deliver
  * @param {{
- *   clearTimeout: clearTimeout;
- *   setTimeout: setTimeout;
+ *   clearTimeout: typeof globalThis.clearTimeout;
+ *   setTimeout: typeof globalThis.setTimeout;
  * }} io
  * @param {number} batchTimeoutMs
  */

@@ -1,13 +1,43 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-/** @file Fetch canonical chain info to generate the minimum needed for agoricNames */
+/**
+ * @file Generate src/fetched-chain-info.js from the cosmos chain-registry.
+ *
+ * `yarn codegen` fetches from a PINNED chain-registry commit (the
+ * CHAIN_REGISTRY_COMMIT constant below), so its output is deterministic even
+ * though it hits the network. That is what the codegen idempotence CI check
+ * (scripts/verify-codegen-idempotence.mjs) verifies: re-running must not change
+ * the committed src/fetched-chain-info.js. Because the commit is pinned,
+ * upstream changes to chain-registry `master` never break CI on their own — you
+ * adopt them deliberately by refreshing.
+ *
+ * To pull new chains or updated IBC data, refresh (this re-pins to the latest
+ * chain-registry commit) and commit BOTH updated files:
+ *
+ *     yarn codegen --refresh
+ *     # equivalently: ./scripts/fetch-chain-info.ts --refresh
+ *
+ * See the "Refreshing chain info" section of the package README for details.
+ */
 import { ChainRegistryClient } from '@chain-registry/client';
+import { execFileSync } from 'node:child_process';
+import assert from 'node:assert';
 import fsp from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import prettier from 'prettier';
 import { convertChainInfo } from '../src/utils/registry.js';
+
+// The chain-registry commit codegen reads from, pinned so codegen is
+// deterministic. `--refresh` rewrites this exact line, so keep the format
+// (`const CHAIN_REGISTRY_COMMIT = '<40 hex>';`) stable.
+const CHAIN_REGISTRY_COMMIT = '4f9299ef69855a858a6302a8ed2310de1ffd9547';
 
 // XXX script assumes it's run from the package path
 // XXX .json would be more apt; UNTIL https://github.com/endojs/endo/issues/2110
 const outputFile = 'src/fetched-chain-info.js';
+const registrySource = 'https://github.com/cosmos/chain-registry.git';
+const registryRawBase =
+  'https://raw.githubusercontent.com/cosmos/chain-registry';
 
 /**
  * Names for which to fetch info
@@ -56,8 +86,55 @@ export const chainNames = [
   'umee',
 ];
 
+/** Resolve the latest chain-registry commit on the default branch. */
+const resolveLatestCommit = () => {
+  const stdout = execFileSync('git', ['ls-remote', registrySource, 'HEAD'], {
+    encoding: 'utf8',
+  });
+  const [sha] = stdout.split(/\s/, 1);
+  assert(
+    /^[0-9a-f]{40}$/.test(sha),
+    `unexpected git ls-remote output: ${stdout}`,
+  );
+  return sha;
+};
+
+/** Rewrite the CHAIN_REGISTRY_COMMIT constant in this source file. */
+const repin = async (commit: string): Promise<void> => {
+  const selfPath = fileURLToPath(import.meta.url);
+  const before = await fsp.readFile(selfPath, 'utf8');
+  const pattern = /(const CHAIN_REGISTRY_COMMIT = ')[0-9a-f]{40}(';)/;
+  assert(pattern.test(before), 'could not find CHAIN_REGISTRY_COMMIT to repin');
+  await fsp.writeFile(selfPath, before.replace(pattern, `$1${commit}$2`));
+};
+
+const {
+  values: { refresh },
+} = parseArgs({
+  options: {
+    // Re-pin to the latest chain-registry commit before generating.
+    refresh: { type: 'boolean', default: false },
+  },
+});
+
+let commit: string;
+if (refresh) {
+  commit = resolveLatestCommit();
+  await repin(commit);
+  console.log(
+    `Re-pinned chain-registry to ${commit} in ${fileURLToPath(import.meta.url)}`,
+  );
+} else {
+  commit = CHAIN_REGISTRY_COMMIT;
+  console.log(
+    `Using pinned chain-registry commit ${commit} (pass --refresh to update it)`,
+  );
+}
+
 const client = new ChainRegistryClient({
   chainNames,
+  // Pin to an immutable commit so codegen output is reproducible.
+  baseUrl: `${registryRawBase}/${commit}`,
 });
 
 // chain info, assets and ibc data will be downloaded dynamically by invoking fetchUrls method
@@ -73,3 +150,4 @@ const prettySrc = await prettier.format(src, {
   trailingComma: 'all',
 });
 await fsp.writeFile(outputFile, prettySrc);
+console.log(`Wrote ${outputFile}`);

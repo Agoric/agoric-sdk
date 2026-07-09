@@ -1,39 +1,38 @@
-import { assert, Fail, X } from '@endo/errors';
+import { assert, Fail } from '@endo/errors';
 
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import type {
-  ERC4626InstrumentId,
   PoolKey,
   PoolPlaceInfo,
   StatusFor,
   TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import { PoolPlaces } from '@aglocal/portfolio-contract/src/type-guards.js';
-import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
 import { planRebalanceFlow } from '@aglocal/portfolio-contract/tools/plan-solve.js';
+import { computeTargetBalances } from '@agoric/portfolio-api/src/target-balances.js';
+import type { ComputeTargetBalancesOptions } from '@agoric/portfolio-api/src/target-balances.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import type { Brand, NatAmount, NatValue } from '@agoric/ertp/src/types.js';
-import type { EvmAddress } from '@agoric/fast-usdc';
-import { objectMap, objectMetaMap, typedEntries } from '@agoric/internal';
+import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import { objectMetaMap, typedEntries } from '@agoric/internal';
 import type { Caip10Record, CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
-import type { FundsFlowPlan, SupportedChain } from '@agoric/portfolio-api';
-import {
-  ACCOUNT_DUST_EPSILON,
-  isInstrumentId,
-  YieldProtocol,
+import type {
+  FundsFlowPlan,
+  InterChainAccountRef,
+  SupportedChain,
 } from '@agoric/portfolio-api';
+import { ACCOUNT_DUST_EPSILON } from '@agoric/portfolio-api';
 
-import type { CosmosRestClient } from './cosmos-rest-client.js';
-import { getERC4626VaultsBalances } from './erc4626-utils.ts';
-import type { ChainAddressTokenBalance } from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
+import type { EvmAddress } from '@agoric/fast-usdc';
+import { getErc20Balances } from './evm-utils.ts';
+import type { ReconnectingEvmProvider } from './support.ts';
+import type {
+  ChainAddressTokenBalance as SpectrumGetAddressBalanceResult,
+  ChainAddressTokenInput as SpectrumGetAddressBalanceInput,
+} from './graphql/api-spectrum-blockchain/__generated/graphql.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import type { ProtocolPoolUserBalanceResult } from './graphql/api-spectrum-pools/__generated/graphql.ts';
-import type { Sdk as SpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import type { EvmChain } from './pending-tx-manager.ts';
-import type { EvmProviders } from './support.ts';
-import { spectrumProtocols, UserInputError } from './support.ts';
 import { getOwn, lookupValueForKey } from './utils.js';
 
 const scale6 = (x: number) => {
@@ -41,94 +40,51 @@ const scale6 = (x: number) => {
   return BigInt(Math.round(x * 1e6));
 };
 
-const rejectUserInput = (details: ReturnType<typeof X> | string): never =>
-  assert.fail(details, ((...args) =>
-    Reflect.construct(UserInputError, args)) as ErrorConstructor);
-
-const isDust = (value: bigint): boolean =>
-  -ACCOUNT_DUST_EPSILON < value && value < ACCOUNT_DUST_EPSILON;
-
-const isNonemptyPositionEntry = (entry: [AssetPlaceRef, NatValue]): boolean => {
-  const [place, value] = entry;
-  return isInstrumentId(place) && value > 0n;
-};
-
-// Note the differences in the shape of field `balance` between the two Spectrum
-// APIs (string vs. Record<'USDC' | 'USD' | string, number>).
-type AccountBalance = ChainAddressTokenBalance['balance'];
-const amountFromAccountBalance = (
+const amountFromSpectrumAccountBalance = (
   brand: Brand<'nat'>,
-  balance: AccountBalance,
+  balance: SpectrumGetAddressBalanceResult['balance'],
 ) =>
   balance === undefined
     ? undefined
     : AmountMath.make(brand, scale6(Number(balance)));
-type PositionBalance = ProtocolPoolUserBalanceResult['balance'];
-const amountFromPositionBalance = (
-  brand: Brand<'nat'>,
-  balanceRecord: PositionBalance,
-) =>
-  balanceRecord?.USDC === undefined
-    ? undefined
-    : AmountMath.make(brand, scale6(balanceRecord.USDC));
 
 export type BalanceQueryPowers = {
-  cosmosRest: CosmosRestClient;
   spectrumBlockchain: SpectrumBlockchainSdk;
-  spectrumPools: SpectrumPoolsSdk;
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
-  spectrumPoolIds: Partial<Record<PoolKey, string>>;
+  evmTokenAddresses: Partial<
+    Record<InterChainAccountRef | PoolKey, EvmAddress>
+  >;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
-  erc4626VaultAddresses: Partial<Record<ERC4626InstrumentId, EvmAddress>>;
-  evmProviders: EvmProviders;
+  evmProviders: Record<CaipChainId, ReconnectingEvmProvider>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
 };
 
-type AccountQueryDescriptor = {
+type AlchemyBalanceQuery = {
+  place: InterChainAccountRef | PoolKey;
+  chainName: SupportedChain;
+  address: string;
+  token: PoolPlaceInfo['protocol'] | 'USDC';
+};
+
+type SpectrumBalanceQuery = {
   place: AssetPlaceRef;
   chainName: SupportedChain;
   address: string;
   asset: string;
 };
 
-type PositionQueryDescriptor = {
-  place: PoolKey;
-  chainName: SupportedChain;
-  protocol: PoolPlaceInfo['protocol'];
-  address: string;
-};
-
-const makeSpectrumAccountQuery = (
-  desc: AccountQueryDescriptor,
+const makeSpectrumGetAddressBalanceInput = (
+  desc: Pick<SpectrumBalanceQuery, 'chainName' | 'address' | 'asset'>,
   powers: BalanceQueryPowers,
-) => {
+): SpectrumGetAddressBalanceInput => {
   const { chainName, address, asset } = desc;
   const chainId = lookupValueForKey(powers.spectrumChainIds, chainName);
-  if (asset !== 'USDC') {
-    // "USDN" -> "usdn"
-    return { chain: chainId, address, token: asset.toLowerCase() };
-  }
-  const token = lookupValueForKey(powers.usdcTokensByChain, chainName);
+  const token =
+    asset === 'USDC'
+      ? lookupValueForKey(powers.usdcTokensByChain, chainName)
+      : // "USDN" -> "usdn"
+        asset.toLowerCase();
   return { chain: chainId, address, token };
-};
-
-const makeSpectrumPoolQuery = (
-  desc: PositionQueryDescriptor,
-  powers: BalanceQueryPowers,
-) => {
-  const { place, chainName, protocol, address } = desc;
-  return {
-    chain: lookupValueForKey(powers.spectrumChainIds, chainName),
-    protocol: lookupValueForKey(spectrumProtocols, protocol),
-    pool: lookupValueForKey(powers.spectrumPoolIds, place),
-    address,
-  };
-};
-
-export type ERC4626VaultQuery = {
-  place: PoolKey;
-  chainName: SupportedChain;
-  address: string;
 };
 
 export const getCurrentBalances = async (
@@ -137,13 +93,16 @@ export const getCurrentBalances = async (
   powers: BalanceQueryPowers,
 ): Promise<Partial<Record<AssetPlaceRef, NatAmount | undefined>>> => {
   const { positionKeys, accountIdByChain } = status;
-  const { spectrumBlockchain, spectrumPools } = powers;
+  const { spectrumBlockchain } = powers;
   const addressInfo = new Map<SupportedChain, Caip10Record>();
-  const accountQueries = [] as AccountQueryDescriptor[];
-  const positionQueries = [] as PositionQueryDescriptor[];
-  const erc4626Queries = [] as PositionQueryDescriptor[];
+  /** Queries for Alchemy (EVM account & position balances) */
+  const alchemyQueries = [] as AlchemyBalanceQuery[];
+  /** Queries for the Spectrum Blockchain API (non-EVM account balances) */
+  const spectrumAccountQueries = [] as SpectrumBalanceQuery[];
   const balances = new Map<AssetPlaceRef, NatAmount | undefined>();
   const errors = [] as Error[];
+
+  // Define account queries (EVM chains via Alchemy, others via Spectrum).
   for (const [chainName, accountId] of typedEntries(
     accountIdByChain as Required<typeof accountIdByChain>,
   )) {
@@ -152,13 +111,32 @@ export const getCurrentBalances = async (
     try {
       const addressParts = parseAccountId(accountId);
       addressInfo.set(chainName, addressParts);
-      const { accountAddress: address } = addressParts;
-      accountQueries.push({ place, chainName, address, asset: 'USDC' });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_err) {
-      errors.push(Error(`Invalid CAIP-10 address for chain: ${chainName}`));
+      const { namespace, accountAddress: address } = addressParts;
+      if (namespace === 'eip155') {
+        alchemyQueries.push({
+          place: place as `@${EvmChain}`,
+          chainName,
+          address,
+          token: 'USDC',
+        });
+      } else {
+        spectrumAccountQueries.push({
+          place,
+          chainName,
+          address,
+          asset: 'USDC',
+        });
+      }
+    } catch (cause) {
+      const err = Error(
+        `Cannot make query for ${chainName} address ${accountId}`,
+        { cause },
+      );
+      errors.push(err);
     }
   }
+
+  // Define position queries (EVM chains via Alchemy, others via Spectrum).
   for (const instrument of positionKeys) {
     const place = instrument;
     balances.set(place, undefined);
@@ -170,70 +148,74 @@ export const getCurrentBalances = async (
       const { namespace, accountAddress: address } =
         addressInfo.get(chainName) ||
         Fail`No ${chainName} address for instrument ${instrument}`;
-      if (namespace !== 'eip155') {
-        // USDN Vaults are not "pools" and specifically are not in the Spectrum
-        // Pools API.
-        accountQueries.push({ place, chainName, address, asset: protocol });
-      } else if (protocol === YieldProtocol.ERC4626) {
-        // ERC-4626 vault queries are issued directly.
-        erc4626Queries.push({ place, chainName, protocol, address });
+      if (namespace === 'eip155') {
+        alchemyQueries.push({ place, chainName, address, token: protocol });
       } else {
-        // Other queries go through the Spectrum Pools API.
-        positionQueries.push({ place, chainName, protocol, address });
+        spectrumAccountQueries.push({
+          place,
+          chainName,
+          address,
+          asset: protocol,
+        });
       }
     } catch (err) {
       errors.push(err);
     }
   }
 
-  const spectrumAccountQueries = accountQueries.map(desc =>
-    makeSpectrumAccountQuery(desc, powers),
-  );
-  const spectrumPoolQueries = positionQueries.map(desc =>
-    makeSpectrumPoolQuery(desc, powers),
-  );
-
-  const [accountResult, positionResult, erc4626Result] =
-    await Promise.allSettled([
-      spectrumAccountQueries.length
-        ? spectrumBlockchain.getBalances({ accounts: spectrumAccountQueries })
-        : { balances: [] },
-      spectrumPoolQueries.length
-        ? spectrumPools.getBalances({ positions: spectrumPoolQueries })
-        : { balances: [] },
-      erc4626Queries.length
-        ? getERC4626VaultsBalances(erc4626Queries, powers)
-        : { balances: [] },
-    ]);
+  const [alchemyResult, spectrumAccountResult] = await Promise.allSettled([
+    alchemyQueries.length
+      ? getErc20Balances(alchemyQueries, powers)
+      : { balances: [] },
+    spectrumAccountQueries.length
+      ? spectrumBlockchain.getBalances({
+          accounts: spectrumAccountQueries.map(queryDesc =>
+            makeSpectrumGetAddressBalanceInput(queryDesc, powers),
+          ),
+        })
+      : { balances: [] },
+  ]);
 
   if (
-    accountResult.status !== 'fulfilled' ||
-    positionResult.status !== 'fulfilled' ||
-    erc4626Result.status !== 'fulfilled'
+    alchemyResult.status !== 'fulfilled' ||
+    spectrumAccountResult.status !== 'fulfilled'
   ) {
-    const rejections = [accountResult, positionResult, erc4626Result].flatMap(
+    const rejections = [alchemyResult, spectrumAccountResult].flatMap(
       settlement =>
         settlement.status === 'fulfilled' ? [] : [settlement.reason],
     );
     errors.push(...rejections);
     throw AggregateError(errors, 'Could not get balances');
   }
-  const accountBalances = accountResult.value.balances;
-  const positionBalances = positionResult.value.balances;
-  const erc4626Balances = erc4626Result.value.balances;
+  const alchemyBalances = alchemyResult.value.balances;
+  const spectrumAccountBalances = spectrumAccountResult.value.balances;
   if (
-    accountBalances.length !== accountQueries.length ||
-    positionBalances.length !== positionQueries.length ||
-    erc4626Balances.length !== erc4626Queries.length
+    alchemyBalances.length !== alchemyQueries.length ||
+    spectrumAccountBalances.length !== spectrumAccountQueries.length
   ) {
-    const msg = `Bad balance query response(s), expected [${[accountBalances.length, positionBalances.length, erc4626Balances.length]}] results but got [${[accountQueries.length, positionQueries.length, erc4626Queries.length]}]`;
+    const msg = `Bad balance query response(s), expected [${[alchemyBalances.length, spectrumAccountBalances.length]}] results but got [${[alchemyQueries.length, spectrumAccountQueries.length]}]`;
     throw AggregateError(errors, msg);
   }
-  for (let i = 0; i < accountQueries.length; i += 1) {
-    const { place, asset } = accountQueries[i];
-    const result = accountBalances[i];
+
+  for (let i = 0; i < alchemyBalances.length; i += 1) {
+    const { place, balance, error } = alchemyBalances[i];
+    if (error) {
+      errors.push(Error(error));
+    }
+    balances.set(
+      place as AssetPlaceRef,
+      balance === undefined ? undefined : AmountMath.make(brand, balance),
+    );
+  }
+
+  for (let i = 0; i < spectrumAccountQueries.length; i += 1) {
+    const { place, asset } = spectrumAccountQueries[i];
+    const result = spectrumAccountBalances[i];
     if (result.error) errors.push(Error(result.error));
-    const balanceAmount = amountFromAccountBalance(brand, result.balance);
+    const balanceAmount = amountFromSpectrumAccountBalance(
+      brand,
+      result.balance,
+    );
     balances.set(place, balanceAmount);
     // XXX as of 2025-11-19, spectrumBlockchain.getBalances returns @agoric
     // IBC USDC balances in micro-USDC (uusdc) rather than USDC like the rest.
@@ -245,23 +227,6 @@ export const getCurrentBalances = async (
       balances.set(place, AmountMath.make(brand, BigInt(result.balance)));
     }
   }
-  for (let i = 0; i < positionQueries.length; i += 1) {
-    const { place } = positionQueries[i];
-    const result = positionBalances[i];
-    if (result.error) errors.push(Error(result.error));
-    balances.set(place, amountFromPositionBalance(brand, result.balance));
-  }
-  for (let i = 0; i < erc4626Queries.length; i += 1) {
-    const result = erc4626Balances[i];
-    if (result.error) {
-      errors.push(Error(result.error));
-    }
-    if (result.balance === undefined) {
-      balances.set(result.place, undefined);
-    } else {
-      balances.set(result.place, AmountMath.make(brand, result.balance));
-    }
-  }
 
   if (errors.length) {
     throw AggregateError(errors, 'Could not accept balances');
@@ -269,11 +234,11 @@ export const getCurrentBalances = async (
   return Object.fromEntries(balances);
 };
 
-export const getNonDustBalances = async (
+export const getNonDustBalances = async <C extends AssetPlaceRef>(
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
   powers: BalanceQueryPowers,
-): Promise<Partial<Record<AssetPlaceRef, NatAmount>>> => {
+): Promise<Record<C, NatAmount>> => {
   const currentBalances = await getCurrentBalances(status, brand, powers);
   const nonDustBalances = objectMetaMap(currentBalances, desc =>
     desc.value && desc.value.value > ACCOUNT_DUST_EPSILON ? desc : undefined,
@@ -281,128 +246,60 @@ export const getNonDustBalances = async (
   return nonDustBalances;
 };
 
-/**
- * Derive weighted targets for allocation keys. Additionally, always zero out hub balances
- * (chains; keys starting with '@') that have non-zero current amounts. Returns only entries
- * whose values change by at least ACCOUNT_DUST_EPSILON compared to current.
- */
-const computeWeightedTargets = (
-  brand: Brand<'nat'>,
-  currentAmounts: Partial<Record<AssetPlaceRef, NatAmount>>,
-  balanceDelta: bigint,
-  allocation: TargetAllocation = {},
-): Partial<Record<AssetPlaceRef, NatAmount>> => {
-  const currentValues = objectMap(
-    currentAmounts as Required<typeof currentAmounts>,
-    amount => amount.value,
-  );
-  const currentTotal = Object.values(currentValues).reduce(
-    (acc, value) => acc + value,
-    0n,
-  );
-  const total = currentTotal + balanceDelta;
-  total >= 0n || rejectUserInput('Insufficient funds for withdrawal.');
-
-  const weights: [AssetPlaceRef, NatValue][] = Object.keys(allocation).length
-    ? typedEntries({
-        // Any current balance with no target has an effective weight of 0.
-        ...objectMap(currentValues, () => 0n),
-        ...(allocation as Required<typeof allocation>),
-      })
-    : // In the absence of target weights, maintain the relative status quo but
-      // zero out hubs (chains) if there is anywhere else to deploy their funds.
-      (valueEntries => {
-        return valueEntries.some(isNonemptyPositionEntry)
-          ? valueEntries.map(([p, v]) => [p, isInstrumentId(p) ? v : 0n])
-          : valueEntries;
-      })(typedEntries(currentValues));
-  const sumW = weights.reduce<bigint>((acc, entry) => {
-    const w = entry[1];
-    (typeof w === 'bigint' && w >= 0n) ||
-      rejectUserInput(
-        X`Target allocation weight in ${entry} must be a natural number.`,
-      );
-    return acc + w;
-  }, 0n);
-  sumW > 0n ||
-    rejectUserInput('Total target allocation weights must be positive.');
-
-  // Try to satisfy the weights, leaving any amount otherwise subject to
-  // rounding loss or representing a too-small delta at the highest-weight
-  // place that can accept it.
-  const draft: Partial<Record<AssetPlaceRef, NatValue>> = {};
-  let remainder = total;
-  for (const [key, w] of weights) {
-    const a = currentValues[key] || 0n;
-    const b = (total * w) / sumW;
-    const v = isDust(b - a) ? a : b;
-    draft[key] = v;
-    remainder -= v;
-  }
-  if (remainder !== 0n) {
-    weights.sort(([_k1, a], [_k2, b]) => (a < b ? 1 : a > b ? -1 : 0));
-    for (const [key, _w] of weights) {
-      const a = currentValues[key] || 0n;
-      const v = (draft[key] || 0n) + remainder;
-      if (v === a || !isDust(v - a)) {
-        draft[key] = v;
-        remainder = 0n;
-        break;
-      }
-    }
-    remainder === 0n ||
-      rejectUserInput(
-        X`Nowhere to place ${remainder} in update of ${currentValues} to ${draft}`,
-      );
-  }
-
-  // Delete entries reflecting no change.
-  for (const [key, amount] of Object.entries(draft)) {
-    if (amount === currentValues[key]) {
-      delete draft[key];
-    }
-  }
-
-  return {
-    ...objectMap(draft, (value: NatValue) => AmountMath.make(brand, value)),
-  };
-};
-
-export type PlannerContext = {
-  currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>;
-  targetAllocation?: TargetAllocation;
-  network: NetworkSpec;
-  brand: Brand<'nat'>;
+export type PlannerContext<
+  C extends AssetPlaceRef,
+  T extends string & keyof TargetAllocation,
+> = Pick<
+  ComputeTargetBalancesOptions<C, T>,
+  | 'brand'
+  | 'currentBalances'
+  | 'targetAllocation'
+  | 'network'
+  | 'instrumentBlocks'
+> & {
   feeBrand: Brand<'nat'>;
   gasEstimator: GasEstimator;
 };
 
-/**
- * Plan deposit driven by target allocation weights.
- * Computes absolute targets, then plans the corresponding flow.
- */
-export const planDepositToAllocations = async (
-  details: PlannerContext & { amount: NatAmount; fromChain?: SupportedChain },
-): Promise<FundsFlowPlan> => {
-  const { amount, brand, currentBalances, targetAllocation } = details;
-  const { fromChain = 'agoric' } = details;
-  if (!targetAllocation) return { flow: [] };
-  const target = computeWeightedTargets(
+type PlanMaker<D = unknown> = <
+  C extends AssetPlaceRef,
+  T extends keyof TargetAllocation,
+>(
+  details: PlannerContext<C, T> & D,
+) => Promise<FundsFlowPlan>;
+
+/** Plan absorption of a deposit into current balances and target weights. */
+export const planDepositToAllocations: PlanMaker<{
+  amount: NatAmount;
+  fromChain?: SupportedChain;
+}> = async details => {
+  const {
+    amount,
     brand,
     currentBalances,
-    amount.value,
+    network,
     targetAllocation,
-  );
+    fromChain = 'agoric',
+  } = details;
+  if (!targetAllocation) return { flow: [], order: undefined };
+  const target = computeTargetBalances({
+    brand,
+    currentBalances,
+    balanceDelta: amount.value,
+    network,
+    targetAllocation,
+    depositFromChain: fromChain,
+    instrumentBlocks: details.instrumentBlocks,
+  });
+  if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
-  // The deposit should be distributed.
+  const { feeBrand, gasEstimator } = details;
   const depositFrom =
     // TODO(#12309): Remove the `<Deposit>` special case in favor of `+agoric`.
     (fromChain === 'agoric' ? '<Deposit>' : `+${fromChain}`) as AssetPlaceRef;
   const zeroAmount = AmountMath.make(brand, 0n);
   const resolvedCurrent = { ...currentBalances, [depositFrom]: amount };
   const resolvedTarget = { ...target, [depositFrom]: zeroAmount };
-
-  const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
     network,
     current: resolvedCurrent,
@@ -414,23 +311,20 @@ export const planDepositToAllocations = async (
   return flowDetail.plan;
 };
 
-/**
- * Plan rebalance driven by target allocation weights.
- * Computes absolute targets, then plans the corresponding flow.
- */
-export const planRebalanceToAllocations = async (
-  details: PlannerContext,
-): Promise<FundsFlowPlan> => {
-  const { brand, currentBalances, targetAllocation } = details;
-  if (!targetAllocation) return { flow: [] };
-  const target = computeWeightedTargets(
+/** Plan rebalancing of current balances against target weights. */
+export const planRebalanceToAllocations: PlanMaker = async details => {
+  const { brand, currentBalances, network, targetAllocation } = details;
+  if (!targetAllocation) return { flow: [], order: undefined };
+  const target = computeTargetBalances({
     brand,
     currentBalances,
-    0n,
+    network,
     targetAllocation,
-  );
+    instrumentBlocks: details.instrumentBlocks,
+  });
+  if (Object.keys(target).length === 0) return { flow: [], order: undefined };
 
-  const { network, feeBrand, gasEstimator } = details;
+  const { feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
     network,
     current: currentBalances,
@@ -442,30 +336,28 @@ export const planRebalanceToAllocations = async (
   return flowDetail.plan;
 };
 
-/**
- * Plan withdrawal driven by target allocation weights.
- * Computes absolute targets, then plans the corresponding flow.
- */
-export const planWithdrawFromAllocations = async (
-  details: PlannerContext & { amount: NatAmount; toChain?: SupportedChain },
-): Promise<FundsFlowPlan> => {
-  const { amount, brand, currentBalances, targetAllocation } = details;
-  const { toChain = 'agoric' } = details;
-  const target = computeWeightedTargets(
+/** Plan a rebalancing withdrawal from current balances and target weights. */
+export const planWithdrawFromAllocations: PlanMaker<{
+  amount: NatAmount;
+  toChain?: SupportedChain;
+}> = async details => {
+  const { amount, brand, currentBalances, network, targetAllocation } = details;
+  const target = computeTargetBalances({
     brand,
     currentBalances,
-    -amount.value,
+    network,
+    balanceDelta: -amount.value,
     targetAllocation,
-  );
+    instrumentBlocks: details.instrumentBlocks,
+  });
 
+  const { feeBrand, gasEstimator, toChain = 'agoric' } = details;
   const withdrawTo =
     // TODO(#12309): Remove the `<Cash>` special case in favor of `-agoric`.
     (toChain === 'agoric' ? '<Cash>' : `-${toChain}`) as AssetPlaceRef;
   const zeroAmount = AmountMath.make(brand, 0n);
   const resolvedCurrent = { ...currentBalances, [withdrawTo]: zeroAmount };
   const resolvedTarget = { ...target, [withdrawTo]: amount };
-
-  const { network, feeBrand, gasEstimator } = details;
   const flowDetail = await planRebalanceFlow({
     network,
     current: resolvedCurrent,

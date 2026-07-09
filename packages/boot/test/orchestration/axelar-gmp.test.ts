@@ -9,7 +9,12 @@ import type { ExecutionContext, TestFn } from 'ava';
 import { encodeAbiParameters } from 'viem';
 import { makeReceiveUpCallPayload } from '../../tools/axelar-supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
-import { makeWalletFactoryContext } from '../bootstrapTests/walletFactory.js';
+import {
+  makeBootTestContext,
+  withWalletFactory,
+  type TestWalletDriver,
+  type WalletFactoryBootTestContext,
+} from '../tools/boot-test-context.js';
 
 export type WalletFactoryDriver = Awaited<
   ReturnType<typeof makeWalletFactoryDriver>
@@ -20,8 +25,7 @@ export type SmartWalletDriver = Awaited<
 >;
 
 type MakeEVMTransactionParams = {
-  wallet: SmartWalletDriver;
-  previousOffer: string;
+  wallet: TestWalletDriver;
   methodName: string;
   offerArgs: any;
   proposal: any;
@@ -34,47 +38,58 @@ type AxelarGmpMemo = {
   type: 1 | 2 | 3;
 };
 
-const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+type AxelarGmpTestContext = WalletFactoryBootTestContext & {
+  axelarLog: ReturnType<WalletFactoryBootTestContext['makePublishedLog']>;
+  flow: {
+    evmTransactionCounter: number;
+    previousOffer: string;
+    lcaAddress: string;
+  };
+  wallet: TestWalletDriver;
+};
+
+const test = anyTest as TestFn<AxelarGmpTestContext>;
 
 const makeTestContext = async (t: ExecutionContext) => {
-  const ctx = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-config.json',
+  const ctx = await withWalletFactory(
+    await makeBootTestContext(t, {
+      configSpecifier:
+        '@agoric/vm-config/decentral-itest-orchestration-config.json',
+      snapshotName: 'orchestration-base',
+    }),
   );
 
-  const wallet =
-    await ctx.walletFactoryDriver.provideSmartWallet('agoric1makeAccount');
+  const wallet = await ctx.provideSmartWallet('agoric1makeAccount');
 
-  const fullCtx = {
+  return {
     ...ctx,
+    axelarLog: ctx.makePublishedLog('axelarGmp.log'),
+    flow: {
+      evmTransactionCounter: 0,
+      previousOffer: '',
+      lcaAddress: '',
+    },
     wallet,
   };
-
-  return fullCtx;
 };
 
 const agoricToAxelarChannel = 'channel-9';
 const axelarToAgoricChannel = 'channel-41';
-let evmTransactionCounter = 0;
-let previousOffer = '';
-let lcaAddress = '';
 
-const makeEVMTransaction = async ({
-  wallet,
-  methodName,
-  offerArgs,
-  proposal,
-}: MakeEVMTransactionParams) => {
-  const id = `evmTransaction${evmTransactionCounter}`;
+const makeEVMTransaction = async (
+  t: ExecutionContext<AxelarGmpTestContext>,
+  { wallet, methodName, offerArgs, proposal }: MakeEVMTransactionParams,
+) => {
+  const id = `evmTransaction${t.context.flow.evmTransactionCounter}`;
 
   const proposeInvitationSpec: ContinuingInvitationSpec = {
     source: 'continuing',
-    previousOffer,
+    previousOffer: t.context.flow.previousOffer,
     invitationMakerName: 'makeEVMTransactionInvitation',
     invitationArgs: harden([methodName, offerArgs]),
   };
 
-  evmTransactionCounter += 1;
+  t.context.flow.evmTransactionCounter += 1;
 
   await wallet.executeOffer({
     id,
@@ -88,12 +103,11 @@ const makeEVMTransaction = async ({
 test.before(async t => {
   t.context = await makeTestContext(t);
 
-  const { evalProposal, buildProposal } = t.context;
-  // Register AXL in vbankAssets
-  await evalProposal(
-    buildProposal(
-      '../../../multichain-testing/src/register-interchain-bank-assets.builder.js',
-      [
+  await t.context.applyProposals([
+    {
+      builderPath:
+        '@agoric/builders/scripts/testing/register-interchain-bank-assets.builder.js',
+      args: [
         '--assets',
         JSON.stringify([
           {
@@ -104,25 +118,27 @@ test.before(async t => {
           },
         ]),
       ],
-    ),
-  );
-
-  await evalProposal(
-    buildProposal(
-      '@agoric/builders/scripts/orchestration/axelar-gmp.build.js',
-      ['--net', 'bootstrap', '--peer', 'axelar:connection-0:channel-41:uaxl'],
-    ),
-  );
+    },
+    {
+      builderPath: '@agoric/builders/scripts/orchestration/axelar-gmp.build.js',
+      args: [
+        '--net',
+        'bootstrap',
+        '--peer',
+        'axelar:connection-0:channel-41:uaxl',
+      ],
+    },
+  ]);
 });
 
 test.beforeEach(t => {
-  t.context.storage.data.delete('published.axelarGmp.log');
+  t.context.axelarLog.reset();
 });
 
 test.serial('makeAccount via axelarGmp', async t => {
   const {
-    storage,
     wallet,
+    axelarLog,
     bridgeUtils: { runInbound },
   } = t.context;
 
@@ -142,10 +158,7 @@ test.serial('makeAccount via axelarGmp', async t => {
     },
   });
 
-  const getLogged = () =>
-    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
-
-  t.deepEqual(getLogged(), [
+  axelarLog.expect(t, [
     'Inside createAndMonitorLCA',
     'localAccount created successfully',
     'tap created successfully',
@@ -164,7 +177,7 @@ test.serial('makeAccount via axelarGmp', async t => {
     }),
   );
 
-  t.deepEqual(getLogged(), [
+  axelarLog.expect(t, [
     'Inside createAndMonitorLCA',
     'localAccount created successfully',
     'tap created successfully',
@@ -173,28 +186,32 @@ test.serial('makeAccount via axelarGmp', async t => {
     'Done',
   ]);
 
-  previousOffer = wallet.getCurrentWalletRecord().offerToUsedInvitation[0][0];
+  t.context.flow.previousOffer = wallet.current().offerToUsedInvitation[0][0];
 });
 
 test.serial('get lca address', async t => {
   const { wallet } = t.context;
 
-  await makeEVMTransaction({
+  await makeEVMTransaction(t, {
     wallet,
-    previousOffer,
     methodName: 'getLocalAddress',
     offerArgs: [],
     proposal: {},
   });
 
-  // @ts-expect-error
-  lcaAddress = wallet.getLatestUpdateRecord().status.result;
-  t.truthy(lcaAddress);
-  t.like(wallet.getLatestUpdateRecord(), {
+  t.context.flow.lcaAddress = `${wallet.expectResult(
+    t,
+    `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+  )}`;
+  t.truthy(t.context.flow.lcaAddress);
+  wallet.expectStatus(t, {
+    id: `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+    numWantsSatisfied: 1,
+    result: t.context.flow.lcaAddress,
+  });
+  t.like(wallet.latest(), {
     status: {
-      id: `evmTransaction${evmTransactionCounter - 1}`,
-      numWantsSatisfied: 1,
-      result: lcaAddress,
+      id: `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
     },
   });
 });
@@ -217,8 +234,8 @@ test.serial('receiveUpCall test', async t => {
       amount: 1n,
       denom: 'uaxl',
       sender: makeTestAddress(),
-      target: lcaAddress as `${string}1${string}`,
-      receiver: lcaAddress as `${string}1${string}`,
+      target: t.context.flow.lcaAddress as `${string}1${string}`,
+      receiver: t.context.flow.lcaAddress as `${string}1${string}`,
       sourceChannel: axelarToAgoricChannel,
       destinationChannel: agoricToAxelarChannel,
       memo: JSON.stringify({
@@ -238,23 +255,27 @@ test.serial('receiveUpCall test', async t => {
     }),
   );
 
-  await makeEVMTransaction({
+  await makeEVMTransaction(t, {
     wallet,
-    previousOffer,
     methodName: 'getRemoteAddress',
     offerArgs: [],
     proposal: {},
   });
 
-  // @ts-expect-error
-  const evmSmartWalletAddress = wallet.getLatestUpdateRecord().status.result;
+  const evmSmartWalletAddress = wallet.expectResult(
+    t,
+    `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+  );
   t.truthy(evmSmartWalletAddress);
 
-  t.like(wallet.getLatestUpdateRecord(), {
+  wallet.expectStatus(t, {
+    id: `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+    numWantsSatisfied: 1,
+    result: evmSmartWalletAddress,
+  });
+  t.like(wallet.latest(), {
     status: {
-      id: `evmTransaction${evmTransactionCounter - 1}`,
-      numWantsSatisfied: 1,
-      result: evmSmartWalletAddress,
+      id: `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
     },
   });
 });
@@ -262,9 +283,8 @@ test.serial('receiveUpCall test', async t => {
 test.serial('make offers using the lca', async t => {
   const { wallet } = t.context;
 
-  await makeEVMTransaction({
+  await makeEVMTransaction(t, {
     wallet,
-    previousOffer,
     methodName: 'send',
     offerArgs: [
       {
@@ -277,22 +297,19 @@ test.serial('make offers using the lca', async t => {
     proposal: {},
   });
 
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: {
-      id: `evmTransaction${evmTransactionCounter - 1}`,
-      numWantsSatisfied: 1,
-      result: 'transfer success',
-    },
-  });
+  wallet.expectResult(
+    t,
+    `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+    'transfer success',
+  );
 });
 
 test.serial('token transfers using lca', async t => {
-  const { storage, wallet } = t.context;
+  const { axelarLog, wallet } = t.context;
   const { BLD } = t.context.agoricNamesRemotes.brand;
 
-  await makeEVMTransaction({
+  await makeEVMTransaction(t, {
     wallet,
-    previousOffer,
     methodName: 'sendGmp',
     offerArgs: [
       {
@@ -306,10 +323,7 @@ test.serial('token transfers using lca', async t => {
     },
   });
 
-  const getLogged = () =>
-    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
-
-  t.deepEqual(getLogged(), [
+  axelarLog.expect(t, [
     'Inside sendGmp',
     'Payload: null',
     'Initiating IBC Transfer...',
@@ -317,19 +331,17 @@ test.serial('token transfers using lca', async t => {
     'sendGmp successful',
   ]);
 
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: {
-      id: `evmTransaction${evmTransactionCounter - 1}`,
-      result: 'sendGmp successful',
-    },
-  });
+  wallet.expectResult(
+    t,
+    `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+    'sendGmp successful',
+  );
 
   t.log('make offer with 0 amount');
 
   await t.throwsAsync(
-    makeEVMTransaction({
+    makeEVMTransaction(t, {
       wallet,
-      previousOffer,
       methodName: 'sendGmp',
       offerArgs: [
         {
@@ -347,7 +359,7 @@ test.serial('token transfers using lca', async t => {
 });
 
 test.serial('make contract calls using lca', async t => {
-  const { wallet, storage } = t.context;
+  const { axelarLog, wallet } = t.context;
   const { BLD } = t.context.agoricNamesRemotes.brand;
 
   const factoryContractAddress: `0x${string}` =
@@ -360,9 +372,8 @@ test.serial('make contract calls using lca', async t => {
     },
   ];
 
-  await makeEVMTransaction({
+  await makeEVMTransaction(t, {
     wallet,
-    previousOffer,
     methodName: 'sendGmp',
     offerArgs: [
       {
@@ -378,10 +389,7 @@ test.serial('make contract calls using lca', async t => {
     },
   });
 
-  const getLogged = () =>
-    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
-
-  t.deepEqual(getLogged(), [
+  axelarLog.expect(t, [
     'Inside sendGmp',
     `Payload: ${JSON.stringify(buildGMPPayload(contractInvocationData))}`,
     'Fee object {"amount":"20000","recipient":"axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd"}',
@@ -390,19 +398,17 @@ test.serial('make contract calls using lca', async t => {
     'sendGmp successful',
   ]);
 
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: {
-      id: `evmTransaction${evmTransactionCounter - 1}`,
-      result: 'sendGmp successful',
-    },
-  });
+  wallet.expectResult(
+    t,
+    `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+    'sendGmp successful',
+  );
 
   t.log('make offer without contractInvocationData');
 
   await t.throwsAsync(
-    makeEVMTransaction({
+    makeEVMTransaction(t, {
       wallet,
-      previousOffer,
       methodName: 'sendGmp',
       offerArgs: [
         {
@@ -424,9 +430,8 @@ test.serial('make contract calls using lca', async t => {
   t.log('make offer without passing gas amount');
 
   await t.throwsAsync(
-    makeEVMTransaction({
+    makeEVMTransaction(t, {
       wallet,
-      previousOffer,
       methodName: 'sendGmp',
       offerArgs: [
         {
@@ -453,36 +458,28 @@ test.serial('make contract calls using lca', async t => {
 test.serial('restart axelarGmp', async t => {
   t.log('restart axelar-gmp');
 
-  const { evalProposal, buildProposal, wallet } = t.context;
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/restart-axelar-gmp.js'),
-  );
+  const { applyProposal, wallet } = t.context;
+  await applyProposal('@agoric/builders/scripts/testing/restart-axelar-gmp.js');
 
   t.log(
     'check if the LCA address remains durable after restarting the contract',
   );
-  await makeEVMTransaction({
+  await makeEVMTransaction(t, {
     wallet,
-    previousOffer,
     methodName: 'getLocalAddress',
     offerArgs: [],
     proposal: {},
   });
 
-  // @ts-expect-error
-  lcaAddress = wallet.getLatestUpdateRecord().status.result;
-  t.truthy(lcaAddress);
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: {
-      id: `evmTransaction${evmTransactionCounter - 1}`,
-      numWantsSatisfied: 1,
-      result: lcaAddress,
-    },
-  });
+  t.context.flow.lcaAddress = `${wallet.expectResult(
+    t,
+    `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+  )}`;
+  t.truthy(t.context.flow.lcaAddress);
 });
 
 test.serial('make contract calls after contract restart', async t => {
-  const { wallet, storage } = t.context;
+  const { axelarLog, wallet } = t.context;
   const { BLD } = t.context.agoricNamesRemotes.brand;
 
   const factoryContractAddress: `0x${string}` =
@@ -495,9 +492,8 @@ test.serial('make contract calls after contract restart', async t => {
     },
   ];
 
-  await makeEVMTransaction({
+  await makeEVMTransaction(t, {
     wallet,
-    previousOffer,
     methodName: 'sendGmp',
     offerArgs: [
       {
@@ -513,10 +509,7 @@ test.serial('make contract calls after contract restart', async t => {
     },
   });
 
-  const getLogged = () =>
-    JSON.parse(storage.data.get('published.axelarGmp.log')!).values;
-
-  t.deepEqual(getLogged(), [
+  axelarLog.expect(t, [
     'Inside sendGmp',
     `Payload: ${JSON.stringify(buildGMPPayload(contractInvocationData))}`,
     'Fee object {"amount":"50000","recipient":"axelar1zl3rxpp70lmte2xr6c4lgske2fyuj3hupcsvcd"}',
@@ -525,10 +518,9 @@ test.serial('make contract calls after contract restart', async t => {
     'sendGmp successful',
   ]);
 
-  t.like(wallet.getLatestUpdateRecord(), {
-    status: {
-      id: `evmTransaction${evmTransactionCounter - 1}`,
-      result: 'sendGmp successful',
-    },
-  });
+  wallet.expectResult(
+    t,
+    `evmTransaction${t.context.flow.evmTransactionCounter - 1}`,
+    'sendGmp successful',
+  );
 });

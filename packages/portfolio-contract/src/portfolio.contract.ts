@@ -17,6 +17,7 @@ import type {
   Marshaller,
   StorageNode,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
 import {
   ChainInfoShape,
   DenomDetailShape,
@@ -30,23 +31,26 @@ import {
   type Denom,
   type DenomAmount,
   type DenomDetail,
-  type IBCConnectionInfo,
   type OrchestrationPowers,
   type OrchestrationTools,
 } from '@agoric/orchestration';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
   FlowConfig,
+  PortfolioAgentGrantee,
+  PortfolioAgentKey,
+  PortfolioPermissionsExt,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   DEFAULT_FLOW_CONFIG,
-  YieldProtocol,
   FlowConfigShape,
+  PortfolioPlannerAgent,
+  YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.ts';
+import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type {
   PermitDetails,
   YmaxOperationDetails,
@@ -57,11 +61,12 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/types.js';
 import type { Zone } from '@agoric/zone';
-import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
+import { Fail, q } from '@endo/errors';
+import { E, type ERef } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import type { CopyRecord } from '@endo/pass-style';
-import { M } from '@endo/patterns';
+import { M, objectMap } from '@endo/patterns';
+import type { PortfolioDelegationClient } from './delegation.exo.ts';
 import { prepareEVMWalletHandlerKit } from './evm-wallet-handler.exo.ts';
 import { preparePlanner } from './planner.exo.ts';
 import {
@@ -103,7 +108,7 @@ const makeTransferChannels = (chainInfo: PortfolioPrivateArgs['chainInfo']) => {
   return harden({ noble: nobleConn, axelar: axelarConn });
 };
 
-const makeEip155ChainIdToAxelarChain = (
+export const makeEip155ChainIdToAxelarChain = (
   chainInfo: PortfolioPrivateArgs['chainInfo'],
 ) => {
   const chainIdToChainName: Record<`${number}`, AxelarChain> = {};
@@ -123,32 +128,92 @@ const extractContractAddresses = <T extends keyof EVMContractAddresses>(
   chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
   contracts: EVMContractAddressesMap,
   key: T,
-): Record<AxelarChain, AccountId> => {
+): Partial<Record<AxelarChain, AccountId>> => {
   const addresses = fromTypedEntries(
-    Object.entries(chainIdToAxelarChain).map(
-      ([chainId, chainName]) =>
-        [
-          chainName satisfies AxelarChain,
-          `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
-        ] as const,
+    Object.entries(chainIdToAxelarChain).flatMap(([chainId, chainName]) =>
+      contracts[chainName][key]
+        ? contracts[chainName][key].length > 2
+          ? ([
+              [
+                chainName satisfies AxelarChain,
+                `eip155:${chainId}:${contracts[chainName][key]}` satisfies AccountId,
+              ],
+            ] as const)
+          : []
+        : Fail`missing ${key} address for chain ${chainName}`,
     ),
-  ) satisfies Record<AxelarChain, AccountId>;
+  ) satisfies Partial<Record<AxelarChain, AccountId>>;
   return addresses;
+};
+
+export const extractEvmRemoteAccountConfig = (
+  chainIdToAxelarChain: ReturnType<typeof makeEip155ChainIdToAxelarChain>,
+  contracts: EVMContractAddressesMap,
+): StatusFor['contract']['evmRemoteAccountConfig'] | undefined => {
+  let currentRouterAddresses: Partial<Record<AxelarChain, AccountId>>;
+  try {
+    currentRouterAddresses = extractContractAddresses(
+      chainIdToAxelarChain,
+      contracts,
+      'remoteAccountRouter',
+    );
+  } catch (err) {
+    trace('Router based evm accounts not configured', err);
+    return undefined;
+  }
+
+  const factoryAddresses = extractContractAddresses(
+    chainIdToAxelarChain,
+    contracts,
+    'remoteAccountFactory',
+  );
+  const remoteAccountImplementationAddresses = extractContractAddresses(
+    chainIdToAxelarChain,
+    contracts,
+    'remoteAccountImplementation',
+  );
+
+  const missingFactoryAddresses = Object.keys(currentRouterAddresses).filter(
+    chain => !(chain in factoryAddresses),
+  );
+  const missingImplementationAddresses = Object.keys(factoryAddresses).filter(
+    chain => !(chain in remoteAccountImplementationAddresses),
+  );
+
+  missingFactoryAddresses.length === 0 ||
+    Fail`Missing addresses from ${q('remoteAccountFactory')}: ${q(missingFactoryAddresses)}`;
+  missingImplementationAddresses.length === 0 ||
+    Fail`Missing addresses from ${q('remoteAccountImplementation')}: ${q(missingImplementationAddresses)}`;
+
+  return {
+    currentRouterAddresses,
+    factoryAddresses,
+    remoteAccountImplementationAddresses,
+  };
 };
 
 const interfaceTODO = undefined;
 
 const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
-  M.splitRecord({
-    aavePool: M.string(),
-    compound: M.string(),
-    depositFactory: M.string(),
-    factory: M.string(),
-    usdc: M.string(),
-    permit2: M.string(),
-    gateway: M.string(),
-    gasService: M.string(),
-  });
+  M.splitRecord(
+    {
+      aavePool: M.string(),
+      compound: M.string(),
+      depositFactory: M.string(),
+      factory: M.string(), // legacy factory
+      usdc: M.string(),
+      permit2: M.string(),
+      gateway: M.string(),
+      gasService: M.string(),
+    },
+    {
+      cctpRelayer: M.string(),
+      remoteAccountFactory: M.string(),
+      remoteAccountRouter: M.string(),
+      remoteAccountImplementation: M.string(),
+      oneInchRouter: M.string(),
+    },
+  );
 
 export type AxelarConfig = {
   [chain in AxelarChain]: {
@@ -161,9 +226,10 @@ export type AxelarConfig = {
   };
 };
 
-interface PostalServiceI {
+interface PostalService {
   deliverPayment(addr: string, pmt: Payment): Promise<void>;
 }
+type PostalServiceInstance = Instance<() => { publicFacet: PostalService }>;
 
 const AxelarConfigPattern = M.splitRecord({
   axelarId: M.string(),
@@ -190,6 +256,9 @@ export type EVMContractAddresses = {
   compound: `0x${string}`;
   depositFactory: `0x${string}`;
   factory: `0x${string}`;
+  remoteAccountImplementation?: `0x${string}`;
+  remoteAccountFactory?: `0x${string}`;
+  remoteAccountRouter?: `0x${string}`;
   usdc: `0x${string}`;
   permit2: `0x${string}`;
   tokenMessenger: `0x${string}`;
@@ -199,7 +268,10 @@ export type EVMContractAddresses = {
   compoundRewardsController: `0x${string}`;
   gateway: `0x${string}`;
   gasService: `0x${string}`;
+  cctpRelayer?: `0x${string}`;
   walletHelper: `0x${string}`;
+  /** 1inch AggregationRouterV6; mainnet-only (1inch has no testnet support) */
+  oneInchRouter?: `0x${string}`;
 } & Partial<BeefyContracts> &
   Partial<ERC4626Contracts>;
 
@@ -241,6 +313,14 @@ export type PortfolioPrivateArgs = OrchestrationPowers & {
   walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
   defaultFlowConfig?: FlowConfig | null;
+  // Keep new private args optional: seemingly small breaking changes in
+  // startup configuration often turn out to be expensive across upgrade,
+  // bootstrap, and test paths.
+  // Production normally passes the postal-service instance and lets the
+  // contract get its public facet from Zoe. Tests may pass the public facet
+  // directly to avoid standing up a full Zoe-managed postal-service contract.
+  postalService?: PostalService;
+  postalServiceInstance?: PostalServiceInstance;
 };
 
 export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
@@ -261,6 +341,8 @@ export const privateArgsShape: TypedPattern<PortfolioPrivateArgs> =
     },
     {
       defaultFlowConfig: M.or(FlowConfigShape, M.null()),
+      postalService: M.remotable('PostalService'),
+      postalServiceInstance: M.remotable('PostalServiceInstance'),
     },
     {},
   );
@@ -332,6 +414,8 @@ export const contract = async (
     gmpAddresses,
     timerService,
     defaultFlowConfig = DEFAULT_FLOW_CONFIG,
+    postalService,
+    postalServiceInstance,
   } = privateArgs;
   const { brands } = zcf.getTerms();
   const { orchestrateAll, zoeTools, chainHub, vowTools } = tools;
@@ -350,6 +434,11 @@ export const contract = async (
   // Extract transfer channel info synchronously
   const transferChannels = makeTransferChannels(chainInfo);
   const eip155ChainIdToAxelarChain = makeEip155ChainIdToAxelarChain(chainInfo);
+
+  const evmRemoteAccountConfig = extractEvmRemoteAccountConfig(
+    eip155ChainIdToAxelarChain,
+    contracts,
+  );
 
   const proposalShapes = makeProposalShapes(brands.USDC, brands.Access);
   const offerArgsShapes = makeOfferArgsShapes(brands.USDC);
@@ -392,7 +481,11 @@ export const contract = async (
 
     publishStatus(
       storageNode,
-      harden({ contractAccount: addr.value, depositFactoryAddresses }),
+      harden({
+        contractAccount: addr.value,
+        depositFactoryAddresses,
+        ...(evmRemoteAccountConfig ? { evmRemoteAccountConfig } : {}),
+      } satisfies StatusFor['contract']),
     );
     trace('published contractAccount', addr.value);
   });
@@ -490,6 +583,79 @@ export const contract = async (
     txfrCtx,
   );
 
+  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+  const getPortfolio = (id: number) => portfolios.get(id);
+
+  const plannerDelegations = zone.mapStore<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >('plannerDelegations', {
+    keyShape: M.remotable('Portfolio planner'),
+    valueShape: M.remotable('PortfolioDelegationClient'),
+  });
+  const setPlannerDelegation = (
+    portfolioPlanner: PortfolioKit['planner'],
+    client: PortfolioDelegationClient,
+  ): void => {
+    if (plannerDelegations.has(portfolioPlanner)) {
+      plannerDelegations.set(portfolioPlanner, client);
+    } else {
+      plannerDelegations.init(portfolioPlanner, client);
+    }
+  };
+  const getPlannerDelegation = (
+    portfolioPlanner: PortfolioKit['planner'],
+  ): PortfolioDelegationClient | undefined => {
+    if (!plannerDelegations.has(portfolioPlanner)) {
+      return undefined;
+    }
+    return plannerDelegations.get(portfolioPlanner);
+  };
+
+  const postalServiceP: ERef<PostalService> | undefined = postalServiceInstance
+    ? E(zcf.getZoeService()).getPublicFacet(postalServiceInstance)
+    : postalService;
+
+  /**
+   * Sets a delegation for the planner, or delivers it to an agoric address as an invitation.
+   *
+   * Mint a delegation invitation for one portfolio and deliver it to `grantee`.
+   * The grantee redeems it once and saves the resulting wallet-store entry
+   * for later `invokeEntry` calls. Reachable only via `evmHandler.grant`,
+   * which requires the caller to already hold the per-portfolio evmHandler
+   * facet — i.e., the per-wallet `wallet.portfolios.get(id)` lookup has
+   * already authorized the signer as the portfolio's owner.
+   */
+  const deliverDelegation = async (
+    client: PortfolioDelegationClient,
+    portfolioId: number,
+    agentId: number,
+    grantee: PortfolioAgentGrantee,
+    permissions: PortfolioPermissionsExt,
+  ): Promise<void> => {
+    if (grantee === PortfolioPlannerAgent) {
+      const planner = getPortfolio(portfolioId)!.planner;
+      setPlannerDelegation(planner, client);
+      return;
+    }
+
+    const ps =
+      postalServiceP || Fail`postal service not configured in private args`;
+    const invitation = await zcf.makeInvitation(
+      (seat: ZCFSeat) => {
+        seat.exit();
+        return client;
+      },
+      'portfolioMandate',
+      harden({
+        portfolioId,
+        agentId: `agent${agentId}` satisfies PortfolioAgentKey,
+        permissions,
+      }),
+    );
+    await E(ps).deliverPayment(grantee, invitation);
+  };
+
   const makePortfolioKit = preparePortfolioKit(zone, {
     zcf,
     vowTools,
@@ -505,10 +671,8 @@ export const contract = async (
     usdcBrand: brands.USDC,
     eip155ChainIdToAxelarChain,
     contracts,
+    deliverDelegation,
   });
-
-  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
-  const getPortfolio = (id: number) => portfolios.get(id);
 
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
@@ -547,7 +711,11 @@ export const contract = async (
     offerArgs,
     kit,
     config = defaultFlowConfig,
-  ) => orchFns2.openPortfolio(seat, offerArgs, kit, ...flowCfg(config));
+  ) =>
+    orchFns2.openPortfolio(seat, offerArgs, kit, {
+      ...config,
+      explicitStartFlow: true,
+    });
 
   const usedAccessTokens = zone.makeOnce(
     'usedAccessTokens',
@@ -627,7 +795,9 @@ export const contract = async (
      * @see {@link openPortfolio} for the flow implementation
      */
     async openPortfolioFromEVM(
-      { allocations }: YmaxOperationDetails<'OpenPortfolio'>['data'],
+      data:
+        | YmaxOperationDetails<'OpenPortfolio'>['data']
+        | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data'],
       permitDetails: PermitDetails,
     ): Promise<{
       storagePath: string;
@@ -640,7 +810,10 @@ export const contract = async (
 
       // XXX: validate instruments
       const targetAllocation: TargetAllocation = Object.fromEntries(
-        allocations.map(({ instrument, portion }) => [instrument, portion]),
+        data.allocations.map(({ instrument, portion }) => [
+          instrument,
+          portion,
+        ]),
       );
 
       const fromChain =
@@ -656,6 +829,12 @@ export const contract = async (
       const sourceAccountId =
         `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
+
+      await null;
+      if ('features' in data && data.features !== undefined) {
+        // setAutoFeatures is promptly resolved
+        await vowTools.asPromise(kit.evmHandler.setAutoFeatures(data.features));
+      }
 
       const seat = zcf.makeEmptySeatKit().zcfSeat;
 
@@ -718,15 +897,18 @@ export const contract = async (
   );
 
   const makePlanner = preparePlanner(zone.subZone('planner'), {
-    zcf,
-    rebalance,
-    getPortfolio,
+    getPortfolioPlanner: id => getPortfolio(id).planner,
+    getPlannerDelegation,
     shapes: offerArgsShapes,
-    vowTools,
   });
 
   const makePlannerInvitation = prepareResultOnlyInvitation('planner', () =>
     makePlanner(),
+  );
+
+  const permit2Addresses = objectMap(
+    eip155ChainIdToAxelarChain,
+    chainName => contracts[chainName].permit2,
   );
 
   const { makeEVMWalletMessageHandler } = prepareEVMWalletHandlerKit(
@@ -737,6 +919,7 @@ export const contract = async (
       timerService,
       portfolioContractPublicFacet: publicFacet,
       publishStatus,
+      permit2Addresses,
     },
   );
 
@@ -773,7 +956,7 @@ export const contract = async (
       },
       async deliverResolverInvitation(
         address: string,
-        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
       ) {
         const zoe = zcf.getZoeService();
         const pfP = E(zoe).getPublicFacet(instancePS);
@@ -796,7 +979,7 @@ export const contract = async (
        */
       async deliverPlannerInvitation(
         address: string,
-        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
       ) {
         trace('deliverPlannerInvitation', address, instancePS);
         const zoe = zcf.getZoeService();
@@ -815,7 +998,7 @@ export const contract = async (
        */
       async deliverEVMWalletHandlerInvitation(
         address: string,
-        instancePS: Instance<() => { publicFacet: PostalServiceI }>,
+        instancePS: Instance<() => { publicFacet: PostalService }>,
       ) {
         trace('deliverEVMWalletHandlerInvitation');
         const zoe = zcf.getZoeService();

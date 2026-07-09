@@ -4,10 +4,13 @@ import { encodeType } from '../../src/utils/viem-utils/hashTypedData.js';
 import {
   extractWitnessFieldFromTypes,
   makeWitnessTypeStringExtractor,
+  validatePermit2Domain,
+  validateTokenPermissionsType,
 } from '../../src/utils/permit2/signatureTransferHelpers.js';
 import {
   permitBatchWitnessTransferFromTypes,
   permitWitnessTransferFromTypes,
+  TokenPermissionTypeParams,
 } from '../../src/utils/permit2/signatureTransfer.js';
 
 const witnessField = { name: 'witness', type: 'Foo' } as const;
@@ -127,4 +130,124 @@ test('extractWitnessFieldFromTypes throws on invalid shapes', t => {
     message:
       'PermitWitnessTransferFrom field at index 0 must be `TokenPermissions permitted`',
   });
+});
+
+// ==================== validateTokenPermissionsType ====================
+
+test('validateTokenPermissionsType passes for correct type params', t => {
+  t.notThrows(() =>
+    validateTokenPermissionsType({
+      TokenPermissions: TokenPermissionTypeParams,
+    }),
+  );
+});
+
+test('validateTokenPermissionsType throws for wrong field name', t => {
+  const bad = [
+    { name: 'wrongName', type: 'address' },
+    { name: 'amount', type: 'uint256' },
+  ] as unknown as typeof TokenPermissionTypeParams;
+
+  t.throws(() => validateTokenPermissionsType({ TokenPermissions: bad }), {
+    message: /TokenPermissions field at index 0/,
+  });
+});
+
+test('validateTokenPermissionsType throws for wrong field type', t => {
+  const bad = [
+    { name: 'token', type: 'uint256' },
+    { name: 'amount', type: 'uint256' },
+  ] as unknown as typeof TokenPermissionTypeParams;
+
+  t.throws(() => validateTokenPermissionsType({ TokenPermissions: bad }), {
+    message: /TokenPermissions field at index 0/,
+  });
+});
+
+// ==================== validatePermit2Domain ====================
+
+const MOCK_PERMIT2_ADDRESS =
+  '0x000000000022D473030F116dDEE9F6B43aC78BA3' as const;
+
+test('validatePermit2Domain passes for valid domain', t => {
+  const domain = {
+    name: 'Permit2',
+    chainId: 42161n,
+    verifyingContract: MOCK_PERMIT2_ADDRESS,
+  };
+
+  t.notThrows(() => validatePermit2Domain(domain));
+});
+
+test('validatePermit2Domain passes for valid domain with address list', t => {
+  const domain = {
+    name: 'Permit2',
+    chainId: 42161n,
+    verifyingContract: MOCK_PERMIT2_ADDRESS,
+  };
+
+  t.notThrows(() =>
+    validatePermit2Domain(domain, { '42161': MOCK_PERMIT2_ADDRESS }),
+  );
+});
+
+test('validatePermit2Domain throws for wrong name', t => {
+  const domain = {
+    name: 'NotPermit2',
+    chainId: 42161n,
+    verifyingContract: MOCK_PERMIT2_ADDRESS,
+  };
+
+  t.throws(() => validatePermit2Domain(domain), {
+    message: /permit2 domain name/,
+  });
+});
+
+test('validatePermit2Domain throws for missing chainId', t => {
+  const domain = {
+    name: 'Permit2',
+    verifyingContract: MOCK_PERMIT2_ADDRESS,
+  };
+
+  t.throws(() => validatePermit2Domain(domain), {
+    message: /chainId and verifyingContract/,
+  });
+});
+
+test('validatePermit2Domain throws for non-bigint chainId', t => {
+  const domain = {
+    name: 'Permit2',
+    chainId: 42161,
+    verifyingContract: MOCK_PERMIT2_ADDRESS,
+  };
+
+  t.throws(() => validatePermit2Domain(domain), {
+    message: /chainId and verifyingContract/,
+  });
+});
+
+test('validatePermit2Domain throws for wrong verifying contract', t => {
+  const domain = {
+    name: 'Permit2',
+    chainId: 42161n,
+    verifyingContract:
+      '0x0000000000000000000000000000000000000000' as `0x${string}`,
+  };
+
+  t.throws(
+    () => validatePermit2Domain(domain, { '42161': MOCK_PERMIT2_ADDRESS }),
+    { message: /verifying contract/ },
+  );
+});
+
+test('validatePermit2Domain is case-insensitive for address comparison', t => {
+  const domain = {
+    name: 'Permit2',
+    chainId: 42161n,
+    verifyingContract: MOCK_PERMIT2_ADDRESS.toUpperCase() as `0x${string}`,
+  };
+
+  t.notThrows(() =>
+    validatePermit2Domain(domain, { '42161': MOCK_PERMIT2_ADDRESS }),
+  );
 });

@@ -1,8 +1,7 @@
 // @ts-check
 import { createMockAckMap } from '@agoric/orchestration/tools/ibc-mocks.js';
-import type { IBCChannelID, IBCEvent, IBCMethod } from '@agoric/vats';
-
-/** @import { IBCChannelID, IBCMethod, IBCEvent } from '@agoric/vats'; */
+import type { IBCChannelID } from '@agoric/network/ibc';
+import type { IBCEvent, IBCMethod } from '@agoric/vats';
 
 const responses = {
   // {"result":"+/cosmos.staking.v1beta1.MsgDelegateResponse"}

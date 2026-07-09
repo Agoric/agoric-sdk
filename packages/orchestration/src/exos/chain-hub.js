@@ -55,7 +55,7 @@ export const PFM_RECEIVER = /** @type {const} */ ('pfm');
  */
 
 /**
- * @enum {(typeof HubName)[keyof typeof HubName]}
+ * @typedef {(typeof HubName)[keyof typeof HubName]} HubName
  */
 export const HubName = /** @type {const} */ ({
   /** agoricNames key for ChainInfo hub */
@@ -79,7 +79,7 @@ export const ASSETS_KEY = HubName.ChainAssets;
  */
 const CHAIN_ID_SEPARATOR = '_';
 
-/** @typedef {`${string}${CHAIN_ID_SEPARATOR}${string}`} IbcConnectionKey */
+/** @typedef {`${string}${typeof CHAIN_ID_SEPARATOR}${string}`} IbcConnectionKey */
 
 /**
  * Vstorage keys can be only alphanumerics, dash, or underscore, which are all
@@ -702,7 +702,7 @@ export const makeChainHub = (
     },
 
     /**
-     * Like {@see resolveAccountId} but always returns a CosmosChainAddress.
+     * Like `resolveAccountId` but always returns a CosmosChainAddress.
      *
      * @param {AccountIdArg | Bech32Address} partialId CAIP-10 account ID or a
      *   Cosmos bech32 address

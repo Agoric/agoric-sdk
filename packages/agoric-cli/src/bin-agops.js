@@ -1,22 +1,16 @@
 #!/usr/bin/env node
-/* eslint-env node */
 // @ts-check
-// @jessie-check
 
 import '@endo/init';
 
 import { E } from '@endo/far';
 
-import { execFileSync } from 'child_process';
-import path from 'path';
-import process from 'process';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import process from 'node:process';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { Command, CommanderError, createCommand } from 'commander';
-import { makeOracleCommand } from './commands/oracle.js';
 import { makeGovCommand } from './commands/gov.js';
-import { makePsmCommand } from './commands/psm.js';
-import { makeReserveCommand } from './commands/reserve.js';
-import { makeVaultsCommand } from './commands/vaults.js';
 import { makePerfCommand } from './commands/perf.js';
 import { makeTestCommand } from './commands/test-upgrade.js';
 
@@ -28,8 +22,6 @@ program.name(progname).version('unversioned');
 
 program.addCommand(makeGovCommand(logger));
 program.addCommand(makePerfCommand(logger));
-program.addCommand(makePsmCommand(logger));
-program.addCommand(makeVaultsCommand(logger));
 
 /**
  * XXX Threading I/O powers has gotten a bit jumbled.
@@ -64,8 +56,6 @@ const procIO = {
   setTimeout,
 };
 
-program.addCommand(makeOracleCommand(procIO, logger));
-program.addCommand(makeReserveCommand(logger, procIO));
 program.addCommand(makeTestCommand(procIO, { fetch }));
 
 void E.when(program.parseAsync(process.argv), undefined, err => {

@@ -1,10 +1,9 @@
-// @jessie-check
 // @ts-check
 
 import { M } from '@endo/patterns';
 
 /**
- * @import {TypedPattern} from './types.js';
+ * @import {CastedPattern} from '@endo/patterns';
  */
 
 export const StorageNodeShape = M.remotable('StorageNode');
@@ -24,6 +23,6 @@ export const UnguardedHelperI = M.interface(
  */
 
 /**
- * @type {TypedPattern<BridgeBigInt>}
+ * @type {CastedPattern<BridgeBigInt>}
  */
 export const BridgeBigIntShape = M.or(M.number(), M.string());

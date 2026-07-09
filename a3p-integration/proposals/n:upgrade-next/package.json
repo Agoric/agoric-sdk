@@ -1,4 +1,5 @@
 {
+  "name": "n:upgrade-next",
   "agoricProposal": {
     "releaseNotes": false,
     "sdkImageTag": "unreleased",
@@ -15,7 +16,7 @@
     "@agoric/client-utils": "dev",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
-    "@agoric/synthetic-chain": "^0.6.1",
+    "@agoric/synthetic-chain": "^0.7.1",
     "@agoric/zoe": "dev",
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
@@ -30,6 +31,7 @@
     "ts-blank-space": "^0.6.2"
   },
   "resolutions": {
+    "agoric": "portal:../../agoric-sdk/packages/agoric-cli",
     "@agoric/access-token": "portal:../../agoric-sdk/packages/access-token",
     "@agoric/base-zone": "portal:../../agoric-sdk/packages/base-zone",
     "@agoric/cache": "portal:../../agoric-sdk/packages/cache",
@@ -43,7 +45,6 @@
     "@agoric/eslint-config": "portal:../../agoric-sdk/packages/eslint-config",
     "@agoric/governance": "portal:../../agoric-sdk/packages/governance",
     "@agoric/import-manager": "portal:../../agoric-sdk/packages/import-manager",
-    "@agoric/inter-protocol": "portal:../../agoric-sdk/packages/inter-protocol",
     "@agoric/internal": "portal:../../agoric-sdk/packages/internal",
     "@agoric/kmarshal": "portal:../../agoric-sdk/packages/kmarshal",
     "@agoric/network": "portal:../../agoric-sdk/packages/network",
@@ -88,6 +89,6 @@
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",
-    "typescript": "~5.9.2"
+    "typescript": "~6.0.3"
   }
 }

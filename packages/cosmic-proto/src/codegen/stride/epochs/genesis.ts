@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import {
   Timestamp,
   type TimestampSDKType,
@@ -82,6 +83,18 @@ function createBaseEpochInfo(): EpochInfo {
  */
 export const EpochInfo = {
   typeUrl: '/stride.epochs.EpochInfo' as const,
+  annotations: {
+    'gogoproto.nullable': {
+      currentEpochStartTime: false,
+      duration: false,
+      startTime: false,
+    },
+    typeUrlFromField: {
+      currentEpochStartTime: () => Timestamp,
+      duration: () => Duration,
+      startTime: () => Timestamp,
+    },
+  } as const satisfies FieldAnnotationsRecord,
   is(o: any): o is EpochInfo {
     return (
       o &&

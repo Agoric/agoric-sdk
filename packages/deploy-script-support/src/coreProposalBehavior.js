@@ -39,7 +39,7 @@ export const permits = {
  * @param {ManifestBundleRef} inputs.manifestBundleRef
  * @param {FlatMethargs} inputs.getManifestCall
  * @param {Manifest} [inputs.customManifest]
- * @param {typeof E} inputs.E
+ * @param {typeof import('@endo/far').E} inputs.E
  * @param {(...args: unknown[]) => void} [inputs.log]
  * @param {(ref: ManifestBundleRef) => Promise<Installation<unknown>>} [inputs.customRestoreRef]
  * @returns {(vatPowers: unknown) => Promise<unknown>}
@@ -188,7 +188,7 @@ export const makeCoreProposalBehavior = ({
 /**
  * @param {object} inputs
  * @param {Array<{ ref: ManifestBundleRef, call: FlatMethargs, customManifest?: Manifest }>} inputs.metadataRecords
- * @param {typeof E} inputs.E
+ * @param {typeof import('@endo/far').E} inputs.E
  */
 export const makeEnactCoreProposalsFromBundleRef = ({ metadataRecords, E }) => {
   /**

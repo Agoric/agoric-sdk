@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { Params, type ParamsSDKType } from './mint.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -219,6 +220,11 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
  */
 export const QueryParamsResponse = {
   typeUrl: '/cosmos.mint.v1beta1.QueryParamsResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { params: true },
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
   is(o: any): o is QueryParamsResponse {
     return (
@@ -373,6 +379,11 @@ function createBaseQueryInflationResponse(): QueryInflationResponse {
  */
 export const QueryInflationResponse = {
   typeUrl: '/cosmos.mint.v1beta1.QueryInflationResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { inflation: true },
+    'gogoproto.nullable': { inflation: false },
+    typeUrlFromField: { inflation: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryInflationResponse' as const,
   is(o: any): o is QueryInflationResponse {
     return (
@@ -544,6 +555,11 @@ function createBaseQueryAnnualProvisionsResponse(): QueryAnnualProvisionsRespons
  */
 export const QueryAnnualProvisionsResponse = {
   typeUrl: '/cosmos.mint.v1beta1.QueryAnnualProvisionsResponse' as const,
+  annotations: {
+    'amino.dont_omitempty': { annualProvisions: true },
+    'gogoproto.nullable': { annualProvisions: false },
+    typeUrlFromField: { annualProvisions: 'cosmos.Dec' },
+  } as const satisfies FieldAnnotationsRecord,
   aminoType: 'cosmos-sdk/QueryAnnualProvisionsResponse' as const,
   is(o: any): o is QueryAnnualProvisionsResponse {
     return (

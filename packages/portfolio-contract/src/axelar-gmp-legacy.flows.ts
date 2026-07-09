@@ -76,6 +76,19 @@ type ProvideEVMAccountSendCallFactory = (
   sendCallArg?: unknown,
 ) => ProvideEVMAccountSendCall;
 
+const assertNotRouterBasedAccount = ({
+  routerFactory,
+  routerAddress,
+  remoteAddress,
+  chainName,
+}: GMPAccountInfo) => {
+  // If we somehow got asked to send a GMP message to a router-based account,
+  // something went wrong
+  if (routerFactory || routerAddress) {
+    throw Fail`Remote account ${remoteAddress} on ${chainName} should not be a router-enabled account`;
+  }
+};
+
 // Shared "provide pattern" with a pluggable GMP call, so we can reuse the
 // reservation/resolve/error-handling logic across account-creation variants.
 const makeProvideEVMAccount = ({
@@ -88,7 +101,7 @@ const makeProvideEVMAccount = ({
   txType: TxType;
   mode: 'makeAccount' | 'createAndDeposit';
 }) => {
-  return async (
+  return (
     chainName: AxelarChain,
     chainInfo: BaseChainInfo,
     gmp: {
@@ -99,7 +112,7 @@ const makeProvideEVMAccount = ({
     ctx: PortfolioInstanceContext,
     pk: GuestInterface<PortfolioKit>,
     opts: { orchOpts?: OrchestrationOptions; sendCallArg?: unknown } = {},
-  ): Promise<GMPAccountStatus> => {
+  ): GMPAccountStatus => {
     // sendCall is either sendMakeAccountCall or sendCreateAndDepositCall
     const sendCall = getSendCall(opts.sendCallArg);
     const pId = pk.reader.getPortfolioId();
@@ -147,6 +160,8 @@ const makeProvideEVMAccount = ({
       const evmAccount = isNewAccount
         ? predictAddress(principalAccount)
         : pk.reader.getGMPInfo(chainName);
+
+      assertNotRouterBasedAccount(evmAccount);
 
       // Bail out early if another caller created the account, and this is not a deposit.
       if (!manager && mode !== 'createAndDeposit') {
@@ -387,7 +402,7 @@ export const provideEVMAccountWithPermit = (
   pk: GuestInterface<PortfolioKit>,
   permit2Payload: PermitDetails['permit2Payload'],
   orchOpts?: OrchestrationOptions,
-): Promise<GMPAccountStatus> =>
+): GMPAccountStatus =>
   provideEVMAccountWithPermitBase(chainName, chainInfo, gmp, lca, ctx, pk, {
     orchOpts,
     sendCallArg: permit2Payload,
@@ -422,6 +437,8 @@ export const sendGMPContractCall = async (
   } = ctx;
   const { chainName, remoteAddress, chainId: gmpChainId } = gmpAcct;
   const axelarId = axelarIds[chainName];
+
+  assertNotRouterBasedAccount(gmpAcct);
 
   const sourceAddress = coerceAccountId(lca.getAddress());
   const { result, txId } = resolverClient.registerTransaction(
@@ -507,6 +524,8 @@ export const sendPermit2GMP = async (
 
   const { permit, owner, witness, witnessTypeString, signature } =
     permit2Payload;
+
+  assertNotRouterBasedAccount(gmpAcct);
 
   transferAmount <= permit.permitted.amount ||
     Fail`insufficient permitted amount ${q(permit.permitted.amount)} for transferAmount ${q(transferAmount)}`;

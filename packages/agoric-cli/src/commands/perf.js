@@ -1,6 +1,5 @@
 // @ts-check
 /* eslint-disable func-names */
-/* eslint-env node */
 import {
   iterateEach,
   makeCastingSpec,
@@ -11,8 +10,8 @@ import { fetchEnvNetworkConfig } from '@agoric/client-utils';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
 import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
 import { Command } from 'commander';
-import fs from 'fs';
-import { exit } from 'process';
+import fs from 'node:fs';
+import { exit } from 'node:process';
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
   execSwingsetTransaction,

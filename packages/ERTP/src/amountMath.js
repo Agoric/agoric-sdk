@@ -8,7 +8,7 @@ import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
- * @import {CopyBag, CopySet} from '@endo/patterns';
+ * @import {CopyBag, CopySet, Key} from '@endo/patterns';
  * @import {Amount, AmountValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
 
@@ -16,7 +16,7 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 /**
  * Constants for the kinds of assets we support.
  *
- * @enum {(typeof AssetKind)[keyof typeof AssetKind]}
+ * @typedef {(typeof AssetKind)[keyof typeof AssetKind]} AssetKind
  */
 export const AssetKind = /** @type {const} */ ({
   NAT: 'nat',
@@ -110,8 +110,7 @@ const assertValueGetAssetKind = value => {
  * @returns {MathHelpers<V>}
  */
 export const assertValueGetHelpers = value =>
-  // @ts-expect-error cast
-  helpers[assertValueGetAssetKind(value)];
+  /** @type {MathHelpers<V>} */ (helpers[assertValueGetAssetKind(value)]);
 
 /**
  * @type {(allegedBrand: Brand<any>, brand?: Brand<any>) => void}
@@ -238,8 +237,7 @@ export const AmountMath = {
     brand === allegedBrand ||
       Fail`The brand in the allegedAmount ${allegedAmount} in 'coerce' didn't match the specified brand ${brand}.`;
     // Will throw on inappropriate value
-    // @ts-expect-error cast
-    return AmountMath.make(brand, allegedValue);
+    return /** @type {A} */ (AmountMath.make(brand, allegedValue));
   },
   /**
    * Extract and return the value.
@@ -254,18 +252,18 @@ export const AmountMath = {
    * Return the amount representing an empty amount. This is the identity
    * element for MathHelpers.add and MatHelpers.subtract.
    *
-   * @type {{
+   */
+  makeEmpty: /** @type {{
    *   (brand: Brand): Amount<'nat'>;
    *   <K extends AssetKind>(brand: Brand<K>, assetKind: K): Amount<K>;
-   * }}
-   */
-  makeEmpty: (brand, assetKind = /** @type {const} */ ('nat')) => {
-    assertRemotable(brand, 'brand');
-    assertAssetKind(assetKind);
-    const value = helpers[assetKind].doMakeEmpty();
-    // @ts-expect-error XXX narrowing from function overload
-    return harden({ brand, value });
-  },
+   * }} */ (
+    (brand, assetKind = /** @type {const} */ ('nat')) => {
+      assertRemotable(brand, 'brand');
+      assertAssetKind(assetKind);
+      const value = helpers[assetKind].doMakeEmpty();
+      return harden({ brand, value });
+    }
+  ),
   /**
    * Return the amount representing an empty amount, using another amount as the
    * template for the brand and assetKind.
@@ -278,8 +276,7 @@ export const AmountMath = {
     assertRecord(amount, 'amount');
     const { brand, value } = amount;
     const assetKind = assertValueGetAssetKind(value);
-    // @ts-expect-error different subtype
-    return AmountMath.makeEmpty(brand, assetKind);
+    return /** @type {A} */ (AmountMath.makeEmpty(brand, assetKind));
   },
   /**
    * Return true if the Amount is empty. Otherwise false.

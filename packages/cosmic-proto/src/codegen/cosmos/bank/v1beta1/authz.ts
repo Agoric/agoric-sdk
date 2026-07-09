@@ -5,8 +5,6 @@ import { type JsonSafe } from '../../../json-safe.js';
 /**
  * SendAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account.
- *
- * Since: cosmos-sdk 0.43
  * @name SendAuthorization
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.SendAuthorization
@@ -17,8 +15,6 @@ export interface SendAuthorization {
   /**
    * allow_list specifies an optional list of addresses to whom the grantee can send tokens on behalf of the
    * granter. If omitted, any recipient is allowed.
-   *
-   * Since: cosmos-sdk 0.47
    */
   allowList: string[];
 }
@@ -29,8 +25,6 @@ export interface SendAuthorizationProtoMsg {
 /**
  * SendAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account.
- *
- * Since: cosmos-sdk 0.43
  * @name SendAuthorizationSDKType
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.SendAuthorization
@@ -50,8 +44,6 @@ function createBaseSendAuthorization(): SendAuthorization {
 /**
  * SendAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account.
- *
- * Since: cosmos-sdk 0.43
  * @name SendAuthorization
  * @package cosmos.bank.v1beta1
  * @see proto type: cosmos.bank.v1beta1.SendAuthorization
