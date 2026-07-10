@@ -53,8 +53,7 @@ test('garden#29: ymax vat is promoted to critical at the software upgrade', asyn
     t.is(
       pin.vatID,
       vatID,
-      `pinned vatID ${pin.vatID} must match the live ymax1 vatID ${vatID}; ` +
-        'update n:upgrade-next package.json upgradeInfo.vatOptionUpdates if deployment changed it',
+      `pinned vatID ${pin.vatID} must match the live ymax1 vatID ${vatID}; update n:upgrade-next package.json upgradeInfo.vatOptionUpdates if deployment changed it`,
     );
   }
 
