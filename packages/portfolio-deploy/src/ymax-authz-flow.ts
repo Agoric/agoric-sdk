@@ -42,10 +42,30 @@ import {
 export type ContractName = (typeof PORTFOLIO_CONTRACT_NAMES)[number];
 const unsignedUpgradeKind = 'ymax-authz-upgrade-request' as const;
 
-export const defaultFee: StdFee = {
-  gas: '400000',
-  amount: [{ denom: 'ubld', amount: '10000' }],
-};
+/**
+ * Derives fee from gas so the two can never drift apart (e.g. bumping gas
+ * for a bigger tx without bumping the fee to match, which under-pays and
+ * gets rejected with `insufficient fees`).
+ */
+const makeFee = ({
+  gas,
+  price = 0.03, // 0.025 observed on mainnet, plus some headroom
+  denom = 'ubld', // price is in this denom
+}: {
+  gas: number;
+  price?: number;
+  denom?: string;
+}): StdFee => ({
+  gas: `${Math.round(gas)}`,
+  amount: [{ denom, amount: `${Math.round(gas * price)}` }],
+});
+
+// 800_000: an authz-wrapped upgrade tx (MsgExec, and for a multisig grantee
+// a larger AuthInfo with multiple member pubkeys/signatures) is bigger than
+// the plain single-signer WalletSpendAction this budget was originally
+// sized for, so it needs more gas just for tx-size ante processing — a real
+// case measured ~470_000 gas used against a 400_000 budget.
+export const defaultFee: StdFee = makeFee({ gas: 800_000 });
 
 export type Clock = () => Date;
 
