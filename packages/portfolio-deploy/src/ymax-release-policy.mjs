@@ -238,7 +238,6 @@ export const validateNamedPendingUpgradeRecord = (
  *   reader: ReleasePlanReader;
  *   releaseTag: string;
  *   target: Target;
- *   ymax1Planner: string;
  * }} ReleasePlanOptions
  */
 
@@ -337,7 +336,6 @@ export const makeReleasePlan = ({
   reader,
   releaseTag,
   target,
-  ymax1Planner,
 }) => {
   if (!(target in targetInfo)) throw Error(`unsupported target: ${target}`);
   if (!['bundle-only', 'deploy'].includes(mode)) {
@@ -387,14 +385,6 @@ export const makeReleasePlan = ({
     ...planPreUpgrade(reader, target, bundleId),
     ...planUpgrade(reader, target, bundleId, privateArgs, releaseTag),
   };
-
-  if (
-    target === 'ymax1-main' &&
-    (plan.needUpgradeSubmit || plan.needUpgradeConfirm) &&
-    ymax1Planner !== 'down'
-  ) {
-    throw Error('ymax1Planner must be down for ymax1-main');
-  }
 
   return {
     ...plan,

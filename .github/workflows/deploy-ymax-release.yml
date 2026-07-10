@@ -89,7 +89,6 @@ jobs:
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
-          YMAX1_PLANNER: ${{ inputs.ymax1Planner }}
         run: node .github/scripts/plan-ymax-release.mjs
 
   build-bundle:
@@ -159,12 +158,6 @@ jobs:
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
-      - name: Require ymax1 planner down
-        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
-        run: |
-          echo 'ymax1Planner must be down for ymax1-main' >&2
-          exit 1
-
       - name: Validate signing inputs
         env:
           AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
@@ -230,6 +223,18 @@ jobs:
               ;;
           esac
 
+      # Enforced here, once a signed tx is actually ready, rather than
+      # earlier: this job can rerun freely while cosigners are still
+      # collecting signatures without requiring the planner be down for
+      # the whole wait. It's also checked before upgrade-submit's approval
+      # gate so a human is never asked to approve a broadcast that this
+      # step would immediately block anyway.
+      - name: Require ymax1 planner down
+        if: steps.prepare.outputs.ready_to_broadcast == 'true' && inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        run: |
+          echo 'ymax1Planner must be down for ymax1-main' >&2
+          exit 1
+
   # Only job that broadcasts to chain, so it's the only one gated by
   # environment approval — and only runs (so only ever prompts) once
   # upgrade-prepare reports a signed tx is actually ready to send.
@@ -287,12 +292,6 @@ jobs:
       - uses: actions/checkout@v5
 
       - uses: ./.github/actions/setup-agoric-sdk-build
-
-      - name: Require ymax1 planner down
-        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
-        run: |
-          echo 'ymax1Planner must be down for ymax1-main' >&2
-          exit 1
 
       - name: Run upgrade confirm phase
         env:

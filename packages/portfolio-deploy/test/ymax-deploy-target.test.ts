@@ -462,7 +462,6 @@ test('pending upgrade evidence suppresses submit but still requires confirm', t 
     }),
     releaseTag,
     target: 'ymax0-main',
-    ymax1Planner: '',
   });
   t.like(plan, {
     mode: 'deploy',
@@ -491,7 +490,6 @@ test('ymax1-main never needs pre-upgrade, even with no ymax1-main-install.json',
     }),
     releaseTag,
     target: 'ymax1-main',
-    ymax1Planner: 'down',
   });
   t.like(plan, {
     target: 'ymax1-main',
@@ -1229,7 +1227,6 @@ test('reject ymax1-main upgrade without ymax0-main upgrade evidence', async t =>
         }),
         releaseTag,
         target: 'ymax1-main',
-        ymax1Planner: 'down',
       }),
     { message: 'missing required release asset ymax0-main-install.json' },
   );

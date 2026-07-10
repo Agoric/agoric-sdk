@@ -73,7 +73,6 @@ export const main = async ({
     reader: makeReleaseReader({ gh, releaseTag }),
     releaseTag,
     target,
-    ymax1Planner: env.YMAX1_PLANNER || '',
   });
 
   if (env.GITHUB_OUTPUT) {
