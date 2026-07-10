@@ -1,4 +1,3 @@
-
 // Launching the chain requires @agoric/builders (the proposal builders that
 // bootstrap configs run) and @agoric/vm-config (the bootstrap config JSON
 // resolved by chain-main.js / sim-chain.js). Both are referenced only via
