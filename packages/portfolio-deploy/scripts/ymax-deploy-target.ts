@@ -647,6 +647,28 @@ const extractWalletSpendActions = (
   return [];
 };
 
+/**
+ * Decode a WalletSpendAction's spend_action capData into the upgrade
+ * invocation it carries (bundleId + the invocationId nonce stamped in the
+ * bridge action's message.id), or undefined if it isn't an `upgrade`
+ * invokeEntry call — including if it fails to parse, tolerated since some
+ * callers scan arbitrary tx/message history for a match.
+ */
+const extractUpgradeInvocation = (
+  spendAction: string,
+): { bundleId: string; invocationId: string } | undefined => {
+  try {
+    const action = grokCapData(spendAction) as BridgeAction;
+    if (action.method !== 'invokeEntry') return undefined;
+    const { method, args, id } = action.message;
+    if (method !== 'upgrade' || id === undefined) return undefined;
+    const [{ bundleId }] = args as [{ bundleId: string }];
+    return { bundleId, invocationId: String(id) };
+  } catch {
+    return undefined;
+  }
+};
+
 const findInvocationTx = ({
   pending,
   owner,
@@ -664,23 +686,16 @@ const findInvocationTx = ({
   // The control wallet stamps each invocation with its own message.id nonce,
   // so we can't correlate on pending.invocationId. Instead identify the
   // upgrade by control wallet + an invokeEntry upgrade of this specific bundle.
-  // Returns the upgrade message (for its id) when `message` is this bundle's
-  // upgrade invocation, else undefined; doubles as a predicate.
+  // Returns the invocation (for its invocationId) when `message` is this
+  // bundle's upgrade invocation, else undefined; doubles as a predicate.
   const bundleUpgrade = (message: AnyJson) => {
     for (const walletMessage of extractWalletSpendActions(message)) {
       if (walletMessage.owner !== owner) {
         continue;
       }
-      try {
-        const action = grokCapData(walletMessage.spend_action) as BridgeAction;
-        if (!(action.method === 'invokeEntry')) continue;
-        const msg = action.message;
-        if (!(msg.method === 'upgrade')) continue;
-        const [{ bundleId }] = msg.args as [{ bundleId: string }];
-        if (!(bundleId === pending.bundleId)) continue;
-        return msg;
-      } catch {
-        // Ignore malformed nested messages while scanning recent txs.
+      const invocation = extractUpgradeInvocation(walletMessage.spend_action);
+      if (invocation?.bundleId === pending.bundleId) {
+        return invocation;
       }
     }
     return undefined;
@@ -698,7 +713,7 @@ const findInvocationTx = ({
   // The wallet nonce that identifies this invocation's result in vstorage.
   const messageId = tx.tx?.body?.messages
     ?.map(bundleUpgrade)
-    .find(msg => msg)?.id;
+    .find(invocation => invocation)?.invocationId;
   return { tx, messageId };
 };
 
@@ -1095,6 +1110,80 @@ const preparePendingUpgrade = async (
     await asset.writeText(`${JSON.stringify(pending, null, 2)}\n`);
   }
   return { pending, overrides };
+};
+
+/**
+ * Build the pending-upgrade record for an already-generated detached tx
+ * from what it actually contains, instead of manufacturing a fresh
+ * invocationId at submit time: the tx (and its invocationId) may have been
+ * built well before this run, while cosigners were still collecting
+ * signatures, so a freshly generated one here would record an invocationId
+ * that doesn't match what's actually going to chain.
+ */
+const buildDetachedPendingRecord = async (
+  upgradeTarget: Target,
+  install: InstallRecord,
+  {
+    cause,
+    target,
+    privateArgs,
+    releaseTag,
+    distDir,
+    release,
+    now,
+    grantee,
+  }: Pick<
+    StepTools,
+    'cause' | 'target' | 'releaseTag' | 'distDir' | 'release' | 'now'
+  > & {
+    privateArgs: string | undefined;
+    grantee: string | undefined;
+  },
+): Promise<PendingUpgradeRecord> => {
+  expectMissing(
+    cause,
+    `missing required release asset ${upgradeTarget}-upgrade-pending.json`,
+  );
+  if (target !== upgradeTarget) {
+    throw Error(
+      `missing required release asset ${upgradeTarget}-upgrade-pending.json`,
+    );
+  }
+  const unsignedTxAssetName = detachedUnsignedTxAssetName(
+    upgradeTarget,
+    grantee,
+  );
+  const unsignedTx = (await release.join(unsignedTxAssetName).readJSON()) as {
+    body: { messages: AnyJson[] };
+  };
+  const invocation = unsignedTx.body.messages
+    .flatMap(message => extractWalletSpendActions(message))
+    .map(walletMessage => extractUpgradeInvocation(walletMessage.spend_action))
+    .find(found => found);
+  if (!invocation) {
+    throw Error(
+      `${unsignedTxAssetName} does not contain an upgrade invocation`,
+    );
+  }
+  if (invocation.bundleId !== install.bundleId) {
+    throw Error(
+      `${unsignedTxAssetName} upgrades bundleId ${invocation.bundleId}, not ${install.bundleId}`,
+    );
+  }
+  const overrides = await createOverrides(upgradeTarget, privateArgs, {
+    distDir,
+    release,
+  });
+  const submitTime = new Date(now()).toISOString();
+  return {
+    target: upgradeTarget,
+    releaseTag,
+    ...typedTargetInfo[upgradeTarget],
+    bundleId: install.bundleId,
+    privateArgsOverridesPath: overrides.assetName,
+    invocationId: invocation.invocationId,
+    submitTime,
+  };
 };
 
 const shQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
@@ -1857,12 +1946,12 @@ export const makeGraph = (
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
-          const { pending } = await preparePendingUpgrade(
+          const pending = await buildDetachedPendingRecord(
             'ymax0-devnet',
             install as InstallRecord,
-            { asset: asset! },
             { cause, privateArgs, ...tools },
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax0-devnet',
             (signedTx as { txBytes: Uint8Array }).txBytes,
@@ -1937,12 +2026,12 @@ export const makeGraph = (
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
-          const { pending } = await preparePendingUpgrade(
+          const pending = await buildDetachedPendingRecord(
             'ymax0-main',
             install as InstallRecord,
-            { asset: asset! },
             { cause, privateArgs, ...tools },
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax0-main',
             (signedTx as { txBytes: Uint8Array }).txBytes,
@@ -2015,12 +2104,12 @@ export const makeGraph = (
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
-          const { pending } = await preparePendingUpgrade(
+          const pending = await buildDetachedPendingRecord(
             'ymax1-main',
             install as InstallRecord,
-            { asset: asset! },
             { cause, privateArgs, ...tools },
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax1-main',
             (signedTx as { txBytes: Uint8Array }).txBytes,

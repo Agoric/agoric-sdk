@@ -1675,6 +1675,167 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
   t.falsy(assets?.has('ymax0-main-upgrade.json'));
 });
 
+test('phase-upgrade-submit records the invocationId embedded in the detached tx, not a fresh one', async t => {
+  // A detached tx can be generated well before it's broadcast (while
+  // cosigners collect signatures), so submit-time `now()` must NOT be used
+  // to derive the invocationId recorded in the pending record — it has to
+  // come from what's actually embedded in the tx being broadcast.
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+  const broadcastCalls: Uint8Array[] = [];
+  const { execFile: baseExecFile } = ctx;
+  const grantee = 'agoric1operator0000000000000000000000000000000';
+  const generateTime = '2026-04-16T10:00:00.000Z';
+  const submitTime = '2026-04-20T15:30:00.000Z';
+
+  const execFile = async (
+    cmd: string,
+    args: string[],
+    opts?: Parameters<typeof baseExecFile>[2],
+    ...rest: unknown[]
+  ) => {
+    const logResult = fakeUpgradeLogs(
+      ctx.execs,
+      ctx.normalize,
+      cmd,
+      args,
+      opts,
+      {
+        contract: 'ymax0',
+        bundleId: 'b1-abc123',
+        incarnationNumber: examples.upgrade.main0.incarnationNumber,
+      },
+    );
+    if (logResult) {
+      return logResult;
+    }
+    return baseExecFile(cmd, args, opts, ...rest);
+  };
+
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+  });
+
+  const connectRpc = (async (_rpcAddr: string) => ({
+    getAccount: async () => ({
+      accountNumber: 12,
+      sequence: 34,
+      pubkey: {
+        type: 'tendermint/PubKeySecp256k1',
+        value: Buffer.from([2, 3, 4]).toString('base64'),
+      },
+    }),
+    broadcastTx: async (txBytes: Uint8Array) => {
+      broadcastCalls.push(txBytes);
+      return { transactionHash: 'AUTHZSUBMIT456', height: 91 };
+    },
+  })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
+  const makeWalletKit = async () =>
+    ({
+      marshaller: {
+        toCapData: (specimen: unknown) => ({
+          body: `#${JSON.stringify(specimen)}`,
+          slots: [],
+        }),
+      },
+      agoricNames: { instance: { postalService: 'board0371' } },
+    }) as unknown as Awaited<
+      ReturnType<typeof import('@agoric/client-utils').makeSmartWalletKit>
+    >;
+
+  await main(
+    [
+      'node',
+      'packages/portfolio-deploy/scripts/ymax-deploy-target.ts',
+      'phase-upgrade-generate',
+      ...flags({ target: 'ymax0-main', tag: releaseTag }),
+    ],
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE: grantee,
+      PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+    },
+    {
+      execFile: execFile as unknown as typeof import('execa').execa,
+      agoricSdk: ctx.agoricSdk,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      path,
+      stdout: ctx.stdout,
+      now: () => Date.parse(generateTime),
+    },
+  );
+  const expectedInvocationId = `upgrade.ymax0-main.${generateTime}`;
+
+  const assets = ctx.releases.get(releaseTag)?.assets;
+  const unsignedTx = JSON.parse(
+    assets?.get('ymax0-main-authz-unsigned-tx.json') || 'null',
+  );
+  const spendAction = JSON.parse(
+    unsignedTx.body.messages[0].msgs[0].spend_action,
+  );
+  const embeddedAction = JSON.parse(spendAction.body.replace(/^#/, ''));
+  t.is(embeddedAction.message.id, expectedInvocationId);
+  clearTrace(ctx);
+
+  const signedTx = {
+    ...unsignedTx,
+    auth_info: {
+      ...unsignedTx.auth_info,
+      signer_infos: [
+        {
+          ...unsignedTx.auth_info.signer_infos[0],
+          public_key: {
+            '@type': '/cosmos.crypto.secp256k1.PubKey',
+            key: Buffer.from([2, 3, 4]).toString('base64'),
+          },
+        },
+      ],
+    },
+    signatures: [Buffer.from([7, 8, 9]).toString('base64')],
+  };
+  assets?.set(
+    'ymax0-main-authz-signed-tx.json',
+    `${JSON.stringify(signedTx, null, 2)}\n`,
+  );
+
+  await main(
+    [
+      'node',
+      'packages/portfolio-deploy/scripts/ymax-deploy-target.ts',
+      'phase-upgrade-submit',
+      ...flags({ target: 'ymax0-main', tag: releaseTag }),
+    ],
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE: grantee,
+      PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+    },
+    {
+      execFile: execFile as unknown as typeof import('execa').execa,
+      agoricSdk: ctx.agoricSdk,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      path,
+      stdout: ctx.stdout,
+      now: () => Date.parse(submitTime),
+    },
+  );
+
+  t.is(broadcastCalls.length, 1);
+  const submitReport = JSON.parse(ctx.stdoutChunks[0]);
+  t.is(submitReport.detail.invocationId, expectedInvocationId);
+  t.not(submitReport.detail.invocationId, `upgrade.ymax0-main.${submitTime}`);
+  t.is(submitReport.detail.submitTime, submitTime);
+});
+
 test('authz operator-sign path embeds a multisig grantee pubkey resolved from chain', async t => {
   // Regression test: `agd tx multisign` panics with a nil pointer
   // dereference if the unsigned tx's placeholder signer_info has no
