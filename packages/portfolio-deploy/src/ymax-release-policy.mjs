@@ -30,6 +30,18 @@ export const prerequisiteTargets = {
   'ymax1-main': ['ymax0-main'],
 };
 
+/**
+ * Targets that install their own bundle during pre-upgrade. `ymax1-main`
+ * reuses the bundle already installed (and validated via
+ * {@link prerequisiteTargets}) for `ymax0-main`, so it has no pre-upgrade
+ * work of its own.
+ */
+const installsOwnBundle = {
+  'ymax0-devnet': true,
+  'ymax0-main': true,
+  'ymax1-main': false,
+};
+
 /** @param {string | undefined} specimen */
 export const canonicalizePrivateArgs = specimen => {
   const overrides = specimen ? JSON.parse(specimen) : {};
@@ -256,6 +268,9 @@ const validatePrerequisites = (
 };
 
 const planPreUpgrade = ({ assetNames, getAssetJson }, target, bundleId) => {
+  if (!installsOwnBundle[target]) {
+    return { needPreUpgrade: false };
+  }
   const installAssetName = `${target}-install.json`;
   if (!assetNames.has(installAssetName)) {
     return { needPreUpgrade: true };

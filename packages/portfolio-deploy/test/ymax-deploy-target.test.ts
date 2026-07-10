@@ -478,6 +478,27 @@ test('pending upgrade evidence suppresses submit but still requires confirm', t 
   });
 });
 
+test('ymax1-main never needs pre-upgrade, even with no ymax1-main-install.json', t => {
+  const releaseTag = happyPathReleaseTag;
+  const plan = makeReleasePlan({
+    bundleIdArg: '',
+    mode: 'deploy',
+    privateArgs: '',
+    reader: makePlanReader({
+      'bundle-ymax0.json': jsonText(examples.bundle),
+      'ymax0-main-install.json': jsonText(examples.install.main0),
+      'ymax0-main-upgrade.json': jsonText(examples.upgrade.main0),
+    }),
+    releaseTag,
+    target: 'ymax1-main',
+    ymax1Planner: 'down',
+  });
+  t.like(plan, {
+    target: 'ymax1-main',
+    needPreUpgrade: false,
+  });
+});
+
 const seedRelease = (
   releases: Map<string, { url: string; assets: Map<string, string> }>,
   releaseTag: string,
