@@ -139,7 +139,12 @@ jobs:
             --tag "$RELEASE_TAG" \
             --branch "$BRANCH"
 
-  upgrade-submit:
+  # Does everything short of actually broadcasting: validates inputs,
+  # generates (or re-validates) the unsigned/detached artifacts, and reports
+  # whether a signed tx is ready. Unprotected (no environment) so it never
+  # prompts for approval — approval is reserved for upgrade-submit, and only
+  # requested once there's actually something to broadcast.
+  upgrade-prepare:
     needs: [plan, pre-upgrade]
     if: |
       always() &&
@@ -148,9 +153,7 @@ jobs:
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
     runs-on: ubuntu-latest
     outputs:
-      upgrade_submitted: ${{ steps.upgrade.outputs.upgrade_submitted }}
-    environment:
-      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+      ready_to_broadcast: ${{ steps.prepare.outputs.ready_to_broadcast }}
     steps:
       - uses: actions/checkout@v5
 
@@ -186,13 +189,12 @@ jobs:
               ;;
           esac
 
-      - name: Run upgrade submit phase
-        id: upgrade
+      - name: Prepare upgrade signing state
+        id: prepare
         env:
           AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
           AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
           GITHUB_TOKEN: ${{ github.token }}
-          MNEMONIC: ${{ inputs.signingKey == 'ci-secret' && secrets.YMAX_CONTROL_MNEMONIC || '' }}
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
           SIGNING_KEY: ${{ inputs.signingKey }}
@@ -200,14 +202,9 @@ jobs:
         run: |
           set -euo pipefail
 
-          upgrade_submitted=false
           case "$SIGNING_KEY" in
             ci-secret)
-              packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-                phase-upgrade-submit \
-                --target "$TARGET" \
-                --tag "$RELEASE_TAG"
-              upgrade_submitted=true
+              echo "ready_to_broadcast=true" >> "$GITHUB_OUTPUT"
               ;;
             detached-control|detached-grantee)
               export GRANTEE="$AUTHZ_GRANTEE"
@@ -224,19 +221,57 @@ jobs:
               fi
 
               if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$signed_asset"; then
-                packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-                  phase-upgrade-submit \
-                  --target "$TARGET" \
-                  --tag "$RELEASE_TAG"
-                upgrade_submitted=true
+                echo "ready_to_broadcast=true" >> "$GITHUB_OUTPUT"
               else
+                echo "ready_to_broadcast=false" >> "$GITHUB_OUTPUT"
                 echo "Detached signing pending: generated or validated unsigned tx; upload $signed_asset to the release and rerun this workflow."
                 jq -r '.detail.agdSignCommand' <<<"$generate_output"
               fi
               ;;
           esac
 
-          echo "upgrade_submitted=$upgrade_submitted" >> "$GITHUB_OUTPUT"
+  # Only job that broadcasts to chain, so it's the only one gated by
+  # environment approval — and only runs (so only ever prompts) once
+  # upgrade-prepare reports a signed tx is actually ready to send.
+  upgrade-submit:
+    needs: [plan, pre-upgrade, upgrade-prepare]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.need_upgrade_submit == 'true' &&
+      contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
+      needs.upgrade-prepare.result == 'success' &&
+      needs.upgrade-prepare.outputs.ready_to_broadcast == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      upgrade_submitted: ${{ steps.upgrade.outputs.upgrade_submitted }}
+    environment:
+      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Run upgrade submit phase
+        id: upgrade
+        env:
+          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MNEMONIC: ${{ inputs.signingKey == 'ci-secret' && secrets.YMAX_CONTROL_MNEMONIC || '' }}
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          SIGNING_KEY: ${{ inputs.signingKey }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+
+          export GRANTEE="$AUTHZ_GRANTEE"
+          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+            phase-upgrade-submit \
+            --target "$TARGET" \
+            --tag "$RELEASE_TAG"
+          echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
     needs: [plan, pre-upgrade, upgrade-submit]
@@ -248,8 +283,6 @@ jobs:
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
       contains(fromJSON('["success","skipped","failure"]'), needs.upgrade-submit.result)
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
     steps:
       - uses: actions/checkout@v5
 
