@@ -1,5 +1,5 @@
 import path from 'node:path';
-import chalk from 'chalk';
+import { styleText } from 'node:util';
 import { execFileSync } from 'node:child_process';
 import { makePspawn } from './helpers.js';
 import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
@@ -26,7 +26,7 @@ export default async function installMain(_progname, rawArgs, powers, opts) {
     process.env.CXXFLAGS = '-std=c++14';
   }
 
-  const pspawn = makePspawn({ log, spawn, chalk });
+  const pspawn = makePspawn({ log, spawn });
 
   const rimraf = file => pspawn('rm', ['-rf', file]);
 
@@ -240,7 +240,7 @@ export default async function installMain(_progname, rawArgs, powers, opts) {
 
     const removeNodeModulesSymlinks = async subdir => {
       const nm = `${subdir}/node_modules`;
-      log(chalk.bold.green(`removing ${nm} link`));
+      log(styleText(['bold', 'green'], `removing ${nm} link`));
       await fs.unlink(nm).catch(_ => {});
 
       // Remove all the package links.
@@ -267,7 +267,7 @@ export default async function installMain(_progname, rawArgs, powers, opts) {
   await yarnInstallEachWorktree('updates');
 
   if (sdkWorktree || !opts.sdk) {
-    log.info(chalk.bold.green('Done installing without SDK links'));
+    log.info(styleText(['bold', 'green'], 'Done installing without SDK links'));
     return 0;
   }
 
@@ -313,6 +313,6 @@ export default async function installMain(_progname, rawArgs, powers, opts) {
     }
   }
 
-  log.info(chalk.bold.green('Done installing with SDK links'));
+  log.info(styleText(['bold', 'green'], 'Done installing with SDK links'));
   return 0;
 }

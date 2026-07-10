@@ -1,5 +1,7 @@
 // @ts-check
 
+import { styleText } from 'node:util';
+
 /** @import { ChildProcess } from 'child_process' */
 
 // Backwards compatibility
@@ -27,14 +29,12 @@ export const getSDKBinaries = ({
  *
  * @param {object} param0
  * @param {Record<string, string | undefined>} [param0.env] the default environment
- * @param {*} [param0.chalk] a colorizer
  * @param {Console} [param0.log] a console object
  * @param {(cmd: string, cargs: Array<string>, opts: any) => ChildProcess}param0.spawn the spawn function
  */
 export const makePspawn = ({
   env: defaultEnv = process.env,
   log = console,
-  chalk,
   spawn,
 }) =>
   /**
@@ -57,14 +57,7 @@ export const makePspawn = ({
     cargs,
     { stdio = 'inherit', env = defaultEnv, ...rest } = {},
   ) {
-    const color = (method, ...args) => {
-      if (chalk && chalk[method]) {
-        return chalk[method](...args);
-      }
-      return args.join(' ');
-    };
-
-    log.warn(color('blueBright', cmd, ...cargs));
+    log.warn(styleText('blueBright', [cmd, ...cargs].join(' ')));
     const cp = spawn(cmd, cargs, { stdio, env, ...rest });
     const pr = new Promise((resolve, _reject) => {
       cp.on('exit', resolve);
@@ -84,7 +77,7 @@ export const makePspawn = ({
             reason = e;
           }
         }
-        log.error(color('yellow', `cannot execute ${cmd}:`), reason);
+        log.error(styleText('yellow', `cannot execute ${cmd}:`), reason);
         resolve(-1);
       });
     });

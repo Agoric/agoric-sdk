@@ -21,7 +21,7 @@ import {
   getEnvironmentOptionsList,
 } from '@endo/env-options';
 import anylogger from '@agoric/internal/vendor/anylogger.js';
-import chalk from 'chalk';
+import { styleText } from 'node:util';
 
 const DEBUG_LIST = getEnvironmentOptionsList('DEBUG');
 
@@ -61,7 +61,7 @@ anylogger.ext = (l, ...rest) => {
           console[level].bind(console)) ||
         fallbackSink;
       logger[level] = (...args) =>
-        doLog(chalk.bold.blue(`${prefix}:`), ...args);
+        doLog(styleText(['bold', 'blue'], `${prefix}:`), ...args);
     } else {
       // Disable printing.
       logger[level] = () => {};
