@@ -4,7 +4,10 @@ import {
   CONTROL_ADDRESSES,
   PORTFOLIO_CONTRACT_NAMES,
 } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import { pubkeyToAddress, type Pubkey } from '@cosmjs/amino';
 import {
+  decodePubkey,
+  encodePubkey,
   makeAuthInfoBytes,
   makeSignBytes,
   makeSignDoc,
@@ -53,11 +56,74 @@ export type NetworkConfigShape = {
   rpcAddrs: string[];
 };
 
-type SequenceQueryClient = {
-  getSequence(address: string): Promise<{
+type AccountQueryClient = {
+  getAccount(address: string): Promise<{
     accountNumber: number;
     sequence: number;
-  }>;
+    pubkey: Pubkey | null;
+  } | null>;
+};
+
+/**
+ * Resolve a raw `grantee` CLI/workflow input into an address, a real public
+ * key (in the same `Any`-shaped form `parseJsonPublicKey` and
+ * `makeAuthInfoBytes` expect), and its current account number/sequence —
+ * with a single on-chain lookup either way.
+ *
+ * `input` is either:
+ * - a bech32 address: the public key is looked up on chain. Fails if the
+ *   account has never sent a transaction (so the chain has no record of
+ *   its public key) — pass the pubkey directly in that case.
+ * - a public key, in the same `@type`-tagged JSON shape `agd keys show
+ *   <name> --pubkey` prints: the address is derived locally. The account
+ *   must still exist on chain (e.g. already funded) to have a known
+ *   account number, regardless of whether it has ever signed anything.
+ *
+ * The grantee's real public key must be embedded in the unsigned tx's
+ * placeholder `signer_info`, or `agd tx multisign` panics with a nil
+ * pointer dereference (it unconditionally reads
+ * `signer_infos[0].public_key` while verifying the supplied signatures).
+ */
+const resolveGrantee = async (
+  input: string,
+  queryClient: AccountQueryClient,
+): Promise<{
+  address: string;
+  pubkey: { typeUrl: string; value: Uint8Array };
+  accountNumber: number;
+  sequence: number;
+}> => {
+  const asJson = (() => {
+    try {
+      const parsed = JSON.parse(input);
+      return parsed && typeof parsed === 'object' ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+
+  if (asJson) {
+    const pubkey = parseJsonPublicKey(asJson) || Fail`invalid grantee pubkey`;
+    const address = pubkeyToAddress(decodePubkey(pubkey), 'agoric');
+    const { accountNumber, sequence } =
+      (await queryClient.getAccount(address)) ||
+      Fail`grantee ${address} (derived from the given public key) was not found on chain; fund it before generating this request`;
+    return { address, pubkey, accountNumber, sequence };
+  }
+
+  const account =
+    (await queryClient.getAccount(input)) ||
+    Fail`grantee ${input} not found on chain`;
+  const pubkey =
+    account.pubkey ||
+    Fail`grantee ${input} has no public key on chain (never sent a transaction?); pass its public key directly instead (e.g. \`agd keys show <name> --pubkey\`)`;
+  const any = encodePubkey(pubkey);
+  return {
+    address: input,
+    pubkey: { typeUrl: any.typeUrl, value: any.value },
+    accountNumber: account.accountNumber,
+    sequence: account.sequence,
+  };
 };
 
 export type WalletKitShape = {
@@ -126,28 +192,21 @@ const makeUnsignedUpgradeArtifact = ({
 export const makeUpgradeRequestBuilder = ({
   contract,
   networkConfig,
-  grantee,
-  granteePubkey,
+  grantee: granteeInput,
   queryClient,
   walletKit,
   clock,
 }: {
   contract: ContractName;
   networkConfig: NetworkConfigShape;
-  grantee?: string;
   /**
-   * Grantee's public key, in the same `@type`-tagged JSON shape `agd keys
-   * show <name> --pubkey` prints (a plain secp256k1 key, or a
-   * LegacyAminoPubKey for a multisig grantee).
-   *
-   * Required when `grantee` is a multisig account: `agd tx multisign`
-   * dereferences the (would-be) unsigned tx's `signer_infos[0].public_key`
-   * unconditionally, so leaving it unset causes it to panic. Not needed for
-   * a single-key grantee, since `agd tx sign` fills in the real signer info
-   * itself when signing.
+   * Either the grantee's bech32 address (its public key is then looked up
+   * on chain) or its public key in the same `@type`-tagged JSON shape `agd
+   * keys show <name> --pubkey` prints (its address is then derived
+   * locally). See {@link resolveGrantee}.
    */
-  granteePubkey?: object;
-  queryClient: SequenceQueryClient;
+  grantee?: string;
+  queryClient: AccountQueryClient;
   walletKit: WalletKitShape;
   clock: Clock;
 }) =>
@@ -173,7 +232,10 @@ export const makeUpgradeRequestBuilder = ({
         ...overrides,
         postalServiceInstance: postalService,
       });
-      const signerAddress = grantee || controlAddress;
+      const grantee = granteeInput
+        ? await resolveGrantee(granteeInput, queryClient)
+        : undefined;
+      const signerAddress = grantee?.address || controlAddress;
       const txMsg = grantee
         ? makeUpgradeExecEncodeObject(
             {
@@ -183,7 +245,7 @@ export const makeUpgradeRequestBuilder = ({
             {
               marshaller: walletKit.marshaller,
               controlAddress,
-              grantee,
+              grantee: grantee.address,
               invocationId,
             },
           )
@@ -199,7 +261,9 @@ export const makeUpgradeRequestBuilder = ({
             },
           );
       const { accountNumber, sequence } =
-        await queryClient.getSequence(signerAddress);
+        grantee ||
+        (await queryClient.getAccount(signerAddress)) ||
+        Fail`signer account ${signerAddress} not found on chain`;
       const signerData: SignerData = {
         accountNumber,
         sequence,
@@ -209,11 +273,8 @@ export const makeUpgradeRequestBuilder = ({
         messages: [txMsg],
         memo,
       });
-      const pubkey = granteePubkey
-        ? parseJsonPublicKey(granteePubkey) || Fail`invalid granteePubkey`
-        : undefined;
       const authInfoBytes = makeAuthInfoBytes(
-        [{ pubkey: pubkey as never, sequence }],
+        [{ pubkey: grantee?.pubkey as never, sequence }],
         defaultFee.amount,
         Number(defaultFee.gas),
         undefined,
@@ -222,7 +283,7 @@ export const makeUpgradeRequestBuilder = ({
       return makeUnsignedUpgradeArtifact({
         contract,
         controlAddress,
-        ...(grantee ? { grantee } : {}),
+        ...(grantee ? { grantee: grantee.address } : {}),
         bundleId,
         invocationId,
         chainId: networkConfig.chainName,

@@ -1457,9 +1457,13 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
   });
 
   const connectRpc = (async (_rpcAddr: string) => ({
-    getSequence: async () => ({
+    getAccount: async () => ({
       accountNumber: 12,
       sequence: 34,
+      pubkey: {
+        type: 'tendermint/PubKeySecp256k1',
+        value: Buffer.from([2, 3, 4]).toString('base64'),
+      },
     }),
     broadcastTx: async (txBytes: Uint8Array) => {
       broadcastCalls.push(txBytes);
@@ -1528,7 +1532,7 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
     {
       ...ctx.env,
       MNEMONIC: undefined,
-      GRANTEE_ADDRESS: 'agoric1operator0000000000000000000000000000000',
+      GRANTEE: 'agoric1operator0000000000000000000000000000000',
       PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
     },
   );
@@ -1602,7 +1606,7 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
     {
       ...ctx.env,
       MNEMONIC: undefined,
-      GRANTEE_ADDRESS: 'agoric1operator0000000000000000000000000000000',
+      GRANTEE: 'agoric1operator0000000000000000000000000000000',
       PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
     },
   );
@@ -1627,11 +1631,14 @@ test('authz operator-sign path generates and broadcasts for ymax0-main', async t
   t.falsy(assets?.has('ymax0-main-upgrade.json'));
 });
 
-test('authz operator-sign path embeds a multisig grantee pubkey when GRANTEE_PUBKEY is set', async t => {
+test('authz operator-sign path embeds a multisig grantee pubkey resolved from chain', async t => {
   // Regression test: `agd tx multisign` panics with a nil pointer
   // dereference if the unsigned tx's placeholder signer_info has no
   // public_key, which is the case whenever the grantee is a multisig
-  // account (agd tx multisign is only needed for multisig grantees).
+  // account (agd tx multisign is only needed for multisig grantees). The
+  // grantee is given as a bare address; its public key is resolved from
+  // the (mocked) on-chain account, as it would be for a multisig that has
+  // transacted at least once before.
   const ctx = makeScenario();
   const releaseTag = happyPathReleaseTag;
   const grantee = 'agoric1operator0000000000000000000000000000000';
@@ -1649,6 +1656,16 @@ test('authz operator-sign path embeds a multisig grantee pubkey when GRANTEE_PUB
       },
     ],
   };
+  const granteePubkeyAmino = {
+    type: 'tendermint/PubKeyMultisigThreshold',
+    value: {
+      threshold: '2',
+      pubkeys: granteePubkey.public_keys.map(pk => ({
+        type: 'tendermint/PubKeySecp256k1',
+        value: pk.key,
+      })),
+    },
+  };
 
   seedRelease(ctx.releases, releaseTag, {
     'bundle-ymax0.json': jsonText(examples.bundle),
@@ -1658,9 +1675,10 @@ test('authz operator-sign path embeds a multisig grantee pubkey when GRANTEE_PUB
   });
 
   const connectRpc = (async (_rpcAddr: string) => ({
-    getSequence: async () => ({
+    getAccount: async () => ({
       accountNumber: 12,
       sequence: 34,
+      pubkey: granteePubkeyAmino,
     }),
   })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
   const makeWalletKit = async () =>
@@ -1694,8 +1712,7 @@ test('authz operator-sign path embeds a multisig grantee pubkey when GRANTEE_PUB
     {
       ...ctx.env,
       MNEMONIC: undefined,
-      GRANTEE_ADDRESS: grantee,
-      GRANTEE_PUBKEY: JSON.stringify(granteePubkey),
+      GRANTEE: grantee,
       PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
     },
   );
@@ -1704,10 +1721,7 @@ test('authz operator-sign path embeds a multisig grantee pubkey when GRANTEE_PUB
   const unsignedTx = JSON.parse(
     assets?.get('ymax0-main-authz-unsigned-tx.json') || 'null',
   );
-  t.deepEqual(
-    unsignedTx.auth_info.signer_infos[0].public_key,
-    granteePubkey,
-  );
+  t.deepEqual(unsignedTx.auth_info.signer_infos[0].public_key, granteePubkey);
 });
 
 test('detached direct-sign path generates and broadcasts for ymax0-main without authz', async t => {
@@ -1779,9 +1793,10 @@ test('detached direct-sign path generates and broadcasts for ymax0-main without 
   });
 
   const connectRpc = (async (_rpcAddr: string) => ({
-    getSequence: async () => ({
+    getAccount: async () => ({
       accountNumber: 12,
       sequence: 34,
+      pubkey: null,
     }),
     broadcastTx: async (txBytes: Uint8Array) => {
       broadcastCalls.push(txBytes);
@@ -1822,7 +1837,7 @@ test('detached direct-sign path generates and broadcasts for ymax0-main without 
     {
       ...ctx.env,
       MNEMONIC: undefined,
-      GRANTEE_ADDRESS: undefined,
+      GRANTEE: undefined,
       PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
     },
   );
@@ -1890,7 +1905,7 @@ test('detached direct-sign path generates and broadcasts for ymax0-main without 
     {
       ...ctx.env,
       MNEMONIC: undefined,
-      GRANTEE_ADDRESS: undefined,
+      GRANTEE: undefined,
       PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
     },
   );
@@ -2430,7 +2445,7 @@ test.serial(
       },
       'phase-upgrade-confirm',
       { target: 'ymax0-devnet', tag: releaseTag },
-      { ...ctx.env, AGORIC_NET: 'devnet', GRANTEE_ADDRESS: undefined },
+      { ...ctx.env, AGORIC_NET: 'devnet', GRANTEE: undefined },
     );
 
     const written = ctx.releases

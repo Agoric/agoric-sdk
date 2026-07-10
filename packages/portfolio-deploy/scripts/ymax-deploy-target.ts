@@ -1786,7 +1786,7 @@ export const makeGraph = (
         ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
-          throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
+          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
         }
         const overrides = await createOverrides('ymax0-devnet', privateArgs, {
           distDir: deployPackage.distDir,
@@ -1841,7 +1841,7 @@ export const makeGraph = (
         ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
-          throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
+          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
         }
         const overrides = await createOverrides('ymax0-main', privateArgs, {
           distDir: deployPackage.distDir,
@@ -1895,7 +1895,7 @@ export const makeGraph = (
         ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
-          throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
+          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
         }
         const overrides = await createOverrides('ymax1-main', privateArgs, {
           distDir: deployPackage.distDir,
@@ -2142,8 +2142,7 @@ export const main = async (
   const {
     GITHUB_TOKEN: ghToken,
     AGORIC_NET,
-    GRANTEE_ADDRESS,
-    GRANTEE_PUBKEY,
+    GRANTEE,
     MNEMONIC,
     YMAX_INSTALL_BUNDLE_MNEMONIC,
     PRIVATE_ARGS_OVERRIDES,
@@ -2238,8 +2237,7 @@ export const main = async (
     return buildUpgradeRequestBuilder({
       contract,
       networkConfig: config,
-      grantee: GRANTEE_ADDRESS,
-      granteePubkey: GRANTEE_PUBKEY ? JSON.parse(GRANTEE_PUBKEY) : undefined,
+      grantee: GRANTEE,
       queryClient: await connectRpc(rpcAddr),
       walletKit,
       clock: () => new Date(now()),
@@ -2279,7 +2277,7 @@ export const main = async (
       makeVstorageApiForTarget,
       setTimeout,
       now,
-      grantee: GRANTEE_ADDRESS,
+      grantee: GRANTEE,
     },
   );
 
@@ -2289,7 +2287,7 @@ export const main = async (
       break;
     }
     case 'phase-upgrade-generate': {
-      const record = detachedUnsignedTxAssetName(target, GRANTEE_ADDRESS);
+      const record = detachedUnsignedTxAssetName(target, GRANTEE);
       const generated = await graph.ensureNode<object>(record);
       writeJson(stdout, {
         target,

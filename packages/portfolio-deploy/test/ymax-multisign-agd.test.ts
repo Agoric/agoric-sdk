@@ -12,13 +12,19 @@ import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.
 import { TxBody, TxRaw } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeCmdRunner, makeFileRW } from '@agoric/pola-io';
 import { CONTROL_ADDRESSES } from '@agoric/portfolio-api/src/portfolio-constants.js';
-import { makeAuthInfoBytes, type EncodeObject } from '@cosmjs/proto-signing';
+import { pubkeyToAddress } from '@cosmjs/amino';
+import {
+  decodePubkey,
+  makeAuthInfoBytes,
+  type EncodeObject,
+} from '@cosmjs/proto-signing';
 import type { ExecutionContext } from 'ava';
 import { promisify } from 'node:util';
 import { makeUpgradeRequestBuilder } from '../src/ymax-authz-flow.ts';
 import {
   makeAgdUnsignedTx,
   makeUpgradeEncodeObject,
+  parseJsonPublicKey,
   parseSignedTxBytes,
   registry,
 } from '../src/ymax-authz-msgs.ts';
@@ -102,6 +108,14 @@ const tx1 = {
 const marshalData = {
   toCapData: data => ({ body: `#${JSON.stringify(data)}`, slots: [] }),
 };
+
+// `agd keys show --pubkey` prints gRPC-gateway JSON (`@type`-tagged); mock
+// on-chain account lookups need the amino `Pubkey` shape cosmjs uses.
+const toAminoPubkey = (pubkeyJson: string) =>
+  decodePubkey(
+    parseJsonPublicKey(JSON.parse(pubkeyJson)) ||
+      assert.fail('invalid pubkey'),
+  );
 
 const makeUnsignedAgdTx = async ({
   controlPubkey,
@@ -393,7 +407,11 @@ const checkControlAddress = async (
     contract,
     networkConfig: { chainName, rpcAddrs: [] },
     queryClient: {
-      getSequence: async () => ({ accountNumber: 1, sequence: 7 }),
+      getAccount: async () => ({
+        accountNumber: 1,
+        sequence: 7,
+        pubkey: null,
+      }),
     },
     walletKit: {
       marshaller: marshalData,
@@ -532,16 +550,23 @@ test.serial('authz grantee upgrade supports a multisig grantee', async t => {
   await bob.addPubKey(grantee.name, grantee.pubkey);
 
   const sequence = 12;
+  let getAccountCalls = 0;
   const upgradeRequestBuilder = makeUpgradeRequestBuilder({
     contract: 'ymax1',
     networkConfig: { chainName: tx1.chainId, rpcAddrs: [] },
+    // The grantee is given as a bare address here, as in normal operation
+    // once the multisig has transacted at least once before; its public
+    // key is resolved from the (mocked) on-chain account.
     grantee: grantee.address,
-    granteePubkey: JSON.parse(grantee.pubkey),
     queryClient: {
-      getSequence: async () => ({
-        accountNumber: multisig.accountNumber,
-        sequence,
-      }),
+      getAccount: async () => {
+        getAccountCalls += 1;
+        return {
+          accountNumber: multisig.accountNumber,
+          sequence,
+          pubkey: toAminoPubkey(grantee.pubkey),
+        };
+      },
     },
     walletKit: {
       marshaller: marshalData,
@@ -557,6 +582,9 @@ test.serial('authz grantee upgrade supports a multisig grantee', async t => {
   });
   t.is(request.grantee, grantee.address);
   t.is(request.controlAddress, CONTROL_ADDRESSES.ymax1.devnet);
+  // The grantee's pubkey and its account number/sequence both come from
+  // this single lookup — resolving the grantee must not query twice.
+  t.is(getAccountCalls, 1);
 
   const unsigned = makeAgdUnsignedTx({
     bodyBytes: Buffer.from(request.bodyBytesBase64, 'base64'),
@@ -589,4 +617,91 @@ test.serial('authz grantee upgrade supports a multisig grantee', async t => {
   const signedTxBytes = parseSignedTxBytes(signedText);
   const signedTx = TxRaw.decode(signedTxBytes);
   t.true(signedTx.signatures.length > 0);
+});
+
+test('generateUpgradeRequest derives the grantee address from a pubkey input', async t => {
+  const memberPubkeys = [
+    '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"}',
+    '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}',
+  ];
+  const granteePubkey = {
+    '@type': '/cosmos.crypto.multisig.LegacyAminoPubKey',
+    threshold: 2,
+    public_keys: memberPubkeys.map(pk => JSON.parse(pk)),
+  };
+  const expectedAddress = pubkeyToAddress(
+    decodePubkey(parseJsonPublicKey(granteePubkey) || assert.fail()),
+    'agoric',
+  );
+
+  const getAccountCalledWith: string[] = [];
+  const upgradeRequestBuilder = makeUpgradeRequestBuilder({
+    contract: 'ymax1',
+    networkConfig: { chainName: tx1.chainId, rpcAddrs: [] },
+    // Never used before, so its address has no public key on chain yet:
+    // give the pubkey directly instead of the address.
+    grantee: JSON.stringify(granteePubkey),
+    queryClient: {
+      getAccount: async address => {
+        getAccountCalledWith.push(address);
+        // The account exists (e.g. already funded, for an account number)
+        // but has no pubkey on record — irrelevant here since the pubkey
+        // was already given directly.
+        return { accountNumber: 1, sequence: 7, pubkey: null };
+      },
+    },
+    walletKit: {
+      marshaller: marshalData,
+      agoricNames: { instance: { postalService: 'board0371' } },
+    },
+    clock: () => new Date('2026-06-26T17:39:38.685Z'),
+  });
+  const request = await upgradeRequestBuilder.generateUpgradeRequest({
+    bundleId: tx1.upgradeArgs.bundleId,
+    invocationId: tx1.invocationId,
+    memo: '',
+    overrides: tx1.upgradeArgs.privateArgsOverrides,
+  });
+
+  t.is(request.grantee, expectedAddress);
+  // Exactly one lookup, for the derived address's account number/sequence
+  // — the pubkey itself was already known, so it's never queried.
+  t.deepEqual(getAccountCalledWith, [expectedAddress]);
+
+  const unsigned = makeAgdUnsignedTx({
+    bodyBytes: Buffer.from(request.bodyBytesBase64, 'base64'),
+    authInfoBytes: Buffer.from(request.authInfoBytesBase64, 'base64'),
+  });
+  t.deepEqual(unsigned.auth_info.signer_infos[0].public_key, granteePubkey);
+});
+
+test('generateUpgradeRequest fails when a grantee address has no on-chain pubkey', async t => {
+  const address = 'agoric1w376w9ws44d7l5cp7g5jjqn45mp5teldt5dhg9';
+  const upgradeRequestBuilder = makeUpgradeRequestBuilder({
+    contract: 'ymax1',
+    networkConfig: { chainName: tx1.chainId, rpcAddrs: [] },
+    grantee: address,
+    queryClient: {
+      // The account exists (e.g. it holds a balance) but has never sent a
+      // transaction, so the chain has no record of its public key.
+      getAccount: async () => ({ accountNumber: 1, sequence: 0, pubkey: null }),
+    },
+    walletKit: {
+      marshaller: marshalData,
+      agoricNames: { instance: { postalService: 'board0371' } },
+    },
+    clock: () => new Date('2026-06-26T17:39:38.685Z'),
+  });
+
+  await t.throwsAsync(
+    upgradeRequestBuilder.generateUpgradeRequest({
+      bundleId: tx1.upgradeArgs.bundleId,
+      invocationId: tx1.invocationId,
+      memo: '',
+      overrides: tx1.upgradeArgs.privateArgsOverrides,
+    }),
+    {
+      message: new RegExp(`^grantee "${address}" has no public key on chain`),
+    },
+  );
 });
