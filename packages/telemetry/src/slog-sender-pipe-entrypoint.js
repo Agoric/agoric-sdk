@@ -1,4 +1,3 @@
-/* eslint-env node */
 /**
  * @file Run as a child process of {@link ./slog-sender-pipe.js} to isolate an
  *   aggregate slog sender (@see {@link ./make-slog-sender.js}). Communicates
@@ -9,7 +8,7 @@
 
 import '@endo/init';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import { Fail } from '@endo/errors';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 

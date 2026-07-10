@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:a6a2e1536c562e230876da26fd23e1c408d879b3e7315a1602f25c68684c012f
+package:
+  name: "@lerna-lite/version"
+  version: 4.6.1
+upstream:
+  repo: lerna-lite/lerna-lite
+  issue: null
+  pr: null
+status: obsolete
+notes: null
+createdAt: 2026-04-16T04:56:02.627Z
+updatedAt: 2026-04-16T04:59:58.952Z

@@ -16,14 +16,15 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "yarn run -T eslint .",
-    "lint:types": "yarn run -T tsc"
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo"
   },
   "devDependencies": {
+    "@aglocal/boot": "workspace:*",
     "@agoric/swing-store": "workspace:*",
     "@agoric/vats": "workspace:*",
-    "@endo/promise-kit": "^1.1.13",
-    "ava": "^6.4.1",
+    "@endo/promise-kit": "^1.2.1",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "esbuild": "^0.25.2",
     "execa": "^9.5.2",
@@ -43,21 +44,22 @@
     "@agoric/vat-data": "workspace:*",
     "@agoric/vow": "workspace:*",
     "@agoric/zoe": "workspace:*",
-    "@endo/errors": "^1.2.13",
-    "@endo/eventual-send": "^1.3.4",
+    "@endo/common": "^1.4.0",
+    "@endo/errors": "^1.3.1",
+    "@endo/eventual-send": "^1.5.0",
     "@endo/far": "^1.1.14",
-    "@endo/init": "^1.1.12",
-    "@endo/marshal": "^1.8.0",
-    "@endo/pass-style": "^1.6.3",
-    "@endo/patterns": "^1.7.0",
+    "@endo/init": "^1.1.13",
+    "@endo/marshal": "^1.10.0",
+    "@endo/pass-style": "^1.8.1",
+    "@endo/patterns": "^1.9.1",
     "commander": "^12.1.0",
     "ethers": "^6.13.4"
   },
   "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],
@@ -65,15 +67,12 @@
       "--import=ts-blank-space/register",
       "--no-warnings"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 97.49
+    "atLeast": 97.51
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

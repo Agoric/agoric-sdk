@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:fd76a6f15bc881b934af2ca723e11c540257f34f726a11e203c19f2355672a53
+package:
+  name: concordance
+  version: 5.0.4
+upstream:
+  repo: concordancejs/concordance
+  issue: null
+  pr: https://github.com/concordancejs/concordance/pull/88
+status: proposed
+notes: null
+createdAt: 2026-04-16T05:09:19.601Z
+updatedAt: 2026-04-16T05:09:19.601Z

@@ -4,6 +4,7 @@
         "../../tsconfig-build-options.json"
     ],
     "exclude": [
+        "**/types-index.js",
         "scripts",
         "test",
         "**/exports.js",

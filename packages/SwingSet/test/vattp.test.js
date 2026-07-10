@@ -3,7 +3,8 @@ import { test } from '../tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../src/index.js';
+import { makeSwingsetController } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 import {
   buildMailboxStateMap,
   buildMailbox,

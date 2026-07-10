@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-unused-vars -- doesn't see type usage in JSDoc */
+/* eslint-disable @typescript-eslint/no-unused-vars -- not detecting the TSDoc */
 import type { NatAmount } from '@agoric/ertp';
 import {
   type AccountId,
   type Bech32Address,
+  type CaipChainId,
   type CosmosChainAddress,
   type TrafficEntry,
 } from '@agoric/orchestration';
@@ -10,14 +11,20 @@ import type {
   ContinuingInvitationSpec,
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
+import type { Address as EvmAddress } from 'abitype';
 import type {
   AxelarChain,
   SupportedChain,
   YieldProtocol,
+  PortfolioPlannerAgent as PortfolioPlannerAgentValue,
 } from './constants.js';
 import type { InstrumentId } from './instruments.js';
 import type { PublishedTx } from './resolver.js';
 import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
+import type {
+  PortfolioAutoFeaturesExt,
+  PortfolioPermissionsExt,
+} from './portfolio-permissions.js';
 
 /**
  * Feature flags to handle contract upgrade flow compatibility.
@@ -25,6 +32,8 @@ import type { EVMWalletUpdate, PortfolioPath } from './evm/types.ts';
 export type FlowFeatures = {
   /** Control `ProgressTracker` support. */
   useProgressTracker?: boolean;
+  /** Enable experimental swap feature. */
+  experimentalSwap?: boolean;
 };
 
 /**
@@ -97,15 +106,34 @@ export type ProposalType = {
 };
 
 /**
- * Target allocation mapping from PoolKey to numerator (typically in basis points).
- * Denominator is implicitly the sum of all numerators.
+ * Target allocation mapping from InstrumentId or EVM-only InterChainAccountRef
+ * (the latter indicating undeployed USDC on a chain) to numerator (typically in
+ * basis points). Denominator is implicitly the sum of all numerators.
  */
-export type TargetAllocation = Partial<Record<InstrumentId, bigint>>;
+export type TargetAllocation = Partial<
+  Record<InstrumentId | `@${AxelarChain}`, bigint>
+>;
 
 export type FlowDetail =
-  | { type: 'withdraw'; amount: NatAmount; toChain?: SupportedChain }
-  | { type: 'deposit'; amount: NatAmount; fromChain?: SupportedChain }
-  | { type: 'rebalance' }; // aka simpleRebalance
+  | {
+      type: 'withdraw';
+      amount: NatAmount;
+      toChain?: SupportedChain;
+      agent?: undefined;
+      agentMemo?: undefined;
+    }
+  | {
+      type: 'deposit';
+      amount: NatAmount;
+      fromChain?: SupportedChain;
+      agent?: undefined;
+      agentMemo?: undefined;
+    }
+  | {
+      type: 'rebalance'; // aka simpleRebalance
+      agent?: PortfolioAgentKey;
+      agentMemo?: string;
+    };
 
 /** linked list of concurrent failures, including dependencies */
 export type FlowErrors = {
@@ -129,6 +157,44 @@ export type FlowStatus =
   | { state: 'done' }
   | ({ state: 'fail' } & FlowErrors);
 
+/**
+ * Decomposed parameters for a same-chain, same-account reward-token -> USDC
+ * swap (src === dest === `@{chain}`) routed through 1inch.
+ *
+ * Rather than forwarding an opaque calldata blob, the planner supplies the swap
+ * as named fields and the contract reconstructs the call itself, filling the
+ * fund-safety fields it controls (`dstToken` = USDC, `dstReceiver` = this
+ * portfolio's own account, `minReturnAmount` = the movement `amount`) and
+ * pinning the router/selector from `provider`. `executor`, `srcReceiver`, and
+ * `data` are provider route internals
+ */
+export type OneInchSwapDesc = {
+  provider: '1inch';
+  /** reward token; becomes `desc.srcToken` and the approved spend token */
+  tokenIn: `0x${string}`;
+  /** becomes `desc.amount` and the approved amount */
+  amountIn: bigint;
+  /** provider routing flags (e.g. 1inch `_PARTIAL_FILL`) */
+  flags: bigint;
+  /** provider route internal: the contract executing the swap */
+  executor: `0x${string}`;
+  /** provider route internal: where `tokenIn` is routed */
+  srcReceiver: `0x${string}`;
+  /** provider route internal: opaque executor calldata */
+  data: `0x${string}`;
+};
+
+/**
+ * A reward-token -> USDC swap request. Currently only 1inch is supported;
+ * supporting another aggregator widens this to a union of per-provider descs.
+ */
+export type SwapDesc = OneInchSwapDesc;
+
+/**
+ * Swap aggregator whose API produced the swap `data`
+ */
+export type SwapProvider = SwapDesc['provider'];
+
 export type MovementDesc = {
   amount: NatAmount;
   src: AssetPlaceRef;
@@ -138,6 +204,7 @@ export type MovementDesc = {
   /** for example: { usdnOut: 98n } */
   detail?: Record<string, bigint>;
   claim?: boolean;
+  swap?: SwapDesc;
 };
 
 export type TxPhase = 'makeSrcAccount' | 'makeDestAccount' | 'apply';
@@ -163,7 +230,13 @@ export type FlowStep = {
    * and for each property, to have an array of zero or more TxIds.
    */
   phases?: Partial<Record<TxPhase, TxId[]>>;
-  // XXX all parts: fee etc.
+  /**
+   * The swap request this step performs, carried through from the plan
+   * `MovementDesc` so it is visible in published flow steps. Present only on
+   * reward-token -> USDC swap steps.
+   */
+  swap?: SwapDesc;
+  // XXX remaining plan parts (fee, detail, claim) could be surfaced the same way
 };
 
 /**
@@ -189,11 +262,69 @@ export type TrafficReport = {
 
 export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
+export type PortfolioAgentKey = `agent${number}`;
+
+export type PortfolioAgentState = 'active' | 'revoked' | 'expired';
+
+export type PortfolioPlannerAgentId = typeof PortfolioPlannerAgentValue;
+export type PortfolioAgentGrantee = Bech32Address | PortfolioPlannerAgentId;
+
+export type PortfolioAgentStatus = {
+  grantee: PortfolioAgentGrantee;
+  permissions: PortfolioPermissionsExt;
+  state: PortfolioAgentState;
+};
+
+export type PortfolioRemoteAccountCommonStates =
+  | 'provisioning'
+  | 'active'
+  | 'failed';
+
+export type PortfolioGenericRemoteAccountState =
+  | {
+      chainId: CaipChainId;
+      address: string;
+      state: PortfolioRemoteAccountCommonStates;
+    }
+  | {
+      state: 'provisioning' | 'failed' | 'unknown';
+    };
+
+export type PortfolioEVMRemoteAccountState = {
+  chainId: `eip155:${number | bigint | string}`;
+  address: EvmAddress;
+} & {
+  state: PortfolioRemoteAccountCommonStates;
+  /**
+   * The factory that deployed the router-based remote account and maintains a map of authorized routers.
+   *
+   * Absent for legacy accounts.
+   */
+  routerFactory?: EvmAddress;
+};
+
+export type PortfolioCosmosRemoteAccountState = {
+  chainId: `cosmos:${string}`;
+  address: Bech32Address;
+  state: PortfolioRemoteAccountCommonStates;
+};
+
+export type PortfolioRemoteAccountState =
+  | PortfolioEVMRemoteAccountState
+  | PortfolioCosmosRemoteAccountState
+  | PortfolioGenericRemoteAccountState;
 
 export type StatusFor = {
   contract: {
     contractAccount: CosmosChainAddress['value'];
-    depositFactoryAddresses?: Record<AxelarChain, AccountId>;
+    depositFactoryAddresses?: Partial<Record<AxelarChain, AccountId>>;
+    evmRemoteAccountConfig?: {
+      remoteAccountImplementationAddresses: Partial<
+        Record<AxelarChain, AccountId>
+      >;
+      factoryAddresses: Partial<Record<AxelarChain, AccountId>>;
+      currentRouterAddresses: Partial<Record<AxelarChain, AccountId>>;
+    };
   };
   pendingTx: PublishedTx;
   evmWallet: EVMWalletUpdate;
@@ -203,8 +334,20 @@ export type StatusFor = {
   };
   portfolio: {
     positionKeys: InstrumentId[];
+    // accountIdByChain and accountsPending deprecated
+    // in favor of accountStateByChain
     accountIdByChain: Partial<Record<SupportedChain, AccountId>>;
     accountsPending?: SupportedChain[];
+    accountStateByChain?: {
+      [evmChain in AxelarChain]?: PortfolioEVMRemoteAccountState;
+    } & {
+      [cosmosChain in 'agoric' | 'noble']?: PortfolioCosmosRemoteAccountState;
+    } & {
+      [genericChain in Exclude<
+        SupportedChain,
+        AxelarChain | 'agoric' | 'noble'
+      >]?: PortfolioGenericRemoteAccountState;
+    };
     depositAddress?: Bech32Address;
     /** Noble Forwarding Address (NFA) registered by the contract for the `@agoric` address */
     nobleForwardingAddress?: Bech32Address;
@@ -220,10 +363,12 @@ export type StatusFor = {
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
     rebalanceCount: number;
-    /** @deprecated in favor of flowsRunning */
+    /** The count of all flows associated with this portfolio */
     flowCount: number;
-    flowsRunning?: Record<FlowKey, FlowDetail>;
+    flowsRunning?: Record<FlowKey, FlowDetail & { awaitingSteps?: boolean }>;
+    enabledAutoFeatures?: PortfolioAutoFeaturesExt;
   };
+  portfolioAgents: Record<PortfolioAgentKey, PortfolioAgentStatus>;
   position: {
     protocol: YieldProtocol;
     accountId: AccountId;
@@ -233,6 +378,48 @@ export type StatusFor = {
   flow: FlowStatus & FlowDetail;
   flowSteps: FlowStep[];
   flowOrder: FundsFlowPlan['order'];
+};
+
+export type PortfolioSyncState = Pick<
+  StatusFor['portfolio'],
+  'policyVersion' | 'rebalanceCount'
+>;
+
+export type PortfolioDelegatedRebalanceParams = {
+  syncState: PortfolioSyncState;
+  agentMemo?: string;
+};
+
+export type PortfolioDelegatedSetTargetAllocationParams = {
+  syncState: PortfolioSyncState;
+  targetAllocation: TargetAllocation;
+  agentMemo?: string;
+};
+
+/**
+ * Published vstorage values produced by the portfolio contract.
+ */
+export type PortfolioPublishedPathTypes = {
+  ymax0: StatusFor['contract'];
+  ymax1: StatusFor['contract'];
+  'ymax0.portfolios': StatusFor['portfolios'];
+  'ymax1.portfolios': StatusFor['portfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}`]: StatusFor['portfolio'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.positions.${string}`]: StatusFor['position'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.agents`]: StatusFor['portfolioAgents'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`]: StatusFor['pendingTx'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`]: StatusFor['flow'];
+} & {
+  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`]: StatusFor['flowSteps'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}.portfolio`]: StatusFor['evmWalletPortfolios'];
+} & {
+  [K in `ymax${'0' | '1'}.evmWallets.0x${string}`]: StatusFor['evmWallet'];
 };
 
 /**

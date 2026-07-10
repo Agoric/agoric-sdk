@@ -1,9 +1,9 @@
 #! /usr/bin/env node
 import '@endo/init';
-import path from 'path';
-import { promises as fsp } from 'fs';
-import crypto from 'crypto';
-import process from 'process';
+import path from 'node:path';
+import { promises as fsp } from 'node:fs';
+import crypto from 'node:crypto';
+import process from 'node:process';
 
 import bundleSource from '@endo/bundle-source';
 import { bundlePaths, entryPaths, hashPaths } from '../src/paths.js';

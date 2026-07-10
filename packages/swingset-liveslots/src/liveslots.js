@@ -525,6 +525,7 @@ function build(
     return valToSlot.get(val);
   }
 
+  /** @type {Set<string> | null} */
   let importedPromises = null;
   function beginCollectingPromiseImports() {
     importedPromises = new Set();
@@ -840,7 +841,7 @@ function build(
 
   function DeviceHandler(slot) {
     return {
-      get(target, prop) {
+      get(_target, prop) {
         if (typeof prop !== 'string' && typeof prop !== 'symbol') {
           return undefined;
         }
@@ -1078,7 +1079,9 @@ function build(
     }
     // 'imports' is an exclusively-owned Set that holds all new
     // promise vpids, both resolved and unresolved
-    const imports = finishCollectingPromiseImports();
+    const imports = /** @type {Set<string>} */ (
+      finishCollectingPromiseImports()
+    );
     for (const vpid of retiredVPIDs) {
       unregisterUnreferencedVPID(vpid); // unregisters if not in vdata
       importedVPIDs.delete(vpid);

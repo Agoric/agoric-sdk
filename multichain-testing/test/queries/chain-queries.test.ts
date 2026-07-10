@@ -60,14 +60,14 @@ const queryICQChain = test.macro({
 
     const { creditFromFaucet, chainInfo, getRestEndpoint } =
       useChain(chainName);
-    const { staking, bech32_prefix } = chainInfo.chain;
+    const { staking, bech32_prefix: bech32Prefix } = chainInfo.chain;
     const denom = staking?.staking_tokens?.[0].denom;
     if (!denom) throw Error(`no denom for ${chainName}`);
 
     t.log(
       'Set up wallet with tokens so we have a wallet with balance to query',
     );
-    const wallet = await createWallet(bech32_prefix);
+    const wallet = await createWallet(bech32Prefix);
     const { address } = (await wallet.getAccounts())[0];
     await creditFromFaucet(address);
 
@@ -171,7 +171,7 @@ const queryChainWithoutICQ = test.macro({
     } = t.context;
 
     const { chainInfo } = useChain(chainName);
-    const { staking, chain_id } = chainInfo.chain;
+    const { staking, chain_id: chainId } = chainInfo.chain;
     const denom = staking?.staking_tokens?.[0].denom;
     if (!denom) throw Error(`no denom for ${chainName}`);
 
@@ -214,7 +214,7 @@ const queryChainWithoutICQ = test.macro({
     );
     t.is(
       offerResult.status.error,
-      `Error: Queries not available for chain "${chain_id}"`,
+      `Error: Queries not available for chain "${chainId}"`,
       'Queries not available error returned',
     );
   },
@@ -224,7 +224,7 @@ test.serial('Send Local Query from chain object', async t => {
   const { wallets, provisionSmartWallet, vstorageClient, retryUntilCondition } =
     t.context;
 
-  const agoricAddr = wallets['agoric'];
+  const agoricAddr = wallets.agoric;
   const wdUser1 = await provisionSmartWallet(agoricAddr, {
     BLD: 100n,
     IST: 100n,
@@ -232,11 +232,11 @@ test.serial('Send Local Query from chain object', async t => {
   const expectedBalances = [
     {
       denom: 'ubld',
-      amount: '90000000', // 100n * (10n ** 6n) - smart wallet provision
+      amount: '90250000', // 100n * (10n ** 6n) - smart wallet provision + smart wallet credit
     },
     {
       denom: 'uist',
-      amount: '100250000', // 100n * (10n ** 6n) + smart wallet credit
+      amount: '100000000', // 100n * (10n ** 6n)
     },
   ];
   t.log(`provisioning agoric smart wallet for ${agoricAddr}`);

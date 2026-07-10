@@ -1,10 +1,8 @@
-/* eslint-env node */
-
 // XXX the JSON configs specify that launching the chain requires @agoric/builders,
 // so let the JS tooling know about it by importing it here.
 import '@agoric/builders';
 
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import bundleSource from '@endo/bundle-source';
 import { assert, Fail, makeError, X } from '@endo/errors';
@@ -37,7 +35,7 @@ import {
   extractCoreProposalBundles,
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 
 import {
   makeDefaultMeterProvider,
@@ -126,7 +124,7 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
  *   - Inbound: queued work that follows timer advancement (e.g., normal messages)
  *   - Cleanup: for dealing with data from terminated vats
  *
- * @enum {(typeof CrankerPhase)[keyof typeof CrankerPhase]} CrankerPhase
+ * @typedef {(typeof CrankerPhase)[keyof typeof CrankerPhase]} CrankerPhase
  */
 const CrankerPhase = /** @type {const} */ ({
   Leftover: 'leftover',
@@ -140,7 +138,7 @@ const CrankerPhase = /** @type {const} */ ({
 /**
  * Some phases correspond with inbound message queues.
  *
- * @enum {(typeof InboundQueueName)[keyof typeof InboundQueueName]} InboundQueueName
+ * @typedef {(typeof InboundQueueName)[keyof typeof InboundQueueName]} InboundQueueName
  */
 const InboundQueueName = /** @type {const} */ ({
   Forced: CrankerPhase.Forced,
@@ -185,6 +183,7 @@ export async function buildSwingset(
     profileVats,
     debugVats,
     warehousePolicy,
+    kernelBundle = undefined,
   },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
@@ -299,6 +298,7 @@ export async function buildSwingset(
       profileVats,
       debugVats,
       warehousePolicy,
+      kernelBundle,
     },
   );
 
@@ -325,7 +325,6 @@ export async function buildSwingset(
  */
 
 /**
- * @template [T=unknown]
  * @typedef {object} LaunchOptions
  * @property {QueueStorage} actionQueueStorage
  * @property {QueueStorage} highPriorityQueueStorage
@@ -1089,7 +1088,8 @@ export async function launchAndShareInternals({
                 const bundle = await bundleSource(source, {
                   // Disable bundle size limits for chain initialization/upgrade
                   // bundles which may be large, but do not travel through RPC
-                  // and we still want to be legible.
+                  // and we still want to be legible (no esbuild minification
+                  // fallback). Matches initializeSwingset.js.
                   byteLimit: Infinity,
                 });
                 const { endoZipBase64Sha512: hash } = bundle;
@@ -1133,7 +1133,7 @@ export async function launchAndShareInternals({
   };
 
   // Handle actions related to ABCI block methods: BeginBlock, EndBlock, Commit
-  // https://docs.cometbft.com/v0.34/spec/abci/abci#block-execution
+  // https://docs.cometbft.com/v0.37/spec/abci/abci++_app_requirements#beginblock---delivertx---endblock
   // We also have a once-per-process-lifetime AG_COSMOS_INIT message, and split
   // Commit into two phases (see `Commit` at
   // {@link ../../../golang/cosmos/app/app.go}).

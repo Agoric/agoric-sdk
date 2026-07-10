@@ -1,10 +1,7 @@
 //@ts-nocheck
-import {
-  DenomTrace,
-  type DenomTraceSDKType,
-  Params,
-  type ParamsSDKType,
-} from './transfer.js';
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
+import { Denom, type DenomSDKType } from './token.js';
+import { Params, type ParamsSDKType } from './transfer.js';
 import {
   Coin,
   type CoinSDKType,
@@ -12,10 +9,15 @@ import {
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
-/** GenesisState defines the ibc-transfer genesis state */
+/**
+ * GenesisState defines the ibc-transfer genesis state
+ * @name GenesisState
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.GenesisState
+ */
 export interface GenesisState {
   portId: string;
-  denomTraces: DenomTrace[];
+  denoms: Denom[];
   params: Params;
   /**
    * total_escrowed contains the total amount of tokens escrowed
@@ -27,23 +29,63 @@ export interface GenesisStateProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.GenesisState';
   value: Uint8Array;
 }
-/** GenesisState defines the ibc-transfer genesis state */
+/**
+ * GenesisState defines the ibc-transfer genesis state
+ * @name GenesisStateSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.GenesisState
+ */
 export interface GenesisStateSDKType {
   port_id: string;
-  denom_traces: DenomTraceSDKType[];
+  denoms: DenomSDKType[];
   params: ParamsSDKType;
   total_escrowed: CoinSDKType[];
 }
 function createBaseGenesisState(): GenesisState {
   return {
     portId: '',
-    denomTraces: [],
+    denoms: [],
     params: Params.fromPartial({}),
     totalEscrowed: [],
   };
 }
+/**
+ * GenesisState defines the ibc-transfer genesis state
+ * @name GenesisState
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.GenesisState
+ */
 export const GenesisState = {
   typeUrl: '/ibc.applications.transfer.v1.GenesisState' as const,
+  annotations: {
+    'gogoproto.nullable': { params: false },
+    typeUrlFromField: { params: () => Params },
+  } as const satisfies FieldAnnotationsRecord,
+  aminoType: 'cosmos-sdk/GenesisState' as const,
+  is(o: any): o is GenesisState {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.portId === 'string' &&
+          Array.isArray(o.denoms) &&
+          (!o.denoms.length || Denom.is(o.denoms[0])) &&
+          Params.is(o.params) &&
+          Array.isArray(o.totalEscrowed) &&
+          (!o.totalEscrowed.length || Coin.is(o.totalEscrowed[0]))))
+    );
+  },
+  isSDK(o: any): o is GenesisStateSDKType {
+    return (
+      o &&
+      (o.$typeUrl === GenesisState.typeUrl ||
+        (typeof o.port_id === 'string' &&
+          Array.isArray(o.denoms) &&
+          (!o.denoms.length || Denom.isSDK(o.denoms[0])) &&
+          Params.isSDK(o.params) &&
+          Array.isArray(o.total_escrowed) &&
+          (!o.total_escrowed.length || Coin.isSDK(o.total_escrowed[0]))))
+    );
+  },
   encode(
     message: GenesisState,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -51,8 +93,8 @@ export const GenesisState = {
     if (message.portId !== '') {
       writer.uint32(10).string(message.portId);
     }
-    for (const v of message.denomTraces) {
-      DenomTrace.encode(v!, writer.uint32(18).fork()).ldelim();
+    for (const v of message.denoms) {
+      Denom.encode(v!, writer.uint32(18).fork()).ldelim();
     }
     if (message.params !== undefined) {
       Params.encode(message.params, writer.uint32(26).fork()).ldelim();
@@ -74,7 +116,7 @@ export const GenesisState = {
           message.portId = reader.string();
           break;
         case 2:
-          message.denomTraces.push(DenomTrace.decode(reader, reader.uint32()));
+          message.denoms.push(Denom.decode(reader, reader.uint32()));
           break;
         case 3:
           message.params = Params.decode(reader, reader.uint32());
@@ -92,8 +134,8 @@ export const GenesisState = {
   fromJSON(object: any): GenesisState {
     return {
       portId: isSet(object.portId) ? String(object.portId) : '',
-      denomTraces: Array.isArray(object?.denomTraces)
-        ? object.denomTraces.map((e: any) => DenomTrace.fromJSON(e))
+      denoms: Array.isArray(object?.denoms)
+        ? object.denoms.map((e: any) => Denom.fromJSON(e))
         : [],
       params: isSet(object.params) ? Params.fromJSON(object.params) : undefined,
       totalEscrowed: Array.isArray(object?.totalEscrowed)
@@ -104,12 +146,10 @@ export const GenesisState = {
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
     const obj: any = {};
     message.portId !== undefined && (obj.portId = message.portId);
-    if (message.denomTraces) {
-      obj.denomTraces = message.denomTraces.map(e =>
-        e ? DenomTrace.toJSON(e) : undefined,
-      );
+    if (message.denoms) {
+      obj.denoms = message.denoms.map(e => (e ? Denom.toJSON(e) : undefined));
     } else {
-      obj.denomTraces = [];
+      obj.denoms = [];
     }
     message.params !== undefined &&
       (obj.params = message.params ? Params.toJSON(message.params) : undefined);
@@ -125,8 +165,7 @@ export const GenesisState = {
   fromPartial(object: Partial<GenesisState>): GenesisState {
     const message = createBaseGenesisState();
     message.portId = object.portId ?? '';
-    message.denomTraces =
-      object.denomTraces?.map(e => DenomTrace.fromPartial(e)) || [];
+    message.denoms = object.denoms?.map(e => Denom.fromPartial(e)) || [];
     message.params =
       object.params !== undefined && object.params !== null
         ? Params.fromPartial(object.params)

@@ -2,6 +2,10 @@
   "name": "@agoric/pola-io",
   "version": "0.1.0",
   "description": "Least Authority I/O utilities",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/types.ts",
@@ -10,16 +14,15 @@
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "eslint .",
-    "lint:types": "yarn run -T tsc",
-    "lint-fix": "eslint --fix ."
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
+    "lint-fix": "yarn lint:eslint --fix"
   },
   "dependencies": {
     "@agoric/internal": "workspace:*"
   },
   "devDependencies": {
-    "@endo/init": "^1.1.12",
-    "ava": "^6.4.1"
+    "ava": "^8.0.1"
   },
   "files": [
     "src/"
@@ -45,6 +48,6 @@
     "atLeast": 92.3
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

@@ -59,12 +59,12 @@ const MsgSend = CodecHelper(MsgSendType);
 /**
  * @import {HostInterface, HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {IBCConnectionInfo} from '@agoric/network/ibc';
  * @import {AmountArg, CosmosChainAddress, DenomAmount, IBCMsgTransferOptions,
  *   OrchestrationAccountCommon, LocalAccountMethods, TransferRoute,
- *   AccountIdArg, Denom, IBCConnectionInfo, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
+ *   AccountIdArg, Denom, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCEvent} from '@agoric/vats';
- * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Zone} from '@agoric/zone';
@@ -537,24 +537,29 @@ export const prepareLocalOrchestrationAccountKit = (
             )} must match the channelId ${q(transferChannel.channelId)}`,
           );
 
+          const {
+            // Strip out the fields that are already included in MsgTransfer.ß
+            timeoutHeight,
+            timeoutTimestamp: _,
+            memo: optsMemo,
+            ...packetOpts
+          } = opts || {};
+
           /** @type {string | undefined} */
-          let memo;
-          if (opts && 'memo' in opts) {
-            memo = opts.memo;
-          }
+          let memo = optsMemo;
           if (forwardInfo) {
             // pass opts.memo as forward.next, if present
             memo = JSON.stringify({
               forward: {
                 ...forwardInfo.forward,
-                next: memo,
+                ...(memo === undefined ? {} : { next: memo }),
               },
             });
           }
           const transferMsg = MsgTransfer.typedJson({
             ...transferDetails,
             sender: this.state.address.value,
-            timeoutHeight: opts?.timeoutHeight,
+            timeoutHeight,
             timeoutTimestamp,
             memo,
           });
@@ -596,7 +601,7 @@ export const prepareLocalOrchestrationAccountKit = (
           // vow that rejects unless the packet acknowledgment comes back and is
           // verified.
           return holder.sendThenWaitForAck(sender, {
-            ...opts,
+            ...packetOpts,
             trafficSlice,
           });
         },
@@ -1040,11 +1045,13 @@ export const prepareLocalOrchestrationAccountKit = (
 
             // Find the local denom hash for the transferDenom, if there is one.
             return watch(
-              E(localchain).queryMany([
-                QueryDenomHashRequest.typedJson({
-                  trace: denomOrTrace,
-                }),
-              ]),
+              E(localchain).queryMany(
+                /** @type {any} */ ([
+                  QueryDenomHashRequest.typedJson({
+                    trace: denomOrTrace,
+                  }),
+                ]),
+              ),
               this.facets.parseInboundTransferWatcher,
               buildReturnValue(denomOrTrace),
             );

@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { AmountMath } from '@agoric/ertp';
 import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';

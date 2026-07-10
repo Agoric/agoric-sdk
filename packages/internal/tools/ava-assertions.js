@@ -21,7 +21,12 @@ export const arrayIsLike = (t, array, expected, message) => {
     actualExcess > 0
       ? [...expected, ...Array.from({ length: actualExcess })]
       : expected;
-  t.like(array, comparable, message);
+  if (comparable.length === 0) {
+    // Ava `like` rejects an empty array selector, so use `deepEqual` instead.
+    t.deepEqual(array, comparable, message);
+  } else {
+    t.like(array, comparable, message);
+  }
 
   if (actualLength === expectedLength) return;
 

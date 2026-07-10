@@ -20,6 +20,10 @@
       "default": "./dist/index.js"
     },
     "./package.json": "./package.json",
+    "./json-safe": {
+      "types": "./dist/codegen/json-safe.d.ts",
+      "default": "./dist/codegen/json-safe.js"
+    },
     "./address-hooks.js": {
       "types": "./dist/address-hooks.d.ts",
       "default": "./dist/address-hooks.js"
@@ -31,6 +35,10 @@
     "./cosmos/*.js": {
       "types": "./dist/codegen/cosmos/*.d.ts",
       "default": "./dist/codegen/cosmos/*.js"
+    },
+    "./cosmos/gov/v1/gov.js": {
+      "types": "./dist/codegen/cosmos/gov/v1/gov.d.ts",
+      "default": "./dist/codegen/cosmos/gov/v1/gov.js"
     },
     "./circle/cctp/v1/tx.js": {
       "types": "./dist/codegen/circle/cctp/v1/tx.d.ts",
@@ -144,6 +152,38 @@
       "types": "./dist/codegen/agoric/swingset/swingset.d.ts",
       "default": "./dist/codegen/agoric/swingset/swingset.js"
     },
+    "./codegen/binary.js": {
+      "types": "./dist/codegen/binary.d.ts",
+      "default": "./dist/codegen/binary.js"
+    },
+    "./codegen/decimals.js": {
+      "types": "./dist/codegen/decimals.d.ts",
+      "default": "./dist/codegen/decimals.js"
+    },
+    "./codegen/helpers.js": {
+      "types": "./dist/codegen/helpers.d.ts",
+      "default": "./dist/codegen/helpers.js"
+    },
+    "./codegen/json-safe.js": {
+      "types": "./dist/codegen/json-safe.d.ts",
+      "default": "./dist/codegen/json-safe.js"
+    },
+    "./codegen/types.js": {
+      "types": "./dist/codegen/types.d.ts",
+      "default": "./dist/codegen/types.js"
+    },
+    "./codegen/utf8.js": {
+      "types": "./dist/codegen/utf8.d.ts",
+      "default": "./dist/codegen/utf8.js"
+    },
+    "./codegen/varint.js": {
+      "types": "./dist/codegen/varint.d.ts",
+      "default": "./dist/codegen/varint.js"
+    },
+    "./codegen/*.js": {
+      "types": "./dist/codegen/*.d.ts",
+      "default": "./dist/codegen/*.js"
+    },
     "./tendermint/*.js": {
       "types": "./dist/codegen/tendermint/*.d.ts",
       "default": "./dist/codegen/tendermint/*.js"
@@ -168,14 +208,16 @@
     "!CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && scripts/minify.cjs",
-    "clean": "rimraf dist",
+    "build": "yarn build:js && yarn build:types",
+    "build:js": "esbuild \"src/**/*.ts\" \"src/**/*.js\" --outdir=dist --outbase=src --platform=neutral --sourcemap --sources-content=false --minify",
+    "build:types": "tsc --project tsconfig.build.json --emitDeclarationOnly && echo 👩‍⚖️ type defs emitted",
+    "clean": "rimraf dist tsconfig.build.tsbuildinfo",
     "codegen": "./update-protos.sh && scripts/codegen.cjs",
     "prepare": "npm run build",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "yarn run -T eslint .",
-    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "test": "ava",
     "test:xs": "exit 0",
     "test:live": "yarn build && scripts/test-live.js"
@@ -185,20 +227,23 @@
   },
   "devDependencies": {
     "@agoric/cosmos": "workspace:*",
-    "@ava/typescript": "^6.0.0",
-    "@cosmology/telescope": "^1.12.21",
-    "@endo/bundle-source": "^4.1.2",
-    "@endo/import-bundle": "^1.5.2",
-    "ava": "^6.4.1",
-    "glob": "^11.0.3",
+    "@ava/typescript": "^7.0.0",
+    "@endo/bundle-source": "^4.3.2",
+    "@endo/import-bundle": "^1.7.0",
+    "@hyperweb/telescope": "^2.2.1",
+    "ava": "^8.0.1",
+    "esbuild": "^0.25.2",
     "rimraf": "^5.0.0",
-    "terser": "^5.39.0",
     "tsd": "^0.33.0",
-    "typescript": "~5.9.2"
+    "typescript": "~6.0.3"
   },
   "dependencies": {
-    "@endo/base64": "^1.0.12",
-    "@endo/init": "^1.1.12",
+    "@chain-registry/v2": "^1.71.186",
+    "@chain-registry/v2-types": "^0.53.115",
+    "@endo/base64": "^1.1.1",
+    "@endo/init": "^1.1.13",
+    "@interchainjs/cosmos": "^1.19.3",
+    "@interchainjs/types": "^1.19.1",
     "bech32": "^2.0.0",
     "query-string": "^9.1.1"
   },
@@ -217,6 +262,6 @@
     ]
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

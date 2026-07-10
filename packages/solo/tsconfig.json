@@ -2,8 +2,8 @@
 {
   "extends": "../../tsconfig.json",
   "include": [
-    "public/**/*.js",
-    "src/**/*.js",
-    "test/**/*.js",
+    "public",
+    "src",
+    "test",
   ],
 }

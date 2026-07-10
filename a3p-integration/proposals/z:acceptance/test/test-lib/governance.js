@@ -13,8 +13,16 @@ import {
 import { makeVstorageKit } from './rpc.js';
 
 /**
+ * @import {MinimalNetworkConfig} from './rpc.js';
+ * @import {QuestionSpec} from '@agoric/governance/src/types.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {ExecutionContext} from 'ava';
+ * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ */
+
+/**
  * @param {typeof window.fetch} fetch
- * @param {import('./rpc.js').MinimalNetworkConfig} networkConfig
+ * @param {MinimalNetworkConfig} networkConfig
  */
 export const makeGovernanceDriver = async (fetch, networkConfig) => {
   const { readLatestHead, marshaller, vstorage } = await makeVstorageKit(
@@ -26,12 +34,11 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
 
   /** @param {string} previousOfferId */
   const generateVoteOffer = async previousOfferId => {
-    const latestQuestionRecord =
-      /** @type {import('@agoric/governance/src/types.js').QuestionSpec} */ (
-        await readLatestHead(
-          'published.committees.Economic_Committee.latestQuestion',
-        )
-      );
+    const latestQuestionRecord = /** @type {QuestionSpec} */ (
+      await readLatestHead(
+        'published.committees.Economic_Committee.latestQuestion',
+      )
+    );
 
     const id = `propose-${Date.now()}`;
     const chosenPositions = [latestQuestionRecord.positions[0]];
@@ -195,10 +202,9 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     const instance = await readLatestHead(`published.agoricNames.instance`);
     const instances = Object.fromEntries(instance);
 
-    const voteWallet =
-      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
-        await readLatestHead(`published.wallet.${address}.current`)
-      );
+    const voteWallet = /** @type {CurrentWalletRecord} */ (
+      await readLatestHead(`published.wallet.${address}.current`)
+    );
 
     const usedInvitationsForVoter = voteWallet.offerToUsedInvitation;
 
@@ -273,7 +279,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
 
 /**
  *
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {Awaited<ReturnType<typeof makeGovernanceDriver>>} governanceDriver
  * @param {{
  *   instanceName: string;
@@ -281,7 +287,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
  *   governanceAddresses: string[];
  *   params: object
  * }} electionParams
- * @param {{ getLastUpdate: (addr: string) => Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}} io
+ * @param {{ getLastUpdate: (addr: string) => Promise<UpdateRecord>}} io
  */
 export const runCommitteeElectionParamChange = async (
   t,

@@ -10,7 +10,6 @@ import { assert, Fail, X } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import {
-  makeTracer,
   naturalCompare,
   objectMap,
   partialMap,
@@ -46,12 +45,25 @@ const replaceOrInit = <K, V>(
   map.set(key, callback(old, key, exists));
 };
 
-// XXX These probably belong in @agoric/internal.
+// #region XXX These probably belong in @agoric/internal.
+const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+const alphabetizeRecord = <T extends Record<string, unknown>>(obj: T) =>
+  Object.fromEntries(
+    Object.entries(obj).sort(([k1], [k2]) => compareStrings(k1, k2)),
+  );
+
+/**
+ * Return the absolute value of a bigint, similar to `Math.abs` (which doesn't
+ * work with bigints).
+ */
+export const bigintAbs = (x: bigint) => (x < 0n ? -x : x);
+
 /**
  * Return the minimum and maximum bigint value from non-empty arguments, similar
  * to `Math.min` and `Math.max` (which don't work with bigints).
  */
-const bigIntExtremes = (first: bigint, ...rest: bigint[]) => {
+export const bigintExtremes = (first: bigint, ...rest: bigint[]) => {
   let min = first;
   let max = first;
   for (const arg of rest) {
@@ -60,15 +72,21 @@ const bigIntExtremes = (first: bigint, ...rest: bigint[]) => {
   }
   return { min, max };
 };
+
+/**
+ * Return the minimum bigint value from non-empty arguments, similar to
+ * `Math.min` (which doesn't work with bigints).
+ */
+export const bigintMin = (first: bigint, ...rest: bigint[]): bigint =>
+  bigintExtremes(first, ...rest).min;
+
 /**
  * Return the maximum bigint value from non-empty arguments, similar to
  * `Math.max` (which doesn't work with bigints).
  */
-const bigIntMax = (first: bigint, ...rest: bigint[]): bigint =>
-  bigIntExtremes(first, ...rest).max;
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const trace = makeTracer('solve');
+export const bigintMax = (first: bigint, ...rest: bigint[]): bigint =>
+  bigintExtremes(first, ...rest).max;
+// #endregion
 
 /** The count of minor units per major unit (e.g., uusdc per USDC) */
 const UNIT_SCALE = 1e6;
@@ -155,7 +173,7 @@ type WeightFns = {
     flowVar: FlowVar,
     pickVar: PickVar,
   ) => { primary: number[]; other: number[] };
-  setWeights: (flowVar: FlowVar, pickVar: PickVar, epsilon: number) => void;
+  setWeights: (flowVar: FlowVar, pickVar: PickVar, epsilon?: number) => void;
 };
 
 const DEFAULT_SECONDARY_WEIGHT_EPSILON = 1e-6;
@@ -167,7 +185,7 @@ const modeFns = new Map(
         primary: [flowVar.variableFeeBps, pickVar.magnifiedFlatFee],
         other: [pickVar.timeSec],
       }),
-      setWeights: (flowVar, pickVar, epsilon) => {
+      setWeights: (flowVar, pickVar, epsilon = 0) => {
         // Fees have full weight; time is weighted by epsilon.
         flowVar.weight = flowVar.variableFeeBps;
         pickVar.weight = pickVar.magnifiedFlatFee + pickVar.timeSec * epsilon;
@@ -178,7 +196,7 @@ const modeFns = new Map(
         primary: [pickVar.timeSec],
         other: [flowVar.variableFeeBps, pickVar.magnifiedFlatFee],
       }),
-      setWeights: (flowVar, pickVar, epsilon) => {
+      setWeights: (flowVar, pickVar, epsilon = 0) => {
         // Fees are weighted by epsilon; time has full weight.
         flowVar.weight = flowVar.variableFeeBps * epsilon;
         pickVar.weight = pickVar.timeSec + pickVar.magnifiedFlatFee * epsilon;
@@ -278,6 +296,9 @@ export const buildLPModel = (
   const maxExpectedFlow = Math.max(
     ...Object.values(graph.supplies).map(x => Math.abs(x) / UNIT_SCALE),
   );
+  // XXX This tiebreaker logic caused too much instability, cf. PAK-395.
+  // For now, consider *only* the primary.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const epsilonWeight =
     Number.isFinite(minPrimaryWeight) && Number.isFinite(maxSecondaryWeight)
       ? minPrimaryWeight / (maxSecondaryWeight * maxExpectedFlow * 100)
@@ -286,7 +307,7 @@ export const buildLPModel = (
     setWeights(
       flowVariables[`via_${id}`],
       pickVariables[`pick_${id}`],
-      epsilonWeight,
+      // epsilonWeight,
     );
     // No arc is free.
     pickVariables[`pick_${id}`].weight += 1;
@@ -329,13 +350,24 @@ const refineModel = (
     const { id, capacity, min } = edge;
     const pickVar = `pick_${id}`;
     const flowVar = `via_${id}`;
-    if ((solution[flowVar] ?? 0) > 0) {
+    const allowKey = `allow_${id}`;
+    if ((solution[flowVar] ?? 0) >= FLOW_EPS) {
       cloned.binaries[pickVar] = true;
       cloned.ints[flowVar] = true;
+
+      // Now that we've selected our arcs, minimums *do* apply directly.
       cloned.constraints[`through_${id}`] = {
         min: min === undefined ? undefined : Number(min),
         max: capacity === undefined ? undefined : Number(capacity),
       };
+      delete cloned.constraints[allowKey].max;
+
+      // Scaling by too much here would introduce numerical instability, so we
+      // cap it and rely on the inherent headroom of our coupling constraints
+      // (@see {@link buildLPModel}).
+      const allowScale = Math.min(1000, UNIT_SCALE);
+      cloned.variables[pickVar][allowKey] *= allowScale;
+
       cloned.variables[pickVar].weight =
         (cloned.variables[pickVar].weight - 1) * UNIT_SCALE + 1;
     } else {
@@ -354,7 +386,7 @@ const refineModel = (
 
 /**
  * Represent a JSON-serializable object as a spacey single-line literal with
- * identifier-compatible property names unquoted.
+ * identifier-compatible property names unquoted and number digits grouped.
  */
 const prettyJsonable = (obj: unknown): string => {
   const jsonText = JSON.stringify(obj, null, 1);
@@ -364,8 +396,24 @@ const prettyJsonable = (obj: unknown): string => {
     strings.push(s);
     return '#';
   });
-  // Condense the [now guaranteed-insignificant] whitespace.
-  const singleLine = safe.replace(/\s+/g, ' ');
+  // Condense the [now guaranteed-insignificant] whitespace and insert
+  // underscores to separate digits into groups of 3.
+  const singleLine = safe
+    .replace(/\s+/g, ' ')
+    .replace(/([0-9]+)([.][0-9]+)?/g, (_x, w, f = '') => {
+      const wCount = w.length;
+      const wGroups = w.slice(wCount % 3).match(/[0-9]{3}/g) || [];
+      if (wCount % 3) wGroups.unshift(w.slice(0, wCount % 3));
+
+      const fGroups = f.match(/[0-9]{1,3}/g) || [];
+      const lastFGroup = fGroups.pop();
+      if (lastFGroup) {
+        fGroups.push(lastFGroup.padEnd(3, '0'));
+        fGroups[0] = `.${fGroups[0]}`;
+      }
+
+      return `${wGroups.join('_')}${fGroups.join('_')}`;
+    });
   // Restore the strings, stripping quotes from property names as possible.
   const pretty = singleLine.replaceAll('#', () => {
     const s = strings.shift() as string;
@@ -373,6 +421,48 @@ const prettyJsonable = (obj: unknown): string => {
     return s.replace(/^"([\p{ID_Start}$_][\p{ID_Continue}$]*)":$/u, '$1:');
   });
   return pretty;
+};
+
+/**
+ * Translate opaque variable names associated with edges (e.g., "pick_e00" and
+ * "via_e99") into ordered human-readable records like
+ * `"e00": { arc: "@agoric->@Ethereum", pick: 0.01, via: 1_000_000 }`.
+ */
+const summarizeSolution = (
+  graph: FlowGraph,
+  solution?: LpSolution,
+): null | Record<string, unknown> => {
+  if (!solution) return null;
+
+  const { base, edges } = typedEntries(solution).reduce<{
+    base: Record<string, unknown>;
+    edges: Record<string, unknown>;
+  }>(
+    (groups, [key, value]) => {
+      const keyParts = key.match(/^(.*?)_(e[0-9]+)$/);
+      if (!keyParts) {
+        groups.base[key] = value;
+      } else {
+        const [, kind, edgeId] = keyParts;
+        const edgeData = groups.edges[edgeId] as any;
+        if (!edgeData) {
+          const edge = graph.edges.find(e => e.id === edgeId);
+          const label = edge ? `${edge.src}->${edge.dest}` : '<unknown>';
+          groups.edges[edgeId] = { arc: label, [kind]: value };
+        } else {
+          const prevLastKey = Object.keys(edgeData).pop() as string;
+          edgeData[kind] = value;
+          if (kind < prevLastKey) {
+            const { arc, ...rest } = edgeData;
+            groups.edges[edgeId] = { arc, ...alphabetizeRecord(rest) };
+          }
+        }
+      }
+      return groups;
+    },
+    { base: { __proto__: null }, edges: { __proto__: null } },
+  );
+  return { ...base, ...alphabetizeRecord(edges) };
 };
 
 const solveLPModel = (
@@ -386,11 +476,11 @@ const solveLPModel = (
   // instead. If result is undefined or there are no variable values, it's truly infeasible.
   if (!(solution?.feasible || solution?.result)) {
     if (graph.debug) {
-      // Emit richer context only on demand to avoid noisy passing runs
+      // Emit richer context.
       let msg = formatInfeasibleDiagnostics(graph, model);
-      msg += ` | ${prettyJsonable(solution)}`;
+      msg += ` | ${prettyJsonable(summarizeSolution(graph, solution))}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
-      failUnsolvable(X`No feasible solution: ${msg}`);
+      failUnsolvable(`No feasible solution: ${msg}`);
     }
     failUnsolvable(X`No feasible solution: ${solution}`);
   }
@@ -409,9 +499,9 @@ export const solveRebalance = async (
   // Then, derive a new model with minor-unit integer amount values against the
   // selected subgraph.
   // This two-step approach seems to dodge some IEEE 754 rounding issues.
-  const pickSolution = solveLPModel(model, graph, { precision: 1e-15 });
+  const pickSolution = solveLPModel(model, graph, { precision: 1e-6 });
   const refinedModel = refineModel(model, graph, pickSolution);
-  const solution = solveLPModel(refinedModel, graph);
+  const solution = solveLPModel(refinedModel, graph, { precision: 1e-3 });
 
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
@@ -580,7 +670,7 @@ export const rebalanceMinCostFlowSteps = async (
     const padded = padFeeEstimate(estimate);
     // cf. https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
     const MINIMUM_GAS = 5_000_000n;
-    return AmountMath.make(feeBrand, bigIntMax(MINIMUM_GAS, padded));
+    return AmountMath.make(feeBrand, bigintMax(MINIMUM_GAS, padded));
   };
 
   const steps = await Promise.all(

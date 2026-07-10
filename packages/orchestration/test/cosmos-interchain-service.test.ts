@@ -14,8 +14,8 @@ import {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { LocalIbcAddress } from '@agoric/network/ibc';
 import type { IBCMethod } from '@agoric/vats';
-import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { CosmosChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';

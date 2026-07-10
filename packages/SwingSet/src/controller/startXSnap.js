@@ -1,6 +1,6 @@
-import path from 'path';
+import path from 'node:path';
 import { Fail } from '@endo/errors';
-import { type as osType } from 'os';
+import { type as osType } from 'node:os';
 import { xsnap, recordXSnap } from '@agoric/xsnap';
 
 /**
@@ -45,8 +45,8 @@ const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
  *   bundleHandler: BundleHandler,
  *   snapStore?: SnapStore,
  *   spawn: typeof procSpawn,
- *   fs: import('fs'),
- *   tmpName: import('tmp')['tmpName'],
+ *   fs: typeof import('fs'),
+ *   tmpName: (typeof import('tmp'))['tmpName'],
  *   debug?: boolean,
  *   workerTraceRootPath?: string,
  *   overrideBundles?: Bundle[],

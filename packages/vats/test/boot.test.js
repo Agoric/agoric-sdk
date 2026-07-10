@@ -99,7 +99,7 @@ test('evaluateBundleCap is available to core eval', async (/** @type {ECtx} */ t
     const bundleID = bundle.endoZipBase64Sha512;
     vatAdminState.installBundle(bundleID, bundle);
     const bridgeManager = {
-      register: (name, fn) => {
+      register: (_name, fn) => {
         handler = fn;
       },
     };

@@ -1,5 +1,7 @@
 /** global FinalizationRegistry */
 
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import process from 'node:process';
@@ -22,6 +24,7 @@ import { spawnRetentiveVatSequence } from './leakiness.mjs';
 const testRetention = async (t, xsnapOptions) => {
   let snapshotsCreated = 0;
   let snapshotsFreed = 0;
+  /** @type {null | Awaited<ReturnType<typeof import('../src/xsnap.js').xsnap>>} */
   let lastVat = null;
   /** @type {FinalizationRegistry<void>} */
   const fr = new FinalizationRegistry(() => {

@@ -20,7 +20,7 @@ const { fromEntries } = Object;
 /**
  * @typedef {{
  *   accounts: MapStore<string, HostInterface<OrchestrationAccount<any>>>;
- *   publicTopics: MapStore<string, ResolvedPublicTopic<unknown>>;
+ *   publicTopics: MapStore<string, ResolvedPublicTopic<any>>;
  * }} PortfolioHolderState
  */
 
@@ -61,7 +61,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
     },
     /**
      * @param {Iterable<[string, OrchestrationAccount<any>]>} accountEntries
-     * @param {Iterable<[string, ResolvedPublicTopic<unknown>]>} publicTopicEntries
+     * @param {Iterable<[string, ResolvedPublicTopic<any>]>} publicTopicEntries
      */
     (accountEntries, publicTopicEntries) => {
       mustMatch(accountEntries, AccountEntriesShape, 'must provide accounts');
@@ -126,7 +126,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
         /**
          * @param {string} chainName key where the account is stored
          * @param {HostInterface<OrchestrationAccount<any>>} account
-         * @param {ResolvedPublicTopic<unknown>} publicTopic
+         * @param {ResolvedPublicTopic<any>} publicTopic
          */
         addAccount(chainName, account, publicTopic) {
           return asVow(() => {

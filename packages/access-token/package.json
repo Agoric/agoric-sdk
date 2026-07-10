@@ -17,20 +17,17 @@
     "test:xs": "exit 0",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:eslint": "yarn run -T eslint .",
-    "lint:types": "yarn run -T tsc"
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo"
   },
   "dependencies": {
     "@agoric/internal": "workspace:*",
-    "n-readlines": "^1.0.0",
     "proper-lockfile": "^4.1.2",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@endo/init": "^1.1.12",
-    "@types/n-readlines": "^1.0.3",
     "@types/proper-lockfile": "^4.1.2",
-    "ava": "^6.4.1",
+    "ava": "^8.0.1",
     "c8": "^10.1.3"
   },
   "files": [
@@ -43,15 +40,12 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 83.57
+    "atLeast": 84.05
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

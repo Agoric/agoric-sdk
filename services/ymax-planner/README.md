@@ -172,14 +172,98 @@ Environment variables:
 - `FEE_BRAND_NAME`: For identifying how to pay [Axelar Cosmos–EVM] transfer fees by matching against `issuerName` in vstorage data at path "published.agoricNames.vbankAsset" (default "BLD")
 - `REQUEST_TIMEOUT`: Milliseconds to wait for each external request (default "10000" = 10 seconds)
 - `REQUEST_RETRIES`: Retry count for external requests (default "3")
-- `COSMOS_REST_TIMEOUT`: Overrides `REQUEST_TIMEOUT` for Agoric/Noble/etc. Cosmos REST APIs (optional)
-- `COSMOS_REST_RETRIES`: Overrides `REQUEST_RETRIES` for Agoric/Noble/etc. Cosmos REST APIs (optional)
 - `GRAPHQL_ENDPOINTS`: JSON text for a Record\<dirname, url[]> object describing endpoints associated with each api-\* GraphQL API directory under [graphql](./src/graphql) (optional)
 - `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided (relative to the cwd),
 an absolute path is recommended
-- `YDS_URL`: Base URL of the YMax Data Service API, for sending transaction settlement notifications (optional)
+- `YDS_URL`: Base URL of the YMax Data Service API, for fetching dynamic instrument status and sending transaction settlement notifications (optional)
 - `YDS_API_KEY`: API key for authenticating with YDS (required with `YDS_URL`)
+- `AUTO_REBALANCE_DRIFT_BPS`: Basis-point threshold for position drift auto-rebalance candidates. If any single instrument's actual allocation differs from its target by more than this value, and the target balances would increase enough non-zero-weight positions, the planner may submit an auto rebalance (default "100" = 1 percentage point)
+- `AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC`: Minimum total increase of non-zero-weight positions required for the position drift trigger, in micro-USDC (default "25000000" = 25 USDC)
+- `AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC`: Minimum total increase of non-zero-weight positions required for the excess cash trigger, in micro-USDC (default "25000000" = 25 USDC)
 - `DOTENV`: Path to environment file containing defaults of above (default ".env")
+
+## External Service Dependencies
+
+The planner connects to external services for balance queries, gas estimation, and
+event subscriptions:
+* **Alchemy RPC**: query EVM balances directly
+  * ERC-20 `balanceOf` (Aave aTokens, Compound cUSDCv3, chain-specific USDC)
+  * Beefy vaults `balanceOf` and `getPricePerFullShare` (mooToken → underlying)
+  * ERC-4626 vaults `balanceOf` and `convertToAssets` (Morpho, etc.)
+* **Spectrum Blockchain API**: query non-EVM token balances (Agoric USDC/USDN, Noble)
+* **Axelar API**: estimate cross-chain gas fees (GMP)
+* **Agoric CometBFT RPC**: subscribe to chain events and query account data
+* **Google Cloud Secret Manager**: retrieve Agoric wallet mnemonic for signing transactions
+* **YMax Data Service**: send notifications when monitored transactions settle
+
+### Alchemy RPC
+
+**Env var**: `ALCHEMY_API_KEY`
+
+WebSocket connections to wss://$subdomain.g.alchemy.com/v2/$ALCHEMY_API_KEY
+allow queries against EVM chains (Arbitrum, Avalanche, Base, Ethereum, Optimism,
+and their testnets) by calling contract methods directly:
+
+- **Aave / Compound**: Simple `balanceOf` — receipt tokens (aTokens, cUSDCv3)
+  already represent underlying USDC value.
+- **Beefy vaults**: `balanceOf` returns mooToken shares, then
+  `getPricePerFullShare()` (1e18 precision) converts to underlying value.
+- **ERC-4626 vaults** (Morpho, etc.): `balanceOf` returns vault shares, then
+  `convertToAssets(shares)` converts to underlying value.
+- **USDC on EVM chains**: Simple `balanceOf` on the USDC token contract.
+
+### Spectrum Blockchain API
+
+**Env var**: `GRAPHQL_ENDPOINTS` (endpoint URLs associated with JSON member name
+"api-spectrum-blockchain" and
+[corresponding directory](./src/graphql/api-spectrum-blockchain))
+
+Supports `getBalances` GraphQL queries to retrieve balances for **non-EVM**
+accounts (Agoric, Noble), with failover across multiple URLs.
+
+### Axelar API
+
+**Env var**: `CLUSTER`/`AGORIC_NET` (for selecting mainnet vs. testnet endpoint)
+
+Estimates gas fees for cross-chain transfers via Axelar's General Message
+Passing protocol. Called during rebalance planning to account for transfer costs.
+
+- Mainnet: `https://api.axelarscan.io/`
+- Testnet: `https://testnet.api.axelarscan.io/`
+
+### Agoric CometBFT RPC
+
+**Env vars**: `CLUSTER`/`AGORIC_NET`
+
+Connects to an Agoric RPC node:
+- **WebSocket** (`CosmosRPCClient`): subscribes to CometBFT events
+  (`/websocket` with query `tm.event = 'NewBlock'`) to drive the rebalance loop.
+  Also used to fetch block timestamps and verify chain ID at startup.
+- **`abci_query`** (`@cosmjs/stargate` `StargateClient`): queries for account
+  data (account number and sequence) over the same RPC endpoint.
+
+### Google Cloud Secret Manager
+
+**Env vars**: `GCP_PROJECT_ID` (default `simulationlab`), `GCP_SECRET_NAME` (default `YMAX_CONTROL_MNEMONIC`), `MNEMONIC`
+
+Used once at startup to retrieve the wallet mnemonic for signing transactions.
+Fetches `projects/{projectId}/secrets/{secretName}/versions/latest` via the
+`@google-cloud/secret-manager` client. If `MNEMONIC` is set directly in the
+environment, the GCP lookup is skipped.
+
+### YMax Data Service (YDS)
+
+**Env vars**: `YDS_URL`, `YDS_API_KEY`
+
+Provides cached portfolio balances for auto-rebalance candidate detection and
+dynamic instrument status. Also receives transaction settlement notifications:
+after a CCTP transfer, GMP transfer, or smart wallet transaction is confirmed,
+the planner POSTs the transaction ID and on-chain hash to
+`{YDS_URL}/flow-step-tx-hashes` with the `x-resolver-auth-key` header.
+
+This service is optional. If `YDS_URL` is not set, portfolio balances are only
+updated upon activity, instrument status is assumed to match static network
+configuration, and transaction settlement notifications are not sent anywhere.
 
 ## Architecture
 

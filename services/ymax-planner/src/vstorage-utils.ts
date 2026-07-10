@@ -17,8 +17,7 @@ import { Fail, q } from '@endo/errors';
 export const EncodedKeySeparator = '\x00';
 export const PathSeparator = '.';
 
-/** @type {(key: string) => string} */
-export const encodedKeyToPath = key => {
+export const encodedKeyToPath = (key: string): string => {
   const encodedParts = key.split(EncodedKeySeparator);
   encodedParts.length > 1 || Fail`invalid encoded key ${q(key)}`;
   const path = encodedParts.slice(1).join(PathSeparator);
@@ -26,8 +25,7 @@ export const encodedKeyToPath = key => {
 };
 harden(encodedKeyToPath);
 
-/** @type {(path: string) => string} */
-export const pathToEncodedKey = path => {
+export const pathToEncodedKey = (path: string): string => {
   const segments = path.split(PathSeparator);
   return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
 };
@@ -133,7 +131,7 @@ export type ReadStorageMetaOptions<
 /**
  * Make a vstorage Children or Data query, returning the decoded result along
  * with response metadata derived from fields documented at
- * https://docs.cometbft.com/v1.0/spec/abci/abci++_methods#query (for
+ * https://docs.cometbft.com/v0.38/spec/abci/abci++_methods#query (for
  * successful responses, `log` and `height` [as `blockHeight`], and for error
  * responses, `codespace` and `code`) or a transformation thereof.
  * UNTIL https://github.com/Agoric/agoric-sdk/pull/11630

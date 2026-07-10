@@ -2,13 +2,32 @@
   "name": "@agoric/portfolio-api",
   "version": "0.1.0",
   "description": "API for Portfolio management",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "type": "module",
   "files": [
     "src",
     "tools"
   ],
   "main": "src/main.js",
-  "bin": "src/cli/bin.js",
+  "exports": {
+    ".": "./src/main.js",
+    "./src/constants.js": "./src/constants.js",
+    "./src/evm-wallet/eip712-messages.js": "./src/evm-wallet/eip712-messages.ts",
+    "./src/evm-wallet/message-handler-helpers.js": "./src/evm-wallet/message-handler-helpers.ts",
+    "./src/network/network-spec.js": "./src/network/network-spec.ts",
+    "./src/network/prod-network.js": "./src/network/prod-network.ts",
+    "./src/places.js": "./src/places.ts",
+    "./src/portfolio-permissions.js": "./src/portfolio-permissions.ts",
+    "./src/portfolio-constants.js": "./src/portfolio-constants.js",
+    "./src/resolver.js": "./src/resolver.js",
+    "./src/target-balances.js": "./src/target-balances.ts",
+    "./src/type-guards.js": "./src/type-guards.ts",
+    "./package.json": "./package.json"
+  },
+  "bin": "./src/cli/bin.js",
   "scripts": {
     "build": "exit 0",
     "prepack": "yarn run -T prepack-package",
@@ -18,8 +37,8 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "yarn run -T eslint .",
-    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "lint:mermaid": "npx tsx scripts/gen-mermaid.mts --check",
     "lint:ymax-diagram": "npx tsx scripts/lint-ymax-state-diagram.mts",
     "lint:ymax-machine": "npx tsx scripts/gen-ymax-machine.mts --check",
@@ -29,25 +48,26 @@
   "dependencies": {
     "@agoric/internal": "workspace:*",
     "@agoric/orchestration": "workspace:*",
-    "@endo/common": "^1.2.13",
-    "@endo/errors": "^1.2.13",
-    "@endo/patterns": "^1.7.0"
+    "@endo/common": "^1.4.0",
+    "@endo/errors": "^1.3.1",
+    "@endo/patterns": "^1.9.1"
   },
   "devDependencies": {
-    "@endo/init": "^1.1.12",
+    "@endo/far": "^1.1.14",
+    "@endo/init": "^1.1.13",
     "@types/js-yaml": "^4",
     "ajv": "^6.12.6",
-    "ava": "^6.4.1",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "js-yaml": "^4.1.1",
     "ts-blank-space": "^0.6.2",
     "tsd": "^0.33.0"
   },
   "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],
@@ -55,19 +75,16 @@
       "--import=ts-blank-space/register",
       "--no-warnings"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 100
+    "atLeast": 99.95
   },
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public"
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

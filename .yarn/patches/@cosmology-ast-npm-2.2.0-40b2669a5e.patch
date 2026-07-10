@@ -1,0 +1,47 @@
+diff --git a/encoding/proto/props/index.js b/encoding/proto/props/index.js
+index b5dcdcaae100c4e46849b41d72b62f1e299631e7..b3c4be4c41b930369c958a4f1ba8cbfb467c643a 100644
+--- a/encoding/proto/props/index.js
++++ b/encoding/proto/props/index.js
+@@ -36,17 +36,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
+ exports.createAminoTypeProperty = exports.createTypeUrlProperty = void 0;
+ const t = __importStar(require("@babel/types"));
+ const amino_1 = require("../../amino");
++const asConst = expr => t.tSAsExpression(expr, t.tsTypeReference(t.identifier('const')));
+ const createTypeUrlProperty = (context, proto) => {
+     const typeUrl = (0, amino_1.getTypeUrl)(context.ref.proto, proto);
+     if (!typeUrl)
+         return;
+-    return t.objectProperty(t.identifier('typeUrl'), t.stringLiteral(typeUrl));
++    return t.objectProperty(t.identifier('typeUrl'), asConst(t.stringLiteral(typeUrl)));
+ };
+ exports.createTypeUrlProperty = createTypeUrlProperty;
+ const createAminoTypeProperty = (context, proto) => {
+     const str = (0, amino_1.getAminoTypeName)(context, context.ref.proto, proto);
+     if (!str || str.startsWith('/'))
+         return;
+-    return t.objectProperty(t.identifier('aminoType'), t.stringLiteral(str));
++    return t.objectProperty(t.identifier('aminoType'), asConst(t.stringLiteral(str)));
+ };
+ exports.createAminoTypeProperty = createAminoTypeProperty;
+diff --git a/esm/encoding/proto/props/index.js b/esm/encoding/proto/props/index.js
+index 8e51ff99c5b249b93e1c0cfa610c5a10b3bd935c..c9c9a357d30306bdc5d37ce239e3288ee96afb3e 100644
+--- a/esm/encoding/proto/props/index.js
++++ b/esm/encoding/proto/props/index.js
+@@ -1,14 +1,15 @@
+ import * as t from '@babel/types';
+ import { getAminoTypeName, getTypeUrl } from '../../amino';
++const asConst = expr => t.tSAsExpression(expr, t.tsTypeReference(t.identifier('const')));
+ export const createTypeUrlProperty = (context, proto) => {
+     const typeUrl = getTypeUrl(context.ref.proto, proto);
+     if (!typeUrl)
+         return;
+-    return t.objectProperty(t.identifier('typeUrl'), t.stringLiteral(typeUrl));
++    return t.objectProperty(t.identifier('typeUrl'), asConst(t.stringLiteral(typeUrl)));
+ };
+ export const createAminoTypeProperty = (context, proto) => {
+     const str = getAminoTypeName(context, context.ref.proto, proto);
+     if (!str || str.startsWith('/'))
+         return;
+-    return t.objectProperty(t.identifier('aminoType'), t.stringLiteral(str));
++    return t.objectProperty(t.identifier('aminoType'), asConst(t.stringLiteral(str)));
+ };

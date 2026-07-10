@@ -7,7 +7,7 @@ import { VowShape } from '@agoric/vow';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
-import { decodeIbcEndpoint } from '@agoric/vats/tools/ibc-utils.js';
+import { decodeIbcEndpoint } from '@agoric/network/ibc/utils.js';
 import {
   AmountArgShape,
   CoinShape,
@@ -74,7 +74,7 @@ import {
  * @import {HostOf} from '@agoric/async-flow';
  * @import {AmountArg, IcaAccount, CosmosChainAddress, CosmosValidatorAddress,
  *   ICQConnection, StakingAccountActions, StakingAccountQueries, NobleMethods,
- *   OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo,
+ *   OrchestrationAccountCommon, CosmosRewardsResponse,
  *   IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse, CaipChainId,
  *   ChainInfo, AccountIdArg, CosmosActionOptions, IcaAccountMethods,
  *   ProgressTracker, MakeProgressTracker} from '../types.js';
@@ -90,7 +90,11 @@ import {
  * @import {AnyJson, JsonSafe, MessageBody, TypeFromUrl,
  *   ResponseTypeUrl} from '@agoric/cosmic-proto';
  * @import {Matcher} from '@endo/patterns';
- * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
+ * @import {
+ *   IBCConnectionInfo,
+ *   LocalIbcAddress,
+ *   RemoteIbcAddress,
+ * } from '@agoric/network/ibc';
  * @import {AnyType, MsgDepositForBurnType, MsgUndelegateResponseType} from '../utils/codecs.js';
  * @import {SliceDescriptor} from '../utils/orchestrationAccount.js';
  * @import {ProgressReport} from '../utils/progress.js';
@@ -891,7 +895,14 @@ export const prepareCosmosOrchestrationAccountKit = (
         ) {
           const { chainAddress } = this.state;
           const { holder } = this.facets;
-          const { timeoutHeight, memo, ...restOpts } = opts;
+          const {
+            // Strip out the timeout information and memo from the executeOpts,
+            // since they're used in the MsgTransfer.
+            timeoutHeight,
+            timeoutTimestamp: _,
+            memo,
+            ...executeOpts
+          } = opts;
           const results = holder.executeTxProto3(
             [
               Any.toJSON(
@@ -907,10 +918,10 @@ export const prepareCosmosOrchestrationAccountKit = (
                 }),
               ),
             ],
-            restOpts,
+            executeOpts,
           );
 
-          const { progressTracker } = restOpts;
+          const { progressTracker } = executeOpts;
           if (progressTracker) {
             const priorReport = progressTracker.getCurrentProgressReport();
             const { traffic, slice: trafficSlice } = addTrafficEntries(
@@ -1334,19 +1345,25 @@ export const prepareCosmosOrchestrationAccountKit = (
               d.delegator ? d.delegator.value === chainAddress.value : true,
             ) || Fail`Some delegation record is for another delegator`;
 
+            const undelegateResponsesV =
+              /** @type {Vow<readonly MsgUndelegateResponseType[]>} */ (
+                /** @type {unknown} */ (
+                  holder.executeTxProto3(
+                    delegations.map(({ validator, amount }) =>
+                      Any.toJSON(
+                        MsgUndelegate.toProtoMsg({
+                          delegatorAddress: chainAddress.value,
+                          validatorAddress: validator.value,
+                          amount: coerceCoin(chainHub, amount),
+                        }),
+                      ),
+                    ),
+                    opts,
+                  )
+                )
+              );
             const undelegateV = watch(
-              holder.executeTxProto3(
-                delegations.map(({ validator, amount }) =>
-                  Any.toJSON(
-                    MsgUndelegate.toProtoMsg({
-                      delegatorAddress: chainAddress.value,
-                      validatorAddress: validator.value,
-                      amount: coerceCoin(chainHub, amount),
-                    }),
-                  ),
-                ),
-                opts,
-              ),
+              undelegateResponsesV,
               this.facets.decodedUndelegateWatcher,
             );
             return watch(undelegateV, this.facets.returnVoidWatcher);

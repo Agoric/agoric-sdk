@@ -1,9 +1,8 @@
 /* eslint-disable @jessie.js/safe-await-separator */
 // @ts-nocheck
 import djson from 'deterministic-json';
-import { createHash } from 'crypto';
-import chalk from 'chalk';
-import parseArgs from 'minimist';
+import { createHash } from 'node:crypto';
+import { parseArgs, styleText } from 'node:util';
 import { Fail } from '@endo/errors';
 import { doInit } from './init.js';
 import { shellMetaRegexp, shellEscape } from './run.js';
@@ -30,6 +29,23 @@ const isPublicRpc = (roles, cluster) => {
 const isPersistentPeer = isPublicRpc;
 
 const dirname = new URL('./', import.meta.url).pathname;
+
+const parseTopLevelArgs = rawArgs => {
+  const commandIndex = rawArgs.findIndex(arg => !arg.startsWith('-'));
+  const optionArgs =
+    commandIndex < 0 ? rawArgs : rawArgs.slice(0, commandIndex);
+  const commandArgs = commandIndex < 0 ? [] : rawArgs.slice(commandIndex);
+  const { values: opts } = parseArgs({
+    args: optionArgs,
+    options: {
+      version: { type: 'boolean' },
+      help: { type: 'boolean' },
+    },
+    allowPositionals: false,
+    strict: false,
+  });
+  return { opts, args: commandArgs };
+};
 
 const makeGuardFile =
   ({ rd, wr }) =>
@@ -93,10 +109,7 @@ const provisionOutput = async ({ rd, wr, running }) => {
 
 const main = async (progname, rawArgs, powers) => {
   const { env, rd, wr, setup, running, inquirer, fetch } = powers;
-  const { _: args, ...opts } = parseArgs(rawArgs, {
-    boolean: ['version', 'help'],
-    stopEarly: true,
-  });
+  const { opts, args } = parseTopLevelArgs(rawArgs);
 
   // This is needed for hyphenated group names not to trigger Ansible.
   env.ANSIBLE_TRANSFORM_INVALID_GROUP_CHARS = 'ignore';
@@ -185,17 +198,19 @@ show-config      display the client connection parameters
       break;
     }
     case 'bootstrap': {
-      const {
-        _: subArgs,
-        'boot-tokens': bootTokens,
-        ...subOpts
-      } = parseArgs(args.slice(1), {
-        default: {
-          'boot-tokens': DEFAULT_BOOT_TOKENS,
+      const { values: subOptsValues, positionals: subArgs } = parseArgs({
+        args: args.slice(1),
+        options: {
+          'boot-tokens': { type: 'string', default: DEFAULT_BOOT_TOKENS },
+          bump: { type: 'string' },
+          'import-from': { type: 'string' },
+          genesis: { type: 'string' },
         },
-        string: ['bump', 'import-from', 'genesis'],
-        stopEarly: true,
+        allowPositionals: true,
+        strict: false,
       });
+      const bootTokens = subOptsValues['boot-tokens'];
+      const subOpts = subOptsValues;
 
       const dir = setup.SETUP_HOME;
       if (await rd.exists(`${dir}/network.txt`)) {
@@ -298,9 +313,15 @@ show-config      display the client connection parameters
     case 'bootstrap-cosmos': {
       await inited();
       // eslint-disable-next-line no-unused-vars
-      const { _: subArgs, ...subOpts } = parseArgs(args.slice(1), {
-        string: ['bump', 'import-from', 'genesis'],
-        stopEarly: true,
+      const { values: subOpts, positionals: subArgs } = parseArgs({
+        args: args.slice(1),
+        options: {
+          bump: { type: 'string' },
+          'import-from': { type: 'string' },
+          genesis: { type: 'string' },
+        },
+        allowPositionals: true,
+        strict: false,
       });
 
       // See where we're importing the chain state from.
@@ -511,7 +532,8 @@ show-config      display the client connection parameters
       }
 
       console.error(
-        chalk.black.bgGreenBright.bold(
+        styleText(
+          ['black', 'bgGreenBright', 'bold'],
           'Your Agoric Cosmos chain is now running!',
         ),
       );
@@ -522,7 +544,7 @@ show-config      display the client connection parameters
     case 'dweb': {
       await inited();
       const cfg = await needBacktick(`${shellEscape(progname)} show-config`);
-      stdout.write(`${chalk.yellow(cfg)}\n`);
+      stdout.write(`${styleText('yellow', cfg)}\n`);
 
       await wr.mkdir(`${DWEB_DIR}/data`, { recursive: true });
       await wr.createFile(`${DWEB_DIR}/data/cosmos-chain.json`, cfg);
@@ -569,7 +591,7 @@ show-config      display the client connection parameters
 
       console.error(
         `Use the following to provision:
-${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
+${styleText(['yellow', 'bold'], `ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 `,
       );
       break;
@@ -689,7 +711,7 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
         _retries =>
           setup.sleep(
             SECONDS_BETWEEN_BLOCKS + 1,
-            `to check if ${chalk.underline(host)} has committed a block`,
+            `to check if ${styleText('underline', host)} has committed a block`,
           ),
         (buf, code) => {
           if (buf === '' && code === 1) {
@@ -708,11 +730,12 @@ ${chalk.yellow.bold(`ag-setup-solo --netconfig='${dwebHost}/network-config'`)}
 
       const atLeast = host.match(/^node\d+/) ? '' : `At least one of `;
       console.error(
-        chalk.greenBright(
-          `${atLeast}${chalk.underline(
-            host,
-          )} is up-and-running (committed block height=${height})`,
-        ),
+        styleText('greenBright', atLeast) +
+          styleText(['greenBright', 'underline'], host) +
+          styleText(
+            'greenBright',
+            ` is up-and-running (committed block height=${height})`,
+          ),
       );
       break;
     }

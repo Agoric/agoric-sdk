@@ -17,7 +17,6 @@ import type {
   TypedDataToPrimitiveTypes,
 } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
-import { Fail, q } from '@endo/errors';
 import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.js';
 import {
   type Witness,
@@ -25,7 +24,8 @@ import {
   type getPermitBatchWitnessTransferFromData,
   makeWitness,
   TokenPermissionsComponents,
-} from '@agoric/orchestration/src/utils/permit2.js';
+} from '@agoric/orchestration/src/utils/permit2.ts';
+import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 
 const YMAX_DOMAIN_NAME = 'Ymax';
 const YMAX_DOMAIN_VERSION = '1';
@@ -43,10 +43,8 @@ const YmaxStandaloneDomainBase = {
   name: YMAX_DOMAIN_NAME,
   version: YMAX_DOMAIN_VERSION,
 } as const satisfies TypedDataDomain;
-export type YmaxSharedDomain = typeof YmaxStandaloneDomainBase & {
+export type YmaxFullDomain = typeof YmaxStandaloneDomainBase & {
   chainId: bigint;
-};
-export type YmaxStandaloneDomain = YmaxSharedDomain & {
   verifyingContract: Address;
 };
 
@@ -73,6 +71,10 @@ const PortfolioStandaloneTypeParams = [
  */
 const OperationTypes = {
   OpenPortfolio: [{ name: 'allocations', type: 'Allocation[]' }],
+  OpenPortfolioWithAutoFeatures: [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+  ],
   Rebalance: [PortfolioIdParam],
   SetTargetAllocation: [
     { name: 'allocations', type: 'Allocation[]' },
@@ -86,6 +88,28 @@ const OperationTypes = {
    * - token: ERC-20 token contract address (must be USDC contract on the destination chain)
    */
   Withdraw: [{ name: 'withdraw', type: 'Asset' }, PortfolioIdParam],
+  /**
+   * Grant portfolio permissions on a portfolio to another Agoric address
+   * (e.g. an automation agent). The contract delivers an invitation whose
+   * redeemed result can be saved in the grantee's wallet store and used via
+   * wallet invocation.
+   *
+   * - accountHolder: bech32 Agoric address that will receive the invitation
+   * - permissions: encoded portfolio permissions (see PortfolioPermissions)
+   */
+  Grant: [
+    { name: 'accountHolder', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+    PortfolioIdParam,
+  ],
+  /**
+   * Update which auto-features are enabled for a portfolio. The contract will
+   * generate a permissioned delegation as necessary and deliver it to the planner.
+   */
+  SetAutoFeatures: [
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+    PortfolioIdParam,
+  ],
 } as const satisfies TypedData;
 type OperationTypes = typeof OperationTypes;
 export type OperationTypeNames = keyof OperationTypes;
@@ -96,6 +120,10 @@ const OperationSubTypes = {
     { name: 'portion', type: 'uint256' },
   ],
   Asset: TokenPermissionsComponents,
+  /** @see {@link PortfolioPermissions} */
+  PortfolioPermissions: [{ name: 'allocation', type: 'bool' }],
+  /** @see {@link PortfolioAutoFeatures} */
+  PortfolioAutoFeatures: [{ name: 'rebalance', type: 'bool' }],
 } as const satisfies TypedData;
 
 /**
@@ -110,6 +138,20 @@ const OperationSubTypes = {
 export type TargetAllocation = TypedDataToPrimitiveTypes<
   typeof OperationSubTypes
 >['Allocation'];
+type YmaxOperationTypesWithSubTypes<
+  T extends string,
+  P extends readonly TypedDataParameter[],
+> = {
+  [K in T]: P;
+} & typeof OperationSubTypes;
+
+export type PortfolioPermissionsEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioPermissions'];
+
+export type PortfolioAutoFeaturesEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioAutoFeatures'];
 
 /**
  * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.
@@ -125,6 +167,12 @@ const getYmaxWitnessFieldName = <T extends OperationTypeNames>(operation: T) =>
 type YmaxWitnessFieldName<T extends OperationTypeNames> = ReturnType<
   typeof getYmaxWitnessFieldName<T>
 >;
+export type YmaxWitnessTypeParam<
+  T extends OperationTypeNames = OperationTypeNames,
+> = TypedDataParameter<
+  YmaxWitnessFieldName<T>,
+  Extract<keyof YmaxWitnessOperationTypes<T>, string>
+>;
 
 /**
  * showing a field named "witness" in the wallet signing UI is... boring
@@ -134,11 +182,8 @@ const getYmaxWitnessTypeParam = <T extends OperationTypeNames>(
   operation: T,
 ): YmaxWitnessTypeParam<T> => ({
   name: getYmaxWitnessFieldName(operation),
-  type: getYmaxWitnessTypeName(operation),
+  type: getYmaxWitnessTypeName(operation) as YmaxWitnessTypeParam<T>['type'],
 });
-export type YmaxWitnessTypeParam<
-  T extends OperationTypeNames = OperationTypeNames,
-> = TypedDataParameter<YmaxWitnessFieldName<T>, YmaxWitnessTypeName<T>>;
 
 // TODO: Filter operation types to only those needed for witness/standalone
 type YmaxWitnessOperationTypes<
@@ -169,53 +214,52 @@ type YmaxStandaloneTypes<T extends OperationTypeNames = OperationTypeNames> =
 export type YmaxOperationType<T extends OperationTypeNames> =
   TypedDataToPrimitiveTypes<OperationTypes & typeof OperationSubTypes>[T];
 
-// Hack to satisfy TypeScript limitations with generic inference in complex types
-// Equivalent to `YmaxWitnessTypeParam`
-type YmaxWitnessMappedTypeParam<T extends OperationTypeNames> =
-  TypedDataParameter<
-    YmaxWitnessFieldName<T>,
-    Extract<keyof YmaxWitnessOperationTypes<T>, string>
-  >;
+type YmaxWitnessData<T extends OperationTypeNames> = TypedDataToPrimitiveTypes<
+  YmaxWitnessTypes<T>
+>[YmaxWitnessTypeParam<T>['type']];
+type YmaxStandaloneData<T extends OperationTypeNames> =
+  TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T];
+
+const getYmaxOperationAndSubTypes = <
+  T extends string,
+  P extends readonly TypedDataParameter[],
+>(
+  operation: T,
+  params: P,
+) =>
+  ({
+    [operation]: params,
+    ...OperationSubTypes,
+  }) as YmaxOperationTypesWithSubTypes<T, P> satisfies TypedData;
 
 const getYmaxWitnessTypes = <T extends OperationTypeNames>(operation: T) =>
-  ({
-    [getYmaxWitnessTypeName(operation)]: [
-      ...OperationTypes[operation],
-      ...SharedPortfolioTypeParams,
-    ],
-    ...OperationSubTypes,
-  }) as YmaxWitnessTypes<T> satisfies TypedData;
+  getYmaxOperationAndSubTypes(getYmaxWitnessTypeName(operation), [
+    ...OperationTypes[operation],
+    ...SharedPortfolioTypeParams,
+  ]) as YmaxWitnessTypes<T> satisfies TypedData;
 
 const getYmaxStandaloneTypes = <T extends OperationTypeNames>(operation: T) =>
   ({
     EIP712Domain: StandaloneDomainTypeParams,
-    [operation]: [
+    ...getYmaxOperationAndSubTypes(operation, [
       ...OperationTypes[operation],
       ...SharedPortfolioTypeParams,
       ...PortfolioStandaloneTypeParams,
-    ],
-    ...OperationSubTypes,
+    ]),
   }) as YmaxStandaloneTypes<T> satisfies TypedData;
 
 export const getYmaxOperationTypes = <T extends OperationTypeNames>(
   operation: T,
 ) =>
-  ({
-    [operation]: OperationTypes[operation],
-    ...OperationSubTypes,
-  }) as {
+  getYmaxOperationAndSubTypes(operation, OperationTypes[operation]) as {
     [K in T]: OperationTypes[K];
   } & typeof OperationSubTypes satisfies TypedData;
 
 export const getYmaxWitness = <T extends OperationTypeNames>(
   operation: T,
-  data: NoInfer<
-    TypedDataToPrimitiveTypes<YmaxWitnessTypes>[YmaxWitnessTypeName<T>]
-  >,
-): Witness<YmaxWitnessTypes<T>, YmaxWitnessMappedTypeParam<T>> =>
-  // @ts-expect-error some generic inference issue I suppose?
-  makeWitness(
-    // @ts-expect-error some generic inference issue I suppose?
+  data: NoInfer<YmaxWitnessData<T>>,
+): Witness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>> =>
+  makeWitness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>>(
     data,
     getYmaxWitnessTypes(operation),
     getYmaxWitnessTypeParam(operation),
@@ -224,28 +268,29 @@ export const getYmaxWitness = <T extends OperationTypeNames>(
 export const getYmaxStandaloneDomain = (
   chainId: bigint | number,
   verifyingContract: Address,
-): YmaxStandaloneDomain => ({
+): YmaxFullDomain => ({
   ...YmaxStandaloneDomainBase,
   chainId: BigInt(chainId),
   verifyingContract,
 });
 
 export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
-  data: NoInfer<TypedDataToPrimitiveTypes<YmaxStandaloneTypes>[T]>,
+  data: NoInfer<YmaxStandaloneData<T>>,
   operation: T,
   chainId: bigint | number,
   verifyingContract: Address,
 ): TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
-  domain: YmaxStandaloneDomain;
+  domain: YmaxFullDomain;
 } => {
   const types = getYmaxStandaloneTypes(operation);
 
-  // @ts-expect-error some generic inference issue I suppose?
   return {
     domain: getYmaxStandaloneDomain(chainId, verifyingContract),
     types,
     primaryType: operation,
-    message: data,
+    message: data as TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
+  } as TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
+    domain: YmaxFullDomain;
   };
 };
 
@@ -258,7 +303,7 @@ export type YmaxPermitWitnessTransferFromData<
 > = ReturnType<
   typeof getPermitWitnessTransferFromData<
     YmaxWitnessTypes<T>,
-    YmaxWitnessMappedTypeParam<T>
+    YmaxWitnessTypeParam<T>
   >
 >;
 
@@ -267,22 +312,13 @@ export type YmaxPermitBatchWitnessTransferFromData<
 > = ReturnType<
   typeof getPermitBatchWitnessTransferFromData<
     YmaxWitnessTypes<T>,
-    YmaxWitnessMappedTypeParam<T>
+    YmaxWitnessTypeParam<T>
   >
 >;
 
-export function validateYmaxDomain(
+export function validateYmaxDomainBase(
   domain: TypedDataDomain,
-  validContractAddresses?: undefined,
-): asserts domain is typeof YmaxStandaloneDomainBase;
-export function validateYmaxDomain(
-  domain: TypedDataDomain,
-  validContractAddresses: Record<number | string, Address>,
-): asserts domain is YmaxStandaloneDomain;
-export function validateYmaxDomain(
-  domain: TypedDataDomain,
-  validContractAddresses?: Record<number | string, Address>,
-) {
+): asserts domain is typeof YmaxStandaloneDomainBase {
   if (domain.name !== YMAX_DOMAIN_NAME) {
     throw new Error(
       `Invalid Ymax domain name: ${domain.name} (expected ${YMAX_DOMAIN_NAME})`,
@@ -293,17 +329,41 @@ export function validateYmaxDomain(
       `Invalid Ymax domain version: ${domain.version} (expected ${YMAX_DOMAIN_VERSION})`,
     );
   }
+}
+
+export function validateYmaxDomain(
+  domain: TypedDataDomain,
+  validContractAddresses?:
+    | Partial<Record<number | string, Address>>
+    | undefined,
+): asserts domain is YmaxFullDomain {
+  const baseDomain = domain;
+  validateYmaxDomainBase(baseDomain);
+
+  if (
+    typeof domain.chainId !== 'bigint' ||
+    domain.verifyingContract === undefined
+  ) {
+    throw new Error(`Ymax domain must include chain ID and verifying contract`);
+  }
 
   if (validContractAddresses) {
     const chainIdStr = String(domain.chainId);
 
-    chainIdStr in validContractAddresses ||
-      Fail`Unknown chain ID in Ymax domain: ${q(domain.chainId)}`;
+    if (!(chainIdStr in validContractAddresses)) {
+      throw new Error(`Unknown chain ID in Ymax domain: ${domain.chainId}`);
+    }
 
-    domain.verifyingContract === validContractAddresses[chainIdStr] ||
-      Fail`Invalid verifying contract for chain ID ${q(domain.chainId)}: ${q(
+    if (
+      !sameEvmAddress(
         domain.verifyingContract,
-      )} (expected ${q(validContractAddresses[chainIdStr])})`;
+        validContractAddresses[chainIdStr],
+      )
+    ) {
+      throw new Error(
+        `Invalid verifying contract for chain ID ${domain.chainId}: ${domain.verifyingContract} (expected ${validContractAddresses[chainIdStr]})`,
+      );
+    }
   }
 
   // XXX: check no extra fields?
@@ -334,7 +394,7 @@ export const splitWitnessFieldType = <T extends OperationTypeNames>(
     version,
   } satisfies TypedDataDomain;
 
-  validateYmaxDomain(domain);
+  validateYmaxDomainBase(domain);
   validateYmaxOperationTypeName<T>(operation);
 
   return {

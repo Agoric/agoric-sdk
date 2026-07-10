@@ -1,5 +1,4 @@
 #!/usr/bin/env -S node --inspect-brk
-/* eslint-env node */
 
 /**
  * Simple boilerplate program providing linkage to launch an application written using modules within the
@@ -7,6 +6,7 @@
  */
 
 import '@endo/init/pre.js';
+import './anylogger-legacy.js';
 
 // Now do lockdown.
 import '@endo/init';

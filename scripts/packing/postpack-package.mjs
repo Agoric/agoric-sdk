@@ -1,21 +1,26 @@
 #!/usr/bin/env node
-/* eslint-disable @jessie.js/safe-await-separator */
 /**
  * @file Unified postpack script for all packages.
  *
  * This script handles cleanup after npm pack completes:
  * 1. Restores .ts files that were deleted during prepack (via git checkout)
- * 2. Removes generated .d.ts, .d.ts.map, .js, and .mts files (via git clean)
+ * 2. Restores files rewritten during prepack (via git checkout), except during
+ *    `npm publish` where reverting package.json would undo lerna's canary version
+ *    bump before npm reads the version for upload (E400 version mismatch).
+ * 3. Removes generated .d.ts, .d.ts.map, .js, and .mts files (via git clean)
  *
  * Usage: yarn run -T postpack-package (from any package directory)
  */
 import fs from 'node:fs';
 import path from 'node:path';
+// eslint-disable-next-line import/no-extraneous-dependencies -- transitive via lerna-lite; only used by repo-internal scripts
 import spawn from 'nano-spawn';
 
 // Package directory from INIT_CWD (set by yarn) or current directory
 const packageDir = process.env.INIT_CWD || process.cwd();
 const rewriteListPath = path.join(packageDir, '.pack-rewrite-files.txt');
+const preservePackageJson =
+  process.env.AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON === '1';
 
 console.log(`postpack-package: ${path.basename(packageDir)}`);
 
@@ -48,11 +53,23 @@ const restoreRewriteList = async (listPath, gitCwd, label) => {
   if (!fs.existsSync(listPath)) return false;
   console.log(`  → restoring rewritten files (${label})`);
   try {
+    // During the dev-canary publish workflow, Lerna Lite runs postpack after
+    // the tarball is built but before it rereads package.json for upload.
+    // Restoring package.json here would undo the canary version bump while the
+    // tarball still contains the bumped version.
+    const packageJsonEntry = path.relative(
+      gitCwd,
+      path.join(packageDir, 'package.json'),
+    );
+    const filterEntry = preservePackageJson
+      ? entry =>
+          entry && path.normalize(entry) !== path.normalize(packageJsonEntry)
+      : Boolean;
     const entries = fs
       .readFileSync(listPath, 'utf-8')
       .split('\n')
       .map(line => line.trim())
-      .filter(Boolean);
+      .filter(filterEntry);
     if (entries.length > 0) {
       try {
         await spawn('git', ['ls-files', '-z', '--', ...entries], {

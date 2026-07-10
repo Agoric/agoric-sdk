@@ -1,129 +1,187 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../../type-url-annotations.js';
 import {
   PageRequest,
   type PageRequestSDKType,
   PageResponse,
   type PageResponseSDKType,
 } from '../../../../cosmos/base/query/v1beta1/pagination.js';
-import {
-  DenomTrace,
-  type DenomTraceSDKType,
-  Params,
-  type ParamsSDKType,
-} from './transfer.js';
+import { Params, type ParamsSDKType } from './transfer.js';
+import { Denom, type DenomSDKType } from './token.js';
 import {
   Coin,
   type CoinSDKType,
 } from '../../../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { isSet } from '../../../../helpers.js';
 import { type JsonSafe } from '../../../../json-safe.js';
+import { isSet } from '../../../../helpers.js';
 /**
- * QueryDenomTraceRequest is the request type for the Query/DenomTrace RPC
- * method
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryParamsRequest
  */
-export interface QueryDenomTraceRequest {
-  /** hash (in hex format) or denom (full denom with ibc prefix) of the denomination trace information. */
-  hash: string;
-}
-export interface QueryDenomTraceRequestProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest';
-  value: Uint8Array;
-}
-/**
- * QueryDenomTraceRequest is the request type for the Query/DenomTrace RPC
- * method
- */
-export interface QueryDenomTraceRequestSDKType {
-  hash: string;
-}
-/**
- * QueryDenomTraceResponse is the response type for the Query/DenomTrace RPC
- * method.
- */
-export interface QueryDenomTraceResponse {
-  /** denom_trace returns the requested denomination trace information. */
-  denomTrace?: DenomTrace;
-}
-export interface QueryDenomTraceResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse';
-  value: Uint8Array;
-}
-/**
- * QueryDenomTraceResponse is the response type for the Query/DenomTrace RPC
- * method.
- */
-export interface QueryDenomTraceResponseSDKType {
-  denom_trace?: DenomTraceSDKType;
-}
-/**
- * QueryConnectionsRequest is the request type for the Query/DenomTraces RPC
- * method
- */
-export interface QueryDenomTracesRequest {
-  /** pagination defines an optional pagination for the request. */
-  pagination?: PageRequest;
-}
-export interface QueryDenomTracesRequestProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest';
-  value: Uint8Array;
-}
-/**
- * QueryConnectionsRequest is the request type for the Query/DenomTraces RPC
- * method
- */
-export interface QueryDenomTracesRequestSDKType {
-  pagination?: PageRequestSDKType;
-}
-/**
- * QueryConnectionsResponse is the response type for the Query/DenomTraces RPC
- * method.
- */
-export interface QueryDenomTracesResponse {
-  /** denom_traces returns all denominations trace information. */
-  denomTraces: DenomTrace[];
-  /** pagination defines the pagination in the response. */
-  pagination?: PageResponse;
-}
-export interface QueryDenomTracesResponseProtoMsg {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse';
-  value: Uint8Array;
-}
-/**
- * QueryConnectionsResponse is the response type for the Query/DenomTraces RPC
- * method.
- */
-export interface QueryDenomTracesResponseSDKType {
-  denom_traces: DenomTraceSDKType[];
-  pagination?: PageResponseSDKType;
-}
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}
 export interface QueryParamsRequestProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.QueryParamsRequest';
   value: Uint8Array;
 }
-/** QueryParamsRequest is the request type for the Query/Params RPC method. */
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequestSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryParamsRequest
+ */
 export interface QueryParamsRequestSDKType {}
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryParamsResponse
+ */
 export interface QueryParamsResponse {
-  /** params defines the parameters of the module. */
+  /**
+   * params defines the parameters of the module.
+   */
   params?: Params;
 }
 export interface QueryParamsResponseProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.QueryParamsResponse';
   value: Uint8Array;
 }
-/** QueryParamsResponse is the response type for the Query/Params RPC method. */
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponseSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryParamsResponse
+ */
 export interface QueryParamsResponseSDKType {
   params?: ParamsSDKType;
 }
 /**
+ * QueryDenomRequest is the request type for the Query/Denom RPC
+ * method
+ * @name QueryDenomRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomRequest
+ */
+export interface QueryDenomRequest {
+  /**
+   * hash (in hex format) or denom (full denom with ibc prefix) of the on chain denomination.
+   */
+  hash: string;
+}
+export interface QueryDenomRequestProtoMsg {
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryDenomRequest is the request type for the Query/Denom RPC
+ * method
+ * @name QueryDenomRequestSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomRequest
+ */
+export interface QueryDenomRequestSDKType {
+  hash: string;
+}
+/**
+ * QueryDenomResponse is the response type for the Query/Denom RPC
+ * method.
+ * @name QueryDenomResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomResponse
+ */
+export interface QueryDenomResponse {
+  /**
+   * denom returns the requested denomination.
+   */
+  denom?: Denom;
+}
+export interface QueryDenomResponseProtoMsg {
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryDenomResponse is the response type for the Query/Denom RPC
+ * method.
+ * @name QueryDenomResponseSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomResponse
+ */
+export interface QueryDenomResponseSDKType {
+  denom?: DenomSDKType;
+}
+/**
+ * QueryDenomsRequest is the request type for the Query/Denoms RPC
+ * method
+ * @name QueryDenomsRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomsRequest
+ */
+export interface QueryDenomsRequest {
+  /**
+   * pagination defines an optional pagination for the request.
+   */
+  pagination?: PageRequest;
+}
+export interface QueryDenomsRequestProtoMsg {
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomsRequest';
+  value: Uint8Array;
+}
+/**
+ * QueryDenomsRequest is the request type for the Query/Denoms RPC
+ * method
+ * @name QueryDenomsRequestSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomsRequest
+ */
+export interface QueryDenomsRequestSDKType {
+  pagination?: PageRequestSDKType;
+}
+/**
+ * QueryDenomsResponse is the response type for the Query/Denoms RPC
+ * method.
+ * @name QueryDenomsResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomsResponse
+ */
+export interface QueryDenomsResponse {
+  /**
+   * denoms returns all denominations.
+   */
+  denoms: Denom[];
+  /**
+   * pagination defines the pagination in the response.
+   */
+  pagination?: PageResponse;
+}
+export interface QueryDenomsResponseProtoMsg {
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomsResponse';
+  value: Uint8Array;
+}
+/**
+ * QueryDenomsResponse is the response type for the Query/Denoms RPC
+ * method.
+ * @name QueryDenomsResponseSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomsResponse
+ */
+export interface QueryDenomsResponseSDKType {
+  denoms: DenomSDKType[];
+  pagination?: PageResponseSDKType;
+}
+/**
  * QueryDenomHashRequest is the request type for the Query/DenomHash RPC
  * method
+ * @name QueryDenomHashRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomHashRequest
  */
 export interface QueryDenomHashRequest {
-  /** The denomination trace ([port_id]/[channel_id])+/[denom] */
+  /**
+   * The denomination trace ([port_id]/[channel_id])+/[denom]
+   */
   trace: string;
 }
 export interface QueryDenomHashRequestProtoMsg {
@@ -133,6 +191,9 @@ export interface QueryDenomHashRequestProtoMsg {
 /**
  * QueryDenomHashRequest is the request type for the Query/DenomHash RPC
  * method
+ * @name QueryDenomHashRequestSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomHashRequest
  */
 export interface QueryDenomHashRequestSDKType {
   trace: string;
@@ -140,9 +201,14 @@ export interface QueryDenomHashRequestSDKType {
 /**
  * QueryDenomHashResponse is the response type for the Query/DenomHash RPC
  * method.
+ * @name QueryDenomHashResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomHashResponse
  */
 export interface QueryDenomHashResponse {
-  /** hash (in hex format) of the denomination trace information. */
+  /**
+   * hash (in hex format) of the denomination trace information.
+   */
   hash: string;
 }
 export interface QueryDenomHashResponseProtoMsg {
@@ -152,40 +218,74 @@ export interface QueryDenomHashResponseProtoMsg {
 /**
  * QueryDenomHashResponse is the response type for the Query/DenomHash RPC
  * method.
+ * @name QueryDenomHashResponseSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomHashResponse
  */
 export interface QueryDenomHashResponseSDKType {
   hash: string;
 }
-/** QueryEscrowAddressRequest is the request type for the EscrowAddress RPC method. */
+/**
+ * QueryEscrowAddressRequest is the request type for the EscrowAddress RPC method.
+ * @name QueryEscrowAddressRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryEscrowAddressRequest
+ */
 export interface QueryEscrowAddressRequest {
-  /** unique port identifier */
+  /**
+   * unique port identifier
+   */
   portId: string;
-  /** unique channel identifier */
+  /**
+   * unique channel identifier
+   */
   channelId: string;
 }
 export interface QueryEscrowAddressRequestProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressRequest';
   value: Uint8Array;
 }
-/** QueryEscrowAddressRequest is the request type for the EscrowAddress RPC method. */
+/**
+ * QueryEscrowAddressRequest is the request type for the EscrowAddress RPC method.
+ * @name QueryEscrowAddressRequestSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryEscrowAddressRequest
+ */
 export interface QueryEscrowAddressRequestSDKType {
   port_id: string;
   channel_id: string;
 }
-/** QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method. */
+/**
+ * QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method.
+ * @name QueryEscrowAddressResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryEscrowAddressResponse
+ */
 export interface QueryEscrowAddressResponse {
-  /** the escrow account address */
+  /**
+   * the escrow account address
+   */
   escrowAddress: string;
 }
 export interface QueryEscrowAddressResponseProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse';
   value: Uint8Array;
 }
-/** QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method. */
+/**
+ * QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method.
+ * @name QueryEscrowAddressResponseSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryEscrowAddressResponse
+ */
 export interface QueryEscrowAddressResponseSDKType {
   escrow_address: string;
 }
-/** QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method. */
+/**
+ * QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method.
+ * @name QueryTotalEscrowForDenomRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest
+ */
 export interface QueryTotalEscrowForDenomRequest {
   denom: string;
 }
@@ -193,11 +293,21 @@ export interface QueryTotalEscrowForDenomRequestProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest';
   value: Uint8Array;
 }
-/** QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method. */
+/**
+ * QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method.
+ * @name QueryTotalEscrowForDenomRequestSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest
+ */
 export interface QueryTotalEscrowForDenomRequestSDKType {
   denom: string;
 }
-/** QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method. */
+/**
+ * QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method.
+ * @name QueryTotalEscrowForDenomResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse
+ */
 export interface QueryTotalEscrowForDenomResponse {
   amount: Coin;
 }
@@ -205,343 +315,33 @@ export interface QueryTotalEscrowForDenomResponseProtoMsg {
   typeUrl: '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse';
   value: Uint8Array;
 }
-/** QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method. */
+/**
+ * QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method.
+ * @name QueryTotalEscrowForDenomResponseSDKType
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse
+ */
 export interface QueryTotalEscrowForDenomResponseSDKType {
   amount: CoinSDKType;
 }
-function createBaseQueryDenomTraceRequest(): QueryDenomTraceRequest {
-  return {
-    hash: '',
-  };
-}
-export const QueryDenomTraceRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest' as const,
-  encode(
-    message: QueryDenomTraceRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.hash !== '') {
-      writer.uint32(10).string(message.hash);
-    }
-    return writer;
-  },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomTraceRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryDenomTraceRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.hash = reader.string();
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(object: any): QueryDenomTraceRequest {
-    return {
-      hash: isSet(object.hash) ? String(object.hash) : '',
-    };
-  },
-  toJSON(message: QueryDenomTraceRequest): JsonSafe<QueryDenomTraceRequest> {
-    const obj: any = {};
-    message.hash !== undefined && (obj.hash = message.hash);
-    return obj;
-  },
-  fromPartial(object: Partial<QueryDenomTraceRequest>): QueryDenomTraceRequest {
-    const message = createBaseQueryDenomTraceRequest();
-    message.hash = object.hash ?? '';
-    return message;
-  },
-  fromProtoMsg(
-    message: QueryDenomTraceRequestProtoMsg,
-  ): QueryDenomTraceRequest {
-    return QueryDenomTraceRequest.decode(message.value);
-  },
-  toProto(message: QueryDenomTraceRequest): Uint8Array {
-    return QueryDenomTraceRequest.encode(message).finish();
-  },
-  toProtoMsg(message: QueryDenomTraceRequest): QueryDenomTraceRequestProtoMsg {
-    return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceRequest',
-      value: QueryDenomTraceRequest.encode(message).finish(),
-    };
-  },
-};
-function createBaseQueryDenomTraceResponse(): QueryDenomTraceResponse {
-  return {
-    denomTrace: undefined,
-  };
-}
-export const QueryDenomTraceResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse' as const,
-  encode(
-    message: QueryDenomTraceResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.denomTrace !== undefined) {
-      DenomTrace.encode(message.denomTrace, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomTraceResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryDenomTraceResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.denomTrace = DenomTrace.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(object: any): QueryDenomTraceResponse {
-    return {
-      denomTrace: isSet(object.denomTrace)
-        ? DenomTrace.fromJSON(object.denomTrace)
-        : undefined,
-    };
-  },
-  toJSON(message: QueryDenomTraceResponse): JsonSafe<QueryDenomTraceResponse> {
-    const obj: any = {};
-    message.denomTrace !== undefined &&
-      (obj.denomTrace = message.denomTrace
-        ? DenomTrace.toJSON(message.denomTrace)
-        : undefined);
-    return obj;
-  },
-  fromPartial(
-    object: Partial<QueryDenomTraceResponse>,
-  ): QueryDenomTraceResponse {
-    const message = createBaseQueryDenomTraceResponse();
-    message.denomTrace =
-      object.denomTrace !== undefined && object.denomTrace !== null
-        ? DenomTrace.fromPartial(object.denomTrace)
-        : undefined;
-    return message;
-  },
-  fromProtoMsg(
-    message: QueryDenomTraceResponseProtoMsg,
-  ): QueryDenomTraceResponse {
-    return QueryDenomTraceResponse.decode(message.value);
-  },
-  toProto(message: QueryDenomTraceResponse): Uint8Array {
-    return QueryDenomTraceResponse.encode(message).finish();
-  },
-  toProtoMsg(
-    message: QueryDenomTraceResponse,
-  ): QueryDenomTraceResponseProtoMsg {
-    return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomTraceResponse',
-      value: QueryDenomTraceResponse.encode(message).finish(),
-    };
-  },
-};
-function createBaseQueryDenomTracesRequest(): QueryDenomTracesRequest {
-  return {
-    pagination: undefined,
-  };
-}
-export const QueryDenomTracesRequest = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest' as const,
-  encode(
-    message: QueryDenomTracesRequest,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    if (message.pagination !== undefined) {
-      PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
-    }
-    return writer;
-  },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomTracesRequest {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryDenomTracesRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.pagination = PageRequest.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(object: any): QueryDenomTracesRequest {
-    return {
-      pagination: isSet(object.pagination)
-        ? PageRequest.fromJSON(object.pagination)
-        : undefined,
-    };
-  },
-  toJSON(message: QueryDenomTracesRequest): JsonSafe<QueryDenomTracesRequest> {
-    const obj: any = {};
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination
-        ? PageRequest.toJSON(message.pagination)
-        : undefined);
-    return obj;
-  },
-  fromPartial(
-    object: Partial<QueryDenomTracesRequest>,
-  ): QueryDenomTracesRequest {
-    const message = createBaseQueryDenomTracesRequest();
-    message.pagination =
-      object.pagination !== undefined && object.pagination !== null
-        ? PageRequest.fromPartial(object.pagination)
-        : undefined;
-    return message;
-  },
-  fromProtoMsg(
-    message: QueryDenomTracesRequestProtoMsg,
-  ): QueryDenomTracesRequest {
-    return QueryDenomTracesRequest.decode(message.value);
-  },
-  toProto(message: QueryDenomTracesRequest): Uint8Array {
-    return QueryDenomTracesRequest.encode(message).finish();
-  },
-  toProtoMsg(
-    message: QueryDenomTracesRequest,
-  ): QueryDenomTracesRequestProtoMsg {
-    return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesRequest',
-      value: QueryDenomTracesRequest.encode(message).finish(),
-    };
-  },
-};
-function createBaseQueryDenomTracesResponse(): QueryDenomTracesResponse {
-  return {
-    denomTraces: [],
-    pagination: undefined,
-  };
-}
-export const QueryDenomTracesResponse = {
-  typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse' as const,
-  encode(
-    message: QueryDenomTracesResponse,
-    writer: BinaryWriter = BinaryWriter.create(),
-  ): BinaryWriter {
-    for (const v of message.denomTraces) {
-      DenomTrace.encode(v!, writer.uint32(10).fork()).ldelim();
-    }
-    if (message.pagination !== undefined) {
-      PageResponse.encode(
-        message.pagination,
-        writer.uint32(18).fork(),
-      ).ldelim();
-    }
-    return writer;
-  },
-  decode(
-    input: BinaryReader | Uint8Array,
-    length?: number,
-  ): QueryDenomTracesResponse {
-    const reader =
-      input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseQueryDenomTracesResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          message.denomTraces.push(DenomTrace.decode(reader, reader.uint32()));
-          break;
-        case 2:
-          message.pagination = PageResponse.decode(reader, reader.uint32());
-          break;
-        default:
-          reader.skipType(tag & 7);
-          break;
-      }
-    }
-    return message;
-  },
-  fromJSON(object: any): QueryDenomTracesResponse {
-    return {
-      denomTraces: Array.isArray(object?.denomTraces)
-        ? object.denomTraces.map((e: any) => DenomTrace.fromJSON(e))
-        : [],
-      pagination: isSet(object.pagination)
-        ? PageResponse.fromJSON(object.pagination)
-        : undefined,
-    };
-  },
-  toJSON(
-    message: QueryDenomTracesResponse,
-  ): JsonSafe<QueryDenomTracesResponse> {
-    const obj: any = {};
-    if (message.denomTraces) {
-      obj.denomTraces = message.denomTraces.map(e =>
-        e ? DenomTrace.toJSON(e) : undefined,
-      );
-    } else {
-      obj.denomTraces = [];
-    }
-    message.pagination !== undefined &&
-      (obj.pagination = message.pagination
-        ? PageResponse.toJSON(message.pagination)
-        : undefined);
-    return obj;
-  },
-  fromPartial(
-    object: Partial<QueryDenomTracesResponse>,
-  ): QueryDenomTracesResponse {
-    const message = createBaseQueryDenomTracesResponse();
-    message.denomTraces =
-      object.denomTraces?.map(e => DenomTrace.fromPartial(e)) || [];
-    message.pagination =
-      object.pagination !== undefined && object.pagination !== null
-        ? PageResponse.fromPartial(object.pagination)
-        : undefined;
-    return message;
-  },
-  fromProtoMsg(
-    message: QueryDenomTracesResponseProtoMsg,
-  ): QueryDenomTracesResponse {
-    return QueryDenomTracesResponse.decode(message.value);
-  },
-  toProto(message: QueryDenomTracesResponse): Uint8Array {
-    return QueryDenomTracesResponse.encode(message).finish();
-  },
-  toProtoMsg(
-    message: QueryDenomTracesResponse,
-  ): QueryDenomTracesResponseProtoMsg {
-    return {
-      typeUrl: '/ibc.applications.transfer.v1.QueryDenomTracesResponse',
-      value: QueryDenomTracesResponse.encode(message).finish(),
-    };
-  },
-};
 function createBaseQueryParamsRequest(): QueryParamsRequest {
   return {};
 }
+/**
+ * QueryParamsRequest is the request type for the Query/Params RPC method.
+ * @name QueryParamsRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryParamsRequest
+ */
 export const QueryParamsRequest = {
   typeUrl: '/ibc.applications.transfer.v1.QueryParamsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryParamsRequest' as const,
+  is(o: any): o is QueryParamsRequest {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsRequestSDKType {
+    return o && o.$typeUrl === QueryParamsRequest.typeUrl;
+  },
   encode(
     _: QueryParamsRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -595,8 +395,21 @@ function createBaseQueryParamsResponse(): QueryParamsResponse {
     params: undefined,
   };
 }
+/**
+ * QueryParamsResponse is the response type for the Query/Params RPC method.
+ * @name QueryParamsResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryParamsResponse
+ */
 export const QueryParamsResponse = {
   typeUrl: '/ibc.applications.transfer.v1.QueryParamsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryParamsResponse' as const,
+  is(o: any): o is QueryParamsResponse {
+    return o && o.$typeUrl === QueryParamsResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryParamsResponseSDKType {
+    return o && o.$typeUrl === QueryParamsResponse.typeUrl;
+  },
   encode(
     message: QueryParamsResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -659,13 +472,403 @@ export const QueryParamsResponse = {
     };
   },
 };
+function createBaseQueryDenomRequest(): QueryDenomRequest {
+  return {
+    hash: '',
+  };
+}
+/**
+ * QueryDenomRequest is the request type for the Query/Denom RPC
+ * method
+ * @name QueryDenomRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomRequest
+ */
+export const QueryDenomRequest = {
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomRequest' as const,
+  is(o: any): o is QueryDenomRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomRequest.typeUrl || typeof o.hash === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomRequest.typeUrl || typeof o.hash === 'string')
+    );
+  },
+  encode(
+    message: QueryDenomRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.hash !== '') {
+      writer.uint32(10).string(message.hash);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): QueryDenomRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryDenomRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.hash = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryDenomRequest {
+    return {
+      hash: isSet(object.hash) ? String(object.hash) : '',
+    };
+  },
+  toJSON(message: QueryDenomRequest): JsonSafe<QueryDenomRequest> {
+    const obj: any = {};
+    message.hash !== undefined && (obj.hash = message.hash);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryDenomRequest>): QueryDenomRequest {
+    const message = createBaseQueryDenomRequest();
+    message.hash = object.hash ?? '';
+    return message;
+  },
+  fromProtoMsg(message: QueryDenomRequestProtoMsg): QueryDenomRequest {
+    return QueryDenomRequest.decode(message.value);
+  },
+  toProto(message: QueryDenomRequest): Uint8Array {
+    return QueryDenomRequest.encode(message).finish();
+  },
+  toProtoMsg(message: QueryDenomRequest): QueryDenomRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.applications.transfer.v1.QueryDenomRequest',
+      value: QueryDenomRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryDenomResponse(): QueryDenomResponse {
+  return {
+    denom: undefined,
+  };
+}
+/**
+ * QueryDenomResponse is the response type for the Query/Denom RPC
+ * method.
+ * @name QueryDenomResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomResponse
+ */
+export const QueryDenomResponse = {
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomResponse' as const,
+  is(o: any): o is QueryDenomResponse {
+    return o && o.$typeUrl === QueryDenomResponse.typeUrl;
+  },
+  isSDK(o: any): o is QueryDenomResponseSDKType {
+    return o && o.$typeUrl === QueryDenomResponse.typeUrl;
+  },
+  encode(
+    message: QueryDenomResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.denom !== undefined) {
+      Denom.encode(message.denom, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryDenomResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryDenomResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.denom = Denom.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryDenomResponse {
+    return {
+      denom: isSet(object.denom) ? Denom.fromJSON(object.denom) : undefined,
+    };
+  },
+  toJSON(message: QueryDenomResponse): JsonSafe<QueryDenomResponse> {
+    const obj: any = {};
+    message.denom !== undefined &&
+      (obj.denom = message.denom ? Denom.toJSON(message.denom) : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryDenomResponse>): QueryDenomResponse {
+    const message = createBaseQueryDenomResponse();
+    message.denom =
+      object.denom !== undefined && object.denom !== null
+        ? Denom.fromPartial(object.denom)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: QueryDenomResponseProtoMsg): QueryDenomResponse {
+    return QueryDenomResponse.decode(message.value);
+  },
+  toProto(message: QueryDenomResponse): Uint8Array {
+    return QueryDenomResponse.encode(message).finish();
+  },
+  toProtoMsg(message: QueryDenomResponse): QueryDenomResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.applications.transfer.v1.QueryDenomResponse',
+      value: QueryDenomResponse.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryDenomsRequest(): QueryDenomsRequest {
+  return {
+    pagination: undefined,
+  };
+}
+/**
+ * QueryDenomsRequest is the request type for the Query/Denoms RPC
+ * method
+ * @name QueryDenomsRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomsRequest
+ */
+export const QueryDenomsRequest = {
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomsRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomsRequest' as const,
+  is(o: any): o is QueryDenomsRequest {
+    return o && o.$typeUrl === QueryDenomsRequest.typeUrl;
+  },
+  isSDK(o: any): o is QueryDenomsRequestSDKType {
+    return o && o.$typeUrl === QueryDenomsRequest.typeUrl;
+  },
+  encode(
+    message: QueryDenomsRequest,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.pagination !== undefined) {
+      PageRequest.encode(message.pagination, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryDenomsRequest {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryDenomsRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pagination = PageRequest.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryDenomsRequest {
+    return {
+      pagination: isSet(object.pagination)
+        ? PageRequest.fromJSON(object.pagination)
+        : undefined,
+    };
+  },
+  toJSON(message: QueryDenomsRequest): JsonSafe<QueryDenomsRequest> {
+    const obj: any = {};
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageRequest.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryDenomsRequest>): QueryDenomsRequest {
+    const message = createBaseQueryDenomsRequest();
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageRequest.fromPartial(object.pagination)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: QueryDenomsRequestProtoMsg): QueryDenomsRequest {
+    return QueryDenomsRequest.decode(message.value);
+  },
+  toProto(message: QueryDenomsRequest): Uint8Array {
+    return QueryDenomsRequest.encode(message).finish();
+  },
+  toProtoMsg(message: QueryDenomsRequest): QueryDenomsRequestProtoMsg {
+    return {
+      typeUrl: '/ibc.applications.transfer.v1.QueryDenomsRequest',
+      value: QueryDenomsRequest.encode(message).finish(),
+    };
+  },
+};
+function createBaseQueryDenomsResponse(): QueryDenomsResponse {
+  return {
+    denoms: [],
+    pagination: undefined,
+  };
+}
+/**
+ * QueryDenomsResponse is the response type for the Query/Denoms RPC
+ * method.
+ * @name QueryDenomsResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomsResponse
+ */
+export const QueryDenomsResponse = {
+  typeUrl: '/ibc.applications.transfer.v1.QueryDenomsResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomsResponse' as const,
+  is(o: any): o is QueryDenomsResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomsResponse.typeUrl ||
+        (Array.isArray(o.denoms) &&
+          (!o.denoms.length || Denom.is(o.denoms[0]))))
+    );
+  },
+  isSDK(o: any): o is QueryDenomsResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomsResponse.typeUrl ||
+        (Array.isArray(o.denoms) &&
+          (!o.denoms.length || Denom.isSDK(o.denoms[0]))))
+    );
+  },
+  encode(
+    message: QueryDenomsResponse,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    for (const v of message.denoms) {
+      Denom.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pagination !== undefined) {
+      PageResponse.encode(
+        message.pagination,
+        writer.uint32(18).fork(),
+      ).ldelim();
+    }
+    return writer;
+  },
+  decode(
+    input: BinaryReader | Uint8Array,
+    length?: number,
+  ): QueryDenomsResponse {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseQueryDenomsResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.denoms.push(Denom.decode(reader, reader.uint32()));
+          break;
+        case 2:
+          message.pagination = PageResponse.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): QueryDenomsResponse {
+    return {
+      denoms: Array.isArray(object?.denoms)
+        ? object.denoms.map((e: any) => Denom.fromJSON(e))
+        : [],
+      pagination: isSet(object.pagination)
+        ? PageResponse.fromJSON(object.pagination)
+        : undefined,
+    };
+  },
+  toJSON(message: QueryDenomsResponse): JsonSafe<QueryDenomsResponse> {
+    const obj: any = {};
+    if (message.denoms) {
+      obj.denoms = message.denoms.map(e => (e ? Denom.toJSON(e) : undefined));
+    } else {
+      obj.denoms = [];
+    }
+    message.pagination !== undefined &&
+      (obj.pagination = message.pagination
+        ? PageResponse.toJSON(message.pagination)
+        : undefined);
+    return obj;
+  },
+  fromPartial(object: Partial<QueryDenomsResponse>): QueryDenomsResponse {
+    const message = createBaseQueryDenomsResponse();
+    message.denoms = object.denoms?.map(e => Denom.fromPartial(e)) || [];
+    message.pagination =
+      object.pagination !== undefined && object.pagination !== null
+        ? PageResponse.fromPartial(object.pagination)
+        : undefined;
+    return message;
+  },
+  fromProtoMsg(message: QueryDenomsResponseProtoMsg): QueryDenomsResponse {
+    return QueryDenomsResponse.decode(message.value);
+  },
+  toProto(message: QueryDenomsResponse): Uint8Array {
+    return QueryDenomsResponse.encode(message).finish();
+  },
+  toProtoMsg(message: QueryDenomsResponse): QueryDenomsResponseProtoMsg {
+    return {
+      typeUrl: '/ibc.applications.transfer.v1.QueryDenomsResponse',
+      value: QueryDenomsResponse.encode(message).finish(),
+    };
+  },
+};
 function createBaseQueryDenomHashRequest(): QueryDenomHashRequest {
   return {
     trace: '',
   };
 }
+/**
+ * QueryDenomHashRequest is the request type for the Query/DenomHash RPC
+ * method
+ * @name QueryDenomHashRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomHashRequest
+ */
 export const QueryDenomHashRequest = {
   typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashRequest' as const,
+  aminoType: 'cosmos-sdk/QueryDenomHashRequest' as const,
+  is(o: any): o is QueryDenomHashRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomHashRequest.typeUrl ||
+        typeof o.trace === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomHashRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomHashRequest.typeUrl ||
+        typeof o.trace === 'string')
+    );
+  },
   encode(
     message: QueryDenomHashRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -729,8 +932,30 @@ function createBaseQueryDenomHashResponse(): QueryDenomHashResponse {
     hash: '',
   };
 }
+/**
+ * QueryDenomHashResponse is the response type for the Query/DenomHash RPC
+ * method.
+ * @name QueryDenomHashResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryDenomHashResponse
+ */
 export const QueryDenomHashResponse = {
   typeUrl: '/ibc.applications.transfer.v1.QueryDenomHashResponse' as const,
+  aminoType: 'cosmos-sdk/QueryDenomHashResponse' as const,
+  is(o: any): o is QueryDenomHashResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomHashResponse.typeUrl ||
+        typeof o.hash === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryDenomHashResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryDenomHashResponse.typeUrl ||
+        typeof o.hash === 'string')
+    );
+  },
   encode(
     message: QueryDenomHashResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -797,8 +1022,29 @@ function createBaseQueryEscrowAddressRequest(): QueryEscrowAddressRequest {
     channelId: '',
   };
 }
+/**
+ * QueryEscrowAddressRequest is the request type for the EscrowAddress RPC method.
+ * @name QueryEscrowAddressRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryEscrowAddressRequest
+ */
 export const QueryEscrowAddressRequest = {
   typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressRequest' as const,
+  aminoType: 'cosmos-sdk/QueryEscrowAddressRequest' as const,
+  is(o: any): o is QueryEscrowAddressRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryEscrowAddressRequest.typeUrl ||
+        (typeof o.portId === 'string' && typeof o.channelId === 'string'))
+    );
+  },
+  isSDK(o: any): o is QueryEscrowAddressRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEscrowAddressRequest.typeUrl ||
+        (typeof o.port_id === 'string' && typeof o.channel_id === 'string'))
+    );
+  },
   encode(
     message: QueryEscrowAddressRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -879,8 +1125,29 @@ function createBaseQueryEscrowAddressResponse(): QueryEscrowAddressResponse {
     escrowAddress: '',
   };
 }
+/**
+ * QueryEscrowAddressResponse is the response type of the EscrowAddress RPC method.
+ * @name QueryEscrowAddressResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryEscrowAddressResponse
+ */
 export const QueryEscrowAddressResponse = {
   typeUrl: '/ibc.applications.transfer.v1.QueryEscrowAddressResponse' as const,
+  aminoType: 'cosmos-sdk/QueryEscrowAddressResponse' as const,
+  is(o: any): o is QueryEscrowAddressResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryEscrowAddressResponse.typeUrl ||
+        typeof o.escrowAddress === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryEscrowAddressResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryEscrowAddressResponse.typeUrl ||
+        typeof o.escrow_address === 'string')
+    );
+  },
   encode(
     message: QueryEscrowAddressResponse,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -955,9 +1222,30 @@ function createBaseQueryTotalEscrowForDenomRequest(): QueryTotalEscrowForDenomRe
     denom: '',
   };
 }
+/**
+ * QueryTotalEscrowForDenomRequest is the request type for TotalEscrowForDenom RPC method.
+ * @name QueryTotalEscrowForDenomRequest
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest
+ */
 export const QueryTotalEscrowForDenomRequest = {
   typeUrl:
     '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomRequest' as const,
+  aminoType: 'cosmos-sdk/QueryTotalEscrowForDenomRequest' as const,
+  is(o: any): o is QueryTotalEscrowForDenomRequest {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalEscrowForDenomRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
+  isSDK(o: any): o is QueryTotalEscrowForDenomRequestSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalEscrowForDenomRequest.typeUrl ||
+        typeof o.denom === 'string')
+    );
+  },
   encode(
     message: QueryTotalEscrowForDenomRequest,
     writer: BinaryWriter = BinaryWriter.create(),
@@ -1029,9 +1317,34 @@ function createBaseQueryTotalEscrowForDenomResponse(): QueryTotalEscrowForDenomR
     amount: Coin.fromPartial({}),
   };
 }
+/**
+ * QueryTotalEscrowForDenomResponse is the response type for TotalEscrowForDenom RPC method.
+ * @name QueryTotalEscrowForDenomResponse
+ * @package ibc.applications.transfer.v1
+ * @see proto type: ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse
+ */
 export const QueryTotalEscrowForDenomResponse = {
   typeUrl:
     '/ibc.applications.transfer.v1.QueryTotalEscrowForDenomResponse' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+    typeUrlFromField: { amount: () => Coin },
+  } as const satisfies FieldAnnotationsRecord,
+  aminoType: 'cosmos-sdk/QueryTotalEscrowForDenomResponse' as const,
+  is(o: any): o is QueryTotalEscrowForDenomResponse {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalEscrowForDenomResponse.typeUrl ||
+        Coin.is(o.amount))
+    );
+  },
+  isSDK(o: any): o is QueryTotalEscrowForDenomResponseSDKType {
+    return (
+      o &&
+      (o.$typeUrl === QueryTotalEscrowForDenomResponse.typeUrl ||
+        Coin.isSDK(o.amount))
+    );
+  },
   encode(
     message: QueryTotalEscrowForDenomResponse,
     writer: BinaryWriter = BinaryWriter.create(),

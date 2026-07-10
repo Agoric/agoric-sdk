@@ -1,7 +1,7 @@
 // define these here, in one place, so both the builder and the
 // client-facing API can see the same paths
 
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from 'node:url';
 
 /** @param {string} path */
 const resolve = path => fileURLToPath(new URL(path, import.meta.url));

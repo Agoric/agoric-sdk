@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+/* global globalThis */
 /**
  * @file verify CCTP mintRecipient encoding by sending
  * a burn transaction to noble and verifying that
@@ -143,6 +144,7 @@ const attestationKey = tx => {
 
 const makePoll = (setTimeout: typeof globalThis.setTimeout, period = 2_000) => {
   async function* poll<T>(thunk: () => Promise<{ done: boolean; value: T }>) {
+    await null;
     for (;;) {
       const step = await thunk();
       yield step.value;
@@ -181,7 +183,6 @@ const main = async ({
     const client = await connectWithSigner(
       config.noble.rpc,
       wallet,
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore XXX cosmjs types
       clientOpts,
     );
@@ -212,6 +213,7 @@ const main = async ({
   console.log('GET attestation', `${config.circle.iris}/attestations/${key}`);
   const iris = (path: string) => fetchJSON(`${config.circle.iris}${path}`);
   const tryGetAttestation = async () => {
+    await null;
     try {
       const current = await iris(`/attestations/${key}`);
       return { done: current.status === 'complete', value: current };

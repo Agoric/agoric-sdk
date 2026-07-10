@@ -1,5 +1,4 @@
 // @ts-check
-// @jessie-check
 
 import { Far, isPassable } from '@endo/pass-style';
 import {
@@ -39,7 +38,9 @@ const makeVirtualExo = (
   options = undefined,
 ) => {
   const defineKindOptions =
-    /** @type {DefineKindOptions<{ self: typeof methods }>} */ (options);
+    /** @type {DefineKindOptions<{ self: typeof methods }>} */ (
+      /** @type {unknown} */ (options)
+    );
   const makeInstance = defineVirtualExoClass(
     label,
     interfaceGuard,

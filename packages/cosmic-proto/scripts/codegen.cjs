@@ -1,151 +1,32 @@
 #!/usr/bin/env node
 // @ts-check
 
-/* eslint-env node */
-const { exec, execSync, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
 const fsp = require('fs/promises');
 const path = require('path');
 const assert = require('node:assert/strict');
 const process = require('process');
-const { TelescopeBuilder } = require('@cosmology/telescope');
+const { getNestedProto } = require('@cosmology/proto-parser');
+const { TelescopeBuilder } = require('@hyperweb/telescope');
 const rimraf = require('rimraf').rimrafSync;
+const { getBaseTelescopeOptions } = require('../tools/telescope-options.cjs');
+const {
+  applyTelescopeFixes,
+  detectGnuSed,
+  fixTypeImportForVerbatim,
+} = require('../tools/telescope-cleanup.cjs');
 
 const protoDirs = [path.join(__dirname, '/../proto')];
 const outPath = path.join(__dirname, '../src/codegen');
 rimraf(outPath);
 
 /**
- * Make the JsonSafe type import compatible with TS verbatimImportSyntax
- *
- * @param {string} directory
- * @param {boolean} gnuSed
- */
-function fixTypeImport(directory, gnuSed) {
-  const fullPath = path.resolve(directory);
-  const command = `
-    find ${fullPath} -type f -exec ${gnuSed ? 'sed -i' : 'sed -i ""'} \
-    -e 's/import { JsonSafe/import {type JsonSafe/g' \
-    -e 's/\\([{,]\\) \\([[:alnum:]_]*SDKType\\)/\\1 type \\2/g' {} +
-  `;
-
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error during replacement: ${error.message}`);
-      return;
-    }
-    if (stderr) {
-      console.error(`Standard error: ${stderr}`);
-    }
-  });
-}
-
-/**
- * @type {import('@cosmology/telescope').TelescopeInput}
+ * @type {import('@hyperweb/telescope').TelescopeInput}
  */
 const input = {
   protoDirs,
   outPath,
-  options: {
-    // for ESM compatibility
-    restoreImportExtension: '.js',
-    tsDisable: {
-      // FIXME types aren't resolving correctly
-      disableAll: true,
-      files: [
-        'cosmos/authz/v1beta1/tx.amino.ts',
-        'cosmos/staking/v1beta1/tx.amino.ts',
-      ],
-      patterns: ['**/*amino.ts', '**/*registry.ts'],
-    },
-    interfaces: {
-      enabled: true,
-      // useGlobalDecoderRegistry: true,
-      registerAllDecodersToGlobal: false,
-      useUnionTypes: false,
-    },
-    prototypes: {
-      /**
-       * Not working as expected with @cosmology/telescope@1.12.2
-       * It was only implemented for an Amino registry.
-       */
-      // enableRegistryLoader: true,
-      /**
-       * Relies on tree-shaking to avoid huge bundle sizes.
-       */
-      enableMessageComposer: false,
-      includePackageVar: false,
-      excluded: {
-        packages: [
-          'ibc.applications.fee.v1', // issue with parsing protos (LCD routes with nested objects in params)
-
-          'cosmos.app.v1alpha1',
-          'cosmos.app.v1beta1',
-          'cosmos.base.kv.v1beta1',
-          'cosmos.base.reflection.v1beta1',
-          'cosmos.base.snapshots.v1beta1',
-          'cosmos.base.store.v1beta1',
-          'cosmos.base.tendermint.v1beta1',
-          'cosmos.crisis.v1beta1',
-          'cosmos.evidence.v1beta1',
-          'cosmos.genutil.v1beta1',
-
-          'cosmos.autocli.v1',
-
-          'cosmos.msg.v1',
-          'cosmos.nft.v1beta1',
-          'cosmos.capability.v1beta1',
-          'cosmos.orm.v1alpha1',
-          'cosmos.orm.v1',
-          'cosmos.slashing.v1beta1',
-          'google.api',
-          'ibc.core.port.v1',
-          'ibc.core.types.v1',
-        ],
-      },
-      methods: {
-        fromJSON: true,
-        toJSON: true,
-        encode: true,
-        decode: true,
-        fromPartial: true,
-        toAmino: false,
-        fromAmino: false,
-        fromProto: true,
-        toProto: true,
-      },
-      parser: {
-        keepCase: false,
-      },
-      typingsFormat: {
-        useDeepPartial: false,
-        timestamp: /** @type {const} */ ('timestamp'),
-
-        // [Defaults]
-        // timestamp: 'date',
-        // duration: 'duration',
-        // num64: 'bigint',
-        // useExact: false,
-        // customTypes: {
-        //   useCosmosSDKDec: true,
-        // },
-        customTypes: {
-          base64Lib: /** @type {const} */ ('@endo/base64'),
-          useEnhancedDecimal: true,
-        },
-      },
-    },
-    aminoEncoding: {
-      // Must be enabled for getSigningAgoricClient
-      enabled: false,
-      // disableMsgTypes: true,
-    },
-    lcdClients: {
-      enabled: false,
-    },
-    rpcClients: {
-      enabled: false,
-    },
-  },
+  options: getBaseTelescopeOptions(),
 };
 
 const builder = new TelescopeBuilder(input);
@@ -160,9 +41,347 @@ const strcmp = (a, b) => {
   return 0;
 };
 
+const hasOwn = (obj, prop) => Object.hasOwn(obj ?? {}, prop);
+
+const objectFromSortedEntries = entries =>
+  Object.fromEntries(entries.sort(([a], [b]) => strcmp(a, b)));
+
+const typeUrlFromField = (proto, field) => {
+  const scalarType = field.options?.['(cosmos_proto.scalar)'];
+  if (scalarType) {
+    return scalarType;
+  }
+
+  if (field.parsedType?.type !== 'Type') {
+    return undefined;
+  }
+
+  const typeName =
+    field.parsedType.originalName ?? field.parsedType.name ?? field.type;
+  if (!typeName) {
+    return undefined;
+  }
+
+  const [firstScope] = field.scope ?? [];
+  const scope = Array.isArray(firstScope) ? firstScope[0] : firstScope;
+  const importedPkg = field.importedName?.includes('.')
+    ? field.importedName.split('.').slice(0, -1).join('.')
+    : undefined;
+  const pkg =
+    typeof scope === 'string' && scope
+      ? scope
+      : (importedPkg ?? proto.proto.package);
+  return `/${pkg}.${typeName}`;
+};
+
+const addRecordValue = (record, typeUrl, annotation, fieldName, value) => {
+  record[typeUrl] ??= {};
+  record[typeUrl][annotation] ??= {};
+  record[typeUrl][annotation][fieldName] = value;
+};
+
+const sortedAnnotationRecord = record =>
+  objectFromSortedEntries(
+    Object.entries(record).map(([typeUrl, annotations]) => [
+      typeUrl,
+      objectFromSortedEntries(
+        Object.entries(annotations).map(([annotation, fields]) => [
+          annotation,
+          objectFromSortedEntries(Object.entries(fields)),
+        ]),
+      ),
+    ]),
+  );
+
+const typeUrlRecordFromProto = proto => {
+  const nested = getNestedProto(proto.traversed) ?? {};
+  const record = {};
+
+  for (const [typeName, typeDef] of Object.entries(nested).sort(([a], [b]) =>
+    strcmp(a, b),
+  )) {
+    if (typeDef.type !== 'Type') {
+      continue;
+    }
+
+    const typeUrl = `/${proto.proto.package}.${
+      typeDef.originalName ?? typeName
+    }`;
+
+    for (const [rawFieldName, field] of Object.entries(
+      typeDef.fields ?? {},
+    ).sort(([a], [b]) => strcmp(a, b))) {
+      const options = field.options ?? {};
+      const isRepeated = field.rule === 'repeated' || field.keyType;
+      const hasNullable = hasOwn(options, '(gogoproto.nullable)');
+      const hasEmbed = hasOwn(options, '(gogoproto.embed)');
+
+      // The current codec transformation treats child messages as objects, not
+      // arrays. Repeated gogoproto.nullable=false fields need separate handling.
+      if (isRepeated || (!hasNullable && !hasEmbed)) {
+        continue;
+      }
+
+      const fieldName = options['(telescope:name)'] ?? rawFieldName;
+      const fieldTypeUrl = typeUrlFromField(proto, field);
+      if (fieldTypeUrl) {
+        addRecordValue(
+          record,
+          typeUrl,
+          'typeUrlFromField',
+          fieldName,
+          fieldTypeUrl,
+        );
+      }
+
+      if (hasNullable) {
+        addRecordValue(
+          record,
+          typeUrl,
+          'gogoproto.nullable',
+          fieldName,
+          Boolean(options['(gogoproto.nullable)']),
+        );
+      }
+
+      if (hasEmbed) {
+        addRecordValue(
+          record,
+          typeUrl,
+          'gogoproto.embed',
+          options['(telescope:orig)'] ?? rawFieldName,
+          fieldName,
+        );
+      }
+
+      if (hasOwn(options, '(amino.dont_omitempty)')) {
+        addRecordValue(
+          record,
+          typeUrl,
+          'amino.dont_omitempty',
+          fieldName,
+          Boolean(options['(amino.dont_omitempty)']),
+        );
+      }
+    }
+  }
+
+  return sortedAnnotationRecord(record);
+};
+
+const importIdentifierFromTypeUrl = typeUrl =>
+  `__annotationCodec${[...typeUrl]
+    .map(char =>
+      /[A-Za-z0-9$]/.test(char) ? char : `_${char.charCodeAt(0).toString(16)}`,
+    )
+    .join('')}`;
+
+const renderAnnotationExpression = (value, getCodecRef, path = []) => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return `{${Object.entries(value)
+      .map(
+        ([key, child]) =>
+          `${JSON.stringify(key)}: ${renderAnnotationExpression(child, getCodecRef, [...path, key])},`,
+      )
+      .join('')}}`;
+  }
+
+  if (path[0] === 'typeUrlFromField' && typeof value === 'string') {
+    const codecRef = getCodecRef(value);
+    if (codecRef) {
+      return `() => ${codecRef}`;
+    }
+  }
+
+  return JSON.stringify(value);
+};
+
+const toPosixPath = filePath => filePath.split(path.sep).join(path.posix.sep);
+
+const importPathFrom = (fromFile, toFile) => {
+  const importPath = toPosixPath(path.relative(path.dirname(fromFile), toFile));
+  return importPath.startsWith('.') ? importPath : `./${importPath}`;
+};
+
+const localRuntimeImportName = (contents, importFrom, importedName) => {
+  const importStatementPattern =
+    /import\s+(?!type\b)([\s\S]*?)\s+from\s+(['"])(.*?)\2\s*;/g;
+
+  for (const match of contents.matchAll(importStatementPattern)) {
+    const [, importSpecifiers, , source] = match;
+    if (source !== importFrom) {
+      continue;
+    }
+
+    const namedImports = importSpecifiers.match(/\{([\s\S]*)\}/);
+    if (!namedImports) {
+      continue;
+    }
+
+    for (const rawSpecifier of namedImports[1].split(',')) {
+      const specifier = rawSpecifier.trim();
+      if (!specifier || specifier.startsWith('type ')) {
+        continue;
+      }
+
+      const importName =
+        /^([A-Za-z_$][\w$]*)(?:\s+as\s+([A-Za-z_$][\w$]*))?$/.exec(specifier);
+      if (!importName) {
+        continue;
+      }
+
+      const [, imported, local = imported] = importName;
+      if (imported === importedName) {
+        return local;
+      }
+    }
+  }
+
+  return undefined;
+};
+
+const addAnnotationImports = (contents, protoOutFile, childImports) => {
+  const imports = [];
+  if (!contents.includes('import type { FieldAnnotationsRecord }')) {
+    imports.push(
+      `import type { FieldAnnotationsRecord } from ${JSON.stringify(
+        importPathFrom(
+          protoOutFile,
+          path.join(outPath, '..', 'type-url-annotations.js'),
+        ),
+      )};`,
+    );
+  }
+
+  for (const { importFrom, importedName, localName } of [
+    ...childImports.values(),
+  ].sort(
+    (a, b) =>
+      strcmp(a.importFrom, b.importFrom) ||
+      strcmp(a.importedName, b.importedName),
+  )) {
+    imports.push(
+      `import { ${importedName} as ${localName} } from ${JSON.stringify(
+        importFrom,
+      )};`,
+    );
+  }
+  if (!imports.length) {
+    return contents;
+  }
+
+  const annotationImports = `${imports.join('\n')}\n`;
+
+  if (contents.startsWith('//@ts-nocheck\n')) {
+    return contents.replace(
+      '//@ts-nocheck\n',
+      `//@ts-nocheck\n${annotationImports}`,
+    );
+  }
+
+  return `${annotationImports}${contents}`;
+};
+
+const addCodecAnnotations = (
+  contents,
+  exportName,
+  annotationsRecord,
+  getCodecRef,
+) => {
+  const exportNeedle = `export const ${exportName} = {\n`;
+  const exportOffset = contents.indexOf(exportNeedle);
+  assert.notEqual(exportOffset, -1, `missing codec export ${exportName}`);
+
+  const typeUrlOffset = contents.indexOf('\n  typeUrl:', exportOffset);
+  assert.notEqual(typeUrlOffset, -1, `missing typeUrl for ${exportName}`);
+  const typeUrlLineEnd = contents.indexOf('\n', typeUrlOffset + 1);
+  assert.notEqual(
+    typeUrlLineEnd,
+    -1,
+    `missing typeUrl line end for ${exportName}`,
+  );
+
+  const annotationProperty = `  annotations: ${renderAnnotationExpression(
+    annotationsRecord,
+    getCodecRef,
+  )} as const satisfies FieldAnnotationsRecord,\n`;
+  return [
+    contents.slice(0, typeUrlLineEnd + 1),
+    annotationProperty,
+    contents.slice(typeUrlLineEnd + 1),
+  ].join('');
+};
+
+const addProtoAnnotations = async (
+  protoOutFile,
+  exports,
+  typeUrlRecord,
+  typeInfoFromTypeUrl,
+) => {
+  const annotationsEntries = Object.entries(typeUrlRecord);
+  if (!annotationsEntries.length) {
+    return;
+  }
+
+  const exportFromTypeUrl = new Map(exports);
+  const childImports = new Map();
+  let contents = await fsp.readFile(protoOutFile, 'utf8');
+
+  const getCodecRef = typeUrl => {
+    const typeInfo = typeInfoFromTypeUrl.get(typeUrl);
+    if (!typeInfo) {
+      return undefined;
+    }
+    if (path.resolve(typeInfo.outFile) === path.resolve(protoOutFile)) {
+      return typeInfo.exportName;
+    }
+
+    const importFrom = importPathFrom(protoOutFile, typeInfo.importFile);
+    const existingImport = localRuntimeImportName(
+      contents,
+      importFrom,
+      typeInfo.exportName,
+    );
+    if (existingImport) {
+      return existingImport;
+    }
+
+    const localName = importIdentifierFromTypeUrl(typeUrl);
+    childImports.set(localName, {
+      importFrom,
+      importedName: typeInfo.exportName,
+      localName,
+    });
+    return localName;
+  };
+
+  let didAddAnnotations = false;
+  for (const [typeUrl, annotationsRecord] of annotationsEntries) {
+    const exportName = exportFromTypeUrl.get(typeUrl);
+    if (!exportName) {
+      continue;
+    }
+    contents = addCodecAnnotations(
+      contents,
+      exportName,
+      annotationsRecord,
+      getCodecRef,
+    );
+    didAddAnnotations = true;
+  }
+  if (!didAddAnnotations) {
+    return;
+  }
+  contents = addAnnotationImports(contents, protoOutFile, childImports);
+  await fsp.writeFile(protoOutFile, contents);
+};
+
 const createTypeFromUrl = async () => {
   const { store } = builder;
   const fileExports = {};
+  const protoExports = [];
+  const typeInfoFromTypeUrl = new Map();
+
   for (const proto of store.getProtos()) {
     // console.log(proto);
     if (!proto.traversed) {
@@ -179,10 +398,34 @@ const createTypeFromUrl = async () => {
     }
 
     const importFrom = `./${proto.filename.replace(/\.proto$/, '.js')}`;
-    fileExports[importFrom] = exports.map(exp => [
-      `${typeUrlPrefix}${exp}`,
-      exp,
-    ]);
+    const exportsForFile = exports.map(exp => [`${typeUrlPrefix}${exp}`, exp]);
+    fileExports[importFrom] = exportsForFile;
+    const protoOutFile = path.join(
+      outPath,
+      proto.filename.replace(/\.proto$/, '.ts'),
+    );
+    const protoImportFile = path.join(
+      outPath,
+      proto.filename.replace(/\.proto$/, '.js'),
+    );
+    protoExports.push({ proto, exportsForFile, protoOutFile });
+    for (const [typeUrl, exportName] of exportsForFile) {
+      typeInfoFromTypeUrl.set(typeUrl, {
+        exportName,
+        importFile: protoImportFile,
+        outFile: protoOutFile,
+      });
+    }
+  }
+
+  for (const { proto, exportsForFile, protoOutFile } of protoExports) {
+    const protoTypeUrlRecord = typeUrlRecordFromProto(proto);
+    await addProtoAnnotations(
+      protoOutFile,
+      exportsForFile,
+      protoTypeUrlRecord,
+      typeInfoFromTypeUrl,
+    );
   }
 
   const sortedEntries = Object.entries(fileExports).sort(([a], [b]) =>
@@ -234,24 +477,54 @@ builder
     console.log('🔨 code generated by Telescope');
 
     // for all files under codegen/ replace "import { JsonSafe" with "import type { JsonSafe"
-    const gnuSed =
-      execSync(`sed --help 2>&1 | sed 2q | grep -qe '-i ' || printf gnu`, {
-        encoding: 'utf8',
-      }) === 'gnu';
-    fixTypeImport('./src/codegen', gnuSed);
+    const gnuSed = detectGnuSed();
+    fixTypeImportForVerbatim('./src/codegen', gnuSed);
     console.log('🔧 type keyword added');
 
-    // top-level to get the root prettier config
+    const repoRoot = path.join(__dirname, '..', '..', '..');
+    const srcFromRoot = path.relative(
+      repoRoot,
+      path.join(__dirname, '..', 'src'),
+    );
+    const codegenFromRoot = path.join(srcFromRoot, 'codegen');
     const prettierResult = spawnSync(
       'yarn',
-      ['run', '--top-level', 'prettier', '--write', 'src'],
+      ['run', '-T', 'prettier', '--write', codegenFromRoot],
       {
-        cwd: path.join(__dirname, '..'),
+        cwd: repoRoot,
         stdio: 'inherit',
       },
     );
+    if (prettierResult.error) {
+      throw prettierResult.error;
+    }
     assert.equal(prettierResult.status, 0);
     console.log('💅 code formatted by Prettier');
+
+    const cleanedFiles = await applyTelescopeFixes({
+      outPath,
+      includeSigningClientParamsCleanup: true,
+    });
+    if (cleanedFiles.length > 0) {
+      const prettierHelpersResult = spawnSync(
+        'yarn',
+        [
+          'run',
+          '--top-level',
+          'prettier',
+          '--write',
+          ...cleanedFiles.map(file =>
+            path.relative(path.join(__dirname, '..'), file),
+          ),
+        ],
+        {
+          cwd: path.join(__dirname, '..'),
+          stdio: 'inherit',
+        },
+      );
+      assert.equal(prettierHelpersResult.status, 0);
+    }
+    console.log('🧹 cleaned generated helper compatibility imports');
 
     console.log('ℹ️ `yarn build && yarn test` to test it.');
   })

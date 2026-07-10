@@ -1,5 +1,4 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
-/* eslint-env node */
 
 import fsp from 'node:fs/promises';
 import prettier from 'prettier';

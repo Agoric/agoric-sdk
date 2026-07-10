@@ -90,6 +90,7 @@ export const prepareOwnable = (
       underlying,
     }),
     {
+      /** @param {any} seat */
       handle(seat) {
         const { underlying } = this.state;
         const revocable = makeRevocable(underlying);

@@ -94,16 +94,17 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
     'initialSupply of 50 RUN',
   );
 
-  /** @type {VatLoader<'bank'>} */
-  const loadCriticalVat = async name => {
-    assert.equal(name, 'bank');
-    const vatP = E(buildRootObject)(
-      null,
-      null,
-      makeScalarMapStore('addAssets baggage'),
-    );
-    return /** @type {Awaited<WellKnownVats[typeof name]>} */ (vatP);
-  };
+  const loadCriticalVat = /** @type {VatLoader<'bank'>} */ (
+    async name => {
+      assert.equal(name, 'bank');
+      const vatP = E(buildRootObject)(
+        null,
+        null,
+        makeScalarMapStore('addAssets baggage'),
+      );
+      return /** @type {Awaited<WellKnownVats[typeof name]>} */ (vatP);
+    }
+  );
   produce.loadCriticalVat.resolve(loadCriticalVat);
   produce.bridgeManager.resolve(undefined);
 

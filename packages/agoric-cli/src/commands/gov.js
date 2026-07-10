@@ -1,12 +1,11 @@
 // @ts-check
 /* eslint-disable func-names */
-/* eslint-env node */
 import {
   fetchEnvNetworkConfig,
   makeAgoricNames,
   makeVstorageKit,
 } from '@agoric/client-utils';
-import { execFileSync as execFileSyncAmbient } from 'child_process';
+import { execFileSync as execFileSyncAmbient } from 'node:child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
@@ -21,8 +20,9 @@ import {
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {GovernancePublishedPathTypes} from '@agoric/governance/src/types.js';
  * @import {VstorageKit} from '@agoric/client-utils';
- * @import {Logger} from 'anylogger';
+ * @import {Logger} from '@agoric/internal/vendor/anylogger.js';
  * @import {Writable} from 'stream';
  */
 
@@ -346,6 +346,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts, options) {
+      /** @type {VstorageKit<GovernancePublishedPathTypes>} */
       const vsk = makeVstorageKit({ fetch }, networkConfig);
       const { readPublished } = vsk;
 

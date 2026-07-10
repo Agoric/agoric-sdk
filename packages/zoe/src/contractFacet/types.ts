@@ -118,10 +118,20 @@ export type ZCF<CT = Record<string, unknown>> = {
   getInstance: () => Instance;
 };
 
+/**
+ * A part of an `atomicRearrange` transfer.  Construct via `fromOnly`,
+ * `toOnly`, or directly as a 3- or 4-element array.
+ *
+ * The first three positions are required (any of them may be `undefined`)
+ * to match the runtime `TransferPartShape` guard, which expects at least
+ * three elements.  The fourth (`toAmounts`) is truly optional.  See
+ * `fromOnly` (returns a 3-element tuple) and `toOnly` (returns a 4-element
+ * tuple) for the canonical constructors.
+ */
 export type TransferPart = [
-  fromSeat?: ZCFSeat,
-  toSeat?: ZCFSeat,
-  fromAmounts?: AmountKeywordRecord,
+  fromSeat: ZCFSeat | undefined,
+  toSeat: ZCFSeat | undefined,
+  fromAmounts: AmountKeywordRecord | undefined,
   toAmounts?: AmountKeywordRecord,
 ];
 

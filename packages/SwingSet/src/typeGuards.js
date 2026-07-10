@@ -1,4 +1,3 @@
-// @jessie-check
 import { M } from '@agoric/store';
 
 export const ManagerType = M.or(

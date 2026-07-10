@@ -5,14 +5,14 @@
 import 'ses';
 import '@endo/eventual-send/shim.js';
 // @ts-expect-error Cannot find module
-import 'data:text/javascript,try { lockdown(); } catch (_err) {}';
+import 'data:text/javascript,try { lockdown(); } catch {}';
 
-import * as proc from 'child_process';
-import * as os from 'os';
-import fs from 'fs';
+import * as proc from 'node:child_process';
+import * as os from 'node:os';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
-import { parseArgs } from 'util';
-import { isMainThread } from 'worker_threads';
+import { parseArgs } from 'node:util';
+import { isMainThread } from 'node:worker_threads';
 
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -30,7 +30,7 @@ const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambien
  * interpreting it as a decimal count of bytes to retain.
  *
  * @param {Partial<XSnapOptions>} [xsnapOptions]
- * @returns {Promise<Awaited<ReturnType<xsnap>>>}
+ * @returns {Promise<Awaited<ReturnType<typeof xsnap>>>}
  */
 export const makeRetentiveVat = async xsnapOptions => {
   const vat = await xsnap({ ...makeXSnapOptions(io), ...xsnapOptions });
@@ -60,7 +60,7 @@ harden(makeRetentiveVat);
  * approximately the same amount of additional data.
  *
  * @param {object} options
- * @param {(newVat: Awaited<ReturnType<xsnap>>, loadedSnapshotStream: AsyncIterable<Uint8Array> | undefined) => Promise<void>} [options.afterCommand]
+ * @param {(newVat: Awaited<ReturnType<typeof xsnap>>, loadedSnapshotStream: AsyncIterable<Uint8Array> | undefined) => Promise<void>} [options.afterCommand]
  *   a callback to run after a vat handles its command, for e.g. interrogation and/or
  *   inserting delays between instances
  * @param {number} options.chunkCount the number of instances to spawn
@@ -75,8 +75,8 @@ export const spawnRetentiveVatSequence = async ({
   xsnapOptions,
 }) => {
   await null;
-  /** @type {Awaited<ReturnType<xsnap>> | undefined} */
-  let vat = undefined;
+  /** @type {Awaited<ReturnType<typeof xsnap>> | undefined} */
+  let vat;
   try {
     for (let i = 0; i < chunkCount; i += 1) {
       // Make a new vat, replacing a previous vat if present.
@@ -155,7 +155,10 @@ if (isEntryPoint) {
     },
   };
   const { values: config } = parseArgs({ options: cliOptions });
-  let chunkCount, chunkSize, idleDuration, xsnapOptions;
+  let chunkCount;
+  let chunkSize;
+  let idleDuration;
+  let xsnapOptions;
   try {
     if (config.help) throw Error();
     const parseNat = str => Nat(/[0-9]/.test(str || '') ? Number(str) : NaN);

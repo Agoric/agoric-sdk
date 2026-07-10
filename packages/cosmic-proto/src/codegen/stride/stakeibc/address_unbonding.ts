@@ -1,7 +1,13 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
 import { type JsonSafe } from '../../json-safe.js';
+/**
+ * @name AddressUnbonding
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddressUnbonding
+ */
 export interface AddressUnbonding {
   address: string;
   receiver: string;
@@ -15,6 +21,11 @@ export interface AddressUnbondingProtoMsg {
   typeUrl: '/stride.stakeibc.AddressUnbonding';
   value: Uint8Array;
 }
+/**
+ * @name AddressUnbondingSDKType
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddressUnbonding
+ */
 export interface AddressUnbondingSDKType {
   address: string;
   receiver: string;
@@ -35,8 +46,42 @@ function createBaseAddressUnbonding(): AddressUnbonding {
     epochNumber: BigInt(0),
   };
 }
+/**
+ * @name AddressUnbonding
+ * @package stride.stakeibc
+ * @see proto type: stride.stakeibc.AddressUnbonding
+ */
 export const AddressUnbonding = {
   typeUrl: '/stride.stakeibc.AddressUnbonding' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
+  is(o: any): o is AddressUnbonding {
+    return (
+      o &&
+      (o.$typeUrl === AddressUnbonding.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.unbondingEstimatedTime === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.claimIsPending === 'boolean' &&
+          typeof o.epochNumber === 'bigint'))
+    );
+  },
+  isSDK(o: any): o is AddressUnbondingSDKType {
+    return (
+      o &&
+      (o.$typeUrl === AddressUnbonding.typeUrl ||
+        (typeof o.address === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.unbonding_estimated_time === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.denom === 'string' &&
+          typeof o.claim_is_pending === 'boolean' &&
+          typeof o.epoch_number === 'bigint'))
+    );
+  },
   encode(
     message: AddressUnbonding,
     writer: BinaryWriter = BinaryWriter.create(),

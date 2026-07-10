@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import * as config from '../../src/cli/config.js';
 import { mockOut, mockrl, mockFile } from '../../testing/mocks.js';

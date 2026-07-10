@@ -20,7 +20,7 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
  * @import {Remote, Vow, PromiseVow, VowTools} from '@agoric/vow';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
- * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
+ * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/network/ibc';
  * @import {CosmosActionOptions, CosmosChainAddress, IcaAccount} from '../types.js';
  */
 

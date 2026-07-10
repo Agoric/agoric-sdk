@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
@@ -41,11 +43,11 @@ const prepareArityCheckWatcher = (zone, t) => {
     undefined,
     expectedArgs => ({ expectedArgs }),
     {
-      onFulfilled(value, ...args) {
+      onFulfilled(_value, ...args) {
         t.deepEqual(args, this.state.expectedArgs);
         return 'fulfilled';
       },
-      onRejected(reason, ...args) {
+      onRejected(_reason, ...args) {
         t.deepEqual(args, this.state.expectedArgs);
         return 'rejected';
       },

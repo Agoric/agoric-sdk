@@ -11,9 +11,11 @@ import {
 import { Shape as NetworkShape } from '@agoric/network';
 import { CodecHelper } from '@agoric/cosmic-proto';
 import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import { MsgTransfer as MsgTransferType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 
 const MsgSend = CodecHelper(MsgSendType);
+const MsgTransfer = CodecHelper(MsgTransferType);
 
 const { Vow$ } = NetworkShape;
 
@@ -31,8 +33,14 @@ const { Vow$ } = NetworkShape;
  * @import {IBCEvent, IBCPacket, ScopedBridgeManager} from './types.js';
  * @import {TransferMiddleware} from './transfer.js';
  * @import {Zone} from '@agoric/base-zone';
- * @import {Bech32Address} from '@agoric/orchestration';
  * @import {WeakMapStore} from '@agoric/store';
+ */
+
+/**
+ * Duplicated from @agoric/orchestration to avoid pulling that package's
+ * source files into vats's type-check graph (vats does not depend on it).
+ *
+ * @typedef {`${string}1${string}`} Bech32Address
  */
 
 /**
@@ -356,9 +364,12 @@ export const prepareLocalChainAccountKit = (
           const rewrittenMsgs = messages.map((msg, i) => {
             const { '@type': typeUrl, ...value } = msg;
             if (typeUrl !== MsgSend.typeUrl) {
-              console.info(
-                `Skipping message ${i} of type ${typeUrl} as it is not a MsgSend`,
-              );
+              // Make this message quieter.
+              if (typeUrl === MsgTransfer.typeUrl) {
+                console.info(
+                  `Skipping message ${i} of type ${typeUrl} as it is not a MsgSend`,
+                );
+              }
               return msg;
             }
 
@@ -505,7 +516,7 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
         async query(request) {
           const requests = harden([request]);
           return watch(
-            E(this.facets.public).queryMany(requests),
+            E(this.facets.public).queryMany(/** @type {any} */ (requests)),
             this.facets.extractFirstQueryResultWatcher,
           );
         },

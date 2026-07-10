@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { E } from '@endo/eventual-send';
 
 import { Fail, q } from '@endo/errors';

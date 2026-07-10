@@ -5,7 +5,7 @@ import { getStringMethodNames } from '@agoric/internal';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far, passStyleOf } from '@endo/marshal';
-import path from 'path';
+import path from 'node:path';
 import { setup } from './setupBasicMints.js';
 import { setupZCFTest } from './zcf/setupZcfTest.js';
 

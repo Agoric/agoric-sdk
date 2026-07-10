@@ -1,0 +1,17 @@
+{
+    "extends": [
+        "./tsconfig.json",
+        "../../tsconfig-build-options.json"
+    ],
+    "exclude":[
+        "**/types-index.js",
+        "**/proposals",
+        "**/scripts",
+        "**/test"
+    ],
+    "compilerOptions": {
+        "incremental": false,
+        "ignoreDeprecations": "6.0",
+        "types": []
+    }
+}

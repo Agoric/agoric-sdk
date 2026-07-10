@@ -239,7 +239,7 @@ export const makeFakeStorageKit = (
               try {
                 streamCell = JSON.parse(oldVal);
                 assert(isStreamCell(streamCell));
-              } catch (_err) {
+              } catch {
                 streamCell = undefined;
               }
               // StreamCells reset at block boundaries.
@@ -378,20 +378,22 @@ export const documentStorageSchema = async (t, storage, opts) => {
       ? opts
       : { pattern: 'mockChainStorageRoot.', replacement: 'published.' };
 
-  const pruned = [...keys]
-    .sort()
-    .filter(
-      'node' in opts
-        ? key =>
-            key
-              .replace(pattern, replacement)
-              .startsWith(`published.${opts.node}`)
-        : _entry => true,
-    );
+  const nodePrefix = 'node' in opts ? `published.${opts.node}` : undefined;
+  /** @type {[key: string, publishedKey: string][]} */
+  const normalized = [];
+  for (const key of keys) {
+    const publishedKey = key.replace(pattern, replacement);
+    if (!nodePrefix || publishedKey.startsWith(nodePrefix)) {
+      normalized.push([key, publishedKey]);
+    }
+  }
+  normalized.sort(([left], [right]) =>
+    left < right ? -1 : left > right ? 1 : 0,
+  );
 
-  const illustration = pruned.map(
-    /** @type {(k: string) => [string, unknown]} */
-    key => [key.replace(pattern, replacement), getBody(key)],
+  const illustration = normalized.map(
+    /** @type {(entry: [string, string]) => [string, unknown]} */
+    ([key, publishedKey]) => [publishedKey, getBody(key)],
   );
 
   const note =

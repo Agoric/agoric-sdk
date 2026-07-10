@@ -4,7 +4,6 @@
         "./tsconfig.json"
     ],
     "compilerOptions": {
-        "allowSyntheticDefaultImports": true,
         "incremental": true,
         "noEmit": true,
         // Must be false because we have non-relative .ts imports and when that
@@ -13,9 +12,6 @@
         "rewriteRelativeImportExtensions": false,
         "paths": {
             // Each package to avoid error TS5061: Pattern '@agoric/*/bundles/bundle-*.js' can have at most one '*' character.
-            "@agoric/packages/inter-protocol/bundles/bundle-*.js": [
-                "./types/bundles-stub.d.ts"
-            ],
             "@agoric/packages/zoe/bundles/bundle-*.js": [
                 "./types/bundles-stub.d.ts"
             ]
@@ -24,14 +20,7 @@
     "exclude": [
         "a3p-integration", // vendored package problems
         "multichain-testing", // not relevant for coding loop (and noble-usdn-lab.ts is very slow)
-        "packages/benchmark",
-        "packages/create-dapp",
-        "packages/solo",
-        "packages/stat-logger",
-        "packages/swingset-runner",
-        "packages/xsnap/moddable",
-        "packages/xsnap/xsnap-native",
-        "packages/xsnap-lockdown",
+        "packages/swingset-runner", // TODO not yet type-clean (~64 errors); also lacks a lint:types script
         "**/build",
         "**/bundles",
         "**/coverage",

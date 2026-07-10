@@ -368,61 +368,64 @@ export const makeZoeStorageManager = (
   );
   const makeInstanceRecord = makeInstanceRecordStorage(zoeBaggage);
 
-  /** @type {MakeZoeInstanceStorageManager} */
-  const makeZoeInstanceStorageManager = async (
-    installation,
-    customTerms,
-    uncleanIssuerKeywordRecord,
-    instance,
-    contractBundleCap,
-    instanceLabel,
-  ) => {
-    // Clean the issuerKeywordRecord we receive in `startInstance`
-    // from the user, and save the issuers in Zoe if they are not
-    // already stored there
-    const { issuers, brands } = await issuerStorage.storeIssuerKeywordRecord(
-      uncleanIssuerKeywordRecord,
-    );
-
-    // Create purses for the issuers if they do not already exist
-    await Promise.all(
-      Object.entries(issuers).map(([keyword, issuer]) =>
-        escrowStorage.createPurse(issuer, brands[keyword]),
-      ),
-    );
-
-    // The instanceRecord is what the contract code is parameterized
-    // with: the particular terms, issuers, and brands used in a
-    // contract instance based on the installation. A user can query
-    // Zoe to find out the installation, terms, issuers, and brands
-    // for a contract instance. Contract code has similar query
-    // capabilities from the ZCF side.
-
-    const instanceRecord = makeInstanceRecord(
-      harden({
+  const makeZoeInstanceStorageManager =
+    /** @type {MakeZoeInstanceStorageManager} */ (
+      async (
         installation,
+        customTerms,
+        uncleanIssuerKeywordRecord,
         instance,
-        terms: {
-          ...customTerms,
-          issuers,
-          brands,
-        },
-      }),
-    );
+        contractBundleCap,
+        instanceLabel,
+      ) => {
+        // Clean the issuerKeywordRecord we receive in `startInstance`
+        // from the user, and save the issuers in Zoe if they are not
+        // already stored there
+        const { issuers, brands } =
+          await issuerStorage.storeIssuerKeywordRecord(
+            uncleanIssuerKeywordRecord,
+          );
 
-    const bundleLabel = installation.getBundleLabel();
-    const contractLabel = instanceLabel
-      ? `${bundleLabel}-${instanceLabel}`
-      : bundleLabel;
+        // Create purses for the issuers if they do not already exist
+        await Promise.all(
+          Object.entries(issuers).map(([keyword, issuer]) =>
+            escrowStorage.createPurse(issuer, brands[keyword]),
+          ),
+        );
 
-    const { root, adminNode } = await createZCFVat(
-      contractBundleCap,
-      contractLabel,
+        // The instanceRecord is what the contract code is parameterized
+        // with: the particular terms, issuers, and brands used in a
+        // contract instance based on the installation. A user can query
+        // Zoe to find out the installation, terms, issuers, and brands
+        // for a contract instance. Contract code has similar query
+        // capabilities from the ZCF side.
+
+        const instanceRecord = makeInstanceRecord(
+          harden({
+            installation,
+            instance,
+            terms: {
+              ...customTerms,
+              issuers,
+              brands,
+            },
+          }),
+        );
+
+        const bundleLabel = installation.getBundleLabel();
+        const contractLabel = instanceLabel
+          ? `${bundleLabel}-${instanceLabel}`
+          : bundleLabel;
+
+        const { root, adminNode } = await createZCFVat(
+          contractBundleCap,
+          contractLabel,
+        );
+        // @ts-expect-error checked cast
+        return makeInstanceStorageManager(instanceRecord, adminNode, root)
+          .instanceStorageManager;
+      }
     );
-    // @ts-expect-error checked cast
-    return makeInstanceStorageManager(instanceRecord, adminNode, root)
-      .instanceStorageManager;
-  };
 
   const getInvitationIssuer = () => invitationIssuer;
 

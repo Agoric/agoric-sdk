@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
 import nativePath from 'node:path';
@@ -168,7 +166,7 @@ const baseConfig = harden({
  * @param {string[]} [options.bootstrapCoreEvals] code defining functions to be
  *   called with a set of powers, each in their own isolated compartment
  * @param {object} [powers]
- * @param {Pick<import('node:fs/promises'), 'mkdir'>} [powers.fsp]
+ * @param {Pick<typeof import('node:fs/promises'), 'mkdir'>} [powers.fsp]
  * @param {typeof resolve} [powers.resolvePath]
  */
 export const makeCosmicSwingsetTestKit = async (
@@ -298,7 +296,7 @@ export const makeCosmicSwingsetTestKit = async (
     blockTime: lastBlockTime,
     params: lastBlockParams,
   } = initMessage;
-  let lastBlockWalltime = Date.now();
+  let lastBlockWalltime = performance.now();
   await blockingSend(initMessage);
 
   /**
@@ -313,7 +311,7 @@ export const makeCosmicSwingsetTestKit = async (
   // Advance block time at a nominal rate of one second per real millisecond,
   // but introduce discontinuities as necessary to maintain monotonicity.
   const nextBlockTime = () => {
-    const delta = Math.floor(Date.now() - lastBlockWalltime);
+    const delta = Math.floor(performance.now() - lastBlockWalltime);
     return lastBlockTime + (delta > 0 ? delta : 1);
   };
 
@@ -334,7 +332,7 @@ export const makeCosmicSwingsetTestKit = async (
       blockTime > lastBlockTime ||
       Fail`blockTime ${blockTime} must be greater than ${lastBlockTime}`;
     needsBootstrap = false;
-    lastBlockWalltime = Date.now();
+    lastBlockWalltime = performance.now();
     lastBlockHeight = blockHeight;
     lastBlockTime = blockTime;
     lastBlockParams = params;

@@ -1,5 +1,3 @@
-// @jessie-check
-
 // XXX package factoring debt
 
 // Ensure this is a module.

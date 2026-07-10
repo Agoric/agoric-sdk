@@ -6,7 +6,7 @@ const MAX_SUBSCRIPTIONS = 5;
 const hasOwnProperties = (obj: unknown) =>
   typeof obj === 'object' && obj !== null && Reflect.ownKeys(obj).length > 0;
 
-/** cf. https://docs.cometbft.com/v1.0/explanation/core/subscription */
+/** cf. https://docs.cometbft.com/v0.38/core/subscription */
 export type SubscriptionResponse = {
   type: string;
   value: Record<string, unknown>;
@@ -28,9 +28,9 @@ export class CosmosRPCClient extends JSONRPCClient {
 
   #closedPK: PromiseWithResolvers<CloseEvent>;
 
-  #isClosed: boolean;
+  #isClosed = false;
 
-  #lastSentId: number;
+  #lastSentId = -1;
 
   #ws: WebSocket;
 
@@ -57,8 +57,6 @@ export class CosmosRPCClient extends JSONRPCClient {
     this.#subscriptions = new Map();
     this.#openedPK = Promise.withResolvers();
     this.#closedPK = Promise.withResolvers();
-    this.#isClosed = false;
-    this.#lastSentId = -1;
 
     ws.addEventListener('close', event => {
       this.#closedPK.resolve(event);
@@ -126,12 +124,12 @@ export class CosmosRPCClient extends JSONRPCClient {
     });
   }
 
-  async send(payload: any) {
+  override async send(payload: any) {
     if (this.#isClosed) throw Error('already closed');
     return super.send(payload);
   }
 
-  receive(response: JSONRPCResponse) {
+  override receive(response: JSONRPCResponse) {
     // console.log('Received RPC response:', response);
     return super.receive(response);
   }
@@ -154,7 +152,7 @@ export class CosmosRPCClient extends JSONRPCClient {
   }
 
   /**
-   * Websocket documentation: https://docs.cometbft.com/v1.0/explanation/core/subscription
+   * Websocket documentation: https://docs.cometbft.com/v0.38/core/subscription
    * Query syntax: https://pkg.go.dev/github.com/cometbft/cometbft@v1.0.1/libs/pubsub/query/syntax
    * List of events: https://pkg.go.dev/github.com/cometbft/cometbft/types#pkg-constants
    */

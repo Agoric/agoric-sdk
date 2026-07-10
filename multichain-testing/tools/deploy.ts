@@ -1,8 +1,8 @@
 /** @file run a builder and deploy it onto the Agoric chain in local Starship cluster */
-import { createRequire } from 'module';
-import type { AgdTools } from './agd-tools.js';
 import type { CoreEvalPlan } from '@agoric/deploy-script-support/src/writeCoreEvalParts.js';
 import { makeTracer, toCLIOptions } from '@agoric/internal';
+import { createRequire } from 'node:module';
+import type { AgdTools } from './agd-tools.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -22,8 +22,8 @@ export const makeDeployBuilder = (
     if (builderOpts) {
       args.push(...toCLIOptions(builderOpts));
     }
-    const npx = (file: string, args: string[]) =>
-      execa('npx', ['--no-install', file, ...args]);
+    const npx = (file: string, npxArgs: string[]) =>
+      execa('npx', ['--no-install', file, ...npxArgs]);
     const { stdout } = await npx('agoric', args);
     const match = stdout.match(/ (?<name>[-\w]+)-permit.json/);
     if (!(match && match.groups)) {

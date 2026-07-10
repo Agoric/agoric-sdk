@@ -1,16 +1,15 @@
 #! /usr/bin/env node
 // @ts-check
-// @jessie-check
 
 // This file functions as both an importable module and a standalone script.
 import './helpers/maybe-unsafe-lockdown.js';
 
-import os from 'os';
-import process from 'process';
-import { Transform } from 'stream';
-import fsPower from 'fs';
-import fsPromisesPower from 'fs/promises';
-import pathPower from 'path';
+import os from 'node:os';
+import process from 'node:process';
+import { Transform } from 'node:stream';
+import fsPower from 'node:fs';
+import fsPromisesPower from 'node:fs/promises';
+import pathPower from 'node:path';
 
 import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
@@ -42,10 +41,10 @@ import {
  */
 
 /**
- * @param {object} options
+ * @param {Record<string, any>} options
  * @returns {asserts options is StateSyncImporterOptions}
  */
-export const validateImporterOptions = options => {
+export function validateImporterOptions(options) {
   typeof options === 'object' || Fail`options is not an object`;
   typeof options.stateDir === 'string' ||
     Fail`required stateDir option not a string`;
@@ -58,7 +57,7 @@ export const validateImporterOptions = options => {
   checkArtifactMode(options.artifactMode);
   options.includeHistorical === undefined ||
     Fail`deprecated includeHistorical option found`;
-};
+}
 
 /**
  * @param {Pick<StateSyncImporterOptions, 'artifactMode' | 'exportDataMode' >} options
@@ -82,10 +81,10 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
 
   switch (artifactMode) {
     case 'debug':
-    // eslint-disable-next-line no-fallthrough
+    // @ts-expect-error intentional fallthrough for mode hierarchy
     case 'operational':
       if (manifest.artifactMode === 'operational') break;
-    // eslint-disable-next-line no-fallthrough
+    // @ts-expect-error intentional fallthrough for mode hierarchy
     case 'replay':
       if (manifest.artifactMode === 'replay') break;
     // eslint-disable-next-line no-fallthrough
@@ -110,8 +109,8 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
 /**
  * @param {StateSyncImporterOptions} options
  * @param {object} powers
- * @param {Pick<import('fs/promises'), 'readFile'> & Pick<import('fs'), 'createReadStream'>} powers.fs
- * @param {import('path')['resolve']} powers.pathResolve
+ * @param {Pick<typeof import('fs/promises'), 'readFile'> & Pick<typeof import('fs'), 'createReadStream'>} powers.fs
+ * @param {typeof import('path')['resolve']} powers.pathResolve
  * @param {typeof import('@agoric/swing-store')['importSwingStore']} [powers.importSwingStore]
  * @param {typeof import('@agoric/swing-store')['openSwingStore']} [powers.openSwingStore]
  * @param {null | ((...args: any[]) => void)} [powers.log]
@@ -168,7 +167,7 @@ export const performStateSyncImport = async (
         .pipe(
           new Transform({
             objectMode: true,
-            transform(data, encoding, callback) {
+            transform(data, _encoding, callback) {
               try {
                 callback(null, JSON.parse(data));
               } catch (error) {
@@ -245,8 +244,8 @@ export const performStateSyncImport = async (
  * @param {Partial<Record<string, string>>} powers.env
  * @param {string} powers.homedir
  * @param {Console} powers.console
- * @param {Pick<import('fs/promises'), 'readFile' | 'stat'> & Pick<import('fs'), 'createReadStream'>} powers.fs
- * @param {import('path')['resolve']} powers.pathResolve
+ * @param {Pick<typeof import('fs/promises'), 'readFile' | 'stat'> & Pick<typeof import('fs'), 'createReadStream'>} powers.fs
+ * @param {typeof import('path')['resolve']} powers.pathResolve
  */
 export const main = async (
   args,

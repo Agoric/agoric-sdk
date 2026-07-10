@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { makeFsStreamWriter } from '@agoric/internal/src/node/fs-stream.js';
 import { makeContextualSlogProcessor } from './context-aware-slog.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';

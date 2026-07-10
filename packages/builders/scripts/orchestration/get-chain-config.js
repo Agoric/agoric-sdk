@@ -6,8 +6,8 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { fetchNetworkConfig } from '@agoric/client-utils';
 
 /**
- * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration'
+ * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CosmosChainInfo} from '@agoric/orchestration'
  */
 
 /** @param {string[]} strs */
@@ -31,7 +31,7 @@ const parsePeers = strs => {
  * @param {object} args - The arguments object.
  * @param {'bootstrap' | 'devnet' |'emerynet' | 'local' } args.net - Agoric network shorthand (e.g., 'emerynet').
  * @param {string[]} args.peers - The peers to connect .
- * @param {childProcess.execFileSync} [args.execFileSync] - Optional execFileSync function.
+ * @param {typeof childProcess.execFileSync} [args.execFileSync] - Optional execFileSync function.
  * @returns {Promise<Record<string, CosmosChainInfo>>} A promise that resolves to the chain configuration details keyed by chain name.
  */
 
