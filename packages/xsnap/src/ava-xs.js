@@ -5,22 +5,17 @@ import { spawn } from 'node:child_process';
 import { type as osType } from 'node:os';
 import { promises as fsp } from 'node:fs';
 import path from 'node:path';
-import globCallback from 'glob';
 import bundleSource from '@endo/bundle-source';
 
 import { main, makeBundleResolve } from './avaXS.js';
 
+// Sorted to match glob@7's default `alphasort` ordering (localeCompare in the
+// 'en' locale), which node:fs glob does not guarantee.
 /** @type {(pattern: string) => Promise<string[]>} */
 const glob = pattern =>
-  new Promise((resolve, reject) => {
-    globCallback(pattern, (err, matches) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve(matches);
-    });
-  });
+  Array.fromAsync(fsp.glob(pattern)).then(matches =>
+    matches.sort((a, b) => a.localeCompare(b, 'en')),
+  );
 
 Promise.resolve()
   .then(_ =>
