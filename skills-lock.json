@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "depot-ci": {
+      "source": "depot/skills",
+      "sourceType": "github",
+      "computedHash": "a74aa89e07a321daf93067195aef099207f9d63b42f98ff626b6eb16b918acfd"
+    },
+    "depot-container-builds": {
+      "source": "depot/skills",
+      "sourceType": "github",
+      "computedHash": "84c1483e6c43d22889d8ba8a4939b5842aa9d9418b529c264054e339a3c737af"
+    },
+    "depot-general": {
+      "source": "depot/skills",
+      "sourceType": "github",
+      "computedHash": "d90476f95961ba38e331abce9a94a30d6e8b514b5247b4b76e79070b21a91b1a"
+    },
+    "depot-github-runners": {
+      "source": "depot/skills",
+      "sourceType": "github",
+      "computedHash": "6c8de79b1be93caf2249b4a796534620363253761559ca9463a61bc46ead8d45"
+    },
+    "maintaining-dependency-patches": {
+      "source": "turadg/skills",
+      "sourceType": "github",
+      "computedHash": "e0cc047ae42fcefe938a5b248416fc09b0aef6b694d4cfcd79a8804fbee767f6"
+    }
+  }
+}

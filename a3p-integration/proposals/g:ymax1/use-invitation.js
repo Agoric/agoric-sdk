@@ -4,8 +4,8 @@
 import '@endo/init/legacy.js'; // XXX axios
 
 // Detect if this is run as a script.
-import url from 'url';
-import process from 'process';
+import url from 'node:url';
+import process from 'node:process';
 
 import { redeemInvitation } from './ymax-util.js';
 

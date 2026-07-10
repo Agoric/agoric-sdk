@@ -2,7 +2,7 @@
 import '@endo/init/debug.js';
 
 import test from 'ava';
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 import tmp from 'tmp';
 import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
 import { createSHA256 } from '../src/hasher.js';
@@ -159,8 +159,14 @@ test('unknown format', t => {
   const { kernelStorage } = initSwingStore();
   const { bundleStore } = kernelStorage;
   const unknownID = 'b1999-whoa-futuristic';
-  /** @import {Bundle} from '../src/bundleStore.js' */
-  t.throws(() => bundleStore.addBundle(unknownID, /** @type {Bundle} */ ({})), {
-    message: /unsupported BundleID/,
-  });
+  t.throws(
+    () =>
+      bundleStore.addBundle(
+        unknownID,
+        /** @type {import('../src/bundleStore.js').Bundle} */ ({}),
+      ),
+    {
+      message: /unsupported BundleID/,
+    },
+  );
 });

@@ -1,4 +1,4 @@
-/* eslint-env node */
+/* global process */
 
 import timersPromises from 'node:timers/promises';
 import { inspect } from 'node:util';
@@ -24,14 +24,16 @@ import {
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
 
+import type { CaipChainId } from '@agoric/orchestration';
 import { loadConfig } from '../src/config.ts';
-import { CosmosRestClient } from '../src/cosmos-rest-client.ts';
 import { CosmosRPCClient } from '../src/cosmos-rpc.ts';
 import { createEVMContext, prepareAbortController } from '../src/support.ts';
+import { makeEvmRpc, type EvmRpc } from '../src/evm-scanner.ts';
 import type { SimplePowers } from '../src/main.ts';
 import { makeSQLiteKeyValueStore } from '../src/kv-store.ts';
 import type { HandlePendingTxOpts } from '../src/pending-tx-manager.ts';
 import { handlePendingTx } from '../src/pending-tx-manager.ts';
+import { makeNowISO } from '../src/utils.ts';
 import {
   parseStreamCell,
   parseStreamCellValue,
@@ -51,9 +53,11 @@ export const processTx = async (
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
-    now = Date.now,
+    now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
+    // Default to the wall clock for debugging sent transactions.
+    makeNonce = makeNowISO(Date.now),
     AbortController = globalThis.AbortController,
     AbortSignal = globalThis.AbortSignal,
     WebSocket = ws.WebSocket,
@@ -81,7 +85,7 @@ export const processTx = async (
   const { clusterName } = config;
 
   const networkConfig = await fetchEnvNetworkConfig({
-    env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
+    env: { AGORIC_NET: config.agoricNetworkSpec },
     fetch,
   });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
@@ -92,12 +96,6 @@ export const processTx = async (
     heartbeats: generateInterval(6000),
   });
   await rpc.opened();
-
-  const cosmosRest = new CosmosRestClient(simplePowers, {
-    clusterName,
-    timeout: config.cosmosRest.timeout,
-    retries: config.cosmosRest.retries,
-  });
 
   const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
   const signingSmartWalletKit = await makeSigningSmartWalletKit(
@@ -115,10 +113,13 @@ export const processTx = async (
   const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
   const evmHeights = await deeplyFulfilledObject(
     objectMap(evmCtx.evmProviders, (provider, chainId) =>
-      provider.getBlockNumber().catch(err => {
-        failedEvmChains.push(chainId);
-        return { error: err.message };
-      }),
+      provider
+        .getProvider()
+        .getBlockNumber()
+        .catch(err => {
+          failedEvmChains.push(chainId);
+          return { error: err.message };
+        }),
     ),
   );
   if (isVerbose) {
@@ -126,6 +127,13 @@ export const processTx = async (
   }
   failedEvmChains.length === 0 ||
     Fail`Could not connect to EVM chains: ${q(failedEvmChains)}`;
+
+  const retryProviders = Object.fromEntries(
+    Object.entries(evmCtx.evmProviders).map(([caip, provider]) => [
+      caip,
+      makeEvmRpc(provider, setTimeout),
+    ]),
+  ) as Record<CaipChainId, EvmRpc>;
 
   const { db, kvStore } = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
     trace: () => {},
@@ -178,15 +186,17 @@ export const processTx = async (
       // Prepare powers for handling the transaction
       const txPowers: HandlePendingTxOpts = Object.freeze({
         ...evmCtx,
-        cosmosRest,
-        cosmosRpc: rpc,
+        retryProviders,
         fetch,
+        setTimeout,
+        now,
         kvStore,
         makeAbortController,
         log: (...args) => console.log('[TX]', ...args),
         error: (...args) => console.error('[ERROR]', ...args),
         marshaller,
         signingSmartWalletKit,
+        makeNonce,
         vstoragePathPrefixes,
         axelarApiUrl: config.axelar.apiUrl,
         pendingTxAbortControllers: new Map(),

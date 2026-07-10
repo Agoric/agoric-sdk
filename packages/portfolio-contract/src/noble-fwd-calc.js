@@ -7,7 +7,7 @@ const MODULE_NAME = 'forwarding';
  * cf. https://github.com/noble-assets/forwarding/blob/main/proto/noble/forwarding/v1/packet.proto
  *
  * @import {Bech32Address} from '@agoric/orchestration';
- * @import {IBCChannelID} from '@agoric/vats';
+ * @import {IBCChannelID} from '@agoric/network/ibc';
  *
  * @typedef {{
  *   noble: {

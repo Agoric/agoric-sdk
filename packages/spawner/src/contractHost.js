@@ -4,11 +4,9 @@ import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-// spawnBundle is built with 'yarn build'
-// eslint-disable-next-line import/no-extraneous-dependencies -- cannot detect self-reference
-import spawnBundle from '@agoric/spawner/bundles/bundle-spawn.js';
-
-function makeSpawner(vatAdminSvc) {
+function makeSpawner(vatAdminSvc, spawnBundleCapP = undefined) {
+  const spawnBundleRefP =
+    spawnBundleCapP || E(vatAdminSvc).getNamedBundleCap('spawn');
   return Far('spawner', {
     install(bundle, oldModuleFormat) {
       assert(!oldModuleFormat, 'oldModuleFormat not supported');
@@ -16,7 +14,8 @@ function makeSpawner(vatAdminSvc) {
         async spawn(argsP) {
           const meter = await E(vatAdminSvc).createUnlimitedMeter();
           const opts = { name: 'spawn', meter };
-          const { root } = await E(vatAdminSvc).createVat(spawnBundle, opts);
+          const spawnBundleRef = await spawnBundleRefP;
+          const { root } = await E(vatAdminSvc).createVat(spawnBundleRef, opts);
           return E(E(root).loadBundle(bundle)).start(argsP);
         },
       });

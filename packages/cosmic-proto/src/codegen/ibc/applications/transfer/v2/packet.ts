@@ -6,17 +6,30 @@ import { type JsonSafe } from '../../../../json-safe.js';
  * FungibleTokenPacketData defines a struct for the packet payload
  * See FungibleTokenPacketData spec:
  * https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
+ * @name FungibleTokenPacketData
+ * @package ibc.applications.transfer.v2
+ * @see proto type: ibc.applications.transfer.v2.FungibleTokenPacketData
  */
 export interface FungibleTokenPacketData {
-  /** the token denomination to be transferred */
+  /**
+   * the token denomination to be transferred
+   */
   denom: string;
-  /** the token amount to be transferred */
+  /**
+   * the token amount to be transferred
+   */
   amount: string;
-  /** the sender address */
+  /**
+   * the sender address
+   */
   sender: string;
-  /** the recipient address on the destination chain */
+  /**
+   * the recipient address on the destination chain
+   */
   receiver: string;
-  /** optional memo */
+  /**
+   * optional memo
+   */
   memo: string;
 }
 export interface FungibleTokenPacketDataProtoMsg {
@@ -27,6 +40,9 @@ export interface FungibleTokenPacketDataProtoMsg {
  * FungibleTokenPacketData defines a struct for the packet payload
  * See FungibleTokenPacketData spec:
  * https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
+ * @name FungibleTokenPacketDataSDKType
+ * @package ibc.applications.transfer.v2
+ * @see proto type: ibc.applications.transfer.v2.FungibleTokenPacketData
  */
 export interface FungibleTokenPacketDataSDKType {
   denom: string;
@@ -44,8 +60,39 @@ function createBaseFungibleTokenPacketData(): FungibleTokenPacketData {
     memo: '',
   };
 }
+/**
+ * FungibleTokenPacketData defines a struct for the packet payload
+ * See FungibleTokenPacketData spec:
+ * https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures
+ * @name FungibleTokenPacketData
+ * @package ibc.applications.transfer.v2
+ * @see proto type: ibc.applications.transfer.v2.FungibleTokenPacketData
+ */
 export const FungibleTokenPacketData = {
   typeUrl: '/ibc.applications.transfer.v2.FungibleTokenPacketData' as const,
+  aminoType: 'cosmos-sdk/FungibleTokenPacketData' as const,
+  is(o: any): o is FungibleTokenPacketData {
+    return (
+      o &&
+      (o.$typeUrl === FungibleTokenPacketData.typeUrl ||
+        (typeof o.denom === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.sender === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.memo === 'string'))
+    );
+  },
+  isSDK(o: any): o is FungibleTokenPacketDataSDKType {
+    return (
+      o &&
+      (o.$typeUrl === FungibleTokenPacketData.typeUrl ||
+        (typeof o.denom === 'string' &&
+          typeof o.amount === 'string' &&
+          typeof o.sender === 'string' &&
+          typeof o.receiver === 'string' &&
+          typeof o.memo === 'string'))
+    );
+  },
   encode(
     message: FungibleTokenPacketData,
     writer: BinaryWriter = BinaryWriter.create(),

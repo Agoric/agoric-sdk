@@ -1,6 +1,6 @@
 // @ts-check
-import { spawn } from 'child_process';
-import { fileURLToPath } from 'url';
+import { spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 import engineGC from './engine-gc.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
@@ -22,7 +22,9 @@ const settleUnhandled = async () => {
   await delayTurn();
 };
 
+/** @param {'unhandledRejection' | 'rejectionHandled'} event */
 const stripListeners = event => {
+  // @ts-expect-error the overload is per specific event name and can't handle the union
   const listeners = process.listeners(event);
   for (const listener of listeners) {
     process.off(event, listener);
@@ -52,6 +54,10 @@ const makeUnhandledTracker = () => {
     }
   });
 
+  /**
+   * @param {unknown} _reason
+   * @param {Promise<unknown>} promise
+   */
   const onUnhandled = (_reason, promise) => {
     seenUnhandled += 1;
     const token = Symbol('unhandledRejection');
@@ -60,6 +66,7 @@ const makeUnhandledTracker = () => {
     registry.register(promise, token, token);
   };
 
+  /** @param {Promise<unknown>} promise */
   const onHandledLate = promise => {
     const token = tokenByPromise.get(promise);
     tokenByPromise.delete(promise);
@@ -233,7 +240,6 @@ export const makeExpectUnhandledRejectionMacro = ({
         ? async t => innerMacro.exec(t, ...args)
         : t => (0, args[0])(t, ...args);
 
-    /** @type {string} */
     return test.macro(
       /** @type {MacroDeclarationOptions<A, C>} */ ({
         title(providedTitle = '', ...args) {

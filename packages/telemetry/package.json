@@ -12,8 +12,8 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:types": "yarn run -T tsc",
-    "lint:eslint": "yarn run -T eslint ."
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "bin": {
     "frcat": "./src/frcat-entrypoint.js"
@@ -24,11 +24,11 @@
   "dependencies": {
     "@agoric/internal": "workspace:*",
     "@agoric/store": "workspace:*",
-    "@endo/errors": "^1.2.13",
-    "@endo/init": "^1.1.12",
-    "@endo/marshal": "^1.8.0",
-    "@endo/promise-kit": "^1.1.13",
-    "@endo/stream": "^1.2.13",
+    "@endo/errors": "^1.3.1",
+    "@endo/init": "^1.1.13",
+    "@endo/marshal": "^1.10.0",
+    "@endo/promise-kit": "^1.2.1",
+    "@endo/stream": "^1.3.1",
     "@opentelemetry/api": "~1.9.0",
     "@opentelemetry/api-logs": "0.57.1",
     "@opentelemetry/exporter-logs-otlp-http": "0.57.1",
@@ -39,14 +39,13 @@
     "@opentelemetry/sdk-metrics": "~1.30.1",
     "@opentelemetry/sdk-trace-base": "~1.30.1",
     "@opentelemetry/semantic-conventions": "~1.28.0",
-    "anylogger": "^0.21.0",
-    "better-sqlite3": "^10.1.0",
+    "better-sqlite3": "^12.10.0",
     "tmp": "^0.2.1"
   },
   "devDependencies": {
-    "@endo/lockdown": "^1.0.18",
-    "@endo/ses-ava": "^1.3.2",
-    "ava": "^6.4.1",
+    "@endo/lockdown": "^1.0.19",
+    "@endo/ses-ava": "^1.4.2",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "tmp": "^0.2.1"
   },
@@ -57,9 +56,9 @@
     "access": "public"
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "typeCoverage": {
-    "atLeast": 89.28
+    "atLeast": 89.52
   }
 }

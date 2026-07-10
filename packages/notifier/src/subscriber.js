@@ -1,5 +1,3 @@
-// @jessie-check
-
 /// <reference types="ses" />
 
 import { E, Far } from '@endo/far';

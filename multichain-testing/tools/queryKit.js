@@ -13,8 +13,8 @@ import { makeClientMarshaller } from './marshalTables.js';
 /**
  * Iter tools...
  *
- * @template {Promise<any>} PT
- * @param {() => PT} fn
+ * @template T
+ * @param {() => Promise<T>} fn
  * @param {{ delay: (ms: number) => Promise<void>, period?: number }} opts
  */
 export async function* poll(fn, { delay, period = 1000 }) {
@@ -27,8 +27,8 @@ export async function* poll(fn, { delay, period = 1000 }) {
 }
 
 /**
- * @template {Promise<any>} PT
- * @param {AsyncGenerator<Awaited<PT>>} src
+ * @template T
+ * @param {AsyncGenerator<T>} src
  * @param {(a: unknown, b: unknown) => boolean} [equal]
  */
 export async function* dedup(src, equal = (x, y) => x === y) {
@@ -42,10 +42,10 @@ export async function* dedup(src, equal = (x, y) => x === y) {
 }
 
 /**
- * @template {Promise<any>} PT
- * @template {Promise<any>} PU
- * @param {AsyncGenerator<Awaited<PT>>} src
- * @param {(x: Awaited<PT>) => PU} fn
+ * @template T
+ * @template U
+ * @param {AsyncGenerator<T>} src
+ * @param {(x: T) => Promise<U>} fn
  */
 export async function* mapIter(src, fn) {
   for await (const item of src) {

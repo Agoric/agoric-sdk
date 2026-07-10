@@ -10,13 +10,12 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const packageRoot = resolve(__dirname, '..');
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 const MAX_PASSES = 20;
 const CHUNK_SIZE = 50;
 
+// eslint-disable-next-line no-control-regex
 const ansiRegex = /\u001b\[[0-9;]*m/g;
 const missingImportPatterns = [
   /^(?<file>.+?):\d+:\d+\s+-\s+error TS(2304|2552|2503|2307):\s+Cannot find (?:name|namespace|module)\b/,

@@ -1,4 +1,3 @@
-// @jessie-check
 // @ts-check
 
 import { Fail } from '@endo/errors';
@@ -7,6 +6,7 @@ import { Nat } from '@endo/nat';
 /**
  * @import {PowerFlagFeeSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
  * @import {ParamsSDKType} from '@agoric/cosmic-proto/swingset/swingset.js';
+ * @import {JsonSafe} from '@agoric/cosmic-proto/json-safe'
  */
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
@@ -76,6 +76,11 @@ export const defaultBeansPerUnit = [
   ),
 ];
 
+export const defaultInstallationDeadlineBlocks = -1n; // no deadline
+export const defaultInstallationDeadlineSeconds = 24n * 60n * 60n; // 24 hours
+export const defaultBundleUncompressedSizeLimitBytes = 10_000_000n;
+export const defaultChunkSizeLimitBytes = 490_000n;
+
 const defaultBootstrapVatConfig =
   '@agoric/vm-config/decentral-demo-config.json';
 
@@ -91,7 +96,7 @@ export const defaultQueueMax = [
 ];
 
 /**
- * @enum {(typeof VatCleanupPhase)[keyof typeof VatCleanupPhase]}
+ * @typedef {(typeof VatCleanupPhase)[keyof typeof VatCleanupPhase]} VatCleanupPhase
  */
 export const VatCleanupPhase = /** @type {const} */ ({
   Default: 'default',
@@ -113,7 +118,7 @@ export const VatCleanupDefaults = {
 
 /**
  * @param {VatCleanupKeywordsRecord} keywordsRecord
- * @returns {ParamsSDKType['vat_cleanup_budget']}
+ * @returns {JsonSafe<ParamsSDKType['vat_cleanup_budget']>}
  */
 export const makeVatCleanupBudgetFromKeywords = keywordsRecord => {
   return Object.entries(keywordsRecord).map(([keyName, value]) => {
@@ -129,8 +134,9 @@ export const makeVatCleanupBudgetFromKeywords = keywordsRecord => {
 export const defaultVatCleanupBudget =
   makeVatCleanupBudgetFromKeywords(VatCleanupDefaults);
 
+// Source of truth is golang/cosmos/x/swingset/types/default-params.go
 /**
- * @type {ParamsSDKType}
+ * @type {JsonSafe<ParamsSDKType>}
  */
 export const DEFAULT_SIM_SWINGSET_PARAMS = {
   beans_per_unit: defaultBeansPerUnit,
@@ -139,4 +145,8 @@ export const DEFAULT_SIM_SWINGSET_PARAMS = {
   power_flag_fees: defaultPowerFlagFees,
   queue_max: defaultQueueMax,
   vat_cleanup_budget: defaultVatCleanupBudget,
+  installation_deadline_blocks: `${defaultInstallationDeadlineBlocks}`,
+  installation_deadline_seconds: `${defaultInstallationDeadlineSeconds}`,
+  bundle_uncompressed_size_limit_bytes: `${defaultBundleUncompressedSizeLimitBytes}`,
+  chunk_size_limit_bytes: `${defaultChunkSizeLimitBytes}`,
 };

@@ -2,13 +2,10 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
-import {
-  makeFakeVatAdmin,
-  zcfBundleCap,
-} from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { bundles, devices } from '../test/devices.js';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { vatsSourceSpecRegistry } from '../source-spec-registry.js';
 
 import { buildRootObject as agoricNamesRoot } from '../src/vat-agoricNames.js';
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';
@@ -40,8 +37,55 @@ export const noop = () => {};
 
 export const mockDProxy = /** @type {DProxy} */ (d => d);
 
-export const makeMock = log =>
-  harden({
+/** @type {Promise<typeof import('@agoric/zoe/tools/fakeVatAdmin.js')> | undefined} */
+let fakeVatAdminToolsP;
+const getFakeVatAdminTools = () => {
+  if (!fakeVatAdminToolsP) {
+    fakeVatAdminToolsP = import('@agoric/zoe/tools/fakeVatAdmin.js');
+  }
+  return fakeVatAdminToolsP;
+};
+
+/** @type {Promise<{bundles: Record<string, any>; devices: Record<string, any>}> | undefined} */
+let bootTestBundlesP;
+const getBootTestBundles = () => {
+  if (!bootTestBundlesP) {
+    bootTestBundlesP = (async () => {
+      const bundleCache = await unsafeSharedBundleCache;
+      const [centralSupply, mintHolder] = await Promise.all([
+        bundleCache.load(
+          vatsSourceSpecRegistry.centralSupply.sourceSpec,
+          vatsSourceSpecRegistry.centralSupply.bundleName,
+        ),
+        bundleCache.load(
+          vatsSourceSpecRegistry.mintHolder.sourceSpec,
+          vatsSourceSpecRegistry.mintHolder.bundleName,
+        ),
+      ]);
+      const bundles = harden({
+        centralSupply,
+        mintHolder,
+      });
+      const devices = harden({
+        vatAdmin: {
+          getNamedBundleCap: name => ({
+            getBundle: () => {
+              const bundle = bundles[name];
+              assert(bundle, `unknown bundle ${name}`);
+              return bundle;
+            },
+          }),
+        },
+      });
+      return harden({ bundles, devices });
+    })();
+  }
+  return bootTestBundlesP;
+};
+
+export const makeMock = async log => {
+  const { devices } = await getBootTestBundles();
+  return harden({
     devices: {
       command: /** @type {any} */ ({ registerInboundHandler: noop }),
       mailbox: /** @type {any} */ ({
@@ -81,12 +125,17 @@ export const makeMock = log =>
       }),
     },
   });
+};
 
-export const makePopulatedFakeVatAdmin = () => {
+export const makePopulatedFakeVatAdmin = async () => {
   // The .createVat() from zoe/tools/fakeVatAdmin.js only knows how to
   // make ZCF vats, so wrap it in a form that can create the other
   // vats too. We have two types.
 
+  const [{ bundles }, { makeFakeVatAdmin, zcfBundleCap }] = await Promise.all([
+    getBootTestBundles(),
+    getFakeVatAdminTools(),
+  ]);
   const fakeCapToName = new Map(); // cap -> name
   const fakeNameToCap = new Map(); // name -> cap
   const { admin: fakeVatAdmin, vatAdminState } = makeFakeVatAdmin();
@@ -151,8 +200,8 @@ export const makePopulatedFakeVatAdmin = () => {
   return { vatAdminService, vatAdminRoot };
 };
 
-export const mockSwingsetVats = mock => {
-  const { vatAdminRoot } = makePopulatedFakeVatAdmin();
+export const mockSwingsetVats = async mock => {
+  const { vatAdminRoot } = await makePopulatedFakeVatAdmin();
   const vats = {
     ...mock.vats,
     vatAdmin: vatAdminRoot,

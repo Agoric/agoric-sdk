@@ -13,7 +13,17 @@ import { Fail, q } from '@endo/errors';
  * @returns {LegacyWeakMap<K, V>}
  */
 export const makeLegacyWeakMap = (tag = 'key') => {
-  /** @type {WeakMap<K & object, V>} */
+  /**
+   * The keys are always objects, so back onto a `WeakMap` keyed by `K & object`
+   * while operating on the public key type `K` via this bivariant view.
+   *
+   * @type {{
+   *   has(key: any): boolean,
+   *   get(key: any): V | undefined,
+   *   set(key: any, value: V): unknown,
+   *   delete(key: any): boolean,
+   * }}
+   */
   const wm = new WeakMap();
   const assertKeyDoesNotExist = key =>
     !wm.has(key) || Fail`${q(tag)} already registered: ${key}`;

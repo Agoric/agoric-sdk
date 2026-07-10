@@ -10,10 +10,19 @@ import {
 } from '@agoric/cosmic-proto/agoric/vstorage/query.js';
 
 /**
- * @import {AbciQueryResponse} from '@cosmjs/tendermint-rpc';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {StreamCell} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
+ */
+
+/**
+ * @typedef {{
+ *   code?: number;
+ *   codespace?: string;
+ *   height?: string | number;
+ *   log?: string;
+ *   value?: string;
+ * }} AbciQueryResponse
  */
 
 const kindToRpc = /** @type {const} */ ({
@@ -88,7 +97,7 @@ export const makeVStorage = ({ fetch }, config) => {
   /**
    * Make a vstorage Children or Data query, returning the decoded result along
    * with response metadata derived from fields documented at
-   * https://docs.cometbft.com/v1.0/spec/abci/abci++_methods#query (for
+   * https://docs.cometbft.com/v0.38/spec/abci/abci++_methods#query (for
    * successful responses, `log` and `height` [as `blockHeight`], and for error
    * responses, `codespace` and `code`).
    *
@@ -130,6 +139,9 @@ export const makeVStorage = ({ fetch }, config) => {
     }
 
     const { value: b64Value } = response;
+    if (typeof b64Value !== 'string') {
+      throw Error(`missing value reading ${kind} of ${path}`);
+    }
     const result = codec.response.decode(decodeBase64(b64Value));
     /** @type {QueryMetaResponseBase} */
     const metaResponseBase = {

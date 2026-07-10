@@ -4,7 +4,8 @@ import {
   Order,
   State,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import type { ChainInfo, IBCConnectionInfo } from '@agoric/orchestration';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
+import type { ChainInfo } from '@agoric/orchestration';
 import { HubName } from '@agoric/orchestration/src/exos/chain-hub.js';
 import { objectMap } from '@endo/patterns';
 import { HubName as HubNameCopy } from '@agoric/deploy-script-support/src/control/chain-info.core.js';

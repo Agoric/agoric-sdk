@@ -1,14 +1,15 @@
 import {
+  getTypesForEIP712Domain,
   hashStruct,
   hashTypedData,
   recoverTypedDataAddress,
   serializeTypedData,
   validateTypedData,
   verifyTypedData
-} from "./chunk-ZKSIP2AM.js";
+} from "./chunk-5422ZTQA.js";
 import {
   isHex
-} from "./chunk-GCI53Z2G.js";
+} from "./chunk-25QYMKH4.js";
 import "./chunk-4VNS5WPM.js";
 
 // src/utils/viem-utils/hashTypedData.ts
@@ -42,6 +43,7 @@ function findTypeDependencies({
 }
 export {
   encodeType,
+  getTypesForEIP712Domain,
   hashStruct,
   hashTypedData,
   isHex,

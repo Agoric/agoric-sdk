@@ -233,31 +233,31 @@ publish-ymax: ,$(CONTRACT_INSTANCE)-installed
 
 AGORIC_NET ?= devnet
 YMAX_TOOL=./scripts/ymax-tool.ts
+YMAX_ADMIN=../packages/portfolio-deploy/scripts/wallet-admin.ts
+# Optional operator-supplied JSON file; omitted means privateArgsOverrides = {}
+PRIVATE_ARGS_OVERRIDES ?=
+OVERRIDES_ARG=$(if $(PRIVATE_ARGS_OVERRIDES),--overrides $(PRIVATE_ARGS_OVERRIDES),)
 
 ,$(CONTRACT_INSTANCE)-installed: $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json
 	agd keys --keyring-backend=test show $(PUBLISHER)
 	AGORIC_NET=devnet ./scripts/install-bundle.ts $< >$@ || (rm $@; false)
-
-,privateArgsOverrides.json:
-	@echo "Using AGORIC_NET=$(AGORIC_NET)"
-	AGORIC_NET=$(AGORIC_NET) $(YMAX_TOOL) --buildEthOverrides >$@ || (rm $@; false)
 
 yctrl-redeploy: ,$(CONTRACT_INSTANCE)-deployed
 
 NETCONFIG=https://devnet.agoric.net/network-config
 CONTRACT_FLAG=--contract=$(CONTRACT_INSTANCE)
 
-,$(CONTRACT_INSTANCE)-deployed: $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json ,$(CONTRACT_INSTANCE)-bundle-id ,$(CONTRACT_INSTANCE)-installed ,privateArgsOverrides.json
+,$(CONTRACT_INSTANCE)-deployed: $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json ,$(CONTRACT_INSTANCE)-bundle-id ,$(CONTRACT_INSTANCE)-installed
 	@[ -n "$$MNEMONIC" ] || (echo "ymaxControl MNEMONIC not set; see gov keys sheet"; false)
-	if [ -n "$$REASON" ]; then AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --terminate "$(REASON)"; else true; fi
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --installAndStart $$(cat ,$(CONTRACT_INSTANCE)-bundle-id) <,privateArgsOverrides.json
+	if [ -n "$$REASON" ]; then AGORIC_NET=devnet $(YMAX_ADMIN) $(DEPLOY)/src/ymax-terminate.ts --contract $(CONTRACT_INSTANCE) --message "$(REASON)"; else true; fi
+	AGORIC_NET=devnet $(YMAX_ADMIN) $(DEPLOY)/src/ymax-install-and-start.ts --contract $(CONTRACT_INSTANCE) --bundle "$$(cat ,$(CONTRACT_INSTANCE)-bundle-id)" $(OVERRIDES_ARG)
 	agoric follow -B $(NETCONFIG) -lF :published.agoricNames.instance >$@ || (rm $@; false)
 
 ,upgrade: $(DEPLOY)/dist/bundle-$(CONTRACT_INSTANCE).json ,$(CONTRACT_INSTANCE)-bundle-id ,$(CONTRACT_INSTANCE)-installed
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --upgrade $$(cat ,$(CONTRACT_INSTANCE)-bundle-id)
+	AGORIC_NET=devnet $(YMAX_ADMIN) $(DEPLOY)/src/ymax-upgrade.ts --contract $(CONTRACT_INSTANCE) --bundle "$$(cat ,$(CONTRACT_INSTANCE)-bundle-id)"
 
 ,creatorFacet: ,$(CONTRACT_INSTANCE)-deployed
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --getCreatorFacet
+	AGORIC_NET=devnet $(YMAX_ADMIN) $(DEPLOY)/src/ymax-get-creator-facet.ts --contract $(CONTRACT_INSTANCE)
 	touch $@
 
 ##
@@ -268,16 +268,16 @@ introduce-parties: ,invitePlanner ,inviteResolver
 PLANNER ?= agoric140yw0u2qrvmrgp33ejpddgnrwpm74vpfpx5v7n
 
 ,invitePlanner: ,creatorFacet
-	AGORIC_NET=devnet ./scripts/ymax-tool.ts $(CONTRACT_FLAG) --invitePlanner $(PLANNER)
+	AGORIC_NET=devnet $(YMAX_ADMIN) $(DEPLOY)/src/ymax-deliver-invitation.ts --contract $(CONTRACT_INSTANCE) --kind planner --to $(PLANNER)
 	touch $@
-	@echo now use planner MNEMONIC: ymax-tool.ts $(CONTRACT_FLAG) --redeem --description planner
+	@echo now use planner MNEMONIC: $(YMAX_ADMIN) $(DEPLOY)/src/redeem-invitation.ts --contract $(CONTRACT_INSTANCE) --description planner
 
 RESOLVER ?= $(PLANNER)
 ,inviteResolver: ,creatorFacet
 	AGORIC_NET=$(AGORIC_NET) \
-		$(YMAX_TOOL) $(CONTRACT_FLAG) --inviteResolver $(RESOLVER)
+		$(YMAX_ADMIN) $(DEPLOY)/src/ymax-deliver-invitation.ts --contract $(CONTRACT_INSTANCE) --kind resolver --to $(RESOLVER)
 	touch $@
-	@echo now use resolver MNEMONIC: ymax-tool.ts $(CONTRACT_FLAG) --redeem --description resolver
+	@echo now use resolver MNEMONIC: $(YMAX_ADMIN) $(DEPLOY)/src/redeem-invitation.ts --contract $(CONTRACT_INSTANCE) --description resolver --no-save
 
 check-vstorage: ,vstorage-outdated-$(AGORIC_NET).json
 

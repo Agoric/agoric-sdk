@@ -1,15 +1,14 @@
 #! /usr/bin/env node
 // @ts-check
-// @jessie-check
 
 // This file functions as both an importable module and a standalone script.
 import './helpers/maybe-unsafe-lockdown.js';
 
-import os from 'os';
-import process from 'process';
-import fsPower from 'fs/promises';
-import pathPower from 'path';
-import { fileURLToPath } from 'url';
+import os from 'node:os';
+import process from 'node:process';
+import fsPower from 'node:fs/promises';
+import pathPower from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { Fail, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -23,7 +22,6 @@ import { makeProcessValue } from './helpers/process-value.js';
 /**
  * @import {ArtifactMode} from '@agoric/swing-store';
  * @import {PromiseKit} from '@endo/promise-kit';
- * @import {ExportMessage} from './export-kernel-db.js';
  */
 
 // ExportManifestFilename is the manifest filename which must be synchronized
@@ -71,7 +69,7 @@ export const checkArtifactMode = getEffectiveArtifactMode;
  * @param {boolean} [isImport]
  * @returns {asserts mode is SwingStoreExportDataMode | undefined}
  */
-export const checkExportDataMode = (mode, isImport = false) => {
+export function checkExportDataMode(mode, isImport = false) {
   switch (mode) {
     case 'skip':
     case undefined:
@@ -82,12 +80,12 @@ export const checkExportDataMode = (mode, isImport = false) => {
       if (isImport) {
         break;
       }
-      // Fall through
+      throw Fail`Invalid value ${q(mode)} for "export-data-mode"`;
     }
     default:
       throw Fail`Invalid value ${q(mode)} for "export-data-mode"`;
   }
-};
+}
 
 /**
  * A state-sync manifest is a representation of the information contained in a
@@ -125,10 +123,10 @@ export const checkExportDataMode = (mode, isImport = false) => {
  */
 
 /**
- * @param {object} options
+ * @param {Record<string, any>} options
  * @returns {asserts options is StateSyncExporterOptions}
  */
-export const validateExporterOptions = options => {
+export function validateExporterOptions(options) {
   typeof options === 'object' || Fail`options is not an object`;
   typeof options.stateDir === 'string' ||
     Fail`required stateDir option not a string`;
@@ -143,13 +141,13 @@ export const validateExporterOptions = options => {
   options.includeExportData === undefined ||
     Fail`deprecated includeExportData option found`;
   options.exportMode === undefined || Fail`deprecated exportMode option found`;
-};
+}
 
 /**
  * @param {StateSyncExporterOptions} options
  * @param {object} powers
- * @param {Pick<import('fs/promises'), 'open' | 'writeFile'>} powers.fs
- * @param {import('path')['resolve']} powers.pathResolve
+ * @param {Pick<typeof import('fs/promises'), 'open' | 'writeFile'>} powers.fs
+ * @param {typeof import('path')['resolve']} powers.pathResolve
  * @param {typeof import('@agoric/swing-store')['makeSwingStoreExporter']} [powers.makeSwingStoreExporter]
  * @param {null | ((...args: any[]) => void)} [powers.log]
  * @returns {StateSyncExporter}
@@ -292,8 +290,8 @@ export const initiateSwingStoreExport = (
  * @param {string} powers.homedir
  * @param {((msg: ExportMessage) => void) | null} powers.send
  * @param {Console} powers.console
- * @param {import('fs/promises')} powers.fs
- * @param {import('path')['resolve']} powers.pathResolve
+ * @param {typeof import('fs/promises')} powers.fs
+ * @param {typeof import('path')['resolve']} powers.pathResolve
  */
 export const main = async (
   args,

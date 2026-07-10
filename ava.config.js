@@ -1,11 +1,14 @@
 /**
  * Monorepo AVA configuration.
  *
- * Centralized defaults:
- * - TypeScript support via ts-blank-space
- * - conservative default timeout; slow tests should use explicit per-test timeout
+ * Centralized defaults for every workspace package; each package has an
+ * `ava.config.js` that spreads this base and applies its own overrides
+ * (timeout, workerThreads, etc.).
+ *
+ * The `files` globs support both invocation styles: running `ava` within a
+ * package directory and running from the monorepo root (the basis for a
+ * future "test affected" command).
  */
-
 export default {
   files: [
     // When run within a package
@@ -14,11 +17,9 @@ export default {
     'packages/*/test/**/*.test.*',
     'services/*/test/**/*.test.*',
   ],
-  // The default timeout is 10s; slower tests should use t.timeout() to extend it.
-  // https://github.com/avajs/ava/blob/main/docs/07-test-timeouts.md
-  extensions: {
-    js: true,
-    ts: 'module',
-  },
+  extensions: ['js', 'ts'],
   nodeArguments: ['--import=ts-blank-space/register', '--no-warnings'],
+  // Generous idle timeout for whole-repo runs; packages override with their
+  // own stricter values (10s AVA default pinned where none was set).
+  timeout: '30m',
 };

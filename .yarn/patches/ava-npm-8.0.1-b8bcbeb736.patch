@@ -1,0 +1,70 @@
+diff --git a/lib/cli.js b/lib/cli.js
+index f6288775566bd1ffaa886eba7a18ad0d1625b1fb..4dc9d5bc65f4b1149bf928638c7ed93e5754e39d 100644
+--- a/lib/cli.js
++++ b/lib/cli.js
+@@ -220,6 +220,11 @@ export default async function loadCli() { // eslint-disable-line complexity
+ 
+ 	const combined = {...conf};
+ 
++	// Agoric tweak to configure TAP output via environment variable
++	if (process.env.AGORIC_AVA_USE_TAP) {
++		combined.tap = true;
++	}
++
+ 	for (const flag of Object.keys(FLAGS)) {
+ 		if (flag === 'no-worker-threads' && Object.hasOwn(argv, 'worker-threads')) {
+ 			combined.workerThreads = argv['worker-threads'];
+diff --git a/lib/reporters/tap.js b/lib/reporters/tap.js
+--- a/lib/reporters/tap.js
++++ b/lib/reporters/tap.js
+@@ -15,6 +15,7 @@
+ 	name,
+ 	originalError, // A structured clone, so some details are missing.
+ 	stack,
++	message,
+ 	type,
+ }, sanitizeStackOutput) {
+ 	if (type === 'unknown') {
+@@ -24,9 +25,14 @@
+ 		};
+ 	}
+ 
+-	if (originalError && Object.getOwnPropertyDescriptor(originalError, 'name')?.writable !== false) {
++	// Timeout events carry no originalError; synthesize a serializable one so
++	// the TAP reporter does not crash on them.
++	const cleanMessage = formattedError ? stripVTControlCharacters(formattedError) : message;
++	const serializableError = originalError ?? {message: cleanMessage};
++
++	if (Object.getOwnPropertyDescriptor(serializableError, 'name')?.writable !== false) {
+ 		try {
+-			originalError.name = name; // Restore the original name.
++			serializableError.name = name; // Restore the original name.
+ 		} catch {
+ 			// Ignore
+ 		}
+@@ -34,20 +40,21 @@
+ 
+ 	if (type === 'ava') {
+ 		if (assertion) {
+-			originalError.assertion = assertion;
++			serializableError.assertion = assertion;
+ 		}
+ 
++		formattedDetails ??= [];
+ 		if (formattedDetails.length > 0) {
+-			originalError.details = Object.fromEntries(formattedDetails.map(({label, formatted}) => [
++			serializableError.details = Object.fromEntries(formattedDetails.map(({label, formatted}) => [
+ 				stripVTControlCharacters(label),
+ 				stripVTControlCharacters(formatted),
+ 			]));
+ 		}
+ 	}
+ 
+-	originalError.stack = sanitizeStackOutput?.(stack || originalError.stack) ?? (stack || originalError.stack);
++	serializableError.stack = sanitizeStackOutput?.(stack || serializableError.stack) ?? (stack || serializableError.stack);
+ 
+-	return originalError;
++	return serializableError;
+ }
+ 
+ export default class TapReporter {

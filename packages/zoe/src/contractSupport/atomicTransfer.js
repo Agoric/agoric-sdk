@@ -5,9 +5,17 @@ import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
  * @import {AmountKeywordRecord, TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
  */
 
+// Pass tuple literals directly (without `harden(...)`) so TypeScript
+// preserves the positional tuple type during inference.  Wrapping with
+// `harden(...)` widens the literal to `(A | B | C)[]` which loses
+// element-by-element typing in `TypeFromPattern<typeof TransferPartShape>`,
+// breaking downstream guard/impl matching for methods that take a
+// `TransferPart`.  `M.splitArray` hardens its arguments internally via
+// `makeMatcher` → `makeTagged` → `harden(payload)`, so the user-side
+// `harden(...)` was redundant at runtime.
 export const TransferPartShape = M.splitArray(
-  harden([M.opt(SeatShape), M.opt(SeatShape), M.opt(AmountKeywordRecordShape)]),
-  harden([M.opt(AmountKeywordRecordShape)]),
+  [M.opt(SeatShape), M.opt(SeatShape), M.opt(AmountKeywordRecordShape)],
+  [M.opt(AmountKeywordRecordShape)],
 );
 
 /**

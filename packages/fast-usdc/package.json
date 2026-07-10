@@ -2,6 +2,10 @@
   "name": "@agoric/fast-usdc",
   "version": "0.1.0",
   "description": "CLI and library for Fast USDC product",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
   "type": "module",
   "files": [
     "src",
@@ -18,12 +22,12 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:eslint": "yarn run -T eslint .",
-    "lint:types": "yarn run -T tsc"
+    "lint:eslint": "node ../../scripts/eslint-repo.mjs .",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo"
   },
   "devDependencies": {
-    "@fast-check/ava": "^2.0.1",
-    "ava": "^6.4.1",
+    "@fast-check/ava": "^3.0.1",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "nano-spawn": "^1.0.2",
     "ts-blank-space": "^0.6.2"
@@ -38,17 +42,17 @@
     "@agoric/zoe": "workspace:*",
     "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
-    "@endo/base64": "^1.0.12",
-    "@endo/common": "^1.2.13",
-    "@endo/errors": "^1.2.13",
-    "@endo/eventual-send": "^1.3.4",
+    "@endo/base64": "^1.1.1",
+    "@endo/common": "^1.4.0",
+    "@endo/errors": "^1.3.1",
+    "@endo/eventual-send": "^1.5.0",
     "@endo/far": "^1.1.14",
-    "@endo/init": "^1.1.12",
-    "@endo/marshal": "^1.8.0",
-    "@endo/nat": "^5.1.3",
-    "@endo/pass-style": "^1.6.3",
-    "@endo/patterns": "^1.7.0",
-    "@endo/promise-kit": "^1.1.13",
+    "@endo/init": "^1.1.13",
+    "@endo/marshal": "^1.10.0",
+    "@endo/nat": "^5.2.0",
+    "@endo/pass-style": "^1.8.1",
+    "@endo/patterns": "^1.9.1",
+    "@endo/promise-kit": "^1.2.1",
     "@nick134-bit/noblejs": "0.0.2",
     "bech32": "^2.0.0",
     "commander": "^12.1.0",
@@ -59,9 +63,9 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 97.08
+    "atLeast": 96.9
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

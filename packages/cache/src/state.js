@@ -1,7 +1,4 @@
-// @jessie-check
-
 /**
- * @import {State} from './state.js';
  * @import {MapStore} from '@agoric/store';
  */
 

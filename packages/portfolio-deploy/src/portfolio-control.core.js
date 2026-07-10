@@ -115,7 +115,7 @@ export const delegatePortfolioContract = async (permitted, config) => {
   );
 };
 
-export const getManifestForPortfolioControl = (utils, { options }) => {
+export const getManifestForPortfolioControl = (_utils, { options }) => {
   const { contractName } = options;
   return {
     manifest: {

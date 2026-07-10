@@ -1,11 +1,14 @@
-// @ts-nocheck
-
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../src/index.js';
+import { makeSwingsetController } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 import { buildTimer } from '../src/devices/timer/timer.js';
+
+/**
+ * @import {SwingSetConfig} from '../src/index.js';
+ */
 
 const TimerSrc = new URL(
   '../src/devices/timer/device-timer.js',
@@ -102,9 +105,12 @@ test('comms initialize is deterministic', async t => {
 
   const sourceSpec = new URL('vat-activityhash-comms.js', import.meta.url)
     .pathname;
-  const config = { defaultManagerType: 'xs-worker' };
-  config.bootstrap = 'bootstrap';
-  config.vats = { bootstrap: { sourceSpec } };
+  /** @type {SwingSetConfig} */
+  const config = {
+    bootstrap: 'bootstrap',
+    defaultManagerType: 'xs-worker',
+    vats: { bootstrap: { sourceSpec } },
+  };
   const { kernelStorage: ks1, debug: debug1 } = initSwingStore();
   await initializeSwingset(config, [], ks1);
   const c1 = await makeSwingsetController(ks1, {});

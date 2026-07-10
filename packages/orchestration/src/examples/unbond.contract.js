@@ -26,13 +26,13 @@ import * as flows from './unbond.flows.js';
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Remote<Marshaller>;
  *   timerService: Remote<TimerService>;
- * }} privateArgs
+ * }} _privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
 const contract = async (
   zcf,
-  privateArgs,
+  _privateArgs,
   zone,
   { orchestrateAll, zcfTools },
 ) => {

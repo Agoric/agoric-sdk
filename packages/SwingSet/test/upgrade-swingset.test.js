@@ -1,5 +1,7 @@
 // @ts-nocheck
 
+import '@agoric/internal/src/ava-force-exit.mjs';
+
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
@@ -7,11 +9,11 @@ import { initSwingStore } from '@agoric/swing-store';
 import { kser } from '@agoric/kmarshal';
 
 import {
-  initializeSwingset,
   makeSwingsetController,
   upgradeSwingset,
   buildKernelBundles,
 } from '../src/index.js';
+import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();

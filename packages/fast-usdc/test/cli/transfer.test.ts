@@ -111,6 +111,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
         return {};
       }
     }
+    throw Error(`unexpected query: ${query}`);
   });
   const nobleSignerAddress = 'noble09876';
   const signerMock = makeMockSigner();
@@ -192,6 +193,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
         return {};
       }
     }
+    throw Error(`unexpected query: ${query}`);
   });
   const nobleSignerAddress = 'noble09876';
   const signerMock = makeMockSigner();

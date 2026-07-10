@@ -52,6 +52,9 @@ case $VERSION_CODENAME in
   bookworm)
     VERSION_CODENAME=jammy
     ;;
+  trixie)
+    VERSION_CODENAME=kinetic
+    ;;
 esac
 
 # Install Ansible.

@@ -95,7 +95,7 @@ export const prepareWatchUtils = (
         /** @type {AsPromiseFunction} */
         asPromise(specimenP, ...watcherArgs) {
           // Watch the specimen in case it is an ephemeral promise.
-          const vow = watch(specimenP, ...watcherArgs);
+          const vow = watch(specimenP, .../** @type {any[]} */ (watcherArgs));
           const promise = when(vow);
           // Watch the ephemeral result promise to ensure that if its settlement is
           // lost due to upgrade of this incarnation, we will at least cause an

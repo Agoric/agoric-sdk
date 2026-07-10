@@ -11,12 +11,12 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 
 import { prepareNetworkPowers } from '@agoric/network';
+import { encodeIbcEndpoint } from '@agoric/network/ibc/utils.js';
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
 import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
 
 import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
-import { encodeIbcEndpoint } from '../tools/ibc-utils.js';
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {

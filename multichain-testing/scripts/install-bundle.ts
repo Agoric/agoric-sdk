@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --import ts-blank-space/register
+/* global globalThis */
 import '@endo/init/debug.js';
 
 import {

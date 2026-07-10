@@ -79,11 +79,17 @@ test.serial('terminate existing instance', async t => {
 
 test.serial('invoke ymaxControl showing no instance', async t => {
   // TODO test this invokation id?
-  const id = 'getCreatorFacet.1';
+  // const id = 'getCreatorFacet.1';
 
-  await t.throwsAsync(ymaxControl.overwrite('creatorFacet').getCreatorFacet(), {
-    message: /no StartedInstanceKit/,
-  });
+  await t.throwsAsync(
+    ymaxControl.getCreatorFacet.once({
+      saveAs: 'creatorFacet',
+      overwrite: true,
+    })(),
+    {
+      message: /no StartedInstanceKit/,
+    },
+  );
 });
 
 test.serial('start using ymaxControl', async t => {
@@ -137,7 +143,10 @@ test.serial('start using ymaxControl', async t => {
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
-  const cf = await ymaxControl.overwrite('creatorFacet').getCreatorFacet();
+  const cf = await ymaxControl.getCreatorFacet.once({
+    saveAs: 'creatorFacet',
+    overwrite: true,
+  })();
 
   t.truthy(cf, 'Creator facet saved to wallet store');
 });

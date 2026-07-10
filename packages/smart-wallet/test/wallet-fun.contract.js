@@ -50,10 +50,13 @@ export const start = (zcf, _pa, baggage) => {
         return [...admins.values()].map(a => a.getPrice());
       },
       makeValueSetterInvitation() {
-        return zcf.makeInvitation((seat, /** @type {object} */ args) => {
-          seat.exit();
-          return makeValueSetter(args?.offset);
-        }, 'setter');
+        return zcf.makeInvitation(
+          (seat, /** @type {Record<string, any>} */ args) => {
+            seat.exit();
+            return makeValueSetter(args?.offset);
+          },
+          'setter',
+        );
       },
       getValue() {
         return value;

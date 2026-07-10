@@ -17,7 +17,7 @@ const noOutput = ['ignore', 'ignore', 'ignore'];
 /**
  *
  * @param {string} bin
- * @param {{ cwd: string, spawn: import('child_process')['spawn']}} param1
+ * @param {{ cwd: string, spawn: typeof import('child_process')['spawn']}} param1
  */
 export const pspawn = (bin, { spawn, cwd }) => {
   /**
@@ -149,7 +149,7 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log, stdio }) => {
 export const makeWalletTool = ({ runMake, pspawnAgd, delay, log }) => {
   /**
    * @param {string[]} args
-   * @param {object} [opts]
+   * @param {{ stdio?: StdioOptions }} [opts]
    * @returns {Promise<any>} JSON.parse of stdout of `ag-chain-cosmos query <...args>`
    * @throws if agd exits non-0 or gives empty output
    */

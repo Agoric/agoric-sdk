@@ -6,7 +6,8 @@
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForGame1 } from '@agoric/smart-wallet/test/start-game1-proposal.js';
+import { getManifestForGame1 } from '@agoric/smart-wallet/tools/fixtures/start-game1-proposal.js';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
@@ -15,16 +16,23 @@ import { getManifestForGame1 } from '@agoric/smart-wallet/test/start-game1-propo
 
 /** @type {CoreEvalBuilder} */
 const game1ProposalBuilder = async ({ publishRef, install }) => {
+  const game1Path = await buildBundlePath(
+    import.meta.url,
+    '@agoric/smart-wallet/tools/fixtures/gameAssetContract.js',
+    'game1',
+  );
   return harden({
-    sourceSpec: '@agoric/smart-wallet/test/start-game1-proposal.js',
+    sourceSpec: '@agoric/smart-wallet/tools/fixtures/start-game1-proposal.js',
     getManifestCall: [
       getManifestForGame1.name,
       {
         game1Ref: publishRef(
           install(
-            '@agoric/smart-wallet/test/gameAssetContract.js',
-            '../bundles/bundle-game1.js',
-            { persist: true },
+            '@agoric/smart-wallet/tools/fixtures/gameAssetContract.js',
+            game1Path,
+            {
+              persist: true,
+            },
           ),
         ),
       },

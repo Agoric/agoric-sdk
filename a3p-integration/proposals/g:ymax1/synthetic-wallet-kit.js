@@ -39,7 +39,7 @@ export const makeSyntheticWalletKit = ({ address, vstorageKit }) => {
     await writeFile(tempFile, JSON.stringify(capData), 'utf-8');
 
     try {
-      const result = await agoric.wallet(
+      await agoric.wallet(
         'send',
         '--from',
         address,

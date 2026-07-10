@@ -1,4 +1,4 @@
-/* eslint-env node */
+/* global setTimeout */
 
 import { retryUntilCondition } from '@agoric/client-utils';
 import {
@@ -39,7 +39,7 @@ export const verifyPushedPrice = async (
     'price not pushed yet',
     {
       log: console.log,
-      setTimeout: globalThis.setTimeout,
+      setTimeout,
       ...pushPriceRetryOpts,
     },
   );

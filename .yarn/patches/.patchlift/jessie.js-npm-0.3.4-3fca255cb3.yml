@@ -1,0 +1,13 @@
+schemaVersion: 1
+patchHash: sha256:00a56a53e862d553e8d86d223a9eac573451f485482721241536250e739f2ad8
+package:
+  name: jessie.js
+  version: 0.3.4
+upstream:
+  repo: endojs/Jessie
+  issue: null
+  pr: null
+status: obsolete
+notes: added for "bundler" mode https://github.com/Agoric/agoric-sdk/pull/9185
+createdAt: 2026-04-16T05:01:18.177Z
+updatedAt: 2026-04-16T05:01:54.479Z

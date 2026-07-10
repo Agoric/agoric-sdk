@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable @jessie.js/safe-await-separator */
 // @ts-check
 
 import { $ } from 'execa';
@@ -16,28 +15,39 @@ try {
 }
 
 const root = process.cwd();
-const pkgsDir = path.join(root, 'packages');
 
 console.log('Discovering packages with a codegen script...');
 
 // `yarn workspaces foreach` could do this more concisely but it would couple
 // this implementation to a Yarn CLI which has caused migration work in the past
+//
+// NOTE: every `codegen` script MUST be deterministic, or this check breaks on
+// unrelated PRs whenever its input changes. Codegen that pulls external data
+// should pin that source (e.g. to a specific upstream commit) and adopt updates
+// via a separate, deliberate refresh step — fetching is fine, drifting is not
+// (see packages/orchestration/scripts/fetch-chain-info.ts).
 /** @type {string[]} */
 const packages = [];
-if (fs.existsSync(pkgsDir)) {
-  const entries = await fsp.readdir(pkgsDir, { withFileTypes: true });
-  for (const ent of entries) {
-    if (!ent.isDirectory()) continue;
-    const pkgPath = path.join(pkgsDir, ent.name, 'package.json');
-    try {
-      if (!fs.existsSync(pkgPath)) continue;
-      const raw = await fsp.readFile(pkgPath, 'utf8');
-      const pkg = JSON.parse(raw);
-      if (pkg.scripts && pkg.scripts.codegen) {
-        packages.push(path.join('packages', ent.name));
+for (const pkgsDir of [
+  path.join(root, 'packages'),
+  path.join(root, 'services'),
+]) {
+  if (fs.existsSync(pkgsDir)) {
+    const entries = await fsp.readdir(pkgsDir, { withFileTypes: true });
+    for (const ent of entries) {
+      if (!ent.isDirectory()) continue;
+      const pkgPath = path.join(pkgsDir, ent.name, 'package.json');
+      try {
+        if (!fs.existsSync(pkgPath)) continue;
+        const raw = await fsp.readFile(pkgPath, 'utf8');
+        const pkg = JSON.parse(raw);
+        if (pkg.scripts && pkg.scripts.codegen) {
+          // Push the relative path to the package, which is where we will run `yarn codegen`.
+          packages.push(path.relative(root, path.join(pkgsDir, ent.name)));
+        }
+      } catch {
+        // ignore parse errors
       }
-    } catch {
-      // ignore parse errors
     }
   }
 }
@@ -57,18 +67,38 @@ for (const pkg of packages) {
 
   console.log(`Checking for unexpected changes after ${pkg} codegen...`);
   try {
-    await $('bash', [
+    await $(
       '.github/actions/restore-node/check-git-status.sh',
-      '.',
-      'false',
-    ]);
+      [pkg, 'false'],
+      { stdio: 'inherit' },
+    );
     console.log(`No changes detected after ${pkg} codegen.`);
   } catch (err) {
     console.error(`Changes detected after ${pkg} codegen.`);
     console.error(
-      `Please run 'yarn codegen' in ${pkg} and commit the results.`,
+      `The generated files committed in ${pkg} are out of date with its \`codegen\` script.`,
     );
+    console.error(
+      `To fix: run \`yarn codegen\` in ${pkg}, then commit the resulting changes.`,
+    );
+    console.error(
+      `(\`codegen\` must be deterministic. If it pulls external data, it should pin`,
+    );
+    console.error(
+      ` that source and adopt updates via a separate refresh step — see`,
+    );
+    console.error(` packages/orchestration/scripts/fetch-chain-info.ts.)`);
     process.exitCode = 1;
-    process.exit(1);
   }
+}
+
+try {
+  await $(
+    'bash',
+    ['.github/actions/restore-node/check-git-status.sh', '.', 'false'],
+    { stdio: 'inherit' },
+  );
+} catch (err) {
+  console.error(`Unexpected changes detected after all codegen runs.`);
+  process.exitCode = 1;
 }

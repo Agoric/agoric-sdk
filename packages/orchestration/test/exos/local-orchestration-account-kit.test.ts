@@ -26,7 +26,7 @@ import { assetOn } from '../../src/utils/asset.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
-import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
+import { UNBOND_PERIOD_SECONDS } from '../../tools/ibc-mock-fixtures.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
 import { ICS20_TRANSFER_SUCCESS_RESULT } from '../../src/exos/ibc-packet.js';

@@ -1,7 +1,6 @@
 // @ts-check
-/* eslint-env node */
 import { normalizeBech32 } from '@cosmjs/encoding';
-import { execFileSync as execFileSyncAmbient } from 'child_process';
+import { execFileSync as execFileSyncAmbient } from 'node:child_process';
 import { makeAgoricQueryClient } from '@agoric/client-utils';
 
 /**
@@ -116,6 +115,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     stdout.write(`${agdBinary} `);
     stdout.write(cmd.join(' '));
     stdout.write('\n');
+    return undefined;
   } else {
     const yesCmd = cmd.concat(['--yes']);
     if (verbose) console.log('Executing ', agdBinary, yesCmd);
@@ -170,7 +170,7 @@ export const pollBlocks = opts => async lookup => {
       // see await null above
       const result = await lookup({ time, height });
       return result;
-    } catch (_err) {
+    } catch {
       console.error(
         time,
         retryMessage || 'not in block',

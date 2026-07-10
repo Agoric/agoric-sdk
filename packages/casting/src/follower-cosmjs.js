@@ -15,7 +15,6 @@ import { makeLeader as defaultMakeLeader } from './leader-netconfig.js';
  * @import {ValueFollowerElement} from './types.js';
  * @import {LeaderOrMaker} from './types.js';
  * @import {FollowerOptions} from './types.js';
- * @import {QueryClient} from '@cosmjs/stargate';
  * @import {StreamCell} from './types.js';
  */
 
@@ -160,7 +159,7 @@ export const makeCosmjsFollower = (
     return clientP;
   };
 
-  /** @type {Map<string, QueryClient>} */
+  /** @type {Map<string, import('@cosmjs/stargate').QueryClient>} */
   const endpointToQueryClient = new Map();
 
   /**
@@ -481,6 +480,7 @@ export const makeCosmjsFollower = (
     // contain data.
     await null;
     for (;;) {
+      /** @type {number} */
       let thisHeight;
       ({ value: cursorData, height: thisHeight } =
         await getDataAtHeight(cursorBlockHeight));

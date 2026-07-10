@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { type Rpc } from '../../../helpers.js';
-import { BinaryReader } from '../../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryParamsRequest,
   QueryParamsResponse,
   QuerySubspacesRequest,
   QuerySubspacesResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/cosmos/params/v1beta1/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   /**
@@ -15,11 +15,7 @@ export interface Query {
    * key.
    */
   params(request: QueryParamsRequest): Promise<QueryParamsResponse>;
-  /**
-   * Subspaces queries for all registered subspaces and all keys for a subspace.
-   *
-   * Since: cosmos-sdk 0.46
-   */
+  /** Subspaces queries for all registered subspaces and all keys for a subspace. */
   subspaces(request?: QuerySubspacesRequest): Promise<QuerySubspacesResponse>;
 }
 export class QueryClientImpl implements Query {

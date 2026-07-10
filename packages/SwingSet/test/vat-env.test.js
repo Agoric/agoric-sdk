@@ -11,7 +11,7 @@ import { buildVatController } from '../src/index.js';
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore some resolutions don't expect this on global
-const { harden, VatData } = global;
+const { harden, VatData } = /** @type {any} */ (global);
 
 test('harden from SES is in the test environment', t => {
   harden({});

@@ -1,4 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { buildBundlePath } from '../lib/build-bundle.js';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
@@ -6,21 +7,24 @@ import { makeHelpers } from '@agoric/deploy-script-support';
  */
 
 /** @type {CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }) =>
-  harden({
+export const defaultProposalBuilder = async ({ publishRef, install }) => {
+  const pegasusPath = await buildBundlePath(
+    import.meta.url,
+    '@agoric/pegasus/src/contract.js',
+    'pegasus',
+  );
+  return harden({
     sourceSpec: '@agoric/pegasus/src/proposals/core-proposal.js',
     getManifestCall: [
       'getManifestForPegasus',
       {
         pegasusRef: publishRef(
-          install(
-            '@agoric/pegasus/src/contract.js',
-            '../bundles/bundle-pegasus.js',
-          ),
+          install('@agoric/pegasus/src/contract.js', pegasusPath),
         ),
       },
     ],
   });
+};
 
 /** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {

@@ -1,4 +1,5 @@
 {
+  "name": "f:ymax0-restart",
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal"
   },
@@ -6,6 +7,7 @@
     "@aglocal/portfolio-contract",
     "@aglocal/portfolio-deploy",
     "@agoric/client-utils",
+    "@agoric/cosmic-proto",
     "@agoric/deploy-script-support",
     "@agoric/portfolio-api"
   ],
@@ -14,9 +16,11 @@
   "dependencies": {
     "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",
     "@aglocal/portfolio-deploy": "portal:./local-packages/portfolio-deploy",
+    "@agoric/client-utils": "portal:./local-packages/client-utils",
+    "@agoric/cosmic-proto": "dev",
     "@agoric/deploy-script-support": "dev",
     "@agoric/portfolio-api": "dev",
-    "@agoric/synthetic-chain": "^0.6.1",
+    "@agoric/synthetic-chain": "^0.7.1",
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.12",
     "@endo/pass-style": "^1.6.3",
@@ -25,6 +29,7 @@
   },
   "resolutions": {
     "@agoric/client-utils": "portal:./local-packages/client-utils",
+    "@agoric/cosmic-proto": "portal:./local-packages/cosmic-proto",
     "@agoric/deploy-script-support": "portal:./local-packages/deploy-script-support",
     "@agoric/portfolio-api": "portal:./local-packages/portfolio-api",
     "@aglocal/portfolio-contract": "portal:./local-packages/portfolio-contract",
@@ -37,10 +42,10 @@
       "test/**/*.test.*",
       "!submission"
     ],
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "nodeArguments": [
       "--import=ts-blank-space/register",
       "--no-warnings"

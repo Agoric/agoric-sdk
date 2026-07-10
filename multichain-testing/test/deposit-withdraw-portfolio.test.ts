@@ -65,8 +65,8 @@ const portfolioAccountScenario = test.macro({
 
     const { offerToPublicSubscriberPaths } = await retryUntilCondition(
       () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
-      ({ offerToPublicSubscriberPaths }) =>
-        Object.fromEntries(offerToPublicSubscriberPaths)[
+      result =>
+        Object.fromEntries(result.offerToPublicSubscriberPaths)[
           makePortfolioAcctOfferId
         ],
       'Portfolio account creation offer result is in vstorage',
@@ -230,8 +230,8 @@ const portfolioAccountScenario = test.macro({
     );
 
     // Verify smart wallet balance
-    // faucet - provision rebate - deposit + withdraw
-    const driverExpectedBalance = 1_000_000_000n + 250_000n - 500n + 500n;
+    // faucet - deposit + withdraw (provisioning credit is in BLD, not IST)
+    const driverExpectedBalance = 1_000_000_000n - 500n + 500n;
     const driverBalanceAfterWithdraw = await agoricQueryClient.queryBalance(
       agoricAddr,
       'uist',

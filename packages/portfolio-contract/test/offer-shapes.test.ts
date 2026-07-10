@@ -3,24 +3,35 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
+  type PortfolioAgentStatus,
+  type PortfolioPermissions,
+  type PortfolioPermissionsExt,
+  PortfolioPermissionsExtShape,
+  PortfolioPermissionsShape,
+} from '@agoric/portfolio-api';
+import {
   TxStatus,
   TxType,
   type PublishedTx,
 } from '@agoric/portfolio-api/src/resolver.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
+import { PublishedTxShape } from '../src/resolver/types.ts';
 import { makeOfferArgsShapes } from '../src/type-guards-steps.ts';
 import {
+  FlowDetailShape,
   FlowStatusShape,
   FlowStepsShape,
-  FlowDetailShape,
   makeProposalShapes,
   PoolKeyShapeExt,
+  PortfolioAgentStatusShape,
   PortfolioStatusShapeExt,
   PositionStatusShape,
+  TargetAllocationShape,
+  TargetAllocationShapeExt,
   type StatusFor,
+  type TargetAllocation,
 } from '../src/type-guards.ts';
-import { PublishedTxShape } from '../src/resolver/types.ts';
 
 const usdcKit = withAmountUtils(makeIssuerKit('USDC'));
 const usdc = usdcKit.make;
@@ -35,12 +46,19 @@ test('ProposalShapes', t => {
   const cases = harden({
     openPortfolio: {
       pass: {
+        noGive: { give: {} },
         noPositions: { give: { Access: poc26(1n) } },
         withDeposit: { give: { Deposit: usdc(123n), Access: poc26(1n) } },
+        withDepositNoAccess: { give: { Deposit: usdc(123n) } },
         aaveGMPFeePaidByContract: {
           give: {
             Deposit: usdc(6123n),
             Access: poc26(1n),
+          },
+        },
+        aaveGMPFeePaidByContractNoAccess: {
+          give: {
+            Deposit: usdc(6123n),
           },
         },
         withDepositAndAccess: {
@@ -119,6 +137,30 @@ test('offerArgs can carry usdnOut', t => {
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
+test('offerArgs can carry 1inch swap params', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc(200n);
+  const specimen = harden({
+    flow: [
+      {
+        src: '@Avalanche',
+        dest: '@Avalanche',
+        amount,
+        swap: {
+          provider: '1inch',
+          tokenIn: '0x0000000000000000000000000000000000000abc',
+          amountIn: 5_000_000n,
+          flags: 0n,
+          executor: '0x2222222222222222222222222222222222222222',
+          srcReceiver: '0x3333333333333333333333333333333333333333',
+          data: '0xdeadbeef',
+        },
+      },
+    ],
+  });
+  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
 test('movementDescShape allows unknown additional properties', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const { movementDescShape } = shapes;
@@ -161,6 +203,96 @@ test('PoolKeyExt shapes accept future pool keys', t => {
   });
 
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
+});
+
+test('PortfolioPermissionsShape', t => {
+  const passCases = harden({
+    empty: {},
+    allocationOnly: {
+      allocation: true,
+    },
+    rebalanceOnly: {
+      rebalance: true,
+    },
+  } satisfies Record<string, PortfolioPermissions>);
+  const failCases = harden({
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  }) satisfies Record<string, PortfolioPermissionsExt>;
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsShape), name);
+  }
+});
+
+test('PortfolioPermissionsExtShape', t => {
+  const passCases = harden({
+    empty: {},
+    futurePermission: {
+      allocation: true,
+      futurePermission: false,
+    },
+    futureObject: {
+      future: { size: 1 },
+    },
+  }) satisfies Record<string, PortfolioPermissionsExt>;
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsExtShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioPermissionsExtShape), name);
+  }
+});
+
+test('PortfolioAgentStatusShape allows upgraded permission bags', t => {
+  const passCases = harden({
+    futurePermission: {
+      grantee: 'agoric1test',
+      permissions: { futurePermission: true },
+      state: 'active',
+    },
+  } satisfies Record<string, PortfolioAgentStatus>);
+  const failCases = harden({});
+
+  t.log('good:', Object.keys(passCases).join(', '));
+  t.log('bad:', Object.keys(failCases).join(', '));
+  for (const [name, specimen] of Object.entries(passCases)) {
+    t.notThrows(() => mustMatch(specimen, PortfolioAgentStatusShape), name);
+  }
+  for (const [name, specimen] of Object.entries(failCases)) {
+    t.false(matches(specimen, PortfolioAgentStatusShape), name);
+  }
+});
+
+test('portfolio agent status shape allows future top-level fields', t => {
+  t.notThrows(
+    () =>
+      mustMatch(
+        harden({
+          grantee: 'agoric1test',
+          permissions: { allocation: true },
+          state: 'active',
+          expiresAt: 1234567890,
+          revokedBy: 'agoric1admin',
+        }),
+        PortfolioAgentStatusShape,
+      ),
+    'agent status should allow additional top-level fields',
+  );
 });
 
 test('numeric position references are rejected', t => {
@@ -208,6 +340,11 @@ test('vstorage flow type matches shape', t => {
       where: '@Arbitrum',
       type: 'deposit',
       amount,
+    },
+    rebalanceWithAgent: {
+      state: 'done',
+      type: 'rebalance',
+      agent: 'agent1',
     },
   });
 
@@ -335,6 +472,10 @@ test('vstorage flow detail type matches shape', t => {
       type: 'withdraw',
       amount: usdc(1n),
       toChain: 'noble',
+    },
+    rebalanceWithAgent: {
+      type: 'rebalance',
+      agent: 'agent1',
     },
   });
 
@@ -568,5 +709,60 @@ test('published tx shape accepts nextTxId field', t => {
       () => mustMatch(specimen, PublishedTxShape),
       `${name} with nextTxId should match shape`,
     );
+  }
+});
+
+test('TargetAllocation to USDC expressed as @Chain', t => {
+  const passCases = harden({
+    targetAllocationWithChain: {
+      Aave_Ethereum: 5000n,
+      '@Arbitrum': 5000n,
+    },
+  } satisfies Record<string, TargetAllocation>);
+
+  const extendedPassCases = harden({
+    ...passCases,
+    targetAllocationWithFutureChain: {
+      Aave_Ethereum: 5000n,
+      '@NewChain': 5000n,
+    },
+  });
+
+  const failCases = harden({
+    invalidChainKey: {
+      Aave_Ethereum: 5000n,
+      '@UnknownChain': 5000n,
+    },
+    depositWithFromChain: {
+      Aave_Ethereum: 5000n,
+      '+Arbitrum': 5000n,
+    },
+    withdrawWithToChain: {
+      Aave_Ethereum: 5000n,
+      '-Arbitrum': 5000n,
+    },
+    localChainAccount: {
+      Aave_Ethereum: 5000n,
+      '@agoric': 5000n,
+    },
+  });
+
+  const { entries } = Object;
+  for (const [name, targetAllocation] of entries(passCases)) {
+    t.notThrows(
+      () => mustMatch(targetAllocation, TargetAllocationShape),
+      `pass: ${name}`,
+    );
+  }
+
+  for (const [name, targetAllocation] of entries(extendedPassCases)) {
+    t.notThrows(
+      () => mustMatch(targetAllocation, TargetAllocationShapeExt),
+      `extended pass: ${name}`,
+    );
+  }
+
+  for (const [name, targetAllocation] of entries(failCases)) {
+    t.false(matches(targetAllocation, TargetAllocationShape), `fail: ${name}`);
   }
 });

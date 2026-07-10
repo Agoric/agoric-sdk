@@ -1,5 +1,3 @@
-// @jessie-check
-
 // Ensure this is a module.
 export {};
 

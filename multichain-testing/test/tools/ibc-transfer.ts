@@ -1,11 +1,11 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import { DEFAULT_TIMEOUT_NS, getTimeout } from '../../tools/ibc-transfer.js';
 import {
   NANOSECONDS_PER_MILLISECOND,
   SECONDS_PER_MINUTE,
   MILLISECONDS_PER_SECOND,
 } from '@agoric/orchestration/src/utils/time.js';
+import { DEFAULT_TIMEOUT_NS, getTimeout } from '../../tools/ibc-transfer.js';
 
 const test = anyTest as TestFn<Record<string, never>>;
 

@@ -1,5 +1,3 @@
-// @jessie-check
-
 /**
  * @import {PromiseRecord} from '@endo/promise-kit';
  */

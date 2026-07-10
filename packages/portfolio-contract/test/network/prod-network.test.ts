@@ -84,6 +84,9 @@ const POOLS: ReadonlyArray<PoolKey> = [
   'ERC4626_morphoGauntletUsdcCore_Arbitrum',
   'ERC4626_morphoHyperithmUsdc_Arbitrum',
   'ERC4626_morphoGauntletUsdcPrime_Optimism',
+  'ERC4626_morphoGauntletUsdcPrime_Ethereum',
+  'ERC4626_morphoEthenaSteakhouseUsdc_Base',
+  'ERC4626_morphoKpkUsdcPrime_Ethereum',
 ];
 
 // Helpers

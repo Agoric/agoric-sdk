@@ -1,4 +1,4 @@
-/* eslint-env node */
+/* global process */
 
 // We need some pre-lockdown shimming.
 import '@endo/init/pre-remoting.js';

@@ -1,4 +1,3 @@
-/* eslint-env node */
 import '@endo/init/debug.js';
 
 import test from 'ava';

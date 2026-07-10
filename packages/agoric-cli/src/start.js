@@ -1,8 +1,7 @@
-/* eslint-env node */
-import chalk from 'chalk';
-import { createHash } from 'crypto';
-import path from 'path';
-import { createRequire } from 'module';
+import { styleText } from 'node:util';
+import { createHash } from 'node:crypto';
+import path from 'node:path';
+import { createRequire } from 'node:module';
 
 import { Nat, isNat } from '@endo/nat';
 import { untilTrue } from '@agoric/internal';
@@ -76,7 +75,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     pspawnEnv.DEBUG = 'agoric:info,SwingSet:vat,SwingSet:ls';
   }
 
-  const pspawn = makePspawn({ env: pspawnEnv, spawn, log, chalk });
+  const pspawn = makePspawn({ env: pspawnEnv, spawn, log });
 
   // Turn on some debugging options.
   const nodeDebugEnv = { ...pspawnEnv };
@@ -162,7 +161,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
   };
 
   const rmVerbose = async filePath => {
-    log(chalk.green(`removing ${filePath}`));
+    log(styleText('green', `removing ${filePath}`));
     // rm is available on all the unix-likes, so use it for speed.
     await pspawn('rm', ['-rf', filePath]);
   };
@@ -206,7 +205,7 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     const fakeGCI = 'sim-chain';
     const serverExists = await exists(serverDir);
     if (!serverExists) {
-      log(chalk.yellow(`initializing ${profileName}`));
+      log(styleText('yellow', `initializing ${profileName}`));
       await pspawn(
         agSolo,
         ['init', profileName, '--egresses=fake', `--webport=${HOST_PORT}`],
@@ -217,7 +216,9 @@ export default async function startMain(progname, rawArgs, powers, opts) {
     }
 
     if (fakeDelay >= 0) {
-      log(chalk.yellow(`setting sim chain with ${fakeDelay} second delay`));
+      log(
+        styleText('yellow', `setting sim chain with ${fakeDelay} second delay`),
+      );
       await pspawn(
         agSolo,
         ['set-fake-chain', `--delay=${fakeDelay}`, fakeGCI],

@@ -49,7 +49,8 @@ import type {
 import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { WithdrawToSeat } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { mustMatch, type MapStore } from '@agoric/store';
-import type { IBCChannelID, IBCPacket, VTransferIBCEvent } from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
+import type { IBCPacket, VTransferIBCEvent } from '@agoric/vats';
 import type { TargetRegistration } from '@agoric/vats/src/bridge-target.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { ZCF } from '@agoric/zoe/src/zoeService/zoe.js';

@@ -196,7 +196,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectType<Vow<ChainInfo>>(chainHostInterface.getChainInfo());
 
   const publicTopicRecord: HostInterface<
-    Record<string, ResolvedPublicTopic<unknown>>
+    Record<string, ResolvedPublicTopic<any>>
   > = {
     someTopic: {
       subscriber: null as any,
@@ -204,14 +204,14 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     },
   };
   // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
-  expectType<Record<string, ResolvedPublicTopic<unknown>>>(publicTopicRecord);
+  expectType<Record<string, ResolvedPublicTopic<any>>>(publicTopicRecord);
 }
 
 // HostOf with TransferSteps
 {
   type TransferStepsVow = HostOf<OrchestrationAccount<any>['transferSteps']>;
 
-  const transferStepsVow: TransferStepsVow = (...args: any[]): Vow<any> =>
+  const transferStepsVow: TransferStepsVow = (..._args: any[]): Vow<any> =>
     ({}) as any;
   expectType<(...args: any[]) => Vow<any>>(transferStepsVow);
 }
@@ -228,7 +228,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   const vowObject: VowObject = {
     foo: () => ({}) as Vow<number>,
-    bar: (x: string) => ({}) as Vow<boolean>,
+    bar: (_x: string) => ({}) as Vow<boolean>,
     bizz: () => ({ foo: 1 }),
   };
 
@@ -243,14 +243,17 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   // orchestrate()
 
   const facade: OrchestrationFacade = null as any;
-  const echo = <T extends number>(orc: Orchestrator, ctx: undefined, num: T) =>
-    num;
+  const echo = <T extends number>(
+    _orc: Orchestrator,
+    _ctx: undefined,
+    num: T,
+  ) => num;
   // @ts-expect-error requires an async function
   facade.orchestrate('name', undefined, echo);
 
   const slowEcho = <T extends number>(
-    orc: Orchestrator,
-    ctx: undefined,
+    _orc: Orchestrator,
+    _ctx: undefined,
     num: T,
   ) => Promise.resolve(num);
   {
@@ -390,7 +393,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   >(account.executeEncodedTx);
 
   expectType<
-    <TUS extends readonly (keyof TypeFromUrl | unknown)[]>(
+    <TUS extends readonly string[]>(
       msgs: Readonly<{ [K in keyof TUS]: AnyJson<TUS[K]> }>,
       opts?: CosmosActionOptions,
     ) => Promise<{ [K in keyof TUS]: MessageBody<ResponseTypeUrl<TUS[K]>> }>

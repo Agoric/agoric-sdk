@@ -167,6 +167,10 @@ export function makeKVStore(db, beforeMutation, trace) {
 // available.
 // https://github.com/Agoric/agoric-sdk/pull/10299
 
+/**
+ * @param {string} left
+ * @param {string} right
+ */
 export const compareByCodePoints = (left, right) => {
   const leftIter = left[Symbol.iterator]();
   const rightIter = right[Symbol.iterator]();
@@ -195,8 +199,11 @@ export const compareByCodePoints = (left, right) => {
  * @returns {KVStore<T>}
  */
 export const makeKVStoreFromMap = map => {
+  /** @type {string[] | undefined} */
   let sortedKeys;
+  /** @type {string | undefined} */
   let priorKeyReturned;
+  /** @type {number} */
   let priorKeyIndex;
 
   const ensureSorted = () => {
@@ -222,6 +229,7 @@ export const makeKVStoreFromMap = map => {
     getNextKey: priorKey => {
       assert.typeof(priorKey, 'string');
       ensureSorted();
+      assert(sortedKeys, 'sortedKeys should be defined after ensureSorted');
       const start =
         priorKeyReturned === undefined
           ? 0
