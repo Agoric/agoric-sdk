@@ -11,6 +11,8 @@ import {
 } from '@agoric/client-utils';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
 import { MsgExec } from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
+import { LegacyAminoPubKey } from '@agoric/cosmic-proto/codegen/cosmos/crypto/multisig/keys.js';
+import { AuthInfo } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
 import { getControlAddress } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import type {
@@ -27,6 +29,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import assert from 'node:assert/strict';
 import {
+  encodeJsonPublicKey,
   makeAgdUnsignedTx,
   parseSignedTxBytes,
 } from '../src/ymax-authz-msgs.ts';
@@ -1054,15 +1057,69 @@ const preparePendingUpgrade = async (
 
 const shQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
 
+/**
+ * `agd tx sign` needs a different command depending on the grantee's
+ * account type:
+ * - single-key grantee (or the direct control address): sign directly in
+ *   one shot; the output is already the complete signed tx.
+ * - multisig grantee: each cosigner signs individually with their own key.
+ *   `agd` requires the multisig's pubkey in the *local* keyring even for
+ *   this (verified empirically: `agd tx sign` without `--multisig` rejects
+ *   the individual signer's own address as "not the tx's intended signer",
+ *   since the tx's only real signer is the multisig account) — but only
+ *   its public key, so the command imports it directly rather than asking
+ *   the cosigner to run a separate `agd keys add --multisig=...` step
+ *   naming every other cosigner. The local key name is derived from the
+ *   grantee's own address (not the target), so the same recurring grantee
+ *   reuses one keyring entry across every target/release it signs for,
+ *   and a genuinely different grantee never collides with a stale one.
+ */
 const formatAgdSignCommand = ({
+  target,
   request,
   unsignedTxAssetName,
   signedTxAssetName,
 }: {
+  target: Target;
   request: UnsignedUpgradeArtifact;
   unsignedTxAssetName: string;
   signedTxAssetName: string;
 }) => {
+  const authInfo = AuthInfo.decode(
+    Buffer.from(request.authInfoBytesBase64, 'base64'),
+  );
+  const granteePubkey = authInfo.signerInfos[0]?.publicKey;
+  if (granteePubkey?.typeUrl === LegacyAminoPubKey.typeUrl) {
+    const granteeAddress =
+      request.grantee ||
+      Fail`multisig grantee sign command requires a resolved grantee address`;
+    const multisigName = `ymax-grantee-${granteeAddress.slice(-8)}`;
+    const multisigPubkeyJson = JSON.stringify(
+      encodeJsonPublicKey(granteePubkey),
+    );
+    const signatureAssetName = `${detachedSignatureAssetPrefix(target)}<your-name>.json`;
+    return [
+      `agd keys add ${shQuote(multisigName)} --pubkey=${shQuote(multisigPubkeyJson)}`,
+      [
+        'agd tx sign',
+        shQuote(unsignedTxAssetName),
+        '--offline',
+        '--sign-mode amino-json',
+        `--multisig=${multisigName}`,
+        '--from',
+        '<your-key-name>',
+        '--account-number',
+        String(request.signerData.accountNumber),
+        '--sequence',
+        String(request.signerData.sequence),
+        '--chain-id',
+        shQuote(request.signerData.chainId),
+        '--overwrite',
+        '--output-document',
+        shQuote(signatureAssetName),
+      ].join(' '),
+    ].join('; ');
+  }
   const signerAddress = request.grantee || request.controlAddress;
   return [
     'agd tx sign',
@@ -1144,6 +1201,7 @@ const generateAuthzOperatorUpgrade = async (
 
   return {
     agdSignCommand: formatAgdSignCommand({
+      target: upgradeTarget,
       request,
       unsignedTxAssetName,
       signedTxAssetName: detachedSignedTxAssetName(

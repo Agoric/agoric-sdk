@@ -1746,6 +1746,19 @@ test('authz operator-sign path embeds a multisig grantee pubkey resolved from ch
     assets?.get('ymax0-main-authz-unsigned-tx.json') || 'null',
   );
   t.deepEqual(unsignedTx.auth_info.signer_infos[0].public_key, granteePubkey);
+
+  // Regression test: for a multisig grantee, the printed agd command must
+  // have each cosigner sign individually with --multisig=... (amino-json,
+  // only the multisig's own pubkey imported first) rather than the
+  // single-key --sign-mode direct command, which agd rejects outright for
+  // a multisig signer (confirmed against a real agd binary). The local
+  // keyring name is derived from the grantee's own address (last 8 chars),
+  // not the target, so the same recurring grantee reuses one entry across
+  // every target/release instead of colliding or duplicating per target.
+  t.is(
+    JSON.parse(ctx.stdoutChunks[0]!).detail.agdSignCommand,
+    'agd keys add \'ymax-grantee-00000000\' --pubkey=\'{"@type":"/cosmos.crypto.multisig.LegacyAminoPubKey","threshold":2,"public_keys":[{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"},{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}]}\'; agd tx sign \'ymax0-main-authz-unsigned-tx.json\' --offline --sign-mode amino-json --multisig=ymax-grantee-00000000 --from <your-key-name> --account-number 12 --sequence 34 --chain-id \'agoric-3\' --overwrite --output-document \'ymax0-main-authz-signature-<your-name>.json\'',
+  );
 });
 
 test('phase-upgrade-generate combines detached-grantee signature files into the signed tx', async t => {
