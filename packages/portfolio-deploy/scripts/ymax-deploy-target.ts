@@ -19,6 +19,8 @@ import type {
   BridgeAction,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
+import { pubkeyToAddress } from '@cosmjs/amino';
+import { decodePubkey } from '@cosmjs/proto-signing';
 import { StargateClient } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
 import { execa } from 'execa';
@@ -29,6 +31,7 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import assert from 'node:assert/strict';
 import {
+  encodeAuthInfoBytes,
   encodeJsonPublicKey,
   makeAgdUnsignedTx,
   parseSignedTxBytes,
@@ -37,6 +40,7 @@ import {
   combineDetachedGranteeSignatures,
   formatJson,
   makeUpgradeRequestBuilder as buildUpgradeRequestBuilder,
+  resolveGranteeAddress,
   type CombineSignaturesResult,
   type UnsignedUpgradeArtifact,
 } from '../src/ymax-authz-flow.ts';
@@ -1158,7 +1162,7 @@ const formatAgdSignCommand = ({
         '--output-document',
         shQuote(signatureAssetName),
       ].join(' '),
-    ].join('; ');
+    ].join('\n');
   }
   const signerAddress = request.grantee || request.controlAddress;
   return [
@@ -1178,6 +1182,109 @@ const formatAgdSignCommand = ({
     '--output-document',
     shQuote(signedTxAssetName),
   ].join(' ');
+};
+
+/**
+ * The grantee address embedded in an already-generated unsigned tx (via its
+ * signer_info public key), or undefined for a plain control-address tx
+ * (which embeds no public key at all — see {@link resolveGrantee}'s doc).
+ */
+const embeddedGranteeAddress = (authInfo: {
+  signerInfos: Array<{ publicKey?: { typeUrl: string; value: Uint8Array } }>;
+}) => {
+  const pubkeyAny = authInfo.signerInfos[0]?.publicKey;
+  return pubkeyAny && pubkeyToAddress(decodePubkey(pubkeyAny), 'agoric');
+};
+
+/**
+ * A rerun that passes a different `--grantee` than the one an
+ * already-generated unsigned tx was built for would otherwise proceed
+ * silently — showing a sign command for the wrong signer, or combining
+ * uploaded signatures against the wrong grantee's multisig. Catch that
+ * before it gets confusing, the same way {@link createOverrides} guards
+ * against a conflicting `privateArgsOverrides` asset.
+ */
+const ensureGranteeMatchesUnsignedTx = async ({
+  release,
+  unsignedTxAssetName,
+  grantee,
+}: {
+  release: ReleaseRW;
+  unsignedTxAssetName: string;
+  grantee: string;
+}) => {
+  const unsignedTx = (await release.join(unsignedTxAssetName).readJSON()) as {
+    auth_info: unknown;
+  };
+  const authInfo = AuthInfo.decode(encodeAuthInfoBytes(unsignedTx.auth_info));
+  const existingAddress =
+    embeddedGranteeAddress(authInfo) ||
+    Fail`existing ${unsignedTxAssetName} was generated without a grantee`;
+  const requestedAddress = resolveGranteeAddress(grantee);
+  if (existingAddress !== requestedAddress) {
+    throw Error(
+      `grantee ${grantee} resolves to ${requestedAddress}, but existing ${unsignedTxAssetName} was generated for grantee ${existingAddress}; remove or rename ${unsignedTxAssetName} to change grantee`,
+    );
+  }
+};
+
+/**
+ * Rebuild the `agd tx sign`/`agd keys add` command from whatever's already
+ * on the release, rather than only ever showing it the run the unsigned tx
+ * was first generated: `graph.ensureNode` skips `create()` (and its
+ * `agdSignCommand`) once the asset already exists, which otherwise leaves
+ * later "still waiting on cosigners" reruns with nothing to show — the
+ * literal string `null` where the command used to be. `account_number`
+ * isn't encoded in the tx itself, so it's re-fetched live; the signer
+ * address comes from this run's grantee/control address, not by decoding
+ * the persisted tx (which a preceding {@link ensureGranteeMatchesUnsignedTx}
+ * call already confirmed agrees with it, for the grantee case).
+ */
+const rebuildAgdSignCommand = async ({
+  target,
+  unsignedTxAssetName,
+  signedTxAssetName,
+  release,
+  connectTargetRpc,
+  grantee,
+}: {
+  target: Target;
+  unsignedTxAssetName: string;
+  signedTxAssetName: string;
+  release: ReleaseRW;
+  connectTargetRpc: (upgradeTarget: Target) => Promise<StargateClient>;
+  grantee: string | undefined;
+}) => {
+  const unsignedTx = (await release.join(unsignedTxAssetName).readJSON()) as {
+    auth_info: unknown;
+  };
+  const authInfoBytes = encodeAuthInfoBytes(unsignedTx.auth_info);
+  const authInfo = AuthInfo.decode(authInfoBytes);
+  const signerInfo =
+    authInfo.signerInfos[0] || Fail`unsigned tx missing signer_info`;
+  const { contract, network } = getTargetInfo(target);
+  const signerAddress = grantee
+    ? resolveGranteeAddress(grantee)
+    : getControlAddress(contract, network);
+  const queryClient = await connectTargetRpc(target);
+  const account =
+    (await queryClient.getAccount(signerAddress)) ||
+    Fail`signer ${signerAddress} not found on chain`;
+  return formatAgdSignCommand({
+    target,
+    request: {
+      authInfoBytesBase64: Buffer.from(authInfoBytes).toString('base64'),
+      grantee: grantee ? signerAddress : undefined,
+      controlAddress: grantee ? '' : signerAddress,
+      signerData: {
+        accountNumber: account.accountNumber,
+        sequence: Number(signerInfo.sequence),
+        chainId: getTargetInfo(target).chainId,
+      },
+    } as unknown as UnsignedUpgradeArtifact,
+    unsignedTxAssetName,
+    signedTxAssetName,
+  });
 };
 
 const generateAuthzOperatorUpgrade = async (
@@ -2452,6 +2559,13 @@ export const main = async (
     }
     case 'phase-upgrade-generate': {
       const record = detachedUnsignedTxAssetName(target, GRANTEE);
+      if (GRANTEE && hasAsset(await release.readOnly().get(), record)) {
+        await ensureGranteeMatchesUnsignedTx({
+          release,
+          unsignedTxAssetName: record,
+          grantee: GRANTEE,
+        });
+      }
       const generated = await graph.ensureNode<object>(record);
       const signedTxAssetName = detachedSignedTxAssetName(target, GRANTEE);
       const releaseInfo = await release.readOnly().get();
@@ -2467,11 +2581,24 @@ export const main = async (
             })
           : undefined;
       const readyToBroadcast = alreadySigned || combineResult?.ready === true;
+      const agdSignCommand = readyToBroadcast
+        ? undefined
+        : await rebuildAgdSignCommand({
+            target,
+            unsignedTxAssetName: record,
+            signedTxAssetName,
+            release,
+            connectTargetRpc,
+            grantee: GRANTEE,
+          });
       writeJson(stdout, {
         target,
         phase: 'upgrade-generate',
         record,
-        detail: generated,
+        detail: {
+          ...generated,
+          ...(agdSignCommand ? { agdSignCommand } : {}),
+        },
         readyToBroadcast,
         ...(combineResult && !combineResult.ready
           ? { reason: combineResult.reason }

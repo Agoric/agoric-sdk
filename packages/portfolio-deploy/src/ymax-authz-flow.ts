@@ -120,6 +120,27 @@ type AccountQueryClient = {
  * pointer dereference (it unconditionally reads
  * `signer_infos[0].public_key` while verifying the supplied signatures).
  */
+/**
+ * Derive a grantee's address from raw CLI/workflow input without touching
+ * the network: `input` is either a bech32 address (returned as-is) or a
+ * public key JSON (address derived locally). Shared with rerun guards that
+ * need to check "does this run's grantee match an already-generated
+ * artifact's" without an extra chain round-trip.
+ */
+export const resolveGranteeAddress = (input: string): string => {
+  const asJson = (() => {
+    try {
+      const parsed = JSON.parse(input);
+      return parsed && typeof parsed === 'object' ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  })();
+  if (!asJson) return input;
+  const pubkey = parseJsonPublicKey(asJson) || Fail`invalid grantee pubkey`;
+  return pubkeyToAddress(decodePubkey(pubkey), 'agoric');
+};
+
 const resolveGrantee = async (
   input: string,
   queryClient: AccountQueryClient,
@@ -140,7 +161,7 @@ const resolveGrantee = async (
 
   if (asJson) {
     const pubkey = parseJsonPublicKey(asJson) || Fail`invalid grantee pubkey`;
-    const address = pubkeyToAddress(decodePubkey(pubkey), 'agoric');
+    const address = resolveGranteeAddress(input);
     const { accountNumber, sequence } =
       (await queryClient.getAccount(address)) ||
       Fail`grantee ${address} (derived from the given public key) was not found on chain; fund it before generating this request`;

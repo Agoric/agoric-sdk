@@ -218,8 +218,12 @@ jobs:
                   signature_hint=""
                 fi
                 sign_command="$(jq -r '.detail.agdSignCommand' <<<"$generate_output")"
+                reason="$(jq -r '.reason // ""' <<<"$generate_output")"
                 message="Detached signing pending: generated or validated unsigned tx; upload $signed_asset$signature_hint to the release and rerun this workflow."
                 echo "$message"
+                if [ -n "$reason" ]; then
+                  echo "$reason"
+                fi
                 echo "$sign_command"
 
                 # Also written to the job summary (rendered prominently on
@@ -229,6 +233,10 @@ jobs:
                   echo '### :key: Action required: detached signing pending'
                   echo
                   echo "$message"
+                  if [ -n "$reason" ]; then
+                    echo
+                    echo "$reason"
+                  fi
                   echo
                   echo '```sh'
                   echo "$sign_command"

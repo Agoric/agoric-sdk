@@ -4,6 +4,7 @@ import path from 'node:path';
 import { makeFileRW } from '@agoric/pola-io';
 import {
   makeSignDoc as makeAminoSignDoc,
+  pubkeyToAddress,
   serializeSignDoc,
 } from '@cosmjs/amino';
 import { Secp256k1, Secp256k1Signature, sha256 } from '@cosmjs/crypto';
@@ -1758,7 +1759,7 @@ test('authz operator-sign path embeds a multisig grantee pubkey resolved from ch
   // every target/release instead of colliding or duplicating per target.
   t.is(
     JSON.parse(ctx.stdoutChunks[0]!).detail.agdSignCommand,
-    'agd keys add \'ymax-grantee-00000000\' --pubkey=\'{"@type":"/cosmos.crypto.multisig.LegacyAminoPubKey","threshold":2,"public_keys":[{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"},{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}]}\'; agd tx sign \'ymax0-main-authz-unsigned-tx.json\' --offline --sign-mode amino-json --multisig=ymax-grantee-00000000 --from <your-key-name> --account-number 12 --sequence 34 --chain-id \'agoric-3\' --overwrite --output-document \'ymax0-main-authz-signature-<your-name>.json\'',
+    'agd keys add \'ymax-grantee-00000000\' --pubkey=\'{"@type":"/cosmos.crypto.multisig.LegacyAminoPubKey","threshold":2,"public_keys":[{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3"},{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl"}]}\'\nagd tx sign \'ymax0-main-authz-unsigned-tx.json\' --offline --sign-mode amino-json --multisig=ymax-grantee-00000000 --from <your-key-name> --account-number 12 --sequence 34 --chain-id \'agoric-3\' --overwrite --output-document \'ymax0-main-authz-signature-<your-name>.json\'',
   );
 });
 
@@ -1797,7 +1798,10 @@ test('phase-upgrade-generate combines detached-grantee signature files into the 
       })),
     },
   };
-  const grantee = 'agoric1grantee00000000000000000000000000000000';
+  // A real chain guarantees this address decodes back to granteePubkeyAmino;
+  // deriving it the same way keeps this mock internally consistent (rather
+  // than an arbitrary placeholder the mocked getAccount ignores anyway).
+  const grantee = pubkeyToAddress(granteePubkeyAmino, 'agoric');
   const accountNumber = 55;
   const sequence = 6;
 
@@ -2273,14 +2277,19 @@ test('operator must remove upgrade artifact to change privateArgsOverrides', asy
   t.deepEqual(stdoutChunks, []);
 });
 
-const makeAuthzGenerateChainMocks = () => {
+const makeAuthzGenerateChainMocks = (
+  // Not a cryptographically valid key, just the right shape (33 bytes,
+  // compressed-prefix byte) — enough for pubkeyToAddress, which most tests
+  // never exercise since they don't decode the embedded pubkey back out.
+  pubkeyValue = Buffer.from([2, 3, 4]).toString('base64'),
+) => {
   const connectRpc = (async (_rpcAddr: string) => ({
     getAccount: async () => ({
       accountNumber: 12,
       sequence: 34,
       pubkey: {
         type: 'tendermint/PubKeySecp256k1',
-        value: Buffer.from([2, 3, 4]).toString('base64'),
+        value: pubkeyValue,
       },
     }),
   })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
@@ -2456,6 +2465,78 @@ test('phase-upgrade-generate is idempotent when privateArgs matches the existing
   );
   t.deepEqual(overridesNames, [existingOverridesName]);
   t.truthy(assets?.get('ymax0-main-authz-unsigned-tx.json'));
+});
+
+test('phase-upgrade-generate rejects a rerun with a different grantee than the existing unsigned tx', async t => {
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+  });
+
+  // A cryptographically valid (33-byte compressed) key, unlike the 3-byte
+  // placeholder most fixtures use, since this test needs to decode it back
+  // out to compare against a second run's grantee. The mock returns this
+  // same key regardless of the address queried, so the address embedded in
+  // the unsigned tx is this key's own derived address, not firstGrantee.
+  const mockPubkeyValue = Buffer.from([2, ...Array(32).fill(7)]).toString(
+    'base64',
+  );
+  const embeddedAddress = pubkeyToAddress(
+    { type: 'tendermint/PubKeySecp256k1', value: mockPubkeyValue },
+    'agoric',
+  );
+  const { connectRpc, makeWalletKit } =
+    makeAuthzGenerateChainMocks(mockPubkeyValue);
+
+  const firstGrantee = 'agoric1operator0000000000000000000000000000000';
+  await runPhase(
+    {
+      agoricSdk: ctx.agoricSdk,
+      execFile: ctx.execFile,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      stdout: ctx.stdout,
+    },
+    'phase-upgrade-generate',
+    { target: 'ymax0-main', tag: releaseTag },
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE: firstGrantee,
+      PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+    },
+  );
+
+  const secondGrantee = 'agoric1differentgrantee0000000000000000000000';
+  await t.throwsAsync(
+    runPhase(
+      {
+        agoricSdk: ctx.agoricSdk,
+        execFile: ctx.execFile,
+        fetchFn: ctx.fetchFn,
+        connectRpc,
+        makeWalletKit,
+        stdout: ctx.stdout,
+      },
+      'phase-upgrade-generate',
+      { target: 'ymax0-main', tag: releaseTag },
+      {
+        ...ctx.env,
+        MNEMONIC: undefined,
+        GRANTEE: secondGrantee,
+        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+      },
+    ),
+    {
+      message: `grantee ${secondGrantee} resolves to ${secondGrantee}, but existing ymax0-main-authz-unsigned-tx.json was generated for grantee ${embeddedAddress}; remove or rename ymax0-main-authz-unsigned-tx.json to change grantee`,
+    },
+  );
 });
 
 test.serial('deploy ymax1-main', async t => {
