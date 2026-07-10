@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 /**
  * @typedef {Partial<{
  *    'block.height': Slog['blockHeight'];

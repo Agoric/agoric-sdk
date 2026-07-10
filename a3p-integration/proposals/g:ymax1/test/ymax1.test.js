@@ -92,9 +92,9 @@ test.serial('no instance currently deployed', async t => {
 });
 
 test.serial('invoke ymaxControl showing no instance', async t => {
-  const yc = ymaxControl.saveAs('creatorFacet');
+  const yc = ymaxControl;
 
-  await t.throwsAsync(yc.getCreatorFacet(), {
+  await t.throwsAsync(yc.getCreatorFacet.once({ saveAs: 'creatorFacet' })(), {
     message: /no StartedInstanceKit/,
   });
 });
@@ -136,7 +136,9 @@ test.serial('installAndStart using ymaxControl', async t => {
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
-  const { result } = await ymaxControl.saveAs('creatorFacet').getCreatorFacet();
+  const { result } = await ymaxControl.getCreatorFacet.once({
+    saveAs: 'creatorFacet',
+  })();
 
   t.truthy(result, 'Creator facet saved to wallet store');
 });

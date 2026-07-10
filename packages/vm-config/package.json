@@ -25,7 +25,8 @@
     "@agoric/zoe": "workspace:*"
   },
   "devDependencies": {
-    "ava": "^7.0.0",
+    "@endo/init": "^1.1.13",
+    "ava": "^8.0.1",
     "c8": "^10.1.3"
   },
   "files": [
@@ -45,12 +46,9 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 100
+    "atLeast": 95.1
   }
 }

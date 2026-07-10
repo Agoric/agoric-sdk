@@ -5,6 +5,9 @@
  * scenario's independent kernel boots on its own core; see
  * zoe-swingset-context.js.
  */
+
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import {
   buildZoeSwingsetData,

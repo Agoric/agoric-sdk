@@ -1,4 +1,3 @@
-/* eslint-env node */
 import path from 'node:path';
 
 /**
@@ -20,6 +19,7 @@ export const makeDirectoryLock = powers => {
     acquireTimeoutMs,
     onEvent = () => {},
   } = powers;
+  /** @param {BuildCacheEvent} event */
   const safeEmit = event => {
     try {
       onEvent(event);

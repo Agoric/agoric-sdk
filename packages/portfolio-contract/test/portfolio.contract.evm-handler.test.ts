@@ -29,10 +29,10 @@ import {
   type RunningFlowKey,
 } from './contract-test-support.ts';
 
-test('evmHandler.withdraw starts a withdraw flow', async t => {
+test('evmHandler.withdraw starts and completes a withdraw flow', async t => {
   const shared = await setupPlanner(t);
   const { common } = shared;
-  const { usdc } = common.brands;
+  const { usdc, bld } = common.brands;
   const inputs = {
     fromChain: 'Arbitrum' as const,
     depositAmount: usdc.units(1000),
@@ -48,7 +48,7 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
       useRouter,
       useVerifiedSigner,
     );
-    const { evmTrader } = powers;
+    const { evmTrader, planner1 } = powers;
     await doOpenEvmPortfolio(shared, inputs, powers);
 
     const statusBefore = await evmTrader.getPortfolioStatus();
@@ -68,9 +68,9 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
       .withdraw(withdrawDetails);
     t.regex(flowKey, /^flow\d+$/, `${label} withdraw returns a flow key`);
 
-    const statusAfter = await evmTrader.getPortfolioStatus();
+    const statusAfterStart = await evmTrader.getPortfolioStatus();
     t.like(
-      statusAfter.flowsRunning,
+      statusAfterStart.flowsRunning,
       {
         [flowKey]: {
           type: 'withdraw',
@@ -80,12 +80,65 @@ test('evmHandler.withdraw starts a withdraw flow', async t => {
       `${label} withdraw flow is running`,
     );
 
+    const { contents: contentsRunning } = getPortfolioInfoTimed(
+      t,
+      evmTrader.getPortfolioPath(),
+      common.bootstrap.storage,
+    );
+    snapshotTimed(t, contentsRunning, `vstorage running (${label})`);
+    await documentStorageSchemaTimed(
+      t,
+      common.bootstrap.storage,
+      pendingTxOpts,
+    );
+
+    const amount = usdc.make(withdrawDetails.amount);
+    const fee = bld.make(100n);
+    // A withdraw from a position first redeems back to the EVM chain
+    // account (`@Arbitrum`), then transfers from there to the owner's EOA
+    // (`-Arbitrum`). Both steps are GMP calls settled the same way.
+    const steps = [
+      { src: 'Aave_Arbitrum', dest: '@Arbitrum', amount, fee },
+      { src: '@Arbitrum', dest: '-Arbitrum', amount, fee },
+    ];
+
+    const flowNum = Number(flowKey.replace('flow', ''));
+    const { policyVersion, rebalanceCount } = statusBefore;
+    await E(planner1.stub).resolvePlan(
+      evmTrader.getPortfolioId(),
+      flowNum,
+      { flow: steps },
+      policyVersion,
+      rebalanceCount,
+    );
+
+    for (const _ of steps) {
+      await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+      await powers.txResolver.drainPending();
+      await eventLoopIteration();
+    }
+
+    const statusAfter = await evmTrader.getPortfolioStatus();
+    t.deepEqual(
+      statusAfter.flowsRunning,
+      {},
+      `no flows running after ${label} withdraw completes`,
+    );
+
     const { contents } = getPortfolioInfoTimed(
       t,
       evmTrader.getPortfolioPath(),
       common.bootstrap.storage,
     );
-    snapshotTimed(t, contents, `vstorage (${label})`);
+    const flowHistory =
+      contents[`${evmTrader.getPortfolioPath()}.flows.${flowKey}`];
+    t.truthy(
+      Array.isArray(flowHistory) &&
+        flowHistory.some(entry => entry?.state === 'done'),
+      `${label} withdraw flow history includes a done entry`,
+    );
+
+    snapshotTimed(t, contents, `vstorage done (${label})`);
     await documentStorageSchemaTimed(
       t,
       common.bootstrap.storage,
@@ -222,10 +275,31 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
       useRouter,
       useVerifiedSigner,
     );
-    const { evmTrader } = powers;
+    const { evmTrader, planner1 } = powers;
     await doOpenEvmPortfolio(shared, inputs, powers);
 
+    // The portfolio's target allocation must include the new position
+    // before the planner can route a deposit there; request that change
+    // and resolve its (empty) rebalance plan first.
+    const rebalanceFlowKey = await evmTrader
+      .forChain(inputs.fromChain)
+      .setTargetAllocation([{ instrument: 'Aave_Base', portion: 10000n }]);
+    const { policyVersion: rebalPolicyVersion, rebalanceCount: rebalCount } =
+      await evmTrader.getPortfolioStatus();
+    await E(planner1.stub).resolvePlan(
+      evmTrader.getPortfolioId(),
+      Number(rebalanceFlowKey.replace('flow', '')),
+      { flow: [] },
+      rebalPolicyVersion,
+      rebalCount,
+    );
+
     const statusBefore = await evmTrader.getPortfolioStatus();
+    t.deepEqual(
+      statusBefore.flowsRunning,
+      {},
+      `no flows running after ${label} target allocation update`,
+    );
     t.truthy(
       statusBefore.accountIdByChain?.[inputs.fromChain],
       `${label} has Arbitrum account`,
@@ -295,7 +369,6 @@ test('evmHandler.deposit (Arbitrum -> Base) completes a deposit flow', async t =
     const depositFlowNum = await resolveDepositPlan(
       {
         portfolioId: evmTrader.getPortfolioId(),
-        overrideTargetAllocation: { Aave_Base: 10000n },
         separateMakeAccount: true,
       },
       powers,
@@ -541,11 +614,15 @@ test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t =
       },
     ];
 
+    const syncState = {
+      policyVersion: statusBefore.policyVersion,
+      rebalanceCount: statusBefore.rebalanceCount,
+    };
+
     const rebalanceFlowKey = await E(planner1.stub).rebalance(
       evmTrader.getPortfolioId(),
+      { syncState, agentMemo: '12345' },
       steps,
-      statusBefore.policyVersion,
-      statusBefore.rebalanceCount,
     );
     t.regex(
       rebalanceFlowKey,
@@ -578,10 +655,17 @@ test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t =
     );
     const flowHistory =
       contents[`${evmTrader.getPortfolioPath()}.flows.${rebalanceFlowKey}`];
-    t.truthy(
-      Array.isArray(flowHistory) &&
-        flowHistory.some(entry => entry?.state === 'done'),
-      `${label} planner rebalance flow history includes a done entry`,
+    const doneFlowEntry = Array.isArray(flowHistory)
+      ? flowHistory.find(entry => entry?.state === 'done')
+      : undefined;
+    t.like(
+      doneFlowEntry,
+      {
+        agent: 'agent1',
+        agentMemo: '12345',
+        type: 'rebalance',
+      },
+      `${label} planner rebalance done flow designates agent and memo`,
     );
 
     snapshotTimed(t, contents, `vstorage (${label})`);

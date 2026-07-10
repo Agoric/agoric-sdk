@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { getReplHandler } from '../src/repl.js';

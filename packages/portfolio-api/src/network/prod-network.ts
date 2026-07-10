@@ -55,6 +55,12 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       protocol: 'Beefy',
     },
     {
+      pool: 'ERC4626_morphoAlphaUsdcCore_Ethereum',
+      chain: 'Ethereum',
+      protocol: 'ERC4626',
+      blockDepositReason: 'AT_CAPACITY',
+    },
+    {
       pool: 'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
       chain: 'Ethereum',
       protocol: 'ERC4626',
@@ -213,7 +219,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -222,7 +228,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -231,7 +237,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -240,7 +246,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -249,7 +255,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 30, // Avalanche has instant finality
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -258,7 +264,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -267,7 +273,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -276,7 +282,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
 
@@ -287,7 +293,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -296,7 +302,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -305,7 +311,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 30, // Avalanche has instant finality
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -314,7 +320,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -323,7 +329,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -332,7 +338,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
 
@@ -343,7 +349,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 30, // Avalanche has instant finality
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -352,7 +358,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -361,7 +367,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -370,7 +376,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
 
@@ -381,7 +387,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 60,
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
     {
@@ -390,7 +396,7 @@ export const PROD_NETWORK: NetworkSpec = deepFreeze({
       transfer: 'cctpV2',
       variableFeeBps: 0,
       timeSec: 30, // Avalanche has instant finality
-      min: 100_000n,
+      min: 1_000_000n,
       feeMode: 'evmToEvm',
     },
   ],

@@ -350,13 +350,24 @@ const refineModel = (
     const { id, capacity, min } = edge;
     const pickVar = `pick_${id}`;
     const flowVar = `via_${id}`;
+    const allowKey = `allow_${id}`;
     if ((solution[flowVar] ?? 0) >= FLOW_EPS) {
       cloned.binaries[pickVar] = true;
       cloned.ints[flowVar] = true;
+
+      // Now that we've selected our arcs, minimums *do* apply directly.
       cloned.constraints[`through_${id}`] = {
         min: min === undefined ? undefined : Number(min),
         max: capacity === undefined ? undefined : Number(capacity),
       };
+      delete cloned.constraints[allowKey].max;
+
+      // Scaling by too much here would introduce numerical instability, so we
+      // cap it and rely on the inherent headroom of our coupling constraints
+      // (@see {@link buildLPModel}).
+      const allowScale = Math.min(1000, UNIT_SCALE);
+      cloned.variables[pickVar][allowKey] *= allowScale;
+
       cloned.variables[pickVar].weight =
         (cloned.variables[pickVar].weight - 1) * UNIT_SCALE + 1;
     } else {

@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import { mustMatch } from '@endo/patterns';
 import test from 'ava';
 import {

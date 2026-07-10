@@ -1,4 +1,3 @@
-/* eslint-env node */
 import { Command } from 'commander';
 import path from 'node:path';
 import url from 'node:url';

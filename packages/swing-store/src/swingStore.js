@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 import * as fs from 'node:fs';
 import * as pathlib from 'node:path';
 

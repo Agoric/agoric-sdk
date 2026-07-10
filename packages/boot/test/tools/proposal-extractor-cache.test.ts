@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { createHash } from 'node:crypto';
 import * as fsPromises from 'node:fs/promises';

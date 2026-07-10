@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import type { TestFn, Implementation } from 'ava';
 import anyTest from 'ava';
 import { fileURLToPath } from 'node:url';

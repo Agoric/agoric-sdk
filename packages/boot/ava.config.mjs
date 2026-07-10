@@ -91,13 +91,9 @@ const byExplicitBootOrder = (a, b) => {
 };
 
 export default {
-  extensions: {
-    js: true,
-    ts: 'module',
-  },
+  extensions: ['js', 'ts'],
   files: ['test/**/*.test.*'],
-  nodeArguments: ['--loader=ts-blank-space/register', '--no-warnings'],
-  require: ['@endo/init/debug.js'],
+  nodeArguments: ['--import=ts-blank-space/register', '--no-warnings'],
   timeout: '20m',
   sortTestFiles: byExplicitBootOrder,
   workerThreads: false,

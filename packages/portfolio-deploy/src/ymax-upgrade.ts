@@ -18,6 +18,7 @@ const trace = (...args: unknown[]) =>
 const options = {
   contract: { type: 'string', default: 'ymax0' },
   bundle: { type: 'string' },
+  'invocation-id': { type: 'string' },
   overrides: { type: 'string' },
   'result-file': { type: 'string' },
 } as const;
@@ -30,10 +31,12 @@ const upgradeYmax = async (tools: RunTools) => {
   const {
     contract,
     bundle: bundleId,
+    'invocation-id': invocationId,
     overrides,
     'result-file': resultFile,
   } = values;
   if (!bundleId) throw Error('--bundle missing');
+  if (!invocationId) throw Error('--invocation-id missing');
   if (!resultFile) throw Error('--result-file missing');
 
   const fileOverrides = await (overrides
@@ -61,11 +64,18 @@ const upgradeYmax = async (tools: RunTools) => {
   let tx: DeliverTxResponse | undefined;
   try {
     trace('upgrading contract', contract, 'to bundle', bundleId);
-    ({ tx } = await ymaxControl.upgrade({ bundleId, privateArgsOverrides }));
+    ({ tx } = await (ymaxControl as any).upgrade({
+      bundleId,
+      privateArgsOverrides,
+      id: invocationId,
+    }));
   } catch (err) {
     tx = account.lastTx;
-    if (!tx) throw err;
+    if (!tx) throw Error('no lastTx?!', { cause: err });
     console.error('recovering from upgrade() throw via lastTx', err);
+  }
+  if (!tx) {
+    throw Error('missing upgrade tx');
   }
   trace(`upgrade tx: ${tx.transactionHash} at height ${tx.height}`);
 
@@ -101,6 +111,7 @@ const upgradeYmax = async (tools: RunTools) => {
   const result = {
     contract,
     bundleId,
+    invocationId,
     upgradeTxHash: tx.transactionHash,
     upgradeBlockHeight: upgradeBlock.height,
     upgradeBlockTime: upgradeBlock.time,

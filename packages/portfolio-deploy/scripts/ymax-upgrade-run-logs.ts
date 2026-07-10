@@ -363,7 +363,8 @@ const main = async (argv = process.argv) => {
     throw Error(`bad --window-minutes: ${values['window-minutes']}`);
   }
 
-  const namespace = values.namespace || network;
+  const namespace =
+    values.namespace || { devnet: 'devnet', main: 'followmain' }[network];
   const pod = values.pod || defaultPodForNetwork(network);
   const address = values.address || getControlAddress(contract, network);
   const apiAddr = await getApiAddr(network);

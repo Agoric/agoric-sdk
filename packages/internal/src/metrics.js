@@ -230,6 +230,11 @@ export const makeQueueMetrics = ({
 
   let ready = false;
   const lengths = /** @type {TotalMap<string, number>} */ (new Map());
+  /**
+   * @param {string} queueName
+   * @param {number} delta
+   * @param {boolean} [init]
+   */
   const nudge = (queueName, delta, init = false) => {
     if (!lengths.has(queueName)) {
       if (!init) console?.warn('Unknown queue', queueName);

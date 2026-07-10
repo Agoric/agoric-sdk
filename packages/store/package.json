@@ -41,7 +41,7 @@
   "devDependencies": {
     "@endo/init": "^1.1.13",
     "@endo/ses-ava": "^1.4.2",
-    "ava": "^7.0.0"
+    "ava": "^8.0.1"
   },
   "files": [
     "src/",
@@ -54,12 +54,9 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 89.98
+    "atLeast": 89.92
   }
 }

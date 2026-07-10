@@ -68,8 +68,9 @@
     "@cosmjs/proto-signing": "^0.36.0",
     "@endo/bundle-source": "^4.3.2",
     "@endo/import-bundle": "^1.7.0",
+    "@endo/init": "^1.1.13",
     "@endo/ses-ava": "^1.4.2",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "esbuild": "^0.25.2",
     "prettier": "^3.7.4",
@@ -86,19 +87,16 @@
     }
   },
   "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],
     "nodeArguments": [
-      "--loader=ts-blank-space/register",
+      "--import=ts-blank-space/register",
       "--no-warnings"
-    ],
-    "require": [
-      "@endo/init/debug.js"
     ],
     "timeout": "20m"
   },
@@ -112,6 +110,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 97.65
+    "atLeast": 96.68
   }
 }

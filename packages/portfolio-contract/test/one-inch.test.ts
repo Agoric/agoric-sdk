@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
 import { encodeFunctionData } from 'viem';
 import type { SwapDesc } from '@agoric/portfolio-api';

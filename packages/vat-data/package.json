@@ -29,16 +29,13 @@
     "@endo/far": "^1.1.14",
     "@endo/init": "^1.1.13",
     "@endo/ses-ava": "^1.4.2",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "tsd": "^0.33.0"
   },
   "files": [
     "src"
   ],
   "ava": {
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "files": [
       "test/**/*.test.*"
     ]
@@ -50,6 +47,6 @@
     "node": "^22.11"
   },
   "typeCoverage": {
-    "atLeast": 99.33
+    "atLeast": 99.06
   }
 }

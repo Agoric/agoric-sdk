@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@agoric/kmarshal": "workspace:*",
-    "ava": "^7.0.0"
+    "ava": "^8.0.1"
   },
   "files": [
     "src",
@@ -55,9 +55,6 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "workerThreads": false,
     "timeout": "20m"
   },
@@ -65,6 +62,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 75.22
+    "atLeast": 75.35
   }
 }

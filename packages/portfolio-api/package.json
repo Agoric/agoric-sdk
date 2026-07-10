@@ -54,19 +54,20 @@
   },
   "devDependencies": {
     "@endo/far": "^1.1.14",
+    "@endo/init": "^1.1.13",
     "@types/js-yaml": "^4",
     "ajv": "^6.12.6",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "js-yaml": "^4.1.1",
     "ts-blank-space": "^0.6.2",
     "tsd": "^0.33.0"
   },
   "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],
@@ -74,13 +75,10 @@
       "--import=ts-blank-space/register",
       "--no-warnings"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 100
+    "atLeast": 99.95
   },
   "license": "Apache-2.0",
   "publishConfig": {

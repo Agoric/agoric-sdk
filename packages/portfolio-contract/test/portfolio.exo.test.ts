@@ -3,7 +3,7 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ThrowsExpectation } from 'ava';
 
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeIssuerKit } from '@agoric/ertp';
 import {
   fromTypedEntries,
   typedEntries,
@@ -454,7 +454,7 @@ type EVMDepositRemoteAccountConfig = {
 };
 
 const doEVMDeposit = test.macro(
-  (
+  async (
     t,
     params: {
       remoteAccount?: EVMDepositRemoteAccountConfig | undefined;
@@ -465,13 +465,15 @@ const doEVMDeposit = test.macro(
   ) => {
     const ownerAddress =
       '0x6666666666666666666666666666666666666666' as Address;
+    const storage = makeFakeStorageKit('published', { sequence: true });
     const {
       makePortfolioKit,
       makeMockLCA,
       predictMockWalletAddress,
       predictMockRemoteAccountAddress,
       getCallLog,
-    } = makeTestSetup();
+      getPortfolioStatus,
+    } = makeTestSetup({ storage });
     const { evmHandler, manager, reader } = makePortfolioKit({
       portfolioId: 454,
       sourceAccountId: `eip155:42161:${ownerAddress}`,
@@ -569,11 +571,7 @@ const doEVMDeposit = test.macro(
         ,
         {},
         ,
-        {
-          type: 'deposit',
-          amount: AmountMath.make(USDC, 1_000n),
-          fromChain: 'Arbitrum',
-        },
+        undefined,
         { flowId: 1 },
         ,
         {
@@ -584,6 +582,15 @@ const doEVMDeposit = test.macro(
         },
       ],
     ]);
+    t.like(await getPortfolioStatus!(454), {
+      flowsRunning: {
+        flow1: {
+          type: 'deposit',
+          fromChain: 'Arbitrum',
+          amount: { value: 1_000n },
+        },
+      },
+    });
   },
 );
 
@@ -811,9 +818,12 @@ test('evmHandler withdraw check address', t => {
   );
 });
 
-test('evmHandler withdraw uses chainId from domain', t => {
+test('evmHandler withdraw uses chainId from domain', async t => {
   const ownerAddress = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
   const { evmHandler } = makePortfolioKit({
     portfolioId: 4,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
@@ -829,25 +839,20 @@ test('evmHandler withdraw uses chainId from domain', t => {
   });
 
   t.is(result, 'flow1');
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
-        type: 'withdraw',
-        amount: AmountMath.make(USDC, amount),
-        toChain: 'Base',
-      },
-      { flowId: 1 },
-    ],
-  ]);
+  t.like(getCallLog(), [['executePlan', , {}, , undefined, { flowId: 1 }]]);
+  t.like(await getPortfolioStatus!(4), {
+    flowsRunning: {
+      flow1: { type: 'withdraw', toChain: 'Base', amount: { value: amount } },
+    },
+  });
 });
 
-test('evmHandler withdraw defaults to source chainId if domain missing', t => {
+test('evmHandler withdraw defaults to source chainId if domain missing', async t => {
   const ownerAddress = '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
   const { evmHandler } = makePortfolioKit({
     portfolioId: 5,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
@@ -862,20 +867,16 @@ test('evmHandler withdraw defaults to source chainId if domain missing', t => {
   });
 
   t.is(result, 'flow1');
-  t.like(getCallLog(), [
-    [
-      'executePlan',
-      ,
-      {},
-      ,
-      {
+  t.like(getCallLog(), [['executePlan', , {}, , undefined, { flowId: 1 }]]);
+  t.like(await getPortfolioStatus!(5), {
+    flowsRunning: {
+      flow1: {
         type: 'withdraw',
-        amount: AmountMath.make(USDC, amount),
         toChain: 'Arbitrum',
+        amount: { value: amount },
       },
-      { flowId: 1 },
-    ],
-  ]);
+    },
+  });
 });
 
 test('evmHandler withdraw fails for unsupported chainId', t => {
@@ -964,9 +965,12 @@ test('evmHandler rebalance does not yet support deposit', t => {
   });
 });
 
-test('evmHandler rebalance with allocations sets new target allocation', t => {
+test('evmHandler rebalance with allocations sets new target allocation', async t => {
   const ownerAddress = '0xffffffffffffffffffffffffffffffffffffffff' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
   const { evmHandler, reader } = makePortfolioKit({
     portfolioId: 10,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
@@ -985,9 +989,10 @@ test('evmHandler rebalance with allocations sets new target allocation', t => {
     Beefy_compoundUsdc_Arbitrum: 40n,
   });
 
-  t.like(getCallLog(), [
-    ['executePlan', , {}, , { type: 'rebalance' }, { flowId: 1 }],
-  ]);
+  t.like(getCallLog(), [['executePlan', , {}, , undefined, { flowId: 1 }]]);
+  t.like(await getPortfolioStatus!(10), {
+    flowsRunning: { flow1: { type: 'rebalance' } },
+  });
 });
 
 test('evmHandler rebalance with allocations requires non-empty allocations', t => {
@@ -1087,7 +1092,10 @@ test('evmHandler grant allocates sequential agent ids', async t => {
 });
 
 test('delegation rebalance creates flow and calls executePlan', async t => {
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
+    storage,
+  });
   const { manager } = makePortfolioKit({ portfolioId: 20 });
 
   const agentId = await manager.grantDelegation('agoric1delegate', {
@@ -1106,15 +1114,14 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
-  t.like(getCallLog()[1], [
-    'executePlan',
-    ,
-    {},
-    ,
-    { type: 'rebalance' },
-    { flowId: 1 },
-  ]);
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    'flow1',
+  );
+  t.like(getCallLog()[1], ['executePlan', , {}, , undefined, { flowId: 1 }]);
+  t.like(await getPortfolioStatus!(20), {
+    flowsRunning: { flow1: { type: 'rebalance' } },
+  });
 });
 
 test('allocation delegation cannot use rebalance', async t => {
@@ -1136,9 +1143,14 @@ test('allocation delegation cannot use rebalance', async t => {
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.throws(() => client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), {
-    message: /delegation agent1 does not have required permission "rebalance"/,
-  });
+  t.throws(
+    () =>
+      client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    {
+      message:
+        /delegation agent1 does not have required permission "rebalance"/,
+    },
+  );
   t.is(getCallLog().length, 1, 'rebalance denial does not start a flow');
 });
 
@@ -1177,10 +1189,10 @@ test('revoked delegation client is no longer usable', async t => {
   });
   t.throws(
     () =>
-      client.setTargetAllocation(
-        { USDN: 100n },
-        { policyVersion: 1, rebalanceCount: 0 },
-      ),
+      client.setTargetAllocation({
+        targetAllocation: { USDN: 100n },
+        syncState: { policyVersion: 1, rebalanceCount: 0 },
+      }),
     {
       message: /delegation client is not active for agent1/,
     },
@@ -1229,12 +1241,18 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
     ...Parameters<PortfolioKitDeps['deliverDelegation']>,
   ];
 
-  t.is(client.rebalance({ policyVersion: 0, rebalanceCount: 0 }), 'flow1');
+  t.is(
+    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    'flow1',
+  );
   t.is(getCallLog().length, 2);
   t.like(getCallLog(), [
     ['deliverDelegation'],
-    ['executePlan', , {}, , { type: 'rebalance' }, { flowId: 1 }],
+    ['executePlan', , {}, , undefined, { flowId: 1 }],
   ]);
+  t.like(await getPortfolioStatus!(22), {
+    flowsRunning: { flow1: { type: 'rebalance' } },
+  });
 
   await manager.setAutoFeatures({ rebalance: false });
   t.is(getCallLog().length, 2, 'active planner delegation is updated in place');
@@ -1248,9 +1266,14 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
       state: 'active',
     },
   });
-  t.throws(() => client.rebalance({ policyVersion: 1, rebalanceCount: 0 }), {
-    message: /delegation agent1 does not have required permission "rebalance"/,
-  });
+  t.throws(
+    () =>
+      client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
+    {
+      message:
+        /delegation agent1 does not have required permission "rebalance"/,
+    },
+  );
 
   manager.revokeDelegation(1);
 
@@ -1293,4 +1316,83 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
       state: 'active',
     },
   });
+});
+
+test('awaitingSteps is published in flowsRunning and reflects resolution state', async t => {
+  const storage = makeFakeStorageKit('published', { sequence: true });
+  const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({
+    storage,
+  });
+  const { manager, planner } = makePortfolioKit({ portfolioId: 1 });
+
+  const amount = { brand: USDC, value: 100n };
+  const steps = [{ src: '@agoric' as const, dest: '@noble' as const, amount }];
+
+  // Flow started without pre-resolved steps: plan is pending
+  const { flowId } = manager.startFlow({ type: 'withdraw', amount });
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(Object.keys(flowsRunning).length, 1, 'one flow running');
+    t.is(
+      flowsRunning[`flow${flowId}`].awaitingSteps,
+      true,
+      'awaitingSteps is true before resolveFlowPlan',
+    );
+  }
+
+  // resolveFlowPlan publishes status immediately
+  planner.resolveFlowPlan(flowId, steps);
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId}`].awaitingSteps,
+      false,
+      'awaitingSteps is false after resolveFlowPlan',
+    );
+  }
+
+  // Flow started with pre-resolved steps: awaitingSteps is false immediately
+  const { flowId: flowId2 } = manager.startFlow(
+    { type: 'withdraw', amount },
+    steps,
+  );
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId2}`].awaitingSteps,
+      false,
+      'awaitingSteps is false immediately when steps are provided at startFlow',
+    );
+  }
+
+  // rejectFlowPlan also publishes status immediately
+  const { flowId: flowId3, stepsP } = manager.startFlow({
+    type: 'withdraw',
+    amount,
+  });
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId3}`].awaitingSteps,
+      true,
+      'awaitingSteps is true before rejectFlowPlan',
+    );
+  }
+
+  planner.rejectFlowPlan(flowId3, 'insufficient funds');
+
+  {
+    const { flowsRunning = {} } = await getPortfolioStatus!(1);
+    t.is(
+      flowsRunning[`flow${flowId3}`].awaitingSteps,
+      false,
+      'awaitingSteps is false after rejectFlowPlan',
+    );
+  }
+
+  await t.throwsAsync(vowTools.when(stepsP), { message: 'insufficient funds' });
 });

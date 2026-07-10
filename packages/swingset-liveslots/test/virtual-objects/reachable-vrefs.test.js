@@ -1,4 +1,6 @@
 // @ts-nocheck
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { Remotable } from '@endo/marshal';

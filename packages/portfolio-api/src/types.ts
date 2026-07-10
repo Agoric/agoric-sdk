@@ -32,6 +32,8 @@ import type {
 export type FlowFeatures = {
   /** Control `ProgressTracker` support. */
   useProgressTracker?: boolean;
+  /** Enable experimental swap feature. */
+  experimentalSwap?: boolean;
 };
 
 /**
@@ -113,9 +115,25 @@ export type TargetAllocation = Partial<
 >;
 
 export type FlowDetail =
-  | { type: 'withdraw'; amount: NatAmount; toChain?: SupportedChain }
-  | { type: 'deposit'; amount: NatAmount; fromChain?: SupportedChain }
-  | { type: 'rebalance' }; // aka simpleRebalance
+  | {
+      type: 'withdraw';
+      amount: NatAmount;
+      toChain?: SupportedChain;
+      agent?: undefined;
+      agentMemo?: undefined;
+    }
+  | {
+      type: 'deposit';
+      amount: NatAmount;
+      fromChain?: SupportedChain;
+      agent?: undefined;
+      agentMemo?: undefined;
+    }
+  | {
+      type: 'rebalance'; // aka simpleRebalance
+      agent?: PortfolioAgentKey;
+      agentMemo?: string;
+    };
 
 /** linked list of concurrent failures, including dependencies */
 export type FlowErrors = {
@@ -244,15 +262,7 @@ export type TrafficReport = {
 
 export type PortfolioKey = `portfolio${number}`;
 export type FlowKey = `flow${number}`;
-export type PortfolioAgentId = `agent${number}`;
-
-/**
- * attribute a flow to an agent that initiated it.
- * @see {StatusFor['flowAgent']}
- */
-export type FlowAgent = {
-  id: PortfolioAgentId;
-};
+export type PortfolioAgentKey = `agent${number}`;
 
 export type PortfolioAgentState = 'active' | 'revoked' | 'expired';
 
@@ -353,12 +363,12 @@ export type StatusFor = {
     policyVersion: number;
     /** the count of acknowledged submissions [from the planner] associated with the current policyVersion */
     rebalanceCount: number;
-    /** @deprecated in favor of flowsRunning */
+    /** The count of all flows associated with this portfolio */
     flowCount: number;
-    flowsRunning?: Record<FlowKey, FlowDetail>;
+    flowsRunning?: Record<FlowKey, FlowDetail & { awaitingSteps?: boolean }>;
     enabledAutoFeatures?: PortfolioAutoFeaturesExt;
   };
-  portfolioAgents: Record<PortfolioAgentId, PortfolioAgentStatus>;
+  portfolioAgents: Record<PortfolioAgentKey, PortfolioAgentStatus>;
   position: {
     protocol: YieldProtocol;
     accountId: AccountId;
@@ -366,7 +376,6 @@ export type StatusFor = {
     totalOut: NatAmount;
   };
   flow: FlowStatus & FlowDetail;
-  flowAgent: FlowAgent;
   flowSteps: FlowStep[];
   flowOrder: FundsFlowPlan['order'];
 };
@@ -375,6 +384,17 @@ export type PortfolioSyncState = Pick<
   StatusFor['portfolio'],
   'policyVersion' | 'rebalanceCount'
 >;
+
+export type PortfolioDelegatedRebalanceParams = {
+  syncState: PortfolioSyncState;
+  agentMemo?: string;
+};
+
+export type PortfolioDelegatedSetTargetAllocationParams = {
+  syncState: PortfolioSyncState;
+  targetAllocation: TargetAllocation;
+  agentMemo?: string;
+};
 
 /**
  * Published vstorage values produced by the portfolio contract.
@@ -394,8 +414,6 @@ export type PortfolioPublishedPathTypes = {
   [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.pendingTx.tx${number}`]: StatusFor['pendingTx'];
 } & {
   [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}`]: StatusFor['flow'];
-} & {
-  [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.agent`]: StatusFor['flowAgent'];
 } & {
   [K in `ymax${'0' | '1'}.portfolios.portfolio${number}.flows.flow${number}.steps`]: StatusFor['flowSteps'];
 } & {
