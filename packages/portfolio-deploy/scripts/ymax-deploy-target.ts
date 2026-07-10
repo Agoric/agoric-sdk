@@ -44,6 +44,7 @@ import {
   bundleIdFromBundleRecord,
   canonicalizePrivateArgs,
   expectedOverridesAssetName,
+  overridesAssetPrefix,
   requireAsset,
   targetInfo,
   validateExpectedOverridesAsset,
@@ -377,6 +378,14 @@ const createRelease = async (
   return release.readOnly().get();
 };
 
+/**
+ * At most one `${target}-privateArgsOverrides-*.json` asset should ever
+ * exist per release: without this guard, a retry that omits
+ * `privateArgs` (e.g. a rerun of a still-detached-signing wait that forgot
+ * to re-supply the workflow's `privateArgsOverrides` input) would compute
+ * the digest for `{}` and silently add a second, unrelated artifact
+ * alongside the real one instead of failing loudly or reusing it.
+ */
 const createOverrides = async (
   target: Target,
   privateArgs: string | undefined,
@@ -388,8 +397,39 @@ const createOverrides = async (
     release: ReleaseRW;
   },
 ) => {
+  const prefix = overridesAssetPrefix(target);
+  const { assets } = await release.readOnly().get();
+  const existingNames = assets
+    .map(({ name }) => name)
+    .filter(name => name.startsWith(prefix) && name.endsWith('.json'));
+
+  // No override given this run: reuse whatever's already on the release
+  // rather than materializing a fresh "{}" artifact that would discard the
+  // real overrides collected on an earlier attempt. A workflow_dispatch
+  // input left blank arrives as '', not undefined, so treat both as
+  // "not given".
+  const isMissing = privateArgs === undefined || privateArgs === '';
+  if (isMissing && existingNames.length > 0) {
+    if (existingNames.length > 1) {
+      throw Error(
+        `multiple ${prefix}*.json assets exist for ${target} (${existingNames.join(', ')}); remove the stale ones (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`,
+      );
+    }
+    const [assetName] = existingNames;
+    const text = await release.join(assetName).readText();
+    const assetWr = distDir.join(assetName);
+    await assetWr.writeText(text);
+    return { assetName, file: assetWr.readOnly() };
+  }
+
   const text = canonicalizePrivateArgs(privateArgs);
   const assetName = expectedOverridesAssetName(target, privateArgs);
+  const stale = existingNames.filter(name => name !== assetName);
+  if (stale.length > 0) {
+    throw Error(
+      `${assetName} would be a new private-args-overrides asset for ${target}, but ${stale.join(', ')} already exists on the release; remove the stale asset (e.g. \`gh release delete-asset\`) or rerun with the matching privateArgsOverrides to reuse it`,
+    );
+  }
   const assetWr = distDir.join(assetName);
   await assetWr.writeText(text);
   const asset = release.join(assetName);

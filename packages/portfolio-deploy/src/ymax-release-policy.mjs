@@ -48,6 +48,9 @@ export const canonicalizePrivateArgs = specimen => {
   return `${JSON.stringify(overrides, null, 2)}\n`;
 };
 
+/** @param {Target} target */
+export const overridesAssetPrefix = target => `${target}-privateArgsOverrides-`;
+
 /**
  * @param {Target} target
  * @param {string | undefined} specimen
@@ -55,7 +58,7 @@ export const canonicalizePrivateArgs = specimen => {
 export const expectedOverridesAssetName = (target, specimen) => {
   const text = canonicalizePrivateArgs(specimen);
   const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
-  return `${target}-privateArgsOverrides-${digest}.json`;
+  return `${overridesAssetPrefix(target)}${digest}.json`;
 };
 
 export const bundleIdFromBundleRecord = (

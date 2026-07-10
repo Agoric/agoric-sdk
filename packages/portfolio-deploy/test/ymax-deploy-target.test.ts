@@ -9,6 +9,7 @@ import {
 import { Secp256k1, Secp256k1Signature, sha256 } from '@cosmjs/crypto';
 
 import {
+  canonicalizePrivateArgs,
   expectedOverridesAssetName,
   makeReleasePlan,
   validateNamedInstallRecord,
@@ -2270,6 +2271,191 @@ test('operator must remove upgrade artifact to change privateArgsOverrides', asy
     ),
   );
   t.deepEqual(stdoutChunks, []);
+});
+
+const makeAuthzGenerateChainMocks = () => {
+  const connectRpc = (async (_rpcAddr: string) => ({
+    getAccount: async () => ({
+      accountNumber: 12,
+      sequence: 34,
+      pubkey: {
+        type: 'tendermint/PubKeySecp256k1',
+        value: Buffer.from([2, 3, 4]).toString('base64'),
+      },
+    }),
+  })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
+  const makeWalletKit = async () =>
+    ({
+      marshaller: {
+        toCapData: (specimen: unknown) => ({
+          body: `#${JSON.stringify(specimen)}`,
+          slots: [],
+        }),
+      },
+      agoricNames: {
+        instance: {
+          postalService: 'board0371',
+        },
+      },
+    }) as unknown as Awaited<
+      ReturnType<typeof import('@agoric/client-utils').makeSmartWalletKit>
+    >;
+  return { connectRpc, makeWalletKit };
+};
+
+test('phase-upgrade-generate reuses an existing privateArgsOverrides asset when privateArgs is blank', async t => {
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+
+  const existingOverridesName = expectedOverridesAssetName(
+    'ymax0-main',
+    '{"oracle":"value-a"}',
+  );
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+    // A prior attempt materialized overrides but never got as far as the
+    // unsigned tx (so there's no upgrade/pending record yet to pin the
+    // path via validateExpectedOverridesAsset).
+    [existingOverridesName]: canonicalizePrivateArgs('{"oracle":"value-a"}'),
+  });
+
+  const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
+
+  await runPhase(
+    {
+      agoricSdk: ctx.agoricSdk,
+      execFile: ctx.execFile,
+      fetchFn: ctx.fetchFn,
+      connectRpc,
+      makeWalletKit,
+      stdout: ctx.stdout,
+    },
+    'phase-upgrade-generate',
+    { target: 'ymax0-main', tag: releaseTag },
+    {
+      ...ctx.env,
+      MNEMONIC: undefined,
+      GRANTEE: 'agoric1operator0000000000000000000000000000000',
+      // A workflow_dispatch optional string input left blank arrives as
+      // '', not undefined.
+      PRIVATE_ARGS_OVERRIDES: '',
+    },
+  );
+
+  const assets = ctx.releases.get(releaseTag)?.assets;
+  const overridesNames = [...(assets?.keys() ?? [])].filter(name =>
+    name.startsWith('ymax0-main-privateArgsOverrides-'),
+  );
+  t.deepEqual(overridesNames, [existingOverridesName]);
+  t.is(
+    assets?.get(existingOverridesName),
+    canonicalizePrivateArgs('{"oracle":"value-a"}'),
+  );
+  t.truthy(assets?.get('ymax0-main-authz-unsigned-tx.json'));
+});
+
+test('phase-upgrade-generate rejects a conflicting privateArgsOverrides asset instead of adding a second one', async t => {
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+
+  const existingOverridesName = expectedOverridesAssetName(
+    'ymax0-main',
+    '{"oracle":"value-a"}',
+  );
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+    [existingOverridesName]: canonicalizePrivateArgs('{"oracle":"value-a"}'),
+  });
+
+  const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
+
+  await t.throwsAsync(
+    runPhase(
+      {
+        agoricSdk: ctx.agoricSdk,
+        execFile: ctx.execFile,
+        fetchFn: ctx.fetchFn,
+        connectRpc,
+        makeWalletKit,
+        stdout: ctx.stdout,
+      },
+      'phase-upgrade-generate',
+      { target: 'ymax0-main', tag: releaseTag },
+      {
+        ...ctx.env,
+        MNEMONIC: undefined,
+        GRANTEE: 'agoric1operator0000000000000000000000000000000',
+        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value-b"}',
+      },
+    ),
+    {
+      message: new RegExp(
+        `^${expectedOverridesAssetName('ymax0-main', '{"oracle":"value-b"}').replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')} would be a new private-args-overrides asset for ymax0-main, but ${existingOverridesName.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&')} already exists`,
+      ),
+    },
+  );
+
+  const assets = ctx.releases.get(releaseTag)?.assets;
+  const overridesNames = [...(assets?.keys() ?? [])].filter(name =>
+    name.startsWith('ymax0-main-privateArgsOverrides-'),
+  );
+  t.deepEqual(overridesNames, [existingOverridesName]);
+  t.falsy(assets?.get('ymax0-main-authz-unsigned-tx.json'));
+});
+
+test('phase-upgrade-generate is idempotent when privateArgs matches the existing overrides asset', async t => {
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+
+  const existingOverridesName = expectedOverridesAssetName(
+    'ymax0-main',
+    '{"oracle":"value-a"}',
+  );
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+    [existingOverridesName]: canonicalizePrivateArgs('{"oracle":"value-a"}'),
+  });
+
+  const { connectRpc, makeWalletKit } = makeAuthzGenerateChainMocks();
+
+  await t.notThrowsAsync(
+    runPhase(
+      {
+        agoricSdk: ctx.agoricSdk,
+        execFile: ctx.execFile,
+        fetchFn: ctx.fetchFn,
+        connectRpc,
+        makeWalletKit,
+        stdout: ctx.stdout,
+      },
+      'phase-upgrade-generate',
+      { target: 'ymax0-main', tag: releaseTag },
+      {
+        ...ctx.env,
+        MNEMONIC: undefined,
+        GRANTEE: 'agoric1operator0000000000000000000000000000000',
+        // Same value as what's already recorded: re-supplying it explicitly
+        // must not be treated as a conflicting override.
+        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value-a"}',
+      },
+    ),
+  );
+
+  const assets = ctx.releases.get(releaseTag)?.assets;
+  const overridesNames = [...(assets?.keys() ?? [])].filter(name =>
+    name.startsWith('ymax0-main-privateArgsOverrides-'),
+  );
+  t.deepEqual(overridesNames, [existingOverridesName]);
+  t.truthy(assets?.get('ymax0-main-authz-unsigned-tx.json'));
 });
 
 test.serial('deploy ymax1-main', async t => {
