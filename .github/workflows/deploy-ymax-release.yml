@@ -207,17 +207,17 @@ jobs:
                 --tag "$RELEASE_TAG")"
               printf '%s\n' "$generate_output"
 
-              if [ "$SIGNING_KEY" = 'detached-grantee' ]; then
-                signed_asset="${TARGET}-authz-signed-tx.json"
-              else
-                signed_asset="${TARGET}-signed-tx.json"
-              fi
-
-              if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$signed_asset"; then
-                echo "ready_to_broadcast=true" >> "$GITHUB_OUTPUT"
-              else
-                echo "ready_to_broadcast=false" >> "$GITHUB_OUTPUT"
-                echo "Detached signing pending: generated or validated unsigned tx; upload $signed_asset to the release and rerun this workflow."
+              ready="$(jq -r '.readyToBroadcast' <<<"$generate_output")"
+              echo "ready_to_broadcast=$ready" >> "$GITHUB_OUTPUT"
+              if [ "$ready" != 'true' ]; then
+                if [ "$SIGNING_KEY" = 'detached-grantee' ]; then
+                  signed_asset="${TARGET}-authz-signed-tx.json"
+                  signature_hint=" (or, for a multisig grantee, individual ${TARGET}-authz-signature-*.json files, one per cosigner)"
+                else
+                  signed_asset="${TARGET}-signed-tx.json"
+                  signature_hint=""
+                fi
+                echo "Detached signing pending: generated or validated unsigned tx; upload $signed_asset$signature_hint to the release and rerun this workflow."
                 jq -r '.detail.agdSignCommand' <<<"$generate_output"
               fi
               ;;

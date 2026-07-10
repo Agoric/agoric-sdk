@@ -2,6 +2,11 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import path from 'node:path';
 
 import { makeFileRW } from '@agoric/pola-io';
+import {
+  makeSignDoc as makeAminoSignDoc,
+  serializeSignDoc,
+} from '@cosmjs/amino';
+import { Secp256k1, Secp256k1Signature, sha256 } from '@cosmjs/crypto';
 
 import {
   expectedOverridesAssetName,
@@ -10,6 +15,7 @@ import {
   validateNamedPendingUpgradeRecord,
   validateNamedUpgradeRecord,
 } from '../src/ymax-release-policy.mjs';
+import { toAminoMsg } from '../src/ymax-authz-msgs.ts';
 import {
   main,
   makeGraph,
@@ -1740,6 +1746,183 @@ test('authz operator-sign path embeds a multisig grantee pubkey resolved from ch
     assets?.get('ymax0-main-authz-unsigned-tx.json') || 'null',
   );
   t.deepEqual(unsignedTx.auth_info.signer_infos[0].public_key, granteePubkey);
+});
+
+test('phase-upgrade-generate combines detached-grantee signature files into the signed tx', async t => {
+  const ctx = makeScenario();
+  const releaseTag = happyPathReleaseTag;
+
+  // Two synthetic member keys (not real agd-managed keys) so the test can
+  // sign for them directly; ymax-multisign-agd.test.ts already proves the
+  // verification logic matches real `agd tx sign` output byte-for-byte.
+  const memberPrivkeys = [
+    Uint8Array.from({ length: 32 }, (_v, i) => i + 1),
+    Uint8Array.from({ length: 32 }, (_v, i) => i + 33),
+  ];
+  const memberKeypairs = await Promise.all(
+    memberPrivkeys.map(privkey => Secp256k1.makeKeypair(privkey)),
+  );
+  const memberPubkeysCompressed = memberKeypairs.map(({ pubkey }) =>
+    Secp256k1.compressPubkey(pubkey),
+  );
+  const granteePubkeyJson = {
+    '@type': '/cosmos.crypto.multisig.LegacyAminoPubKey',
+    threshold: 2,
+    public_keys: memberPubkeysCompressed.map(key => ({
+      '@type': '/cosmos.crypto.secp256k1.PubKey',
+      key: Buffer.from(key).toString('base64'),
+    })),
+  };
+  const granteePubkeyAmino = {
+    type: 'tendermint/PubKeyMultisigThreshold',
+    value: {
+      threshold: '2',
+      pubkeys: memberPubkeysCompressed.map(key => ({
+        type: 'tendermint/PubKeySecp256k1',
+        value: Buffer.from(key).toString('base64'),
+      })),
+    },
+  };
+  const grantee = 'agoric1grantee00000000000000000000000000000000';
+  const accountNumber = 55;
+  const sequence = 6;
+
+  seedRelease(ctx.releases, releaseTag, {
+    'bundle-ymax0.json': jsonText(examples.bundle),
+    'ymax0-devnet-install.json': jsonText(examples.install.devnet0),
+    'ymax0-devnet-upgrade.json': jsonText(examples.upgrade.devnet0),
+    'ymax0-main-install.json': jsonText(examples.install.main0),
+  });
+
+  const connectRpc = (async (_rpcAddr: string) => ({
+    getAccount: async () => ({
+      accountNumber,
+      sequence,
+      pubkey: granteePubkeyAmino,
+    }),
+  })) as unknown as typeof import('@cosmjs/stargate').StargateClient.connect;
+  const makeWalletKit = async () =>
+    ({
+      marshaller: {
+        toCapData: (specimen: unknown) => ({
+          body: `#${JSON.stringify(specimen)}`,
+          slots: [],
+        }),
+      },
+      agoricNames: { instance: { postalService: 'board0371' } },
+    }) as unknown as Awaited<
+      ReturnType<typeof import('@agoric/client-utils').makeSmartWalletKit>
+    >;
+
+  const generate = () =>
+    runPhase(
+      {
+        agoricSdk: ctx.agoricSdk,
+        execFile: ctx.execFile,
+        fetchFn: ctx.fetchFn,
+        connectRpc,
+        makeWalletKit,
+        stdout: ctx.stdout,
+      },
+      'phase-upgrade-generate',
+      { target: 'ymax0-main', tag: releaseTag },
+      {
+        ...ctx.env,
+        MNEMONIC: undefined,
+        GRANTEE: grantee,
+        PRIVATE_ARGS_OVERRIDES: '{"oracle":"value"}',
+      },
+    );
+
+  await generate();
+  t.deepEqual(JSON.parse(ctx.stdoutChunks.at(-1)!).readyToBroadcast, false);
+  t.deepEqual(
+    JSON.parse(ctx.stdoutChunks.at(-1)!).reason,
+    'no detached signatures uploaded yet',
+  );
+  clearTrace(ctx);
+
+  const assets = ctx.releases.get(releaseTag)?.assets!;
+  const unsignedTx = JSON.parse(
+    assets.get('ymax0-main-authz-unsigned-tx.json')!,
+  );
+  t.deepEqual(
+    unsignedTx.auth_info.signer_infos[0].public_key,
+    granteePubkeyJson,
+  );
+
+  const digest = sha256(
+    serializeSignDoc(
+      makeAminoSignDoc(
+        unsignedTx.body.messages.map((message: any) => toAminoMsg(message)),
+        {
+          amount: unsignedTx.auth_info.fee.amount,
+          gas: unsignedTx.auth_info.fee.gas_limit,
+        },
+        'agoric-3',
+        unsignedTx.body.memo || '',
+        accountNumber,
+        sequence,
+      ),
+    ),
+  );
+  const signatureAssetFor = async (keypair: {
+    privkey: Uint8Array;
+    pubkey: Uint8Array;
+  }) => {
+    const signature = await Secp256k1.createSignature(digest, keypair.privkey);
+    // ExtendedSecp256k1Signature.toFixedLength() appends a recovery byte
+    // (65 bytes); cosmos-sdk stores plain 64-byte r||s, matching
+    // Secp256k1Signature.fromFixedLength/toFixedLength.
+    const fixedLengthSignature = new Secp256k1Signature(
+      signature.r(32),
+      signature.s(32),
+    ).toFixedLength();
+    return jsonText({
+      signatures: [
+        {
+          public_key: {
+            '@type': '/cosmos.crypto.secp256k1.PubKey',
+            key: Buffer.from(Secp256k1.compressPubkey(keypair.pubkey)).toString(
+              'base64',
+            ),
+          },
+          data: {
+            single: {
+              mode: 'SIGN_MODE_LEGACY_AMINO_JSON',
+              signature: Buffer.from(fixedLengthSignature).toString('base64'),
+            },
+          },
+          sequence: String(sequence),
+        },
+      ],
+    });
+  };
+
+  assets.set(
+    'ymax0-main-authz-signature-alice.json',
+    await signatureAssetFor(memberKeypairs[0]!),
+  );
+  await generate();
+  t.deepEqual(JSON.parse(ctx.stdoutChunks.at(-1)!).readyToBroadcast, false);
+  t.deepEqual(
+    JSON.parse(ctx.stdoutChunks.at(-1)!).reason,
+    '1 of 2 required signatures collected',
+  );
+  t.falsy(assets.get('ymax0-main-authz-signed-tx.json'));
+  clearTrace(ctx);
+
+  assets.set(
+    'ymax0-main-authz-signature-bob.json',
+    await signatureAssetFor(memberKeypairs[1]!),
+  );
+  await generate();
+  t.deepEqual(JSON.parse(ctx.stdoutChunks.at(-1)!).readyToBroadcast, true);
+  const signedTxText = assets.get('ymax0-main-authz-signed-tx.json');
+  t.truthy(signedTxText);
+  const signedTx = JSON.parse(signedTxText!);
+  t.is(signedTx.signatures.length, 1);
+  t.deepEqual(signedTx.body, unsignedTx.body);
 });
 
 test('detached direct-sign path generates and broadcasts for ymax0-main without authz', async t => {

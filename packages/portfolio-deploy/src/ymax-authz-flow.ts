@@ -1,10 +1,19 @@
 /** @file build unsigned ymax upgrade requests for release workflows */
 /* eslint-disable @jessie.js/safe-await-separator */
+import { LegacyAminoPubKey } from '@agoric/cosmic-proto/codegen/cosmos/crypto/multisig/keys.js';
+import { PubKey as Secp256k1PubKeyProto } from '@agoric/cosmic-proto/codegen/cosmos/crypto/secp256k1/keys.js';
 import {
   CONTROL_ADDRESSES,
   PORTFOLIO_CONTRACT_NAMES,
 } from '@agoric/portfolio-api/src/portfolio-constants.js';
-import { pubkeyToAddress, type Pubkey } from '@cosmjs/amino';
+import {
+  makeSignDoc as makeAminoSignDoc,
+  pubkeyToAddress,
+  serializeSignDoc,
+  type MultisigThresholdPubkey,
+  type Pubkey,
+} from '@cosmjs/amino';
+import { Secp256k1, Secp256k1Signature, sha256 } from '@cosmjs/crypto';
 import {
   decodePubkey,
   encodePubkey,
@@ -12,15 +21,22 @@ import {
   makeSignBytes,
   makeSignDoc,
 } from '@cosmjs/proto-signing';
-import { type SignerData, type StdFee } from '@cosmjs/stargate';
+import {
+  makeMultisignedTx,
+  type SignerData,
+  type StdFee,
+} from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
 import { createHash } from 'node:crypto';
 import { netOfConfig } from './ymax-admin-helpers.ts';
 import {
+  encodeTxBodyBytes,
+  makeAgdSignedTx,
   makeUpgradeEncodeObject,
   makeUpgradeExecEncodeObject,
   parseJsonPublicKey,
   registry,
+  toAminoMsg,
 } from './ymax-authz-msgs.ts';
 
 export type ContractName = (typeof PORTFOLIO_CONTRACT_NAMES)[number];
@@ -124,6 +140,180 @@ const resolveGrantee = async (
     accountNumber: account.accountNumber,
     sequence: account.sequence,
   };
+};
+
+export type DetachedSignatureDescriptor = {
+  signatures: ReadonlyArray<{
+    public_key: unknown;
+    data: { single: { mode: string; signature: string } };
+  }>;
+};
+
+export type CombineSignaturesResult =
+  | {
+      ready: true;
+      signedTx: { body: unknown; auth_info: unknown; signatures: string[] };
+      signedAddresses: string[];
+    }
+  | { ready: false; reason: string };
+
+/**
+ * Compute the amino sign-bytes digest for a tx (`msgs`/`fee`/`chainId`/
+ * `memo`/`accountNumber`/`sequence`) once, shared across every signer's
+ * verification below. cosmjs offers no ready-made helper for this —
+ * `makeMultisignedTx` (below) blindly trusts whatever signature bytes it's
+ * handed, so a corrupted or mismatched signature file would otherwise go
+ * unnoticed until the chain rejects the broadcast.
+ */
+const makeAminoSignDocDigest = ({
+  msgs,
+  fee,
+  chainId,
+  memo,
+  accountNumber,
+  sequence,
+}: {
+  msgs: Array<{ type: string; value: unknown }>;
+  fee: StdFee;
+  chainId: string;
+  memo: string;
+  accountNumber: number;
+  sequence: number;
+}) => {
+  const signDoc = makeAminoSignDoc(
+    msgs,
+    fee,
+    chainId,
+    memo,
+    accountNumber,
+    sequence,
+  );
+  return sha256(serializeSignDoc(signDoc));
+};
+
+/**
+ * Verify each detached-grantee signature descriptor (the gRPC-gateway JSON
+ * `agd tx sign --multisig=... --sign-mode=amino-json` produces) against the
+ * unsigned tx it's supposed to cover, and — once enough valid signatures
+ * from distinct multisig members are collected — combine them into the
+ * final signed tx, in the same gRPC-gateway JSON shape `makeAgdUnsignedTx`
+ * uses.
+ *
+ * Throws if any signature fails to verify or comes from an address that
+ * isn't a member of the grantee's multisig: those indicate a corrupted or
+ * mismatched signature file, not merely "not ready yet". Returns
+ * `{ready: false}` only for the benign, expected "still waiting on
+ * cosigners" case.
+ *
+ * `getAccountNumber` is called (only once we know there's a multisig grantee
+ * worth combining for) with the grantee's address, derived here from its
+ * public key already embedded in the unsigned tx — the caller doesn't need
+ * to resolve or pass it in independently.
+ */
+export const combineDetachedGranteeSignatures = async ({
+  unsignedTx,
+  chainId,
+  getAccountNumber,
+  signatureDescriptors,
+}: {
+  unsignedTx: {
+    body: { memo?: string; messages: unknown[] };
+    auth_info: {
+      signer_infos: Array<{ public_key?: unknown; sequence: string }>;
+      fee?: { amount: { denom: string; amount: string }[]; gas_limit: string };
+    };
+  };
+  chainId: string;
+  getAccountNumber: (granteeAddress: string) => Promise<number>;
+  signatureDescriptors: readonly DetachedSignatureDescriptor[];
+}): Promise<CombineSignaturesResult> => {
+  const granteePubkeyJson = unsignedTx.auth_info.signer_infos[0]?.public_key;
+  const granteePubkeyAny = granteePubkeyJson
+    ? parseJsonPublicKey(granteePubkeyJson)
+    : undefined;
+  if (
+    !granteePubkeyAny ||
+    granteePubkeyAny.typeUrl !== LegacyAminoPubKey.typeUrl
+  ) {
+    return {
+      ready: false,
+      reason: 'grantee is not a multisig; upload the signed tx directly',
+    };
+  }
+  const multisigPubkey = decodePubkey(
+    granteePubkeyAny,
+  ) as MultisigThresholdPubkey;
+  const threshold = Number(multisigPubkey.value.threshold);
+  const memberAddresses = new Set(
+    multisigPubkey.value.pubkeys.map(pk => pubkeyToAddress(pk, 'agoric')),
+  );
+  const granteeAddress = pubkeyToAddress(multisigPubkey, 'agoric');
+  const accountNumber = await getAccountNumber(granteeAddress);
+
+  const sequence = Number(unsignedTx.auth_info.signer_infos[0]!.sequence || 0);
+  const unsignedFee =
+    unsignedTx.auth_info.fee || Fail`unsigned tx is missing auth_info.fee`;
+  const fee: StdFee = {
+    amount: unsignedFee.amount,
+    gas: unsignedFee.gas_limit,
+  };
+  const memo = unsignedTx.body.memo || '';
+  const msgs = unsignedTx.body.messages.map(message => toAminoMsg(message));
+  const digest = makeAminoSignDocDigest({
+    msgs,
+    fee,
+    chainId,
+    memo,
+    accountNumber,
+    sequence,
+  });
+
+  const verified = new Map<string, Uint8Array>();
+  for (const descriptor of signatureDescriptors) {
+    for (const sig of descriptor.signatures) {
+      const pubkeyAny =
+        parseJsonPublicKey(sig.public_key) ||
+        Fail`unparseable signature public_key`;
+      pubkeyAny.typeUrl === Secp256k1PubKeyProto.typeUrl ||
+        Fail`unsupported signature public_key type ${pubkeyAny.typeUrl}`;
+      const pubkeyBytes = Secp256k1PubKeyProto.decode(pubkeyAny.value).key;
+      const address = pubkeyToAddress(decodePubkey(pubkeyAny), 'agoric');
+      memberAddresses.has(address) ||
+        Fail`signature from ${address} is not a member of the grantee multisig`;
+      const signatureBytes = Buffer.from(sig.data.single.signature, 'base64');
+      const signature = Secp256k1Signature.fromFixedLength(signatureBytes);
+      const ok = await Secp256k1.verifySignature(
+        signature,
+        digest,
+        pubkeyBytes,
+      );
+      ok ||
+        Fail`signature from ${address} does not verify against the unsigned tx`;
+      verified.set(address, signatureBytes);
+    }
+  }
+
+  if (verified.size < threshold) {
+    return {
+      ready: false,
+      reason: `${verified.size} of ${threshold} required signatures collected`,
+    };
+  }
+
+  const bodyBytes = encodeTxBodyBytes(unsignedTx.body);
+  const signedTxRaw = makeMultisignedTx(
+    multisigPubkey,
+    sequence,
+    fee,
+    bodyBytes,
+    verified,
+  );
+  const signedTx = makeAgdSignedTx({
+    bodyBytes: signedTxRaw.bodyBytes,
+    authInfoBytes: signedTxRaw.authInfoBytes,
+    signatures: signedTxRaw.signatures,
+  });
+  return { ready: true, signedTx, signedAddresses: [...verified.keys()] };
 };
 
 export type WalletKitShape = {

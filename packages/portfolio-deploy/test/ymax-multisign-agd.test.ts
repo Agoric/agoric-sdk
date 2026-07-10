@@ -20,7 +20,10 @@ import {
 } from '@cosmjs/proto-signing';
 import type { ExecutionContext } from 'ava';
 import { promisify } from 'node:util';
-import { makeUpgradeRequestBuilder } from '../src/ymax-authz-flow.ts';
+import {
+  combineDetachedGranteeSignatures,
+  makeUpgradeRequestBuilder,
+} from '../src/ymax-authz-flow.ts';
 import {
   makeAgdUnsignedTx,
   makeUpgradeEncodeObject,
@@ -113,8 +116,7 @@ const marshalData = {
 // on-chain account lookups need the amino `Pubkey` shape cosmjs uses.
 const toAminoPubkey = (pubkeyJson: string) =>
   decodePubkey(
-    parseJsonPublicKey(JSON.parse(pubkeyJson)) ||
-      assert.fail('invalid pubkey'),
+    parseJsonPublicKey(JSON.parse(pubkeyJson)) || assert.fail('invalid pubkey'),
   );
 
 const makeUnsignedAgdTx = async ({
@@ -617,6 +619,75 @@ test.serial('authz grantee upgrade supports a multisig grantee', async t => {
   const signedTxBytes = parseSignedTxBytes(signedText);
   const signedTx = TxRaw.decode(signedTxBytes);
   t.true(signedTx.signatures.length > 0);
+
+  // Ground-truth check for combineDetachedGranteeSignatures: it must accept
+  // these two real `agd tx sign --sign-mode=amino-json --multisig=...`
+  // signatures, reproducing byte-for-byte what real `agd tx multisign`
+  // produced above, without ever shelling out to agd itself.
+  const signatureDescriptors = await Promise.all(
+    signatures.map(async sig => JSON.parse(await sig.readText())),
+  );
+  const [aliceAddress, bobAddress] = await Promise.all(
+    [alice, bob].map(async signer =>
+      pubkeyToAddress(toAminoPubkey(await signer.showPubKey()), 'agoric'),
+    ),
+  );
+
+  const notYetReady = await combineDetachedGranteeSignatures({
+    unsignedTx: unsigned,
+    chainId: multisig.chainId,
+    getAccountNumber: async (address: string) => {
+      t.is(address, grantee.address);
+      return multisig.accountNumber;
+    },
+    signatureDescriptors: [signatureDescriptors[0]!],
+  });
+  t.deepEqual(notYetReady, {
+    ready: false,
+    reason: '1 of 2 required signatures collected',
+  });
+
+  const combined = await combineDetachedGranteeSignatures({
+    unsignedTx: unsigned,
+    chainId: multisig.chainId,
+    getAccountNumber: async (address: string) => {
+      t.is(address, grantee.address);
+      return multisig.accountNumber;
+    },
+    signatureDescriptors,
+  });
+  if (!combined.ready) throw Error('expected combined.ready');
+  t.deepEqual(
+    new Set(combined.signedAddresses),
+    new Set([aliceAddress, bobAddress]),
+  );
+  const recombinedBytes = parseSignedTxBytes(
+    `${JSON.stringify(combined.signedTx)}\n`,
+  );
+  t.deepEqual(recombinedBytes, signedTxBytes);
+
+  const tamperedSignature = JSON.parse(JSON.stringify(signatureDescriptors[1]));
+  const originalSignatureBytes = Buffer.from(
+    tamperedSignature.signatures[0].data.single.signature,
+    'base64',
+  );
+  const tamperedSignatureBytes = Uint8Array.from(originalSignatureBytes);
+  tamperedSignatureBytes[0] = (tamperedSignatureBytes[0]! + 1) % 256;
+  tamperedSignature.signatures[0].data.single.signature = Buffer.from(
+    tamperedSignatureBytes,
+  ).toString('base64');
+  await t.throwsAsync(
+    combineDetachedGranteeSignatures({
+      unsignedTx: unsigned,
+      chainId: multisig.chainId,
+      getAccountNumber: async (address: string) => {
+        t.is(address, grantee.address);
+        return multisig.accountNumber;
+      },
+      signatureDescriptors: [signatureDescriptors[0]!, tamperedSignature],
+    }),
+    { message: /does not verify against the unsigned tx/ },
+  );
 });
 
 test('generateUpgradeRequest derives the grantee address from a pubkey input', async t => {

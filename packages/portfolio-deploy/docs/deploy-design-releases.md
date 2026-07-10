@@ -135,6 +135,14 @@ Direct signing uses the control address to sign the generated
 With `authz` delegation, the control address delegates to a grantee, and the
 grantee signs a generated `MsgExec` that wraps the wallet-spend action.
 
+If the grantee is a multisig, an operator doesn't need to run
+`agd tx multisign` themselves: each cosigner can instead upload their own
+`TARGET-authz-signature-<name>.json` (the output of `agd tx sign
+--multisig=... --sign-mode=amino-json`) as a release asset. Once enough
+valid signatures for the grantee's threshold are present,
+`phase-upgrade-generate` verifies and combines them into
+`TARGET-authz-signed-tx.json` itself.
+
 ## Release Model
 
 Each deployment lineage gets one tag and one prerelease GitHub release.
@@ -157,6 +165,9 @@ Primary assets:
 - `ymax1-main-upgrade.json`
 - `TARGET-unsigned-tx.json` or `TARGET-authz-unsigned-tx.json`
 - `TARGET-signed-tx.json` or `TARGET-authz-signed-tx.json`
+- `TARGET-authz-signature-<name>.json` (optional; per-cosigner detached
+  signatures for a multisig grantee, combined automatically instead of
+  uploading `TARGET-authz-signed-tx.json` directly)
 - `TARGET-upgrade-logs.ndjson`
 - `TARGET-upgrade-logs.norm.txt`
 - `TARGET-privateArgsOverrides-<sha>.json`

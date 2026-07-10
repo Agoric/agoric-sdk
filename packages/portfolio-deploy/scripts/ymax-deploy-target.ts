@@ -31,8 +31,10 @@ import {
   parseSignedTxBytes,
 } from '../src/ymax-authz-msgs.ts';
 import {
+  combineDetachedGranteeSignatures,
   formatJson,
   makeUpgradeRequestBuilder as buildUpgradeRequestBuilder,
+  type CombineSignaturesResult,
   type UnsignedUpgradeArtifact,
 } from '../src/ymax-authz-flow.ts';
 import {
@@ -1164,6 +1166,70 @@ const detachedSignedTxAssetName = (
   grantee: string | undefined,
 ) => `${target}${grantee ? '-authz' : ''}-signed-tx.json`;
 
+/**
+ * Individual detached-grantee signature files an operator uploads instead
+ * of collecting and combining them into `signedTxAssetName` themselves
+ * (see {@link combineDetachedGranteeSignatures}). Only meaningful for authz
+ * grantees, since the control address is never a multisig in this design.
+ */
+const detachedSignatureAssetPrefix = (target: Target) =>
+  `${target}-authz-signature-`;
+
+/**
+ * If `signedTxAssetName` isn't already on the release, look for uploaded
+ * `${target}-authz-signature-*.json` files and, once enough valid ones for
+ * the grantee's multisig are present, combine and upload them as
+ * `signedTxAssetName` — so an operator never has to run `agd tx multisign`
+ * themselves. Safe to call repeatedly while cosigners are still signing:
+ * it only writes the asset once combination actually succeeds.
+ */
+const tryCombineDetachedSignatures = async ({
+  target,
+  release,
+  unsignedTxAssetName,
+  signedTxAssetName,
+  connectTargetRpc,
+}: {
+  target: Target;
+  release: ReleaseRW;
+  unsignedTxAssetName: string;
+  signedTxAssetName: string;
+  connectTargetRpc: (upgradeTarget: Target) => Promise<StargateClient>;
+}): Promise<CombineSignaturesResult> => {
+  const { assets } = await release.readOnly().get();
+  const prefix = detachedSignatureAssetPrefix(target);
+  const signatureAssetNames = assets
+    .map(({ name }) => name)
+    .filter(name => name.startsWith(prefix) && name.endsWith('.json'));
+  if (signatureAssetNames.length === 0) {
+    return { ready: false, reason: 'no detached signatures uploaded yet' };
+  }
+  const unsignedTx = await release.join(unsignedTxAssetName).readJSON();
+  const signatureDescriptors = await Promise.all(
+    signatureAssetNames.map(
+      name => release.join(name).readJSON() as Promise<any>,
+    ),
+  );
+  const result = await combineDetachedGranteeSignatures({
+    unsignedTx: unsignedTx as any,
+    chainId: getTargetInfo(target).chainId,
+    getAccountNumber: async (granteeAddress: string) => {
+      const queryClient = await connectTargetRpc(target);
+      const account =
+        (await queryClient.getAccount(granteeAddress)) ||
+        Fail`grantee ${granteeAddress} not found on chain`;
+      return account.accountNumber;
+    },
+    signatureDescriptors,
+  });
+  if (result.ready) {
+    await release
+      .join(signedTxAssetName)
+      .writeText(formatJson(result.signedTx));
+  }
+  return result;
+};
+
 const submitAuthzOperatorUpgrade = async (
   upgradeTarget: Target,
   txBytes: Uint8Array,
@@ -2289,11 +2355,29 @@ export const main = async (
     case 'phase-upgrade-generate': {
       const record = detachedUnsignedTxAssetName(target, GRANTEE);
       const generated = await graph.ensureNode<object>(record);
+      const signedTxAssetName = detachedSignedTxAssetName(target, GRANTEE);
+      const releaseInfo = await release.readOnly().get();
+      const alreadySigned = hasAsset(releaseInfo, signedTxAssetName);
+      const combineResult: CombineSignaturesResult | undefined =
+        !alreadySigned && GRANTEE
+          ? await tryCombineDetachedSignatures({
+              target,
+              release,
+              unsignedTxAssetName: record,
+              signedTxAssetName,
+              connectTargetRpc,
+            })
+          : undefined;
+      const readyToBroadcast = alreadySigned || combineResult?.ready === true;
       writeJson(stdout, {
         target,
         phase: 'upgrade-generate',
         record,
         detail: generated,
+        readyToBroadcast,
+        ...(combineResult && !combineResult.ready
+          ? { reason: combineResult.reason }
+          : {}),
       });
       break;
     }
