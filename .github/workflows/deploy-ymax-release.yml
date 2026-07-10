@@ -166,18 +166,18 @@ jobs:
           case "$SIGNING_KEY" in
             ci-secret|detached-control)
               if [ -n "$AUTHZ_GRANTEE" ]; then
-                echo "authzGrantee is only valid with signingKey=detached-grantee" >&2
+                echo "::error::authzGrantee is only valid with signingKey=detached-grantee. Clear it or rerun with signingKey=detached-grantee."
                 exit 1
               fi
               ;;
             detached-grantee)
               if [ -z "$AUTHZ_GRANTEE" ]; then
-                echo "authzGrantee is required with signingKey=detached-grantee" >&2
+                echo "::error::authzGrantee is required with signingKey=detached-grantee. Rerun with authzGrantee set."
                 exit 1
               fi
               ;;
             *)
-              echo "unsupported signingKey: $SIGNING_KEY" >&2
+              echo "::error::unsupported signingKey: $SIGNING_KEY"
               exit 1
               ;;
           esac
@@ -217,8 +217,23 @@ jobs:
                   signed_asset="${TARGET}-signed-tx.json"
                   signature_hint=""
                 fi
-                echo "Detached signing pending: generated or validated unsigned tx; upload $signed_asset$signature_hint to the release and rerun this workflow."
-                jq -r '.detail.agdSignCommand' <<<"$generate_output"
+                sign_command="$(jq -r '.detail.agdSignCommand' <<<"$generate_output")"
+                message="Detached signing pending: generated or validated unsigned tx; upload $signed_asset$signature_hint to the release and rerun this workflow."
+                echo "$message"
+                echo "$sign_command"
+
+                # Also written to the job summary (rendered prominently on
+                # the run's summary page) so the required action is visible
+                # without opening this step's logs.
+                {
+                  echo '### :key: Action required: detached signing pending'
+                  echo
+                  echo "$message"
+                  echo
+                  echo '```sh'
+                  echo "$sign_command"
+                  echo '```'
+                } >> "$GITHUB_STEP_SUMMARY"
               fi
               ;;
           esac
@@ -232,7 +247,7 @@ jobs:
       - name: Require ymax1 planner down
         if: steps.prepare.outputs.ready_to_broadcast == 'true' && inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
         run: |
-          echo 'ymax1Planner must be down for ymax1-main' >&2
+          echo '::error::ymax1Planner must be down for ymax1-main. Stop the planner, then rerun this workflow with ymax1Planner=down.'
           exit 1
 
   # Only job that broadcasts to chain, so it's the only one gated by
