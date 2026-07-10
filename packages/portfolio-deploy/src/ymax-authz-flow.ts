@@ -60,12 +60,21 @@ const makeFee = ({
   amount: [{ denom, amount: `${Math.round(gas * price)}` }],
 });
 
-// 800_000: an authz-wrapped upgrade tx (MsgExec, and for a multisig grantee
-// a larger AuthInfo with multiple member pubkeys/signatures) is bigger than
-// the plain single-signer WalletSpendAction this budget was originally
-// sized for, so it needs more gas just for tx-size ante processing — a real
-// case measured ~470_000 gas used against a 400_000 budget.
-export const defaultFee: StdFee = makeFee({ gas: 800_000 });
+// 800_000 covered tx-size ante processing for the larger authz-wrapped tx,
+// but an actual mainnet upgrade broadcast then hit a SECOND, much bigger
+// gas wall during message execution itself: `out of gas in location:
+// WritePerByte; gasWanted: 800000, gasUsed: 2199995`. Execution here just
+// enqueues the WalletSpendAction onto the swingset action queue — one
+// KVStore write whose gas cost is purely a function of that write's byte
+// size, not portfolio count or anything else already on chain. That write
+// was ~46KB for this particular upgrade, almost entirely privateArgsOverrides
+// (e.g. a full per-chain IBC connection/channel graph), which is much
+// bigger than the plain WalletSpendAction this budget was originally sized
+// for. 8_000_000 is a wide (~3.5x) margin over the observed failure point,
+// picked to unblock now; a much bigger privateArgsOverrides payload could
+// still exceed it, so prefer live gas simulation over guessing a
+// still-bigger constant if this proves insufficient again.
+export const defaultFee: StdFee = makeFee({ gas: 8_000_000 });
 
 export type Clock = () => Date;
 
