@@ -67,7 +67,9 @@ export const applyVatOptionUpdates = (kvStore, vatOptionUpdates = []) => {
     return /** @type {string} */ (kvStore.get(key));
   };
 
-  const terminated = new Set(JSON.parse(kvStore.get('vats.terminated') || '[]'));
+  const terminated = new Set(
+    JSON.parse(kvStore.get('vats.terminated') || '[]'),
+  );
   const dynamicVats = new Set(getAllDynamicVats(getRequired));
 
   const changed = [];
@@ -83,8 +85,7 @@ export const applyVatOptionUpdates = (kvStore, vatOptionUpdates = []) => {
     // is owned entirely by the host that resolved it.
     dynamicVats.has(vatID) ||
       Fail`vat-option-update: ${vatID} is not a live dynamic vat`;
-    !terminated.has(vatID) ||
-      Fail`vat-option-update: ${vatID} is terminated`;
+    !terminated.has(vatID) || Fail`vat-option-update: ${vatID} is terminated`;
     const optionsKey = `${vatID}.options`;
     const options = JSON.parse(getRequired(optionsKey));
     let dirty = false;

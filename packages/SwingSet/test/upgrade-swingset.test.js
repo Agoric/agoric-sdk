@@ -523,13 +523,17 @@ test('applyVatOptionUpdates change is carried in the swing-store data exports (â
   kvStore.set('v10.options', mkContractOptions('zcf-b1-abcde-ymax1'));
   await hostStorage.commit();
 
-  const changed = applyVatOptionUpdates(kvStore, [{ vatID: 'v10', critical: true }]);
+  const changed = applyVatOptionUpdates(kvStore, [
+    { vatID: 'v10', critical: true },
+  ]);
   t.deepEqual(changed, ['v10 (zcf-b1-abcde-ymax1)']);
   await hostStorage.commit();
 
   // 1) The export FEED cosmic-swingset forwards to cosmos carries the promoted
   //    value on the consensus key `kv.v10.options`.
-  const feed = exportLog.getEntries().filter(([key]) => key === 'kv.v10.options');
+  const feed = exportLog
+    .getEntries()
+    .filter(([key]) => key === 'kv.v10.options');
   t.true(feed.length >= 1, 'the options change appears in the export feed');
   t.true(
     JSON.parse(feed.at(-1)[1]).critical,
@@ -544,7 +548,10 @@ test('applyVatOptionUpdates change is carried in the swing-store data exports (â
     exported.set(key, value);
   }
   await exporter.close();
-  t.true(exported.has('kv.v10.options'), 'export data includes the vat options');
+  t.true(
+    exported.has('kv.v10.options'),
+    'export data includes the vat options',
+  );
   t.true(
     JSON.parse(exported.get('kv.v10.options')).critical,
     'state-sync export carries critical:true',

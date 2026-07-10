@@ -1172,7 +1172,10 @@ export async function launchAndShareInternals({
         const {
           coreProposals: upgradeInfoCoreProposals,
           vatOptionUpdates: upgradeInfoVatOptionUpdates,
-        } = parseUpgradePlanInfo(upgradeDetails?.plan, ActionType.AG_COSMOS_INIT);
+        } = parseUpgradePlanInfo(
+          upgradeDetails?.plan,
+          ActionType.AG_COSMOS_INIT,
+        );
 
         // Apply any host-injected in-place vat option updates for this software
         // upgrade (issue kriskowal/garden#29). This mirrors coreProposals
