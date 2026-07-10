@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-env node */
 
 import { X } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -47,6 +46,7 @@ const connectAndRun = async (
   let connected = false;
   let progressDot = '.';
   const exit = makePromiseKit();
+  /** @type {ReturnType<typeof setInterval> | null} */
   let progressTimer = null;
 
   const sendJSON = (ws, obj) => {
@@ -145,7 +145,7 @@ const connectAndRun = async (
           stillLoading = nextLoading;
         }
 
-        clearInterval(progressTimer);
+        clearInterval(progressTimer ?? undefined);
         process.stdout.write('\n');
         console.debug(JSON.stringify(need), 'loaded');
         // Take a new copy, since the chain objects have been added to bootstrap.

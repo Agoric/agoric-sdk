@@ -351,6 +351,7 @@ const erc4626VaultAddresses = harden({
     mainnet: {
       Base: '0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61', // https://app.morpho.org/base/vault/0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61/gauntlet-usdc-prime
       Optimism: '0xC30ce6A5758786e0F640cC5f881Dd96e9a1C5C59', // https://app.morpho.org/opmainnet/vault/0xC30ce6A5758786e0F640cC5f881Dd96e9a1C5C59/gauntlet-usdc-prime
+      Ethereum: '0x8c106EEDAd96553e64287A5A6839c3Cc78afA3D0', // https://app.morpho.org/ethereum/vault/0x8c106EEDAd96553e64287A5A6839c3Cc78afA3D0/gauntlet-usdc-prime
     },
     testnet: {},
   },
@@ -369,6 +370,18 @@ const erc4626VaultAddresses = harden({
   morphoHyperithmUsdc: {
     mainnet: {
       Arbitrum: '0x4B6F1C9E5d470b97181786b26da0d0945A7cf027', // https://app.morpho.org/arbitrum/vault/0x4B6F1C9E5d470b97181786b26da0d0945A7cf027/hyperithm-usdc
+    },
+    testnet: {},
+  },
+  morphoEthenaSteakhouseUsdc: {
+    mainnet: {
+      Base: '0xBeEfF0be997Cca5B1c13A7433c2004637975739e', // https://app.morpho.org/base/vault/0xBeEfF0be997Cca5B1c13A7433c2004637975739e/ethena-x-steakhouse-usdc
+    },
+    testnet: {},
+  },
+  morphoKpkUsdcPrime: {
+    mainnet: {
+      Ethereum: '0x4Ef53d2cAa51C447fdFEEedee8F07FD1962C9ee6', // https://app.morpho.org/ethereum/vault/0x4Ef53d2cAa51C447fdFEEedee8F07FD1962C9ee6/kpk-usdc-prime
     },
     testnet: {},
   },
@@ -545,6 +558,15 @@ const mainnetTokenMessengerV2 = (rows =>
 const cctpRelayer = '0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f';
 
 /**
+ * 1inch AggregationRouterV6, deployed at the same address on all supported EVM
+ * chains.
+ *
+ * @see {@link https://github.com/1inch/limit-order-protocol#deployments--audits-limit-orders-protocol-v4}
+ * @see {@link https://business.1inch.com/portal/documentation/apis/swap/classic-swap/quick-start}
+ */
+const oneInchRouter = '0x111111125421cA6dc452d289314280a0f8842A65';
+
+/**
  * Mainnet configuration with real contract addresses
  *
  * @type {EVMContractAddressesMap}
@@ -569,6 +591,7 @@ const mainnetContracts = {
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyVaultAddresses.re7.mainnet.Avalanche,
     walletHelper: walletHelperAddresses.mainnet.Avalanche,
+    oneInchRouter,
     cctpRelayer,
   },
   Ethereum: {
@@ -618,7 +641,12 @@ const mainnetContracts = {
       erc4626VaultAddresses.morphoHyperithmUsdcDegen.mainnet.Ethereum,
     ERC4626_morphoGauntletUsdcCore_Ethereum:
       erc4626VaultAddresses.morphoGauntletUsdcCore.mainnet.Ethereum,
+    ERC4626_morphoGauntletUsdcPrime_Ethereum:
+      erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Ethereum,
     walletHelper: walletHelperAddresses.mainnet.Ethereum,
+    ERC4626_morphoKpkUsdcPrime_Ethereum:
+      erc4626VaultAddresses.morphoKpkUsdcPrime.mainnet.Ethereum,
+    oneInchRouter,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
@@ -642,6 +670,7 @@ const mainnetContracts = {
     Beefy_compoundUsdc_Optimism:
       beefyVaultAddresses.compoundUsdc.mainnet.Optimism,
     walletHelper: walletHelperAddresses.mainnet.Optimism,
+    oneInchRouter,
     ERC4626_morphoGauntletUsdcPrime_Optimism:
       erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Optimism,
   },
@@ -667,6 +696,7 @@ const mainnetContracts = {
     Beefy_compoundUsdc_Arbitrum:
       beefyVaultAddresses.compoundUsdc.mainnet.Arbitrum,
     walletHelper: walletHelperAddresses.mainnet.Arbitrum,
+    oneInchRouter,
     ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum:
       erc4626VaultAddresses.morphoSteakhouseHighYieldUsdc.mainnet.Arbitrum,
     ERC4626_morphoGauntletUsdcCore_Arbitrum:
@@ -695,6 +725,7 @@ const mainnetContracts = {
     Beefy_morphoSeamlessUsdc_Base:
       beefyVaultAddresses.morphoSeamlessUsdc.mainnet.Base,
     walletHelper: walletHelperAddresses.mainnet.Base,
+    oneInchRouter,
     ERC4626_morphoSteakhousePrimeUsdc_Base:
       erc4626VaultAddresses.morphoSteakhousePrimeUsdc.mainnet.Base,
     ERC4626_morphoSteakhouseUsdc_Base:
@@ -703,6 +734,8 @@ const mainnetContracts = {
       erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Base,
     ERC4626_morphoSeamlessUsdcVault_Base:
       erc4626VaultAddresses.morphoSeamlessUsdcVault.mainnet.Base,
+    ERC4626_morphoEthenaSteakhouseUsdc_Base:
+      erc4626VaultAddresses.morphoEthenaSteakhouseUsdc.mainnet.Base,
   },
 };
 harden(mainnetContracts);

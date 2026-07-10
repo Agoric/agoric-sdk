@@ -71,6 +71,10 @@ const PortfolioStandaloneTypeParams = [
  */
 const OperationTypes = {
   OpenPortfolio: [{ name: 'allocations', type: 'Allocation[]' }],
+  OpenPortfolioWithAutoFeatures: [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+  ],
   Rebalance: [PortfolioIdParam],
   SetTargetAllocation: [
     { name: 'allocations', type: 'Allocation[]' },
@@ -98,6 +102,14 @@ const OperationTypes = {
     { name: 'permissions', type: 'PortfolioPermissions' },
     PortfolioIdParam,
   ],
+  /**
+   * Update which auto-features are enabled for a portfolio. The contract will
+   * generate a permissioned delegation as necessary and deliver it to the planner.
+   */
+  SetAutoFeatures: [
+    { name: 'features', type: 'PortfolioAutoFeatures' },
+    PortfolioIdParam,
+  ],
 } as const satisfies TypedData;
 type OperationTypes = typeof OperationTypes;
 export type OperationTypeNames = keyof OperationTypes;
@@ -110,6 +122,8 @@ const OperationSubTypes = {
   Asset: TokenPermissionsComponents,
   /** @see {@link PortfolioPermissions} */
   PortfolioPermissions: [{ name: 'allocation', type: 'bool' }],
+  /** @see {@link PortfolioAutoFeatures} */
+  PortfolioAutoFeatures: [{ name: 'rebalance', type: 'bool' }],
 } as const satisfies TypedData;
 
 /**
@@ -130,6 +144,14 @@ type YmaxOperationTypesWithSubTypes<
 > = {
   [K in T]: P;
 } & typeof OperationSubTypes;
+
+export type PortfolioPermissionsEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioPermissions'];
+
+export type PortfolioAutoFeaturesEIP712 = TypedDataToPrimitiveTypes<
+  typeof OperationSubTypes
+>['PortfolioAutoFeatures'];
 
 /**
  * In the wrapped case, the domain is fixed by permit2, so we can't choose name/version there.

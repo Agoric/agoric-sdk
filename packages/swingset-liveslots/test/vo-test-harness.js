@@ -116,7 +116,7 @@ export async function runVOTest(t, prepare, makeTestObject, testTestObject) {
     });
     const holder = makeHolder();
 
-    let held = null;
+    let held = /** @type {any} */ (null);
 
     prepare(VatData);
 

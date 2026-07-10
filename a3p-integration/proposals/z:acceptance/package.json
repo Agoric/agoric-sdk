@@ -1,4 +1,5 @@
 {
+  "name": "z:acceptance",
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
@@ -16,7 +17,6 @@
     "@agoric/client-utils": "dev",
     "@agoric/cosmic-proto": "dev",
     "@agoric/ertp": "dev",
-    "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",
     "@agoric/store": "dev",
     "@agoric/synthetic-chain": "^0.7.1",
@@ -33,12 +33,12 @@
   },
   "resolutions": {
     "$commentXsnap": "UNTIL https://github.com/Agoric/agoric-sdk/issues/10259",
+    "$commentAgoric": "agoric (CLI) is intentionally NOT portaled to the local agoric-cli: #12719 removed the psm/vaults/reserve/oracle agops subcommands from this repo, but the acceptance tests still exercise those still-on-chain contracts. Resolving agoric from npm keeps the published CLI (with those subcommands) available.",
     "@agoric/xsnap": "beta",
     "@agoric/cosmos": "portal:../../agoric-sdk/golang/cosmos",
     "@agoric/ertp": "portal:../../agoric-sdk/packages/ERTP",
     "@agoric/swingset-vat": "portal:../../agoric-sdk/packages/SwingSet",
     "@agoric/access-token": "portal:../../agoric-sdk/packages/access-token",
-    "agoric": "portal:../../agoric-sdk/packages/agoric-cli",
     "@agoric/async-flow": "portal:../../agoric-sdk/packages/async-flow",
     "@agoric/base-zone": "portal:../../agoric-sdk/packages/base-zone",
     "@agoric/builders": "portal:../../agoric-sdk/packages/builders",
@@ -52,7 +52,6 @@
     "@agoric/eslint-config": "portal:../../agoric-sdk/packages/eslint-config",
     "@agoric/governance": "portal:../../agoric-sdk/packages/governance",
     "@agoric/import-manager": "portal:../../agoric-sdk/packages/import-manager",
-    "@agoric/inter-protocol": "portal:../../agoric-sdk/packages/inter-protocol",
     "@agoric/internal": "portal:../../agoric-sdk/packages/internal",
     "@agoric/kmarshal": "portal:../../agoric-sdk/packages/kmarshal",
     "@agoric/network": "portal:../../agoric-sdk/packages/network",

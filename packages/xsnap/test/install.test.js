@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
 import {

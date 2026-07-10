@@ -57,6 +57,7 @@ test.before(async t => {
       harness,
     }),
   );
+
   t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());

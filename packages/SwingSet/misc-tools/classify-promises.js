@@ -3,7 +3,7 @@
 /* eslint no-labels: "off", no-extra-label: "off", no-underscore-dangle: "off" */
 import process from 'node:process';
 import sqlite3 from 'better-sqlite3';
-import yargsParser from 'yargs-parser';
+import { parseArgs } from 'node:util';
 import '@endo/init/debug.js';
 import { makeStandinPromise, krefOf } from '@agoric/kmarshal';
 import { Far } from '@endo/far';
@@ -320,7 +320,12 @@ const getSendForResultKpid = (getSyscallsForKref, kpid) => {
 };
 
 const main = rawArgv => {
-  const { _: args, ...options } = yargsParser(rawArgv.slice(2));
+  const { values: options, positionals: args } = parseArgs({
+    args: rawArgv.slice(2),
+    options: {},
+    allowPositionals: true,
+    strict: false,
+  });
   if (Reflect.ownKeys(options).length > 0 || args.length !== 1) {
     const envVars = Object.entries({
       BRIDGE_VAT_ID,

@@ -3,7 +3,12 @@
  * and holding portfolios for EVM accounts.
  * @see {@link prepareEVMWalletHandlerKit}
  */
-import { makeTracer, type ERemote, type Remote } from '@agoric/internal';
+import {
+  makeTracer,
+  type ERemote,
+  type Remote,
+  type TypedPattern,
+} from '@agoric/internal';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import type { Bech32Address } from '@agoric/orchestration';
 import type { WithSignature } from '@agoric/orchestration/src/utils/viem.js';
@@ -53,7 +58,9 @@ type EIP712Data = WithSignature<
 type PortfolioEVMFacet = PortfolioKit['evmHandler'];
 interface PortfolioContractPublicFacet {
   openPortfolioFromEVM(
-    data: YmaxOperationDetails<'OpenPortfolio'>['data'],
+    data:
+      | YmaxOperationDetails<'OpenPortfolio'>['data']
+      | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data'],
     permitDetails: PermitDetails,
   ): Promise<{
     evmHandler: PortfolioEVMFacet;
@@ -305,7 +312,8 @@ export const prepareEVMPortfolioOperationManager = (
       await null;
       try {
         const portfolioId =
-          operationDetails.operation !== 'OpenPortfolio'
+          operationDetails.operation !== 'OpenPortfolio' &&
+          operationDetails.operation !== 'OpenPortfolioWithAutoFeatures'
             ? operationDetails.data.portfolio
             : undefined;
         const portfolio =
@@ -319,7 +327,8 @@ export const prepareEVMPortfolioOperationManager = (
         );
 
         switch (operationDetails.operation) {
-          case 'OpenPortfolio': {
+          case 'OpenPortfolio':
+          case 'OpenPortfolioWithAutoFeatures': {
             const { permitDetails, data } = operationDetails;
             if (!permitDetails) {
               throw Fail`Missing permit details for OpenPortfolio operation`;
@@ -388,6 +397,15 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
+          case 'SetAutoFeatures': {
+            const {
+              data: { features },
+            } = operationDetails;
+
+            const result = E(portfolio!).setAutoFeatures(features);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
           default:
             // @ts-expect-error exhaustiveness check
             Fail`Unsupported operation: ${q(operationDetails.operation)}`;
@@ -403,7 +421,7 @@ type EVMPortfolioOperationManager = ReturnType<
   typeof prepareEVMPortfolioOperationManager
 >;
 
-export const EIP712DataShape = M.splitRecord(
+export const EIP712DataShape: TypedPattern<EIP712Data> = M.splitRecord(
   {
     domain: M.any(),
     types: M.record(),
@@ -414,7 +432,7 @@ export const EIP712DataShape = M.splitRecord(
   {
     verifiedSigner: M.string(),
   },
-);
+) as TypedPattern<EIP712Data>;
 
 /**
  * Prepare an EVM Wallet message handler exoClass. This is the inner factory

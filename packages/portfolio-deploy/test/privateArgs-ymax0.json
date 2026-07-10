@@ -1335,6 +1335,7 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
       "walletHelper": "0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70",
+      "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     },
     "Avalanche": {
@@ -1356,6 +1357,7 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
       "walletHelper": "0x",
+      "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     },
     "Base": {
@@ -1364,6 +1366,7 @@
       "ERC4626_morphoSeamlessUsdcVault_Base": "0x616a4E1db48e22028f6bbf20444Cd3b8e3273738",
       "ERC4626_morphoSteakhousePrimeUsdc_Base": "0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2",
       "ERC4626_morphoSteakhouseUsdc_Base": "0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183",
+      "ERC4626_morphoEthenaSteakhouseUsdc_Base": "0xBeEfF0be997Cca5B1c13A7433c2004637975739e",
       "aavePool": "0xA238Dd80C259a72e81d7e4664a9801593F98d1c5",
       "aaveRewardsController": "0xf9cc4F0D883F1a1eb2c253bdb46c254Ca51E1F44",
       "aaveUSDC": "0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB",
@@ -1381,6 +1384,7 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
       "walletHelper": "0xE0aFf709b7A6Cdf476738b86354D17bd334eB516",
+      "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     },
     "Ethereum": {
@@ -1398,6 +1402,8 @@
       "ERC4626_morphoHyperithmUsdcMidcurve_Ethereum": "0xCdaea3dde6cE5969aA1414A82A3A681cEd51Ce72",
       "ERC4626_morphoResolvUsdc_Ethereum": "0x132E6C9C33A62D7727cd359b1f51e5B566E485Eb",
       "ERC4626_morphoSteakhouseHighYieldInstant_Ethereum": "0xbeeff2C5bF38f90e3482a8b19F12E5a6D2FCa757",
+      "ERC4626_morphoGauntletUsdcPrime_Ethereum": "0x8c106EEDAd96553e64287A5A6839c3Cc78afA3D0",
+      "ERC4626_morphoKpkUsdcPrime_Ethereum": "0x4Ef53d2cAa51C447fdFEEedee8F07FD1962C9ee6",
       "aavePool": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
       "aaveRewardsController": "0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb",
       "aaveUSDC": "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
@@ -1415,6 +1421,7 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
       "walletHelper": "0x",
+      "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     },
     "Optimism": {
@@ -1437,6 +1444,7 @@
       "tokenMessengerV2": "0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d",
       "usdc": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
       "walletHelper": "0x",
+      "oneInchRouter": "0x111111125421cA6dc452d289314280a0f8842A65",
       "cctpRelayer": "0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f"
     }
   },

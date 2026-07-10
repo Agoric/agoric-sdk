@@ -1,6 +1,8 @@
-import { promisify } from 'node:util';
+import { promisify, styleText } from 'node:util';
 import { Readable } from 'node:stream';
-import chalk from 'chalk';
+import { mkdtemp } from 'node:fs/promises';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { Fail } from '@endo/errors';
 
@@ -27,12 +29,9 @@ export const reading = (
 };
 
 export const writing = (
-  { write, close, rename, unlink, chmod, mkdir, writeFile },
-  { dirname, basename },
-  { open: tempOpen },
+  { rename, unlink, chmod, mkdir, writeFile },
+  { basename },
 ) => {
-  const fsWrite = promisify(write);
-  const fsClose = promisify(close);
   const it = freeze({
     chmod: promisify(chmod),
     mkdir: promisify(mkdir),
@@ -40,33 +39,35 @@ export const writing = (
     unlink: promisify(unlink),
     rename: promisify(rename),
 
-    createFile: async (path, contents) => {
-      console.error(chalk.yellow(`Creating ${chalk.underline(path)}`));
-      const info = await new Promise((res, rej) => {
-        tempOpen(
-          { dir: dirname(path), prefix: `${basename(path)}.` },
-          (err, tmpInfo) => {
-            if (err) {
-              rej(err);
-              return;
-            }
-            res(tmpInfo);
-          },
-        );
-      });
+    createFile: async (filePath, contents) => {
+      console.error(
+        styleText('yellow', 'Creating ') +
+          styleText(['yellow', 'underline'], filePath),
+      );
+
+      const name = basename(filePath);
+      const tempDir = await mkdtemp(
+        path.join(path.dirname(filePath), `${name}.`),
+      );
+      const tempPath = path.join(tempDir, name);
+
       try {
-        // Write the contents, close, and rename.
-        await fsWrite(info.fd, contents);
-        await fsClose(info.fd);
-        await it.rename(info.path, path);
+        await fs.promises.writeFile(tempPath, contents);
+        await it.rename(tempPath, filePath);
       } catch (e) {
-        // Unlink on error.
         try {
-          await it.unlink(info.path);
+          await fs.promises.unlink(tempPath);
+          await fs.promises.rmdir(tempDir);
         } catch (e2) {
           // do nothing
         }
         throw e;
+      }
+
+      try {
+        await fs.promises.rmdir(tempDir);
+      } catch (e) {
+        // Ignore cleanup errors
       }
     },
   });

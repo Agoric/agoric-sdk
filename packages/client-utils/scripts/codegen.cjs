@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const assert = require('node:assert/strict');

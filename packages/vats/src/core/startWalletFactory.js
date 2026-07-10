@@ -5,7 +5,7 @@ import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { Stable } from '@agoric/internal/src/tokens.js';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import {
   makeHistoryReviver,
   makeBoardRemote,
@@ -16,11 +16,10 @@ import {
  * @import {ERemote} from '@agoric/internal';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {EReturn} from '@endo/far';
- * @import {AdminFacet, InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';
+ * @import {InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';
  * @import {start as StartWalletFactory} from '@agoric/smart-wallet/src/walletFactory.js';
  * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
  * @import {ScopedBridgeManager} from '../types.js';
- * @import {start} from '@agoric/inter-protocol/src/econCommitteeCharter.js';
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {ERef} from '@agoric/vow';
@@ -41,7 +40,7 @@ const trace = makeTracer('StartWF', 'verbose');
 // eslint-disable-next-line no-unused-vars
 const startFactoryInstance = (zoe, inst) => E(zoe).startInstance(inst);
 
-const StableUnit = BigInt(10 ** Stable.displayInfo.decimalPlaces);
+const StakeUnit = BigInt(10 ** Stake.displayInfo.decimalPlaces);
 
 /**
  * Publish an arbitrary wallet state so that clients can tell that a wallet has
@@ -78,10 +77,6 @@ const publishRevivableWalletState = async (
  *   ChainStorageVatParams &
  *   PromiseSpaceOf<{
  *     economicCommitteeCreatorFacet: CommitteeElectorateCreatorFacet;
- *     econCharterKit: {
- *       creatorFacet: Awaited<ReturnType<typeof start>>['creatorFacet'];
- *       adminFacet: AdminFacet;
- *     };
  *     walletBridgeManager: ScopedBridgeManager<'wallet'>;
  *     provisionWalletBridgeManager: ScopedBridgeManager<'provisionWallet'>;
  *   }>} powers
@@ -102,7 +97,6 @@ export const startWalletFactory = async (
       provisionWalletBridgeManager: provisionWalletBridgeManagerP,
       chainStorage,
       namesByAddressAdmin: namesByAddressAdminP,
-      econCharterKit,
       startUpgradable,
       startGovernedUpgradable,
     },
@@ -112,13 +106,13 @@ export const startWalletFactory = async (
     },
     instance: { produce: instanceProduce },
     brand: {
-      consume: { [Stable.symbol]: feeBrandP },
+      consume: { [Stake.symbol]: provisionBrandP },
     },
     issuer: {
       consume: { [Stable.symbol]: feeIssuerP },
     },
   },
-  { options: { perAccountInitialValue = (StableUnit * 25n) / 100n } = {} } = {},
+  { options: { perAccountInitialValue = (StakeUnit * 25n) / 100n } = {} } = {},
 ) => {
   // The wallet path is read by the cosmos side to check provisioning
   // See `WalletStoragePathSegment` and `GetSmartWalletState` in
@@ -150,13 +144,13 @@ export const startWalletFactory = async (
     walletStorageNode,
     poolStorageNode,
     namesByAddressAdmin,
-    feeBrand,
+    provisionBrand,
     feeIssuer,
   ] = await Promise.all([
     makeStorageNodeChild(chainStorage, WALLET_STORAGE_PATH_SEGMENT),
     makeStorageNodeChild(chainStorage, POOL_STORAGE_PATH_SEGMENT),
     namesByAddressAdminP,
-    feeBrandP,
+    provisionBrandP,
     feeIssuerP,
   ]);
 
@@ -174,7 +168,7 @@ export const startWalletFactory = async (
     /** @type {any} */
     const oldPoolMetrics = dataReviver.getItem(OLD_POOL_METRICS_STORAGE_PATH);
     const newBrandFromOldSlotID = makeMap([
-      [oldPoolMetrics.totalMintedProvided.brand.getBoardId(), feeBrand],
+      [oldPoolMetrics.totalMintedProvided.brand.getBoardId(), provisionBrand],
     ]);
     const brandReviver = makeHistoryReviver(
       chainStorageEntries,
@@ -199,7 +193,7 @@ export const startWalletFactory = async (
   // eslint-disable-next-line @agoric/group-jsdoc-imports
   /**
    * XXX the type is being lost without this annotation
-   * @type {Promise<GovernanceFacetKit<import('@agoric/inter-protocol/src/provisionPool.js').start>>}
+   * @type {Promise<GovernanceFacetKit<typeof import('@agoric/vats/src/provisionPool.js').start>>}
    */
   const ppFacetsP = E(startGovernedUpgradable)({
     installation: provisionPool,
@@ -214,7 +208,7 @@ export const startWalletFactory = async (
     governedParams: {
       PerAccountInitialAmount: {
         type: ParamTypes.AMOUNT,
-        value: AmountMath.make(feeBrand, perAccountInitialValue),
+        value: AmountMath.make(provisionBrand, perAccountInitialValue),
       },
     },
   });
@@ -272,14 +266,7 @@ export const startWalletFactory = async (
 
     const bridgeHandler = await E(ppFacets.creatorFacet).makeHandler();
 
-    await Promise.all([
-      E(provisionWalletBridgeManager).initHandler(bridgeHandler),
-      E(E.get(econCharterKit).creatorFacet).addInstance(
-        ppFacets.instance,
-        ppFacets.governorCreatorFacet,
-        'provisionPool',
-      ),
-    ]);
+    await E(provisionWalletBridgeManager).initHandler(bridgeHandler);
     trace('initAfterProvisionPool done');
   };
 
@@ -320,7 +307,6 @@ export const WALLET_FACTORY_MANIFEST = {
       namesByAddressAdmin: true,
       startUpgradable: true,
       startGovernedUpgradable: true,
-      econCharterKit: 'psmCharter',
     },
     produce: {
       client: true, // dummy client in this configuration
@@ -334,7 +320,7 @@ export const WALLET_FACTORY_MANIFEST = {
       },
     },
     brand: {
-      consume: { [Stable.symbol]: 'zoe' },
+      consume: { [Stake.symbol]: 'zoe' },
     },
     issuer: {
       consume: { [Stable.symbol]: 'zoe' },

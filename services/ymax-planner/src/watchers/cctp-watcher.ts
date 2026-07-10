@@ -1,8 +1,10 @@
 import type { Filter, Log } from 'ethers';
 import { id, zeroPadValue, getAddress, ethers } from 'ethers';
+import type { WebSocket } from 'ws';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { KVStore } from '@agoric/internal/src/kv-store.js';
 import { PendingTxCode, TX_TIMEOUT_MS } from '../pending-tx-manager.ts';
+import { WatcherTransportError } from './watcher-utils.ts';
 import {
   getBlockNumberBeforeRealTime,
   scanEvmLogsInChunks,
@@ -10,6 +12,7 @@ import {
   type WatcherTimeoutOptions,
 } from '../evm-scanner.ts';
 import {
+  claimTransferLog,
   deleteTxBlockLowerBound,
   getTxBlockLowerBound,
   setTxBlockLowerBound,
@@ -46,6 +49,7 @@ type CctpWatch = {
   log?: (...args: unknown[]) => void;
   kvStore: KVStore;
   txId: `tx${number}`;
+  chainId?: CaipChainId;
 };
 
 const parseTransferLog = log => {
@@ -79,8 +83,11 @@ export const watchCctpTransfer = ({
   log = () => {},
   setTimeout = globalThis.setTimeout,
   signal,
+  kvStore,
+  txId,
+  chainId,
 }: CctpWatch & WatcherTimeoutOptions): Promise<WatcherResult> => {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     if (signal?.aborted) {
       resolve({ settled: false });
       return;
@@ -95,20 +102,72 @@ export const watchCctpTransfer = ({
       `Watching for ERC-20 transfers to: ${toAddress} with amount: ${expectedAmount}`,
     );
 
+    const ws = provider.websocket as WebSocket;
+    let done = false;
     let transferFound = false;
-    let timeoutId: NodeJS.Timeout;
-    let listeners: Array<{ event: any; listener: any }> = [];
-
-    const finish = (result: WatcherResult) => {
-      resolve(result);
-      if (timeoutId) clearTimeout(timeoutId);
-      for (const { event, listener } of listeners) {
-        void provider.off(event, listener);
+    const cleanups: (() => unknown)[] = [];
+    const doCleanup = () => {
+      for (const cleanup of cleanups) {
+        try {
+          cleanup();
+        } catch (err) {
+          log('Error during cleanup:', err);
+        }
       }
-      listeners = [];
     };
 
-    signal?.addEventListener('abort', () => finish({ settled: false }));
+    const finish = (result: WatcherResult) => {
+      if (done) return;
+      done = true;
+      resolve(result);
+      doCleanup();
+    };
+
+    /**
+     * Cleanup and reject with a transport error. Used for fatal WebSocket
+     * failures where we cannot continue watching. This signals that the WATCH
+     * failed, not that the transaction failed, so the caller can safely
+     * re-subscribe (via `watchWithRetry`).
+     */
+    const fail = (err: unknown) => {
+      if (done) return;
+      done = true;
+      reject(err);
+      doCleanup();
+    };
+
+    const onWsError = (e: any) => {
+      const errorMsg = e?.message || String(e);
+      log(`WebSocket error during CCTP watch: ${errorMsg}`);
+      fail(
+        new WatcherTransportError(`WebSocket connection error: ${errorMsg}`, {
+          cause: e,
+        }),
+      );
+    };
+
+    const onWsClose = (code?: number, reason?: any) => {
+      log(
+        `WebSocket closed during CCTP watch (code=${code}, reason=${reason})`,
+      );
+      fail(
+        new WatcherTransportError(
+          `WebSocket closed unexpectedly: ${reason} (code=${code})`,
+        ),
+      );
+    };
+
+    ws.on('error', onWsError);
+    cleanups.unshift(() => ws.off('error', onWsError));
+
+    ws.on('close', onWsClose);
+    cleanups.unshift(() => ws.off('close', onWsClose));
+
+    if (signal) {
+      const onAbort = () => finish({ settled: false });
+      signal.addEventListener('abort', onAbort);
+      cleanups.unshift(() => signal.removeEventListener('abort', onAbort));
+    }
 
     const listenForTransfer = async (eventLog: Log) => {
       let transferData;
@@ -127,6 +186,22 @@ export const watchCctpTransfer = ({
       );
 
       if (amount === expectedAmount && usdcAddress === tokenAddr) {
+        // Claim this specific transfer so a single physical transfer cannot
+        // settle more than one pending tx sharing the same (destination,
+        // amount). If another leg already claimed it, keep watching.
+        const claimed = claimTransferLog(
+          kvStore,
+          chainId,
+          eventLog.transactionHash,
+          eventLog.index,
+          txId,
+        );
+        if (!claimed) {
+          log(
+            `Transfer ${eventLog.transactionHash}:${eventLog.index} already claimed by another pending tx; continuing to watch`,
+          );
+          return;
+        }
         log(
           `✓ Amount matches! Expected: ${expectedAmount}, Received: ${amount}`,
         );
@@ -143,15 +218,18 @@ export const watchCctpTransfer = ({
     };
 
     void provider.on(filter, listenForTransfer);
-    listeners.push({ event: filter, listener: listenForTransfer });
+    cleanups.unshift(() => {
+      void provider.off(filter, listenForTransfer);
+    });
 
-    timeoutId = setTimeout(() => {
-      if (!transferFound) {
-        log(
-          `[${PendingTxCode.CCTP_TX_NOT_FOUND}] ✗ No matching transfer found within ${timeoutMs / 60000} minutes`,
-        );
-      }
+    // Intentional: does not resolve/reject; only logs on timeout.
+    const timeoutId = setTimeout(() => {
+      if (done || transferFound) return;
+      log(
+        `[${PendingTxCode.CCTP_TX_NOT_FOUND}] ✗ No matching transfer found within ${timeoutMs / 60000} minutes`,
+      );
     }, timeoutMs);
+    cleanups.unshift(() => clearTimeout(timeoutId));
   });
 };
 
@@ -211,7 +289,24 @@ export const lookBackCctp = async ({
         try {
           const t = parseTransferLog(ev);
           log(`Check: amount=${t.amount}`);
-          return t.amount === expectedAmount;
+          if (t.amount !== expectedAmount) return false;
+          // Claim this specific transfer so a single physical transfer cannot
+          // settle more than one pending tx sharing the same (destination,
+          // amount). If another leg already claimed it, skip to the next match.
+          const claimed = claimTransferLog(
+            kvStore,
+            chainId,
+            ev.transactionHash,
+            ev.index,
+            txId,
+          );
+          if (!claimed) {
+            log(
+              `Transfer ${ev.transactionHash}:${ev.index} already claimed by another pending tx; skipping`,
+            );
+            return false;
+          }
+          return true;
         } catch (e) {
           log(`Parse error:`, e);
           return false;

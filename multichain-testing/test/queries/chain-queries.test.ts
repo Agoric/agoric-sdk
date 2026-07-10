@@ -232,11 +232,11 @@ test.serial('Send Local Query from chain object', async t => {
   const expectedBalances = [
     {
       denom: 'ubld',
-      amount: '90000000', // 100n * (10n ** 6n) - smart wallet provision
+      amount: '90250000', // 100n * (10n ** 6n) - smart wallet provision + smart wallet credit
     },
     {
       denom: 'uist',
-      amount: '100250000', // 100n * (10n ** 6n) + smart wallet credit
+      amount: '100000000', // 100n * (10n ** 6n)
     },
   ];
   t.log(`provisioning agoric smart wallet for ${agoricAddr}`);

@@ -1,4 +1,7 @@
 // @ts-nocheck
+import '@agoric/internal/src/ava-force-exit.mjs';
+import '@endo/init/debug.js';
+
 /* global globalThis */
 
 import { spawn } from 'node:child_process';

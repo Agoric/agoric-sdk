@@ -1,4 +1,5 @@
 {
+  "name": "k:param-change",
   "agoricProposal": {
     "type": "/cosmos.params.v1beta1.ParameterChangeProposal"
   },

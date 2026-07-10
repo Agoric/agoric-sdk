@@ -22,7 +22,7 @@ import {
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 
 /**
- * @import {makePublishKit as MakePublishKit} from '../src/index.js';
+ * @typedef {typeof import('../src/index.js').makePublishKit} MakePublishKit
  * @import {PublicationRecord} from '../src/types.js';
  * @import {Bundle, SwingSetConfig} from '@agoric/swingset-vat/src/types-external.js';
  */
@@ -478,7 +478,7 @@ const verifyPublishKitTermination = test.macro(
       subscriber.subscribeAfter(undefined),
     ];
     const { method = 'finish', getExtraFinalPromises = getLatestPromises } =
-      /** @type {object} */ (config);
+      /** @type {Record<string, any>} */ (config);
 
     const cellsP = [...(await getExtraFinalPromises(publisher, subscriber))];
     const value = Symbol.for('termination');

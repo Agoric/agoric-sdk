@@ -30,7 +30,7 @@ import {
 } from '@agoric/orchestration';
 import {
   AxelarChain,
-  PortfolioAgentIdShape,
+  PortfolioAgentKeyShape,
   PortfolioPermissionsExtShape,
   YieldProtocol,
   type AssetPlaceRef,
@@ -207,8 +207,11 @@ export const FlowDetailShape: TypedPattern<FlowDetail> = M.or(
     { type: 'deposit', amount: AnyNatAmountShape },
     { fromChain: ChainNameExtShape },
   ),
-  { type: 'rebalance' },
+  M.splitRecord({ type: 'rebalance' }, { agent: PortfolioAgentKeyShape }),
 );
+
+export const FlowKeyShape: TypedPattern<`flow${number}`> =
+  AnyString<`flow${number}`>();
 
 export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   M.splitRecord(
@@ -224,7 +227,13 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
       nobleForwardingAddress: AnyString<Bech32Address>(),
       targetAllocation: TargetAllocationShapeExt,
       accountsPending: M.arrayOf(ChainNameExtShape),
-      flowsRunning: M.recordOf(AnyString<`flow${number}`>(), FlowDetailShape),
+      flowsRunning: M.recordOf(
+        FlowKeyShape,
+        M.and(
+          FlowDetailShape,
+          M.splitRecord({}, { awaitingSteps: M.boolean() }),
+        ),
+      ),
     },
   );
 
@@ -236,7 +245,7 @@ export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
   });
 
 export const PortfolioAgentsShape: TypedPattern<StatusFor['portfolioAgents']> =
-  M.recordOf(PortfolioAgentIdShape, PortfolioAgentStatusShape);
+  M.recordOf(PortfolioAgentKeyShape, PortfolioAgentStatusShape);
 
 /**
  * Creates vstorage path for position transfer history.
@@ -287,16 +296,6 @@ export const makePortfolioAgentsPath = (
   parent: number,
 ): [`portfolio${number}`, 'agents'] => [`portfolio${parent}`, 'agents'];
 
-export const makeFlowAgentPath = (
-  parent: number,
-  id: number,
-): [`portfolio${number}`, 'flows', `flow${number}`, 'agent'] => [
-  `portfolio${parent}`,
-  'flows',
-  `flow${id}`,
-  'agent',
-];
-
 export const makeFlowStepsPath = (
   parent: number,
   id: number,
@@ -326,12 +325,20 @@ export const FlowStatusShape: TypedPattern<StatusFor['flow']> = M.or(
   ),
 );
 
-export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf({
-  how: M.string(),
-  amount: AnyNatAmountShape,
-  src: AnyString<AssetPlaceRef>(),
-  dest: AnyString<AssetPlaceRef>(),
-});
+export const FlowStepsShape: TypedPattern<StatusFor['flowSteps']> = M.arrayOf(
+  M.splitRecord(
+    {
+      how: M.string(),
+      amount: AnyNatAmountShape,
+      src: AnyString<AssetPlaceRef>(),
+      dest: AnyString<AssetPlaceRef>(),
+    },
+    {
+      phases: M.recordOf(M.string(), M.arrayOf(M.string())),
+      swap: M.record(),
+    },
+  ),
+);
 // #endregion
 
 // XXX deployment concern, not part of contract external interface

@@ -1,17 +1,22 @@
 // @ts-check
-import { mustMatch as typelessMustMatch } from '@endo/patterns';
+import { mustMatch } from '@endo/patterns';
 
 /**
- * @import {MustMatch, PatternType, TypedPattern} from './types.js';
+ * @import {CastedPattern} from '@endo/patterns';
  */
 
-/** @type {MustMatch} */
-export const mustMatch = typelessMustMatch;
+/**
+ * Re-exported from `@endo/patterns`, which now narrows `specimen` to the
+ * pattern's type. Prefer importing `mustMatch` from `@endo/patterns` directly.
+ *
+ * @deprecated import from `@endo/patterns` instead
+ */
+export { mustMatch };
 
 /**
  * @template M
  * @param {unknown} specimen
- * @param {TypedPattern<M>} patt
+ * @param {CastedPattern<M>} patt
  * @returns {M}
  */
 export const cast = (specimen, patt) => {
@@ -19,5 +24,7 @@ export const cast = (specimen, patt) => {
   // type but a function can't both narrow and return a type. That is by design:
   // https://github.com/microsoft/TypeScript/issues/34636#issuecomment-545025916
   mustMatch(specimen, patt);
-  return specimen;
+  // The assertion narrows `specimen`, but inside this generic body TS keeps an
+  // `unknown extends M` conditional that doesn't collapse to `M`, so re-assert.
+  return /** @type {M} */ (specimen);
 };

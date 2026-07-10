@@ -43,7 +43,7 @@ const setupEnvironment = ({
 
   const event = createMockGmpStatusEvent(txId, blockWithEvent);
   const opts = createMockPendingTxOpts(latestBlock, [event]);
-  const mockProvider = opts.evmProviders[chainId];
+  const mockProvider = opts.evmProviders[chainId] as any;
 
   const currentTimeMs = 1700000000; // 2023-11-14T22:13:20Z
   const txTimestampMs = currentTimeMs - 10 * 1000; // 10 seconds ago

@@ -110,8 +110,10 @@ const gcMessageTypes = /** @type {const} */ ([
 /** @type {Set<RunQueueEvent['type']>} */
 const gcMessageTypesSet = new Set(gcMessageTypes);
 
-/** @type {(message: RunQueueEvent) => message is GcMessage} */
-const isGcMessage = message => gcMessageTypesSet.has(message.type);
+const isGcMessage =
+  /** @type {(message: RunQueueEvent) => message is GcMessage} */ (
+    message => gcMessageTypesSet.has(message.type)
+  );
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -319,6 +321,7 @@ export default function buildKernel(
 
   // If `kernelPanic` is set to non-null, vat execution code will throw it as an
   // error at the first opportunity
+  /** @type {Error | null} */
   let kernelPanic = null;
 
   /** @type {KernelPanic} */
@@ -471,13 +474,12 @@ export default function buildKernel(
    *    illegalSyscall: { vatID: VatID, info: SwingSetCapData } | undefined,
    *    vatRequestedTermination: { reject: boolean, info: SwingSetCapData } | undefined,
    *  } } DeliveryStatus
-   * @import {PolicyInputCleanupCounts} from '../types-external.js';
    * @typedef { {
    *    abort?: boolean, // changes should be discarded, not committed
    *    consumeMessage?: boolean, // discard the aborted delivery
    *    didDelivery?: VatID, // we made a delivery to a vat, for run policy and save-snapshot
    *    computrons?: bigint, // computron count for run policy
-   *    cleanups?: PolicyInputCleanupCounts, // cleanup budget spent
+   *    cleanups?: import('../types-external.js').PolicyInputCleanupCounts, // cleanup budget spent
    *    meterID?: string, // deduct those computrons from a meter
    *    measureDirt?: { vatID: VatID, dirt: Dirt }, // dirt counters should increment
    *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin

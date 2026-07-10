@@ -1,10 +1,8 @@
 #! /usr/bin/env node
-/* eslint-env node */
 import '@endo/init';
 
 import fs from 'node:fs';
 import path from 'node:path';
-import temp from 'temp';
 import process from 'node:process';
 import { exec, spawn } from 'node:child_process';
 import inquirer from 'inquirer';
@@ -18,7 +16,7 @@ process.on('SIGINT', () => process.exit(-1));
 deploy(process.argv[1], process.argv.splice(2), {
   env: process.env,
   rd: files.reading(fs, path),
-  wr: files.writing(fs, path, temp),
+  wr: files.writing(fs, path),
   setup: setup({ resolve: path.resolve, env: process.env, setInterval }),
   running: running(process, { exec, spawn }),
   inquirer,

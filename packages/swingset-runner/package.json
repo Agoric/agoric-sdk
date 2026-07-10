@@ -21,7 +21,6 @@
   "dependencies": {
     "@agoric/deploy-script-support": "workspace:*",
     "@agoric/ertp": "workspace:*",
-    "@agoric/inter-protocol": "workspace:*",
     "@agoric/internal": "workspace:*",
     "@agoric/kmarshal": "workspace:*",
     "@agoric/stat-logger": "workspace:*",
@@ -31,18 +30,17 @@
     "@agoric/telemetry": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@agoric/zoe": "workspace:*",
-    "@endo/bundle-source": "^4.1.2",
-    "@endo/errors": "^1.2.13",
-    "@endo/eventual-send": "^1.3.4",
-    "@endo/init": "^1.1.12",
-    "@endo/marshal": "^1.8.0",
-    "@endo/nat": "^5.1.3",
+    "@endo/bundle-source": "^4.3.2",
+    "@endo/errors": "^1.3.1",
+    "@endo/eventual-send": "^1.5.0",
+    "@endo/init": "^1.1.13",
+    "@endo/marshal": "^1.10.0",
+    "@endo/nat": "^5.2.0",
     "expose-gc": "^1.0.0",
-    "n-readlines": "^1.0.1",
-    "yargs": "^16.1.0"
+    "yargs": "^17.0.0"
   },
   "devDependencies": {
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "import-meta-resolve": "^4.1.0"
   },
@@ -53,15 +51,12 @@
     "files": [
       "test/**/*.test.*"
     ],
-    "require": [
-      "@endo/init/debug.js"
-    ],
     "timeout": "2m"
   },
   "typeCoverage": {
-    "atLeast": 56.04
+    "atLeast": 56.27
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

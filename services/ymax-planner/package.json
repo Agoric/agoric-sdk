@@ -19,7 +19,7 @@
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
     "lint:eslint": "yarn run -T eslint src/",
-    "lint:types": "yarn run -T tsc",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "lint:graphql": "ls -d ./src/graphql/api-* | xargs -n 1 yarn run graphql-dir-validate",
     "test": "ava",
     "test:c8": "c8 --all ${C8_OPTIONS:-} ava",
@@ -34,6 +34,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@endo/far": "^1.1.14",
     "@graphql-codegen/cli": "^6.1.1",
     "@graphql-codegen/client-preset": "^5.2.2",
     "@graphql-codegen/schema-ast": "^5.0.0",
@@ -41,7 +42,7 @@
     "@graphql-inspector/cli": "^5.0.8",
     "@types/node": "^22.10.2",
     "@types/ws": "^8",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.3",
     "esbuild": "^0.25.2",
     "graphql": "^16.12.0",
@@ -61,16 +62,16 @@
     "@cosmjs/encoding": "^0.36.0",
     "@cosmjs/proto-signing": "^0.36.0",
     "@cosmjs/stargate": "^0.36.0",
-    "@endo/common": "^1.2.13",
-    "@endo/errors": "^1.2.13",
-    "@endo/init": "^1.1.12",
-    "@endo/lockdown": "^1.0.18",
-    "@endo/nat": "^5.1.3",
-    "@endo/pass-style": "^1.6.3",
-    "@endo/patterns": "^1.7.0",
-    "@endo/promise-kit": "^1.1.13",
+    "@endo/common": "^1.4.0",
+    "@endo/errors": "^1.3.1",
+    "@endo/init": "^1.1.13",
+    "@endo/lockdown": "^1.0.19",
+    "@endo/nat": "^5.2.0",
+    "@endo/pass-style": "^1.8.1",
+    "@endo/patterns": "^1.9.1",
+    "@endo/promise-kit": "^1.2.1",
     "@google-cloud/secret-manager": "^6.1.0",
-    "better-sqlite3": "^10.1.0",
+    "better-sqlite3": "^12.10.0",
     "chain-registry": "^2.0.44",
     "dotenv": "^17.2.1",
     "ethers": "^6.13.0",
@@ -82,10 +83,10 @@
     "ws": "^8.18.3"
   },
   "ava": {
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "files": [
       "test/**/*.test.*"
     ],
@@ -103,6 +104,6 @@
     "atLeast": 93.19
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   }
 }

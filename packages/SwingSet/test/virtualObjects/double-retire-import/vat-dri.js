@@ -1,7 +1,7 @@
-/* global VatData */
+/* global globalThis */
 import { Far } from '@endo/far';
 // import { defineKind } from '@agoric/vat-data';
-const { defineKind } = VatData;
+const { defineKind } = /** @type {any} */ (globalThis).VatData;
 
 function initialize(arg) {
   return harden({ arg });

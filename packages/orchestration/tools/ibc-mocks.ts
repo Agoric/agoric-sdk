@@ -66,7 +66,11 @@ export function buildTxResponseString<T extends EncoderMessage<any>[]>(
   messages: T,
 ): string {
   const msgResponses = messages.map(({ encoder, message }) => {
-    return Any.fromPartial(CodecHelper(encoder).toProtoMsg(message));
+    const protoMsg = CodecHelper(encoder).toProtoMsg(message);
+    return Any.fromPartial({
+      typeUrl: String(protoMsg.typeUrl),
+      value: protoMsg.value,
+    });
   });
 
   const txMsgData = TxMsgData.toProto({

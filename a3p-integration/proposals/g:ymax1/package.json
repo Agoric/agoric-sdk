@@ -1,4 +1,5 @@
 {
+  "name": "g:ymax1",
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
@@ -30,6 +31,9 @@
     "@endo/pass-style": "^1.6.3",
     "ava": "^6.4.1"
   },
+  "devDependencies": {
+    "ts-blank-space": "^0.7.0"
+  },
   "resolutions": {
     "@agoric/client-utils": "portal:./local-packages/client-utils",
     "@agoric/cosmic-proto": "portal:./local-packages/cosmic-proto",
@@ -50,10 +54,10 @@
       "test/**/*.test.*",
       "!submission"
     ],
-    "extensions": {
-      "js": true,
-      "ts": "module"
-    },
+    "extensions": [
+      "js",
+      "ts"
+    ],
     "nodeArguments": [
       "--import=ts-blank-space/register",
       "--no-warnings"

@@ -46,7 +46,7 @@ export const parseNetworkSpec = spec => {
  * Fetches the network config for the given network specifier.
  *
  * @param {string} spec
- * @param {{ fetch: typeof fetch }} io
+ * @param {{ fetch: typeof globalThis.fetch }} io
  * @returns {Promise<MinimalNetworkConfig>}
  */
 export const fetchNetworkConfig = async (spec, { fetch }) => {

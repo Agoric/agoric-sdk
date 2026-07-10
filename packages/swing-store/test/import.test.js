@@ -1,4 +1,5 @@
 // @ts-check
+import '@endo/init/debug.js';
 
 import path from 'node:path';
 import { createGunzip } from 'node:zlib';
@@ -62,8 +63,8 @@ test('import empty', async t => {
 });
 
 const importTest = test.macro(async (t, mode) => {
-  /** @import {ArtifactMode} from '../src/internal.js' */
-  const artifactMode = /** @type {ArtifactMode} */ (mode);
+  const artifactMode =
+    /** @type {import('../src/internal.js').ArtifactMode} */ (mode);
 
   const [dbDir, cleanup] = tmpDir('testdb');
   t.teardown(cleanup);

@@ -1,4 +1,3 @@
-/* eslint-env node */
 // @ts-check
 
 import childProcessAmbient from 'node:child_process';
@@ -51,7 +50,7 @@ const resolveModuleSpecifier = (moduleSpecifier, paths) => {
 };
 
 /**
- * @param {FsPromises} fs
+ * @param {typeof FsPromises} fs
  * @param {string} filePath
  */
 const readJSONFile = async (fs, filePath) => {
@@ -101,7 +100,7 @@ const parseProposalParts = agoricRunOutput => {
 const resolveFromCwd = (filePath, cwd) => path.resolve(cwd, String(filePath));
 
 /**
- * @param {FsPromises} fs
+ * @param {typeof FsPromises} fs
  * @param {string} cwd
  * @param {string | number} filePath
  */
@@ -109,7 +108,7 @@ const readTextFromCwd = (fs, cwd, filePath) =>
   fs.readFile(resolveFromCwd(filePath, cwd), 'utf8');
 
 /**
- * @param {FsPromises} fs
+ * @param {typeof FsPromises} fs
  * @param {string} cwd
  * @param {string | number} filePath
  */
@@ -153,7 +152,7 @@ const materializeFromRecords = (records, resolvedBuilderPath, cwd) => {
 };
 
 /**
- * @param {FsPromises} fs
+ * @param {typeof FsPromises} fs
  * @param {string} outputDir
  * @param {string} resolvedBuilderPath
  */
@@ -212,7 +211,7 @@ const readProposalMaterialsFromPlans = async (
 };
 
 /**
- * @param {{ fs: FsPromises; cwd: string; }} param0
+ * @param {{ fs: typeof FsPromises; cwd: string; }} param0
  */
 const makeScopedWriteFile = ({ fs, cwd }) => {
   /** @type {typeof fs.writeFile} */
@@ -225,7 +224,7 @@ const makeScopedWriteFile = ({ fs, cwd }) => {
 
 /**
  * @param {{
- *   fs: FsPromises;
+ *   fs: typeof FsPromises;
  *   cwd: string;
  *   resolvedBuilderPath: string;
  *   args: string[];
@@ -282,7 +281,7 @@ const runInProcess = async ({
 
 /**
  * @param {{
- *   fs: FsPromises;
+ *   fs: typeof FsPromises;
  *   cwd: string;
  *   resolvedBuilderPath: string;
  *   args: string[];
@@ -332,7 +331,7 @@ const runWithShell = async ({
  *   cwd?: string;
  *   mode?: ProposalBuildMode;
  *   cacheDir?: string;
- *   fs?: FsPromises;
+ *   fs?: typeof FsPromises;
  *   now?: () => number;
  *   console?: Console;
  *   childProcess?: Pick<typeof import('node:child_process'), 'execFileSync'>;

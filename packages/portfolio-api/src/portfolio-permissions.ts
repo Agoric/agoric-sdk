@@ -1,6 +1,10 @@
 import type { TypedPattern } from '@agoric/internal';
 import { type CopyRecord } from '@endo/pass-style';
 import { M } from '@endo/patterns';
+import type {
+  PortfolioAutoFeaturesEIP712,
+  PortfolioPermissionsEIP712,
+} from './evm-wallet/eip712-messages.ts';
 
 /**
  * Portfolio permissions granted to an automation agent.
@@ -11,23 +15,54 @@ export type PortfolioPermissions = {
    * portfolio's `targetAllocation`, but may not add or remove keys.
    */
   allocation?: boolean;
-  [permission: string]: unknown;
-} & CopyRecord;
+  /** whether the agent may trigger a rebalance using the current policy. */
+  rebalance?: boolean;
+};
 
 /**
- * Version 1 wire shape for EIP-712 grant permissions.
- *
- * The current signed payload supports only the `allocation` permission.
+ * Extensible app-level type for portfolio permissions.
  */
-export const PortfolioPermissionsV1Shape: TypedPattern<{
-  allocation: boolean;
-}> = M.splitRecord({ allocation: M.boolean() }, {}, {});
+export type PortfolioPermissionsExt = PortfolioPermissions & CopyRecord<any>;
+
+/**
+ * The currently implemented permissions. Granted permissions must match this shape.
+ *
+ * The empty bag `{}` is valid and represents no delegated authority. End-user
+ * grant paths may still require specific permissions before creating a grant.
+ */
+export const PortfolioPermissionsShape: TypedPattern<PortfolioPermissions> =
+  M.splitRecord({}, { allocation: M.boolean(), rebalance: M.boolean() }, {});
+
+export const PortfolioPermissionsEIP712Shape: TypedPattern<PortfolioPermissionsEIP712> =
+  M.splitRecord({ allocation: M.boolean() });
 
 /**
  * Extensible app-level shape for portfolio permissions.
  *
- * Future versions may add more boolean permission keys while preserving the
- * broad `PortfolioPermissions` type throughout the rest of the system.
+ * Future versions may add more permission keys while preserving the
+ * broad `PortfolioPermissionsExt` type throughout the rest of the system.
  */
-export const PortfolioPermissionsExtShape: TypedPattern<PortfolioPermissions> =
+export const PortfolioPermissionsExtShape: TypedPattern<PortfolioPermissionsExt> =
+  M.recordOf(M.string(), M.any());
+
+/** A set of auto-features that can be enabled for a portfolio. */
+export type PortfolioAutoFeatures = {
+  rebalance?: boolean;
+};
+
+/**
+ * Shape enforcing the current known auto-features accepted by the system.
+ * Changes to this shape should be backward compatible.
+ */
+export const PortfolioAutoFeaturesShape: TypedPattern<PortfolioAutoFeatures> =
+  M.splitRecord({}, { rebalance: M.boolean() }, {});
+
+export const PortfolioAutoFeaturesEIP712Shape: TypedPattern<PortfolioAutoFeaturesEIP712> =
+  M.splitRecord({ rebalance: M.boolean() });
+
+/** Extensible type compatible with future auto-features definitions */
+export type PortfolioAutoFeaturesExt = PortfolioAutoFeatures & CopyRecord<any>;
+
+/** Shape for storing auto-features in a forward compatible way. */
+export const PortfolioAutoFeaturesExtShape: TypedPattern<PortfolioAutoFeaturesExt> =
   M.recordOf(M.string(), M.any());

@@ -3,6 +3,12 @@ import path from 'node:path';
 import ts from 'typescript';
 
 /**
+ * The type-checker binary (run via `yarn run -T`). Single source of truth:
+ * flip this one value back to `'tsc'` when TS 7 ships.
+ */
+export const TYPECHECK_BIN = 'tsgo';
+
+/**
  * Flags where `true` increases type strictness.
  */
 export const STRICTNESS_FLAGS = [
@@ -75,10 +81,10 @@ export const getOffFlags = options =>
  * @param {string} configPath
  * @param {string} flagName
  */
-export const tscArgsForFlag = (configPath, flagName) => [
+export const typecheckArgsForFlag = (configPath, flagName) => [
   'run',
   '-T',
-  'tsc',
+  TYPECHECK_BIN,
   '-p',
   configPath,
   '--pretty',

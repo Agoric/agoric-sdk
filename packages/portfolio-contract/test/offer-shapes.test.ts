@@ -2,18 +2,18 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import type { PortfolioAgentStatus } from '@agoric/portfolio-api';
 import {
-  PortfolioPermissionsExtShape,
-  PortfolioPermissionsV1Shape,
+  type PortfolioAgentStatus,
   type PortfolioPermissions,
-} from '@agoric/portfolio-api/src/portfolio-permissions.js';
+  type PortfolioPermissionsExt,
+  PortfolioPermissionsExtShape,
+  PortfolioPermissionsShape,
+} from '@agoric/portfolio-api';
 import {
   TxStatus,
   TxType,
   type PublishedTx,
 } from '@agoric/portfolio-api/src/resolver.js';
-import { FlowAgentShape } from '@agoric/portfolio-api/src/type-guards.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { matches, mustMatch } from '@endo/patterns';
 import { PublishedTxShape } from '../src/resolver/types.ts';
@@ -137,6 +137,30 @@ test('offerArgs can carry usdnOut', t => {
   t.notThrows(() => mustMatch(specimen, shapes.rebalance));
 });
 
+test('offerArgs can carry 1inch swap params', t => {
+  const shapes = makeOfferArgsShapes(USDC);
+  const amount = usdc(200n);
+  const specimen = harden({
+    flow: [
+      {
+        src: '@Avalanche',
+        dest: '@Avalanche',
+        amount,
+        swap: {
+          provider: '1inch',
+          tokenIn: '0x0000000000000000000000000000000000000abc',
+          amountIn: 5_000_000n,
+          flags: 0n,
+          executor: '0x2222222222222222222222222222222222222222',
+          srcReceiver: '0x3333333333333333333333333333333333333333',
+          data: '0xdeadbeef',
+        },
+      },
+    ],
+  });
+  t.notThrows(() => mustMatch(specimen, shapes.rebalance));
+});
+
 test('movementDescShape allows unknown additional properties', t => {
   const shapes = makeOfferArgsShapes(USDC);
   const { movementDescShape } = shapes;
@@ -181,14 +205,17 @@ test('PoolKeyExt shapes accept future pool keys', t => {
   t.notThrows(() => mustMatch(statusWithFutureKeys, PortfolioStatusShapeExt));
 });
 
-test('PortfolioPermissionsV1Shape', t => {
+test('PortfolioPermissionsShape', t => {
   const passCases = harden({
+    empty: {},
     allocationOnly: {
       allocation: true,
     },
+    rebalanceOnly: {
+      rebalance: true,
+    },
   } satisfies Record<string, PortfolioPermissions>);
   const failCases = harden({
-    empty: {},
     futurePermission: {
       allocation: true,
       futurePermission: false,
@@ -196,15 +223,15 @@ test('PortfolioPermissionsV1Shape', t => {
     futureObject: {
       future: { size: 1 },
     },
-  });
+  }) satisfies Record<string, PortfolioPermissionsExt>;
 
   t.log('good:', Object.keys(passCases).join(', '));
   t.log('bad:', Object.keys(failCases).join(', '));
   for (const [name, specimen] of Object.entries(passCases)) {
-    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsV1Shape), name);
+    t.notThrows(() => mustMatch(specimen, PortfolioPermissionsShape), name);
   }
   for (const [name, specimen] of Object.entries(failCases)) {
-    t.false(matches(specimen, PortfolioPermissionsV1Shape), name);
+    t.false(matches(specimen, PortfolioPermissionsShape), name);
   }
 });
 
@@ -218,7 +245,7 @@ test('PortfolioPermissionsExtShape', t => {
     futureObject: {
       future: { size: 1 },
     },
-  } satisfies Record<string, PortfolioPermissions>);
+  }) satisfies Record<string, PortfolioPermissionsExt>;
   const failCases = harden({});
 
   t.log('good:', Object.keys(passCases).join(', '));
@@ -249,21 +276,6 @@ test('PortfolioAgentStatusShape allows upgraded permission bags', t => {
   for (const [name, specimen] of Object.entries(failCases)) {
     t.false(matches(specimen, PortfolioAgentStatusShape), name);
   }
-});
-
-test('flow agent shape allows future attribution fields', t => {
-  t.notThrows(
-    () =>
-      mustMatch(
-        harden({
-          id: 'agent2',
-          grantee: 'agoric1future',
-          scope: 'setTargetAllocation',
-        }),
-        FlowAgentShape,
-      ),
-    'flow agent shape should allow additional attribution fields',
-  );
 });
 
 test('portfolio agent status shape allows future top-level fields', t => {
@@ -328,6 +340,11 @@ test('vstorage flow type matches shape', t => {
       where: '@Arbitrum',
       type: 'deposit',
       amount,
+    },
+    rebalanceWithAgent: {
+      state: 'done',
+      type: 'rebalance',
+      agent: 'agent1',
     },
   });
 
@@ -455,6 +472,10 @@ test('vstorage flow detail type matches shape', t => {
       type: 'withdraw',
       amount: usdc(1n),
       toChain: 'noble',
+    },
+    rebalanceWithAgent: {
+      type: 'rebalance',
+      agent: 'agent1',
     },
   });
 

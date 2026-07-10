@@ -17,7 +17,7 @@ const require = createRequire(import.meta.url);
 
 /**
  * @type {TestFn<{
- *   addressHooks: import('../src/address-hooks.js');
+ *   addressHooks: typeof import('../src/address-hooks.js');
  * }>}
  */
 const test = rawTest;
@@ -53,7 +53,7 @@ test.before(async t => {
 /**
  * @type {Macro<
  *  [addressHook: string, baseAddress: string, hookDataStr: string, error?: any],
- *   { addressHooks: import('../src/address-hooks.js') }
+ *   { addressHooks: typeof import('../src/address-hooks.js') }
  * >}
  */
 const splitMacro = test.macro({
@@ -109,7 +109,7 @@ test(
 /**
  * @type {Macro<
  *   [string, ArrayLike<number> | undefined, ArrayLike<number>, string],
- *   { addressHooks: import('../src/address-hooks.js') }
+ *   { addressHooks: typeof import('../src/address-hooks.js') }
  * >}
  */
 const roundtripMacro = test.macro({

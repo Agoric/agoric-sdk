@@ -92,8 +92,8 @@ function isMatch(specimen, pattern) {
  *   spawnXSnap: (opts: object) => XSnap,
  *   bundleSource: BundleSource,
  *   resolve: ResolveFn,
- *   dirname: typeof dirname,
- *   basename: typeof basename,
+ *   dirname: typeof import('path').dirname,
+ *   basename: typeof import('path').basename,
  * }} io
  * @returns {Promise<TestResults>}
  *
@@ -304,9 +304,9 @@ async function avaConfig(args, options, { glob, readFile }) {
  *   spawn: typeof import('child_process')['spawn'],
  *   osType: typeof import('os')['type'],
  *   readFile: typeof import('fs')['promises']['readFile'],
- *   resolve: typeof resolve,
- *   dirname: typeof dirname,
- *   basename: typeof basename,
+ *   resolve: typeof import('path').resolve,
+ *   dirname: typeof import('path').dirname,
+ *   basename: typeof import('path').basename,
  *   glob: (pattern: string) => Promise<string[]>,
  * }} io
  */
@@ -404,7 +404,7 @@ export async function main(
  *
  * @param {typeof import('path')} path
  * @returns {ResolveFn}
- * @typedef {typeof resolve } ResolveFn
+ * @typedef {typeof import('path').resolve } ResolveFn
  */
 export function makeBundleResolve(path) {
   const bundleRoots = [

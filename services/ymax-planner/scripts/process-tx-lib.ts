@@ -113,10 +113,13 @@ export const processTx = async (
   const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
   const evmHeights = await deeplyFulfilledObject(
     objectMap(evmCtx.evmProviders, (provider, chainId) =>
-      provider.getBlockNumber().catch(err => {
-        failedEvmChains.push(chainId);
-        return { error: err.message };
-      }),
+      provider
+        .getProvider()
+        .getBlockNumber()
+        .catch(err => {
+          failedEvmChains.push(chainId);
+          return { error: err.message };
+        }),
     ),
   );
   if (isVerbose) {

@@ -15,6 +15,13 @@ import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.j
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 
 import { type AccountId, type Orchestrator } from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
+import {
+  decodeFunctionData,
+  getAbiItem,
+  getAddress,
+  toFunctionSelector,
+} from 'viem';
 import {
   type AxelarChain,
   type FlowDetail,
@@ -32,6 +39,8 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { hexToBytes } from '@noble/hashes/utils';
 import type { Address } from 'abitype';
 import type { Assertions } from 'ava';
+import { erc20ABI } from '../src/interfaces/erc20.ts';
+import { oneInchRouterABI } from '../src/interfaces/one-inch.ts';
 import {
   provideEVMAccount,
   provideEVMAccountWithPermit,
@@ -72,6 +81,7 @@ import { makePortfolioSteps } from '../tools/plan-transfers.ts';
 import {
   decodeCreateAndDepositPayload,
   decodeFunctionCall,
+  decodeMultiCalls,
 } from './abi-utils.ts';
 import {
   BLD,
@@ -2338,6 +2348,230 @@ test('withdraw from Beefy position', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
+test('swap reward token to USDC via 1inch', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeAcct = AmountMath.make(BLD, 50n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, storage, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
+  const { log } = offer;
+
+  const kit = await ctx.makePortfolioKit();
+
+  // Phase 1: provision the Avalanche remote account so we know the address the
+  // swap proceeds must return to (`dstReceiver`).
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      {
+        flow: [
+          { src: '<Deposit>', dest: '@agoric', amount },
+          { src: '@agoric', dest: '@noble', amount },
+          { src: '@noble', dest: '@Avalanche', amount, fee: feeAcct },
+        ],
+      },
+      kit,
+    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+
+  const { getPortfolioStatus } = makeStorageTools(storage);
+  const { accountIdByChain } = await getPortfolioStatus(1);
+  const avalancheAccountId = accountIdByChain.Avalanche;
+  assert(avalancheAccountId, 'Avalanche remote account provisioned');
+  const receiver = parseAccountId(avalancheAccountId).accountAddress;
+
+  // Phase 2: the planner supplies decomposed 1inch swap params; the contract
+  // reconstructs the swap() calldata, pinning dstToken=USDC and dstReceiver to
+  // our own account. Run the swap step and check the reconstructed call.
+  const tokenIn = '0x0000000000000000000000000000000000000abc' as const;
+  const amountIn = 5_000_000n;
+  const { oneInchRouter, usdc } = contractsMock.Avalanche;
+  const swapParams = {
+    provider: '1inch',
+    tokenIn,
+    amountIn,
+    flags: 0n,
+    executor: '0x2222222222222222222222222222222222222222', // opaque to us
+    srcReceiver: '0x3333333333333333333333333333333333333333', // opaque to us
+    data: '0xdeadbeef', // opaque executor calldata
+  } as const;
+  // The router's min USDC out is the movement amount, not part of the swap desc.
+  const minReturnAmount = amount.value;
+  // The contract must reconstruct this, filling dstToken/dstReceiver itself.
+  // viem returns checksummed addresses from decodeFunctionData.
+  const expectedSwap = {
+    functionName: 'swap',
+    args: [
+      getAddress(swapParams.executor),
+      {
+        srcToken: getAddress(tokenIn),
+        dstToken: getAddress(usdc),
+        srcReceiver: getAddress(swapParams.srcReceiver),
+        dstReceiver: getAddress(receiver as `0x${string}`),
+        amount: amountIn,
+        minReturnAmount,
+        flags: swapParams.flags,
+      },
+      swapParams.data,
+    ],
+  };
+
+  const seat2 = makeMockSeat({ Deposit: amount }, undefined, log);
+  const swapP = rebalance(
+    orch,
+    ctx,
+    seat2,
+    {
+      flow: [
+        {
+          src: '@Avalanche',
+          dest: '@Avalanche',
+          amount,
+          fee: feeCall,
+          swap: swapParams,
+        },
+      ],
+    },
+    kit,
+    undefined,
+    {
+      ...DEFAULT_FLOW_CONFIG,
+      features: {
+        ...DEFAULT_FLOW_CONFIG?.features,
+        experimentalSwap: true,
+      },
+    },
+  );
+  await Promise.all([swapP, txResolver.settleUntil(swapP)]);
+
+  t.log(log.map(msg => msg._method).join(', '));
+
+  const router = oneInchRouter!.toLowerCase();
+
+  // Find the GMP transfer whose multicall is the approve -> 1inch swap.
+  const swapMemo = log
+    .filter((e: any) => e._method === 'transfer' && e.opts?.memo)
+    .map((e: any) => {
+      try {
+        return decodeMultiCalls(e.opts.memo);
+      } catch {
+        return undefined;
+      }
+    })
+    .find(
+      decoded =>
+        decoded?.calls.length === 3 &&
+        decoded.calls[1].target.toLowerCase() === router,
+    );
+  t.truthy(swapMemo, 'found 1inch swap multicall');
+  assert(swapMemo);
+
+  const [approveIn, swapCall, approveReset] = swapMemo.calls;
+  // approve(router, amountIn) on the reward token, the verbatim 1inch router
+  // call, then approve(router, 0) to clear any residual allowance.
+  const decodeApprove = (data: `0x${string}`) => {
+    const decoded = decodeFunctionData({ abi: erc20ABI, data });
+    assert(decoded.functionName === 'approve');
+    const [spender, value] = decoded.args;
+    return {
+      functionName: decoded.functionName,
+      spender: spender.toLowerCase(),
+      value,
+    };
+  };
+
+  t.is(approveIn.target.toLowerCase(), tokenIn);
+  t.deepEqual(decodeApprove(approveIn.data), {
+    functionName: 'approve',
+    spender: router,
+    value: amountIn,
+  });
+
+  const decodeSwap = (data: `0x${string}`) =>
+    decodeFunctionData({ abi: oneInchRouterABI, data });
+  const swapSelector = toFunctionSelector(
+    getAbiItem({ abi: oneInchRouterABI, name: 'swap' }),
+  );
+
+  t.is(swapCall.target.toLowerCase(), router);
+  t.is(swapCall.data.slice(0, 10), swapSelector, 'swap() selector from ABI');
+  t.deepEqual(
+    decodeSwap(swapCall.data),
+    expectedSwap,
+    'contract reconstructed the swap() args with pinned dstToken/dstReceiver',
+  );
+
+  t.is(approveReset.target.toLowerCase(), tokenIn);
+  t.deepEqual(decodeApprove(approveReset.data), {
+    functionName: 'approve',
+    spender: router,
+    value: 0n,
+  });
+
+  await documentStorageSchema(t, storage, docOpts);
+});
+
+test('swap fails when experimentalSwap feature is disabled', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, ctx, offer } = mocks({}, { Deposit: amount });
+  const { log } = offer;
+
+  const kit = await ctx.makePortfolioKit();
+
+  const swapParams = {
+    provider: '1inch',
+    tokenIn: '0x0000000000000000000000000000000000000abc',
+    amountIn: 5_000_000n,
+    flags: 0n,
+    executor: '0x2222222222222222222222222222222222222222',
+    srcReceiver: '0x3333333333333333333333333333333333333333',
+    data: '0xdeadbeef',
+  } as const;
+
+  const seat = makeMockSeat({ Deposit: amount }, undefined, log);
+  // DEFAULT_FLOW_CONFIG has no `experimentalSwap` feature flag set, so the
+  // swap step must be rejected before any GMP calls are made.
+  await rebalance(
+    orch,
+    ctx,
+    seat,
+    {
+      flow: [
+        {
+          src: '@Avalanche',
+          dest: '@Avalanche',
+          amount,
+          fee: feeCall,
+          swap: swapParams,
+        },
+      ],
+    },
+    kit,
+    undefined,
+    DEFAULT_FLOW_CONFIG,
+  );
+
+  t.falsy(
+    log.some((e: any) => e._method === 'transfer'),
+    'no GMP transfer should be attempted',
+  );
+
+  const failCall = log.find((e: any) => e._method === 'fail');
+  t.truthy(
+    failCall,
+    'seat.fail() should be called when experimentalSwap is disabled',
+  );
+  t.regex(`${failCall?.reason}`, /swap not supported/);
+});
+
 // EVM wallet integration flow
 test('openPortfolio from EVM with Permit2 completes a deposit flow', async t => {
   // Use a mixed-case spender to ensure case-insensitive address checks.
@@ -2506,6 +2740,37 @@ test('wayFromSrcToDest rejects @agoric -> -Arbitrum (invalid src for withdraw)',
   t.throws(
     () => wayFromSrcToDest({ src: '@agoric', dest: '-Arbitrum', amount }),
     { message: /src for withdraw to "Arbitrum" must be same chain or noble/ },
+  );
+});
+
+// #endregion
+
+// #region wayFromSrcToDest swap tests
+
+test('wayFromSrcToDest handles @Avalanche -> @Avalanche (reward swap)', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  const actual = wayFromSrcToDest({
+    src: '@Avalanche',
+    dest: '@Avalanche',
+    amount,
+    swap: {
+      provider: '1inch',
+      tokenIn: '0x0000000000000000000000000000000000000abc',
+      amountIn: 5_000_000n,
+      flags: 0n,
+      executor: '0x2222222222222222222222222222222222222222',
+      srcReceiver: '0x3333333333333333333333333333333333333333',
+      data: '0xdeadbeef',
+    },
+  });
+  t.deepEqual(actual, { how: 'swap', chain: 'Avalanche' });
+});
+
+test('wayFromSrcToDest rejects @Avalanche -> @Avalanche without swap params', t => {
+  const amount = AmountMath.make(USDC, 2_000_000n);
+  t.throws(
+    () => wayFromSrcToDest({ src: '@Avalanche', dest: '@Avalanche', amount }),
+    { message: /must be noble/ },
   );
 });
 

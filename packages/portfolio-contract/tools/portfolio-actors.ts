@@ -35,12 +35,16 @@ import {
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 import type {
+  PortfolioAutoFeatures,
   PortfolioPublicInvitationMaker,
   PortfolioContinuingInvitationMaker,
   AxelarChain,
   PortfolioPermissions,
 } from '@agoric/portfolio-api';
-import { PortfolioPermissionsV1Shape } from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import {
+  PortfolioAutoFeaturesEIP712Shape,
+  PortfolioPermissionsEIP712Shape,
+} from '@agoric/portfolio-api/src/portfolio-permissions.js';
 import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
@@ -404,9 +408,18 @@ export const makeEvmTrader = ({
         async openPortfolio(
           allocations: TargetAllocation[],
           depositAmount: bigint,
+          features?: Required<PortfolioAutoFeatures>,
         ) {
           assert(contractRepresentative, 'missing contract representative');
-          const witness = getYmaxWitness('OpenPortfolio', { allocations });
+          const witness = features
+            ? (getYmaxWitness('OpenPortfolioWithAutoFeatures', {
+                allocations,
+                features,
+              }) as unknown as ReturnType<
+                // getPermitWitnessTransferFromData is not a fan of witness union types
+                typeof getYmaxWitness<'OpenPortfolio'>
+              >)
+            : getYmaxWitness('OpenPortfolio', { allocations });
           const deadline = await getDeadline();
           const permitMessage = getPermitWitnessTransferFromData(
             {
@@ -519,7 +532,7 @@ export const makeEvmTrader = ({
          *
          * Although the caller-facing type is {@link PortfolioPermissions},
          * the current standalone EIP-712 `Grant` payload uses
-         * {@link PortfolioPermissionsV1Shape}. This helper validates that
+         * {@link PortfolioPermissionsEIP712Shape}. This helper validates that
          * the requested permission bag fits the current wire shape before
          * signing, so unsupported permissions fail client-side.
          */
@@ -528,7 +541,7 @@ export const makeEvmTrader = ({
           permissions: PortfolioPermissions,
         ) {
           const deadline = await getDeadline();
-          mustMatch(permissions, PortfolioPermissionsV1Shape);
+          mustMatch(permissions, PortfolioPermissionsEIP712Shape);
           const message = getYmaxStandaloneOperationData(
             {
               accountHolder: granteeAddress,
@@ -540,6 +553,31 @@ export const makeEvmTrader = ({
             'Grant',
             chainId,
             standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+        /**
+         * Submit a signed SetAutoFeatures op and return the resulting wallet
+         * status entry for this trader's portfolio.
+         */
+        async setAutoFeatures(features: PortfolioAutoFeatures) {
+          const deadline = await getDeadline();
+          const hardenedFeatures = harden({ ...features });
+          mustMatch(hardenedFeatures, PortfolioAutoFeaturesEIP712Shape);
+          const message = harden(
+            getYmaxStandaloneOperationData(
+              {
+                features: hardenedFeatures,
+                portfolio: BigInt(self.getPortfolioId()),
+                nonce: (nonce += 1n),
+                deadline,
+              },
+              'SetAutoFeatures',
+              chainId,
+              standaloneVerifyingContract,
+            ),
           );
           const expectedNonce = nonce;
           await submitMessage(message);

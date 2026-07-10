@@ -16,11 +16,24 @@ import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contract
 
 /**
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {EconomyBootstrapPowers} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js';
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {Installation} from '@agoric/zoe';
  * @import {ERef} from '@agoric/vow';
+ */
+
+/**
+ * Bootstrap powers needed to start a governed contract in tests: the generic
+ * chain powers plus the electorate creator facet (formerly supplied by Inter
+ * Protocol's economicCommittee).
+ *
+ * @typedef {BootstrapPowers & {
+ *   consume: {
+ *     economicCommitteeCreatorFacet: Promise<CommitteeElectorateCreatorFacet>;
+ *   };
+ * }} GovernedContractDeployPowers
  */
 
 const trace = makeTracer('startGovernedInstance', true);
@@ -28,7 +41,7 @@ const trace = makeTracer('startGovernedInstance', true);
 /**
  * Start a new governed contract instance.
  *
- * @param {EconomyBootstrapPowers} powers
+ * @param {GovernedContractDeployPowers} powers
  * @param {object} config
  * @param {object} config.options
  * @param {Installation} [config.options.contractInstallation]

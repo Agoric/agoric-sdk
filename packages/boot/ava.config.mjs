@@ -7,42 +7,61 @@
 // TODO break up the slowest test files so that the default sharding is more
 // balanced and we don't have to rely on this custom sorting.
 
-// Keep this list complete for boot test files.
-// Unlisted tests still run, but they fall back to path sorting after all listed
-// tests, which can silently skew CI shard balance and snapshot locality.
+// Keep this list COMPLETE for boot test files. AVA slices the sorted list into
+// CI_NODE_TOTAL contiguous chunks BY COUNT via chunkd(files, index, total) — it
+// does NOT read these comments — so an unlisted file falls to the path-sorted
+// end and silently shifts every shard boundary.
 //
-// The fixed order is chosen so AVA's contiguous shard slicing keeps each
-// runutils snapshot family in as few shards as practical. That reduces duplicate
-// cold snapshot regeneration in CI. Balance still matters, but only after
-// snapshot-family fanout.
+// Because the cut is by count, the blank-line groups below MUST match chunkd's
+// chunk sizes for the current file count, or the cuts land mid-group and undo
+// the balancing. For the current 26 files at total=4 the sizes are [7, 7, 6, 6]
+// (e.g. 24 -> [6,6,6,6], 28 -> [7,7,7,7]). Re-check sizes AND per-shard CI
+// timings whenever the file set changes.
+//
+// The order targets, in priority:
+//   1. Balance per-shard wall-clock. The orchestration suite (IBC-heavy) is the
+//      dominant cost; its files are split across shards 0/1 so no single shard
+//      carries the whole family. vstorage-chain-info is split into config +
+//      revise (independent boots) so they run on separate cores within shard 1.
+//   2. Keep each runutils snapshot family within one shard. All families
+//      (demo-base, main-vaults-base, itest-vaults-base, orchestration-base) are
+//      cached and restored in every shard, so a family spanning two shards only
+//      costs duplicate *cold* regeneration on cache-miss runs. main-vaults-base
+//      (upgradeAPI, terminate-governed, wallet-fun, provisionPool-governance) is
+//      kept together in shard 2.
 const bootTestOrder = [
-  'test/bootstrapTests/ec-membership-update.test.ts',
+  // shard 0 (7): orchestration-base (heavy half) + light unit/tool tests
+  'test/orchestration/orchestration.test.ts',
+  'test/orchestration/contract-upgrade.test.ts',
+  'test/orchestration/lca.test.ts',
+  'test/configs.test.js',
+  'test/tools/ibc/mocks.test.ts',
+  'test/tools/proposal-extractor-cache.test.ts',
+  'test/tools/boot-test-context.test.ts',
+
+  // shard 1 (7): orchestration-base (remaining) + orchestration-chains + light
+  'test/orchestration/restart-contracts.test.ts',
+  'test/orchestration/axelar-gmp.test.ts',
+  'test/bootstrapTests/vow-offer-results.test.ts',
+  'test/orchestration/vstorage-chain-info.test.ts',
+  'test/orchestration/revise-chain-info.test.ts',
+  'test/tools/runutils-snapshots.test.ts',
+  'test/tools/controller-fixture.test.ts',
+
+  // shard 2 (6): main-vaults-base + upgrading + snapshot tool
   'test/bootstrapTests/upgradeAPI.test.ts',
   'test/bootstrapTests/terminate-governed.test.ts',
   'test/bootstrapTests/wallet-fun.test.ts',
-  'test/bootstrapTests/updateUpgradedVaultParams.test.ts',
-  'test/bootstrapTests/walletSurvivesZoeRestart.test.ts',
+  'test/bootstrapTests/provisionPool-governance.test.ts',
+  'test/tools/create-runutils-snapshot.test.ts',
+  'test/upgrading/upgrade-vats.test.ts',
 
-  'test/orchestration/orchestration.test.ts',
-  'test/orchestration/restart-contracts.test.ts',
-  'test/orchestration/axelar-gmp.test.ts',
-  'test/orchestration/contract-upgrade.test.ts',
-  'test/orchestration/lca.test.ts',
-  'test/bootstrapTests/vow-offer-results.test.ts',
-  'test/tools/runutils-snapshots.test.ts',
-
+  // shard 3 (6): itest-vaults-base + demo-base + upgrading
   'test/bootstrapTests/vats-restart.test.ts',
   'test/bootstrapTests/net-ibc-upgrade.test.ts',
+  'test/bootstrapTests/boot-snapshot.test.ts',
   'test/bootstrapTests/demo-config.test.ts',
   'test/bootstrapTests/vtransfer.test.ts',
-  'test/orchestration/vstorage-chain-info.test.ts',
-  'test/bootstrapTests/boot-snapshot.test.ts',
-
-  'test/configs.test.js',
-  'test/tools/create-runutils-snapshot.test.ts',
-  'test/tools/proposal-extractor-cache.test.ts',
-  'test/tools/ibc/mocks.test.ts',
-  'test/upgrading/upgrade-vats.test.ts',
   'test/upgrading/upgrade-contracts.test.js',
 ];
 
@@ -72,13 +91,9 @@ const byExplicitBootOrder = (a, b) => {
 };
 
 export default {
-  extensions: {
-    js: true,
-    ts: 'module',
-  },
+  extensions: ['js', 'ts'],
   files: ['test/**/*.test.*'],
-  nodeArguments: ['--loader=ts-blank-space/register', '--no-warnings'],
-  require: ['@endo/init/debug.js'],
+  nodeArguments: ['--import=ts-blank-space/register', '--no-warnings'],
   timeout: '20m',
   sortTestFiles: byExplicitBootOrder,
   workerThreads: false,

@@ -47,7 +47,7 @@ export const makeFakeBankBridge = (
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   return zone.exo('Fake Bank Bridge Manager', undefined, {
-    getBridgeId: () => 'bank',
+    getBridgeId: () => /** @type {const} */ ('bank'),
     toBridge: async obj => {
       onToBridge(obj);
       const { method, type, ...params } = obj;
@@ -138,7 +138,7 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   return zone.exo('Fake IBC Bridge Manager', undefined, {
-    getBridgeId: () => 'dibc',
+    getBridgeId: () => /** @type {const} */ ('dibc'),
     toBridge: async obj => {
       onToBridge(obj);
       const { method, type, ...params } = obj;
@@ -193,7 +193,7 @@ export const SIMULATED_ERRORS = /** @type {const} */ ({
  *
  * Returns an empty object per message unless specified.
  *
- * @param {object} message
+ * @param {Record<string, any>} message
  * @param {number} sequence
  * @returns {unknown}
  * @throws {Error} to simulate failures in certain cases
@@ -264,7 +264,7 @@ export const LOCALCHAIN_QUERY_DENOM_HASH_DEFAULT_VALUE = 'fakeDenomHash';
  *
  * Returns an empty object per query message unless specified.
  *
- * @param {object} message
+ * @param {Record<string, any>} message
  * @returns {unknown}
  */
 export const fakeLocalChainBridgeQueryHandler = message => {
@@ -347,7 +347,7 @@ export const makeFakeLocalchainBridge = (
   let accountsCreated = 0;
 
   return zone.exo('Fake Localchain Bridge Manager', undefined, {
-    getBridgeId: () => 'vlocalchain',
+    getBridgeId: () => /** @type {const} */ ('vlocalchain'),
     toBridge: async obj => {
       const { method, type, ...params } = obj;
       trace('toBridge', type, method, params);
@@ -422,7 +422,7 @@ export const makeFakeTransferBridge = (zone, onToBridge = () => {}) => {
   let hndlr;
   const registered = zone.setStore('registered');
   return zone.exo('Fake Transfer Bridge Manager', undefined, {
-    getBridgeId: () => 'vtransfer',
+    getBridgeId: () => /** @type {const} */ ('vtransfer'),
     toBridge: async obj => {
       onToBridge(obj);
       const { type, ...params } = obj;

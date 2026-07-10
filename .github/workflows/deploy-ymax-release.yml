@@ -29,6 +29,19 @@ on:
         description: Optional JSON string to use as privateArgsOverrides
         required: false
         type: string
+      signingKey:
+        description: Key path used for upgrade signing
+        required: true
+        type: choice
+        default: ci-secret
+        options:
+          - ci-secret
+          - detached-control
+          - detached-grantee
+      authzGrantee:
+        description: Grantee address for detached-grantee signing
+        required: false
+        type: string
       ymax1Planner:
         description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades). Operator is responsible for actually stopping the planner.'
         required: false
@@ -51,13 +64,17 @@ jobs:
     outputs:
       need_bundle_build: ${{ steps.plan.outputs.need_bundle_build }}
       need_pre_upgrade: ${{ steps.plan.outputs.need_pre_upgrade }}
-      need_upgrade: ${{ steps.plan.outputs.need_upgrade }}
+      need_upgrade_submit: ${{ steps.plan.outputs.need_upgrade_submit }}
+      need_upgrade_confirm: ${{ steps.plan.outputs.need_upgrade_confirm }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          # Corepack is not enabled yet, so setup-node must not try to detect
+          # the yarn cache.
+          package-manager-cache: false
 
       - name: Plan deploy work
         id: plan
@@ -80,20 +97,24 @@ jobs:
 
   pre-upgrade:
     needs: [plan, build-bundle]
+    # Opt out of GitHub's implicit success() so a skipped build-bundle job
+    # does not skip pre-upgrade for non-devnet targets.
     if: |
+      always() &&
+      needs.plan.result == 'success' &&
       needs.plan.outputs.need_pre_upgrade == 'true' &&
       (inputs.target != 'ymax0-devnet' || contains(fromJSON('["success","skipped"]'), needs.build-bundle.result))
     runs-on: ubuntu-latest
     environment:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
       - name: Download bundle artifact
         if: inputs.target == 'ymax0-devnet' && needs.plan.outputs.need_bundle_build == 'true'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: ${{ needs.build-bundle.outputs.artifact-name }}
           path: packages/portfolio-deploy/dist
@@ -113,18 +134,20 @@ jobs:
             --tag "$RELEASE_TAG" \
             --branch "$BRANCH"
 
-  upgrade:
+  upgrade-submit:
     needs: [plan, pre-upgrade]
     if: |
       always() &&
       needs.plan.result == 'success' &&
-      needs.plan.outputs.need_upgrade == 'true' &&
+      needs.plan.outputs.need_upgrade_submit == 'true' &&
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
     runs-on: ubuntu-latest
+    outputs:
+      upgrade_submitted: ${{ steps.upgrade.outputs.upgrade_submitted }}
     environment:
       name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: ./.github/actions/setup-agoric-sdk-build
 
@@ -134,16 +157,114 @@ jobs:
           echo 'ymax1Planner must be down for ymax1-main' >&2
           exit 1
 
-      - name: Run upgrade phase
+      - name: Validate signing inputs
+        env:
+          AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
+          SIGNING_KEY: ${{ inputs.signingKey }}
+        run: |
+          case "$SIGNING_KEY" in
+            ci-secret|detached-control)
+              if [ -n "$AUTHZ_GRANTEE" ]; then
+                echo "authzGrantee is only valid with signingKey=detached-grantee" >&2
+                exit 1
+              fi
+              ;;
+            detached-grantee)
+              if [ -z "$AUTHZ_GRANTEE" ]; then
+                echo "authzGrantee is required with signingKey=detached-grantee" >&2
+                exit 1
+              fi
+              ;;
+            *)
+              echo "unsupported signingKey: $SIGNING_KEY" >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Run upgrade submit phase
+        id: upgrade
+        env:
+          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
+          GITHUB_TOKEN: ${{ github.token }}
+          MNEMONIC: ${{ inputs.signingKey == 'ci-secret' && secrets.YMAX_CONTROL_MNEMONIC || '' }}
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          SIGNING_KEY: ${{ inputs.signingKey }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+
+          upgrade_submitted=false
+          case "$SIGNING_KEY" in
+            ci-secret)
+              packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+                phase-upgrade-submit \
+                --target "$TARGET" \
+                --tag "$RELEASE_TAG"
+              upgrade_submitted=true
+              ;;
+            detached-control|detached-grantee)
+              export GRANTEE_ADDRESS="$AUTHZ_GRANTEE"
+              generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+                phase-upgrade-generate \
+                --target "$TARGET" \
+                --tag "$RELEASE_TAG")"
+              printf '%s\n' "$generate_output"
+
+              if [ "$SIGNING_KEY" = 'detached-grantee' ]; then
+                signed_asset="${TARGET}-authz-signed-tx.json"
+              else
+                signed_asset="${TARGET}-signed-tx.json"
+              fi
+
+              if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$signed_asset"; then
+                packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+                  phase-upgrade-submit \
+                  --target "$TARGET" \
+                  --tag "$RELEASE_TAG"
+                upgrade_submitted=true
+              else
+                echo "Detached signing pending: generated or validated unsigned tx; upload $signed_asset to the release and rerun this workflow."
+                jq -r '.detail.agdSignCommand' <<<"$generate_output"
+              fi
+              ;;
+          esac
+
+          echo "upgrade_submitted=$upgrade_submitted" >> "$GITHUB_OUTPUT"
+
+  upgrade-confirm:
+    needs: [plan, pre-upgrade, upgrade-submit]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.need_upgrade_confirm == 'true' &&
+      (needs.plan.outputs.need_upgrade_submit != 'true' || needs.upgrade-submit.outputs.upgrade_submitted == 'true') &&
+      contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
+      contains(fromJSON('["success","skipped","failure"]'), needs.upgrade-submit.result)
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/setup-agoric-sdk-build
+
+      - name: Require ymax1 planner down
+        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        run: |
+          echo 'ymax1Planner must be down for ymax1-main' >&2
+          exit 1
+
+      - name: Run upgrade confirm phase
         env:
           AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
           GITHUB_TOKEN: ${{ github.token }}
-          MNEMONIC: ${{ secrets.YMAX_CONTROL_MNEMONIC }}
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
         run: |
           packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-            phase-upgrade \
+            phase-upgrade-confirm \
             --target "$TARGET" \
             --tag "$RELEASE_TAG"

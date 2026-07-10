@@ -13,8 +13,22 @@ import {
  */
 
 /**
+ * A minimal view of the backing collection keyed in terms of the public key
+ * type `K`. The scalar weak set only ever stores object (remotable) keys, so it
+ * backs onto a `WeakSet` keyed by `K & object`; the non-weak scalar set store
+ * reuses these methods over a `Set<K>`. The bivariant `any` key lets both
+ * satisfy this view while the methods operate on `K` internally.
+ *
+ * @typedef {{
+ *   has(key: any): boolean,
+ *   add(key: any): unknown,
+ *   delete(key: any): boolean,
+ * }} WeakSetStoreBacking
+ */
+
+/**
  * @template {Key} K
- * @param {WeakSet<K & object>} jsset
+ * @param {WeakSetStoreBacking} jsset
  * @param {(k: K) => void} assertKeyOkToAdd
  * @param {(k: K) => void} [assertKeyOkToDelete]
  * @param {string} [keyName]

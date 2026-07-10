@@ -1,4 +1,3 @@
-/* eslint-env node */
 /**
  * @import {Command} from 'commander';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';

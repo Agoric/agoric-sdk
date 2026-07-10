@@ -10,6 +10,10 @@ import type { ClusterName } from '@agoric/internal';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { parseGraphqlEndpoints } from './utils.ts';
 
+export const DEFAULT_AUTO_REBALANCE_DRIFT_BPS = 100n;
+export const DEFAULT_AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC = 25_000_000n;
+export const DEFAULT_AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC = 25_000_000n;
+
 export const defaultAgoricNetworkSpecForCluster: Record<ClusterName, string> =
   harden({
     local: AgoricClientUtils.LOCAL_CONFIG_KEY,
@@ -25,9 +29,13 @@ export type RequestLimits = {
   maxBackoff: number;
 };
 
+export const FETCH_HEADERS = harden({
+  'User-Agent': 'Agoric-YMax-Planner/1.0.0',
+});
+
 export interface YmaxPlannerConfig {
   readonly clusterName: ClusterName;
-  readonly contractInstance: string;
+  readonly contractInstance: 'ymax0' | 'ymax1';
   readonly mnemonic: string;
   readonly alchemyApiKey: string;
   readonly requestLimits: Partial<RequestLimits>;
@@ -43,6 +51,12 @@ export interface YmaxPlannerConfig {
   readonly yds: {
     readonly url?: string;
     readonly apiKey?: string;
+  };
+  readonly autoRebalance: {
+    // TODO: `driftBps` should probably be of type number rather than bigint.
+    readonly driftBps: bigint;
+    readonly driftMinMoveUusdc: bigint;
+    readonly cashMinMoveUusdc: bigint;
   };
 }
 
@@ -66,20 +80,40 @@ const getMnemonicFromGCP = async (
   return payload;
 };
 
+// XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
+const positiveIntegerFromString = (
+  value: string,
+  fieldName: string,
+): number => {
+  const number = /[0-9]/.test(value)
+    ? Number(value.replace(/([0-9a-f])_([0-9a-f])(_(?=[0-9a-f]))?/gi, '$1$2'))
+    : NaN;
+  if (!Number.isInteger(number) || number <= 0) {
+    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
+  }
+  return number;
+};
+
 const parsePositiveInteger = (
   env: Record<string, string | undefined>,
   fieldName: string,
   defaultValue: number,
 ): number => {
-  const value = env[fieldName];
-  if (value === undefined) return defaultValue;
+  const value = env[fieldName]?.trim();
+  return value === undefined
+    ? defaultValue
+    : positiveIntegerFromString(value, fieldName);
+};
 
-  // XXX: Similar to @endo/cli `parseNumber`, candidate for @agoric/internal.
-  const number = /[0-9]/.test(value) ? Number(value) : NaN;
-  if (!Number.isInteger(number) || number <= 0) {
-    throw Fail`${q(fieldName)} must be a positive integer, got: ${value}`;
-  }
-  return number;
+const parsePositiveBigint = (
+  env: Record<string, string | undefined>,
+  fieldName: string,
+  defaultValue: bigint,
+): bigint => {
+  const value = env[fieldName]?.trim();
+  return value === undefined
+    ? defaultValue
+    : BigInt(positiveIntegerFromString(value, fieldName));
 };
 
 const validateRequired = (
@@ -168,6 +202,23 @@ export const loadConfig = async (
   const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
   const ydsApiKey = env.YDS_API_KEY?.trim();
   !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
+  const autoRebalance = harden({
+    driftBps: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_DRIFT_BPS',
+      DEFAULT_AUTO_REBALANCE_DRIFT_BPS,
+    ),
+    driftMinMoveUusdc: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC',
+      DEFAULT_AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC,
+    ),
+    cashMinMoveUusdc: parsePositiveBigint(
+      env,
+      'AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC',
+      DEFAULT_AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC,
+    ),
+  });
 
   const config: YmaxPlannerConfig = harden({
     clusterName,
@@ -188,6 +239,7 @@ export const loadConfig = async (
       url: ydsUrl,
       apiKey: ydsApiKey,
     },
+    autoRebalance,
   });
 
   return config;

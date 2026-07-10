@@ -319,7 +319,7 @@ const insistCompatibleShapeCapData = (
  * @param {*} assertAcceptableSyscallCapdataSize  Function to check for oversized
  *   syscall params
  * @param {LiveSlotsOptions} [liveSlotsOptions]
- * @param {{ WeakMap: typeof WeakMap, WeakSet: typeof WeakSet }} [powers]
+ * @param {{ WeakMap: typeof globalThis.WeakMap, WeakSet: typeof globalThis.WeakSet }} [powers]
  * Specifying the underlying WeakMap/WeakSet objects to wrap with
  * VirtualObjectAwareWeakMap/Set.  By default, capture the ones currently
  * defined on `globalThis` when the maker is invoked, to avoid infinite

@@ -22,8 +22,17 @@ const CosmosResponse = CodecHelper(CosmosResponseType);
 
 /**
  * @import {AnyJson, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {TxBody as TxBodyData} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {InterchainAccountPacketData} from '@agoric/cosmic-proto/ibc/applications/interchain_accounts/v1/packet.js';
  * @import {InterchainQueryPacketData} from '@agoric/cosmic-proto/icq/v1/packet.js';
+ */
+
+/**
+ * Options for the TxBody of an outgoing ICA packet. `unordered` and
+ * `timeoutTimestamp` are TxBody fields (since cosmos-sdk v0.53), encoded along
+ * with the rest.
+ *
+ * @typedef {Partial<Omit<TxBodyData, 'messages'>>} TxPacketOptions
  */
 
 /**
@@ -32,7 +41,7 @@ const CosmosResponse = CodecHelper(CosmosResponseType);
  * malformed messages in favor of interface guards.
  *
  * @param {AnyJson[]} msgs
- * @param {Partial<Omit<TxBodyType, 'messages'>>} [opts]
+ * @param {TxPacketOptions} [opts]
  * @returns {string} stringified InterchainAccountPacketData
  * @throws {Error} if malformed messages are provided
  */

@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -79,56 +77,62 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     getBundleIDByName: name => {
       return Promise.resolve().then(() => nameToBundleID.get(name));
     },
-    /** @type {(bundleCap: BundleCap, options?: Partial<DynamicVatOptions>) => Promise<CreateVatResults>} */
-    createVat: (bundleCap, { vatParameters = {} } = {}) => {
-      bundleCap === zcfBundleCap || Fail`fakeVatAdmin only knows ZCF`;
-      const testJigKit = reservedTestJigs.shift() || makePromiseKit();
-      handlePKitWarning(testJigKit);
-      const exitKit = makePromiseKit();
-      handlePKitWarning(exitKit);
-      const exitVat = completion => {
-        exitMessage = completion;
-        hasExited = true;
-        exitWithFailure = false;
-        exitKit.resolve(completion);
-      };
-      const vpow = harden({
-        ...fakeVatPowers,
-        testJigSetter: jig => {
-          testContextSetter?.(jig);
-          testJigKit.resolve(jig);
-        },
-        exitVat,
-      });
-      const vatBaggage = makeScalarBigMapStore('fake vat baggage', {
-        durable: true,
-      });
-
-      // XXX Notice that this call isn't wrapping vatParams.  We (BW, CH) tried
-      // doing this, but backed out when it got complex.
-      //
-      // const ns = await evalContractBundle(zcfBundle);
-      // const ns2 = makeRemote(
-      //   Far('wrappedRoot', {
-      //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
-      //   }),
-      // );
-      const rootP = makeRemote(
-        buildTestRootObject(vpow, vatParameters, vatBaggage),
-      );
-      return E.when(rootP, root =>
-        harden({
-          root,
-          adminNode: Far('adminNode', {
-            done: () => {
-              return exitKit.promise;
+    createVat:
+      /** @type {(bundleCap: BundleCap, options?: Partial<DynamicVatOptions>) => Promise<CreateVatResults>} */ (
+        (bundleCap, { vatParameters = {} } = {}) => {
+          bundleCap === zcfBundleCap || Fail`fakeVatAdmin only knows ZCF`;
+          const testJigKit = reservedTestJigs.shift() || makePromiseKit();
+          handlePKitWarning(testJigKit);
+          const exitKit = makePromiseKit();
+          handlePKitWarning(exitKit);
+          const exitVat = completion => {
+            exitMessage = completion;
+            hasExited = true;
+            exitWithFailure = false;
+            exitKit.resolve(completion);
+          };
+          const vpow = harden({
+            ...fakeVatPowers,
+            testJigSetter: jig => {
+              testContextSetter?.(jig);
+              testJigKit.resolve(jig);
             },
-            terminateWithFailure: () => {},
-            upgrade: (_bundleCap, _options) => Fail`upgrade not faked`,
-          }),
-        }),
-      );
-    },
+            exitVat,
+          });
+          const vatBaggage = makeScalarBigMapStore('fake vat baggage', {
+            durable: true,
+          });
+
+          // XXX Notice that this call isn't wrapping vatParams.  We (BW, CH) tried
+          // doing this, but backed out when it got complex.
+          //
+          // const ns = await evalContractBundle(zcfBundle);
+          // const ns2 = makeRemote(
+          //   Far('wrappedRoot', {
+          //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
+          //   }),
+          // );
+          const rootP = makeRemote(
+            buildTestRootObject(
+              vpow,
+              /** @type {any} */ (vatParameters),
+              vatBaggage,
+            ),
+          );
+          return E.when(rootP, root =>
+            harden({
+              root,
+              adminNode: Far('adminNode', {
+                done: () => {
+                  return exitKit.promise;
+                },
+                terminateWithFailure: () => {},
+                upgrade: (_bundleCap, _options) => Fail`upgrade not faked`,
+              }),
+            }),
+          );
+        }
+      ),
   });
   const criticalVatKey = harden({});
   const vatPowers = harden({

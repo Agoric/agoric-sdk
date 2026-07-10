@@ -65,7 +65,6 @@ const MsgSend = CodecHelper(MsgSendType);
  *   AccountIdArg, Denom, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {OfferHandler, ZCF, ZCFSeat} from '@agoric/zoe';
  * @import {IBCEvent} from '@agoric/vats';
- * @import {QueryDenomHashResponse} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Zone} from '@agoric/zone';
@@ -1046,11 +1045,13 @@ export const prepareLocalOrchestrationAccountKit = (
 
             // Find the local denom hash for the transferDenom, if there is one.
             return watch(
-              E(localchain).queryMany([
-                QueryDenomHashRequest.typedJson({
-                  trace: denomOrTrace,
-                }),
-              ]),
+              E(localchain).queryMany(
+                /** @type {any} */ ([
+                  QueryDenomHashRequest.typedJson({
+                    trace: denomOrTrace,
+                  }),
+                ]),
+              ),
               this.facets.parseInboundTransferWatcher,
               buildReturnValue(denomOrTrace),
             );

@@ -183,7 +183,8 @@ export const tryJsonParse = (jsonText, onError) => {
   const transformError =
     typeof onError === 'function'
       ? onError
-      : err => Fail([`${onError}: ${err.message} for input `, ''], jsonText);
+      : /** @param {Error} err */
+        err => Fail([`${onError}: ${err.message} for input `, ''], jsonText);
   return tryNow(() => {
     const type = typeof jsonText;
     type === 'string' || Fail`Input must be a string, not ${b(type)}`;
@@ -217,7 +218,7 @@ export const PromiseAllOrErrors = async items => {
  * @template T
  * @param {() => Promise<T>} trier
  * @param {(error?: unknown) => Promise<unknown>} finalizer
- * @returns {ReturnType<trier>}
+ * @returns {Promise<T>}
  */
 export const aggregateTryFinally = async (trier, finalizer) =>
   trier().then(
@@ -238,7 +239,7 @@ export const aggregateTryFinally = async (trier, finalizer) =>
  * @param {(
  *   addCleanup: (fn: (err?: unknown) => Promise<void>) => void,
  * ) => Promise<T>} fn
- * @returns {ReturnType<fn>}
+ * @returns {Promise<T>}
  */
 export const withDeferredCleanup = async fn => {
   /** @type {((err?: unknown) => unknown)[]} */
@@ -303,9 +304,10 @@ export const attenuate = (specimen, permit, transform = x => x) => {
   /** @type {string[]} */
   const path = [];
   /**
-   * @template SubT
-   * @template {Exclude<Permit<SubT>, Primitive>} SubP
-   * @type {(specimen: SubT, permit: SubP) => Attenuated<SubT, SubP>}
+   * @type {<SubT, SubP extends Exclude<Permit<SubT>, Primitive>>(
+   *   subSpecimen: SubT,
+   *   subPermit: SubP,
+   * ) => Attenuated<SubT, SubP>}
    */
   const extract = (subSpecimen, subPermit) => {
     if (subPermit === null || typeof subPermit !== 'object') {
@@ -397,8 +399,7 @@ export const zip = (xs, ys) => harden(xs.map((x, i) => [x, ys[+i]]));
  */
 export const allValues = async obj => {
   const resolved = await Promise.all(values(obj));
-  // @ts-expect-error cast
-  return harden(fromEntries(zip(keys(obj), resolved)));
+  return /** @type {any} */ (harden(fromEntries(zip(keys(obj), resolved))));
 };
 
 /**

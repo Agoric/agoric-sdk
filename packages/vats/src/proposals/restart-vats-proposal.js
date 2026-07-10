@@ -4,11 +4,12 @@ import { M, mustMatch } from '@agoric/store';
 import { E, getInterfaceOf } from '@endo/far';
 
 /**
+ * @import {Brand} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
  * @import {AdminFacet, ZCFMint} from '@agoric/zoe';
- * @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {ERef} from '@endo/far';
- * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {BootstrapPowers, PromiseSpaceOf} from '../core/types.ts';
  */
 
 const trace = makeTracer('RV');
@@ -34,7 +35,7 @@ const vatUpgradeStatus = {
 };
 
 /**
- * @param {BootstrapPowers & EconomyBootstrapSpace} space
+ * @param {BootstrapPowers} space
  * @param {object} config
  * @param {{ skip: string[] }} config.options
  */
@@ -44,16 +45,15 @@ export const restartVats = async ({ consume }, { options }) => {
   trace('restartVats start', options);
   mustMatch(options, harden({ skip: M.arrayOf(M.string()) }));
 
-  trace('awaiting VaultFactorKit as a proxy for "bootstrap done"');
-  await consume.vaultFactoryKit;
+  trace('awaiting provisionPoolStartResult as a proxy for "bootstrap done"');
+  await consume.provisionPoolStartResult;
 
   trace('testing restarts');
-  const { contractKits, governedContractKits, psmKit, vatStore } =
+  const { contractKits, governedContractKits, vatStore } =
     await deeplyFulfilledObject(
       harden({
         contractKits: consume.contractKits,
         governedContractKits: consume.governedContractKits,
-        psmKit: consume.psmKit,
         vatStore: consume.vatStore,
       }),
     );
@@ -121,12 +121,6 @@ export const restartVats = async ({ consume }, { options }) => {
     );
   }
 
-  trace('iterating over psmKit');
-  for (const kit of psmKit.values()) {
-    console.log('restarting PSM', kit.label);
-    await tryRestartContract(kit.label, kit.psm, kit.psmAdminFacet);
-  }
-
   trace('iterating over vatStore');
   for (const [name, { adminNode }] of vatStore.entries()) {
     const status = vatUpgradeStatus[name];
@@ -163,13 +157,12 @@ export const getManifestForRestart = (_powers, options) => ({
         governedContractKits: true,
         instancePrivateArgs: true,
         loadCriticalVat: true,
-        psmKit: true,
         vatStore: true,
         vatAdminSvc: true,
         vatUpgradeInfo: true,
         zoe: 'zoe',
         provisioning: 'provisioning',
-        vaultFactoryKit: true,
+        provisionPoolStartResult: true,
       },
       produce: {},
     },

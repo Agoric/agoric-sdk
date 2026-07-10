@@ -1,4 +1,3 @@
-/* eslint-env node */
 import { makeReadJsonFile } from '@agoric/internal/src/node/read-json.js';
 import fs from 'node:fs';
 import {
@@ -12,6 +11,7 @@ import { unsafeSharedBundleCache } from './bundleTool.js';
  * @import {SwingStoreKernelStorage} from '../src/types-external.js';
  * @import {InitializationOptions} from '../src/controller/initializeSwingset.js';
  * @import {InitializeSwingsetRuntimeOptions} from '../src/controller/initializeSwingset.js';
+ * @import {EndoZipBase64Bundle} from '../src/types-external.js';
  */
 
 const readBundleSpecFile = makeReadJsonFile(fs.promises);
@@ -41,7 +41,8 @@ export const initializeTestSwingset = async (
     {
       ...runtimeOptions,
       bundleFromPath: runtimeOptions.bundleFromPath || readBundleSpecFile,
-      bundleFromSourceSpec: (sourceSpec, _options) => cache.load(sourceSpec),
+      bundleFromSourceSpec: (sourceSpec, _options) =>
+        /** @type {Promise<EndoZipBase64Bundle>} */ (cache.load(sourceSpec)),
     },
   );
   return initializeSwingsetKernel(kernelConfig, kernelStorage, runtimeOptions);

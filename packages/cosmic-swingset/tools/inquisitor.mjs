@@ -5,7 +5,6 @@
  *   as a standalone interactive or non-interactive script. See
  *   "Check for CLI invocation" below for usage detail about the latter.
  */
-/* eslint-env node */
 /* global globalThis */
 /* eslint-disable no-empty */
 
@@ -544,7 +543,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
     wrapTranscriptStore: transcriptStore => {
       const wrapHelpers = makeWrapHelpers();
       const pendingItemsByVat = new Map();
-      /** @type {ReturnType<makeTranscriptStore>} */
+      /** @type {ReturnType<typeof makeTranscriptStore>} */
       const transcriptStoreOverride = {
         ...transcriptStore,
         addItem: (vatID, item) => {
@@ -649,7 +648,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
        * @type {Map<string, {info: SnapshotInfo, chunks: Uint8Array[]} | null>}
        */
       const pendingSnapshotsByVat = new Map();
-      /** @type {ReturnType<makeSnapStore>} */
+      /** @type {ReturnType<typeof makeSnapStore>} */
       const snapStoreOverride = {
         ...snapStore,
         saveSnapshot: async (vatID, snapPos, dataStream) => {
@@ -730,7 +729,7 @@ export const makeSwingStoreOverlay = (dbPath, wrapStore = wrapSubstore) => {
         !bundleStore.hasBundle(bundleID) ||
           Fail`base bundleStore already has ${bundleID}`;
       };
-      /** @type {ReturnType<makeBundleStore>} */
+      /** @type {ReturnType<typeof makeBundleStore>} */
       const bundleStoreOverride = {
         ...bundleStore,
         // writes

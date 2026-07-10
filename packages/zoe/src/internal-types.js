@@ -58,7 +58,7 @@ export {};
  * @param {WithdrawFacet} withdrawFacet
  * @param {ERef<ExitObj>} exitObj
  * @param {ERef<unknown>} [offerResult]
- * @param {Baggage} baggage
+ * @param {Baggage} [baggage]
  * @returns {ZoeSeatAdminKit}
  */
 
@@ -81,7 +81,7 @@ export {};
  */
 
 /**
- * @callback {(brand: Brand) => AssetKind} GetAssetKind
+ * @typedef {(brand: Brand) => AssetKind} GetAssetKind
  */
 
 /**

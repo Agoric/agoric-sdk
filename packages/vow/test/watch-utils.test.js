@@ -1,5 +1,7 @@
 // @ts-check
 /* global setTimeout */
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';

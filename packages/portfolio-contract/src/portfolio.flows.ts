@@ -13,6 +13,8 @@ import {
   fromTypedEntries,
   makeTracer,
   objectMap,
+  partialMap,
+  typedEntries,
   type TraceLogger,
 } from '@agoric/internal';
 import type {
@@ -75,6 +77,7 @@ import {
   provideEVMAccount,
   sendGMPContractCall,
   sendPermit2GMP,
+  swapRewardToUsdc,
   type EVMContext,
   type GMPAccountStatus,
 } from './pos-evm.flows.ts';
@@ -139,6 +142,10 @@ type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
+type PortfolioStartedFlow = ReturnType<
+  GuestInterface<PortfolioKit>['manager']['startFlow']
+>;
+
 type EVMAccounts = Partial<Record<AxelarChain, GMPAccountStatus>>;
 type AccountsByChain = {
   agoric: AccountInfoFor['agoric'];
@@ -150,6 +157,7 @@ type AssetMovement = {
   amount: Amount<'nat'>;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  swap?: FlowStep['swap'];
   apply: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
@@ -399,7 +407,7 @@ const trackFlow = async (
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
   order: Job['order'],
-  detail: FlowDetail,
+  detail?: object, // formerly FlowDetail
   progressPowers?: {
     resolverClient: GuestInterface<ResolverKit['client']>;
     phasesForStep: Map<TxPhase, TxId[]>[];
@@ -629,6 +637,7 @@ type Way =
   | { how: 'CCTPv2'; src: AxelarChain; dest: AxelarChain }
   | { how: 'withdrawToEVM'; dest: AxelarChain }
   | { how: 'CCTPtoUser'; dest: AxelarChain }
+  | { how: 'swap'; chain: AxelarChain }
   | {
       how: YieldProtocol;
       /** pool we're supplying */
@@ -719,6 +728,12 @@ export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
           // Otherwise, fall through to existing v1 routing which may be cheaper
           const srcIsEVM = keys(AxelarChain).includes(srcName);
           const destIsEVM = keys(AxelarChain).includes(destName);
+
+          // In-place reward-token -> USDC swap via 1inch (e.g. @Arbitrum -> @Arbitrum)
+          if (srcIsEVM && srcName === destName && moveDesc.swap) {
+            return { how: 'swap', chain: srcName as AxelarChain };
+          }
+
           // TODO HACK don't use magic number 2 for CCTPv2 signal
           if (
             srcIsEVM &&
@@ -771,7 +786,7 @@ const stepFlow = async (
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
   flowId: number,
-  flowDetail: FlowDetail,
+  flowDetail?: object, // formerly FlowDetail
   config?: FlowConfig,
   options?: Pick<ExecutePlanOptions, 'queuedSteps' | 'evmDepositDetail'>,
 ) => {
@@ -1123,6 +1138,38 @@ const stepFlow = async (
         break;
       }
 
+      case 'swap': {
+        const { chain } = way;
+        features?.experimentalSwap || Fail`swap not supported: ${q(move)}`;
+        todo.push({
+          how: 'swap',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          ...(move.swap ? { swap: move.swap } : {}),
+          apply: async ({ [chain]: gInfo, agoric }, _tracer, ...optsArgs) => {
+            assert(gInfo && agoric, chain);
+            await gInfo.ready;
+            const evmCtx = await makeEVMCtx(
+              chain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await swapRewardToUsdc(
+              evmCtx,
+              gInfo,
+              amount,
+              move.swap,
+              ...optsArgs,
+            );
+            return {};
+          },
+        });
+
+        break;
+      }
+
       case 'USDN': {
         const vault =
           way.poolKey === 'USDNVault' ? VaultType.STAKED : undefined;
@@ -1334,14 +1381,13 @@ const stepFlow = async (
     }
   }
 
-  const acctsDone = keys(kit.reader.accountIdByChain());
+  const acctsDone = new Set(keys(kit.reader.accountIdByChain()));
   const acctsToDo = [
     ...new Set(
-      (
-        moves
-          .map(({ dest }) => getChainNameOfPlaceRef(dest))
-          .filter(Boolean) as string[]
-      ).filter(ch => !acctsDone.includes(ch)),
+      partialMap(moves, ({ dest }) => {
+        const chainName = getChainNameOfPlaceRef(dest);
+        return chainName && !acctsDone.has(chainName) ? chainName : undefined;
+      }),
     ),
   ];
 
@@ -1409,53 +1455,51 @@ const stepFlow = async (
     const evmChains = keys(AxelarChain) as unknown[];
 
     const seen = new Set<AxelarChain>();
-    const chainToAcctStatusP: [AxelarChain, Promise<GMPAccountStatus>][] =
-      moves.flatMap((move, moveIndex) =>
-        [move.src, move.dest].flatMap((ref, isDest) => {
-          const maybeChain = getChainNameOfPlaceRef(ref);
-          if (!evmChains.includes(maybeChain)) return [];
-          const chain = maybeChain as AxelarChain;
-          if (seen.has(chain)) return [];
-          seen.add(chain);
+    const chainToAcctStatusP: [AxelarChain, Promise<GMPAccountStatus>][] = [];
+    for (const [moveIndex, move] of moves.entries()) {
+      const step = moveIndex + 1;
+      const phased = { makeSrcAccount: move.src, makeDestAccount: move.dest };
+      for (const [phase, ref] of typedEntries(phased)) {
+        const maybeChain = getChainNameOfPlaceRef(ref);
+        if (!evmChains.includes(maybeChain)) continue;
+        const chain = maybeChain as AxelarChain;
+        if (seen.has(chain)) continue;
+        seen.add(chain);
 
-          const gmp = {
-            ...gmpCommon,
-            fee: move.fee?.value || 0n,
-          };
+        const gmp = {
+          ...gmpCommon,
+          fee: move.fee?.value || 0n,
+        };
 
-          const progressTracker = features?.useProgressTracker
-            ? agoric.lca.makeProgressTracker()
-            : undefined;
-          const acctP = forChain(chain, async () => {
-            await null;
-            const optsArgs = progressTracker ? [{ progressTracker }] : [];
-            void publishProvideAccountProgress(
-              progressTracker,
-              moveIndex + 1,
-              isDest ? 'makeDestAccount' : 'makeSrcAccount',
-            );
-            const acctInfo = await provideEVMAccount(
-              chain,
-              infoFor[chain],
-              gmp,
-              agoric.lca,
-              ctx,
-              kit,
-              { orchOpts: optsArgs[0] },
-            );
+        const progressTracker = features?.useProgressTracker
+          ? agoric.lca.makeProgressTracker()
+          : undefined;
+        const acctP = forChain(chain, async () => {
+          await null;
+          const optsArgs = progressTracker ? [{ progressTracker }] : [];
+          void publishProvideAccountProgress(progressTracker, step, phase);
+          const acctInfo = await provideEVMAccount(
+            chain,
+            infoFor[chain],
+            gmp,
+            agoric.lca,
+            ctx,
+            kit,
+            { orchOpts: optsArgs[0] },
+          );
 
-            // Finalize only after the account has settled.
-            progressTracker &&
-              acctInfo.ready
-                .finally(() => progressTracker.finish())
-                .catch(() => {});
+          // Finalize only after the account has settled.
+          progressTracker &&
+            acctInfo.ready
+              .finally(() => progressTracker.finish())
+              .catch(() => {});
 
-            return acctInfo;
-          });
+          return acctInfo;
+        });
 
-          return [asEntry(chain, acctP)];
-        }),
-      );
+        chainToAcctStatusP.push(asEntry(chain, acctP));
+      }
+    }
     const chainToAcctStatus = await Promise.all(
       chainToAcctStatusP.map(async ([chain, acctP]) => {
         const acct = await acctP;
@@ -1542,9 +1586,7 @@ export const rebalance = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
-  startedFlow?: ReturnType<
-    GuestInterface<PortfolioKit>['manager']['startFlow']
-  >,
+  startedFlow?: PortfolioStartedFlow,
   config?: FlowConfig,
 ) => {
   const id = kit.reader.getPortfolioId();
@@ -1714,13 +1756,21 @@ export const openPortfolio = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['openPortfolio'],
   madeKit?: GuestInterface<PortfolioKit>,
-  config?: FlowConfig,
+  openConfig?: FlowConfig & {
+    /**
+     * A config flag for new invocations of `openPortfolio` to call `startFlow`
+     * and provide `executePlan` with a `startedFlow`.
+     */
+    explicitStartFlow?: boolean;
+  },
   evmDepositDetails?: {
     fromChain: AxelarChain;
     amount: NatAmount;
     permitDetails: PermitDetails;
   },
 ) => {
+  const { explicitStartFlow, ...flowConfig } = openConfig ?? {};
+  const config = openConfig !== undefined ? flowConfig : undefined;
   const features = config?.features;
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const trace = makeTracer('openPortfolio');
@@ -1760,14 +1810,26 @@ export const openPortfolio = (async (
         }
 
         if (depositFlowDetail) {
+          // Historical openPortfolio flows would rely on the backwards compatibility of
+          // `executePlan` to call `startFlow`. For new invocations (`explicitStartFlow`
+          // set to `true`), we instead call `startFlow` here.
+          // This approach is needed to maintain replay compatibility of historical invocations.
+          const flowArgs: [
+            FlowDetail | undefined,
+            PortfolioStartedFlow | undefined,
+          ] = explicitStartFlow
+            ? [
+                undefined,
+                kit.manager.startFlow(depositFlowDetail, offerArgs.flow),
+              ]
+            : [depositFlowDetail, undefined];
           await executePlan(
             orch,
             ctxI,
             seat,
             offerArgs,
             kit,
-            depositFlowDetail,
-            undefined,
+            ...flowArgs,
             config,
             depositOptions,
           );
@@ -1900,19 +1962,20 @@ export const executePlan = (async (
   seat: ZCFSeat,
   offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
-  flowDetail: FlowDetail,
-  startedFlow?: ReturnType<
-    GuestInterface<PortfolioKit>['manager']['startFlow']
-  >,
+  flowDetail?: FlowDetail,
+  startedFlow?: PortfolioStartedFlow,
   config?: FlowConfig,
   options?: ExecutePlanOptions,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
-  const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
+  const traceP = makeTracer(`portfolio${pId}`);
 
   // XXX for backwards compatibility, startedFlow may be undefined
   const { stepsP, flowId } =
-    startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
+    startedFlow ??
+    (flowDetail
+      ? pKit.manager.startFlow(flowDetail, offerArgs.flow)
+      : Fail`executePlan requires either startedFlow or flowDetail`);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
   await null;

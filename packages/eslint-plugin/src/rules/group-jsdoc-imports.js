@@ -1,5 +1,4 @@
 /**
- * @import {Bar} from 'foo';
  * @import {Rule} from 'eslint';
  */
 

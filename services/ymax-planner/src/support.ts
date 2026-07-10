@@ -1,4 +1,5 @@
 import { WebSocketProvider } from 'ethers';
+import type { WebSocket as WsWebSocket } from 'ws';
 import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
@@ -9,8 +10,15 @@ import {
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
+import { makePromiseKit } from '@endo/promise-kit';
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
+
+/**
+ * USDC value in floating-point major units (i.e., nominally corresponding with
+ * USD)
+ */
+export type UsdcNumber = number;
 
 export const UserInputError = class extends Error {} as ErrorConstructor;
 harden(UserInputError);
@@ -45,25 +53,25 @@ const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
   'cosmos:grand-1 noble': 'grand-1',
 };
 
-// Note that lookupValueForKey throws when the key is not found.
+// Throws when the key is not found.  The cast pins
+// `lookupValueForKey`'s generic K to the concrete
+// `${CaipChainId} ${SupportedChain}` union so TypeScript can unify
+// it with `spectrumChainIds`'s keys.
+const lookupSpectrumChainId = (
+  chainId: CaipChainId,
+  chainLabel: SupportedChain,
+): string =>
+  lookupValueForKey(
+    spectrumChainIds,
+    `${chainId} ${chainLabel}` as `${CaipChainId} ${SupportedChain}`,
+  );
+
 export const spectrumChainIdsByCluster: Readonly<
   Record<ClusterName, ROPartial<SupportedChain, string>>
 > = {
-  mainnet: {
-    ...objectMap(CaipChainIds.mainnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-  testnet: {
-    ...objectMap(CaipChainIds.testnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-  local: {
-    ...objectMap(CaipChainIds.local, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
+  mainnet: { ...objectMap(CaipChainIds.mainnet, lookupSpectrumChainId) },
+  testnet: { ...objectMap(CaipChainIds.testnet, lookupSpectrumChainId) },
+  local: { ...objectMap(CaipChainIds.local, lookupSpectrumChainId) },
 };
 
 /**
@@ -262,14 +270,141 @@ export const getEvmRpcMap = (
       throw Error(`Unsupported cluster name ${clusterName}`);
   }
 };
+/** Interval between WebSocket liveness pings. */
+export const WS_HEARTBEAT_INTERVAL_MS = 30_000;
+
+/**
+ * A reconnecting wrapper around an ethers {@link WebSocketProvider}. ethers v6
+ * does not reconnect on its own, so a dropped or zombie (open-but-dead) socket
+ * otherwise stays broken for the whole process lifetime, leaving watchers
+ * silently stalled until a manual restart (see PAK-517).
+ *
+ * Liveness is detected two ways: ping/pong heartbeats catch an idle socket that
+ * has gone dead, and {@link reportUnhealthy} lets the RPC layer report a call
+ * that timed out (an in-use zombie). On either, the underlying provider is
+ * recreated. The previous socket is `terminate`d, which surfaces a `close`
+ * event to any active watchers; their existing
+ * `onWsClose → WatcherTransportError → watchWithRetry` path then re-subscribes
+ * on the fresh socket.
+ */
+export type ReconnectingEvmProvider = {
+  /** The current live provider; never a destroyed one. */
+  getProvider: () => WebSocketProvider;
+  /** The current underlying socket. */
+  readonly websocket: WebSocketProvider['websocket'];
+  /** Force an immediate reconnect (e.g. because an RPC call timed out). */
+  reportUnhealthy: (reason?: string) => void;
+  /** Permanently close: stop heartbeats and reconnection. */
+  close: () => void;
+};
+
+export const makeReconnectingEvmProvider = ({
+  wsUrl,
+  makeProvider = url => new WebSocketProvider(url),
+  makeHeartbeat,
+  log = () => {},
+}: {
+  wsUrl: string;
+  makeProvider?: (url: string) => WebSocketProvider;
+  /**
+   * Must yield once per heartbeat interval; a fresh iterator is created for
+   * each successive provider.
+   */
+  makeHeartbeat?: () => AsyncIterable<unknown>;
+  log?: (...args: unknown[]) => void;
+}): ReconnectingEvmProvider => {
+  let currentProvider: WebSocketProvider;
+  // Monotonic id of the live socket. Stale listeners (from a prior socket)
+  // compare against it to avoid cycling a provider that is no longer current.
+  let generation = 0;
+  let closed = false;
+
+  const attach = (provider: WebSocketProvider, gen: number) => {
+    const ws = provider.websocket as unknown as WsWebSocket;
+
+    ws.on('close', (code?: number, reason?: unknown) =>
+      cycle(gen, `socket close (code=${code}, reason=${reason})`),
+    );
+    ws.on('error', (err: unknown) =>
+      cycle(gen, `socket error: ${(err as Error)?.message ?? err}`),
+    );
+
+    if (!makeHeartbeat) return;
+    let gotPong = true;
+    ws.on('pong', () => {
+      gotPong = true;
+    });
+    void (async () => {
+      for await (const _ of makeHeartbeat()) {
+        if (closed || gen !== generation) break;
+        if (ws.readyState !== 1 /* OPEN */) continue;
+        if (!gotPong) {
+          cycle(gen, 'pong timeout');
+          break;
+        }
+        gotPong = false;
+        try {
+          ws.ping();
+        } catch (err) {
+          log('error sending ping', err);
+        }
+      }
+    })();
+  };
+
+  const cycle = (fromGen: number, reason: string) => {
+    // Ignore stale triggers: only the current generation may cycle.
+    if (closed || fromGen !== generation) return;
+    generation += 1;
+    const old = currentProvider;
+    log(`cycling WebSocket (gen ${fromGen}→${generation}): ${reason}`);
+    currentProvider = makeProvider(wsUrl);
+    attach(currentProvider, generation);
+    // `terminate` (vs a graceful close) dislodges a zombie/half-open socket and
+    // emits `close`, prompting active watchers to re-subscribe on the new one.
+    try {
+      (old.websocket as unknown as WsWebSocket).terminate();
+    } catch (err) {
+      log('error terminating old socket', err);
+    }
+    void old.destroy().catch(err => log('error destroying old provider', err));
+  };
+
+  currentProvider = makeProvider(wsUrl);
+  attach(currentProvider, generation);
+
+  return {
+    getProvider: () => currentProvider,
+    get websocket() {
+      return currentProvider.websocket;
+    },
+    reportUnhealthy: (reason = 'reported unhealthy') =>
+      cycle(generation, reason),
+    close: () => {
+      closed = true;
+      void currentProvider
+        .destroy()
+        .catch(err => log('error destroying provider', err));
+    },
+  };
+};
+
 type CreateContextParams = {
   clusterName: ClusterName;
   alchemyApiKey: string;
+  /**
+   * Must yield once per heartbeat interval; a fresh iterator is created for
+   * each EVM provider (including providers created by automatic reconnections).
+   */
+  makeHeartbeat?: () => AsyncIterable<unknown>;
+  log?: (...args: unknown[]) => void;
 };
 
 export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
+  makeHeartbeat,
+  log = () => {},
 }: CreateContextParams): Promise<
   Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
@@ -280,9 +415,13 @@ export const createEVMContext = async ({
   const evmProviders = Object.fromEntries(
     Object.entries(wssUrls).map(([caip, wsUrl]) => [
       caip,
-      new WebSocketProvider(wsUrl),
+      makeReconnectingEvmProvider({
+        wsUrl,
+        makeHeartbeat,
+        log: (...args) => log(`[${caip}]`, ...args),
+      }),
     ]),
-  ) as Record<CaipChainId, WebSocketProvider>;
+  ) as Record<CaipChainId, ReconnectingEvmProvider>;
 
   return {
     evmProviders,
@@ -318,28 +457,43 @@ export const prepareAbortController = ({
    * Make a new manually-abortable AbortSignal with optional timeout and/or
    * optional signals whose own aborts should propagate (as with
    * `AbortSignal.any`).
+   * As a convenience, the returned value includes an `abortedP` promise that
+   * promptly fulfills to undefined after the returned signal is aborted.
    */
   const makeAbortController = (
     timeoutMillisec?: number,
-    racingSignals?: Iterable<AbortSignal>,
-  ): AbortController => {
+    racingSignals?: Iterable<AbortSignal | undefined>,
+  ): AbortController & { abortedP: Promise<void> } => {
     let controller: AbortController | null = new AbortController();
     const abort: AbortController['abort'] = reason => {
-      try {
-        return controller?.abort(reason);
-      } finally {
-        controller = null;
-      }
+      const controllerRef = controller;
+      controller = null;
+      return controllerRef?.abort(reason);
     };
     if (timeoutMillisec !== undefined) {
       setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
     }
-    if (!racingSignals) {
-      return { abort, signal: controller.signal };
-    }
-    const signal = AbortSignal.any([controller.signal, ...racingSignals]);
-    signal.addEventListener('abort', _event => abort());
-    return { abort, signal };
+    const racingArray: AbortSignal[] | undefined =
+      racingSignals && [...racingSignals].filter((x): x is AbortSignal => !!x);
+
+    let signal: AbortSignal | null = racingArray?.length
+      ? AbortSignal.any([controller.signal, ...racingArray])
+      : controller.signal;
+    const { promise: abortedP, resolve } = makePromiseKit<void>();
+    const finish = async () => {
+      resolve();
+      signal?.removeEventListener('abort', onSignalAbort);
+      // Forget `signal`, but not before returning it to the caller.
+      signal = await null;
+    };
+    const onSignalAbort = _event => {
+      abort(signal?.reason);
+      void finish();
+    };
+    signal.addEventListener('abort', onSignalAbort);
+    if (signal?.aborted) void finish();
+
+    return { abort, signal: signal as AbortSignal, abortedP };
   };
   return makeAbortController;
 };

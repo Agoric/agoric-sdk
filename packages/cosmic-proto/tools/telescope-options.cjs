@@ -1,4 +1,3 @@
-/* eslint-env node */
 // @ts-check
 /** @import { TelescopeInput } from '@hyperweb/telescope' */
 

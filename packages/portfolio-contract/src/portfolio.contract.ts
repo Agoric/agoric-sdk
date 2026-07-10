@@ -36,9 +36,10 @@ import {
 } from '@agoric/orchestration';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
 import type {
-  FlowAgent,
   FlowConfig,
-  PortfolioPermissions,
+  PortfolioAgentGrantee,
+  PortfolioAgentKey,
+  PortfolioPermissionsExt,
   PortfolioPublicInvitationMaker,
   TargetAllocation,
 } from '@agoric/portfolio-api';
@@ -46,6 +47,7 @@ import {
   AxelarChain,
   DEFAULT_FLOW_CONFIG,
   FlowConfigShape,
+  PortfolioPlannerAgent,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { YmaxFullDomain } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
@@ -209,6 +211,7 @@ const EVMContractAddressesShape: TypedPattern<EVMContractAddresses> =
       remoteAccountFactory: M.string(),
       remoteAccountRouter: M.string(),
       remoteAccountImplementation: M.string(),
+      oneInchRouter: M.string(),
     },
   );
 
@@ -267,6 +270,8 @@ export type EVMContractAddresses = {
   gasService: `0x${string}`;
   cctpRelayer?: `0x${string}`;
   walletHelper: `0x${string}`;
+  /** 1inch AggregationRouterV6; mainnet-only (1inch has no testnet support) */
+  oneInchRouter?: `0x${string}`;
 } & Partial<BeefyContracts> &
   Partial<ERC4626Contracts>;
 
@@ -578,11 +583,42 @@ export const contract = async (
     txfrCtx,
   );
 
+  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
+  const getPortfolio = (id: number) => portfolios.get(id);
+
+  const plannerDelegations = zone.mapStore<
+    PortfolioKit['planner'],
+    PortfolioDelegationClient
+  >('plannerDelegations', {
+    keyShape: M.remotable('Portfolio planner'),
+    valueShape: M.remotable('PortfolioDelegationClient'),
+  });
+  const setPlannerDelegation = (
+    portfolioPlanner: PortfolioKit['planner'],
+    client: PortfolioDelegationClient,
+  ): void => {
+    if (plannerDelegations.has(portfolioPlanner)) {
+      plannerDelegations.set(portfolioPlanner, client);
+    } else {
+      plannerDelegations.init(portfolioPlanner, client);
+    }
+  };
+  const getPlannerDelegation = (
+    portfolioPlanner: PortfolioKit['planner'],
+  ): PortfolioDelegationClient | undefined => {
+    if (!plannerDelegations.has(portfolioPlanner)) {
+      return undefined;
+    }
+    return plannerDelegations.get(portfolioPlanner);
+  };
+
   const postalServiceP: ERef<PostalService> | undefined = postalServiceInstance
     ? E(zcf.getZoeService()).getPublicFacet(postalServiceInstance)
     : postalService;
 
   /**
+   * Sets a delegation for the planner, or delivers it to an agoric address as an invitation.
+   *
    * Mint a delegation invitation for one portfolio and deliver it to `grantee`.
    * The grantee redeems it once and saves the resulting wallet-store entry
    * for later `invokeEntry` calls. Reachable only via `evmHandler.grant`,
@@ -590,13 +626,19 @@ export const contract = async (
    * facet — i.e., the per-wallet `wallet.portfolios.get(id)` lookup has
    * already authorized the signer as the portfolio's owner.
    */
-  const deliverDelegationInvitation = async (
+  const deliverDelegation = async (
     client: PortfolioDelegationClient,
     portfolioId: number,
-    agentId: FlowAgent['id'],
-    grantee: Bech32Address,
-    permissions: PortfolioPermissions,
+    agentId: number,
+    grantee: PortfolioAgentGrantee,
+    permissions: PortfolioPermissionsExt,
   ): Promise<void> => {
+    if (grantee === PortfolioPlannerAgent) {
+      const planner = getPortfolio(portfolioId)!.planner;
+      setPlannerDelegation(planner, client);
+      return;
+    }
+
     const ps =
       postalServiceP || Fail`postal service not configured in private args`;
     const invitation = await zcf.makeInvitation(
@@ -605,7 +647,11 @@ export const contract = async (
         return client;
       },
       'portfolioMandate',
-      harden({ portfolioId, agentId, permissions }),
+      harden({
+        portfolioId,
+        agentId: `agent${agentId}` satisfies PortfolioAgentKey,
+        permissions,
+      }),
     );
     await E(ps).deliverPayment(grantee, invitation);
   };
@@ -625,11 +671,8 @@ export const contract = async (
     usdcBrand: brands.USDC,
     eip155ChainIdToAxelarChain,
     contracts,
-    deliverDelegationInvitation,
+    deliverDelegation,
   });
-
-  const portfolios = zone.mapStore<number, PortfolioKit>('portfolios');
-  const getPortfolio = (id: number) => portfolios.get(id);
 
   /**
    * Generate sequential portfolio IDs while keeping the portfolios collection private.
@@ -668,7 +711,11 @@ export const contract = async (
     offerArgs,
     kit,
     config = defaultFlowConfig,
-  ) => orchFns2.openPortfolio(seat, offerArgs, kit, ...flowCfg(config));
+  ) =>
+    orchFns2.openPortfolio(seat, offerArgs, kit, {
+      ...config,
+      explicitStartFlow: true,
+    });
 
   const usedAccessTokens = zone.makeOnce(
     'usedAccessTokens',
@@ -748,7 +795,9 @@ export const contract = async (
      * @see {@link openPortfolio} for the flow implementation
      */
     async openPortfolioFromEVM(
-      { allocations }: YmaxOperationDetails<'OpenPortfolio'>['data'],
+      data:
+        | YmaxOperationDetails<'OpenPortfolio'>['data']
+        | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data'],
       permitDetails: PermitDetails,
     ): Promise<{
       storagePath: string;
@@ -761,7 +810,10 @@ export const contract = async (
 
       // XXX: validate instruments
       const targetAllocation: TargetAllocation = Object.fromEntries(
-        allocations.map(({ instrument, portion }) => [instrument, portion]),
+        data.allocations.map(({ instrument, portion }) => [
+          instrument,
+          portion,
+        ]),
       );
 
       const fromChain =
@@ -777,6 +829,12 @@ export const contract = async (
       const sourceAccountId =
         `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
+
+      await null;
+      if ('features' in data && data.features !== undefined) {
+        // setAutoFeatures is promptly resolved
+        await vowTools.asPromise(kit.evmHandler.setAutoFeatures(data.features));
+      }
 
       const seat = zcf.makeEmptySeatKit().zcfSeat;
 
@@ -839,11 +897,9 @@ export const contract = async (
   );
 
   const makePlanner = preparePlanner(zone.subZone('planner'), {
-    zcf,
-    rebalance,
-    getPortfolio,
+    getPortfolioPlanner: id => getPortfolio(id).planner,
+    getPlannerDelegation,
     shapes: offerArgsShapes,
-    vowTools,
   });
 
   const makePlannerInvitation = prepareResultOnlyInvitation('planner', () =>

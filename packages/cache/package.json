@@ -12,7 +12,7 @@
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
-    "lint:types": "yarn run -T tsc",
+    "lint:types": "yarn run -T tsgo --tsBuildInfoFile tsconfig.tsgo.tsbuildinfo",
     "lint:eslint": "node ../../scripts/eslint-repo.mjs ."
   },
   "keywords": [],
@@ -24,11 +24,11 @@
     "@agoric/store": "workspace:*",
     "@agoric/vat-data": "workspace:*",
     "@endo/far": "^1.1.14",
-    "@endo/marshal": "^1.8.0"
+    "@endo/marshal": "^1.10.0"
   },
   "devDependencies": {
     "@agoric/zoe": "workspace:*",
-    "ava": "^7.0.0",
+    "ava": "^8.0.1",
     "c8": "^10.1.3"
   },
   "files": [
@@ -38,14 +38,11 @@
     "access": "public"
   },
   "engines": {
-    "node": "^20.9 || ^22.11"
+    "node": "^22.11"
   },
   "ava": {
     "files": [
       "test/**/*.test.*"
-    ],
-    "require": [
-      "@endo/init/debug.js"
     ],
     "timeout": "20m"
   },

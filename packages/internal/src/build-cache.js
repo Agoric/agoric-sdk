@@ -1,4 +1,3 @@
-/* eslint-env node */
 import path from 'node:path';
 
 /**
@@ -20,6 +19,7 @@ export const makeDirectoryLock = powers => {
     acquireTimeoutMs,
     onEvent = () => {},
   } = powers;
+  /** @param {BuildCacheEvent} event */
   const safeEmit = event => {
     try {
       onEvent(event);
@@ -166,7 +166,7 @@ let atomicWriteSequence = 0;
 
 /**
  * @param {{
- *   fs: Pick<import('node:fs/promises'), 'rename' | 'writeFile'>;
+ *   fs: Pick<typeof import('node:fs/promises'), 'rename' | 'writeFile'>;
  *   filePath: string;
  *   data: string;
  *   now: () => number;

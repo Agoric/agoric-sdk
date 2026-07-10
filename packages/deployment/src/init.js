@@ -286,9 +286,15 @@ const doInit =
       fetch,
     });
 
-    const { _: parsedArgs, noninteractive } = parseArgs(args.slice(1), {
-      boolean: ['noninteractive'],
+    const { values: initOpts, positionals: parsedArgs } = parseArgs({
+      args: args.slice(1),
+      options: {
+        noninteractive: { type: 'boolean' },
+      },
+      allowPositionals: true,
+      strict: false,
     });
+    const { noninteractive } = initOpts;
     let [dir, overrideNetworkName] = parsedArgs;
 
     if (!dir) {

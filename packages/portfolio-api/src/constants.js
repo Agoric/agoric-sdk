@@ -30,7 +30,7 @@ harden(DEFAULT_FLOW_CONFIG);
 /**
  * Yield protocols for Proof of Concept.
  *
- * @enum {(typeof YieldProtocol)[keyof typeof YieldProtocol]}
+ * @typedef {(typeof YieldProtocol)[keyof typeof YieldProtocol]} YieldProtocol
  */
 export const YieldProtocol = keyMirror({
   Aave: null,
@@ -47,7 +47,7 @@ harden(YieldProtocol);
  * Withdraw: user is withdrawing assets from a yield protocol on the target chain.
  * DepositForBurn: user is transferring assets off the target chain via CCTP.
  *
- * @enum {(typeof EvmWalletOperationType)[keyof typeof EvmWalletOperationType]}
+ * @typedef {(typeof EvmWalletOperationType)[keyof typeof EvmWalletOperationType]} EvmWalletOperationType
  */
 export const EvmWalletOperationType = /** @type {const} */ ({
   Supply: 'supply',
@@ -57,7 +57,7 @@ export const EvmWalletOperationType = /** @type {const} */ ({
 harden(EvmWalletOperationType);
 
 /**
- * @enum {(typeof AxelarChain)[keyof typeof AxelarChain]}
+ * @typedef {(typeof AxelarChain)[keyof typeof AxelarChain]} AxelarChain
  */
 export const AxelarChain = keyMirror({
   Arbitrum: null,
@@ -93,7 +93,7 @@ export const Eip155ChainIds = {
 harden(Eip155ChainIds);
 
 /**
- * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
+ * @typedef {(typeof SupportedChain)[keyof typeof SupportedChain]} SupportedChain
  */
 export const SupportedChain = keyMirror({
   // ...AxelarChain works locally but gets lost in .d.ts generation
@@ -170,7 +170,7 @@ harden(UsdcTokenIds);
 /**
  * Strategies for portfolio rebalancing of bulk deposits.
  *
- * @enum {(typeof RebalanceStrategy)[keyof typeof RebalanceStrategy]}
+ * @typedef {(typeof RebalanceStrategy)[keyof typeof RebalanceStrategy]} RebalanceStrategy
  */
 export const RebalanceStrategy = /** @type {const} */ ({
   /**
@@ -200,6 +200,7 @@ export const FlowFeaturesShape = M.splitRecord(
   {},
   {
     useProgressTracker: M.boolean(),
+    experimentalSwap: M.boolean(),
   },
 );
 
@@ -213,3 +214,9 @@ export const FlowConfigShape = M.splitRecord(
     features: FlowFeaturesShape,
   },
 );
+
+/**
+ * Special string to designate the planner as a grantee.
+ * Includes a special & character to avoid potential collision with any CAIP-10 account address.
+ */
+export const PortfolioPlannerAgent = '&planner';

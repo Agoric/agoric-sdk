@@ -1,5 +1,6 @@
-import { M } from '@endo/patterns';
 import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
+import { M } from '@endo/patterns';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
 import { E } from '@endo/far';
@@ -41,7 +42,7 @@ const setup = (t, zone, escrowValue = 0n) => {
   const kit = makeIssuerKit('fungible');
   const { brand } = kit;
 
-  /** @type {NotifierRecord<Amount>} */
+  /** @type {NotifierRecord<Amount<'nat'>>} */
   const { notifier: balanceNotifier, updater: balanceUpdater } =
     makeNotifierKit();
 

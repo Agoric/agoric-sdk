@@ -1,4 +1,3 @@
-/* eslint-env node */
 /* global globalThis */
 import { Command } from 'commander';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';

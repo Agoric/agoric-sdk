@@ -22,10 +22,9 @@ const sourceSpec =
 /**
  * @import {ParseArgsConfig} from 'node:util';
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {IBCChannelID, IBCConnectionID, IBCConnectionInfo} from '@agoric/network/ibc';
  * @import {ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
- * @import {execFileSync} from 'child_process';
  * @import {ExecFileSyncOptionsWithStringEncoding} from 'node:child_process';
  */
 
@@ -55,7 +54,7 @@ export const defaultProposalBuilder = async (_utils, chainInfo) =>
     getManifestCall: ['getManifestForChainInfo', { options: { chainInfo } }],
   });
 
-/** @type {TypedPattern<Record<string, ChainInfo>>} */
+/** @type {CastedPattern<Record<string, ChainInfo>>} */
 const ChainInfosShape = M.recordOf(M.string(), ChainInfoShape);
 
 /**
@@ -64,7 +63,7 @@ const ChainInfosShape = M.recordOf(M.string(), ChainInfoShape);
 
 /**
  * @param {string} net
- * @param {typeof fetch} fetch
+ * @param {typeof globalThis.fetch} fetch
  * @returns {Promise<MinimalNetworkConfig>}
  */
 const getNetConfig = (net, fetch) =>
@@ -91,7 +90,7 @@ const parsePeers = strs => {
  * Checks:
  *   1. agd binary exists locally
  *   2. kubectl binary exists AND target pod/container has agd
- * @param {{ execFileSync: typeof execFileSync}} io
+ * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
  * @param {string} podName
  * @param {string} container
  * @returns {'agd' | 'kubectl'}
@@ -142,7 +141,7 @@ const findAgdOrKubectl = ({ execFileSync }, podName, container) => {
  *   const agd = makeAgd({execFileSync})
  *                 .withOpts({rpcAddrs: ['https...]});
  *   const info = await agd.query(['bank', 'balances', 'agoric1...]);
- * @param {{ execFileSync: typeof execFileSync}} io
+ * @param {{ execFileSync: typeof import('child_process').execFileSync}} io
  * @param {{ podName?: string, container?: string }} [options] - Optional configuration for kubectl
  */
 const makeAgd = (
