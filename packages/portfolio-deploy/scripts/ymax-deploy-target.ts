@@ -1204,18 +1204,26 @@ const shQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
  *   grantee's own address (not the target), so the same recurring grantee
  *   reuses one keyring entry across every target/release it signs for,
  *   and a genuinely different grantee never collides with a stale one.
+ *
+ * Bracketed with `gh release download`/`gh release upload` so the printed
+ * command is copy-paste complete: a cosigner shouldn't have to separately
+ * know to fetch the unsigned tx off the release first, or to upload their
+ * result back to it afterward.
  */
 const formatAgdSignCommand = ({
   target,
+  releaseTag,
   request,
   unsignedTxAssetName,
   signedTxAssetName,
 }: {
   target: Target;
+  releaseTag: string;
   request: UnsignedUpgradeArtifact;
   unsignedTxAssetName: string;
   signedTxAssetName: string;
 }) => {
+  const download = `gh release download ${shQuote(releaseTag)} --pattern ${shQuote(unsignedTxAssetName)} --clobber`;
   const authInfo = AuthInfo.decode(
     Buffer.from(request.authInfoBytesBase64, 'base64'),
   );
@@ -1230,6 +1238,7 @@ const formatAgdSignCommand = ({
     );
     const signatureAssetName = `${detachedSignatureAssetPrefix(target)}<your-name>.json`;
     return [
+      download,
       `agd keys add ${shQuote(multisigName)} --pubkey=${shQuote(multisigPubkeyJson)}`,
       [
         'agd tx sign',
@@ -1249,26 +1258,31 @@ const formatAgdSignCommand = ({
         '--output-document',
         shQuote(signatureAssetName),
       ].join(' '),
+      `gh release upload ${shQuote(releaseTag)} ${shQuote(signatureAssetName)} --clobber`,
     ].join('\n');
   }
   const signerAddress = request.grantee || request.controlAddress;
   return [
-    'agd tx sign',
-    shQuote(unsignedTxAssetName),
-    '--offline',
-    '--sign-mode direct',
-    '--from',
-    shQuote(signerAddress),
-    '--account-number',
-    String(request.signerData.accountNumber),
-    '--sequence',
-    String(request.signerData.sequence),
-    '--chain-id',
-    shQuote(request.signerData.chainId),
-    '--overwrite',
-    '--output-document',
-    shQuote(signedTxAssetName),
-  ].join(' ');
+    download,
+    [
+      'agd tx sign',
+      shQuote(unsignedTxAssetName),
+      '--offline',
+      '--sign-mode direct',
+      '--from',
+      shQuote(signerAddress),
+      '--account-number',
+      String(request.signerData.accountNumber),
+      '--sequence',
+      String(request.signerData.sequence),
+      '--chain-id',
+      shQuote(request.signerData.chainId),
+      '--overwrite',
+      '--output-document',
+      shQuote(signedTxAssetName),
+    ].join(' '),
+    `gh release upload ${shQuote(releaseTag)} ${shQuote(signedTxAssetName)} --clobber`,
+  ].join('\n');
 };
 
 /**
@@ -1329,6 +1343,7 @@ const ensureGranteeMatchesUnsignedTx = async ({
  */
 const rebuildAgdSignCommand = async ({
   target,
+  releaseTag,
   unsignedTxAssetName,
   signedTxAssetName,
   release,
@@ -1336,6 +1351,7 @@ const rebuildAgdSignCommand = async ({
   grantee,
 }: {
   target: Target;
+  releaseTag: string;
   unsignedTxAssetName: string;
   signedTxAssetName: string;
   release: ReleaseRW;
@@ -1359,6 +1375,7 @@ const rebuildAgdSignCommand = async ({
     Fail`signer ${signerAddress} not found on chain`;
   return formatAgdSignCommand({
     target,
+    releaseTag,
     request: {
       authInfoBytesBase64: Buffer.from(authInfoBytes).toString('base64'),
       grantee: grantee ? signerAddress : undefined,
@@ -1436,6 +1453,7 @@ const generateAuthzOperatorUpgrade = async (
   return {
     agdSignCommand: formatAgdSignCommand({
       target: upgradeTarget,
+      releaseTag,
       request,
       unsignedTxAssetName,
       signedTxAssetName: detachedSignedTxAssetName(
@@ -2672,6 +2690,7 @@ export const main = async (
         ? undefined
         : await rebuildAgdSignCommand({
             target,
+            releaseTag: tag,
             unsignedTxAssetName: record,
             signedTxAssetName,
             release,
