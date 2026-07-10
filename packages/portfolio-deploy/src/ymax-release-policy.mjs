@@ -146,6 +146,15 @@ export const requireAsset = (assetNames, assetName) => {
 };
 
 /**
+ * A workflow_dispatch input left blank arrives as '', not undefined; treat
+ * both as "the operator didn't specify anything this run" rather than as a
+ * request for empty overrides.
+ * @param {string | undefined} privateArgs
+ */
+export const isPrivateArgsSpecified = privateArgs =>
+  privateArgs !== undefined && privateArgs !== '';
+
+/**
  * @param {string} assetName
  * @param {Target} target
  * @param {string | undefined} specimen
@@ -197,7 +206,7 @@ export const validateNamedUpgradeRecord = (
   const assetName = `${target}-upgrade.json`;
   requireAsset(assetNames, assetName);
   validateUpgradeRecord(target, bundleId, record);
-  if (privateArgs !== undefined) {
+  if (isPrivateArgsSpecified(privateArgs)) {
     validateExpectedOverridesAsset(assetName, target, privateArgs, record);
   }
 };
@@ -221,7 +230,9 @@ export const validateNamedPendingUpgradeRecord = (
   const assetName = `${target}-upgrade-pending.json`;
   requireAsset(assetNames, assetName);
   validatePendingUpgradeRecord(target, bundleId, record, expectedReleaseTag);
-  validateExpectedOverridesAsset(assetName, target, privateArgs, record);
+  if (isPrivateArgsSpecified(privateArgs)) {
+    validateExpectedOverridesAsset(assetName, target, privateArgs, record);
+  }
 };
 
 /**

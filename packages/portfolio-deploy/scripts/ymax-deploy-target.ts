@@ -48,6 +48,7 @@ import {
   bundleIdFromBundleRecord,
   canonicalizePrivateArgs,
   expectedOverridesAssetName,
+  isPrivateArgsSpecified,
   overridesAssetPrefix,
   requireAsset,
   targetInfo,
@@ -409,11 +410,8 @@ const createOverrides = async (
 
   // No override given this run: reuse whatever's already on the release
   // rather than materializing a fresh "{}" artifact that would discard the
-  // real overrides collected on an earlier attempt. A workflow_dispatch
-  // input left blank arrives as '', not undefined, so treat both as
-  // "not given".
-  const isMissing = privateArgs === undefined || privateArgs === '';
-  if (isMissing && existingNames.length > 0) {
+  // real overrides collected on an earlier attempt.
+  if (!isPrivateArgsSpecified(privateArgs) && existingNames.length > 0) {
     if (existingNames.length > 1) {
       throw Error(
         `multiple ${prefix}*.json assets exist for ${target} (${existingNames.join(', ')}); remove the stale ones (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`,
@@ -974,7 +972,7 @@ const findUpgrade = async (
   requireAsset(assetNames, `${target}-upgrade.json`);
   const record = (await asset.readJSON()) as UpgradeRecord;
   validateNamedUpgradeRecord(assetNames, target, install.bundleId, record);
-  if (target !== currentTarget) {
+  if (target !== currentTarget || !isPrivateArgsSpecified(privateArgs)) {
     return record;
   }
   validateExpectedOverridesAsset(

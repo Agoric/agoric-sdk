@@ -152,12 +152,30 @@ test('policy pending upgrade validation checks are enforced', t => {
           invocationId: 'invocation-1',
           submitTime: '2026-04-16T12:05:00.000Z',
         } as any,
-        '',
+        '{"a":1}',
       ),
     {
       message:
         /^existing ymax0-main-upgrade-pending\.json uses wrong\.json, not ymax0-main-privateArgsOverrides-.*; remove or rename ymax0-main-upgrade-pending\.json to change private args$/,
     },
+    'a specified privateArgs mismatching the recorded path is rejected',
+  );
+  t.notThrows(
+    () =>
+      validateNamedPendingUpgradeRecord(
+        new Set(['ymax0-main-upgrade-pending.json']),
+        'ymax0-main',
+        'b1-abc123',
+        {
+          ...examples.install.main0,
+          privateArgsOverridesPath: 'wrong.json',
+          releaseTag: 'v0.3.2604-beta1',
+          invocationId: 'invocation-1',
+          submitTime: '2026-04-16T12:05:00.000Z',
+        } as any,
+        '',
+      ),
+    "a blank privateArgs (workflow_dispatch's empty-string default) trusts the recorded path instead of re-deriving one to compare",
   );
   t.throws(
     () =>
