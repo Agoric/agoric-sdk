@@ -14,7 +14,7 @@ belong under `test/cache`, not `test/fixtures`.
 ## Test ordering
 
 `packages/boot` uses an explicit AVA `sortTestFiles` comparator in
-`packages/boot/ava.config.mjs`.
+`packages/boot/ava.config.js`.
 
 That comparator, `byExplicitBootOrder`, makes AVA's sorted file list follow the
 fixed `bootTestOrder` sequence.
