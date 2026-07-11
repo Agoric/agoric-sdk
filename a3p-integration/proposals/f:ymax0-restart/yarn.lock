@@ -61,6 +61,8 @@ __metadata:
     "@agoric/vow": "npm:dev"
     "@agoric/zoe": "npm:dev"
     "@agoric/zone": "npm:dev"
+    "@cosmjs/amino": "npm:^0.36.0"
+    "@cosmjs/crypto": "npm:^0.36.0"
     "@cosmjs/encoding": "npm:^0.36.0"
     "@cosmjs/proto-signing": "npm:^0.36.0"
     "@cosmjs/stargate": "npm:^0.36.0"
@@ -1623,7 +1625,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cosmjs/amino@npm:^0.36.2":
+"@cosmjs/amino@npm:^0.36.0, @cosmjs/amino@npm:^0.36.2":
   version: 0.36.2
   resolution: "@cosmjs/amino@npm:0.36.2"
   dependencies:
