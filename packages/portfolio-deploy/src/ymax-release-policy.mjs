@@ -30,11 +30,26 @@ export const prerequisiteTargets = {
   'ymax1-main': ['ymax0-main'],
 };
 
+/**
+ * Targets that install their own bundle during pre-upgrade. `ymax1-main`
+ * reuses the bundle already installed (and validated via
+ * {@link prerequisiteTargets}) for `ymax0-main`, so it has no pre-upgrade
+ * work of its own.
+ */
+const installsOwnBundle = {
+  'ymax0-devnet': true,
+  'ymax0-main': true,
+  'ymax1-main': false,
+};
+
 /** @param {string | undefined} specimen */
 export const canonicalizePrivateArgs = specimen => {
   const overrides = specimen ? JSON.parse(specimen) : {};
   return `${JSON.stringify(overrides, null, 2)}\n`;
 };
+
+/** @param {Target} target */
+export const overridesAssetPrefix = target => `${target}-privateArgsOverrides-`;
 
 /**
  * @param {Target} target
@@ -43,7 +58,7 @@ export const canonicalizePrivateArgs = specimen => {
 export const expectedOverridesAssetName = (target, specimen) => {
   const text = canonicalizePrivateArgs(specimen);
   const digest = createHash('sha256').update(text).digest('hex').slice(0, 12);
-  return `${target}-privateArgsOverrides-${digest}.json`;
+  return `${overridesAssetPrefix(target)}${digest}.json`;
 };
 
 export const bundleIdFromBundleRecord = (
@@ -131,6 +146,15 @@ export const requireAsset = (assetNames, assetName) => {
 };
 
 /**
+ * A workflow_dispatch input left blank arrives as '', not undefined; treat
+ * both as "the operator didn't specify anything this run" rather than as a
+ * request for empty overrides.
+ * @param {string | undefined} privateArgs
+ */
+export const isPrivateArgsSpecified = privateArgs =>
+  privateArgs !== undefined && privateArgs !== '';
+
+/**
  * @param {string} assetName
  * @param {Target} target
  * @param {string | undefined} specimen
@@ -182,7 +206,7 @@ export const validateNamedUpgradeRecord = (
   const assetName = `${target}-upgrade.json`;
   requireAsset(assetNames, assetName);
   validateUpgradeRecord(target, bundleId, record);
-  if (privateArgs !== undefined) {
+  if (isPrivateArgsSpecified(privateArgs)) {
     validateExpectedOverridesAsset(assetName, target, privateArgs, record);
   }
 };
@@ -206,7 +230,9 @@ export const validateNamedPendingUpgradeRecord = (
   const assetName = `${target}-upgrade-pending.json`;
   requireAsset(assetNames, assetName);
   validatePendingUpgradeRecord(target, bundleId, record, expectedReleaseTag);
-  validateExpectedOverridesAsset(assetName, target, privateArgs, record);
+  if (isPrivateArgsSpecified(privateArgs)) {
+    validateExpectedOverridesAsset(assetName, target, privateArgs, record);
+  }
 };
 
 /**
@@ -226,7 +252,6 @@ export const validateNamedPendingUpgradeRecord = (
  *   reader: ReleasePlanReader;
  *   releaseTag: string;
  *   target: Target;
- *   ymax1Planner: string;
  * }} ReleasePlanOptions
  */
 
@@ -256,6 +281,9 @@ const validatePrerequisites = (
 };
 
 const planPreUpgrade = ({ assetNames, getAssetJson }, target, bundleId) => {
+  if (!installsOwnBundle[target]) {
+    return { needPreUpgrade: false };
+  }
   const installAssetName = `${target}-install.json`;
   if (!assetNames.has(installAssetName)) {
     return { needPreUpgrade: true };
@@ -322,7 +350,6 @@ export const makeReleasePlan = ({
   reader,
   releaseTag,
   target,
-  ymax1Planner,
 }) => {
   if (!(target in targetInfo)) throw Error(`unsupported target: ${target}`);
   if (!['bundle-only', 'deploy'].includes(mode)) {
@@ -372,14 +399,6 @@ export const makeReleasePlan = ({
     ...planPreUpgrade(reader, target, bundleId),
     ...planUpgrade(reader, target, bundleId, privateArgs, releaseTag),
   };
-
-  if (
-    target === 'ymax1-main' &&
-    (plan.needUpgradeSubmit || plan.needUpgradeConfirm) &&
-    ymax1Planner !== 'down'
-  ) {
-    throw Error('ymax1Planner must be down for ymax1-main');
-  }
 
   return {
     ...plan,

@@ -39,7 +39,12 @@ on:
           - detached-control
           - detached-grantee
       authzGrantee:
-        description: Grantee address for detached-grantee signing
+        description: >-
+          Grantee for detached-grantee signing: either its address (its
+          public key is looked up on chain — fails if it has never sent a
+          transaction) or its public key JSON (output of `agd keys show
+          <name> --pubkey`; use this the first time a multisig grantee is
+          used, since its address has no on-chain public key yet).
         required: false
         type: string
       ymax1Planner:
@@ -84,7 +89,6 @@ jobs:
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
-          YMAX1_PLANNER: ${{ inputs.ymax1Planner }}
         run: node .github/scripts/plan-ymax-release.mjs
 
   build-bundle:
@@ -134,7 +138,12 @@ jobs:
             --tag "$RELEASE_TAG" \
             --branch "$BRANCH"
 
-  upgrade-submit:
+  # Does everything short of actually broadcasting: validates inputs,
+  # generates (or re-validates) the unsigned/detached artifacts, and reports
+  # whether a signed tx is ready. Unprotected (no environment) so it never
+  # prompts for approval — approval is reserved for upgrade-submit, and only
+  # requested once there's actually something to broadcast.
+  upgrade-prepare:
     needs: [plan, pre-upgrade]
     if: |
       always() &&
@@ -143,19 +152,11 @@ jobs:
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result)
     runs-on: ubuntu-latest
     outputs:
-      upgrade_submitted: ${{ steps.upgrade.outputs.upgrade_submitted }}
-    environment:
-      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+      ready_to_broadcast: ${{ steps.prepare.outputs.ready_to_broadcast }}
     steps:
       - uses: actions/checkout@v5
 
       - uses: ./.github/actions/setup-agoric-sdk-build
-
-      - name: Require ymax1 planner down
-        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
-        run: |
-          echo 'ymax1Planner must be down for ymax1-main' >&2
-          exit 1
 
       - name: Validate signing inputs
         env:
@@ -165,21 +166,119 @@ jobs:
           case "$SIGNING_KEY" in
             ci-secret|detached-control)
               if [ -n "$AUTHZ_GRANTEE" ]; then
-                echo "authzGrantee is only valid with signingKey=detached-grantee" >&2
+                echo "::error::authzGrantee is only valid with signingKey=detached-grantee. Clear it or rerun with signingKey=detached-grantee."
                 exit 1
               fi
               ;;
             detached-grantee)
               if [ -z "$AUTHZ_GRANTEE" ]; then
-                echo "authzGrantee is required with signingKey=detached-grantee" >&2
+                echo "::error::authzGrantee is required with signingKey=detached-grantee. Rerun with authzGrantee set."
                 exit 1
               fi
               ;;
             *)
-              echo "unsupported signingKey: $SIGNING_KEY" >&2
+              echo "::error::unsupported signingKey: $SIGNING_KEY"
               exit 1
               ;;
           esac
+
+      - name: Prepare upgrade signing state
+        id: prepare
+        env:
+          AGORIC_NET: ${{ inputs.target == 'ymax0-devnet' && 'devnet' || 'main' }}
+          AUTHZ_GRANTEE: ${{ inputs.authzGrantee }}
+          GITHUB_TOKEN: ${{ github.token }}
+          PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
+          SIGNING_KEY: ${{ inputs.signingKey }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+
+          case "$SIGNING_KEY" in
+            ci-secret)
+              echo "ready_to_broadcast=true" >> "$GITHUB_OUTPUT"
+              ;;
+            detached-control|detached-grantee)
+              export GRANTEE="$AUTHZ_GRANTEE"
+              generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+                phase-upgrade-generate \
+                --target "$TARGET" \
+                --tag "$RELEASE_TAG")"
+              printf '%s\n' "$generate_output"
+
+              ready="$(jq -r '.readyToBroadcast' <<<"$generate_output")"
+              echo "ready_to_broadcast=$ready" >> "$GITHUB_OUTPUT"
+              if [ "$ready" != 'true' ]; then
+                if [ "$SIGNING_KEY" = 'detached-grantee' ]; then
+                  signed_asset="${TARGET}-authz-signed-tx.json"
+                  signature_hint=" (or, for a multisig grantee, individual ${TARGET}-authz-signature-*.json files, one per cosigner)"
+                else
+                  signed_asset="${TARGET}-signed-tx.json"
+                  signature_hint=""
+                fi
+                sign_command="$(jq -r '.detail.agdSignCommand' <<<"$generate_output")"
+                reason="$(jq -r '.reason // ""' <<<"$generate_output")"
+                message="Detached signing pending: generated or validated unsigned tx; upload $signed_asset$signature_hint to the release and rerun this workflow."
+                echo "$message"
+                if [ -n "$reason" ]; then
+                  echo "$reason"
+                fi
+                echo "$sign_command"
+
+                # Also written to the job summary (rendered prominently on
+                # the run's summary page) so the required action is visible
+                # without opening this step's logs.
+                {
+                  echo '### :key: Action required: detached signing pending'
+                  echo
+                  echo "$message"
+                  if [ -n "$reason" ]; then
+                    echo
+                    echo "$reason"
+                  fi
+                  echo
+                  echo '```sh'
+                  echo "$sign_command"
+                  echo '```'
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+              ;;
+          esac
+
+      # Enforced here, once a signed tx is actually ready, rather than
+      # earlier: this job can rerun freely while cosigners are still
+      # collecting signatures without requiring the planner be down for
+      # the whole wait. It's also checked before upgrade-submit's approval
+      # gate so a human is never asked to approve a broadcast that this
+      # step would immediately block anyway.
+      - name: Require ymax1 planner down
+        if: steps.prepare.outputs.ready_to_broadcast == 'true' && inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
+        run: |
+          echo '::error::ymax1Planner must be down for ymax1-main. Stop the planner, then rerun this workflow with ymax1Planner=down.'
+          exit 1
+
+  # Only job that broadcasts to chain, so it's the only one gated by
+  # environment approval — and only runs (so only ever prompts) once
+  # upgrade-prepare reports a signed tx is actually ready to send.
+  upgrade-submit:
+    needs: [plan, pre-upgrade, upgrade-prepare]
+    if: |
+      always() &&
+      needs.plan.result == 'success' &&
+      needs.plan.outputs.need_upgrade_submit == 'true' &&
+      contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
+      needs.upgrade-prepare.result == 'success' &&
+      needs.upgrade-prepare.outputs.ready_to_broadcast == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      upgrade_submitted: ${{ steps.upgrade.outputs.upgrade_submitted }}
+    environment:
+      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/setup-agoric-sdk-build
 
       - name: Run upgrade submit phase
         id: upgrade
@@ -189,49 +288,18 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           MNEMONIC: ${{ inputs.signingKey == 'ci-secret' && secrets.YMAX_CONTROL_MNEMONIC || '' }}
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
-          RELEASE_TAG: ${{ inputs.releaseTag }}
           SIGNING_KEY: ${{ inputs.signingKey }}
+          RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
         run: |
           set -euo pipefail
 
-          upgrade_submitted=false
-          case "$SIGNING_KEY" in
-            ci-secret)
-              packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-                phase-upgrade-submit \
-                --target "$TARGET" \
-                --tag "$RELEASE_TAG"
-              upgrade_submitted=true
-              ;;
-            detached-control|detached-grantee)
-              export GRANTEE_ADDRESS="$AUTHZ_GRANTEE"
-              generate_output="$(packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-                phase-upgrade-generate \
-                --target "$TARGET" \
-                --tag "$RELEASE_TAG")"
-              printf '%s\n' "$generate_output"
-
-              if [ "$SIGNING_KEY" = 'detached-grantee' ]; then
-                signed_asset="${TARGET}-authz-signed-tx.json"
-              else
-                signed_asset="${TARGET}-signed-tx.json"
-              fi
-
-              if gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq "$signed_asset"; then
-                packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
-                  phase-upgrade-submit \
-                  --target "$TARGET" \
-                  --tag "$RELEASE_TAG"
-                upgrade_submitted=true
-              else
-                echo "Detached signing pending: generated or validated unsigned tx; upload $signed_asset to the release and rerun this workflow."
-                jq -r '.detail.agdSignCommand' <<<"$generate_output"
-              fi
-              ;;
-          esac
-
-          echo "upgrade_submitted=$upgrade_submitted" >> "$GITHUB_OUTPUT"
+          export GRANTEE="$AUTHZ_GRANTEE"
+          packages/portfolio-deploy/scripts/ymax-deploy-target.ts \
+            phase-upgrade-submit \
+            --target "$TARGET" \
+            --tag "$RELEASE_TAG"
+          echo "upgrade_submitted=true" >> "$GITHUB_OUTPUT"
 
   upgrade-confirm:
     needs: [plan, pre-upgrade, upgrade-submit]
@@ -243,18 +311,10 @@ jobs:
       contains(fromJSON('["success","skipped"]'), needs.pre-upgrade.result) &&
       contains(fromJSON('["success","skipped","failure"]'), needs.upgrade-submit.result)
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.target == 'ymax0-devnet' && 'ymax0-devnet' || inputs.target == 'ymax0-main' && 'ymax0-mainnet' || 'ymax1-mainnet' }}
     steps:
       - uses: actions/checkout@v5
 
       - uses: ./.github/actions/setup-agoric-sdk-build
-
-      - name: Require ymax1 planner down
-        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
-        run: |
-          echo 'ymax1Planner must be down for ymax1-main' >&2
-          exit 1
 
       - name: Run upgrade confirm phase
         env:

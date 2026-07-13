@@ -19,13 +19,6 @@ on:
         description: Optional JSON string used for the original upgrade
         required: false
         type: string
-      ymax1Planner:
-        description: 'Attest ymax1 planner state (must be "down" for ymax1-main upgrades).'
-        required: false
-        type: choice
-        options:
-          - up
-          - down
 
 permissions:
   actions: read
@@ -54,7 +47,6 @@ jobs:
           PRIVATE_ARGS_OVERRIDES: ${{ inputs.privateArgsOverrides }}
           RELEASE_TAG: ${{ inputs.releaseTag }}
           TARGET: ${{ inputs.target }}
-          YMAX1_PLANNER: ${{ inputs.ymax1Planner }}
         run: node .github/scripts/plan-ymax-release.mjs
 
   confirm:
@@ -67,12 +59,6 @@ jobs:
       - uses: actions/checkout@v5
 
       - uses: ./.github/actions/setup-agoric-sdk-build
-
-      - name: Require ymax1 planner down
-        if: inputs.target == 'ymax1-main' && inputs.ymax1Planner != 'down'
-        run: |
-          echo 'ymax1Planner must be down for ymax1-main' >&2
-          exit 1
 
       - name: Run upgrade confirm phase
         env:

@@ -230,7 +230,33 @@ const encodeKnownMessage = (
   }
 };
 
-const parseJsonPublicKey = (publicKey: any) => {
+/** Inverse of {@link parseJsonPublicKey}: proto `Any` -> gRPC-gateway JSON. */
+export const encodeJsonPublicKey = (publicKey?: {
+  typeUrl: string;
+  value: Uint8Array;
+}): any => {
+  if (!publicKey) {
+    return undefined;
+  }
+  if (publicKey.typeUrl === Secp256k1PubKey.typeUrl) {
+    const { key } = Secp256k1PubKey.decode(publicKey.value);
+    return {
+      '@type': Secp256k1PubKey.typeUrl,
+      key: Buffer.from(key).toString('base64'),
+    };
+  }
+  if (publicKey.typeUrl === LegacyAminoPubKey.typeUrl) {
+    const { threshold, publicKeys } = LegacyAminoPubKey.decode(publicKey.value);
+    return {
+      '@type': LegacyAminoPubKey.typeUrl,
+      threshold,
+      public_keys: publicKeys.map(pk => encodeJsonPublicKey(pk)),
+    };
+  }
+  throw Error(`unsupported public key type: ${publicKey.typeUrl}`);
+};
+
+export const parseJsonPublicKey = (publicKey: any) => {
   if (!publicKey) {
     return undefined;
   }
@@ -316,6 +342,51 @@ const parseJsonModeInfo = (modeInfo: any) => {
   throw Error('unsupported mode_info shape in signed tx JSON');
 };
 
+/** Inverse of {@link makeAgdUnsignedTx}'s `body`: gRPC-gateway JSON -> proto bytes. */
+export const encodeTxBodyBytes = (body: any) =>
+  TxBody.encode(
+    TxBody.fromPartial({
+      messages: (body.messages || []).map((message: any) =>
+        encodeKnownMessage(message),
+      ),
+      memo: body.memo || '',
+      timeoutHeight: BigInt(body.timeout_height || 0),
+      extensionOptions: (body.extension_options || []).map((option: any) => ({
+        typeUrl: option.type_url,
+        value: Buffer.from(option.value, 'base64'),
+      })),
+      nonCriticalExtensionOptions: (
+        body.non_critical_extension_options || []
+      ).map((option: any) => ({
+        typeUrl: option.type_url,
+        value: Buffer.from(option.value, 'base64'),
+      })),
+    }),
+  ).finish();
+
+/** Inverse of {@link makeAgdUnsignedTx}'s `auth_info`: gRPC-gateway JSON -> proto bytes. */
+export const encodeAuthInfoBytes = (authInfo: any) =>
+  AuthInfo.encode(
+    AuthInfo.fromPartial({
+      signerInfos: (authInfo.signer_infos || []).map((info: any) => ({
+        publicKey: parseJsonPublicKey(info.public_key),
+        modeInfo: parseJsonModeInfo(info.mode_info),
+        sequence: BigInt(info.sequence || 0),
+      })),
+      fee: authInfo.fee
+        ? {
+            amount: (authInfo.fee.amount || []).map((coin: any) => ({
+              denom: coin.denom,
+              amount: coin.amount,
+            })),
+            gasLimit: BigInt(authInfo.fee.gas_limit || 0),
+            payer: authInfo.fee.payer || '',
+            granter: authInfo.fee.granter || '',
+          }
+        : undefined,
+    }),
+  ).finish();
+
 export const parseSignedTxBytes = (text: string) => {
   const specimen = JSON.parse(text) as any;
   if (
@@ -325,50 +396,9 @@ export const parseSignedTxBytes = (text: string) => {
   ) {
     throw Error('not signed tx JSON');
   }
-  const bodyBytes = TxBody.encode(
-    TxBody.fromPartial({
-      messages: (specimen.body.messages || []).map((message: any) =>
-        encodeKnownMessage(message),
-      ),
-      memo: specimen.body.memo || '',
-      timeoutHeight: BigInt(specimen.body.timeout_height || 0),
-      extensionOptions: (specimen.body.extension_options || []).map(
-        (option: any) => ({
-          typeUrl: option.type_url,
-          value: Buffer.from(option.value, 'base64'),
-        }),
-      ),
-      nonCriticalExtensionOptions: (
-        specimen.body.non_critical_extension_options || []
-      ).map((option: any) => ({
-        typeUrl: option.type_url,
-        value: Buffer.from(option.value, 'base64'),
-      })),
-    }),
-  ).finish();
-  const authInfoBytes = AuthInfo.encode(
-    AuthInfo.fromPartial({
-      signerInfos: (specimen.auth_info.signer_infos || []).map((info: any) => ({
-        publicKey: parseJsonPublicKey(info.public_key),
-        modeInfo: parseJsonModeInfo(info.mode_info),
-        sequence: BigInt(info.sequence || 0),
-      })),
-      fee: specimen.auth_info.fee
-        ? {
-            amount: (specimen.auth_info.fee.amount || []).map((coin: any) => ({
-              denom: coin.denom,
-              amount: coin.amount,
-            })),
-            gasLimit: BigInt(specimen.auth_info.fee.gas_limit || 0),
-            payer: specimen.auth_info.fee.payer || '',
-            granter: specimen.auth_info.fee.granter || '',
-          }
-        : undefined,
-    }),
-  ).finish();
   return serializeSignedTx({
-    bodyBytes,
-    authInfoBytes,
+    bodyBytes: encodeTxBodyBytes(specimen.body),
+    authInfoBytes: encodeAuthInfoBytes(specimen.auth_info),
     signatures: specimen.signatures.map((sig: string) =>
       Buffer.from(sig, 'base64'),
     ),
@@ -407,7 +437,77 @@ const decodeKnownMessage = ({
   }
 };
 
-export const makeAgdUnsignedTx = ({
+/**
+ * Convert a message already decoded into {@link decodeKnownMessage}'s
+ * gRPC-gateway JSON shape into its Amino JSON form, recursively for
+ * `MsgExec`'s nested messages — needed to reconstruct the exact
+ * `SIGN_MODE_LEGACY_AMINO_JSON` sign bytes for verifying detached
+ * signatures. cosmjs's `AminoTypes` deliberately leaves `MsgExec` and other
+ * authz messages unimplemented (see `@cosmjs/stargate`'s
+ * `createAuthzAminoConverters`), and although `@agoric/cosmic-proto`'s
+ * generated codecs carry an `aminoType` name (used below), none of them
+ * implement the `toAminoMsg`/`fromAminoMsg` conversion `Registry.toAmino`
+ * would dispatch to — so there's no existing converter to reuse, just the
+ * canonical type-name constants.
+ *
+ * Field key order doesn't matter here: both `agd` (via `sdk.MustSortJSON`)
+ * and cosmjs's `serializeSignDoc` (via `sortedJsonStringify`) canonicalize
+ * by recursively sorting object keys before hashing, so only the key names
+ * and value encodings need to match.
+ */
+export const toAminoMsg = (message: any): { type: string; value: any } => {
+  switch (message['@type']) {
+    case MsgExec.typeUrl:
+      return {
+        type: MsgExec.aminoType,
+        value: {
+          grantee: message.grantee,
+          msgs: message.msgs.map((nested: any) => toAminoMsg(nested)),
+        },
+      };
+    case MsgWalletSpendAction.typeUrl:
+      return {
+        type: MsgWalletSpendAction.aminoType,
+        value: {
+          owner: message.owner,
+          spend_action: message.spend_action,
+        },
+      };
+    default:
+      throw Error(
+        `unsupported message type for amino signing: ${message['@type']}`,
+      );
+  }
+};
+
+/** Inverse of {@link parseJsonModeInfo}: proto ModeInfo -> gRPC-gateway JSON. */
+const encodeModeInfoJson = (modeInfo: any): any => {
+  if (modeInfo.single) {
+    return { single: { mode: signModeToJSON(modeInfo.single.mode) } };
+  }
+  if (modeInfo.multi) {
+    return {
+      multi: {
+        ...(modeInfo.multi.bitarray
+          ? {
+              bitarray: {
+                extra_bits_stored: modeInfo.multi.bitarray.extraBitsStored,
+                elems: Buffer.from(modeInfo.multi.bitarray.elems).toString(
+                  'base64',
+                ),
+              },
+            }
+          : {}),
+        mode_infos: modeInfo.multi.modeInfos.map((info: any) =>
+          encodeModeInfoJson(info),
+        ),
+      },
+    };
+  }
+  throw Error('unsupported mode_info shape when encoding tx JSON');
+};
+
+const encodeTxToJson = ({
   bodyBytes,
   authInfoBytes,
 }: {
@@ -435,25 +535,10 @@ export const makeAgdUnsignedTx = ({
     auth_info: {
       signer_infos: authInfo.signerInfos.map(info => ({
         ...(info.publicKey
-          ? {
-              public_key: {
-                type_url: info.publicKey.typeUrl,
-                value: Buffer.from(info.publicKey.value).toString('base64'),
-              },
-            }
+          ? { public_key: encodeJsonPublicKey(info.publicKey) }
           : {}),
         ...(info.modeInfo
-          ? {
-              mode_info: {
-                ...(info.modeInfo.single
-                  ? {
-                      single: {
-                        mode: signModeToJSON(info.modeInfo.single.mode),
-                      },
-                    }
-                  : {}),
-              },
-            }
+          ? { mode_info: encodeModeInfoJson(info.modeInfo) }
           : {}),
         sequence: info.sequence.toString(),
       })),
@@ -469,6 +554,30 @@ export const makeAgdUnsignedTx = ({
           }
         : undefined,
     },
-    signatures: [],
   };
 };
+
+export const makeAgdUnsignedTx = ({
+  bodyBytes,
+  authInfoBytes,
+}: {
+  bodyBytes: Uint8Array;
+  authInfoBytes: Uint8Array;
+}) => ({
+  ...encodeTxToJson({ bodyBytes, authInfoBytes }),
+  signatures: [],
+});
+
+/** Same gRPC-gateway JSON shape as {@link makeAgdUnsignedTx}, but with real signatures attached. */
+export const makeAgdSignedTx = ({
+  bodyBytes,
+  authInfoBytes,
+  signatures,
+}: {
+  bodyBytes: Uint8Array;
+  authInfoBytes: Uint8Array;
+  signatures: readonly Uint8Array[];
+}) => ({
+  ...encodeTxToJson({ bodyBytes, authInfoBytes }),
+  signatures: signatures.map(sig => Buffer.from(sig).toString('base64')),
+});
