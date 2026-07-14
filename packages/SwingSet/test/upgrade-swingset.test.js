@@ -5,12 +5,15 @@ import '@agoric/internal/src/ava-force-exit.mjs';
 // eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { initSwingStore } from '@agoric/swing-store';
+import tmp from 'tmp';
+import { makeTempDirFactory } from '@agoric/internal/src/tmpDir.js';
+import { initSwingStore, makeSwingStoreExporter } from '@agoric/swing-store';
 import { kser } from '@agoric/kmarshal';
 
 import {
   makeSwingsetController,
   upgradeSwingset,
+  applyVatOptionUpdates,
   buildKernelBundles,
 } from '../src/index.js';
 import { initializeTestSwingset as initializeSwingset } from '../tools/test-swingset.js';
@@ -464,4 +467,106 @@ test('v3 upgrade', async t => {
 
   const newData = { ...debug.dump().kvEntries };
   t.deepEqual(data, newData);
+});
+
+const makeContractOptionsJson = (name, extra = {}) =>
+  JSON.stringify({ name, workerOptions: { type: 'local' }, ...extra });
+
+const tmpDir = makeTempDirFactory(tmp);
+
+const makeExportLog = () => {
+  const entries = [];
+  return {
+    callback(updates) {
+      for (const pair of updates) entries.push(pair);
+    },
+    getEntries() {
+      return entries;
+    },
+  };
+};
+
+test('applyVatOptionUpdates promotes a designated contract vat in place', async t => {
+  const [dbDir, cleanup] = tmpDir('critical-export');
+  t.teardown(cleanup);
+
+  const exportLog = makeExportLog();
+  const { hostStorage, kernelStorage } = initSwingStore(dbDir, {
+    exportCallback: exportLog.callback,
+  });
+  const { commit } = hostStorage;
+  const { kvStore } = kernelStorage;
+
+  // A live ymax target (v10), an unrelated live contract (v11), and a
+  // terminated incarnation (v12).
+  kvStore.set('vat.dynamicIDs', JSON.stringify(['v10', 'v11', 'v12']));
+  kvStore.set('vats.terminated', JSON.stringify(['v12']));
+  kvStore.set('v10.options', makeContractOptionsJson('zcf-b1-abcde-ymax1'));
+  kvStore.set('v11.options', makeContractOptionsJson('zcf-b1-fghij-other'));
+  kvStore.set('v12.options', makeContractOptionsJson('zcf-b1-klmno-ymax0'));
+  await commit();
+
+  const changed = applyVatOptionUpdates(kvStore, [
+    { vatID: 'v10', critical: true },
+  ]);
+  await commit();
+
+  t.deepEqual(changed, ['v10 (zcf-b1-abcde-ymax1)']);
+  t.true(JSON.parse(kvStore.get('v10.options')).critical);
+  // the unrelated vat is untouched, and no `version` key was written
+  t.is(JSON.parse(kvStore.get('v11.options')).critical, undefined);
+  t.false(kvStore.has('version'));
+
+  // The change lands in the export feed cosmic-swingset forwards to cosmos...
+  const feed = exportLog
+    .getEntries()
+    .filter(([key]) => key === 'kv.v10.options');
+  t.true(
+    JSON.parse(feed.at(-1)[1]).critical,
+    'the exported feed value is critical:true',
+  );
+
+  // ...and in a full state-sync export.
+  const exporter = makeSwingStoreExporter(dbDir);
+  const exported = new Map();
+  for await (const [key, value] of exporter.getExportData()) {
+    exported.set(key, value);
+  }
+  await exporter.close();
+  t.true(
+    JSON.parse(exported.get('kv.v10.options')).critical,
+    'state-sync export carries critical:true',
+  );
+
+  // idempotent: re-applying changes nothing
+  const changed2 = applyVatOptionUpdates(kvStore, [
+    { vatID: 'v10', critical: true },
+  ]);
+  t.deepEqual(changed2, []);
+});
+
+test('applyVatOptionUpdates guards stale / mis-chained / wrong-kind vatIDs', async t => {
+  const { kernelStorage } = initSwingStore();
+  const { kvStore } = kernelStorage;
+  kvStore.set('vat.dynamicIDs', JSON.stringify(['v10', 'v12']));
+  kvStore.set('vats.terminated', JSON.stringify(['v12']));
+  kvStore.set('v10.options', makeContractOptionsJson('zcf-b1-abcde-ymax1'));
+  kvStore.set('v12.options', makeContractOptionsJson('zcf-b1-klmno-ymax0'));
+
+  t.throws(
+    () => applyVatOptionUpdates(kvStore, [{ vatID: 'v12', critical: true }]),
+    { message: /is terminated/ },
+  );
+  t.throws(
+    () => applyVatOptionUpdates(kvStore, [{ vatID: 'v99', critical: true }]),
+    { message: /is not a live dynamic vat/ },
+  );
+});
+
+test('applyVatOptionUpdates with no updates is a no-op', async t => {
+  const { kernelStorage } = initSwingStore();
+  const { kvStore } = kernelStorage;
+  t.deepEqual(applyVatOptionUpdates(kvStore, []), []);
+  t.deepEqual(applyVatOptionUpdates(kvStore), []);
+  t.false(kvStore.has('version'));
 });
