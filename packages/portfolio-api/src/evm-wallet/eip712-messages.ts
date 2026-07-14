@@ -75,6 +75,24 @@ const OperationTypes = {
     { name: 'allocations', type: 'Allocation[]' },
     { name: 'features', type: 'PortfolioAutoFeatures' },
   ],
+  /**
+   * Open a portfolio and, in the same signed message, grant portfolio
+   * permissions to an automation agent's Agoric address. This collapses the
+   * former two-step "create portfolio" + "Grant" flow into a single user
+   * signature: the contract creates the portfolio with the given allocations
+   * and then delivers the delegation to `grantee.address`, exactly as a
+   * standalone {@link Grant} would.
+   *
+   * Like {@link OpenPortfolio}, this is a permit2-wrapped (funds-bearing)
+   * operation; the accompanying Permit2 supplies the initial deposit.
+   *
+   * - allocations: initial target allocation across instruments
+   * - grantee: delegation recipient and encoded portfolio permissions
+   */
+  OpenPortfolioWithGrant: [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'grantee', type: 'DelegationGrantee' },
+  ],
   Rebalance: [PortfolioIdParam],
   SetTargetAllocation: [
     { name: 'allocations', type: 'Allocation[]' },
@@ -122,6 +140,10 @@ const OperationSubTypes = {
   Asset: TokenPermissionsComponents,
   /** @see {@link PortfolioPermissions} */
   PortfolioPermissions: [{ name: 'allocation', type: 'bool' }],
+  DelegationGrantee: [
+    { name: 'address', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+  ],
   /** @see {@link PortfolioAutoFeatures} */
   PortfolioAutoFeatures: [{ name: 'rebalance', type: 'bool' }],
 } as const satisfies TypedData;
