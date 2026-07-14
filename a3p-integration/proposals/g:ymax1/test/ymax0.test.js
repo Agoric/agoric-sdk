@@ -8,7 +8,7 @@ import {
 } from '@agoric/synthetic-chain';
 import anyTest from 'ava';
 import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
-import { bundleId, ymax0ControlAddr as ymaxControlAddr } from './consts.js';
+import { bundleId, ymax0ControlAddr as ymaxControlAddr } from '../consts.js';
 import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 
