@@ -14,7 +14,10 @@ export {
   loadSwingsetConfigFile,
   normalizeConfig,
 } from './controller/swingset-config-node.js';
-export { upgradeSwingset } from './controller/upgradeSwingset.js';
+export {
+  upgradeSwingset,
+  applyVatOptionUpdates,
+} from './controller/upgradeSwingset.js';
 export {
   buildMailboxStateMap,
   buildMailbox,
