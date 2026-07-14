@@ -495,6 +495,104 @@ test('handleOperation - openPortfolio with auto-features', async t => {
   t.snapshot(getStatuses(), 'Published Statuses');
 });
 
+test('handleOperation - openPortfolio with grant', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow1', {
+    namePrefix: 'test1c_',
+  });
+
+  // Create an OpenPortfolioWithGrant operation: create the portfolio AND
+  // delegate control to an automation agent in a single signed message.
+  const granteeAddress = 'agoric1exampleagentaddress';
+  const openPortfolioOperationDetails: YmaxOperationDetails<'OpenPortfolioWithGrant'> &
+    Required<Pick<FullMessageDetails, 'permitDetails'>> = {
+    operation: 'OpenPortfolioWithGrant',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      allocations: [{ instrument: 'inst1', portion: 100n }],
+      grantee: {
+        address: granteeAddress,
+        permissions: { allocation: true },
+      },
+    },
+    permitDetails: {
+      chainId: 42161n,
+      token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+      amount: 1_000_000n,
+      spender: '0xSpenderAddress' as const,
+      permit2Payload: {
+        owner: '0xOwnerAddress' as const,
+        witness: '0xWitnessData' as const,
+        witnessTypeString: 'WitnessTypeString' as const,
+        permit: {
+          permitted: {
+            token: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as const,
+            amount: 1_000_000n,
+          },
+          nonce: 123n,
+          deadline: 1700000000n,
+        },
+        signature: '0xSignatureData' as const,
+      },
+    },
+  };
+
+  // Call handleOperation
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: openPortfolioOperationDetails.permitDetails.permit2Payload.owner,
+    operationDetails: harden(openPortfolioOperationDetails),
+    nonce: 123n,
+    deadline: 1700000000n,
+  });
+
+  // Wait for the vow to settle
+  await vowTools.when(resultVow);
+
+  // The combined operation is recognized as an "open" operation (no
+  // pre-existing portfolioId is looked up) and routes to openPortfolioFromEVM,
+  // which forwards the full data — including the grant fields — so the contract
+  // can create the portfolio and deliver the delegation in the same call. The
+  // grant delivery itself lives in openPortfolioFromEVM (exercised by the
+  // contract-level tests); here we verify the handler dispatch and payload.
+  const calls = getCalls();
+  t.is(
+    calls.openPortfolioFromEVM.length,
+    1,
+    'OpenPortfolioWithGrant routes to openPortfolioFromEVM',
+  );
+  const [forwardedData] = calls.openPortfolioFromEVM[0];
+  t.deepEqual(
+    forwardedData,
+    openPortfolioOperationDetails.data,
+    'forwards allocations and grantee parameters',
+  );
+  t.deepEqual(
+    [...mockWallet.portfolios.keys()],
+    [1n],
+    'creates exactly one portfolio',
+  );
+  const statuses = getStatuses();
+  t.truthy(statuses.length, 'publishes a message status');
+  t.false(
+    statuses.some(s => 'error' in s && s.error !== undefined),
+    'no error status published',
+  );
+});
+
 test('handleOperation - openPortfolio requires permitDetails', async t => {
   const { zone } = t.context;
   const {

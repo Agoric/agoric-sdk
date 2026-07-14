@@ -398,3 +398,136 @@ test('Grant delivery failure is surfaced in wallet vstorage without publishing a
     'grant delivery failure vstorage',
   );
 });
+
+test('Pete may open a portfolio and grant control in a single signed message', async t => {
+  const deployed = await deploy(t);
+  const { zoe } = deployed;
+
+  // The agent's deposit facet is registered so the grant can be delivered.
+  const receiver = await registerDepositFacet(
+    deployed.common.bootstrap.namesByAddressAdmin,
+    PETE_AGENT,
+  );
+  const peteKit = await makeEvmTraderKit(deployed, {
+    privateKey: evmTrader0PrivateKey,
+  });
+  const peteArbitrum = peteKit.evmTrader.forChain('Arbitrum');
+
+  // One user signature: create the portfolio AND grant allocation control to
+  // the agent, replacing the former two-step OpenPortfolio + Grant flow.
+  const { portfolioId } = await peteArbitrum.openPortfolioWithGrant(
+    [
+      { instrument: 'Aave_Arbitrum', portion: 60n },
+      { instrument: 'Compound_Arbitrum', portion: 40n },
+    ],
+    10_000_000n,
+    PETE_AGENT,
+    harden({ allocation: true }),
+  );
+  await eventLoopIteration();
+
+  // The combined operation delivered the delegation as part of the same call.
+  // (openPortfolioWithGrant only resolves once the contract's
+  // openPortfolioFromEVM has awaited the grant, so success here implies the
+  // grant succeeded; a rejected grant would have failed the whole message.)
+  const { delegationClient } = await redeemAndCheckDelegation({
+    t,
+    zoe,
+    grantStatus: { status: 'ok' },
+    receiver,
+    expectedDetails: {
+      portfolioId,
+      agentId: 'agent1',
+      permissions: { allocation: true },
+    },
+  });
+
+  // The published agents record reflects the delegation.
+  const portfolioPath = stripRootStoragePath(
+    peteKit.evmTrader.getPortfolioPath(),
+  ) as `ymax${'0' | '1'}.portfolios.portfolio${number}`;
+  const agents = await peteKit.readPublished(`${portfolioPath}.agents`);
+  t.deepEqual(agents, {
+    agent1: {
+      grantee: PETE_AGENT,
+      permissions: { allocation: true },
+      state: 'active',
+    },
+  });
+
+  // The grant is live end-to-end: the grantee rebalances through the redeemed
+  // delegation facet, proving the single-message open+grant produced a usable
+  // delegation.
+  const before = await peteKit.evmTrader.getPortfolioStatus();
+  const rebalanceFlowId = await E(delegationClient).setTargetAllocation({
+    targetAllocation: {
+      Aave_Arbitrum: 50n,
+      Compound_Arbitrum: 50n,
+    },
+    syncState: getSyncState(before),
+    agentMemo: '67890',
+  });
+  t.regex(String(rebalanceFlowId), /^flow\d+$/);
+
+  await eventLoopIteration();
+  const after = await peteKit.evmTrader.getPortfolioStatus();
+  t.deepEqual(after.targetAllocation, {
+    Aave_Arbitrum: 50n,
+    Compound_Arbitrum: 50n,
+  });
+});
+
+test('open+grant with an unregistered grantee aborts before portfolio creation', async t => {
+  const deployed = await deploy(t);
+
+  // Deliberately do NOT register a depositFacet for PETE_AGENT. A standalone
+  // Grant surfaces this NamesByAddress miss non-fatally (see the "Grant
+  // delivery failure is surfaced ..." test above); in the combined flow the
+  // smart-wallet depositFacet is preflighted before a portfolio kit is
+  // allocated, so the same caller-triggerable failure aborts the whole
+  // open+grant operation without orphaning a portfolio shell.
+  const peteKit = await makeEvmTraderKit(deployed, {
+    privateKey: evmTrader0PrivateKey,
+  });
+  const peteArbitrum = peteKit.evmTrader.forChain('Arbitrum');
+  const walletAddress = peteKit.evmAccount.address;
+
+  await t.throwsAsync(
+    peteArbitrum.openPortfolioWithGrant(
+      [
+        { instrument: 'Aave_Arbitrum', portion: 60n },
+        { instrument: 'Compound_Arbitrum', portion: 40n },
+      ],
+      10_000_000n,
+      PETE_AGENT,
+      harden({ allocation: true }),
+    ),
+    { message: /"nameKey" not found: "agoric1petesAgent"/ },
+    'combined open+grant rejects when the grantee is not registered',
+  );
+  await eventLoopIteration();
+
+  // The failed message is recorded on the wallet as an error, not silently
+  // swallowed.
+  const walletStatus = (await peteKit.readPublished(
+    `evmWallets.${walletAddress}`,
+  )) as { status: string; error?: string };
+  t.is(walletStatus.status, 'error');
+  t.regex(walletStatus.error || '', /"nameKey" not found: "agoric1petesAgent"/);
+
+  // The funding flow never started and the portfolio kit was never allocated:
+  // the wallet's portfolio path is published only by
+  // OpenOutcomeWatcher.onFulfilled (when openPortfolioFromEVM resolves), so
+  // its absence pins the ordering invariant. This is an indirect proxy for "no
+  // deposit pulled": the deposit is drawn inside the funding flow, which is
+  // never reached here.
+  await t.throwsAsync(
+    peteKit.readPublished(`evmWallets.${walletAddress}.portfolio`),
+    { message: /no data at path/ },
+    'no portfolio path is published for the wallet after the aborted open+grant',
+  );
+
+  await t.throwsAsync(peteKit.readPublished('portfolios.portfolio0'), {
+    message: /no data at path/,
+  });
+});

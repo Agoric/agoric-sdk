@@ -49,7 +49,10 @@ import {
   getYmaxStandaloneOperationData,
   getYmaxWitness,
 } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
-import type { TargetAllocation } from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type {
+  PortfolioPermissionsEIP712,
+  TargetAllocation,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
 import type { TimerService } from '@agoric/time';
 import { mustMatch, type ERemote } from '@agoric/internal';
 import { E } from '@endo/far';
@@ -436,6 +439,63 @@ export const makeEvmTrader = ({
             witness,
           );
 
+          const expectedNonce = nonce;
+          await submitMessage(permitMessage);
+          const result = (await getMessageResult(
+            expectedNonce,
+            deadline,
+          )) as string;
+          const parsedId = Number(result.replace(/^portfolio/, ''));
+          Number.isInteger(parsedId) ||
+            assert.fail('invalid portfolio id result');
+          const storagePath = await updatePortfolioPath(parsedId);
+          return harden({ storagePath, portfolioId: parsedId });
+        },
+        /**
+         * Open a portfolio AND grant control to an automation agent in a
+         * single signed (permit2-wrapped) message — the combined form of
+         * {@link openPortfolio} + {@link grant}, matching the contract's
+         * `OpenPortfolioWithGrant` operation. Like `grant`, the requested
+         * permission bag is validated against the current wire shape before
+         * signing.
+         */
+        async openPortfolioWithGrant(
+          allocations: TargetAllocation[],
+          depositAmount: bigint,
+          granteeAddress: Bech32Address,
+          permissions: PortfolioPermissions,
+        ) {
+          assert(contractRepresentative, 'missing contract representative');
+          mustMatch(
+            harden({ ...permissions }),
+            PortfolioPermissionsEIP712Shape,
+          );
+          const witness = getYmaxWitness('OpenPortfolioWithGrant', {
+            allocations,
+            grantee: {
+              address: granteeAddress,
+              // validated against PortfolioPermissionsEIP712Shape just above
+              permissions: permissions as PortfolioPermissionsEIP712,
+            },
+          }) as unknown as ReturnType<
+            // getPermitWitnessTransferFromData is not a fan of witness union types
+            typeof getYmaxWitness<'OpenPortfolio'>
+          >;
+          const deadline = await getDeadline();
+          const permitMessage = getPermitWitnessTransferFromData(
+            {
+              permitted: {
+                token: usdcToken,
+                amount: depositAmount,
+              },
+              spender: contractRepresentative,
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            permit2Address,
+            chainId,
+            witness,
+          );
           const expectedNonce = nonce;
           await submitMessage(permitMessage);
           const result = (await getMessageResult(
