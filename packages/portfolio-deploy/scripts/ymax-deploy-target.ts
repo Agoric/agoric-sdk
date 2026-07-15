@@ -10,12 +10,17 @@ import {
   retryUntilCondition,
 } from '@agoric/client-utils';
 import { MsgWalletSpendAction } from '@agoric/cosmic-proto/agoric/swingset/msgs.js';
+import { MsgExec } from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
+import { LegacyAminoPubKey } from '@agoric/cosmic-proto/codegen/cosmos/crypto/multisig/keys.js';
+import { AuthInfo } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeCmdRunner, makeFileRd, makeFileRW } from '@agoric/pola-io';
 import { getControlAddress } from '@agoric/portfolio-api/src/portfolio-constants.js';
 import type {
   BridgeAction,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
+import { pubkeyToAddress } from '@cosmjs/amino';
+import { decodePubkey } from '@cosmjs/proto-signing';
 import { StargateClient } from '@cosmjs/stargate';
 import { Fail } from '@endo/errors';
 import { execa } from 'execa';
@@ -26,18 +31,25 @@ import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import assert from 'node:assert/strict';
 import {
+  encodeAuthInfoBytes,
+  encodeJsonPublicKey,
   makeAgdUnsignedTx,
   parseSignedTxBytes,
 } from '../src/ymax-authz-msgs.ts';
 import {
+  combineDetachedGranteeSignatures,
   formatJson,
   makeUpgradeRequestBuilder as buildUpgradeRequestBuilder,
+  resolveGranteeAddress,
+  type CombineSignaturesResult,
   type UnsignedUpgradeArtifact,
 } from '../src/ymax-authz-flow.ts';
 import {
   bundleIdFromBundleRecord,
   canonicalizePrivateArgs,
   expectedOverridesAssetName,
+  isPrivateArgsSpecified,
+  overridesAssetPrefix,
   requireAsset,
   targetInfo,
   validateExpectedOverridesAsset,
@@ -123,6 +135,11 @@ type AnyJson = { '@type': string };
 type WalletSpendActionMessage = AnyJson & {
   owner: string;
   spend_action: string;
+};
+
+type AuthzExecMessage = AnyJson & {
+  grantee?: string;
+  msgs?: AnyJson[];
 };
 
 /**
@@ -366,6 +383,14 @@ const createRelease = async (
   return release.readOnly().get();
 };
 
+/**
+ * At most one `${target}-privateArgsOverrides-*.json` asset should ever
+ * exist per release: without this guard, a retry that omits
+ * `privateArgs` (e.g. a rerun of a still-detached-signing wait that forgot
+ * to re-supply the workflow's `privateArgsOverrides` input) would compute
+ * the digest for `{}` and silently add a second, unrelated artifact
+ * alongside the real one instead of failing loudly or reusing it.
+ */
 const createOverrides = async (
   target: Target,
   privateArgs: string | undefined,
@@ -377,8 +402,36 @@ const createOverrides = async (
     release: ReleaseRW;
   },
 ) => {
+  const prefix = overridesAssetPrefix(target);
+  const { assets } = await release.readOnly().get();
+  const existingNames = assets
+    .map(({ name }) => name)
+    .filter(name => name.startsWith(prefix) && name.endsWith('.json'));
+
+  // No override given this run: reuse whatever's already on the release
+  // rather than materializing a fresh "{}" artifact that would discard the
+  // real overrides collected on an earlier attempt.
+  if (!isPrivateArgsSpecified(privateArgs) && existingNames.length > 0) {
+    if (existingNames.length > 1) {
+      throw Error(
+        `multiple ${prefix}*.json assets exist for ${target} (${existingNames.join(', ')}); remove the stale ones (e.g. \`gh release delete-asset\`) or pass the matching privateArgsOverrides explicitly`,
+      );
+    }
+    const [assetName] = existingNames;
+    const text = await release.join(assetName).readText();
+    const assetWr = distDir.join(assetName);
+    await assetWr.writeText(text);
+    return { assetName, file: assetWr.readOnly() };
+  }
+
   const text = canonicalizePrivateArgs(privateArgs);
   const assetName = expectedOverridesAssetName(target, privateArgs);
+  const stale = existingNames.filter(name => name !== assetName);
+  if (stale.length > 0) {
+    throw Error(
+      `${assetName} would be a new private-args-overrides asset for ${target}, but ${stale.join(', ')} already exists on the release; remove the stale asset (e.g. \`gh release delete-asset\`) or rerun with the matching privateArgsOverrides to reuse it`,
+    );
+  }
   const assetWr = distDir.join(assetName);
   await assetWr.writeText(text);
   const asset = release.join(assetName);
@@ -512,6 +565,28 @@ const makeCosmosTxApi = (
         setTimeout,
       )
     ).tx_response,
+  blockByHeight: async (height: number) => {
+    type BlockResponse = {
+      block_id?: { hash?: string };
+      block?: { header?: { height?: string; time?: string } };
+    };
+    const [apiAddr] = apiAddrs;
+    const data = await fetchJsonResilient<BlockResponse>(
+      fetchFn,
+      `${apiAddr}/cosmos/base/tendermint/v1beta1/blocks/${height}`,
+      setTimeout,
+    );
+    const b64hash = data.block_id?.hash;
+    const header = data.block?.header;
+    if (!b64hash || !header?.height || !header?.time) {
+      throw Error(`incomplete block data at height ${height}`);
+    }
+    return {
+      height: Number.parseInt(header.height, 10),
+      hash: Buffer.from(b64hash, 'base64').toString('hex'),
+      time: header.time,
+    };
+  },
 });
 
 const makeAgoricVstorageApi = (
@@ -556,13 +631,51 @@ const makeAgoricVstorageApi = (
 // and chain consensus time, when matching an upgrade tx to its submit.
 const SUBMIT_TIME_SKEW_MS = 20 * 1_000;
 
+const extractWalletSpendActions = (
+  message: AnyJson | undefined,
+): WalletSpendActionMessage[] => {
+  if (!message) {
+    return [];
+  }
+  if (message['@type'] === MsgWalletSpendAction.typeUrl) {
+    return [message as WalletSpendActionMessage];
+  }
+  if (message['@type'] === MsgExec.typeUrl) {
+    const execMessage = message as AuthzExecMessage;
+    return (execMessage.msgs || []).flatMap(extractWalletSpendActions);
+  }
+  return [];
+};
+
+/**
+ * Decode a WalletSpendAction's spend_action capData into the upgrade
+ * invocation it carries (bundleId + the invocationId nonce stamped in the
+ * bridge action's message.id), or undefined if it isn't an `upgrade`
+ * invokeEntry call — including if it fails to parse, tolerated since some
+ * callers scan arbitrary tx/message history for a match.
+ */
+const extractUpgradeInvocation = (
+  spendAction: string,
+): { bundleId: string; invocationId: string } | undefined => {
+  try {
+    const action = grokCapData(spendAction) as BridgeAction;
+    if (action.method !== 'invokeEntry') return undefined;
+    const { method, args, id } = action.message;
+    if (method !== 'upgrade' || id === undefined) return undefined;
+    const [{ bundleId }] = args as [{ bundleId: string }];
+    return { bundleId, invocationId: String(id) };
+  } catch {
+    return undefined;
+  }
+};
+
 const findInvocationTx = ({
   pending,
-  sender,
+  owner,
   txs,
 }: {
   pending: PendingUpgradeRecord;
-  sender: string;
+  owner: string;
   txs: CosmosTxResponse[];
 }) => {
   // submitTime is recorded just before broadcast, so the block timestamp must
@@ -573,23 +686,19 @@ const findInvocationTx = ({
   // The control wallet stamps each invocation with its own message.id nonce,
   // so we can't correlate on pending.invocationId. Instead identify the
   // upgrade by control wallet + an invokeEntry upgrade of this specific bundle.
-  // Returns the upgrade message (for its id) when `message` is this bundle's
-  // upgrade invocation, else undefined; doubles as a predicate.
+  // Returns the invocation (for its invocationId) when `message` is this
+  // bundle's upgrade invocation, else undefined; doubles as a predicate.
   const bundleUpgrade = (message: AnyJson) => {
-    if (!(message['@type'] === MsgWalletSpendAction.typeUrl)) return undefined;
-    const walletMessage = message as WalletSpendActionMessage;
-    if (!(walletMessage.owner === sender)) return undefined;
-    try {
-      const action = grokCapData(walletMessage.spend_action) as BridgeAction;
-      if (!(action.method === 'invokeEntry')) return undefined;
-      const msg = action.message;
-      if (!(msg.method === 'upgrade')) return undefined;
-      const [{ bundleId }] = msg.args as [{ bundleId: string }];
-      if (!(bundleId === pending.bundleId)) return undefined;
-      return msg;
-    } catch {
-      return undefined;
+    for (const walletMessage of extractWalletSpendActions(message)) {
+      if (walletMessage.owner !== owner) {
+        continue;
+      }
+      const invocation = extractUpgradeInvocation(walletMessage.spend_action);
+      if (invocation?.bundleId === pending.bundleId) {
+        return invocation;
+      }
     }
+    return undefined;
   };
   const tx = txs.find(
     candidate =>
@@ -604,8 +713,38 @@ const findInvocationTx = ({
   // The wallet nonce that identifies this invocation's result in vstorage.
   const messageId = tx.tx?.body?.messages
     ?.map(bundleUpgrade)
-    .find(msg => msg)?.id;
+    .find(invocation => invocation)?.invocationId;
   return { tx, messageId };
+};
+
+const findDetachedAuthzGrantee = async (
+  release: ReleaseRW,
+  upgradeTarget: Target,
+) => {
+  for (const name of [
+    `${upgradeTarget}-authz-signed-tx.json`,
+    `${upgradeTarget}-authz-unsigned-tx.json`,
+  ]) {
+    const asset = release.join(name).readOnly();
+    if (!(await asset.exists())) {
+      continue;
+    }
+    const txJson = (await asset.readJSON()) as {
+      body?: { messages?: AnyJson[] };
+    };
+    const messages = Array.isArray(txJson.body?.messages)
+      ? txJson.body.messages
+      : [];
+    const execMessage = messages.find(
+      (message): message is AuthzExecMessage =>
+        message?.['@type'] === MsgExec.typeUrl &&
+        typeof (message as AuthzExecMessage).grantee === 'string',
+    );
+    if (execMessage?.grantee) {
+      return execMessage.grantee;
+    }
+  }
+  return undefined;
 };
 
 type DecodedUpgradeLog = {
@@ -848,7 +987,7 @@ const findUpgrade = async (
   requireAsset(assetNames, `${target}-upgrade.json`);
   const record = (await asset.readJSON()) as UpgradeRecord;
   validateNamedUpgradeRecord(assetNames, target, install.bundleId, record);
-  if (target !== currentTarget) {
+  if (target !== currentTarget || !isPrivateArgsSpecified(privateArgs)) {
     return record;
   }
   validateExpectedOverridesAsset(
@@ -973,35 +1112,283 @@ const preparePendingUpgrade = async (
   return { pending, overrides };
 };
 
+/**
+ * Build the pending-upgrade record for an already-generated detached tx
+ * from what it actually contains, instead of manufacturing a fresh
+ * invocationId at submit time: the tx (and its invocationId) may have been
+ * built well before this run, while cosigners were still collecting
+ * signatures, so a freshly generated one here would record an invocationId
+ * that doesn't match what's actually going to chain.
+ */
+const buildDetachedPendingRecord = async (
+  upgradeTarget: Target,
+  install: InstallRecord,
+  {
+    cause,
+    target,
+    privateArgs,
+    releaseTag,
+    distDir,
+    release,
+    now,
+    grantee,
+  }: Pick<
+    StepTools,
+    'cause' | 'target' | 'releaseTag' | 'distDir' | 'release' | 'now'
+  > & {
+    privateArgs: string | undefined;
+    grantee: string | undefined;
+  },
+): Promise<PendingUpgradeRecord> => {
+  expectMissing(
+    cause,
+    `missing required release asset ${upgradeTarget}-upgrade-pending.json`,
+  );
+  if (target !== upgradeTarget) {
+    throw Error(
+      `missing required release asset ${upgradeTarget}-upgrade-pending.json`,
+    );
+  }
+  const unsignedTxAssetName = detachedUnsignedTxAssetName(
+    upgradeTarget,
+    grantee,
+  );
+  const unsignedTx = (await release.join(unsignedTxAssetName).readJSON()) as {
+    body: { messages: AnyJson[] };
+  };
+  const invocation = unsignedTx.body.messages
+    .flatMap(message => extractWalletSpendActions(message))
+    .map(walletMessage => extractUpgradeInvocation(walletMessage.spend_action))
+    .find(found => found);
+  if (!invocation) {
+    throw Error(
+      `${unsignedTxAssetName} does not contain an upgrade invocation`,
+    );
+  }
+  if (invocation.bundleId !== install.bundleId) {
+    throw Error(
+      `${unsignedTxAssetName} upgrades bundleId ${invocation.bundleId}, not ${install.bundleId}`,
+    );
+  }
+  const overrides = await createOverrides(upgradeTarget, privateArgs, {
+    distDir,
+    release,
+  });
+  const submitTime = new Date(now()).toISOString();
+  return {
+    target: upgradeTarget,
+    releaseTag,
+    ...typedTargetInfo[upgradeTarget],
+    bundleId: install.bundleId,
+    privateArgsOverridesPath: overrides.assetName,
+    invocationId: invocation.invocationId,
+    submitTime,
+  };
+};
+
 const shQuote = (text: string) => `'${text.replaceAll("'", `'\\''`)}'`;
 
+/**
+ * `agd tx sign` needs a different command depending on the grantee's
+ * account type:
+ * - single-key grantee (or the direct control address): sign directly in
+ *   one shot; the output is already the complete signed tx.
+ * - multisig grantee: each cosigner signs individually with their own key.
+ *   `agd` requires the multisig's pubkey in the *local* keyring even for
+ *   this (verified empirically: `agd tx sign` without `--multisig` rejects
+ *   the individual signer's own address as "not the tx's intended signer",
+ *   since the tx's only real signer is the multisig account) — but only
+ *   its public key, so the command imports it directly rather than asking
+ *   the cosigner to run a separate `agd keys add --multisig=...` step
+ *   naming every other cosigner. The local key name is derived from the
+ *   grantee's own address (not the target), so the same recurring grantee
+ *   reuses one keyring entry across every target/release it signs for,
+ *   and a genuinely different grantee never collides with a stale one.
+ *
+ * Bracketed with `gh release download`/`gh release upload` so the printed
+ * command is copy-paste complete: a cosigner shouldn't have to separately
+ * know to fetch the unsigned tx off the release first, or to upload their
+ * result back to it afterward.
+ */
 const formatAgdSignCommand = ({
+  target,
+  releaseTag,
   request,
   unsignedTxAssetName,
   signedTxAssetName,
 }: {
+  target: Target;
+  releaseTag: string;
   request: UnsignedUpgradeArtifact;
   unsignedTxAssetName: string;
   signedTxAssetName: string;
 }) => {
+  const download = `gh release download ${shQuote(releaseTag)} --pattern ${shQuote(unsignedTxAssetName)} --clobber`;
+  const authInfo = AuthInfo.decode(
+    Buffer.from(request.authInfoBytesBase64, 'base64'),
+  );
+  const granteePubkey = authInfo.signerInfos[0]?.publicKey;
+  if (granteePubkey?.typeUrl === LegacyAminoPubKey.typeUrl) {
+    const granteeAddress =
+      request.grantee ||
+      Fail`multisig grantee sign command requires a resolved grantee address`;
+    const multisigName = `ymax-grantee-${granteeAddress.slice(-8)}`;
+    const multisigPubkeyJson = JSON.stringify(
+      encodeJsonPublicKey(granteePubkey),
+    );
+    const signatureAssetName = `${detachedSignatureAssetPrefix(target)}<your-name>.json`;
+    return [
+      download,
+      `agd keys add ${shQuote(multisigName)} --pubkey=${shQuote(multisigPubkeyJson)}`,
+      [
+        'agd tx sign',
+        shQuote(unsignedTxAssetName),
+        '--offline',
+        '--sign-mode amino-json',
+        `--multisig=${multisigName}`,
+        '--from',
+        '<your-key-name>',
+        '--account-number',
+        String(request.signerData.accountNumber),
+        '--sequence',
+        String(request.signerData.sequence),
+        '--chain-id',
+        shQuote(request.signerData.chainId),
+        '--overwrite',
+        '--output-document',
+        shQuote(signatureAssetName),
+      ].join(' '),
+      `gh release upload ${shQuote(releaseTag)} ${shQuote(signatureAssetName)} --clobber`,
+    ].join('\n');
+  }
   const signerAddress = request.grantee || request.controlAddress;
   return [
-    'agd tx sign',
-    shQuote(unsignedTxAssetName),
-    '--offline',
-    '--sign-mode direct',
-    '--from',
-    shQuote(signerAddress),
-    '--account-number',
-    String(request.signerData.accountNumber),
-    '--sequence',
-    String(request.signerData.sequence),
-    '--chain-id',
-    shQuote(request.signerData.chainId),
-    '--overwrite',
-    '--output-document',
-    shQuote(signedTxAssetName),
-  ].join(' ');
+    download,
+    [
+      'agd tx sign',
+      shQuote(unsignedTxAssetName),
+      '--offline',
+      '--sign-mode direct',
+      '--from',
+      shQuote(signerAddress),
+      '--account-number',
+      String(request.signerData.accountNumber),
+      '--sequence',
+      String(request.signerData.sequence),
+      '--chain-id',
+      shQuote(request.signerData.chainId),
+      '--overwrite',
+      '--output-document',
+      shQuote(signedTxAssetName),
+    ].join(' '),
+    `gh release upload ${shQuote(releaseTag)} ${shQuote(signedTxAssetName)} --clobber`,
+  ].join('\n');
+};
+
+/**
+ * The grantee address embedded in an already-generated unsigned tx (via its
+ * signer_info public key), or undefined for a plain control-address tx
+ * (which embeds no public key at all — see {@link resolveGrantee}'s doc).
+ */
+const embeddedGranteeAddress = (authInfo: {
+  signerInfos: Array<{ publicKey?: { typeUrl: string; value: Uint8Array } }>;
+}) => {
+  const pubkeyAny = authInfo.signerInfos[0]?.publicKey;
+  return pubkeyAny && pubkeyToAddress(decodePubkey(pubkeyAny), 'agoric');
+};
+
+/**
+ * A rerun that passes a different `--grantee` than the one an
+ * already-generated unsigned tx was built for would otherwise proceed
+ * silently — showing a sign command for the wrong signer, or combining
+ * uploaded signatures against the wrong grantee's multisig. Catch that
+ * before it gets confusing, the same way {@link createOverrides} guards
+ * against a conflicting `privateArgsOverrides` asset.
+ */
+const ensureGranteeMatchesUnsignedTx = async ({
+  release,
+  unsignedTxAssetName,
+  grantee,
+}: {
+  release: ReleaseRW;
+  unsignedTxAssetName: string;
+  grantee: string;
+}) => {
+  const unsignedTx = (await release.join(unsignedTxAssetName).readJSON()) as {
+    auth_info: unknown;
+  };
+  const authInfo = AuthInfo.decode(encodeAuthInfoBytes(unsignedTx.auth_info));
+  const existingAddress =
+    embeddedGranteeAddress(authInfo) ||
+    Fail`existing ${unsignedTxAssetName} was generated without a grantee`;
+  const requestedAddress = resolveGranteeAddress(grantee);
+  if (existingAddress !== requestedAddress) {
+    throw Error(
+      `grantee ${grantee} resolves to ${requestedAddress}, but existing ${unsignedTxAssetName} was generated for grantee ${existingAddress}; remove or rename ${unsignedTxAssetName} to change grantee`,
+    );
+  }
+};
+
+/**
+ * Rebuild the `agd tx sign`/`agd keys add` command from whatever's already
+ * on the release, rather than only ever showing it the run the unsigned tx
+ * was first generated: `graph.ensureNode` skips `create()` (and its
+ * `agdSignCommand`) once the asset already exists, which otherwise leaves
+ * later "still waiting on cosigners" reruns with nothing to show — the
+ * literal string `null` where the command used to be. `account_number`
+ * isn't encoded in the tx itself, so it's re-fetched live; the signer
+ * address comes from this run's grantee/control address, not by decoding
+ * the persisted tx (which a preceding {@link ensureGranteeMatchesUnsignedTx}
+ * call already confirmed agrees with it, for the grantee case).
+ */
+const rebuildAgdSignCommand = async ({
+  target,
+  releaseTag,
+  unsignedTxAssetName,
+  signedTxAssetName,
+  release,
+  connectTargetRpc,
+  grantee,
+}: {
+  target: Target;
+  releaseTag: string;
+  unsignedTxAssetName: string;
+  signedTxAssetName: string;
+  release: ReleaseRW;
+  connectTargetRpc: (upgradeTarget: Target) => Promise<StargateClient>;
+  grantee: string | undefined;
+}) => {
+  const unsignedTx = (await release.join(unsignedTxAssetName).readJSON()) as {
+    auth_info: unknown;
+  };
+  const authInfoBytes = encodeAuthInfoBytes(unsignedTx.auth_info);
+  const authInfo = AuthInfo.decode(authInfoBytes);
+  const signerInfo =
+    authInfo.signerInfos[0] || Fail`unsigned tx missing signer_info`;
+  const { contract, network } = getTargetInfo(target);
+  const signerAddress = grantee
+    ? resolveGranteeAddress(grantee)
+    : getControlAddress(contract, network);
+  const queryClient = await connectTargetRpc(target);
+  const account =
+    (await queryClient.getAccount(signerAddress)) ||
+    Fail`signer ${signerAddress} not found on chain`;
+  return formatAgdSignCommand({
+    target,
+    releaseTag,
+    request: {
+      authInfoBytesBase64: Buffer.from(authInfoBytes).toString('base64'),
+      grantee: grantee ? signerAddress : undefined,
+      controlAddress: grantee ? '' : signerAddress,
+      signerData: {
+        accountNumber: account.accountNumber,
+        sequence: Number(signerInfo.sequence),
+        chainId: getTargetInfo(target).chainId,
+      },
+    } as unknown as UnsignedUpgradeArtifact,
+    unsignedTxAssetName,
+    signedTxAssetName,
+  });
 };
 
 const generateAuthzOperatorUpgrade = async (
@@ -1065,6 +1452,8 @@ const generateAuthzOperatorUpgrade = async (
 
   return {
     agdSignCommand: formatAgdSignCommand({
+      target: upgradeTarget,
+      releaseTag,
       request,
       unsignedTxAssetName,
       signedTxAssetName: detachedSignedTxAssetName(
@@ -1086,6 +1475,70 @@ const detachedSignedTxAssetName = (
   target: Target,
   grantee: string | undefined,
 ) => `${target}${grantee ? '-authz' : ''}-signed-tx.json`;
+
+/**
+ * Individual detached-grantee signature files an operator uploads instead
+ * of collecting and combining them into `signedTxAssetName` themselves
+ * (see {@link combineDetachedGranteeSignatures}). Only meaningful for authz
+ * grantees, since the control address is never a multisig in this design.
+ */
+const detachedSignatureAssetPrefix = (target: Target) =>
+  `${target}-authz-signature-`;
+
+/**
+ * If `signedTxAssetName` isn't already on the release, look for uploaded
+ * `${target}-authz-signature-*.json` files and, once enough valid ones for
+ * the grantee's multisig are present, combine and upload them as
+ * `signedTxAssetName` — so an operator never has to run `agd tx multisign`
+ * themselves. Safe to call repeatedly while cosigners are still signing:
+ * it only writes the asset once combination actually succeeds.
+ */
+const tryCombineDetachedSignatures = async ({
+  target,
+  release,
+  unsignedTxAssetName,
+  signedTxAssetName,
+  connectTargetRpc,
+}: {
+  target: Target;
+  release: ReleaseRW;
+  unsignedTxAssetName: string;
+  signedTxAssetName: string;
+  connectTargetRpc: (upgradeTarget: Target) => Promise<StargateClient>;
+}): Promise<CombineSignaturesResult> => {
+  const { assets } = await release.readOnly().get();
+  const prefix = detachedSignatureAssetPrefix(target);
+  const signatureAssetNames = assets
+    .map(({ name }) => name)
+    .filter(name => name.startsWith(prefix) && name.endsWith('.json'));
+  if (signatureAssetNames.length === 0) {
+    return { ready: false, reason: 'no detached signatures uploaded yet' };
+  }
+  const unsignedTx = await release.join(unsignedTxAssetName).readJSON();
+  const signatureDescriptors = await Promise.all(
+    signatureAssetNames.map(
+      name => release.join(name).readJSON() as Promise<any>,
+    ),
+  );
+  const result = await combineDetachedGranteeSignatures({
+    unsignedTx: unsignedTx as any,
+    chainId: getTargetInfo(target).chainId,
+    getAccountNumber: async (granteeAddress: string) => {
+      const queryClient = await connectTargetRpc(target);
+      const account =
+        (await queryClient.getAccount(granteeAddress)) ||
+        Fail`grantee ${granteeAddress} not found on chain`;
+      return account.accountNumber;
+    },
+    signatureDescriptors,
+  });
+  if (result.ready) {
+    await release
+      .join(signedTxAssetName)
+      .writeText(formatJson(result.signedTx));
+  }
+  return result;
+};
 
 const submitAuthzOperatorUpgrade = async (
   upgradeTarget: Target,
@@ -1137,6 +1590,7 @@ const confirmUpgradeContract = async (
     upgradeLogs,
     makeTxApiForTarget,
     makeVstorageApiForTarget,
+    grantee,
   }: StepTools & {
     upgradeLogs: CmdRunner;
     makeTxApiForTarget: (
@@ -1145,6 +1599,7 @@ const confirmUpgradeContract = async (
     makeVstorageApiForTarget: (
       upgradeTarget: Target,
     ) => Promise<ReturnType<typeof makeAgoricVstorageApi>>;
+    grantee?: string;
   },
 ) => {
   expectMissing(
@@ -1157,18 +1612,29 @@ const confirmUpgradeContract = async (
   const txApi = await makeTxApiForTarget(upgradeTarget);
   const vstorageApi = await makeVstorageApiForTarget(upgradeTarget);
   const info = getTargetInfo(upgradeTarget);
-  const sender = getControlAddress(
+  const owner = getControlAddress(
     pending.contract as 'ymax0' | 'ymax1',
     pending.network as 'devnet' | 'main',
   );
-  const txs = await txApi.txs({
-    query: `message.sender='${sender}'`,
-    orderBy: 'ORDER_BY_DESC',
-    pagination: { limit: 50 },
-  });
+  const detachedGrantee =
+    grantee || (await findDetachedAuthzGrantee(release, upgradeTarget));
+  const candidateSenders = [
+    ...new Set([owner, detachedGrantee].filter(Boolean)),
+  ];
+  const txs = (
+    await Promise.all(
+      candidateSenders.map(sender =>
+        txApi.txs({
+          query: `message.sender='${sender}'`,
+          orderBy: 'ORDER_BY_DESC',
+          pagination: { limit: 50 },
+        }),
+      ),
+    )
+  ).flat();
   const { tx: invocationTx, messageId } = findInvocationTx({
     pending,
-    sender,
+    owner,
     txs,
   });
   // The list page can be truncated, so resolve the full tx by hash. A landed
@@ -1189,7 +1655,7 @@ const confirmUpgradeContract = async (
     // dies later in the getGoodLogs retry with a vague "missing upgrade
     // result". Poll (retryUntilCondition) until the invocation update appears,
     // then check .error — mirroring getGoodLogs / client-utils pollOffer.
-    const updates = await vstorageApi.wallet(sender).readUpdates();
+    const updates = await vstorageApi.wallet(owner).readUpdates();
     const invocation = [...updates]
       .reverse()
       .find(
@@ -1249,12 +1715,25 @@ const confirmUpgradeContract = async (
     .join(normLogsAssetName)
     .writeText(makeNormText(sortedLogEntries));
 
+  const fetchHealthBlock = (height: number) =>
+    retryUntilCondition(
+      () => txApi.blockByHeight(height),
+      () => true,
+      `block at height ${height}`,
+      { setTimeout, retryIntervalMs: 5_000 },
+    );
+  const healthBlocks = await Promise.all([
+    fetchHealthBlock(result.upgradeBlockHeight + 1),
+    fetchHealthBlock(result.upgradeBlockHeight + 2),
+  ]);
+
   const record = await makeUpgradeRecord(
     upgradeTarget,
     install.bundleId,
     {
       ...result,
       incarnationNumber,
+      healthBlocks,
     },
     pending.privateArgsOverridesPath,
   );
@@ -1335,6 +1814,7 @@ export const makeGraph = (
     release,
     setTimeout,
     now,
+    grantee,
   };
 
   const nodes: Record<string, GraphNode> = {
@@ -1484,12 +1964,12 @@ export const makeGraph = (
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
-          const { pending } = await preparePendingUpgrade(
+          const pending = await buildDetachedPendingRecord(
             'ymax0-devnet',
             install as InstallRecord,
-            { asset: asset! },
             { cause, privateArgs, ...tools },
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax0-devnet',
             (signedTx as { txBytes: Uint8Array }).txBytes,
@@ -1564,12 +2044,12 @@ export const makeGraph = (
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
-          const { pending } = await preparePendingUpgrade(
+          const pending = await buildDetachedPendingRecord(
             'ymax0-main',
             install as InstallRecord,
-            { asset: asset! },
             { cause, privateArgs, ...tools },
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax0-main',
             (signedTx as { txBytes: Uint8Array }).txBytes,
@@ -1642,12 +2122,12 @@ export const makeGraph = (
         ),
       create: async ({ install, signedTx }, asset, cause) => {
         if (detached) {
-          const { pending } = await preparePendingUpgrade(
+          const pending = await buildDetachedPendingRecord(
             'ymax1-main',
             install as InstallRecord,
-            { asset: asset! },
             { cause, privateArgs, ...tools },
           );
+          await asset!.writeText(`${JSON.stringify(pending, null, 2)}\n`);
           await submitAuthzOperatorUpgrade(
             'ymax1-main',
             (signedTx as { txBytes: Uint8Array }).txBytes,
@@ -1682,7 +2162,7 @@ export const makeGraph = (
         ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
-          throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
+          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
         }
         const overrides = await createOverrides('ymax0-devnet', privateArgs, {
           distDir: deployPackage.distDir,
@@ -1737,7 +2217,7 @@ export const makeGraph = (
         ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
-          throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
+          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
         }
         const overrides = await createOverrides('ymax0-main', privateArgs, {
           distDir: deployPackage.distDir,
@@ -1791,7 +2271,7 @@ export const makeGraph = (
         ),
       create: async ({ install }, asset, cause) => {
         if (!grantee) {
-          throw Fail`GRANTEE_ADDRESS must be set for phase-upgrade-generate`;
+          throw Fail`GRANTEE must be set for phase-upgrade-generate`;
         }
         const overrides = await createOverrides('ymax1-main', privateArgs, {
           distDir: deployPackage.distDir,
@@ -2038,7 +2518,7 @@ export const main = async (
   const {
     GITHUB_TOKEN: ghToken,
     AGORIC_NET,
-    GRANTEE_ADDRESS,
+    GRANTEE,
     MNEMONIC,
     YMAX_INSTALL_BUNDLE_MNEMONIC,
     PRIVATE_ARGS_OVERRIDES,
@@ -2117,7 +2597,7 @@ export const main = async (
     return makeAgoricVstorageApi(apiAddrs, { fetchFn, setTimeout });
   };
   const makeUpgradeRequestBuilder = async (upgradeTarget: Target) => {
-    const { network } = getTargetInfo(upgradeTarget);
+    const { network, contract } = getTargetInfo(upgradeTarget);
     const config = await fetchNetworkConfig(network, { fetch });
     const rpcAddr = config.rpcAddrs?.[0];
     if (!rpcAddr) {
@@ -2131,8 +2611,9 @@ export const main = async (
       config,
     );
     return buildUpgradeRequestBuilder({
+      contract,
       networkConfig: config,
-      grantee: GRANTEE_ADDRESS,
+      grantee: GRANTEE,
       queryClient: await connectRpc(rpcAddr),
       walletKit,
       clock: () => new Date(now()),
@@ -2172,7 +2653,7 @@ export const main = async (
       makeVstorageApiForTarget,
       setTimeout,
       now,
-      grantee: GRANTEE_ADDRESS,
+      grantee: GRANTEE,
     },
   );
 
@@ -2182,13 +2663,52 @@ export const main = async (
       break;
     }
     case 'phase-upgrade-generate': {
-      const record = detachedUnsignedTxAssetName(target, GRANTEE_ADDRESS);
+      const record = detachedUnsignedTxAssetName(target, GRANTEE);
+      if (GRANTEE && hasAsset(await release.readOnly().get(), record)) {
+        await ensureGranteeMatchesUnsignedTx({
+          release,
+          unsignedTxAssetName: record,
+          grantee: GRANTEE,
+        });
+      }
       const generated = await graph.ensureNode<object>(record);
+      const signedTxAssetName = detachedSignedTxAssetName(target, GRANTEE);
+      const releaseInfo = await release.readOnly().get();
+      const alreadySigned = hasAsset(releaseInfo, signedTxAssetName);
+      const combineResult: CombineSignaturesResult | undefined =
+        !alreadySigned && GRANTEE
+          ? await tryCombineDetachedSignatures({
+              target,
+              release,
+              unsignedTxAssetName: record,
+              signedTxAssetName,
+              connectTargetRpc,
+            })
+          : undefined;
+      const readyToBroadcast = alreadySigned || combineResult?.ready === true;
+      const agdSignCommand = readyToBroadcast
+        ? undefined
+        : await rebuildAgdSignCommand({
+            target,
+            releaseTag: tag,
+            unsignedTxAssetName: record,
+            signedTxAssetName,
+            release,
+            connectTargetRpc,
+            grantee: GRANTEE,
+          });
       writeJson(stdout, {
         target,
         phase: 'upgrade-generate',
         record,
-        detail: generated,
+        detail: {
+          ...generated,
+          ...(agdSignCommand ? { agdSignCommand } : {}),
+        },
+        readyToBroadcast,
+        ...(combineResult && !combineResult.ready
+          ? { reason: combineResult.reason }
+          : {}),
       });
       break;
     }

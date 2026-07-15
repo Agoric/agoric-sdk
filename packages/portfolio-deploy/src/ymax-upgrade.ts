@@ -64,10 +64,9 @@ const upgradeYmax = async (tools: RunTools) => {
   let tx: DeliverTxResponse | undefined;
   try {
     trace('upgrading contract', contract, 'to bundle', bundleId);
-    ({ tx } = await (ymaxControl as any).upgrade({
+    ({ tx } = await ymaxControl.upgrade({
       bundleId,
       privateArgsOverrides,
-      id: invocationId,
     }));
   } catch (err) {
     tx = account.lastTx;

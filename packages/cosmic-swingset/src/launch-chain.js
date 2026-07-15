@@ -22,6 +22,7 @@ import {
   loadSwingsetConfigFile,
   normalizeConfig,
   upgradeSwingset,
+  applyVatOptionUpdates,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
 import { attenuate, BridgeId as BRIDGE_ID } from '@agoric/internal';
@@ -1166,8 +1167,37 @@ export async function launchAndShareInternals({
 
         const softwareUpgradeCoreProposals = upgradeDetails?.coreProposals;
 
-        const { coreProposals: upgradeInfoCoreProposals } =
-          parseUpgradePlanInfo(upgradeDetails?.plan, ActionType.AG_COSMOS_INIT);
+        const {
+          coreProposals: upgradeInfoCoreProposals,
+          vatOptionUpdates: upgradeInfoVatOptionUpdates,
+        } = parseUpgradePlanInfo(
+          upgradeDetails?.plan,
+          ActionType.AG_COSMOS_INIT,
+        );
+
+        // Apply any host-injected in-place vat option updates for this
+        // software upgrade. This mirrors coreProposals handling: two
+        // channels, merged and applied at the upgrade block —
+        //   * upgradeDetails.vatOptionUpdates: hard-coded per chain in the
+        //     cosmos upgrade handler (golang/cosmos/app/upgrade.go), for
+        //     chains known there; and
+        //   * upgradePlan.info.vatOptionUpdates: proposer-supplied via the
+        //     upgrade proposal's info JSON.
+        // All chain selection is done cosmos-side; cosmic-swingset makes no
+        // chainID decision. Applying it here — before core proposals run and
+        // before COMMIT_BLOCK — gets it applied and recorded in consensus for
+        // every later block.
+        const vatOptionUpdates = [
+          ...(upgradeDetails?.vatOptionUpdates || []),
+          ...(upgradeInfoVatOptionUpdates || []),
+        ];
+        if (vatOptionUpdates.length) {
+          // Just for a clearer error if this were ever reached during
+          // bootstrap.
+          (upgradeDetails && !isBootstrap) ||
+            Fail`vat option updates are only supported during a software upgrade, not chain bootstrap`;
+          applyVatOptionUpdates(kernelStorage.kvStore, vatOptionUpdates);
+        }
 
         if (isBootstrap) {
           // This only runs for the very first block on the chain.

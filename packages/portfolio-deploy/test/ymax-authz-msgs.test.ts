@@ -5,6 +5,8 @@ import {
   MsgExec,
   MsgGrant,
 } from '@agoric/cosmic-proto/codegen/cosmos/authz/v1beta1/tx.js';
+import { LegacyAminoPubKey } from '@agoric/cosmic-proto/codegen/cosmos/crypto/multisig/keys.js';
+import { PubKey as Secp256k1PubKey } from '@agoric/cosmic-proto/codegen/cosmos/crypto/secp256k1/keys.js';
 import { Any } from '@agoric/cosmic-proto/codegen/google/protobuf/any.js';
 import { TxBody, TxRaw } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
@@ -23,9 +25,12 @@ import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils.js';
 import { LOCAL_CONFIG } from '@agoric/client-utils/src/network-config.js';
 import { makeSmartWalletKit } from '@agoric/client-utils/src/smart-wallet-kit.js';
 import {
+  encodeJsonPublicKey,
+  makeAgdUnsignedTx,
   makeGrantEncodeObject,
   makeUpgradeEncodeObject,
   makeUpgradeExecEncodeObject,
+  parseJsonPublicKey,
 } from '../src/ymax-authz-msgs.ts';
 
 const agoricHdPath = stringToPath(`m/44'/564'/0'/0/0`);
@@ -312,4 +317,100 @@ test('direct spend action message signs cryptographically', async t => {
     marshaller.fromCapData(JSON.parse(decodedSpend.spendAction)),
     action,
   );
+});
+
+const secp256k1Json = (key: Uint8Array) => ({
+  '@type': Secp256k1PubKey.typeUrl,
+  key: Buffer.from(key).toString('base64'),
+});
+
+test('encodeJsonPublicKey round-trips a secp256k1 key through parseJsonPublicKey', t => {
+  const key = Buffer.from(
+    'A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3',
+    'base64',
+  );
+  const json = secp256k1Json(key);
+
+  const parsed = parseJsonPublicKey(json);
+  t.truthy(parsed);
+  t.is(parsed?.typeUrl, Secp256k1PubKey.typeUrl);
+
+  t.deepEqual(encodeJsonPublicKey(parsed), json);
+});
+
+test('encodeJsonPublicKey round-trips a multisig LegacyAminoPubKey through parseJsonPublicKey', t => {
+  // matches the shape `agd keys show <multisig> --pubkey` prints
+  const json = {
+    '@type': LegacyAminoPubKey.typeUrl,
+    threshold: 2,
+    public_keys: [
+      secp256k1Json(
+        Buffer.from('A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3', 'base64'),
+      ),
+      secp256k1Json(
+        Buffer.from('Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl', 'base64'),
+      ),
+    ],
+  };
+
+  const parsed = parseJsonPublicKey(json);
+  t.truthy(parsed);
+  t.is(parsed?.typeUrl, LegacyAminoPubKey.typeUrl);
+
+  t.deepEqual(encodeJsonPublicKey(parsed), json);
+});
+
+test('makeAgdUnsignedTx embeds a multisig public_key in gRPC-gateway JSON shape', t => {
+  const controlPubkey = {
+    '@type': LegacyAminoPubKey.typeUrl,
+    threshold: 2,
+    public_keys: [
+      secp256k1Json(
+        Buffer.from('A43NKCA60Po/kXiKIsA2CKVERUMsRnRsmEB1T4pnHgS3', 'base64'),
+      ),
+      secp256k1Json(
+        Buffer.from('Azb3Hn7YJIsE0NAnSN1HNnRQ/CQ8rQiJpxA1Bo8LS3bl', 'base64'),
+      ),
+    ],
+  };
+  const bodyBytes = registry.encodeTxBody({
+    messages: [
+      {
+        typeUrl: MsgWalletSpendAction.typeUrl,
+        value: { owner: new Uint8Array(), spendAction: '' } as any,
+      },
+    ],
+    memo: '',
+  });
+  const authInfoBytes = makeAuthInfoBytes(
+    [
+      {
+        pubkey: encodePubkey({
+          type: 'tendermint/PubKeyMultisigThreshold',
+          value: {
+            threshold: '2',
+            pubkeys: [
+              {
+                type: 'tendermint/PubKeySecp256k1',
+                value: controlPubkey.public_keys[0].key,
+              },
+              {
+                type: 'tendermint/PubKeySecp256k1',
+                value: controlPubkey.public_keys[1].key,
+              },
+            ],
+          },
+        }),
+        sequence: 0,
+      },
+    ],
+    fee.amount,
+    Number(fee.gas),
+    undefined,
+    undefined,
+  );
+
+  const unsigned = makeAgdUnsignedTx({ bodyBytes, authInfoBytes });
+
+  t.deepEqual(unsigned.auth_info.signer_infos[0].public_key, controlPubkey);
 });

@@ -241,11 +241,25 @@ const getLatestSenderTx = async ({
   const txs = [...((await fetchSenderTxs(apiAddr, sender, limit)) || [])];
   if (txHash) {
     const found = txs.find(tx => tx.txhash === txHash.toUpperCase());
-    if (!found) {
-      throw Error(`tx hash not found among recent sender txs: ${txHash}`);
+    if (found) {
+      trace(`found requested tx ${found.txhash} at height ${found.height}`);
+      return found;
     }
-    trace(`found requested tx ${found.txhash} at height ${found.height}`);
-    return found;
+    // tx not in sender's list — may have been submitted by a grantee via authz; look up directly by hash
+    trace(
+      `tx ${txHash.toUpperCase()} not among recent sender txs, fetching directly by hash`,
+    );
+    const response = await fetchJson<SingleTxResponse>(
+      `${apiAddr}/cosmos/tx/v1beta1/txs/${txHash.toUpperCase()}`,
+    );
+    const direct = must(
+      response.tx_response,
+      `tx not found by hash: ${txHash}`,
+    );
+    trace(
+      `found requested tx ${direct.txhash} at height ${direct.height} via direct lookup`,
+    );
+    return direct;
   }
   txs.sort((left, right) => {
     const leftTs = left.timestamp ? Date.parse(left.timestamp) : NaN;

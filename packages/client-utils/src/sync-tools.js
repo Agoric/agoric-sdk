@@ -95,8 +95,13 @@ export const retryUntilCondition = async (
           };
           return cleanup;
         };
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        resultP.finally(makeCleanup(resultP));
+        // Use `.then(cleanup, cleanup)` rather than `.finally(cleanup)`: a
+        // rejected `resultP` is already handled below via `await
+        // Promise.race([resultP, ...])`, but `.finally()` forwards the
+        // rejection into a new, uncaught promise, which was reported as an
+        // unhandled rejection once `operation` failed on any attempt prior
+        // to the last.
+        resultP.then(makeCleanup(resultP), makeCleanup(resultP));
       }
       const result = await Promise.race([
         resultP,
