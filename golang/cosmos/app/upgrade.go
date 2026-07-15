@@ -24,6 +24,7 @@ import (
 var upgradeNamesOfThisVersion = []string{
 	"agoric-upgrade-23",
 	"agoric-upgrade-23-1",
+	"agoric-upgrade-23-2",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -60,6 +61,8 @@ func isPrimaryUpgradeName(name string) bool {
 	case validUpgradeName("agoric-upgrade-23"):
 		return true
 	case validUpgradeName("agoric-upgrade-23-1"):
+		return false
+	case validUpgradeName("agoric-upgrade-23-2"):
 		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
@@ -235,7 +238,11 @@ func makeUpgrade23Handler(app *GaiaApp, targetUpgrade string) upgradetypes.Upgra
 				}
 				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
 			}
+		}
 
+		// These vatOptionUpdates are idempotent and can be applied on any upgrade
+		// of this version, even if it is not the first upgrade.
+		{
 			// Promote the running ymax contract vat to `critical`. These are
 			// the known vatIDs for the ymax contract on each chain: ymax1 on
 			// mainnet, ymax0 on devnet.
