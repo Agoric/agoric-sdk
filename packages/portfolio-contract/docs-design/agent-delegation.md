@@ -57,11 +57,18 @@ Agoric-side delegation path is not in scope.
 The new op follows the existing handler's nonce + deadline pattern;
 nothing delegation-specific.
 
-### "Allocated instruments"
+### "Allowed" / "allocated" instruments
 
 An instrument is "allocated" iff it is present as a key in the portfolio's
 current `targetAllocation` (see [portfolio.exo.ts](../src/portfolio.exo.ts)
-state shape). The check applied to a granted rebalance is:
+state shape).
+
+For delegation purposes, this key set is also the complete set of **allowed
+instruments**. There is no separate instrument allowlist in the grant. A key
+whose portion is `0` remains allowed; an instrument stops being allowed only
+when an owner-signed portfolio edit removes its key from `targetAllocation`.
+
+The check applied to a granted rebalance is:
 
 - the proposed allocation's key set must equal the current allocation's
   key set — no added keys (the agent cannot introduce new instruments)
@@ -74,29 +81,52 @@ be present.
 
 A rebalance that violates the permission's key-set rule causes the offer to reject.
 
+### Changing the mandate
+
+The delegation does not give the agent authority to change its own mandate.
+To add or remove instruments, the agent proposes a normal portfolio edit by
+generating a link to the Ymax edit-portfolio page. The link encodes the proposed
+target allocation, including its complete instrument key set.
+
+The user opens the link, reviews the proposed allocation in Ymax, and signs the
+existing EVM `SetTargetAllocation` operation. That owner-authorized operation
+updates both the allocation portions and the set of instruments available to
+the delegate. No delegation credential or agent signature can substitute for
+the user's signature on this operation.
+
+After the signed edit is accepted, `policyVersion` advances. Any agent action
+prepared against the old mandate fails its version check; the agent must read
+the new `targetAllocation` and `policyVersion` before acting again.
+
+The proposal link is not authorization. Query parameters are untrusted input
+used only to pre-populate the review screen; the signed EIP-712 message is the
+authoritative request.
+
 ### Operations exposed to the grantee
 
-The delegation exo exposes a narrowed subset of the portfolio's
-`invitationMakers`. For this story, that means `SimpleRebalance` only,
-guarded by the key-set check above. `Deposit` and `Withdraw` are not
-exposed. `Rebalance` (which accepts an arbitrary flow) is treated as
-if it didn't exist — it is a deprecated design mistake — so there is
-nothing to guard there.
+The delegation client facet exposes two fund-management methods, each guarded
+by a distinct permission:
 
-The key-set check lives in the delegation wrapper exo, not in the
-portfolio. The wrapper holds the portfolio reference internally and
-never hands it out; claw1 only ever reaches `SimpleRebalance` through
-the wrapper. The wrapper checks the proposed allocation's key set
-against the current allocation, then forwards to the portfolio's
-existing `SimpleRebalance`. The portfolio code is unchanged.
+- `setTargetAllocation({ targetAllocation, syncState, agentMemo? })` requires
+  `allocation`. The wrapper enforces the exact-key-set mandate described above;
+  the portfolio delegation helper then validates the active delegation,
+  permission, and sync state before updating the target allocation and starting
+  an attributed rebalance flow.
+- `rebalance({ syncState, agentMemo? })` requires `rebalance`. It starts a
+  rebalance flow under the current policy without changing the target
+  allocation. This is currently used by the Ymax planner delegation for the
+  auto-rebalance feature, not by the external EVM `Grant` operation.
 
-The agent's `SimpleRebalance` offerArgs include `policyVersion` (and
-`rebalanceCount`), matching the existing planner submission pattern
-(see [planner.exo.ts](../src/planner.exo.ts) and
-[portfolio.exo.ts](../src/portfolio.exo.ts) `submitVersion`). The
-portfolio rejects the offer if the version doesn't match. The agent
-reads the current `targetAllocation` and `policyVersion` from the
-portfolio's vstorage status node, the same way the planner does.
+Neither method accepts an arbitrary flow plan from the delegation client.
+`Deposit` and `Withdraw` are not exposed. The wrapper holds only the narrowed
+portfolio delegation-helper facet and never exposes the portfolio's manager or
+other fund-moving facets.
+
+`syncState` contains `policyVersion` and `rebalanceCount`, matching the planner
+submission protocol (see [planner.exo.ts](../src/planner.exo.ts) and
+[portfolio.exo.ts](../src/portfolio.exo.ts)). The portfolio rejects the call if
+either value does not match. The agent reads the current `targetAllocation`,
+`policyVersion`, and `rebalanceCount` from portfolio status.
 
 This also resolves the apparent race between Pete and the grantee:
 if Pete calls `SetTargetAllocation` between the agent's read and the
