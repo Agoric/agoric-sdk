@@ -180,6 +180,8 @@ The attribution semantics are:
 - the numeric key is stable for the lifetime of that delegation
 - every flow started through that delegation embeds the assigned
   `agentN` string reference in its flow record
+- "agent" means any registered delegation client, including the internal
+  planner delegation used for auto-features as well as an external grantee
 - owner-initiated flows simply omit `agent`, rather than pretending the
   owner is "agent0"
 - an optional client-supplied `agentMemo` is correlation metadata, not
@@ -190,8 +192,10 @@ ids:
 
 - `delegations` map keyed internally by just `n`
 - the next id is derived from the size of this append-only map
-- each record stores at least grantee address, permissions, and lifecycle
-  state (`active`, later maybe `revoked`, `expired`)
+- each record stores at least the grantee identifier, permissions, and
+  lifecycle state (`active`, later maybe `revoked`, `expired`); the grantee is
+  either an external Agoric address or the reserved planner identifier
+  `&planner`
 
 Externally, the published id can stay simple: `agent4`. Since the
 portfolio path already scopes the registry and flow attribution, the
@@ -218,6 +222,11 @@ portfolio17.agents = {
   agent4: {
     grantee: 'agoric1claw1...',
     permissions: { allocation: true },
+    state: 'active',
+  },
+  agent5: {
+    grantee: '&planner',
+    permissions: { allocation: false, rebalance: true },
     state: 'active',
   },
 };
@@ -263,6 +272,13 @@ Then:
 6. The portfolio's normal flow publication retains that embedded reference
    through subsequent status updates.
 
+The auto-feature path uses the same boundary. `setAutoFeatures` derives the
+planner's permissions from the enabled features and grants or reuses a
+registered delegation whose grantee is `&planner`. The contract delivers that
+delegation client directly to the planner. When the planner calls its delegated
+`rebalance` method, the resulting flow embeds the planner delegation's assigned
+`agentN` reference just like a flow submitted by an external grantee.
+
 This keeps the audit story honest: attribution comes from the only
 object that had the authority to start that flow, not from untrusted
 offer args supplied by the client. `agentMemo`, when present, remains
@@ -280,11 +296,13 @@ The implementation divides responsibility across these structures:
   agent key and the published agent registry.
 - `packages/portfolio-contract/src/portfolio.exo.ts` stores and publishes
   the registry; its narrowed delegation helper attaches the trusted agent
-  key to `FlowDetail` before starting a delegated flow.
+  key to `FlowDetail` before starting a delegated flow. `setAutoFeatures`
+  creates or updates the planner's entry in this same registry.
 - `packages/portfolio-contract/src/delegation.exo.ts` carries the assigned
   numeric `agentId` and invokes only that narrowed helper.
-- the delegation-grant path assigns the id, persists the registry entry,
-  and delivers the wrapper and grant details.
+- the delegation-grant path assigns the id and persists the registry entry. It
+  delivers external grants by invitation and installs the `&planner` grant
+  directly in the planner.
 
 ### Testing obligations
 
@@ -300,6 +318,9 @@ At minimum, this design implies tests for:
   stable once assigned
 - delegated attribution: a delegated `setTargetAllocation` publishes a flow
   containing `agent: 'agentM'` as soon as the flow is known
+- planner attribution: enabling auto-rebalance registers `&planner` as an
+  agent, and its delegated rebalance flows contain that delegation's
+  `agentN` reference
 - non-delegated flows: owner-initiated flows do not publish a spurious
   `agent` reference
 - registry / flow linkage: every published `flow.agent` resolves to a
@@ -339,9 +360,10 @@ With a registry:
 - **When the id is allocated**: on grant creation, not on first use.
   Otherwise the same delegation would lack an identity until its first
   action.
-- **What counts as an "agent"**: only delegated wrappers. Direct owner
-  calls and planner flows should remain unattributed unless we later add
-  a more general "initiator" concept.
+- **What counts as an "agent"**: any registered delegation wrapper, including
+  the `&planner` wrapper used by auto-features. Direct owner calls remain
+  unattributed. The id records the delegated authority path, not whether the
+  actor is external or human-operated.
 - **Historical retention**: the registry should probably retain revoked
   delegations rather than deleting them, because old flows still refer to
   them.
