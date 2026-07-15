@@ -135,12 +135,22 @@ The agent re-reads and retries.
 
 ### Permissions as a parameter
 
-The permissions field in invitation details is an options bag.
-v1 has exactly one supported permission:
+The app-level permissions field in invitation details and the delegation
+registry is an extensible options bag. The currently implemented shape is:
 
 ```ts
-type PortfolioPermissions = { allocation: boolean };
+type PortfolioPermissions = {
+  allocation?: boolean;
+  rebalance?: boolean;
+};
 ```
+
+The external EIP-712 `Grant` wire format intentionally contains only the
+required `allocation: boolean` field, and the external grant path requires it
+to be `true`. The `rebalance` permission is currently assigned internally to
+the planner delegation when auto-rebalance is enabled. This wire/app
+difference is explicit: clients must not infer that every app-level permission
+can be granted by the current EIP-712 message.
 
 TODO: more expressive permissions (e.g. min/max portion bands per
 instrument, max drift per rebalance, allowlist of instruments narrower
@@ -229,9 +239,10 @@ shape later without changing the path.
 
 ### How attribution is attached
 
-The clean authority boundary is still the delegation wrapper exo.
-The wrapper already mediates access to `SimpleRebalance`; it can also
-carry its own assigned `agentId` and forward it when starting the flow.
+The clean authority boundary is the delegation wrapper together with the
+portfolio's narrowed delegation-helper facet. The wrapper mediates
+`setTargetAllocation` and `rebalance`, carries its assigned `agentId`, and
+cannot reach the portfolio manager directly.
 
 Then:
 
@@ -239,9 +250,9 @@ Then:
 2. The portfolio allocates numeric id `4`, stores the delegation record,
    and mints the wrapper with that `agentId` in its state.
 3. claw1 calls delegated `setTargetAllocation(...)`.
-4. The wrapper performs the key-set / version checks and forwards to the
-   existing rebalance path with out-of-band attribution
-   `agent4`.
+4. The wrapper performs the key-set check. The portfolio delegation helper
+   validates the active client, permission, and version, then starts the flow
+   with out-of-band attribution `agent4`.
 5. As soon as the delegated call gets back `flow34`, the delegation exo
    can call the portfolio's reporter facet to publish
    `flows.flow34.agent = { id: 'agent4' }`; it does not need
@@ -285,7 +296,7 @@ At minimum, this design implies tests for:
 - grant-time id allocation: the first delegation for `portfolio17`
   becomes `agent1`, the next `agent2`, and ids are
   stable once assigned
-- delegated attribution: a delegated `SimpleRebalance` publishes
+- delegated attribution: a delegated `setTargetAllocation` publishes
   `flows.flowN.agent = { id: 'portfolio17agentM' }` as soon as `flowN`
   is known
 - non-delegated flows: owner/planner flows do not publish a spurious
