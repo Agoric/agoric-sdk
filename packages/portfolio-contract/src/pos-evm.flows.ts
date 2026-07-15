@@ -533,10 +533,14 @@ export const ERC4626Protocol = {
       if (!users || !tokens || !amounts || !proofs) {
         throw Fail`ERC4626 claimRewards requires users, tokens, amounts, and proofs`;
       }
+      const lengths = [users, tokens, amounts, proofs].map(arr => arr.length);
+      if (new Set(lengths).size !== 1) {
+        throw Fail`ERC4626 claimRewards requires users, tokens, amounts, and proofs to be of uniform count`;
+      }
       const { addresses: a } = ctx;
       const distributor =
         a.merkleDistributor ||
-        assert.fail(X`merkleDistributor address not configured`);
+        assert.fail('merkleDistributor address not configured');
       const session = makeEvmAbiCallBatch();
       const md = session.makeContract(distributor, merkleDistributorABI);
       md.claim(users, tokens, amounts, proofs);

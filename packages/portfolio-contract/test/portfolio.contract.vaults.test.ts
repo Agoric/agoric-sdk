@@ -289,21 +289,7 @@ test('claim rewards on Morpho ERC4626 position successfully', async t => {
     ] as `0x${string}`[][],
   };
 
-  const rebalanceP = trader1.rebalance(
-    t,
-    { give: { Deposit: amount }, want: {} },
-    {
-      flow: [
-        {
-          dest: '@Ethereum',
-          src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
-          amount: usdc.make(100n),
-          fee: feeCall,
-          claimRewards,
-        },
-      ],
-    },
-  );
+  const rebalanceP = trader1.deposit(t, usdc.make(100n));
 
   await txResolver.drainPending();
 
