@@ -1,6 +1,6 @@
 {
   "name": "@agoric/network",
-  "version": "0.3.0-u23.0",
+  "version": "0.3.0-u23.1",
   "description": "Agoric's network protocol API",
   "type": "module",
   "main": "./src/index.js",

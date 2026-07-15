@@ -1,6 +1,6 @@
 {
   "name": "@agoric/portfolio-api",
-  "version": "0.3.0-u23.0",
+  "version": "0.3.0-u23.1",
   "description": "API for Portfolio management",
   "type": "module",
   "files": [

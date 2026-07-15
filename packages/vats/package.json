@@ -1,6 +1,6 @@
 {
   "name": "@agoric/vats",
-  "version": "0.17.0-u23.0",
+  "version": "0.17.0-u23.1",
   "description": "Agoric's Vat library",
   "type": "module",
   "main": "./index.js",

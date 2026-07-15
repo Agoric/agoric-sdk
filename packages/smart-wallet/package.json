@@ -1,6 +1,6 @@
 {
   "name": "@agoric/smart-wallet",
-  "version": "0.7.0-u23.0",
+  "version": "0.7.0-u23.1",
   "description": "Wallet contract",
   "type": "module",
   "main": "src/index.js",
