@@ -220,17 +220,33 @@ the release process can be aborted.
     as used in e.g. `go get github.com/Agoric/agoric-sdk@$version`.
 
   ```sh
-  # Create the final release CHANGELOGs.
-  yarn lerna version --no-push --conventional-graduate
+  ## Create the final release CHANGELOGs.
+  yarn lerna version --no-push --conventional-prerelease --preid u<NN>
+  goTag="v$(git tag -l --contains HEAD | sed -n 's!^@agoric/cosmos@!!p' | head -1)"
+  git tag -f "$goTag"
+  ## Build xsnap prebuilt binaries
+  git push -u origin HEAD
+  xsnapVersion="$(git tag -l --contains HEAD | sed -n 's!^@agoric/xsnap@!!p' | head -1)"
+  echo $xsnapVersion
+  # open https://github.com/Agoric/xsnap-worker-binaries/actions/workflows/build-real.yml
+  # Trigger job with branch name and xsnap version
+  # open https://github.com/Agoric/xsnap-worker-binaries/actions/workflows/publish-github-release.yml
+  # Trigger job with xsnap version, build-real buildId, mark pre-release = true, validate only = false
+  # open https://github.com/Agoric/xsnap-worker-binaries/releases
+  # Copy hash of xsnap-worker-manifest-<version>.json artifact of the release just created
+  # Add version/hash entry to packages/xsnap/src/prebuilt-manifest-sha256.js
+  git add packages/xsnap/src/prebuilt-manifest-sha256.js
+  (cd packages/xsnap && yarn postinstall)
+  git commit -m "chore(xsnap): update prebuilt manifest hash"
+  git tag -a "@agoric/xsnap@$xsnapVersion" -f
+  ## Tag SDK for docker image
   prior=$(git tag -l | sed -ne 's!^@agoric/sdk@\([0-9]*\).*!\1!p' | sort -n | tail -1)
   SDKVER=$(( prior + 1 ))
   git tag @agoric/sdk@$SDKVER
-  goTag="v$(git tag -l --contains HEAD | sed -n 's!^@agoric/cosmos@!!p' | head -1)"
-  git tag -f "$goTag"
-  # Push the branch.
-  git push -u origin HEAD
-  # Tell which packages have actual news.
-  scripts/have-news HEAD^ > have-news.md
+  ## Push the branch.
+  git push origin
+  ## Tell which packages have actual news.
+  scripts/have-news HEAD~2 > have-news.md
   ```
 
 - [ ] Create the release PR:
@@ -269,23 +285,20 @@ to pass and for reviewer approval.
   yarn lerna publish --concurrency 1 from-package
   ```
 
+- [ ] <a id="publish-tags"></a>Publish the released package tags
+  ```sh
+  # Publish the released package tags.
+  ./scripts/get-released-tags --base=dev-upgrade-NN git push origin
+  ```
+
+  This will push all the tags created in the above
+  ["Generate new SDK version" step](#user-content-generate-sdk-version).
+
 - [ ] Merge the release PR into the base branch.
 
   **DO NOT REBASE OR SQUASH OR YOU WILL LOSE REFERENCES TO YOUR TAGS.**
 
   You may use the GitHub "Merge" button directly instead of automerge.
-
-- [ ] **DO NOT** change your local git environment to the base branch - keep
-  it on the release branch for the following steps.
-
-- [ ] <a id="publish-tags"></a>Publish the released package tags
-  ```sh
-  # Publish the released package tags.
-  ./scripts/get-released-tags git push origin
-  ```
-
-  This will push all the tags created in the above
-  ["Generate new SDK version" step](#user-content-generate-sdk-version).
 
 - [ ] (Optional) Publish an NPM distribution tag
 
