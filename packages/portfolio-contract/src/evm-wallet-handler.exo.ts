@@ -60,7 +60,8 @@ interface PortfolioContractPublicFacet {
   openPortfolioFromEVM(
     data:
       | YmaxOperationDetails<'OpenPortfolio'>['data']
-      | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data'],
+      | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data']
+      | YmaxOperationDetails<'OpenPortfolioWithGrant'>['data'],
     permitDetails: PermitDetails,
   ): Promise<{
     evmHandler: PortfolioEVMFacet;
@@ -313,7 +314,8 @@ export const prepareEVMPortfolioOperationManager = (
       try {
         const portfolioId =
           operationDetails.operation !== 'OpenPortfolio' &&
-          operationDetails.operation !== 'OpenPortfolioWithAutoFeatures'
+          operationDetails.operation !== 'OpenPortfolioWithAutoFeatures' &&
+          operationDetails.operation !== 'OpenPortfolioWithGrant'
             ? operationDetails.data.portfolio
             : undefined;
         const portfolio =
@@ -328,7 +330,8 @@ export const prepareEVMPortfolioOperationManager = (
 
         switch (operationDetails.operation) {
           case 'OpenPortfolio':
-          case 'OpenPortfolioWithAutoFeatures': {
+          case 'OpenPortfolioWithAutoFeatures':
+          case 'OpenPortfolioWithGrant': {
             const { permitDetails, data } = operationDetails;
             if (!permitDetails) {
               throw Fail`Missing permit details for OpenPortfolio operation`;

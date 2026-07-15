@@ -210,6 +210,31 @@ test('getYmaxWitness for OpenPortfolio', t => {
   t.deepEqual(witness.witness, { allocations });
 });
 
+test('getYmaxWitness for OpenPortfolioWithGrant nests grantee fields', t => {
+  const allocations: TargetAllocation[] = [
+    { instrument: 'Aave_Arbitrum', portion: 10000n },
+  ];
+  const grantee = {
+    address: 'agoric1exampleagentaddress',
+    permissions: { allocation: true },
+  };
+
+  const witness = getYmaxWitness('OpenPortfolioWithGrant', {
+    allocations,
+    grantee,
+  });
+
+  t.deepEqual(witness.witnessTypes.YmaxV1OpenPortfolioWithGrant, [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'grantee', type: 'DelegationGrantee' },
+  ]);
+  t.deepEqual(witness.witnessTypes.DelegationGrantee, [
+    { name: 'address', type: 'string' },
+    { name: 'permissions', type: 'PortfolioPermissions' },
+  ]);
+  t.deepEqual(witness.witness, { allocations, grantee });
+});
+
 test('getYmaxWitness for Deposit', t => {
   const witness = getYmaxWitness('Deposit', { portfolio: 5n });
 
