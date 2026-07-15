@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.43.0-u23.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.43.0-u23.0...@agoric/cosmic-swingset@0.43.0-u23.1) (2026-07-15)
+
+### Features
+
+* promote a running vat to critical at a software upgrade ([58cc611](https://github.com/Agoric/agoric-sdk/commit/58cc6112aafad39aeab4b4f285cda8b3fd3509b4))
+
 ## [0.43.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.41.3...@agoric/cosmic-swingset@0.43.0-u23.0) (2026-04-27)
 
 ### ⚠ BREAKING CHANGES

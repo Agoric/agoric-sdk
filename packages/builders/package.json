@@ -1,6 +1,6 @@
 {
   "name": "@agoric/builders",
-  "version": "0.3.0-u23.0",
+  "version": "0.3.0-u23.1",
   "description": "Build scripts for proposals to an Agoric chain",
   "type": "module",
   "main": "./index.js",

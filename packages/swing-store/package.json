@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swing-store",
-  "version": "0.11.0-u23.0",
+  "version": "0.11.0-u23.1",
   "description": "Persistent storage for SwingSet",
   "type": "module",
   "main": "./src/index.js",

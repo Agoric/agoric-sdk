@@ -1,6 +1,6 @@
 {
   "name": "@agoric/xsnap",
-  "version": "0.16.0-u23.0",
+  "version": "0.16.0-u23.1",
   "description": "Snapshotting VM worker based on Moddable's XS Javascript engine",
   "author": "Agoric",
   "license": "Apache-2.0",

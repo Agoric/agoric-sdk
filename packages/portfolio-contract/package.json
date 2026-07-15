@@ -1,7 +1,7 @@
 {
   "name": "@aglocal/portfolio-contract",
   "private": true,
-  "version": "0.3.0-u23.0",
+  "version": "0.3.0-u23.1",
   "description": "portfolio-contract aka ymax0 or YMax Proof of Concept (PoC)",
   "type": "module",
   "files": [

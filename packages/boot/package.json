@@ -1,6 +1,6 @@
 {
   "name": "@aglocal/boot",
-  "version": "0.3.0-u23.0",
+  "version": "0.3.0-u23.1",
   "private": true,
   "description": "Config and utilities to bootstrap an Agoric chain",
   "type": "module",

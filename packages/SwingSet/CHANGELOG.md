@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.34.0-u23.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.34.0-u23.0...@agoric/swingset-vat@0.34.0-u23.1) (2026-07-15)
+
+### Features
+
+* **SwingSet:** apply host-injected vat option updates in place ([d8fb38b](https://github.com/Agoric/agoric-sdk/commit/d8fb38b6dc5e660be9bc55d19b67bc0ab769b8da))
+
 ## [0.34.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-vat@0.32.2...@agoric/swingset-vat@0.34.0-u23.0) (2026-04-27)
 
 ### ⚠ BREAKING CHANGES

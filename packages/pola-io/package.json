@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pola-io",
-  "version": "0.3.0-u23.0",
+  "version": "0.3.0-u23.1",
   "description": "Least Authority I/O utilities",
   "type": "module",
   "main": "./src/index.js",

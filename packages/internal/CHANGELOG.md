@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0-u23.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.5.0-u23.0...@agoric/internal@0.5.0-u23.1) (2026-07-15)
+
+**Note:** Version bump only for package @agoric/internal
+
 ## [0.5.0-u23.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.2...@agoric/internal@0.5.0-u23.0) (2026-04-27)
 
 ### ⚠ BREAKING CHANGES
