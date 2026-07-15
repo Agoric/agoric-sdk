@@ -1,0 +1,21 @@
+{
+  "//": "Self-contained deploy/emit config. Deliberately does NOT extend the monorepo base tsconfig: `gcloud functions deploy --source services/kms-signer-poc` uploads only this directory, so a `../../tsconfig.json` extends resolves to a missing file in the Cloud Build sandbox. Keep the emit-affecting options here in sync with the repo root tsconfig.",
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "strictNullChecks": true,
+    "types": ["node"],
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "noEmit": false,
+    "declaration": false,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"],
+  "exclude": ["test", "**/*.test.ts"]
+}
