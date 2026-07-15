@@ -50,6 +50,7 @@ export default [
       'packages/orchestration/src/stubs/',
       '**/*.html',
       '**/ava*.config.js',
+      '**/ava*.config.mjs',
       '**/.ava*.config.js',
       '**/tsup.config.ts',
       '**/vendor/**',

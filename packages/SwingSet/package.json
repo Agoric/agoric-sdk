@@ -85,21 +85,6 @@
   "directories": {
     "example": "examples"
   },
-  "ava": {
-    "extensions": [
-      "js",
-      "ts"
-    ],
-    "workerThreads": false,
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--import=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "timeout": "20m"
-  },
   "publishConfig": {
     "access": "public"
   },

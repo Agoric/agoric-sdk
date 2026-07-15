@@ -60,13 +60,6 @@
     "tools/",
     "NEWS.md"
   ],
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "workerThreads": false,
-    "timeout": "10m"
-  },
   "publishConfig": {
     "access": "public"
   },

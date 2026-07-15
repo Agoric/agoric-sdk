@@ -4,6 +4,8 @@
  * is with a comparator function, which is not JSON-serializable. So we put the
  * config in a separate .mjs file and point to it from package.json.
  */
+
+import base from '../../ava.config.js';
 // TODO break up the slowest test files so that the default sharding is more
 // balanced and we don't have to rely on this custom sorting.
 
@@ -91,9 +93,7 @@ const byExplicitBootOrder = (a, b) => {
 };
 
 export default {
-  extensions: ['js', 'ts'],
-  files: ['test/**/*.test.*'],
-  nodeArguments: ['--import=ts-blank-space/register', '--no-warnings'],
+  ...base,
   timeout: '20m',
   sortTestFiles: byExplicitBootOrder,
   workerThreads: false,

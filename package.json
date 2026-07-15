@@ -97,7 +97,8 @@
     "rxjs@npm:^6.4.0": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
     "rxjs@npm:^7.5.5": "patch:rxjs@npm%3A7.5.5#~/.yarn/patches/rxjs-npm-7.5.5-d0546b1ccb.patch",
     "ses@npm:^2.0.0": "patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch",
-    "ses@npm:^2.2.0": "patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch"
+    "ses@npm:^2.2.0": "patch:ses@npm%3A2.2.0#~/.yarn/patches/ses-npm-2.2.0-8184219d81.patch",
+    "supertap@npm:^3.0.1": "patch:supertap@npm%3A3.0.1#~/.yarn/patches/supertap-npm-3.0.1-d7c04bcbf0.patch"
   },
   "dependenciesMeta": {
     "better-sqlite3@12.10.0": {
@@ -144,19 +145,5 @@
     "build-lockfiles": "./scripts/update-package-locks.sh",
     "build-ts": "tsc --build tsconfig.build.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
-  },
-  "ava": {
-    "extensions": [
-      "js",
-      "ts"
-    ],
-    "files": [
-      "packages/*/test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--import=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "timeout": "30m"
   }
 }

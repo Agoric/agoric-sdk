@@ -35,12 +35,6 @@
       "@agoric"
     ]
   },
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "timeout": "2m"
-  },
   "typeCoverage": {
     "atLeast": 92.3
   },

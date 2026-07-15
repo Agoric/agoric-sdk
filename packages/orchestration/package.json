@@ -86,20 +86,6 @@
       "optional": true
     }
   },
-  "ava": {
-    "extensions": [
-      "js",
-      "ts"
-    ],
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--import=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "timeout": "20m"
-  },
   "files": [
     "*.js",
     "*.ts",

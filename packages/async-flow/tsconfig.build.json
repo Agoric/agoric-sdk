@@ -4,6 +4,7 @@
         "../../tsconfig-build-options.json"
     ],
     "exclude": [
+        "**/ava.config.js",
         "**/types-index.js",
         "scripts",
         "test",

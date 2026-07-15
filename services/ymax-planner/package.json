@@ -82,24 +82,6 @@
     "viem": "^2.41.2",
     "ws": "^8.18.3"
   },
-  "ava": {
-    "extensions": [
-      "js",
-      "ts"
-    ],
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "nodeArguments": [
-      "--import=ts-blank-space/register",
-      "--no-warnings"
-    ],
-    "require": [
-      "@endo/init/pre-remoting.js",
-      "./src/lockdown.js"
-    ],
-    "timeout": "30s"
-  },
   "typeCoverage": {
     "atLeast": 93.19
   },

@@ -7887,7 +7887,7 @@ __metadata:
 
 "ava@patch:ava@npm%3A8.0.1#~/.yarn/patches/ava-npm-8.0.1-b8bcbeb736.patch":
   version: 8.0.1
-  resolution: "ava@patch:ava@npm%3A8.0.1#~/.yarn/patches/ava-npm-8.0.1-b8bcbeb736.patch::version=8.0.1&hash=7239ec"
+  resolution: "ava@patch:ava@npm%3A8.0.1#~/.yarn/patches/ava-npm-8.0.1-b8bcbeb736.patch::version=8.0.1&hash=589ff2"
   dependencies:
     "@vercel/nft": "npm:^1.5.0"
     acorn: "npm:^8.16.0"
@@ -7936,7 +7936,7 @@ __metadata:
       optional: true
   bin:
     ava: entrypoints/cli.js
-  checksum: 10c0/1d1b384ae7ac43c0af7ce87c9e3cf7cd6e63ef5a1cdef28ad6398fa487ac8ae3a93ad18fa2575dc24affc8f0d3199933170c1dccfae05f2b747919ea142815e8
+  checksum: 10c0/e1caa258cf2f38c5b746c3527ccb646dff6d7de5b3aba9e9fed94855c45338036e024d89729cff786d8dd2580718c682d9019c11d178feee8cb767d415f2f3a9
   languageName: node
   linkType: hard
 
@@ -17598,7 +17598,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"supertap@npm:^3.0.1":
+"supertap@npm:3.0.1":
   version: 3.0.1
   resolution: "supertap@npm:3.0.1"
   dependencies:
@@ -17607,6 +17607,18 @@ __metadata:
     serialize-error: "npm:^7.0.1"
     strip-ansi: "npm:^7.0.1"
   checksum: 10c0/8164674f2e280cab875f0fef5bb36c15553c13e29697ff92f4e0d6bc62149f0303a89eee47535413ed145ea72e14a24d065bab233059d48a499ec5ebb4566b0f
+  languageName: node
+  linkType: hard
+
+"supertap@patch:supertap@npm%3A3.0.1#~/.yarn/patches/supertap-npm-3.0.1-d7c04bcbf0.patch":
+  version: 3.0.1
+  resolution: "supertap@patch:supertap@npm%3A3.0.1#~/.yarn/patches/supertap-npm-3.0.1-d7c04bcbf0.patch::version=3.0.1&hash=9b051d"
+  dependencies:
+    indent-string: "npm:^5.0.0"
+    js-yaml: "npm:^3.14.1"
+    serialize-error: "npm:^7.0.1"
+    strip-ansi: "npm:^7.0.1"
+  checksum: 10c0/6bd063596b73df3a3eca4432e51f4a3ab65d0040dca38628651ade218bc35d9e82d949621363547e75e819ee795f5c52f3e077f495aaede7a392787eaf3576d4
   languageName: node
   linkType: hard
 

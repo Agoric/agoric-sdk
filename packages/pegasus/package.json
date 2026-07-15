@@ -57,12 +57,6 @@
     "src/",
     "NEWS.md"
   ],
-  "ava": {
-    "files": [
-      "test/**/*.test.*"
-    ],
-    "timeout": "10m"
-  },
   "publishConfig": {
     "access": "public"
   },
