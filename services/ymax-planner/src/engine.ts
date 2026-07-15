@@ -492,15 +492,10 @@ export const processPortfolioEvents = async (
       }
       (logContext as any).plan = plan;
 
-      if (plan.flow.length > 0) {
-        const planOrSteps = plan.order ? plan : plan.flow;
-        return settle('resolvePlan', [...scope, planOrSteps, ...versions], {
-          plan,
-        });
-      } else {
-        const reason = 'Nothing to do for this operation.';
-        return settle('rejectPlan', [...scope, reason, ...versions]);
-      }
+      const planOrSteps = plan.order ? plan : plan.flow;
+      return settle('resolvePlan', [...scope, planOrSteps, ...versions], {
+        plan,
+      });
     } catch (err) {
       annotateError(err, inspect(logContext, { depth: 4 }));
       if (
