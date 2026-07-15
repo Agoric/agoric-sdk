@@ -137,8 +137,43 @@ const client = new ChainRegistryClient({
   baseUrl: `${registryRawBase}/${commit}`,
 });
 
-// chain info, assets and ibc data will be downloaded dynamically by invoking fetchUrls method
-await client.fetchUrls();
+/**
+ * Fetch one registry URL, retrying transient network failures with exponential
+ * backoff.
+ *
+ * codegen pins chain-registry to an immutable commit (CHAIN_REGISTRY_COMMIT),
+ * so the fetched content is identical across attempts — retrying is safe and
+ * keeps codegen deterministic. This exists because `client.fetchUrls()` issues
+ * all requests with a single `Promise.all` and lets the whole codegen (hence
+ * the CI idempotence check in scripts/verify-codegen-idempotence.mjs) fail
+ * whenever any one of the ~hundreds of raw.githubusercontent.com requests has a
+ * transient blip or rate-limit — a recurring source of flaky failures on
+ * master.
+ */
+const fetchUrlWithRetry = async (
+  url: string,
+  retries = 5,
+  delayMs = 500,
+): Promise<void> => {
+  try {
+    await client.fetch(url);
+  } catch (err) {
+    if (retries <= 0) {
+      throw new Error(`Failed to fetch ${url}`, { cause: err });
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    console.warn(
+      `fetch failed for ${url} (${retries} ${retries === 1 ? 'retry' : 'retries'} left), retrying in ${delayMs}ms: ${message}`,
+    );
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+    await fetchUrlWithRetry(url, retries - 1, delayMs * 2);
+  }
+};
+
+// chain info, assets and ibc data are downloaded dynamically. Fetch each URL
+// with retry (rather than client.fetchUrls()) so a transient network failure
+// doesn't fail the whole codegen; see fetchUrlWithRetry above.
+await Promise.all(client.urls.map(url => fetchUrlWithRetry(url)));
 
 const chainInfo = await convertChainInfo(client);
 
