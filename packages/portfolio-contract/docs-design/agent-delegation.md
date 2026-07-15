@@ -161,35 +161,35 @@ once additional permission fields exist.
 
 ### Auditing: durable agent IDs on flows
 
-If we want to answer "which delegate did this?", the current v1 sketch
-is not quite enough. Right now a delegation is just a narrowed exo sent
-to an address. That is sufficient for authorization, but weak for audit:
-once the grantee submits `flow34`, the published flow status can say
-"rebalance" but not which delegation facet initiated it.
-
-The simplest extension is to make delegations first-class portfolio
-state, not just delivered capabilities. In addition to `flow34.steps`,
-publish agent attribution on the flow, e.g.
+Delegations are first-class portfolio state, not just delivered
+capabilities. This lets clients answer "which delegate did this?" by
+resolving the agent reference embedded in a delegated flow:
 
 ```js
-flow34.agent = { id: 'agent4' };
+const flow34 = {
+  type: 'rebalance',
+  agent: 'agent4',
+  // ...mutable flow status
+};
 ```
 
-The important part is not the exact encoding, but the semantics:
+The attribution semantics are:
 
 - the published id `agent4` is assigned by the portfolio, not
   chosen by the grantee
 - the numeric key is stable for the lifetime of that delegation
-- every flow started through that delegation publishes a small agent
-  record carrying that id as a reference
+- every flow started through that delegation embeds the assigned
+  `agentN` string reference in its flow record
 - owner-initiated flows simply omit `agent`, rather than pretending the
   owner is "agent0"
+- an optional client-supplied `agentMemo` is correlation metadata, not
+  an identity or authority claim
 
-This suggests a per-portfolio delegation collection with monotonically
-assigned ids, analogous to `nextFlowId`:
+Each portfolio has a delegation collection with monotonically assigned
+ids:
 
-- `nextAgentId` in the portfolio state
 - `delegations` map keyed internally by just `n`
+- the next id is derived from the size of this append-only map
 - each record stores at least grantee address, permissions, and lifecycle
   state (`active`, later maybe `revoked`, `expired`)
 
@@ -223,19 +223,24 @@ portfolio17.agents = {
 };
 ```
 
-and the flow attribution would live at a sibling path:
+The flow record at `portfolio17.flows.flow34` embeds the reference:
 
 ```js
-portfolio17.flows.flow34.agent = { id: 'agent4' };
+portfolio17.flows.flow34 = {
+  state: 'run',
+  type: 'rebalance',
+  agent: 'agent4',
+  // ...other flow status
+};
 ```
 
 Do not denormalize permissions, grantee address, or other delegation
-metadata onto the flow. The flow only needs a small reference record.
+metadata onto the flow. The flow only needs the small string reference.
 Everything else should be resolved through
 `portfolio17.agents.agent4`. That keeps vstorage writes
 smaller and avoids duplicating mutable metadata onto a record that is
-updated many times already. Using a record now leaves room to extend the
-shape later without changing the path.
+updated many times already. There is no separate
+`portfolio17.flows.flow34.agent` vstorage path.
 
 ### How attribution is attached
 
@@ -251,62 +256,58 @@ Then:
    and mints the wrapper with that `agentId` in its state.
 3. claw1 calls delegated `setTargetAllocation(...)`.
 4. The wrapper performs the key-set check. The portfolio delegation helper
-   validates the active client, permission, and version, then starts the flow
-   with out-of-band attribution `agent4`.
-5. As soon as the delegated call gets back `flow34`, the delegation exo
-   can call the portfolio's reporter facet to publish
-   `flows.flow34.agent = { id: 'agent4' }`; it does not need
-   to wait for later updates to the mutable flow status.
-6. The portfolio publishes `flows.flow34` as it already does.
+   validates the active client, permission, and version.
+5. The helper constructs the `FlowDetail` from trusted delegation state,
+   including `agent: 'agent4'` and any client-supplied `agentMemo`, and starts
+   the flow.
+6. The portfolio's normal flow publication retains that embedded reference
+   through subsequent status updates.
 
 This keeps the audit story honest: attribution comes from the only
 object that had the authority to start that flow, not from untrusted
-offer args supplied by the client. It also avoids bloating the mutable
+offer args supplied by the client. `agentMemo`, when present, remains
+untrusted metadata. This also avoids bloating the mutable
 `flows.flow34` status object with delegation metadata.
 
-### Likely code touch points
+### Implemented code touch points
 
-Very roughly, implementing this means touching these structures:
+The implementation divides responsibility across these structures:
 
-- `@agoric/portfolio-api` `StatusFor`: add a published type for
-  `flows.flowN.agent` and likely a published `agents` registry shape.
-- `packages/portfolio-contract/src/type-guards.ts`: add path helpers and
-  pattern shapes for the new `flow.agent` record and published agent ids.
-- `packages/portfolio-contract/src/portfolio.exo.ts`: extend the
-  reporter facet with a small helper to publish `flows.flowN.agent`, and
-  add durable portfolio state for `nextAgentId` plus the delegation
-  registry.
-- `packages/portfolio-contract/src/delegation.exo.ts`: carry the
-  assigned `agentId` in delegation state and, after `setTargetAllocation()`
-  receives `flowN`, call the portfolio reporter facet to publish
-  `flows.flowN.agent`.
-- delegation-grant path in the portfolio contract / EVM handler: assign
-  the next agent id, persist the registry entry, and mint the wrapper
-  with that id.
+- `@agoric/portfolio-api` defines `FlowDetail.agent` as a
+  `PortfolioAgentKey` string and defines the published `portfolioAgents`
+  registry shape.
+- `packages/portfolio-contract/src/type-guards.ts` accepts the embedded
+  agent key and the published agent registry.
+- `packages/portfolio-contract/src/portfolio.exo.ts` stores and publishes
+  the registry; its narrowed delegation helper attaches the trusted agent
+  key to `FlowDetail` before starting a delegated flow.
+- `packages/portfolio-contract/src/delegation.exo.ts` carries the assigned
+  numeric `agentId` and invokes only that narrowed helper.
+- the delegation-grant path assigns the id, persists the registry entry,
+  and delivers the wrapper and grant details.
 
 ### Testing obligations
 
 At minimum, this design implies tests for:
 
 - published type / path coverage: `StatusFor`, published path typings,
-  and contract-side type guards accept `flows.flowN.agent` and
+  and contract-side type guards accept the embedded `flow.agent` key and
   `portfolioN.agents`
 - lazy registry behavior: portfolios with no delegations publish no
   `agents` collection, and readers treat absence as equivalent to empty
 - grant-time id allocation: the first delegation for `portfolio17`
   becomes `agent1`, the next `agent2`, and ids are
   stable once assigned
-- delegated attribution: a delegated `setTargetAllocation` publishes
-  `flows.flowN.agent = { id: 'portfolio17agentM' }` as soon as `flowN`
-  is known
-- non-delegated flows: owner/planner flows do not publish a spurious
-  `agent` record
-- registry / flow linkage: every published `flow.agent.id` resolves to a
+- delegated attribution: a delegated `setTargetAllocation` publishes a flow
+  containing `agent: 'agentM'` as soon as the flow is known
+- non-delegated flows: owner-initiated flows do not publish a spurious
+  `agent` reference
+- registry / flow linkage: every published `flow.agent` resolves to a
   corresponding entry in `portfolioN.agents`
 - upgrade compatibility: old portfolios with no `agents` collection and
-  old flows with no `.agent` remain valid and are interpreted as having
+  old flows with no `agent` field remain valid and are interpreted as having
   no delegate attribution
-- **agent id is in inviation details**
+- agent id is in invitation details
 
 ### Why a registry is worth it
 
