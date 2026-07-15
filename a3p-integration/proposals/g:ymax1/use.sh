@@ -25,3 +25,6 @@ agd tx bank send gov1 $ymax1Addr 20000000uist $SIGN_BROADCAST_OPTS --from gov1
 echo "== use invitations..."
 ./use-invitation.js $ymax0Addr # update ymax0 control
 ./use-invitation.js $ymax1Addr # accept ymax1 control
+
+echo "== install and start ymax1..."
+./install-and-start.js

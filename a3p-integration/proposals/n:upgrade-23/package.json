@@ -4,7 +4,14 @@
     "sdkImageTag": "unreleased",
     "planName": "agoric-upgrade-23",
     "upgradeInfo": {
-      "coreProposals": []
+      "coreProposals": [],
+      "vatOptionUpdates": [
+        {
+          "vatID": "v91",
+          "critical": true,
+          "label": "ymax1"
+        }
+      ]
     },
     "type": "Software Upgrade Proposal",
     "sdk-generate": []

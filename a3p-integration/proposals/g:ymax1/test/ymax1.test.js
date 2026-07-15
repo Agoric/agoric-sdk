@@ -12,11 +12,7 @@ import anyTest from 'ava';
 import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 import { makeActionId, sendWalletAction } from '../wallet-util.js';
 import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
-import {
-  bundleId,
-  ymax1ControlAddr as ymaxControlAddr,
-  ymaxDataArgs,
-} from './consts.js';
+import { bundleId, ymax1ControlAddr as ymaxControlAddr } from '../consts.js';
 
 /**
  * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
@@ -67,7 +63,7 @@ const test =
 const makeTestContext = async _t => {
   /**
    * Hack to share data between test
-   * @type {{vatID?: string; instanceId?: string, vatIDsToIgnore?: string[]}}
+   * @type {{vatID?: string; instanceId?: string}}
    */
   const shared = {};
 
@@ -76,43 +72,7 @@ const makeTestContext = async _t => {
 
 test.before(async t => (t.context = await makeTestContext(t)));
 
-test.serial('no instance currently deployed', async t => {
-  const { [contractName]: instance } = fromEntries(
-    await vsc.readPublished(`agoricNames.instance`),
-  );
-
-  // @ts-expect-error non-nullable type
-  t.is(instance, undefined);
-
-  const potentialVats = await getDetailsMatchingVats(contractName).then(
-    candidates => candidates.filter(v => !v.terminated),
-  );
-  t.context.shared.vatIDsToIgnore = potentialVats.map(({ vatID }) => vatID);
-  t.deepEqual(potentialVats, []);
-});
-
-test.serial('invoke ymaxControl showing no instance', async t => {
-  const yc = ymaxControl.saveAs('creatorFacet');
-
-  await t.throwsAsync(yc.getCreatorFacet(), {
-    message: /no StartedInstanceKit/,
-  });
-});
-
-test.serial('installAndStart using ymaxControl', async t => {
-  const { BLD, USDC, PoC26 } = fromEntries(
-    await vsc.readPublished('agoricNames.issuer'),
-  );
-
-  const issuers = harden({ USDC, Access: PoC26, BLD, Fee: BLD });
-
-  const yc = ymaxControl;
-  await yc.installAndStart({
-    bundleId,
-    issuers,
-    privateArgsOverrides: ymaxDataArgs,
-  });
-
+test.serial('ymax1 already installed and started via use.sh', async t => {
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
   );
@@ -120,19 +80,22 @@ test.serial('installAndStart using ymaxControl', async t => {
   t.context.shared.instanceId = boardId(instance);
 
   const potentialVats = await getDetailsMatchingVats(contractName).then(
-    candidates =>
-      candidates.filter(
-        v =>
-          !v.terminated && !t.context.shared.vatIDsToIgnore?.includes(v.vatID),
-      ),
+    candidates => candidates.filter(v => !v.terminated),
   );
   t.log('potential vats', potentialVats);
   t.is(potentialVats.length, 1);
 
-  const vatDetails = potentialVats.slice(-1)[0];
+  const vatDetails = potentialVats[0];
   t.log(vatDetails);
 
   t.context.shared.vatID = vatDetails.vatID;
+
+  // Deployment is deterministic, so this vatID is stable across runs. Other
+  // proposals reference it statically (e.g. n:upgrade-next's
+  // upgradeInfo.vatOptionUpdates); if it ever changes, use this log line to
+  // find the new value.
+  t.log('ymax1 vatID:', vatDetails.vatID);
+  t.regex(vatDetails.vatID, /^v\d+$/, 'ymax1 has a dynamic vatID');
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
@@ -238,7 +201,7 @@ test.serial('get new contract control and upgrade', async t => {
 
 test.serial('terminate', async t => {
   const yc = ymaxControl;
-  await yc.terminate({ message: 'terminate to leave state as we found it' });
+  await yc.terminate({ message: 'test termination through contract control' });
 
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),

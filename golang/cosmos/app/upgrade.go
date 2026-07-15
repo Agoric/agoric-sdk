@@ -24,6 +24,7 @@ import (
 var upgradeNamesOfThisVersion = []string{
 	"agoric-upgrade-23",
 	"agoric-upgrade-23-1",
+	"agoric-upgrade-23-2",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -60,6 +61,8 @@ func isPrimaryUpgradeName(name string) bool {
 	case validUpgradeName("agoric-upgrade-23"):
 		return true
 	case validUpgradeName("agoric-upgrade-23-1"):
+		return false
+	case validUpgradeName("agoric-upgrade-23-2"):
 		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
@@ -185,6 +188,15 @@ func makeUpgrade23Handler(app *GaiaApp, targetUpgrade string) upgradetypes.Upgra
 
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
+		// vatOptionUpdates are in-place per-vat option changes handed to
+		// cosmic-swingset to apply at this upgrade's reboot point. Unlike the
+		// CoreProposalSteps below, they are not core-evals: there is no
+		// supported runtime path for a core-eval to flip an already-running
+		// vat's `critical` flag, so this writes the kernel kvStore directly
+		// (applyVatOptionUpdates, packages/SwingSet/src/controller/
+		// upgradeSwingset.js). Chain selection lives here, cosmos-side.
+		var vatOptionUpdates []vatOptionUpdate
+
 		// These CoreProposalSteps are not idempotent and should only be executed
 		// as part of the first upgrade using this handler on any given chain.
 		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
@@ -228,6 +240,28 @@ func makeUpgrade23Handler(app *GaiaApp, targetUpgrade string) upgradetypes.Upgra
 			}
 		}
 
+		// These vatOptionUpdates are idempotent and can be applied on any upgrade
+		// of this version, even if it is not the first upgrade.
+		{
+			// Promote the running ymax contract vat to `critical`. These are
+			// the known vatIDs for the ymax contract on each chain: ymax1 on
+			// mainnet, ymax0 on devnet.
+			promote := true
+			switch ctx.ChainID() {
+			case "agoric-3": // MAINNET (ymax1)
+				vatOptionUpdates = []vatOptionUpdate{{VatID: "v288", Critical: &promote}}
+			case "agoricdev-25": // DEVNET (ymax0)
+				vatOptionUpdates = []vatOptionUpdate{{VatID: "v320", Critical: &promote}}
+			}
+			if len(vatOptionUpdates) > 0 {
+				ctx.Logger().Info(
+					"upgrade will apply in-place vat option updates",
+					"chainID", ctx.ChainID(),
+					"vatOptionUpdates", vatOptionUpdates,
+				)
+			}
+		}
+
 		app.upgradeDetails = &upgradeDetails{
 			// Record the plan to send to SwingSet
 			Plan: plan,
@@ -235,6 +269,8 @@ func makeUpgrade23Handler(app *GaiaApp, targetUpgrade string) upgradetypes.Upgra
 			// These will be merged with any coreProposals specified in the
 			// upgradeInfo field of the upgrade plan ran as subsequent steps
 			CoreProposals: vm.CoreProposalsFromSteps(CoreProposalSteps...),
+			// In-place vat option updates applied at the reboot point (see above)
+			VatOptionUpdates: vatOptionUpdates,
 		}
 
 		// Always run module migrations
