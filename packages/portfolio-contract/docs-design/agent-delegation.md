@@ -3,7 +3,23 @@
 Just like we invite clients to play the role of planner or EVM,
 we can invite clients to have attenuated access to a portfolio.
 
-## story: separation of duties
+## Stack-ranked demo items
+
+1. Create mandate through chat for a new portfolio
+
+2. Add agent through chat for an existing portfolio
+
+3. Agent proposes a mandate change; user reviews and signs it
+
+4. Agent takes live action within mandate
+
+5. Show out-of-mandate enforcement and rejection
+
+6. Show async agent action within mandate
+
+7. Show activity screen agent/user attribution
+
+## story: separation of duties (items 2, 4, 5)
 
 Pete opens portfolio45, with 60% Aave, 40% Compound.
 
