@@ -16,6 +16,79 @@ import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
  */
 
 /**
+ * A host-injected, in-place change to a single running vat's persisted
+ * options, applied at a chain software upgrade.
+ *
+ * @typedef {object} VatOptionUpdate
+ * @property {string} vatID  the exact vatID to update (e.g. 'v288'). Selection
+ *   is by vatID, not by name/label, since a vat's name/label may be ambiguous
+ *   (e.g. a chain running several incarnations of the same contract).
+ * @property {boolean} [critical]  when set, promote/demote the vat's
+ *   `critical` flag, read fresh by kernel.js `terminateVat()` to decide
+ *   whether to `panic()` instead of severing the vat.
+ */
+
+/**
+ * Apply host-injected per-vat option updates in place, by read-modify-writing
+ * each named vat's `${vatID}.options` blob. This is deliberately NOT a schema
+ * migration and bumps no `version`. It is idempotent, and each target vat is
+ * checked to be a live, non-terminated dynamic vat.
+ *
+ * Must be called at a deterministic point while SwingSet is not running, e.g.
+ * from the upgrade handler of the cosmic-swingset host.
+ *
+ * There is currently no mechanism to flip `critical` on a running vat through
+ * vat-admin (that would require a more complex vat upgrade), so this is a
+ * host-driven change straight to the kvStore blob, the same read-modify-write
+ * `upgradeSwingset` and `vatKeeper.setReapDirtThreshold` already perform.
+ *
+ * @param {KVStore} kvStore  the kernel kvStore (kernelStorage.kvStore)
+ * @param {VatOptionUpdate[]} [vatOptionUpdates]
+ * @returns {string[]}  human-readable descriptions of the vats actually changed
+ */
+export const applyVatOptionUpdates = (kvStore, vatOptionUpdates = []) => {
+  if (!vatOptionUpdates.length) return [];
+
+  /** @type {(key: string) => string} */
+  const getRequired = key => {
+    kvStore.has(key) || Fail`storage lacks required key ${key}`;
+    return /** @type {string} */ (kvStore.get(key));
+  };
+
+  const terminated = new Set(
+    JSON.parse(kvStore.get('vats.terminated') || '[]'),
+  );
+  const dynamicVats = new Set(getAllDynamicVats(getRequired));
+
+  const changed = [];
+  for (const update of vatOptionUpdates) {
+    const { vatID, critical } = update;
+    // The target must be a live, non-terminated dynamic vat.
+    dynamicVats.has(vatID) ||
+      Fail`vat-option-update: ${vatID} is not a live dynamic vat`;
+    !terminated.has(vatID) || Fail`vat-option-update: ${vatID} is terminated`;
+    const optionsKey = `${vatID}.options`;
+    const options = JSON.parse(getRequired(optionsKey));
+    let dirty = false;
+    if (critical !== undefined && !!options.critical !== critical) {
+      options.critical = critical;
+      dirty = true;
+    }
+    if (dirty) {
+      kvStore.set(optionsKey, JSON.stringify(options));
+      changed.push(`${vatID} (${options.name})`);
+    }
+  }
+  console.log(
+    `vat-option-update: changed ${changed.length} vat(s): ${
+      changed.join(', ') || '(none)'
+    }`,
+  );
+  return changed;
+};
+harden(applyVatOptionUpdates);
+
+/**
  * Parse a string of decimal digits into a number.
  *
  * @param {string} digits
