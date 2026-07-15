@@ -70,11 +70,6 @@ compiled
 dist
 api-docs
 *.tsbuildinfo
-# Declaration-emit builds of packages whose tsconfig includes their
-# ava.config.js pull the root ava.config.js into the program and emit its
-# declarations at the repo root; nothing consumes them.
-/ava.config.d.ts
-/ava.config.d.ts.map
 
 # misc
 /.vagrant
