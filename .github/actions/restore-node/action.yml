@@ -66,13 +66,11 @@ runs:
         persist-credentials: false
         ref: ${{ inputs.ref }}
 
-    # The built-files cache must be keyed by the commit actually checked out,
-    # which is github.sha except when the `ref` input overrides it.
     - id: checked-out
       name: Identify checked-out commit
+      run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       shell: bash
       working-directory: ${{ inputs.path }}
-      run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
     # Select an Endo target against which to test, defaulting to 'NOPE' for use
     # of internally-referenced NPM packages but allowing overrides in the pull
