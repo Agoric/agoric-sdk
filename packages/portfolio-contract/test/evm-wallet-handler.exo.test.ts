@@ -50,12 +50,15 @@ type RebalanceArgs = Parameters<PortfolioEVMFacet['rebalance']>;
 
 type SetAutoFeatureArgs = Parameters<PortfolioEVMFacet['setAutoFeatures']>;
 
+type RevokeArgs = Parameters<PortfolioEVMFacet['revoke']>;
+
 type MockPortfolioCalls = {
   openPortfolioFromEVM: OpenPortfolioArgs[];
   validateEVMMessageDomain: ValidateEVMMessageDomainArgs[];
   withdraw: WithdrawArgs[];
   deposit: DepositArgs[];
   rebalance: RebalanceArgs[];
+  revoke: RevokeArgs[];
   setAutoFeatures: SetAutoFeatureArgs[];
 };
 
@@ -114,6 +117,10 @@ const makeMockPortfolioEvmHandler = ({
     grant(..._args: Parameters<PortfolioEVMFacet['grant']>) {
       // Not exercised by existing tests; present so the mock satisfies the
       // facet type after the security fix moved delegation onto evmHandler.
+      return vowTools.asVow(() => {});
+    },
+    revoke(...args: RevokeArgs) {
+      calls.revoke.push(args);
       return vowTools.asVow(() => {});
     },
     setAutoFeatures(
@@ -262,6 +269,7 @@ const makeHandleOperationTestSetup = (
     withdraw: [],
     deposit: [],
     rebalance: [],
+    revoke: [],
     setAutoFeatures: [],
   };
 
@@ -932,6 +940,50 @@ test('handleOperation invokes setAutoFeatures with correct parameters', async t 
 
   t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
   t.snapshot(getCalls(), 'Calls');
+  t.snapshot(getStatuses(), 'Published Statuses');
+});
+
+test('handleOperation invokes revoke with correct agent ID', async t => {
+  const { zone } = t.context;
+  const {
+    vowTools,
+    getCalls,
+    mockWallet,
+    mockStorageNode,
+    getStatuses,
+    handleOperation,
+  } = makeHandleOperationTestSetup(zone, 'vow7c', {
+    portfolios: [{ id: 9 }],
+    namePrefix: 'test7c_',
+  });
+
+  const revokeDetails: YmaxOperationDetails<'Revoke'> = {
+    operation: 'Revoke',
+    domain: {
+      name: 'Ymax',
+      version: '1',
+      chainId: 42161n,
+      verifyingContract: '0xVerifyingContractAddress' as const,
+    },
+    data: {
+      agentId: 3n,
+      portfolio: 9n,
+    },
+  };
+
+  const resultVow = handleOperation({
+    wallet: mockWallet,
+    storageNode: mockStorageNode,
+    address: '0xEvmWalletAddress',
+    operationDetails: harden(revokeDetails),
+    nonce: 101n,
+    deadline: 1700000000n,
+  });
+
+  await vowTools.when(resultVow);
+
+  t.deepEqual(getCalls().revoke, [[3n]]);
+  t.snapshot([...mockWallet.portfolios.keys()], 'Portfolio IDs');
   t.snapshot(getStatuses(), 'Published Statuses');
 });
 

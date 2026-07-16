@@ -1181,7 +1181,7 @@ test('revoked delegation client is no longer usable', async t => {
     agent1: { state: 'active' },
   });
 
-  manager.revokeDelegation(agentId);
+  await evmHandler.revoke(BigInt(agentId));
 
   t.false(client.getReader().isActive());
   t.like(await getPortfolioAgents!(19), {

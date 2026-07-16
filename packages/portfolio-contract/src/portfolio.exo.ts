@@ -1532,6 +1532,20 @@ export const preparePortfolioKit = (
             await this.facets.manager.grantDelegation(grantee, permissions);
           });
         },
+        /** Revoke a delegation previously granted by this portfolio's owner. */
+        revoke(agentId: bigint) {
+          return vowTools.asVow(() => {
+            mustMatch(agentId, M.nat());
+            const { sourceAccountId } = this.state;
+            if (!sourceAccountId) {
+              throw Fail`revoke requires sourceAccountId to be set (portfolio must be opened from EVM)`;
+            }
+            agentId > 0n || Fail`agentId must be positive`;
+            agentId <= BigInt(Number.MAX_SAFE_INTEGER) ||
+              Fail`agentId is too large`;
+            this.facets.manager.revokeDelegation(Number(agentId));
+          });
+        },
         /**
          * Set the auto-features for this portfolio
          */

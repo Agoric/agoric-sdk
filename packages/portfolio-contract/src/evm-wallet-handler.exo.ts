@@ -400,6 +400,15 @@ export const prepareEVMPortfolioOperationManager = (
 
             return watch(result, BasicOutcomeWatcher);
           }
+          case 'Revoke': {
+            const {
+              data: { agentId },
+            } = operationDetails;
+
+            const result = E(portfolio!).revoke(agentId);
+
+            return watch(result, BasicOutcomeWatcher);
+          }
           case 'SetAutoFeatures': {
             const {
               data: { features },
