@@ -162,6 +162,31 @@ test('getYmaxStandaloneOperationData for Rebalance', t => {
   ]);
 });
 
+test('getYmaxStandaloneOperationData for Revoke', t => {
+  const data = {
+    agentId: 4n,
+    portfolio: 2n,
+    nonce: 3n,
+    deadline: 1700000000n,
+  };
+
+  const result = getYmaxStandaloneOperationData(
+    data,
+    'Revoke',
+    42161n,
+    MOCK_CONTRACT_ADDRESS,
+  );
+
+  t.is(result.primaryType, 'Revoke');
+  t.deepEqual(result.message, data);
+  t.deepEqual(result.types.Revoke, [
+    { name: 'agentId', type: 'uint256' },
+    { name: 'portfolio', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]);
+});
+
 test('getYmaxStandaloneOperationData for SetTargetAllocation', t => {
   const allocations: TargetAllocation[] = [
     { instrument: 'Aave_Arbitrum', portion: 10000n },
@@ -386,6 +411,7 @@ test('validateYmaxOperationTypeName passes for valid types', t => {
     'SetTargetAllocation',
     'Deposit',
     'Withdraw',
+    'Revoke',
   ];
 
   for (const typeName of validTypes) {
@@ -424,6 +450,7 @@ for (const witnessCase of [
   { witnessType: 'YmaxV1Deposit', primaryType: 'Deposit' },
   { witnessType: 'YmaxV1Withdraw', primaryType: 'Withdraw' },
   { witnessType: 'YmaxV1Rebalance', primaryType: 'Rebalance' },
+  { witnessType: 'YmaxV1Revoke', primaryType: 'Revoke' },
   {
     witnessType: 'YmaxV1SetTargetAllocation',
     primaryType: 'SetTargetAllocation',
@@ -478,6 +505,12 @@ test('YmaxOperationType types are correctly inferred', t => {
   t.deepEqual(rebalance, {
     portfolio: 0n,
   });
+
+  const revoke: YmaxOperationType<'Revoke'> = {
+    agentId: 1n,
+    portfolio: 0n,
+  };
+  t.deepEqual(revoke, { agentId: 1n, portfolio: 0n });
 
   // SetTargetAllocation type
   const setTargetAllocation: YmaxOperationType<'SetTargetAllocation'> = {
