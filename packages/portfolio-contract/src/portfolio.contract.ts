@@ -227,6 +227,7 @@ export type AxelarConfig = {
 };
 
 interface PostalService {
+  getDepositFacet(addr: string): Promise<unknown>;
   deliverPayment(addr: string, pmt: Payment): Promise<void>;
 }
 type PostalServiceInstance = Instance<() => { publicFacet: PostalService }>;
@@ -790,6 +791,17 @@ export const contract = async (
     /**
      * Open a portfolio for EVM users with a signed Permit2 deposit.
      *
+     * If `data` includes `grantee`, this also performs the combined
+     * open+grant flow: delegate control to that Agoric address in the same
+     * signed message, reusing the same authorization and validation as a
+     * standalone `grant()`.
+     *
+     * Ordering guarantee: a rejected combined grant preflight aborts before
+     * the portfolio kit is allocated or the funding flow starts, so no
+     * portfolio shell is published and no deposit is pulled. Funding is still
+     * fire-and-forget, so a later funding failure can leave a delegated-but-
+     * unfunded portfolio.
+     *
      * @returns storagePath (vstorage) and evmHandler facet
      *
      * @see {@link openPortfolio} for the flow implementation
@@ -797,7 +809,8 @@ export const contract = async (
     async openPortfolioFromEVM(
       data:
         | YmaxOperationDetails<'OpenPortfolio'>['data']
-        | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data'],
+        | YmaxOperationDetails<'OpenPortfolioWithAutoFeatures'>['data']
+        | YmaxOperationDetails<'OpenPortfolioWithGrant'>['data'],
       permitDetails: PermitDetails,
     ): Promise<{
       storagePath: string;
@@ -824,16 +837,44 @@ export const contract = async (
       sameEvmAddress(permitDetails.token, contracts[fromChain].usdc) ||
         Fail`permit2 token address ${permitDetails.token} does not match usdc contract address ${contracts[fromChain].usdc} for chain ${fromChain}`;
       const amount = AmountMath.make(brands.USDC, permitDetails.amount);
+      const grantee =
+        'grantee' in data && data.grantee !== undefined
+          ? data.grantee
+          : undefined;
+
+      await null;
+      if (grantee) {
+        // Preflight the smart wallet depositFacet before allocating a
+        // portfolio ID. `grant()` will still deliver the invitation below, but
+        // this keeps an unregistered grantee from leaving an orphaned shell.
+        const ps =
+          postalServiceP || Fail`postal service not configured in private args`;
+        await E(ps).getDepositFacet(grantee.address);
+      }
 
       // Store the authenticated source EVM account in CAIP-10 format
       const sourceAccountId =
         `eip155:${permitDetails.chainId}:${permitDetails.permit2Payload.owner.toLowerCase()}` as AccountId;
       const kit = makeNextPortfolioKit({ sourceAccountId });
 
-      await null;
       if ('features' in data && data.features !== undefined) {
         // setAutoFeatures is promptly resolved
         await vowTools.asPromise(kit.evmHandler.setAutoFeatures(data.features));
+      }
+      if (grantee) {
+        // `grant()` already enforces the shared auth and permission checks.
+        // `asPromise()` is safe because grant delivery is prompt: it hands the
+        // invitation to an already-provisioned smart wallet via
+        // `deliverDelegation` / `NamesByAddress`, so success resolves promptly
+        // and an unregistered grantee rejects promptly too.
+        await vowTools.asPromise(
+          // cast from EIP-712 string to agoric1 Bech32 address, as in the
+          // standalone Grant handler; the string is looked up in NamesByAddress.
+          kit.evmHandler.grant(
+            grantee.address as Bech32Address,
+            grantee.permissions,
+          ),
+        );
       }
 
       const seat = zcf.makeEmptySeatKit().zcfSeat;

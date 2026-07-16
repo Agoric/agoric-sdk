@@ -155,11 +155,11 @@ const forkDeployBase = async (
     timerService,
   );
   const postalService = Far('DummyPostalServicePublicFacet', {
+    async getDepositFacet(addr: string) {
+      return E(common.bootstrap.namesByAddress).lookup(addr, 'depositFacet');
+    },
     async deliverPayment(addr: string, payment: Invitation) {
-      const depositFacet = await E(common.bootstrap.namesByAddress).lookup(
-        addr,
-        'depositFacet',
-      );
+      const depositFacet = await this.getDepositFacet(addr);
       await E(depositFacet).receive(payment);
     },
   });
