@@ -45,10 +45,11 @@ instead of compiling native sources locally.
 
 Optional environment overrides:
 
-- `XSNAP_BINARY_VERSION` (default: package version)
 - `XSNAP_BINARY_REPO` (default: `Agoric/xsnap-worker-binaries`)
 - `XSNAP_BINARY_BASE_URL` (advanced override)
-- `XSNAP_BINARY_MANIFEST_SHA256` (required trust anchor for unpinned versions)
+- `XSNAP_BINARY_VERSION` (default: package `build.env`, then package version)
+- `XSNAP_BINARY_MANIFEST_SHA256` (default: package `build.env` manifest hash;
+  required trust anchor when overriding `XSNAP_BINARY_VERSION`)
 - `XSNAP_CACHE_DIR` (advanced override for cached downloads)
 
 Some time later, possibly on a different computer…
