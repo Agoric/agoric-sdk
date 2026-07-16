@@ -114,21 +114,35 @@ const SOURCE_STAMP_FILE = '.agoric-source-stamp.json';
 
 /**
  * @param {string} text
- * @returns {Record<string, string>}
+ * @returns {{ record: Record<string, string>, entries: ([string, string] | string)[] }}
  */
-const parseEnvText = text => {
+const parseEnvTextEntries = text => {
+  /** @type {([string, string] | string)[]} */
+  const entries = [];
   /** @type {Record<string, string>} */
-  const envMap = {};
+  const record = {};
   for (const line of text.split('\n')) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
+    if (!trimmed || trimmed.startsWith('#')) {
+      entries.push(line);
+      continue;
+    }
     const index = trimmed.indexOf('=');
-    if (index <= 0) continue;
+    if (index <= 0) {
+      entries.push(line);
+      continue;
+    }
+
     const key = trimmed.slice(0, index);
     const value = trimmed.slice(index + 1);
-    envMap[key] = value;
+    entries.push([key, value]);
+    record[key] = value;
   }
-  return envMap;
+  if (entries.at(-1) === '') {
+    // Avoid empty trailing line in showEnv.
+    entries.pop();
+  }
+  return { record, entries };
 };
 
 /**
@@ -142,20 +156,53 @@ const parseEnvText = text => {
  */
 
 /**
+ * @param {{ name: string; version: string; }} pkg
+ * @param {Record<string, string>} oldBuildEnv
+ * @param {Readonly<([string, string] | string)[]>} buildEnvEntries
  * @param {SourceDescriptor[]} sources
  * @param {{
  *   stdout: typeof process.stdout,
  * }} io
  */
-const showEnv = async (sources, { stdout }) => {
+const showEnv = async (
+  pkg,
+  oldBuildEnv,
+  buildEnvEntries,
+  sources,
+  { stdout },
+) => {
   await null;
+  const buildEnv = { ...oldBuildEnv };
+  if (buildEnv.XSNAP_PACKAGE == null) {
+    buildEnv.XSNAP_PACKAGE = pkg.name;
+  }
+  if (buildEnv.XSNAP_BINARY_VERSION == null) {
+    buildEnv.XSNAP_BINARY_VERSION = pkg.version;
+  }
+
   for (const { envPrefix, url, commitHash, archiveUrl } of sources) {
-    stdout.write(`${envPrefix}URL=${url}\n`);
-    stdout.write(`${envPrefix}COMMIT_HASH=${commitHash}\n`);
+    buildEnv[`${envPrefix}URL`] = url;
+    buildEnv[`${envPrefix}COMMIT_HASH`] = commitHash;
     const defaultUrl = defaultArchiveUrl(url, commitHash);
     if (archiveUrl && archiveUrl !== defaultUrl) {
-      stdout.write(`${envPrefix}ARCHIVE_URL=${archiveUrl}\n`);
+      buildEnv[`${envPrefix}ARCHIVE_URL`] = archiveUrl;
     }
+  }
+
+  // Gathered all the replacements, so iterate on the entries.
+  for (const line of buildEnvEntries) {
+    if (typeof line === 'string') {
+      stdout.write(`${line}\n`);
+      continue;
+    }
+    const [key, value] = line;
+    stdout.write(`${key}=${buildEnv[key] ?? value}\n`);
+    delete buildEnv[key];
+  }
+
+  // Append any new key-values.
+  for (const [key, value] of Object.entries(buildEnv)) {
+    stdout.write(`${key}=${value}\n`);
   }
 };
 
@@ -217,6 +264,7 @@ const updateSources = async (sources, { fs, curl, tar }) => {
 };
 
 /**
+ * @param {{ name: string; version: string; }} pkg
  * @param {ModdablePlatform} platform
  * @param {boolean} force
  * @param {{
@@ -225,9 +273,10 @@ const updateSources = async (sources, { fs, curl, tar }) => {
  *   make: ReturnType<typeof makeCLI>,
  * }} io
  */
-const buildXsnap = async (platform, force, { fs, make }) => {
-  const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
-  const pkg = JSON.parse(pjson);
+const buildXsnap = async (pkg, platform, force, { fs, make }) => {
+  // I solemnly swear I will do no synchronous work followed by a variable
+  // number turns of the event loop.
+  await null;
 
   const configEnvs = [
     `XSNAP_VERSION=${pkg.version}`,
@@ -275,9 +324,8 @@ const buildXsnap = async (platform, force, { fs, make }) => {
  * }} io
  */
 async function main(args, { env, stdout, spawn, fs, os }) {
-  // I solemnly swear I will do no synchronous work followed by a variable
-  // number turns of the event loop.
-  await null;
+  const pjson = await fs.readFile(asset('../package.json'), 'utf-8');
+  const pkg = JSON.parse(pjson);
 
   const osType = os.type();
   const platform = ModdableSDK.platforms[osType];
@@ -291,10 +339,13 @@ async function main(args, { env, stdout, spawn, fs, os }) {
 
   /** @type {Record<string, string>} */
   let pinnedEnvFromFile = {};
+  /** @type {(string | [string, string])[]} */
+  let pinnedEnvTextEntries = [];
   let hasPinnedEnvFile = false;
   try {
     const text = await fs.readFile(asset('../build.env'), 'utf-8');
-    pinnedEnvFromFile = parseEnvText(text);
+    ({ record: pinnedEnvFromFile, entries: pinnedEnvTextEntries } =
+      parseEnvTextEntries(text));
     hasPinnedEnvFile = true;
   } catch (_err) {
     // Allow explicit environment overrides to run without a checked-in build.env.
@@ -423,7 +474,9 @@ async function main(args, { env, stdout, spawn, fs, os }) {
 
   // --show-env reports effective URL/hash pins without making changes.
   if (args.includes('--show-env')) {
-    await showEnv(sources, { stdout });
+    await showEnv(pkg, pinnedEnvFromFile, pinnedEnvTextEntries, sources, {
+      stdout,
+    });
     return;
   }
 
@@ -442,7 +495,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
       isRejected(
         npm.run(['run', '-s', 'check-version'], { cwd: asset('..') }),
       ));
-    await buildXsnap(platform, force, { fs, make });
+    await buildXsnap(pkg, platform, force, { fs, make });
   } else if (!hasBin) {
     throw Error(
       'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
