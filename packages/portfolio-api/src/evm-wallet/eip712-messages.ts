@@ -120,6 +120,8 @@ const OperationTypes = {
     { name: 'permissions', type: 'PortfolioPermissions' },
     PortfolioIdParam,
   ],
+  /** Revoke an existing portfolio delegation by its numeric agent ID. */
+  Revoke: [{ name: 'agentId', type: 'uint256' }, PortfolioIdParam],
   /**
    * Update which auto-features are enabled for a portfolio. The contract will
    * generate a permissioned delegation as necessary and deliver it to the planner.
