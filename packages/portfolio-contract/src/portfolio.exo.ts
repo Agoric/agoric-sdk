@@ -31,6 +31,7 @@ import {
   type FlowStatus,
   type FundsFlowPlan,
   type PortfolioAgentGrantee,
+  type PortfolioAgentKey,
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
@@ -1518,6 +1519,8 @@ export const preparePortfolioKit = (
          * resolves the signer's per-wallet portfolio reference. That
          * resolution is the authorization check; this method then enforces
          * its own input validation.
+         *
+         * Returns promptly the `PortfolioAgentKey` of the new delegation.
          */
         grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
           return vowTools.asVow(async () => {
@@ -1529,7 +1532,11 @@ export const preparePortfolioKit = (
             permissions.allocation === true ||
               Fail`grant requires allocation permission`;
             // Returns promise promptly resolved
-            await this.facets.manager.grantDelegation(grantee, permissions);
+            const agentId = await this.facets.manager.grantDelegation(
+              grantee,
+              permissions,
+            );
+            return `agent${agentId}` satisfies PortfolioAgentKey;
           });
         },
         /**

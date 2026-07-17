@@ -1091,6 +1091,25 @@ test('evmHandler grant allocates sequential agent ids', async t => {
   t.is(callLogRaced[3][3], 4);
 });
 
+test('evmHandler grant returns the resulting agent key', async t => {
+  const ownerAddress = '0x5656565656565656565656565656565656565656' as const;
+  const { makePortfolioKit, vowTools } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 23,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  const agentKey1 = await vowTools.when(
+    evmHandler.grant('agoric1delegate', { allocation: true }),
+  );
+  t.is(agentKey1, 'agent1');
+
+  const agentKey2 = await vowTools.when(
+    evmHandler.grant('agoric1delegatetwo', { allocation: true }),
+  );
+  t.is(agentKey2, 'agent2');
+});
+
 test('delegation rebalance creates flow and calls executePlan', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { makePortfolioKit, getCallLog, getPortfolioStatus } = makeTestSetup({
