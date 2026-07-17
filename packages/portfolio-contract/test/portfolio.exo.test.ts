@@ -1337,6 +1337,25 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
   });
 });
 
+test('evmHandler setAutoFeatures returns the resulting auto-features settings', async t => {
+  const ownerAddress = '0x6767676767676767676767676767676767676767' as const;
+  const { makePortfolioKit, vowTools } = makeTestSetup();
+  const { evmHandler } = makePortfolioKit({
+    portfolioId: 24,
+    sourceAccountId: `eip155:42161:${ownerAddress}`,
+  });
+
+  const settings1 = await vowTools.when(
+    evmHandler.setAutoFeatures({ rebalance: true }),
+  );
+  t.deepEqual(settings1, { rebalance: true });
+
+  const settings2 = await vowTools.when(
+    evmHandler.setAutoFeatures({ rebalance: false }),
+  );
+  t.deepEqual(settings2, { rebalance: false });
+});
+
 test('awaitingSteps is published in flowsRunning and reflects resolution state', async t => {
   const storage = makeFakeStorageKit('published', { sequence: true });
   const { makePortfolioKit, getPortfolioStatus, vowTools } = makeTestSetup({

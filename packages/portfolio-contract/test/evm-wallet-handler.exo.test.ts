@@ -120,7 +120,8 @@ const makeMockPortfolioEvmHandler = ({
       ..._args: Parameters<PortfolioEVMFacet['setAutoFeatures']>
     ) {
       calls.setAutoFeatures.push(_args);
-      return vowTools.asVow(() => {});
+      const [features] = _args;
+      return vowTools.asVow(() => features);
     },
   });
 };
