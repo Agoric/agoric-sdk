@@ -169,7 +169,7 @@ jobs:
           AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON="1" \
             yarn lerna publish from-package \
             --concurrency "1" --dist-tag "${{ inputs.tag }}" --loglevel "verbose" \
-            --no-verify-access --yes
+            --no-push --no-verify-access --yes
 
           git stash pop || true
 
