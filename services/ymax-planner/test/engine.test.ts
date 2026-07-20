@@ -12,6 +12,7 @@ import type {
   PoolKey as InstrumentId,
   StatusFor,
 } from '@aglocal/portfolio-contract/src/type-guards.ts';
+import type { MovementDesc } from '@aglocal/portfolio-contract/src/type-guards-steps.ts';
 import {
   makeSigningSmartWalletKitFromClient,
   makeSmartWalletKitFromVstorageKit,
@@ -40,6 +41,7 @@ import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import {
   CaipChainIds,
   type FlowStatus,
+  type FundsFlowPlan,
   type SupportedChain,
 } from '@agoric/portfolio-api';
 import type { InvokeStoreEntryAction } from '@agoric/smart-wallet/src/smartWallet.js';
@@ -1065,17 +1067,17 @@ test('startFlow logs include traceId prefix', async t => {
       /\[portfolio[0-9]+[.]flow[0-9]+\]/.test(args[0] as string),
   );
   arrayIsLike(t, tracedLogs, [
-    { args: { 0: `[${portfolioKey}.flow4]`, 1: 'rejectPlan', length: 6 } },
+    { args: { 0: `[${portfolioKey}.flow4]`, 1: 'resolvePlan', length: 6 } },
     { args: { 0: `[${portfolioKey2}.flow2]`, 1: 'resolvePlan', length: 6 } },
   ]);
 });
 
 /**
  * Characterize a single-portfolio processPortfolioEvents scenario that is
- * expected to reject the pending flow. Fields are used in this documented
+ * expected to settle the pending flow. Fields are used in this documented
  * order.
  */
-type RejectionConfig = {
+type SettlementConfig = {
   /** PortfolioStatus accountIdByChain keys and their corresponding balances. */
   portfolioAccounts?: Partial<Record<SupportedChain, NatAmount>>;
   mutatePortfolioKit?: (
@@ -1084,18 +1086,24 @@ type RejectionConfig = {
   /** The first pending FlowDetail. */
   flow: FlowDetail;
   portfolioStatusOverrides?: Partial<StatusFor['portfolio']>;
-  /** The rejectPlan reason string, or a regular expression for matching it. */
-  expectedReason: string | RegExp;
-};
+} & (
+  | {
+      /** The rejectPlan reason string, or a regular expression for matching it. */
+      expectedReason: string | RegExp;
+    }
+  | {
+      /** The resolvePlan plan argument. */
+      expectedPlan: FundsFlowPlan | MovementDesc[];
+    }
+);
 
-const testRejection = test.macro(
-  async (t: ExecutionContext, config: RejectionConfig) => {
+const testSettlement = test.macro(
+  async (t: ExecutionContext, config: SettlementConfig) => {
     const {
       portfolioAccounts,
       mutatePortfolioKit,
       flow,
       portfolioStatusOverrides,
-      expectedReason,
     } = config;
     const kit = await fakePortfolioKit({ accounts: portfolioAccounts });
     mutatePortfolioKit?.(kit);
@@ -1123,14 +1131,16 @@ const testRejection = test.macro(
       wrap: true,
     });
 
+    const expectedResult =
+      'expectedReason' in config ? config.expectedReason : config.expectedPlan;
     const expectedInvocation: InvokeStoreEntryAction['message'] = {
       targetName: 'planner',
-      method: 'rejectPlan',
+      method: 'expectedReason' in config ? 'rejectPlan' : 'resolvePlan',
       args: [
         portfolioId,
         flowId,
         // @ts-expect-error A regular expression will be replaced before use.
-        expectedReason,
+        expectedResult,
         portfolioStatus.policyVersion,
         portfolioStatus.rebalanceCount,
       ],
@@ -1155,10 +1165,17 @@ const testRejection = test.macro(
       [{ method: 'invokeEntry' }],
       'contract planner facet was invoked',
     );
-    if (typeof expectedReason !== 'string') {
+    if (
+      'expectedReason' in config &&
+      typeof config.expectedReason !== 'string'
+    ) {
       const actualReason = (bridgeActions as InvokeStoreEntryAction[])[0]
         ?.message?.args?.[2];
-      t.regex(actualReason as string, expectedReason, 'flow rejection reason');
+      t.regex(
+        actualReason as string,
+        config.expectedReason,
+        'flow rejection reason',
+      );
       expectedInvocation.args[2] = actualReason;
     }
     arrayIsLike(t, bridgeActions, [
@@ -1167,15 +1184,12 @@ const testRejection = test.macro(
   },
 );
 
-test('no-step flows are rejected', testRejection, {
-  flow: {
-    type: 'deposit',
-    amount: AmountMath.make(depositBrand, 1_000_000n),
-  },
-  expectedReason: 'Nothing to do for this operation.',
+test('no-step flows resolve with an empty plan', testSettlement, {
+  flow: { type: 'rebalance' },
+  expectedPlan: [],
 });
 
-test('invalid targetAllocation is rejected', testRejection, {
+test('invalid targetAllocation is rejected', testSettlement, {
   portfolioStatusOverrides: { targetAllocation: { USDN: 0n } },
   flow: {
     type: 'deposit',
@@ -1185,7 +1199,7 @@ test('invalid targetAllocation is rejected', testRejection, {
 });
 
 // Try to withdraw $1 when all links have minimum throughput $10.
-test('unsolvable flow is rejected', testRejection, {
+test('unsolvable flow is rejected', testSettlement, {
   portfolioAccounts: {
     Ethereum: AmountMath.make(depositBrand, 2_000_000n),
   },

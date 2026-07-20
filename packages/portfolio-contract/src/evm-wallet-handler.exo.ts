@@ -205,6 +205,7 @@ export const prepareEVMPortfolioOperationManager = (
     undefined,
     (data: {
       wallet: EVMWallet;
+      address?: Address;
       storageNode: Remote<StorageNode>;
       nonce: bigint;
       deadline: bigint;
@@ -254,7 +255,9 @@ export const prepareEVMPortfolioOperationManager = (
       },
       BasicOutcomeWatcher: {
         onFulfilled(result: unknown) {
-          const { storageNode, nonce, deadline } = this.state;
+          const { storageNode, address, nonce, deadline } = this.state;
+
+          trace('fulfilled', address, nonce, result);
 
           publishStatus<'evmWallet'>(storageNode, {
             updated: 'messageUpdate',
@@ -265,7 +268,9 @@ export const prepareEVMPortfolioOperationManager = (
           });
         },
         onRejected(reason: unknown) {
-          const { storageNode, nonce, deadline } = this.state;
+          const { storageNode, address, nonce, deadline } = this.state;
+
+          trace('rejected', address, nonce, reason);
 
           publishStatus<'evmWallet'>(storageNode, {
             updated: 'messageUpdate',
@@ -305,6 +310,7 @@ export const prepareEVMPortfolioOperationManager = (
 
       const { BasicOutcomeWatcher, OpenOutcomeWatcher } = makeOutcomeHandlers({
         wallet,
+        address,
         storageNode,
         nonce,
         deadline,
@@ -533,7 +539,10 @@ export const prepareEVMWalletMessageHandler = (
             },
           );
 
-          trace('extracted details', details);
+          trace(
+            `extracted details (${verifiedSigner ? 'verified' : 'recovered'} signer)`,
+            details,
+          );
 
           const { nonce, deadline, ...operationDetails } = details;
 
