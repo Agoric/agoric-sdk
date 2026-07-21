@@ -129,7 +129,7 @@ export const checkAutoRebalance = (
   return null;
 };
 
-export type MaybeAutoRebalancePowers = {
+export type AutoPowers = {
   autoRebalance: AutoRebalanceConfig;
   console: Pick<Console, 'error' | 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
@@ -159,6 +159,21 @@ export type MaybeAutoRebalancePowers = {
   walletStore: ReturnType<typeof reflectWalletStore>;
 };
 
+export const maybeAutoClaim = async (
+  portfolioStatus: StatusFor['portfolio'],
+  _portfolioKey: PortfolioKey,
+  _currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
+  _powers: AutoPowers,
+): Promise<string | undefined> => {
+  const { enabledAutoFeatures, targetAllocation } = portfolioStatus;
+  // eslint-disable-next-line no-useless-return
+  if (!enabledAutoFeatures?.claim || !targetAllocation) return;
+
+  // TODO(AGO-625)
+  // eslint-disable-next-line no-useless-return
+  return;
+};
+
 export const maybeAutoRebalance = async (
   portfolioStatus: StatusFor['portfolio'],
   portfolioKey: PortfolioKey,
@@ -179,7 +194,7 @@ export const maybeAutoRebalance = async (
     portfoliosPathPrefix,
     postYdsTransaction,
     walletStore,
-  }: MaybeAutoRebalancePowers,
+  }: AutoPowers,
 ): Promise<string | undefined> => {
   const { enabledAutoFeatures, targetAllocation } = portfolioStatus;
   if (!enabledAutoFeatures?.rebalance || !targetAllocation) return;

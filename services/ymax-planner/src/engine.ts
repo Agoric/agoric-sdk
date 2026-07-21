@@ -66,6 +66,7 @@ import type {
 import type { EvmAddress } from '@agoric/fast-usdc';
 import {
   checkAutoRebalance,
+  maybeAutoClaim,
   maybeAutoRebalance,
   type AutoRebalanceConfig,
 } from './auto.ts';
@@ -531,6 +532,24 @@ export const processPortfolioEvents = async (
     postYdsTransaction,
     walletStore,
   };
+  const shouldClaim = (
+    portfolioKey: PortfolioKey,
+    status: StatusFor['portfolio'],
+  ): boolean => {
+    const { enabledAutoFeatures, targetAllocation } = status;
+    if (!enabledAutoFeatures?.claim || !targetAllocation) return false;
+
+    // If we don't have new balance information, there's no point in checking.
+    const cachedBalanceData = balanceCache.get(portfolioKey);
+    if (!cachedBalanceData) return false;
+    const { isoTimestamp } = cachedBalanceData;
+    const oldState = memory.snapshots.get(portfolioKey)!;
+    if (oldState.balancesTimestamp === isoTimestamp) return false;
+    oldState.balancesTimestamp = isoTimestamp;
+
+    // TODO(AGO-625)
+    return false;
+  };
   const shouldRebalance = (
     portfolioKey: PortfolioKey,
     status: StatusFor['portfolio'],
@@ -538,20 +557,11 @@ export const processPortfolioEvents = async (
     const { enabledAutoFeatures, targetAllocation } = status;
     if (!enabledAutoFeatures?.rebalance || !targetAllocation) return false;
 
-    // If status hasn't changed since our last successful submission,
-    // there's no point in checking.
-    const fingerprint = fingerprintPortfolioState(status, { marshaller });
-    const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
-      fingerprint,
-      repeats: 0,
-      txHash: null,
-    }));
-    if (oldState.txHash && fingerprint === oldState.fingerprint) return false;
-
-    // Likewise if we don't have new balance information.
+    // If we don't have new balance information, there's no point in checking.
     const cachedBalanceData = balanceCache.get(portfolioKey);
     if (!cachedBalanceData) return false;
     const { isoTimestamp, balances } = cachedBalanceData;
+    const oldState = memory.snapshots.get(portfolioKey)!;
     if (oldState.balancesTimestamp === isoTimestamp) return false;
     oldState.balancesTimestamp = isoTimestamp;
 
@@ -710,7 +720,17 @@ export const processPortfolioEvents = async (
   await makeWorkPool(portfolioRecordForKey, undefined, async entry => {
     const [portfolioKey, portfolioRecord] = entry;
     const { status } = portfolioRecord;
+
+    // If the portfolio already has a running flow or hasn't changed since our
+    // last successful submission, there's nothing to do now.
     if (Object.keys(status.flowsRunning || {}).length > 0) return;
+    const fingerprint = fingerprintPortfolioState(status, { marshaller });
+    const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
+      fingerprint,
+      repeats: 0,
+      txHash: null,
+    }));
+    if (oldState.txHash && fingerprint === oldState.fingerprint) return;
 
     await null;
 
@@ -730,7 +750,24 @@ export const processPortfolioEvents = async (
       return;
     }
 
-    await null;
+    try {
+      if (shouldClaim(portfolioKey, status)) {
+        const txHash = await maybeMakeFlow(
+          portfolioKey,
+          status,
+          async balances =>
+            maybeAutoClaim(status, portfolioKey, balances, autoPowers),
+        );
+        if (txHash) return;
+      }
+    } catch (err) {
+      const msg = `[${portfolioKey}.autoClaim] ⚠️ Failure ${err?.name}: ${err?.message}`;
+      console.warn(msg, err);
+      return;
+    }
+
+    // Avoid no-useless-return lint issues.
+    null;
   }).done;
 };
 

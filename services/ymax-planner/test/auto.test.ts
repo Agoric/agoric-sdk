@@ -8,7 +8,7 @@ import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
   checkAutoRebalance,
   maybeAutoRebalance,
-  type MaybeAutoRebalancePowers,
+  type AutoPowers,
 } from '../src/auto.ts';
 import { UserInputError } from '../src/support.ts';
 
@@ -188,7 +188,7 @@ const makeAutoPortfolioStatus = (
   });
 
 const makeMaybeAutoPowers = (
-  overrides: Partial<MaybeAutoRebalancePowers> = {},
+  overrides: Partial<AutoPowers> = {},
 ) => {
   const logs: unknown[][] = [];
   const warns: unknown[][] = [];
@@ -196,7 +196,7 @@ const makeMaybeAutoPowers = (
   const rebalanceCalls: unknown[][] = [];
   const ydsTransactionCalls: unknown[] = [];
   const transactionHash = `0x${'b'.repeat(64)}`;
-  const powers: MaybeAutoRebalancePowers = {
+  const powers: AutoPowers = {
     autoRebalance: config,
     console: {
       error: (...args) => errors.push(args),
