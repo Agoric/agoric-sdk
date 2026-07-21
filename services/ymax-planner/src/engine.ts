@@ -65,7 +65,7 @@ import type {
 
 import type { EvmAddress } from '@agoric/fast-usdc';
 import {
-  checkAutoClaim,
+  pickAutoClaimSources,
   checkAutoRebalance,
   maybeAutoClaim,
   maybeAutoRebalance,
@@ -568,12 +568,12 @@ export const processPortfolioEvents = async (
     const cachedBalanceData = balanceCache.get(portfolioKey);
     if (!cachedBalanceData) return false;
 
-    const claimDetail = checkAutoClaim(cachedBalanceData, {
-      exchangeRates,
-      gasCosts,
-      autoClaimConfig,
-    });
-    return !!claimDetail;
+    const claimFrom = pickAutoClaimSources(
+      cachedBalanceData.tokenBalances,
+      { exchangeRates, gasCosts, gasEstimator, autoClaimConfig },
+      1,
+    );
+    return !!claimFrom;
   };
   const shouldRebalance = (
     portfolioKey: PortfolioKey,
@@ -766,8 +766,15 @@ export const processPortfolioEvents = async (
         const txHash = await maybeMakeFlow(
           portfolioKey,
           status,
-          async balances =>
-            maybeAutoClaim(status, portfolioKey, balances, autoPowers),
+          async _balances =>
+            maybeAutoClaim(
+              status,
+              portfolioKey,
+              // TODO(AGO-625): Refresh reward token balances as well.
+              // Copy relevant code from YDS.
+              balanceCache.get(portfolioKey)!.tokenBalances,
+              autoPowers,
+            ),
         );
         if (txHash) return;
       }
