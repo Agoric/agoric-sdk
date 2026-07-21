@@ -9,6 +9,8 @@ import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { reflectWalletStore } from '@agoric/client-utils';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
+import { partialMap, provideLazyMap } from '@agoric/internal';
+import type { AccountId, CaipChainId } from '@agoric/orchestration';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
 import {
   computeTargetBalances,
@@ -24,6 +26,7 @@ import {
   type GasStateWindowMetric,
 } from './gas-estimation.ts';
 import type { InstrumentBlocks } from './instrument-status.ts';
+import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from './rewards.ts';
 import { UserInputError } from './support.ts';
 import { getOwn } from './utils.js';
 import type {
@@ -100,21 +103,128 @@ const computeBpsDrift = (
   return Math.abs(bpsDrift);
 };
 
-export const checkAutoClaim = (
-  _balances: {
-    uusdcBalances: Partial<Record<AssetPlaceRef, NatAmount>>;
-    tokenBalances: YdsTokenBalance[];
-  },
-  _state: {
-    exchangeRates: RewardTokenRate[];
-    gasCosts: ChainGasState[];
-    autoClaimConfig: AutoClaimConfig;
-  },
+const isGasAcceptable = (
+  gasCost: ChainGasState | undefined,
+  maxThresholds: AutoClaimConfig['maxGasCostSpike'],
 ): boolean => {
-  // TODO(AGO-625)
-  // const { uusdcBalances, tokenBalances } = balances;
-  // const { exchangeRates, gasCosts, autoClaimConfig } = state;
-  return false;
+  if (!gasCost) return false;
+  const currentUusdPerGasUnit = gasCost.current.sampleUusd;
+  if (currentUusdPerGasUnit === null) return false;
+  return maxThresholds.every(threshold => {
+    const [factor, windowDuration, windowMetric] = threshold;
+    const key = `${windowMetric}Uusd` as keyof ChainGasState['windows'][number];
+    const metricValue = gasCost.windows.find(
+      w => w.duration === windowDuration,
+    )?.[key];
+    if (typeof metricValue !== 'number') return false;
+    const maxUusdPerGasUnit = factor * metricValue;
+    return currentUusdPerGasUnit <= maxUusdPerGasUnit;
+  });
+};
+
+export const pickAutoClaimSources = (
+  tokenBalances: YdsTokenBalance[],
+  globalState: Pick<
+    AutoPowers,
+    'exchangeRates' | 'gasCosts' | 'gasEstimator' | 'autoClaimConfig'
+  >,
+  pickLimit = Infinity,
+): null | (YdsTokenBalance & { uusdcValue: bigint })[] => {
+  const { exchangeRates, gasCosts, autoClaimConfig } = globalState;
+  if (!exchangeRates || !gasCosts) return null;
+  const picks: (YdsTokenBalance & { uusdcValue: bigint })[] = [];
+
+  // Evaluate each reward token independently.
+  const tokenLocations = Map.groupBy(
+    tokenBalances,
+    ({ caipChainId, tokenId }) => `${caipChainId}:${tokenId}` as AccountId,
+  );
+  const gasCostByChain = new Map<CaipChainId, number>();
+  for (const [_caipTokenId, rewardBalances] of tokenLocations) {
+    const { caipChainId, tokenId } = rewardBalances[0];
+
+    // Require USDC exchangability.
+    const [, evmChainId] = caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
+    const usdcFromTokenRates = exchangeRates.filter(
+      rate =>
+        `${rate.evmChainId}` === evmChainId &&
+        rate.sourceToken === tokenId &&
+        rate.targetDenom === 'USDC',
+    );
+    if (!usdcFromTokenRates.length) continue;
+    const getUusdcValue = (rewardTokenCount: number): number => {
+      if (!rewardTokenCount) return 0;
+      // Per https://ymax.app/docs , rates are sorted by descending amount. Take
+      // the first one whose amount is not too big, falling back on the lowest
+      // amount (which is presumably the worst rate).
+      const exchangeRate =
+        usdcFromTokenRates.find(
+          rate => BigInt(rate.sourceAmount) <= rewardTokenCount,
+        ) || usdcFromTokenRates.at(-1)!;
+      const uusdcValue =
+        (rewardTokenCount * Number(exchangeRate.targetAmount)) /
+        Number(exchangeRate.sourceAmount);
+      return Math.floor(uusdcValue);
+    };
+
+    // Require chain-scoped gas favorability.
+    const uusdPerGasUnit = provideLazyMap(gasCostByChain, caipChainId, () => {
+      const gasCost = gasCosts.find(cost => cost.caip2Id === caipChainId);
+      return isGasAcceptable(gasCost, autoClaimConfig.maxGasCostSpike)
+        ? (gasCost!.current.sampleUusd ?? NaN)
+        : NaN;
+    });
+    if (!(uusdPerGasUnit >= 0)) continue;
+
+    // Pick any sources for which the slippage-adjusted USD value is equal to or
+    // greater than the estimated gas cost multiplied by minRewardPerGas
+    // $value * (1 - maxSlippage) >= $gasUnits * costPerGasUnit * minRewardPerGas
+    //   => $value / $gasUnits >= costPerGasUnit * minRewardPerGas / (1 - maxSlippage)
+    // Remember also that a swap (along with its gas cost) is always necessary
+    // but covers any number of claims, so individually-justified claims that
+    // can't cover the additional gas for swapping on their own can still be
+    // picked as part of a batch (once we're swapping, we include every
+    // justified claim).
+    // TODO(AGO-625): Extend `GasEstimator`?
+    let estimatedGasUnits = Number(GAS_UNITS_PER_SWAP);
+    const threshold =
+      (uusdPerGasUnit * autoClaimConfig.minRewardPerGas) /
+      (1 - autoClaimConfig.maxSlippageBps / 10_000);
+
+    // First, check for already-claimed tokens.
+    const claimedBalance = rewardBalances.find(b => b.instrumentName === null);
+    let claimedUusdc = getUusdcValue(Number(claimedBalance?.amount));
+    if (claimedUusdc > 0 && claimedUusdc / estimatedGasUnits >= threshold) {
+      picks.push({ ...claimedBalance!, uusdcValue: BigInt(claimedUusdc) });
+      if (picks.length >= pickLimit) return picks;
+    }
+
+    // Next, sources by descending value-per-gas until the batch stops growing.
+    const bestRewardBalances = partialMap(rewardBalances, balance => {
+      if (balance.instrumentName === null) return undefined;
+      // TODO(AGO-625): Extend `GasEstimator`?
+      const gasUnits = Number(getOwn(GAS_UNITS_PER_CLAIM, balance.tokenId));
+      if (!gasUnits) return undefined;
+      const uusdcValue = getUusdcValue(Number(balance.amount));
+      const uusdcPerGasUnit = uusdcValue / gasUnits;
+      return uusdcValue > 0 && uusdcPerGasUnit >= threshold
+        ? { balance, uusdcValue, gasUnits, uusdcPerGasUnit }
+        : undefined;
+    }).sort(({ uusdcPerGasUnit: a }, { uusdcPerGasUnit: b }) =>
+      a > b ? -1 : a < b ? 1 : 0,
+    );
+    for (const { balance, uusdcValue, gasUnits } of bestRewardBalances) {
+      estimatedGasUnits += gasUnits;
+      claimedUusdc += uusdcValue;
+      if (claimedUusdc / estimatedGasUnits >= threshold) {
+        picks.push({ ...balance, uusdcValue: BigInt(uusdcValue) });
+        if (picks.length >= pickLimit) return picks;
+        continue;
+      }
+      break;
+    }
+  }
+  return picks.length > 0 ? picks : null;
 };
 
 export const checkAutoRebalance = (
@@ -205,17 +315,50 @@ export type AutoPowers = {
 
 export const maybeAutoClaim = async (
   portfolioStatus: StatusFor['portfolio'],
-  _portfolioKey: PortfolioKey,
-  _currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
-  _powers: AutoPowers,
+  portfolioKey: PortfolioKey,
+  tokenBalances: YdsTokenBalance[],
+  powers: AutoPowers,
 ): Promise<string | undefined> => {
   const { enabledAutoFeatures } = portfolioStatus;
-  // eslint-disable-next-line no-useless-return
-  if (!enabledAutoFeatures?.claim) return;
+  if (!enabledAutoFeatures?.claim) return undefined;
 
-  // TODO(AGO-625)
-  // eslint-disable-next-line no-useless-return
-  return;
+  const { inspectForStdout, portfoliosPathPrefix } = powers;
+
+  const path = `${portfoliosPathPrefix}.${portfolioKey}`;
+  // eslint-disable-next-line no-underscore-dangle
+  const _portfolioId = portfolioIdFromKey(portfolioKey);
+  const logPrefix = `[${portfolioKey}.autoClaim]`;
+  const { policyVersion, rebalanceCount } = portfolioStatus;
+  // eslint-disable-next-line no-underscore-dangle
+  const _syncState = { policyVersion, rebalanceCount } as const;
+
+  const logContext = {
+    path,
+    flowDetail: { type: 'claim-rewards' as const },
+    tokenBalances,
+    policyVersion,
+    rebalanceCount,
+  };
+
+  await null;
+  try {
+    const sources = pickAutoClaimSources(tokenBalances, powers);
+    if (!sources?.length) {
+      console.log(logPrefix, 'skip', inspectForStdout(logContext));
+      return;
+    }
+
+    // TODO(AGO-625)
+    console.log(
+      logPrefix,
+      'claim',
+      inspectForStdout({ ...logContext, sources }),
+    );
+    return undefined;
+  } catch (err) {
+    annotateError(err, inspect(logContext, { depth: 4 }));
+    throw err;
+  }
 };
 
 export const maybeAutoRebalance = async (
