@@ -118,7 +118,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: record approval
-        run: echo "Approved publishing dist-tag '${{ inputs.tag }}' from branch '${{ inputs.branch }}'"
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
+          RELEASE_BRANCH: ${{ inputs.branch }}
+        run: |
+          printf "Approved publishing dist-tag '%s' from branch '%s'\n" \
+            "${NPM_DIST_TAG}" "${RELEASE_BRANCH}"
 
   release-publish:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'release' }}
@@ -131,13 +136,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: validate inputs
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
         run: |
           set -o errexit -o xtrace
 
-          case "${{ inputs.tag }}" in
+          case "${NPM_DIST_TAG}" in
             '' | latest)
-              echo "tag must name a release tag (e.g. agoric-upgrade-23); got '${{ inputs.tag }}'"
-              echo "Refusing to publish to '${{ inputs.tag }}'."
+              printf "tag must name a release tag (e.g. agoric-upgrade-23); got '%s'\n" \
+                "${NPM_DIST_TAG}"
+              printf "Refusing to publish to '%s'.\n" "${NPM_DIST_TAG}"
+              exit 1
+              ;;
+            *[!A-Za-z0-9._-]* | .* | -*)
+              printf "tag must contain only letters, numbers, dots, underscores, and hyphens, and must not start with dot or hyphen; got '%s'\n" \
+                "${NPM_DIST_TAG}"
               exit 1
               ;;
           esac
@@ -159,6 +172,8 @@ jobs:
         run: npm whoami
 
       - name: publish release versions to NPM
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
         run: |
           set -o errexit -o xtrace
 
@@ -168,7 +183,7 @@ jobs:
 
           AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON="1" \
             yarn lerna publish from-package \
-            --concurrency "1" --dist-tag "${{ inputs.tag }}" --loglevel "verbose" \
+            --concurrency "1" --dist-tag "${NPM_DIST_TAG}" --loglevel "verbose" \
             --no-push --no-verify-access --yes
 
           git stash pop || true
