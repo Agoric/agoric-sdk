@@ -65,11 +65,16 @@ import type {
 
 import type { EvmAddress } from '@agoric/fast-usdc';
 import {
+  checkAutoClaim,
   checkAutoRebalance,
+  maybeAutoClaim,
   maybeAutoRebalance,
+  type AutoClaimConfig,
   type AutoRebalanceConfig,
+  type AutoPowers,
 } from './auto.ts';
 import type { CosmosRPCClient, SubscriptionResponse } from './cosmos-rpc.ts';
+import type { ChainGasState } from './gas-estimation.ts';
 import type { Sdk as SpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import type { InstrumentBlocks } from './instrument-status.ts';
 import type {
@@ -211,6 +216,7 @@ export type Powers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
+  getGasCosts?: () => Promise<ChainGasState[] | undefined>;
   getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
   getPortfolioSummaries?: (
     portfolioKeys: PortfolioKey[],
@@ -230,6 +236,7 @@ export type Powers = {
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
   postYdsTransaction?: (txHash: string) => Promise<void>;
+  autoClaimConfig: AutoClaimConfig;
   autoRebalance: AutoRebalanceConfig;
 };
 
@@ -248,12 +255,14 @@ export type ProcessPortfolioPowers = Pick<
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
   | 'postYdsTransaction'
+  | 'autoClaimConfig'
   | 'autoRebalance'
 > & {
   console: Required<Powers>['console'];
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
+  gasCosts?: ChainGasState[];
   instrumentBlocks?: InstrumentBlocks;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
@@ -327,6 +336,7 @@ export const processPortfolioEvents = async (
     gasEstimator,
     network,
     nowISO,
+    gasCosts,
     instrumentBlocks,
     signingSmartWalletKit,
     walletStore,
@@ -340,6 +350,7 @@ export const processPortfolioEvents = async (
     evmProviders,
     chainNameToChainIdMap,
     postYdsTransaction,
+    autoClaimConfig,
     autoRebalance,
   }: ProcessPortfolioPowers,
 ) => {
@@ -514,11 +525,13 @@ export const processPortfolioEvents = async (
       }
     }
   };
-  const autoPowers = {
+  const autoPowers: AutoPowers = {
+    autoClaimConfig,
     autoRebalance,
     console,
     depositBrand,
     feeBrand,
+    gasCosts,
     gasEstimator,
     getWalletInvocationUpdate,
     inspectForStdout,
@@ -531,28 +544,37 @@ export const processPortfolioEvents = async (
     postYdsTransaction,
     walletStore,
   };
+  const gasCostOk = !!gasCosts;
+  const shouldClaim = (
+    portfolioKey: PortfolioKey,
+    status: StatusFor['portfolio'],
+  ): boolean => {
+    if (!gasCostOk) return false;
+
+    const { enabledAutoFeatures } = status;
+    if (!enabledAutoFeatures?.claim) return false;
+
+    const cachedBalanceData = balanceCache.get(portfolioKey);
+    if (!cachedBalanceData) return false;
+    const { balances } = cachedBalanceData;
+
+    const claimDetail = checkAutoClaim(balances, gasCosts, autoClaimConfig);
+    return !!claimDetail;
+  };
   const shouldRebalance = (
     portfolioKey: PortfolioKey,
     status: StatusFor['portfolio'],
+    oldBalancesTimestamp: undefined | IsoTimestamp,
   ): boolean => {
     const { enabledAutoFeatures, targetAllocation } = status;
     if (!enabledAutoFeatures?.rebalance || !targetAllocation) return false;
 
-    // If status hasn't changed since our last successful submission,
-    // there's no point in checking.
-    const fingerprint = fingerprintPortfolioState(status, { marshaller });
-    const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
-      fingerprint,
-      repeats: 0,
-      txHash: null,
-    }));
-    if (oldState.txHash && fingerprint === oldState.fingerprint) return false;
-
-    // Likewise if we don't have new balance information.
+    // If we don't have new balance information, there's no point in checking.
     const cachedBalanceData = balanceCache.get(portfolioKey);
     if (!cachedBalanceData) return false;
     const { isoTimestamp, balances } = cachedBalanceData;
-    if (oldState.balancesTimestamp === isoTimestamp) return false;
+    if (isoTimestamp === oldBalancesTimestamp) return false;
+    const oldState = memory.snapshots.get(portfolioKey)!;
     oldState.balancesTimestamp = isoTimestamp;
 
     // XXX We should refactor to avoid adding back unchanged balances.
@@ -710,12 +732,39 @@ export const processPortfolioEvents = async (
   await makeWorkPool(portfolioRecordForKey, undefined, async entry => {
     const [portfolioKey, portfolioRecord] = entry;
     const { status } = portfolioRecord;
+
+    // If the portfolio already has a running flow or hasn't changed since our
+    // last successful submission, there's nothing to do now.
     if (Object.keys(status.flowsRunning || {}).length > 0) return;
+    const fingerprint = fingerprintPortfolioState(status, { marshaller });
+    const oldState = provideLazyMap(memory.snapshots, portfolioKey, () => ({
+      fingerprint,
+      repeats: 0,
+      txHash: null,
+    }));
+    if (oldState.txHash && fingerprint === oldState.fingerprint) return;
+    const { balancesTimestamp } = oldState;
 
     await null;
 
     try {
-      if (shouldRebalance(portfolioKey, status)) {
+      if (shouldClaim(portfolioKey, status)) {
+        const txHash = await maybeMakeFlow(
+          portfolioKey,
+          status,
+          async balances =>
+            maybeAutoClaim(status, portfolioKey, balances, autoPowers),
+        );
+        if (txHash) return;
+      }
+    } catch (err) {
+      const msg = `[${portfolioKey}.autoClaim] ⚠️ Failure ${err?.name}: ${err?.message}`;
+      console.warn(msg, err);
+      return;
+    }
+
+    try {
+      if (shouldRebalance(portfolioKey, status, balancesTimestamp)) {
         const txHash = await maybeMakeFlow(
           portfolioKey,
           status,
@@ -730,7 +779,8 @@ export const processPortfolioEvents = async (
       return;
     }
 
-    await null;
+    // Avoid no-useless-return lint issues.
+    null;
   }).done;
 };
 
@@ -914,6 +964,7 @@ export const startEngine = async (
     rpc,
     signingSmartWalletKit,
     makeNonce,
+    getGasCosts,
     getInstrumentBlocks,
     getPortfolioSummaries,
     now,
@@ -923,6 +974,17 @@ export const startEngine = async (
   const { portfoliosPathPrefix, pendingTxPathPrefix } = vstoragePathPrefixes;
   await null;
   const { query, marshaller } = signingSmartWalletKit;
+
+  let gasCosts: ChainGasState[] | undefined;
+  const updateGasCosts = async () => {
+    await null;
+    try {
+      const newGasCosts = await getGasCosts?.();
+      if (newGasCosts) gasCosts = newGasCosts;
+    } catch (err) {
+      console.error('🚨 [updateGasCosts]', err);
+    }
+  };
 
   let instrumentBlocks: InstrumentBlocks | undefined;
   const updateInstrumentBlocks = async () => {
@@ -957,12 +1019,14 @@ export const startEngine = async (
   const updatePortfolioBalances = async () => {
     await null;
     try {
-      const autoRebalancers = partialMap(
+      const autoPortfolios = partialMap(
         [...portfolioRecordForKey],
-        ([portfolioKey, record]) =>
-          record.status.enabledAutoFeatures?.rebalance && portfolioKey,
+        ([portfolioKey, record]) => {
+          const auto = record.status.enabledAutoFeatures;
+          return (auto?.claim || auto?.rebalance) && portfolioKey;
+        },
       );
-      const summaries = await getPortfolioSummaries?.(autoRebalancers);
+      const summaries = await getPortfolioSummaries?.(autoPortfolios);
       if (!summaries) return;
       for (const { portfolioId, latestSnapshot } of summaries) {
         if (!latestSnapshot) continue;
@@ -1218,17 +1282,16 @@ export const startEngine = async (
     // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
     // transactions, so process them concurrently with portfolio events.
     await Promise.all([
-      Promise.all([updateInstrumentBlocks(), updatePortfolioBalances()]).then(
-        () =>
-          processPortfolioEvents(
-            portfolioEvents,
-            respHeight,
-            portfoliosMemory,
-            {
-              ...processPortfolioPowers,
-              instrumentBlocks,
-            },
-          ),
+      Promise.all([
+        updateGasCosts(),
+        updateInstrumentBlocks(),
+        updatePortfolioBalances(),
+      ]).then(() =>
+        processPortfolioEvents(portfolioEvents, respHeight, portfoliosMemory, {
+          ...processPortfolioPowers,
+          gasCosts,
+          instrumentBlocks,
+        }),
       ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),
     ]);

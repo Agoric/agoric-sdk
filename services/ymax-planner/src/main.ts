@@ -43,6 +43,7 @@ import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
+import type { ChainGasState } from './gas-estimation.ts';
 import { calculateInstrumentBlocks } from './instrument-status.ts';
 import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
 import {
@@ -368,6 +369,31 @@ export const main = async (
       })
     : undefined;
 
+  let lastGasCosts: { timestamp: number; gasCosts: ChainGasState[] } = {
+    timestamp: -Infinity,
+    gasCosts: [],
+  };
+  const getGasCosts = ydsClient
+    ? async (): Promise<ChainGasState[] | undefined> => {
+        // Refresh once per minute.
+        const timestamp = now();
+        if (timestamp < lastGasCosts.timestamp + 60_000) {
+          return lastGasCosts.gasCosts;
+        }
+
+        const resp = await withHealthLogging(
+          'gas costs',
+          ydsClient.get('chains/gas').json(),
+          config.requestLimits,
+        );
+        if (!resp) return undefined;
+
+        const gasCosts = (resp as any).data as ChainGasState[];
+        lastGasCosts = { timestamp, gasCosts };
+        return gasCosts;
+      }
+    : undefined;
+
   let lastInstrumentBlocksString = '';
   const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
     const { noDepositInstruments, noWithdrawInstruments } = instrumentBlocks;
@@ -515,6 +541,7 @@ export const main = async (
     evmTokenAddresses,
     spectrumBlockchain,
     network: PROD_NETWORK,
+    getGasCosts,
     getInstrumentBlocks,
     getPortfolioSummaries,
     signingSmartWalletKit,
@@ -531,6 +558,7 @@ export const main = async (
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
     postYdsTransaction,
+    autoClaimConfig: config.autoClaim,
     autoRebalance: config.autoRebalance,
   };
 

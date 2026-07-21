@@ -87,6 +87,7 @@ const makeSpectrumGetAddressBalanceInput = (
   return { chain: chainId, address, token };
 };
 
+// TODO(AGO-625): Generalize to also expose reward token balances.
 export const getCurrentBalances = async (
   status: StatusFor['portfolio'],
   brand: Brand<'nat'>,
