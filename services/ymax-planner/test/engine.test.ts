@@ -820,10 +820,11 @@ test('processPortfolioEvents starts auto rebalance when criteria fire', async t 
   const memory = makePortfoliosMemory();
   memory.balanceCache.set(`portfolio${portfolioId}`, {
     isoTimestamp: EPOCH_TIMESTAMP,
-    balances: {
+    uusdcBalances: {
       '@noble': nobleBalance,
       USDN: usdnBalance,
     },
+    tokenBalances: [],
   });
   await processPortfolioEvents(
     [makeVstorageEventDetail(blockHeight, portfolioPath, portfolioStatus)],
@@ -893,10 +894,11 @@ test('processPortfolioEvents scans remembered portfolios when there are no event
   memory.snapshots.set(portfolioKey, { fingerprint: '', repeats: 0 });
   memory.balanceCache.set(portfolioKey, {
     isoTimestamp: EPOCH_TIMESTAMP,
-    balances: {
+    uusdcBalances: {
       '@noble': nobleBalance,
       USDN: usdnBalance,
     },
+    tokenBalances: [],
   });
 
   await processPortfolioEvents([], blockHeight, memory, powers);
@@ -928,9 +930,10 @@ test('processPortfolioEvents rebalances against latest balances', async t => {
   });
   memory.balanceCache.set(portfolioKey, {
     isoTimestamp: EPOCH_TIMESTAMP,
-    balances: {
+    uusdcBalances: {
       '@noble': makeDeposit(25_000_000n),
     },
+    tokenBalances: [],
   });
 
   await processPortfolioEvents([], blockHeight, memory, powers);
@@ -977,9 +980,10 @@ test('processPortfolioEvents continues auto scan after portfolio error', async t
     memory.snapshots.set(portfolioKey, { fingerprint: '', repeats: 0 });
     memory.balanceCache.set(portfolioKey, {
       isoTimestamp: EPOCH_TIMESTAMP,
-      balances: {
+      uusdcBalances: {
         '@noble': makeDeposit(25_000_000n),
       },
+      tokenBalances: [],
     });
   }
 

@@ -60,6 +60,7 @@ import { YdsNotifier } from './yds-notifier.ts';
 import {
   YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
   type YdsPortfolioSummary,
+  type RewardTokenRate,
 } from './yds-portfolio-balances.ts';
 import { getPoolTokenAddresses } from './evm-utils.ts';
 import { generateDiff } from './ses-utils.ts';
@@ -368,31 +369,46 @@ export const main = async (
         retry: config.requestLimits.maxRetries,
       })
     : undefined;
+  const makeYdsCacheable = <T>(
+    name: string,
+    ttlMs: number,
+    fetcher: (
+      yds: Exclude<typeof ydsClient, undefined>,
+    ) => Promise<{ data: T } | undefined>,
+  ): (() => Promise<T | undefined>) | undefined => {
+    if (!ydsClient) return undefined;
 
-  let lastGasCosts: { timestamp: number; gasCosts: ChainGasState[] } = {
-    timestamp: -Infinity,
-    gasCosts: [],
-  };
-  const getGasCosts = ydsClient
-    ? async (): Promise<ChainGasState[] | undefined> => {
-        // Refresh once per minute.
-        const timestamp = now();
-        if (timestamp < lastGasCosts.timestamp + 60_000) {
-          return lastGasCosts.gasCosts;
-        }
-
-        const resp = await withHealthLogging(
-          'gas costs',
-          ydsClient.get('chains/gas').json(),
-          config.requestLimits,
-        );
-        if (!resp) return undefined;
-
-        const gasCosts = (resp as any).data as ChainGasState[];
-        lastGasCosts = { timestamp, gasCosts };
-        return gasCosts;
+    let got: { timestamp: number; value: T | undefined } = {
+      timestamp: -Infinity,
+      value: undefined,
+    };
+    return async (): Promise<T | undefined> => {
+      const timestamp = now();
+      if (timestamp < got.timestamp + ttlMs) {
+        return got.value as T;
       }
-    : undefined;
+      const resp = await withHealthLogging(
+        name,
+        fetcher(ydsClient),
+        config.requestLimits,
+      );
+      if (!resp) return undefined;
+
+      const value = resp.data;
+      got = { timestamp, value };
+      return value;
+    };
+  };
+
+  const getExchangeRates = makeYdsCacheable(
+    'exchange rates',
+    60_000,
+    async yds =>
+      yds.get('reward-token-rates').json<{ data: RewardTokenRate[] }>(),
+  );
+  const getGasCosts = makeYdsCacheable('gas costs', 60_000, async yds =>
+    yds.get('chains/gas').json<{ data: ChainGasState[] }>(),
+  );
 
   let lastInstrumentBlocksString = '';
   const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
@@ -541,6 +557,7 @@ export const main = async (
     evmTokenAddresses,
     spectrumBlockchain,
     network: PROD_NETWORK,
+    getExchangeRates,
     getGasCosts,
     getInstrumentBlocks,
     getPortfolioSummaries,
