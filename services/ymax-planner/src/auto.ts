@@ -1,23 +1,34 @@
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
+  PoolPlaces,
   portfolioIdFromKey,
   type StatusFor,
   type TargetAllocation,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
-import { NoSolutionError } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
+import {
+  NoSolutionError,
+  makeGmpFeeAmount,
+} from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import type { reflectWalletStore } from '@agoric/client-utils';
+import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
 import { partialMap, provideLazyMap } from '@agoric/internal';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
+import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
+import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
 import {
   computeTargetBalances,
   TargetBalanceError,
 } from '@agoric/portfolio-api/src/target-balances.js';
 import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
-import type { FundsFlowPlan, PortfolioKey } from '@agoric/portfolio-api';
+import type {
+  FundsFlowPlan,
+  PortfolioKey,
+  SwapDesc,
+} from '@agoric/portfolio-api';
 import { annotateError, Fail } from '@endo/errors';
 import { inspect } from 'node:util';
 import {
@@ -322,15 +333,25 @@ export const maybeAutoClaim = async (
   const { enabledAutoFeatures } = portfolioStatus;
   if (!enabledAutoFeatures?.claim) return undefined;
 
-  const { inspectForStdout, portfoliosPathPrefix } = powers;
+  const {
+    console,
+    depositBrand,
+    feeBrand,
+    gasEstimator,
+    getWalletInvocationUpdate,
+    inspectForStdout,
+    isDryRun,
+    makeNonce,
+    portfoliosPathPrefix,
+    postYdsTransaction,
+    walletStore,
+  } = powers;
 
   const path = `${portfoliosPathPrefix}.${portfolioKey}`;
-  // eslint-disable-next-line no-underscore-dangle
-  const _portfolioId = portfolioIdFromKey(portfolioKey);
+  const portfolioId = portfolioIdFromKey(portfolioKey);
   const logPrefix = `[${portfolioKey}.autoClaim]`;
   const { policyVersion, rebalanceCount } = portfolioStatus;
-  // eslint-disable-next-line no-underscore-dangle
-  const _syncState = { policyVersion, rebalanceCount } as const;
+  const syncState = { policyVersion, rebalanceCount } as const;
 
   const logContext = {
     path,
@@ -348,13 +369,112 @@ export const maybeAutoClaim = async (
       return;
     }
 
-    // TODO(AGO-625)
+    // Build a FundsFlowPlan in which the only dependencies are that each
+    // swap step depends upon all claim steps for the same chain.
+    sources.sort((a, b) => {
+      const { caipChainId: chainA, instrumentName: instrumentA } = a;
+      const { caipChainId: chainB, instrumentName: instrumentB } = b;
+      if (chainA !== chainB) return chainA < chainB ? -1 : 1;
+      if (instrumentA !== instrumentB) {
+        if (instrumentA === null) return 1;
+        if (instrumentB === null) return -1;
+        return instrumentA < instrumentB ? -1 : 1;
+      }
+      return 0;
+    });
+
+    const dummyAmount = AmountMath.make(depositBrand, 0n);
+    const swapInputs: bigint[] = [];
+    const order: FundsFlowPlan['order'] = [];
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const flow: FundsFlowPlan['flow'] = await Promise.all(
+      sources.map(async (source, stepIndex) => {
+        const { chainName, instrumentName, tokenId, amount } = source;
+        const dest = `@${chainName}` as AssetPlaceRef;
+        await null;
+        if (instrumentName) {
+          swapInputs.push(source.uusdcValue);
+
+          const src = instrumentName;
+          const poolInfo = PoolPlaces[instrumentName];
+          const claimRewards = {
+            tokens: [tokenId],
+            minAmounts: [BigInt(amount)],
+          };
+          const feeValue = await gasEstimator.getWalletEstimate(
+            chainName as AxelarChain,
+            EvmWalletOperationType.Claim,
+            poolInfo?.protocol,
+          );
+          const fee = makeGmpFeeAmount(feeBrand, feeValue);
+          return { src, dest, amount: dummyAmount, fee, claimRewards };
+        } else {
+          // Record and consume from input steps.
+          let { uusdcValue } = source;
+          if (swapInputs.length > 0) {
+            const firstClaimIndex = stepIndex - swapInputs.length;
+            const prerequisiteIndexes = swapInputs.map((value, i) => {
+              uusdcValue += value;
+              return firstClaimIndex + i;
+            });
+            order.push([stepIndex, prerequisiteIndexes]);
+            swapInputs.splice(0);
+          }
+          const uusdcAmount = AmountMath.make(depositBrand, uusdcValue);
+
+          const src = `@${chainName}` as AssetPlaceRef;
+          const swap: SwapDesc = {
+            tokenIn: tokenId as any,
+            amountIn: uusdcValue,
+            // TODO(AGO-625): Make the API call to get this data.
+            provider: '1inch',
+            flags: 0n,
+            executor: '0xTODO',
+            srcReceiver: '0xTODO',
+            data: '0xTODO',
+          };
+          const feeValue = await gasEstimator.getWalletEstimate(
+            chainName as AxelarChain,
+            EvmWalletOperationType.Swap,
+            undefined,
+            GAS_UNITS_PER_SWAP,
+          );
+          const fee = makeGmpFeeAmount(feeBrand, feeValue);
+          return { src, dest, amount: uusdcAmount, fee, swap };
+        }
+      }),
+    );
+    const plan: FundsFlowPlan = { flow, order };
+
+    const txOpts = { sendOnly: true } as const;
+    const planReceiver = walletStore.get<PortfolioPlanner>('planner', txOpts);
+    const agentMemo = makeNonce().trim();
+    agentMemo || Fail`makeNonce returned an empty agentMemo`;
+    const { tx, id } = await planReceiver.rebalance(
+      portfolioId,
+      { syncState, agentMemo },
+      plan,
+    );
+    if (!isDryRun) {
+      void getWalletInvocationUpdate(id as any).catch(err => {
+        console.warn(logPrefix, '⚠️ Failure for auto-claim', err);
+      });
+      void postYdsTransaction?.(tx.transactionHash).catch(err => {
+        console.error(
+          logPrefix,
+          '🚨 Failure posting transaction to YDS',
+          { txHash: tx.transactionHash, agentMemo },
+          err,
+        );
+      });
+    }
     console.log(
       logPrefix,
       'claim',
-      inspectForStdout({ ...logContext, sources }),
+      inspectForStdout({ ...logContext, plan }),
+      tx,
     );
-    return undefined;
+    return tx.transactionHash;
   } catch (err) {
     annotateError(err, inspect(logContext, { depth: 4 }));
     throw err;
