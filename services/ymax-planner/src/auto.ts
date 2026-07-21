@@ -96,6 +96,15 @@ const computeBpsDrift = (
   return Math.abs(bpsDrift);
 };
 
+export const checkAutoClaim = (
+  _balances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
+  _gasCosts: ChainGasState[],
+  _autoClaimConfig: AutoClaimConfig,
+): boolean => {
+  // TODO(AGO-625)
+  return false;
+};
+
 export const checkAutoRebalance = (
   targetAllocation: TargetAllocation,
   currentBalances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
@@ -149,7 +158,8 @@ export const checkAutoRebalance = (
   return null;
 };
 
-export type MaybeAutoRebalancePowers = {
+export type AutoPowers = {
+  autoClaimConfig: AutoClaimConfig;
   autoRebalance: AutoRebalanceConfig;
   console: Pick<Console, 'error' | 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
@@ -180,6 +190,21 @@ export type MaybeAutoRebalancePowers = {
   walletStore: ReturnType<typeof reflectWalletStore>;
 };
 
+export const maybeAutoClaim = async (
+  portfolioStatus: StatusFor['portfolio'],
+  _portfolioKey: PortfolioKey,
+  _currentBalances: Partial<Record<AssetPlaceRef, NatAmount>>,
+  _powers: AutoPowers,
+): Promise<string | undefined> => {
+  const { enabledAutoFeatures } = portfolioStatus;
+  // eslint-disable-next-line no-useless-return
+  if (!enabledAutoFeatures?.claim) return;
+
+  // TODO(AGO-625)
+  // eslint-disable-next-line no-useless-return
+  return;
+};
+
 export const maybeAutoRebalance = async (
   portfolioStatus: StatusFor['portfolio'],
   portfolioKey: PortfolioKey,
@@ -200,7 +225,7 @@ export const maybeAutoRebalance = async (
     portfoliosPathPrefix,
     postYdsTransaction,
     walletStore,
-  }: MaybeAutoRebalancePowers,
+  }: AutoPowers,
 ): Promise<string | undefined> => {
   const { enabledAutoFeatures, targetAllocation } = portfolioStatus;
   if (!enabledAutoFeatures?.rebalance || !targetAllocation) return;

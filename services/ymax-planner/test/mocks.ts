@@ -117,6 +117,11 @@ export const createMockEnginePowers = (): EnginePowers => ({
   gasEstimator: {} as any,
   usdcTokensByChain: {},
   chainNameToChainIdMap: CaipChainIds.testnet,
+  autoClaimConfig: {
+    maxGasCostSpike: [[1.5, 'P30D', 'p50']],
+    maxSlippageBps: 200,
+    minRewardPerGas: 2,
+  },
   autoRebalance: {
     driftBps: 100n,
     driftMinMoveUusdc: 25_000_000n,

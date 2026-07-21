@@ -8,14 +8,22 @@ import type { StatusFor } from '@aglocal/portfolio-contract/src/type-guards.ts';
 import {
   checkAutoRebalance,
   maybeAutoRebalance,
-  type MaybeAutoRebalancePowers,
+  type AutoClaimConfig,
+  type AutoRebalanceConfig,
+  type AutoPowers,
 } from '../src/auto.ts';
 import { UserInputError } from '../src/support.ts';
 
 const brand = Far('mock USDC brand') as Brand<'nat'>;
 const makeAmount = (value: bigint) => AmountMath.make(brand, value);
 
-const config = harden({
+const autoClaimConfig: AutoClaimConfig = harden({
+  maxGasCostSpike: [[1.5, 'P30D', 'p50']],
+  maxSlippageBps: 200,
+  minRewardPerGas: 2,
+});
+
+const autoRebalanceConfig: AutoRebalanceConfig = harden({
   driftBps: 100n,
   driftMinMoveUusdc: 25_000_000n,
   cashMinMoveUusdc: 25_000_000n,
@@ -39,7 +47,7 @@ test('checkAutoRebalance trigger: Position Drift', t => {
         USDN: makeAmount(balancedValue),
         Aave_Arbitrum: makeAmount(balancedValue),
       },
-      config,
+      autoRebalanceConfig,
     );
     t.is(
       resultAtBpsThreshold,
@@ -59,7 +67,7 @@ test('checkAutoRebalance trigger: Position Drift', t => {
         USDN: makeAmount(balancedValue),
         Aave_Arbitrum: makeAmount(balancedValue),
       },
-      config,
+      autoRebalanceConfig,
     );
     const { greatestBpsDrift, ...nonFloatFields } = {
       ...resultOverBpsThreshold,
@@ -86,7 +94,7 @@ test('checkAutoRebalance trigger: Position Drift', t => {
         USDN: makeAmount(balancedValue),
         Aave_Arbitrum: makeAmount(balancedValue),
       },
-      config,
+      autoRebalanceConfig,
     );
     t.is(
       resultAtBpsThreshold,
@@ -114,7 +122,7 @@ test('checkAutoRebalance trigger: Excess Cash', t => {
         USDN: makeAmount(balancedValue),
         Aave_Arbitrum: makeAmount(balancedValue),
       },
-      config,
+      autoRebalanceConfig,
     );
     t.is(
       resultUnderCashThreshold,
@@ -134,7 +142,7 @@ test('checkAutoRebalance trigger: Excess Cash', t => {
         USDN: makeAmount(balancedValue),
         Aave_Arbitrum: makeAmount(balancedValue),
       },
-      config,
+      autoRebalanceConfig,
     );
     t.deepEqual(
       resultAtCashThreshold,
@@ -156,7 +164,7 @@ test('checkAutoRebalance trigger: Excess Cash', t => {
         USDN: makeAmount(50_000_000n),
         Aave_Arbitrum: makeAmount(50_000_000n),
       },
-      config,
+      autoRebalanceConfig,
     ),
     null,
     'cash at or below its target allocation is not excess',
@@ -167,7 +175,7 @@ test('checkAutoRebalance trigger: Excess Cash', t => {
       { USDN: 0n, Aave_Arbitrum: 1n },
       { '@agoric': makeAmount(25_000_000n) },
       { USDN: makeAmount(25_000_000n) },
-      config,
+      autoRebalanceConfig,
     ),
     { reason: 'EXCESS_CASH', excessCashAllocated: 25_000_000n },
   );
@@ -187,17 +195,16 @@ const makeAutoPortfolioStatus = (
     ...overrides,
   });
 
-const makeMaybeAutoPowers = (
-  overrides: Partial<MaybeAutoRebalancePowers> = {},
-) => {
+const makeMaybeAutoPowers = (overrides: Partial<AutoPowers> = {}) => {
   const logs: unknown[][] = [];
   const warns: unknown[][] = [];
   const errors: unknown[][] = [];
   const rebalanceCalls: unknown[][] = [];
   const ydsTransactionCalls: unknown[] = [];
   const transactionHash = `0x${'b'.repeat(64)}`;
-  const powers: MaybeAutoRebalancePowers = {
-    autoRebalance: config,
+  const powers: AutoPowers = {
+    autoClaimConfig: autoClaimConfig,
+    autoRebalance: autoRebalanceConfig,
     console: {
       error: (...args) => errors.push(args),
       log: (...args) => logs.push(args),
