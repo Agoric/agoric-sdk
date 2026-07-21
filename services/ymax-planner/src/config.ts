@@ -13,6 +13,7 @@ import {
   GAS_STATE_WINDOW_DURATIONS,
   GAS_STATE_WINDOW_METRICS,
 } from './gas-estimation.ts';
+import { ONEINCH_API_BASE_URL } from './oneinch.ts';
 import { parseGraphqlEndpoints } from './utils.ts';
 
 export const DEFAULT_AUTO_CLAIM_MAX_GAS_COST_SPIKE = '1.5:P30D:p50';
@@ -53,6 +54,10 @@ export interface YmaxPlannerConfig {
   readonly axelar: {
     readonly apiUrl: string;
     readonly chainIdMap: Record<AxelarChain, string>;
+  };
+  readonly oneInch: {
+    readonly apiUrl: string;
+    readonly apiKey?: string;
   };
   readonly sqlite: {
     readonly dbPath: string;
@@ -234,6 +239,13 @@ export const loadConfig = async (
     Fail`GRAPHQL_ENDPOINTS configuration for api-spectrum-blockchain is required`;
   const sqliteDbPath = validateRequired(env, 'SQLITE_DB_PATH');
 
+  const oneInchApiUrl = validateUrl(
+    env,
+    'ONEINCH_API_URL',
+    ONEINCH_API_BASE_URL,
+  ) as string;
+  const oneInchApiKey = env.ONEINCH_API_KEY?.trim();
+
   const ydsUrl = validateUrl(env, 'YDS_URL', undefined);
   const ydsApiKey = env.YDS_API_KEY?.trim();
   !ydsUrl || ydsApiKey || Fail`YDS_API_KEY is required with YDS_URL`;
@@ -303,6 +315,10 @@ export const loadConfig = async (
     axelar: {
       apiUrl: axelarApiAddress,
       chainIdMap: axelarChainIdMap,
+    },
+    oneInch: {
+      apiUrl: oneInchApiUrl,
+      apiKey: oneInchApiKey,
     },
     sqlite: {
       dbPath: sqliteDbPath,

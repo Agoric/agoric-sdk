@@ -232,6 +232,7 @@ const makeMaybeAutoPowers = (overrides: Partial<AutoPowers> = {}) => {
     postYdsTransaction: async txHash => {
       ydsTransactionCalls.push(txHash);
     },
+    usdcTokensByChain: {},
     walletStore: {
       get: () =>
         ({

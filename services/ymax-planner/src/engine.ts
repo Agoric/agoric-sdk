@@ -5,6 +5,7 @@ import type { InspectOptions } from 'node:util';
 import { inspect } from 'node:util';
 
 import type { Coin } from '@cosmjs/stargate';
+import type { KyInstance } from 'ky';
 
 import { Fail, annotateError, q } from '@endo/errors';
 import { Nat } from '@endo/nat';
@@ -237,6 +238,7 @@ export type Powers = {
   /** Prefer monotonicity (e.g., `performance.now` rather than `Date.now`). */
   now: () => number;
   nowISO: () => string;
+  oneInchClient?: KyInstance;
   gasEstimator: GasEstimator;
   usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   chainNameToChainIdMap: Partial<Record<EvmChain, CaipChainId>>;
@@ -259,6 +261,7 @@ export type ProcessPortfolioPowers = Pick<
   | 'gasEstimator'
   | 'usdcTokensByChain'
   | 'chainNameToChainIdMap'
+  | 'oneInchClient'
   | 'postYdsTransaction'
   | 'autoClaimConfig'
   | 'autoRebalance'
@@ -357,6 +360,7 @@ export const processPortfolioEvents = async (
     vstoragePathPrefixes,
     evmProviders,
     chainNameToChainIdMap,
+    oneInchClient,
     postYdsTransaction,
     autoClaimConfig,
     autoRebalance,
@@ -551,9 +555,11 @@ export const processPortfolioEvents = async (
     isDryRun,
     makeNonce,
     network,
+    oneInchClient,
     planRebalanceToAllocations,
     portfoliosPathPrefix,
     postYdsTransaction,
+    usdcTokensByChain,
     walletStore,
   };
   const shouldClaim = (

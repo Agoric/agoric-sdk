@@ -356,6 +356,14 @@ export const main = async (
     trace: () => {},
   });
 
+  const oneInchClient = config.oneInch.apiKey
+    ? ky.create({
+        fetch,
+        prefixUrl: config.oneInch.apiUrl,
+        headers: { Authorization: `Bearer ${config.oneInch.apiKey}` },
+      })
+    : undefined;
+
   const ydsApiKey = config.yds.apiKey;
   const ydsClient = config.yds.url
     ? ky.create({
@@ -574,6 +582,7 @@ export const main = async (
     gasEstimator,
     usdcTokensByChain,
     chainNameToChainIdMap: CaipChainIds[clusterName],
+    oneInchClient,
     postYdsTransaction,
     autoClaimConfig: config.autoClaim,
     autoRebalance: config.autoRebalance,
