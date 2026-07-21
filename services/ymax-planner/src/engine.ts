@@ -261,11 +261,12 @@ export type ProcessPortfolioPowers = Pick<
   evmProviders: Record<CaipChainId, ReconnectingEvmProvider>;
 };
 
+type UusdcBalances = Partial<Record<AssetPlaceRef, NatAmount>>;
 export type PortfoliosMemory = {
   deferrals: EventRecord[];
   // TODO: Combine snapshots and portfolioRecordForKey.
   snapshots: Map<
-    string,
+    PortfolioKey,
     {
       fingerprint: string;
       repeats: number;
@@ -281,7 +282,7 @@ export type PortfoliosMemory = {
     PortfolioKey,
     {
       isoTimestamp: IsoTimestamp;
-      balances: Partial<Record<AssetPlaceRef, NatAmount>>;
+      balances: UusdcBalances;
     }
   >;
 };
@@ -513,7 +514,7 @@ export const processPortfolioEvents = async (
       }
     }
   };
-  const maybeAutoRebalancePowers = {
+  const autoPowers = {
     autoRebalance,
     console,
     depositBrand,
@@ -674,35 +675,62 @@ export const processPortfolioEvents = async (
       await handlePortfolio(portfolioKey, eventRecord);
     }
   }
+
+  const balanceRefreshPs = new Map<
+    PortfolioKey,
+    Promise<{ balances: UusdcBalances; timestamp: IsoTimestamp }>
+  >();
+  const maybeMakeFlow = async (
+    portfolioKey: PortfolioKey,
+    status: StatusFor['portfolio'],
+    maybeSendTx: (balances: UusdcBalances) => Promise<string | undefined>,
+  ): Promise<string | undefined> => {
+    const { balances, timestamp: balancesTimestamp } = await provideLazyMap(
+      balanceRefreshPs,
+      portfolioKey,
+      async () => {
+        const freshBalances = await getFreshBalances(portfolioKey, status);
+        const freshTimestamp = balanceCache.get(portfolioKey)!.isoTimestamp;
+        const oldState = memory.snapshots.get(portfolioKey)!;
+        oldState.balancesTimestamp = freshTimestamp;
+        return { balances: freshBalances, timestamp: freshTimestamp };
+      },
+    );
+    const txHash = await maybeSendTx(balances);
+    if (!txHash) return undefined;
+    memory.snapshots.set(portfolioKey, {
+      fingerprint: fingerprintPortfolioState(status, { marshaller }),
+      txHash,
+      repeats: 0,
+      balancesTimestamp,
+    });
+    return txHash;
+  };
+
   await makeWorkPool(portfolioRecordForKey, undefined, async entry => {
     const [portfolioKey, portfolioRecord] = entry;
     const { status } = portfolioRecord;
     if (Object.keys(status.flowsRunning || {}).length > 0) return;
 
     await null;
+
     try {
-      if (!shouldRebalance(portfolioKey, status)) return;
-      const freshBalances = await getFreshBalances(portfolioKey, status);
-      const freshTimestamp = balanceCache.get(portfolioKey)!.isoTimestamp;
-      const oldState = memory.snapshots.get(portfolioKey)!;
-      oldState.balancesTimestamp = freshTimestamp;
-      const txHash = await maybeAutoRebalance(
-        status,
-        portfolioKey,
-        freshBalances,
-        maybeAutoRebalancePowers,
-      );
-      if (!txHash) return;
-      memory.snapshots.set(portfolioKey, {
-        fingerprint: fingerprintPortfolioState(status, { marshaller }),
-        txHash,
-        repeats: 0,
-        balancesTimestamp: freshTimestamp,
-      });
+      if (shouldRebalance(portfolioKey, status)) {
+        const txHash = await maybeMakeFlow(
+          portfolioKey,
+          status,
+          async balances =>
+            maybeAutoRebalance(status, portfolioKey, balances, autoPowers),
+        );
+        if (txHash) return;
+      }
     } catch (err) {
       const msg = `[${portfolioKey}.autoRebalance] ⚠️ Failure ${err?.name}: ${err?.message}`;
       console.warn(msg, err);
+      return;
     }
+
+    await null;
   }).done;
 };
 
