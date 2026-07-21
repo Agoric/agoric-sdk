@@ -31,6 +31,7 @@ import {
   type FlowStatus,
   type FundsFlowPlan,
   type PortfolioAgentGrantee,
+  type PortfolioAgentKey,
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
@@ -1141,7 +1142,7 @@ export const preparePortfolioKit = (
          * Sets the pre-validated features settings on the portfolio and
          * delivers the delegation to the planner as needed.
          *
-         * Promptly resolves
+         * Promptly resolves with the new auto-features settings.
          *
          * @param features
          */
@@ -1187,6 +1188,7 @@ export const preparePortfolioKit = (
 
           this.state.enabledAutoFeatures = features;
           this.facets.reporter.publishStatus();
+          return features;
         },
       },
       accountWatcher: {
@@ -1518,6 +1520,8 @@ export const preparePortfolioKit = (
          * resolves the signer's per-wallet portfolio reference. That
          * resolution is the authorization check; this method then enforces
          * its own input validation.
+         *
+         * Returns promptly the `PortfolioAgentKey` of the new delegation.
          */
         grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
           return vowTools.asVow(async () => {
@@ -1529,11 +1533,17 @@ export const preparePortfolioKit = (
             permissions.allocation === true ||
               Fail`grant requires allocation permission`;
             // Returns promise promptly resolved
-            await this.facets.manager.grantDelegation(grantee, permissions);
+            const agentId = await this.facets.manager.grantDelegation(
+              grantee,
+              permissions,
+            );
+            return `agent${agentId}` satisfies PortfolioAgentKey;
           });
         },
         /**
-         * Set the auto-features for this portfolio
+         * Set the auto-features for this portfolio.
+         *
+         * Returns the new validated auto-features settings.
          */
         setAutoFeatures(features: PortfolioAutoFeaturesExt) {
           return vowTools.asVow(() => {
