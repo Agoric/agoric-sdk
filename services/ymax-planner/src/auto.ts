@@ -1,3 +1,5 @@
+import type { KyInstance } from 'ky';
+
 import type { PortfolioPlanner } from '@aglocal/portfolio-contract/src/planner.exo.ts';
 import type { AssetPlaceRef } from '@aglocal/portfolio-contract/src/type-guards-steps.js';
 import {
@@ -14,8 +16,10 @@ import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.
 import type { reflectWalletStore } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount, NatValue } from '@agoric/ertp';
+import type { EvmAddress } from '@agoric/fast-usdc';
 import { partialMap, provideLazyMap } from '@agoric/internal';
 import type { AccountId, CaipChainId } from '@agoric/orchestration';
+import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import type { NetworkSpec } from '@agoric/portfolio-api/src/network/network-spec.js';
@@ -23,10 +27,14 @@ import {
   computeTargetBalances,
   TargetBalanceError,
 } from '@agoric/portfolio-api/src/target-balances.js';
-import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js';
+import {
+  isERC4626InstrumentId,
+  isInterChainAccountRef,
+} from '@agoric/portfolio-api/src/type-guards.js';
 import type {
   FundsFlowPlan,
   PortfolioKey,
+  SupportedChain,
   SwapDesc,
 } from '@agoric/portfolio-api';
 import { annotateError, Fail } from '@endo/errors';
@@ -37,6 +45,7 @@ import {
   type GasStateWindowMetric,
 } from './gas-estimation.ts';
 import type { InstrumentBlocks } from './instrument-status.ts';
+import { fetchOneInchSwapInfo } from './oneinch.ts';
 import { GAS_UNITS_PER_CLAIM, GAS_UNITS_PER_SWAP } from './rewards.ts';
 import { UserInputError } from './support.ts';
 import { getOwn } from './utils.js';
@@ -306,6 +315,7 @@ export type AutoPowers = {
   isDryRun?: boolean;
   makeNonce: () => string;
   network: NetworkSpec;
+  oneInchClient?: KyInstance;
   planRebalanceToAllocations: (details: {
     path: string;
     flowDetail: { type: 'rebalance' };
@@ -321,6 +331,7 @@ export type AutoPowers = {
   }) => Promise<FundsFlowPlan>;
   portfoliosPathPrefix: string;
   postYdsTransaction?: (txHash: string) => Promise<void>;
+  usdcTokensByChain: Partial<Record<SupportedChain, string>>;
   walletStore: ReturnType<typeof reflectWalletStore>;
 };
 
@@ -334,6 +345,7 @@ export const maybeAutoClaim = async (
   if (!enabledAutoFeatures?.claim) return undefined;
 
   const {
+    autoClaimConfig,
     console,
     depositBrand,
     feeBrand,
@@ -342,10 +354,14 @@ export const maybeAutoClaim = async (
     inspectForStdout,
     isDryRun,
     makeNonce,
+    oneInchClient,
     portfoliosPathPrefix,
     postYdsTransaction,
+    usdcTokensByChain,
     walletStore,
   } = powers;
+
+  if (!oneInchClient) return undefined;
 
   const path = `${portfoliosPathPrefix}.${portfolioKey}`;
   const portfolioId = portfolioIdFromKey(portfolioKey);
@@ -363,7 +379,14 @@ export const maybeAutoClaim = async (
 
   await null;
   try {
-    const sources = pickAutoClaimSources(tokenBalances, powers);
+    const sources = pickAutoClaimSources(tokenBalances, powers)?.filter(
+      source => {
+        // TODO(AGO-625): Morpho reward claims require advanced inputs; skip
+        // for now.
+        const { instrumentName } = source;
+        return !instrumentName || !isERC4626InstrumentId(instrumentName);
+      },
+    );
     if (!sources?.length) {
       console.log(logPrefix, 'skip', inspectForStdout(logContext));
       return;
@@ -384,22 +407,25 @@ export const maybeAutoClaim = async (
     });
 
     const dummyAmount = AmountMath.make(depositBrand, 0n);
-    const swapInputs: bigint[] = [];
+    const swapInputs: { tokenCount: bigint; uusdcValue: bigint }[] = [];
     const order: FundsFlowPlan['order'] = [];
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const flow: FundsFlowPlan['flow'] = await Promise.all(
       sources.map(async (source, stepIndex) => {
         const { chainName, instrumentName, tokenId, amount } = source;
         const dest = `@${chainName}` as AssetPlaceRef;
         await null;
         if (instrumentName) {
-          swapInputs.push(source.uusdcValue);
+          swapInputs.push({
+            tokenCount: BigInt(source.amount),
+            uusdcValue: source.uusdcValue,
+          });
 
           const src = instrumentName;
           const poolInfo = PoolPlaces[instrumentName];
           const claimRewards = {
             tokens: [tokenId] as EvmAddress[],
             minAmounts: [BigInt(amount)],
+            // TODO(AGO-625): Morpho needs more fields.
           };
           const feeValue = await gasEstimator.getWalletEstimate(
             chainName as AxelarChain,
@@ -410,35 +436,55 @@ export const maybeAutoClaim = async (
           return { src, dest, amount: dummyAmount, fee, claimRewards };
         } else {
           // Record and consume from input steps.
-          let { uusdcValue } = source;
+          let rewardTokenCount = BigInt(source.amount);
+          let uusdcValue = source.uusdcValue;
           if (swapInputs.length > 0) {
             const firstClaimIndex = stepIndex - swapInputs.length;
-            const prerequisiteIndexes = swapInputs.map((value, i) => {
-              uusdcValue += value;
+            const prerequisiteIndexes = swapInputs.map((input, i) => {
+              rewardTokenCount += input.tokenCount;
+              uusdcValue += input.uusdcValue;
               return firstClaimIndex + i;
             });
             order.push([stepIndex, prerequisiteIndexes]);
             swapInputs.splice(0);
           }
-          const uusdcAmount = AmountMath.make(depositBrand, uusdcValue);
+          const minReturnNum =
+            Number(uusdcValue) * (1 - autoClaimConfig.maxSlippageBps / 10_000);
+          const minReturn = BigInt(Math.ceil(minReturnNum));
+          const [, evmChainId] =
+            source.caipChainId.match(/^eip155:([1-9][0-9]*)$/) || [];
+          const caip10 = parseAccountId(
+            portfolioStatus.accountIdByChain[source.chainName]!,
+          );
+          const swapInfo = await fetchOneInchSwapInfo(oneInchClient, {
+            chainId: Number(evmChainId),
+            src: tokenId as EvmAddress,
+            dst: usdcTokensByChain[source.chainName] as EvmAddress,
+            amount: `${rewardTokenCount}`,
+            // TODO(AGO-625): Should `from` and `origin` be distinct?
+            from: caip10.accountAddress as EvmAddress,
+            origin: caip10.accountAddress as EvmAddress,
+            minReturn: `${minReturn}`,
+            includeGas: true,
+          });
+          const uusdcAmount = AmountMath.make(depositBrand, minReturn);
 
           const src = `@${chainName}` as AssetPlaceRef;
           const swap: SwapDesc = {
             tokenIn: tokenId as any,
-            amountIn: uusdcValue,
-            // TODO(AGO-625): Make the API call to get this data.
+            amountIn: rewardTokenCount,
             provider: '1inch',
             // Disallow partial fill etc.
             flags: 0n,
-            executor: '0xTODO',
-            srcReceiver: '0xTODO',
-            data: '0xTODO',
+            executor: swapInfo.executor,
+            srcReceiver: swapInfo.desc.srcReceiver,
+            data: swapInfo.data,
           };
           const feeValue = await gasEstimator.getWalletEstimate(
             chainName as AxelarChain,
             EvmWalletOperationType.Swap,
             undefined,
-            GAS_UNITS_PER_SWAP,
+            swapInfo.gas ?? GAS_UNITS_PER_SWAP,
           );
           const fee = makeGmpFeeAmount(feeBrand, feeValue);
           return { src, dest, amount: uusdcAmount, fee, swap };

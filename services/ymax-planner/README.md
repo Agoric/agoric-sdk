@@ -175,6 +175,8 @@ Environment variables:
 - `GRAPHQL_ENDPOINTS`: JSON text for a Record\<dirname, url[]> object describing endpoints associated with each api-\* GraphQL API directory under [graphql](./src/graphql) (optional)
 - `SQLITE_DB_PATH`: The path where the SQLiteDB used by the resolver should be created. While a relative path can be provided (relative to the cwd),
 an absolute path is recommended
+- `ONEINCH_API_URL`: Base URL of the 1inch.com API, for fetching information to swap reward tokens into USDC (default "https://api.1inch.dev")
+- `ONEINCH_API_KEY`: Bearer token for the 1inch.com API (required for swaps)
 - `YDS_URL`: Base URL of the YMax Data Service API, for fetching dynamic instrument status and sending transaction settlement notifications (optional)
 - `YDS_API_KEY`: API key for authenticating with YDS (required with `YDS_URL`)
 - `AUTO_CLAIM_MAX_GAS_COST_SPIKE`: Gas cost thresholds for when claim-and-swap flows may be initiated, expressed as a comma-separated list of "$factor:$windowDuration:$windowMetric" criteria where $factor is a non-negative number, $windowDuration is one of "PT15M"/"PT24H"/"P30D" (ISO 8601 duration strings for 15 minutes, 24 hours, and 30 days, respectively), and $windowMetric is one of "min"/"mean"/"p50"/"p90"/"max" ("p50" representing "median"). No such flows will be initiated when any criteria fails (default "1.5:P30D:p50" suppresses initiation when the current gas rate in USD exceeds 1.5 times its 30-day median)
