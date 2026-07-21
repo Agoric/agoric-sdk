@@ -114,7 +114,11 @@ import {
 } from './vstorage-utils.ts';
 import type { ReadStorageMetaOptions } from './vstorage-utils.ts';
 import { normalizeYdsPortfolioBalances } from './yds-portfolio-balances.ts';
-import type { YdsPortfolioSummary } from './yds-portfolio-balances.ts';
+import type {
+  RewardTokenRate,
+  YdsPortfolioSummary,
+  YdsTokenBalance,
+} from './yds-portfolio-balances.ts';
 
 const compareBigints = (a: bigint, b: bigint) => (a > b ? 1 : a < b ? -1 : 0);
 
@@ -216,6 +220,7 @@ export type Powers = {
   spectrumChainIds: Partial<Record<SupportedChain, string>>;
   evmTokenAddresses: Partial<Record<InstrumentId, EvmAddress>>;
   network: NetworkSpec;
+  getExchangeRates?: () => Promise<RewardTokenRate[] | undefined>;
   getGasCosts?: () => Promise<ChainGasState[] | undefined>;
   getInstrumentBlocks?: () => Promise<InstrumentBlocks | undefined>;
   getPortfolioSummaries?: (
@@ -262,6 +267,7 @@ export type ProcessPortfolioPowers = Pick<
   isDryRun?: boolean;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
+  exchangeRates?: RewardTokenRate[];
   gasCosts?: ChainGasState[];
   instrumentBlocks?: InstrumentBlocks;
   vstoragePathPrefixes: {
@@ -291,7 +297,8 @@ export type PortfoliosMemory = {
     PortfolioKey,
     {
       isoTimestamp: IsoTimestamp;
-      balances: UusdcBalances;
+      uusdcBalances: UusdcBalances;
+      tokenBalances: YdsTokenBalance[];
     }
   >;
 };
@@ -336,6 +343,7 @@ export const processPortfolioEvents = async (
     gasEstimator,
     network,
     nowISO,
+    exchangeRates,
     gasCosts,
     instrumentBlocks,
     signingSmartWalletKit,
@@ -370,16 +378,19 @@ export const processPortfolioEvents = async (
     portfolioKey: PortfolioKey,
     portfolioStatus: StatusFor['portfolio'],
   ) => {
-    const balances = await getNonDustBalances(
+    const uusdcBalances = await getNonDustBalances(
       portfolioStatus,
       depositBrand,
       balanceQueryPowers,
     );
+    // TODO(AGO-625): Refresh reward token balances when appropriate.
+    // For now, just carry them forward.
     balanceCache.set(portfolioKey, {
       isoTimestamp: normalizeIsoTimestamp(nowISO()),
-      balances,
+      uusdcBalances,
+      tokenBalances: balanceCache.get(portfolioKey)?.tokenBalances || [],
     });
-    return balances;
+    return uusdcBalances;
   };
   type ReadVstorageSimpleOpts = Pick<
     ReadStorageMetaOptions<'data'>,
@@ -531,6 +542,7 @@ export const processPortfolioEvents = async (
     console,
     depositBrand,
     feeBrand,
+    exchangeRates,
     gasCosts,
     gasEstimator,
     getWalletInvocationUpdate,
@@ -544,21 +556,23 @@ export const processPortfolioEvents = async (
     postYdsTransaction,
     walletStore,
   };
-  const gasCostOk = !!gasCosts;
   const shouldClaim = (
     portfolioKey: PortfolioKey,
     status: StatusFor['portfolio'],
   ): boolean => {
-    if (!gasCostOk) return false;
-
     const { enabledAutoFeatures } = status;
-    if (!enabledAutoFeatures?.claim) return false;
+    if (!exchangeRates || !gasCosts || !enabledAutoFeatures?.claim) {
+      return false;
+    }
 
     const cachedBalanceData = balanceCache.get(portfolioKey);
     if (!cachedBalanceData) return false;
-    const { balances } = cachedBalanceData;
 
-    const claimDetail = checkAutoClaim(balances, gasCosts, autoClaimConfig);
+    const claimDetail = checkAutoClaim(cachedBalanceData, {
+      exchangeRates,
+      gasCosts,
+      autoClaimConfig,
+    });
     return !!claimDetail;
   };
   const shouldRebalance = (
@@ -572,17 +586,17 @@ export const processPortfolioEvents = async (
     // If we don't have new balance information, there's no point in checking.
     const cachedBalanceData = balanceCache.get(portfolioKey);
     if (!cachedBalanceData) return false;
-    const { isoTimestamp, balances } = cachedBalanceData;
+    const { isoTimestamp, uusdcBalances } = cachedBalanceData;
     if (isoTimestamp === oldBalancesTimestamp) return false;
     const oldState = memory.snapshots.get(portfolioKey)!;
     oldState.balancesTimestamp = isoTimestamp;
 
     // XXX We should refactor to avoid adding back unchanged balances.
     const candidateTargets = {
-      ...balances,
+      ...uusdcBalances,
       ...computeTargetBalances({
         brand: depositBrand,
-        currentBalances: balances,
+        currentBalances: uusdcBalances,
         network,
         targetAllocation,
         instrumentBlocks,
@@ -590,7 +604,7 @@ export const processPortfolioEvents = async (
     };
     const rebalanceDetail = checkAutoRebalance(
       targetAllocation,
-      balances,
+      uusdcBalances,
       candidateTargets,
       autoRebalance,
     );
@@ -964,6 +978,7 @@ export const startEngine = async (
     rpc,
     signingSmartWalletKit,
     makeNonce,
+    getExchangeRates,
     getGasCosts,
     getInstrumentBlocks,
     getPortfolioSummaries,
@@ -975,32 +990,39 @@ export const startEngine = async (
   await null;
   const { query, marshaller } = signingSmartWalletKit;
 
-  let gasCosts: ChainGasState[] | undefined;
-  const updateGasCosts = async () => {
-    await null;
-    try {
-      const newGasCosts = await getGasCosts?.();
-      if (newGasCosts) gasCosts = newGasCosts;
-    } catch (err) {
-      console.error('🚨 [updateGasCosts]', err);
-    }
+  const ydsFetchers = {
+    exchangeRates: getExchangeRates,
+    gasCosts: getGasCosts,
+    instrumentBlocks: getInstrumentBlocks,
+  } as const;
+  const ydsState = {
+    exchangeRates: undefined as RewardTokenRate[] | undefined,
+    gasCosts: undefined as ChainGasState[] | undefined,
+    instrumentBlocks: undefined as InstrumentBlocks | undefined,
   };
-
-  let instrumentBlocks: InstrumentBlocks | undefined;
-  const updateInstrumentBlocks = async () => {
-    await null;
-    try {
-      instrumentBlocks = await getInstrumentBlocks?.();
-    } catch (err) {
-      console.error('🚨 [updateInstrumentBlocks]', err);
-    }
-  };
+  const refreshYdsState = async () =>
+    Promise.all(
+      typedEntries(ydsFetchers).map(
+        async <K extends keyof typeof ydsFetchers>([key, fetcher]: [
+          K,
+          (typeof ydsFetchers)[K],
+        ]) => {
+          await null;
+          try {
+            const newValue = (await fetcher?.()) as (typeof ydsState)[K];
+            if (newValue) ydsState[key] = newValue;
+          } catch (err) {
+            console.error(`🚨 [refreshYdsState.${key}]`, err);
+          }
+        },
+      ),
+    );
 
   const [vbankAssetCapData] = await Promise.all([
     readStreamCellValue(query.vstorage, 'published.agoricNames.vbankAsset', {
       retries: 4,
     }),
-    updateInstrumentBlocks(),
+    refreshYdsState(),
   ]);
   const vbankAssets: AssetInfo[] = marshaller
     .fromCapData(vbankAssetCapData)
@@ -1030,17 +1052,26 @@ export const startEngine = async (
       if (!summaries) return;
       for (const { portfolioId, latestSnapshot } of summaries) {
         if (!latestSnapshot) continue;
+        const { tokenBalances } = latestSnapshot;
 
-        // This data might be more stale than that of our own balance queries.
+        // This data might be more stale than that of our own balance queries,
+        // but those don't yet update reward token balances.
+        // TODO(AGO-625): Revisit that.
         const isoTimestamp = normalizeIsoTimestamp(latestSnapshot.ts);
         const found = balanceCache.get(portfolioId);
-        if (found && found.isoTimestamp >= isoTimestamp) continue;
-
-        const balances = normalizeYdsPortfolioBalances(
-          latestSnapshot,
-          depositBrand,
-        );
-        balanceCache.set(portfolioId, { isoTimestamp, balances });
+        if (found && found.isoTimestamp >= isoTimestamp) {
+          found.tokenBalances = tokenBalances;
+        } else {
+          const uusdcBalances = normalizeYdsPortfolioBalances(
+            latestSnapshot,
+            depositBrand,
+          );
+          balanceCache.set(portfolioId, {
+            isoTimestamp,
+            uusdcBalances,
+            tokenBalances,
+          });
+        }
       }
     } catch (err) {
       console.error('🚨 [updatePortfolioBalances]', err);
@@ -1107,7 +1138,7 @@ export const startEngine = async (
     feeBrand: feeAsset.brand as Brand<'nat'>,
     vstoragePathPrefixes,
     evmProviders: evmCtx.evmProviders,
-    instrumentBlocks,
+    ...ydsState,
   });
   await makeWorkPool(portfolioKeys, undefined, async portfolioKey => {
     const { streamCellJson, event } = makeVstorageEvent(
@@ -1282,15 +1313,10 @@ export const startEngine = async (
     // Pending tx watchers must subscribe to EVM events ASAP to avoid missing
     // transactions, so process them concurrently with portfolio events.
     await Promise.all([
-      Promise.all([
-        updateGasCosts(),
-        updateInstrumentBlocks(),
-        updatePortfolioBalances(),
-      ]).then(() =>
+      Promise.all([refreshYdsState(), updatePortfolioBalances()]).then(() =>
         processPortfolioEvents(portfolioEvents, respHeight, portfoliosMemory, {
           ...processPortfolioPowers,
-          gasCosts,
-          instrumentBlocks,
+          ...ydsState,
         }),
       ),
       processPendingTxEvents(pendingTxEvents, handlePendingTx, txPowers),

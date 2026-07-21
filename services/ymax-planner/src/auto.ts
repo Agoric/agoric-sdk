@@ -26,6 +26,10 @@ import {
 import type { InstrumentBlocks } from './instrument-status.ts';
 import { UserInputError } from './support.ts';
 import { getOwn } from './utils.js';
+import type {
+  RewardTokenRate,
+  YdsTokenBalance,
+} from './yds-portfolio-balances.ts';
 
 const { keys } = Object;
 
@@ -97,11 +101,19 @@ const computeBpsDrift = (
 };
 
 export const checkAutoClaim = (
-  _balances: Partial<Record<AssetPlaceRef, NatAmount | undefined>>,
-  _gasCosts: ChainGasState[],
-  _autoClaimConfig: AutoClaimConfig,
+  _balances: {
+    uusdcBalances: Partial<Record<AssetPlaceRef, NatAmount>>;
+    tokenBalances: YdsTokenBalance[];
+  },
+  _state: {
+    exchangeRates: RewardTokenRate[];
+    gasCosts: ChainGasState[];
+    autoClaimConfig: AutoClaimConfig;
+  },
 ): boolean => {
   // TODO(AGO-625)
+  // const { uusdcBalances, tokenBalances } = balances;
+  // const { exchangeRates, gasCosts, autoClaimConfig } = state;
   return false;
 };
 
@@ -164,6 +176,7 @@ export type AutoPowers = {
   console: Pick<Console, 'error' | 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
+  exchangeRates?: RewardTokenRate[];
   gasCosts?: ChainGasState[];
   gasEstimator: GasEstimator;
   getWalletInvocationUpdate: (messageId: string | number) => Promise<unknown>;
