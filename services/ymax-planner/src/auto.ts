@@ -18,11 +18,31 @@ import { isInterChainAccountRef } from '@agoric/portfolio-api/src/type-guards.js
 import type { FundsFlowPlan, PortfolioKey } from '@agoric/portfolio-api';
 import { annotateError, Fail } from '@endo/errors';
 import { inspect } from 'node:util';
+import {
+  type ChainGasState,
+  type GasStateWindowDuration,
+  type GasStateWindowMetric,
+} from './gas-estimation.ts';
 import type { InstrumentBlocks } from './instrument-status.ts';
 import { UserInputError } from './support.ts';
 import { getOwn } from './utils.js';
 
 const { keys } = Object;
+
+export type AutoClaimConfig = {
+  /**
+   * Gas cost is only considered favorable when less than or equal to the
+   * specified factor for each member of an arbitrary collection of historical
+   * metrics.
+   */
+  readonly maxGasCostSpike: [
+    factor: number,
+    GasStateWindowDuration,
+    GasStateWindowMetric,
+  ][];
+  readonly maxSlippageBps: number;
+  readonly minRewardPerGas: number;
+};
 
 export type AutoRebalanceConfig = {
   /** Absolute allocation drift threshold in basis points. */
@@ -134,6 +154,7 @@ export type MaybeAutoRebalancePowers = {
   console: Pick<Console, 'error' | 'log' | 'warn'>;
   depositBrand: Brand<'nat'>;
   feeBrand: Brand<'nat'>;
+  gasCosts?: ChainGasState[];
   gasEstimator: GasEstimator;
   getWalletInvocationUpdate: (messageId: string | number) => Promise<unknown>;
   inspectForStdout: (obj: unknown) => string;
