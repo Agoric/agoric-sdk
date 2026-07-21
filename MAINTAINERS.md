@@ -263,11 +263,28 @@ In particular, be sure that you have waited for the release PR's CI tests
 to pass and for reviewer approval.
 
 - [ ] Publish to NPM
-  ```sh
-  # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
-  # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-  yarn lerna publish --concurrency 1 from-package
-  ```
+
+  NPM enforces [trusted publishing](https://docs.npmjs.com/trusted-publishers)
+  for agoric-sdk packages, so publishing must happen in CI — a local
+  `npm publish` or `lerna publish` is rejected, even with 2FA. Trigger it from
+  the
+  [Post-merge publishes/checks workflow](https://github.com/Agoric/agoric-sdk/actions/workflows/after-merge.yml):
+
+  1. Select "Run workflow".
+  2. Leave "Use workflow from" on `master`; that ref only supplies the
+     workflow definition.
+  3. Set `branch` to the
+     [timestamped release branch](#user-content-release-branch) whose
+     committed versions should be published.
+  4. Set `mode` to `release`.
+  5. Set `tag` to the release's NPM dist-tag (e.g. `agoric-upgrade-23`).
+  6. Approve the `npm-publish-release` environment deployment when prompted.
+
+  The `release-publish` job checks out `branch` and runs
+  `yarn lerna publish from-package --concurrency 1 --dist-tag <tag>`,
+  publishing every package whose committed package.json version is not yet on
+  the registry. NOTE: If some packages fail to publish, re-run the workflow;
+  already-published packages are skipped.
 
 - [ ] Merge the release PR into the base branch.
 
@@ -288,6 +305,9 @@ to pass and for reviewer approval.
   ["Generate new SDK version" step](#user-content-generate-sdk-version).
 
 - [ ] (Optional) Publish an NPM distribution tag
+
+  Trusted publishing OIDC credentials cover only `npm publish`, so dist-tag
+  updates still use your regular npm login/token as before.
 
   If you want to update an
   [NPM dist-tag](https://docs.npmjs.com/cli/v6/commands/npm-dist-tag) for the
