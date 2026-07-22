@@ -1,5 +1,3 @@
-// @jessie-check
-
 /// <reference types="ses" />
 
 // NOTE: Because @endo/bundle-source does not do tree-shaking (at least as of
@@ -15,6 +13,7 @@ export * from './config.js';
 export * from './debug.js';
 export * from './errors.js';
 export * from './js-utils.js';
+export * from './keyMirror.js';
 export { pureDataMarshaller } from './marshal/pure-data.js';
 export * from './method-tools.js';
 export * from './metrics.js';

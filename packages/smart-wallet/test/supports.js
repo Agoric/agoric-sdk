@@ -20,6 +20,19 @@ import { E, Far } from '@endo/far';
 
 /**
  * @import {StoredFacet} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BridgeManager} from '@agoric/vats';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {TopicsRecord} from '@agoric/zoe/src/contractSupport/index.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {NatValue} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {Producer} from '@agoric/vats/src/core/types.js';
+ * @import {VatLoader} from '@agoric/vats/src/core/types.js';
+ * @import {WellKnownVats} from '@agoric/vats/src/core/types.js';
  */
 
 export { ActionType };
@@ -61,14 +74,11 @@ export const subscriptionKey = subscription => {
     });
 };
 
-/** @returns {import('@agoric/vats').BridgeManager} */
+/** @returns {BridgeManager} */
 const makeFakeBridgeManager = () =>
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
       return Far('scopedBridgeManager', {
-        getBridgeId() {
-          return bridgeId;
-        },
         fromBridge(_obj) {
           assert.fail(`expected fromBridge`);
         },
@@ -116,20 +126,21 @@ export const makeMockTestSpace = async log => {
   produce.zoe.resolve(zoe);
   produce.feeMintAccess.resolve(feeMintAccessP);
 
-  /** @type {VatLoader<'mints' | 'board'>} */
-  const vatLoader = async name => {
-    /** @typedef {Awaited<WellKnownVats[typeof name]>} ReturnedVat */
-    switch (name) {
-      case 'mints':
-        return /** @type {ReturnedVat} */ (mintsRoot());
-      case 'board': {
-        const baggage = makeScalarBigMapStore('baggage');
-        return /** @type {ReturnedVat} */ (boardRoot({}, {}, baggage));
+  const vatLoader = /** @type {VatLoader<'mints' | 'board'>} */ (
+    async name => {
+      /** @typedef {Awaited<WellKnownVats[typeof name]>} ReturnedVat */
+      switch (name) {
+        case 'mints':
+          return /** @type {ReturnedVat} */ (mintsRoot());
+        case 'board': {
+          const baggage = makeScalarBigMapStore('baggage');
+          return /** @type {ReturnedVat} */ (boardRoot({}, {}, baggage));
+        }
+        default:
+          throw Error('unknown loadVat name');
       }
-      default:
-        throw Error('unknown loadVat name');
     }
-  };
+  );
   produce.loadVat.resolve(vatLoader);
   produce.loadCriticalVat.resolve(vatLoader);
 
@@ -159,7 +170,7 @@ export const makeMockTestSpace = async log => {
 
 /**
  * @param {ERef<{
- *   getPublicTopics: () => import('@agoric/zoe/src/contractSupport/index.js').TopicsRecord;
+ *   getPublicTopics: () => TopicsRecord;
  * }>} hasTopics
  * @param {string} subscriberName
  */

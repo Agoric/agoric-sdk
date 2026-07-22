@@ -8,7 +8,17 @@ import { keyEQ } from '@agoric/store';
 import { makeNameHubKit } from '../nameHub.js';
 import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
-import './types-ambient.js';
+/**
+ * @import {MapStore, WeakMapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
+ * @import {WellKnownName} from './types.ts';
+ * @import {VattpVat} from '@agoric/swingset-vat/src/vats/vattp/vat-vattp.js';
+ * @import {CommsVatRoot} from './types.ts';
+ * @import {PromiseSpaceOf} from './types.ts';
+ * @import {WellKnownSpaces} from './types.ts';
+ * @import {VatAdminVat} from '@agoric/swingset-vat/src/vats/vat-admin/vat-vat-admin.js';
+ * @import {NamedVatPowers} from './types.ts';
+ */
 
 const { entries, fromEntries, keys } = Object;
 
@@ -19,6 +29,17 @@ const { entries, fromEntries, keys } = Object;
  * @type {{
  *   [P in keyof WellKnownName]: { [P2 in WellKnownName[P]]: string };
  * }}
+ */
+/**
+ * Names reserved in the agoricNames namespace at bootstrap.
+ *
+ * RETIRED (#12719): the Inter Protocol contracts removed from the repo —
+ * VaultFactory (+ VaultFactoryGovernor), reserve (+ reserveGovernor), psm,
+ * auctioneer, feeDistributor, liquidate, priceAggregator, scaledPriceAuthority —
+ * are no longer started by any boot config. Their names are kept reserved only
+ * for continuity with chains that started those instances before the removal;
+ * a fresh (committee-only) chain reserves the names but never populates them.
+ * See the "AgoricNames delta" note in PR #12744. Do not add new uses.
  */
 export const agoricNamesReserved = harden({
   issuer: {
@@ -206,7 +227,7 @@ harden(runModuleBehaviors);
 const noop = harden(() => {});
 
 /**
- * @param {ERef<import('../types.js').NameAdmin>} nameAdmin
+ * @param {ERef<NameAdmin>} nameAdmin
  * @param {typeof console.log} [log]
  */
 export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
@@ -234,7 +255,7 @@ export const makePromiseSpaceForNameHub = (nameAdmin, log = noop) => {
 };
 
 /**
- * @param {ERef<import('../types.js').NameAdmin>} parentAdmin
+ * @param {ERef<NameAdmin>} parentAdmin
  * @param {typeof console.log} [log]
  * @param {string[]} [kinds]
  */
@@ -271,8 +292,8 @@ export const makeWellKnownSpaces = async (
  *   For static typing and integrating with the bootstrap permit system, return {
  *   produce, consume } spaces rather than NameAdmins.
  * @returns {Promise<{
- *   agoricNames: import('../types.js').NameHub;
- *   agoricNamesAdmin: import('../types.js').NameAdmin;
+ *   agoricNames: NameHub;
+ *   agoricNamesAdmin: NameAdmin;
  *   spaces: WellKnownSpaces;
  * }>}
  */
@@ -306,7 +327,7 @@ export const makeMyAddressNameAdminKit = address => {
   // Create a name hub for this address.
   const { nameHub, nameAdmin: rawMyAddressNameAdmin } = makeNameHubKit();
 
-  /** @type {import('../types.js').MyAddressNameAdmin} */
+  /** @type {MyAddressNameAdmin} */
   const myAddressNameAdmin = Far('myAddressNameAdmin', {
     ...rawMyAddressNameAdmin,
     getMyAddress: () => address,
@@ -327,6 +348,10 @@ export const makeMyAddressNameAdminKit = address => {
  * @param {string} [label]
  * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
+ * @import {NameAdmin} from '../types.js';
+ * @import {NameHub} from '../types.js';
+ * @import {MyAddressNameAdmin} from '../types.js';
+ * @import {FeeIssuerConfig} from '@agoric/zoe';
  */
 export const makeVatSpace = (
   svc,
@@ -355,7 +380,12 @@ export const makeVatSpace = (
     return vatInfo;
   };
 
-  const { provideAsync } = makeAtomicProvider(tmpStore);
+  // CreateVatResults has a `root: object` field that isn't statically Passable,
+  // so widen the value type for the atomic provider (the consume proxy below is
+  // likewise loosely typed).
+  const { provideAsync } = makeAtomicProvider(
+    /** @type {WeakMapStore<string, any>} */ (tmpStore),
+  );
   /** @type {NamedVatPowers['namedVat']['consume']} */
   // @ts-expect-error cast
   const consume = new Proxy(

@@ -6,6 +6,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { E } from '@endo/far';
 import { mustMatch } from '@endo/patterns';
+import type { Installation } from '@agoric/zoe';
 import { registerChain } from '../../src/chain-info.js';
 import type {
   CosmosChainInfo,
@@ -285,6 +286,11 @@ test('baggage', async t => {
   );
 
   const tree = inspectMapStore(contractBaggage);
+  // This snapshot includes the full chain info registered into the durable
+  // chainHub at startup. That's intentional: the contract's job is to send
+  // *anywhere*, so it gets the complete fetched chain info. The snapshot will
+  // therefore churn whenever `src/fetched-chain-info.js` is refreshed; that's
+  // expected and should land in the same deliberate refresh commit.
   t.snapshot(tree, 'contract baggage after start');
 });
 

@@ -6,13 +6,18 @@ import { makeScopedBridge } from '../bridge.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {BridgeManager} from '../types.js';
+ * @import {ScopedBridgeManager} from '../types.js';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {Producer} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
  */
 
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     bridgeManager: import('../types.js').BridgeManager;
- *     vtransferBridgeManager: import('../types.js').ScopedBridgeManager<'vtransfer'>;
+ *     bridgeManager: BridgeManager;
+ *     vtransferBridgeManager: ScopedBridgeManager<'vtransfer'>;
  *   };
  *   produce: {
  *     transferMiddleware: Producer<any>;

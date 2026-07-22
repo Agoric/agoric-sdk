@@ -6,18 +6,30 @@ import {
 } from './upgrade-vats-generic-proposal.js';
 
 /**
+ * @import {ScopedBridgeManager} from '../types.js';
+ * @import {TransferMiddleware} from '../transfer.js';
+ * @import {CreateVatResults, VatAdminSvc, VatUpgradeOptions} from '@agoric/swingset-vat';
+ * @import {MapStore} from '@agoric/store';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: {
- *     vtransferBridgeManager: import('../types.js').ScopedBridgeManager<'vtransfer'>;
- *     transferMiddleware: import('../transfer.js').TransferMiddleware;
+ *     vtransferBridgeManager: ScopedBridgeManager<'vtransfer'>;
+ *     transferMiddleware: TransferMiddleware;
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<
- *       string,
- *       import('@agoric/swingset-vat').CreateVatResults
- *     >;
+ *     vatStore: MapStore<string, CreateVatResults>;
  *   };
  * }} powers
  * @param {object} options
+ * @param {{
+ *   bundleRefs: { [vatName: string]: VatSourceRef };
+ *   vatOptions?: {
+ *     [vatName: string]: VatUpgradeOptions;
+ *   };
+ * }} options.options
  */
 export const upgradeAndInterceptMsgSend = async (powers, options) => {
   const {

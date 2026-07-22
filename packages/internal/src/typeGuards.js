@@ -1,7 +1,10 @@
-// @jessie-check
 // @ts-check
 
 import { M } from '@endo/patterns';
+
+/**
+ * @import {CastedPattern} from '@endo/patterns';
+ */
 
 export const StorageNodeShape = M.remotable('StorageNode');
 
@@ -9,8 +12,8 @@ export const StorageNodeShape = M.remotable('StorageNode');
 export const UnguardedHelperI = M.interface(
   'helper',
   {},
-  // not exposed so sloppy okay
-  { sloppy: true },
+  // not exposed so using `defaultGuards` is fine.
+  { defaultGuards: 'passable' },
 );
 
 /**
@@ -20,6 +23,6 @@ export const UnguardedHelperI = M.interface(
  */
 
 /**
- * @type {import('./types.js').TypedPattern<BridgeBigInt>}
+ * @type {CastedPattern<BridgeBigInt>}
  */
 export const BridgeBigIntShape = M.or(M.number(), M.string());

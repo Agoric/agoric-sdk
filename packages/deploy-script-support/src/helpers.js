@@ -1,12 +1,10 @@
 // @ts-check
 
-/// <reference types="@agoric/zoe/exported.js" />
-
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 
-import fs from 'fs/promises';
-import os from 'os';
+import fs from 'node:fs/promises';
+import os from 'node:os';
 
 import { makeInstall } from './install.js';
 import { makeOfferAndFindInvitationAmount } from './offer.js';
@@ -18,6 +16,13 @@ import { makeGetBundlerMaker } from './getBundlerMaker.js';
 import { assertOfferResult } from './assertOfferResult.js';
 import { installInPieces } from './installInPieces.js';
 import { makeWriteCoreEval } from './writeCoreEvalParts.js';
+
+/**
+ * @import {CommonHome} from './externalTypes.js';
+ * @import {AgSoloHome} from './externalTypes.js';
+ * @import {DeployScriptEndownments} from './externalTypes.js';
+ * @import {WriteCoreEval} from './writeCoreEvalParts.js';
+ */
 
 export * from '@agoric/internal/src/node/createBundles.js';
 export { parseScriptArgs } from './parseCoreEvalArgs.js';
@@ -54,8 +59,8 @@ const makeLazyObject = sourceObject => {
 };
 
 /**
- * @param {Promise<import('./externalTypes.js').CommonHome | import('./externalTypes.js').AgSoloHome>} homePromise
- * @param {import('./externalTypes.js').DeployScriptEndownments} endowments
+ * @param {Promise<CommonHome | AgSoloHome>} homePromise
+ * @param {DeployScriptEndownments} endowments
  */
 export const makeHelpers = async (homePromise, endowments) => {
   // Endowments provided via `agoric run` or `agoric deploy`.
@@ -65,6 +70,9 @@ export const makeHelpers = async (homePromise, endowments) => {
     publishBundle,
     pathResolve,
     cacheDir = pathResolve(os.homedir(), '.agoric/cache'),
+    onWriteCoreEval,
+    writeFile,
+    log,
   } = endowments;
 
   // Internal-to-this-function lazy dependencies.
@@ -146,11 +154,14 @@ export const makeHelpers = async (homePromise, endowments) => {
     get getBundlerMaker() {
       return makeGetBundlerMaker(homePromise, { bundleSource, lookup });
     },
-    /** @returns {import('./writeCoreEvalParts.js').WriteCoreEval} */
+    /** @returns {WriteCoreEval} */
     get writeCoreEval() {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,
         getBundlerMaker: helpers.getBundlerMaker,
+        ...(onWriteCoreEval && { onWriteCoreEval }),
+        ...(log && { log }),
+        ...(writeFile && { writeFile }),
       });
     },
     /** @deprecated use writeCoreEval */
@@ -158,6 +169,9 @@ export const makeHelpers = async (homePromise, endowments) => {
       return makeWriteCoreEval(homePromise, endowments, {
         getBundleSpec: deps.cacheAndGetBundleSpec,
         getBundlerMaker: helpers.getBundlerMaker,
+        ...(onWriteCoreEval && { onWriteCoreEval }),
+        ...(log && { log }),
+        ...(writeFile && { writeFile }),
       });
     },
   });

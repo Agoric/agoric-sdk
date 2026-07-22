@@ -12,21 +12,40 @@ import {
 import { Fail, q } from '@endo/errors';
 
 // #region vstorage paths, cf. golang/cosmos/x/vstorage/types/path_keys.go
-// TODO: Promote elsewhere, maybe @agoric/internal?
+// XXX: Promote elsewhere, maybe @agoric/internal?
+
+export const EncodedKeySeparator = '\x00';
+export const PathSeparator = '.';
+
+export const encodedKeyToPath = (key: string): string => {
+  const encodedParts = key.split(EncodedKeySeparator);
+  encodedParts.length > 1 || Fail`invalid encoded key ${q(key)}`;
+  const path = encodedParts.slice(1).join(PathSeparator);
+  return path;
+};
+harden(encodedKeyToPath);
+
+export const pathToEncodedKey = (path: string): string => {
+  const segments = path.split(PathSeparator);
+  return `${segments.length}${EncodedKeySeparator}${segments.join(EncodedKeySeparator)}`;
+};
+harden(pathToEncodedKey);
 
 const vstoragePathPatt = /^$|^[a-zA-Z0-9_-]+(?:\.[a-zA-Z0-9_-]+)*$/;
 const assertVstoragePath = (vstoragePath: string) => {
   if (vstoragePath.match(vstoragePathPatt)) return;
   const p = q(vstoragePath);
-  !vstoragePath.startsWith('.') || Fail`path ${p} starts with separator`;
-  !vstoragePath.endsWith('.') || Fail`path ${p} ends with separator`;
-  !vstoragePath.includes('..') || Fail`path ${p} contains doubled separators`;
+  !vstoragePath.startsWith(PathSeparator) ||
+    Fail`path ${p} starts with separator`;
+  !vstoragePath.endsWith(PathSeparator) || Fail`path ${p} ends with separator`;
+  !vstoragePath.includes(PathSeparator.repeat(2)) ||
+    Fail`path ${p} contains doubled separators`;
   Fail`path ${p} contains invalid characters`;
 };
 
 /**
- * Compare a vstorage path to an ostensible ancestor path and return the count
- * of segments separating them. The count will be 0 when the paths are equal, 1
+ * Compare a vstorage path to an alleged ancestor path and return the count of
+ * segments separating them. The count will be 0 when the paths are equal, 1
  * when the ancestor is a direct parent, 2 when the ancestor is a grandparent,
  * etc., and negated when the "ancestor" is actually a descendant.
  * If neither path is a prefix of the other, then the count will be NaN.
@@ -45,11 +64,11 @@ export const countVstoragePathSegmentsRelativeTo = (
   if (extraStringLen === 0) return vstoragePath === ancestorPath ? 0 : NaN;
 
   // The empty path is a special case.
-  if (ancestorPath === '') return vstoragePath.split('.').length;
+  if (ancestorPath === '') return vstoragePath.split(PathSeparator).length;
 
   if (!vstoragePath.startsWith(`${ancestorPath}.`)) return NaN;
   const suffix = vstoragePath.slice(ancestorPath.length + 1);
-  const suffixSegments = suffix.split('.');
+  const suffixSegments = suffix.split(PathSeparator);
   return suffixSegments.length;
 };
 harden(countVstoragePathSegmentsRelativeTo);
@@ -94,7 +113,7 @@ harden(parseStreamCellValue);
 
 export const STALE_RESPONSE = 'STALE_RESPONSE';
 
-type ReadStorageMetaOptions<
+export type ReadStorageMetaOptions<
   MethodName extends 'children' | 'data',
   Result = MethodName extends 'children'
     ? QueryChildrenMetaResponse
@@ -112,7 +131,7 @@ type ReadStorageMetaOptions<
 /**
  * Make a vstorage Children or Data query, returning the decoded result along
  * with response metadata derived from fields documented at
- * https://docs.cometbft.com/v1.0/spec/abci/abci++_methods#query (for
+ * https://docs.cometbft.com/v0.38/spec/abci/abci++_methods#query (for
  * successful responses, `log` and `height` [as `blockHeight`], and for error
  * responses, `codespace` and `code`) or a transformation thereof.
  * UNTIL https://github.com/Agoric/agoric-sdk/pull/11630

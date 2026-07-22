@@ -4,7 +4,7 @@ import { Far } from '@endo/far';
 export function buildRootObject(vatPowers, vatParameters) {
   const { D, testLog: log } = vatPowers;
   return Far('root', {
-    async bootstrap(vats, devices) {
+    async bootstrap(_vats, devices) {
       if (vatParameters.argv[0] === 'write+read') {
         log(`w+r`);
         D(devices.d3).setState(harden({ s: 'new' }));

@@ -1,5 +1,3 @@
-// @jessie-check
-
 import { assert, Fail } from '@endo/errors';
 import { assertPattern } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
@@ -13,7 +11,7 @@ import { preparePaymentLedger } from './paymentLedger.js';
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Zone} from '@agoric/base-zone';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {AdditionalDisplayInfo, RecoverySetsOption, IssuerKit, PaymentLedger} from './types.js';
  */
@@ -255,7 +253,7 @@ harden(makeDurableIssuerKit);
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
- * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
+ * @returns {O['elementShape'] extends CastedPattern<infer T extends Key>
  *     ? IssuerKit<K, T>
  *     : IssuerKit<K>}
  */
@@ -331,7 +329,7 @@ harden(prepareIssuerKit);
  *   anything else is corrupted by that corrupted state. See
  *   https://github.com/Agoric/agoric-sdk/issues/3434
  * @param {O} [options]
- * @returns {O['elementShape'] extends TypedPattern<infer T extends Key>
+ * @returns {O['elementShape'] extends CastedPattern<infer T extends Key>
  *     ? IssuerKit<K, T>
  *     : IssuerKit<K>}
  */

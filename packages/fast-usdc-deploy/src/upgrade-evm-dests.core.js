@@ -16,12 +16,17 @@ const { make } = AmountMath;
 /**
  * @import {CopyRecord} from '@endo/pass-style';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CosmosChainInfo} from '@agoric/orchestration';
  * @import {BundleID} from '@agoric/swingset-vat';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  * @import {FastUSDCCorePowers} from './start-fast-usdc.core.js';
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FeeConfig} from '@agoric/fast-usdc';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const { keys } = Object;

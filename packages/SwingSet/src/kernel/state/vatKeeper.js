@@ -369,54 +369,47 @@ export function makeVatKeeper(
       required = false,
       requireNew = false,
     } = options;
-    assert(
-      !(required && requireNew),
-      "'required' and 'requireNew' are mutually exclusive",
-    );
+    !(required && requireNew) ||
+      Fail`'required' and 'requireNew' are mutually exclusive`;
     typeof vatSlot === 'string' || Fail`non-string vatSlot: ${vatSlot}`;
     const { type, allocatedByVat } = parseVatSlot(vatSlot);
     const vatKey = `${vatID}.c.${vatSlot}`;
-    if (!kvStore.has(vatKey)) {
+    if (kvStore.has(vatKey)) {
+      !requireNew || Fail`vref ${q(vatSlot)} is already allocated`;
+    } else {
       !required || Fail`vref ${vatSlot} not in clist`;
-      if (allocatedByVat) {
-        let kernelSlot;
-        if (type === 'object') {
-          // this sets the initial refcount to reachable:0 recognizable:0
-          kernelSlot = addKernelObject(vatID);
-        } else if (type === 'device') {
-          Fail`normal vats aren't allowed to export device nodes`;
-        } else if (type === 'promise') {
-          kernelSlot = addKernelPromiseForVat(vatID);
-        } else {
-          Fail`unknown type ${type}`;
-        }
-        // now increment the refcount with isExport=true and
-        // onlyRecognizable=true, which will skip object exports (we only
-        // count imports) and leave the reachability count at zero
-        const incopts = { isExport: true, onlyRecognizable: true };
-        incrementRefCount(kernelSlot, `${vatID}|vk|clist`, incopts);
-        const kernelKey = `${vatID}.c.${kernelSlot}`;
-        incStat('clistEntries');
-        // we add the key as "unreachable" but "recognizable", and then rely
-        // on setReachableFlag() at the end to both mark it reachable and to
-        // update any necessary refcounts consistently
-        kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
-        kvStore.set(vatKey, kernelSlot);
-        kernelSlog.changeCList(
-          vatID,
-          getCrankNumber(),
-          'export',
-          kernelSlot,
-          vatSlot,
-        );
-        kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
+      allocatedByVat || Fail`unknown vatSlot ${q(vatSlot)}`;
+      let kernelSlot;
+      if (type === 'object') {
+        // this sets the initial refcount to reachable:0 recognizable:0
+        kernelSlot = addKernelObject(vatID);
+      } else if (type === 'device') {
+        Fail`normal vats aren't allowed to export device nodes`;
+      } else if (type === 'promise') {
+        kernelSlot = addKernelPromiseForVat(vatID);
       } else {
-        // the vat didn't allocate it, and the kernel didn't allocate it
-        // (else it would have been in the c-list), so it must be bogus
-        Fail`unknown vatSlot ${q(vatSlot)}`;
+        Fail`unknown type ${type}`;
       }
-    } else if (requireNew) {
-      Fail`vref ${q(vatSlot)} is already allocated`;
+      // now increment the refcount with isExport=true and
+      // onlyRecognizable=true, which will skip object exports (we only
+      // count imports) and leave the reachability count at zero
+      const incopts = { isExport: true, onlyRecognizable: true };
+      incrementRefCount(kernelSlot, `${vatID}|vk|clist`, incopts);
+      const kernelKey = `${vatID}.c.${kernelSlot}`;
+      incStat('clistEntries');
+      // we add the key as "unreachable" but "recognizable", and then rely
+      // on setReachableFlag() at the end to both mark it reachable and to
+      // update any necessary refcounts consistently
+      kvStore.set(kernelKey, buildReachableAndVatSlot(false, vatSlot));
+      kvStore.set(vatKey, kernelSlot);
+      kernelSlog.changeCList(
+        vatID,
+        getCrankNumber(),
+        'export',
+        kernelSlot,
+        vatSlot,
+      );
+      kdebug(`Add mapping v->k ${kernelKey}<=>${vatKey}`);
     }
     const kernelSlot = getRequired(vatKey);
 

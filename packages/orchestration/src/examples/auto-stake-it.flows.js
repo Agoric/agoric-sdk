@@ -8,6 +8,7 @@ import { denomHash } from '../utils/denomHash.js';
  * @import {MakeStakingTap} from './auto-stake-it-tap-kit.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
  * @import {ChainHub} from '../exos/chain-hub.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
  */
 
 /**
@@ -84,7 +85,7 @@ export const makeAccounts = async (
     ]),
   );
   const publicTopicEntries = harden(
-    /** @type {[string, ResolvedPublicTopic<unknown>][]} */ (
+    /** @type {[string, ResolvedPublicTopic<any>][]} */ (
       await Promise.all(
         accountEntries.map(async ([name, account]) => {
           const { account: topicRecord } = await account.getPublicTopics();

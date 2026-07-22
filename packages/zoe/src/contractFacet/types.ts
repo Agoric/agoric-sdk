@@ -118,10 +118,20 @@ export type ZCF<CT = Record<string, unknown>> = {
   getInstance: () => Instance;
 };
 
+/**
+ * A part of an `atomicRearrange` transfer.  Construct via `fromOnly`,
+ * `toOnly`, or directly as a 3- or 4-element array.
+ *
+ * The first three positions are required (any of them may be `undefined`)
+ * to match the runtime `TransferPartShape` guard, which expects at least
+ * three elements.  The fourth (`toAmounts`) is truly optional.  See
+ * `fromOnly` (returns a 3-element tuple) and `toOnly` (returns a 4-element
+ * tuple) for the canonical constructors.
+ */
 export type TransferPart = [
-  fromSeat?: ZCFSeat,
-  toSeat?: ZCFSeat,
-  fromAmounts?: AmountKeywordRecord,
+  fromSeat: ZCFSeat | undefined,
+  toSeat: ZCFSeat | undefined,
+  fromAmounts: AmountKeywordRecord | undefined,
   toAmounts?: AmountKeywordRecord,
 ];
 
@@ -143,7 +153,9 @@ export type ZCFRegisterFeeMint = (
  * will be appended to the returned jig object (overriding any
  * provided by the `testFn`).
  */
-export type SetTestJig = (testFn?: () => Record<string, unknown>) => void;
+export type SetTestJig<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> = (testFn?: () => T) => void;
 export type ZCFMint<K extends AssetKind = AssetKind> = {
   getIssuerRecord: () => ZoeIssuerRecord<K>;
   /**
@@ -200,10 +212,7 @@ export type OfferHandler<OR = unknown, OA = never> =
   | {
       handle: HandleOffer<OR, OA>;
     };
-export type ContractMeta<
-  SF extends // import inline to maintain ambient mode
-    ContractStartFunction = ContractStartFunction,
-> = {
+export type ContractMeta<SF extends ContractStartFunction> = {
   customTermsShape?: Record<
     Parameters<SF>[0] extends ZCF<infer CT> ? keyof CT : never,
     Pattern
@@ -218,14 +227,12 @@ export type ContractMeta<
 };
 /**
  * API for a contract start function.
- *
- * CAVEAT: assumes synchronous
  */
 export type ContractStartFn<PF = any, CF = any, CT = any, PA = any> = (
   zcf: ZCF<CT>,
   privateArgs: PA,
   baggage: import('@agoric/vat-data').Baggage,
-) => ContractStartFnResult<PF, CF>;
+) => ERef<ContractStartFnResult<PF, CF>>;
 export type ContractStartFnResult<PF, CF> = {
   publicFacet?: PF;
   creatorFacet?: CF;

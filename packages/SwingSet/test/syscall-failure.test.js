@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { test } from '../tools/prepare-test-env-ava.js';
 
 // eslint-disable-next-line import/order
@@ -6,7 +5,12 @@ import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
 import { enumeratePrefixedKeys } from '../src/kernel/state/storageHelper.js';
 
+/**
+ * @import {SwingSetConfig} from '../src/index.js';
+ */
+
 async function vatSyscallFailure(t, beDynamic) {
+  /** @type {SwingSetConfig} */
   const config = {
     bootstrap: 'bootstrap',
     bundles: {

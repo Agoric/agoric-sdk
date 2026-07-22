@@ -1,6 +1,7 @@
+// @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 import { E, Far } from '@endo/far';
 import {
   prepareNetworkProtocol,
@@ -17,6 +18,15 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeScalarMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+
+/**
+ * @import {Assertions} from 'ava';
+ * @import {DepositFacet} from '@agoric/ertp';
+ * @import {Pegasus} from '../src/pegasus.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Subscription} from '@agoric/notifier';
+ * @import {Connection} from '@agoric/network';
+ */
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -38,7 +48,7 @@ const provideBaggage = key => {
 };
 
 /**
- * @param {import('ava').Assertions} t
+ * @param {Assertions} t
  */
 async function testRemotePeg(t) {
   t.plan(24);
@@ -50,7 +60,7 @@ async function testRemotePeg(t) {
   const { makeVowKit, when } = powers;
 
   /**
-   * @type {PromiseRecord<import('@agoric/ertp').DepositFacet>}
+   * @type {PromiseRecord<DepositFacet>}
    */
   const { promise: localDepositFacet, resolve: resolveLocalDepositFacet } =
     makePromiseKit();
@@ -86,7 +96,7 @@ async function testRemotePeg(t) {
   );
 
   /**
-   * @type {import('../src/pegasus.js').Pegasus}
+   * @type {Pegasus}
    */
   const pegasus = publicAPI;
 

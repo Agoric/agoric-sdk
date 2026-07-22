@@ -4,11 +4,15 @@ import { provideDurableMapStore } from '@agoric/vat-data';
 /**
  * @import {EOnly} from '@endo/eventual-send';
  * @import {MutableQuote, PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Mint} from '@agoric/ertp';
+ * @import {IssuerKit} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @returns {ERef<Mint<'set', PriceDescription>>}
  */
 export const provideQuoteMint = baggage => {
@@ -16,15 +20,15 @@ export const provideQuoteMint = baggage => {
     baggage,
     'quoteMintIssuerBaggage',
   );
-  /** @type {IssuerKit<'set', PriceDescription>} */
-  // @ts-expect-error cast
-  const issuerKit = prepareIssuerKit(
-    issuerBaggage,
-    'quote',
-    AssetKind.SET,
-    undefined,
-    undefined,
-    { recoverySetsOption: 'noRecoverySets' },
+  const issuerKit = /** @type {IssuerKit<'set', PriceDescription>} */ (
+    prepareIssuerKit(
+      issuerBaggage,
+      'quote',
+      AssetKind.SET,
+      undefined,
+      undefined,
+      { recoverySetsOption: 'noRecoverySets' },
+    )
   );
   return issuerKit.mint;
 };

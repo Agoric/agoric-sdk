@@ -1,6 +1,6 @@
 // Keep this import first to avoid: VatData unavailable
 // see also https://github.com/endojs/endo/issues/1467
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import * as contractExports from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
@@ -26,9 +26,16 @@ import type { Instance, ZoeService } from '@agoric/zoe';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import { passStyleOf, type CopyRecord } from '@endo/pass-style';
-import { produceAttenuatedDeposit } from '../src/attenuated-deposit.core.js';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import type { BootstrapPowers } from '@agoric/vats/src/core/types.js';
+import type { TestFn } from 'ava';
+import { produceAttenuatedDeposit } from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
+import type { ChainInfoPowers } from '@agoric/deploy-script-support/src/control/chain-info.core.js';
+import { deployPostalService } from '@agoric/deploy-script-support/src/control/postal-service.core.js';
+import { produceDeliverContractControl } from '@agoric/deploy-script-support/src/control/contract-control.core.js';
+import { produceGetUpgradeKit } from '@agoric/deploy-script-support/src/control/get-upgrade-kit.core.js';
 import { axelarConfig } from '../src/axelar-configs.js';
-import type { ChainInfoPowers } from '../src/chain-info.core.js';
 import { toExternalConfig } from '../src/config-marshal.js';
 import { delegatePortfolioContract } from '../src/portfolio-control.core.js';
 import {
@@ -41,12 +48,16 @@ import type {
   StartFn,
 } from '../src/portfolio-start.type.ts';
 import { name as contractName } from '../src/portfolio.contract.permit.js';
-import * as postalServiceExports from '../src/postal-service.contract.js';
-import { deployPostalService } from '../src/postal-service.core.js';
-import { produceDeliverContractControl } from '../src/contract-control.core.js';
-import { produceGetUpgradeKit } from '../src/get-upgrade-kit.core.js';
+import * as postalServiceExports from '../src/control/postal-service.contract.js';
 
 const { entries, keys } = Object;
+
+const nodeRequire = createRequire(import.meta.url);
+const asset = (spec: string) => readFile(nodeRequire.resolve(spec), 'utf8');
+
+const { bytecode: walletBytecode } = JSON.parse(
+  await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+);
 
 const docOpts = {
   note: 'YMax VStorage Schema',
@@ -130,12 +141,13 @@ const makeBootstrap = async t => {
     await eventLoopIteration();
     return getCapDataStructure(storage.getValues(path).at(-1));
   };
+  const getTestJig = () => ({});
   const { provisionSmartWallet } = await deployWalletFactory({
     boot: async () => {
       return {
         ...common.bootstrap,
         zoe: zoe as any, // XXX Guarded<ZoeService>
-        utils: { ...common.utils, readLegible, bundleAndInstall },
+        utils: { ...common.utils, readLegible, bundleAndInstall, getTestJig },
       };
     },
   });
@@ -145,21 +157,59 @@ const makeBootstrap = async t => {
 };
 
 const ymaxOptions = toExternalConfig(
-  harden({ axelarConfig, gmpAddresses } as PortfolioDeployConfig),
+  harden({
+    axelarConfig,
+    gmpAddresses,
+    walletBytecode,
+  } as PortfolioDeployConfig),
   {},
   portfolioDeployConfigShape,
 );
 
-test('coreEval code without swingset', async t => {
-  const { common, powers, zoe, bundleAndInstall } = await makeBootstrap(t);
+const test: TestFn<Awaited<ReturnType<typeof makeBootstrap>>> = anyTest;
+
+test.before(async t => {
+  t.context = await makeBootstrap(t);
+});
+
+test.serial(
+  'deployPostalService publishes instance in agoricNames',
+  async t => {
+    const { common, powers, zoe, bundleAndInstall } = t.context;
+
+    // @ts-expect-error test bootstrap powers omit postalService installation slot
+    powers.installation.produce.postalService.resolve(
+      await bundleAndInstall(postalServiceExports),
+    );
+
+    await deployPostalService(powers as any);
+
+    const postalServiceInstance = await E(common.bootstrap.agoricNames).lookup(
+      'instance',
+      'postalService',
+    );
+    t.is(passStyleOf(postalServiceInstance), 'remotable');
+
+    const postalServicePub = await E(zoe).getPublicFacet(postalServiceInstance);
+    t.is(passStyleOf(postalServicePub), 'remotable');
+  },
+);
+
+test.serial('coreEval code without swingset', async t => {
+  const { common, powers, zoe, bundleAndInstall } = t.context;
   const { bootstrap, utils } = common;
   const { usdc, bld, poc26 } = common.brands;
 
   // script from agoric run does this step
   t.log('produce installation using test bundle');
   powers.installation.produce[contractName].resolve(
-    await bundleAndInstall(contractExports),
+    await bundleAndInstall(contractExports, 'b2-ymax-bundleId'),
   );
+  // @ts-expect-error test bootstrap powers omit postalService installation slot
+  powers.installation.produce.postalService.resolve(
+    await bundleAndInstall(postalServiceExports),
+  );
+  await deployPostalService(powers as any);
 
   t.log('invoke coreEval');
   await t.notThrowsAsync(startPortfolio(powers, { options: ymaxOptions }));
@@ -223,18 +273,12 @@ test('coreEval code without swingset', async t => {
   await documentStorageSchema(t, storage, docOpts);
 });
 
-test('delegate ymax control; invite planner; submit plan', async t => {
+test.serial('delegate ymax control; invite planner; submit plan', async t => {
   const { common, powers, zoe, bundleAndInstall, provisionSmartWallet } =
-    await makeBootstrap(t);
+    t.context;
 
   t.log('produce getDepositFacet');
   await produceAttenuatedDeposit(powers as any);
-
-  t.log('start ymax0 as in 101');
-  powers.installation.produce[contractName].resolve(
-    await bundleAndInstall(contractExports, 'b2-ymax-bundleId'),
-  );
-  await startPortfolio(powers, { options: ymaxOptions });
 
   t.log('terminate ymax0 as in 103');
   {
@@ -313,6 +357,10 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     const issuers = { USDC, Access: PoC26, Fee: BLD, BLD };
     const { privateArgs } = await (powers as PortfolioBootPowers).consume
       .ymax0Kit;
+    const postalServiceInstance = await E(agoricNames).lookup(
+      'instance',
+      pContractName,
+    );
 
     // New portfolio-control does not use privateArgs from previous kit
     const privateArgsOverrides = {
@@ -321,6 +369,8 @@ test('delegate ymax control; invite planner; submit plan', async t => {
       chainInfo: privateArgs.chainInfo,
       contracts: privateArgs.contracts,
       gmpAddresses: privateArgs.gmpAddresses,
+      walletBytecode,
+      postalServiceInstance,
     } as CopyRecord;
 
     await E(E(walletCtrl).getInvokeFacet()).invokeEntry({
@@ -363,7 +413,7 @@ test('delegate ymax control; invite planner; submit plan', async t => {
   });
 
   t.log('make a portfolio');
-  const { poc26 } = common.brands;
+  const { usdc, poc26 } = common.brands;
   const accessToken = poc26.mint.mintPayment(poc26.make(1n));
   const [walletTrader] = await provisionSmartWallet('agoric1trader1');
   await E(E(walletTrader).getDepositFacet()).receive(accessToken);
@@ -378,12 +428,37 @@ test('delegate ymax control; invite planner; submit plan', async t => {
     offerArgs: {},
   });
 
-  await Promise.all([openP, ackNFA(common.utils)]);
+  await Promise.all([openP, ackNFA(common.utils, -1)]);
 
-  t.log('invoke planner');
+  t.log('trader deposits, awaiting planner');
+  const Deposit = usdc.units(1_000);
+  await E(E(walletTrader).getDepositFacet()).receive(
+    await common.utils.pourPayment(Deposit),
+  );
+  const depositP = E(E(walletTrader).getOffersFacet()).executeOffer({
+    id: 2,
+    invitationSpec: {
+      source: 'continuing',
+      invitationMakerName: 'Deposit',
+      previousOffer: 1,
+    },
+    proposal: { give: { Deposit }, want: {} },
+    offerArgs: {},
+  });
+  await eventLoopIteration(); // wait for startFlow before resolving it
+
+  t.log('invoke planner to resolve the deposit plan');
   await E(E(walletPl).getInvokeFacet()).invokeEntry({
     targetName: 'planner',
-    method: 'submit',
-    args: [0, [], 0, 0],
+    method: 'resolvePlan',
+    args: [
+      0,
+      1,
+      [{ src: '<Deposit>', dest: '@agoric', amount: Deposit }],
+      0,
+      0,
+    ],
   });
+
+  await depositP;
 });

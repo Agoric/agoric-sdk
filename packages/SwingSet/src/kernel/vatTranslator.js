@@ -47,6 +47,7 @@ export function assertValidVatstoreKey(key) {
  * @import {VatID} from '../types-internal.js'
  * @import {KernelKeeper} from './state/kernelKeeper.js'
  *
+ * @import {KernelSyscallAbandonExports} from '../types-external.js';
  */
 
 /**
@@ -76,6 +77,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     const inputSlots = msg.methargs.slots.map(slot =>
       mapKernelSlotToVatSlot(slot),
     );
+    /** @type {string | null} */
     let resultSlot = null;
     if (msg.result) {
       insistKernelType('promise', msg.result);
@@ -317,6 +319,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       mapVatSlotToKernelSlot(slot),
     );
     const kernelArgs = harden({ ...methargs, slots: kernelSlots });
+    /** @type {string | null} */
     let result = null;
     if (resultSlot) {
       insistVatType('promise', resultSlot);
@@ -495,7 +498,7 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
   /**
    *
    * @param {string[]} vrefs
-   * @returns {import('../types-external.js').KernelSyscallAbandonExports}
+   * @returns {KernelSyscallAbandonExports}
    */
   function translateAbandonExports(vrefs) {
     Array.isArray(vrefs) || Fail`abandonExports() given non-Array ${vrefs}`;

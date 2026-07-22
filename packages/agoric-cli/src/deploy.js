@@ -1,12 +1,11 @@
 // @ts-check
-/* eslint-env node */
 
 import { X } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { E, makeCapTP } from '@endo/captp';
 import { makeLeaderFromRpcAddresses } from '@agoric/casting';
-import path from 'path';
-import http from 'http';
+import path from 'node:path';
+import http from 'node:http';
 import inquirer from 'inquirer';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { whileTrue } from '@agoric/internal';
@@ -47,6 +46,7 @@ const connectAndRun = async (
   let connected = false;
   let progressDot = '.';
   const exit = makePromiseKit();
+  /** @type {ReturnType<typeof setInterval> | null} */
   let progressTimer = null;
 
   const sendJSON = (ws, obj) => {
@@ -145,7 +145,7 @@ const connectAndRun = async (
           stillLoading = nextLoading;
         }
 
-        clearInterval(progressTimer);
+        clearInterval(progressTimer ?? undefined);
         process.stdout.write('\n');
         console.debug(JSON.stringify(need), 'loaded');
         // Take a new copy, since the chain objects have been added to bootstrap.

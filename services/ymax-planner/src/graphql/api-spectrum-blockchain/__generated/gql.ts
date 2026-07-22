@@ -1,5 +1,5 @@
 /* eslint-disable */
-import * as types from './graphql';
+import * as types from './graphql.js';
 
 
 
@@ -15,16 +15,16 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
-    "\"\"\"\n  Get the balances for an arbitrary number of accounts.\n  \n  Each account is identified by a blockchain (for EVM chains, a\n  `0x${upaddedLowercaseHexDigits}` representation of their EIP-155 CHAIN_ID [cf.\n  https://chainlist.org/ ]), address, and token (for EVM chains, a\n  `0x{hexDigits}` representation of its contract address, visible on e.g.\n  https://coinmarketcap.com/ ).\n  \n  Note that the output `balance` is a decimal string representing a floating-point\n  token balance (e.g., each unit of which is 1e6 micro-units).\n\"\"\"\nquery getBalances($accounts: [ChainAddressTokenInput!]!) {\n  balances: getAddressBalance(input: $accounts) {\n    chain\n    address\n    token\n    balance\n    error\n  }\n}": typeof types.GetBalancesDocument,
+    "\"\"\"\n  Get the balances for an arbitrary number of accounts.\n  \n  Each account is identified by a blockchain (for EVM chains, a\n  '0x<upaddedLowercaseHexDigits>' representation of their EIP-155 CHAIN_ID [cf.\n  https://chainlist.org/ ]), address, and token (for EVM chains, a\n  '0x<hexDigits>' representation of its contract address, visible on e.g.\n  https://coinmarketcap.com/ ).\n  \n  Note that the output 'balance' is a decimal string representing a floating-point\n  token balance (e.g., each unit of which is 1e6 micro-units).\n\"\"\"\nquery getBalances($accounts: [ChainAddressTokenInput!]!) {\n  balances: getAddressBalance(input: $accounts) {\n    chain\n    address\n    token\n    balance\n    error\n  }\n}": typeof types.GetBalancesDocument,
 };
 const documents: Documents = {
-    "\"\"\"\n  Get the balances for an arbitrary number of accounts.\n  \n  Each account is identified by a blockchain (for EVM chains, a\n  `0x${upaddedLowercaseHexDigits}` representation of their EIP-155 CHAIN_ID [cf.\n  https://chainlist.org/ ]), address, and token (for EVM chains, a\n  `0x{hexDigits}` representation of its contract address, visible on e.g.\n  https://coinmarketcap.com/ ).\n  \n  Note that the output `balance` is a decimal string representing a floating-point\n  token balance (e.g., each unit of which is 1e6 micro-units).\n\"\"\"\nquery getBalances($accounts: [ChainAddressTokenInput!]!) {\n  balances: getAddressBalance(input: $accounts) {\n    chain\n    address\n    token\n    balance\n    error\n  }\n}": types.GetBalancesDocument,
+    "\"\"\"\n  Get the balances for an arbitrary number of accounts.\n  \n  Each account is identified by a blockchain (for EVM chains, a\n  '0x<upaddedLowercaseHexDigits>' representation of their EIP-155 CHAIN_ID [cf.\n  https://chainlist.org/ ]), address, and token (for EVM chains, a\n  '0x<hexDigits>' representation of its contract address, visible on e.g.\n  https://coinmarketcap.com/ ).\n  \n  Note that the output 'balance' is a decimal string representing a floating-point\n  token balance (e.g., each unit of which is 1e6 micro-units).\n\"\"\"\nquery getBalances($accounts: [ChainAddressTokenInput!]!) {\n  balances: getAddressBalance(input: $accounts) {\n    chain\n    address\n    token\n    balance\n    error\n  }\n}": types.GetBalancesDocument,
 };
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\"\"\"\n  Get the balances for an arbitrary number of accounts.\n  \n  Each account is identified by a blockchain (for EVM chains, a\n  `0x${upaddedLowercaseHexDigits}` representation of their EIP-155 CHAIN_ID [cf.\n  https://chainlist.org/ ]), address, and token (for EVM chains, a\n  `0x{hexDigits}` representation of its contract address, visible on e.g.\n  https://coinmarketcap.com/ ).\n  \n  Note that the output `balance` is a decimal string representing a floating-point\n  token balance (e.g., each unit of which is 1e6 micro-units).\n\"\"\"\nquery getBalances($accounts: [ChainAddressTokenInput!]!) {\n  balances: getAddressBalance(input: $accounts) {\n    chain\n    address\n    token\n    balance\n    error\n  }\n}"): typeof import('./graphql').GetBalancesDocument;
+export function graphql(source: "\"\"\"\n  Get the balances for an arbitrary number of accounts.\n  \n  Each account is identified by a blockchain (for EVM chains, a\n  '0x<upaddedLowercaseHexDigits>' representation of their EIP-155 CHAIN_ID [cf.\n  https://chainlist.org/ ]), address, and token (for EVM chains, a\n  '0x<hexDigits>' representation of its contract address, visible on e.g.\n  https://coinmarketcap.com/ ).\n  \n  Note that the output 'balance' is a decimal string representing a floating-point\n  token balance (e.g., each unit of which is 1e6 micro-units).\n\"\"\"\nquery getBalances($accounts: [ChainAddressTokenInput!]!) {\n  balances: getAddressBalance(input: $accounts) {\n    chain\n    address\n    token\n    balance\n    error\n  }\n}"): typeof import('./graphql.js').GetBalancesDocument;
 
 
 export function graphql(source: string) {

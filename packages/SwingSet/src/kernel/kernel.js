@@ -110,8 +110,10 @@ const gcMessageTypes = /** @type {const} */ ([
 /** @type {Set<RunQueueEvent['type']>} */
 const gcMessageTypesSet = new Set(gcMessageTypes);
 
-/** @type {(message: RunQueueEvent) => message is GcMessage} */
-const isGcMessage = message => gcMessageTypesSet.has(message.type);
+const isGcMessage =
+  /** @type {(message: RunQueueEvent) => message is GcMessage} */ (
+    message => gcMessageTypesSet.has(message.type)
+  );
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -160,6 +162,7 @@ export default function buildKernel(
 ) {
   const {
     waitUntilQuiescent,
+    now = () => 0,
     kernelStorage,
     debugPrefix,
     vatEndowments,
@@ -179,7 +182,11 @@ export default function buildKernel(
     verbose,
     warehousePolicy,
     overrideVatManagerOptions = {},
+    startupProfiler = undefined,
   } = kernelRuntimeOptions;
+  const noteStartupPhase = (label, ms) => {
+    startupProfiler && startupProfiler(label, ms);
+  };
   const logStartup = verbose ? console.debug : () => {};
   if (verbose) kdebugEnable(true);
 
@@ -195,14 +202,14 @@ export default function buildKernel(
     kernelSlog,
   );
 
-  /** @type {ReturnType<makeVatWarehouse>} */
+  /** @type {ReturnType<typeof makeVatWarehouse>} */
   let vatWarehouse;
   let started = false;
 
   /**
    * @typedef {{
    *   manager: unknown,
-   *   translators: ReturnType<makeDeviceTranslators>,
+   *   translators: ReturnType<typeof makeDeviceTranslators>,
    * }} DeviceInfo
    */
   const ephemeral = {
@@ -314,6 +321,7 @@ export default function buildKernel(
 
   // If `kernelPanic` is set to non-null, vat execution code will throw it as an
   // error at the first opportunity
+  /** @type {Error | null} */
   let kernelPanic = null;
 
   /** @type {KernelPanic} */
@@ -433,7 +441,7 @@ export default function buildKernel(
 
   // this is called for syscall.exit, which allows the crank to complete
   // before terminating the vat
-  function requestTermination(vatID, reject, info) {
+  function requestTermination(_vatID, reject, info) {
     insistCapData(info);
     vatRequestedTermination = { reject, info };
   }
@@ -466,13 +474,12 @@ export default function buildKernel(
    *    illegalSyscall: { vatID: VatID, info: SwingSetCapData } | undefined,
    *    vatRequestedTermination: { reject: boolean, info: SwingSetCapData } | undefined,
    *  } } DeliveryStatus
-   * @import {PolicyInputCleanupCounts} from '../types-external.js';
    * @typedef { {
    *    abort?: boolean, // changes should be discarded, not committed
    *    consumeMessage?: boolean, // discard the aborted delivery
    *    didDelivery?: VatID, // we made a delivery to a vat, for run policy and save-snapshot
    *    computrons?: bigint, // computron count for run policy
-   *    cleanups?: PolicyInputCleanupCounts, // cleanup budget spent
+   *    cleanups?: import('../types-external.js').PolicyInputCleanupCounts, // cleanup budget spent
    *    meterID?: string, // deduct those computrons from a meter
    *    measureDirt?: { vatID: VatID, dirt: Dirt }, // dirt counters should increment
    *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin
@@ -1844,7 +1851,11 @@ export default function buildKernel(
 
     kernelKeeper.loadStats();
 
-    await vatWarehouse.start(logStartup);
+    {
+      const t0 = now();
+      await vatWarehouse.start(logStartup);
+      noteStartupPhase('kernel.vatWarehouse.start', now() - t0);
+    }
 
     // the admin device is endowed directly by the kernel
     deviceEndowments.vatAdmin = {
@@ -1863,6 +1874,7 @@ export default function buildKernel(
     // instantiate all devices
     for (const [name, deviceID] of kernelKeeper.getDevices()) {
       logStartup(`starting device ${name} as ${deviceID}`);
+      const deviceStart = now();
       const deviceKeeper = kernelKeeper.allocateDeviceKeeperIfNeeded(deviceID);
       const { source, options } = deviceKeeper.getSourceAndOptions();
       assert(source.bundleID);
@@ -1870,6 +1882,7 @@ export default function buildKernel(
       const { deviceParameters = {}, unendowed } = options;
       const devConsole = makeConsole(`${debugPrefix}SwingSet:dev-${name}`);
 
+      const bundleLoadStart = now();
       const bundle = kernelKeeper.getBundle(source.bundleID);
       assert(bundle);
       const NS = await importBundle(bundle, {
@@ -1881,6 +1894,10 @@ export default function buildKernel(
           assert: globalThis.assert,
         }),
       });
+      noteStartupPhase(
+        `kernel.device.${name}.importBundle`,
+        now() - bundleLoadStart,
+      );
 
       if (deviceEndowments[name] || unendowed) {
         const translators = makeDeviceTranslators(deviceID, name, kernelKeeper);
@@ -1921,6 +1938,7 @@ export default function buildKernel(
           `WARNING: skipping device ${deviceID} (${name}) because it has no endowments`,
         );
       }
+      noteStartupPhase(`kernel.device.${name}.total`, now() - deviceStart);
     }
 
     // attach vat-admin device hooks

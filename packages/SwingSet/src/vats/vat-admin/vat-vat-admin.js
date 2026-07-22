@@ -25,6 +25,10 @@ import {
  * @import {VatPowers} from '../../types-external.js';
  * @import {BundleID} from '../../types-external.js';
  * @import {BundleCap} from '../../types-external.js';
+ * @import {Device} from '../../types-external.js';
+ * @import {UpgradeID} from '../../devices/vat-admin/device-vat-admin.js';
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {ERef} from '@endo/far';
  */
 
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias
@@ -52,7 +56,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   const pendingBundles = new Map();
   const pendingUpgrades = new Map(); // upgradeID -> Promise<UpgradeResults>
 
-  /** @type {import('../../types-external.js').Device<VatAdminRootDeviceNode>} */
+  /** @type {Device<VatAdminRootDeviceNode>} */
   let vatAdminDev;
 
   const runningVats = new Map(); // vatID -> [doneP, { resolve, reject }]
@@ -101,7 +105,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       },
       get: ({ state }) => D(vatAdminDev).getMeter(state.meterID), // returns BigInts
       // getNotifier: ({ state }) => state.notifier, // XXX RESTORE
-      getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
+      getNotifier: () => Fail`not implemented, see #7234`, // XXX TEMP
     },
     { finish: finishMeter },
   );
@@ -120,7 +124,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       setThreshold(_context, _newThreshold) {},
       get: () => harden({ remaining: 'unlimited', threshold: 0 }),
       // getNotifier: ({ state }) => state.notifier, // will never fire // XXX RESTORE
-      getNotifier: ({ _self }) => Fail`not implemented, see #7234`, // XXX TEMP
+      getNotifier: () => Fail`not implemented, see #7234`, // XXX TEMP
     },
     { finish: finishMeter },
   );
@@ -526,7 +530,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   /**
    * the kernel queues this to us when a vat upgrade completes or fails
    *
-   * @param {import('../../devices/vat-admin/device-vat-admin.js').UpgradeID} upgradeID
+   * @param {UpgradeID} upgradeID
    * @param {boolean} success
    * @param {Error | undefined} error
    * @param {number} incarnationNumber
@@ -560,8 +564,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
   }
 
   // XXX TEMP
-  // eslint-disable-next-line no-unused-vars
-  function meterCrossedThreshold(meterID, remaining) {
+  function meterCrossedThreshold(_meterID, _remaining) {
     // const { updater } = meterByID.get(meterID); // XXX RESTORE
     // updater.updateState(remaining); // XXX RESTORE
   }
@@ -611,3 +614,5 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
     upgradeStaticVat,
   });
 }
+
+/** @typedef {ERef<ReturnType<typeof buildRootObject>>} VatAdminVat */

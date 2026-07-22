@@ -8,6 +8,10 @@ import {
   defineVirtualExoClassKit,
 } from '../src/exo-utils.js';
 
+/**
+ * @import {Amplify} from '@endo/exo';
+ */
+
 const UpCounterI = M.interface('UpCounter', {
   incr: M.call().optional(M.gte(0)).returns(M.number()),
 });
@@ -43,7 +47,7 @@ test('test amplify defineVirtualExoClass fails', t => {
 });
 
 test('test amplify defineVirtualExoClassKit', t => {
-  /** @type {import('@endo/exo').Amplify} */
+  /** @type {Amplify} */
   let amp;
   const makeCounterKit = defineVirtualExoClassKit(
     'Counter',

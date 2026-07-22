@@ -1,16 +1,19 @@
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
-} from '@agoric/vats/tools/board-utils.js';
-import { assertAllDefined } from '@agoric/internal';
+} from '@agoric/internal/src/marshal/board-client-utils.js';
+import { assertAllDefined, tryNow } from '@agoric/internal';
 import { makeVStorage } from './vstorage.js';
 
 export { boardSlottingMarshaller };
 
 /**
+ * @import {Marshal} from '@endo/marshal';
  * @import {MinimalNetworkConfig} from './network-config.js';
- * @import {TypedPublished} from './types.js';
+ * @import {PublishedPathTypes, TypedPublishedFor, VstorageKit} from './types.js';
  * @import {VStorage} from './vstorage.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {BoardRemote} from '@agoric/vats/tools/board-utils.js';
  */
 
 /** @deprecated */
@@ -70,7 +73,7 @@ harden(storageHelper);
  * @deprecated
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
- * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
+ * @returns {Promise<AgoricNamesRemotes>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
   assertAllDefined({ ctx, vstorage });
@@ -80,7 +83,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
       const content = await vstorage.readLatest(
         `published.agoricNames.${kind}`,
       );
-      /** @type {Array<[string, import('@agoric/vats/tools/board-utils.js').BoardRemote]>} */
+      /** @type {Array<[string, BoardRemote]>} */
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
       for (const [name, remote] of parts) {
         if ('getBoardId' in remote) {
@@ -94,54 +97,93 @@ export const makeAgoricNames = async (ctx, vstorage) => {
 };
 
 /**
+ * @template {PublishedPathTypes} [Ext=Record<never, never>]
+ * @param {object} config
+ * @param {VStorage} config.vstorage
+ * @param {MinimalNetworkConfig} config.networkConfig
+ * @param {Pick<Marshal<string>, 'fromCapData' | 'toCapData'>} [config.marshaller]
+ * @returns {VstorageKit<Ext>}
+ * @alpha
+ */
+export const makeVstorageKitFromVstorage = ({
+  vstorage,
+  networkConfig,
+  marshaller,
+}) => {
+  /** @type {IdMap} */
+  const fromBoard = marshaller
+    ? {
+        // XXX Route conversions through a provided marshaller.
+        // Note that the fromBoard pattern is deprecated.
+        convertSlotToVal: (boardId, iface) => {
+          const boardRemote = makeBoardRemote({ boardId, iface });
+          // @ts-expect-error TS18048 marshaller won't be undefined here.
+          return marshaller.fromCapData(marshaller.toCapData(boardRemote));
+        },
+      }
+    : makeFromBoard();
+  marshaller ??= boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+  /** @type {(txt: string | {value: string}) => unknown} */
+  const unserializeHead = txt => {
+    const { capDatas } = storageHelper.parseCapData(txt);
+    // XXX For backwards compatibility with the old implementation
+    // (`storageHelper.unserializeTxt(txt, fromBoard).at(-1)`), parse every
+    // capDatas item even though we only care about the last one.
+    // This is almost certainly safe to improve in a dedicated PR.
+    const values = capDatas.map(capData => marshaller.fromCapData(capData));
+    return values.at(-1);
+  };
+
+  /**
+   * Read latest at path and unmarshal it
+   * @type {<T extends unknown = any>(path: string) => Promise<T>}
+   */
+  const readLatestHead = path =>
+    /** @type {Promise<any>} */ (
+      vstorage.readLatest(path).then(unserializeHead)
+    );
+
+  /**
+   * Read latest at published path and unmarshal it.
+   *
+   * Note this does not perform a runtime check to verify the shape. The
+   * static types come from the spec of what is supposed to be written to
+   * vstorage, which is validated in testing of the chain code that is run
+   * in consensus.
+   *
+   * @type {<T extends string>(subpath: T) => Promise<TypedPublishedFor<T, Ext>>}
+   */
+  const readPublished = subpath =>
+    /** @type {Promise<TypedPublishedFor<any, Ext>>} */ (
+      readLatestHead(`published.${subpath}`)
+    );
+
+  return {
+    fromBoard,
+    marshaller,
+    networkConfig,
+    readLatestHead,
+    readPublished,
+    unserializeHead,
+    vstorage,
+  };
+};
+harden(makeVstorageKitFromVstorage);
+
+/**
+ * @template {PublishedPathTypes} [Ext=Record<never, never>]
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} networkConfig
+ * @returns {VstorageKit<Ext>}
  */
 export const makeVstorageKit = ({ fetch }, networkConfig) => {
-  try {
-    const vstorage = makeVStorage({ fetch }, networkConfig);
-    const fromBoard = makeFromBoard();
-
-    const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-    /** @type {(txt: string | {value: string}) => unknown} */
-    const unserializeHead = txt =>
-      storageHelper.unserializeTxt(txt, fromBoard).at(-1);
-
-    /**
-     * Read latest at path and unmarshal it
-     * @template T
-     * @type {(path: string) => Promise<T>}
-     */
-    const readLatestHead = path =>
-      // @ts-expect-error cast
-      vstorage.readLatest(path).then(unserializeHead);
-
-    /**
-     * Read latest at published path and unmarshal it.
-     *
-     * Note this does not perform a runtime check to verify the shape. The
-     * static types come from the spec of what is supposed to be written to
-     * vstorage, which is validated in testing of the chain code that is run
-     * in consensus.
-     *
-     * @type {<T extends string>(subpath: T) => Promise<TypedPublished<T>>}
-     */
-    const readPublished = subpath =>
-      // @ts-expect-error cast
-      readLatestHead(`published.${subpath}`);
-
-    return {
-      fromBoard,
-      marshaller,
-      networkConfig,
-      readLatestHead,
-      readPublished,
-      unserializeHead,
-      vstorage,
-    };
-  } catch (err) {
-    throw Error(`RPC failure (${networkConfig.rpcAddrs}): ${err.message}`);
-  }
+  const vstorage = tryNow(
+    () => makeVStorage({ fetch }, networkConfig),
+    err => {
+      throw Error(`RPC failure (${networkConfig.rpcAddrs}): ${err.message}`);
+    },
+  );
+  return makeVstorageKitFromVstorage({ vstorage, networkConfig });
 };
-/** @typedef {ReturnType<typeof makeVstorageKit>} VstorageKit */
+harden(makeVstorageKit);

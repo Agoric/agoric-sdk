@@ -1,21 +1,18 @@
-// no jessie-check because this code runs only in Node for testing
-/* eslint-env node */
-
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-
-import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
 import { makeHandle } from '../src/makeHandle.js';
-import zcfBundle from '../bundles/bundle-contractFacet.js';
+import { buildTestRootObject } from './testVatRoot.js';
 
 /**
  * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {BundleCap, BundleID, EndoZipBase64Bundle, TestBundle} from '@agoric/swingset-vat';
+ * @import {DynamicVatOptions} from '@agoric/swingset-vat';
+ * @import {CreateVatResults} from '@agoric/swingset-vat';
  */
 
 // this simulates a bundlecap, which is normally a swingset "device node"
@@ -51,6 +48,8 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     }),
     testJigSetter: testContextSetter,
   };
+  /** @type {Array<ReturnType<typeof makePromiseKit>>} */
+  const reservedTestJigs = [];
 
   // This is explicitly intended to be mutable so that
   // test-only state can be provided from contracts
@@ -78,53 +77,62 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     getBundleIDByName: name => {
       return Promise.resolve().then(() => nameToBundleID.get(name));
     },
-    createVat: (bundleCap, { vatParameters = {} } = {}) => {
-      bundleCap === zcfBundleCap || Fail`fakeVatAdmin only knows ZCF`;
-      const exitKit = makePromiseKit();
-      handlePKitWarning(exitKit);
-      const exitVat = completion => {
-        exitMessage = completion;
-        hasExited = true;
-        exitWithFailure = false;
-        exitKit.resolve(completion);
-      };
-      const vpow = harden({
-        ...fakeVatPowers,
-        exitVat,
-      });
-      const vatBaggage = makeScalarBigMapStore('fake vat baggage', {
-        durable: true,
-      });
-
-      // XXX Notice that this call isn't wrapping vatParams.  We (BW, CH) tried
-      // doing this, but backed out when it got complex.
-      //
-      // const ns = await evalContractBundle(zcfBundle);
-      // const ns2 = makeRemote(
-      //   Far('wrappedRoot', {
-      //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
-      //   }),
-      // );
-      const rootP = makeRemote(
-        E(evalContractBundle(zcfBundle)).buildRootObject(
-          vpow,
-          vatParameters,
-          vatBaggage,
-        ),
-      );
-      return E.when(rootP, root =>
-        harden({
-          root,
-          adminNode: Far('adminNode', {
-            done: () => {
-              return exitKit.promise;
+    createVat:
+      /** @type {(bundleCap: BundleCap, options?: Partial<DynamicVatOptions>) => Promise<CreateVatResults>} */ (
+        (bundleCap, { vatParameters = {} } = {}) => {
+          bundleCap === zcfBundleCap || Fail`fakeVatAdmin only knows ZCF`;
+          const testJigKit = reservedTestJigs.shift() || makePromiseKit();
+          handlePKitWarning(testJigKit);
+          const exitKit = makePromiseKit();
+          handlePKitWarning(exitKit);
+          const exitVat = completion => {
+            exitMessage = completion;
+            hasExited = true;
+            exitWithFailure = false;
+            exitKit.resolve(completion);
+          };
+          const vpow = harden({
+            ...fakeVatPowers,
+            testJigSetter: jig => {
+              testContextSetter?.(jig);
+              testJigKit.resolve(jig);
             },
-            terminateWithFailure: () => {},
-            upgrade: (_bundleCap, _options) => Fail`upgrade not faked`,
-          }),
-        }),
-      );
-    },
+            exitVat,
+          });
+          const vatBaggage = makeScalarBigMapStore('fake vat baggage', {
+            durable: true,
+          });
+
+          // XXX Notice that this call isn't wrapping vatParams.  We (BW, CH) tried
+          // doing this, but backed out when it got complex.
+          //
+          // const ns = await evalContractBundle(zcfBundle);
+          // const ns2 = makeRemote(
+          //   Far('wrappedRoot', {
+          //     buildRootObject: vp => ns.buildRootObject(vpow, vp, vatBaggage),
+          //   }),
+          // );
+          const rootP = makeRemote(
+            buildTestRootObject(
+              vpow,
+              /** @type {any} */ (vatParameters),
+              vatBaggage,
+            ),
+          );
+          return E.when(rootP, root =>
+            harden({
+              root,
+              adminNode: Far('adminNode', {
+                done: () => {
+                  return exitKit.promise;
+                },
+                terminateWithFailure: () => {},
+                upgrade: (_bundleCap, _options) => Fail`upgrade not faked`,
+              }),
+            }),
+          );
+        }
+      ),
   });
   const criticalVatKey = harden({});
   const vatPowers = harden({
@@ -139,6 +147,34 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
     getHasExited: () => hasExited,
     getExitWithFailure: () => exitWithFailure,
     /**
+     * @param {string} base
+     * @param {EndoZipBase64Bundle | TestBundle} bundle
+     */
+    getBundleID: (base, bundle) => {
+      if (bundle.moduleFormat !== 'endoZipBase64') {
+        return base;
+      }
+      if (base === `b1-${bundle.endoZipBase64Sha512}`) {
+        return base;
+      }
+      return `${base}-${bundle.endoZipBase64Sha512}`;
+    },
+    /**
+     * @param {string} base
+     * @param {EndoZipBase64Bundle | TestBundle} bundle
+     */
+    registerBundle: (base, bundle) => {
+      const bid = vatAdminState.getBundleID(base, bundle);
+      vatAdminState.installBundle(bid, bundle);
+      return bid;
+    },
+    prepareJig: () => {
+      const jigKit = makePromiseKit();
+      handlePKitWarning(jigKit);
+      reservedTestJigs.push(jigKit);
+      return jigKit.promise;
+    },
+    /**
      * @param {string} id
      * @param {EndoZipBase64Bundle | TestBundle} bundle
      */
@@ -150,7 +186,14 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
         if (extant.moduleFormat === 'endoZipBase64') {
           // Narrow bundle.moduleFormat now that extant.moduleFormat is narrowed
           assert.equal(bundle.moduleFormat, extant.moduleFormat);
-          assert.equal(bundle.endoZipBase64, extant.endoZipBase64);
+          // Make the error message managable by only showing the length,
+          // beginning and end of the huge base64 strings.
+          const summarize = s =>
+            `${s.length} chars (${s.slice(0, 10)}...${s.slice(-10)})`;
+          assert(
+            bundle.endoZipBase64 === extant.endoZipBase64,
+            `bundle ${id} ${summarize(bundle.endoZipBase64)} differs from extant ${summarize(extant.endoZipBase64)}`,
+          );
         }
         return idToBundleCap.get(id);
       }

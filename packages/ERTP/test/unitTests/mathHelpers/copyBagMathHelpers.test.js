@@ -8,6 +8,10 @@ import {
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
 import { mockCopyBagBrand as mockBrand } from './mockBrand.js';
 
+/**
+ * @import {CopyBag} from '@endo/patterns';
+ */
+
 // The "unit tests" for MathHelpers actually make the calls through
 // AmountMath so that we can test that any duplication is handled
 // correctly.
@@ -65,7 +69,7 @@ test('copyBag with strings getValue', t => {
   );
   t.deepEqual(
     getCopyBagEntries(
-      /** @type {import('@endo/patterns').CopyBag} */ (
+      /** @type {CopyBag} */ (
         m.getValue(
           mockBrand,
           harden({ brand: mockBrand, value: makeBag(['1']) }),

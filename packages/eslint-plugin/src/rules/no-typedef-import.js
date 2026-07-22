@@ -11,6 +11,10 @@
  * @see https://github.com/microsoft/typescript/issues/60831
  */
 
+/**
+ * @import {Rule} from 'eslint';
+ */
+
 const LINE_REGEX =
   /^(\s*\*?\s*)@typedef\s+\{\s*import\((['"])([^'"]+)\2\)\.([A-Za-z0-9_$]+)([^}]*)\}\s+([A-Za-z0-9_$]+)(.*)$/;
 
@@ -76,7 +80,7 @@ const transformCommentValue = value => {
   return lines.join('\n');
 };
 
-/** @type {import('eslint').Rule.RuleModule} */
+/** @type {Rule.RuleModule} */
 module.exports = {
   meta: {
     type: 'problem',

@@ -1,35 +1,111 @@
 /** @file test for deposit tools */
-/* eslint-disable max-classes-per-file, class-methods-use-this */
 import test from 'ava';
+import type { ExecutionContext } from 'ava';
 
-import { planUSDNDeposit } from '@aglocal/portfolio-contract/test/mocks.js';
-import { TEST_NETWORK } from '@aglocal/portfolio-contract/test/network/test-network.js';
-import PROD_NETWORK from '@aglocal/portfolio-contract/tools/network/network.prod.ts';
-import type { NetworkSpec } from '@aglocal/portfolio-contract/tools/network/network-spec.js';
+import type { PartialDeep } from 'type-fest';
+
+import {
+  ACCOUNT_DUST_EPSILON,
+  CaipChainIds,
+  SupportedChain,
+  type AssetPlaceRef,
+  type InterChainAccountRef,
+  type MovementDesc,
+  type StatusFor,
+} from '@agoric/portfolio-api';
+import type {
+  PortfolioPublishedPathTypes,
+  TargetAllocation,
+} from '@aglocal/portfolio-contract/src/type-guards.ts';
+import {
+  readableSteps,
+  readableOrder,
+} from '@aglocal/portfolio-contract/test/supports.js';
+import { TEST_NETWORK } from '@aglocal/portfolio-contract/tools/network/test-network.js';
+import type {
+  BlockWithdrawReason,
+  NetworkSpec,
+  PoolKey,
+  PoolSpec,
+} from '@agoric/portfolio-api/src/network/network-spec.js';
 import type { GasEstimator } from '@aglocal/portfolio-contract/tools/plan-solve.ts';
 import { makePortfolioQuery } from '@aglocal/portfolio-contract/tools/portfolio-actors.js';
 import type { VstorageKit } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand, NatAmount } from '@agoric/ertp/src/types.js';
-import { objectMap } from '@agoric/internal';
+import { fromTypedEntries, objectMap } from '@agoric/internal';
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
+import { q, Fail } from '@endo/errors';
 import { Far } from '@endo/pass-style';
-import { CosmosRestClient, USDN } from '../src/cosmos-rest-client.ts';
+import PROD_NETWORK from '@agoric/portfolio-api/src/network/prod-network.js';
+import type { EvmAddress } from '@agoric/fast-usdc';
+import { assetList as nobleAssetList } from 'chain-registry/mainnet/noble/index.js';
+import type { InstrumentBlocks } from '../src/instrument-status.ts';
 import {
-  getCurrentBalances,
   getNonDustBalances,
   planDepositToAllocations,
   planRebalanceToAllocations,
   planWithdrawFromAllocations,
 } from '../src/plan-deposit.ts';
-import { SpectrumClient } from '../src/spectrum-client.ts';
-import { mockGasEstimator } from './mocks.ts';
+import type { PlannerContext } from '../src/plan-deposit.ts';
+import {
+  mockEvmCtx,
+  mockGasEstimator,
+  createMockSpectrumBlockchain,
+  createMockProviderSets,
+} from './mocks.ts';
+import type { Sdk as SpectrumBlockchainSdk } from '../src/graphql/api-spectrum-blockchain/__generated/sdk.ts';
+import PROD_NETWORK_202604 from '../tools/network-snapshots/prod-network-2026-04.ts';
+import PROD_NETWORK_202606 from '../tools/network-snapshots/prod-network-2026-06.ts';
 
 const depositBrand = Far('mock brand') as Brand<'nat'>;
 const makeDeposit = value => AmountMath.make(depositBrand, value);
 
 const feeBrand = Far('fee brand (BLD)') as Brand<'nat'>;
 
-const powers = { fetch, setTimeout };
+const scale6 = (x: number) => {
+  assert.typeof(x, 'number');
+  return BigInt(Math.round(x * 1e6));
+};
+
+const plannerContext: Omit<
+  PlannerContext<AssetPlaceRef, keyof TargetAllocation>,
+  'currentBalances' | 'targetAllocation'
+> = {
+  brand: depositBrand,
+  network: TEST_NETWORK,
+  feeBrand,
+  gasEstimator: mockGasEstimator,
+};
+
+const noMinChainRecords = plannerContext.network.chains.map(chain => ({
+  ...chain,
+  deltaSoftMin: 0n,
+}));
+
+const emptyPlan = harden({ flow: [], order: undefined });
+
+const makeMovementDesc = (
+  src: AssetPlaceRef,
+  dest: AssetPlaceRef,
+  value: bigint,
+) => {
+  return { src, dest, amount: { value } };
+};
+
+/** A helper to support prettier-friendly plan flow assertions. */
+const assertPlanFlow = async (
+  t: ExecutionContext,
+  label: string,
+  flow: MovementDesc[],
+  expectedFlow: PartialDeep<MovementDesc>[],
+) => {
+  const result = await t.try(tt => arrayIsLike(tt, flow, expectedFlow, label));
+  if (!result.passed) {
+    t.log(`${label} actual flow`, readableSteps(flow, depositBrand));
+  }
+  result.commit();
+};
 
 /**
  * Helper for test results
@@ -37,94 +113,89 @@ const powers = { fetch, setTimeout };
 const handleDeposit = async (
   portfolioKey: `${string}.portfolios.portfolio${number}`,
   amount: NatAmount,
-  feeBrand: Brand<'nat'>,
+  feeTokenBrand: Brand<'nat'>,
   powers: {
-    readPublished: VstorageKit['readPublished'];
-    spectrum: SpectrumClient;
-    cosmosRest: CosmosRestClient;
+    readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
     gasEstimator: GasEstimator;
+    spectrumBlockchain?: SpectrumBlockchainSdk;
+    spectrumChainIds?: Partial<Record<SupportedChain, string>>;
+    evmTokenAddresses?: Partial<
+      Record<InterChainAccountRef | PoolKey, EvmAddress>
+    >;
+    usdcTokensByChain?: Partial<Record<SupportedChain, string>>;
+    balances?: Record<EvmAddress, bigint>;
   },
-  network: NetworkSpec = PROD_NETWORK,
+  network: NetworkSpec = TEST_NETWORK,
 ) => {
   const querier = makePortfolioQuery(powers.readPublished, portfolioKey);
   const status = await querier.getPortfolioStatus();
   const { policyVersion, rebalanceCount, targetAllocation } = status;
-  if (!targetAllocation) return { policyVersion, rebalanceCount, steps: [] };
-  const currentBalances = await getCurrentBalances(status, amount.brand, {
-    spectrumChainIds: {},
-    spectrumPoolIds: {},
-    usdcTokensByChain: {},
+  if (!targetAllocation) {
+    return { policyVersion, rebalanceCount, plan: emptyPlan };
+  }
+  const currentBalances = await getNonDustBalances(status, amount.brand, {
+    spectrumChainIds: powers.spectrumChainIds || {},
+    usdcTokensByChain: powers.usdcTokensByChain || {},
+    evmTokenAddresses: powers.evmTokenAddresses || {},
+    spectrumBlockchain: createMockSpectrumBlockchain({}),
+    chainNameToChainIdMap: CaipChainIds.testnet,
+    evmProviders: createMockProviderSets({
+      balances: powers.balances || {},
+    }).evmProviders,
     ...powers,
   });
-  const steps = await planDepositToAllocations({
+  const plan = await planDepositToAllocations({
     amount,
     brand: amount.brand,
     currentBalances,
     targetAllocation,
     network,
-    feeBrand,
+    feeBrand: feeTokenBrand,
     gasEstimator: powers.gasEstimator,
   });
-  return { policyVersion, rebalanceCount, steps };
+  return { policyVersion, rebalanceCount, plan };
 };
+
+{
+  const usdn =
+    nobleAssetList.assets.find(a => a.symbol === 'USDN') || Fail`no USDN`;
+  usdn.base === 'uusdn' ||
+    Fail`precondition: USDN denom must be "uusdn", not ${q(usdn.base)}`;
+}
 
 test('getNonDustBalances filters balances at or below the dust epsilon', async t => {
   const status = {
     positionKeys: ['Aave_Arbitrum', 'Compound_Base'],
     accountIdByChain: {
-      Arbitrum: 'chain:mock:addr-arb',
-      Base: 'chain:mock:addr-base',
+      Arbitrum: 'eip155:42161:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+      Base: 'eip155:8453:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
     },
   } as any;
 
-  class MockSpectrumClientDust extends SpectrumClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      if (chain === 'arbitrum' && pool === 'aave') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 100, borrowAmount: 0 },
-        };
-      }
-      if (chain === 'base' && pool === 'compound') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 150, borrowAmount: 0 },
-        };
-      }
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
-    }
-  }
-  const mockSpectrumClient = new MockSpectrumClientDust();
-  const mockCosmosRestClient = {
-    async getAccountBalance() {
-      throw new Error('unexpected Cosmos balance request');
-    },
-  } as unknown as CosmosRestClient;
-
+  const compoundBaseAddress =
+    '0xaf88d065e77c8cC2239327C5EDb3A432268e5832' as EvmAddress;
+  const compoundBaseBalance = 150n;
   const balances = await getNonDustBalances(status, depositBrand, {
-    cosmosRest: mockCosmosRestClient,
-    spectrum: mockSpectrumClient,
+    spectrumBlockchain: createMockSpectrumBlockchain({}),
     spectrumChainIds: {},
-    spectrumPoolIds: {},
     usdcTokensByChain: {},
+    evmTokenAddresses: {
+      Aave_Arbitrum: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as EvmAddress,
+      Compound_Base: compoundBaseAddress,
+      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as EvmAddress,
+      '@Base': '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' as EvmAddress,
+    },
+    chainNameToChainIdMap: CaipChainIds.mainnet,
+    evmProviders: createMockProviderSets({
+      balances: {
+        [compoundBaseAddress]: compoundBaseBalance,
+      },
+    }).evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['Compound_Base']);
   t.false(Object.hasOwn(balances, 'Aave_Arbitrum'));
-  t.is(balances.Compound_Base!.value, 150n);
+  t.is(balances.Compound_Base!.value, compoundBaseBalance);
 });
 
 test('getNonDustBalances retains noble balances above the dust epsilon', async t => {
@@ -135,53 +206,83 @@ test('getNonDustBalances retains noble balances above the dust epsilon', async t
     },
   } as any;
 
-  const spectrumStub = {
-    async getPoolBalance() {
-      throw new Error('unexpected Spectrum balance request');
-    },
-  } as unknown as SpectrumClient;
-
-  const mockCosmosRestClient = {
-    async getAccountBalance(chainName: string, addr: string, denom: string) {
-      t.is(chainName, 'noble');
-      t.is(denom, 'uusdn');
-      t.truthy(addr);
-      return { denom, amount: '101' };
-    },
-  } as unknown as CosmosRestClient;
-
   const balances = await getNonDustBalances(status, depositBrand, {
-    cosmosRest: mockCosmosRestClient,
-    spectrum: spectrumStub,
-    spectrumChainIds: {},
-    spectrumPoolIds: {},
-    usdcTokensByChain: {},
+    spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 101 }),
+    spectrumChainIds: { noble: 'noble-1' },
+    usdcTokensByChain: { noble: 'uusdc' },
+    evmTokenAddresses: {},
+    chainNameToChainIdMap: CaipChainIds.testnet,
+    evmProviders: mockEvmCtx.evmProviders,
   });
 
   t.deepEqual(Object.keys(balances), ['USDN']);
-  t.is(balances.USDN!.value, 101n);
+  t.is(balances.USDN!.value, 101_000_000n);
 });
 
-/**
- * Deposit: 1000n
- * TargetAllocation:
- *   USDN: 50%
- *   Aave_Arbitrum: 30%
- *   Compound_Arbitrum: 20%
- 
- * CurrentBalance:
- *   Noble: 200n,
- *   Aave_Arbitrum: 100n,
- *   Compound_Arlanbitrum: 50n,
- * 
- * Expected:
- *   USDN: 675n, +675n, 475n from deposit, 200n Noble
- *   Aave_Arbitrum: 405n, +305n
- *   Compound_Arbitrum: 270n, +220n
- */
+test('getNonDustBalances works for erc4626 vaults', async t => {
+  const status = {
+    accountIdByChain: {
+      Ethereum: 'eip155:11155111:0xbcc48e14f89f2bff20a7827148b466ae8f2fbc9b',
+      agoric:
+        'cosmos:agoricdev-25:agoric1gwcndgrd72vuj56jsp5dw26wq4tnzylj79vx8tpq5yc93xcm26js6x3k38',
+      noble:
+        'cosmos:grand-1:noble1utnnvgvratte5ulr4w28fd464g3shjl0z87fue9mkrljnr0t8mlst7h8uq',
+    },
+    accountsPending: [],
+    depositAddress:
+      'agoric17h7u4j564tuh04pfnf0ptjcarnhrmuja9w4u6phzrncs35up3ltshqqd0r',
+    flowCount: 0,
+    nobleForwardingAddress: 'noble18ppsadxr545ll6xdxw4mfr9r9le6gwukewy30c',
+    policyVersion: 1,
+    positionKeys: ['ERC4626_vaultU2_Ethereum'],
+    rebalanceCount: 2,
+    targetAllocation: {
+      ERC4626_vaultU2_Ethereum: 100n,
+    },
+  } as StatusFor['portfolio'];
+
+  const erc4626Address =
+    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB49' as EvmAddress;
+  const erc4626Balance = 3000n;
+  const balances = await getNonDustBalances(status, depositBrand, {
+    spectrumChainIds: {
+      agoric: 'agoricdev-25',
+      noble: 'grand-1',
+    },
+    evmTokenAddresses: {
+      ERC4626_vaultU2_Ethereum: erc4626Address,
+      '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as EvmAddress,
+    },
+    spectrumBlockchain: createMockSpectrumBlockchain({}),
+    usdcTokensByChain: {
+      agoric: 'uusdc',
+      noble: 'uusdc',
+    },
+    chainNameToChainIdMap: CaipChainIds.testnet,
+    evmProviders: createMockProviderSets({
+      balances: {
+        [erc4626Address]: erc4626Balance,
+      },
+    }).evmProviders,
+  });
+
+  t.deepEqual(Object.keys(balances), ['ERC4626_vaultU2_Ethereum']);
+  t.is(balances.ERC4626_vaultU2_Ethereum!.value, erc4626Balance);
+});
+
 test('handleDeposit works with mocked dependencies', async t => {
-  const deposit = makeDeposit(1000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
+  const targetAllocation = {
+    USDN: 50n,
+    Aave_Arbitrum: 30n,
+    Compound_Arbitrum: 20n,
+  };
+  const initialBalances = {
+    USDN: 200_000n,
+    Aave_Arbitrum: 100_000n,
+    Compound_Arbitrum: 50_000n,
+  };
+  const deposit = makeDeposit(9_650_000n);
 
   // Mock VstorageKit readPublished
   const mockReadPublished = async (path: string) => {
@@ -190,14 +291,10 @@ test('handleDeposit works with mocked dependencies', async t => {
         positionKeys: ['USDN', 'Aave_Arbitrum', 'Compound_Arbitrum'],
         flowCount: 0,
         accountIdByChain: {
-          noble: 'noble:test:addr1',
-          Arbitrum: 'arbitrum:test:addr2',
+          noble: 'cosmos:grand-1:noble1test',
+          Arbitrum: 'eip155:42161:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
         },
-        targetAllocation: {
-          USDN: 50n,
-          Aave_Arbitrum: 30n,
-          Compound_Arbitrum: 20n,
-        },
+        targetAllocation,
         policyVersion: 4,
         rebalanceCount: 2,
       };
@@ -205,66 +302,62 @@ test('handleDeposit works with mocked dependencies', async t => {
     throw new Error(`Unexpected path: ${path}`);
   };
 
-  // Mock SpectrumClient
-  class MockSpectrumClient extends SpectrumClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      // Return different balances for different pools
-      if (pool === 'aave' && chain === 'arbitrum') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 100, borrowAmount: 0 },
-        };
-      }
-      if (pool === 'compound' && chain === 'arbitrum') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 50, borrowAmount: 0 },
-        };
-      }
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
-    }
-  }
-  const mockSpectrumClient = new MockSpectrumClient();
-
-  // Mock CosmosRestClient
-  class MockCosmosRestClient extends CosmosRestClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getAccountBalance(chainName: string, addr: string, denom: string) {
-      if (chainName === 'noble' && denom === 'uusdn') {
-        return { denom, amount: '200' };
-      }
-      return { denom, amount: '0' };
-    }
-  }
-  const mockCosmosRestClient = new MockCosmosRestClient();
-
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
-    readPublished: mockReadPublished,
-  } as VstorageKit;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
+
+  const aaveArbitrumAddress =
+    '0xaf88d065e77c8cC2239327C5EDb3A432268e5833' as EvmAddress;
+  const compoundArbitrumAddress =
+    '0xaf88d065e77c8cC2239327C5EDb3A432268e5834' as EvmAddress;
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
-    spectrum: mockSpectrumClient,
-    cosmosRest: mockCosmosRestClient,
+    spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.2 }),
+    spectrumChainIds: {
+      noble: 'noble-1',
+    },
+    evmTokenAddresses: {
+      Aave_Arbitrum: aaveArbitrumAddress,
+      Compound_Arbitrum: compoundArbitrumAddress,
+      '@Arbitrum': '0xaf88d065e77c8cC2239327C5EDb3A432268e5831' as EvmAddress,
+    },
+    usdcTokensByChain: {
+      noble: 'uusdc',
+    },
     gasEstimator: mockGasEstimator,
+    balances: {
+      [aaveArbitrumAddress]: initialBalances.Aave_Arbitrum,
+      [compoundArbitrumAddress]: initialBalances.Compound_Arbitrum,
+    },
   });
+  arrayIsLike(t, result.plan.flow, [
+    makeMovementDesc('<Deposit>', '@agoric', deposit.value),
+    makeMovementDesc('@agoric', '@noble', deposit.value),
+    makeMovementDesc('@noble', 'USDN', 5_000_000n - initialBalances.USDN),
+    makeMovementDesc(
+      '@noble',
+      '@Arbitrum',
+      5_000_000n -
+        initialBalances.Aave_Arbitrum -
+        initialBalances.Compound_Arbitrum,
+    ),
+    makeMovementDesc(
+      '@Arbitrum',
+      'Aave_Arbitrum',
+      3_000_000n - initialBalances.Aave_Arbitrum,
+    ),
+    makeMovementDesc(
+      '@Arbitrum',
+      'Compound_Arbitrum',
+      2_000_000n - initialBalances.Compound_Arbitrum,
+    ),
+  ]);
   t.snapshot(result);
 });
 
@@ -279,8 +372,8 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
         positionKeys: ['USDN', 'Aave_Arbitrum'],
         flowCount: 0,
         accountIdByChain: {
-          noble: 'noble:test:addr1',
-          Arbitrum: 'arbitrum:test:addr2',
+          noble: 'cosmos:grand-1:noble1test',
+          Arbitrum: 'eip155:42161:0xAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAa',
         },
         // No targetAllocation
         policyVersion: 4,
@@ -290,52 +383,26 @@ test('handleDeposit handles missing targetAllocation gracefully', async t => {
     throw new Error(`Unexpected path: ${path}`);
   };
 
-  // Mock SpectrumClient
-  class MockSpectrumClient2 extends SpectrumClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
-    }
-  }
-  const mockSpectrumClient = new MockSpectrumClient2();
-
-  // Mock CosmosRestClient
-  class MockCosmosRestClient2 extends CosmosRestClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getAccountBalance(chainName: string, addr: string, denom: string) {
-      return { denom, amount: '0' };
-    }
-  }
-  const mockCosmosRestClient = new MockCosmosRestClient2();
-
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
-    readPublished: mockReadPublished,
-  } as VstorageKit;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
 
   const result = await handleDeposit(portfolioKey, deposit, feeBrand, {
     readPublished: mockVstorageKit.readPublished,
-    spectrum: mockSpectrumClient,
-    cosmosRest: mockCosmosRestClient,
+    spectrumBlockchain: createMockSpectrumBlockchain({}),
     gasEstimator: mockGasEstimator,
   });
 
-  t.deepEqual(result, { policyVersion: 4, rebalanceCount: 0, steps: [] });
+  t.deepEqual(result, { policyVersion: 4, rebalanceCount: 0, plan: emptyPlan });
 });
 
 test('handleDeposit handles different position types correctly', async t => {
-  const deposit = makeDeposit(1000n);
+  const deposit = makeDeposit(1_000_000n);
   const portfolioKey = 'test.portfolios.portfolio1' as const;
 
   // Mock VstorageKit readPublished with various position types
@@ -350,9 +417,9 @@ test('handleDeposit handles different position types correctly', async t => {
         ],
         flowCount: 0,
         accountIdByChain: {
-          noble: 'noble:test:addr1',
-          Avalanche: 'example:avalanche:addr2',
-          Ethereum: 'example:ethereum:addr3',
+          noble: 'cosmos:grand-1:noble1test',
+          Avalanche: 'eip155:43113:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
+          Ethereum: 'eip155:1:0xaf88d065e77c8cC2239327C5EDb3A432268e5831',
         },
         targetAllocation: {
           USDN: 40n,
@@ -365,72 +432,82 @@ test('handleDeposit handles different position types correctly', async t => {
     throw new Error(`Unexpected path: ${path}`);
   };
 
-  // Mock SpectrumClient with different chain responses
-  class MockSpectrumClient3 extends SpectrumClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getPoolBalance(chain: any, pool: any, addr: any) {
-      if (chain === 'avalanche' && pool === 'aave') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 150, borrowAmount: 0 },
-        };
-      }
-      if (chain === 'ethereum' && pool === 'compound') {
-        return {
-          pool,
-          chain,
-          address: addr,
-          balance: { supplyBalance: 75, borrowAmount: 0 },
-        };
-      }
-      return {
-        pool,
-        chain,
-        address: addr,
-        balance: { supplyBalance: 0, borrowAmount: 0 },
-      };
-    }
-  }
-  const mockSpectrumClient = new MockSpectrumClient3();
-
-  // Mock CosmosRestClient
-  class MockCosmosRestClient3 extends CosmosRestClient {
-    constructor() {
-      super(powers);
-    }
-
-    async getAccountBalance(chainName: string, addr: string, denom: string) {
-      if (chainName === 'noble' && denom === 'uusdn') {
-        return { denom, amount: '300' };
-      }
-      return { denom, amount: '0' };
-    }
-  }
-  const mockCosmosRestClient = new MockCosmosRestClient3();
-
   // Mock VstorageKit
-  const mockVstorageKit: VstorageKit = {
-    readPublished: mockReadPublished,
-  } as VstorageKit;
+  const mockVstorageKit: Pick<
+    VstorageKit<PortfolioPublishedPathTypes>,
+    'readPublished'
+  > = {
+    readPublished:
+      mockReadPublished as VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
+  };
 
+  const aaveAvalancheAddress =
+    '0xaf88d065e77c8cC2239327C5EDb3A432268e5833' as EvmAddress;
+  const compoundEthereumAddress =
+    '0xaf88d065e77c8cC2239327C5EDb3A432268e5834' as EvmAddress;
   const result = await handleDeposit(
     portfolioKey,
     deposit,
     feeBrand,
     {
       readPublished: mockVstorageKit.readPublished,
-      spectrum: mockSpectrumClient,
-      cosmosRest: mockCosmosRestClient,
+      spectrumBlockchain: createMockSpectrumBlockchain({ usdn: 0.3 }),
+      spectrumChainIds: {
+        noble: 'noble-1',
+      },
+      evmTokenAddresses: {
+        Aave_Avalanche: aaveAvalancheAddress,
+        Compound_Ethereum: compoundEthereumAddress,
+        '@Avalanche':
+          '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E' as EvmAddress,
+        '@Ethereum': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' as EvmAddress,
+      },
+      usdcTokensByChain: {
+        noble: 'uusdc',
+      },
       gasEstimator: mockGasEstimator,
+      balances: {
+        [aaveAvalancheAddress]: 150_000n,
+        [compoundEthereumAddress]: 75_000n,
+      },
     },
-    TEST_NETWORK,
+    harden({ ...plannerContext.network, chains: noMinChainRecords }),
   );
-  t.snapshot(result?.steps);
+  const plan = result?.plan;
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
+});
+
+test('targetAllocation must have positive total weight', async t => {
+  const badContext = {
+    ...plannerContext,
+    targetAllocation: { Aave_Arbitrum: 0n, Compound_Arbitrum: 0n },
+    currentBalances: {},
+  };
+  const expectation = {
+    message: 'Total target allocation weights must be positive.',
+  };
+  const amount = makeDeposit(scale6(1));
+  await t.throwsAsync(
+    planRebalanceToAllocations(badContext),
+    expectation,
+    'planRebalanceToAllocations',
+  );
+  await t.throwsAsync(
+    planDepositToAllocations({ ...badContext, amount }),
+    expectation,
+    'planDepositToAllocations',
+  );
+  await t.throwsAsync(
+    planWithdrawFromAllocations({
+      ...badContext,
+      currentBalances: { Aave_Arbitrum: amount, Compound_Arbitrum: amount },
+      amount,
+    }),
+    expectation,
+    'planWithdrawFromAllocations',
+  );
 });
 
 test('planRebalanceToAllocations emits an empty plan when already balanced', async t => {
@@ -439,98 +516,175 @@ test('planRebalanceToAllocations emits an empty plan when already balanced', asy
     Aave_Arbitrum: 40n,
     Compound_Arbitrum: 20n,
   };
-  const currentBalances = objectMap(targetAllocation, v =>
-    makeDeposit(v * 200n),
-  );
-  const steps = await planRebalanceToAllocations({
-    brand: depositBrand,
-    currentBalances,
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
     targetAllocation,
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    currentBalances: objectMap(targetAllocation, v => makeDeposit(v * 200n)),
   });
-  t.deepEqual(steps, []);
+  t.deepEqual(plan, emptyPlan);
+});
+
+// https://github.com/Agoric/agoric-private/issues/623
+test('planRebalanceToAllocations emits an empty plan when almost balanced', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 50n,
+    Compound_Ethereum: 25n,
+  };
+  const currentBalanceValues = {
+    Aave_Arbitrum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
+    Aave_Avalanche: 50_000_000n + 2n * ACCOUNT_DUST_EPSILON - 2n,
+    Compound_Ethereum: 25_000_000n - ACCOUNT_DUST_EPSILON + 1n,
+  };
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    targetAllocation,
+    currentBalances: objectMap(currentBalanceValues, v => makeDeposit(v)),
+  });
+  t.deepEqual(plan, emptyPlan);
 });
 
 test('planRebalanceToAllocations moves funds when needed', async t => {
-  const targetAllocation = {
-    USDN: 40n,
-    USDNVault: 0n,
-    Aave_Arbitrum: 40n,
-    Compound_Arbitrum: 20n,
-  };
-  const currentBalances = { USDN: makeDeposit(1000n) };
-  const steps = await planRebalanceToAllocations({
-    brand: depositBrand,
-    currentBalances,
-    targetAllocation,
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    network: harden({ ...plannerContext.network, chains: noMinChainRecords }),
+    targetAllocation: {
+      USDN: 40n,
+      USDNVault: 0n,
+      Aave_Arbitrum: 40n,
+      Compound_Arbitrum: 20n,
+    },
+    currentBalances: { USDN: makeDeposit(1000n) },
   });
-  t.snapshot(steps);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planWithdrawFromAllocations withdraws and rebalances', async t => {
-  const targetAllocation = {
-    USDN: 40n,
-    Aave_Arbitrum: 40n,
-    Compound_Arbitrum: 20n,
-  };
-  const currentBalances = { USDN: makeDeposit(2000n) };
-  const steps = await planWithdrawFromAllocations({
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    network: harden({ ...plannerContext.network, chains: noMinChainRecords }),
+    targetAllocation: { USDN: 40n, Aave_Arbitrum: 40n, Compound_Arbitrum: 20n },
+    currentBalances: { USDN: makeDeposit(2000n) },
     amount: makeDeposit(1000n),
-    brand: depositBrand,
-    currentBalances,
-    targetAllocation,
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
   });
-  t.snapshot(steps);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
-test('planWithdrawFromAllocations with no target preserves relative amounts', async t => {
-  const currentBalances = {
-    USDN: makeDeposit(800n),
-    Aave_Arbitrum: makeDeposit(800n),
-    Compound_Arbitrum: makeDeposit(400n),
-  };
-  const steps = await planWithdrawFromAllocations({
+test('planWithdrawFromAllocations rejects overdrafts', async t => {
+  await t.throwsAsync(
+    planWithdrawFromAllocations({
+      ...plannerContext,
+      targetAllocation: { USDN: 100n },
+      currentBalances: { USDN: makeDeposit(2000n) },
+      amount: makeDeposit(3000n),
+    }),
+    { message: 'Insufficient funds for withdrawal.' },
+  );
+});
+
+test('planWithdrawFromAllocations can withdraw to an EVM account', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    network: harden({ ...plannerContext.network, chains: noMinChainRecords }),
+    targetAllocation: { USDN: 40n, Aave_Arbitrum: 40n, Compound_Arbitrum: 20n },
+    currentBalances: { USDN: makeDeposit(2000n) },
     amount: makeDeposit(1000n),
-    brand: depositBrand,
-    currentBalances,
+    toChain: 'Ethereum',
+  });
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
+});
+
+test('planWithdrawFromAllocations considers former allocation targets', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    network: harden({ ...plannerContext.network, chains: noMinChainRecords }),
+    targetAllocation: { Compound_Arbitrum: 100n },
+    currentBalances: {
+      Aave_Avalanche: makeDeposit(1000n),
+      Compound_Arbitrum: makeDeposit(1000n),
+    },
+    amount: makeDeposit(1200n),
+  });
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
+});
+
+test('planWithdrawFromAllocations with no target preserves relative positions', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    network: harden({ ...plannerContext.network, chains: noMinChainRecords }),
     targetAllocation: {},
-    network: TEST_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    currentBalances: {
+      '@Arbitrum': makeDeposit(200n),
+      USDN: makeDeposit(800n),
+      Aave_Arbitrum: makeDeposit(800n),
+      Compound_Arbitrum: makeDeposit(400n),
+    },
+    amount: makeDeposit(1200n),
   });
-  t.snapshot(steps);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
-test('planDepositToAllocations produces steps expected by contract', async t => {
-  const USDC = depositBrand;
-  const BLD = feeBrand;
-  const amount = makeDeposit(1000n);
+test('planWithdrawFromAllocations with no target and no positions preserves relative amounts', async t => {
+  const plan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    network: harden({ ...plannerContext.network, chains: noMinChainRecords }),
+    targetAllocation: {},
+    currentBalances: {
+      '@Arbitrum': makeDeposit(1000n),
+      '@noble': makeDeposit(1000n),
+    },
+    amount: makeDeposit(1000n),
+  });
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
+});
 
-  const network = PROD_NETWORK;
-  const actual = await planDepositToAllocations({
-    amount,
-    brand: USDC,
-    currentBalances: {},
-    feeBrand: BLD,
-    gasEstimator: null as any,
-    network,
+test('planDepositToAllocations produces plan expected by contract', async t => {
+  const amount = makeDeposit(1_000_000n);
+  const plan = await planDepositToAllocations({
+    ...plannerContext,
     targetAllocation: { USDN: 1n },
+    currentBalances: {},
+    amount,
   });
 
-  const expected = planUSDNDeposit(amount);
-  t.deepEqual(actual, expected);
+  const expectedFlow = [
+    { amount, src: '<Deposit>', dest: '@agoric' },
+    { amount, src: '@agoric', dest: '@noble' },
+    { amount, src: '@noble', dest: 'USDN', detail: { usdnOut: 999499n } },
+  ];
+  arrayIsLike(t, plan?.flow, expectedFlow);
+  t.deepEqual(plan, { flow: expectedFlow, order: undefined });
 });
 
-test('USDN denom', t => {
-  t.is(USDN.base, 'uusdn');
+test('planDepositToAllocations can deposit from an EVM account', async t => {
+  const amount = makeDeposit(1_000_000n);
+  const plan = await planDepositToAllocations({
+    ...plannerContext,
+    targetAllocation: { USDN: 1n },
+    currentBalances: {},
+    amount,
+    fromChain: 'Avalanche',
+  });
+
+  const expectedFlow = [
+    { amount, src: '+Avalanche', dest: '@Avalanche' },
+    { amount, src: '@Avalanche', dest: '@agoric' },
+    { amount, src: '@agoric', dest: '@noble' },
+    { amount, src: '@noble', dest: 'USDN' },
+  ];
+  arrayIsLike(t, plan?.flow, expectedFlow);
 });
 
 async function singleSourceRebalanceSteps(scale: number) {
@@ -546,28 +700,222 @@ async function singleSourceRebalanceSteps(scale: number) {
     Aave_Avalanche: makeDeposit(3750061n * BigInt(scale)),
   };
 
-  const steps = await planRebalanceToAllocations({
-    brand: depositBrand,
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
     currentBalances,
     targetAllocation,
-    // TODO: Refactor this test against a stable network dedicated to testing.
-    network: PROD_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    network: TEST_NETWORK,
   });
-  return steps;
+  return plan;
 }
 
-test('planRebalanceToAllocations regression - single source', async t => {
-  // TODO: For human comprehensibility, adopt something like `readableSteps`
-  // from packages/portfolio-contract/test/rebalance.test.ts.
-  const steps = await singleSourceRebalanceSteps(1);
-  t.snapshot(steps);
+test('planRebalanceToAllocations regression - single source, 2x', async t => {
+  const plan = await singleSourceRebalanceSteps(2);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
 
 test('planRebalanceToAllocations regression - single source, 10x', async t => {
-  const steps = await singleSourceRebalanceSteps(10);
-  t.snapshot(steps);
+  const plan = await singleSourceRebalanceSteps(10);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
+});
+
+test('solver regressions', async t => {
+  // PoolKey names have been changed to align with TEST_NETWORK, but the numbers
+  // all match.
+
+  // 2026-04-13T18:50Z
+  const portfolio90Flow9 = await planWithdrawFromAllocations({
+    ...plannerContext,
+    targetAllocation: {
+      Aave_Avalanche: 0n,
+      Aave_Base: 0n,
+      Compound_Arbitrum: 0n,
+      Compound_Base: 0n,
+      Aave_Ethereum: 50n,
+      Aave_Optimism: 0n,
+      Compound_Ethereum: 50n,
+    },
+    currentBalances: {
+      Aave_Ethereum: makeDeposit(108976524n),
+      Compound_Ethereum: makeDeposit(114585044n),
+    },
+    amount: makeDeposit(223560027n),
+  });
+  await assertPlanFlow(t, 'portfolio90 flow9', portfolio90Flow9.flow, [
+    makeMovementDesc('Aave_Ethereum', '@Ethereum', 108975753n),
+    makeMovementDesc('Compound_Ethereum', '@Ethereum', 114584274n),
+    makeMovementDesc('@Ethereum', '@agoric', 223560027n),
+    makeMovementDesc('@agoric', '<Cash>', 223560027n),
+  ]);
+
+  // flow2: 2026-04-20T17:02Z
+  // flow3: 2026-04-20T17:03Z
+  // flow4: 2026-04-20T17:03Z
+  // flow8: 2026-04-22T09:33Z
+  const portfolio176FlowX = await planWithdrawFromAllocations({
+    ...plannerContext,
+    targetAllocation: { Aave_Base: 100n },
+    currentBalances: { Aave_Base: makeDeposit(999999n) },
+    amount: makeDeposit(999999n),
+    toChain: 'Avalanche',
+  });
+  await assertPlanFlow(
+    t,
+    'portfolio176 flow{2,3,4,8}',
+    portfolio176FlowX.flow,
+    [
+      makeMovementDesc('Aave_Base', '@Base', 999999n),
+      makeMovementDesc('@Base', '@Avalanche', 999999n),
+      makeMovementDesc('@Avalanche', '-Avalanche', 999999n),
+    ],
+  );
+
+  // 2026-04-21T16:31Z
+  const portfolio81Flow23 = await planDepositToAllocations({
+    ...plannerContext,
+    targetAllocation: {
+      Aave_Ethereum: 50n,
+      Compound_Ethereum: 50n,
+    },
+    currentBalances: {
+      Aave_Ethereum: makeDeposit(8123339354n),
+      Compound_Ethereum: makeDeposit(8123318568n),
+    },
+    amount: makeDeposit(1000000000n),
+    fromChain: 'Ethereum',
+  });
+  await assertPlanFlow(t, 'portfolio81 flow23', portfolio81Flow23.flow, [
+    makeMovementDesc('+Ethereum', '@Ethereum', 1000000000n),
+    makeMovementDesc('@Ethereum', 'Aave_Ethereum', 499989607n),
+    makeMovementDesc('@Ethereum', 'Compound_Ethereum', 500010393n),
+  ]);
+
+  // 2026-04-21T23:52Z
+  const portfolio177Flow1 = await planDepositToAllocations({
+    ...plannerContext,
+    targetAllocation: {
+      Aave_Ethereum: 34n,
+      Compound_Ethereum: 33n,
+      Aave_Base: 33n,
+    },
+    currentBalances: {},
+    amount: makeDeposit(scale6(25_000)),
+    fromChain: 'Ethereum',
+  });
+  await assertPlanFlow(t, 'portfolio177 flow1', portfolio177Flow1.flow, [
+    makeMovementDesc('+Ethereum', '@Ethereum', scale6(25_000)),
+    makeMovementDesc('@Ethereum', 'Aave_Ethereum', scale6(8500)),
+    makeMovementDesc('@Ethereum', 'Compound_Ethereum', scale6(8250)),
+    makeMovementDesc('@Ethereum', '@agoric', scale6(8250)),
+    makeMovementDesc('@agoric', '@noble', scale6(8250)),
+    makeMovementDesc('@noble', '@Base', scale6(8250)),
+    makeMovementDesc('@Base', 'Aave_Base', scale6(8250)),
+  ]);
+
+  // 2026-04-28T10:09Z
+  const ymax0Portfolio35Flow76 = await planRebalanceToAllocations({
+    ...plannerContext,
+    network: PROD_NETWORK_202604,
+    targetAllocation: {
+      '@Arbitrum': 0n,
+      '@Avalanche': 0n,
+      '@Ethereum': 0n,
+      Aave_Arbitrum: 0n,
+      Aave_Avalanche: 100n,
+      ERC4626_morphoClearstarHighYieldUsdc_Ethereum: 0n,
+    },
+    currentBalances: { '@Avalanche': makeDeposit(3900011n) },
+  });
+  await assertPlanFlow(
+    t,
+    'ymax0 portfolio35 flow76',
+    ymax0Portfolio35Flow76.flow,
+    [makeMovementDesc('@Avalanche', 'Aave_Avalanche', 3900011n)],
+  );
+
+  // 2026-05-13T17:42Z
+  const portfolio195Flow2 = await planDepositToAllocations({
+    ...plannerContext,
+    targetAllocation: {
+      Aave_Avalanche: 34n,
+      Compound_Base: 33n,
+      Compound_Optimism: 33n,
+    },
+    currentBalances: {},
+    amount: makeDeposit(1500000000n),
+    fromChain: 'Ethereum',
+  });
+  await assertPlanFlow(t, 'portfolio195 flow2', portfolio195Flow2.flow, [
+    makeMovementDesc('+Ethereum', '@Ethereum', scale6(1500)),
+    makeMovementDesc('@Ethereum', '@agoric', scale6(1500)),
+    makeMovementDesc('@agoric', '@noble', scale6(1500)),
+    makeMovementDesc('@noble', '@Avalanche', scale6(510)),
+    makeMovementDesc('@noble', '@Base', scale6(495)),
+    makeMovementDesc('@noble', '@Optimism', scale6(495)),
+    makeMovementDesc('@Avalanche', 'Aave_Avalanche', scale6(510)),
+    makeMovementDesc('@Optimism', 'Compound_Optimism', scale6(495)),
+    makeMovementDesc('@Base', 'Compound_Base', scale6(495)),
+  ]);
+
+  // 2026-06-15 (simulated)
+  const portfolio145Rebalance202606 = await planRebalanceToAllocations({
+    ...plannerContext,
+    network: PROD_NETWORK_202606,
+    targetAllocation: {
+      ERC4626_morphoAlphaUsdcCore_Ethereum: 1515152n,
+      ERC4626_morphoClearstarHighYieldUsdc_Ethereum: 2525253n,
+      ERC4626_morphoGauntletUsdcCore_Arbitrum: 1515152n,
+      ERC4626_morphoGauntletUsdcRwa_Ethereum: 1414141n,
+      ERC4626_morphoSeamlessUsdcVault_Base: 1515152n,
+      ERC4626_morphoSteakhousePrimeUsdc_Base: 1515152n,
+    },
+    currentBalances: {
+      Compound_Arbitrum: makeDeposit(37n),
+      ERC4626_morphoAlphaUsdcCore_Ethereum: makeDeposit(15465311n),
+      ERC4626_morphoClearstarHighYieldUsdc_Ethereum: makeDeposit(69299093n),
+      ERC4626_morphoGauntletUsdcCore_Arbitrum: makeDeposit(15372933n),
+      ERC4626_morphoGauntletUsdcRwa_Ethereum: makeDeposit(14394083n),
+      ERC4626_morphoSeamlessUsdcVault_Base: makeDeposit(13870033n),
+      ERC4626_morphoSteakhousePrimeUsdc_Base: makeDeposit(15387391n),
+      '@Base': makeDeposit(1402522n),
+      '@Arbitrum': makeDeposit(0n),
+      '@Ethereum': makeDeposit(4633698n),
+    },
+  });
+  await assertPlanFlow(
+    t,
+    'portfolio145 simulated rebalance',
+    portfolio145Rebalance202606.flow,
+    [],
+  );
+
+  // 2026-07-03T21:09Z
+  {
+    // $10M is the limit on a single depositForBurn transaction
+    // Ref: https://developers.circle.com/cctp/references/contract-interfaces#depositforburn
+    const bigDeposit = scale6(10_000_000);
+    const portfolio239Flow1 = await planDepositToAllocations({
+      ...plannerContext,
+      network: PROD_NETWORK_202606,
+      targetAllocation: { ERC4626_morphoSteakhousePrimeUsdc_Base: 100n },
+      currentBalances: {},
+      amount: makeDeposit(bigDeposit),
+      fromChain: 'Ethereum',
+    });
+    await assertPlanFlow(t, 'portfolio239 flow1', portfolio239Flow1.flow, [
+      makeMovementDesc('+Ethereum', '@Ethereum', bigDeposit),
+      makeMovementDesc('@Ethereum', '@Base', bigDeposit),
+      makeMovementDesc(
+        '@Base',
+        'ERC4626_morphoSteakhousePrimeUsdc_Base',
+        bigDeposit,
+      ),
+    ]);
+  }
 });
 
 test('planRebalanceToAllocations regression - multiple sources', async t => {
@@ -590,14 +938,677 @@ test('planRebalanceToAllocations regression - multiple sources', async t => {
     Compound_Arbitrum: makeDeposit(2849999n),
   };
 
-  const steps = await planRebalanceToAllocations({
-    brand: depositBrand,
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
     currentBalances,
     targetAllocation,
-    // TODO: Refactor this test against a stable network dedicated to testing.
-    network: PROD_NETWORK,
-    feeBrand,
-    gasEstimator: mockGasEstimator,
+    network: TEST_NETWORK,
   });
-  t.snapshot(steps);
+  t.snapshot(plan && readableSteps(plan.flow, depositBrand), 'steps');
+  t.snapshot(plan?.order && readableOrder(plan.order), 'step dependencies');
+  t.snapshot(plan, 'raw plan');
 });
+
+// ============= CCTPv2 Route Selection Tests =============
+
+test('planRebalanceToAllocations prefers CCTPv2 for EVM-to-EVM (Base → Avalanche)', async t => {
+  const targetAllocation = {
+    Aave_Avalanche: 100n, // All funds to Avalanche
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(10_000_000n), // Starting on Base
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+  });
+
+  // Should have: Base (withdraw) → @Base → @Avalanche (CCTPv2) → Aave_Avalanche (supply)
+  // NOT: Base → @Base → @noble → @Avalanche → Aave_Avalanche
+  const movements = plan.flow;
+
+  // Find the cross-chain transfer step
+  const crossChainStep = movements.find(
+    m => m.src === '@Base' && m.dest === '@Avalanche',
+  );
+  t.truthy(crossChainStep, 'Should have direct Base → Avalanche step');
+  t.deepEqual(
+    crossChainStep?.detail,
+    { cctpVersion: 2n },
+    'Should use CCTPv2 (detail.cctpVersion = 2n)',
+  );
+});
+
+test('planRebalanceToAllocations routes to Noble via CCTPv1 (not CCTPv2)', async t => {
+  const targetAllocation = {
+    USDN: 100n, // All funds to Noble's USDN
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(10_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+  });
+
+  // The final step to Noble or USDN should NOT use CCTPv2 (which can't reach Cosmos)
+  // It should use CCTPv1 via @noble or @agoric
+  const toNobleOrUsdn = plan.flow.filter(
+    m => m.dest === '@noble' || m.dest === 'USDN',
+  );
+
+  t.true(toNobleOrUsdn.length > 0, 'Should have steps reaching Noble/USDN');
+
+  for (const step of toNobleOrUsdn) {
+    // Steps to Noble/USDN cannot use CCTPv2 (detail.cctpVersion = 2n)
+    t.not(
+      step.detail?.cctpVersion,
+      2n,
+      `Step ${step.src} → ${step.dest} should not use CCTPv2`,
+    );
+  }
+
+  // Verify at least one step reaches USDN (the final destination)
+  const toUsdn = plan.flow.find(m => m.dest === 'USDN');
+  t.truthy(toUsdn, 'Should have step to USDN');
+});
+
+test('planRebalanceToAllocations uses CCTPv2 for multi-EVM rebalance', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 25n,
+    Aave_Base: 25n,
+    Aave_Ethereum: 25n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(40_000_000n), // All on Base, need to spread
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+  });
+
+  // All EVM-to-EVM transfers should use CCTPv2
+  const evmToEvmSteps = plan.flow.filter(
+    m =>
+      m.src.startsWith('@') &&
+      m.dest.startsWith('@') &&
+      !['@agoric', '@noble'].includes(m.src) &&
+      !['@agoric', '@noble'].includes(m.dest),
+  );
+
+  t.true(evmToEvmSteps.length > 0, 'Should have EVM-to-EVM transfer steps');
+  for (const step of evmToEvmSteps) {
+    t.deepEqual(
+      step.detail,
+      { cctpVersion: 2n },
+      `Step ${step.src} → ${step.dest} should use CCTPv2`,
+    );
+  }
+});
+
+test('planRebalanceToAllocations selects correct routes for Base → Avalanche + Noble split', async t => {
+  // Starting: Funds on Base
+  // Goal: Split between Avalanche Aave and Noble USDN
+  // Expected:
+  //   - Base → Avalanche via CCTPv2 (direct, ~60s)
+  //   - Base → Noble via CCTPv1 (via @agoric, ~1080s)
+  // CCTPv2 should NOT be used for the Noble leg
+
+  const targetAllocation = {
+    Aave_Avalanche: 50n,
+    USDN: 50n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(20_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+    network: PROD_NETWORK, // XXX why doesn't this work with the test net???
+  });
+
+  // Check Avalanche route uses CCTPv2
+  const toAvalancheStep = plan.flow.find(
+    m => m.src === '@Base' && m.dest === '@Avalanche',
+  );
+  t.truthy(toAvalancheStep, 'Should have Base → Avalanche step');
+  t.deepEqual(
+    toAvalancheStep?.detail,
+    { cctpVersion: 2n },
+    'Avalanche route should use CCTPv2',
+  );
+
+  // Snapshot the full plan for regression tracking
+  t.snapshot(plan, 'Base to Avalanche + Noble split routing');
+});
+
+test('planRebalanceToAllocations regression - CCTPv2 multi-source rebalance', async t => {
+  const targetAllocation = {
+    Aave_Arbitrum: 25n,
+    Aave_Avalanche: 25n,
+    Aave_Base: 25n,
+    Aave_Ethereum: 25n,
+  };
+  const currentBalances = {
+    Aave_Base: makeDeposit(5_000_000n),
+    Aave_Optimism: makeDeposit(5_000_000n),
+  };
+
+  const plan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation,
+  });
+
+  t.snapshot(plan, 'CCTPv2 multi-source rebalance');
+});
+
+test('@<ChainName> USDC target allocations', async t => {
+  const currentBalances = {
+    '@Base': makeDeposit(scale6(10)),
+    Aave_Base: makeDeposit(scale6(10)),
+  };
+
+  const withdrawPlan = await planWithdrawFromAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation: objectMap(currentBalances, amt => amt.value),
+    amount: makeDeposit(scale6(10)),
+  });
+  await assertPlanFlow(t, 'withdraw from mixed targets', withdrawPlan.flow, [
+    makeMovementDesc('Aave_Base', '@Base', scale6(5)),
+    makeMovementDesc('@Base', '@agoric', scale6(10)),
+    makeMovementDesc('@agoric', '<Cash>', scale6(10)),
+  ]);
+
+  const depositPlan = await planDepositToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation: objectMap(currentBalances, amt => amt.value),
+    amount: makeDeposit(scale6(10)),
+  });
+  await assertPlanFlow(t, 'deposit to mixed targets', depositPlan.flow, [
+    makeMovementDesc('<Deposit>', '@agoric', scale6(10)),
+    makeMovementDesc('@agoric', '@noble', scale6(10)),
+    makeMovementDesc('@noble', '@Base', scale6(10)),
+    makeMovementDesc('@Base', 'Aave_Base', scale6(5)),
+  ]);
+
+  const depositAndRebalancePlan = await planDepositToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation: { '@Base': 100n },
+    amount: makeDeposit(scale6(10)),
+  });
+  await assertPlanFlow(
+    t,
+    'deposit and consolidate',
+    depositAndRebalancePlan.flow,
+    [
+      makeMovementDesc('Aave_Base', '@Base', scale6(10)),
+      makeMovementDesc('<Deposit>', '@agoric', scale6(10)),
+      makeMovementDesc('@agoric', '@noble', scale6(10)),
+      makeMovementDesc('@noble', '@Base', scale6(10)),
+    ],
+  );
+
+  const rebalancePlan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation: { '@Base': 100n },
+  });
+  await assertPlanFlow(t, 'rebalance into chain', rebalancePlan.flow, [
+    makeMovementDesc('Aave_Base', '@Base', scale6(10)),
+  ]);
+
+  const rerebalancePlan = await planRebalanceToAllocations({
+    ...plannerContext,
+    currentBalances,
+    targetAllocation: { '@Base': 50n, '@Optimism': 50n },
+  });
+  await assertPlanFlow(t, 'rebalance into chains', rerebalancePlan.flow, [
+    makeMovementDesc('Aave_Base', '@Base', scale6(10)),
+    makeMovementDesc('@Base', '@agoric', scale6(10)),
+    makeMovementDesc('@agoric', '@noble', scale6(10)),
+    makeMovementDesc('@noble', '@Optimism', scale6(10)),
+  ]);
+});
+
+{
+  // Create scenarios where a 100 USDC minimum delta for Ethereum and the default
+  // of 1 USDC elsewhere suppress changes until balances are scaled up.
+  const chainRecords = plannerContext.network.chains.map(chain =>
+    chain.name === 'Ethereum'
+      ? { ...chain, deltaSoftMin: 100_000_000n }
+      : chain,
+  );
+  const expensiveEthNetwork = harden({
+    ...plannerContext.network,
+    chains: chainRecords,
+  });
+  const targetAllocation = {
+    Aave_Ethereum: 880n,
+    Aave_Base: 50n,
+    Aave_Optimism: 50n,
+    Aave_Avalanche: 20n,
+    Beefy_re7_Avalanche: 0n,
+  };
+  const balancesTemplate = {
+    Aave_Ethereum: 12.5,
+    Aave_Base: 4.01,
+    Aave_Optimism: 5.99,
+    Aave_Avalanche: 2.6,
+    Beefy_re7_Avalanche: 0.008,
+  } satisfies Partial<Record<AssetPlaceRef, number>>;
+  const makeBalances = (scale: number) =>
+    objectMap(balancesTemplate, v => makeDeposit(scale6(v * scale)));
+
+  test('planRebalanceToAllocations suppresses small deltas', async t => {
+    const plan = await planRebalanceToAllocations({
+      ...plannerContext,
+      network: expensiveEthNetwork,
+      targetAllocation,
+      currentBalances: makeBalances(1),
+    });
+
+    // The balance at Beefy_re7_Avalanche is too small to clear out, and the
+    // balance at Aave_Ethereum isn't growing by enough so the reductions at
+    // Aave_{Base,Optimism,Avalanche} instead go to the respective chain
+    // accounts.
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Aave_Avalanche', '@Avalanche', scale6(2.098)),
+      makeMovementDesc('Aave_Base', '@Base', scale6(2.755)),
+      makeMovementDesc('Aave_Optimism', '@Optimism', scale6(4.735)),
+    ]);
+  });
+
+  test('planDepositToAllocations suppresses small deltas', async t => {
+    const amount = makeDeposit(scale6(0.9));
+    const plan = await planDepositToAllocations({
+      ...plannerContext,
+      network: expensiveEthNetwork,
+      targetAllocation,
+      currentBalances: objectMap(makeBalances(1), (amt, place) =>
+        place === 'Aave_Avalanche' ? AmountMath.subtract(amt, amount) : amt,
+      ),
+      amount,
+    });
+
+    // The balance at Beefy_re7_Avalanche is too small to clear out, and the
+    // balance at Aave_Ethereum isn't growing by enough so the reductions at
+    // Aave_{Base,Optimism,Avalanche} instead go to the respective chain
+    // accounts and the deposit stays at agoric.
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Aave_Avalanche', '@Avalanche', scale6(1.198)),
+      makeMovementDesc('Aave_Base', '@Base', scale6(2.755)),
+      makeMovementDesc('Aave_Optimism', '@Optimism', scale6(4.735)),
+      makeMovementDesc('<Deposit>', '@agoric', scale6(0.9)),
+    ]);
+  });
+
+  test('planRebalanceToAllocations suppresses small deltas, 10x', async t => {
+    const plan = await planRebalanceToAllocations({
+      ...plannerContext,
+      network: expensiveEthNetwork,
+      targetAllocation,
+      currentBalances: makeBalances(10),
+    });
+
+    // A 10x variant of 'planRebalanceToAllocations suppresses small deltas'.
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Aave_Avalanche', '@Avalanche', scale6(20.98)),
+      makeMovementDesc('Aave_Base', '@Base', scale6(27.55)),
+      makeMovementDesc('Aave_Optimism', '@Optimism', scale6(47.35)),
+    ]);
+  });
+
+  test('planDepositToAllocations suppresses small deltas, 10x', async t => {
+    const amount = makeDeposit(scale6(9));
+    const plan = await planDepositToAllocations({
+      ...plannerContext,
+      network: expensiveEthNetwork,
+      targetAllocation,
+      currentBalances: objectMap(makeBalances(10), (amt, place) =>
+        place === 'Aave_Avalanche' ? AmountMath.subtract(amt, amount) : amt,
+      ),
+      amount,
+    });
+
+    // A 10x variant of 'planDepositToAllocations suppresses small deltas'.
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Aave_Avalanche', '@Avalanche', scale6(11.98)),
+      makeMovementDesc('Aave_Base', '@Base', scale6(27.55)),
+      makeMovementDesc('Aave_Optimism', '@Optimism', scale6(47.35)),
+      makeMovementDesc('<Deposit>', '@agoric', scale6(9)),
+    ]);
+  });
+
+  test('planRebalanceToAllocations suppresses small deltas, 100x', async t => {
+    const plan = await planRebalanceToAllocations({
+      ...plannerContext,
+      network: expensiveEthNetwork,
+      targetAllocation,
+      currentBalances: makeBalances(100),
+    });
+
+    // The lowest-weight delta is too small, but values at
+    // Aave_{Avalanche,Base,Optimism,Ethereum} of $260 + $401 + $599 + $1250 =
+    // $2510 can be distributed over respective weights [20, 50, 50, 880] to
+    // [$50.20, $125.50, $125.50, $2208.80].
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Aave_Avalanche', '@Avalanche', scale6(209.8)),
+      makeMovementDesc('@Avalanche', '@agoric', scale6(209.8)),
+      makeMovementDesc('Aave_Base', '@Base', scale6(275.5)),
+      makeMovementDesc('@Base', '@agoric', scale6(275.5)),
+      makeMovementDesc('Aave_Optimism', '@Optimism', scale6(473.5)),
+      makeMovementDesc('@Optimism', '@agoric', scale6(473.5)),
+      makeMovementDesc('@agoric', '@noble', scale6(958.8)),
+      makeMovementDesc('@noble', '@Ethereum', scale6(958.8)),
+      makeMovementDesc('@Ethereum', 'Aave_Ethereum', scale6(958.8)),
+    ]);
+  });
+
+  test('planDepositToAllocations suppresses small deltas, 100x', async t => {
+    const amount = makeDeposit(scale6(90));
+    const plan = await planDepositToAllocations({
+      ...plannerContext,
+      network: expensiveEthNetwork,
+      targetAllocation,
+      currentBalances: objectMap(makeBalances(100), (amt, place) =>
+        place === 'Aave_Avalanche' ? AmountMath.subtract(amt, amount) : amt,
+      ),
+      amount,
+    });
+
+    // Deltas for the largest and smallest weights are too small, but relative
+    // adjustment between <Deposit> and Aave_{Avalanche,Optimism,Base} can
+    // succeed, distibuting $9 + $17 + $59.90 + $40.10 = $126 over respective
+    // weights [0, 20, 50, 50] to [$0, $21, $52.50, $52.50].
+    // t.log(readableSteps(plan.flow, depositBrand));
+    // The lowest-weight delta is too small, but values at
+    // <Deposit> and Aave_{Avalanche,Base,Optimism,Ethereum} of
+    // $90 + $170 + $401 + $599 + $1250 = $2510 can be distributed over
+    // respective weights [0, 20, 50, 50, 880] to
+    // [$0, $50.20, $125.50, $125.50, $2208.80].
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      makeMovementDesc('Aave_Avalanche', '@Avalanche', scale6(119.8)),
+      makeMovementDesc('@Avalanche', '@agoric', scale6(119.8)),
+      makeMovementDesc('Aave_Base', '@Base', scale6(275.5)),
+      makeMovementDesc('@Base', '@agoric', scale6(275.5)),
+      makeMovementDesc('Aave_Optimism', '@Optimism', scale6(473.5)),
+      makeMovementDesc('@Optimism', '@agoric', scale6(473.5)),
+      makeMovementDesc('<Deposit>', '@agoric', scale6(90)),
+      makeMovementDesc('@agoric', '@noble', scale6(958.8)),
+      makeMovementDesc('@noble', '@Ethereum', scale6(958.8)),
+      makeMovementDesc('@Ethereum', 'Aave_Ethereum', scale6(958.8)),
+    ]);
+  });
+
+  for (const [title, usdcValue] of Object.entries({
+    'planWithdrawFromAllocations works despite small deltas (amount >= deltaSoftMin)': 1,
+    'planWithdrawFromAllocations works despite small deltas (amount < deltaSoftMin)': 0.9,
+  })) {
+    test(title, async t => {
+      const amount = makeDeposit(scale6(usdcValue));
+      const plan = await planWithdrawFromAllocations({
+        ...plannerContext,
+        network: expensiveEthNetwork,
+        targetAllocation,
+        currentBalances: objectMap(makeBalances(1), (amt, place) =>
+          place === 'Aave_Ethereum' ? AmountMath.add(amt, amount) : amt,
+        ),
+        amount,
+      });
+
+      // Aave_Ethereum is prevented from increasing, but the other positions
+      // decrease as requested and the withdrawal is serviced.
+      // t.log(readableSteps(plan.flow, depositBrand));
+      arrayIsLike(t, plan?.flow, [
+        makeMovementDesc('Aave_Avalanche', '@Avalanche', scale6(2.098)),
+        makeMovementDesc('@Avalanche', '@agoric', scale6(usdcValue)),
+        makeMovementDesc('Aave_Base', '@Base', scale6(2.755)),
+        makeMovementDesc('Aave_Optimism', '@Optimism', scale6(4.735)),
+        makeMovementDesc('@agoric', '<Cash>', scale6(usdcValue)),
+      ]);
+    });
+  }
+
+  test('planWithdrawFromAllocations works despite small deltas (amount > first currentBalances entry)', async t => {
+    const plan = await planWithdrawFromAllocations({
+      ...plannerContext,
+      network: expensiveEthNetwork,
+      targetAllocation,
+      currentBalances: fromTypedEntries(
+        Object.keys(balancesTemplate)
+          .reverse()
+          .map((place: AssetPlaceRef, idx: number) => [
+            place,
+            makeDeposit(scale6(idx * 0.1)),
+          ]),
+      ),
+      amount: makeDeposit(scale6(0.8)),
+    });
+
+    // All deltas are too small, so the $0.80 withdrawal is pulled from
+    // descending balances (Aave_{Ethereum,Base,Optimism} at
+    // [$0.40, $0.30, $0.20], with only $0.10 needed from Aave_Optimism).
+    // t.log(readableSteps(plan.flow, depositBrand));
+    arrayIsLike(t, plan?.flow, [
+      { src: 'Aave_Base', dest: '@Base', amount: makeDeposit(scale6(0.3)) },
+      { src: '@Base', dest: '@agoric', amount: makeDeposit(scale6(0.3)) },
+      {
+        src: 'Aave_Ethereum',
+        dest: '@Ethereum',
+        amount: makeDeposit(scale6(0.4)),
+      },
+      { src: '@Ethereum', dest: '@agoric', amount: makeDeposit(scale6(0.4)) },
+      {
+        src: 'Aave_Optimism',
+        dest: '@Optimism',
+        amount: makeDeposit(scale6(0.1)),
+      },
+      { src: '@Optimism', dest: '@agoric', amount: makeDeposit(scale6(0.1)) },
+      { src: '@agoric', dest: '<Cash>', amount: makeDeposit(scale6(0.8)) },
+    ]);
+  });
+}
+
+// Blocked/suppressed sources proportionally reduce the other targets,
+// potentially even cascading into new blocked sources:
+// |             Instrument |   A   |   B   |   C   |   D   |   E   |   F   |
+// |-----------------------:|------:|------:|------:|------:|------:|------:|
+// |        initial balance |  $20  |  $20  |  $18  |  $20  |   $8  |   $2  |
+// |                 target |   0%  |  20%  |  20%  |  20%  |  20%  |  20%  |
+// | ideal balance for +$12 |   $0  |  $20  |  $20  |  $20  |  $20  |  $20  |
+// |       A is no-withdraw | *$20* |  $16  |  $16  |  $16  |  $16  |  $16  |
+// |       D is no-withdraw |  $20  |  $15  |  $15  | *$20* |  $15  |  $15  |
+// |  chain min delta is $6 |  $20  |  $14  | *$18* |  $20  |  $14  |  $14  |
+//
+// We run this scenario over multiple tests to cover both static and dynamic
+// instrument blocking (cf. `cases` below).
+{
+  const blockWithdrawReason = 'LOW_LIQUIDITY' as const;
+  const blockDepositReason = 'AT_CAPACITY' as const;
+  const chain = 'Ethereum';
+  const atChain = `@${chain}` as AssetPlaceRef;
+  const fromChain = `+${chain}` as AssetPlaceRef;
+  const A = `A_${chain}` as AssetPlaceRef;
+  const B = `B_${chain}` as AssetPlaceRef;
+  const C = `C_${chain}` as AssetPlaceRef;
+  const D = `D_${chain}` as AssetPlaceRef;
+  const E = `E_${chain}` as AssetPlaceRef;
+  const F = `F_${chain}` as AssetPlaceRef;
+  const X = `X_${chain}` as AssetPlaceRef;
+  const chains = [
+    ...plannerContext.network.chains.map(c =>
+      c.name === chain ? { ...c, deltaSoftMin: 6_000_000n } : c,
+    ),
+  ] as NetworkSpec['chains'];
+
+  const staticBlocks = [
+    { pool: A, chain, protocol: 'A' as any, blockWithdrawReason },
+    { pool: B, chain, protocol: 'B' as any },
+    { pool: C, chain, protocol: 'C' as any },
+    { pool: D, chain, protocol: 'D' as any, blockWithdrawReason },
+    { pool: E, chain, protocol: 'E' as any },
+    { pool: F, chain, protocol: 'F' as any },
+    { pool: X, chain, protocol: 'X' as any, blockDepositReason },
+  ] as PoolSpec[];
+  // Dynamic equivalent of `staticBlocks`:
+  // * D remains statically no-withdraw
+  // * X is dynamically no-deposit and A is dynamically no-withdraw
+  // * dynamic blocks of B and E are statically overridden
+  const dynamicBlocks = {
+    noDepositInstruments: new Set([B, E, X]),
+    noWithdrawInstruments: new Set([B, E, A]),
+  } as InstrumentBlocks;
+  const overrides = { [B]: null, [E]: null };
+  const blockDepositOverrides = { ...overrides };
+  const blockWithdrawOverrides = { ...overrides, [D]: blockWithdrawReason };
+
+  const cases: [string, PoolSpec[], InstrumentBlocks?][] = [
+    ['static', staticBlocks, undefined],
+    [
+      'dynamic',
+      staticBlocks.map<PoolSpec>(poolSpec => ({
+        ...poolSpec,
+        blockDepositReason: blockDepositOverrides[poolSpec.pool],
+        blockWithdrawReason: blockWithdrawOverrides[poolSpec.pool],
+      })),
+      dynamicBlocks,
+    ],
+  ];
+  for (const [kind, extraPools, instrumentBlocks] of cases) {
+    test(`computeTargetBalances cascades blocked/suppressed sources, ${kind}`, async t => {
+      const network: NetworkSpec = harden({
+        ...plannerContext.network,
+        chains,
+        pools: [...plannerContext.network.pools, ...extraPools],
+      });
+      const currentBalances = {
+        [A]: makeDeposit(scale6(20)),
+        [B]: makeDeposit(scale6(20)),
+        [C]: makeDeposit(scale6(18)),
+        [D]: makeDeposit(scale6(20)),
+        [E]: makeDeposit(scale6(8)),
+        [F]: makeDeposit(scale6(2)),
+      } as any;
+      const targetAllocation: TargetAllocation = {
+        [A]: 0n,
+        [B]: 20n,
+        [C]: 20n,
+        [D]: 20n,
+        [E]: 20n,
+        [F]: 20n,
+      };
+      const assertPlan = async (
+        label: string,
+        expectSteps: ReturnType<typeof makeMovementDesc>[],
+      ) => {
+        const plan = await planDepositToAllocations({
+          ...plannerContext,
+          network,
+          currentBalances,
+          targetAllocation,
+          amount: makeDeposit(scale6(12)),
+          fromChain: chain,
+          instrumentBlocks,
+        });
+        // t.log(readableSteps(plan.flow, depositBrand));
+        arrayIsLike(t, plan?.flow, expectSteps, label);
+      };
+      await assertPlan('without deposit blocking', [
+        makeMovementDesc(B, atChain, scale6(6)),
+        makeMovementDesc(atChain, E, scale6(6)),
+        makeMovementDesc(fromChain, atChain, scale6(12)),
+        makeMovementDesc(atChain, F, scale6(12)),
+      ]);
+
+      // Now replace F with the deposit-blocked X.
+      currentBalances[X] = currentBalances[F];
+      delete currentBalances[F];
+      targetAllocation[X] = targetAllocation[F];
+      delete targetAllocation[F];
+      await assertPlan('with deposit blocking', [
+        makeMovementDesc(B, atChain, scale6(6)),
+        makeMovementDesc(atChain, E, scale6(6)),
+        makeMovementDesc(fromChain, atChain, scale6(12)),
+      ]);
+    });
+  }
+}
+
+for (const [title, usdcOverdraft] of Object.entries({
+  'planWithdrawFromAllocations works around withdraw-blocked pools': 0,
+  'planWithdrawFromAllocations clamps to withdrawable amounts': 10,
+})) {
+  // Each of these scenarios is also covered by equivalent testing against both
+  // static and dynamic instrument blocking.
+  const dynamicBlocks = {
+    noDepositInstruments: new Set([]),
+    noWithdrawInstruments: new Set(['Aave_Base']),
+  } as InstrumentBlocks;
+  const cases: [string, BlockWithdrawReason?, InstrumentBlocks?][] = [
+    ['static', 'LOW_LIQUIDITY', undefined],
+    ['dynamic', undefined, dynamicBlocks],
+  ];
+  for (const [kind, staticBlockWithdrawReason, instrumentBlocks] of cases) {
+    // TODO(AGO-535): Both of these scenarios should withdraw 50 USDC.
+    const testFn = usdcOverdraft === 0 ? test : test.failing;
+    testFn(`${title}, ${kind}`, async t => {
+      const network: NetworkSpec = harden({
+        ...plannerContext.network,
+        pools: [
+          ...plannerContext.network.pools.filter(p => p.pool !== 'Aave_Base'),
+          {
+            pool: 'Aave_Base',
+            chain: 'Base',
+            protocol: 'Aave',
+            blockWithdrawReason: staticBlockWithdrawReason,
+          },
+        ] as NetworkSpec['pools'],
+      });
+      const currentBalances = {
+        Aave_Base: makeDeposit(scale6(50)),
+        Aave_Ethereum: makeDeposit(scale6(25)),
+        Compound_Ethereum: makeDeposit(scale6(25)),
+      };
+      const targetAllocation: TargetAllocation = {
+        Aave_Base: 50n,
+        Aave_Ethereum: 25n,
+        Compound_Ethereum: 25n,
+      };
+
+      const plan = await planWithdrawFromAllocations({
+        ...plannerContext,
+        network,
+        currentBalances,
+        targetAllocation,
+        amount: makeDeposit(scale6(50 + usdcOverdraft)),
+        toChain: 'Ethereum',
+        instrumentBlocks,
+      });
+      // t.log(readableSteps(plan.flow, depositBrand));
+      arrayIsLike(t, plan?.flow, [
+        makeMovementDesc('Aave_Ethereum', '@Ethereum', scale6(25)),
+        makeMovementDesc('Compound_Ethereum', '@Ethereum', scale6(25)),
+        makeMovementDesc('@Ethereum', '-Ethereum', scale6(50)),
+      ]);
+    });
+  }
+}

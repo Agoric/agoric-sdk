@@ -1,6 +1,9 @@
 import type { Remote } from '@agoric/internal';
 import type { Zone } from '@agoric/zone';
+import type { ERef } from '@endo/far';
 import type { CopyTagged, RemotableObject } from '@endo/pass-style';
+
+export type { ERef };
 
 /**
  * Return truthy if a rejection reason should result in a retry.
@@ -8,12 +11,21 @@ import type { CopyTagged, RemotableObject } from '@endo/pass-style';
 export type IsRetryableReason = (reason: any, priorRetryValue: any) => any;
 
 /**
+ * Types that are conceptually similar to Promise<F> in that they wrap a fulfilled type.
+ */
+export type VowLike<F> = Promise<F> | PromiseLike<F> | Vow<F>; // s| PromiseStep<F> …etc.
+
+/**
+ * Extract the final fulfilment type from a chain of VowLikes.
+ */
+export type Fulfilled<T> = T extends VowLike<infer F> ? Fulfilled<F> : T;
+
+/**
  * Return type of a function that may
  * return a promise or a vow.
  */
 export type PromiseVow<T> = Promise<T | Vow<T>>;
 
-export type ERef<T> = T | PromiseLike<T>;
 /**
  * Eventually a value T or Vow for it.
  */
@@ -23,12 +35,7 @@ export type EVow<T> = ERef<T | Vow<T>>;
  * Follow the chain of vow shortening to the end, returning the final value.
  * This is used within E, so we must narrow the type to its remote form.
  */
-export type EUnwrap<T> =
-  T extends Vow<infer U>
-    ? EUnwrap<U>
-    : T extends PromiseLike<infer U>
-      ? EUnwrap<U>
-      : T;
+export type EUnwrap<T> = Fulfilled<T>;
 
 /**
  * The first version of the vow implementation
@@ -128,7 +135,11 @@ export type VowTools = {
    * fulfilled and rejects when any of the input's promises or vows are rejected
    * with the first rejection reason.
    */
-  all: (maybeVows: unknown[]) => Vow<any[]>;
+  all: <TS extends readonly unknown[]>(
+    maybeVows: TS,
+  ) => Vow<{
+    [K in keyof TS]: Fulfilled<TS[K]>;
+  }>;
   /**
    * Vow-tolerant
    * implementation of Promise.allSettled that takes an iterable of vows and other
@@ -136,19 +147,19 @@ export type VowTools = {
    * the input's promises or vows are settled with an array of settled outcome
    * objects.
    */
-  allSettled: (maybeVows: unknown[]) => Vow<
-    (
-      | {
-          status: 'fulfilled';
-          value: any;
-        }
-      | {
-          status: 'rejected';
-          reason: any;
-        }
-    )[]
-  >;
-  allVows: (maybeVows: unknown[]) => Vow<any[]>;
+  allSettled: <TS extends readonly unknown[]>(
+    maybeVows: TS,
+  ) => Vow<{
+    [K in keyof TS]: PromiseSettledResult<Fulfilled<TS[K]>>;
+  }>;
+  /**
+   * @deprecated use `all`
+   */
+  allVows: <TS extends readonly unknown[]>(
+    maybeVows: TS,
+  ) => Vow<{
+    [K in keyof TS]: Fulfilled<TS[K]>;
+  }>;
   /**
    * Convert a vow or promise to a promise, ensuring proper handling of ephemeral promises.
    */
@@ -167,21 +178,31 @@ export type VowTools = {
    * @deprecated use `retryable`
    */
   retriable: RetryableTool;
-  watch: <T = any, TResult1 = T, TResult2 = never, C extends any[] = any[]>(
+  /**
+   * @remarks The watcher type is decoupled from the caller's `watcherArgs`
+   * type. The watcher accepts `any[]` args (since its inferred guard
+   * signature often has `Passable[]` rest args, which would otherwise
+   * propagate to the caller and reject contexts containing `Remote<T>`
+   * references). The caller passes whatever args they want; the watcher
+   * receives them at runtime as whatever its impl typed them.
+   */
+  watch: <T = any, TResult1 = T, TResult2 = never, C extends unknown[] = []>(
     specimenP: EVow<T>,
-    watcher?: Watcher<T, TResult1, TResult2, C> | undefined,
+    watcher?: Watcher<T, TResult1, TResult2, any[]> | undefined,
     ...watcherArgs: C
   ) => Vow<
-    Exclude<TResult1, void> | Exclude<TResult2, void> extends never
-      ? TResult1
-      : Exclude<TResult1, void> | Exclude<TResult2, void>
+    Fulfilled<
+      Exclude<TResult1, void> | Exclude<TResult2, void> extends never
+        ? TResult1
+        : Exclude<TResult1, void> | Exclude<TResult2, void>
+    >
   >;
   /**
    * Shorten `specimenP` until we achieve a final result.
    *
    * Does not survive upgrade (even if specimenP is a durable Vow).
    *
-   * Use only if the Vow will resolve _promptly_ {@see {@link  @agoric/swingset-vat/docs/async.md}}.
+   * Use only if the Vow will resolve _promptly_ {@link  @agoric/swingset-vat/docs/async.md}.
    */
   when: <T, TResult1 = EUnwrap<T>, TResult2 = never>(
     specimenP: T,

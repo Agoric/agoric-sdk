@@ -5,28 +5,55 @@ import { Fail, q } from '@endo/errors';
 
 import type { NatAmount } from '@agoric/ertp/src/types.js';
 import { provideLazyMap, typedEntries } from '@agoric/internal/src/js-utils.js';
+import { tryNow } from '@agoric/internal/src/ses-utils.js';
+import {
+  isDepositFromChainRef,
+  isInstrumentId,
+  isInterChainAccountRef,
+  isWithdrawToChainRef,
+} from '@agoric/portfolio-api/src/type-guards.js';
+import type {
+  AssetPlaceRef,
+  InterChainAccountRef,
+} from '@agoric/portfolio-api';
+import { chainOf } from './network/buildGraph.ts';
 
 import {
   PoolPlaces,
   type PoolKey,
   type PoolPlaceInfo,
 } from '../src/type-guards.js';
-import type { RebalanceGraph } from './network/buildGraph.js';
+import type { FlowGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
-import type { LpModel } from './plan-solve.js';
+import type { LpModel, SolvedEdgeFlow } from './plan-solve.js';
+
+const bfs = <T>(start: T, adj: Map<T, T[]>): Set<T> => {
+  const queue = [start];
+  const seen = new Set(queue);
+  while (queue.length) {
+    const cur = queue.shift()!;
+    const arr = adj.get(cur);
+    for (const node of arr || []) {
+      if (seen.has(node)) continue;
+      seen.add(node);
+      queue.push(node);
+    }
+  }
+  return seen;
+};
 
 /**
  * Build human-readable diagnostics for infeasible models.
  * Heuristics only: checks supply balance and reachability of sinks from sources.
  *
  * Example output (when graph.debug is true):
- *   No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs present: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum
+ * `No feasible solution: nodes=7 edges=12 | supply: sum=0 pos=1500 neg=1500 (pos should equal neg; sum should be 0) | sources=2 sinks=2 | sources with no path to any sink (1): Aave_Arbitrum(800) | hubs: @agoric, @noble, @Arbitrum | inter-hub edges: @agoric->@noble, @noble->@Arbitrum`
  *
  * How to enable:
  *   - Set `debug: true` on the NetworkSpec used to build the graph.
  */
 export const diagnoseInfeasible = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   _model: LpModel,
 ): string => {
   const nodes = [...graph.nodes];
@@ -57,31 +84,18 @@ export const diagnoseInfeasible = (
     srcAdj.push(e.dest);
   }
 
-  const bfs = (start: string) => {
-    const queue = [start];
-    const seen = new Set(queue);
-    while (queue.length) {
-      const cur = queue.shift()!;
-      const outs = adj.get(cur);
-      for (const v of outs || []) {
-        if (seen.has(v)) continue;
-        seen.add(v);
-        queue.push(v);
-      }
-    }
-    return seen;
-  };
-
   const stranded = [] as { node: string; supply: number }[];
   for (const s of sources) {
-    const reach = bfs(s);
+    const reach = bfs(s, adj);
     const canReachSink = [...reach].some(n => sinksSet.has(n));
     if (!canReachSink) stranded.push({ node: s, supply: supplies[s] });
   }
 
-  const hubSet = new Set(nodes.filter(n => n.startsWith('@')));
+  const hubSet = new Set(nodes.filter(n => isInterChainAccountRef(n)));
   const hubEdges = edges
-    .filter(e => e.src.startsWith('@') && e.dest.startsWith('@'))
+    .filter(
+      e => isInterChainAccountRef(e.src) && isInterChainAccountRef(e.dest),
+    )
     .map(e => `${e.src}->${e.dest}`);
 
   const lines: string[] = [];
@@ -100,7 +114,7 @@ export const diagnoseInfeasible = (
       `sources with no path to any sink (${stranded.length}): ${sample}`,
     );
   }
-  lines.push(`hubs present: ${[...hubSet].sort().join(', ')}`);
+  lines.push(`hubs: ${[...hubSet].sort().join(', ')}`);
   lines.push(
     `inter-hub edges: ${hubEdges.length ? hubEdges.join(', ') : '(none)'}`,
   );
@@ -114,90 +128,81 @@ export const diagnoseInfeasible = (
  */
 export const preflightValidateNetworkPlan = (
   network: NetworkSpec,
-  current: Partial<Record<string, NatAmount>>,
-  target: Partial<Record<string, NatAmount>>,
+  current: Partial<Record<AssetPlaceRef, NatAmount>>,
+  target: Partial<Record<AssetPlaceRef, NatAmount>>,
 ) => {
-  const keys = new Set<string>([
-    ...Object.keys(current ?? {}),
-    ...Object.keys(target ?? {}),
-  ]);
-  const vOf = (a?: NatAmount) => (a ? (a.value as bigint) : 0n);
+  const placeRefs = new Set(
+    Object.keys({ ...current, ...target }) as AssetPlaceRef[],
+  );
 
   // Build hub-only adjacency from NetworkSpec.links
-  const adj = new Map<string, string[]>();
-  for (const l of network.links) {
-    const src = `@${l.src}`;
-    const dest = `@${l.dest}`;
-    (adj.get(src) ?? adj.set(src, []).get(src)!).push(dest);
+  const hubAdj = new Map<InterChainAccountRef, InterChainAccountRef[]>();
+  for (const link of network.links) {
+    const { src, dest } = link;
+    if (!isInterChainAccountRef(src) || !isInterChainAccountRef(dest)) continue;
+    const srcAdj = provideLazyMap(hubAdj, src, () => []);
+    srcAdj.push(dest);
   }
-  const bfs = (start: string) => {
-    const seen = new Set<string>([start]);
-    const queue = [start];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      for (const n of adj.get(cur) || [])
-        if (!seen.has(n)) {
-          seen.add(n);
-          queue.push(n);
-        }
-    }
-    return seen;
-  };
-  const reachFromAgoric = bfs('@agoric');
+  const reachFromAgoric = bfs('@agoric', hubAdj);
 
-  const needsToAgoric = new Map<string, string[]>();
-  const needsFromAgoric = new Map<string, string[]>();
-  const declared = new Set<string>([
-    ...network.chains.map(c => `@${c.name}`),
+  const needsToAgoric = new Map<InterChainAccountRef, AssetPlaceRef[]>();
+  const needsFromAgoric = new Map<InterChainAccountRef, AssetPlaceRef[]>();
+  const declared = new Set<AssetPlaceRef>([
+    ...network.chains.map(c => `@${c.name}` as InterChainAccountRef),
     ...network.pools.map(p => p.pool),
     ...(network.localPlaces ?? []).map(lp => lp.id),
-    '<Deposit>',
-    '<Cash>',
-    '+agoric',
+    ...(['<Deposit>', '<Cash>', '+agoric'] as AssetPlaceRef[]),
   ]);
 
-  for (const k of keys) {
+  for (const k of placeRefs) {
     if (k === '+agoric') continue;
-    const cur = vOf(current[k]);
-    const tgt = vOf(target[k]);
+    const cur = current[k]?.value ?? 0n;
+    const tgt = target[k]?.value ?? 0n;
     if (cur === tgt) continue;
 
-    const pp: PoolPlaceInfo | undefined = (
-      PoolPlaces as Record<PoolKey, PoolPlaceInfo | undefined>
-    )[k as PoolKey];
-    if (!pp && !declared.has(k)) {
-      throw Fail`Unsupported position key: ${q(k)}`;
+    if (isInstrumentId(k)) {
+      const placeInfo = PoolPlaces[k as PoolKey];
+      placeInfo || declared.has(k) || Fail`Unsupported position key: ${q(k)}`;
+    } else {
+      [
+        isInterChainAccountRef,
+        isDepositFromChainRef,
+        isWithdrawToChainRef,
+      ].some(p => p(k)) || Fail`Unsupported key: ${q(k)}`;
     }
-    // Determine the chain for this position key
-    const chain =
-      k === '<Deposit>' || k === '<Cash>' || k === '+agoric'
-        ? 'agoric'
-        : (pp?.chainName ?? /^[^_]+_([A-Za-z0-9-]+)$/.exec(k)?.[1] ?? '');
-    if (!chain) {
-      // If still unknown, skip further inter-hub checks; builder will surface issues
-      continue;
-    }
-    const hub = `@${chain}`;
+    const chain = tryNow(
+      () => chainOf(k),
+      () => undefined,
+    );
 
+    // If chain is unknown, skip further checks so the issue resurfaces with
+    // more context.
+    if (!chain) continue;
+
+    const hub = `@${chain}` as InterChainAccountRef;
     if (cur > tgt) {
-      (
-        needsToAgoric.get(chain) ?? needsToAgoric.set(chain, []).get(chain)!
-      ).push(k);
+      const hubSources = provideLazyMap(needsToAgoric, hub, () => []);
+      hubSources.push(k);
     } else if (tgt > cur) {
-      (
-        needsFromAgoric.get(chain) ?? needsFromAgoric.set(chain, []).get(chain)!
-      ).push(k);
+      const hubSinks = provideLazyMap(needsFromAgoric, hub, () => []);
+      hubSinks.push(k);
       if (!reachFromAgoric.has(hub)) {
-        const list = (needsFromAgoric.get(chain) || []).join(', ');
-        throw Fail`No inter-hub path @agoric->${hub}; positions: ${q(list)}`;
+        const list = needsFromAgoric.get(hub) || [];
+        // Construct a string directly to avoid undesirable quoting of `Fail`.
+        const msg = `No inter-hub path @agoric->${hub}; positions: ${q(list)}`;
+        throw Error(msg);
       }
     }
   }
 
-  for (const [chain, posKeys] of needsToAgoric.entries()) {
-    const reach = bfs(`@${chain}`);
+  for (const [hub, posKeys] of needsToAgoric.entries() as Iterable<
+    [InterChainAccountRef, AssetPlaceRef[]]
+  >) {
+    const reach = bfs(hub, hubAdj);
     if (!reach.has('@agoric')) {
-      throw Fail`No inter-hub path @${chain}->@agoric; positions: ${q(posKeys.join(', '))}`;
+      // Construct a string directly to avoid undesirable quoting of `Fail`.
+      const msg = `No inter-hub path ${hub}->@agoric; positions: ${q(posKeys.join(', '))}`;
+      throw Error(msg);
     }
   }
 };
@@ -226,7 +231,7 @@ export const preflightValidateNetworkPlan = (
  *   before validating it with `explainPath`.
  */
 export const explainPath = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   path: string[],
 ):
   | { ok: true }
@@ -245,8 +250,10 @@ export const explainPath = (
   if (path.length < 2) return { ok: true };
   const nodes = graph.nodes;
   const edgeMap = new Map<string, { capacity: number }>();
-  for (const e of graph.edges)
-    edgeMap.set(`${e.src}->${e.dest}`, { capacity: e.capacity ?? Infinity });
+  for (const e of graph.edges) {
+    const capacity = Number(e.capacity ?? Infinity);
+    edgeMap.set(`${e.src}->${e.dest}`, { capacity });
+  }
   for (let i = 0; i < path.length - 1; i += 1) {
     const src = path[i];
     const dest = path[i + 1];
@@ -310,7 +317,7 @@ export const explainPath = (
  * Diagnose near-miss connectivity categories for each source (positive supply)
  * and sink (negative supply). Purely topological; ignores objective.
  */
-export const diagnoseNearMisses = (graph: RebalanceGraph) => {
+export const diagnoseNearMisses = (graph: FlowGraph) => {
   const nodes = [...graph.nodes];
   const supplies = graph.supplies;
   const sources = nodes.filter(n => (supplies[n] || 0) > 0);
@@ -323,22 +330,11 @@ export const diagnoseNearMisses = (graph: RebalanceGraph) => {
     if (e.capacity === undefined || e.capacity > 0)
       (capAdj.get(e.src) ?? capAdj.set(e.src, []).get(e.src)!).push(e.dest);
   }
-  const bfs = (start: string, A: Map<string, string[]>) => {
-    const seen = new Set<string>([start]);
-    const queue = [start];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      for (const v of A.get(cur) || [])
-        if (!seen.has(v)) {
-          seen.add(v);
-          queue.push(v);
-        }
-    }
-    return seen;
-  };
 
   const interHubEdges = graph.edges
-    .filter(e => e.src.startsWith('@') && e.dest.startsWith('@'))
+    .filter(
+      e => isInterChainAccountRef(e.src) && isInterChainAccountRef(e.dest),
+    )
     .map(e => `${e.src}->${e.dest}`);
 
   const missingPairs: Array<{
@@ -355,13 +351,13 @@ export const diagnoseNearMisses = (graph: RebalanceGraph) => {
       if (reachDir.has(t) && reachCap.has(t)) continue; // reachable
       // Try to see if a single inter-hub edge would unlock (only for hubs)
       let hint: string | undefined;
-      if (s.startsWith('@') && t.startsWith('@')) {
+      if (isInterChainAccountRef(s) && isInterChainAccountRef(t)) {
         // if t not in reach from s, propose s->t if not present
         const cand = `${s}->${t}`;
         if (!interHubEdges.includes(cand))
           hint = `consider adding inter-hub ${cand}`;
       }
-      // eslint-disable-next-line no-nested-ternary
+
       const category = !reachDir.has(t)
         ? 'no-directed-path'
         : !reachCap.has(t)
@@ -376,13 +372,13 @@ export const diagnoseNearMisses = (graph: RebalanceGraph) => {
 
 /** Build a canonical leaf/hub -> hub/leaf path skeleton between two nodes. */
 export const canonicalPathBetween = (
-  graph: RebalanceGraph,
+  _graph: FlowGraph,
   src: string,
   dest: string,
 ): string[] => {
   if (src === dest) return [src];
   const hubOf = (n: string) => {
-    if (n.startsWith('@')) return n;
+    if (isInterChainAccountRef(n)) return n;
     // Seats live on agoric
     if (n === '<Cash>' || n === '<Deposit>' || n === '+agoric')
       return '@agoric';
@@ -407,7 +403,7 @@ export const canonicalPathBetween = (
 
 /** Build an example path explanation for a pair of nodes. */
 export const examplePathExplain = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   src: string,
   dest: string,
 ) => {
@@ -421,7 +417,7 @@ export const examplePathExplain = (
  * Includes supply/reachability summary, near-miss pairs, and an example path explanation.
  */
 export const formatInfeasibleDiagnostics = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   model: LpModel,
 ): string => {
   const diag = diagnoseInfeasible(graph, model);
@@ -451,21 +447,14 @@ export const formatInfeasibleDiagnostics = (
 
 /**
  * Validate solved flows for consistency.
- * Checks:
- * 1. Total supply sums to 0 (conservation)
- * 2. Each flow has sufficient supply at its source
- * 3. Hub chains end with zero balance (proper routing)
  *
- * @param graph - The rebalance graph with initial supplies
+ * @param graph - The rebalance graph with initial signed supplies
  * @param flows - Solved flows from the optimizer
  * @returns Validation result with ok flag and details
  */
 export const validateSolvedFlows = (
-  graph: RebalanceGraph,
-  flows: Array<{
-    edge: { src: string; dest: string; id: string };
-    flow: number;
-  }>,
+  graph: FlowGraph,
+  flows: SolvedEdgeFlow[],
 ): {
   ok: boolean;
   errors: string[];
@@ -474,11 +463,18 @@ export const validateSolvedFlows = (
 } => {
   const errors: string[] = [];
   const warnings: string[] = [];
+  const supplies = typedEntries(
+    graph.supplies as { [K in AssetPlaceRef]: number },
+  );
+  const sources = new Map(supplies.filter(([_place, supply]) => supply > 0));
 
   // Check 1: Total supply sums to 0
   let totalSupply = 0;
-  for (const node of graph.nodes) {
-    totalSupply += graph.supplies[node] || 0;
+  for (const [place, supply] of supplies) {
+    totalSupply += supply;
+    if (!graph.nodes.has(place)) {
+      warnings.push(`Unknown place ${place} supplies ${supply}`);
+    }
   }
   if (totalSupply !== 0) {
     errors.push(
@@ -487,7 +483,7 @@ export const validateSolvedFlows = (
   }
 
   // Check 2: Simulate flow execution to verify supply sufficiency
-  const balances = new Map(typedEntries(graph.supplies));
+  const balances = new Map(sources);
   for (const { edge, flow } of flows) {
     const srcBalance = balances.get(edge.src) || 0;
 
@@ -505,13 +501,13 @@ export const validateSolvedFlows = (
     balances.set(edge.dest, destBalance + flow);
   }
 
-  // Check 3: Hub chains should end with 0 balance
-  for (const hub of graph.nodes) {
-    if (!hub.startsWith('@')) continue;
-    const finalBalance = balances.get(hub) || 0;
-    if (finalBalance !== 0) {
-      warnings.push(`Hub ${hub} has non-zero final balance: ${finalBalance}`);
-    }
+  // Check 3: Negative supplies should exactly consume ending balances
+  for (const [place, finalBalance] of balances) {
+    const supply = graph.supplies[place] || 0;
+    if (finalBalance > 0 ? supply === -finalBalance : supply >= 0) continue;
+    errors.push(
+      `Final balance mismatch at ${place}. ${finalBalance} should have balanced ${supply}`,
+    );
   }
 
   return {

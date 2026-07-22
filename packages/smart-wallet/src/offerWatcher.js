@@ -1,6 +1,9 @@
 import { E, passStyleOf } from '@endo/far';
 
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import {
+  isAbandonedError,
+  isUpgradeDisconnection,
+} from '@agoric/internal/src/upgrade-api.js';
 import { prepareExoClassKit, watchPromise } from '@agoric/vat-data';
 import { M } from '@agoric/store';
 import {
@@ -19,7 +22,13 @@ import { UNPUBLISHED_RESULT } from './offers.js';
  * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {Zone} from '@agoric/base-zone';
  * @import {PaymentPKeywordRecord, Proposal, UserSeat, ZoeService} from '@agoric/zoe';
+ * @import {InvitationMakers} from './types.js';
+ * @import {PublicSubscribers} from './types.js';
+ * @import {UpgradeDisconnection} from '@agoric/internal/src/upgrade-api.js';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Amount} from '@agoric/ertp';
  */
 
 /**
@@ -34,6 +43,28 @@ import { UNPUBLISHED_RESULT } from './offers.js';
  *   paymentWatcher: OfferPromiseWatcher<PaymentPKeywordRecord>;
  * }} OutcomeWatchers
  */
+
+/**
+ * Adopted from `@agoric/vow/vat.js`
+ *
+ * @param {unknown} reason
+ * @param {unknown} priorRetryValue
+ */
+const isRetryableReason = (reason, priorRetryValue) => {
+  if (
+    isUpgradeDisconnection(reason) &&
+    (!isUpgradeDisconnection(priorRetryValue) ||
+      reason.incarnationNumber > priorRetryValue.incarnationNumber)
+  ) {
+    return reason;
+  }
+  // For abandoned errors there is no way to differentiate errors from
+  // consecutive upgrades
+  if (isAbandonedError(reason) && !isAbandonedError(priorRetryValue)) {
+    return reason;
+  }
+  return undefined;
+};
 
 /** @param {VowTools} vowTools */
 const makeWatchForOfferResult = ({ watch }) => {
@@ -127,9 +158,49 @@ const offerWatcherGuard = harden({
 /**
  * @param {Baggage} baggage
  * @param {VowTools} vowTools
+ * @param {Zone} zone
  */
-export const prepareOfferWatcher = (baggage, vowTools) => {
+export const prepareOfferWatcher = (baggage, vowTools, zone) => {
   const watchForOfferResult = makeWatchForOfferResult(vowTools);
+
+  const extraProps = zone.weakMapStore('offerWatcherExtraProps');
+  /**
+   * Implement retry logic for offer watchers. This uses the stateful
+   * `isRetryableReason` to avoid infinite promise rejection loops upon remote
+   * vat upgrade.
+   *
+   * @param {{}} facet
+   * @param {unknown} reason
+   * @returns {reason is UpgradeDisconnection} roughly
+   */
+  const needsRetry = (facet, reason) => {
+    const exists = extraProps.has(facet);
+    const extra = exists ? extraProps.get(facet) : harden({});
+
+    const key = `priorRetry`;
+    const priorRetryable = extra[key];
+    const retryable = isRetryableReason(reason, priorRetryable);
+    if (retryable) {
+      // Insert / update the new state.
+      extraProps[exists ? 'set' : 'init'](
+        facet,
+        harden({
+          ...extra,
+          [key]: retryable,
+        }),
+      );
+    } else if (exists) {
+      // Delete/shrink existing state to clean up unnecessary state.
+      const { [key]: _omit, ...rest } = extra;
+      if (Object.keys(rest).length === 0) {
+        extraProps.delete(facet);
+      } else {
+        extraProps.set(facet, harden(rest));
+      }
+    }
+    return !!retryable;
+  };
+
   return prepareExoClassKit(
     baggage,
     'OfferWatcher',
@@ -165,8 +236,8 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
         /**
          * @param {string} offerId
          * @param {Amount<'set'>} invitationAmount
-         * @param {import('./types.js').InvitationMakers} invitationMakers
-         * @param {import('./types.js').PublicSubscribers} publicSubscribers
+         * @param {InvitationMakers} invitationMakers
+         * @param {PublicSubscribers} publicSubscribers
          */
         onNewContinuingOffer(
           offerId,
@@ -256,13 +327,12 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * If promise disconnected, watch again. Or if there's an Error, handle
          * it.
          *
-         * @param {Error
-         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(reason)) {
+          if (needsRetry(facets.paymentWatcher, reason)) {
             void watchForPayout(facets, seat);
           } else {
             facets.helper.handleError(reason);
@@ -293,13 +363,12 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * If promise disconnected, watch again. Or if there's an Error, handle
          * it.
          *
-         * @param {Error
-         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(reason)) {
+          if (needsRetry(facets.resultWatcher, reason)) {
             void watchForOfferResult(facets, seat);
           } else {
             facets.helper.handleError(reason);
@@ -323,15 +392,17 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
          * and getPayouts() settle the same (they await the same promise and
          * then synchronously return a local value).
          *
-         * @param {Error
-         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
+         * @param {Error | UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
         onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(reason)) {
+          if (needsRetry(facets.numWantsWatcher, reason)) {
             void watchForNumWants(facets, seat);
+          } else {
+            facets.helper.handleError(reason);
           }
+          throw reason;
         },
       },
     },

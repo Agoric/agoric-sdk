@@ -12,6 +12,7 @@ const trace = makeTracer('BasicFlows');
  * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
+ * @import {ZCFSeat} from '@agoric/zoe';
  */
 
 /**
@@ -65,7 +66,7 @@ export const makePortfolioAccount = async (
     ),
   );
   const publicTopicEntries = harden(
-    /** @type {[string, ResolvedPublicTopic<unknown>][]} */ (
+    /** @type {[string, ResolvedPublicTopic<any>][]} */ (
       await Promise.all(
         accountEntries.map(async ([name, account]) => {
           const { account: topicRecord } = await account.getPublicTopics();

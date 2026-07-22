@@ -12,8 +12,9 @@ import * as wfExports from '../src/walletFactory.js';
 
 /**
  * @import {start as StartFn} from '../src/walletFactory.js';
- * @import {SmartWallet} from '../src/smartWallet.js'
+ * @import {SmartWallet, SmartWalletTestJig} from '../src/smartWallet.js'
  * @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation} from '@agoric/zoe';
  */
 
 const ROOT_STORAGE_PATH = 'ROOT';
@@ -25,7 +26,10 @@ const getCapDataStructure = cell => {
 };
 
 export const makeBootstrap = async ({ root = ROOT_STORAGE_PATH } = {}) => {
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  let testJig;
+  const setJig = jig => (testJig = jig);
+  const getTestJig = () => testJig;
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
 
   const storage = makeFakeStorageKit(root);
   const board = makeFakeBoard();
@@ -66,7 +70,7 @@ export const makeBootstrap = async ({ root = ROOT_STORAGE_PATH } = {}) => {
     namesByAddressAdmin,
     storage,
     zoe,
-    utils: { pourPayment, bundleAndInstall, readLegible },
+    utils: { pourPayment, bundleAndInstall, readLegible, getTestJig },
   };
 };
 
@@ -76,6 +80,7 @@ export const makeBootstrap = async ({ root = ROOT_STORAGE_PATH } = {}) => {
  *   walletFactoryFacets: StartedInstanceKit<StartFn>;
  *   bootstrap: Awaited<ReturnType<typeof makeBootstrap>>;
  *   provisionSmartWallet: (addr: string) => Promise<[SmartWallet, boolean]>;
+ *   testJig: SmartWalletTestJig;
  * }>}
  */
 export const deploy = async ({ boot = makeBootstrap } = {}) => {
@@ -112,5 +117,8 @@ export const deploy = async ({ boot = makeBootstrap } = {}) => {
     return E(creatorFacet).provideSmartWallet(addr, bank, namesByAddressAdmin);
   };
 
-  return { walletFactoryFacets, bootstrap, provisionSmartWallet };
+  /** @type {SmartWalletTestJig} */
+  const testJig = utils.getTestJig();
+
+  return { walletFactoryFacets, bootstrap, provisionSmartWallet, testJig };
 };

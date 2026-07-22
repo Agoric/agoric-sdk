@@ -35,6 +35,7 @@ import djson from '../lib/djson.js';
  * } from '../types-internal.js'
  * @import {KernelKeeper} from './state/kernelKeeper.js'
  * @import {VatTranslators} from './vatTranslator.js'
+ * @import {makeVatLoader} from './vat-loader/vat-loader.js';
  */
 
 /**
@@ -251,7 +252,7 @@ export const makeLRU = max => {
 /**
  * @param {object} details
  * @param {KernelKeeper} details.kernelKeeper
- * @param {ReturnType<typeof import('./vat-loader/vat-loader.js').makeVatLoader>} details.vatLoader
+ * @param {ReturnType<typeof makeVatLoader>} details.vatLoader
  * @param {(vatID: string, translators: VatTranslators) => VatSyscallHandler} details.buildVatSyscallHandler
  * @param { KernelPanic } details.panic
  * @param { VatWarehousePolicy } details.warehousePolicy
@@ -265,8 +266,11 @@ export function makeVatWarehouse({
   panic,
   warehousePolicy,
 }) {
-  const { maxVatsOnline = 50, restartWorkerOnSnapshot = true } =
-    warehousePolicy || {};
+  const {
+    maxVatsOnline = 50,
+    maxPreloadVats = maxVatsOnline / 2,
+    restartWorkerOnSnapshot = true,
+  } = warehousePolicy || {};
   // Often a large contract evaluation is among the first few deliveries,
   // so let's do a snapshot after just a few deliveries.
   const snapshotInitial = kernelKeeper.getSnapshotInitial();
@@ -429,7 +433,7 @@ export function makeVatWarehouse({
   /** @param {typeof console.log} logStartup */
   async function start(logStartup) {
     const recreate = true; // note: PANIC on failure to recreate
-    const maxPreload = maxVatsOnline / 2;
+    const maxPreload = maxPreloadVats;
     let numPreloaded = 0;
 
     // NOTE: OPTIMIZATION OPPORTUNITY: replay vats in parallel

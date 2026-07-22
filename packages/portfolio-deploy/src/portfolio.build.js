@@ -1,6 +1,8 @@
 // import { AxelarConfigShape } from '@aglocal/portfolio-contract/src/portfolio.contract.js';
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { parseArgs } from 'node:util';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
 import {
   axelarConfigTestnet,
   axelarConfig as axelarMainnetConfig,
@@ -9,6 +11,9 @@ import {
 import { toExternalConfig } from './config-marshal.js';
 import { name } from './portfolio.contract.permit.js';
 import { portfolioDeployConfigShape } from './portfolio-start.core.js';
+
+const nodeRequire = createRequire(import.meta.url);
+const asset = spec => readFile(nodeRequire.resolve(spec), 'utf8');
 
 /**
  * @import { CoreEvalBuilder, DeployScriptFunction } from '@agoric/deploy-script-support/src/externalTypes.js';
@@ -25,6 +30,7 @@ const parseBuilderArgs = args =>
     options: {
       net: { type: 'string' },
       replace: { type: 'string' },
+      'no-flow-config': { type: 'boolean', default: false },
     },
   });
 
@@ -50,9 +56,15 @@ const defaultProposalBuilder = async ({ publishRef, install }, config) => {
 
 /** @type {DeployScriptFunction} */ 0;
 const build = async (homeP, endowments) => {
+  await null;
   const { scriptArgs } = endowments;
   const { values: flags } = parseBuilderArgs(scriptArgs);
   const boardId = flags.replace;
+  const defaultFlowConfig = flags['no-flow-config'] ? null : undefined;
+
+  const { bytecode: walletBytecode } = JSON.parse(
+    await asset('@aglocal/portfolio-deploy/tools/evm-orch/Wallet.json'),
+  );
 
   /** @type {{ mainnet: PortfolioDeployConfig, testnet: PortfolioDeployConfig }} */
   const configs = harden({
@@ -62,6 +74,8 @@ const build = async (homeP, endowments) => {
         ...gmpAddresses.mainnet,
       },
       oldBoardId: boardId || '',
+      walletBytecode,
+      defaultFlowConfig,
     },
     testnet: {
       axelarConfig: { ...axelarConfigTestnet },
@@ -69,6 +83,8 @@ const build = async (homeP, endowments) => {
         ...gmpAddresses.testnet,
       },
       oldBoardId: boardId || '',
+      walletBytecode,
+      defaultFlowConfig,
     },
   });
 

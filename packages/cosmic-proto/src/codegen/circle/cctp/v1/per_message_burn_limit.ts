@@ -1,4 +1,5 @@
 //@ts-nocheck
+import type { FieldAnnotationsRecord } from '../../../../type-url-annotations.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
 import { type JsonSafe } from '../../../json-safe.js';
@@ -8,6 +9,9 @@ import { type JsonSafe } from '../../../json-safe.js';
  * @param denom the denom
  * @param amount the amount that can be burned (in microunits).  An amount of
  * 1000000 uusdc is equivalent to 1USDC
+ * @name PerMessageBurnLimit
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PerMessageBurnLimit
  */
 export interface PerMessageBurnLimit {
   denom: string;
@@ -23,6 +27,9 @@ export interface PerMessageBurnLimitProtoMsg {
  * @param denom the denom
  * @param amount the amount that can be burned (in microunits).  An amount of
  * 1000000 uusdc is equivalent to 1USDC
+ * @name PerMessageBurnLimitSDKType
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PerMessageBurnLimit
  */
 export interface PerMessageBurnLimitSDKType {
   denom: string;
@@ -34,8 +41,35 @@ function createBasePerMessageBurnLimit(): PerMessageBurnLimit {
     amount: '',
   };
 }
+/**
+ * PerMessageBurnLimit is the maximum amount of a certain denom that can be
+ * burned in an single burn
+ * @param denom the denom
+ * @param amount the amount that can be burned (in microunits).  An amount of
+ * 1000000 uusdc is equivalent to 1USDC
+ * @name PerMessageBurnLimit
+ * @package circle.cctp.v1
+ * @see proto type: circle.cctp.v1.PerMessageBurnLimit
+ */
 export const PerMessageBurnLimit = {
   typeUrl: '/circle.cctp.v1.PerMessageBurnLimit' as const,
+  annotations: {
+    'gogoproto.nullable': { amount: false },
+  } as const satisfies FieldAnnotationsRecord,
+  is(o: any): o is PerMessageBurnLimit {
+    return (
+      o &&
+      (o.$typeUrl === PerMessageBurnLimit.typeUrl ||
+        (typeof o.denom === 'string' && typeof o.amount === 'string'))
+    );
+  },
+  isSDK(o: any): o is PerMessageBurnLimitSDKType {
+    return (
+      o &&
+      (o.$typeUrl === PerMessageBurnLimit.typeUrl ||
+        (typeof o.denom === 'string' && typeof o.amount === 'string'))
+    );
+  },
   encode(
     message: PerMessageBurnLimit,
     writer: BinaryWriter = BinaryWriter.create(),

@@ -1,12 +1,12 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 
-import process from 'process';
-import crypto from 'crypto';
-import { performance } from 'perf_hooks';
-import { spawn as ambientSpawn } from 'child_process';
-import fs from 'fs';
+import process from 'node:process';
+import crypto from 'node:crypto';
+import { performance } from 'node:perf_hooks';
+import { spawn as ambientSpawn } from 'node:child_process';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
-import anylogger from 'anylogger';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 import microtime from 'microtime';
 
 import { assert, q, Fail } from '@endo/errors';
@@ -25,9 +25,10 @@ import { kslot, krefOf } from '@agoric/kmarshal';
 import { insistStorageAPI } from '../lib/storageAPI.js';
 import { insistCapData } from '../lib/capdata.js';
 import {
+  buildSwingsetKernelConfig,
   buildKernelBundle,
+  initializeSwingsetKernel,
   swingsetIsInitialized,
-  initializeSwingset,
 } from './initializeSwingset.js';
 import {
   makeWorkerBundleHandler,
@@ -48,6 +49,11 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
  * @import {ResolutionPolicy} from '../types-external.js';
  * @import {SwingSetCapData} from '../types-external.js';
  * @import {SwingSetConfig} from '../types-external.js';
+ * @import {SlogSender} from '@agoric/telemetry';
+ * @import {VatWarehousePolicy} from '../types-external.js';
+ * @import {spawn as procSpawn} from 'child_process';
+ * @import {BundleHandler} from './bundle-handler.js';
+ * @import {default as kernelDefault} from '../kernel/kernel.js';
  */
 
 /**
@@ -79,8 +85,6 @@ export function computeSha512(bytes) {
  */
 function makeConsole(prefixer) {
   if (typeof prefixer !== 'function') {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore TODO remove when anylogger has types
     const logger = anylogger(prefixer);
     return makeLimitedConsole(level => logger[level]);
   }
@@ -91,8 +95,6 @@ function makeConsole(prefixer) {
       const prefix = prefixer(source);
       let logger = prefixToLogger.get(prefix);
       if (!logger) {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore TODO remove when anylogger has types
         logger = anylogger(prefix);
         prefixToLogger.set(prefix, logger);
       }
@@ -134,15 +136,15 @@ function onUnhandledRejection(e, pr) {
  *   verbose?: boolean,
  *   debugPrefix?: string,
  *   slogCallbacks?: unknown,
- *   slogSender?: import('@agoric/telemetry').SlogSender,
+ *   slogSender?: SlogSender,
  *   testTrackDecref?: unknown,
- *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy,
+ *   warehousePolicy?: VatWarehousePolicy,
  *   overrideVatManagerOptions?: unknown,
- *   spawn?: typeof import('child_process').spawn,
+ *   spawn?: typeof procSpawn,
  *   env?: Record<string, string | undefined>,
  *   kernelBundle?: Bundle
- *   xsnapBundleData?: ReturnType<import('./bundle-handler.js').makeXsnapBundleData>,
- *   bundleHandler?: import('./bundle-handler.js').BundleHandler,
+ *   xsnapBundleData?: ReturnType<typeof makeXsnapBundleData>,
+ *   bundleHandler?: BundleHandler,
  *   profileVats?: string[],
  *   debugVats?: string[],
  * }} runtimeOptions
@@ -174,6 +176,15 @@ export async function makeSwingsetController(
       xsnapBundleData,
     ),
   } = runtimeOptions;
+
+  const shouldProfileStartup = env.SWINGSET_STARTUP_PROFILE === '1';
+  /** @type {Array<{ label: string, ms: number }>} */
+  const startupPhases = [];
+  const noteStartupPhase = (label, ms) => {
+    if (shouldProfileStartup) {
+      startupPhases.push({ label, ms });
+    }
+  };
 
   if (typeof Compartment === 'undefined') {
     throw Error('SES must be installed before calling makeSwingsetController');
@@ -305,7 +316,17 @@ export async function makeSwingsetController(
     const kernelBundle = await slogDuration(
       ['bundle-kernel-start', 'bundle-kernel-finish'],
       {},
-      async () => runtimeOptions.kernelBundle ?? buildKernelBundle(),
+      async () => {
+        await null;
+        const t0 = performance.now();
+        const resolved =
+          (await runtimeOptions.kernelBundle) ?? (await buildKernelBundle());
+        noteStartupPhase(
+          'controller.buildKernelBundle',
+          performance.now() - t0,
+        );
+        return resolved;
+      },
     );
 
     // FIXME: Put this somewhere better.
@@ -325,6 +346,7 @@ export async function makeSwingsetController(
       ['import-kernel-start', 'import-kernel-finish'],
       {},
       async () => {
+        const t0 = performance.now();
         const kernelNS = await importBundle(kernelBundle, {
           filePrefix: 'kernel/...',
           endowments: {
@@ -339,12 +361,17 @@ export async function makeSwingsetController(
             Base64: globalThis.Base64, // Available only on XSnap
           },
         });
-        return kernelNS.default;
+        noteStartupPhase(
+          'controller.importKernelBundle',
+          performance.now() - t0,
+        );
+        return /** @type {typeof kernelDefault} */ (kernelNS.default);
       },
     );
 
     const kernelEndowments = {
       waitUntilQuiescent,
+      now: () => performance.now(),
       kernelStorage,
       debugPrefix,
       // all vats get these in their global scope, plus a vat-specific 'console'
@@ -364,16 +391,20 @@ export async function makeSwingsetController(
       verbose,
       warehousePolicy,
       overrideVatManagerOptions,
+      startupProfiler: noteStartupPhase,
     };
 
-    /** @type { ReturnType<typeof import('../kernel/kernel.js').default> } */
     const kernel = buildKernel(
       kernelEndowments,
       deviceEndowments,
       kernelRuntimeOptions,
     );
 
-    await kernel.start();
+    {
+      const t0 = performance.now();
+      await kernel.start();
+      noteStartupPhase('controller.kernel.start', performance.now() - t0);
+    }
 
     /**
      * Validate and install a code bundle.
@@ -614,6 +645,14 @@ export async function makeSwingsetController(
       },
     });
   });
+  if (shouldProfileStartup) {
+    const rows = startupPhases
+      .sort((a, b) => b.ms - a.ms)
+      .map(({ label, ms }) => `${label}=${ms.toFixed(1)}ms`)
+      .join(', ');
+    // Use ambient console so profiling output is visible regardless of logger levels.
+    console.error(`startup-profile: ${rows}`);
+  }
 
   return controller;
 }
@@ -633,7 +672,7 @@ export async function makeSwingsetController(
  * the two stages; this can happen, for example, in some debugging cases.
  *
  * @param {SwingSetConfig} config
- * @param {string[]} bootstrapArgs
+ * @param {unknown[]} bootstrapArgs
  * @param {{
  *   kernelStorage?: SwingStoreKernelStorage;
  *   env?: Record<string, string>;
@@ -641,9 +680,9 @@ export async function makeSwingsetController(
  *   kernelBundles?: Record<string, Bundle>;
  *   debugPrefix?: string;
  *   slogCallbacks?: unknown;
- *   slogSender?: import('@agoric/telemetry').SlogSender;
+ *   slogSender?: SlogSender;
  *   testTrackDecref?: unknown;
- *   warehousePolicy?: import('../types-external.js').VatWarehousePolicy;
+ *   warehousePolicy?: VatWarehousePolicy;
  * }} runtimeOptions
  * @param {Record<string, unknown>} deviceEndowments
  */
@@ -683,11 +722,15 @@ export async function buildVatController(
   let bootstrapResult;
   await null;
   if (!swingsetIsInitialized(kernelStorage)) {
-    bootstrapResult = await initializeSwingset(
+    const kernelConfig = await buildSwingsetKernelConfig(
       config,
       bootstrapArgs,
-      kernelStorage,
       initializationOptions,
+      runtimeOptions,
+    );
+    bootstrapResult = await initializeSwingsetKernel(
+      kernelConfig,
+      kernelStorage,
       runtimeOptions,
     );
   }

@@ -1,10 +1,11 @@
-/* eslint-env node */
 /**
  * @import {Command} from 'commander';
  * @import {Amount, Brand} from '@agoric/ertp';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {USDCProposalShapes} from '../pool-share-math.js';
+ * @import {PoolMetrics} from '../types.js';
+ * @import {SmartWalletKit} from '@agoric/client-utils';
  */
 
 import {
@@ -50,7 +51,7 @@ const parseUSDCAmount = (amountString, usdc) => {
  * @param {Command} program
  * @param {{
  *   fetch?: Window['fetch'];
- *    smartWalletKit?: import('@agoric/client-utils').SmartWalletKit;
+ *    smartWalletKit?: SmartWalletKit;
  *   stdout: typeof process.stdout;
  *   stderr: typeof process.stderr;
  *   env: typeof process.env;
@@ -97,7 +98,9 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
-      const metrics = await swk.readPublished('fastUsdc.poolMetrics');
+      const metrics = /** @type {PoolMetrics} */ (
+        await swk.readPublished('fastUsdc.poolMetrics')
+      );
       const fastLPAmount = floorDivideBy(usdcAmount, metrics.shareWorth);
 
       const offer = Offers.fastUsdc.Deposit(swk.agoricNames, {
@@ -140,7 +143,9 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
-      const metrics = await swk.readPublished('fastUsdc.poolMetrics');
+      const metrics = /** @type {PoolMetrics} */ (
+        await swk.readPublished('fastUsdc.poolMetrics')
+      );
       const fastLPAmount = ceilDivideBy(usdcAmount, metrics.shareWorth);
 
       const offer = Offers.fastUsdc.Withdraw(swk.agoricNames, {

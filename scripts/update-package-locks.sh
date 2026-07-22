@@ -17,6 +17,15 @@ fi
 
 COREPACK_ROOT="${COREPACK_ROOT:-}"
 
+# XXX: Tech debt. We currently piggyback on update-package-locks to refresh
+# a3p local vendored package files instead of having a dedicated sync command.
+echo "Refreshing a3p local-packages files via prepare-test.sh"
+(
+  cd a3p-integration
+  ./scripts/prepare-test.sh
+)
+echo "a3p local-packages files refreshed."
+
 # This script updates all JS lock files in the repository.
 find . -name node_modules -prune -o -name yarn.lock -print0 \
   | while IFS= read -r -d $'\0' lockfile; do

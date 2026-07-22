@@ -11,9 +11,13 @@
  * linked with https://github.com/agoric/agoric-sdk/issues/4564
  */
 import { E } from '@endo/far';
-import url from 'url';
+import url from 'node:url';
 
-/** @typedef {ReturnType<import('./endo-pieces-contract.js')['start']>['publicFacet']} BundleMaker */
+/**
+ * @import {start} from './endo-pieces-contract.js';
+ */
+
+/** @typedef {ReturnType<typeof start>['publicFacet']} BundleMaker */
 /** @typedef {ReturnType<BundleMaker['makeBundler']>} Bundler */
 
 export const makeGetBundlerMaker =

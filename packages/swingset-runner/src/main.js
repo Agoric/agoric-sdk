@@ -1,8 +1,8 @@
-import path from 'path';
-import fs from 'fs';
-import process from 'process';
-import repl from 'repl';
-import util from 'util';
+import path from 'node:path';
+import fs from 'node:fs';
+import process from 'node:process';
+import repl from 'node:repl';
+import util from 'node:util';
 import { makeStatLogger } from '@agoric/stat-logger';
 import {
   buildTimer,
@@ -27,6 +27,10 @@ import {
   printMainStats,
   outputStats,
 } from './printStats.js';
+
+/**
+ * @import {Session} from 'inspector';
+ */
 
 const log = console.log;
 
@@ -260,13 +264,13 @@ export async function main() {
   let heapProfileFilePath;
   /** @type {number} */
   let heapSamplingInterval = 1024;
-  /** @type {import('inspector').Session | undefined} */
+  /** @type {Session | undefined} */
   let inspectorSession;
   /** @type {string | undefined} */
   let nextArg;
 
   const initializeInspectorSession = () =>
-    import('inspector').then(({ Session }) => {
+    import('node:inspector').then(({ Session }) => {
       inspectorSession = new Session();
       inspectorSession.connect();
     });

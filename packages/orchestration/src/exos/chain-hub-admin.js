@@ -6,7 +6,8 @@ import { ChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainInfo, ChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {IBCConnectionInfo} from '@agoric/network/ibc';
+ * @import {CosmosChainInfo, ChainInfo, Denom} from '@agoric/orchestration';
  * @import {ChainHub, DenomDetail} from './chain-hub.js';
  */
 
@@ -80,4 +81,4 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
   return makeCreatorFacet;
 };
 
-/** @typedef {ReturnType<prepareChainHubAdmin>} ChainHubAdmin */
+/** @typedef {ReturnType<typeof prepareChainHubAdmin>} ChainHubAdmin */

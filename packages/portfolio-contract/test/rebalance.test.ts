@@ -1,5 +1,7 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
-import type { ImplementationFn } from 'ava';
+import type { ExecutionContext, ImplementationFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import type { Brand } from '@agoric/ertp/src/types.js';
 import { objectMap } from '@agoric/internal';
@@ -15,12 +17,13 @@ import type {
   TransferProtocol,
 } from '../tools/network/network-spec.js';
 import type { FlowEdge } from '../tools/network/buildGraph.js';
+import { TEST_NETWORK } from '../tools/network/test-network.js';
 import { planRebalanceFlow } from '../tools/plan-solve.js';
 import type { RebalanceMode } from '../tools/plan-solve.js';
-import { TEST_NETWORK } from './network/test-network.js';
 import { gasEstimator } from './mocks.js';
+import { readableSteps } from './supports.js';
+import type { MockMovementDesc } from './supports.js';
 
-// eslint-disable-next-line no-nested-ternary
 const strcmp = (a: string, b: string) => (a > b ? 1 : a < b ? -1 : 0);
 const compareFlowEdges = (a: FlowEdge, b: FlowEdge) =>
   strcmp(a.src.toLowerCase(), b.src.toLowerCase()) ||
@@ -35,21 +38,12 @@ const { brand: TOK_BRAND } = (() => ({ brand: Far('USD*') as Brand<'nat'> }))();
 const { brand: FEE_BRAND } = (() => ({ brand: Far('BLD') as Brand<'nat'> }))();
 const token = (v: bigint) => AmountMath.make(TOK_BRAND, v * USCALE);
 const ZERO = token(0n);
-const fixedFee = AmountMath.make(FEE_BRAND, 11n * USCALE);
-const evmGas = 220000000n * USCALE;
+const fixedFee = AmountMath.make(FEE_BRAND, 12n * USCALE);
+const evmGas = 240000000n * USCALE;
 const subtract5bps = (scaled: bigint) =>
   // HACK subtract an extra 1n to match `rebalanceMinCostFlowSteps`.
   // See https://github.com/Agoric/agoric-private/issues/415
   (scaled * USCALE * 9995n) / 10000n - 1n;
-
-const formatAmount = ({ brand, value }) => {
-  const intPart = Number(value / USCALE);
-  const fracPart = Number(value - BigInt(intPart) * USCALE) / Number(USCALE);
-  const scaledValue = intPart + fracPart;
-  if (brand === TOK_BRAND) return `$${scaledValue}`;
-  const prettyBrand = brand[Symbol.toStringTag].replace(/^Alleged: /, '');
-  return `${scaledValue} ${prettyBrand}`;
-};
 
 // Pools
 const A = 'Aave_Arbitrum';
@@ -59,15 +53,11 @@ const C = 'Compound_Ethereum';
 // Helper to build current map (use shared token)
 const balances = (rec: Record<string, bigint>) => objectMap(rec, v => token(v));
 
-// Helper for comprehensible ava outputs.
-const readableSteps = steps =>
-  steps.map(step => {
-    const { src, dest, amount, fee } = step;
-    const prettyAmount = formatAmount(amount);
-    const feeSuffix = fee ? ` [fee ${formatAmount(fee)}]` : '';
-    return `${src} -> ${dest} ${prettyAmount}${feeSuffix}`;
-  });
-const assertSteps = async (t, actual, expected) => {
+const assertSteps = async (
+  t: ExecutionContext,
+  actual: MockMovementDesc[],
+  expected: MockMovementDesc[],
+) => {
   const fullResult = await t.try(tt => tt.deepEqual(actual, expected));
   if (fullResult.passed) {
     fullResult.commit();
@@ -76,7 +66,10 @@ const assertSteps = async (t, actual, expected) => {
   // Try for a simple diff, but if that doesn't exhibit the failure then commit
   // to the full result after all.
   const summaryResult = await t.try(tt =>
-    tt.deepEqual(readableSteps(actual), readableSteps(expected)),
+    tt.deepEqual(
+      readableSteps(actual, TOK_BRAND),
+      readableSteps(expected, TOK_BRAND),
+    ),
   );
   if (!summaryResult.passed) {
     fullResult.discard();
@@ -107,7 +100,7 @@ const testWithAllModes = (
 testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
   const current = balances({ [A]: 80n, [B]: 20n });
   const targetBps = { [A]: 5000n, [B]: 5000n };
-  const { steps } = await planRebalanceFlow({
+  const { plan } = await planRebalanceFlow({
     mode: mode as RebalanceMode,
     network: TEST_NETWORK,
     current,
@@ -117,7 +110,7 @@ testWithAllModes('solver simple 2-pool case (A -> B 30)', async (t, mode) => {
     gasEstimator,
   });
 
-  await assertSteps(t, steps, [
+  await assertSteps(t, plan.flow, [
     // leaf -> hub
     { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
     // hub -> hub legs
@@ -142,7 +135,7 @@ testWithAllModes(
   async (t, mode) => {
     const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
     const targetBps = { [A]: 3400n, [B]: 3300n, [C]: 3300n };
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -154,7 +147,7 @@ testWithAllModes(
 
     const amt66 = token(66n);
     const amt33 = token(33n);
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       // leaf -> hub (aggregated outflow from A)
       { src: A, dest: '@Arbitrum', amount: amt66, fee: fixedFee },
       // hub -> hub aggregated then split
@@ -188,7 +181,7 @@ testWithAllModes(
 testWithAllModes('solver already balanced => no steps', async (t, mode) => {
   const current = balances({ [A]: 50n, [B]: 50n });
   const targetBps = { [A]: 5000n, [B]: 5000n };
-  const { steps } = await planRebalanceFlow({
+  const { plan } = await planRebalanceFlow({
     mode: mode as RebalanceMode,
     network: TEST_NETWORK,
     current,
@@ -197,12 +190,12 @@ testWithAllModes('solver already balanced => no steps', async (t, mode) => {
     feeBrand: FEE_BRAND,
     gasEstimator,
   });
-  await assertSteps(t, steps, []);
+  await assertSteps(t, plan.flow, []);
 });
 
 testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
   const current = balances({ [A]: 10n, [B]: 20n, [C]: 70n });
-  const { steps } = await planRebalanceFlow({
+  const { plan } = await planRebalanceFlow({
     mode: mode as RebalanceMode,
     network: TEST_NETWORK,
     current,
@@ -211,7 +204,7 @@ testWithAllModes('solver all to one (B + C -> A)', async (t, mode) => {
     feeBrand: FEE_BRAND,
     gasEstimator,
   });
-  await assertSteps(t, steps, [
+  await assertSteps(t, plan.flow, [
     { src: B, dest: '@Avalanche', amount: token(20n), fee: fixedFee },
     { src: '@Avalanche', dest: '@agoric', amount: token(20n), fee: fixedFee },
     { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
@@ -235,7 +228,7 @@ testWithAllModes(
   async (t, mode) => {
     const current = balances({ [A]: 100n, [B]: 0n, [C]: 0n });
     const target = { [A]: ZERO, [B]: token(60n), [C]: token(40n) };
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -244,7 +237,7 @@ testWithAllModes(
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: A, dest: '@Arbitrum', amount: token(100n), fee: fixedFee },
       { src: '@Arbitrum', dest: '@agoric', amount: token(100n), fee: fixedFee },
       { src: '@agoric', dest: '@noble', amount: token(100n) },
@@ -276,7 +269,7 @@ testWithAllModes(
   'solver collect to one (B 30 + C 70 -> A)',
   async (t, mode) => {
     const current = balances({ [A]: 0n, [B]: 30n, [C]: 70n });
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -285,7 +278,7 @@ testWithAllModes(
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
       { src: '@Avalanche', dest: '@agoric', amount: token(30n), fee: fixedFee },
       { src: C, dest: '@Ethereum', amount: token(70n), fee: fixedFee },
@@ -309,7 +302,7 @@ testWithAllModes(
   'solver deposit redistribution (+agoric 100 -> A 70, B 30)',
   async (t, mode) => {
     const current = balances({ '+agoric': 100n, [A]: 0n, [B]: 0n });
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -318,7 +311,7 @@ testWithAllModes(
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: '+agoric', dest: '@agoric', amount: token(100n) },
       { src: '@agoric', dest: '@noble', amount: token(100n) },
       {
@@ -349,7 +342,7 @@ testWithAllModes(
   'solver deposit redistribution (Deposit 100 -> A 70, B 30)',
   async (t, mode) => {
     const current = balances({ '<Deposit>': 100n, [A]: 0n, [B]: 0n });
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -358,7 +351,7 @@ testWithAllModes(
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: '<Deposit>', dest: '@agoric', amount: token(100n) },
       { src: '@agoric', dest: '@noble', amount: token(100n) },
       {
@@ -389,7 +382,7 @@ testWithAllModes(
   'solver withdraw to cash (A 50 + B 30 -> Cash)',
   async (t, mode) => {
     const current = balances({ [A]: 50n, [B]: 30n, '<Cash>': 0n });
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -398,7 +391,7 @@ testWithAllModes(
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: A, dest: '@Arbitrum', amount: token(50n), fee: fixedFee },
       { src: '@Arbitrum', dest: '@agoric', amount: token(50n), fee: fixedFee },
       { src: B, dest: '@Avalanche', amount: token(30n), fee: fixedFee },
@@ -419,7 +412,7 @@ testWithAllModes(
       '@Avalanche': 20n,
       '@noble': 20n,
     });
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -435,7 +428,7 @@ testWithAllModes(
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: '@Arbitrum', dest: A, amount: token(30n), fee: fixedFee },
       { src: '@Avalanche', dest: B, amount: token(20n), fee: fixedFee },
       {
@@ -469,7 +462,7 @@ testWithAllModes(
       [A]: token(300n),
       [C]: token(200n),
     };
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -478,7 +471,7 @@ testWithAllModes(
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: '<Deposit>', dest: '@agoric', amount: token(1000n) },
       { src: '@agoric', dest: '@noble', amount: token(1000n) },
       {
@@ -529,7 +522,7 @@ testWithAllModes(
       [C]: token(160n),
       '<Deposit>': ZERO,
     };
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -539,7 +532,7 @@ testWithAllModes(
       gasEstimator,
     });
     // Expect deposit 500 to route to fill deficits: USDN 120, A 220, C 160
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: '<Deposit>', dest: '@agoric', amount: token(500n) },
       { src: '@agoric', dest: '@noble', amount: token(500n) },
       {
@@ -579,7 +572,7 @@ testWithAllModes(
     const USDN = 'USDN';
     const current = balances({ '<Deposit>': 1000n, [USDN]: 500n });
     const target = { '<Deposit>': ZERO, [USDN]: token(1500n) };
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -588,7 +581,7 @@ testWithAllModes(
       feeBrand: FEE_BRAND,
       gasEstimator,
     });
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: '<Deposit>', dest: '@agoric', amount: token(1000n) },
       { src: '@agoric', dest: '@noble', amount: token(1000n) },
       {
@@ -606,7 +599,7 @@ testWithAllModes(
   async (t, mode) => {
     const current = balances({ [A]: 80n, [B]: 20n, [C]: 7n }); // C present in current
     const target = { [A]: token(50n), [B]: token(50n) }; // C omitted from target
-    const { steps } = await planRebalanceFlow({
+    const { plan } = await planRebalanceFlow({
       mode: mode as RebalanceMode,
       network: TEST_NETWORK,
       current,
@@ -617,7 +610,7 @@ testWithAllModes(
     });
 
     // Identical to the 2-pool case; no steps to/from C
-    await assertSteps(t, steps, [
+    await assertSteps(t, plan.flow, [
       { src: A, dest: '@Arbitrum', amount: token(30n), fee: fixedFee },
       { src: '@Arbitrum', dest: '@agoric', amount: token(30n), fee: fixedFee },
       { src: '@agoric', dest: '@noble', amount: token(30n) },
@@ -635,7 +628,68 @@ testWithAllModes(
   },
 );
 
-test.failing('solver differentiates cheapest vs. fastest', async t => {
+test('infeasibility error with debug=true', async t => {
+  // @ts-expect-error fake chain names
+  const network: NetworkSpec = harden({
+    debug: true,
+    environment: 'test',
+    chains: [
+      { name: 'FakeSupply', control: 'axelar' },
+      { name: 'FakeSink', control: 'axelar' },
+    ],
+    pools: [
+      { pool: 'Aave_FakeSupply', chain: 'FakeSupply', protocol: 'Aave' },
+      { pool: 'Aave_FakeSink', chain: 'FakeSink', protocol: 'Aave' },
+    ],
+    links: [
+      {
+        src: '@FakeSupply',
+        dest: '@FakeSink',
+        transfer: 'cctpV2',
+        variableFeeBps: 0,
+        timeSec: 30,
+        min: 100_000n,
+      },
+      {
+        src: '@FakeSink',
+        dest: '@FakeSupply',
+        transfer: 'cctpV2',
+        variableFeeBps: 0,
+        timeSec: 30,
+        min: 100_000n,
+      },
+    ],
+  });
+  const current = { '+FakeSupply': token(10_000_000_000n) }; // $10k
+  const target = {
+    Aave_FakeSupply: token(9_999_990_000n),
+    // delta is too small for link
+    Aave_FakeSink: token(10000n),
+  };
+  let thrown: Error | undefined;
+  await null;
+  try {
+    await planRebalanceFlow({
+      network,
+      // @ts-expect-error fake chain names
+      current,
+      // @ts-expect-error fake chain names
+      target,
+      brand: TOK_BRAND,
+      feeBrand: FEE_BRAND,
+      gasEstimator,
+    });
+  } catch (err) {
+    thrown = err as Error;
+  }
+  t.assert(thrown);
+  t.is(
+    thrown?.message,
+    'No feasible solution: nodes=5 edges=11 | supply: pos 0 must equal neg 10000000000000000 (diff -10000000000000000) | WARN: total supply does not balance to 0 | sources=0 sinks=2 | hubs: @FakeSink, @FakeSupply | inter-hub edges: @FakeSupply->@FakeSink, @FakeSink->@FakeSupply | { feasible: false, result: 0, bounded: true, e01: { arc: "@FakeSupply->Aave_FakeSupply", pick: 0.010, via: 9_999_990_000 }, e02: { arc: "Aave_FakeSink->@FakeSink", via: 9_999_990_000 }, e10: { arc: "@FakeSink->@FakeSupply", pick: 0.010, via: 9_999_990_000 } }',
+  );
+});
+
+test('solver differentiates cheapest vs. fastest', async t => {
   const network: NetworkSpec = {
     debug: true,
     environment: 'test',
@@ -683,11 +737,11 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     gasEstimator,
   });
   t.like(cheapResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
-    { src: '+agoric', dest: '@agoric', via: 'local' },
-    { src: '@agoric', dest: '@External', via: 'cheap' },
-    { src: '@External', dest: 'Sink_External', via: 'local' },
+    { src: '+agoric', dest: '@agoric', transfer: 'local' },
+    { src: '@agoric', dest: '@External', transfer: 'cheap' },
+    { src: '@External', dest: 'Sink_External', transfer: 'local' },
   ]);
-  await assertSteps(t, cheapResult.steps, [
+  await assertSteps(t, cheapResult.plan.flow, [
     { src: '+agoric', dest: '@agoric', amount: token(100n) },
     {
       src: '@agoric',
@@ -708,11 +762,11 @@ test.failing('solver differentiates cheapest vs. fastest', async t => {
     gasEstimator,
   });
   t.like(fastResult.flows.map(flow => flow.edge).sort(compareFlowEdges), [
-    { src: '+agoric', dest: '@agoric', via: 'local' },
-    { src: '@agoric', dest: '@External', via: 'fast' },
-    { src: '@External', dest: 'Sink_External', via: 'local' },
+    { src: '+agoric', dest: '@agoric', transfer: 'local' },
+    { src: '@agoric', dest: '@External', transfer: 'fast' },
+    { src: '@External', dest: 'Sink_External', transfer: 'local' },
   ]);
-  await assertSteps(t, fastResult.steps, [
+  await assertSteps(t, fastResult.plan.flow, [
     { src: '+agoric', dest: '@agoric', amount: token(100n) },
     {
       src: '@agoric',

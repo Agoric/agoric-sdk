@@ -1,8 +1,15 @@
+import '@endo/init/debug.js';
+
 import anyTest from 'ava';
-import path from 'path';
+import path from 'node:path';
 import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
+import { unsafeSharedBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import bundleSource from '@endo/bundle-source';
-import zcfBundle from '../../../bundles/bundle-contractFacet.js';
+import { zoeSourceSpecRegistry } from '../../../source-spec-registry.js';
+
+/**
+ * @import {TestFn} from 'ava';
+ */
 
 // offerArgsUsageContract is just used as a generic contract for the
 // purpose of registering a feeBrand before any zcfMint for the
@@ -11,13 +18,15 @@ const CONTRACT_FILES = ['runMintContract', 'offerArgsUsageContract'];
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-/** @type {import('ava').TestFn<{ data: { kernelBundles: any, config: any } }>} */
+/** @type {TestFn<{ data: { kernelBundles: any, config: any } }>} */
 const test = anyTest;
 
 test.before(async t => {
-  const start = Date.now();
+  const start = performance.now();
   const kernelBundles = await buildKernelBundles();
-  const step2 = Date.now();
+  const bundleCache = await unsafeSharedBundleCache;
+  const { zcfBundle } = await bundleCache.loadRegistry(zoeSourceSpecRegistry);
+  const step2 = performance.now();
   const contractBundles = {};
   const contractNames = [];
   await Promise.all(
@@ -36,7 +45,7 @@ test.before(async t => {
       contractNames.push(bundleName);
     }),
   );
-  const step3 = Date.now();
+  const step3 = performance.now();
 
   const vats = {};
   await Promise.all(
@@ -58,7 +67,7 @@ test.before(async t => {
   config.bundles = { zcf: { bundle: zcfBundle }, ...contractBundles };
   config.defaultManagerType = 'xs-worker';
 
-  const step4 = Date.now();
+  const step4 = performance.now();
   const ktime = `${(step2 - start) / 1000}s kernel`;
   const ctime = `${(step3 - step2) / 1000}s contracts`;
   const vtime = `${(step4 - step3) / 1000}s vats`;

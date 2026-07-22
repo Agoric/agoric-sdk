@@ -11,6 +11,11 @@ import { M } from '@agoric/store';
 import { prepareExoClass, watchPromise } from '@agoric/vat-data';
 
 /**
+ * @import {VatPowers} from '@agoric/swingset-vat';
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
+/**
  * @callback Die
  * @param {unknown} completion
  * @param {[target: unknown, method: string, ...args: unknown[]]} [finalSend]
@@ -54,8 +59,8 @@ const promiseWatcherMethods = {
 };
 
 /**
- * @param {import('@agoric/swingset-vat').VatPowers} vatPowers
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {VatPowers} vatPowers
+ * @param {Baggage} baggage
  * @param {unknown} [vatParameters]
  */
 export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
@@ -88,6 +93,20 @@ export const makeReflectionMethods = (vatPowers, baggage, vatParameters) => {
   };
 
   return {
+    baggageHas: key => {
+      return baggage.has(key);
+    },
+    baggageGet: key => {
+      return baggage.get(key);
+    },
+    baggageSet: (key, value) => {
+      if (!baggage.has(key)) {
+        baggage.init(key, value);
+      } else {
+        baggage.set(key, value);
+      }
+    },
+
     /** @type {Die} */
     dieHappy: (completion, finalSend) => {
       vatPowers.exitVat(completion);
@@ -198,7 +217,7 @@ harden(makeReflectionMethods);
 
 export function buildRootObject(vatPowers, vatParameters, baggage) {
   const methods = makeReflectionMethods(vatPowers, baggage, vatParameters);
-  const rootObject = Far('root', methods);
+  const rootObject = Far('root', { ...methods, getVersion: () => 1 });
 
   // Invoke specified methods of the new root object *before* returning,
   // supporting use of previous results as top-level arguments by interpreting

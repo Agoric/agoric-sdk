@@ -1,8 +1,8 @@
 // @ts-nocheck
 import '@endo/init';
 import sqlite3 from 'better-sqlite3';
-import fs from 'fs';
-import process from 'process';
+import fs from 'node:fs';
+import process from 'node:process';
 
 // run this like:
 //  node vat-map-from-swingstore.js run-04-swingstore.sqlite vat-map-04.json 04

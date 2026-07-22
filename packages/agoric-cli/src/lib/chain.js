@@ -1,12 +1,12 @@
 // @ts-check
-/* eslint-env node */
 import { normalizeBech32 } from '@cosmjs/encoding';
-import { execFileSync as execFileSyncAmbient } from 'child_process';
+import { execFileSync as execFileSyncAmbient } from 'node:child_process';
 import { makeAgoricQueryClient } from '@agoric/client-utils';
 
 /**
  * @import {MinimalNetworkConfig} from '@agoric/client-utils';
  * @import {Params, ParamsSDKType} from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
+ * @import {Writable} from 'stream';
  */
 
 const agdBinary = 'agd';
@@ -79,8 +79,8 @@ const makeGasOpts = limit => {
  *   dryRun?: boolean,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string}
- *   stdout?: Pick<import('stream').Writable, 'write'>
- *   execFileSync?: typeof import('child_process').execFileSync
+ *   stdout?: Pick<Writable, 'write'>
+ *   execFileSync?: typeof execFileSyncAmbient
  * }} opts
  */
 export const execSwingsetTransaction = (swingsetArgs, opts) => {
@@ -115,6 +115,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     stdout.write(`${agdBinary} `);
     stdout.write(cmd.join(' '));
     stdout.write('\n');
+    return undefined;
   } else {
     const yesCmd = cmd.concat(['--yes']);
     if (verbose) console.log('Executing ', agdBinary, yesCmd);
@@ -145,7 +146,7 @@ harden(fetchSwingsetParams);
 
 /**
  * @param {MinimalNetworkConfig & {
- *   execFileSync: typeof import('child_process').execFileSync,
+ *   execFileSync: typeof execFileSyncAmbient,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
  *   retryMessage?: string,
@@ -169,7 +170,7 @@ export const pollBlocks = opts => async lookup => {
       // see await null above
       const result = await lookup({ time, height });
       return result;
-    } catch (_err) {
+    } catch {
       console.error(
         time,
         retryMessage || 'not in block',
@@ -184,7 +185,7 @@ export const pollBlocks = opts => async lookup => {
 /**
  * @param {string} txhash
  * @param {MinimalNetworkConfig & {
- *   execFileSync: typeof import('child_process').execFileSync,
+ *   execFileSync: typeof execFileSyncAmbient,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
  * }} opts

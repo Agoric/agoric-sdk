@@ -3,7 +3,7 @@ import { agoric, mkTemp } from '@agoric/synthetic-chain';
 import { writeFile } from 'node:fs/promises';
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {VstorageKit} from '@agoric/client-utils';
  */
 

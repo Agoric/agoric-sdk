@@ -14,6 +14,12 @@
  */
 
 /**
+ * @import {RemotableObject} from '@endo/marshal';
+ * @import {OfferStatus} from '@agoric/smart-wallet/src/offers.js';
+ * @import {VstorageKit} from './types.js';
+ */
+
+/**
  * @typedef {object} RetryOptions
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
@@ -21,7 +27,7 @@
  * @property {(value: unknown) => unknown} [renderResult]
  *
  * @typedef {object} RetryPowers
- * @property {typeof global.setTimeout} setTimeout
+ * @property {<T extends (...args: unknown[]) => unknown>(fn: T, timeout?: number, ...args: Parameters<T>) => unknown} setTimeout
  * @property {(...args: unknown[]) => void} [log]
  *
  * @typedef {RetryOptions & RetryPowers} RetryOptionsAndPowers mixes ocaps with configuration
@@ -42,7 +48,7 @@
 export const sleep = (ms, { log = () => {}, setTimeout }) =>
   new Promise(resolve => {
     log(`Sleeping for ${ms}ms...`);
-    setTimeout(resolve, ms);
+    setTimeout(() => resolve(undefined), ms);
   });
 
 /**
@@ -89,8 +95,13 @@ export const retryUntilCondition = async (
           };
           return cleanup;
         };
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        resultP.finally(makeCleanup(resultP));
+        // Use `.then(cleanup, cleanup)` rather than `.finally(cleanup)`: a
+        // rejected `resultP` is already handled below via `await
+        // Promise.race([resultP, ...])`, but `.finally()` forwards the
+        // rejection into a new, uncaught promise, which was reported as an
+        // unhandled rejection once `operation` failed on any attempt prior
+        // to the last.
+        resultP.then(makeCleanup(resultP), makeCleanup(resultP));
       }
       const result = await Promise.race([
         resultP,
@@ -152,7 +163,7 @@ const makeGetInstances = follow => async () => {
 /**
  *
  * @param {string} contractName
- * @param {{ log: (message: string) => void, follow: () => object, setTimeout: typeof global.setTimeout }} ambientAuthority
+ * @param {{ log: (message: string) => void, follow: () => object, setTimeout: typeof globalThis.setTimeout }} ambientAuthority
  * @param {WaitUntilOptions} options
  */
 export const waitUntilContractDeployed = (
@@ -192,7 +203,7 @@ const checkCosmosBalance = (balances, threshold) => {
 
 /**
  * @param {string} destAcct
- * @param {{ log?: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
+ * @param {{ log?: (message: string) => void, query: () => Promise<object>, setTimeout: typeof globalThis.setTimeout}} io
  * @param {{denom: string, value: number}} threshold
  * @param {WaitUntilOptions} options
  */
@@ -219,7 +230,7 @@ const makeQueryWallet = follow => async (/** @type {string} */ addr) => {
 
 /**
  *
- * @param {object} offerStatus
+ * @param {{ updated?: string, status?: OfferStatus }} offerStatus
  * @param {boolean} waitForPayouts
  * @param {string} offerId
  */
@@ -241,7 +252,7 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{ log?: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
+ * @param {{ log?: typeof console.log, follow: () => object, setTimeout: typeof globalThis.setTimeout }} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (
@@ -266,8 +277,12 @@ export const waitUntilOfferResult = (
 /// ////////// Making sure a core-eval successfully sent zoe invitations to committee members for governance /////////////
 
 /**
+ * Check if a capabilities-as-pure-data representation (specifically replacing
+ * each Remotable with a string containing its alleged interface name) of a
+ * smart-wallet UpdateRecord indicates that it is a balance update whose
+ * `currentAmount` `brand` looks like a Zoe Invitation.
  *
- * @param {{ updated: string, currentAmount: any }} update
+ * @param {{ updated?: string, currentAmount?: { brand?: string } }} update
  * @returns {boolean}
  */
 const checkForInvitation = update => {
@@ -280,9 +295,13 @@ const checkForInvitation = update => {
 };
 
 /**
+ * Wait for the specified address's wallet to publish a balance update with a
+ * `currentAmount` whose `brand` looks like a Zoe Invitation.
+ * @deprecated because it requires io.follow to map Amount `brand` references
+ * into strings
  *
  * @param {string} addr
- * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof globalThis.setTimeout}} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilInvitationReceived = (addr, io, options) => {
@@ -304,12 +323,12 @@ const makeQueryWalletCurrent = follow => (/** @type {string} */ addr) =>
   follow('-lF', `:published.wallet.${addr}.current`);
 
 /**
- * @param {object} update
+ * @param {Record<string, unknown>} update
  * @param {string} offerId
  * @returns {boolean}
  */
 const checkLiveOffers = (update, offerId) => {
-  const liveOffers = update.liveOffers;
+  const liveOffers = /** @type {string[][] | undefined} */ (update.liveOffers);
   if (!liveOffers) {
     return false;
   }
@@ -319,7 +338,7 @@ const checkLiveOffers = (update, offerId) => {
 /**
  * @param {string} addr
  * @param {string} offerId
- * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof globalThis.setTimeout}} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferExited = async (addr, offerId, io, options) => {
@@ -342,18 +361,18 @@ export const waitUntilOfferExited = async (addr, offerId, io, options) => {
  * @typedef {{
  *   latestOutcome: {
  *     outcome: string;
- *     question: import('@endo/marshal').RemotableObject
+ *     question: RemotableObject
  *   },
  *   latestQuestion: {
  *     closingRule: { deadline: bigint },
- *     questionHandle: import('@endo/marshal').RemotableObject
+ *     questionHandle: RemotableObject
  *   }
  * }} ElectionResult
  */
 
 /**
  * @param {string} basePath
- * @param {import('./vstorage-kit').VstorageKit} vstorage
+ * @param {VstorageKit} vstorage
  * @returns {Promise<ElectionResult>}
  */
 const fetchLatestEcQuestion = async (basePath, vstorage) => {
@@ -406,9 +425,9 @@ const checkCommitteeElectionResult = (electionResult, expectedResult) => {
  *   deadline: bigint;
  * }} expectedResult
  * @param {{
- *   vstorage: import('./vstorage-kit').VstorageKit;
+ *   vstorage: VstorageKit;
  *   log: typeof console.log,
- *   setTimeout: typeof global.setTimeout
+ *   setTimeout: typeof globalThis.setTimeout
  * }} io
  * @param {WaitUntilOptions} options
  */

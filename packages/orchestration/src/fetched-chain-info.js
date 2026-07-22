@@ -102,6 +102,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'injective-1': {
+        id: 'connection-118',
+        client_id: '07-tendermint-126',
+        counterparty: {
+          client_id: '07-tendermint-328',
+          connection_id: 'connection-333',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-492',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-454',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'kaiyo-1': {
         id: 'connection-20',
         client_id: '07-tendermint-20',
@@ -1108,6 +1126,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'cosmoshub-4': {
+        id: 'connection-103',
+        client_id: '07-tendermint-151',
+        counterparty: {
+          client_id: '07-tendermint-1480',
+          connection_id: 'connection-1272',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-278',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-1879',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'dymension_1100-1': {
         id: 'connection-52',
         client_id: '07-tendermint-82',
@@ -1580,6 +1616,24 @@ export default /** @type {const} } */ ({
           channelId: 'channel-342',
           portId: 'transfer',
           counterPartyChannelId: 'channel-3',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
+      celestia: {
+        id: 'connection-1272',
+        client_id: '07-tendermint-1480',
+        counterparty: {
+          client_id: '07-tendermint-151',
+          connection_id: 'connection-103',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-1879',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-278',
           counterPartyPortId: 'transfer',
           ordering: 0,
           state: 3,
@@ -3534,6 +3588,24 @@ export default /** @type {const} } */ ({
       },
     ],
     connections: {
+      'agoric-3': {
+        id: 'connection-333',
+        client_id: '07-tendermint-328',
+        counterparty: {
+          client_id: '07-tendermint-126',
+          connection_id: 'connection-118',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-454',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-492',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'axelar-dojo-1': {
         id: 'connection-93',
         client_id: '07-tendermint-113',

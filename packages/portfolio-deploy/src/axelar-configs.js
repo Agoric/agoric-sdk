@@ -1,8 +1,8 @@
 /**
  * @import {AxelarChain} from '@agoric/portfolio-api/src/constants.js';
- * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
- * @import {BaseChainInfo, Bech32Address} from '@agoric/orchestration'
- * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.ts';
+ * @import {EVMContractAddresses} from '@aglocal/portfolio-contract/src/portfolio.contract.js';
+ * @import {BaseChainInfo, Bech32Address, HexAddress} from '@agoric/orchestration'
+ * @import {EVMContractAddressesMap} from '@aglocal/portfolio-contract/src/type-guards.js';
  */
 
 /**
@@ -50,9 +50,13 @@ export const AxelarChainIdMap = harden({
 // XXX: Ideally this should be Record<keyof typeof AxelarChain, HexAddress>.
 // Currently using a looser type to work around compile-time errors.
 /**
- * @typedef {`0x${string}`} HexAddress
  * @typedef {Record<string, HexAddress>} EvmAddressesMap
  * @typedef {{ mainnet: EvmAddressesMap, testnet: EvmAddressesMap }} AddressesMap
+ */
+
+/**
+ * @typedef {Record<string, HexAddress> | Partial<Record<string, undefined>>} OptionalEvmAddressesMap
+ * @typedef {{ mainnet: OptionalEvmAddressesMap, testnet: OptionalEvmAddressesMap }} OptionalAddressesMap
  */
 
 /**
@@ -102,6 +106,28 @@ const usdcAddresses = harden({
     Ethereum: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238', // https://developers.circle.com/stablecoins/usdc-contract-addresses
     Optimism: '0x5fd84259d66Cd46123540766Be93DFE6D43130D7', // https://sepolia-optimism.etherscan.io/token/0x5fd84259d66Cd46123540766Be93DFE6D43130D7
     Base: '0x036CbD53842c5426634e7929541eC2318f3dCF7e', // https://sepolia.basescan.org/address/0x036CbD53842c5426634e7929541eC2318f3dCF7e
+  },
+});
+
+/**
+ * Permit2 contract addresses
+ * @see {@link https://docs.uniswap.org/contracts/v4/deployments}
+ * @type {AddressesMap}
+ */
+const permit2Addresses = harden({
+  mainnet: {
+    Avalanche: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Arbitrum: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Ethereum: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Optimism: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Base: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+  },
+  testnet: {
+    Avalanche: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Arbitrum: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Ethereum: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Optimism: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    Base: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
   },
 });
 
@@ -173,6 +199,24 @@ const compoundRewardsControllerAddresses = harden({
   },
 });
 
+/** @type {AddressesMap} */
+const walletHelperAddresses = harden({
+  mainnet: {
+    Avalanche: '0x',
+    Ethereum: '0x',
+    Base: '0xE0aFf709b7A6Cdf476738b86354D17bd334eB516',
+    Arbitrum: '0x16e0e17f315eC5F2A1af92bB1A71754D667F8E70',
+    Optimism: '0x',
+  },
+  testnet: {
+    Avalanche: '0x',
+    Ethereum: '0x',
+    Base: '0x',
+    Arbitrum: '0x',
+    Optimism: '0x',
+  },
+});
+
 /** @type {Record<string, AddressesMap>} */
 const beefyVaultAddresses = harden({
   re7: {
@@ -209,21 +253,276 @@ const beefyVaultAddresses = harden({
   },
 });
 
+// XXX move to a new morpho-config.js https://github.com/Agoric/agoric-sdk/pull/12438#discussion_r2783437249
+/** @type {Record<string, AddressesMap>} */
+const erc4626VaultAddresses = harden({
+  vaultU2: {
+    mainnet: {},
+    testnet: {
+      Ethereum: '0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc', // https://sepolia.etherscan.io/address/0xAA1dD21066383b1aC4652Ea41C7520Fb373840Bc
+    },
+  },
+  morphoClearstarHighYieldUsdc: {
+    mainnet: {
+      Ethereum: '0x9B5E92fd227876b4C07a8c02367E2CB23c639DfA', // https://app.morpho.org/ethereum/vault/0x9B5E92fd227876b4C07a8c02367E2CB23c639DfA/clearstar-high-yield-usdc
+    },
+    testnet: {},
+  },
+  morphoClearstarUsdcCore: {
+    mainnet: {
+      Ethereum: '0x69A238Ae7ebeb3c53ff3B544E48B96a2142fc284', // https://app.morpho.org/ethereum/vault/0x69A238Ae7ebeb3c53ff3B544E48B96a2142fc284/clearstar-usdc-core
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcRwa: {
+    mainnet: {
+      Ethereum: '0xA8875aaeBc4f830524e35d57F9772FfAcbdD6C45', // https://app.morpho.org/ethereum/vault/0xA8875aaeBc4f830524e35d57F9772FfAcbdD6C45/gauntlet-usdc-rwa
+    },
+    testnet: {},
+  },
+  morphoSteakhouseHighYieldInstant: {
+    mainnet: {
+      Ethereum: '0xbeeff2C5bF38f90e3482a8b19F12E5a6D2FCa757', // https://app.morpho.org/ethereum/vault/0xbeeff2C5bF38f90e3482a8b19F12E5a6D2FCa757/steakhouse-high-yield-instant
+    },
+    testnet: {},
+  },
+  morphoClearstarInstitutionalUsdc: {
+    mainnet: {
+      Ethereum: '0x8F40e713a1Cfeff2A052E0c610C8118Be3f75b12', // https://app.morpho.org/ethereum/vault/0x8F40e713a1Cfeff2A052E0c610C8118Be3f75b12/clearstar-institutional-usdc
+    },
+    testnet: {},
+  },
+  morphoClearstarUsdcReactor: {
+    mainnet: {
+      Ethereum: '0x62fE596d59fB077c2Df736dF212E0AFfb522dC78', // https://app.morpho.org/ethereum/vault/0x62fE596d59fB077c2Df736dF212E0AFfb522dC78/clearstar-usdc-reactor
+    },
+    testnet: {},
+  },
+  morphoAlphaUsdcCore: {
+    mainnet: {
+      Ethereum: '0xb0f05E4De970A1aaf77f8C2F823953a367504BA9', // https://app.morpho.org/ethereum/vault/0xb0f05E4De970A1aaf77f8C2F823953a367504BA9/alpha-usdc-core
+    },
+    testnet: {},
+  },
+  morphoResolvUsdc: {
+    mainnet: {
+      Ethereum: '0x132E6C9C33A62D7727cd359b1f51e5B566E485Eb', // https://app.morpho.org/ethereum/vault/0x132E6C9C33A62D7727cd359b1f51e5B566E485Eb/resolv-usdc
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcFrontier: {
+    mainnet: {
+      Ethereum: '0x9a1D6bd5b8642C41F25e0958129B85f8E1176F3e', // https://app.morpho.org/ethereum/vault/0x9a1D6bd5b8642C41F25e0958129B85f8E1176F3e/gauntlet-usdc-frontier
+    },
+    testnet: {},
+  },
+  morphoHyperithmUsdcMidcurve: {
+    mainnet: {
+      Ethereum: '0xCdaea3dde6cE5969aA1414A82A3A681cEd51Ce72', // https://app.morpho.org/ethereum/vault/0xCdaea3dde6cE5969aA1414A82A3A681cEd51Ce72/hyperithm-usdc-midcurve
+    },
+    testnet: {},
+  },
+  morphoHyperithmUsdcDegen: {
+    mainnet: {
+      Ethereum: '0x777791C4d6DC2CE140D00D2828a7C93503c67777', // https://app.morpho.org/ethereum/vault/0x777791C4d6DC2CE140D00D2828a7C93503c67777/hyperithm-usdc-degen,
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcCore: {
+    mainnet: {
+      Arbitrum: '0x7e97fa6893871A2751B5fE961978DCCb2c201E65', // https://app.morpho.org/arbitrum/vault/0x7e97fa6893871A2751B5fE961978DCCb2c201E65/gauntlet-usdc-core
+      Ethereum: '0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458', // https://app.morpho.org/ethereum/vault/0x8eB67A509616cd6A7c1B3c8C21D48FF57df3d458/gauntlet-usdc-core
+    },
+    testnet: {},
+  },
+  morphoSteakhousePrimeUsdc: {
+    mainnet: {
+      Base: '0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2', // https://app.morpho.org/base/vault/0xBEEFE94c8aD530842bfE7d8B397938fFc1cb83b2/steakhouse-prime-usdc
+    },
+    testnet: {},
+  },
+  morphoSteakhouseUsdc: {
+    mainnet: {
+      Base: '0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183', // https://app.morpho.org/base/vault/0xbeeF010f9cb27031ad51e3333f9aF9C6B1228183/steakhouse-usdc
+    },
+    testnet: {},
+  },
+  morphoGauntletUsdcPrime: {
+    mainnet: {
+      Base: '0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61', // https://app.morpho.org/base/vault/0xeE8F4eC5672F09119b96Ab6fB59C27E1b7e44b61/gauntlet-usdc-prime
+      Optimism: '0xC30ce6A5758786e0F640cC5f881Dd96e9a1C5C59', // https://app.morpho.org/opmainnet/vault/0xC30ce6A5758786e0F640cC5f881Dd96e9a1C5C59/gauntlet-usdc-prime
+      Ethereum: '0x8c106EEDAd96553e64287A5A6839c3Cc78afA3D0', // https://app.morpho.org/ethereum/vault/0x8c106EEDAd96553e64287A5A6839c3Cc78afA3D0/gauntlet-usdc-prime
+    },
+    testnet: {},
+  },
+  morphoSeamlessUsdcVault: {
+    mainnet: {
+      Base: '0x616a4E1db48e22028f6bbf20444Cd3b8e3273738', // https://app.morpho.org/base/vault/0x616a4E1db48e22028f6bbf20444Cd3b8e3273738/seamless-usdc-vault
+    },
+    testnet: {},
+  },
+  morphoSteakhouseHighYieldUsdc: {
+    mainnet: {
+      Arbitrum: '0x5c0C306Aaa9F877de636f4d5822cA9F2E81563BA', // https://app.morpho.org/arbitrum/vault/0x5c0C306Aaa9F877de636f4d5822cA9F2E81563BA/steakhouse-high-yield-usdc
+    },
+    testnet: {},
+  },
+  morphoHyperithmUsdc: {
+    mainnet: {
+      Arbitrum: '0x4B6F1C9E5d470b97181786b26da0d0945A7cf027', // https://app.morpho.org/arbitrum/vault/0x4B6F1C9E5d470b97181786b26da0d0945A7cf027/hyperithm-usdc
+    },
+    testnet: {},
+  },
+  morphoEthenaSteakhouseUsdc: {
+    mainnet: {
+      Base: '0xBeEfF0be997Cca5B1c13A7433c2004637975739e', // https://app.morpho.org/base/vault/0xBeEfF0be997Cca5B1c13A7433c2004637975739e/ethena-x-steakhouse-usdc
+    },
+    testnet: {},
+  },
+  morphoKpkUsdcPrime: {
+    mainnet: {
+      Ethereum: '0x4Ef53d2cAa51C447fdFEEedee8F07FD1962C9ee6', // https://app.morpho.org/ethereum/vault/0x4Ef53d2cAa51C447fdFEEedee8F07FD1962C9ee6/kpk-usdc-prime
+    },
+    testnet: {},
+  },
+});
+
 /** @type {AddressesMap} */
 const factoryAddresses = harden({
   mainnet: {
-    Arbitrum: '0x51e589D94b51d01B75442AE1504cD8c50d6127C9', // https://arbiscan.io/address/0x51e589D94b51d01B75442AE1504cD8c50d6127C9
-    Avalanche: '0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f', // https://snowtrace.io/address/0x13cA288486f2bb6B3619c5fd6A2917Ec98a41E7f
-    Base: '0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1', // https://basescan.org/address/0x724fB9Fd9876d12Da33223C84E7Abf46fFc159C1
-    Ethereum: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://etherscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
-    Optimism: '0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc', // https://optimistic.etherscan.io/address/0x6ca3e8BFe9196A463136cB2442672e46BBe00BCc
+    Arbitrum: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://arbiscan.io/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
+    Avalanche: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://snowtrace.io/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
+    Base: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://basescan.org/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
+    Ethereum: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://etherscan.io/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
+    Optimism: '0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32', // https://optimistic.etherscan.io/address/0x2b9CAc25853Aba64F0D72eDEFE0C603408B61C32
   },
   testnet: {
-    Arbitrum: '0x230973176B58Ea6071cf2e45061B07692ff1057f', // https://sepolia.arbiscan.io/address/0x230973176B58Ea6071cf2e45061B07692ff1057f
-    Avalanche: '0x75E97ed669C1500784194626b9b45006f76F75f2', // https://testnet.snowtrace.io/address/0x75E97ed669C1500784194626b9b45006f76F75f2
-    Base: '0x98B8598E1cAc53FE9C0B40eB71e3d9aA4ED6bAAF', // https://sepolia.basescan.org/address/0x98B8598E1cAc53FE9C0B40eB71e3d9aA4ED6bAAF
-    Ethereum: '0x2cA7d5d7d1492714FC3636b7A190b99fc80aD057', // https://sepolia.etherscan.io/address/0x2cA7d5d7d1492714FC3636b7A190b99fc80aD057
+    Arbitrum: '0x3625adB63D9c6c4a1654AF173AA871ce0611769B', // https://sepolia.arbiscan.io/address/0x3625adB63D9c6c4a1654AF173AA871ce0611769B
+    Avalanche: '0x3625adB63D9c6c4a1654AF173AA871ce0611769B', // https://testnet.snowtrace.io/address/0x3625adB63D9c6c4a1654AF173AA871ce0611769B
+    Base: '0x3625adB63D9c6c4a1654AF173AA871ce0611769B', // https://sepolia.basescan.org/address/0x3625adB63D9c6c4a1654AF173AA871ce0611769B
+    Ethereum: '0x3625adB63D9c6c4a1654AF173AA871ce0611769B', // https://sepolia.etherscan.io/address/0x3625adB63D9c6c4a1654AF173AA871ce0611769B
+    Optimism: '0x3625adB63D9c6c4a1654AF173AA871ce0611769B', // https://sepolia-optimism.etherscan.io/address/0x3625adB63D9c6c4a1654AF173AA871ce0611769B
+  },
+});
+
+/** @type {AddressesMap} */
+const depositFactoryAddresses = harden({
+  // TODO: These are addresses specific to ymax0 and its current contractAddress
+  mainnet: {
+    Arbitrum: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://arbiscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Avalanche: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://snowtrace.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Base: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://basescan.org/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Ethereum: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://etherscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+    Optimism: '0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A', // https://optimistic.etherscan.io/address/0x827A7A0bB3D6F2f624a9774C3d84D33d460De44A
+  },
+  testnet: {
+    Arbitrum: '0x45F636F03F8570768A7907C0b21BDf791e69B437', // https://sepolia.arbiscan.io/address/0x45F636F03F8570768A7907C0b21BDf791e69B437
+    Avalanche: '0x', // https://testnet.snowtrace.io/address/0x
+    Base: '0x45F636F03F8570768A7907C0b21BDf791e69B437', // https://sepolia.basescan.org/address/0x45F636F03F8570768A7907C0b21BDf791e69B437
+    Ethereum: '0x45F636F03F8570768A7907C0b21BDf791e69B437', // https://sepolia.etherscan.io/address/0x45F636F03F8570768A7907C0b21BDf791e69B437
     Optimism: '0x',
+  },
+});
+
+/** @type {OptionalAddressesMap} */
+const remoteAccountImplementation = harden({
+  mainnet: {
+    Arbitrum: '0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38', // https://arbiscan.io/address/0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38
+    Avalanche: '0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38', // https://snowtrace.io/address/0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38
+    Base: '0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38', // https://basescan.org/address/0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38
+    Ethereum: '0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38', // https://etherscan.io/address/0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38
+    Optimism: '0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38', // https://optimistic.etherscan.io/address/0xaa72ad40f0e4B4df832Cc1f4f4aD28AB7d31aE38
+  },
+  testnet: {
+    Arbitrum: '0x335D6bFFc26a19557c76294e6A05f42DE54582AC', // https://sepolia.arbiscan.io/address/0x335D6bFFc26a19557c76294e6A05f42DE54582AC
+    Avalanche: '0x335D6bFFc26a19557c76294e6A05f42DE54582AC', // https://testnet.snowtrace.io/address/0x335D6bFFc26a19557c76294e6A05f42DE54582AC
+    Base: '0x335D6bFFc26a19557c76294e6A05f42DE54582AC', // https://sepolia.basescan.org/address/0x335D6bFFc26a19557c76294e6A05f42DE54582AC
+    Ethereum: '0x335D6bFFc26a19557c76294e6A05f42DE54582AC', // https://sepolia.etherscan.io/address/0x335D6bFFc26a19557c76294e6A05f42DE54582AC
+    Optimism: '0x335D6bFFc26a19557c76294e6A05f42DE54582AC', // https://sepolia-optimism.etherscan.io/address/0x335D6bFFc26a19557c76294e6A05f42DE54582AC
+  },
+});
+
+/** @type {OptionalAddressesMap} */
+const remoteAccountFactory = harden({
+  // TODO: These are addresses specific to ymax0 and its current contractAddress
+  mainnet: {
+    Arbitrum: '0x3B460c6bA83d6b5EDf421AB696B473c2816823A6', // https://arbiscan.io/address/0x3B460c6bA83d6b5EDf421AB696B473c2816823A6
+    Avalanche: '0x3B460c6bA83d6b5EDf421AB696B473c2816823A6', // https://snowtrace.io/address/0x3B460c6bA83d6b5EDf421AB696B473c2816823A6
+    Base: '0x3B460c6bA83d6b5EDf421AB696B473c2816823A6', // https://basescan.org/address/0x3B460c6bA83d6b5EDf421AB696B473c2816823A6
+    Ethereum: '0x3B460c6bA83d6b5EDf421AB696B473c2816823A6', // https://etherscan.io/address/0x3B460c6bA83d6b5EDf421AB696B473c2816823A6
+    Optimism: '0x3B460c6bA83d6b5EDf421AB696B473c2816823A6', // https://optimistic.etherscan.io/address/0x3B460c6bA83d6b5EDf421AB696B473c2816823A6
+  },
+  testnet: {
+    Arbitrum: '0x8cC84a5655E0188522F44562796565F521A967d3', // https://sepolia.arbiscan.io/address/0x8cC84a5655E0188522F44562796565F521A967d3
+    Avalanche: '0x8cC84a5655E0188522F44562796565F521A967d3', // https://testnet.snowtrace.io/address/0x8cC84a5655E0188522F44562796565F521A967d3
+    Base: '0x8cC84a5655E0188522F44562796565F521A967d3', // https://sepolia.basescan.org/address/0x8cC84a5655E0188522F44562796565F521A967d3
+    Ethereum: '0x8cC84a5655E0188522F44562796565F521A967d3', // https://sepolia.etherscan.io/address/0x8cC84a5655E0188522F44562796565F521A967d3
+    Optimism: '0x8cC84a5655E0188522F44562796565F521A967d3', // https://sepolia-optimism.etherscan.io/address/0x8cC84a5655E0188522F44562796565F521A967d3
+  },
+});
+
+/** @type {OptionalAddressesMap} */
+const remoteAccountRouter = harden({
+  // TODO: These are addresses specific to ymax0 and its current contractAddress
+  mainnet: {
+    Arbitrum: '0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c', // https://arbiscan.io/address/0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c
+    Avalanche: '0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c', // https://snowtrace.io/address/0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c
+    Base: '0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c', // https://basescan.org/address/0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c
+    Ethereum: '0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c', // https://etherscan.io/address/0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c
+    Optimism: '0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c', // https://optimistic.etherscan.io/address/0x2cB36677Ba72854ABEe7F1c5d743E53e9537dA2c
+  },
+  testnet: {
+    Arbitrum: '0xC313dC1dc1F09549856F051eD3a45A24C6Cfb45A', // https://sepolia.arbiscan.io/address/0xC313dC1dc1F09549856F051eD3a45A24C6Cfb45A
+    Avalanche: '0x',
+    Base: '0xC313dC1dc1F09549856F051eD3a45A24C6Cfb45A', // https://sepolia.basescan.org/address/0xC313dC1dc1F09549856F051eD3a45A24C6Cfb45A
+    Ethereum: '0xC313dC1dc1F09549856F051eD3a45A24C6Cfb45A', // https://sepolia.etherscan.io/address/0xC313dC1dc1F09549856F051eD3a45A24C6Cfb45A
+    Optimism: '0x',
+  },
+});
+
+/**
+ * Axelar Gateway contract addresses
+ * @see {@link https://docs.axelar.dev/dev/reference/mainnet-contract-addresses/}
+ * @see {@link https://docs.axelar.dev/dev/reference/testnet-contract-addresses/}
+ * @type {AddressesMap}
+ */
+const gatewayAddresses = harden({
+  mainnet: {
+    Arbitrum: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    Avalanche: '0x5029C0EFf6C34351a0CEc334542cDb22c7928f78',
+    Base: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    Ethereum: '0x4F4495243837681061C4743b74B3eEdf548D56A5',
+    Optimism: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+  },
+  testnet: {
+    Arbitrum: '0xe1cE95479C84e9809269227C7F8524aE051Ae77a',
+    Avalanche: '0xC249632c2D40b9001FE907806902f63038B737Ab',
+    Base: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    Ethereum: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+    Optimism: '0xe432150cce91c13a887f7D836923d5597adD8E31',
+  },
+});
+
+/**
+ * Axelar Gas Service contract addresses
+ * @see {@link https://docs.axelar.dev/dev/reference/mainnet-contract-addresses/}
+ * @see {@link https://docs.axelar.dev/dev/reference/testnet-contract-addresses/}
+ * @type {AddressesMap}
+ */
+const gasServiceAddresses = harden({
+  mainnet: {
+    Arbitrum: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+    Avalanche: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+    Base: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+    Ethereum: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+    Optimism: '0x2d5d7d31F671F86C782533cc367F14109a082712',
+  },
+  testnet: {
+    Arbitrum: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    Avalanche: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    Base: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    Ethereum: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
+    Optimism: '0xbE406F0189A0B4cf3A05C286473D23791Dd44Cc6',
   },
 });
 
@@ -242,8 +541,34 @@ const mainnetTokenMessenger = (rows =>
   ]),
 );
 
+/** @see {@link https://developers.circle.com/cctp/references/contract-addresses#tokenmessengerv2} */
+const mainnetTokenMessengerV2 = (rows =>
+  Object.fromEntries(
+    rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
+  ))(
+  /** @type {[string, number, `0x${string}`][]} */ ([
+    ['Ethereum', 0, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['Avalanche', 1, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['OP Mainnet', 2, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['Arbitrum', 3, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+    ['Base', 6, '0x28b5a0e9C621a5BadaA536219b3a228C8168cf5d'],
+  ]),
+);
+
+const cctpRelayer = '0xBC79861af3Ff45Dd10aDB823dD8c7F07310C9d2f';
+
+/**
+ * 1inch AggregationRouterV6, deployed at the same address on all supported EVM
+ * chains.
+ *
+ * @see {@link https://github.com/1inch/limit-order-protocol#deployments--audits-limit-orders-protocol-v4}
+ * @see {@link https://business.1inch.com/portal/documentation/apis/swap/classic-swap/quick-start}
+ */
+const oneInchRouter = '0x111111125421cA6dc452d289314280a0f8842A65';
+
 /**
  * Mainnet configuration with real contract addresses
+ *
  * @type {EVMContractAddressesMap}
  */
 const mainnetContracts = {
@@ -251,65 +576,166 @@ const mainnetContracts = {
     aavePool: aaveAddresses.mainnet.Avalanche,
     compound: '0x', // TODO
     compoundRewardsController: '0x', // TODO
+    depositFactory: depositFactoryAddresses.mainnet.Avalanche,
     factory: factoryAddresses.mainnet.Avalanche,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Avalanche,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Avalanche,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Avalanche,
+    gateway: gatewayAddresses.mainnet.Avalanche,
+    gasService: gasServiceAddresses.mainnet.Avalanche,
     usdc: usdcAddresses.mainnet.Avalanche,
+    permit2: permit2Addresses.mainnet.Avalanche,
     tokenMessenger: mainnetTokenMessenger.Avalanche.Address,
+    tokenMessengerV2: mainnetTokenMessengerV2.Avalanche.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Avalanche,
     Beefy_re7_Avalanche: beefyVaultAddresses.re7.mainnet.Avalanche,
+    walletHelper: walletHelperAddresses.mainnet.Avalanche,
+    oneInchRouter,
+    cctpRelayer,
   },
   Ethereum: {
     aavePool: aaveAddresses.mainnet.Ethereum,
+    cctpRelayer,
     compound: compoundAddresses.mainnet.Ethereum,
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Ethereum,
+    depositFactory: depositFactoryAddresses.mainnet.Ethereum,
     factory: factoryAddresses.mainnet.Ethereum,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Ethereum,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Ethereum,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Ethereum,
+    gateway: gatewayAddresses.mainnet.Ethereum,
+    gasService: gasServiceAddresses.mainnet.Ethereum,
     usdc: usdcAddresses.mainnet.Ethereum,
+    permit2: permit2Addresses.mainnet.Ethereum,
     tokenMessenger: mainnetTokenMessenger.Ethereum.Address,
+    tokenMessengerV2: mainnetTokenMessengerV2.Ethereum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Ethereum,
     Beefy_morphoGauntletUsdc_Ethereum:
       beefyVaultAddresses.morphoGauntletUsdc.mainnet.Ethereum,
     Beefy_morphoSmokehouseUsdc_Ethereum:
       beefyVaultAddresses.morphoSmokehouseUsdc.mainnet.Ethereum,
+    ERC4626_morphoClearstarHighYieldUsdc_Ethereum:
+      erc4626VaultAddresses.morphoClearstarHighYieldUsdc.mainnet.Ethereum,
+    ERC4626_morphoClearstarUsdcCore_Ethereum:
+      erc4626VaultAddresses.morphoClearstarUsdcCore.mainnet.Ethereum,
+    ERC4626_morphoGauntletUsdcRwa_Ethereum:
+      erc4626VaultAddresses.morphoGauntletUsdcRwa.mainnet.Ethereum,
+    ERC4626_morphoSteakhouseHighYieldInstant_Ethereum:
+      erc4626VaultAddresses.morphoSteakhouseHighYieldInstant.mainnet.Ethereum,
+    ERC4626_morphoClearstarInstitutionalUsdc_Ethereum:
+      erc4626VaultAddresses.morphoClearstarInstitutionalUsdc.mainnet.Ethereum,
+    ERC4626_morphoClearstarUsdcReactor_Ethereum:
+      erc4626VaultAddresses.morphoClearstarUsdcReactor.mainnet.Ethereum,
+    ERC4626_morphoAlphaUsdcCore_Ethereum:
+      erc4626VaultAddresses.morphoAlphaUsdcCore.mainnet.Ethereum,
+    ERC4626_morphoResolvUsdc_Ethereum:
+      erc4626VaultAddresses.morphoResolvUsdc.mainnet.Ethereum,
+    ERC4626_morphoGauntletUsdcFrontier_Ethereum:
+      erc4626VaultAddresses.morphoGauntletUsdcFrontier.mainnet.Ethereum,
+    ERC4626_morphoHyperithmUsdcMidcurve_Ethereum:
+      erc4626VaultAddresses.morphoHyperithmUsdcMidcurve.mainnet.Ethereum,
+    ERC4626_morphoHyperithmUsdcDegen_Ethereum:
+      erc4626VaultAddresses.morphoHyperithmUsdcDegen.mainnet.Ethereum,
+    ERC4626_morphoGauntletUsdcCore_Ethereum:
+      erc4626VaultAddresses.morphoGauntletUsdcCore.mainnet.Ethereum,
+    ERC4626_morphoGauntletUsdcPrime_Ethereum:
+      erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Ethereum,
+    walletHelper: walletHelperAddresses.mainnet.Ethereum,
+    ERC4626_morphoKpkUsdcPrime_Ethereum:
+      erc4626VaultAddresses.morphoKpkUsdcPrime.mainnet.Ethereum,
+    oneInchRouter,
   },
   Optimism: {
     aavePool: aaveAddresses.mainnet.Optimism,
+    cctpRelayer,
     compound: compoundAddresses.mainnet.Optimism,
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Optimism,
+    depositFactory: depositFactoryAddresses.mainnet.Optimism,
     factory: factoryAddresses.mainnet.Optimism,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Optimism,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Optimism,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Optimism,
+    gateway: gatewayAddresses.mainnet.Optimism,
+    gasService: gasServiceAddresses.mainnet.Optimism,
     usdc: usdcAddresses.mainnet.Optimism,
+    permit2: permit2Addresses.mainnet.Optimism,
     tokenMessenger: mainnetTokenMessenger['OP Mainnet'].Address,
+    tokenMessengerV2: mainnetTokenMessengerV2['OP Mainnet'].Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Optimism,
     Beefy_compoundUsdc_Optimism:
       beefyVaultAddresses.compoundUsdc.mainnet.Optimism,
+    walletHelper: walletHelperAddresses.mainnet.Optimism,
+    oneInchRouter,
+    ERC4626_morphoGauntletUsdcPrime_Optimism:
+      erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Optimism,
   },
   Arbitrum: {
     aavePool: aaveAddresses.mainnet.Arbitrum,
+    cctpRelayer,
     compound: compoundAddresses.mainnet.Arbitrum,
     compoundRewardsController:
       compoundRewardsControllerAddresses.mainnet.Arbitrum,
+    depositFactory: depositFactoryAddresses.mainnet.Arbitrum,
     factory: factoryAddresses.mainnet.Arbitrum,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Arbitrum,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Arbitrum,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Arbitrum,
+    gateway: gatewayAddresses.mainnet.Arbitrum,
+    gasService: gasServiceAddresses.mainnet.Arbitrum,
     usdc: usdcAddresses.mainnet.Arbitrum,
+    permit2: permit2Addresses.mainnet.Arbitrum,
     tokenMessenger: mainnetTokenMessenger.Arbitrum.Address,
+    tokenMessengerV2: mainnetTokenMessengerV2.Arbitrum.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Arbitrum,
     Beefy_compoundUsdc_Arbitrum:
       beefyVaultAddresses.compoundUsdc.mainnet.Arbitrum,
+    walletHelper: walletHelperAddresses.mainnet.Arbitrum,
+    oneInchRouter,
+    ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum:
+      erc4626VaultAddresses.morphoSteakhouseHighYieldUsdc.mainnet.Arbitrum,
+    ERC4626_morphoGauntletUsdcCore_Arbitrum:
+      erc4626VaultAddresses.morphoGauntletUsdcCore.mainnet.Arbitrum,
+    ERC4626_morphoHyperithmUsdc_Arbitrum:
+      erc4626VaultAddresses.morphoHyperithmUsdc.mainnet.Arbitrum,
   },
   Base: {
     aavePool: aaveAddresses.mainnet.Base,
+    cctpRelayer,
     compound: compoundAddresses.mainnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.mainnet.Base,
+    depositFactory: depositFactoryAddresses.mainnet.Base,
     factory: factoryAddresses.mainnet.Base,
+    remoteAccountImplementation: remoteAccountImplementation.mainnet.Base,
+    remoteAccountFactory: remoteAccountFactory.mainnet.Base,
+    remoteAccountRouter: remoteAccountRouter.mainnet.Base,
+    gateway: gatewayAddresses.mainnet.Base,
+    gasService: gasServiceAddresses.mainnet.Base,
     usdc: usdcAddresses.mainnet.Base,
+    permit2: permit2Addresses.mainnet.Base,
     tokenMessenger: mainnetTokenMessenger.Base.Address,
+    tokenMessengerV2: mainnetTokenMessengerV2.Base.Address,
     aaveUSDC: aaveUsdcAddresses.mainnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.mainnet.Base,
     Beefy_morphoSeamlessUsdc_Base:
       beefyVaultAddresses.morphoSeamlessUsdc.mainnet.Base,
+    walletHelper: walletHelperAddresses.mainnet.Base,
+    oneInchRouter,
+    ERC4626_morphoSteakhousePrimeUsdc_Base:
+      erc4626VaultAddresses.morphoSteakhousePrimeUsdc.mainnet.Base,
+    ERC4626_morphoSteakhouseUsdc_Base:
+      erc4626VaultAddresses.morphoSteakhouseUsdc.mainnet.Base,
+    ERC4626_morphoGauntletUsdcPrime_Base:
+      erc4626VaultAddresses.morphoGauntletUsdcPrime.mainnet.Base,
+    ERC4626_morphoSeamlessUsdcVault_Base:
+      erc4626VaultAddresses.morphoSeamlessUsdcVault.mainnet.Base,
+    ERC4626_morphoEthenaSteakhouseUsdc_Base:
+      erc4626VaultAddresses.morphoEthenaSteakhouseUsdc.mainnet.Base,
   },
 };
 harden(mainnetContracts);
@@ -329,6 +755,20 @@ const testnetTokenMessenger = (rows =>
   ]),
 );
 
+/** @see {@link https://developers.circle.com/cctp/references/contract-addresses#tokenmessengerv2-2} */
+const testnetTokenMessengerV2 = (rows =>
+  Object.fromEntries(
+    rows.map(([Chain, Domain, Address]) => [Chain, { Domain, Address }]),
+  ))(
+  /** @type {[string, number, `0x${string}`][]} */ ([
+    ['Ethereum Sepolia', 0, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['Avalanche Fuji', 1, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['OP Sepolia', 2, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['Arbitrum Sepolia', 3, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+    ['Base Sepolia', 6, '0x8FE6B999Dc680CcFDD5Bf7EB0974218be2542DAA'],
+  ]),
+);
+
 // XXX turn these inside out? contract.chain.address
 /**
  * Testnet configuration with testnet contract addresses
@@ -339,54 +779,100 @@ const testnetContracts = {
     aavePool: aaveAddresses.testnet.Avalanche,
     compound: '0x', // TODO
     compoundRewardsController: '0x',
+    depositFactory: depositFactoryAddresses.testnet.Avalanche,
     factory: factoryAddresses.testnet.Avalanche,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Avalanche,
+    remoteAccountFactory: remoteAccountFactory.testnet.Avalanche,
+    remoteAccountRouter: remoteAccountRouter.testnet.Avalanche,
+    gateway: gatewayAddresses.testnet.Avalanche,
+    gasService: gasServiceAddresses.testnet.Avalanche,
     usdc: usdcAddresses.testnet.Avalanche,
+    permit2: permit2Addresses.testnet.Avalanche,
     tokenMessenger: testnetTokenMessenger['Avalanche Fuji'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Avalanche Fuji'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Avalanche,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Avalanche,
+    walletHelper: walletHelperAddresses.testnet.Avalanche,
   },
   Base: {
     aavePool: aaveAddresses.testnet.Base,
     compound: compoundAddresses.testnet.Base,
     compoundRewardsController: compoundRewardsControllerAddresses.testnet.Base,
+    depositFactory: depositFactoryAddresses.testnet.Base,
     factory: factoryAddresses.testnet.Base,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Base,
+    remoteAccountFactory: remoteAccountFactory.testnet.Base,
+    remoteAccountRouter: remoteAccountRouter.testnet.Base,
+    gateway: gatewayAddresses.testnet.Base,
+    gasService: gasServiceAddresses.testnet.Base,
     usdc: usdcAddresses.testnet.Base,
+    permit2: permit2Addresses.testnet.Base,
     tokenMessenger: testnetTokenMessenger['Base Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Base Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Base,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Base,
+    walletHelper: walletHelperAddresses.testnet.Base,
   },
   Ethereum: {
     aavePool: aaveAddresses.testnet.Ethereum,
     compound: compoundAddresses.testnet.Ethereum,
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Ethereum,
+    depositFactory: depositFactoryAddresses.testnet.Ethereum,
     factory: factoryAddresses.testnet.Ethereum,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Ethereum,
+    remoteAccountFactory: remoteAccountFactory.testnet.Ethereum,
+    remoteAccountRouter: remoteAccountRouter.testnet.Ethereum,
+    gateway: gatewayAddresses.testnet.Ethereum,
+    gasService: gasServiceAddresses.testnet.Ethereum,
     usdc: usdcAddresses.testnet.Ethereum,
+    permit2: permit2Addresses.testnet.Ethereum,
     tokenMessenger: testnetTokenMessenger['Ethereum Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Ethereum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Ethereum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Ethereum,
+    ERC4626_vaultU2_Ethereum: erc4626VaultAddresses.vaultU2.testnet.Ethereum,
+    walletHelper: walletHelperAddresses.testnet.Ethereum,
   },
   Optimism: {
     aavePool: aaveAddresses.testnet.Optimism,
     compound: compoundAddresses.testnet.Optimism,
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Optimism,
+    depositFactory: depositFactoryAddresses.testnet.Optimism,
     factory: factoryAddresses.testnet.Optimism,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Optimism,
+    remoteAccountFactory: remoteAccountFactory.testnet.Optimism,
+    remoteAccountRouter: remoteAccountRouter.testnet.Optimism,
+    gateway: gatewayAddresses.testnet.Optimism,
+    gasService: gasServiceAddresses.testnet.Optimism,
     usdc: usdcAddresses.testnet.Optimism,
+    permit2: permit2Addresses.testnet.Optimism,
     tokenMessenger: testnetTokenMessenger['OP Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['OP Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Optimism,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Optimism,
+    walletHelper: walletHelperAddresses.testnet.Optimism,
   },
   Arbitrum: {
     aavePool: aaveAddresses.testnet.Arbitrum,
     compound: compoundAddresses.testnet.Arbitrum,
     compoundRewardsController:
       compoundRewardsControllerAddresses.testnet.Arbitrum,
+    depositFactory: depositFactoryAddresses.testnet.Arbitrum,
     factory: factoryAddresses.testnet.Arbitrum,
+    remoteAccountImplementation: remoteAccountImplementation.testnet.Arbitrum,
+    remoteAccountFactory: remoteAccountFactory.testnet.Arbitrum,
+    remoteAccountRouter: remoteAccountRouter.testnet.Arbitrum,
+    gateway: gatewayAddresses.testnet.Arbitrum,
+    gasService: gasServiceAddresses.testnet.Arbitrum,
     usdc: usdcAddresses.testnet.Arbitrum,
+    permit2: permit2Addresses.testnet.Arbitrum,
     tokenMessenger: testnetTokenMessenger['Arbitrum Sepolia'].Address,
+    tokenMessengerV2: testnetTokenMessengerV2['Arbitrum Sepolia'].Address,
     aaveUSDC: aaveUsdcAddresses.testnet.Arbitrum,
     aaveRewardsController: aaveRewardsControllerAddresses.testnet.Arbitrum,
+    walletHelper: walletHelperAddresses.testnet.Arbitrum,
   },
 };
 harden(testnetContracts);

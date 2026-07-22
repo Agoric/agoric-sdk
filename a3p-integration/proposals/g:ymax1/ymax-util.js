@@ -7,15 +7,19 @@ import {
   voteLatestProposalAndWait,
   makeAgd,
 } from '@agoric/synthetic-chain';
-import { makeActionId, sendWalletAction } from './wallet-util.js';
-import { walletUpdates } from './walletUpdates.js';
+import {
+  walletUpdates,
+  makeActionId,
+} from '@agoric/deploy-script-support/src/wallet-utils.js';
+import { YMAX_CONTROL_WALLET_KEY } from '@agoric/portfolio-api/src/portfolio-constants.js';
+import { sendWalletAction } from './wallet-util.js';
 
 const agd = makeAgd({ execFileSync }).withOpts({
   keyringBackend: 'test',
 });
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 
 const { fromEntries } = Object;
@@ -28,7 +32,7 @@ export const redeemInvitation = async ymaxControlAddr => {
     () => vsc.readPublished(`wallet.${ymaxControlAddr}`),
     { setTimeout, log: () => {} },
   );
-  const id = makeActionId('deliver ymaxControl');
+  const id = makeActionId(`deliver ${YMAX_CONTROL_WALLET_KEY}`);
 
   const instances = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
@@ -44,10 +48,10 @@ export const redeemInvitation = async ymaxControlAddr => {
         source: 'purse',
         // @ts-expect-error Instance type mismatch
         instance: postalService,
-        description: 'deliver ymaxControl',
+        description: `deliver ${YMAX_CONTROL_WALLET_KEY}`,
       },
       proposal: {},
-      saveResult: { name: 'ymaxControl', overwrite: true },
+      saveResult: { name: YMAX_CONTROL_WALLET_KEY, overwrite: true },
     },
   };
 

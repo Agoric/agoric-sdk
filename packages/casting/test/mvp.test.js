@@ -1,20 +1,25 @@
 // @ts-nocheck
-
 import './lockdown.js';
 
 import { makeMarshal } from '@endo/marshal';
+
 import { test } from './prepare-test-env-ava.js';
 
 import {
-  iterateLatest,
   iterateEach,
+  iterateLatest,
+  makeCastingSpec,
   makeFollower,
   makeLeader,
-  makeCastingSpec,
 } from '../src/main.js';
 
 import { delay } from '../src/defaults.js';
 import { startFakeServer } from './fake-rpc-server.js';
+
+/**
+ * @import {LeaderOptions} from '../src/types.js';
+ * @import {FollowerOptions} from '../src/types.js';
+ */
 
 // TODO: Replace with test.macro({title, exec}).
 const testHappyPath = (label, ...input) => {
@@ -31,13 +36,13 @@ const testHappyPath = (label, ...input) => {
         options,
       );
       controller.advance(start);
-      /** @type {import('../src/types.js').LeaderOptions} */
+      /** @type {LeaderOptions} */
       const lo = {
         retryCallback: null, // fail fast, no retries
         keepPolling: () => delay(1000).then(() => true), // poll really quickly
         jitter: null, // no jitter
       };
-      /** @type {import('../src/types.js').FollowerOptions} */
+      /** @type {FollowerOptions} */
       const so = {
         proof: 'none',
       };
@@ -186,13 +191,13 @@ test('yields error on bad capdata without terminating', async t => {
     options,
   );
   controller.advance(0);
-  /** @type {import('../src/types.js').LeaderOptions} */
+  /** @type {LeaderOptions} */
   const lo = {
     retryCallback: null, // fail fast, no retries
     keepPolling: () => delay(1000).then(() => true), // poll really quickly
     jitter: null, // no jitter
   };
-  /** @type {import('../src/types.js').FollowerOptions} */
+  /** @type {FollowerOptions} */
   const so = {
     proof: 'none',
   };

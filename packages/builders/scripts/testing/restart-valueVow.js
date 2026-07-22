@@ -5,9 +5,12 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
 /**
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @typedef {typeof import('@agoric/zoe/src/contracts/valueVow.contract.js').start} start
+ * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('RestartValueVow', true);
@@ -17,7 +20,7 @@ const trace = makeTracer('RestartValueVow', true);
  *   instance: {
  *     consume: {
  *       valueVow: Instance<
- *         import('@agoric/zoe/src/contracts/valueVow.contract.js').start
+ *         start
  *       >;
  *     };
  *   };
@@ -38,8 +41,7 @@ export const restartValueVow = async ({
 };
 harden(restartValueVow);
 
-export const getManifestForValueVow = ({ restoreRef }, { valueVowRef }) => {
-  console.log('valueVowRef', valueVowRef);
+export const getManifestForValueVow = () => {
   return {
     manifest: {
       [restartValueVow.name]: {
@@ -51,28 +53,18 @@ export const getManifestForValueVow = ({ restoreRef }, { valueVowRef }) => {
         },
       },
     },
-    installations: {
-      valueVow: restoreRef(valueVowRef),
-    },
   };
 };
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }) =>
+/** @type {CoreEvalBuilder} */
+export const defaultProposalBuilder = async () =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
     sourceSpec: '@agoric/builders/scripts/testing/restart-valueVow.js',
-    getManifestCall: [
-      'getManifestForValueVow',
-      {
-        valueVowRef: publishRef(
-          install('@agoric/zoe/src/contracts/valueVow.contract.js'),
-        ),
-      },
-    ],
+    getManifestCall: ['getManifestForValueVow'],
   });
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
+/** @type {DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the module can work in CoreEval environment
   const dspModule = await import('@agoric/deploy-script-support');

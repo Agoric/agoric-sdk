@@ -2,13 +2,17 @@
 import { E } from '@endo/far';
 
 /**
+ * @import {CreateVatResults, VatAdminSvc} from '@agoric/swingset-vat';
+ * @import {MapStore} from '@agoric/store';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ * @import {VatSourceRef} from '../core/types.ts';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: {
  *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<
- *       string,
- *       import('@agoric/swingset-vat').CreateVatResults
- *     >;
+ *     vatStore: MapStore<string, CreateVatResults>;
  *   };
  * }} powers
  * @param {object} options
@@ -28,7 +32,9 @@ export const upgradeZcf = async (
 
   await E(adminNode).upgrade(zoeBundleCap, {});
 
-  const zoeConfigFacet = await E(zoeRoot).getZoeConfigFacet();
+  const zoeConfigFacet = await E(
+    /** @type {any} */ (zoeRoot),
+  ).getZoeConfigFacet();
   await E(zoeConfigFacet).updateZcfBundleId(zcfRef.bundleID);
   console.log(`ZCF BUNDLE ID: `, zcfRef.bundleID);
 };

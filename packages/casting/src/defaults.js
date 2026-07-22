@@ -3,6 +3,10 @@ import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 
 /**
+ * @import {Unserializer} from './types.js';
+ */
+
+/**
  * Default to the local chain.
  */
 export const DEFAULT_BOOTSTRAP = 'http://localhost:26657';
@@ -104,7 +108,7 @@ export const MAKE_DEFAULT_DECODER = () => {
 /**
  * Unserialize the JSONable data.
  *
- * @type {() => import('./types.js').Unserializer}
+ * @type {() => Unserializer}
  */
 export const MAKE_DEFAULT_UNSERIALIZER = () => {
   const ifaceAllegedPrefix = 'Alleged: ';

@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 import { execa } from 'execa';
 import { getNetworkConfig } from 'agoric/src/helpers.js';
 import {
@@ -21,7 +19,6 @@ import {
   executeCommand,
   executeOffer,
   getUser,
-  GOV1ADDR,
   mkTemp,
   VALIDATORADDR,
 } from '@agoric/synthetic-chain';
@@ -29,7 +26,11 @@ import fsp from 'node:fs/promises';
 import { NonNullish } from '@agoric/internal/src/errors.js';
 import { getBalances } from './utils.js';
 
-/** @import {Result as ExecaResult, ExecaError} from 'execa'; */
+/** @import {Result as ExecaResult, ExecaError} from 'execa';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {ExecutionContext} from 'ava';
+ */
 /**
  * @typedef {ExecaResult & { all: string } & (
  *     | { failed: false }
@@ -142,11 +143,11 @@ export const logRecord = (label, data, log = console.log) => {
 
 /**
  * @typedef {object} PsmMetrics
- * @property {import('@agoric/ertp').Amount<'nat'>} anchorPoolBalance
- * @property {import('@agoric/ertp').Amount<'nat'>} feePoolBalance
- * @property {import('@agoric/ertp').Amount<'nat'>} mintedPoolBalance
- * @property {import('@agoric/ertp').Amount<'nat'>} totalAnchorProvided
- * @property {import('@agoric/ertp').Amount<'nat'>} totalMintedProvided
+ * @property {Amount<'nat'>} anchorPoolBalance
+ * @property {Amount<'nat'>} feePoolBalance
+ * @property {Amount<'nat'>} mintedPoolBalance
+ * @property {Amount<'nat'>} totalAnchorProvided
+ * @property {Amount<'nat'>} totalMintedProvided
  */
 
 const fromBoard = makeFromBoard();
@@ -169,7 +170,7 @@ const snapshotAgoricNames = async () => {
 };
 
 /**
- * @param {import('@agoric/ertp').Brand} brand
+ * @param {Brand} brand
  * @param {bigint} numValInPercent
  */
 const toRatio = (brand, numValInPercent) => {
@@ -374,7 +375,7 @@ export const getPsmMetrics = async anchor => {
 };
 
 export const checkGovParams = async (
-  /** @type {import("ava").ExecutionContext<unknown>} */ t,
+  /** @type {ExecutionContext<unknown>} */ t,
   /** @type {any} */ expected,
   /** @type {string} */ psmName,
 ) => {
@@ -420,7 +421,6 @@ export const initializeNewUser = async (name, fund, io) => {
   const psmTrader = await addUser(name);
   await Promise.all([
     bankSend(psmTrader, `20000000ubld,${fund.value}${fund.denom}`),
-    bankSend(psmTrader, `1000000uist`, GOV1ADDR),
   ]);
 
   await waitUntilAccountFunded(
@@ -518,7 +518,7 @@ export const sendOfferAgd = async (address, offerPromise) => {
  * @param {{
  *   follow: (...params: string[]) => Promise<object>;
  *   sendOffer?: (address: string, offerPromise: Promise<string>) => Promise<SendOfferResult>;
- *   setTimeout: typeof global.setTimeout;
+ *   setTimeout: typeof globalThis.setTimeout;
  *   now: () => number
  * }} io
  */
@@ -593,7 +593,7 @@ const extractBalance = (balances, targetDenom) => {
  * equality, but if that fails we recheck against an assumption that a fee of
  * the default "minFeeDebit" has been charged.
  *
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {number} actualBalance
  * @param {number} expectedBalance
  */
@@ -616,7 +616,7 @@ export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
 
 /**
  *
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {PsmMetrics} metricsBefore
  * @param {Coin[]} balancesBefore
  * @param {{trader: string; fee: number; anchor: string;} & (

@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { search } from '@endo/compartment-mapper';
 import { Fail } from '@endo/errors';
 
@@ -14,6 +15,7 @@ import { Fail } from '@endo/errors';
 export const getSpecifier = async fileUrl => {
   // eslint-disable-next-line no-new
   new URL(fileUrl); // validates fileUrl
+  /** @param {string} location */
   const read = async location => {
     const path = fileURLToPath(new URL(location, fileUrl));
     return readFile(path);
@@ -25,3 +27,18 @@ export const getSpecifier = async fileUrl => {
   return `${name}/${moduleSpecifier.replace(/^\.\//, '')}`;
 };
 harden(getSpecifier);
+
+/**
+ * Given an import specifier and importer URL (usually import.meta.url), return
+ * a file system path corresponding with the specifier for the importer.
+ *
+ * @param {string} specifier
+ * @param {string} baseURL
+ * @returns {string}
+ */
+export const resolveToPath = (specifier, baseURL) => {
+  const resolved = importMetaResolve(specifier, baseURL);
+  const resolvedURL = new URL(resolved);
+  return fileURLToPath(resolvedURL);
+};
+harden(resolveToPath);

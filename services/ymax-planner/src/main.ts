@@ -1,41 +1,120 @@
-/* eslint-env node */
+/* global process */
 
 import timersPromises from 'node:timers/promises';
-import { inspect } from 'node:util';
+import { inspect, parseArgs } from 'node:util';
 
-import { SigningStargateClient } from '@cosmjs/stargate';
+import { SigningStargateClient, StargateClient } from '@cosmjs/stargate';
 import type { GraphQLClient } from 'graphql-request';
+import ky from 'ky';
 import * as ws from 'ws';
 
 import { Fail, q } from '@endo/errors';
-import { isPrimitive } from '@endo/pass-style';
 
+import { PROD_NETWORK } from '@agoric/portfolio-api/src/network/prod-network.js';
 import {
   fetchEnvNetworkConfig,
   getInvocationUpdate,
+  makeTxSequencer,
   makeSigningSmartWalletKit,
   makeSmartWalletKit,
+  makeSequencingSmartWallet,
   reflectWalletStore,
 } from '@agoric/client-utils';
 import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import { objectMetaMap } from '@agoric/internal';
-import { UsdcTokenIds } from '@agoric/portfolio-api/src/constants.js';
+import type { CaipChainId } from '@agoric/orchestration';
+import {
+  deeplyFulfilledObject,
+  naturalCompare,
+  objectMap,
+  withDeferredCleanup,
+} from '@agoric/internal';
+import type { PortfolioKey } from '@agoric/portfolio-api';
+import {
+  CaipChainIds,
+  UsdcTokenIds,
+} from '@agoric/portfolio-api/src/constants.js';
+import {
+  axelarConfig,
+  axelarConfigTestnet,
+} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
 
-import { loadConfig } from './config.ts';
-import { CosmosRestClient } from './cosmos-rest-client.ts';
+import { FETCH_HEADERS, loadConfig } from './config.ts';
 import { CosmosRPCClient } from './cosmos-rpc.ts';
 import { makeGraphqlMultiClient } from './graphql-client.ts';
 import { getSdk as getSpectrumBlockchainSdk } from './graphql/api-spectrum-blockchain/__generated/sdk.ts';
-import { getSdk as getSpectrumPoolsSdk } from './graphql/api-spectrum-pools/__generated/sdk.ts';
 import { startEngine } from './engine.ts';
+import { calculateInstrumentBlocks } from './instrument-status.ts';
+import type { InstrumentBlocks, YdsInstrument } from './instrument-status.ts';
 import {
   createEVMContext,
+  prepareAbortController,
   spectrumChainIdsByCluster,
-  spectrumPoolIdsByCluster,
-  verifyEvmChains,
+  WS_HEARTBEAT_INTERVAL_MS,
 } from './support.ts';
-import { SpectrumClient } from './spectrum-client.ts';
+import type { MakeAbortController } from './support.ts';
+import { makeEvmRpc, type EvmRpc } from './evm-scanner.ts';
 import { makeGasEstimator } from './gas-estimation.ts';
+import { makeSQLiteKeyValueStore } from './kv-store.ts';
+import { YdsNotifier } from './yds-notifier.ts';
+import {
+  YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+  type YdsPortfolioSummary,
+} from './yds-portfolio-balances.ts';
+import { getPoolTokenAddresses } from './evm-utils.ts';
+import { generateDiff } from './ses-utils.ts';
+import { makeNowISO } from './utils.ts';
+
+const { fromEntries, entries } = Object;
+
+// exported for testing
+export const makeHealthLogger = (console: Pick<Console, 'warn' | 'error'>) => {
+  const health = new Map<string, 'ok' | 'failed'>();
+  const withHealthLogging = async <T>(
+    key: string,
+    promise: Promise<T>,
+    logContext?: unknown,
+  ): Promise<T | undefined> => {
+    await null;
+    try {
+      const result = await promise;
+      if (health.get(key) === 'failed') console.warn(`Recovered ${key}`);
+      health.set(key, 'ok');
+      return result;
+    } catch (err) {
+      const { name, message } = err ?? {};
+      let alertMessage = health.has(key)
+        ? `⚠️ Failed to update ${key}`
+        : `🚨 Failed to initialize ${key}`;
+      // Include sufficient detail for line-oriented log propagation.
+      if (name && message) {
+        alertMessage = `${alertMessage}: [${name}] ${message}`;
+      }
+      if (logContext) {
+        console.error(alertMessage, logContext, err);
+      } else {
+        console.error(alertMessage, err);
+      }
+      health.set(key, 'failed');
+      return undefined;
+    }
+  };
+  return withHealthLogging;
+};
+
+// XXX better yet: Tagged<string, 'CosmosTxId'> and
+// Tagged<string, 'CosmosChainId'>
+type CosmosTxId = string;
+type CosmosChainId = string;
+
+/**
+ * cf. https://github.com/Agoric/ymax-web/blob/main/yds/src/routes/transactions.ts:
+ * TransactionSubmitBodySchema
+ */
+type YdsTransactionSubmitBody = {
+  txHash: CosmosTxId;
+  chain: CosmosChainId;
+  ymaxInstance: 'ymax0' | 'ymax1';
+};
 
 const assertChainId = async (
   rpc: CosmosRPCClient,
@@ -50,64 +129,48 @@ const assertChainId = async (
     Fail`Expected chain ID ${q(actualChainId)} to be ${q(chainId)}`;
 };
 
-/**
- * Mock the abort reason of `AbortSignal.timeout(ms)`.
- * https://dom.spec.whatwg.org/#dom-abortsignal-timeout
- */
-const makeTimeoutReason = () =>
-  Object.defineProperty(Error('Timed out'), 'name', {
-    value: 'TimeoutError',
-  });
-
-const prepareAbortController = ({
-  setTimeout,
-  AbortController = globalThis.AbortController,
-  AbortSignal = globalThis.AbortSignal,
-}: {
-  setTimeout: typeof globalThis.setTimeout;
-  AbortController?: typeof globalThis.AbortController;
-  AbortSignal?: typeof globalThis.AbortSignal;
-}) => {
-  /**
-   * Abstract AbortController/AbortSignal functionality upon a provided
-   * setTimeout.
-   */
-  const makeAbortController = (
-    timeoutMillisec?: number,
-    racingSignals: Iterable<AbortSignal> = [],
-  ) => {
-    let controller: AbortController | null = new AbortController();
-    const abort: AbortController['abort'] = reason => {
-      try {
-        return controller?.abort(reason);
-      } finally {
-        controller = null;
-      }
-    };
-    if (timeoutMillisec !== undefined) {
-      setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
-    }
-    const signal = AbortSignal.any([controller.signal, ...racingSignals]);
-    signal.addEventListener('abort', _event => abort());
-    return { abort, signal };
-  };
-  return makeAbortController;
+const logChainAppInfo = async (
+  rpc: CosmosRPCClient,
+  log: typeof console.warn,
+) => {
+  const info = await rpc.request('abci_info', {});
+  log('Agoric chain app info:', info?.response);
 };
 
 export type SimplePowers = {
   fetch: typeof fetch;
   setTimeout: typeof setTimeout;
   delay: (ms: number) => Promise<void>;
-  makeAbortController: ReturnType<typeof prepareAbortController>;
+  makeAbortController: MakeAbortController;
+};
+
+const nowISO = makeNowISO(Date.now);
+
+/**
+ * For debugging transactions sent at the same time, `makeNonce` defaults to
+ * wall-clock timestamps plus a counter.
+ */
+const lastNonce = { timestamp: '', counter: 0 };
+const defaultMakeNonce = () => {
+  const timestamp = nowISO();
+  if (timestamp !== lastNonce.timestamp) {
+    lastNonce.timestamp = timestamp;
+    lastNonce.counter = 1;
+  } else {
+    lastNonce.counter += 1;
+  }
+  return `${timestamp}.${lastNonce.counter}`;
 };
 
 export const main = async (
-  args: string[],
+  cliArgs: string[],
   {
+    console = globalThis.console,
     env = process.env,
     fetch = globalThis.fetch,
     generateInterval = timersPromises.setInterval,
-    now = Date.now,
+    makeNonce = defaultMakeNonce,
+    now = globalThis.performance.now.bind(globalThis.performance),
     setTimeout = globalThis.setTimeout,
     connectWithSigner = SigningStargateClient.connectWithSigner,
     AbortController = globalThis.AbortController,
@@ -115,34 +178,43 @@ export const main = async (
     WebSocket = ws.WebSocket,
   } = {},
 ) => {
-  const dashIdx = [...args, '--'].indexOf('--');
-  const maybeOpts = args.slice(0, dashIdx);
-  const isDryRun = maybeOpts.includes('--dry-run');
-  const isVerbose = maybeOpts.includes('--verbose');
+  const { 'dry-run': isDryRun, verbose: isVerbose } = parseArgs({
+    args: cliArgs,
+    options: { 'dry-run': { type: 'boolean' }, verbose: { type: 'boolean' } },
+  }).values;
+  const makeMaybeLogger = (prefix: string): ((...args: unknown[]) => void) =>
+    isVerbose ? (...args) => console.log(prefix, ...args) : () => {};
+  const withHealthLogging = makeHealthLogger(console);
+
+  const makeAbortController = prepareAbortController({
+    setTimeout,
+    AbortController,
+    AbortSignal,
+  });
 
   const simplePowers: SimplePowers = {
     fetch,
     setTimeout,
     delay: ms => new Promise(resolve => setTimeout(resolve, ms)).then(() => {}),
-    makeAbortController: prepareAbortController({
-      setTimeout,
-      AbortController,
-      AbortSignal,
-    }),
+    makeAbortController,
   };
 
   const config = await loadConfig(env);
   const { clusterName } = config;
   const spectrumChainIds = spectrumChainIdsByCluster[clusterName];
-  const spectrumPoolIds = spectrumPoolIdsByCluster[clusterName];
   const usdcTokensByChain = UsdcTokenIds[clusterName];
 
+  const axelarCfg = (
+    clusterName === 'mainnet' ? axelarConfig : axelarConfigTestnet
+  ) as typeof axelarConfig;
+
+  const evmTokenAddresses = getPoolTokenAddresses(axelarCfg);
   const networkConfig = await fetchEnvNetworkConfig({
-    env: { AGORIC_NET: config.cosmosRest.agoricNetworkSpec },
+    env: { AGORIC_NET: config.agoricNetworkSpec },
     fetch,
   });
   const agoricRpcAddr = networkConfig.rpcAddrs[0];
-  console.warn('Initializing planner', networkConfig);
+  console.warn('Initializing planner:', networkConfig);
 
   const rpc = new CosmosRPCClient(agoricRpcAddr, {
     WebSocket,
@@ -150,104 +222,127 @@ export const main = async (
   });
   await rpc.opened();
   await assertChainId(rpc, networkConfig.chainName, (...logArgs) =>
-    console.warn('Agoric chain status', ...logArgs),
+    console.warn('Agoric chain status:', ...logArgs),
   );
+  await logChainAppInfo(rpc, console.warn);
 
-  const cosmosRest = new CosmosRestClient(simplePowers, {
-    clusterName,
-    timeout: config.cosmosRest.timeout,
-    retries: config.cosmosRest.retries,
-  });
-  const agoricChainInfo = await cosmosRest.getChainInfo('agoric');
-  const agoricVersions = (agoricChainInfo as any)?.application_version;
-  const agoricSummary = objectMetaMap(agoricVersions || {}, desc =>
-    isPrimitive(desc.value) ? desc : undefined,
-  );
-  console.warn('Agoric chain versions', agoricVersions && agoricSummary);
+  const stargateQueryClient = await StargateClient.connect(agoricRpcAddr);
 
   const walletUtils = await makeSmartWalletKit(simplePowers, networkConfig);
-  let signingSmartWalletKit = await makeSigningSmartWalletKit(
-    { connectWithSigner, walletUtils },
-    config.mnemonic,
-  );
-  if (isDryRun) {
-    const stdoutIsTty = process.stdout.isTTY;
-    const bridgeActionInspectOpts = { depth: 6, colors: stdoutIsTty };
-    const { address, query, pollOffer } = signingSmartWalletKit;
-    const sendBridgeAction: SigningSmartWalletKit['sendBridgeAction'] = async (
-      action,
-      fee,
-      memo,
-      signerData,
-    ) => {
-      if (isVerbose) {
-        console.log(
-          '[sendBridgeAction]',
-          inspect({ action, fee, memo, signerData }, bridgeActionInspectOpts),
-        );
+  const signingSmartWalletKit =
+    await (async (): Promise<SigningSmartWalletKit> => {
+      const baseSswk = await makeSigningSmartWalletKit(
+        { connectWithSigner, walletUtils },
+        config.mnemonic,
+      );
+      const { address, query, pollOffer } = baseSswk;
+
+      if (isDryRun) {
+        const logBridgeAction = makeMaybeLogger('[sendBridgeAction]');
+        const stdoutIsTty = process.stdout.isTTY;
+        const bridgeActionInspectOpts = { depth: 6, colors: stdoutIsTty };
+        type SendBridgeAction = SigningSmartWalletKit['sendBridgeAction'];
+        const sendBridgeAction: SendBridgeAction = async (
+          action,
+          fee,
+          memo,
+          signerData,
+        ) => {
+          logBridgeAction(
+            inspect({ action, fee, memo, signerData }, bridgeActionInspectOpts),
+          );
+          return {
+            height: 0,
+            txIndex: 0,
+            code: 0,
+            transactionHash: '',
+            events: [],
+            msgResponses: [],
+            gasUsed: 0n,
+            gasWanted: 0n,
+          };
+        };
+        return {
+          ...walletUtils,
+          address,
+          query,
+          sendBridgeAction,
+          executeOffer: async offer => {
+            const offerP = pollOffer(address, offer.id);
+            await sendBridgeAction({ method: 'executeOffer', offer });
+            return offerP;
+          },
+        };
       }
-      return {
-        height: 0,
-        txIndex: 0,
-        code: 0,
-        transactionHash: '',
-        events: [],
-        msgResponses: [],
-        gasUsed: 0n,
-        gasWanted: 0n,
+
+      const fetchAccount = async () => {
+        const account = await stargateQueryClient.getAccount(address);
+        if (!account) throw Fail`Account not found for address ${address}`;
+        return {
+          address,
+          accountNumber: BigInt(account.accountNumber),
+          sequence: BigInt(account.sequence),
+        };
       };
-    };
-    signingSmartWalletKit = {
-      ...walletUtils,
-      address,
-      query,
-      sendBridgeAction,
-      executeOffer: async offer => {
-        const offerP = pollOffer(address, offer.id);
-        await sendBridgeAction({ method: 'executeOffer', offer });
-        return offerP;
-      },
-    };
-  }
+      const txSequencer = await makeTxSequencer(fetchAccount, {
+        log: makeMaybeLogger('[TxSequencer]'),
+      });
+      return makeSequencingSmartWallet(baseSswk, txSequencer, {
+        log: makeMaybeLogger('[SigningSmartWallet]'),
+      });
+    })();
   console.warn('Signer address:', signingSmartWalletKit.address);
   const walletStore = reflectWalletStore(signingSmartWalletKit, {
     setTimeout,
-    makeNonce: () => new Date(now()).toISOString(),
+    makeNonce,
+    fee: {
+      // As of 2025-11, a planner transaction consumes 160_000 to 185_000 gas
+      // units, so 400_000 includes a fudge factor of over 2x.
+      gas: '400000',
+      // As of 2025-11, validators seem to still be using the Agoric
+      // `minimum-gas-prices` recommendation of 0.01ubld per gas unit:
+      // https://community.agoric.com/t/network-change-instituting-fees-on-the-agoric-chain-to-mitigate-spam-transactions/109/2
+      // So 10_000 ubld = 0.01 BLD includes a fudge factor of over 2x.
+      amount: [{ denom: 'ubld', amount: '10000' }],
+    },
   });
 
-  const spectrum = new SpectrumClient(simplePowers, {
-    baseUrl: config.spectrum.apiUrl,
-    timeout: config.spectrum.timeout,
-    retries: config.spectrum.retries,
-  });
-
-  const makeOptionalGqlSdk = <Sdk>(
+  const makeGqlSdk = <Sdk>(
     makeSdk: (client: GraphQLClient) => Sdk,
-    endpoints?: string[],
-  ): Sdk | undefined => {
-    if (!endpoints) return undefined;
+    endpoints: string[],
+  ): Sdk => {
     const multiClient = makeGraphqlMultiClient(endpoints, simplePowers, {
       requestLimits: config.requestLimits,
     });
     return makeSdk(multiClient);
   };
-  const spectrumBlockchain = makeOptionalGqlSdk(
+  const spectrumBlockchain = makeGqlSdk(
     getSpectrumBlockchainSdk,
     config.spectrumBlockchainEndpoints,
   );
-  const spectrumPools = makeOptionalGqlSdk(
-    getSpectrumPoolsSdk,
-    config.spectrumPoolsEndpoints,
-  );
-
   const evmCtx = await createEVMContext({
     clusterName,
     alchemyApiKey: config.alchemyApiKey,
+    makeHeartbeat: () => generateInterval(WS_HEARTBEAT_INTERVAL_MS),
+    log: (...args) => console.warn('EVM provider:', ...args),
   });
 
-  // Verify Alchemy chain availability - throws if any chain fails
-  console.warn('Verifying EVM chain connectivity...');
-  await verifyEvmChains(evmCtx.evmProviders);
+  // Verify Alchemy chain availability.
+  const failedEvmChains = [] as Array<keyof typeof evmCtx.evmProviders>;
+  const evmHeights = await deeplyFulfilledObject(
+    objectMap(evmCtx.evmProviders, (provider, chainId) =>
+      provider
+        .getProvider()
+        .getBlockNumber()
+        .catch(err => {
+          failedEvmChains.push(chainId);
+          return { error: err.message };
+        }),
+    ),
+  );
+  console.warn('EVM chain heights:', evmHeights);
+  failedEvmChains.length === 0 ||
+    Fail`Could not connect to EVM chains: ${q(failedEvmChains)}. Ensure they are enabled in your Alchemy dashboard.`;
 
   const gasEstimator = makeGasEstimator({
     axelarApiAddress: config.axelar.apiUrl,
@@ -255,16 +350,175 @@ export const main = async (
     fetch,
   });
 
+  const { db, kvStore } = makeSQLiteKeyValueStore(config.sqlite.dbPath, {
+    trace: () => {},
+  });
+
+  const ydsApiKey = config.yds.apiKey;
+  const ydsClient = config.yds.url
+    ? ky.create({
+        fetch,
+        prefixUrl: config.yds.url,
+        headers: {
+          ...FETCH_HEADERS,
+          ...(ydsApiKey ? { 'x-resolver-auth-key': ydsApiKey } : undefined),
+        },
+        timeout: config.requestLimits.timeout,
+        retry: config.requestLimits.maxRetries,
+      })
+    : undefined;
+
+  let lastInstrumentBlocksString = '';
+  const stringifyInstrumentBlocks = (instrumentBlocks: InstrumentBlocks) => {
+    const { noDepositInstruments, noWithdrawInstruments } = instrumentBlocks;
+    const sets = { noDepositInstruments, noWithdrawInstruments };
+    return JSON.stringify(objectMap(sets, s => [...s].sort()));
+  };
+  const getInstrumentBlocks = ydsClient
+    ? async (): Promise<InstrumentBlocks | undefined> => {
+        const resp = await withHealthLogging(
+          'instruments',
+          ydsClient.get('instruments?includeAll=true').json(),
+          config.requestLimits,
+        );
+        if (!resp) return undefined;
+        const instruments = (resp as any).data as YdsInstrument[];
+        const instrumentBlocks = calculateInstrumentBlocks(instruments);
+
+        const newBlocksString = stringifyInstrumentBlocks(instrumentBlocks);
+        if (newBlocksString !== lastInstrumentBlocksString) {
+          console.warn('New instrument blocks:', instrumentBlocks, instruments);
+        }
+        lastInstrumentBlocksString = newBlocksString;
+
+        // TODO(AGO-550): return instrumentBlocks;
+        return undefined;
+      }
+    : undefined;
+
+  let lastPortfolios: {
+    timestamp: number;
+    portfolioIdsString: string;
+    summaries: YdsPortfolioSummary[];
+  } = { timestamp: -Infinity, portfolioIdsString: '[]', summaries: [] };
+  const getPortfolioSummaries =
+    ydsClient && ydsApiKey
+      ? async (
+          portfolioIds: PortfolioKey[],
+        ): Promise<YdsPortfolioSummary[] | undefined> => {
+          if (!portfolioIds.length) return [];
+
+          portfolioIds = portfolioIds.toSorted(naturalCompare);
+          const portfolioIdsString = JSON.stringify(portfolioIds);
+          const timestamp = now();
+          if (
+            portfolioIdsString === lastPortfolios.portfolioIdsString &&
+            timestamp <
+              lastPortfolios.timestamp + YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS
+          ) {
+            return lastPortfolios.summaries;
+          }
+
+          const reqBody = { portfolioIds };
+          const resp = await withHealthLogging(
+            'portfolios',
+            ydsClient.post('portfolios:list', { json: reqBody }).json(),
+            config.requestLimits,
+          );
+          if (!resp) return undefined;
+          const summaries = ((resp as any).data as YdsPortfolioSummary[]).sort(
+            (a, b) => naturalCompare(a.portfolioId, b.portfolioId),
+          );
+
+          if (isVerbose) {
+            const logPrefix = '[getPortfolioSummaries]';
+            const seconds = (timestamp - lastPortfolios.timestamp) / 1000;
+            const elapsed = Number.isFinite(seconds)
+              ? `overwriting after ${seconds} seconds`
+              : 'initializing';
+            const idsDiff: string[] = [];
+            const sigilsByState = { common: ' ', removed: '-', added: '+' };
+            try {
+              const oldIdsString = lastPortfolios.portfolioIdsString;
+              const oldIds = JSON.parse(oldIdsString).sort(naturalCompare);
+              const diff = generateDiff(oldIds, portfolioIds, naturalCompare);
+              for (const { state, value } of diff) {
+                idsDiff.push(`${sigilsByState[state]}${value}`);
+              }
+            } catch (err) {
+              console.error(logPrefix, err);
+            }
+            const diffStr = idsDiff.length ? `\n${idsDiff.join('\n')}\n` : '';
+            console.warn(logPrefix, elapsed, diffStr, summaries);
+          }
+
+          lastPortfolios = { timestamp, portfolioIdsString, summaries };
+          return summaries;
+        }
+      : undefined;
+
+  const ydsNotifier = config.yds.url
+    ? new YdsNotifier(
+        { fetch, log: console.log.bind(console) },
+        {
+          ydsUrl: config.yds.url,
+          ydsApiKey: config.yds.apiKey as string,
+          timeout: config.requestLimits.timeout,
+          retries: config.requestLimits.maxRetries,
+        },
+      )
+    : undefined;
+  const postYdsTransaction = ydsClient
+    ? async (txHash: CosmosTxId): Promise<void> => {
+        const json: YdsTransactionSubmitBody = {
+          txHash,
+          chain: networkConfig.chainName,
+          ymaxInstance: config.contractInstance,
+        };
+        await null;
+        try {
+          await ydsClient.post('transactions', {
+            json,
+          });
+        } catch (cause) {
+          throw Error(
+            `While posting transaction to YDS ${JSON.stringify(json)}`,
+            { cause },
+          );
+        }
+      }
+    : undefined;
+
+  const retryProviders = fromEntries(
+    entries(evmCtx.evmProviders).map(([caip, provider]) => [
+      caip,
+      makeEvmRpc(provider, setTimeout, {
+        log: (...args) => console.warn(`EVM RPC [${caip}]:`, ...args),
+      }),
+    ]),
+  ) as Record<CaipChainId, EvmRpc>;
+
   const powers = {
-    evmCtx,
+    evmCtx: {
+      kvStore,
+      makeAbortController,
+      setTimeout,
+      now,
+      axelarApiUrl: config.axelar.apiUrl,
+      ydsNotifier,
+      retryProviders,
+      ...evmCtx,
+    },
     rpc,
-    spectrum,
+    setTimeout,
     spectrumChainIds,
-    spectrumPoolIds,
+    evmTokenAddresses,
     spectrumBlockchain,
-    spectrumPools,
-    cosmosRest,
+    network: PROD_NETWORK,
+    getInstrumentBlocks,
+    getPortfolioSummaries,
     signingSmartWalletKit,
+    makeNonce,
     walletStore,
     getWalletInvocationUpdate: (messageId, opts) => {
       const { getLastUpdate } = signingSmartWalletKit.query;
@@ -272,14 +526,29 @@ export const main = async (
       return getInvocationUpdate(messageId, getLastUpdate, retryOpts);
     },
     now,
+    nowISO,
     gasEstimator,
     usdcTokensByChain,
+    chainNameToChainIdMap: CaipChainIds[clusterName],
+    postYdsTransaction,
+    autoRebalance: config.autoRebalance,
   };
-  await startEngine(powers, {
-    isDryRun,
-    contractInstance: config.contractInstance,
-    depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
-    feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+
+  await withDeferredCleanup(async addCleanup => {
+    addCleanup(async () => {
+      await db.close();
+    });
+    addCleanup(async () => {
+      stargateQueryClient.disconnect();
+    });
+    await startEngine(powers, {
+      isDryRun,
+      contractInstance: config.contractInstance,
+      depositBrandName: env.DEPOSIT_BRAND_NAME || 'USDC',
+      feeBrandName: env.FEE_BRAND_NAME || 'BLD',
+      balanceCacheTtlMs: YDS_PORTFOLIO_BALANCE_CACHE_TTL_MS,
+    });
   });
 };
+
 harden(main);

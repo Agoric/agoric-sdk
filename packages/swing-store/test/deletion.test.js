@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { Buffer } from 'node:buffer';
@@ -13,6 +15,10 @@ import { initSwingStore } from '../src/swingStore.js';
 import { makeArchiveSnapshot, makeArchiveTranscript } from '../src/archiver.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
+
+/**
+ * @import {ExecutionContext} from 'ava';
+ */
 
 const tmpDir = makeTempDirFactory(tmp);
 
@@ -219,7 +225,7 @@ const setupTranscript = async (t, keepTranscripts) => {
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {{ keepTranscripts: boolean }} config
  */
 const execSlowTranscriptDeletion = async (t, { keepTranscripts }) => {

@@ -1,8 +1,25 @@
 /* eslint-disable max-classes-per-file */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
-import type { Primitive } from '@endo/pass-style';
-import type { Pattern } from '@endo/patterns';
+import type { Primitive, RemotableObject } from '@endo/pass-style';
+import type { CastedPattern } from '@endo/patterns';
+
 import type { Callable } from './ses-utils.js';
+import type { VStorageKey } from './lib-chainStorage.js';
+
+/**
+ * A mapping of a tuple type (as from `Parameters<...>`) into a corresponding
+ * object type with named fields.
+ *
+ * @example
+ * ```
+ * RecordFromTuple<[string, bigint], ['denom', 'amount']>
+ * //=> { denom: string, amount: bigint }
+ * ```
+ */
+export type RecordFromTuple<
+  Types extends readonly unknown[],
+  Names extends Record<Exclude<keyof Types, keyof unknown[]>, string>,
+> = { [K in Exclude<keyof Types, keyof any[]> as Names[K]]: Types[K] };
 
 /**
  * A map corresponding with a total function such that `get(key)` is assumed to
@@ -73,6 +90,13 @@ export declare class SyncCallback<
  */
 export type IsPrimitive<T> = [T] extends [Primitive] ? true : false;
 
+// XXX https://github.com/endojs/endo/issues/2979
+export type IsRemotable<T> = T extends RemotableObject
+  ? true
+  : T extends RemotableBrand<any, any>
+    ? true
+    : false;
+
 /** Recursively extract the non-callable properties of T */
 export type DataOnly<T> =
   IsPrimitive<T> extends true
@@ -99,34 +123,35 @@ export type ERemote<Primary, Local = DataOnly<Primary>> = ERef<
   Remote<Primary, Local>
 >;
 
-/*
- * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
- * explictly specify the type that the Pattern will verify through a match.
- *
- * TODO move all this pattern typing stuff to @endo/patterns
- */
-declare const validatedType: unique symbol;
 /**
- * Tag a pattern with the static type it represents.
- */
-export type TypedPattern<T> = Pattern & { [validatedType]?: T };
-
-export declare type PatternType<TM extends TypedPattern<any>> =
-  TM extends TypedPattern<infer T> ? T : never;
-
-// TODO make Endo's mustMatch do this
-/**
- * Returning normally indicates success. Match failure is indicated by
- * throwing.
+ * Tag a pattern with the static type it represents. Endo's `mustMatch` and
+ * `matches` narrow a specimen to this type.
  *
- * Note: remotables can only be matched as "remotable", not the specific kind.
- *
- * @see {import('@endo/patterns').mustMatch} for the implementation. This one has a type annotation to narrow if the pattern is a TypedPattern.
+ * @deprecated Use {@link CastedPattern} from `@endo/patterns` directly.
  */
-export declare type MustMatch = <P extends Pattern>(
-  specimen: unknown,
-  pattern: P,
-  label?: string | number,
-) => asserts specimen is P extends TypedPattern<any> ? PatternType<P> : unknown;
+export type TypedPattern<T> = CastedPattern<T>;
 
 export type { TraceLogger } from './debug.js';
+
+/**
+ * This represents a node in an IAVL tree.
+ *
+ * The active implementation is x/vstorage, an Agoric extension of the Cosmos
+ * SDK.
+ *
+ * Vstorage is a hierarchical externally-reachable storage structure that
+ * identifies children by restricted ASCII name and is associated with arbitrary
+ * string-valued data for each node, defaulting to the empty string.
+ */
+export interface StorageNode extends RemotableObject {
+  /** publishes some data */
+  setValue: (data: string) => Promise<void>;
+  /** the chain storage path at which the node was constructed */
+  getPath: () => string;
+  /** @deprecated use getPath */
+  getStoreKey: () => Promise<VStorageKey>;
+  makeChildNode: (
+    subPath: string,
+    options?: { sequence?: boolean },
+  ) => StorageNode;
+}

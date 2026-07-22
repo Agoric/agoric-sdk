@@ -1,0 +1,24 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  ICA executeEncodedTx called with optional MsgUnlock + MsgSwap messages
+end note
+initiated --> tx_pending: ICA messages submitted to Noble
+initiated --> failed: ICA submission failed
+state tx_pending
+note right of tx_pending
+  Waiting for Noble to execute unlock and swap messages
+end note
+tx_pending --> completed: Unlock and swap completed, USDC available
+tx_pending --> failed: Transaction failed
+state completed
+note right of completed
+  USDN withdraw complete, USDC on Noble ICA ready for IBC transfer
+end note
+completed --> [*]
+state failed
+note right of failed
+  USDN withdraw failed
+end note
+failed --> [*]

@@ -12,6 +12,7 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
+import { prepareProgressTracker } from '../utils/progress.js';
 import { makeChainHub } from '../exos/chain-hub.js';
 
 const trace = makeTracer('StakeIca');
@@ -20,9 +21,12 @@ const trace = makeTracer('StakeIca');
  * @import {ERemote, Remote} from '@agoric/internal';
  * @import {CosmosChainInfo, CosmosInterchainService, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {ContractMeta, Invitation, ZCF, ZCFSeat} from '@agoric/zoe';
- * @import {IBCConnectionID, NameHub} from '@agoric/vats';
+ * @import {IBCConnectionID} from '@agoric/network/ibc';
+ * @import {NameHub} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
  * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /** @type {ContractMeta<typeof start>} */
@@ -95,6 +99,13 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
+  const makeProgressTracker = prepareProgressTracker(
+    zone.subZone('orchestration'),
+    {
+      vowTools,
+    },
+  );
+
   const chainHub = makeChainHub(
     zone.subZone('chainHub'),
     agoricNames,
@@ -105,6 +116,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     {
       chainHub,
+      makeProgressTracker,
       makeRecorderKit,
       timerService: timer,
       vowTools,

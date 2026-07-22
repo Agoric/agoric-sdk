@@ -1,8 +1,8 @@
-/* eslint-env node */
-import crypto from 'crypto';
+// @ts-nocheck
+import crypto from 'node:crypto';
 import djson from 'deterministic-json';
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 
 import { Fail } from '@endo/errors';
 import setGCIIngress from './set-gci-ingress.js';

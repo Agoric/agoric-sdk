@@ -1,38 +1,77 @@
-import type { WebSocketProvider } from 'ethers';
-
 import { Fail } from '@endo/errors';
 
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
 import type { CaipChainId } from '@agoric/orchestration';
 import { parseAccountId } from '@agoric/orchestration/src/utils/address.js';
 import type { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
+import type { SigningSmartWalletKit } from '@agoric/client-utils';
 
 import type { AxelarId } from '@aglocal/portfolio-contract/src/portfolio.contract.ts';
 import {
   TxStatus,
   TxType,
 } from '@aglocal/portfolio-contract/src/resolver/constants.js';
-import type { PendingTx } from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type {
+  PendingTx,
+  TxId,
+} from '@aglocal/portfolio-contract/src/resolver/types.ts';
+import type { KVStore } from '@agoric/internal/src/kv-store.js';
 
-import type { CosmosRestClient } from './cosmos-rest-client.ts';
-import { resolvePendingTx } from './resolver.ts';
 import {
-  waitForBlock,
-  type EvmProviders,
-  type UsdcAddresses,
+  deleteDerivedOutcome,
+  getDerivedOutcome,
+  setDerivedOutcome,
+  setResolvedTx,
+} from './kv-store.ts';
+import { resolvePendingTx } from './resolver.ts';
+import { withRetriesForAlerting } from './retries.ts';
+import { waitForBlock, type EvmRpc } from './evm-scanner.ts';
+import type {
+  MakeAbortController,
+  ReconnectingEvmProvider,
+  UsdcAddresses,
 } from './support.ts';
-import { watchGmp, lookBackGmp } from './watchers/gmp-watcher.ts';
-import { watchCctpTransfer, lookBackCctp } from './watchers/cctp-watcher.ts';
-import type { CosmosRPCClient } from './cosmos-rpc.ts';
+import { lookBackCctp, watchCctpTransfer } from './watchers/cctp-watcher.ts';
+import { lookBackGmp, watchGmp } from './watchers/gmp-watcher.ts';
+import {
+  watchSmartWalletTx,
+  lookBackSmartWalletTx,
+} from './watchers/wallet-watcher.ts';
+import {
+  watchOperationResult,
+  lookBackOperationResult,
+} from './watchers/operation-watcher.ts';
+import { WatcherTransportError } from './watchers/watcher-utils.ts';
+import type { YdsNotifier } from './yds-notifier.ts';
 
 export type EvmChain = keyof typeof AxelarChain;
 
+export type WatcherResult = {
+  settled: boolean;
+  success?: boolean;
+  txHash?: string;
+};
+
+export type GmpWatcherResult = WatcherResult & {
+  rejectionReason?: string;
+};
+
 export type EvmContext = {
-  cosmosRest: CosmosRestClient;
   usdcAddresses: UsdcAddresses['mainnet' | 'testnet'];
-  evmProviders: EvmProviders;
+  // XXX eliminate evmProviders from EvmContext and use retryProviders for the
+  // balance-checking path too.
+  evmProviders: Record<CaipChainId, ReconnectingEvmProvider>;
+  retryProviders: Record<CaipChainId, EvmRpc>;
   signingSmartWalletKit: SigningSmartWalletKit;
+  /** Used to generate unique suffixes in agoric Smart Wallet OfferSpec ids. */
+  makeNonce: () => string;
   fetch: typeof fetch;
+  setTimeout: typeof globalThis.setTimeout;
+  /** Prefer monotonicity (e.g., `performance.now` rather than `Date.now`). */
+  now: () => number;
+  kvStore: KVStore;
+  makeAbortController: MakeAbortController;
+  axelarApiUrl: string;
+  ydsNotifier?: YdsNotifier;
 };
 
 export type GmpTransfer = {
@@ -43,40 +82,95 @@ export type GmpTransfer = {
 
 type CctpTx = PendingTx & { type: typeof TxType.CCTP_TO_EVM; amount: bigint };
 type GmpTx = PendingTx & { type: typeof TxType.GMP };
+type MakeAccountTx = PendingTx & { type: typeof TxType.MAKE_ACCOUNT };
+type RoutedGmpTx = PendingTx & {
+  type: typeof TxType.ROUTED_GMP;
+  payloadHash?: string;
+};
 
-type LiveWatchOpts = { mode: 'live'; timeoutMs: number };
+type LiveWatchOpts = { mode: 'live'; timeoutMs: number; signal?: AbortSignal };
 type LookBackWatchOpts = {
   mode: 'lookback';
   publishTimeMs: number;
   timeoutMs: number;
+  signal?: AbortSignal;
 };
 type WatchOpts = LiveWatchOpts | LookBackWatchOpts;
 
-export type PendingTxMonitor<
-  T extends PendingTx = PendingTx,
-  C = EvmContext,
-> = {
+export type PendingTxMonitor<T extends PendingTx = PendingTx> = {
   watch: (
-    ctx: C,
+    ctx: EvmContext,
     tx: T,
     log: (...args: unknown[]) => void,
     opts: WatchOpts,
   ) => Promise<void>;
 };
 
-type MonitorRegistry = {
-  [TxType.CCTP_TO_EVM]: PendingTxMonitor<CctpTx, EvmContext>;
-  [TxType.GMP]: PendingTxMonitor<GmpTx, EvmContext>;
+/**
+ * Settle a watcher's outcome on-chain and notify YDS.
+ *
+ * Persists the derived outcome to the kv store BEFORE attempting submission,
+ * so a restart during a stuck submission can skip the (expensive) watcher
+ * next time and just retry the submit. Clears the derived-outcome entry once
+ * the on-chain settlement confirms.
+ */
+export const settleWatcherResult = async (
+  ctx: EvmContext,
+  txId: TxId,
+  result: WatcherResult,
+  label: string,
+  log: (...args: unknown[]) => void,
+  signal?: AbortSignal,
+): Promise<void> => {
+  await null;
+  if (!result.settled) return;
+
+  const logPrefix = `[${txId}]`;
+  const status = result.success !== false ? TxStatus.SUCCESS : TxStatus.FAILED;
+
+  setDerivedOutcome(ctx.kvStore, txId, { status, txHash: result.txHash });
+
+  const submitted = await withRetriesForAlerting(
+    `${logPrefix} ${label} settlement`,
+    () =>
+      resolvePendingTx({
+        signingSmartWalletKit: ctx.signingSmartWalletKit,
+        makeNonce: ctx.makeNonce,
+        txId,
+        status,
+      }),
+    {
+      log,
+      setTimeout: ctx.setTimeout,
+      now: ctx.now,
+      alertingPrefix: `[${PendingTxCode.RESOLVER_SETTLEMENT_FAILED}]`,
+      signal,
+    },
+  );
+  if (submitted !== undefined) {
+    setResolvedTx(ctx.kvStore, txId, status);
+    deleteDerivedOutcome(ctx.kvStore, txId);
+  }
+
+  if (result.txHash) {
+    await ctx.ydsNotifier?.notifySettlement(txId, result.txHash);
+  }
 };
 
-const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
+const cctpMonitor: PendingTxMonitor<CctpTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
     const { txId, destinationAddress, amount } = tx;
     const logPrefix = `[${txId}]`;
 
+    if (opts.signal?.aborted) {
+      log(`${logPrefix} CCTP watch aborted before starting`);
+      return;
+    }
+
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+    assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
@@ -84,202 +178,625 @@ const cctpMonitor: PendingTxMonitor<CctpTx, EvmContext> = {
     const usdcAddress =
       ctx.usdcAddresses[caipId] ||
       Fail`${logPrefix} No USDC address for chain: ${caipId}`;
-    const provider =
-      ctx.evmProviders[caipId] ||
-      Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
+    const rpc =
+      ctx.retryProviders[caipId] ||
+      Fail`${logPrefix} No retry provider for chain: ${caipId}`;
 
     const watchArgs = {
       usdcAddress,
       toAddress: accountAddress as `0x${string}`,
       expectedAmount: amount,
-      provider,
+      provider: rpc,
+      chainId: caipId,
       log: (msg, ...args) => log(logPrefix, msg, ...args),
     };
 
-    let transferStatus: boolean | undefined;
+    let transferResult: WatcherResult | undefined;
+    const getLiveResult = (signal?: AbortSignal) =>
+      watchCctpTransfer({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal,
+        kvStore: ctx.kvStore,
+        txId,
+      });
 
     if (opts.mode === 'live') {
-      transferStatus = await watchCctpTransfer({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-      });
+      transferResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
+      const abortController = ctx.makeAbortController(undefined, [opts.signal]);
+      const finish = (reason: string) => {
+        log(reason);
+        abortController.abort(reason);
+      };
+
       // Start live mode now in case the txId has not yet appeared
-      const abortController = new AbortController();
-      const liveResultP = watchCctpTransfer({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-      });
-      void liveResultP.then(found => {
-        if (found) {
-          log(`${logPrefix} Live mode completed`);
-          abortController.abort();
-        }
+      const liveResultP = liveWatchWithRetry(
+        () => getLiveResult(abortController.signal),
+        {
+          makeAbortController: ctx.makeAbortController,
+          signal: abortController.signal,
+          log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        },
+        err => log(`${logPrefix} Live watcher failed:`, err),
+      );
+      void liveResultP.then(result => {
+        if (result.settled) finish(`${logPrefix} Live mode completed`);
       });
 
-      await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
-      const currentBlock = await provider.getBlockNumber();
-      await waitForBlock(provider, currentBlock + 1);
+      await null;
+      const currentBlock = await rpc.getBlockNumber();
+      await waitForBlock(rpc, currentBlock + 1);
 
-      // Scan historical blocks
-      transferStatus = await lookBackCctp({
+      transferResult = await lookBackCctp({
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
-        chainId: caipId,
+        setTimeout: ctx.setTimeout,
         signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        txId,
       });
 
-      if (transferStatus) {
-        // Found in lookback, cancel live mode
-        log(`${logPrefix} Lookback found transaction`);
-        abortController.abort();
+      if (transferResult.settled) {
+        finish(`${logPrefix} Lookback found transaction`);
       } else {
-        // Not found in lookback, rely on live mode
         log(
           `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
         );
-        transferStatus = await liveResultP;
+        transferResult = await liveResultP;
       }
     }
 
-    await resolvePendingTx({
-      signingSmartWalletKit: ctx.signingSmartWalletKit,
+    if (opts.signal?.aborted) {
+      return;
+    }
+
+    await settleWatcherResult(
+      ctx,
       txId,
-      status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
-    });
+      transferResult,
+      'CCTP',
+      log,
+      opts.signal,
+    );
 
     log(`${logPrefix} CCTP tx resolved`);
   },
 };
 
-const gmpMonitor: PendingTxMonitor<GmpTx, EvmContext> = {
+const gmpMonitor: PendingTxMonitor<GmpTx> = {
   watch: async (ctx, tx, log, opts) => {
     await null;
 
-    const { txId, destinationAddress } = tx;
+    const { txId, destinationAddress, sourceAddress } = tx;
     const logPrefix = `[${txId}]`;
 
+    if (opts.signal?.aborted) {
+      log(`${logPrefix} GMP watch aborted before starting`);
+      return;
+    }
+
     // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+    assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
+    assert(sourceAddress, `${logPrefix} Missing sourceAddress`);
+
+    const { namespace, reference, accountAddress } =
+      parseAccountId(destinationAddress);
+    const caipId: CaipChainId = `${namespace}:${reference}`;
+    const rpc =
+      ctx.retryProviders[caipId] ||
+      Fail`${logPrefix} No retry provider for chain: ${caipId}`;
+
+    // Extract the address portion from sourceAddress (format: 'cosmos:agoric-3:agoric1...')
+    const lcaAddress = parseAccountId(sourceAddress).accountAddress;
+
+    const watchArgs = {
+      provider: rpc,
+      contractAddress: accountAddress as `0x${string}`,
+      txId,
+      expectedSourceAddress: lcaAddress,
+      chainId: caipId,
+      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+    };
+
+    let transferResult: GmpWatcherResult | undefined;
+    const getLiveResult = (signal?: AbortSignal) =>
+      watchGmp({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal,
+        kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
+      });
+
+    if (opts.mode === 'live') {
+      transferResult = await getLiveResult(opts.signal);
+    } else {
+      // Lookback mode with concurrent live watching
+      const abortController = ctx.makeAbortController(undefined, [opts.signal]);
+      const finish = (reason: string) => {
+        log(reason);
+        abortController.abort(reason);
+      };
+
+      // Start live mode now in case the txId has not yet appeared
+      const liveResultP = liveWatchWithRetry(
+        () => getLiveResult(abortController.signal),
+        {
+          makeAbortController: ctx.makeAbortController,
+          signal: abortController.signal,
+          log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        },
+        err => log(`${logPrefix} Live watcher failed:`, err),
+      );
+      void liveResultP.then(result => {
+        if (result.settled) finish(`${logPrefix} Live mode completed`);
+      });
+
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      await null;
+      const currentBlock = await rpc.getBlockNumber();
+      await waitForBlock(rpc, currentBlock + 1);
+
+      transferResult = await lookBackGmp({
+        ...watchArgs,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        setTimeout: ctx.setTimeout,
+        signal: abortController.signal,
+        kvStore: ctx.kvStore,
+        makeAbortController: ctx.makeAbortController,
+      });
+
+      if (transferResult.settled) {
+        finish(`${logPrefix} Lookback found transaction`);
+      } else {
+        log(
+          `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
+        );
+        transferResult = await liveResultP;
+      }
+    }
+
+    if (opts.signal?.aborted) {
+      return;
+    }
+
+    await settleWatcherResult(
+      ctx,
+      txId,
+      transferResult,
+      'GMP',
+      log,
+      opts.signal,
+    );
+
+    log(`${logPrefix} GMP tx resolved`);
+  },
+};
+
+const makeAccountMonitor: PendingTxMonitor<MakeAccountTx> = {
+  watch: async (ctx, tx, log, opts) => {
+    await null;
+
+    const {
+      txId,
+      expectedAddr,
+      factoryAddr,
+      destinationAddress,
+      sourceAddress,
+    } = tx;
+    const logPrefix = `[${txId}]`;
+
+    if (opts.signal?.aborted) {
+      log(`${logPrefix} MAKE_ACCOUNT watch aborted before starting`);
+      return;
+    }
+
+    expectedAddr || Fail`${logPrefix} Missing expectedAddr`;
+    destinationAddress ||
+      Fail`${logPrefix} Missing destinationAddress (factory)`;
+    sourceAddress || Fail`${logPrefix} Missing sourceAddress`;
+
+    // Parse destinationAddress format: 'eip155:42161:0x126cf3AC9ea12794Ff50f56727C7C66E26D9C092'
+    assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
+    assert(sourceAddress, `${logPrefix} Missing sourceAddress`);
+    const { namespace, reference, accountAddress } =
+      parseAccountId(destinationAddress);
+    const caipId: CaipChainId = `${namespace}:${reference}`;
+
+    const rpc =
+      ctx.retryProviders[caipId] ||
+      Fail`${logPrefix} No retry provider for chain: ${caipId}`;
+
+    const lcaAddress = parseAccountId(sourceAddress).accountAddress;
+
+    // For wallet creation, we need to handle two different transaction paths:
+    // - makeAccount mode: transaction sent to Factory (factoryAddr === accountAddress)
+    // - createAndDeposit mode: transaction sent to DepositFactory (factoryAddr !== accountAddress)
+    // The Factory always emits the SmartWalletCreated event in both cases.
+    // In live mode: subscribe to accountAddress (the actual transaction destination)
+    // In lookback mode: search for events from factoryAddr (the Factory contract)
+    const subscribeToAddr = accountAddress as `0x${string}`;
+
+    const watchArgs = {
+      factoryAddr: factoryAddr || (accountAddress as `0x${string}`),
+      subscribeToAddr,
+      provider: rpc,
+      expectedAddr: expectedAddr as `0x${string}`,
+      expectedSourceAddress: lcaAddress,
+      chainId: caipId,
+      log: (msg, ...args) => log(logPrefix, msg, ...args),
+    };
+
+    let walletResult: WatcherResult | undefined;
+    const getLiveResult = (signal?: AbortSignal) =>
+      watchSmartWalletTx({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal,
+        txId,
+      });
+
+    if (opts.mode === 'live') {
+      walletResult = await getLiveResult(opts.signal);
+    } else {
+      // Lookback mode with concurrent live watching
+      const abortController = ctx.makeAbortController(undefined, [opts.signal]);
+      const finish = (reason: string) => {
+        log(reason);
+        abortController.abort(reason);
+      };
+
+      // Start live mode now in case the txId has not yet appeared
+      const liveResultP = liveWatchWithRetry(
+        () => getLiveResult(abortController.signal),
+        {
+          makeAbortController: ctx.makeAbortController,
+          signal: abortController.signal,
+          log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        },
+        err => log(`${logPrefix} Live watcher failed:`, err),
+      );
+      void liveResultP.then(result => {
+        if (result.settled) finish(`${logPrefix} Live mode completed`);
+      });
+
+      // Wait for at least one block to ensure overlap between lookback and live mode
+      await null;
+      const currentBlock = await rpc.getBlockNumber();
+      await waitForBlock(rpc, currentBlock + 1);
+
+      walletResult = await lookBackSmartWalletTx({
+        ...watchArgs,
+        kvStore: ctx.kvStore,
+        txId,
+        publishTimeMs: opts.publishTimeMs,
+        chainId: caipId,
+        setTimeout: ctx.setTimeout,
+        signal: abortController.signal,
+        makeAbortController: ctx.makeAbortController,
+      });
+
+      if (walletResult.settled) {
+        finish(`${logPrefix} Lookback found wallet creation`);
+      } else {
+        log(
+          `${logPrefix} Lookback completed without finding wallet creation, waiting for live mode`,
+        );
+        walletResult = await liveResultP;
+      }
+    }
+
+    if (opts.signal?.aborted) {
+      return;
+    }
+
+    await settleWatcherResult(
+      ctx,
+      txId,
+      walletResult,
+      'MAKE_ACCOUNT',
+      log,
+      opts.signal,
+    );
+
+    log(`${logPrefix} MAKE_ACCOUNT tx resolved`);
+  },
+};
+
+const routedGmpMonitor: PendingTxMonitor<RoutedGmpTx> = {
+  watch: async (ctx, tx, log, opts) => {
+    await null;
+
+    const { txId, destinationAddress, payloadHash, sourceAddress } = tx;
+    const logPrefix = `[${txId}]`;
+
+    if (opts.signal?.aborted) {
+      log(`${logPrefix} ROUTED_GMP watch aborted before starting`);
+      return;
+    }
+
+    // Parse destinationAddress (CAIP-10 router address)
+    assert(destinationAddress, `${logPrefix} Missing destinationAddress`);
+    assert(sourceAddress, `${logPrefix} Missing sourceAddress`);
+
     const { namespace, reference, accountAddress } =
       parseAccountId(destinationAddress);
     const caipId: CaipChainId = `${namespace}:${reference}`;
     caipId in ctx.evmProviders ||
       Fail`${logPrefix} No EVM provider for chain: ${caipId}`;
 
-    const provider = ctx.evmProviders[caipId] as WebSocketProvider;
+    const rpc =
+      ctx.retryProviders[caipId] ||
+      Fail`${logPrefix} No retry provider for chain: ${caipId}`;
+
+    const lcaAddress = parseAccountId(sourceAddress).accountAddress;
 
     const watchArgs = {
-      provider,
-      contractAddress: accountAddress as `0x${string}`,
+      routerAddress: accountAddress as `0x${string}`,
+      provider: rpc,
+      chainId: caipId,
+      kvStore: ctx.kvStore,
       txId,
+      payloadHash,
+      sourceAddress: lcaAddress,
       log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     };
 
-    let transferStatus: boolean | undefined;
+    let transferResult: WatcherResult | undefined;
+    const getLiveResult = (signal?: AbortSignal) =>
+      watchOperationResult({
+        ...watchArgs,
+        timeoutMs: opts.timeoutMs,
+        signal,
+      });
 
     if (opts.mode === 'live') {
-      transferStatus = await watchGmp({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-      });
+      transferResult = await getLiveResult(opts.signal);
     } else {
       // Lookback mode with concurrent live watching
+      const abortController = ctx.makeAbortController(undefined, [opts.signal]);
+      const finish = (reason: string) => {
+        log(reason);
+        abortController.abort(reason);
+      };
+
       // Start live mode now in case the txId has not yet appeared
-      const abortController = new AbortController();
-      const liveResultP = watchGmp({
-        ...watchArgs,
-        timeoutMs: opts.timeoutMs,
-        signal: abortController.signal,
-      });
-      void liveResultP.then(found => {
-        if (found) {
-          log(`${logPrefix} Live mode completed`);
-          abortController.abort();
-        }
+      const liveResultP = liveWatchWithRetry(
+        () => getLiveResult(abortController.signal),
+        {
+          makeAbortController: ctx.makeAbortController,
+          signal: abortController.signal,
+          log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+        },
+        err => log(`${logPrefix} Live watcher failed:`, err),
+      );
+      void liveResultP.then(result => {
+        if (result.settled) finish(`${logPrefix} Live mode completed`);
       });
 
-      await null;
       // Wait for at least one block to ensure overlap between lookback and live mode
-      const currentBlock = await provider.getBlockNumber();
-      await waitForBlock(provider, currentBlock + 1);
+      await null;
+      const currentBlock = await rpc.getBlockNumber();
+      await waitForBlock(rpc, currentBlock + 1);
 
-      // Scan historical blocks
-      transferStatus = await lookBackGmp({
+      transferResult = await lookBackOperationResult({
         ...watchArgs,
         publishTimeMs: opts.publishTimeMs,
-        chainId: caipId,
         signal: abortController.signal,
+        setTimeout: ctx.setTimeout,
+        makeAbortController: ctx.makeAbortController,
       });
 
-      if (transferStatus) {
-        // Found in lookback, cancel live mode
-        log(`${logPrefix} Lookback found transaction`);
-        abortController.abort();
+      if (transferResult.settled) {
+        finish(`${logPrefix} Lookback found transaction`);
       } else {
-        // Not found in lookback, rely on live mode
         log(
           `${logPrefix} Lookback completed without finding transaction, waiting for live mode`,
         );
-        transferStatus = await liveResultP;
+        transferResult = await liveResultP;
       }
     }
 
-    await resolvePendingTx({
-      signingSmartWalletKit: ctx.signingSmartWalletKit,
-      txId,
-      status: transferStatus ? TxStatus.SUCCESS : TxStatus.FAILED,
-    });
+    if (opts.signal?.aborted) {
+      return;
+    }
 
-    log(`${logPrefix} GMP tx resolved`);
+    await settleWatcherResult(
+      ctx,
+      txId,
+      transferResult,
+      'ROUTED_GMP',
+      log,
+      opts.signal,
+    );
+
+    log(`${logPrefix} ROUTED_GMP watch completed`);
   },
 };
 
-const createMonitorRegistry = (): MonitorRegistry => ({
-  [TxType.CCTP_TO_EVM]: cctpMonitor,
-  [TxType.GMP]: gmpMonitor,
-});
+const ibcFromAgoricMonitor: PendingTxMonitor = {
+  // CAVEAT: IBC_FROM_AGORIC watch not needed - settled by contract
+  watch: async (_ctx, _tx, _log, _opts) => {
+    // do nothing
+  },
+};
+
+const MONITORS = new Map<TxType, PendingTxMonitor<PendingTx> | null>([
+  [TxType.CCTP_TO_EVM, cctpMonitor],
+  [TxType.GMP, gmpMonitor],
+  [TxType.ROUTED_GMP, routedGmpMonitor],
+  [TxType.MAKE_ACCOUNT, makeAccountMonitor],
+  [TxType.IBC_FROM_AGORIC, ibcFromAgoricMonitor],
+]);
 
 export type HandlePendingTxOpts = {
-  cosmosRpc: CosmosRPCClient;
   log?: (...args: unknown[]) => void;
   error?: (...args: unknown[]) => void;
   marshaller: SigningSmartWalletKit['marshaller'];
-  registry?: MonitorRegistry;
   timeoutMs?: number;
   vstoragePathPrefixes: {
     portfoliosPathPrefix: string;
     pendingTxPathPrefix: string;
   };
+  txTimestampMs?: number;
+  signal?: AbortSignal;
+  pendingTxAbortControllers: Map<TxId, AbortController>;
 } & EvmContext;
 
+/**
+ * Stable error codes prefixed to watcher timeout and lookback not-found log
+ * messages. Ops alerting in #ops-ymax-resolver matches on these codes so that
+ * alert patterns don't break when log message text is updated.
+ */
+export const PendingTxCode = {
+  GMP_TX_NOT_FOUND: 'GMP_TX_NOT_FOUND',
+  ROUTED_GMP_TX_NOT_FOUND: 'ROUTED_GMP_TX_NOT_FOUND',
+  WALLET_TX_NOT_FOUND: 'WALLET_TX_NOT_FOUND',
+  CCTP_TX_NOT_FOUND: 'CCTP_TX_NOT_FOUND',
+  RESOLVER_SETTLEMENT_FAILED: 'RESOLVER_SETTLEMENT_FAILED',
+} as const;
+
 export const TX_TIMEOUT_MS = 30 * 60 * 1000; // 30 min
+
+export const TRANSPORT_RETRY_LIMIT = 5;
+export const TRANSPORT_RETRY_INITIAL_MS = 1_000;
+export const TRANSPORT_RETRY_MAX_MS = 60_000;
+
+type TransportRetryOpts = {
+  makeAbortController: MakeAbortController;
+  signal?: AbortSignal;
+  log?: (...args: unknown[]) => void;
+  limit?: number;
+  initialDelayMs?: number;
+  maxDelayMs?: number;
+};
+
+export const watchWithRetry = async <T>(
+  runWatch: () => Promise<T>,
+  {
+    makeAbortController,
+    signal,
+    log = () => {},
+    limit = TRANSPORT_RETRY_LIMIT,
+    initialDelayMs = TRANSPORT_RETRY_INITIAL_MS,
+    maxDelayMs = TRANSPORT_RETRY_MAX_MS,
+  }: TransportRetryOpts,
+): Promise<T | undefined> => {
+  await null;
+  let attempt = 0;
+  while (true) {
+    try {
+      return await runWatch();
+    } catch (err) {
+      if (signal?.aborted) return undefined;
+      if (!(err instanceof WatcherTransportError) || attempt >= limit) {
+        throw err;
+      }
+      const delay = Math.min(initialDelayMs * 2 ** attempt, maxDelayMs);
+      attempt += 1;
+      log(
+        `⚠️  Watcher transport failure (attempt ${attempt}/${limit}), retrying in ${delay}ms`,
+        err,
+      );
+      await makeAbortController(delay, [signal]).abortedP;
+      if (signal?.aborted) return undefined;
+    }
+  }
+};
+
+/**
+ * Wrap a watcher invocation with transport-failure retry, smoothing the result
+ * so the returned promise always resolves with a `WatcherResult`. Used by
+ * lookback monitors to keep the concurrent live arm restartable on transient
+ * WebSocket failures without bubbling errors out of the parent watch.
+ */
+const liveWatchWithRetry = <R extends WatcherResult>(
+  runWatch: () => Promise<R>,
+  opts: TransportRetryOpts,
+  onFailure: (err: unknown) => void,
+): Promise<R | WatcherResult> =>
+  watchWithRetry(runWatch, opts).then(
+    result => result ?? { settled: false },
+    err => {
+      onFailure(err);
+      return { settled: false };
+    },
+  );
+
 export const handlePendingTx = async (
   tx: PendingTx,
   {
     log = () => {},
-    registry = createMonitorRegistry(),
+    error = () => {},
     timeoutMs = TX_TIMEOUT_MS,
-    ...evmCtx
+    txTimestampMs,
+    signal,
+    ...watchCtx
   }: HandlePendingTxOpts,
-  txTimestampMs?: number,
 ) => {
   await null;
   const logPrefix = `[${tx.txId}]`;
+
+  // Fast path: if a prior watcher derived an outcome but the on-chain
+  // submission never confirmed, skip the watcher and just retry the submit.
+  const cached = getDerivedOutcome(watchCtx.kvStore, tx.txId);
+  if (cached) {
+    log(
+      `${logPrefix} reusing cached outcome ${cached.status}; skipping watcher`,
+    );
+    await settleWatcherResult(
+      watchCtx,
+      tx.txId,
+      {
+        settled: true,
+        success: cached.status === TxStatus.SUCCESS,
+        txHash: cached.txHash,
+      },
+      'cached-outcome',
+      (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
+      signal,
+    );
+    return;
+  }
+
+  const monitor = MONITORS.get(tx.type);
+  if (monitor === null) {
+    // Previously logged as unhandled type, skip silently.
+    return;
+  }
+
   log(`${logPrefix} handling ${tx.type} tx`);
 
-  const monitor = registry[tx.type] as PendingTxMonitor<PendingTx, EvmContext>;
-  monitor || Fail`${logPrefix} No monitor registered for tx type: ${tx.type}`;
+  if (monitor === undefined) {
+    // Only alert once per unhandled type per execution, to reduce
+    // operator fatigue.
+    error(`🚨 ${logPrefix} No monitor registered for tx type: ${tx.type}`);
+    MONITORS.set(tx.type, null);
+    return;
+  }
 
-  if (txTimestampMs) {
-    await monitor.watch(evmCtx, tx, log, {
-      mode: 'lookback',
-      publishTimeMs: txTimestampMs,
-      timeoutMs,
+  const watchOpts: Omit<WatchOpts, 'mode'> = { timeoutMs, signal };
+  const runWatch = () =>
+    txTimestampMs
+      ? monitor.watch(watchCtx, tx, log, {
+          mode: 'lookback',
+          publishTimeMs: txTimestampMs,
+          ...watchOpts,
+        })
+      : monitor.watch(watchCtx, tx, log, { mode: 'live', ...watchOpts });
+
+  try {
+    await watchWithRetry(runWatch, {
+      makeAbortController: watchCtx.makeAbortController,
+      signal,
+      log: (msg, ...args) => log(`${logPrefix} ${msg}`, ...args),
     });
-  } else {
-    await monitor.watch(evmCtx, tx, log, { mode: 'live', timeoutMs });
+  } catch (err) {
+    const mode = txTimestampMs ? 'with lookback' : 'in live mode';
+    error(`🚨 Failed to process pending tx ${tx.txId} ${mode}`, err);
   }
 };

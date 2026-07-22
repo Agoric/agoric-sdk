@@ -1,8 +1,4 @@
 import { type Amount } from '@agoric/ertp';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
-import { NonNullish } from '@agoric/internal';
 import {
   boardSlottingMarshaller,
   unmarshalFromVstorage,
@@ -28,11 +24,40 @@ import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import type { TimerService } from '@agoric/time';
 import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
 import { type AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
-import type { InvitationDetails } from '@agoric/zoe';
+import type { Instance, InvitationDetails } from '@agoric/zoe';
 import type { Marshal } from '@endo/marshal';
+import type { ERef } from '@agoric/vow';
+import type { BankManager } from '@agoric/vats/src/vat-bank.js';
 import type { SwingsetTestKit } from './supports.js';
 
 type Marshaller = Omit<Marshal<string | null>, 'serialize' | 'unserialize'>;
+
+// Formerly imported from inter-protocol's econ-behaviors (refs #12719).
+const SECONDS_PER_MINUTE = 60n;
+
+const isBootProfileEnabled = () => {
+  const value = process.env.AGORIC_BOOT_TEST_PROFILE;
+  if (!value) {
+    return false;
+  }
+  const normalized = value.trim().toLowerCase();
+  return normalized !== '0' && normalized !== 'false' && normalized !== 'off';
+};
+
+const profileBootStep = async <T>(
+  label: string,
+  op: () => Promise<T>,
+): Promise<T> => {
+  const start = performance.now();
+  try {
+    // eslint-disable-next-line @jessie.js/safe-await-separator
+    return await op();
+  } finally {
+    if (isBootProfileEnabled()) {
+      console.warn(`${label}=${(performance.now() - start).toFixed(1)}ms`);
+    }
+  }
+};
 
 // XXX SwingsetTestKit would simplify this
 export const makeWalletFactoryDriver = async (
@@ -144,12 +169,21 @@ export const makeWalletFactoryDriver = async (
       walletAddress: string,
       myMarshaller?: Marshaller,
     ): Promise<ReturnType<typeof makeWalletDriver>> {
-      const bank = await EV(bankManager).getBankForAddress(walletAddress);
-      return EV(walletFactoryStartResult.creatorFacet)
-        .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
-        .then(([walletPresence, isNew]) =>
-          makeWalletDriver(walletAddress, walletPresence, isNew, myMarshaller),
-        );
+      const bank = await profileBootStep(
+        `walletFactoryDriver.getBankForAddress.${walletAddress}`,
+        () => EV(bankManager).getBankForAddress(walletAddress),
+      );
+      return profileBootStep(
+        `walletFactoryDriver.provideSmartWallet.${walletAddress}`,
+        () =>
+          EV(walletFactoryStartResult.creatorFacet).provideSmartWallet(
+            walletAddress,
+            bank,
+            namesByAddressAdmin,
+          ),
+      ).then(([walletPresence, isNew]) =>
+        makeWalletDriver(walletAddress, walletPresence, isNew, myMarshaller),
+      );
     },
   };
 };
@@ -160,72 +194,6 @@ export type WalletFactoryDriver = Awaited<
 export type SmartWalletDriver = Awaited<
   ReturnType<WalletFactoryDriver['provideSmartWallet']>
 >;
-
-export const makePriceFeedDriver = async (
-  collateralBrandKey: string,
-  agoricNamesRemotes: AgoricNamesRemotes,
-  walletFactoryDriver: WalletFactoryDriver,
-  oracleAddresses: string[],
-) => {
-  const priceFeedName = oracleBrandFeedName(collateralBrandKey, 'USD');
-
-  const oracleWallets = await Promise.all(
-    oracleAddresses.map(addr => walletFactoryDriver.provideSmartWallet(addr)),
-  );
-
-  let nonce = 0;
-  let adminOfferId;
-  const acceptInvitations = async () => {
-    const priceFeedInstance = agoricNamesRemotes.instance[priceFeedName];
-    priceFeedInstance || Fail`no price feed ${priceFeedName}`;
-    nonce += 1;
-    adminOfferId = `accept-${collateralBrandKey}-oracleInvitation${nonce}`;
-    return Promise.all(
-      oracleWallets.map(w =>
-        w.executeOffer({
-          id: adminOfferId,
-          invitationSpec: {
-            source: 'purse',
-            instance: priceFeedInstance,
-            description: 'oracle invitation',
-          },
-          proposal: {},
-        }),
-      ),
-    );
-  };
-  await acceptInvitations();
-
-  // zero is the initial lastReportedRoundId so causes an error: cannot report on previous rounds
-  let roundId = 1n;
-  return {
-    async setPrice(price: number) {
-      await Promise.all(
-        oracleWallets.map(w =>
-          w.executeOfferMaker(
-            Offers.fluxAggregator.PushPrice,
-            {
-              offerId: `push-${price}-${Date.now()}`,
-              roundId,
-              unitPrice: BigInt(price * 1_000_000),
-            },
-            adminOfferId,
-          ),
-        ),
-      );
-      // prepare for next round
-      oracleWallets.push(NonNullish(oracleWallets.shift()));
-      roundId += 1n;
-      // TODO confirm the new price is written to storage
-    },
-    async refreshInvitations() {
-      roundId = 1n;
-      await acceptInvitations();
-    },
-  };
-};
-harden(makePriceFeedDriver);
-export type PriceFeedDriver = Awaited<ReturnType<typeof makePriceFeedDriver>>;
 
 export const makeGovernanceDriver = async (
   testKit: SwingsetTestKit,
@@ -248,12 +216,15 @@ export const makeGovernanceDriver = async (
     ),
   );
 
-  const findInvitation = (wallet, descriptionSubstr) => {
-    return wallet
-      .getCurrentWalletRecord()
-      .purses[0].balance.value.find(v =>
-        v.description.startsWith(descriptionSubstr),
-      );
+  const findInvitation = (
+    wallet: SmartWalletDriver,
+    descriptionSubstr: string,
+  ) => {
+    const invitationBalance = wallet.getCurrentWalletRecord().purses[0]
+      .balance as Amount<'set', InvitationDetails>;
+    return invitationBalance.value.find(v =>
+      v.description.startsWith(descriptionSubstr),
+    );
   };
 
   const ecMembers = smartWallets.map(w => ({
@@ -425,89 +396,3 @@ export const makeGovernanceDriver = async (
 };
 harden(makeGovernanceDriver);
 export type GovernanceDriver = Awaited<ReturnType<typeof makeGovernanceDriver>>;
-
-export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
-  const { EV } = testKit.runUtils;
-  const zoe = await EV.vat('bootstrap').consumeItem('zoe');
-  const chainStorage = await EV.vat('bootstrap').consumeItem('chainStorage');
-  const storageNode = await EV(chainStorage!).makeChildNode('prober-asid9a');
-  let creatorFacet;
-  let adminFacet;
-  let brand;
-  const sub = (a, v) => {
-    return { brand: a.brand, value: a.value - v };
-  };
-
-  return {
-    async instantiateProbeContract(probeContractBundle) {
-      const installation = await EV(zoe).install(probeContractBundle);
-      const startResults = await EV(zoe).startInstance(
-        installation,
-        undefined,
-        undefined,
-        { storageNode },
-        'probe',
-      );
-      ({ creatorFacet, adminFacet } = startResults);
-
-      const issuers = await EV(zoe).getIssuers(startResults.instance);
-      const brands = await EV(zoe).getBrands(startResults.instance);
-      brand = brands.Ducats;
-      return { creatorFacet, issuer: issuers.Ducats, brand };
-    },
-    async upgradeProbe(probeContractBundle) {
-      const fabricateBundleId = bundle => {
-        return `b1-${bundle.endoZipBase64Sha512}`;
-      };
-
-      await EV(adminFacet).upgradeContract(
-        fabricateBundleId(probeContractBundle),
-      );
-    },
-
-    verifyRealloc() {
-      return EV(creatorFacet).getAllocation();
-    },
-    async probeReallocation(value, payment) {
-      const stagingInv = await EV(creatorFacet).makeProbeStagingInvitation();
-
-      const stagingSeat = await EV(zoe).offer(
-        stagingInv,
-        { give: { Ducats: value } },
-        { Ducats: payment },
-      );
-      const helperPayments = await EV(stagingSeat).getPayouts();
-
-      const helperInv = await EV(creatorFacet).makeProbeHelperInvitation();
-      const helperSeat = await EV(zoe).offer(
-        helperInv,
-        { give: { Ducats: sub(value, 1n) } },
-        { Ducats: helperPayments.Ducats },
-      );
-      const internalPayments = await EV(helperSeat).getPayouts();
-
-      const internalInv = await EV(creatorFacet).makeProbeInternalInvitation();
-      const internalSeat = await EV(zoe).offer(
-        internalInv,
-        { give: { Ducats: sub(value, 2n) } },
-        { Ducats: internalPayments.Ducats },
-      );
-      const leftoverPayments = await EV(internalSeat).getPayouts();
-
-      return {
-        stagingResult: await EV(stagingSeat).getOfferResult(),
-        helperResult: await EV(helperSeat).getOfferResult(),
-        internalResult: await EV(internalSeat).getOfferResult(),
-        leftoverPayments,
-      };
-    },
-    async faucet() {
-      const faucetInv = await EV(creatorFacet).makeFaucetInvitation();
-      const seat = await EV(zoe).offer(faucetInv);
-
-      return EV(seat).getPayout('Ducats');
-    },
-  };
-};
-harden(makeZoeDriver);
-export type ZoeDriver = Awaited<ReturnType<typeof makeZoeDriver>>;

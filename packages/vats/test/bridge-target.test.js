@@ -7,7 +7,11 @@ import { prepareBridgeTargetModule } from '../src/bridge-target.js';
 
 import { makeFakeTransferBridge } from '../tools/fake-bridge.js';
 
-/** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
+/**
+ * @import {TestFn} from 'ava';
+ */
+
+/** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
 const test = anyTest;
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });

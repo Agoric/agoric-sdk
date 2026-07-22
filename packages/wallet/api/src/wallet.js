@@ -18,16 +18,30 @@ import pubsub from './pubsub.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makeTimerDeviceDateNow, makeTimerServiceDateNow } from './date-now.js';
 
-import './internal-types.js';
+/**
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {WalletAdminFacet} from './internal-types.js';
+ * @import {OfferState, PursesJSONState, WalletAdmin, WalletBridge} from './types.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {ZoeService} from '@agoric/zoe';
+ */
+
+/**
+ * @import {Board} from '@agoric/vats';
+ * @import {TimerService} from '@agoric/time';
+ * @import {MyAddressNameAdmin} from '@agoric/vats';
+ * @import {WalletRoot} from './lib-wallet.js';
+ */
 
 /**
  * @typedef {{
  * agoricNames: ERef<NameHub>,
- * board: ERef<import('@agoric/vats').Board>,
+ * board: ERef<Board>,
  * cacheStorageNode: ERef<StorageNode>,
  * localTimerPollInterval?: bigint,
- * localTimerService?: import('@agoric/time').TimerService,
- * myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>,
+ * localTimerService?: TimerService,
+ * myAddressNameAdmin: ERef<MyAddressNameAdmin>,
  * namesByAddress: ERef<NameHub>,
  * timerDevice?: unknown,
  * timerDeviceScale?: number,
@@ -41,7 +55,7 @@ export function buildRootObject(vatPowers) {
   // See if we have the device vat power.
   const { D } = vatPowers || {};
 
-  /** @type {import('./lib-wallet.js').WalletRoot} */
+  /** @type {WalletRoot} */
   let walletRoot;
   /** @type {WalletAdminFacet} */
   let walletAdmin;

@@ -1,5 +1,3 @@
-// @jessie-check
-
 /// <reference types="ses" />
 
 import { E, Far } from '@endo/far';
@@ -10,6 +8,7 @@ import { makePinnedHistoryTopic } from './topic.js';
 
 /**
  * @import {EachTopic, IterationObserver, LatestTopic, Notifier, NotifierRecord, SubscriptionRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord} from '../src/types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

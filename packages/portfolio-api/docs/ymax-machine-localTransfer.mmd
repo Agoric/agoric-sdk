@@ -1,0 +1,18 @@
+stateDiagram-v2
+[*] --> initiated
+state initiated
+note right of initiated
+  localTransfer() called with seat and target account
+end note
+initiated --> completed: zoeTools.localTransfer() returned successfully
+initiated --> failed: Zoe transfer threw an error (e.g., insufficient funds, wrong brand)
+state completed
+note right of completed
+  Assets moved from seat to LCA
+end note
+completed --> [*]
+state failed
+note right of failed
+  Transfer failed, seat allocation unchanged
+end note
+failed --> [*]

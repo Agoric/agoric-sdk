@@ -8,6 +8,7 @@ import { MsgTransferResponse as MsgTransferResponseType } from '@agoric/cosmic-p
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
+import type { Installation } from '@agoric/zoe';
 import * as contractExports from '../../src/examples/unbond.contract.js';
 import {
   buildMsgResponseString,

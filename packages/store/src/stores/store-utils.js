@@ -36,10 +36,11 @@ export const makeCurrentKeysKit = (
   checkHas,
   compare,
   assertOkToAdd,
-  assertOkToDelete = undefined,
+  assertOkToDelete,
   keyName = 'key',
 ) => {
   let updateCount = 0;
+  /** @type {Array<K> | undefined} */
   let sortedKeysMemo;
 
   const assertUpdateOnAdd = (k, v = undefined) => {
@@ -61,6 +62,7 @@ export const makeCurrentKeysKit = (
     [Symbol.iterator]: () => {
       const generation = updateCount;
       getSortedKeys();
+      // @ts-expect-error TS doesn't track that sortedKeysMemo is defined
       const len = sortedKeysMemo.length;
       let i = 0;
       return Far('Iterator of keys', {
@@ -70,13 +72,16 @@ export const makeCurrentKeysKit = (
           // we started with.
           for (;;) {
             if (i < len) {
+              // @ts-expect-error TS doesn't track that sortedKeysMemo is defined
               const value = sortedKeysMemo[i];
               i += 1;
               if (checkHas(value)) {
-                return harden({ done: false, value });
+                return harden(/** @type {const} */ ({ done: false, value }));
               }
             } else {
-              return harden({ done: true, value: undefined });
+              return harden(
+                /** @type {const} */ ({ done: true, value: undefined }),
+              );
             }
           }
         },

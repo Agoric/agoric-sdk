@@ -61,7 +61,6 @@ export const makeEquate = bijection => {
     switch (gPassStyle) {
       case 'copyArray': {
         equate(g.length, h.length, 'length');
-        // eslint-disable-next-line github/array-foreach
         g.forEach((gEl, i) => equate(gEl, h[i], i));
         return;
       }

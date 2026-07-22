@@ -1,4 +1,4 @@
-/* eslint-env node */
+// @ts-nocheck
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 

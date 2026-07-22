@@ -6,10 +6,10 @@
  *   https://nodejs.org/docs/latest/api/child_process.html#advanced-serialization
  */
 
-import { fork } from 'child_process';
-import path from 'path';
-import { promisify } from 'util';
-import anylogger from 'anylogger';
+import { fork } from 'node:child_process';
+import path from 'node:path';
+import { promisify } from 'node:util';
+import anylogger from '@agoric/internal/vendor/anylogger.js';
 
 import { q, Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
@@ -17,10 +17,15 @@ import { makeQueue } from '@endo/stream';
 
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
+/**
+ * @import {AsyncQueue} from '@endo/stream';
+ * @import {InitMessage} from './slog-sender-pipe-entrypoint.js';
+ * @import {FlushMessage} from './slog-sender-pipe-entrypoint.js';
+ * @import {MakeSlogSenderOptions} from './index.js';
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore TODO remove when anylogger has types
 const logger = anylogger('slog-sender-pipe');
 
 const sink = () => {};
@@ -31,7 +36,7 @@ const sink = () => {};
  * @param {(...args: T) => Promise<R>} operation
  */
 const withMutex = operation => {
-  /** @type {import('@endo/stream').AsyncQueue<void>} */
+  /** @type {AsyncQueue<void>} */
   const mutex = makeQueue();
   mutex.put(Promise.resolve());
   /** @param {T} args */
@@ -51,11 +56,11 @@ const withMutex = operation => {
 /**
  * @typedef {{
  *   init: {
- *     message: import('./slog-sender-pipe-entrypoint.js').InitMessage;
+ *     message: InitMessage;
  *     reply: PipeReply<{ hasSender: boolean }>;
  *   };
  *   flush: {
- *     message: import('./slog-sender-pipe-entrypoint.js').FlushMessage;
+ *     message: FlushMessage;
  *     reply: PipeReply<{}>;
  *   };
  * }} SlogSenderPipeAPI
@@ -64,7 +69,7 @@ const withMutex = operation => {
  * @typedef {SlogSenderPipeAPI[PipeAPICommand]["reply"]} PipeAPIReply
  */
 
-/** @param {import('./index.js').MakeSlogSenderOptions} options */
+/** @param {MakeSlogSenderOptions} options */
 export const makeSlogSender = async options => {
   const { env = {} } = options;
   const { registerShutdown } = makeShutdown();
@@ -89,7 +94,7 @@ export const makeSlogSender = async options => {
   const rawSend = promisify(cp.send.bind(cp));
   const pipeSend = withMutex(rawSend);
 
-  /** @type {import('@endo/stream').AsyncQueue<PipeAPIReply>} */
+  /** @type {AsyncQueue<PipeAPIReply>} */
   const sendWaitQueue = makeQueue();
   /** @type {PipeAPICommand | undefined} */
   let sendWaitType;

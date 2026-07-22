@@ -12,7 +12,12 @@ import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /**
- * @import {AdminFacet, ContractOf, InvitationAmount, ZCFMint} from '@agoric/zoe';
+ * @import {AdminFacet, InvitationAmount, ZCFMint, ZoeService} from '@agoric/zoe';
+ * @import {SmartWallet} from '../../../src/smartWallet.js';
+ * @import {start as StartWalletFactory} from '../../../src/walletFactory.js';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {PromiseKit} from '@endo/promise-kit';
  */
 
 const trace = makeTracer('BootWFUpg', false);
@@ -34,20 +39,20 @@ export const buildRootObject = async () => {
 
   /** @type {PromiseKit<ZoeService>} */
   const { promise: zoe, ...zoePK } = makePromiseKit();
-  /** @type {PromiseKit<Instance>} */
+  /** @type {PromiseKit<Instance<any>>} */
   const { promise: automaticRefundInstance, ...arPK } = makePromiseKit();
 
   let vatAdmin;
   /** @type {AdminFacet} */
   let adminFacet;
   let creatorFacet;
-  /** @type {import('../../../src/smartWallet.js').SmartWallet} */
+  /** @type {SmartWallet} */
   let wallet;
 
   const bank = await E(bankManager).getBankForAddress(walletAddr);
 
   // for startInstance
-  /** @type {Installation<import('../../../src/walletFactory.js').start>} */
+  /** @type {Installation<StartWalletFactory>} */
   let installation;
   const terms = {
     agoricNames,

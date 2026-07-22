@@ -3,6 +3,11 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
 /**
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {FeeMintAccess} from '../../../src/types-index.js';
+ */
+
+/**
  * Tests zcf.registerFeeMint
  *
  * @param {ZCF} zcf

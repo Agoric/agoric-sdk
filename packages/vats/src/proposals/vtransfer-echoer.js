@@ -3,9 +3,14 @@ import { makeExo } from '@agoric/store';
 import { E } from '@endo/far';
 
 /**
+ * @import {TransferMiddleware} from '../transfer.js';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   consume: {
- *     transferMiddleware: import('../transfer.js').TransferMiddleware;
+ *     transferMiddleware: TransferMiddleware;
  *   };
  * }} powers
  * @param {object} options

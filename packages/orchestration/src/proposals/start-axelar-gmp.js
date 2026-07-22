@@ -1,5 +1,3 @@
-/// <reference types="@agoric/vats/src/core/types-ambient.js"/>
-
 import {
   deeplyFulfilledObject,
   makeTracer,
@@ -11,7 +9,9 @@ import { E } from '@endo/far';
  * @import {Issuer} from '@agoric/ertp';
  * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
- * @import {start as StartFn} from '@agoric/orchestration/src/examples/axelar-gmp.contract.js';
+ * @typedef {typeof import('@agoric/orchestration/src/examples/axelar-gmp.contract.js').start} StartFn
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {Producer} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('start axelarGmp', true);

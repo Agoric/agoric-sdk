@@ -1,5 +1,5 @@
 /**
- * @template {object} R Result type
+ * @template R Result type
  * @typedef {object} OracleAdmin
  * @property {() => Promise<void>} delete
  * Remove the oracle from the aggregator
@@ -8,11 +8,19 @@
  */
 
 /**
+ * @import {PriceAggregatorContract} from './priceAggregator.js';
+ * @import {Invitation} from '../types-index.js';
+ * @import {AmountKeywordRecord, Instance} from '@agoric/zoe';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
+ */
+
+/**
  * @typedef {{} | string} OracleKey
  */
 
 /**
- * @typedef {Pick<import("./priceAggregator.js").PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
+ * @typedef {Pick<PriceAggregatorContract, 'creatorFacet' | 'publicFacet'>} PriceAggregatorKit
  */
 
 /**

@@ -10,6 +10,7 @@ import { throwRedacted as Fail } from '@endo/errors';
 /**
  * @param {VStorage} vs
  * @param {string} start
+ * @returns {AsyncGenerator<string>}
  */
 
 async function* depthFirst(vs, start) {

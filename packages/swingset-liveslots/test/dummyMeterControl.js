@@ -1,5 +1,9 @@
 import { assert } from '@endo/errors';
 
+/**
+ * @import {MeterControl} from '../src/types.js';
+ */
+
 export function makeDummyMeterControl() {
   let meteringDisabled = 0;
 
@@ -41,7 +45,7 @@ export function makeDummyMeterControl() {
     return harden(wrapped);
   }
 
-  /** @type { import('../src/types.js').MeterControl } */
+  /** @type { MeterControl } */
   const meterControl = {
     isMeteringDisabled,
     assertIsMetered,

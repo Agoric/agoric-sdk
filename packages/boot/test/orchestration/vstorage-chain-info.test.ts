@@ -9,21 +9,25 @@ import {
   defaultMarshaller,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
-import type { TestFn } from 'ava';
+import type { ExecutionContext, TestFn } from 'ava';
 import {
   insistManagerType,
   makeSwingsetHarness,
 } from '../../tools/supports.js';
 import {
-  makeWalletFactoryContext,
-  type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.js';
+  makeBootTestContext,
+  withWalletFactory,
+  type WalletFactoryBootTestContext,
+} from '../tools/boot-test-context.js';
 
-const test: TestFn<
-  WalletFactoryTestContext & {
-    harness?: ReturnType<typeof makeSwingsetHarness>;
-  }
-> = anyTest;
+type ChainInfoContext = {
+  harness?: ReturnType<typeof makeSwingsetHarness>;
+  makeBootContext: (
+    t: ExecutionContext<unknown>,
+  ) => Promise<WalletFactoryBootTestContext>;
+};
+
+const test: TestFn<ChainInfoContext> = anyTest;
 
 const ATOM_DENOM = 'uatom';
 
@@ -33,27 +37,40 @@ const {
 } = process.env;
 
 test.before(async t => {
-  insistManagerType(defaultManagerType);
-  const harness =
-    defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
-  const ctx = await makeWalletFactoryContext(
-    t,
-    '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
-    { slogFile, defaultManagerType, harness },
-  );
-  t.context = { ...ctx, harness };
+  const managerType = defaultManagerType;
+  insistManagerType(managerType);
+
+  const harness = managerType === 'xsnap' ? makeSwingsetHarness() : undefined;
+
+  const makeBootContext = async (t0: ExecutionContext<unknown>) =>
+    withWalletFactory(
+      await makeBootTestContext(t0, {
+        configSpecifier:
+          '@agoric/vm-config/decentral-itest-orchestration-chains-config.json',
+        slogFile,
+        defaultManagerType: managerType,
+        harness,
+      }),
+    );
+
+  t.context = { harness, makeBootContext };
 });
-test.after.always(t => t.context.shutdown?.());
 
 /**
- * Test the config itself. Part of this suite so we don't have to start up another swingset.
+ * Verify the orchestration-chains config publishes the expected `chain` and
+ * `chainConnection` info to `agoricNames`. The companion `revise chain info`
+ * test lives in revise-chain-info.test.ts so the two boots run on separate
+ * cores.
  */
-test.serial('config', async t => {
+test('config', async t => {
+  const ctx = await t.context.makeBootContext(t);
+  t.teardown(async () => ctx.shutdown());
+
   const {
     storage,
     readPublished,
     runUtils: { EV },
-  } = t.context;
+  } = ctx;
 
   const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
 
@@ -110,41 +127,4 @@ test.serial('config', async t => {
       },
     });
   }
-});
-
-// XXX rely on .serial to be in sequence, and keep this one last
-test.serial('revise chain info', async t => {
-  const {
-    buildProposal,
-    evalProposal,
-    runUtils: { EV },
-  } = t.context;
-
-  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
-
-  await t.throwsAsync(EV(agoricNames).lookup('chain', 'hot'), {
-    message: '"nameKey" not found: "hot"',
-  });
-
-  // Revise chain info in agoricNames with the fixture in this script
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/append-chain-info.js'),
-  );
-
-  const hotchain = await EV(agoricNames).lookup('chain', 'hot');
-  t.deepEqual(hotchain, {
-    bech32Prefix: 'cosmos',
-    chainId: 'hot-1',
-    namespace: 'cosmos',
-    reference: 'hot-1',
-  });
-
-  const connection = await EV(agoricNames).lookup(
-    'chainConnection',
-    'cosmoshub-4_hot-1',
-  );
-  t.like(connection, {
-    id: 'connection-1',
-    client_id: '07-tendermint-2',
-  });
 });

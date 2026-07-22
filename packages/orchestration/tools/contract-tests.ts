@@ -1,17 +1,16 @@
 import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import type { StorageMessage } from '@agoric/internal/src/lib-chainStorage.js';
 import {
   defaultSerializer,
+  makeAsyncQueue,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
+import { setupFakeNetwork } from '@agoric/orchestration/tools/network-fakes.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { setupFakeNetwork } from '@agoric/orchestration/test/network-fakes.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import {
-  makeNameHubKit,
-  type IBCChannelID,
-  type VTransferIBCEvent,
-} from '@agoric/vats';
+import type { IBCChannelID } from '@agoric/network/ibc';
+import { makeNameHubKit, type VTransferIBCEvent } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import {
@@ -29,7 +28,7 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
-import { objectMap } from '@endo/patterns';
+import { objectExtendEach } from '@endo/common/object-map.js';
 import type { ExecutionContext } from 'ava';
 import { withChainCapabilities, type ChainInfo } from '../index.js';
 import cctpChainInfo from '../src/cctp-chain-info.js';
@@ -131,7 +130,12 @@ export const setupOrchestrationTest = async ({
   const timer = buildZoeManualTimer(log);
   const board = makeFakeBoard();
   const marshaller = board.getPublishingMarshaller();
-  const storage = makeFakeStorageKit(ROOT_STORAGE_PATH);
+  const storageQueue = makeAsyncQueue<StorageMessage>();
+  const storage = makeFakeStorageKit(
+    ROOT_STORAGE_PATH,
+    { sequence: true },
+    { eachMessage: storageQueue.enqueue },
+  );
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
     rootZone.subZone('network'),
@@ -243,6 +247,8 @@ export const setupOrchestrationTest = async ({
     );
     // let the bridge handler finish
     await eventLoopIteration();
+
+    return base;
   };
 
   /** A chainHub for Exo tests, distinct from the one a contract makes within `withOrchestration` */
@@ -254,8 +260,10 @@ export const setupOrchestrationTest = async ({
 
   const chainInfo = harden(() => {
     const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
-    const { ethereum, solana } = objectMap(cctpChainInfo, v => ({
-      ...v,
+    // objectExtendEach preserves the per-key type of cctpChainInfo[K],
+    // intersecting with the { chainId: string } extension at each key.
+    // Plain objectMap would collapse K's correlation to a union.
+    const { ethereum, solana } = objectExtendEach(cctpChainInfo, v => ({
       // for backwards compatibility with `CosmosChainInfoShapeV1` which expects a `chainId`
       chainId: `${v.namespace}:${v.reference}`,
     }));
@@ -285,6 +293,8 @@ export const setupOrchestrationTest = async ({
         getDeserialized(path: string): unknown[] {
           return storage.getValues(path).map(defaultSerializer.parse);
         },
+        storageUpdates: storageQueue.iterable,
+        cancelStorageUpdates: storageQueue.cancel,
       },
     },
     mocks: {

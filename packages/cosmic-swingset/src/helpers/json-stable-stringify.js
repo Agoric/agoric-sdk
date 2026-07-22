@@ -26,13 +26,19 @@ const objectKeys =
     return keys;
   };
 
+/**
+ * @param {{} | null} obj anything but `undefined` (`{}` accepts any
+ *   non-nullish value)
+ * @param {any} [opts]
+ * @returns {string}
+ */
 export default function stableStringify(obj, opts) {
   if (!opts) opts = {};
   if (typeof opts === 'function') opts = { cmp: opts };
   let space = opts.space || '';
   if (typeof space === 'number') space = Array(space + 1).join(' ');
   const cycles = typeof opts.cycles === 'boolean' ? opts.cycles : false;
-  const replacer = opts.replacer || ((key, value) => value);
+  const replacer = opts.replacer || ((_key, value) => value);
 
   const cmp =
     opts.cmp &&
@@ -97,5 +103,10 @@ export default function stableStringify(obj, opts) {
     seen.splice(seen.indexOf(node), 1);
     return `{${out.join(',')}${indent}}`;
   };
-  return stringify({ '': obj }, '', obj, 0);
+  const result = stringify({ '': obj }, '', obj, 0);
+  // `undefined` is unreachable for JSON-serializable input; rather than
+  // mimic JSON.stringify's unsound `=> string` typing, reject loudly.
+  if (result === undefined)
+    throw TypeError('stableStringify input was not serializable');
+  return result;
 }

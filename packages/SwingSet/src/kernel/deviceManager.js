@@ -2,8 +2,6 @@ import { assert, Fail } from '@endo/errors';
 import { makeDeviceSlots } from './deviceSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 
-import '../types-ambient.js';
-
 /**
  * @import {DeviceInvocation} from '../types-external.js';
  * @import {DeviceInvocationResult} from '../types-external.js';

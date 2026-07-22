@@ -1,5 +1,5 @@
 env:
-  GOLANG_VERSION: '1.22'
+  GOLANG_VERSION: '1.24'
   LOADGEN_REPO_NAME: 'testnet-load-generator'
   ORG_NAME: 'Agoric'
   ENABLE_GETTING_STARTED: '' # Known issues with getting started tests, so disable them.
@@ -41,6 +41,39 @@ jobs:
   pre_check:
     uses: ./.github/workflows/pre-check-integration.yml
 
+  build-sdk-ci-image:
+    needs: pre_check
+    if: >-
+      needs.pre_check.outputs.should_run == 'true' &&
+      (
+        github.event_name != 'pull_request' ||
+        github.event.pull_request.head.repo.full_name == github.repository
+      )
+    runs-on: 'depot-ubuntu-22.04'
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      build_id: ${{ steps.build.outputs.build-id }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
+
+      - id: build
+        name: Build and save shared SDK CI image
+        uses: depot/build-push-action@v1
+        with:
+          context: .
+          file: packages/deployment/Dockerfile.sdk
+          platforms: linux/amd64
+          provenance: false
+          # This shared CI image is only a cross-job handoff artifact, so keep
+          # the Depot Registry retention for this project at 1 day.
+          save: true
+
   getting-started-flag:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
@@ -76,9 +109,10 @@ jobs:
         cli: [link-cli/yarn, registry/npm, registry/npx]
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           persist-credentials: false
+
       - name: Reconfigure git to use HTTP authentication
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
         shell: bash
@@ -96,7 +130,7 @@ jobs:
       # lines like `#getting-started-branch: zoe-release-0.7.0`
       - name: Get the appropriate dapp branch
         id: get-branch
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           result-encoding: string
           script: |
@@ -124,7 +158,7 @@ jobs:
 
       - name: run agoric-cli integration-test
         # These integration tests can be flaky so retry automatically
-        uses: nick-fields/retry@v3
+        uses: nick-fields/retry@v4
         with:
           # This step usually takes <4 minutes (after 6m setup). The
           # deployment-test running in parallel takes 35 minutes so 20 minutes
@@ -140,19 +174,15 @@ jobs:
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   deployment-test:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
 
-    runs-on: 'depot-ubuntu-22.04-4'
+    runs-on: 'depot-ubuntu-22.04-8'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
-          submodules: 'true'
           path: ./agoric-sdk
       - run: sudo packages/deployment/scripts/install-deps.sh
         working-directory: ./agoric-sdk
@@ -165,7 +195,7 @@ jobs:
           # NB the Dockerfile.sdk based images must match this node version
           # The node version inside ansible deployment (prepare-machine.yml)
           # should also match this node version
-          node-version: 20
+          node-version: 22
           path: ./agoric-sdk
       - name: Build cosmic-swingset dependencies
         working-directory: ./agoric-sdk
@@ -203,7 +233,7 @@ jobs:
           echo yes | ../agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
         env:
           NETWORK_NAME: chaintest
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: deployment-test-results-${{ env.NOW }}
@@ -214,16 +244,24 @@ jobs:
         uses: ./agoric-sdk/.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
   test-docker-build:
-    needs: pre_check
+    needs:
+      - pre_check
+      - build-sdk-ci-image
     if: needs.pre_check.outputs.should_run == 'true'
-    runs-on: 'depot-ubuntu-22.04-8'
-    timeout-minutes: 60
+    # Keep this validation job on a Depot runner because it builds through Depot
+    # and then uses the loaded image locally for follow-on Docker-heavy checks.
+    runs-on: 'depot-ubuntu-22.04-16'
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      id-token: write
+
     steps:
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: update job environment
         run: |
           if [ ":$HOME" = : ]; then
@@ -246,15 +284,23 @@ jobs:
           echo "=== After cleanup:"
           df -h
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           path: ./agoric-sdk
 
+      - name: Pull shared SDK CI image
+        if: needs.build-sdk-ci-image.outputs.build_id != ''
+        uses: depot/pull-action@v1
+        with:
+          build-id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
+          tags: ghcr.io/agoric/agoric-sdk:unreleased
+
       - name: docker build (sdk)
+        if: needs.build-sdk-ci-image.outputs.build_id == ''
         # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
         # XXX skip TAP test output and collection for now; it hides the output from the logs
-        run: make docker-build-sdk
+        run: DOCKER_BUILD='depot build --platform linux/amd64 --load --provenance=false' make docker-build-sdk
         working-directory: agoric-sdk/packages/deployment
 
       - id: restore-golang
@@ -301,7 +347,7 @@ jobs:
 
       - id: get-loadgen-branch
         name: Get the appropriate loadgen branch
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           result-encoding: string
           script: |
@@ -319,7 +365,7 @@ jobs:
 
       - id: checkout-loadgen
         name: Check out loadgen
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: ./${{ env.LOADGEN_REPO_NAME }}
           ref: ${{ steps.get-loadgen-branch.outputs.result }}
@@ -343,7 +389,10 @@ jobs:
           echo "LOADGEN_PATH=$GITHUB_WORKSPACE/${{ env.LOADGEN_REPO_NAME }}" >> "$GITHUB_ENV"
 
       - name: build proposals tests
-        run: yarn build
+        # Skip build:sdk because the "docker build (sdk)" step above already
+        # produced ghcr.io/agoric/agoric-sdk:unreleased. Running `yarn build`
+        # would rebuild it redundantly via build:sdk (~4-5 min with layer cache).
+        run: yarn build:submissions && yarn build:synthetic-chain
         working-directory: agoric-sdk/a3p-integration
 
       - name: run proposals tests
@@ -363,7 +412,7 @@ jobs:
       # Ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#where-does-the-upload-go
       - name: archive a3p-integration
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: a3p-integration
           path: |
@@ -374,7 +423,7 @@ jobs:
 
       - name: archive slogfile
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: slogfile
           path: ${{ env.SLOGFILE }}
@@ -385,9 +434,6 @@ jobs:
         uses: ./agoric-sdk/.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
       - uses: ./agoric-sdk/.github/actions/post-test
         if: always()
@@ -397,18 +443,34 @@ jobs:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
 
   test-multichain-e2e:
-    needs: pre_check
+    needs:
+      - pre_check
+      - build-sdk-ci-image
     if: needs.pre_check.outputs.should_run == 'true'
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/multichain-e2e.yml
+    with:
+      sdk_build_id: ${{ needs.build-sdk-ci-image.outputs.build_id }}
 
   test-ymax-planner-build:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      # Use Depot so this validation build shares the same remote builder cache
+      # and Dockerfile build path as the publishing workflow, even though this
+      # check is single-platform and does not exercise the multi-arch push path.
+      - uses: depot/setup-action@v1
+        with:
+          oidc: true
       - name: Build ymax-planner Docker image
-        run: docker build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
+        run: depot build --file services/ymax-planner/Dockerfile --tag ymax-planner:ci .
 
   finalize-integration-result:
     needs:
@@ -429,10 +491,10 @@ jobs:
       )
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Final integration-test-result
         if: always()
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};

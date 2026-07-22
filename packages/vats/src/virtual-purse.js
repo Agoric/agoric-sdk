@@ -15,16 +15,20 @@ import {
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {Key, Pattern} from '@endo/patterns';
- * @import {Amount, Issuer, IssuerKit, Paymnent} from '@agoric/ertp';
+ * @import {CastedPattern, Key, Pattern} from '@endo/patterns';
+ * @import {Amount, Brand, Issuer, IssuerKit, Mint, Payment, Purse} from '@agoric/ertp';
+ * @import {LatestTopic} from '@agoric/notifier';
+ * @import {Zone} from '@agoric/zone';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
- * @param {Pattern} [brandShape]
- * @param {Pattern} [amountShape]
+ * @param {CastedPattern<Brand<'nat'>>} [brandShape]
+ * @param {CastedPattern<Amount<'nat'>>} [amountShape]
  */
 export const makeVirtualPurseKitIKit = (
-  brandShape = BrandShape,
+  // Cast to narrow the pattern's return type to the 'nat' specialization.
+  brandShape = /** @type {CastedPattern<Brand<'nat'>>} */ (BrandShape),
   amountShape = AmountShape,
 ) => {
   const VirtualPurseI = M.interface('VirtualPurse', {
@@ -77,10 +81,12 @@ export const makeVirtualPurseKitIKit = (
     utils: UtilsI,
   });
 
+  /** @type {CastedPattern<LatestTopic<Amount<'nat'>>>} */
+  const LatestTopicShape = M.remotable('LatestTopic');
   const VirtualPurseControllerI = M.interface('VirtualPurseController', {
     pushAmount: M.callWhen(AmountShape).returns(),
     pullAmount: M.callWhen(AmountShape).returns(),
-    getBalances: M.call(BrandShape).returns(NotifierShape),
+    getBalances: M.call(BrandShape).returns(LatestTopicShape),
   });
 
   return { VirtualPurseIKit, VirtualPurseControllerI };
@@ -92,26 +98,28 @@ export const makeVirtualPurseKitIKit = (
  * @typedef {(
  *   pmt: Payment<'nat'>,
  *   optAmountShape?: Pattern,
- * ) => Promise<Amount>} Retain
+ * ) => Promise<Amount<'nat'>>} Retain
  */
 /** @typedef {(amt: Amount<'nat'>) => Promise<Payment<'nat'>>} Redeem */
 
 /**
  * @typedef {object} VirtualPurseController The object that determines the
- *   remote behaviour of a virtual purse.
- * @property {(amount: Amount) => Promise<void>} pushAmount Tell the controller
- *   to send an amount from "us" to the "other side". This should resolve on
- *   success and reject on failure. IT IS IMPORTANT NEVER TO FAIL in normal
- *   operation. That will irrecoverably lose assets.
- * @property {(amount: Amount) => Promise<void>} pullAmount Tell the controller
- *   to send an amount from the "other side" to "us". This should resolve on
- *   success and reject on failure. We can still recover assets from failure to
- *   pull.
- * @property {(brand: Brand) => LatestTopic<Amount>} getBalances Return the
- *   current balance iterable for a given brand.
+ *   remote behaviour of a virtual purse. VirtualPurses only support fungible
+ *   ('nat') assets — every other usage in this file is narrowed to 'nat',
+ *   so the controller surface is too.
+ * @property {(amount: Amount<'nat'>) => Promise<void>} pushAmount Tell the
+ *   controller to send an amount from "us" to the "other side". This should
+ *   resolve on success and reject on failure. IT IS IMPORTANT NEVER TO FAIL
+ *   in normal operation. That will irrecoverably lose assets.
+ * @property {(amount: Amount<'nat'>) => Promise<void>} pullAmount Tell the
+ *   controller to send an amount from the "other side" to "us". This should
+ *   resolve on success and reject on failure. We can still recover assets
+ *   from failure to pull.
+ * @property {(brand: Brand<'nat'>) => LatestTopic<Amount<'nat'>>} getBalances
+ *   Return the current balance iterable for a given brand.
  */
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 const prepareVirtualPurseKit = zone =>
   zone.exoClassKit(
     'VirtualPurseKit',
@@ -119,8 +127,8 @@ const prepareVirtualPurseKit = zone =>
     /**
      * @param {ERef<VirtualPurseController>} vpc
      * @param {{
-     *   issuer: ERef<Issuer>;
-     *   brand: Brand;
+     *   issuer: ERef<Issuer<'nat'>>;
+     *   brand: Brand<'nat'>;
      *   mint?: ERef<Mint<'nat'>>;
      * }} issuerKit
      * @param {{
@@ -216,6 +224,10 @@ const prepareVirtualPurseKit = zone =>
         },
       },
       depositFacet: {
+        /**
+         * @param {Payment<'nat'>} payment
+         * @param {Pattern} [optAmountShape]
+         */
         async receive(payment, optAmountShape = undefined) {
           if (isPromise(payment)) {
             throw TypeError(
@@ -223,6 +235,11 @@ const prepareVirtualPurseKit = zone =>
             );
           }
 
+          // The `@type {Retain}` annotation on `utils.retain` is decorative
+          // — exo class M inference uses the method body's return type, not
+          // the developer's assertion. The body bottoms out at Issuer.burn
+          // / Purse.deposit which return the broad Amount union, so we
+          // narrow back to 'nat' here.
           const amt = await this.facets.utils.retain(payment, optAmountShape);
 
           // The push must always succeed.
@@ -281,7 +298,7 @@ const prepareVirtualPurseKit = zone =>
     },
   );
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 export const prepareVirtualPurse = zone => {
   const makeVirtualPurseKit = prepareVirtualPurseKit(zone);
 

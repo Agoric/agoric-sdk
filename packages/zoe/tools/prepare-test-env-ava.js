@@ -1,5 +1,3 @@
-// @jessie-check
-
 /**
  * Prepare global environment for zoe tests.
  *
@@ -7,7 +5,4 @@
  * the same as the SwingSet vat environment.
  */
 
-export {
-  test,
-  VatData,
-} from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+export { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';

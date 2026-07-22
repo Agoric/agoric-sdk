@@ -2,6 +2,7 @@ import { Fail } from '@endo/errors';
 
 /**
  * @import {assertCapData} from '@agoric/internal/src/marshal/cap-data.js';
+ * @import {SwingSetCapData} from './types.js';
  */
 
 /**
@@ -13,7 +14,7 @@ import { Fail } from '@endo/errors';
  * @param {any} specimen  The object to be tested
  * @throws {Error} if, upon inspection, the parameter does not satisfy the above
  *   criteria.
- * @returns {asserts specimen is import('./types.js').SwingSetCapData}
+ * @returns {asserts specimen is SwingSetCapData}
  */
 export function insistCapData(specimen) {
   typeof specimen.body === 'string' ||

@@ -1,10 +1,15 @@
 // @ts-check
-/* eslint-env node */
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/captp';
 
-import { createRequire } from 'module';
-import path from 'path';
+import { createRequire } from 'node:module';
+import path from 'node:path';
+
+/**
+ * @import {ModuleFormat} from '@endo/bundle-source';
+ * @import {BundleOptions} from '@endo/bundle-source';
+ * @import {BundleSourceResult} from '@endo/bundle-source';
+ */
 
 const require = createRequire(import.meta.url);
 
@@ -53,7 +58,7 @@ export const makeLookup =
 /**
  * @param {string[]} scripts
  * @param {{ allowUnsafePlugins?: boolean, progname: string, rawArgs: string[], endowments?: Record<string, any> }} opts
- * @param {{ fs: import('fs/promises'), console: Console }} powers
+ * @param {{ fs: typeof import('fs/promises'), console: Console }} powers
  */
 export const makeScriptLoader =
   (
@@ -135,10 +140,10 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
       const allEndowments = harden({
         home: bootP,
         /**
-         * @template {import('@endo/bundle-source').ModuleFormat} ModuleFormat
+         * @template {ModuleFormat} MF
          * @param {string} file
-         * @param {import('@endo/bundle-source').BundleOptions<ModuleFormat>} options
-         * @returns {Promise<import('@endo/bundle-source').BundleSourceResult<ModuleFormat>>}
+         * @param {BundleOptions<MF>} options
+         * @returns {Promise<BundleSourceResult<MF>>}
          */
         bundleSource: (file, options = {}) =>
           bundleSource(pathResolve(file), {

@@ -6,6 +6,10 @@ import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
 /**
  * @import {Bundle} from '../../types-external.js';
+ * @import {VatID} from '../../types-internal.js';
+ * @import {ManagerOptions} from '../../types-internal.js';
+ * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots';
+ * @import {VatManager} from '../../types-internal.js';
  */
 
 export function makeVatManagerMaker({
@@ -65,11 +69,11 @@ export function makeVatManagerMaker({
    * the given syscall handler function when the worker makes a
    * syscall.
    *
-   * @param {import('../../types-internal.js').VatID} vatID
+   * @param {VatID} vatID
    * @param {object} options
-   * @param {import('../../types-internal.js').ManagerOptions} options.managerOptions
-   * @param {import('@agoric/swingset-liveslots').LiveSlotsOptions} options.liveSlotsOptions
-   * @returns { Promise<import('../../types-internal.js').VatManager> }
+   * @param {ManagerOptions} options.managerOptions
+   * @param {LiveSlotsOptions} options.liveSlotsOptions
+   * @returns { Promise<VatManager> }
    */
   async function makeVatManager(vatID, options) {
     const { managerOptions, liveSlotsOptions } = options;

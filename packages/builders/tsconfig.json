@@ -1,13 +1,14 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "checkJs": true,
-  },
   "include": [
     "*.js",
-    "scripts/**/*.js",
-    "src/**/*.js",
-    "test/**/*.js",
-    "tools/**/*.js",
+    "scripts",
+    "src",
+    "test",
+    "tools",
+  ],
+  "exclude": [
+    "scripts/zips-before/**",
+    "scripts/zips-after/**",
   ],
 }

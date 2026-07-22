@@ -1,14 +1,13 @@
-// @jessie-check
-
-import { Fail, q } from '@endo/errors';
-import { provideDurableMapStore } from '@agoric/vat-data';
 import { AssetKind, hasIssuer, prepareIssuerKit } from '@agoric/ertp';
+import { provideDurableMapStore } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { InvitationElementShape } from '../typeGuards.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {InvitationDetails} from '../types-index.js';
+ * @import {IssuerKit} from '@agoric/ertp';
  */
 
 /**

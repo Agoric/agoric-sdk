@@ -4,62 +4,89 @@
  * @see {openPortfolio}
  * @see {rebalance}
  */
-import type { AgoricResponse } from '@aglocal/boot/tools/axelar-supports.js';
+
 import type { GuestInterface } from '@agoric/async-flow';
+import { VaultType } from '@agoric/cosmic-proto/noble/dollar/vaults/v1/vaults.js';
 import { type Amount, type Brand, type NatAmount } from '@agoric/ertp';
 import {
   deeplyFulfilledObject,
+  fromTypedEntries,
   makeTracer,
+  objectMap,
+  partialMap,
+  typedEntries,
   type TraceLogger,
 } from '@agoric/internal';
 import type {
   AccountId,
-  CaipChainId,
+  BaseChainInfo,
   CosmosChainAddress,
   Denom,
   DenomAmount,
-  IBCConnectionInfo,
+  Chain,
   OrchestrationAccount,
   OrchestrationFlow,
+  OrchestrationOptions,
   Orchestrator,
+  ProgressTracker,
+  TrafficEntry,
 } from '@agoric/orchestration';
-import type { AxelarGmpIncomingMemo } from '@agoric/orchestration/src/axelar-types.js';
-import { coerceAccountId } from '@agoric/orchestration/src/utils/address.js';
+import type { IBCConnectionInfo } from '@agoric/network/ibc';
+import {
+  coerceAccountId,
+  parseAccountId,
+  sameEvmAddress,
+} from '@agoric/orchestration/src/utils/address.js';
+import { progressTrackerAsyncFlowUtils } from '@agoric/orchestration/src/utils/progress.js';
 import type { ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { decodeAbiParameters } from '@agoric/orchestration/src/vendor/viem/viem-abi.js';
 import {
   TxType,
+  type ClaimRewardsParams,
+  type FlowConfig,
   type FlowErrors,
+  type FlowFeatures,
+  type FlowStep,
   type FundsFlowPlan,
+  type TrafficReport,
+  type TxId,
+  type TxPhase,
 } from '@agoric/portfolio-api';
 import {
   AxelarChain,
   SupportedChain,
   type YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
-import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.ts';
+import type { PermitDetails } from '@agoric/portfolio-api/src/evm-wallet/message-handler-helpers.js';
+import type { PublicSubscribers } from '@agoric/smart-wallet/src/types.js';
 import type { VTransferIBCEvent } from '@agoric/vats';
+import type { EVow } from '@agoric/vow';
 import type { ZCFSeat } from '@agoric/zoe';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
-import { decodeBase64 } from '@endo/base64';
 import { assert, Fail, q } from '@endo/errors';
-import { DECODE_CONTRACT_CALL_RESULT_ABI } from './evm-facade.ts';
+import { makeMarshal } from '@endo/marshal';
 import type { RegisterAccountMemo } from './noble-fwd-calc.js';
 import type { AxelarId, GmpAddresses } from './portfolio.contract.ts';
-import type {
-  AccountInfoFor,
-  GMPAccountInfo,
-  PortfolioKit,
-} from './portfolio.exo.ts';
+import type { AccountInfoFor, PortfolioKit } from './portfolio.exo.ts';
 import {
   AaveProtocol,
   BeefyProtocol,
   CCTP,
   CCTPfromEVM,
+  CCTPv2,
   CompoundProtocol,
+  ERC4626Protocol,
   provideEVMAccount,
+  sendGMPContractCall,
+  sendPermit2GMP,
+  swapRewardToUsdc,
   type EVMContext,
-} from './pos-gmp.flows.ts';
+  type GMPAccountStatus,
+} from './pos-evm.flows.ts';
+import { provideEVMAccountWithPermit as provideEVMLegacyAccountWithPermit } from './axelar-gmp-legacy.flows.ts';
+import { provideEVMAccountWithPermit as provideEVMRoutedAccountWithPermit } from './axelar-gmp-router.flows.ts';
+
+import { makeEvmAbiCallBatch } from './evm-facade.ts';
+import { erc20ABI } from './interfaces/erc20.ts';
 import {
   agoricToNoble,
   nobleToAgoric,
@@ -67,9 +94,12 @@ import {
 } from './pos-usdn.flows.ts';
 import type { Position } from './pos.exo.ts';
 import type { ResolverKit } from './resolver/resolver.exo.js';
+import { runJob, type Job } from './schedule-order.ts';
 import {
   getChainNameOfPlaceRef,
+  getDepositChainOfPlaceRef,
   getKeywordOfPlaceRef,
+  getWithdrawChainOfPlaceRef,
   type AssetPlaceRef,
   type MovementDesc,
   type OfferArgsFor,
@@ -81,17 +111,20 @@ import {
   type PoolKey,
   type ProposalType,
 } from './type-guards.ts';
-import { runJob, type Job } from './schedule-order.ts';
-// XXX: import { VaultType } from '@agoric/cosmic-proto/dist/codegen/noble/dollar/vaults/v1/vaults';
+import { appendTxIds } from './utils/traffic.ts';
 
-const { keys, entries, fromEntries } = Object;
+const { keys, fromEntries } = Object;
+const { reduceProgressReports } = progressTrackerAsyncFlowUtils;
 
 export type LocalAccount = OrchestrationAccount<{ chainId: 'agoric-any' }>;
 export type NobleAccount = OrchestrationAccount<{ chainId: 'noble-any' }>;
 
+const SETUP_STEP = 0;
+
 export type PortfolioInstanceContext = {
   axelarIds: AxelarId;
   contracts: EVMContractAddressesMap;
+  walletBytecode: `0x${string}`;
   gmpAddresses: GmpAddresses;
   usdc: { brand: Brand<'nat'>; denom: Denom };
   gmpFeeInfo: { brand: Brand<'nat'>; denom: Denom };
@@ -103,13 +136,18 @@ export type PortfolioInstanceContext = {
     noble: IBCConnectionInfo['transferChannel'];
     axelar?: IBCConnectionInfo['transferChannel'];
   };
+  eip155ChainIdToAxelarChain: Record<`${number}`, AxelarChain>;
 };
 
 type PortfolioBootstrapContext = PortfolioInstanceContext & {
   makePortfolioKit: () => GuestInterface<PortfolioKit>;
 };
 
-type EVMAccounts = Partial<Record<AxelarChain, GMPAccountInfo>>;
+type PortfolioStartedFlow = ReturnType<
+  GuestInterface<PortfolioKit>['manager']['startFlow']
+>;
+
+type EVMAccounts = Partial<Record<AxelarChain, GMPAccountStatus>>;
 type AccountsByChain = {
   agoric: AccountInfoFor['agoric'];
   noble?: AccountInfoFor['noble'];
@@ -120,13 +158,15 @@ type AssetMovement = {
   amount: Amount<'nat'>;
   src: AssetPlaceRef;
   dest: AssetPlaceRef;
+  swap?: FlowStep['swap'];
   apply: (
     accounts: AccountsByChain,
     tracer: TraceLogger,
+    ...optsArgs: [OrchestrationOptions?]
   ) => Promise<{ srcPos?: Position; destPos?: Position }>;
 };
 
-const moveStatus = ({ apply: _a, ...data }: AssetMovement) => data;
+const moveStatus = ({ apply: _a, ...data }: AssetMovement): FlowStep => data;
 const errmsg = (err: any) =>
   `${err != null && 'message' in err ? err.message : err}`;
 
@@ -143,6 +183,7 @@ export type TransportDetail<
     amount: NatAmount,
     src: AccountInfoFor[S],
     dest: AccountInfoFor[D],
+    ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
 
@@ -157,12 +198,19 @@ export type ProtocolDetail<
     ctx: CTX,
     amount: NatAmount,
     src: AccountInfoFor[C],
+    ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
   withdraw: (
     ctx: CTX,
     amount: NatAmount,
     dest: AccountInfoFor[C],
-    claim?: boolean,
+    ...optsArgs: [OrchestrationOptions?]
+  ) => Promise<void>;
+  claimRewards?: (
+    ctx: CTX,
+    dest: AccountInfoFor[C],
+    params: ClaimRewardsParams,
+    ...optsArgs: [OrchestrationOptions?]
   ) => Promise<void>;
 };
 
@@ -170,6 +218,188 @@ const { min } = Math;
 const range = (n: number) => Array.from(Array(n).keys());
 const fullOrder = (length: number): Job['order'] =>
   range(length - 1).map(lo => [lo + 1, [lo]]);
+
+const { toCapData } = makeMarshal(undefined, undefined, {
+  serializeBodyFormat: 'smallcaps',
+});
+
+/**
+ * Deeply compares two serializable (smallcaps) values for equality.
+ *
+ * @param a - first value
+ * @param b - second value
+ * @returns true if a and b are deeply equal (naive implementation)
+ */
+const deepEqual = (a: any, b: any): boolean =>
+  toCapData(harden(a)).body === toCapData(harden(b)).body;
+
+type FlowStepPowers = {
+  createPendingTx: ResolverKit['client']['createPendingTx'];
+  updateTxMeta: ResolverKit['client']['updateTxMeta'];
+  updatePhase: (txIds: TxId[]) => void;
+};
+
+type ExecutePlanOptions = {
+  evmDepositDetail?: PermitDetails & { fromChain: AxelarChain };
+  // XXX consider using pattern matching for queued steps instead of src/dest.
+  queuedSteps?: Array<
+    Pick<MovementDesc, 'src' | 'dest'> & {
+      progressTracker?: ProgressTracker;
+      done?: Promise<unknown>;
+    }
+  >;
+};
+
+const makeFlowStepPowers = (
+  {
+    flowId,
+    step,
+    phase,
+    assetMoves,
+  }: {
+    flowId: number;
+    step: number;
+    phase: TxPhase;
+    assetMoves?: AssetMovement[];
+    moveDescs?: MovementDesc[];
+  },
+  {
+    reporter,
+    resolverClient,
+    phasesForStep,
+  }: {
+    reporter: GuestInterface<PortfolioKit['reporter']>;
+    resolverClient: GuestInterface<ResolverKit['client']>;
+    phasesForStep: Map<TxPhase, TxId[]>[];
+  },
+): FlowStepPowers => ({
+  createPendingTx: (txMeta: PendingTxMeta) =>
+    resolverClient.createPendingTx(txMeta),
+  updateTxMeta: (txId: TxId, txMeta: PendingTxMeta) =>
+    resolverClient.updateTxMeta(txId, txMeta),
+  updatePhase: (txIds: TxId[]) => {
+    phasesForStep[step - 1].set(phase, txIds);
+    if (!assetMoves) {
+      // XXX what can we publish before AssetMovements are initialized?
+      return;
+    }
+    // Publish each move with updated step phase information.
+    const movesWithPhases = assetMoves.map((m, i) => ({
+      ...moveStatus(m),
+      phases: fromTypedEntries([...phasesForStep[i].entries()]),
+    }));
+    reporter.publishFlowSteps(flowId, movesWithPhases);
+  },
+});
+
+// Rename TrafficEntry['dst'] to PendingTxMeta['dest'] for consistency with
+// portfolio house rules.
+type PendingTxMeta = Omit<TrafficEntry, 'dst'> & {
+  type: TxType;
+  dest: TrafficEntry['dst'];
+  nextTxId?: TxId;
+};
+
+type PendingTxsEntry = {
+  txId: TxId;
+  result: EVow<void>;
+  meta: PendingTxMeta;
+};
+
+const makeTrafficPublishingReducer = ({
+  createPendingTx,
+  updateTxMeta,
+  updatePhase,
+}: FlowStepPowers) => {
+  return async (thisReport: TrafficReport, priorTxs: PendingTxsEntry[]) => {
+    const { traffic: thisTraffic = [], appendedTxIds = [] } = thisReport || {};
+    if (thisReport == null) {
+      // Final report.
+      return null;
+    }
+    const txs = priorTxs.slice(0, thisTraffic.length);
+    const firstTxId: TxId | undefined = txs[0]?.txId;
+    let nextTxId: TxId | undefined = appendedTxIds?.[0];
+
+    // Iterate backwards through the trafficEntry array, so we can link them via
+    // nextTxId.
+    await null;
+    for (let i = thisTraffic.length - 1; i >= 0; i -= 1) {
+      const trafficEntry = thisTraffic[i];
+
+      // Convert the source protocol to a TxType.
+      let type: TxType;
+      switch (trafficEntry.src?.[0]) {
+        case 'ibc': {
+          if (i === 0) {
+            type = TxType.IBC_FROM_AGORIC;
+          } else {
+            type = TxType.IBC_FROM_REMOTE;
+          }
+          break;
+        }
+        default: {
+          // TODO: handle other traffic types.
+          type = TxType.UNKNOWN;
+          break;
+        }
+      }
+
+      // Rename the trafficEntry's 'dst' field to 'dest' for consistency with
+      // the portfolio house rules.
+      const { dst: dest, ...restTrafficEntry } = trafficEntry;
+      const newTxMeta: PendingTxMeta = {
+        ...restTrafficEntry,
+        dest,
+        type,
+        ...(nextTxId === undefined ? {} : { nextTxId }),
+      };
+      const txMeta: PendingTxMeta = txs[i]?.meta;
+      if (txMeta) {
+        if (!deepEqual(newTxMeta, txMeta)) {
+          // sync up our pendingTx with the traffic entry.
+          const newPendingTxsEntry = { ...txs[i], meta: newTxMeta };
+          txs[i] = newPendingTxsEntry;
+          updateTxMeta(newPendingTxsEntry.txId, newTxMeta);
+          nextTxId = newPendingTxsEntry.txId;
+        }
+        continue;
+      }
+
+      // create new tx entry since it's missing.
+      const { txId, result } = await createPendingTx(newTxMeta);
+      txs[i] = { txId, result, meta: newTxMeta };
+      nextTxId = txId;
+    }
+    const newFirstTxId = txs[0]?.txId;
+    if (newFirstTxId != null && newFirstTxId !== firstTxId) {
+      updatePhase([...txs.map(tx => tx.txId), ...appendedTxIds]);
+    } else if (!newFirstTxId && firstTxId == null && appendedTxIds.length) {
+      // Allow phases to advance when only appendTxIds are reported (e.g. CCTP).
+      updatePhase([...appendedTxIds]);
+    }
+    return txs;
+  };
+};
+
+/**
+ * Extract a linked list of FlowErrors from an array of results
+ */
+export const makeErrorList = (
+  results: PromiseSettledResult<void>[],
+  moves: Pick<AssetMovement, 'how'>[],
+): FlowErrors | undefined =>
+  [...results].reverse().reduce((next, r, ix) => {
+    if (r.status !== 'rejected') return next;
+    const step = moves.length - ix;
+    const errs: FlowErrors = {
+      step,
+      how: moves[step - 1].how,
+      error: errmsg(r.reason),
+      next,
+    };
+    return errs;
+  }, undefined);
 
 /**
  * **Failure Handling**: Logs failures and publishes status without attempting
@@ -183,7 +413,11 @@ const trackFlow = async (
   traceFlow: TraceLogger,
   accounts: AccountsByChain,
   order: Job['order'],
-  detail: FlowDetail,
+  detail?: object, // formerly FlowDetail
+  progressPowers?: {
+    resolverClient: GuestInterface<ResolverKit['client']>;
+    phasesForStep: Map<TxPhase, TxId[]>[];
+  },
 ) => {
   const runTask = async (ix: number, running: number[]) => {
     // steps are 1-based. the scheduler is 0-based
@@ -198,11 +432,38 @@ const trackFlow = async (
       how: moves[min(...running)].how,
       ...detail,
     });
+
+    // Publish the step's traffic entries as they are produced.
+    const progressTracker =
+      progressPowers && accounts.agoric.lca.makeProgressTracker();
+    const optsArgs = progressTracker ? [{ progressTracker }] : [];
+
     await null;
     try {
       traceStep('starting', moveStatus(move));
-      const { srcPos, destPos } = await move.apply(accounts, traceStep);
       const { amount, how } = move;
+
+      void (
+        progressTracker &&
+        reduceProgressReports(
+          progressTracker,
+          makeTrafficPublishingReducer(
+            makeFlowStepPowers(
+              { flowId, assetMoves: moves, step, phase: 'apply' },
+              { reporter, ...progressPowers },
+            ),
+          ),
+          [] as PendingTxsEntry[],
+        )
+      );
+
+      // Wait for the move to complete.
+      const { srcPos, destPos } = await move.apply(
+        accounts,
+        traceStep,
+        ...optsArgs,
+      );
+
       traceStep('done:', how);
 
       if (srcPos) {
@@ -220,29 +481,25 @@ const trackFlow = async (
         traceFlow('failed movement details', moveStatus(failure));
       }
       throw err;
+    } finally {
+      // Stop reducing progress reports.
+      progressTracker?.finish();
     }
   };
 
   const job: Job = { taskQty: moves.length, order };
-  const results = await runJob(job, runTask, traceFlow);
+  const results = await runJob(job, runTask, traceFlow, (ix, reason) =>
+    Error(`predecessor ${ix + 1} failed`, { cause: reason }),
+  );
   if (results.some(r => r.status === 'rejected')) {
-    const reasons = [...results].reverse().reduce((next, r, ix) => {
-      if (r.status !== 'rejected') return next;
-      const errs: FlowErrors = {
-        step: ix + 1,
-        how: moves[ix].how,
-        error: errmsg(r.reason),
-        next,
-      };
-      return errs;
-    }, undefined);
+    const reasons = makeErrorList(results, moves);
     assert(reasons); // guaranteed by results.some(...) above
     reporter.publishFlowStatus(flowId, {
       state: 'fail',
       ...reasons,
       ...detail,
     });
-    throw results;
+    throw reasons;
   }
 
   reporter.publishFlowStatus(flowId, { state: 'done', ...detail });
@@ -253,6 +510,7 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
   chainName: C,
   kit: GuestInterface<PortfolioKit>, // Guest<T>?
   tracePortfolio: TraceLogger,
+  ...optsArgs: [OrchestrationOptions?]
 ): Promise<AccountInfoFor[C]> => {
   await null;
   const traceChain = tracePortfolio.sub(chainName);
@@ -267,7 +525,7 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       case 'noble': {
         const nobleChain = await orch.getChain('noble');
         traceChain('makeAccount()');
-        const ica: NobleAccount = await nobleChain.makeAccount();
+        const ica: NobleAccount = await nobleChain.makeAccount(...optsArgs);
         traceChain('result:', coerceAccountId(ica.getAddress()));
         const info: AccountInfoFor['noble'] = {
           namespace: 'cosmos',
@@ -279,8 +537,8 @@ export const provideCosmosAccount = async <C extends 'agoric' | 'noble'>(
       }
       case 'agoric': {
         const agoricChain = await orch.getChain('agoric');
-        const lca = await agoricChain.makeAccount();
-        const lcaIn = await agoricChain.makeAccount();
+        const lca = await agoricChain.makeAccount(...optsArgs);
+        const lcaIn = await agoricChain.makeAccount(...optsArgs);
         const reg = await lca.monitorTransfers(kit.tap);
         traceChain('Monitoring transfers for', lca.getAddress().value);
         const info: AccountInfoFor['agoric'] = {
@@ -315,22 +573,61 @@ const registerNobleForwardingAccount = async (
   forwarding: RegisterAccountMemo['noble']['forwarding'],
   trace: TraceLogger,
   amount: DenomAmount = { denom: 'ubld', value: 1n },
+  ...optsArgs: [opts?: OrchestrationOptions]
 ): Promise<void> => {
   trace('Registering NFA', forwarding, 'from', sender.getAddress().value);
 
   await sender.transfer(dest, amount, {
+    ...optsArgs[0],
     memo: JSON.stringify({ noble: { forwarding } }),
   });
   trace('NFA registration transfer sent');
 };
 
+const setupPortfolioAccounts = async (
+  orch: Orchestrator,
+  ctx: Pick<PortfolioInstanceContext, 'contractAccount' | 'transferChannels'>,
+  kit: GuestInterface<PortfolioKit>,
+  trace: TraceLogger,
+  { useProgressTracker = false }: FlowFeatures = {},
+) => {
+  const sender = await ctx.contractAccount;
+  const { lca } = await provideCosmosAccount(orch, 'agoric', kit, trace);
+  const optsArgs = useProgressTracker
+    ? [{ progressTracker: lca.makeProgressTracker() }]
+    : [];
+  const { ica } = await provideCosmosAccount(
+    orch,
+    'noble',
+    kit,
+    trace,
+    ...optsArgs,
+  );
+  const forwarding = {
+    channel: ctx.transferChannels.noble.counterPartyChannelId,
+    recipient: lca.getAddress().value,
+  };
+  const dest = ica.getAddress();
+  await registerNobleForwardingAccount(
+    sender,
+    dest,
+    forwarding,
+    trace,
+    undefined,
+    ...optsArgs,
+  );
+  return { lca, ica };
+};
+
 const getAssetPlaceRefKind = (
   ref: AssetPlaceRef,
-): 'pos' | 'accountId' | 'depositAddr' | 'seat' => {
+): 'pos' | 'accountId' | 'depositAddr' | 'withdrawAddr' | 'seat' => {
   if (keys(PoolPlaces).includes(ref)) return 'pos';
   if (getKeywordOfPlaceRef(ref)) return 'seat';
   if (getChainNameOfPlaceRef(ref)) return 'accountId';
-  if (ref === '+agoric') return 'depositAddr';
+  // +agoric or +Arbitrum etc. - all deposit sources
+  if (ref.startsWith('+')) return 'depositAddr';
+  if (getWithdrawChainOfPlaceRef(ref)) return 'withdrawAddr';
   throw Fail`bad ref: ${ref}`;
 };
 
@@ -342,6 +639,11 @@ type Way =
   | { how: 'IBC'; src: 'noble'; dest: 'agoric' }
   | { how: 'CCTP'; dest: AxelarChain }
   | { how: 'CCTP'; src: AxelarChain }
+  | { how: 'depositFromEVM'; src: AxelarChain }
+  | { how: 'CCTPv2'; src: AxelarChain; dest: AxelarChain }
+  | { how: 'withdrawToEVM'; dest: AxelarChain }
+  | { how: 'CCTPtoUser'; dest: AxelarChain }
+  | { how: 'swap'; chain: AxelarChain }
   | {
       how: YieldProtocol;
       /** pool we're supplying */
@@ -355,11 +657,19 @@ type Way =
       poolKey: PoolKey;
       /** chain with account where assets will go */
       dest: SupportedChain;
-      claim?: boolean;
+    }
+  | {
+      how: YieldProtocol;
+      /** pool we're claiming rewards for */
+      poolKey: PoolKey;
+      /** chain with account that will receive the claimed rewards */
+      dest: SupportedChain;
+      /** External params required for claiming rewards */
+      claimRewards: ClaimRewardsParams;
     };
 
 // exported only for testing
-export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
+export const wayFromSrcToDest = (moveDesc: MovementDesc): Way => {
   const { src } = moveDesc;
   const { dest } = moveDesc;
 
@@ -370,19 +680,21 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       if (!destName)
         throw Fail`src pos must have account as dest ${q(moveDesc)}`;
       const poolKey = src as PoolKey;
-      const { protocol } = PoolPlaces[poolKey];
+      const { protocol, chainName } = PoolPlaces[poolKey];
+      destName === chainName ||
+        Fail`pool ${q(poolKey)} lives on ${q(chainName)}, not ${q(destName)}`;
       // TODO move this into metadata
-      const feeRequired = ['Compound', 'Aave', 'Beefy'];
+      const feeRequired = ['Compound', 'Aave', 'Beefy', 'ERC4626'];
       moveDesc.fee ||
         !feeRequired.includes(protocol) ||
         Fail`missing fee ${q(moveDesc)}`;
-      // XXX check that destName is in protocol.chains
-      return {
+      const baseWay = {
         how: protocol,
         poolKey,
         dest: destName,
-        claim: moveDesc.claim,
       };
+      const { claimRewards } = moveDesc;
+      return claimRewards ? { ...baseWay, claimRewards } : baseWay;
     }
 
     case 'seat':
@@ -390,9 +702,20 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
         Fail`src seat must have agoric account as dest ${q(moveDesc)}`;
       return { how: 'localTransfer' };
 
-    case 'depositAddr':
-      dest === '@agoric' || Fail`src +agoric must have dest @agoric`;
-      return { how: 'send' };
+    case 'depositAddr': {
+      // +agoric -> @agoric uses 'send' (lcaIn to lca)
+      // +Arbitrum -> @Arbitrum uses 'depositFromEVM' (permit2 transfer)
+      if (src === '+agoric') {
+        dest === '@agoric' || Fail`src +agoric must have dest @agoric`;
+        return { how: 'send' };
+      }
+      const srcChain = getDepositChainOfPlaceRef(src);
+      assert(srcChain);
+      const destName = getChainNameOfPlaceRef(dest);
+      srcChain === destName ||
+        Fail`depositFromEVM src ${q(src)} must match dest chain ${q(dest)}`;
+      return { how: 'depositFromEVM', src: srcChain };
+    }
 
     case 'accountId': {
       const srcName = getChainNameOfPlaceRef(src);
@@ -401,14 +724,50 @@ export const wayFromSrcToDesc = (moveDesc: MovementDesc): Way => {
       switch (destKind) {
         case 'seat':
           return { how: 'withdrawToSeat' }; // XXX check that src is agoric
+        case 'withdrawAddr': {
+          const destChain = getWithdrawChainOfPlaceRef(dest);
+          assert(destChain);
+          // Same-chain EVM transfer: @Arbitrum -> -Arbitrum
+          if (srcName === destChain) {
+            return { how: 'withdrawToEVM', dest: destChain };
+          }
+          // Cross-chain from noble: @noble -> -Arbitrum (CCTP to user's address)
+          srcName === 'noble' ||
+            Fail`src for withdraw to ${q(destChain)} must be same chain or noble`;
+          return { how: 'CCTPtoUser', dest: destChain };
+        }
         case 'accountId': {
           const destName = getChainNameOfPlaceRef(dest);
           assert(destName);
-          if (keys(AxelarChain).includes(destName)) {
+
+          // Check if planner explicitly requested CCTPv2 (EVM-to-EVM direct)
+          // Otherwise, fall through to existing v1 routing which may be cheaper
+          const srcIsEVM = keys(AxelarChain).includes(srcName);
+          const destIsEVM = keys(AxelarChain).includes(destName);
+
+          // In-place reward-token -> USDC swap via 1inch (e.g. @Arbitrum -> @Arbitrum)
+          if (srcIsEVM && srcName === destName && moveDesc.swap) {
+            return { how: 'swap', chain: srcName as AxelarChain };
+          }
+
+          // TODO HACK don't use magic number 2 for CCTPv2 signal
+          if (
+            srcIsEVM &&
+            destIsEVM &&
+            moveDesc.detail?.cctpVersion === 2n // CCTPv2 explicitly requested
+          ) {
+            return {
+              how: 'CCTPv2',
+              src: srcName as AxelarChain,
+              dest: destName as AxelarChain,
+            };
+          }
+
+          if (destIsEVM) {
             srcName === 'noble' || Fail`src for ${q(destName)} must be noble`;
             return { how: 'CCTP', dest: destName as AxelarChain };
           }
-          if (keys(AxelarChain).includes(srcName)) {
+          if (srcIsEVM) {
             destName === 'agoric' ||
               Fail`dest for ${q(srcName)} must be agoric`;
             return { how: 'CCTP', src: srcName as AxelarChain };
@@ -443,9 +802,49 @@ const stepFlow = async (
   kit: GuestInterface<PortfolioKit>,
   traceP: TraceLogger,
   flowId: number,
-  flowDetail: FlowDetail,
+  flowDetail?: object, // formerly FlowDetail
+  config?: FlowConfig,
+  options?: Pick<ExecutePlanOptions, 'queuedSteps' | 'evmDepositDetail'>,
 ) => {
+  const features = config?.features;
+  const { queuedSteps, evmDepositDetail } = options ?? {};
+  const { flow: moves, order: maybeOrder } = Array.isArray(plan)
+    ? { flow: plan }
+    : plan;
+
+  const phasesForStep: Map<TxPhase, TxId[]>[] = moves.map(
+    () => new Map<TxPhase, TxId[]>(),
+  );
   const todo: AssetMovement[] = [];
+
+  const publishProvideAccountProgress = (
+    progressTracker: ProgressTracker | undefined,
+    step: number,
+    phase: 'makeSrcAccount' | 'makeDestAccount',
+  ) =>
+    progressTracker &&
+    reduceProgressReports(
+      progressTracker,
+      makeTrafficPublishingReducer(
+        makeFlowStepPowers(
+          {
+            flowId,
+            moveDescs: moves,
+            step,
+            phase,
+          },
+          {
+            reporter,
+            resolverClient: ctx.resolverClient,
+            phasesForStep,
+          },
+        ),
+      ),
+      [] as PendingTxsEntry[],
+    );
+
+  const getQueuedStep = (move: Pick<MovementDesc, 'src' | 'dest'>) =>
+    queuedSteps?.find(step => step.src === move.src && step.dest === move.dest);
 
   const makeEVMCtx = async (
     chain: AxelarChain,
@@ -459,10 +858,11 @@ const stepFlow = async (
     ]);
     const { denom } = ctx.gmpFeeInfo;
     const fee = { denom, value: move.fee ? move.fee.value : 0n };
-    const { axelarIds, gmpAddresses } = ctx;
+    const { axelarIds, gmpAddresses, contracts } = ctx;
 
     const evmCtx: EVMContext = harden({
-      addresses: ctx.contracts[chain],
+      addresses: contracts[chain],
+      contracts,
       lca,
       gmpFee: fee,
       gmpChain: axelar,
@@ -471,6 +871,7 @@ const stepFlow = async (
       resolverClient: ctx.resolverClient,
       feeAccount,
       nobleForwardingChannel,
+      ...(move.detail ? { detail: move.detail } : {}),
     });
     return evmCtx;
   };
@@ -485,11 +886,13 @@ const stepFlow = async (
     return harden({ ...evmCtx, poolKey });
   };
 
-  const makeEVMProtocolStep = <P extends 'Compound' | 'Aave' | 'Beefy'>(
+  const makeEVMProtocolStep = <
+    P extends 'Compound' | 'Aave' | 'Beefy' | 'ERC4626',
+  >(
     way: Way & { how: P },
     move: MovementDesc,
   ): AssetMovement => {
-    // XXX move this check up to wayFromSrcToDesc
+    // XXX move this check up to wayFromSrcToDest
     const chainName = 'src' in way ? way.src : way.dest;
     assert(keys(AxelarChain).includes(chainName));
     const evmChain = chainName as AxelarChain;
@@ -498,15 +901,20 @@ const stepFlow = async (
       Compound: CompoundProtocol,
       Aave: AaveProtocol,
       Beefy: BeefyProtocol,
-    }[way.how];
+      ERC4626: ERC4626Protocol,
+    }[way.how] as ProtocolDetail<P, AxelarChain, EVMContext>;
 
     const { amount } = move;
+    const phases =
+      features?.useProgressTracker && ({} as Record<TxPhase, TxId>);
     return harden({
       how: way.how,
       amount,
       src: move.src,
       dest: move.dest,
-      apply: async ({ [evmChain]: gInfo, agoric }) => {
+      ...(phases ? { phases } : undefined),
+      ...(move.claimRewards ? { claimRewards: move.claimRewards } : undefined),
+      apply: async ({ [evmChain]: gInfo, agoric }, _traceStep, opts) => {
         assert(gInfo, evmChain);
         const accountId: AccountId = `${gInfo.chainId}:${gInfo.remoteAddress}`;
         const { poolKey, how } = way;
@@ -519,13 +927,22 @@ const stepFlow = async (
           poolKey,
           ctx.transferChannels.noble.counterPartyChannelId,
         );
-        await null;
+        traceP('awaiting Wallet contract...', gInfo);
+        await gInfo.ready;
+        traceP('...Wallet contract ready', gInfo);
         if ('src' in way) {
-          await pImpl.supply(evmCtx, amount, gInfo);
-          return { destPos: pos };
+          await pImpl.supply(evmCtx, amount, gInfo, opts);
+          return harden({ destPos: pos });
+        } else if ('claimRewards' in way && way.claimRewards) {
+          pImpl.claimRewards ||
+            Fail`${q(way.how)} does not support claimRewards`;
+          await pImpl.claimRewards!(evmCtx, gInfo, way.claimRewards, opts);
+          // Rewards land in the user's remote address as separate tokens;
+          // the pool position is unchanged.
+          return harden({});
         } else {
-          await pImpl.withdraw(evmCtx, amount, gInfo, way.claim);
-          return { srcPos: pos };
+          await pImpl.withdraw(evmCtx, amount, gInfo, opts);
+          return harden({ srcPos: pos });
         }
       },
     });
@@ -534,17 +951,54 @@ const stepFlow = async (
   const { reporter } = kit;
   const traceFlow = traceP.sub(`flow${flowId}`);
 
-  const { flow: moves, order: maybeOrder } = Array.isArray(plan)
-    ? { flow: plan }
-    : plan;
   const order = maybeOrder || fullOrder(moves.length);
 
   traceFlow('checking', moves.length, 'moves');
   moves.length > 0 || Fail`moves list must not be empty`;
 
-  for (const [i, move] of entries(moves)) {
+  for (const [i, move] of moves.entries()) {
+    const queuedStep = getQueuedStep(move);
+    if (queuedStep) {
+      const maybeChain =
+        getChainNameOfPlaceRef(move.src) ||
+        getChainNameOfPlaceRef(move.dest) ||
+        getDepositChainOfPlaceRef(move.src);
+      assert(maybeChain);
+      assert(keys(AxelarChain).includes(maybeChain));
+      const chainName = maybeChain as AxelarChain;
+      todo.push({
+        how: 'createAndDeposit',
+        amount: move.amount,
+        src: move.src,
+        dest: move.dest,
+        apply: async ({ [chainName]: gInfo }, _tracer, opts) => {
+          assert(gInfo, chainName);
+          await null;
+
+          // Copy background queued progress to our 'apply' phase
+          // `opts.progressTracker`.
+          const progressTracker = opts?.progressTracker;
+          const queuedProgressTracker = queuedStep.progressTracker;
+          if (progressTracker && queuedProgressTracker) {
+            // Transfer all the queued progress reports.
+            await reduceProgressReports(
+              queuedProgressTracker,
+              (value, accum) => {
+                value == null || progressTracker.update(value);
+                return accum;
+              },
+              true,
+            );
+          }
+
+          await Promise.all([gInfo.ready, queuedStep.done]);
+          return {};
+        },
+      });
+      continue;
+    }
     const traceMove = traceFlow.sub(`move${i}`);
-    const way = wayFromSrcToDesc(move);
+    const way = wayFromSrcToDest(move);
     traceMove('plan', { move, way });
     const { amount } = move;
     switch (way.how) {
@@ -575,7 +1029,7 @@ const stepFlow = async (
           amount,
           apply: async ({ agoric }) => {
             await ctx.zoeTools.withdrawToSeat(agoric.lca, seat, amounts);
-            return {};
+            return harden({});
           },
         });
         break;
@@ -587,9 +1041,9 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ agoric }) => {
+          apply: async ({ agoric }, _tracer, ...optsArgs) => {
             const { lca, lcaIn } = agoric;
-            await lcaIn.send(lca.getAddress(), amount);
+            await lcaIn.send(lca.getAddress(), amount, ...optsArgs);
             return {};
           },
         });
@@ -599,7 +1053,7 @@ const stepFlow = async (
         assert(
           (way.src === 'agoric' && way.dest === 'noble') ||
             (way.src === 'noble' && way.dest === 'agoric'),
-          `bug in wayFromSrcToDesc`,
+          `bug in wayFromSrcToDest`,
         );
         const { how } = way.src === 'agoric' ? agoricToNoble : nobleToAgoric;
         const ctxI = { usdc: ctx.usdc };
@@ -608,13 +1062,25 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ agoric, noble }) => {
+          apply: async ({ agoric, noble }, _tracer, ...optsArgs) => {
             assert(noble, 'nobleMentioned'); // per nobleMentioned below
             await null;
             if (way.src === 'agoric') {
-              await agoricToNoble.apply(ctxI, amount, agoric, noble);
+              await agoricToNoble.apply(
+                ctxI,
+                amount,
+                agoric,
+                noble,
+                ...optsArgs,
+              );
             } else {
-              await nobleToAgoric.apply(ctxI, amount, noble, agoric);
+              await nobleToAgoric.apply(
+                ctxI,
+                amount,
+                noble,
+                agoric,
+                ...optsArgs,
+              );
             }
             return {};
           },
@@ -633,22 +1099,94 @@ const stepFlow = async (
           amount,
           src: move.src,
           dest: move.dest,
-          apply: async ({ [evmChain]: gInfo, noble, agoric }) => {
+          apply: async (
+            { [evmChain]: gInfo, noble, agoric },
+            _tracer,
+            ...optsArgs
+          ) => {
             // If an EVM account is in a move, it's available
             // in the accounts arg, along with noble.
             assert(gInfo && noble, evmChain);
             await null;
             if (outbound) {
-              await CCTP.apply(ctx, amount, noble, gInfo);
-            } else {
-              const evmCtx = await makeEVMCtx(
-                evmChain,
-                move,
-                agoric.lca,
-                ctx.transferChannels.noble.counterPartyChannelId,
-              );
-              await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric);
+              await CCTP.apply(ctx, amount, noble, gInfo, ...optsArgs);
+              return {};
             }
+            // EVM-originated CCTP sends a GMP call from the smart wallet,
+            // so the wallet contract must exist first.
+            await gInfo.ready;
+            const evmCtx = await makeEVMCtx(
+              evmChain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await CCTPfromEVM.apply(evmCtx, amount, gInfo, agoric, ...optsArgs);
+            return {};
+          },
+        });
+
+        break;
+      }
+
+      case 'CCTPv2': {
+        const { src: srcChain, dest: destChain } = way;
+
+        todo.push({
+          how: 'CCTPv2',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async (
+            { [srcChain]: srcInfo, [destChain]: destInfo, agoric },
+            _tracer,
+            ...optsArgs
+          ) => {
+            assert(
+              srcInfo && destInfo && agoric,
+              `${srcChain} and ${destChain}`,
+            );
+            await null;
+            const evmCtx = await makeEVMCtx(
+              srcChain,
+              move,
+              // Use agoric LCA for paying GMP fees
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await CCTPv2.apply(evmCtx, amount, srcInfo, destInfo, ...optsArgs);
+            return {};
+          },
+        });
+
+        break;
+      }
+
+      case 'swap': {
+        const { chain } = way;
+        features?.experimentalSwap || Fail`swap not supported: ${q(move)}`;
+        todo.push({
+          how: 'swap',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          ...(move.swap ? { swap: move.swap } : {}),
+          apply: async ({ [chain]: gInfo, agoric }, _tracer, ...optsArgs) => {
+            assert(gInfo && agoric, chain);
+            await gInfo.ready;
+            const evmCtx = await makeEVMCtx(
+              chain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+            await swapRewardToUsdc(
+              evmCtx,
+              gInfo,
+              amount,
+              move.swap,
+              ...optsArgs,
+            );
             return {};
           },
         });
@@ -657,27 +1195,32 @@ const stepFlow = async (
       }
 
       case 'USDN': {
-        const vault = way.poolKey === 'USDNVault' ? 1 : undefined;
+        const vault =
+          way.poolKey === 'USDNVault' ? VaultType.STAKED : undefined;
         const ctxU = { usdnOut: move?.detail?.usdnOut, vault };
 
         const isSupply = 'src' in way;
+        const isClaim = 'claimRewards' in way && way.claimRewards;
 
         todo.push({
           how: way.how,
           src: move.src,
           dest: move.dest,
           amount,
-          apply: async ({ noble }) => {
+          apply: async ({ noble }, _tracer, ...optsArgs) => {
             assert(noble); // per nobleMentioned below
+            await null;
             const acctId = coerceAccountId(noble.ica.getAddress());
             const pos = kit.manager.providePosition('USDN', 'USDN', acctId);
-            await null;
+            if (isClaim) {
+              throw new Error('claiming USDN is not supported');
+            }
             if (isSupply) {
-              await protocolUSDN.supply(ctxU, amount, noble);
-              return { destPos: pos };
+              await protocolUSDN.supply(ctxU, amount, noble, ...optsArgs);
+              return harden({ destPos: pos });
             } else {
-              await protocolUSDN.withdraw(ctxU, amount, noble, way.claim);
-              return { srcPos: pos };
+              await protocolUSDN.withdraw(ctxU, amount, noble, ...optsArgs);
+              return harden({ srcPos: pos });
             }
           },
         });
@@ -697,19 +1240,176 @@ const stepFlow = async (
         todo.push(makeEVMProtocolStep(way as Way & { how: 'Beefy' }, move));
         break;
 
+      case 'ERC4626':
+        todo.push(makeEVMProtocolStep(way as Way & { how: 'ERC4626' }, move));
+        break;
+
+      case 'withdrawToEVM': {
+        // Same-chain EVM transfer: from portfolio's smart wallet to user's address
+        const destChain = way.dest;
+        const sourceAccountId = kit.reader.getSourceAccountId();
+        if (!sourceAccountId) {
+          throw Fail`withdrawToEVM requires sourceAccountId to be set`;
+        }
+
+        todo.push({
+          how: 'withdrawToEVM',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async (
+            { [destChain]: gInfo, agoric },
+            _tracer,
+            ...optsArgs
+          ) => {
+            assert(gInfo && agoric, destChain);
+
+            // Build ERC20 transfer call
+            const session = makeEvmAbiCallBatch();
+            const usdc = session.makeContract(
+              ctx.contracts[destChain].usdc,
+              erc20ABI,
+            );
+            const { accountAddress: userAddress } =
+              parseAccountId(sourceAccountId);
+            usdc.transfer(userAddress as `0x${string}`, amount.value);
+            const calls = session.finish();
+
+            // Create EVM context for GMP call
+            const evmCtx = await makeEVMCtx(
+              destChain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+
+            await sendGMPContractCall(evmCtx, gInfo, calls, ...optsArgs);
+            return {};
+          },
+        });
+        break;
+      }
+
+      case 'depositFromEVM': {
+        // EVM deposit: permit2 transfer from user's EOA to portfolio's smart wallet
+        const srcChain = way.src;
+
+        // Get permit2 details - must be provided for depositFromEVM
+        if (!evmDepositDetail) {
+          throw Fail`depositFromEVM requires evmDepositDetail`;
+        }
+        if (evmDepositDetail.fromChain !== srcChain) {
+          throw Fail`depositFromEVM chain mismatch: expected ${srcChain}, got ${evmDepositDetail.fromChain}`;
+        }
+
+        const { permit2Payload } = evmDepositDetail;
+
+        todo.push({
+          how: 'depositFromEVM',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async (
+            { [srcChain]: gInfo, agoric },
+            _tracer,
+            ...optsArgs
+          ) => {
+            assert(gInfo && agoric, srcChain);
+            // Wait for the smart wallet to be ready (created via provideEVMAccount)
+            await gInfo.ready;
+
+            sameEvmAddress(gInfo.remoteAddress, evmDepositDetail.spender) ||
+              Fail`depositFromEVM spender ${evmDepositDetail.spender} must be the same as the remote account address ${gInfo.remoteAddress}`;
+
+            // Create EVM context for GMP call
+            const evmCtx = await makeEVMCtx(
+              srcChain,
+              move,
+              agoric.lca,
+              ctx.transferChannels.noble.counterPartyChannelId,
+            );
+
+            // Execute permit2 transfer: wallet calls Permit2.permitWitnessTransferFrom
+            // to transfer tokens from user's EOA to the wallet
+            await sendPermit2GMP(
+              evmCtx,
+              gInfo,
+              permit2Payload,
+              amount.value,
+              ...optsArgs,
+            );
+            return {};
+          },
+        });
+        break;
+      }
+
+      case 'CCTPtoUser': {
+        // Cross-chain from noble to user's EVM address via CCTP
+        const destChain = way.dest;
+        const sourceAccountId = kit.reader.getSourceAccountId();
+        assert(sourceAccountId);
+        if (!sourceAccountId) {
+          throw Fail`CCTPtoUser requires sourceAccountId to be set`;
+        }
+
+        todo.push({
+          how: 'CCTPtoUser',
+          amount,
+          src: move.src,
+          dest: move.dest,
+          apply: async ({ noble }, _tracer, ...optsArgs) => {
+            assert(noble, 'noble');
+            await null;
+
+            const traceTransfer = traceP.sub('CCTPtoUser').sub(destChain);
+            const denomAmount: DenomAmount = {
+              denom: 'uusdc',
+              value: amount.value,
+            };
+            traceTransfer('transfer', denomAmount, 'to', sourceAccountId);
+
+            // The user's sourceAccountId is already a CAIP-10 AccountId (e.g., eip155:42161:0x...)
+            const destinationAddress: AccountId = sourceAccountId;
+            const { ica } = noble;
+
+            const { txId, result } = ctx.resolverClient.registerTransaction(
+              TxType.CCTP_TO_EVM,
+              destinationAddress,
+              amount.value,
+            );
+            appendTxIds(optsArgs[0]?.progressTracker, [txId]);
+
+            const callerAndOptsArgs = (
+              optsArgs.length > 0 ? [undefined, ...optsArgs] : []
+            ) as [AccountId?, OrchestrationOptions?];
+            await Promise.all([
+              ica.depositForBurn(
+                destinationAddress,
+                denomAmount,
+                ...callerAndOptsArgs,
+              ),
+              result,
+            ]);
+            traceTransfer('transfer complete.');
+            return {};
+          },
+        });
+        break;
+      }
+
       default:
         throw Fail`unreachable: ${way}`;
     }
   }
 
-  const acctsDone = keys(kit.reader.accountIdByChain());
+  const acctsDone = new Set(keys(kit.reader.accountIdByChain()));
   const acctsToDo = [
     ...new Set(
-      (
-        moves
-          .map(({ dest }) => getChainNameOfPlaceRef(dest))
-          .filter(Boolean) as string[]
-      ).filter(ch => !acctsDone.includes(ch)),
+      partialMap(moves, ({ dest }) => {
+        const chainName = getChainNameOfPlaceRef(dest);
+        return chainName && !acctsDone.has(chainName) ? chainName : undefined;
+      }),
     ),
   ];
 
@@ -720,13 +1420,15 @@ const stepFlow = async (
     how: `makeAccounts(${acctsToDo.join(', ')})`,
     ...flowDetail,
   });
-  reporter.publishFlowSteps(
-    flowId,
-    todo.map(({ apply: _a, ...data }) => data),
-    maybeOrder,
-  );
+  reporter.publishFlowSteps(flowId, todo.map(moveStatus), maybeOrder);
 
-  const agoric = await provideCosmosAccount(orch, 'agoric', kit, traceFlow);
+  const agoric = await provideCosmosAccount(
+    orch,
+    'agoric',
+    kit,
+    traceFlow,
+    // Avoid circular bootstrap dependency: don't use progressTracker here.
+  );
 
   /** run thunk(); on failure, report to vstorage */
   const forChain = async <T>(
@@ -750,44 +1452,112 @@ const stepFlow = async (
     }
   };
 
-  const evmAcctInfo = await (async () => {
-    const axelar = await orch.getChain('axelar');
+  const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
+  const axelar = await orch.getChain('axelar');
+  const infoFor: Record<
+    AxelarChain,
+    BaseChainInfo<'eip155'>
+  > = await deeplyFulfilledObject(
+    objectMap(
+      fromTypedEntries(
+        (keys(AxelarChain) as AxelarChain[]).map(name => [name, name]),
+      ),
+      async name => {
+        const chain = await orch.getChain(name);
+        const info = await chain.getChainInfo();
+        return harden(info);
+      },
+    ),
+  );
+
+  const evmAcctInfo: Record<string, GMPAccountStatus> = await (async () => {
     const { axelarIds } = ctx;
     const gmpCommon = { chain: axelar, axelarIds };
 
     const evmChains = keys(AxelarChain) as unknown[];
-    const asEntry = <K, V>(k: K, v: V): [K, V] => [k, v];
 
     const seen = new Set<AxelarChain>();
-    const chainToAcctP = moves.flatMap(move =>
-      [move.src, move.dest].flatMap(ref => {
+    const chainToAcctStatusP: [AxelarChain, Promise<GMPAccountStatus>][] = [];
+    for (const [moveIndex, move] of moves.entries()) {
+      const step = moveIndex + 1;
+      const phased = { makeSrcAccount: move.src, makeDestAccount: move.dest };
+      for (const [phase, ref] of typedEntries(phased)) {
         const maybeChain = getChainNameOfPlaceRef(ref);
-        if (!evmChains.includes(maybeChain)) return [];
+        if (!evmChains.includes(maybeChain)) continue;
         const chain = maybeChain as AxelarChain;
-        if (seen.has(chain)) return [];
+        if (seen.has(chain)) continue;
         seen.add(chain);
 
         const gmp = {
           ...gmpCommon,
           fee: move.fee?.value || 0n,
-          evmGas: move.detail?.evmGas || 0n,
         };
 
-        const acctP = forChain(chain, () =>
-          provideEVMAccount(chain, gmp, agoric.lca, ctx, kit),
-        );
-        return [asEntry(chain, acctP)];
+        const progressTracker = features?.useProgressTracker
+          ? agoric.lca.makeProgressTracker()
+          : undefined;
+        const acctP = forChain(chain, async () => {
+          await null;
+          const optsArgs = progressTracker ? [{ progressTracker }] : [];
+          void publishProvideAccountProgress(progressTracker, step, phase);
+          const acctInfo = await provideEVMAccount(
+            chain,
+            infoFor[chain],
+            gmp,
+            agoric.lca,
+            ctx,
+            kit,
+            { orchOpts: optsArgs[0] },
+          );
+
+          // Finalize only after the account has settled.
+          progressTracker &&
+            acctInfo.ready
+              .finally(() => progressTracker.finish())
+              .catch(() => {});
+
+          return acctInfo;
+        });
+
+        chainToAcctStatusP.push(asEntry(chain, acctP));
+      }
+    }
+    const chainToAcctStatus = await Promise.all(
+      chainToAcctStatusP.map(async ([chain, acctP]) => {
+        const acct = await acctP;
+        return [chain, acct] as const;
       }),
     );
-    return deeplyFulfilledObject(harden(fromEntries(chainToAcctP)));
+    return harden(fromEntries(chainToAcctStatus));
   })();
 
-  traceFlow('EVM accounts ready', keys(evmAcctInfo));
+  traceFlow('EVM accounts pre-computed', keys(evmAcctInfo));
   const nobleMentioned = moves.some(m => [m.src, m.dest].includes('@noble'));
   const nobleInfo = await (nobleMentioned || keys(evmAcctInfo).length > 0
-    ? forChain('noble', () =>
-        provideCosmosAccount(orch, 'noble', kit, traceFlow),
-      )
+    ? forChain('noble', async () => {
+        await null;
+        const progressTracker = features?.useProgressTracker
+          ? agoric.lca.makeProgressTracker()
+          : undefined;
+        const optsArgs = progressTracker ? [{ progressTracker }] : [];
+        try {
+          void publishProvideAccountProgress(
+            progressTracker,
+            SETUP_STEP,
+            'makeDestAccount',
+          );
+          const result = await provideCosmosAccount(
+            orch,
+            'noble',
+            kit,
+            traceFlow,
+            ...optsArgs,
+          );
+          return result;
+        } finally {
+          progressTracker?.finish();
+        }
+      })
     : undefined);
   const accounts: AccountsByChain = {
     agoric,
@@ -796,6 +1566,9 @@ const stepFlow = async (
   };
   traceFlow('accounts for trackFlow', keys(accounts));
 
+  const progressPowers = features?.useProgressTracker
+    ? { resolverClient: ctx.resolverClient, phasesForStep }
+    : undefined;
   await trackFlow(
     reporter,
     todo,
@@ -804,6 +1577,7 @@ const stepFlow = async (
     accounts,
     order,
     flowDetail,
+    progressPowers,
   );
   traceFlow('stepFlow done');
 };
@@ -834,9 +1608,8 @@ export const rebalance = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['rebalance'],
   kit: GuestInterface<PortfolioKit>,
-  startedFlow?: ReturnType<
-    GuestInterface<PortfolioKit>['manager']['startFlow']
-  >,
+  startedFlow?: PortfolioStartedFlow,
+  config?: FlowConfig,
 ) => {
   const id = kit.reader.getPortfolioId();
   const traceP = makeTracer('rebalance').sub(`portfolio${id}`);
@@ -857,9 +1630,19 @@ export const rebalance = (async (
     if (flow) {
       ({ flowId } =
         startedFlow ?? kit.manager.startFlow({ type: 'rebalance' }, flow));
-      await stepFlow(orch, ctx, seat, flow, kit, traceP, flowId, {
-        type: 'rebalance',
-      });
+      await stepFlow(
+        orch,
+        ctx,
+        seat,
+        flow,
+        kit,
+        traceP,
+        flowId,
+        {
+          type: 'rebalance',
+        },
+        config,
+      );
     }
 
     if (!seat.hasExited()) {
@@ -889,67 +1672,11 @@ const eventAbbr = ({ packet }: VTransferIBCEvent) => ({
   sequence: packet.sequence,
 });
 
-type UpcallData = Pick<PortfolioInstanceContext, 'gmpAddresses' | 'axelarIds'>;
-export type OnTransferContext = UpcallData &
-  Pick<PortfolioInstanceContext, 'transferChannels'> & {
-    resolverService: GuestInterface<ResolverKit['service']>;
-  };
-
-/**
- * Resolve EVM account creation from Axelar GMP memo.
- *
- * @param memo - GMP memo from AXELAR_GMP via axelar channel
- * @param axelarIds - name -> axelar id mapping
- * @param orch - Orchestrator to get chain information
- * @param portfolioManager - Portfolio manager to resolve the account
- * @param traceUpcall - Logger for tracing
- * @returns Promise<boolean> - true if account was resolved, false otherwise
- */
-const resolveEVMAccount = async (
-  memo: AxelarGmpIncomingMemo,
-  axelarIds: AxelarId,
-  orch: Orchestrator,
-  portfolioManager: GuestInterface<PortfolioKit['manager']>,
-  traceUpcall: TraceLogger,
-) => {
-  traceUpcall('GMP', memo);
-
-  const result = (entries(axelarIds) as [AxelarChain, string][]).find(
-    ([_, chainId]) => chainId === memo.source_chain,
-  );
-  if (!result) {
-    traceUpcall('unknown source_chain', memo);
-    return false;
-  }
-
-  const [chainName, _] = result;
-
-  const payloadBytes = decodeBase64(memo.payload);
-  const [{ data }] = decodeAbiParameters(
-    DECODE_CONTRACT_CALL_RESULT_ABI,
-    payloadBytes,
-  ) as [AgoricResponse];
-
-  traceUpcall('Decoded:', JSON.stringify({ data }));
-
-  const [message] = data;
-  const { success, result: result2 } = message;
-  if (!success) return false;
-
-  const [address] = decodeAbiParameters([{ type: 'address' }], result2);
-
-  const chainInfo = await (await orch.getChain(chainName)).getChainInfo();
-  const caipId: CaipChainId = `${chainInfo.namespace}:${chainInfo.reference}`;
-
-  traceUpcall(chainName, 'remoteAddress', address);
-  portfolioManager.resolveAccount({
-    namespace: 'eip155',
-    chainName,
-    chainId: caipId,
-    remoteAddress: address,
-  });
-
-  return true;
+export type OnTransferContext = Pick<
+  PortfolioInstanceContext,
+  'transferChannels'
+> & {
+  resolverService: GuestInterface<ResolverKit['service']>;
 };
 
 /**
@@ -987,7 +1714,7 @@ const resolveCCTPIn = (
  * Prompt.
  */
 export const onAgoricTransfer = (async (
-  orch: Orchestrator,
+  _orch: Orchestrator,
   ctx: OnTransferContext,
   event: VTransferIBCEvent,
   pKit: PortfolioKit,
@@ -998,40 +1725,19 @@ export const onAgoricTransfer = (async (
   traceUpcall('event', eventAbbr(event));
   if (event.packet.destination_port !== 'transfer') return false;
 
-  const { gmpAddresses, axelarIds, transferChannels } = ctx;
+  const { transferChannels, resolverService } = ctx;
   const { destination_channel: packetDest } = event.packet;
   const lca = reader.getLocalAccount();
 
   await null;
 
   switch (packetDest) {
-    case transferChannels.axelar?.channelId: {
-      const parsed = await lca.parseInboundTransfer(event.packet);
-      const { extra } = parsed;
-      if (extra.sender !== gmpAddresses.AXELAR_GMP) {
-        traceUpcall(
-          `GMP early exit; AXELAR_GMP sender expected ${gmpAddresses.AXELAR_GMP}, got ${extra.sender}`,
-        );
-        return false;
-      }
-
-      if (!extra.memo) return false;
-
-      const memo: AxelarGmpIncomingMemo = JSON.parse(extra.memo); // XXX unsound! use typed pattern
-      return resolveEVMAccount(
-        memo,
-        axelarIds,
-        orch,
-        pKit.manager,
-        traceUpcall,
-      );
-    }
     case transferChannels.noble.channelId: {
       const parsed = await lca.parseInboundTransfer(event.packet);
       return resolveCCTPIn(
         parsed,
         coerceAccountId(lca.getAddress()),
-        ctx.resolverService,
+        resolverService,
         traceUpcall,
       );
     }
@@ -1053,7 +1759,9 @@ export const onAgoricTransfer = (async (
 }) satisfies OrchestrationFlow;
 
 /**
- * Offer handler to make a portfolio and, optionally, open yield positions.
+ * Handler to make a portfolio and, optionally, open yield positions.
+ * Supports opening from a cosmos or EVM wallet, with the deposit coming from
+ * the Zoe seat or via an EVM-signed Permit2 transfer respectively.
  *
  * **Input Validation**: ASSUME caller validates args
  *
@@ -1070,44 +1778,83 @@ export const openPortfolio = (async (
   seat: ZCFSeat,
   offerArgs: OfferArgsFor['openPortfolio'],
   madeKit?: GuestInterface<PortfolioKit>,
+  openConfig?: FlowConfig & {
+    /**
+     * A config flag for new invocations of `openPortfolio` to call `startFlow`
+     * and provide `executePlan` with a `startedFlow`.
+     */
+    explicitStartFlow?: boolean;
+  },
+  evmDepositDetails?: {
+    fromChain: AxelarChain;
+    amount: NatAmount;
+    permitDetails: PermitDetails;
+  },
 ) => {
+  const { explicitStartFlow, ...flowConfig } = openConfig ?? {};
+  const config = openConfig !== undefined ? flowConfig : undefined;
+  const features = config?.features;
   await null; // see https://github.com/Agoric/agoric-sdk/wiki/No-Nested-Await
   const trace = makeTracer('openPortfolio');
   try {
     const { makePortfolioKit, ...ctxI } = ctx;
-    const { inertSubscriber, transferChannels } = ctxI;
+    const { inertSubscriber } = ctxI;
     const kit = madeKit ?? makePortfolioKit();
     const id = kit.reader.getPortfolioId();
     const traceP = trace.sub(`portfolio${id}`);
     traceP('portfolio opened');
+    if (offerArgs.targetAllocation && !offerArgs.flow) {
+      kit.manager.setTargetAllocation(offerArgs.targetAllocation);
+    }
 
     // TODO provide a way to recover if any of these provisionings fail
     // SEE https://github.com/Agoric/agoric-private/issues/488
     // Register Noble Forwarding Account (NFA) for CCTP transfers
-    {
-      const sender = await ctxI.contractAccount;
-      const { lca } = await provideCosmosAccount(orch, 'agoric', kit, traceP);
-      const { ica } = await provideCosmosAccount(orch, 'noble', kit, traceP);
-      const forwarding = {
-        channel: transferChannels.noble.counterPartyChannelId,
-        recipient: lca.getAddress().value,
-      };
-      const dest = ica.getAddress();
-      await registerNobleForwardingAccount(sender, dest, forwarding, traceP);
-    }
+    await setupPortfolioAccounts(orch, ctxI, kit, traceP, features);
 
     const { give } = seat.getProposal() as ProposalType['openPortfolio'];
     try {
       if (offerArgs.flow) {
         // XXX only for testing recovery?
-        await rebalance(orch, ctxI, seat, offerArgs, kit);
+        await rebalance(orch, ctxI, seat, offerArgs, kit, undefined, config);
       } else if (offerArgs.targetAllocation) {
-        kit.manager.setTargetAllocation(offerArgs.targetAllocation);
-        if (give.Deposit) {
-          await executePlan(orch, ctxI, seat, offerArgs, kit, {
-            type: 'deposit',
-            amount: give.Deposit,
-          });
+        let depositFlowDetail: FlowDetail | undefined;
+        let depositOptions: ExecutePlanOptions | undefined;
+
+        if (evmDepositDetails) {
+          const { fromChain, amount, permitDetails } = evmDepositDetails;
+          depositFlowDetail = { type: 'deposit', amount, fromChain };
+          depositOptions = {
+            evmDepositDetail: { ...permitDetails, fromChain },
+          };
+        } else if (give.Deposit) {
+          depositFlowDetail = { type: 'deposit', amount: give.Deposit };
+        }
+
+        if (depositFlowDetail) {
+          // Historical openPortfolio flows would rely on the backwards compatibility of
+          // `executePlan` to call `startFlow`. For new invocations (`explicitStartFlow`
+          // set to `true`), we instead call `startFlow` here.
+          // This approach is needed to maintain replay compatibility of historical invocations.
+          const flowArgs: [
+            FlowDetail | undefined,
+            PortfolioStartedFlow | undefined,
+          ] = explicitStartFlow
+            ? [
+                undefined,
+                kit.manager.startFlow(depositFlowDetail, offerArgs.flow),
+              ]
+            : [depositFlowDetail, undefined];
+          await executePlan(
+            orch,
+            ctxI,
+            seat,
+            offerArgs,
+            kit,
+            ...flowArgs,
+            config,
+            depositOptions,
+          );
         }
       }
     } catch (err) {
@@ -1138,12 +1885,95 @@ export const openPortfolio = (async (
 }) satisfies OrchestrationFlow;
 harden(openPortfolio);
 
+/**
+ * Historical Open a portfolio from an EVM-signed Permit2
+ * See openPortfolio for the replacement
+ */
+export const openPortfolioFromPermit2 = (async () => {
+  // Tombstone in favor of openPortfolio with evmDepositDetails
+  return new Promise(() => {});
+}) satisfies OrchestrationFlow;
+harden(openPortfolioFromPermit2);
+
 export const makeLCA = (async (orch: Orchestrator): Promise<LocalAccount> => {
   const agoricChain = await orch.getChain('agoric');
   return agoricChain.makeAccount();
 }) satisfies OrchestrationFlow;
 harden(makeLCA);
 
+const queuePermit2Step = async (
+  pKit: GuestInterface<PortfolioKit>,
+  ctx: PortfolioInstanceContext,
+  details: {
+    gmpChain: Chain<{ chainId: string }>;
+    steps: MovementDesc[];
+    permit2Payload: PermitDetails['permit2Payload'];
+    isRouterSpender: boolean;
+    fromChain: AxelarChain;
+    chainInfo: BaseChainInfo<'eip155'>;
+    config?: FlowConfig;
+  },
+) => {
+  const {
+    gmpChain,
+    steps,
+    permit2Payload,
+    isRouterSpender,
+    fromChain,
+    chainInfo,
+  } = details;
+  const permitStep = steps.find(
+    step => step.src === `+${fromChain}` && step.dest === `@${fromChain}`,
+  );
+  if (!permitStep) {
+    throw Fail`permit2 step missing for ${fromChain}`;
+  }
+  if (!permitStep.fee) {
+    throw Fail`permit2 step missing fee for ${fromChain}`;
+  }
+  const feeAmount = permitStep.fee;
+  const lca = pKit.reader.getLocalAccount();
+  const gmp = {
+    chain: gmpChain,
+    fee: feeAmount.value,
+  };
+
+  const progressTracker = details.config?.features?.useProgressTracker
+    ? lca.makeProgressTracker()
+    : undefined;
+
+  const provideEVMAccountWithPermit = isRouterSpender
+    ? provideEVMRoutedAccountWithPermit
+    : provideEVMLegacyAccountWithPermit;
+
+  // For openPortfolio: atomic createAndDeposit via depositFactory
+  const acct = provideEVMAccountWithPermit(
+    fromChain,
+    chainInfo,
+    gmp,
+    lca,
+    ctx,
+    pKit,
+    permit2Payload,
+    { progressTracker },
+  );
+
+  // We made the progressTracker above, so we must finalize it.
+  const done = progressTracker
+    ? acct.done.finally(() => progressTracker.finish())
+    : acct.done;
+
+  return [
+    {
+      src: permitStep.src,
+      dest: permitStep.dest,
+      done,
+      ...(progressTracker ? { progressTracker } : {}),
+    },
+  ];
+};
+
+// XXX too many args. should use named properties
 /**
  * Offer handler to execute a planned flow of asset movements. It takes
  * responsibility for the `seat` and exits it when done.
@@ -1154,26 +1984,84 @@ export const executePlan = (async (
   seat: ZCFSeat,
   offerArgs: { flow?: MovementDesc[] },
   pKit: GuestInterface<PortfolioKit>,
-  flowDetail: FlowDetail,
-  startedFlow?: ReturnType<
-    GuestInterface<PortfolioKit>['manager']['startFlow']
-  >,
+  flowDetail?: FlowDetail,
+  startedFlow?: PortfolioStartedFlow,
+  config?: FlowConfig,
+  options?: ExecutePlanOptions,
 ): Promise<`flow${number}`> => {
   const pId = pKit.reader.getPortfolioId();
-  const traceP = makeTracer(flowDetail.type).sub(`portfolio${pId}`);
+  const traceP = makeTracer(`portfolio${pId}`);
 
   // XXX for backwards compatibility, startedFlow may be undefined
   const { stepsP, flowId } =
-    startedFlow ?? pKit.manager.startFlow(flowDetail, offerArgs.flow);
+    startedFlow ??
+    (flowDetail
+      ? pKit.manager.startFlow(flowDetail, offerArgs.flow)
+      : Fail`executePlan requires either startedFlow or flowDetail`);
   const traceFlow = traceP.sub(`flow${flowId}`);
   if (!offerArgs.flow) traceFlow('waiting for steps from planner');
-  // idea: race with seat.getSubscriber()
-  const plan = await (stepsP as unknown as Promise<
-    MovementDesc[] | FundsFlowPlan
-  >); // XXX Guest/Host types UNTIL #9822
+  await null;
   try {
-    await stepFlow(orch, ctx, seat, plan, pKit, traceP, flowId, flowDetail);
+    // idea: race with seat.getSubscriber()
+    const plan = await (stepsP as unknown as Promise<
+      MovementDesc[] | FundsFlowPlan
+    >); // XXX Guest/Host types UNTIL #9822
+    const steps = Array.isArray(plan) ? plan : plan.flow;
+    let queuedSteps: ExecutePlanOptions['queuedSteps'];
+    if (options?.evmDepositDetail) {
+      const { fromChain, permit2Payload, spender } = options.evmDepositDetail;
+      // Only use queuePermit2Step for openPortfolio (spender = depositFactory/router).
+      // Deposits to existing portfolios use the depositFromEVM case in stepFlow.
+
+      const isRouterSpender = sameEvmAddress(
+        spender,
+        ctx.contracts[fromChain].remoteAccountRouter,
+      );
+      const isRepresentativeSpender =
+        isRouterSpender ||
+        sameEvmAddress(spender, ctx.contracts[fromChain].depositFactory);
+      if (isRepresentativeSpender) {
+        const gmpChain = await orch.getChain('axelar');
+        const chainInfo = await (await orch.getChain(fromChain)).getChainInfo();
+        queuedSteps = await queuePermit2Step(pKit, ctx, {
+          gmpChain,
+          steps,
+          permit2Payload,
+          isRouterSpender,
+          fromChain,
+          chainInfo,
+          config,
+        });
+      }
+    }
+    if (steps.length === 0) {
+      traceFlow('no steps to execute');
+      pKit.reporter.publishFlowStatus(flowId, { state: 'done', ...flowDetail });
+      return `flow${flowId}`;
+    }
+    await stepFlow(
+      orch,
+      ctx,
+      seat,
+      plan,
+      pKit,
+      traceP,
+      flowId,
+      flowDetail,
+      config,
+      { queuedSteps, evmDepositDetail: options?.evmDepositDetail },
+    );
     return `flow${flowId}`;
+  } catch (err) {
+    if (!seat.hasExited()) seat.fail(err);
+    pKit.reporter.publishFlowStatus(flowId, {
+      state: 'fail',
+      step: 0,
+      error: errmsg(err),
+      how: `await plan`,
+      ...flowDetail,
+    });
+    throw err;
   } finally {
     // The seat must be exited no matter what to avoid leaks
     if (!seat.hasExited()) seat.exit();

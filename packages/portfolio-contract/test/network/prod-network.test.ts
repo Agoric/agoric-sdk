@@ -1,29 +1,22 @@
+import '@endo/init/debug.js';
+
 import test from 'ava';
-import { Far } from '@endo/marshal';
-import type { Brand } from '@agoric/ertp/src/types.js';
 import {
   AxelarChain,
   SupportedChain,
 } from '@agoric/portfolio-api/src/constants.js';
 
-import {
-  makeGraphFromDefinition,
-  type RebalanceGraph,
-} from '../../tools/network/buildGraph.js';
+import { makeGraphForFlow } from '../../tools/network/buildGraph.js';
+import type { FlowGraph } from '../../tools/network/buildGraph.js';
 import PROD_NETWORK, {
   PROD_NETWORK as NAMED_PROD,
-} from '../../tools/network/network.prod.js';
+} from '../../tools/network/prod-network.js';
 import { PoolPlaces } from '../../src/type-guards.js';
 import type { AssetPlaceRef } from '../../src/type-guards-steps.js';
 import type {
   PoolKey,
   TransferProtocol,
 } from '../../tools/network/network-spec.js';
-
-const brand = Far('TestBrand') as Brand<'nat'>;
-const feeBrand = Far('TestFeeBrand') as Brand<'nat'>;
-
-const toSet = <T>(iter: Iterable<T>) => new Set(iter);
 
 // Shared expectations (precisely typed)
 type HubKey = `@${(typeof SupportedChain)[keyof typeof SupportedChain]}`;
@@ -69,24 +62,48 @@ const POOLS: ReadonlyArray<PoolKey> = [
   // USDN pools
   'USDN',
   'USDNVault',
+  // ERC4626 vaults
+  'ERC4626_vaultU2_Ethereum',
+  'ERC4626_morphoClearstarHighYieldUsdc_Ethereum',
+  'ERC4626_morphoClearstarUsdcCore_Ethereum',
+  'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+  'ERC4626_morphoSteakhouseHighYieldInstant_Ethereum',
+  'ERC4626_morphoClearstarInstitutionalUsdc_Ethereum',
+  'ERC4626_morphoClearstarUsdcReactor_Ethereum',
+  'ERC4626_morphoAlphaUsdcCore_Ethereum',
+  'ERC4626_morphoResolvUsdc_Ethereum',
+  'ERC4626_morphoGauntletUsdcFrontier_Ethereum',
+  'ERC4626_morphoHyperithmUsdcMidcurve_Ethereum',
+  'ERC4626_morphoHyperithmUsdcDegen_Ethereum',
+  'ERC4626_morphoGauntletUsdcCore_Ethereum',
+  'ERC4626_morphoSteakhousePrimeUsdc_Base',
+  'ERC4626_morphoSteakhouseUsdc_Base',
+  'ERC4626_morphoGauntletUsdcPrime_Base',
+  'ERC4626_morphoSeamlessUsdcVault_Base',
+  'ERC4626_morphoSteakhouseHighYieldUsdc_Arbitrum',
+  'ERC4626_morphoGauntletUsdcCore_Arbitrum',
+  'ERC4626_morphoHyperithmUsdc_Arbitrum',
+  'ERC4626_morphoGauntletUsdcPrime_Optimism',
+  'ERC4626_morphoGauntletUsdcPrime_Ethereum',
+  'ERC4626_morphoEthenaSteakhouseUsdc_Base',
+  'ERC4626_morphoKpkUsdcPrime_Ethereum',
 ];
 
 // Helpers
-const getGraph = () =>
-  makeGraphFromDefinition(PROD_NETWORK, {}, {}, brand, feeBrand);
+const getGraph = () => makeGraphForFlow(PROD_NETWORK, {}, {});
 
 const hasEdge = (
-  edges: RebalanceGraph['edges'],
+  edges: FlowGraph['edges'],
   src: AssetPlaceRef,
   dest: AssetPlaceRef,
   via?: TransferProtocol,
 ) =>
   edges.some(
-    e => e.src === src && e.dest === dest && (via ? e.via === via : true),
+    e => e.src === src && e.dest === dest && (via ? e.transfer === via : true),
   );
 
 const isReachable = (
-  edges: RebalanceGraph['edges'],
+  edges: FlowGraph['edges'],
   start: AssetPlaceRef,
   goal: AssetPlaceRef,
 ) => {
@@ -142,13 +159,13 @@ test('PROD_NETWORK has the expected hubs', t => {
   t.is(PROD_NETWORK, NAMED_PROD);
 
   const graph = getGraph();
-  const nodes = toSet(graph.nodes.values());
+  const nodes = new Set(graph.nodes.values());
   for (const hub of HUBS) t.true(nodes.has(hub), `missing hub ${hub}`);
 });
 
 test('PROD_NETWORK has the expected pools', t => {
   const graph = getGraph();
-  const nodes = toSet(graph.nodes.values());
+  const nodes = new Set(graph.nodes.values());
   for (const p of POOLS) t.true(nodes.has(p), `missing pool ${p}`);
 });
 
@@ -163,18 +180,18 @@ test('PROD_NETWORK has the right connections', t => {
   // Each EVM hub should have compressed inbound links directly to @agoric (either slow CCTP or fastusdc)
   for (const hub of EVM_HUBS) {
     t.true(
-      hasEdge(edges, hub, '@agoric', 'cctpSlow') ||
+      hasEdge(edges, hub, '@agoric', 'cctpToNoble') ||
         hasEdge(edges, hub, '@agoric', 'fastusdc'),
       `no inbound EVM->@agoric compressed link for ${hub}`,
     );
     // Return path still originates at @noble
     t.true(
-      hasEdge(edges, '@noble', hub, 'cctpReturn'),
+      hasEdge(edges, '@noble', hub, 'cctpFromNoble'),
       `no @noble->${hub} return link`,
     );
     // Ensure legacy inbound to @noble was removed
     t.false(
-      hasEdge(edges, hub, '@noble', 'cctpSlow') ||
+      hasEdge(edges, hub, '@noble', 'cctpToNoble') ||
         hasEdge(edges, hub, '@noble', 'fastusdc'),
       `legacy inbound EVM->@noble edge still present for ${hub}`,
     );

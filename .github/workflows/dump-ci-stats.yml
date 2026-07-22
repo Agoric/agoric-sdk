@@ -21,13 +21,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
+        with:
+          # Corepack is not enabled yet, so setup-node must not try to detect
+          # the yarn cache.
+          package-manager-cache: false
 
       - name: Set up yarn
-        run: corepack enable
+        run: bash scripts/ensure-corepack-yarn.sh
 
       - name: Install GCP Monitoring/Metrics Client
         run: yarn add @google-cloud/monitoring

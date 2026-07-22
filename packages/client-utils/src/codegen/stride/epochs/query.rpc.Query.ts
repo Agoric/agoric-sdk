@@ -1,6 +1,6 @@
 //@ts-nocheck
-import { type Rpc } from '../../helpers.js';
-import { BinaryReader } from '../../binary.js';
+import type { Rpc } from '@agoric/cosmic-proto/codegen/helpers.js';
+import { BinaryReader } from '@agoric/cosmic-proto/codegen/binary.js';
 import { QueryClient, createProtobufRpcClient } from '@cosmjs/stargate';
 import {
   QueryEpochsInfoRequest,
@@ -9,7 +9,7 @@ import {
   QueryCurrentEpochResponse,
   QueryEpochInfoRequest,
   QueryEpochInfoResponse,
-} from './query.js';
+} from '@agoric/cosmic-proto/codegen/stride/epochs/query.js';
 /** Query defines the gRPC querier service. */
 export interface Query {
   /** EpochInfos provide running epochInfos */

@@ -1,7 +1,28 @@
-import type { InterChainAccountRef, LocalChainAccountRef } from './types.js';
+import type { TypedPattern } from '@agoric/internal';
+import { M } from '@endo/patterns';
+import type { BeefyInstrumentId, ERC4626InstrumentId } from './places.ts';
+import type {
+  DepositFromChainRef,
+  LocalChainAccountRef,
+  PortfolioAgentKey,
+  InterChainAccountRef,
+  WithdrawToChainRef,
+} from './types.js';
+
+export { isInstrumentId } from './places.ts';
 
 /**
- * Does it match the pattern, without regard to supported chains.
+ * Without regard to supported chains, is the input plausibly a
+ * DepositFromChainRef (i.e., does it start with `+`)?
+ */
+export const isDepositFromChainRef = (
+  ref: string,
+): ref is DepositFromChainRef => ref.startsWith('+');
+harden(isDepositFromChainRef);
+
+/**
+ * Without regard to supported chains, is the input plausibly a
+ * LocalChainAccountRef (i.e., does it start with `+`)?
  */
 export const isLocalChainAccountRef = (
   ref: string,
@@ -9,9 +30,43 @@ export const isLocalChainAccountRef = (
 harden(isLocalChainAccountRef);
 
 /**
- * Does it match the pattern, without regard to supported chains.
+ * Without regard to supported chains, is the input plausibly an
+ * InterChainAccountRef (i.e., does it start with `@`)?
  */
 export const isInterChainAccountRef = (
   ref: string,
 ): ref is InterChainAccountRef => ref.startsWith('@');
 harden(isInterChainAccountRef);
+
+/**
+ * Without regard to supported chains, is the input plausibly a
+ * WithdrawToChainRef (i.e., does it start with `-`)?
+ */
+export const isWithdrawToChainRef = (ref: string): ref is WithdrawToChainRef =>
+  ref.startsWith('-');
+harden(isWithdrawToChainRef);
+
+/**
+ * Is the input an ERC-4626 InstrumentId
+ * (i.e., does it start with 'ERC4626_')?
+ */
+export const isERC4626InstrumentId = (
+  ref: string,
+): ref is ERC4626InstrumentId => ref.startsWith('ERC4626_');
+harden(isERC4626InstrumentId);
+
+/**
+ * Is the input an Beefy InstrumentId
+ * (i.e., does it start with 'Beefy_')?
+ */
+export const isBeefyInstrumentId = (ref: string): ref is BeefyInstrumentId =>
+  ref.startsWith('Beefy_');
+harden(isBeefyInstrumentId);
+
+export const PortfolioAgentKeyShape: TypedPattern<PortfolioAgentKey> =
+  M.string();
+
+/** The shape for the optional `agentMemo` field for flows started by an agent */
+export const PortfolioFlowAgentMemoShape: TypedPattern<string> = M.string({
+  stringLengthLimit: 64,
+});

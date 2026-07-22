@@ -13,6 +13,7 @@ import { subscribeEach } from './subscribe.js';
  * @import {IterationObserver, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, StoredPublishKit, StoredSubscription, StoredSubscriber, Subscriber, Subscription, UpdateRecord} from '../src/types.js';
  * @import {StorageNode, Unserializer} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
+ * @import {PassableCap} from '@endo/marshal';
  */
 
 /**
@@ -46,7 +47,7 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
  * the iteration themselves, or obtain information to subscribe to the stored
  * data out-of-band.
  *
- * @template {import('@endo/marshal').PassableCap} T
+ * @template {PassableCap} T
  * @param {Subscriber<T>} subscriber
  * @param {ERemote<StorageNode>} storageNode
  * @param {ERemote<EMarshaller>} marshaller

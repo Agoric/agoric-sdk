@@ -2,21 +2,42 @@
 
 /// <reference types="ses" />
 
-import { objectMap } from '@endo/common/object-map.js';
+import { keyMirror } from '@agoric/internal';
+import { M, objectMap } from '@endo/patterns';
 
-/** @import {ClusterName} from '@agoric/internal'; */
-/** @import {CaipChainId} from '@agoric/orchestration'; */
+/**
+ * @import {ClusterName, TypedPattern} from '@agoric/internal';
+ * @import {CaipChainId} from '@agoric/orchestration';
+ * @import {FlowConfig} from './types.js';
+ */
+
+/**
+ * Configuration arguments for newly-created portfolio flows.
+ *
+ * This is only a default so that existing flows continue to behave as before
+ * for replay fidelity.
+ *
+ * @type {FlowConfig | undefined}
+ */
+export const DEFAULT_FLOW_CONFIG = {
+  features: {
+    /** Enable ProgressTracker support in new flows. */
+    useProgressTracker: true,
+  },
+};
+harden(DEFAULT_FLOW_CONFIG);
 
 /**
  * Yield protocols for Proof of Concept.
  *
- * @enum {(typeof YieldProtocol)[keyof typeof YieldProtocol]}
+ * @typedef {(typeof YieldProtocol)[keyof typeof YieldProtocol]} YieldProtocol
  */
-export const YieldProtocol = /** @type {const} */ ({
-  Aave: 'Aave',
-  Compound: 'Compound',
-  USDN: 'USDN',
-  Beefy: 'Beefy',
+export const YieldProtocol = keyMirror({
+  Aave: null,
+  Compound: null,
+  USDN: null,
+  Beefy: null,
+  ERC4626: null,
 });
 harden(YieldProtocol);
 
@@ -26,7 +47,7 @@ harden(YieldProtocol);
  * Withdraw: user is withdrawing assets from a yield protocol on the target chain.
  * DepositForBurn: user is transferring assets off the target chain via CCTP.
  *
- * @enum {(typeof EvmWalletOperationType)[keyof typeof EvmWalletOperationType]}
+ * @typedef {(typeof EvmWalletOperationType)[keyof typeof EvmWalletOperationType]} EvmWalletOperationType
  */
 export const EvmWalletOperationType = /** @type {const} */ ({
   Supply: 'supply',
@@ -36,14 +57,14 @@ export const EvmWalletOperationType = /** @type {const} */ ({
 harden(EvmWalletOperationType);
 
 /**
- * @enum {(typeof AxelarChain)[keyof typeof AxelarChain]}
+ * @typedef {(typeof AxelarChain)[keyof typeof AxelarChain]} AxelarChain
  */
-export const AxelarChain = /** @type {const} */ ({
-  Arbitrum: 'Arbitrum',
-  Avalanche: 'Avalanche',
-  Base: 'Base',
-  Ethereum: 'Ethereum',
-  Optimism: 'Optimism',
+export const AxelarChain = keyMirror({
+  Arbitrum: null,
+  Avalanche: null,
+  Base: null,
+  Ethereum: null,
+  Optimism: null,
 });
 harden(AxelarChain);
 
@@ -72,9 +93,9 @@ export const Eip155ChainIds = {
 harden(Eip155ChainIds);
 
 /**
- * @enum {(typeof SupportedChain)[keyof typeof SupportedChain]}
+ * @typedef {(typeof SupportedChain)[keyof typeof SupportedChain]} SupportedChain
  */
-export const SupportedChain = /** @type {const} */ ({
+export const SupportedChain = keyMirror({
   // ...AxelarChain works locally but gets lost in .d.ts generation
   Arbitrum: 'Arbitrum',
   Avalanche: 'Avalanche',
@@ -92,7 +113,7 @@ harden(SupportedChain);
 const caipChainIdFromEip155 = chainId => `eip155:${chainId}`;
 
 /**
- * cf. https://chainagnostic.org/CAIPs/caip-2
+ * cf. https://standards.chainagnostic.org/CAIPs/caip-2
  * Please keep in sync with ../../../services/ymax-planner/src/support.ts `spectrumChainIds`
  *
  * XXX this probably belongs in @agoric/orchestration
@@ -149,7 +170,7 @@ harden(UsdcTokenIds);
 /**
  * Strategies for portfolio rebalancing of bulk deposits.
  *
- * @enum {(typeof RebalanceStrategy)[keyof typeof RebalanceStrategy]}
+ * @typedef {(typeof RebalanceStrategy)[keyof typeof RebalanceStrategy]} RebalanceStrategy
  */
 export const RebalanceStrategy = /** @type {const} */ ({
   /**
@@ -170,3 +191,32 @@ harden(RebalanceStrategy);
  * This corresponds to 100 uusdc, i.e., $0.0001 for USDC.
  */
 export const ACCOUNT_DUST_EPSILON = 100n;
+
+/**
+ * Feature flags to handle contract upgrade flow compatibility.
+ * @type {TypedPattern<FlowConfig['features']>}
+ */
+export const FlowFeaturesShape = M.splitRecord(
+  {},
+  {
+    useProgressTracker: M.boolean(),
+    experimentalSwap: M.boolean(),
+  },
+);
+
+/**
+ * Configuration options for flows.
+ * @type {TypedPattern<FlowConfig>}
+ */
+export const FlowConfigShape = M.splitRecord(
+  {},
+  {
+    features: FlowFeaturesShape,
+  },
+);
+
+/**
+ * Special string to designate the planner as a grantee.
+ * Includes a special & character to avoid potential collision with any CAIP-10 account address.
+ */
+export const PortfolioPlannerAgent = '&planner';

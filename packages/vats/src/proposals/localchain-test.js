@@ -5,13 +5,21 @@ import { CodecHelper } from '@agoric/cosmic-proto';
 import { QueryAllBalancesRequest as QueryAllBalancesRequestType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { MsgSend as MsgSendType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 
+/**
+ * @import {LocalChain} from '../localchain.js';
+ * @import {ERemote} from '@agoric/internal';
+ * @import {TargetApp} from '../bridge-target.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ */
+
 const MsgSend = CodecHelper(MsgSendType);
 const QueryAllBalancesRequest = CodecHelper(QueryAllBalancesRequestType);
 
 /**
  * @param {BootstrapPowers & {
  *   consume: {
- *     localchain: import('../localchain.js').LocalChain;
+ *     localchain: LocalChain;
  *   };
  * }} powers
  * @param {object} options
@@ -22,7 +30,7 @@ export const testLocalChain = async (
   { options: { testResultPath } },
 ) => {
   console.warn('=== localchain test started (result in', testResultPath, ')!');
-  /** @type {null | import('@agoric/internal').ERemote<StorageNode>} */
+  /** @type {null | ERemote<StorageNode>} */
   let node = await chainStorage;
   if (!node) {
     console.error('testLocalChain no chainStorage');
@@ -72,7 +80,13 @@ export const testLocalChain = async (
         },
       );
 
-    const emptyQuery = await E(localchain).queryMany([]);
+    // queryMany's generic signature can't bind through the E() membrane here,
+    // so view localchain through a minimal non-generic interface for this call.
+    const lc =
+      /** @type {{ queryMany(reqs: unknown[]): Promise<unknown[]> }} */ (
+        localchain
+      );
+    const emptyQuery = await E(lc).queryMany([]);
     console.info('emptyQuery', emptyQuery);
     if (emptyQuery.length !== 0) {
       throw Error('emptyQuery results should be empty');
@@ -80,7 +94,7 @@ export const testLocalChain = async (
 
     const tap = Far(
       'Localchain Tap',
-      /** @type {import('../bridge-target.js').TargetApp} */ ({
+      /** @type {TargetApp} */ ({
         async receiveUpcall(obj) {
           console.info('=== localchain test tap received upcall', obj);
           await E(E(node).makeChildNode('tap')).setValue(JSON.stringify(obj));

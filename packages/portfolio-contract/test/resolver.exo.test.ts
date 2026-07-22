@@ -9,19 +9,38 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import type { ZCF } from '@agoric/zoe';
 import { makeHeapZone } from '@agoric/zone';
 import type { TestFn } from 'ava';
+import { mustMatch } from '@endo/patterns';
 import { TxStatus, TxType } from '../src/resolver/constants.js';
 import { prepareResolverKit } from '../src/resolver/resolver.exo.ts';
-import type { PublishedTx } from '../src/resolver/types.ts';
+import { PublishedTxShape, type PublishedTx } from '../src/resolver/types.ts';
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
-const makeTestContext = async _t => {
+const RESOLVER_SUPPORTED_TRANSACTIONS: TxType[] = [
+  TxType.CCTP_TO_EVM,
+  TxType.GMP,
+  TxType.ROUTED_GMP,
+  TxType.MAKE_ACCOUNT,
+];
+
+const makeTestContext = async t => {
   const nodeUpdates: Record<string, PublishedTx> = {};
   const makeMockNode = (here: string) => {
     return harden({
       makeChildNode: (name: string) => makeMockNode(`${here}.${name}`),
       setValue: (value: string) => {
-        nodeUpdates[here] = defaultMarshaller.fromCapData(JSON.parse(value));
+        const nodeValue = defaultMarshaller.fromCapData(JSON.parse(value));
+        nodeUpdates[here] = nodeValue;
+
+        if (
+          /pendingTxs\.tx\d+/.test(here) &&
+          RESOLVER_SUPPORTED_TRANSACTIONS.includes(nodeValue.type)
+        ) {
+          t.notThrows(
+            () => mustMatch(nodeValue, PublishedTxShape, here),
+            `node ${here} should match PublishedTx shape`,
+          );
+        }
       },
     }) as unknown as StorageNode;
   };
@@ -186,6 +205,34 @@ test('resolver creates correct types for different TxTypes', async t => {
     500n,
   );
 
+  // Test MAKE_ACCOUNT transaction without amount
+  client.registerTransaction(
+    TxType.MAKE_ACCOUNT,
+    'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+    undefined,
+    '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    'cosmos:agoric-3:agoric1mockaccountaddress',
+    '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+  );
+
+  // legacy GMP ignores expectedAddr and factoryAddr
+  client.registerTransaction(
+    TxType.GMP,
+    'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+    undefined,
+    '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    'cosmos:agoric-3:agoric1mockaccountaddress',
+    '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+  );
+
+  // ROUTED_GMP setup
+  const { txId: routedGmpTxId } = client.createPendingTx({
+    type: TxType.ROUTED_GMP,
+    destinationAddress: 'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+    sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+    incomplete: true,
+  });
+
   await eventLoopIteration();
 
   t.deepEqual(
@@ -219,13 +266,85 @@ test('resolver creates correct types for different TxTypes', async t => {
       status: TxStatus.PENDING,
       amount: 500n,
     },
-    'NOBLE_WITHDRAW transaction has correct type and includes amount',
+    'CCTP_TO_AGORIC transaction has correct type and includes amount',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx3'],
+    {
+      type: TxType.MAKE_ACCOUNT,
+      destinationAddress:
+        'eip155:42161:0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+      status: TxStatus.PENDING,
+      expectedAddr: '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+      factoryAddr: '0x8B3f9b3d2e0c9c7e8f9d3e0c9c7e8f9d3e0c9c7e',
+    },
+    'MAKE_ACCOUNT transaction has correct type and excludes amount',
+  );
+
+  t.deepEqual(
+    nodeUpdates['pendingTxs.tx4'],
+    {
+      type: TxType.GMP,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      status: TxStatus.PENDING,
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+    },
+    'GMP legacy does not include expectedAddr and factoryAddr',
+  );
+
+  t.deepEqual(
+    nodeUpdates[`pendingTxs.${routedGmpTxId}`],
+    {
+      type: TxType.ROUTED_GMP,
+      status: TxStatus.SETUP,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+      incomplete: true,
+    },
+    'ROUTED_GMP setup',
+  );
+
+  // ROUTED_GMP update
+  client.updateTxMeta(routedGmpTxId, {
+    type: TxType.ROUTED_GMP,
+    destinationAddress: 'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+    sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+    payloadHash: '0xabcdef1234567890',
+    details: {
+      instructionSelector: '0x12345678',
+      instructionType: 'RemoteAccountExecute',
+      expectedRemoteTargetAddress: '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+    },
+  });
+
+  await eventLoopIteration();
+
+  t.deepEqual(
+    nodeUpdates[`pendingTxs.${routedGmpTxId}`],
+    {
+      type: TxType.ROUTED_GMP,
+      status: TxStatus.PENDING,
+      destinationAddress:
+        'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      sourceAddress: 'cosmos:agoric-3:agoric1mockaccountaddress',
+      payloadHash: '0xabcdef1234567890',
+      details: {
+        instructionSelector: '0x12345678',
+        instructionType: 'RemoteAccountExecute',
+        expectedRemoteTargetAddress:
+          '0x1A1ec25DC08e98e5E93F1104B5e5cd73e96cd0De',
+      },
+    },
+    'ROUTED_GMP updated to pending',
   );
 });
 
-// XXX: figure out why failing settlement crashes the entire transaction.
-test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => {
-  const { nodeUpdates, makeResolverKit } = t.context;
+test('resolver sets status to SUCCESS or FAILED on settlement', async t => {
+  const { nodeUpdates, makeResolverKit, vowTools } = t.context;
 
   const { client, service } = makeResolverKit();
 
@@ -235,11 +354,13 @@ test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => 
     'eip155:1:0x742d35Cc6631C0532925a3b8D7389D026f2077c3',
     100n,
   );
+  const whenSuccessTxResult = vowTools.when(successTx.result);
 
   const failedTx = client.registerTransaction(
     TxType.GMP,
     'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
   );
+  const whenFailedTxResult = vowTools.when(failedTx.result);
 
   await eventLoopIteration();
 
@@ -297,11 +418,19 @@ test.skip('resolver sets status to SUCCESS or FAILED on settlement', async t => 
     {
       destinationAddress:
         'eip155:137:0x9e1028F5F1D5eDE59748FFceC5532509976840E0',
+      rejectionReason: 'Network timeout',
       type: TxType.GMP,
       status: TxStatus.FAILED,
     },
     'second transaction settles as failed with correct data',
   );
+
+  await t.throwsAsync(
+    whenFailedTxResult,
+    { message: /Network timeout/ },
+    'failed tx promise rejects with reason',
+  );
+  await t.notThrowsAsync(whenSuccessTxResult, 'successful tx promise resolves');
 });
 
 test('resolver can find incoming CCTP txs by amount', async t => {

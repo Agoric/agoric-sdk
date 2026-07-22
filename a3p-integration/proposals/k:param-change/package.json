@@ -1,15 +1,16 @@
 {
+  "name": "k:param-change",
   "agoricProposal": {
     "type": "/cosmos.params.v1beta1.ParameterChangeProposal"
   },
   "type": "module",
   "license": "Apache-2.0",
-  "packageManager": "yarn@4.9.3",
+  "packageManager": "yarn@4.12.0",
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.6.1",
+    "@agoric/synthetic-chain": "^0.7.1",
     "agoric": "dev"
   },
   "devDependencies": {

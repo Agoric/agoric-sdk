@@ -1,4 +1,6 @@
 // @ts-check
+import '@endo/init/debug.js';
+
 import test from 'ava';
 
 import { Far, getInterfaceOf, makeMarshal, passStyleOf } from '@endo/marshal';
@@ -9,6 +11,7 @@ import { wrapRemoteMarshallerSendSlotsOnly as wrapRemoteMarshaller } from '../sr
 /**
  * @import {Marshal} from '@endo/marshal';
  * @import {Farable} from '@endo/exo';
+ * @import {ExecutionContext} from 'ava';
  */
 
 /**
@@ -66,7 +69,7 @@ const makeMockMarshaller = ({
 };
 
 /**
- * @param {import('ava').ExecutionContext} t
+ * @param {ExecutionContext} t
  * @param {any} val
  */
 const checkRemoteMarshallerValueInvariants = (t, val) => {
@@ -89,6 +92,10 @@ const checkRemoteMarshallerValueInvariants = (t, val) => {
   t.true(hasCap);
 };
 
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {unknown} val
+ */
 const unexpectedMarshallerInvocation = (t, val) => {
   t.log('Unexpected marshalled value', val);
   t.fail('Remote marshaller should not have been invoked');
@@ -222,6 +229,7 @@ const withNullAndNonNullSlots = test.macro(async (t, { withCache }) => {
   const sharedCap = Far('shared', { sentinel() {} });
 
   const mockSotToVal = new Map();
+  /** @type {WeakMap<object, string>} */
   const mockValToSlot = new WeakMap();
 
   let valueHookCalled = false;

@@ -23,6 +23,7 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
  * @import {OrchestrationTools, OrchestrationPowers} from '../utils/start-helper.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
  * @import {AmountArg, CosmosChainAddress, CosmosValidatorAddress} from '../types.js';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const emptyOfferShape = harden({
@@ -38,13 +39,13 @@ const emptyOfferShape = harden({
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Remote<Marshaller>;
- * }} privateArgs
+ * }} _privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
 const contract = async (
   zcf,
-  privateArgs,
+  _privateArgs,
   zone,
   { orchestrateAll, zoeTools, chainHub },
 ) => {

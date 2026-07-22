@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import { makeMarshal } from '@endo/marshal';
 import test from 'ava';
 import { Command } from 'commander';

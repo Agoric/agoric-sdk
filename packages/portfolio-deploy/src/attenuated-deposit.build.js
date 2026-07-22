@@ -3,9 +3,10 @@
  */
 
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForAttenuatedDeposit } from './attenuated-deposit.core.js';
+import { getManifestForAttenuatedDeposit } from '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
 
-const sourceSpec = './attenuated-deposit.core.js';
+const sourceSpec =
+  '@agoric/deploy-script-support/src/control/attenuated-deposit.core.js';
 
 /**
  * @satisfies {CoreEvalBuilder}

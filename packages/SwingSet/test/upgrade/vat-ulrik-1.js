@@ -11,6 +11,10 @@ import {
   watchPromise,
 } from '@agoric/vat-data';
 
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 // we set up a lot of ephemeral, merely-virtual, and durable objects
 // holding references to imported objects
 // to test what gets deleted vs retained (see object-graph.pdf for the test plan)
@@ -49,8 +53,8 @@ const makeWatcher = defineDurableKind(
 let modRetains;
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {[unknown, ...object]} imp
+ * @param {Baggage} baggage
+ * @param {[unknown, ...any[]]} imp
  * Objects to import, preceded by a dummy element.
  * The `imp` name itself is three characters long for visual similarity
  * with `vir` and `dur` analogs.
@@ -60,9 +64,9 @@ const buildExports = (baggage, imp) => {
   // for debugging, these arrays start with a dummy element so
   // the vref of each contained object (o+X/NN where NN starts at 1)
   // is aligned with its index
-  /** @type {[string, ...object]} */
+  /** @type {[string, ...any[]]} */
   const vir = ['skip0'];
-  /** @type {[string, ...object]} */
+  /** @type {[string, ...any[]]} */
   const dur = ['skip0'];
   for (let i = 1; i < imp.length; i += 1) {
     vir.push(makeVir(`v${i}`, imp[i], { name: `v${i}` }));

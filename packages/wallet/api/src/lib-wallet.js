@@ -42,7 +42,26 @@ import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makePaymentActions } from './actions.js';
 
-import './internal-types.js';
+/**
+ * @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {Handle, UserSeat, ZoeService} from '@agoric/zoe';
+ * @import {Purse} from '@agoric/ertp';
+ * @import {BrandRecord, Contact, DappRecord, Mapping, PaymentRecord, PursesFullState} from './internal-types.js';
+ * @import {InstallationManager, InstanceManager, IssuerManager, OfferState, PursesJSONState, RecordMetadata} from './types.js';
+ * @import {ERef} from '@agoric/vow';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
+ * @import {LegacyMap} from '@agoric/store';
+ * @import {NotifierRecord} from '@agoric/notifier';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Subscriber} from '@agoric/notifier';
+ * @import {Notifier} from '@agoric/notifier';
+ * @import {PromiseRecord} from '@endo/promise-kit';
+ */
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -58,12 +77,18 @@ const cmp = (a, b) => {
 };
 
 /**
+ * @import {Board} from '@agoric/vats';
+ * @import {MyAddressNameAdmin} from '@agoric/vats';
+ * @import {makeMarshal} from '@endo/marshal';
+ */
+
+/**
  * @param {{
  * agoricNames?: ERef<NameHub>
- * board: ERef<import('@agoric/vats').Board>
+ * board: ERef<Board>
  * dateNow?: () => number,
  * inboxStateChangeHandler?: (state: any) => void,
- * myAddressNameAdmin: ERef<import('@agoric/vats').MyAddressNameAdmin>
+ * myAddressNameAdmin: ERef<MyAddressNameAdmin>
  * namesByAddress?: ERef<NameHub>
  * pursesStateChangeHandler?: (state: any) => void,
  * zoe: ERef<ZoeService>,
@@ -131,9 +156,9 @@ export function makeWalletRoot({
     'contact',
     { useLegacyMap: true }, // because contacts have identity!
   );
-  /** @type {Mapping<Instance>} */
+  /** @type {Mapping<Instance<any>>} */
   const instanceMapping = makeMapping('instance');
-  /** @type {Mapping<Installation>} */
+  /** @type {Mapping<Installation<any>>} */
   const installationMapping = makeMapping('installation');
 
   const brandTable = makeIssuerTable();
@@ -566,7 +591,7 @@ export function makeWalletRoot({
 
   // handle the update, which has already resolved to a record. The update means
   // the offer is 'done'.
-  function updateOrResubscribe(id, seat, update) {
+  function updateOrResubscribe(id, _seat, update) {
     const { updateCount } = update;
     assert(updateCount === undefined);
     idToSeat.delete(id);
@@ -1224,6 +1249,7 @@ export function makeWalletRoot({
           if (!exited) {
             return subscribeToUpdates(id, seat);
           }
+          return undefined;
         });
 
       const offerResultP = E(seat).getOfferResult();
@@ -1264,11 +1290,10 @@ export function makeWalletRoot({
   const { updater: paymentsUpdater, notifier: paymentsNotifier } =
     /** @type {NotifierRecord<PaymentRecord[]>} */ (makeNotifierKit([]));
   /**
-   * @param {PaymentRecord} param0
+   * @param {PaymentRecord & {displayPayment?: ReturnType<typeof fillInSlots>}} param0
    */
   const updatePaymentRecord = ({ actions, ...preDisplay }) => {
     // in case we have been here before...
-    // @ts-expect-error
     delete preDisplay.displayPayment;
     const displayPayment = fillInSlots(dehydrate(harden(preDisplay)));
     const paymentRecord = addMeta({
@@ -1690,7 +1715,7 @@ export function makeWalletRoot({
 
   const firstPathToLookup = createRootLookups();
 
-  /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>} */
+  /** @type {ReturnType<typeof makeMarshal>} */
   const marshaller = harden({
     fromCapData: context.fromCapData,
     toCapData: context.toCapData,

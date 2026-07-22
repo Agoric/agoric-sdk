@@ -22,6 +22,9 @@ import { crc6 } from './crc.js';
  * @import {RemotableObject} from '@endo/pass-style';
  * @import {CapData} from '@endo/marshal';
  * @import {Key} from '@endo/patterns';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Zone} from '@agoric/zone';
+ * @import {MapStore} from '@agoric/store';
  */
 
 export const DEFAULT_CRC_DIGITS = 2;
@@ -246,7 +249,7 @@ const makePublishingMarshaller = state => {
  * installation handles) and plain-data string IDs. A well-known board allows
  * sharing objects by way of their ids.
  *
- * @param {import('@agoric/vat-data').Baggage} baggage for upgrade successors
+ * @param {Baggage} baggage for upgrade successors
  * @see {@link packages/SwingSet/docs/vat-upgrade.md|Vat Upgrade}
  */
 export const prepareBoardKit = baggage => {
@@ -369,7 +372,7 @@ export const prepareBoardKit = baggage => {
   );
 };
 
-/** @param {import('@agoric/zone').Zone} zone */
+/** @param {Zone} zone */
 export const prepareRecorderFactory = zone => {
   const baggage = zone.mapStore(`Recorder Baggage`);
   const makeDurablePublishKit = prepareDurablePublishKit(

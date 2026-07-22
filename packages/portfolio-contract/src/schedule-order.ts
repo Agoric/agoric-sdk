@@ -2,6 +2,7 @@
  * @file schedule async tasks based on partial order
  * @see {runJob}
  */
+import { partialMap } from '@agoric/internal/src/js-utils.js';
 
 /** zero based index */
 type Ix = number;
@@ -35,9 +36,9 @@ const cycleCheck = (
 
   /** keys with empty dependencies are omitted */
   const order: Map<Ix, Set<Ix>> = new Map(
-    orderArray.flatMap(([ix, deps]) =>
-      deps.length > 0 ? [[checkNode(ix), new Set(deps.map(checkNode))]] : [],
-    ),
+    partialMap(orderArray, ([ix, deps]) => {
+      return deps.length > 0 && [checkNode(ix), new Set(deps.map(checkNode))];
+    }),
   );
 
   const hasCycle = (node: Ix): boolean => {
@@ -84,6 +85,10 @@ export const runJob = async (
   job: Job,
   runTask: (ix: Ix, running: number[]) => Promise<void>,
   trace: (...args: unknown[]) => void,
+  makeError = (ix: Ix, reason) =>
+    Error(`predecessor ${ix} failed`, {
+      cause: reason,
+    }),
 ): Promise<PromiseSettledResult<void>[]> => {
   const running = new Map<Ix, Promise<Ix>>();
 
@@ -96,11 +101,12 @@ export const runJob = async (
   const results = taskIxs.map(_ => ok);
 
   const failTaskAndAncestors = (ix: Ix, reason: unknown) => {
+    if (results[ix]?.status === 'rejected') return;
     trace('fail', ix, reason);
     todo.delete(ix);
     results[ix] = { status: 'rejected', reason };
 
-    const cascade = Error(`predecessor ${ix} failed`, { cause: reason });
+    const cascade = makeError(ix, reason);
     for (const [candidate, deps] of order.entries()) {
       if (deps.has(ix)) {
         failTaskAndAncestors(candidate, cascade);
@@ -110,7 +116,7 @@ export const runJob = async (
 
   await null;
 
-  while (todo.size > 0) {
+  while (todo.size > 0 || running.size > 0) {
     const runnable = [...todo].filter(v => ready(v) && !running.has(v));
     // trace('runnable', ...runnable);
     if (!runnable.length && !running.size) {
@@ -118,7 +124,15 @@ export const runJob = async (
       throw Error('Job dependency loop prevents completion.');
     }
     for (const ix of runnable) {
-      const done = runTask(ix, [...running.keys(), ix])
+      const runningNow = [...running.keys(), ix];
+      let taskP: Promise<void>;
+      try {
+        taskP = runTask(ix, runningNow);
+      } catch (reason) {
+        failTaskAndAncestors(ix, reason);
+        taskP = Promise.resolve();
+      }
+      const done = Promise.resolve(taskP)
         .then(() => {
           trace('done', ix);
           return ix;
@@ -132,7 +146,7 @@ export const runJob = async (
       trace('started', ix, 'running', ...running.keys());
     }
 
-    if (running.size === 0) break;
+    if (running.size === 0) continue;
 
     // The following `await` cannot throw because every promise in `running`
     // already has a .catch() handler (attached above).

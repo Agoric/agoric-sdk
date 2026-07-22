@@ -1,5 +1,3 @@
-// @jessie-check
-
 import {
   AmountShape,
   AssetKindShape,
@@ -14,19 +12,25 @@ import { M } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
- * @import {AfterDeadlineExitRule, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {CastedPattern} from '@endo/patterns';
+ * @import {AfterDeadlineExitRule, Installation, ZoeIssuerRecord} from '@agoric/zoe';
+ * @import {ExitRule, Invitation, InvitationHandle, WaivedExitRule} from './types-index.js';
+ * @import {InvitationDetails} from './types-index.js';
  */
 
 // keywords have an initial cap
 export const KeywordShape = M.string();
 
-/** @type {TypedPattern<InvitationHandle>} */
+/** @type {CastedPattern<InvitationHandle>} */
 export const InvitationHandleShape = M.remotable('InvitationHandle');
-/** @type {TypedPattern<Invitation>} */
+// Invitation has two phantom type parameters (offerReturn `R` and
+// offerArgs `A`). Defaulting either to its bound (`unknown` or
+// `undefined`) makes the shape too narrow for callers whose impls have
+// specific R/A. Use `any` for both so the shape matches any invitation.
+/** @type {CastedPattern<Invitation<any, any>>} */
 export const InvitationShape = M.remotable('Invitation');
 export const InstanceHandleShape = M.remotable('InstanceHandle');
-/** @type {TypedPattern<Installation>} */
+/** @type {CastedPattern<Installation>} */
 export const InstallationShape = M.remotable('Installation');
 export const SeatShape = M.remotable('Seat');
 
@@ -46,7 +50,7 @@ export const IssuerPKeywordRecordShape = M.recordOf(
 );
 export const BrandKeywordRecordShape = M.recordOf(KeywordShape, BrandShape);
 
-/** @type {TypedPattern<ZoeIssuerRecord>} */
+/** @type {CastedPattern<ZoeIssuerRecord>} */
 export const IssuerRecordShape = M.splitRecord(
   {
     brand: BrandShape,
@@ -116,7 +120,7 @@ export const isOnDemandExitRule = exit => {
 harden(isOnDemandExitRule);
 
 /**
- * @param {import('./types-index.js').ExitRule} exit
+ * @param {ExitRule} exit
  * @returns {exit is WaivedExitRule}
  */
 export const isWaivedExitRule = exit => {
@@ -126,7 +130,7 @@ export const isWaivedExitRule = exit => {
 harden(isWaivedExitRule);
 
 /**
- * @param {import('./types-index.js').ExitRule} exit
+ * @param {ExitRule} exit
  * @returns {exit is AfterDeadlineExitRule}
  */
 export const isAfterDeadlineExitRule = exit => {
@@ -135,7 +139,7 @@ export const isAfterDeadlineExitRule = exit => {
 };
 harden(isAfterDeadlineExitRule);
 
-/** @type {TypedPattern<import('./types-index.js').InvitationDetails>} */
+/** @type {CastedPattern<InvitationDetails>} */
 export const InvitationElementShape = M.splitRecord({
   description: M.string(),
   handle: InvitationHandleShape,

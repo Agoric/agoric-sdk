@@ -7,6 +7,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
+import { prepareProgressTracker } from './progress.js';
 import { prepareOrchestrator } from '../exos/orchestrator.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { makeOrchestrationFacade } from '../facade.js';
@@ -15,7 +16,7 @@ import { makeZcfTools } from './zcf-tools.js';
 
 /**
  * @import {ERemote} from '@agoric/internal';
- * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  * @import {EMarshaller} from '@agoric/internal/src/marshal/wrap-marshaller.js';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {TimerService} from '@agoric/time';
@@ -25,6 +26,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @import {Zone} from '@agoric/zone';
  * @import {Pattern} from '@endo/patterns';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
+ * @import {ZCF} from '@agoric/zoe';
  */
 
 /**
@@ -103,9 +105,13 @@ export const provideOrchestration = (
     baggage,
     cachingMarshaller,
   );
+  const makeProgressTracker = prepareProgressTracker(zones.orchestration, {
+    vowTools,
+  });
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zones.orchestration,
     {
+      makeProgressTracker,
       makeRecorderKit,
       zcf,
       timerService,
@@ -124,6 +130,7 @@ export const provideOrchestration = (
     zones.orchestration,
     {
       chainHub,
+      makeProgressTracker,
       makeRecorderKit,
       timerService,
       vowTools,

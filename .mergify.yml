@@ -42,12 +42,26 @@ shared:
 merge_queue:
   max_parallel_checks: 1
   queued_label: null
+  dequeued_label: null
+  status_comments: none
 
 priority_rules:
   - name: high_priority
     conditions:
       - label=priority:high
     priority: high
+
+# Mergify's suggestion to ensure update_bot_account is set. The doc that say a random org user
+# will be picked is no longer accurate (https://docs.mergify.com/configuration/file-format/)
+defaults:
+  actions:
+    rebase:
+      # Copilot's commits are "copilot-swe-agent[bot]" but apparently the GH Author is "Copilot"
+      bot_account: "{% if '[bot]' in author or author == 'Copilot' %}mergify[bot]{% else %}{{ author }}{% endif %}"
+  queue_rule:
+    update_bot_account: "{% if '[bot]' in author or author == 'Copilot' %}mergify[bot]{% else %}{{ author }}{% endif %}"
+    merge_bot_account: 'mergify[bot]'
+    draft_bot_account: 'mergify[bot]'
 
 queue_rules:
   - name: rebase
@@ -91,6 +105,9 @@ pull_request_rules:
       - base=master
       - label=automerge:rebase
       - '#commits-behind=0'
+      - '#approved-reviews-by>=1'
+      - '#changes-requested-reviews-by=0'
+      - branch-protection-review-decision=APPROVED
       - or:
           - -linear-history
           - check-failure=no-fixup-commits

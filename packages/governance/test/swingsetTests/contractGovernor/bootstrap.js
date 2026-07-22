@@ -14,6 +14,11 @@ import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 
 /**
  * @import {ContractGovernanceVoteResult, GovernedPublicFacetMethods, GovernorCreatorFacet, ParamChangesSpec, QuestionDetails, SimpleIssue, StandardParamPath} from '../../../src/types.js';
+ * @import {EVatVoter} from './vat-voter.js';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {Instance} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -30,7 +35,7 @@ const voteToChangeParameter = async (
   contractFacetAccess,
   deadline,
 ) => {
-  /** @type {ParamChangesSpec<StandardParamPath>} */
+  /** @type {ParamChangesSpec} */
   const paramChangeSpec = harden({
     paramPath: { key: 'governedParams' },
     changes: { [MALLEABLE_NUMBER]: 299792458n },
@@ -110,7 +115,7 @@ const votersVote = async (detailsP, votersP, selections) => {
 };
 
 /**
- * @param {ERef<import('./vat-voter.js').EVatVoter[]>} votersP
+ * @param {ERef<EVatVoter[]>} votersP
  * @param {ERef<QuestionDetails>} detailsP
  * @param {ERef<Instance>} governedInstanceP
  * @param {Instance} electorateInstance
@@ -206,7 +211,7 @@ const setupOfferFilterChange = async (
   log,
   governor,
   installations,
-  invitation,
+  _invitation,
   strings = ['foo', 'bar:'],
 ) => {
   const filterChangeSpec = harden(strings);
@@ -250,7 +255,7 @@ const setupApiCall = async (zoe, log, governor, installations) => {
 const validateElectorateChange = async (
   zoe,
   log,
-  voters1,
+  _voters1,
   detailsP,
   governorInstance,
   electorateInstance,

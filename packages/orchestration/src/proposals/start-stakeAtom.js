@@ -8,8 +8,11 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 /**
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
- * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {IBCConnectionID} from '@agoric/network/ibc';
  * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stake-ica.contract.js';
+ * @import {start} from '../examples/stake-ica.contract.js';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {BootstrapPowers, StartUpgradableOpts} from '@agoric/vats/src/core/types.js';
  */
 
 const trace = makeTracer('StartStakeAtom', true);
@@ -18,9 +21,7 @@ const trace = makeTracer('StartStakeAtom', true);
  * @param {BootstrapPowers & {
  *   installation: {
  *     consume: {
- *       stakeIca: Installation<
- *         import('../examples/stake-ica.contract.js').start
- *       >;
+ *       stakeIca: Installation<typeof start>;
  *     };
  *   };
  * }} powers

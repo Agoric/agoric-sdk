@@ -14,6 +14,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import fetchedChainInfo from '../fetched-chain-info.js';
 import { makeZoeTools } from '../utils/zoe-tools.js';
+import { prepareProgressTracker } from '../utils/progress.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -21,6 +22,10 @@ import { makeZoeTools } from '../utils/zoe-tools.js';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 const trace = makeTracer('StakeBld');
@@ -34,7 +39,7 @@ const trace = makeTracer('StakeBld');
  *   storageNode: Remote<StorageNode>;
  *   timerService: TimerService;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
   const zone = makeDurableZone(baggage);
@@ -48,6 +53,10 @@ export const start = async (zcf, privateArgs, baggage) => {
     cachingMarshaller,
   );
   const vowTools = prepareVowTools(zone.subZone('vows'));
+  const makeProgressTracker = await prepareProgressTracker(
+    zone.subZone('orchestration'),
+    { vowTools },
+  );
 
   const chainHub = makeChainHub(
     zone.subZone('chainHub'),
@@ -60,6 +69,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     {
+      makeProgressTracker,
       makeRecorderKit,
       zcf,
       timerService,

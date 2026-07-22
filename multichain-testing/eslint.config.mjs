@@ -1,3 +1,4 @@
+/* eslint-disable -- going away soon */
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import globals from 'globals';
 import tsParser from '@typescript-eslint/parser';
@@ -15,11 +16,13 @@ const compat = new FlatCompat({
 });
 
 export default [
-  ...compat.extends(
-    'eslint:recommended',
-    'plugin:@typescript-eslint/recommended',
-    'prettier',
-  ),
+  {
+    ignores: [
+      '../packages/cosmic-proto/proto/',
+      '../packages/cosmic-proto/scripts/',
+    ],
+  },
+  ...compat.extends('@agoric', 'plugin:@agoric/recommended', 'prettier'),
   {
     plugins: {
       '@typescript-eslint': typescriptEslint,
@@ -34,6 +37,24 @@ export default [
     },
 
     rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+  {
+    files: ['**/*.ts'],
+
+    rules: {
+      // Not needed with TypeScript syntax
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-param-type': 'off',
+      'jsdoc/require-returns-type': 'off',
+      'no-undef': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {

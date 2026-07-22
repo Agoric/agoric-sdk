@@ -9,6 +9,12 @@ inputs:
     description: 'The relative path to the agoric-sdk directory'
     required: false
     default: '.'
+  ref:
+    default: ''
+    description:
+      'Ref of this repository to check out and build (default: the commit
+      that triggered the workflow)'
+    required: false
   keep-endo:
     description: 'Keep Endo repository after installing from it'
     required: false
@@ -42,7 +48,7 @@ runs:
         OUTPUT_NODE_VERSION="$VERSION_IDENTIFIER"
         case $VERSION_IDENTIFIER in
           node-old | xs)
-            OUTPUT_NODE_VERSION="20"
+            OUTPUT_NODE_VERSION="22"
             ;;
           node-new)
             OUTPUT_NODE_VERSION="24"
@@ -51,12 +57,13 @@ runs:
 
         echo "NODE_VERSION=$OUTPUT_NODE_VERSION" >> "$GITHUB_OUTPUT"
 
-    - uses: actions/checkout@v4
+    - id: checkout
+      uses: actions/checkout@v5
       with:
         clean: false
-        submodules: 'true'
-        persist-credentials: false
         path: ${{ inputs.path }}
+        persist-credentials: false
+        ref: ${{ inputs.ref }}
 
     # Select an Endo target against which to test, defaulting to 'NOPE' for use
     # of internally-referenced NPM packages but allowing overrides in the pull
@@ -65,7 +72,7 @@ runs:
     # `#endo-branch: rank-strings-by-codepoint`
     - name: Get the appropriate Endo branch
       id: endo-branch
-      uses: actions/github-script@v7
+      uses: actions/github-script@v8
       with:
         result-encoding: string
         script: |-
@@ -101,7 +108,7 @@ runs:
     - name: check out Endo if necessary
       id: endo-checkout
       if: steps.endo-branch.outputs.result != 'NOPE'
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         repository: endojs/endo
         path: ./replacement-endo
@@ -131,19 +138,22 @@ runs:
 
     # Set up for Corepack before trying to cache yarn. See
     # https://github.com/actions/setup-node/issues/899#issuecomment-1828798029.
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v5
       with:
         node-version: ${{ steps.set-node-version.outputs.NODE_VERSION }}
+        # Corepack is not enabled yet, so setup-node must not try to detect
+        # the yarn cache on this first pass.
+        package-manager-cache: false
 
     # Before setup-node because that action tries to discover the cache directory.
     # See https://github.com/actions/setup-node/issues/480#issuecomment-1915448139
     - shell: bash
       run: |
         set -ex
-        corepack enable
+        "${{ inputs.path }}/scripts/ensure-corepack-yarn.sh" "${{ inputs.path }}"
         mkdir -p "$(yarn config get cacheFolder)"
 
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v5
       with:
         node-version: ${{ steps.set-node-version.outputs.NODE_VERSION }}
         cache: yarn
@@ -159,10 +169,10 @@ runs:
 
     - name: restore built files
       id: built
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ${{ inputs.path }}
-        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ steps.set-node-version.outputs.NODE_VERSION }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
+        key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ steps.set-node-version.outputs.NODE_VERSION }}-built-${{ inputs.xsnap-random-init }}-${{ steps.checkout.outputs.commit }}-${{ steps.endo-sha.outputs.sha }}
 
     # This and the git diff below are to detect if `yarn install` results in a
     # change to the lock file.
@@ -214,12 +224,12 @@ runs:
         date > node_modules/.cache/agoric/yarn-built
 
     - name: Validate Git Tree Cleanliness
-      uses: pyTooling/Actions/with-post-step@v1.0.7
+      uses: pyTooling/Actions/with-post-step@v7.11.1
       with:
         main: |
-          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
+          bash -x "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
         post: |
-          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
+          bash -x "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"
       env:
         SRC: ${{ inputs.path }}
         IGNORE_DIRTY_YARN_LOCK: ${{ steps.endo-branch.outputs.result != 'NOPE' }}

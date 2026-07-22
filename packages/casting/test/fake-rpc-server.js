@@ -1,4 +1,4 @@
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 import './lockdown.js';
 
 import { makeMarshal } from '@endo/marshal';
@@ -7,6 +7,11 @@ import express from 'express';
 // import morgan from 'morgan';
 
 import { toAscii, toBase64 } from '@cosmjs/encoding';
+
+/**
+ * @import {ExecutionContext} from 'ava';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ */
 
 const chainName = 'fakeChain';
 
@@ -72,7 +77,7 @@ const fakeStatusResult = {
   },
 };
 
-/** @typedef {Partial<import('ava').ExecutionContext<{cleanups: Array<() => void>}>> & {context}} FakeServerTestContext */
+/** @typedef {Partial<ExecutionContext<{cleanups: Array<() => void>}>> & {context}} FakeServerTestContext */
 /**
  * @param {FakeServerTestContext} t
  * @param {Array<{any}>} fakeValues
@@ -94,13 +99,13 @@ export const startFakeServer = (t, fakeValues, options = {}) => {
       next();
     });
     app.use(express.json());
-    app.get('/bad-network-config', (req, res) => {
+    app.get('/bad-network-config', (_req, res) => {
       res.json({
         chainName,
         rpcAddrs: 'not an array',
       });
     });
-    app.get('/network-config', (req, res) => {
+    app.get('/network-config', (_req, res) => {
       res.json({
         chainName,
         rpcAddrs: [`http://localhost:${PORT}/tendermint-rpc`],

@@ -61,12 +61,17 @@ import {
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {KVStore} from '@agoric/internal/src/kv-store.js';
+ * @import {SwingStore} from '@agoric/swing-store';
+ * @import {StateSyncExporter} from './export-kernel-db.js';
+ * @import {ERef} from '@endo/far';
  */
 
 const ignore = () => {};
 
 const tmpDir = makeTempDirFactory(tmp);
 
+/** @type {Promise<unknown> | null} */
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
 
@@ -138,13 +143,13 @@ export const extractPortNums = action => {
 };
 
 /**
- * @template {unknown} [T=unknown]
+ * @template {{} | null} [T={} | null]
  * @param {(req: string) => string} call
  * @param {string} prefix
  * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
  * @param {(value: string) => T} fromBridgeStringValue
  * @param {(value: T) => string} toBridgeStringValue
- * @returns {import('./helpers/bufferedStorage.js').KVStore<T>}
+ * @returns {KVStore<T>}
  */
 const makePrefixedBridgeStorage = (
   call,
@@ -221,15 +226,15 @@ export const makeQueueStorage = (call, queuePath) => {
  * @param {string} stateDBDir
  * @param {object} options
  * @param {typeof process.env} [options.env]
- * @param {Pick<import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} options.fs
- * @param {Pick<import('path'), 'join' | 'resolve'>} options.path
- * @param {import('tmp')} options.tmp required to support vatSnapshotArchiveDir/vatTranscriptArchiveDir
+ * @param {Pick<typeof import('fs'), 'createWriteStream' | 'mkdirSync' | 'renameSync'>} options.fs
+ * @param {Pick<typeof import('path'), 'join' | 'resolve'>} options.path
+ * @param {typeof import('tmp')} options.tmp required to support vatSnapshotArchiveDir/vatTranscriptArchiveDir
  * @param {ReturnType<typeof makeProcessValue>} [options.processValue]
  * @param {() => Promise<void>} [options.readyForCommit]
  * @param {{
  *   debugName?: string,
  *   slogSender?: ERef<EReturn<typeof makeSlogSender>>,
- *   swingStore?: import('@agoric/swing-store').SwingStore,
+ *   swingStore?: SwingStore,
  *   vatconfig?: Parameters<typeof launch>[0]['vatconfig'],
  *   withInternals?: boolean,
  * }} [options.testingOverrides] Exposed only for testing purposes.
@@ -642,7 +647,7 @@ export default async function main(
   /**
    * @type {undefined | {
    *   blockHeight: number,
-   *   exporter?: import('./export-kernel-db.js').StateSyncExporter,
+   *   exporter?: StateSyncExporter,
    *   exportDir?: string,
    *   cleanup?: () => Promise<void>,
    * }}

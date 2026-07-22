@@ -12,6 +12,7 @@ import { eventLoopIteration } from './testing-utils.js';
 /**
  * @import {TotalMap} from './types.js';
  * @import {Marshaller, StorageEntry, StorageMessage, StorageNode, StreamCell} from './lib-chainStorage.js';
+ * @import {ExecutionContext} from 'ava';
  */
 
 const trace = makeTracer('StorTU', false);
@@ -238,7 +239,7 @@ export const makeFakeStorageKit = (
               try {
                 streamCell = JSON.parse(oldVal);
                 assert(isStreamCell(streamCell));
-              } catch (_err) {
+              } catch {
                 streamCell = undefined;
               }
               // StreamCells reset at block boundaries.
@@ -336,9 +337,7 @@ export const makeMockChainStorageRoot = () => {
     getBody: (path, marshaller = defaultMarshaller, index = -1) => {
       data.size || Fail`no data in storage`;
       /**
-       * @type {ReturnType<
-       *   typeof import('@endo/marshal').makeMarshal
-       * >['fromCapData']}
+       * @type {ReturnType<typeof makeMarshal>['fromCapData']}
        */
       const fromCapData = (...args) =>
         Reflect.apply(marshaller.fromCapData, marshaller, args);
@@ -349,7 +348,7 @@ export const makeMockChainStorageRoot = () => {
 };
 
 /**
- * @param {import('ava').ExecutionContext<unknown>} t
+ * @param {ExecutionContext<unknown>} t
  * @param {MockChainStorageRoot | FakeStorageKit} storage
  * @param {({ note: string } | { node: string; owner: string }) &
  *   ({ pattern: string; replacement: string } | {}) & {
@@ -379,20 +378,22 @@ export const documentStorageSchema = async (t, storage, opts) => {
       ? opts
       : { pattern: 'mockChainStorageRoot.', replacement: 'published.' };
 
-  const pruned = [...keys]
-    .sort()
-    .filter(
-      'node' in opts
-        ? key =>
-            key
-              .replace(pattern, replacement)
-              .startsWith(`published.${opts.node}`)
-        : _entry => true,
-    );
+  const nodePrefix = 'node' in opts ? `published.${opts.node}` : undefined;
+  /** @type {[key: string, publishedKey: string][]} */
+  const normalized = [];
+  for (const key of keys) {
+    const publishedKey = key.replace(pattern, replacement);
+    if (!nodePrefix || publishedKey.startsWith(nodePrefix)) {
+      normalized.push([key, publishedKey]);
+    }
+  }
+  normalized.sort(([left], [right]) =>
+    left < right ? -1 : left > right ? 1 : 0,
+  );
 
-  const illustration = pruned.map(
-    /** @type {(k: string) => [string, unknown]} */
-    key => [key.replace(pattern, replacement), getBody(key)],
+  const illustration = normalized.map(
+    /** @type {(entry: [string, string]) => [string, unknown]} */
+    ([key, publishedKey]) => [publishedKey, getBody(key)],
   );
 
   const note =

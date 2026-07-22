@@ -37,7 +37,7 @@ const preparePingee = zone =>
   });
 
 /**
- * @typedef {ReturnType<ReturnType<preparePingee>>} Pingee
+ * @typedef {ReturnType<ReturnType<typeof preparePingee>>} Pingee
  */
 
 const testMode = /** @type {const} */ ({
@@ -49,7 +49,7 @@ const testMode = /** @type {const} */ ({
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {testMode[keyof testMode]} [mode]
+ * @param {(typeof testMode)[keyof typeof testMode]} [mode]
  */
 const testFirstPlay = async (t, zone, mode = testMode.normal) => {
   t.log('testFirstPlay', mode);
@@ -139,7 +139,7 @@ const testFirstPlay = async (t, zone, mode = testMode.normal) => {
 /**
  * @param {any} t
  * @param {Zone} zone
- * @param {testMode[keyof testMode]} [mode]
+ * @param {(typeof testMode)[keyof typeof testMode]} [mode]
  */
 const testReplay = async (t, zone, mode = testMode.normal) => {
   t.log('testReplay', mode);

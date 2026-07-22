@@ -1,19 +1,11 @@
 // This file can contain .js-specific Typescript compiler config.
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    // Default is "esnext" but we need "nodenext" to support ESM in Node.js
-    "module": "nodenext",
-    // Default is "bundler" which is too lax
-    "moduleResolution": "nodenext",
-  },
   "include": [
-    "exported.js",
-    "demo/**/*.js",
-    "lib/**/*.js",
-    "misc-tools/**/*.js",
-    "src/**/*.js",
-    "src/**/*.ts",
+    "demo",
+    "lib",
+    "misc-tools",
+    "src",
     "test",
     "tools",
   ]

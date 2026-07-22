@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import { M } from '@endo/patterns';
 import {
   annihilate,
@@ -22,7 +24,12 @@ import { makeHeapZone } from '../heap.js';
 import { makeVirtualZone } from '../virtual.js';
 
 /**
- * @param {import('ava').Assertions} t
+ * @import {Assertions} from 'ava';
+ * @import {MapStore} from '@agoric/store';
+ */
+
+/**
+ * @param {Assertions} t
  * @param {MapStore} baggage
  */
 const testFirstVatDataIncarnation = (t, baggage) => {

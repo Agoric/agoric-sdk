@@ -1,7 +1,11 @@
 import { M } from '@endo/patterns';
 import { wrapperMethods } from './prepare-attenuator.js';
 
-/** @import {Amplify} from '@endo/exo'; */
+/**
+ * @import {Amplify} from '@endo/exo';
+ * @import {MethodGuard} from '@endo/patterns';
+ * @import {Zone} from '@agoric/base-zone';
+ */
 
 // This revocable kit implementation provides for both attenuation and
 // revocation, since both can be provided at the cost of one level of
@@ -60,7 +64,7 @@ import { wrapperMethods } from './prepare-attenuator.js';
  *   Defaults to the `uKindName`.
  * @property {Record<
  *   PropertyKey,
- *   import('@endo/patterns').MethodGuard
+ *   MethodGuard
  * >} [extraMethodGuards]
  * For guarding the `extraMethods`, if you include them below. These appear
  * only on the synthesized interface guard for the revocable caretaker, and
@@ -78,7 +82,7 @@ import { wrapperMethods } from './prepare-attenuator.js';
  * where the wrapper is a revocable forwarder.
  *
  * @template [U=any]
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
  * @param {PropertyKey[]} uMethodNames

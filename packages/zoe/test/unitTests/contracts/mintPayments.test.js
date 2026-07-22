@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
+import path from 'node:path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
@@ -26,8 +26,11 @@ test('zoe - mint payments', async t => {
         // pack the contract
         const bundle = await bundleSource(mintPaymentsRoot);
         // install the contract
-        vatAdminState.installBundle('b1-mintpayments', bundle);
-        const installationP = E(zoe).installBundleID('b1-mintpayments');
+        const b1mintpayments = vatAdminState.registerBundle(
+          'b1-mintpayments',
+          bundle,
+        );
+        const installationP = E(zoe).installBundleID(b1mintpayments);
         return installationP;
       },
       startInstance: async installation => {
@@ -102,8 +105,11 @@ test('zoe - mint payments with unrelated give and want', async t => {
         // pack the contract
         const bundle = await bundleSource(mintPaymentsRoot);
         // install the contract
-        vatAdminState.installBundle('b1-mintpayments', bundle);
-        const installationP = E(zoe).installBundleID('b1-mintpayments');
+        const b1mintpayments = vatAdminState.registerBundle(
+          'b1-mintpayments',
+          bundle,
+        );
+        const installationP = E(zoe).installBundleID(b1mintpayments);
         return installationP;
       },
       startInstance: async installation => {

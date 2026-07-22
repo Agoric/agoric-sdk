@@ -1,21 +1,27 @@
 import jsLPSolver from 'javascript-lp-solver';
-import type { IModel, IModelVariableConstraint } from 'javascript-lp-solver';
+import type {
+  IModel,
+  IModelVariableConstraint,
+  Solution,
+} from 'javascript-lp-solver';
 
-import { Fail } from '@endo/errors';
+import { assert, Fail, X } from '@endo/errors';
 
 import { AmountMath } from '@agoric/ertp';
-import type { Amount, NatAmount } from '@agoric/ertp/src/types.js';
+import type { NatAmount } from '@agoric/ertp/src/types.js';
 import {
-  makeTracer,
   naturalCompare,
   objectMap,
+  partialMap,
+  provideLazyMap,
   typedEntries,
 } from '@agoric/internal';
-import { EvmWalletOperationType } from '@agoric/portfolio-api/src/constants.js';
+import { EvmWalletOperationType } from '@agoric/portfolio-api';
 import type {
   AxelarChain,
+  FundsFlowPlan,
   YieldProtocol,
-} from '@agoric/portfolio-api/src/constants.js';
+} from '@agoric/portfolio-api';
 
 import type { AssetPlaceRef, MovementDesc } from '../src/type-guards-steps.js';
 import { PoolPlaces } from '../src/type-guards.js';
@@ -25,8 +31,8 @@ import {
   formatInfeasibleDiagnostics,
   validateSolvedFlows,
 } from './graph-diagnose.js';
-import { chainOf, makeGraphFromDefinition } from './network/buildGraph.js';
-import type { FlowEdge, RebalanceGraph } from './network/buildGraph.js';
+import { chainOf, makeGraphForFlow } from './network/buildGraph.js';
+import type { FlowEdge, FlowGraph } from './network/buildGraph.js';
 import type { NetworkSpec } from './network/network-spec.js';
 
 const replaceOrInit = <K, V>(
@@ -39,11 +45,70 @@ const replaceOrInit = <K, V>(
   map.set(key, callback(old, key, exists));
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const trace = makeTracer('solve');
+// #region XXX These probably belong in @agoric/internal.
+const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+const alphabetizeRecord = <T extends Record<string, unknown>>(obj: T) =>
+  Object.fromEntries(
+    Object.entries(obj).sort(([k1], [k2]) => compareStrings(k1, k2)),
+  );
+
+/**
+ * Return the absolute value of a bigint, similar to `Math.abs` (which doesn't
+ * work with bigints).
+ */
+export const bigintAbs = (x: bigint) => (x < 0n ? -x : x);
+
+/**
+ * Return the minimum and maximum bigint value from non-empty arguments, similar
+ * to `Math.min` and `Math.max` (which don't work with bigints).
+ */
+export const bigintExtremes = (first: bigint, ...rest: bigint[]) => {
+  let min = first;
+  let max = first;
+  for (const arg of rest) {
+    if (arg < min) min = arg;
+    if (arg > max) max = arg;
+  }
+  return { min, max };
+};
+
+/**
+ * Return the minimum bigint value from non-empty arguments, similar to
+ * `Math.min` (which doesn't work with bigints).
+ */
+export const bigintMin = (first: bigint, ...rest: bigint[]): bigint =>
+  bigintExtremes(first, ...rest).min;
+
+/**
+ * Return the maximum bigint value from non-empty arguments, similar to
+ * `Math.max` (which doesn't work with bigints).
+ */
+export const bigintMax = (first: bigint, ...rest: bigint[]): bigint =>
+  bigintExtremes(first, ...rest).max;
+// #endregion
+
+/** The count of minor units per major unit (e.g., uusdc per USDC) */
+const UNIT_SCALE = 1e6;
+
+export const NoSolutionError = class extends Error {} as ErrorConstructor;
+harden(NoSolutionError);
+
+const failUnsolvable = (
+  details: ReturnType<typeof X> | string,
+  cause?: Error,
+): never =>
+  assert.fail(
+    details,
+    ((...args) => Reflect.construct(NoSolutionError, args)) as ErrorConstructor,
+    { cause },
+  );
 
 /** Mode of optimization */
 export type RebalanceMode = 'cheapest' | 'fastest';
+
+/** For representing partial order in a flow graph */
+export type StepOrder = Required<FundsFlowPlan>['order'];
 
 /** Solver result edge */
 export interface SolvedEdgeFlow {
@@ -54,6 +119,7 @@ export interface SolvedEdgeFlow {
 
 /** Model shape for javascript-lp-solver */
 export type LpModel = IModel<string, string>;
+export type LpSolution = Solution<string>;
 
 /**
  * Gas estimation interface:
@@ -90,145 +156,167 @@ const FLOW_EPS = 1e-6;
 
 // ------------------------------ Model Building -------------------------------
 
-type IntVar = Record<
+type FlowVar = Record<
   | `allow_${string}`
   | `through_${string}`
   | `netOut_${string}`
-  | 'magnifiedVariableFee'
+  | 'variableFeeBps'
   | 'weight',
   number
 >;
-type BinaryVar = Record<
-  `allow_${string}` | 'magnifiedFlatFee' | 'timeFixed' | 'weight',
+type PickVar = Record<
+  `allow_${string}` | 'magnifiedFlatFee' | 'timeSec' | 'weight',
   number
 >;
 type WeightFns = {
-  getPrimaryWeights: (intVar: IntVar, binaryVar: BinaryVar) => number[];
-  setWeights: (intVar: IntVar, binaryVar: BinaryVar, epsilon: number) => void;
+  classifyWeights: (
+    flowVar: FlowVar,
+    pickVar: PickVar,
+  ) => { primary: number[]; other: number[] };
+  setWeights: (flowVar: FlowVar, pickVar: PickVar, epsilon?: number) => void;
 };
+
+const DEFAULT_SECONDARY_WEIGHT_EPSILON = 1e-6;
 
 const modeFns = new Map(
   typedEntries({
     cheapest: {
-      getPrimaryWeights: (intVar, binaryVar) => [
-        intVar.magnifiedVariableFee,
-        binaryVar.magnifiedFlatFee,
-      ],
-      setWeights: (intVar, binaryVar, epsilon) => {
+      classifyWeights: (flowVar, pickVar) => ({
+        primary: [flowVar.variableFeeBps, pickVar.magnifiedFlatFee],
+        other: [pickVar.timeSec],
+      }),
+      setWeights: (flowVar, pickVar, epsilon = 0) => {
         // Fees have full weight; time is weighted by epsilon.
-        intVar.weight = intVar.magnifiedVariableFee;
-        binaryVar.weight =
-          binaryVar.magnifiedFlatFee + binaryVar.timeFixed * epsilon;
+        flowVar.weight = flowVar.variableFeeBps;
+        pickVar.weight = pickVar.magnifiedFlatFee + pickVar.timeSec * epsilon;
       },
     },
     fastest: {
-      getPrimaryWeights: (_intVar, binaryVar) => [binaryVar.timeFixed],
-      setWeights: (intVar, binaryVar, epsilon) => {
+      classifyWeights: (flowVar, pickVar) => ({
+        primary: [pickVar.timeSec],
+        other: [flowVar.variableFeeBps, pickVar.magnifiedFlatFee],
+      }),
+      setWeights: (flowVar, pickVar, epsilon = 0) => {
         // Fees are weighted by epsilon; time has full weight.
-        intVar.weight = intVar.magnifiedVariableFee * epsilon;
-        binaryVar.weight =
-          binaryVar.timeFixed + binaryVar.magnifiedFlatFee * epsilon;
+        flowVar.weight = flowVar.variableFeeBps * epsilon;
+        pickVar.weight = pickVar.timeSec + pickVar.magnifiedFlatFee * epsilon;
       },
     },
   } as Record<RebalanceMode, WeightFns>),
 );
 
 /**
- * Build LP/MIP model for javascript-lp-solver.
+ * Build LP/MIP model for javascript-lp-solver, expressing amounts in major
+ * units with floating point values (e.g., `1.5` for 1.5 USDC from 1_500_000n
+ * uusdc).
  */
 export const buildLPModel = (
-  graph: RebalanceGraph,
+  graph: FlowGraph,
   mode: RebalanceMode,
 ): LpModel => {
-  const { getPrimaryWeights, setWeights } =
+  const { classifyWeights, setWeights } =
     modeFns.get(mode) || Fail`unknown mode ${mode}`;
 
-  const intVariables = {} as Record<`via_${string}`, IntVar>;
-  const binaryVariables = {} as Record<`pick_${string}`, BinaryVar>;
+  const flowVariables = {} as Record<`via_${string}`, FlowVar>;
+  const pickVariables = {} as Record<`pick_${string}`, PickVar>;
   const couplingConstraints = {} as Record<string, IModelVariableConstraint>;
   const throughputConstraints = {} as Record<string, IModelVariableConstraint>;
   const netFlowConstraints = {} as Record<string, IModelVariableConstraint>;
-  let minPrimaryWeight = Infinity;
+  let [minPrimaryWeight, maxSecondaryWeight] = [Infinity, -Infinity];
   for (const edge of graph.edges) {
     const { id, src, dest } = edge;
-    const { capacity, min, variableFee, fixedFee = 0, timeFixed = 0 } = edge;
+    const { capacity, min, variableFeeBps, flatFee = 0n, timeSec = 0 } = edge;
 
+    // Scale capacity to major units; handle min via coupling because a nonzero
+    // min here would force the solver to pick otherwise unnecessary arcs.
     throughputConstraints[`through_${id}`] = {
-      min: min || 0,
-      max: capacity,
+      min: 0,
+      max: capacity === undefined ? undefined : Number(capacity) / UNIT_SCALE,
     };
-
-    // The numbers in graph.supplies should use the same units as fixedFee, but
-    // variableFee is in basis points relative to some scaling of those other
-    // values.
-    // We also want fee attributes large enough to avoid IEEE 754 rounding
-    // issues.
-    // Assume that scaling to be 1e6 (i.e., 100 bp = 1% of supplies[key]/1e6)
-    // and scale the fee attributes accordingly such that variableFee 100 will
-    // contribute a weight of 0.01 for each `via_$edge` atomic unit of payload
-    // (i.e., magnified by 1e6 if the scaling is actually 1e6) and fixedFee 1
-    // will contribute a weight of 1e6 if the corresponding edge is used (i.e.,
-    // also magnified by 1e6 if the scaling is actually 1e6).
-    // The solution may be disrupted by either over- or under-weighting
-    // variableFee w.r.t. fixedFee, but not otherwise, and we accept the risk.
-    // TODO: Define RebalanceGraph['scale'] to eliminate this guesswork.
-    const magnifiedVariableFee = variableFee / 10_000;
-    const magnifiedFlatFee = fixedFee * 1e6;
 
     // Dynamic costs for this edge are associated with the numeric `via_${id}`
     // variable, and fixed costs are associated with the binary `pick_${id}`.
     // We couple them together with a shared `allow_${id}` attribute that has a
-    // tiny negative value for the former and an enormous positive value for the
+    // small negative value for the former and a large positive value for the
     // latter, and a constraint that the total sum be non-negative.
     // So any `via_${id}` dynamic flow requires activation of `pick_${id}`,
     // which adds enough `allow_${id}` to cover all of the flow.
     couplingConstraints[`allow_${id}`] = { min: 0 };
-    const FORCE_PICK = -1e-6;
-    const COVER_FLOW = 1e9;
+    const FORCE_PICK = -1;
+    const COVER_FLOW = 1e12;
+    if (min !== undefined) {
+      // This arc has a defined minimum that applies whenever it used, which we
+      // represent as a *maximum* bound on the coupling attribute such that
+      // there must be enough `via_${id}` throughput to reduce the sum by a
+      // correspondingly high amount from the COVER_FLOW starting point
+      // established by `pick_${id}`.
+      const scaledMin = Number(min) / UNIT_SCALE;
+      couplingConstraints[`allow_${id}`].max = COVER_FLOW - scaledMin;
+    }
 
-    const intVar: IntVar = {
+    const flowVar: FlowVar = {
       [`allow_${id}`]: FORCE_PICK,
       [`through_${id}`]: 1,
       [`netOut_${src}`]: 1,
       [`netOut_${dest}`]: -1,
-      magnifiedVariableFee,
+      variableFeeBps,
       weight: 0, // increased below
     };
-    intVariables[`via_${id}`] = intVar;
+    flowVariables[`via_${id}`] = flowVar;
 
-    const binaryVar = {
+    // Basing weight on unscaled variableFeeBps is an an implicit magnification
+    // by 1e4 to hundreds of minor units/thousandths of major units (e.g.,
+    // 100 bps = 1% of 1.5 USDC is actually 0.015 USDC but manifests as 150),
+    // and flatFee (which is in minor units) should follow suit such that e.g.
+    // 123 uusdc = 0.000123 USDC manifests as 1.23.
+    const magnifiedFlatFee = (Number(flatFee) * 1e4) / UNIT_SCALE;
+
+    const pickVar: PickVar = {
       [`allow_${id}`]: COVER_FLOW,
       magnifiedFlatFee,
-      timeFixed,
+      timeSec,
       weight: 0, // increased below
     };
-    binaryVariables[`pick_${id}`] = binaryVar;
+    pickVariables[`pick_${id}`] = pickVar;
 
-    // Keep track of the lowest non-zero primary weight for `mode`.
+    // Track the gap between primary and non-primary non-zero weights.
+    const weights = classifyWeights(flowVar, pickVar);
     minPrimaryWeight = Math.min(
       minPrimaryWeight,
-      ...getPrimaryWeights(intVar, binaryVar).map(n => n || Infinity),
+      ...weights.primary.map(n => n || Infinity),
+    );
+    maxSecondaryWeight = Math.max(
+      maxSecondaryWeight,
+      ...weights.other.map(n => n || -Infinity),
     );
   }
 
-  // Finalize the weights.
-  const epsilonWeight = Number.isFinite(minPrimaryWeight)
-    ? minPrimaryWeight / 1e6
-    : 1e-9;
+  // Finalize the weights, trying to leave 100x overhead between primary and
+  // non-primary contributions.
+  const maxExpectedFlow = Math.max(
+    ...Object.values(graph.supplies).map(x => Math.abs(x) / UNIT_SCALE),
+  );
+  // XXX This tiebreaker logic caused too much instability, cf. PAK-395.
+  // For now, consider *only* the primary.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const epsilonWeight =
+    Number.isFinite(minPrimaryWeight) && Number.isFinite(maxSecondaryWeight)
+      ? minPrimaryWeight / (maxSecondaryWeight * maxExpectedFlow * 100)
+      : DEFAULT_SECONDARY_WEIGHT_EPSILON;
   for (const { id } of graph.edges) {
     setWeights(
-      intVariables[`via_${id}`],
-      binaryVariables[`pick_${id}`],
-      epsilonWeight,
+      flowVariables[`via_${id}`],
+      pickVariables[`pick_${id}`],
+      // epsilonWeight,
     );
     // No arc is free.
-    binaryVariables[`pick_${id}`].weight += 1;
+    pickVariables[`pick_${id}`].weight += 1;
   }
 
   // Constrain the net flow from each node.
   for (const node of graph.nodes) {
     const supply = graph.supplies[node] || 0;
-    netFlowConstraints[`netOut_${node}`] = { equal: supply };
+    netFlowConstraints[`netOut_${node}`] = { equal: supply / UNIT_SCALE };
   }
 
   return {
@@ -239,15 +327,66 @@ export const buildLPModel = (
       ...throughputConstraints,
       ...netFlowConstraints,
     },
-    binaries: objectMap(binaryVariables, () => true),
-    ints: objectMap(intVariables, () => true),
-    variables: { ...binaryVariables, ...intVariables },
+    binaries: objectMap(pickVariables, () => true),
+    ints: {},
+    variables: { ...pickVariables, ...flowVariables },
   };
 };
 
 /**
+ * Refine a coarse model of floating-point major-unit amount values and a
+ * corresponding solution into a narrow model of integer minor-unit amount
+ * values along only selected arcs.
+ */
+const refineModel = (
+  fullModel: LpModel,
+  graph: FlowGraph,
+  solution: LpSolution,
+): LpModel => {
+  const cloned = JSON.parse(JSON.stringify(fullModel));
+  cloned.binaries = {};
+  cloned.ints = {};
+  for (const edge of graph.edges) {
+    const { id, capacity, min } = edge;
+    const pickVar = `pick_${id}`;
+    const flowVar = `via_${id}`;
+    const allowKey = `allow_${id}`;
+    if ((solution[flowVar] ?? 0) >= FLOW_EPS) {
+      cloned.binaries[pickVar] = true;
+      cloned.ints[flowVar] = true;
+
+      // Now that we've selected our arcs, minimums *do* apply directly.
+      cloned.constraints[`through_${id}`] = {
+        min: min === undefined ? undefined : Number(min),
+        max: capacity === undefined ? undefined : Number(capacity),
+      };
+      delete cloned.constraints[allowKey].max;
+
+      // Scaling by too much here would introduce numerical instability, so we
+      // cap it and rely on the inherent headroom of our coupling constraints
+      // (@see {@link buildLPModel}).
+      const allowScale = Math.min(1000, UNIT_SCALE);
+      cloned.variables[pickVar][allowKey] *= allowScale;
+
+      cloned.variables[pickVar].weight =
+        (cloned.variables[pickVar].weight - 1) * UNIT_SCALE + 1;
+    } else {
+      delete cloned.variables[pickVar];
+      delete cloned.variables[flowVar];
+      delete cloned.constraints[`allow_${id}`];
+      delete cloned.constraints[`through_${id}`];
+    }
+  }
+  for (const node of graph.nodes) {
+    const supply = graph.supplies[node] || 0;
+    cloned.constraints[`netOut_${node}`] = { equal: supply };
+  }
+  return cloned;
+};
+
+/**
  * Represent a JSON-serializable object as a spacey single-line literal with
- * identifier-compatible property names unquoted.
+ * identifier-compatible property names unquoted and number digits grouped.
  */
 const prettyJsonable = (obj: unknown): string => {
   const jsonText = JSON.stringify(obj, null, 1);
@@ -257,8 +396,24 @@ const prettyJsonable = (obj: unknown): string => {
     strings.push(s);
     return '#';
   });
-  // Condense the [now guaranteed-insignificant] whitespace.
-  const singleLine = safe.replace(/\s+/g, ' ');
+  // Condense the [now guaranteed-insignificant] whitespace and insert
+  // underscores to separate digits into groups of 3.
+  const singleLine = safe
+    .replace(/\s+/g, ' ')
+    .replace(/([0-9]+)([.][0-9]+)?/g, (_x, w, f = '') => {
+      const wCount = w.length;
+      const wGroups = w.slice(wCount % 3).match(/[0-9]{3}/g) || [];
+      if (wCount % 3) wGroups.unshift(w.slice(0, wCount % 3));
+
+      const fGroups = f.match(/[0-9]{1,3}/g) || [];
+      const lastFGroup = fGroups.pop();
+      if (lastFGroup) {
+        fGroups.push(lastFGroup.padEnd(3, '0'));
+        fGroups[0] = `.${fGroups[0]}`;
+      }
+
+      return `${wGroups.join('_')}${fGroups.join('_')}`;
+    });
   // Restore the strings, stripping quotes from property names as possible.
   const pretty = singleLine.replaceAll('#', () => {
     const s = strings.shift() as string;
@@ -268,27 +423,85 @@ const prettyJsonable = (obj: unknown): string => {
   return pretty;
 };
 
-// This operation is async to allow future use of async solvers if needed
-export const solveRebalance = async (
-  model: LpModel,
-  graph: RebalanceGraph,
-): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
-  await null;
-  const solution = jsLPSolver.Solve(model, 1e-9);
+/**
+ * Translate opaque variable names associated with edges (e.g., "pick_e00" and
+ * "via_e99") into ordered human-readable records like
+ * `"e00": { arc: "@agoric->@Ethereum", pick: 0.01, via: 1_000_000 }`.
+ */
+const summarizeSolution = (
+  graph: FlowGraph,
+  solution?: LpSolution,
+): null | Record<string, unknown> => {
+  if (!solution) return null;
 
-  // jsLPSolver returns an object with variable values
+  const { base, edges } = typedEntries(solution).reduce<{
+    base: Record<string, unknown>;
+    edges: Record<string, unknown>;
+  }>(
+    (groups, [key, value]) => {
+      const keyParts = key.match(/^(.*?)_(e[0-9]+)$/);
+      if (!keyParts) {
+        groups.base[key] = value;
+      } else {
+        const [, kind, edgeId] = keyParts;
+        const edgeData = groups.edges[edgeId] as any;
+        if (!edgeData) {
+          const edge = graph.edges.find(e => e.id === edgeId);
+          const label = edge ? `${edge.src}->${edge.dest}` : '<unknown>';
+          groups.edges[edgeId] = { arc: label, [kind]: value };
+        } else {
+          const prevLastKey = Object.keys(edgeData).pop() as string;
+          edgeData[kind] = value;
+          if (kind < prevLastKey) {
+            const { arc, ...rest } = edgeData;
+            groups.edges[edgeId] = { arc, ...alphabetizeRecord(rest) };
+          }
+        }
+      }
+      return groups;
+    },
+    { base: { __proto__: null }, edges: { __proto__: null } },
+  );
+  return { ...base, ...alphabetizeRecord(edges) };
+};
+
+const solveLPModel = (
+  model: LpModel,
+  graph: FlowGraph,
+  { precision = 1e-9 } = {},
+): LpSolution => {
+  const solution = jsLPSolver.Solve(model, precision);
+
   // The 'feasible' flag can be overly strict, so we check if we got a result
   // instead. If result is undefined or there are no variable values, it's truly infeasible.
   if (!(solution?.feasible || solution?.result)) {
     if (graph.debug) {
-      // Emit richer context only on demand to avoid noisy passing runs
+      // Emit richer context.
       let msg = formatInfeasibleDiagnostics(graph, model);
-      msg += ` | ${prettyJsonable(solution)}`;
+      msg += ` | ${prettyJsonable(summarizeSolution(graph, solution))}`;
       console.error('[solver] No feasible solution. Diagnostics:', msg);
-      throw Fail`No feasible solution: ${msg}`;
+      failUnsolvable(`No feasible solution: ${msg}`);
     }
-    throw Fail`No feasible solution: ${solution}`;
+    failUnsolvable(X`No feasible solution: ${solution}`);
   }
+
+  return solution;
+};
+
+// This operation is async to allow future use of async solvers if needed
+export const solveRebalance = async (
+  model: LpModel,
+  graph: FlowGraph,
+): Promise<{ flows: SolvedEdgeFlow[]; detail?: Record<string, unknown> }> => {
+  await null;
+
+  // First, use the provided model with major-unit amount values to pick arcs.
+  // Then, derive a new model with minor-unit integer amount values against the
+  // selected subgraph.
+  // This two-step approach seems to dodge some IEEE 754 rounding issues.
+  const pickSolution = solveLPModel(model, graph, { precision: 1e-6 });
+  const refinedModel = refineModel(model, graph, pickSolution);
+  const solution = solveLPModel(refinedModel, graph, { precision: 1e-3 });
 
   const flows: SolvedEdgeFlow[] = [];
   for (const edge of graph.edges) {
@@ -302,135 +515,236 @@ export const solveRebalance = async (
   return { flows, detail: { solution } };
 };
 
-export const rebalanceMinCostFlowSteps = async (
+/**
+ * Compute partial order from solved flows and initial supplies.
+ *
+ * For each node, we track available supply (initial + completed inflows).
+ * An outflow step depends on the minimum set of inflow steps needed to
+ * provide sufficient supply.
+ *
+ * This approach correctly handles cases like:
+ * - Multiple operations to/from the same node with separate dependencies
+ * - Initial supplies that satisfy some outflows immediately
+ * - Fan-out patterns where multiple outflows depend on the same inflow
+ *
+ * @param flows - solved flows from the LP solver
+ * @param initialSupplies - starting balances at each node
+ * @returns prioritized flows in execution order and partial order constraints
+ */
+export const computePartialOrder = (
   flows: SolvedEdgeFlow[],
-  graph: RebalanceGraph,
-  gasEstimator: GasEstimator,
-): Promise<MovementDesc[]> => {
-  const supplies = new Map(
-    typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
+  initialSupplies: Map<AssetPlaceRef, number>,
+): { prioritized: SolvedEdgeFlow[]; order?: StepOrder } => {
+  // Return immediately if there's nothing to do.
+  if (flows.length === 0) return { prioritized: [] };
+
+  type FlowIndex = number;
+  type Inflow = { stepIdx?: number; unclaimed: number };
+
+  /** Instantaneous supply by node */
+  const available = new Map(initialSupplies);
+
+  /** Step indices constituting those supplies (starting with just the initial supply) */
+  const inflows = new Map<AssetPlaceRef, Inflow[]>(
+    [...initialSupplies.entries()].map(([place, value]) => {
+      const nullInflow = { stepIdx: undefined, unclaimed: value };
+      return [place, [nullInflow]];
+    }),
   );
 
-  type AnnotatedFlow = SolvedEdgeFlow & { srcChain: string };
-  const pendingFlows = new Map<string, AnnotatedFlow>(
-    flows
-      .filter(f => f.flow > FLOW_EPS)
-      .map(f => [f.edge.id, { ...f, srcChain: chainOf(f.edge.src) }]),
-  );
-  const prioritized = [] as AnnotatedFlow[];
+  const scheduled = new Set<FlowIndex>();
+  const order: StepOrder = [];
 
   // Maintain last chosen originating chain to group sequential operations.
   let lastChain: string | undefined;
 
-  while (pendingFlows.size) {
-    // Find flows that can be executed based on current supplies.
-    const candidates = [...pendingFlows.values()].filter(
-      f => (supplies.get(f.edge.src) || 0) >= f.flow,
-    );
-
-    if (!candidates.length) {
-      // Deadlock detected: cannot schedule remaining flows.
-      // This indicates a solver bug or rounding error that produced an infeasible flow.
-      const diagnostics = [...pendingFlows.values()].map(f => {
-        const srcSupply = supplies.get(f.edge.src) || 0;
-        const shortage = f.flow - srcSupply;
-        return `${f.edge.id}: ${f.edge.src}(${srcSupply}) -> ${f.edge.dest} needs ${f.flow} (short ${shortage})`;
-      });
-      throw Fail`Scheduling deadlock: no flows can be executed. Remaining flows:\n${diagnostics.join('\n')}`;
+  for (let stepIdx = 0; stepIdx < flows.length; stepIdx += 1) {
+    /** Flows that can execute with current available supply */
+    const candidates: { flowIdx: FlowIndex; flow: SolvedEdgeFlow }[] = [];
+    for (let i = 0; i < flows.length; i += 1) {
+      if (scheduled.has(i)) continue;
+      const flow = flows[i];
+      const srcSupply = available.get(flow.edge.src) || 0;
+      if (srcSupply >= flow.flow) candidates.push({ flowIdx: i, flow });
     }
-    // Prefer continuing with lastChain if possible.
+
+    // Fail upon encountering deadlock.
+    if (!candidates.length) {
+      const remaining = partialMap(flows, (f, idx) => {
+        if (scheduled.has(idx)) return;
+        const { id, src, dest } = f.edge;
+        const srcSupply = available.get(src);
+        return `${idx}: ${id} ${src}(${srcSupply}) -> ${dest} needs ${f.flow}`;
+      });
+      throw failUnsolvable(
+        X`Scheduling deadlock: no flows can be executed. Remaining:\n${remaining.join('\n')}`,
+      );
+    }
+
+    // Prefer continuing with lastChain if possible
     const fromSameChain = lastChain
-      ? candidates.filter(c => c.srcChain === lastChain)
+      ? candidates.filter(c => chainOf(c.flow.edge.src) === lastChain)
       : undefined;
     const chosenGroup = fromSameChain?.length ? fromSameChain : candidates;
 
-    // Pick deterministic smallest edge id within chosen group.
-    chosenGroup.sort((a, b) => naturalCompare(a.edge.id, b.edge.id));
-    const chosen = chosenGroup[0];
-    prioritized.push(chosen);
-    replaceOrInit(supplies, chosen.edge.src, (old = 0) => old - chosen.flow);
-    replaceOrInit(supplies, chosen.edge.dest, (old = 0) => old + chosen.flow);
-    pendingFlows.delete(chosen.edge.id);
-    lastChain = chosen.srcChain;
-  }
-  /**
-   * Pad each fee estimate in case the landscape changes between estimation and
-   * execution. Add 10%
-   */
-  const padFeeEstimate = (estimate: bigint): bigint => (estimate * 110n) / 100n;
+    // Pick deterministic smallest edge id within chosen group
+    chosenGroup.sort((a, b) => naturalCompare(a.flow.edge.id, b.flow.edge.id));
+    const { flowIdx, flow: chosen } = chosenGroup[0];
+    const { src, dest } = chosen.edge;
+    const srcInflows = inflows.get(src) || [];
+    const destInflows = provideLazyMap(inflows, dest, () => []);
 
-  const steps: MovementDesc[] = await Promise.all(
-    prioritized.map(async ({ edge, flow }) => {
+    // Identify inflows to consume (partially or completely), drawing from them
+    // in the order they were added and marking them as prereqs along the way.
+    let unfunded = chosen.flow;
+    const prereqs: number[] = [];
+    for (const inflow of srcInflows) {
+      if (unfunded <= 0) break;
+      if (inflow.unclaimed <= 0) continue;
+      const claimed = Math.min(inflow.unclaimed, unfunded);
+      unfunded -= claimed;
+      inflow.unclaimed -= claimed;
+      if (inflow.stepIdx !== undefined) prereqs.push(inflow.stepIdx);
+    }
+
+    // Record use of `chosen` in outer-scope variables.
+    replaceOrInit(available, src, (old = 0) => old - chosen.flow);
+    replaceOrInit(available, dest, (old = 0) => old + chosen.flow);
+    scheduled.add(flowIdx);
+    destInflows.push({ stepIdx, unclaimed: chosen.flow });
+    if (prereqs.length > 0) order.push([stepIdx, prereqs]);
+    lastChain = chainOf(src);
+  }
+
+  // Don't bother returning a trivial `order` in which each step depends upon
+  // exactly the previous step.
+  const isTrivialOrder = (): boolean => {
+    if (order.length !== scheduled.size - 1) return false;
+    for (let i = 0; i < order.length; i += 1) {
+      const [target, prereqs] = order[i];
+      if (target !== i + 1) return false;
+      if (prereqs.length !== 1 || prereqs[0] !== i) return false;
+    }
+    return true;
+  };
+
+  const prioritized = [...scheduled].map(idx => flows[idx]);
+  return isTrivialOrder() ? { prioritized } : { prioritized, order };
+};
+
+export const rebalanceMinCostFlowSteps = async (
+  flows: SolvedEdgeFlow[],
+  graph: FlowGraph,
+  {
+    brand,
+    feeBrand,
+    gasEstimator,
+  }: {
+    brand: NatAmount['brand'];
+    feeBrand: NatAmount['brand'];
+    gasEstimator: GasEstimator;
+  },
+): Promise<FundsFlowPlan> => {
+  // XXX Assuming flow values are integer, this filter seems pointless.
+  const filteredFlows = flows.filter(f => f.flow > FLOW_EPS);
+  const initialSupplies = new Map(
+    typedEntries(graph.supplies).filter(([_place, amount]) => amount > 0),
+  ) as Map<AssetPlaceRef, number>;
+
+  const { prioritized, order } = computePartialOrder(
+    filteredFlows,
+    initialSupplies,
+  );
+
+  /** Add 20% to a fee estimate as a buffer against short-term variability. */
+  const padFeeEstimate = (estimate: bigint): bigint =>
+    estimate <= 0n ? estimate : (estimate * 120n - 1n) / 100n + 1n;
+
+  /**
+   * Ensure minimum gas is sent for an Axelar GMP transaction, to hopefully
+   * prevent "not enough gas" errors.
+   * Note: This function returns a `feeBrand` Amount that is appropriate for
+   * Axelar GMP transaction fees but not for e.g. EVM gas (with is in ETH).
+   */
+  const makeGmpFeeAmount = (estimate: bigint): NatAmount => {
+    const padded = padFeeEstimate(estimate);
+    // cf. https://github.com/Agoric/agoric-private/issues/548#issuecomment-3517683817
+    const MINIMUM_GAS = 5_000_000n;
+    return AmountMath.make(feeBrand, bigintMax(MINIMUM_GAS, padded));
+  };
+
+  const steps = await Promise.all(
+    prioritized.map(async ({ edge, flow }): Promise<MovementDesc> => {
+      const { src, dest, variableFeeBps } = edge;
       Number.isSafeInteger(flow) ||
-        Fail`flow ${flow} for edge ${edge} is not a safe integer`;
-      const amount = AmountMath.make(graph.brand, BigInt(flow));
+        failUnsolvable(X`flow ${flow} for edge ${edge} is not a safe integer`);
+      const amount = AmountMath.make(brand, BigInt(flow));
+      const stepBase = { src, dest, amount };
 
       await null;
-      let details = {};
       switch (edge.feeMode) {
         case 'makeEvmAccount': {
-          const destinationEvmChain = chainOf(edge.dest) as AxelarChain;
+          const destinationEvmChain = chainOf(dest) as AxelarChain;
           const feeValue =
             await gasEstimator.getFactoryContractEstimate(destinationEvmChain);
           const returnFeeValue =
             await gasEstimator.getReturnFeeEstimate(destinationEvmChain);
-          details = {
+          return {
+            ...stepBase,
             detail: { evmGas: padFeeEstimate(returnFeeValue) },
-            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
+            fee: makeGmpFeeAmount(feeValue),
           };
-          break;
         }
         // XXX: revisit https://github.com/Agoric/agoric-sdk/pull/11953#discussion_r2383034184
         case 'poolToEvm': {
-          const poolInfo = PoolPlaces[edge.src as PoolKey];
-          const protocol = poolInfo?.protocol;
+          const poolInfo = PoolPlaces[src as PoolKey];
           const feeValue = await gasEstimator.getWalletEstimate(
-            chainOf(edge.dest) as AxelarChain,
+            chainOf(dest) as AxelarChain,
             EvmWalletOperationType.Withdraw,
-            protocol,
+            poolInfo?.protocol,
           );
-          details = {
-            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
-          };
-          break;
+          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
         }
         case 'evmToPool': {
-          const poolInfo = PoolPlaces[edge.dest as PoolKey];
-          const protocol = poolInfo?.protocol;
+          const poolInfo = PoolPlaces[dest as PoolKey];
           const feeValue = await gasEstimator.getWalletEstimate(
-            chainOf(edge.dest) as AxelarChain,
+            chainOf(dest) as AxelarChain,
             EvmWalletOperationType.Supply,
-            protocol,
+            poolInfo?.protocol,
           );
-          details = {
-            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
-          };
-          break;
+          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
         }
         case 'evmToNoble': {
           const feeValue = await gasEstimator.getWalletEstimate(
-            chainOf(edge.src) as AxelarChain,
+            chainOf(src) as AxelarChain,
             EvmWalletOperationType.DepositForBurn,
           );
-          details = {
-            fee: AmountMath.make(graph.feeBrand, padFeeEstimate(feeValue)),
-          };
-          break;
+          return { ...stepBase, fee: makeGmpFeeAmount(feeValue) };
         }
         case 'toUSDN': {
           // NOTE USDN transfer incurs a fee on output amount in basis points
           // HACK of subtract 1n in order to avoid rounding errors in Noble
           // See https://github.com/Agoric/agoric-private/issues/415
           const usdnOut =
-            (BigInt(flow) * (10000n - BigInt(edge.variableFee))) / 10000n - 1n;
-          details = { detail: { usdnOut } };
-          break;
+            (BigInt(flow) * (10000n - BigInt(variableFeeBps))) / 10000n - 1n;
+          return { ...stepBase, detail: { usdnOut } };
+        }
+        case 'evmToEvm': {
+          // CCTPv2 direct EVM-to-EVM transfer
+          // Set detail.cctpVersion = 2n to indicate CCTPv2 to wayFromSrcToDest
+          const feeValue = await gasEstimator.getWalletEstimate(
+            chainOf(src) as AxelarChain,
+            EvmWalletOperationType.DepositForBurn,
+          );
+          return {
+            ...stepBase,
+            detail: { cctpVersion: 2n },
+            fee: makeGmpFeeAmount(feeValue),
+          };
         }
         default:
-          break;
+          return stepBase;
       }
-
-      return { src: edge.src, dest: edge.dest, amount, ...details };
     }),
   );
 
@@ -440,16 +754,17 @@ export const rebalanceMinCostFlowSteps = async (
     if (!validation.ok) {
       console.error('[solver] Flow validation failed:', validation.errors);
       console.error('[solver] Original supplies:', graph.supplies);
-      console.error('[solver] Scheduling deadlock. Final supplies:', supplies);
       console.error('[solver] All proposed flows in order:', steps);
-      throw Fail`Flow validation failed: ${validation.errors.join('; ')}`;
+      failUnsolvable(
+        X`Flow validation failed: ${validation.errors.join('; ')}`,
+      );
     }
     if (validation.warnings.length > 0) {
       console.warn('[solver] Flow validation warnings:', validation.warnings);
     }
   }
 
-  return harden(steps);
+  return harden({ flow: steps, order });
 };
 
 // -------------------------- Convenience End-to-End ---------------------------
@@ -465,8 +780,8 @@ export const planRebalanceFlow = async (opts: {
   network: NetworkSpec;
   current: Partial<Record<AssetPlaceRef, NatAmount>>;
   target: Partial<Record<AssetPlaceRef, NatAmount>>;
-  brand: Amount['brand'];
-  feeBrand: Amount['brand'];
+  brand: NatAmount['brand'];
+  feeBrand: NatAmount['brand'];
   mode?: RebalanceMode;
   gasEstimator: GasEstimator;
 }) => {
@@ -480,48 +795,28 @@ export const planRebalanceFlow = async (opts: {
     gasEstimator,
   } = opts;
   // TODO remove "automatic" values that should be static
-  const graph = makeGraphFromDefinition(
-    network,
-    current,
-    target,
-    brand,
-    feeBrand,
-  );
+  const graph = makeGraphForFlow(network, current, target);
   const model = buildLPModel(graph, mode);
   let result;
   await null;
   try {
     result = await solveRebalance(model, graph);
   } catch (err) {
-    // If the solver says infeasible, try to produce a clearer message
-    preflightValidateNetworkPlan(network as any, current as any, target as any);
-    throw err;
+    const { message } = err;
+    try {
+      // If the solver says infeasible, try to produce a clearer message
+      preflightValidateNetworkPlan(network, current, target);
+    } catch (networkValidationErr) {
+      // eslint-disable-next-line no-ex-assign
+      err = AggregateError([err, networkValidationErr]);
+    }
+    failUnsolvable(message, err);
   }
   const { flows, detail } = result;
-  const steps = await rebalanceMinCostFlowSteps(flows, graph, gasEstimator);
-  return harden({ graph, model, flows, steps, detail });
+  const plan = await rebalanceMinCostFlowSteps(flows, graph, {
+    brand,
+    feeBrand,
+    gasEstimator,
+  });
+  return harden({ graph, model, flows, plan, detail });
 };
-
-// ---------------------------- Example (commented) ----------------------------
-/*
-Example usage:
-
-const { steps } = await planRebalanceFlow(
-  {
-    nodes: ['Aave_Arbitrum', 'Compound_Arbitrum', 'USDN', '<Deposit>', '@agoric'],
-    edges,
-  },
-  {
-    Aave_Arbitrum: AmountMath.make(brand, 1_000n),
-    Compound_Arbitrum: AmountMath.make(brand, 100n),
-  },
-  {
-    Aave_Arbitrum: AmountMath.make(brand, 800n),
-    Compound_Arbitrum: AmountMath.make(brand, 300n),
-  },
-  brand,
-  'cheapest',
-});
-
-console.log(steps);
-*/

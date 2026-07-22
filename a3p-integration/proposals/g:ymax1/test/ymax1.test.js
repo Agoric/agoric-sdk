@@ -2,34 +2,36 @@
 import '@endo/init/debug.js';
 
 import { LOCAL_CONFIG, makeVstorageKit } from '@agoric/client-utils';
+import { walletUpdates } from '@agoric/deploy-script-support/src/wallet-utils.js';
 import {
-  getVatInfoFromID,
   getDetailsMatchingVats,
+  getVatInfoFromID,
 } from '@agoric/synthetic-chain';
+import { makeYmaxControlKitForSynthetic } from '@aglocal/portfolio-deploy/src/ymax-control.js';
 import anyTest from 'ava';
-import { walletUpdates } from '../walletUpdates.js';
-import {
-  bundleId,
-  ymax1ControlAddr as ymaxControlAddr,
-  ymaxDataArgs,
-} from './consts.js';
+import { makeSyntheticWalletKit } from '../synthetic-wallet-kit.js';
 import { makeActionId, sendWalletAction } from '../wallet-util.js';
 import { redeemInvitation, submitYmaxControl } from '../ymax-util.js';
+import { bundleId, ymax1ControlAddr as ymaxControlAddr } from '../consts.js';
 
 /**
- * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet';
+ * @import {BridgeAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
  */
 
 const { fromEntries } = Object;
 
 const contractName = 'ymax1';
 
-const privateArgsOverrides = harden({
-  gmpAddresses: {
-    AXELAR_GAS: 'axelar1gasnew',
-    AXELAR_GMP: 'axelar1gmpnew',
-  },
-});
+const privateArgsOverrides = harden(
+  /** @type {const} */ ({
+    gmpAddresses: {
+      AXELAR_GAS: 'axelar1gasnew',
+      AXELAR_GMP: 'axelar1gmpnew',
+    },
+  }),
+);
 
 const vsc = makeVstorageKit({ fetch }, LOCAL_CONFIG);
 const wup = walletUpdates(
@@ -37,19 +39,31 @@ const wup = walletUpdates(
   { setTimeout, log: () => {} },
 );
 
+// Create synthetic wallet kit and wallet store
+const syntheticWallet = makeSyntheticWalletKit({
+  address: ymaxControlAddr,
+  vstorageKit: vsc,
+});
+const { ymaxControl } = makeYmaxControlKitForSynthetic(
+  { setTimeout },
+  {
+    signer: syntheticWallet,
+    log: () => {},
+    makeNonce: () => String(Date.now()),
+  },
+);
+
 /** @param {any} x */
 const boardId = x => x.getBoardId();
 
 const test =
-  /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */ (
-    anyTest
-  );
+  /** @type {TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */ (anyTest);
 
-/** @param {import('ava').ExecutionContext} _t */
+/** @param {ExecutionContext} _t */
 const makeTestContext = async _t => {
   /**
    * Hack to share data between test
-   * @type {{vatID?: string; instanceId?: string, vatIDsToIgnore?: string[]}}
+   * @type {{vatID?: string; instanceId?: string}}
    */
   const shared = {};
 
@@ -58,68 +72,7 @@ const makeTestContext = async _t => {
 
 test.before(async t => (t.context = await makeTestContext(t)));
 
-test.serial('no instance currently deployed', async t => {
-  const { [contractName]: instance } = fromEntries(
-    await vsc.readPublished(`agoricNames.instance`),
-  );
-
-  // @ts-expect-error non-nullable type
-  t.is(instance, undefined);
-
-  const potentialVats = await getDetailsMatchingVats(contractName).then(
-    candidates => candidates.filter(v => !v.terminated),
-  );
-  t.context.shared.vatIDsToIgnore = potentialVats.map(({ vatID }) => vatID);
-  t.deepEqual(potentialVats, []);
-});
-
-test.serial('invoke ymaxControl showing no instance', async t => {
-  const id = makeActionId('getCreatorFacet');
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'getCreatorFacet',
-      args: [],
-      saveResult: { name: 'creatorFacet' },
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  await t.throwsAsync(wup.invocation(id), {
-    message: /no StartedInstanceKit/,
-  });
-});
-
-test.serial('installAndStart using ymaxControl', async t => {
-  const { BLD, USDC, PoC26 } = fromEntries(
-    // @ts-expect-error old type from npm
-    await vsc.readPublished('agoricNames.issuer'),
-  );
-
-  const issuers = harden({ USDC, Access: PoC26, BLD, Fee: BLD });
-
-  const id = makeActionId('installAndStart');
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'installAndStart',
-      args: [{ bundleId, issuers, privateArgsOverrides: ymaxDataArgs }],
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'copyRecord' });
-
+test.serial('ymax1 already installed and started via use.sh', async t => {
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
   );
@@ -127,43 +80,30 @@ test.serial('installAndStart using ymaxControl', async t => {
   t.context.shared.instanceId = boardId(instance);
 
   const potentialVats = await getDetailsMatchingVats(contractName).then(
-    candidates =>
-      candidates.filter(
-        v =>
-          !v.terminated && !t.context.shared.vatIDsToIgnore?.includes(v.vatID),
-      ),
+    candidates => candidates.filter(v => !v.terminated),
   );
   t.log('potential vats', potentialVats);
   t.is(potentialVats.length, 1);
 
-  const vatDetails = potentialVats.slice(-1)[0];
+  const vatDetails = potentialVats[0];
   t.log(vatDetails);
 
   t.context.shared.vatID = vatDetails.vatID;
+
+  // Deployment is deterministic, so this vatID is stable across runs. Other
+  // proposals reference it statically (e.g. n:upgrade-next's
+  // upgradeInfo.vatOptionUpdates); if it ever changes, use this log line to
+  // find the new value.
+  t.log('ymax1 vatID:', vatDetails.vatID);
+  t.regex(vatDetails.vatID, /^v\d+$/, 'ymax1 has a dynamic vatID');
 });
 
 test.serial('invoke ymaxControl to getCreatorFacet', async t => {
-  const id = makeActionId('getCreatorFacet');
+  const { result } = await ymaxControl.getCreatorFacet.once({
+    saveAs: 'creatorFacet',
+  })();
 
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'getCreatorFacet',
-      args: [],
-      saveResult: { name: 'creatorFacet' },
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), {
-    name: 'creatorFacet',
-    passStyle: 'remotable',
-  });
+  t.truthy(result, 'Creator facet saved to wallet store');
 });
 
 test.serial('ymax told zoe that Access token is required', async t => {
@@ -180,7 +120,6 @@ test.serial('ymax told zoe that Access token is required', async t => {
       id,
       invitationSpec: {
         source: 'contract',
-        // @ts-expect-error XXX Type 'import("...node_modules/@agoric/zoe/src/zoeService/types").Instance' is not assignable to type 'globalThis.Instance'.
         instance,
         publicInvitationMaker: 'makeOpenPortfolioInvitation',
       },
@@ -196,28 +135,8 @@ test.serial('ymax told zoe that Access token is required', async t => {
 });
 
 test.serial('null upgrade existing instance with args override', async t => {
-  const id = makeActionId('upgrade');
-
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'upgrade',
-      args: [
-        {
-          bundleId,
-          privateArgsOverrides,
-        },
-      ],
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'copyRecord' });
+  const yc = ymaxControl;
+  await yc.upgrade({ bundleId, privateArgsOverrides });
 
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
@@ -242,23 +161,10 @@ test.serial('null upgrade existing instance with args override', async t => {
 });
 
 test.serial('revoke contract control', async t => {
-  const id = makeActionId('revoke');
+  const yc = ymaxControl;
+  await yc.revoke();
 
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'revoke',
-      args: [],
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'undefined' });
+  t.pass('Contract control revoked');
 });
 
 test.serial('get new contract control and upgrade', async t => {
@@ -269,27 +175,8 @@ test.serial('get new contract control and upgrade', async t => {
   const result = await redeemInvitation(ymaxControlAddr);
   t.deepEqual(result, { name: 'ymaxControl', passStyle: 'remotable' });
 
-  const id = makeActionId('upgrade2');
-
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'upgrade',
-      args: [
-        {
-          bundleId,
-        },
-      ],
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'copyRecord' });
+  const yc = ymaxControl;
+  await yc.upgrade({ bundleId });
 
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),
@@ -315,27 +202,8 @@ test.serial('get new contract control and upgrade', async t => {
 });
 
 test.serial('terminate', async t => {
-  const id = makeActionId('terminate');
-
-  /** @type {BridgeAction} */
-  const invokeAction = {
-    // @ts-expect-error old type from npm
-    method: 'invokeEntry',
-    message: {
-      id,
-      targetName: 'ymaxControl',
-      method: 'terminate',
-      args: [
-        {
-          message: 'terminate to leave state as we found it',
-        },
-      ],
-    },
-  };
-
-  await sendWalletAction(vsc, ymaxControlAddr, invokeAction);
-
-  t.deepEqual(await wup.invocation(id), { passStyle: 'undefined' });
+  const yc = ymaxControl;
+  await yc.terminate({ message: 'test termination through contract control' });
 
   const { [contractName]: instance } = fromEntries(
     await vsc.readPublished(`agoricNames.instance`),

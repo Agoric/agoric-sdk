@@ -5,7 +5,6 @@ import { insistDeviceID, insistVatID } from '../lib/id.js';
 
 /**
  * @import {KVStore} from '../types-external.js';
- * @import {DeviceID} from '../types-internal.js';
  * @import {VatID} from '../types-internal.js';
  * @import {KernelSlog} from '../types-external.js';
  * @import {SwingSetCapData} from '../types-external.js';

@@ -6,7 +6,7 @@ import type {
   EvidenceWithRisk,
   EvmHash,
   FeeConfig,
-} from '@agoric/fast-usdc/src/types.ts';
+} from '@agoric/fast-usdc/src/types.js';
 import { makeFeeTools } from '@agoric/fast-usdc/src/utils/fees.js';
 import { assertAllDefined, mustMatch } from '@agoric/internal';
 import type {
@@ -61,7 +61,7 @@ export const makeNobleAccount = (async (orch: Orchestrator) => {
 harden(makeNobleAccount);
 
 export const forwardFunds = async (
-  orch: Orchestrator,
+  _orch: Orchestrator,
   {
     currentChainReference,
     supportsCctp,
@@ -137,6 +137,7 @@ export const forwardFunds = async (
         destination,
         amount: amount.value,
       });
+      return;
     }
 
     // UNTIL #10449
@@ -185,7 +186,7 @@ export interface ContextAdvance {
 }
 
 export const advanceFunds = (async (
-  orch: Orchestrator,
+  _orch: Orchestrator,
   {
     chainHubTools,
     feeConfig,

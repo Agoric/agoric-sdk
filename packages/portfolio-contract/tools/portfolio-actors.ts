@@ -10,9 +10,15 @@
  *
  * @see type-guards.ts for the authoritative interface specification
  */
-import { type VstorageKit } from '@agoric/client-utils';
 import { AmountMath, type NatAmount } from '@agoric/ertp';
+import type { VstorageKit } from '@agoric/client-utils';
+import type { Bech32Address, ChainInfo } from '@agoric/orchestration';
 import { ROOT_STORAGE_PATH } from '@agoric/orchestration/tools/contract-tests.js';
+import {
+  getPermitWitnessTransferFromData,
+  type TokenPermissions,
+} from '@agoric/orchestration/src/utils/permit2.js';
+import type { VowTools } from '@agoric/vow';
 import type { InvitationSpec } from '@agoric/smart-wallet/src/invitations.js';
 import type { Instance } from '@agoric/zoe';
 import type { ExecutionContext } from 'ava';
@@ -22,14 +28,37 @@ import {
   portfolioIdOfPath,
   type OfferArgsFor,
   type ProposalType,
+  type PortfolioPublishedPathTypes,
   type StatusFor,
   type PoolKey,
+  type EVMContractAddressesMap,
 } from '@aglocal/portfolio-contract/src/type-guards.js';
 import type { WalletTool } from '@aglocal/portfolio-contract/tools/wallet-offer-tools.js';
 import type {
+  PortfolioAutoFeatures,
   PortfolioPublicInvitationMaker,
   PortfolioContinuingInvitationMaker,
+  AxelarChain,
+  PortfolioPermissions,
 } from '@agoric/portfolio-api';
+import {
+  PortfolioAutoFeaturesEIP712Shape,
+  PortfolioPermissionsEIP712Shape,
+} from '@agoric/portfolio-api/src/portfolio-permissions.js';
+import {
+  getYmaxStandaloneOperationData,
+  getYmaxWitness,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type {
+  PortfolioPermissionsEIP712,
+  TargetAllocation,
+} from '@agoric/portfolio-api/src/evm-wallet/eip712-messages.js';
+import type { TimerService } from '@agoric/time';
+import { mustMatch, type ERemote } from '@agoric/internal';
+import { E } from '@endo/far';
+import type { TypedDataDefinition } from 'viem';
+import type { PrivateKeyAccount } from 'viem/accounts';
+import type { EVMWalletMessageHandler } from '../src/evm-wallet-handler.exo.ts';
 
 const { fromEntries } = Object;
 
@@ -37,7 +66,7 @@ assert.equal(ROOT_STORAGE_PATH, 'orchtest');
 const stripRoot = (path: string) => path.replace(/^orchtest\./, '');
 
 export const makePortfolioQuery = (
-  readPublished: VstorageKit['readPublished'],
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'],
   portfolioKey: `${string}.portfolios.portfolio${number}`,
 ) => {
   const self = harden({
@@ -81,7 +110,7 @@ export const makePortfolioQuery = (
 export const makeTrader = (
   wallet: WalletTool,
   instance: Instance<typeof start>,
-  readPublished: VstorageKit['readPublished'] = () =>
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'] = () =>
     assert.fail('no vstorage access'),
 ) => {
   let nonce = 0;
@@ -145,7 +174,7 @@ export const makeTrader = (
      * This enables ongoing portfolio management after initial creation.
      */
     async rebalance(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       proposal: ProposalType['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
@@ -167,7 +196,7 @@ export const makeTrader = (
       });
     },
     async simpleRebalance(
-      t: ExecutionContext,
+      _t: ExecutionContext,
       proposal: ProposalType['rebalance'],
       offerArgs: OfferArgsFor['rebalance'],
     ) {
@@ -188,7 +217,7 @@ export const makeTrader = (
         offerArgs,
       });
     },
-    async withdraw(t: ExecutionContext, Cash: NatAmount) {
+    async withdraw(_t: ExecutionContext, Cash: NatAmount) {
       if (!openId) throw Error('not open');
       const invitationMakerName: PortfolioContinuingInvitationMaker =
         'Withdraw';
@@ -202,7 +231,7 @@ export const makeTrader = (
       const proposal: ProposalType['withdraw'] = { give: {}, want: { Cash } };
       return wallet.executeContinuingOffer({ id, invitationSpec, proposal });
     },
-    async deposit(t: ExecutionContext, Deposit: NatAmount) {
+    async deposit(_t: ExecutionContext, Deposit: NatAmount) {
       if (!openId) throw Error('not open');
       const invitationMakerName: PortfolioContinuingInvitationMaker = 'Deposit';
       const id = `Deposit-${(nonce += 1)}`;
@@ -249,5 +278,381 @@ export const makeTrader = (
       );
     },
   });
+  return self;
+};
+
+type EvmTraderConfig = {
+  evmWalletHandler: ERemote<EVMWalletMessageHandler>;
+  account: PrivateKeyAccount;
+  contractsByChain: EVMContractAddressesMap;
+  chainInfoByName: Record<AxelarChain, ChainInfo<'eip155'>>;
+  timerService: ERemote<TimerService>;
+  readPublished: VstorageKit<PortfolioPublishedPathTypes>['readPublished'];
+  when: VowTools['when'];
+  useRouter?: boolean;
+  useVerifiedSigner?: boolean;
+};
+
+export const makeEvmTrader = ({
+  evmWalletHandler,
+  account,
+  contractsByChain,
+  chainInfoByName,
+  timerService,
+  readPublished,
+  when,
+  useRouter = false,
+  useVerifiedSigner = false,
+}: EvmTraderConfig) => {
+  let nonce = 0n;
+  let portfolioPath: string | undefined;
+  let portfolioId: number | undefined;
+
+  const getDeadline = async () => {
+    const { absValue } = await E(timerService).getCurrentTimestamp();
+    return absValue + 3600n;
+  };
+
+  const submitMessage = async (message: TypedDataDefinition) => {
+    // arbitrary signature for "verified signer" simulating what a smart account may use
+    const signature = await (useVerifiedSigner
+      ? '0x533487000ACC0047000516447083'
+      : account.signTypedData(message));
+    const verifiedSigner = useVerifiedSigner ? account.address : undefined;
+    const vow = await E(evmWalletHandler).handleMessage({
+      ...message,
+      signature,
+      verifiedSigner,
+    } as any);
+    await when(vow);
+  };
+
+  // FIXME: bare `evmWallets.*` paths are inconsistent with the `ymax0|ymax1`
+  // published root contract; switch to rooted paths.
+  const getWalletPortfolios = async () =>
+    readPublished(`evmWallets.${account.address}.portfolio`) as Promise<
+      StatusFor['evmWalletPortfolios']
+    >;
+
+  // FIXME: bare `evmWallets.*` paths are inconsistent with the `ymax0|ymax1`
+  // published root contract; switch to rooted paths.
+  const getWalletStatus = async () =>
+    readPublished(`evmWallets.${account.address}`) as Promise<
+      StatusFor['evmWallet']
+    >;
+
+  /**
+   * Read the most-recent message status without asserting success — for tests
+   * that want to inspect failure modes.
+   */
+  const getMessageStatus = async (
+    expectedNonce: bigint,
+    expectedDeadline: bigint,
+  ) => {
+    const status = await getWalletStatus();
+    status.updated === 'messageUpdate' ||
+      assert.fail(`unexpected wallet update: ${status.updated}`);
+    status.nonce === expectedNonce ||
+      assert.fail(`nonce mismatch: ${status.nonce} vs ${expectedNonce}`);
+    status.deadline === expectedDeadline ||
+      assert.fail(
+        `deadline mismatch: ${status.deadline} vs ${expectedDeadline}`,
+      );
+    return status;
+  };
+
+  const getMessageResult = async (
+    expectedNonce: bigint,
+    expectedDeadline: bigint,
+  ) => {
+    const status = await getMessageStatus(expectedNonce, expectedDeadline);
+    if (status.status === 'error') {
+      assert.fail(`message failed: ${status.error}`);
+    } else if (status.status !== 'ok') {
+      assert.fail(`unexpected status: ${status.status}`);
+    }
+    return status.result;
+  };
+
+  const updatePortfolioPath = async (expectedId: number) => {
+    const paths = await getWalletPortfolios();
+    const expectedSuffix = `portfolio${expectedId}`;
+    const match = paths.find(path => path.endsWith(expectedSuffix));
+    match || assert.fail('portfolio path not found in wallet portfolios');
+    portfolioPath = match;
+    portfolioId = expectedId;
+    return portfolioPath;
+  };
+
+  const getChainConfig = (chain: AxelarChain) => {
+    const chainInfo = chainInfoByName[chain];
+    chainInfo || assert.fail(`missing chainInfo for ${chain}`);
+    const contracts = contractsByChain[chain];
+    contracts || assert.fail(`missing contracts for ${chain}`);
+    return {
+      chainId: BigInt(chainInfo.reference),
+      usdcToken: contracts.usdc,
+      contractRepresentative: useRouter
+        ? contracts.remoteAccountRouter
+        : contracts.depositFactory,
+      permit2Address: contracts.permit2,
+    };
+  };
+
+  const self = harden({
+    getAddress: () => account.address,
+    forChain: (chain: AxelarChain, verifyingContract?: `0x${string}`) => {
+      const { chainId, usdcToken, contractRepresentative, permit2Address } =
+        getChainConfig(chain);
+      const standaloneVerifyingContract =
+        verifyingContract ?? contractRepresentative;
+      assert(standaloneVerifyingContract, 'missing verifying contract');
+      return harden({
+        async openPortfolio(
+          allocations: TargetAllocation[],
+          depositAmount: bigint,
+          features?: Required<PortfolioAutoFeatures>,
+        ) {
+          assert(contractRepresentative, 'missing contract representative');
+          const witness = features
+            ? (getYmaxWitness('OpenPortfolioWithAutoFeatures', {
+                allocations,
+                features,
+              }) as unknown as ReturnType<
+                // getPermitWitnessTransferFromData is not a fan of witness union types
+                typeof getYmaxWitness<'OpenPortfolio'>
+              >)
+            : getYmaxWitness('OpenPortfolio', { allocations });
+          const deadline = await getDeadline();
+          const permitMessage = getPermitWitnessTransferFromData(
+            {
+              permitted: {
+                token: usdcToken,
+                amount: depositAmount,
+              },
+              spender: contractRepresentative,
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            permit2Address,
+            chainId,
+            witness,
+          );
+
+          const expectedNonce = nonce;
+          await submitMessage(permitMessage);
+          const result = (await getMessageResult(
+            expectedNonce,
+            deadline,
+          )) as string;
+          const parsedId = Number(result.replace(/^portfolio/, ''));
+          Number.isInteger(parsedId) ||
+            assert.fail('invalid portfolio id result');
+          const storagePath = await updatePortfolioPath(parsedId);
+          return harden({ storagePath, portfolioId: parsedId });
+        },
+        /**
+         * Open a portfolio AND grant control to an automation agent in a
+         * single signed (permit2-wrapped) message — the combined form of
+         * {@link openPortfolio} + {@link grant}, matching the contract's
+         * `OpenPortfolioWithGrant` operation. Like `grant`, the requested
+         * permission bag is validated against the current wire shape before
+         * signing.
+         */
+        async openPortfolioWithGrant(
+          allocations: TargetAllocation[],
+          depositAmount: bigint,
+          granteeAddress: Bech32Address,
+          permissions: PortfolioPermissions,
+        ) {
+          assert(contractRepresentative, 'missing contract representative');
+          mustMatch(
+            harden({ ...permissions }),
+            PortfolioPermissionsEIP712Shape,
+          );
+          const witness = getYmaxWitness('OpenPortfolioWithGrant', {
+            allocations,
+            grantee: {
+              address: granteeAddress,
+              // validated against PortfolioPermissionsEIP712Shape just above
+              permissions: permissions as PortfolioPermissionsEIP712,
+            },
+          }) as unknown as ReturnType<
+            // getPermitWitnessTransferFromData is not a fan of witness union types
+            typeof getYmaxWitness<'OpenPortfolio'>
+          >;
+          const deadline = await getDeadline();
+          const permitMessage = getPermitWitnessTransferFromData(
+            {
+              permitted: {
+                token: usdcToken,
+                amount: depositAmount,
+              },
+              spender: contractRepresentative,
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            permit2Address,
+            chainId,
+            witness,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(permitMessage);
+          const result = (await getMessageResult(
+            expectedNonce,
+            deadline,
+          )) as string;
+          const parsedId = Number(result.replace(/^portfolio/, ''));
+          Number.isInteger(parsedId) ||
+            assert.fail('invalid portfolio id result');
+          const storagePath = await updatePortfolioPath(parsedId);
+          return harden({ storagePath, portfolioId: parsedId });
+        },
+        async deposit(depositAmount: bigint, spender = contractRepresentative) {
+          assert(spender, 'missing spender');
+          const currentPortfolioId = self.getPortfolioId();
+          const witness = getYmaxWitness('Deposit', {
+            portfolio: BigInt(currentPortfolioId),
+          });
+          const deadline = await getDeadline();
+          const permitMessage = getPermitWitnessTransferFromData(
+            {
+              permitted: {
+                token: usdcToken,
+                amount: depositAmount,
+              },
+              spender,
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            permit2Address,
+            chainId,
+            witness,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(permitMessage);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async withdraw(withdrawDetails: TokenPermissions) {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              withdraw: withdrawDetails,
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Withdraw',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async rebalance() {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Rebalance',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        async setTargetAllocation(allocations: TargetAllocation[]) {
+          const currentPortfolioId = self.getPortfolioId();
+          const deadline = await getDeadline();
+          const message = getYmaxStandaloneOperationData(
+            {
+              allocations,
+              portfolio: BigInt(currentPortfolioId),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'SetTargetAllocation',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageResult(expectedNonce, deadline) as Promise<string>;
+        },
+        /**
+         * Submit a signed Grant op and return the resulting wallet status
+         * entry for this trader's portfolio.
+         *
+         * Although the caller-facing type is {@link PortfolioPermissions},
+         * the current standalone EIP-712 `Grant` payload uses
+         * {@link PortfolioPermissionsEIP712Shape}. This helper validates that
+         * the requested permission bag fits the current wire shape before
+         * signing, so unsupported permissions fail client-side.
+         */
+        async grant(
+          granteeAddress: Bech32Address,
+          permissions: PortfolioPermissions,
+        ) {
+          const deadline = await getDeadline();
+          mustMatch(permissions, PortfolioPermissionsEIP712Shape);
+          const message = getYmaxStandaloneOperationData(
+            {
+              accountHolder: granteeAddress,
+              permissions,
+              portfolio: BigInt(self.getPortfolioId()),
+              nonce: (nonce += 1n),
+              deadline,
+            },
+            'Grant',
+            chainId,
+            standaloneVerifyingContract,
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+        /**
+         * Submit a signed SetAutoFeatures op and return the resulting wallet
+         * status entry for this trader's portfolio.
+         */
+        async setAutoFeatures(features: PortfolioAutoFeatures) {
+          const deadline = await getDeadline();
+          const hardenedFeatures = harden({ ...features });
+          mustMatch(hardenedFeatures, PortfolioAutoFeaturesEIP712Shape);
+          const message = harden(
+            getYmaxStandaloneOperationData(
+              {
+                features: hardenedFeatures,
+                portfolio: BigInt(self.getPortfolioId()),
+                nonce: (nonce += 1n),
+                deadline,
+              },
+              'SetAutoFeatures',
+              chainId,
+              standaloneVerifyingContract,
+            ),
+          );
+          const expectedNonce = nonce;
+          await submitMessage(message);
+          return getMessageStatus(expectedNonce, deadline);
+        },
+      });
+    },
+    getPortfolioPath: () => portfolioPath || assert.fail('no portfolio'),
+    getPortfolioId: () =>
+      portfolioId ?? portfolioIdOfPath(stripRoot(self.getPortfolioPath())),
+    getPortfolioStatus: () =>
+      readPublished(stripRoot(self.getPortfolioPath())) as Promise<
+        StatusFor['portfolio']
+      >,
+  });
+
   return self;
 };

@@ -1,3 +1,5 @@
+import '@endo/init/debug.js';
+
 import {
   annihilate,
   startLife,
@@ -11,6 +13,10 @@ import { makeExpectUnhandledRejection } from '@agoric/internal/src/lib-nodejs/av
 import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { prepareVowTools } from '../vat.js';
+
+/**
+ * @import {VowKit} from '../src/types.ts';
+ */
 
 const expectUnhandled = makeExpectUnhandledRejection({
   test,
@@ -125,6 +131,7 @@ test.serial(
       const zone = makeDurableZone(baggage, 'durableRoot');
       prepareVowTools(zone);
 
+      /** @type {VowKit} */
       const testVowKit = zone.makeOnce('testVowKit', () =>
         t.fail('need testVowKit in baggage'),
       );
@@ -219,6 +226,7 @@ test.serial(
           return 'is not storable';
         },
       });
+      // @ts-expect-error testing non-storable rejection reason
       zone.makeOnce('testVow', () => makeRejectedVow(vowTools, nonStorable));
     });
 

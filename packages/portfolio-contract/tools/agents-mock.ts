@@ -5,6 +5,7 @@ import type {
 } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { EMethods } from '@agoric/vow/src/E.js';
 import { E } from '@endo/far';
+import type { Instance } from '@agoric/zoe';
 import type { PortfolioPlanner } from '../src/planner.exo.js';
 import type { start as startYMax } from '../src/portfolio.contract.js';
 

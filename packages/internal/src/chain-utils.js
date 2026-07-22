@@ -15,10 +15,15 @@ import * as _ActionType from './action-types.js';
 /** @typedef {`${bigint}`} NatString */
 
 /**
+ * @import {ParamsSDKType} from '@agoric/cosmic-proto/swingset/swingset.js'
+ * @import {JsonSafe} from '@agoric/cosmic-proto/json-safe'
+ */
+
+/**
  * @typedef {object} BlockInfo
  * @property {number} blockHeight
  * @property {number} blockTime POSIX Seconds Since the Epoch
- * @property {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType} params
+ * @property {JsonSafe<ParamsSDKType>} params
  */
 
 /**

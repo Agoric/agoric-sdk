@@ -6,7 +6,11 @@ import {
   defaultAgoricNetworkSpecForCluster,
   type SecretManager,
 } from '../src/config.ts';
-import { createEVMContext } from '../src/support.ts';
+import {
+  createEVMContext,
+  getConfirmationsRequired,
+  getRevertConfirmationsRequired,
+} from '../src/support.ts';
 
 const { entries, keys } = Object;
 
@@ -19,6 +23,7 @@ const minimalEnv = {
     'api-spectrum-blockchain': ['https://example.invalid/'],
     'api-spectrum-pools': ['https://example.invalid/'],
   }),
+  SQLITE_DB_PATH: './test-kv-store.db',
 };
 
 const makeFakeSecretManager = (mnemonic?: string) =>
@@ -52,13 +57,11 @@ test('loadConfig accepts valid configuration', async t => {
     MNEMONIC: 'test mnemonic phrase',
     CONTRACT_INSTANCE: 'ymax1',
     ALCHEMY_API_KEY: 'test1234',
-    SPECTRUM_API_URL: 'https://api.spectrum.example.com',
-    SPECTRUM_API_TIMEOUT: '5000',
-    SPECTRUM_API_RETRIES: '2',
     AGORIC_NET: 'devnet,myChainId',
-    COSMOS_REST_TIMEOUT: '10000',
-    COSMOS_REST_RETRIES: '5',
     GRAPHQL_ENDPOINTS: minimalEnv.GRAPHQL_ENDPOINTS,
+    SQLITE_DB_PATH: './test-kv-store.db',
+    YDS_URL: 'https://yds.example.com',
+    YDS_API_KEY: 'test-api-key-123',
   };
   const secretManager = makeFakeSecretManager();
 
@@ -67,13 +70,12 @@ test('loadConfig accepts valid configuration', async t => {
   t.is(config.clusterName, 'testnet');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
-  t.is(config.spectrum.apiUrl, 'https://api.spectrum.example.com');
-  t.is(config.spectrum.timeout, 5000);
-  t.is(config.spectrum.retries, 2);
-  t.is(config.cosmosRest.agoricNetworkSpec, 'devnet,myChainId');
-  t.is(config.cosmosRest.agoricNetSubdomain, 'devnet');
-  t.is(config.cosmosRest.timeout, 10000);
-  t.is(config.cosmosRest.retries, 5);
+  t.is(config.agoricNetworkSpec, 'devnet,myChainId');
+  t.deepEqual(config.autoRebalance, {
+    driftBps: 100n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
+  });
 });
 
 test('loadConfig uses default values when optional fields are missing', async t => {
@@ -83,13 +85,12 @@ test('loadConfig uses default values when optional fields are missing', async t 
   t.is(config.contractInstance, 'ymax1');
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
-  t.is(config.spectrum.apiUrl, undefined);
-  t.is(config.spectrum.timeout, 10000);
-  t.is(config.spectrum.retries, 3);
-  t.is(config.cosmosRest.agoricNetworkSpec, 'local');
-  t.is(config.cosmosRest.agoricNetSubdomain, 'local');
-  t.is(config.cosmosRest.timeout, 10000);
-  t.is(config.cosmosRest.retries, 3);
+  t.is(config.agoricNetworkSpec, 'local');
+  t.deepEqual(config.autoRebalance, {
+    driftBps: 100n,
+    driftMinMoveUusdc: 25_000_000n,
+    cashMinMoveUusdc: 25_000_000n,
+  });
 });
 
 test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
@@ -103,7 +104,7 @@ test('loadConfig defaults AGORIC_NET from CLUSTER', async t => {
       });
       t.is(config.clusterName, clusterName as any, `CLUSTER=${clusterName}`);
       t.is(
-        config.cosmosRest.agoricNetworkSpec,
+        config.agoricNetworkSpec,
         agoricNetworkSpec || defaultAgoricNetworkSpec,
         `CLUSTER=${clusterName} implies AGORIC_NET`,
       );
@@ -132,13 +133,8 @@ test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
           CLUSTER: clusterName,
         });
         t.is(
-          config.cosmosRest.agoricNetworkSpec,
+          config.agoricNetworkSpec,
           agoricNetworkSpec,
-          `AGORIC_NET=${agoricNetworkSpec}`,
-        );
-        t.is(
-          config.cosmosRest.agoricNetSubdomain,
-          agoricNetSubdomain,
           `AGORIC_NET=${agoricNetworkSpec}`,
         );
         t.is(
@@ -152,23 +148,42 @@ test('loadConfig defaults CLUSTER from AGORIC_NET', async t => {
 });
 
 test('loadConfig validates positive integers', async t => {
-  await t.throwsAsync(() => callLoadConfig({ SPECTRUM_API_TIMEOUT: '0' }), {
-    message: /"SPECTRUM_API_TIMEOUT" must be a positive integer/,
+  await t.throwsAsync(() => callLoadConfig({ REQUEST_TIMEOUT: '0' }), {
+    message: /"REQUEST_TIMEOUT" must be a positive integer/,
   });
+  await t.throwsAsync(
+    () => callLoadConfig({ AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC: '-1' }),
+    {
+      message:
+        /"AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC" must be a positive integer/,
+    },
+  );
 });
 
-test('loadConfig validates URL format', async t => {
-  await t.throwsAsync(() => callLoadConfig({ SPECTRUM_API_URL: 'not-a-url' }), {
-    message: /"SPECTRUM_API_URL" must be a valid URL/,
+test('loadConfig accepts auto rebalance environment overrides', async t => {
+  const config = await callLoadConfig({
+    AUTO_REBALANCE_DRIFT_BPS: '250',
+    AUTO_REBALANCE_DRIFT_MIN_MOVE_UUSDC: '50_000_000',
+    AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC: '30_000_000',
+  });
+
+  t.deepEqual(config.autoRebalance, {
+    driftBps: 250n,
+    driftMinMoveUusdc: 50_000_000n,
+    cashMinMoveUusdc: 30_000_000n,
   });
 });
 
 test('loadConfig trims whitespace from values', async t => {
-  const config = await callLoadConfig({ AGORIC_NET: '  devnet  ' });
+  const config = await callLoadConfig({
+    AGORIC_NET: '  devnet  ',
+    AUTO_REBALANCE_CASH_MIN_MOVE_UUSDC: ' 30000000 ',
+  });
 
   t.is(config.mnemonic, 'test mnemonic phrase');
   t.is(config.alchemyApiKey, 'test1234');
-  t.is(config.cosmosRest.agoricNetworkSpec, 'devnet');
+  t.is(config.agoricNetworkSpec, 'devnet');
+  t.is(config.autoRebalance.cashMinMoveUusdc, 30_000_000n);
 });
 
 test('loadConfig rejects empty required values', async t => {
@@ -191,6 +206,58 @@ test('loadConfig rejects invalid contract instance', async t => {
   await t.throwsAsync(() => callLoadConfig({ CONTRACT_INSTANCE: 'ymax2' }), {
     message: /CONTRACT_INSTANCE must be 'ymax0' or 'ymax1'/,
   });
+});
+
+// --- Unit tests for getRevertConfirmationsRequired ---
+
+test('getRevertConfirmationsRequired exceeds normal confirmations', t => {
+  // All chains should have revert confirmations >= normal confirmations
+  const chainIds = [
+    'eip155:1', // Ethereum (12s blocks)
+    'eip155:42161', // Arbitrum (0.3s blocks)
+    'eip155:43114', // Avalanche (2s blocks)
+    'eip155:8453', // Base (2.5s blocks)
+    'eip155:10', // Optimism (2s blocks)
+  ] as const;
+
+  for (const chainId of chainIds) {
+    const normal = getConfirmationsRequired(chainId);
+    const revert = getRevertConfirmationsRequired(chainId);
+    t.true(
+      revert > normal,
+      `${chainId}: revert (${revert}) should exceed normal (${normal})`,
+    );
+  }
+});
+
+test('getRevertConfirmationsRequired scales with block time', t => {
+  // Faster chains need more confirmations to cover the same wall-clock time
+  const arbitrum = getRevertConfirmationsRequired('eip155:42161'); // 0.3s blocks
+  const ethereum = getRevertConfirmationsRequired('eip155:1'); // 12s blocks
+
+  t.true(
+    arbitrum > ethereum,
+    `Arbitrum (${arbitrum}) should need more confirmations than Ethereum (${ethereum})`,
+  );
+});
+
+test('getRevertConfirmationsRequired computes expected values', t => {
+  // 10 min = 600_000ms; ceil(600_000 / blockTimeMs)
+  const expected: Record<string, number> = {
+    'eip155:1': 50, // ceil(600_000 / 12_000)
+    'eip155:42161': 2000, // ceil(600_000 / 300)
+    'eip155:43114': 300, // ceil(600_000 / 2_000)
+    'eip155:8453': 240, // ceil(600_000 / 2_500)
+    'eip155:10': 300, // ceil(600_000 / 2_000)
+  };
+
+  for (const [chainId, expectedConfs] of Object.entries(expected)) {
+    t.is(
+      getRevertConfirmationsRequired(chainId as any),
+      expectedConfs,
+      `${chainId}: expected ${expectedConfs} revert confirmations`,
+    );
+  }
 });
 
 // --- Unit tests for createEVMContext ---

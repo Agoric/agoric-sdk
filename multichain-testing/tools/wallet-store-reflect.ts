@@ -1,7 +1,13 @@
-import type { SigningSmartWalletKit } from '@agoric/client-utils';
-import { retryUntilCondition, type RetryOptions } from '@agoric/client-utils';
+/* global globalThis */
+import {
+  type SigningSmartWalletKit,
+  retryUntilCondition,
+  type RetryOptions,
+} from '@agoric/client-utils';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { EMethods } from '@agoric/vow/src/E.js';
+import type { Instance } from '@agoric/zoe';
+import type { StdFee } from '@cosmjs/amino';
 
 export const walletUpdates = (
   getLastUpdate: () => Promise<UpdateRecord>,
@@ -12,7 +18,7 @@ export const walletUpdates = (
 ) => {
   return harden({
     invocation: async (id: string | number) => {
-      const done = (await retryUntilCondition(
+      const doneP = retryUntilCondition(
         getLastUpdate,
         update =>
           update.updated === 'invocation' &&
@@ -20,7 +26,8 @@ export const walletUpdates = (
           !!(update.result || update.error),
         `${id}`,
         retryOpts,
-      )) as UpdateRecord & { updated: 'invocation' };
+      ) as Promise<UpdateRecord & { updated: 'invocation' }>;
+      const done = await doneP;
       if (done.error) throw Error(done.error);
       return done.result;
     },
@@ -67,11 +74,12 @@ export const reflectWalletStore = (
     log: (...args: unknown[]) => void;
     setTimeout: typeof globalThis.setTimeout;
     fresh: () => number | string;
+    fee?: StdFee;
   },
 ) => {
   const up = walletUpdates(sig.query.getLastUpdate, retryOpts);
 
-  let saveResult: { name: string; overwrite?: boolean } | undefined = undefined;
+  let saveResult: { name: string; overwrite?: boolean } | undefined;
   const savingResult = async <T>(name: string, thunk: () => Promise<T>) => {
     assert(!saveResult, 'already saving');
     saveResult = { name, overwrite: true };
@@ -98,11 +106,13 @@ export const reflectWalletStore = (
             args,
             ...(saveResult ? { saveResult } : {}),
           });
+          const { fee } = retryOpts;
           const tx = await sig.sendBridgeAction(
-            harden({
+            {
               method: 'invokeEntry',
               message,
-            }),
+            },
+            fee,
           );
           if (tx.code !== 0) {
             throw Error(tx.rawLog);

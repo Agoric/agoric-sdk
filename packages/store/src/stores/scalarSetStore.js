@@ -27,7 +27,7 @@ import { makeCurrentKeysKit } from './store-utils.js';
 export const makeSetStoreMethods = (
   jsset,
   assertKeyOkToAdd,
-  assertKeyOkToDelete = undefined,
+  assertKeyOkToDelete,
   keyName = 'key',
 ) => {
   const { assertUpdateOnAdd, assertUpdateOnDelete, iterableKeys } =
@@ -44,7 +44,7 @@ export const makeSetStoreMethods = (
    * @param {Pattern} [keyPatt]
    * @returns {Iterable<K>}
    */
-  const keys = (keyPatt = undefined) =>
+  const keys = keyPatt =>
     keyPatt === undefined
       ? iterableKeys
       : filterIterable(iterableKeys, k => matches(k, keyPatt));
@@ -93,10 +93,7 @@ export const makeSetStoreMethods = (
  * @param {StoreOptions} [options]
  * @returns {SetStore<K>}
  */
-export const makeScalarSetStore = (
-  tag = 'key',
-  { keyShape = undefined } = {},
-) => {
+export const makeScalarSetStore = (tag = 'key', { keyShape } = {}) => {
   const jsset = new Set();
   if (keyShape !== undefined) {
     assertPattern(keyShape);

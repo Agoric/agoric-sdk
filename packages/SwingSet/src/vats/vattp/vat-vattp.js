@@ -10,6 +10,7 @@ import {
 import { Far, E } from '@endo/far';
 
 /**
+ * @import {ERef} from '@endo/far';
  * @import {MapStore, SetStore} from '@agoric/store';
  */
 
@@ -291,3 +292,5 @@ export function buildRootObject(vatPowers, _vatParams, baggage) {
     ...serviceNetworkFunctions,
   });
 }
+
+/** @typedef {ERef<ReturnType<typeof buildRootObject>>} VattpVat */

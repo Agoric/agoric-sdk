@@ -5,6 +5,14 @@ import { M } from '@endo/patterns';
 import { BridgeHandlerI } from './bridge.js';
 
 /**
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {BridgeId} from '@agoric/internal';
+ * @import {ScopedBridgeManager} from './types.js';
+ * @import {MapStore} from '@agoric/store';
+ * @import {ERef} from '@agoric/vow';
+ */
+
+/**
  * @typedef {any} MostlyPureData ideally should be PureData, but that type is
  *   too restrictive to work out-of-the-box.
  */
@@ -95,7 +103,7 @@ const TargetRegistryI = M.interface('TargetRegistry', {
   unregister: M.callWhen(M.string()).returns(),
 });
 
-/** @param {import('@agoric/base-zone').Zone} zone */
+/** @param {Zone} zone */
 export const prepareTargetRegistration = zone =>
   zone.exoClass(
     'TargetRegistration',
@@ -161,7 +169,7 @@ export const prepareTargetRegistration = zone =>
  *   ScopedBridgeManager inbound messages of the associated event type and
  *   dispatching them to the app registered for their target.
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {ReturnType<typeof prepareTargetRegistration>} makeTargetRegistration
  */
 export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
@@ -173,8 +181,8 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
       targetRegistry: TargetRegistryI,
     },
     /**
-     * @template {import('@agoric/internal').BridgeId} T
-     * @param {import('./types.js').ScopedBridgeManager<T>} manager
+     * @template {BridgeId} T
+     * @param {ScopedBridgeManager<T>} manager
      * @param {string} inboundEventType
      * @param {AppTransformer} [appTransformer]
      */
@@ -187,6 +195,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
     }),
     {
       bridgeHandler: {
+        /** @param {{ type: string; target: any }} obj */
         async fromBridge(obj) {
           const { inboundEventType, targetToApp } = this.state;
           const { type, target: inboundTarget } = obj;
@@ -311,7 +320,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
   );
 harden(prepareBridgeTargetKit);
 
-/** @param {import('@agoric/base-zone').Zone} zone */
+/** @param {Zone} zone */
 export const prepareBridgeTargetModule = zone => {
   const makeTargetRegistration = prepareTargetRegistration(zone);
   const makeBridgeTargetKit = prepareBridgeTargetKit(

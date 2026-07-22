@@ -3,11 +3,10 @@ package vtransfer
 import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
-	clienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
-	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
-	"github.com/cosmos/ibc-go/v8/modules/core/exported"
+	clienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	channeltypes "github.com/cosmos/ibc-go/v10/modules/core/04-channel/types"
+	porttypes "github.com/cosmos/ibc-go/v10/modules/core/05-port/types"
+	"github.com/cosmos/ibc-go/v10/modules/core/exported"
 )
 
 // IBCMiddleware (https://ibc.cosmos.network/main/ibc/apps/ibcmodule) forwards
@@ -57,11 +56,10 @@ func (im IBCMiddleware) OnChanOpenInit(
 	connectionHops []string,
 	portID string,
 	channelID string,
-	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	version string,
 ) (string, error) {
-	return im.ibcModule.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, version)
+	return im.ibcModule.OnChanOpenInit(ctx, order, connectionHops, portID, channelID, counterparty, version)
 }
 
 // OnChanOpenTry implements the IBCModule interface.
@@ -71,11 +69,10 @@ func (im IBCMiddleware) OnChanOpenTry(
 	connectionHops []string,
 	portID,
 	channelID string,
-	chanCap *capabilitytypes.Capability,
 	counterparty channeltypes.Counterparty,
 	counterpartyVersion string,
 ) (string, error) {
-	return im.ibcModule.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, chanCap, counterparty, counterpartyVersion)
+	return im.ibcModule.OnChanOpenTry(ctx, order, connectionHops, portID, channelID, counterparty, counterpartyVersion)
 }
 
 // OnChanOpenAck implements the IBCModule interface.
@@ -125,29 +122,32 @@ func (im IBCMiddleware) OnChanCloseConfirm(
 // OnRecvPacket implements the IBCModule interface.
 func (im IBCMiddleware) OnRecvPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) exported.Acknowledgement {
-	return im.vtransferKeeper.InterceptOnRecvPacket(ctx, im.ibcModule, packet, relayer)
+	return im.vtransferKeeper.InterceptOnRecvPacket(ctx, im.ibcModule, channelVersion, packet, relayer)
 }
 
 // OnAcknowledgementPacket implements the IBCModule interface.
 func (im IBCMiddleware) OnAcknowledgementPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	return im.vtransferKeeper.InterceptOnAcknowledgementPacket(ctx, im.ibcModule, packet, acknowledgement, relayer)
+	return im.vtransferKeeper.InterceptOnAcknowledgementPacket(ctx, im.ibcModule, channelVersion, packet, acknowledgement, relayer)
 }
 
 // OnTimeoutPacket implements the IBCModule interface.
 func (im IBCMiddleware) OnTimeoutPacket(
 	ctx sdk.Context,
+	channelVersion string,
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	return im.vtransferKeeper.InterceptOnTimeoutPacket(ctx, im.ibcModule, packet, relayer)
+	return im.vtransferKeeper.InterceptOnTimeoutPacket(ctx, im.ibcModule, channelVersion, packet, relayer)
 }
 
 // WriteAcknowledgement implements the ICS4 Wrapper interface.
@@ -156,13 +156,12 @@ func (im IBCMiddleware) OnTimeoutPacket(
 // because they support packet initiation.
 func (im IBCMiddleware) WriteAcknowledgement(
 	ctx sdk.Context,
-	chanCap *capabilitytypes.Capability,
 	packet exported.PacketI,
 	ack exported.Acknowledgement,
 ) error {
-	syncAck, origPacket := im.vtransferKeeper.InterceptWriteAcknowledgement(ctx, chanCap, packet, ack)
+	syncAck, origPacket := im.vtransferKeeper.InterceptWriteAcknowledgement(ctx, packet, ack)
 	if syncAck != nil {
-		return im.vtransferKeeper.WriteAcknowledgement(ctx, chanCap, origPacket, syncAck)
+		return im.vtransferKeeper.WriteAcknowledgement(ctx, origPacket, syncAck)
 	}
 	return nil
 }
@@ -174,14 +173,13 @@ func (im IBCMiddleware) WriteAcknowledgement(
 // SendPacket implements the ICS4 Wrapper interface.
 func (im IBCMiddleware) SendPacket(
 	ctx sdk.Context,
-	chanCap *capabilitytypes.Capability,
 	sourcePort string,
 	sourceChannel string,
 	timeoutHeight clienttypes.Height,
 	timeoutTimestamp uint64,
 	data []byte,
 ) (uint64, error) {
-	return im.vtransferKeeper.SendPacket(ctx, chanCap, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
+	return im.vtransferKeeper.SendPacket(ctx, sourcePort, sourceChannel, timeoutHeight, timeoutTimestamp, data)
 }
 
 // GetAppVersion implements the ICS4 Wrapper interface.

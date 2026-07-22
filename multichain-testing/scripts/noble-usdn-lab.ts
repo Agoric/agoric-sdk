@@ -76,6 +76,37 @@ export const configs = {
       api: 'http://localhost:1314',
     },
   },
+  main: {
+    noble: {
+      rpc: 'https://noble-rpc.polkachu.com:443',
+      api: 'https://noble-api.polkachu.com:443',
+      chainId: 'noble-1',
+      explorer: 'https://www.mintscan.io/noble',
+    },
+    agoric: {
+      rpc: 'https://main.rpc.agoric.net:443',
+      connections: {
+        'noble-1': {
+          id: 'connection-72',
+          client_id: '07-tendermint-77',
+          counterparty: {
+            client_id: '07-tendermint-32',
+            connection_id: 'connection-38',
+          },
+          state: 3,
+          transferChannel: {
+            channelId: 'channel-62',
+            portId: 'transfer',
+            counterPartyChannelId: 'channel-21',
+            counterPartyPortId: 'transfer',
+            ordering: 0,
+            state: 3,
+            version: 'ics20-1',
+          },
+        },
+      },
+    },
+  },
   testnet: {
     noble: {
       faucet: 'https://faucet.circle.com/',
@@ -127,9 +158,9 @@ const signArgsFor = (from: Who, config: typeof configs.testnet.noble) =>
   ].flat();
 
 const parseTx = stdout => {
-  const { code, raw_log, txhash } = JSON.parse(stdout);
+  const { code, raw_log: log, txhash } = JSON.parse(stdout);
   if (code !== 0) {
-    throw Error(raw_log);
+    throw Error(log);
   }
   return txhash;
 };
@@ -317,7 +348,8 @@ const main = async ({
   configFile = 'config.ymax.yaml',
   connectWithSigner = SigningStargateClient.connectWithSigner,
 } = {}) => {
-  if (env.NET !== 'testnet') {
+  await null;
+  if ((env.NET || 'starship') === 'starship') {
     const fetcher = await useRegistry(configFile);
     await ConfigContext.init(configFile, fetcher);
   }
@@ -332,6 +364,7 @@ const main = async ({
       MNEMONIC,
       connectWithSigner,
       config: configs[env.NET || 'testnet'],
+      dest: env.MKFWD,
     });
     console.log(tx);
     return;
@@ -357,6 +390,7 @@ const main = async ({
   }
   if (env.POOL) {
     throw Error('does not work; needs to use authority exec');
+    // eslint-disable-next-line no-unreachable
     const { stdout } = await createPool($v, config);
     console.log(JSON.parse(stdout));
   }

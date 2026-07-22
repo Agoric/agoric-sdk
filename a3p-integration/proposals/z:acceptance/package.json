@@ -1,4 +1,5 @@
 {
+  "name": "z:acceptance",
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
@@ -6,7 +7,6 @@
       "testing/recorded-retired-instances.js test/recorded-instances-submission",
       "vats/test-localchain.js test/localchaintest-submission",
       "testing/restart-valueVow.js test/restart-valueVow",
-      "testing/upgrade-vaultFactory.js test/upgrade-vaultFactory",
       "vats/upgrade-provisionPool.js test/upgrade-provisionPool",
       "orchestration/init-stakeBld.js"
     ]
@@ -17,10 +17,9 @@
     "@agoric/client-utils": "dev",
     "@agoric/cosmic-proto": "dev",
     "@agoric/ertp": "dev",
-    "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",
     "@agoric/store": "dev",
-    "@agoric/synthetic-chain": "^0.6.1",
+    "@agoric/synthetic-chain": "^0.7.1",
     "@agoric/zoe": "dev",
     "@cosmjs/stargate": "^0.36.0",
     "@cosmjs/tendermint-rpc": "^0.36.0",
@@ -34,18 +33,18 @@
   },
   "resolutions": {
     "$commentXsnap": "UNTIL https://github.com/Agoric/agoric-sdk/issues/10259",
+    "$commentAgoric": "agoric (CLI) is intentionally NOT portaled to the local agoric-cli: #12719 removed the psm/vaults/reserve/oracle agops subcommands from this repo, but the acceptance tests still exercise those still-on-chain contracts. Resolving agoric from npm keeps the published CLI (with those subcommands) available.",
     "@agoric/xsnap": "beta",
     "@agoric/cosmos": "portal:../../agoric-sdk/golang/cosmos",
     "@agoric/ertp": "portal:../../agoric-sdk/packages/ERTP",
     "@agoric/swingset-vat": "portal:../../agoric-sdk/packages/SwingSet",
     "@agoric/access-token": "portal:../../agoric-sdk/packages/access-token",
-    "agoric": "portal:../../agoric-sdk/packages/agoric-cli",
     "@agoric/async-flow": "portal:../../agoric-sdk/packages/async-flow",
     "@agoric/base-zone": "portal:../../agoric-sdk/packages/base-zone",
     "@agoric/builders": "portal:../../agoric-sdk/packages/builders",
     "@agoric/cache": "portal:../../agoric-sdk/packages/cache",
     "@agoric/casting": "portal:../../agoric-sdk/packages/casting",
-    "@agoric/client-utils": "dev",
+    "@agoric/client-utils": "portal:../../agoric-sdk/packages/client-utils",
     "@agoric/cosmic-proto": "portal:../../agoric-sdk/packages/cosmic-proto",
     "@agoric/cosmic-swingset": "portal:../../agoric-sdk/packages/cosmic-swingset",
     "@agoric/create-dapp": "portal:../../agoric-sdk/packages/create-dapp",
@@ -53,7 +52,6 @@
     "@agoric/eslint-config": "portal:../../agoric-sdk/packages/eslint-config",
     "@agoric/governance": "portal:../../agoric-sdk/packages/governance",
     "@agoric/import-manager": "portal:../../agoric-sdk/packages/import-manager",
-    "@agoric/inter-protocol": "portal:../../agoric-sdk/packages/inter-protocol",
     "@agoric/internal": "portal:../../agoric-sdk/packages/internal",
     "@agoric/kmarshal": "portal:../../agoric-sdk/packages/kmarshal",
     "@agoric/network": "portal:../../agoric-sdk/packages/network",
@@ -86,25 +84,13 @@
     "@cosmjs/tendermint-rpc@npm:^0.35.0-rc": "^0.36.0",
     "@cosmjs/tendermint-rpc@npm:0.35.0-rc": "^0.36.0"
   },
-  "ava": {
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "concurrency": 1,
-    "serial": true,
-    "timeout": "2m",
-    "files": [
-      "test/**/*.test.*",
-      "!submission"
-    ]
-  },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.9.3",
+  "packageManager": "yarn@4.12.0",
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",
-    "typescript": "~5.9.2"
+    "typescript": "~6.0.3"
   }
 }

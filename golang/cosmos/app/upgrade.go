@@ -13,12 +13,12 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	paramstypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
-	icahosttypes "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/types"
-	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
-	ibcclienttypes "github.com/cosmos/ibc-go/v8/modules/core/02-client/types"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
-	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
-	ibctmmigrations "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint/migrations"
+	icahosttypes "github.com/cosmos/ibc-go/v10/modules/apps/27-interchain-accounts/host/types"
+	ibctransfertypes "github.com/cosmos/ibc-go/v10/modules/apps/transfer/types"
+	ibcclienttypes "github.com/cosmos/ibc-go/v10/modules/core/02-client/types"
+	ibcconnectiontypes "github.com/cosmos/ibc-go/v10/modules/core/03-connection/types"
+	ibcexported "github.com/cosmos/ibc-go/v10/modules/core/exported"
+	ibctmmigrations "github.com/cosmos/ibc-go/v10/modules/light-clients/07-tendermint/migrations"
 )
 
 var upgradeNamesOfThisVersion = []string{
@@ -193,6 +193,15 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 
 		CoreProposalSteps := []vm.CoreProposalStep{}
 
+		// vatOptionUpdates are in-place per-vat option changes handed to
+		// cosmic-swingset to apply at this upgrade's reboot point. Unlike the
+		// CoreProposalSteps below, they are not core-evals: there is no
+		// supported runtime path for a core-eval to flip an already-running
+		// vat's `critical` flag, so this writes the kernel kvStore directly
+		// (applyVatOptionUpdates, packages/SwingSet/src/controller/
+		// upgradeSwingset.js). Chain selection lives here, cosmos-side.
+		var vatOptionUpdates []vatOptionUpdate
+
 		// These CoreProposalSteps are not idempotent and should only be executed
 		// as part of the first upgrade using this handler on any given chain.
 		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
@@ -208,6 +217,13 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 			if err != nil {
 				return nil, err
 			}
+
+			// Upgrade the components that changed.
+			CoreProposalSteps = append(CoreProposalSteps,
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
+				),
+			)
 
 			// terminationTargets is a slice of "$boardID:$instanceKitLabel" strings.
 			var terminationTargets []string
@@ -236,6 +252,24 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 				}
 				CoreProposalSteps = append(CoreProposalSteps, terminationStep)
 			}
+
+			// Promote the running ymax contract vat to `critical`. These are
+			// the known vatIDs for the ymax contract on each chain: ymax1 on
+			// mainnet, ymax0 on devnet.
+			promote := true
+			switch ctx.ChainID() {
+			case "agoric-3": // MAINNET (ymax1)
+				vatOptionUpdates = []vatOptionUpdate{{VatID: "v288", Critical: &promote}}
+			case "agoricdev-25": // DEVNET (ymax0)
+				vatOptionUpdates = []vatOptionUpdate{{VatID: "v320", Critical: &promote}}
+			}
+			if len(vatOptionUpdates) > 0 {
+				ctx.Logger().Info(
+					"upgrade will apply in-place vat option updates",
+					"chainID", ctx.ChainID(),
+					"vatOptionUpdates", vatOptionUpdates,
+				)
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
@@ -245,6 +279,8 @@ func makeUnreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) upgradetyp
 			// These will be merged with any coreProposals specified in the
 			// upgradeInfo field of the upgrade plan ran as subsequent steps
 			CoreProposals: vm.CoreProposalsFromSteps(CoreProposalSteps...),
+			// In-place vat option updates applied at the reboot point (see above)
+			VatOptionUpdates: vatOptionUpdates,
 		}
 
 		// Always run module migrations

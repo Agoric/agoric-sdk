@@ -2,6 +2,10 @@ import { makeTracer } from '@agoric/internal';
 import { base64ToBytes, Shape as NetworkShape } from '@agoric/network';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
+import {
+  finishTrafficEntries,
+  trafficTransforms,
+} from '../utils/orchestrationAccount.js';
 
 // As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
 export const ICS20_TRANSFER_SUCCESS_BYTES = '\x01';
@@ -17,6 +21,7 @@ const trace = makeTracer('IBCP');
  * @import {IBCEvent, IBCPacket} from '@agoric/vats';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {PacketOptions} from './packet-tools.js';
+ * @import {Zone} from '@agoric/base-zone';
  */
 
 const { Fail, bare } = assert;
@@ -62,7 +67,7 @@ export const createSequencePattern = sequence => {
 harden(createSequencePattern);
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools & { makeIBCReplyKit: MakeIBCReplyKit }} powers
  */
 export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
@@ -146,26 +151,27 @@ export const prepareIBCTransferSender = (zone, { watch, makeIBCReplyKit }) => {
           );
           const resultV = watch(ackDataV, this.facets.verifyTransferSuccess);
 
-          const baseMeta = opts?.meta ?? {};
-          const traffic = baseMeta.traffic ?? [];
-          const priorTraffic = traffic.slice(0, -1);
-          const thisTraffic = traffic.at(-1);
+          const { progressTracker, trafficSlice } = opts || {};
+          if (progressTracker) {
+            const priorReport = progressTracker.getCurrentProgressReport();
+            const traffic = finishTrafficEntries(
+              priorReport.traffic,
+              trafficSlice,
+              entries =>
+                trafficTransforms.IbcTransfer.finish(entries, sequence),
+            );
+            const report = harden({
+              ...priorReport,
+              traffic,
+            });
+            progressTracker.update(report);
+          }
 
-          const meta = {
-            ...baseMeta,
-            traffic: [
-              ...priorTraffic,
-              {
-                ...thisTraffic,
-                seq: sequence,
-              },
-            ],
-          };
-
-          return harden({ resultV, ...rest, meta });
+          return harden({ ...rest, resultV });
         },
       },
       verifyTransferSuccess: {
+        /** @param {string} ackData */
         onFulfilled(ackData) {
           let obj;
           try {
@@ -215,7 +221,7 @@ harden(prepareIBCTransferSender);
  *
  * Returns a vow that settles when a match is found.
  *
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 export const prepareIBCReplyKit = (zone, vowTools) => {
@@ -280,7 +286,7 @@ harden(prepareIBCReplyKit);
 /** @typedef {ReturnType<typeof prepareIBCReplyKit>} MakeIBCReplyKit */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {VowTools} vowTools
  */
 export const prepareIBCTools = (zone, vowTools) => {

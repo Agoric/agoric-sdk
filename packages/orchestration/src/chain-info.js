@@ -7,6 +7,7 @@
 
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import { keyMirror } from '@agoric/internal';
 import cctpChainInfo from './cctp-chain-info.js';
 import { withChainCapabilities } from './chain-capabilities.js';
 import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
@@ -17,18 +18,20 @@ import { ChainInfoShape, CosmosAssetInfoShape } from './typeGuards.js';
  * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from './types.js';
  * @import {NameAdmin} from '@agoric/vats';
  * @import {ChainInfo} from './orchestration-api.js';
+ * @import {NameHubKit} from '@agoric/vats';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
  * Well-known namespaces supported by the Orchestration SDK
  *
- * @enum {(typeof KnownNamespace)[keyof typeof KnownNamespace]}
+ * @typedef {(typeof KnownNamespace)[keyof typeof KnownNamespace]} KnownNamespace
  * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/c599f7601d0ce83e6dd9f350c6c21d158d56fd6d/CAIPs/caip-2.md}
  */
-export const KnownNamespace = /** @type {const} */ ({
-  cosmos: 'cosmos',
-  eip155: 'eip155',
-  solana: 'solana',
+export const KnownNamespace = keyMirror({
+  cosmos: null,
+  eip155: null,
+  solana: null,
 });
 harden(KnownNamespace);
 
@@ -93,9 +96,7 @@ export const registerChain = async (
       .then(() => log(`registered agoricNames chain.${name}`)),
   ];
 
-  const { chainId } = /** @type {import('./types.js').CosmosChainInfo} */ (
-    chainInfo
-  );
+  const { chainId } = /** @type {CosmosChainInfo} */ (chainInfo);
   for (const [counterChainId, connInfo] of Object.entries(connections)) {
     const [key, connectionInfo] = normalizeConnectionInfo(
       chainId,
@@ -123,7 +124,7 @@ export const registerChain = async (
  *
  * Not active on or planned for mainnet.
  *
- * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * @param {ERef<NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
  * @param {Record<string, ChainInfo>} chains
  */

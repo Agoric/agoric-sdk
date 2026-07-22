@@ -14,7 +14,12 @@ import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
 import { makeBOYDKit } from './boyd-gc.js';
 
-/** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
+/**
+ * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
+ * @import {LiveSlotsOptions} from './types.js';
+ * @import {VatDeliveryObject} from './types.js';
+ * @import {SwingSetCapData} from './types.js';
+ */
 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
@@ -31,7 +36,7 @@ const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagnostics
  * @param {*} vatPowers
- * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
+ * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent, gcAndFinalize,
  *                      meterControl }
  * @param {LimitedConsole} console
@@ -520,6 +525,7 @@ function build(
     return valToSlot.get(val);
   }
 
+  /** @type {Set<string> | null} */
   let importedPromises = null;
   function beginCollectingPromiseImports() {
     importedPromises = new Set();
@@ -835,7 +841,7 @@ function build(
 
   function DeviceHandler(slot) {
     return {
-      get(target, prop) {
+      get(_target, prop) {
         if (typeof prop !== 'string' && typeof prop !== 'symbol') {
           return undefined;
         }
@@ -1073,7 +1079,9 @@ function build(
     }
     // 'imports' is an exclusively-owned Set that holds all new
     // promise vpids, both resolved and unresolved
-    const imports = finishCollectingPromiseImports();
+    const imports = /** @type {Set<string>} */ (
+      finishCollectingPromiseImports()
+    );
     for (const vpid of retiredVPIDs) {
       unregisterUnreferencedVPID(vpid); // unregisters if not in vdata
       importedVPIDs.delete(vpid);
@@ -1252,9 +1260,9 @@ function build(
   let baggage;
   async function startVat(vatParametersCapData) {
     insistCapData(vatParametersCapData);
-    assert(!didStartVat);
+    !didStartVat || Fail`already started`;
     didStartVat = true;
-    assert(!didStopVat);
+    !didStopVat || Fail`already stopped`;
 
     // Build the `vatPowers` provided to `buildRootObject`. We include
     // vatGlobals and inescapableGlobalProperties to make it easier to write
@@ -1320,8 +1328,8 @@ function build(
   }
 
   /**
-   * @param {import('./types.js').VatDeliveryObject} delivery
-   * @returns {undefined | ReturnType<startVat>}
+   * @param {VatDeliveryObject} delivery
+   * @returns {undefined | ReturnType<typeof startVat>}
    */
   function dispatchToUserspace(delivery) {
     let result;
@@ -1384,7 +1392,7 @@ function build(
   });
 
   /**
-   * @param { import('./types.js').SwingSetCapData } _disconnectObjectCapData
+   * @param { SwingSetCapData } _disconnectObjectCapData
    * @returns {Promise<void>}
    */
   async function stopVat(_disconnectObjectCapData) {
@@ -1446,7 +1454,7 @@ function build(
    * terminate the vat). Userspace should not be able to cause the delivery
    * to fail: only a bug in liveslots should trigger a failure.
    *
-   * @param {import('./types.js').VatDeliveryObject} delivery
+   * @param {VatDeliveryObject} delivery
    * @returns {Promise<void>}
    */
   async function dispatch(delivery) {
@@ -1496,7 +1504,7 @@ function build(
  * @param {*} syscall  Kernel syscall interface that the vat will have access to
  * @param {*} forVatID  Vat ID label, for use in debug diagostics
  * @param {*} vatPowers
- * @param {import('./types.js').LiveSlotsOptions} liveSlotsOptions
+ * @param {LiveSlotsOptions} liveSlotsOptions
  * @param {*} gcTools { WeakRef, FinalizationRegistry, waitUntilQuiescent }
  * @param {LimitedConsole} [liveSlotsConsole]
  * @param {*} [buildVatNamespace]

@@ -1,11 +1,15 @@
 /* eslint-disable camelcase */
 // import '@endo/init';
-import fs from 'fs';
-import zlib from 'zlib';
-import process from 'process';
-import readline from 'readline';
+import fs from 'node:fs';
+import zlib from 'node:zlib';
+import process from 'node:process';
+import readline from 'node:readline';
 
 import sqlite3 from 'better-sqlite3';
+
+/**
+ * @import {Readable} from 'stream';
+ */
 
 function makeDB(dbPath) {
   const db = sqlite3(dbPath);
@@ -285,7 +289,7 @@ function extractSmallcaps(methargs_smallcaps) {
 
 async function processFile(slogfileName, sql, commitAndReopenTransaction) {
   console.log(`processFile`, slogfileName);
-  /** @type {import('stream').Readable} */
+  /** @type {Readable} */
   let slog = fs.createReadStream(slogfileName);
   if (slogfileName.endsWith('.gz')) {
     slog = slog.pipe(zlib.createGunzip());

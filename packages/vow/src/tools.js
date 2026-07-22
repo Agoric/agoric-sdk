@@ -10,7 +10,7 @@ import { makeWhen } from './when.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Passable} from '@endo/pass-style';
- * @import {IsRetryableReason, AsPromiseFunction, Vow, VowTools} from './types.js';
+ * @import {IsRetryableReason, AsPromiseFunction, Fulfilled, Vow, VowTools} from './types.js';
  */
 
 /**
@@ -50,13 +50,17 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
    * fulfilled and rejects when any of the input's promises or vows are
    * rejected with the first rejection reason.
    *
-   * @param {unknown[]} maybeVows
+   * @template {readonly unknown[]} TS
+   * @param {TS} maybeVows
+   * @returns {Vow<{ [P in keyof TS]: Fulfilled<TS[P]> }>}
    */
   const all = maybeVows => watchUtils.all(maybeVows);
 
   /**
-   * @param {unknown[]} maybeVows
    * @deprecated use `vowTools.all`
+   * @template {readonly unknown[]} TS
+   * @param {TS} maybeVows
+   * @returns {Vow<{ [P in keyof TS]: Fulfilled<TS[P]>}>}
    */
   const allVows = all;
 
@@ -66,7 +70,9 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
    * resolves when all of the input's promises or vows are settled with an
    * array of settled outcome objects.
    *
-   * @param {unknown[]} maybeVows
+   * @template {readonly unknown[]} TS
+   * @param {TS} maybeVows
+   * @returns {Vow<{ [P in keyof TS]: PromiseSettledResult<Fulfilled<TS[P]>> }>}
    */
   const allSettled = maybeVows => watchUtils.allSettled(maybeVows);
 

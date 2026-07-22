@@ -6,11 +6,18 @@ import { importBundle } from '@endo/import-bundle';
 
 import { createRequire } from 'node:module';
 
+/**
+ * @import {TestFn} from 'ava';
+ * @import {Macro} from 'ava';
+ * @import {HookQuery} from '../src/address-hooks.js';
+ * @import {Bech32Address} from '../src/address-hooks.js';
+ */
+
 const require = createRequire(import.meta.url);
 
 /**
- * @type {import('ava').TestFn<{
- *   addressHooks: import('../src/address-hooks.js');
+ * @type {TestFn<{
+ *   addressHooks: typeof import('../src/address-hooks.js');
  * }>}
  */
 const test = rawTest;
@@ -44,9 +51,9 @@ test.before(async t => {
 });
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *  [addressHook: string, baseAddress: string, hookDataStr: string, error?: any],
- *   { addressHooks: import('../src/address-hooks.js') }
+ *   { addressHooks: typeof import('../src/address-hooks.js') }
  * >}
  */
 const splitMacro = test.macro({
@@ -100,9 +107,9 @@ test(
 );
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [string, ArrayLike<number> | undefined, ArrayLike<number>, string],
- *   { addressHooks: import('../src/address-hooks.js') }
+ *   { addressHooks: typeof import('../src/address-hooks.js') }
  * >}
  */
 const roundtripMacro = test.macro({
@@ -161,7 +168,7 @@ test(
 );
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [
  *     string,
  *     ArrayLike<number>,
@@ -172,7 +179,14 @@ test(
  * >}
  */
 const lengthCheckMacro = test.macro({
-  title(providedTitle = '', prefix, baseAddress, hookData, charLimit, throws) {
+  title(
+    providedTitle = '',
+    _prefix,
+    _baseAddress,
+    _hookData,
+    charLimit,
+    throws,
+  ) {
     let sep = providedTitle.endsWith(' ') ? '' : ' ';
     const limitDesc = charLimit ? `${sep}charLimit=${charLimit}` : '';
     if (limitDesc) sep = ' ';
@@ -225,11 +239,11 @@ const lengthCheckMacro = test.macro({
 }
 
 /**
- * @type {import('ava').Macro<
+ * @type {Macro<
  *   [
  *     baseAddress: string,
- *     query: import('../src/address-hooks.js').HookQuery,
- *     expected: import('../src/address-hooks.js').Bech32Address,
+ *     query: HookQuery,
+ *     expected: Bech32Address,
  *   ]
  * >}
  */

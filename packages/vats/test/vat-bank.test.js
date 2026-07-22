@@ -12,6 +12,10 @@ import { buildRootObject } from '../src/vat-bank.js';
  * @import {Remote} from '@agoric/internal';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  * @import {VbankBalanceUpdateAction} from '@agoric/cosmic-swingset/src/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {Issuer} from '@agoric/ertp';
+ * @import {Payment} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
@@ -188,7 +192,7 @@ test('communication', async t => {
   // TODO: We can fix this only if the ERTP methods also allow consuming a
   // `Remote<Payment>` instead of just `Payment`.  That typing has not yet been
   // done, hence the cast.
-  const payment2 = /** @type {Payment} */ (
+  const payment2 = /** @type {Payment<'nat'>} */ (
     await E(vpurse).withdraw(paymentAmount)
   );
   const actualPaymentAmount2 = await E(kit.issuer).burn(

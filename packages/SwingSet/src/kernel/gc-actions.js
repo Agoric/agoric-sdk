@@ -2,7 +2,11 @@ import { Fail } from '@endo/errors';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatID } from '../lib/id.js';
 
-/** @import {TotalMap} from '@agoric/internal'; */
+/**
+ * @import {TotalMap} from '@agoric/internal';
+ * @import {RunQueueEvent} from '../types-internal.js';
+ * @import {VatKeeper} from '../types-external.js';
+ */
 /** @import {KernelKeeper} from './state/kernelKeeper.js'; */
 
 /**
@@ -47,7 +51,7 @@ function parseAction(s) {
 
 /**
  * @param {KernelKeeper} kernelKeeper
- * @returns {import('../types-internal.js').RunQueueEvent | undefined}
+ * @returns {RunQueueEvent | undefined}
  */
 export function processGCActionSet(kernelKeeper) {
   const allActionsSet = kernelKeeper.getGCActions();
@@ -79,7 +83,7 @@ export function processGCActionSet(kernelKeeper) {
    * and reference counts warrants processing it, or if it should instead be
    * negated/bypassed.
    *
-   * @param {import('../types-external.js').VatKeeper} vatKeeper
+   * @param {VatKeeper} vatKeeper
    * @param {GCActionType} type
    * @param {KOID} kref
    */

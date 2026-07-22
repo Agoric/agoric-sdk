@@ -9,18 +9,21 @@ const { log } = console;
 
 /**
  * @import {ListenHandler, PortAllocator} from '@agoric/network';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
  *
- * @param {ZCF} zcf
+ * @param {ZCF} _zcf
  * @param {{
  *   address: string,
  *   portAllocator: ERef<PortAllocator>;
  * }} privateArgs
- * @param {import('@agoric/vat-data').Baggage} _baggage
+ * @param {Baggage} _baggage
  */
-export const start = async (zcf, privateArgs, _baggage) => {
+export const start = async (_zcf, privateArgs, _baggage) => {
   const { portAllocator } = privateArgs;
 
   const boundPort = await E(portAllocator).allocateCustomIBCPort();

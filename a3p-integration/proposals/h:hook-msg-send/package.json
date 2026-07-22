@@ -1,4 +1,5 @@
 {
+  "name": "h:hook-msg-send",
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
@@ -10,21 +11,13 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/client-utils": "dev",
-    "@agoric/synthetic-chain": "^0.6.1",
+    "@agoric/synthetic-chain": "^0.7.1",
     "@endo/init": "^1.1.12",
     "agoric": "dev",
     "ava": "^5.3.1"
   },
-  "ava": {
-    "concurrency": 1,
-    "timeout": "2m",
-    "files": [
-      "test/**/*.test.*",
-      "!submission"
-    ]
-  },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.9.3"
+  "packageManager": "yarn@4.12.0"
 }

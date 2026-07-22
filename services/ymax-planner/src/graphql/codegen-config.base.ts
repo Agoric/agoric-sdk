@@ -1,4 +1,4 @@
-/* eslint-env node */
+/* global process */
 
 import fs from 'node:fs';
 import pathlib from 'node:path';
@@ -25,8 +25,8 @@ for (
   try {
     const fileStats = fs.statSync(dotEnvPath);
     if (fileStats && !fileStats.isDirectory()) dotEnvPaths.push(dotEnvPath);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars,no-empty
-  } catch (_err) {}
+    // eslint-disable-next-line no-empty
+  } catch {}
   const packageJsonPath = pathlib.join(dirname, 'package.json');
   if (fs.statSync(packageJsonPath, { throwIfNoEntry: false })) break;
 }
@@ -87,6 +87,7 @@ export const makeCodegenConfigForFileUrl = (codegenConfigFileUrl: string) => {
         },
       },
     },
+    importExtension: '.js',
   };
   return config;
 };

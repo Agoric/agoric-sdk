@@ -36,10 +36,12 @@ import {
 const enableKernelGC = true;
 
 /**
+ * @import { KVStore } from '@agoric/internal/src/kv-store.js';
  * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
  * @import { BundleCap, BundleID, EndoZipBase64Bundle, KernelSlog, ManagerType, SnapStore, TranscriptStore, VatKeeper, CleanupBudget, CleanupWork, PolicyOutputCleanupBudget } from '../../types-external.js'
- * @import { InternalKernelOptions, ReapDirtThreshold, PromiseRecord, RunQueueEventCleanupTerminatedVat } from '../../types-internal.js'
+ * @import { InternalKernelOptions, ReapDirtThreshold, SwingsetPromiseRecord, RunQueueEventCleanupTerminatedVat } from '../../types-internal.js'
  * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
+ * @import {VatKeeperPowers} from './vatKeeper.js';
  */
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
@@ -237,7 +239,7 @@ const setObjectReferenceCount = (kvStore, kref, counts) => {
  * and "recognizable" counts.
  *
  * @param { (key: string) => string} getRequired
- * @param { import('@agoric/swing-store').KVStore } kvStore
+ * @param { KVStore } kvStore
  * @param {string} kref  The kernel slot whose refcount is to be incremented.
  * @param {string?} tag  Debugging note with rough source of the reference.
  * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
@@ -845,7 +847,7 @@ export default function makeKernelKeeper(
 
   /**
    * @param {string} kernelSlot
-   * @returns {PromiseRecord}
+   * @returns {SwingsetPromiseRecord}
    */
   function getKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
@@ -1227,7 +1229,7 @@ export default function makeKernelKeeper(
 
   /**
    * @param {string} vatID
-   * @returns {IterableIterator<[kpid: string, p: PromiseRecord]>}
+   * @returns {IterableIterator<[kpid: string, p: SwingsetPromiseRecord]>}
    */
   function* enumeratePromisesByDecider(vatID) {
     insistVatID(vatID);
@@ -1705,7 +1707,7 @@ export default function makeKernelKeeper(
     initializeVatState(kvStore, transcriptStore, vatID, source, options);
   }
 
-  /** @type {import('./vatKeeper.js').VatKeeperPowers} */
+  /** @type {VatKeeperPowers} */
   const vatKeeperPowers = {
     transcriptStore,
     kernelSlog,

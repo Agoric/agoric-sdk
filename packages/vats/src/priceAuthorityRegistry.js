@@ -15,6 +15,10 @@ import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {MutableQuote, PriceAuthority, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Brand} from '@agoric/ertp';
+ * @import {MapStore} from '@agoric/store';
+ * @import {Amount} from '@agoric/ertp';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -29,7 +33,7 @@ import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.
  *   brandIn: Brand,
  *   brandOut: Brand,
  *   force?: boolean,
- * ) => Promise<Deleter>} registerPriceAuthority
+ * ) => ERef<Deleter>} registerPriceAuthority
  *   Add a unique price authority for a given pair
  */
 
@@ -44,7 +48,7 @@ import { PriceAuthorityI } from '@agoric/zoe/src/contractSupport/priceAuthority.
 /**
  * Make a singleton registry for priceAuthorities
  *
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
  * @returns {PriceAuthorityRegistry}
  */
 export const providePriceAuthorityRegistry = baggage => {
@@ -202,7 +206,6 @@ export const providePriceAuthorityRegistry = baggage => {
         }
 
         return Far('deleter', {
-          // @ts-expect-error XXX callWhen
           delete() {
             (priceStore.has(brandOut) && priceStore.get(brandOut) === record) ||
               Fail`Price authority already dropped`;

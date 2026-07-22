@@ -1,10 +1,13 @@
 // @ts-nocheck
+import '@agoric/internal/src/ava-force-exit.mjs';
+import '@endo/init/debug.js';
+
 /* global globalThis */
 
-import { spawn } from 'child_process';
-import fs from 'fs';
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
 import { tmpName } from 'tmp';
-import { type as osType } from 'os';
+import { type as osType } from 'node:os';
 import sqlite3 from 'better-sqlite3';
 import test from 'ava';
 import { makeMeasureSeconds } from '@agoric/internal';

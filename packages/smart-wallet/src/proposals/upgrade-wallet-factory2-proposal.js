@@ -1,8 +1,13 @@
 // @ts-check
-/// <reference types="@agoric/vats/src/core/types-ambient.js" />
 
 import { E } from '@endo/far';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+
+/**
+ * @import {BootstrapPowers} from '@agoric/vats/src/core/types.js';
+ * @import {ChainBootstrapSpace} from '@agoric/vats/src/core/types.js';
+ * @import {VatSourceRef} from '@agoric/vats/src/core/types.js';
+ */
 
 /**
  * @param {BootstrapPowers & ChainBootstrapSpace} powers

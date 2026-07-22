@@ -1,6 +1,11 @@
 /** @file core eval proposal to fix namesByAddress by upgrading vat-provisioning */
 import { E } from '@endo/far';
 
+/**
+ * @import {BootstrapManifest} from '../core/lib-boot.js';
+ * @import {BootstrapPowers} from '../core/types.ts';
+ */
+
 const vatUpgrade = /** @type {const} */ ({
   name: 'provisioning',
   opts: {
@@ -33,13 +38,15 @@ export const upgradeProvisioningVat = async (powers, options) => {
   const incarnation = await E(adminNode).upgrade(bundleCap, opts);
   console.log({ ...vatUpgrade, incarnation });
 
-  const { namesByAddress } = await E(root).getNamesByAddressKit();
+  const { namesByAddress } = await E(
+    /** @type {any} */ (root),
+  ).getNamesByAddressKit();
   resolver.reset();
   resolver.resolve(namesByAddress);
 };
 
 export const getManifestForProvisioning = (_powers, { provisioningRef }) => ({
-  /** @type {import('../core/lib-boot').BootstrapManifest} */
+  /** @type {BootstrapManifest} */
   manifest: {
     [upgradeProvisioningVat.name]: {
       consume: {

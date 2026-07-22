@@ -1,7 +1,3 @@
-// @jessie-check
-
-/// <reference types="@agoric/store/exported.js" />
-
 import { q, Fail, annotateError, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@endo/patterns';
@@ -13,10 +9,12 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 /**
  * @import {Key, Pattern} from '@endo/patterns';
  * @import {Zone} from '@agoric/base-zone';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {CastedPattern} from '@endo/patterns';
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat';
  * @import {AmountStore} from './amountStore.js';
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js';
+ * @import {WeakMapStore} from '@agoric/store';
+ * @import {SetStore} from '@agoric/store';
  */
 
 /**
@@ -24,7 +22,7 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
  * @param {Brand} brand
  * @param {K} assetKind
  * @param {Pattern} elementShape
- * @returns {TypedPattern<Amount<K>>}
+ * @returns {CastedPattern<Amount<K>>}
  */
 const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   let valueShape;
@@ -206,9 +204,8 @@ export const preparePaymentLedger = (
     }
   };
 
-  /** @type {(allegedAmount: Amount) => Amount} */
+  /** @type {<K extends AssetKind>(allegedAmount: Amount<K>) => Amount<K>} */
   const coerce = allegedAmount => AmountMath.coerce(brand, allegedAmount);
-  /** @type {(left: Amount, right: Amount) => boolean} */
 
   /**
    * Methods like deposit() have an optional second parameter `optAmountShape`

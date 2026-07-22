@@ -3,17 +3,24 @@ import { makeTracer } from '@agoric/internal';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 
+/**
+ * @import {Baggage} from '@agoric/swingset-liveslots';
+ * @import {SetStore} from '@agoric/store';
+ * @import {NatValue} from '@agoric/ertp';
+ * @import {ZCF} from '@agoric/zoe';
+ */
+
 const trace = makeTracer('WFun');
 
 /**
  * @param {ZCF} zcf
  * @param {unknown} _pa
- * @param {import('@agoric/swingset-liveslots').Baggage} baggage
+ * @param {Baggage} baggage
  */
 export const start = (zcf, _pa, baggage) => {
   const zone = makeDurableZone(baggage);
 
-  /** @type {import('@agoric/store').SetStore<ReturnType<typeof makeAdmin>>} */
+  /** @type {SetStore<ReturnType<typeof makeAdmin>>} */
   const admins = zone.setStore('admins');
 
   let value;
@@ -43,10 +50,13 @@ export const start = (zcf, _pa, baggage) => {
         return [...admins.values()].map(a => a.getPrice());
       },
       makeValueSetterInvitation() {
-        return zcf.makeInvitation((seat, /** @type {object} */ args) => {
-          seat.exit();
-          return makeValueSetter(args?.offset);
-        }, 'setter');
+        return zcf.makeInvitation(
+          (seat, /** @type {Record<string, any>} */ args) => {
+            seat.exit();
+            return makeValueSetter(args?.offset);
+          },
+          'setter',
+        );
       },
       getValue() {
         return value;
@@ -65,7 +75,7 @@ export const start = (zcf, _pa, baggage) => {
       getPrice() {
         return this.state.price;
       },
-      /** @param {import('@agoric/ertp').NatValue} p */
+      /** @param {NatValue} p */
       setPrice(p) {
         this.state.price = p;
         console.log('price', p);

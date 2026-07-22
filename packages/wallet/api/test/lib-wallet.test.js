@@ -19,6 +19,17 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { makeHeapZone } from '@agoric/zone';
 import { makeWalletRoot } from '../src/lib-wallet.js';
 
+/**
+ * @import {TestFn} from 'ava';
+ * @import {ExecutionContext} from 'ava';
+ * @import {ZoeService} from '@agoric/zoe';
+ * @import {Installation} from '@agoric/zoe';
+ * @import {ERef} from '@agoric/vow';
+ * @import {LatestTopic} from '@agoric/notifier';
+ * @import {Invitation} from '@agoric/zoe';
+ * @import {Issuer} from '@agoric/ertp';
+ */
+
 const ZOE_INVITE_PURSE_PETNAME = 'Default Zoe invite purse';
 
 const mixinMyAddress = prepareMixinMyAddress(makeHeapZone());
@@ -28,7 +39,7 @@ function makeFakeMyAddressNameAdmin() {
   return mixinMyAddress(nameAdmin, 'agoric1test1');
 }
 
-/** @type {import('ava').TestFn<Awaited<LibWalletTestContext>>} */
+/** @type {TestFn<Awaited<LibWalletTestContext>>} */
 const test = anyTest;
 
 /**
@@ -40,7 +51,7 @@ const test = anyTest;
  */
 
 async function setupTest(
-  /** @type {import('ava').ExecutionContext<LibWalletTestContext>} */ t,
+  /** @type {ExecutionContext<LibWalletTestContext>} */ t,
   { autoswap = false, automaticRefund = false } = {},
 ) {
   const pursesStateChangeLog = [];

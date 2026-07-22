@@ -17,6 +17,10 @@ const interfaceTODO = undefined;
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {VTransferIBCEvent} from '@agoric/vats';
+ * @import {ZCF} from '@agoric/zoe';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 export const SingleNatAmountRecord = M.and(
@@ -101,7 +105,7 @@ export const contract = async (
     console.log('making tap');
     return zone.exo('tap', interfaceTODO, {
       /**
-       * @param {import('@agoric/vats').VTransferIBCEvent} event
+       * @param {VTransferIBCEvent} event
        */
       async receiveUpcall(event) {
         await null;
@@ -119,15 +123,13 @@ export const contract = async (
 
         const { baseAddress, query } = decodeAddressHook(origReceiver);
 
-        /**
+        const { destAddr, receiverAddr, outDenom } = /**
          * @type {{
          *   destAddr: string;
          *   receiverAddr: string;
          *   outDenom: string;
          * }}
-         */
-        // @ts-expect-error
-        const { destAddr, receiverAddr, outDenom } = query;
+         */ (query);
 
         trace({
           baseAddress,

@@ -1,38 +1,37 @@
-import { WebSocketProvider, Log } from 'ethers';
-import type { Filter } from 'ethers';
+import { WebSocketProvider } from 'ethers';
+import type { WebSocket as WsWebSocket } from 'ws';
+import type { Address as EvmAddress } from 'viem';
 import type { CaipChainId } from '@agoric/orchestration';
 import type { ClusterName } from '@agoric/internal';
-import { fromTypedEntries, objectMap, typedEntries } from '@agoric/internal';
+import { objectMap } from '@agoric/internal';
 import {
   CaipChainIds,
   EvmWalletOperationType,
   YieldProtocol,
 } from '@agoric/portfolio-api/src/constants.js';
 import type { SupportedChain } from '@agoric/portfolio-api/src/constants.js';
-import type {
-  PoolKey as InstrumentId,
-  PoolPlaceInfo,
-} from '@aglocal/portfolio-contract/src/type-guards.js';
-import {
-  aaveRewardsControllerAddresses,
-  compoundAddresses,
-} from '@aglocal/portfolio-deploy/src/axelar-configs.js';
+import { makePromiseKit } from '@endo/promise-kit';
 import type { EvmContext } from './pending-tx-manager.ts';
 import { lookupValueForKey } from './utils.ts';
 
+/**
+ * USDC value in floating-point major units (i.e., nominally corresponding with
+ * USD)
+ */
+export type UsdcNumber = number;
+
+export const UserInputError = class extends Error {} as ErrorConstructor;
+harden(UserInputError);
+
 type ROPartial<K extends string, V> = Readonly<Partial<Record<K, V>>>;
 
-const { entries } = Object;
-
-type HexAddress = `0x${string}`;
-
 /**
- * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
- *   or @agoric/orchestration
+ * @deprecated should come from e.g. \@agoric/portfolio-api/src/constants.js
+ *   or \@agoric/orchestration
  */
 export type UsdcAddresses = {
-  mainnet: Record<CaipChainId, HexAddress>;
-  testnet: Record<CaipChainId, HexAddress>;
+  mainnet: Record<CaipChainId, EvmAddress>;
+  testnet: Record<CaipChainId, EvmAddress>;
 };
 
 const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
@@ -54,72 +53,25 @@ const spectrumChainIds: Record<`${CaipChainId} ${SupportedChain}`, string> = {
   'cosmos:grand-1 noble': 'grand-1',
 };
 
-// Note that lookupValueForKey throws when the key is not found.
+// Throws when the key is not found.  The cast pins
+// `lookupValueForKey`'s generic K to the concrete
+// `${CaipChainId} ${SupportedChain}` union so TypeScript can unify
+// it with `spectrumChainIds`'s keys.
+const lookupSpectrumChainId = (
+  chainId: CaipChainId,
+  chainLabel: SupportedChain,
+): string =>
+  lookupValueForKey(
+    spectrumChainIds,
+    `${chainId} ${chainLabel}` as `${CaipChainId} ${SupportedChain}`,
+  );
+
 export const spectrumChainIdsByCluster: Readonly<
   Record<ClusterName, ROPartial<SupportedChain, string>>
 > = {
-  mainnet: {
-    ...objectMap(CaipChainIds.mainnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-  testnet: {
-    ...objectMap(CaipChainIds.testnet, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-  local: {
-    ...objectMap(CaipChainIds.local, (chainId, chainLabel) =>
-      lookupValueForKey(spectrumChainIds, `${chainId} ${chainLabel}`),
-    ),
-  },
-};
-
-export const spectrumPoolIdsByCluster: Readonly<
-  Record<ClusterName, ROPartial<InstrumentId, string>>
-> = {
-  mainnet: {
-    ...fromTypedEntries(
-      typedEntries(aaveRewardsControllerAddresses.mainnet).map(
-        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
-      ),
-    ),
-    ...fromTypedEntries(
-      typedEntries(compoundAddresses.mainnet).map(([chainName, addr]) => [
-        `Compound_${chainName}` as InstrumentId,
-        addr,
-      ]),
-    ),
-    Beefy_re7_Avalanche: 'euler-avax-re7labs-usdc',
-    Beefy_morphoGauntletUsdc_Ethereum: 'morpho-gauntlet-usdc',
-    Beefy_morphoSmokehouseUsdc_Ethereum: 'morpho-smokehouse-usdc',
-    Beefy_morphoSeamlessUsdc_Base: 'morpho-seamless-usdc',
-    Beefy_compoundUsdc_Optimism: 'compound-op-usdc',
-    Beefy_compoundUsdc_Arbitrum: 'compound-arbitrum-usdc',
-  },
-  testnet: {
-    ...fromTypedEntries(
-      typedEntries(aaveRewardsControllerAddresses.testnet).map(
-        ([chainName, _addr]) => [`Aave_${chainName}` as InstrumentId, 'USDC'],
-      ),
-    ),
-    ...fromTypedEntries(
-      typedEntries(compoundAddresses.testnet).map(([chainName, addr]) => [
-        `Compound_${chainName}` as InstrumentId,
-        addr,
-      ]),
-    ),
-  },
-  local: {},
-};
-
-export const spectrumProtocols: Readonly<
-  Record<PoolPlaceInfo['protocol'], string>
-> = {
-  Aave: 'aave',
-  Beefy: 'beefy',
-  Compound: 'compound',
-  USDN: 'USDN',
+  mainnet: { ...objectMap(CaipChainIds.mainnet, lookupSpectrumChainId) },
+  testnet: { ...objectMap(CaipChainIds.testnet, lookupSpectrumChainId) },
+  local: { ...objectMap(CaipChainIds.local, lookupSpectrumChainId) },
 };
 
 /**
@@ -130,8 +82,8 @@ export const spectrumProtocols: Readonly<
  * - https://developers.circle.com/cctp/evm-smart-contracts
  * - https://developers.circle.com/stablecoins/usdc-contract-addresses
  *
- * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
- *   or @agoric/orchestration
+ * @deprecated should come from e.g. \@agoric/portfolio-api/src/constants.js
+ *   or \@agoric/orchestration
  * @see {@link ../../../packages/orchestration/src/cctp-chain-info.js}
  */
 export const usdcAddresses: UsdcAddresses = {
@@ -184,8 +136,8 @@ export const walletOperationFallbackGasLimit = 276_809n;
  * Testnet data: https://eth.blockscout.com/ (except Avalanche),
  *   https://subnets-test.avax.network/c-chain
  *
- * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
- *   or @agoric/orchestration
+ * @deprecated should come from e.g. \@agoric/portfolio-api/src/constants.js
+ *   or \@agoric/orchestration
  */
 const chainBlockTimesMs: Record<CaipChainId, number> = harden({
   // ========= Mainnet =========
@@ -212,315 +164,338 @@ export const getBlockTimeMs = (chainId: CaipChainId): number => {
 };
 
 /**
- * @deprecated should come from e.g. @agoric/portfolio-api/src/constants.js
- *   or @agoric/orchestration
+ * Number of block confirmations required before marking a transaction as final.
+ * Higher values provide stronger finality guarantees but increase latency.
+ *
+ * Note: We use 25 confirmations for all chains as a conservative, uniform approach
+ * that maximizes safety. Since confirmation waits only apply to transaction failures
+ * (success cases return immediately with 0 confirmations), the latency impact is
+ * acceptable and limited to rare failure scenarios.
+ *
+ * This value can be reconfigured on a per-chain basis if specific networks require
+ * different confirmation depths based on their consensus mechanisms or reorg risk.
+ *
+ * Background: Circle's blockchain confirmation guidance recommends 12 for Ethereum,
+ * 20 for Arbitrum, 1 for Avalanche, and 10 for Base/Optimism. Our choice of 25
+ * provides additional safety margin beyond these recommendations.
+ *
+ * @see https://developers.circle.com/w3s/blockchain-confirmations
+ */
+
+const blockConfirmationsRequired: Record<CaipChainId, number> = harden({
+  // ========= Mainnet =========
+  'eip155:1': 25, // Ethereum Mainnet
+  'eip155:42161': 25, // Arbitrum One
+  'eip155:43114': 25, // Avalanche C-Chain
+  'eip155:8453': 25, // Base
+  'eip155:10': 25, // Optimism
+
+  // ========= Testnet =========
+  'eip155:11155111': 25, // Ethereum Sepolia
+  'eip155:421614': 25, // Arbitrum Sepolia
+  'eip155:43113': 25, // Avalanche Fuji
+  'eip155:84532': 25, // Base Sepolia
+  'eip155:11155420': 25, // Optimism Sepolia
+});
+
+/**
+ * Get the number of confirmations required for a given chain ID.
+ */
+export const getConfirmationsRequired = (chainId: CaipChainId): number => {
+  return blockConfirmationsRequired[chainId];
+};
+
+/**
+ * Time to wait before confirming a transaction revert, in milliseconds.
+ * This gives Axelar relayers a window to retry the transaction
+ * (observed ~6 min retries for SubcallOutOfGas cases).
+ */
+const REVERT_WAIT_TIME_MS = 10 * 60 * 1_000; // 10 minutes
+
+/**
+ * Get the number of confirmations required before confirming a transaction
+ * revert. Uses a higher threshold than normal confirmations to give Axelar
+ * relayers time to retry reverted transactions.
+ *
+ * The value is computed from {@link REVERT_WAIT_TIME_MS} and the chain's
+ * block time, floored at the normal confirmation requirement.
+ */
+export const getRevertConfirmationsRequired = (
+  chainId: CaipChainId,
+): number => {
+  const blockTimeMs = getBlockTimeMs(chainId);
+  return Math.max(
+    getConfirmationsRequired(chainId),
+    Math.ceil(REVERT_WAIT_TIME_MS / blockTimeMs),
+  );
+};
+
+/**
+ * @deprecated should come from e.g. \@agoric/portfolio-api/src/constants.js
+ *   or \@agoric/orchestration
  */
 export const getEvmRpcMap = (
   clusterName: ClusterName,
   alchemyApiKey: string,
+  protocol: 'wss' | 'https' = 'wss',
 ): Record<CaipChainId, string> => {
   switch (clusterName) {
     case 'mainnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum
-        'eip155:1': `wss://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:1': `${protocol}://eth-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche
-        'eip155:43114': `wss://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
-        // Source:  https://www.alchemy.com/rpc/arbitrum
-        'eip155:42161': `wss://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43114': `${protocol}://avax-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        // Source: https://www.alchemy.com/rpc/arbitrum
+        'eip155:42161': `${protocol}://arb-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism
-        'eip155:10': `wss://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:10': `${protocol}://opt-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base
-        'eip155:8453': `wss://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:8453': `${protocol}://base-mainnet.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     case 'testnet':
       return {
         // Source: https://www.alchemy.com/rpc/ethereum-sepolia
-        'eip155:11155111': `wss://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155111': `${protocol}://eth-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/avalanche-fuji
-        'eip155:43113': `wss://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:43113': `${protocol}://avax-fuji.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/arbitrum-sepolia
-        'eip155:421614': `wss://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:421614': `${protocol}://arb-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/optimism-sepolia
-        'eip155:11155420': `wss://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:11155420': `${protocol}://opt-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
         // Source: https://www.alchemy.com/rpc/base-sepolia
-        'eip155:84532': `wss://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
+        'eip155:84532': `${protocol}://base-sepolia.g.alchemy.com/v2/${alchemyApiKey}`,
       };
     default:
       throw Error(`Unsupported cluster name ${clusterName}`);
   }
 };
+/** Interval between WebSocket liveness pings. */
+export const WS_HEARTBEAT_INTERVAL_MS = 30_000;
+
+/**
+ * A reconnecting wrapper around an ethers {@link WebSocketProvider}. ethers v6
+ * does not reconnect on its own, so a dropped or zombie (open-but-dead) socket
+ * otherwise stays broken for the whole process lifetime, leaving watchers
+ * silently stalled until a manual restart (see PAK-517).
+ *
+ * Liveness is detected two ways: ping/pong heartbeats catch an idle socket that
+ * has gone dead, and {@link reportUnhealthy} lets the RPC layer report a call
+ * that timed out (an in-use zombie). On either, the underlying provider is
+ * recreated. The previous socket is `terminate`d, which surfaces a `close`
+ * event to any active watchers; their existing
+ * `onWsClose → WatcherTransportError → watchWithRetry` path then re-subscribes
+ * on the fresh socket.
+ */
+export type ReconnectingEvmProvider = {
+  /** The current live provider; never a destroyed one. */
+  getProvider: () => WebSocketProvider;
+  /** The current underlying socket. */
+  readonly websocket: WebSocketProvider['websocket'];
+  /** Force an immediate reconnect (e.g. because an RPC call timed out). */
+  reportUnhealthy: (reason?: string) => void;
+  /** Permanently close: stop heartbeats and reconnection. */
+  close: () => void;
+};
+
+export const makeReconnectingEvmProvider = ({
+  wsUrl,
+  makeProvider = url => new WebSocketProvider(url),
+  makeHeartbeat,
+  log = () => {},
+}: {
+  wsUrl: string;
+  makeProvider?: (url: string) => WebSocketProvider;
+  /**
+   * Must yield once per heartbeat interval; a fresh iterator is created for
+   * each successive provider.
+   */
+  makeHeartbeat?: () => AsyncIterable<unknown>;
+  log?: (...args: unknown[]) => void;
+}): ReconnectingEvmProvider => {
+  let currentProvider: WebSocketProvider;
+  // Monotonic id of the live socket. Stale listeners (from a prior socket)
+  // compare against it to avoid cycling a provider that is no longer current.
+  let generation = 0;
+  let closed = false;
+
+  const attach = (provider: WebSocketProvider, gen: number) => {
+    const ws = provider.websocket as unknown as WsWebSocket;
+
+    ws.on('close', (code?: number, reason?: unknown) =>
+      cycle(gen, `socket close (code=${code}, reason=${reason})`),
+    );
+    ws.on('error', (err: unknown) =>
+      cycle(gen, `socket error: ${(err as Error)?.message ?? err}`),
+    );
+
+    if (!makeHeartbeat) return;
+    let gotPong = true;
+    ws.on('pong', () => {
+      gotPong = true;
+    });
+    void (async () => {
+      for await (const _ of makeHeartbeat()) {
+        if (closed || gen !== generation) break;
+        if (ws.readyState !== 1 /* OPEN */) continue;
+        if (!gotPong) {
+          cycle(gen, 'pong timeout');
+          break;
+        }
+        gotPong = false;
+        try {
+          ws.ping();
+        } catch (err) {
+          log('error sending ping', err);
+        }
+      }
+    })();
+  };
+
+  const cycle = (fromGen: number, reason: string) => {
+    // Ignore stale triggers: only the current generation may cycle.
+    if (closed || fromGen !== generation) return;
+    generation += 1;
+    const old = currentProvider;
+    log(`cycling WebSocket (gen ${fromGen}→${generation}): ${reason}`);
+    currentProvider = makeProvider(wsUrl);
+    attach(currentProvider, generation);
+    // `terminate` (vs a graceful close) dislodges a zombie/half-open socket and
+    // emits `close`, prompting active watchers to re-subscribe on the new one.
+    try {
+      (old.websocket as unknown as WsWebSocket).terminate();
+    } catch (err) {
+      log('error terminating old socket', err);
+    }
+    void old.destroy().catch(err => log('error destroying old provider', err));
+  };
+
+  currentProvider = makeProvider(wsUrl);
+  attach(currentProvider, generation);
+
+  return {
+    getProvider: () => currentProvider,
+    get websocket() {
+      return currentProvider.websocket;
+    },
+    reportUnhealthy: (reason = 'reported unhealthy') =>
+      cycle(generation, reason),
+    close: () => {
+      closed = true;
+      void currentProvider
+        .destroy()
+        .catch(err => log('error destroying provider', err));
+    },
+  };
+};
+
 type CreateContextParams = {
   clusterName: ClusterName;
   alchemyApiKey: string;
-};
-
-export type EvmProviders = Record<CaipChainId, WebSocketProvider>;
-
-/**
- * Verifies that all EVM chains are accessible via their providers.
- * Throws an error if any chain fails to connect.
- */
-export const verifyEvmChains = async (
-  evmProviders: EvmProviders,
-): Promise<void> => {
-  const chainResults = await Promise.allSettled(
-    entries(evmProviders).map(async ([chainId, provider]) => {
-      await null;
-      try {
-        await provider.getBlockNumber();
-        return { chainId, success: true };
-      } catch (error: any) {
-        return { chainId, success: false, error: error.message };
-      }
-    }),
-  );
-
-  const workingChains: string[] = [];
-  const failedChains: Array<{ chainId: string; error: string }> = [];
-
-  for (const result of chainResults) {
-    if (result.status === 'fulfilled') {
-      const chainResult = result.value;
-      if (chainResult.success) {
-        workingChains.push(chainResult.chainId);
-      } else {
-        failedChains.push({
-          chainId: chainResult.chainId,
-          error: chainResult.error,
-        });
-      }
-    } else {
-      failedChains.push({
-        chainId: 'unknown',
-        error: result.reason?.message || 'Unknown error',
-      });
-    }
-  }
-
-  console.warn(`✓ Working chains (${workingChains.length}):`, workingChains);
-
-  if (failedChains.length > 0) {
-    console.error(`✗ Failed chains (${failedChains.length}):`);
-    for (const { chainId, error } of failedChains) {
-      console.error(`  - ${chainId}: ${error}`);
-    }
-    throw new Error(
-      `Failed to connect to ${failedChains.length} EVM chain(s). ` +
-        `Ensure all required chains are enabled in your Alchemy dashboard. ` +
-        `Failed chains: ${failedChains.map(c => c.chainId).join(', ')}`,
-    );
-  }
+  /**
+   * Must yield once per heartbeat interval; a fresh iterator is created for
+   * each EVM provider (including providers created by automatic reconnections).
+   */
+  makeHeartbeat?: () => AsyncIterable<unknown>;
+  log?: (...args: unknown[]) => void;
 };
 
 export const createEVMContext = async ({
   clusterName,
   alchemyApiKey,
+  makeHeartbeat,
+  log = () => {},
 }: CreateContextParams): Promise<
   Pick<EvmContext, 'evmProviders' | 'usdcAddresses'>
 > => {
   if (clusterName === 'local') clusterName = 'testnet';
   if (!alchemyApiKey) throw Error('missing alchemyApiKey');
 
-  const urls = getEvmRpcMap(clusterName, alchemyApiKey);
+  const wssUrls = getEvmRpcMap(clusterName, alchemyApiKey, 'wss');
   const evmProviders = Object.fromEntries(
-    Object.entries(urls).map(([caip, wsUrl]) => [
+    Object.entries(wssUrls).map(([caip, wsUrl]) => [
       caip,
-      new WebSocketProvider(wsUrl),
+      makeReconnectingEvmProvider({
+        wsUrl,
+        makeHeartbeat,
+        log: (...args) => log(`[${caip}]`, ...args),
+      }),
     ]),
-  ) as EvmProviders;
+  ) as Record<CaipChainId, ReconnectingEvmProvider>;
 
   return {
     evmProviders,
-    // XXX Remove now that @agoric/portfolio-api/src/constants.js
+    // XXX Remove now that \@agoric/portfolio-api/src/constants.js
     // defines UsdcTokenIds.
     usdcAddresses: usdcAddresses[clusterName],
   };
 };
 
-// XXX This can move to ./utils.ts.
-type BinarySearch = {
-  (
-    start: number,
-    end: number,
-    isAcceptable: (idx: number) => Promise<boolean> | boolean,
-  ): Promise<number>;
-  (
-    start: bigint,
-    end: bigint,
-    isAcceptable: (idx: bigint) => Promise<boolean> | boolean,
-  ): Promise<bigint>;
-};
-
 /**
- * Generic binary search helper for finding the greatest value that satisfies a predicate.
- * Assumes a transition from acceptance to rejection somewhere in [start, end].
- *
- * @param start - Starting value (inclusive)
- * @param end - Ending value (inclusive)
- * @param isAcceptable - Function that returns true for accepted values
- * @returns The greatest accepted value in the range
+ * Mock the abort reason of `AbortSignal.timeout(ms)`.
+ * https://dom.spec.whatwg.org/#dom-abortsignal-timeout
  */
-export const binarySearch = (async <Index extends number | bigint>(
-  start: Index,
-  end: Index,
-  isAcceptable: (idx: Index) => Promise<boolean> | boolean,
-): Promise<Index> => {
-  const unit = (typeof start === 'bigint' ? 1n : 1) as Index;
-  let left: Index = start;
-  let right: Index = end;
-  let greatestFound: Index = left;
-  await null;
-  while (left <= right) {
-    // Calculate the number or bigint midpoint of `left` and `right` by halving
-    // their sum with a single-bit right shift (skipped if the sum is already
-    // zero).
-    const sum = ((left as any) + (right as any)) as Index;
-    // eslint-disable-next-line no-bitwise
-    const mid = (sum && sum >> unit) as Index;
-    if (await isAcceptable(mid)) {
-      greatestFound = mid;
-      left = mid + (unit as any);
-    } else {
-      right = (mid - unit) as any;
-    }
-  }
-  return greatestFound;
-}) as BinarySearch;
-
-/**
- * Returns the highest block number whose real time (i.e., published timestamp
- * as adjusted by clock skew of up to fudgeFactorMs) is known to be less than or
- * equal to targetMs.
- */
-export const getBlockNumberBeforeRealTime = async (
-  provider: WebSocketProvider,
-  targetMs: number,
-  {
-    fudgeFactorMs = 5 * 60 * 1000, // 5 minutes to account for cross-chain clock differences
-    meanBlockDurationMs,
-  }: {
-    fudgeFactorMs?: number;
-    meanBlockDurationMs?: number;
-  } = {},
-) => {
-  const posixSeconds = Math.floor((targetMs - fudgeFactorMs) / 1000);
-
-  // Try to find a good starting point.
-  let startNumber = 0;
-  const latestNumber = await provider.getBlockNumber();
-  const latestBlock = await provider.getBlock(latestNumber);
-  const deltaSec = latestBlock!.timestamp - posixSeconds;
-  if (deltaSec <= 0) return latestNumber;
-  if (deltaSec > 0 && meanBlockDurationMs) {
-    const deltaBlocks = Math.ceil(deltaSec / (meanBlockDurationMs / 1000));
-    const pastNumber = latestNumber - deltaBlocks * 2;
-    if (startNumber < pastNumber) {
-      const pastBlock = await provider.getBlock(pastNumber);
-      if (pastBlock?.timestamp && pastBlock.timestamp <= posixSeconds) {
-        startNumber = pastNumber;
-      }
-    }
-  }
-
-  const blockNumber = await binarySearch(startNumber, latestNumber, async n => {
-    const block = await provider.getBlock(n);
-    return block?.timestamp ? block.timestamp <= posixSeconds : false;
+const makeTimeoutReason = () =>
+  Object.defineProperty(Error('Timed out'), 'name', {
+    value: 'TimeoutError',
   });
-  return blockNumber;
-};
-
-type LogPredicate = (log: Log) => boolean | Promise<boolean>;
-
-type ScanOpts = {
-  provider: WebSocketProvider;
-  baseFilter: Omit<Filter, 'fromBlock' | 'toBlock'> & Partial<Filter>;
-  fromBlock: number;
-  toBlock: number;
-  chainId: CaipChainId;
-  chunkSize?: number;
-  log?: (...args: unknown[]) => void;
-  signal?: AbortSignal;
-};
 
 /**
- * Generic chunked log scanner: scans [fromBlock, toBlock] in CHUNK_SIZE windows,
- * runs `predicate` on each log, and returns the first matching log or undefined.
+ * Abstract AbortController/AbortSignal functionality upon a provided
+ * setTimeout.
  */
-export const scanEvmLogsInChunks = async (
-  opts: ScanOpts,
-  predicate: LogPredicate,
-): Promise<Log | undefined> => {
-  const {
-    provider,
-    baseFilter,
-    fromBlock,
-    toBlock,
-    chainId,
-    chunkSize = 10,
-    log = () => {},
-    signal,
-  } = opts;
-
-  await null;
-  for (let start = fromBlock; start <= toBlock; ) {
-    if (signal?.aborted) {
-      log('[LogScan] Aborted');
-      return undefined;
-    }
-    const end = Math.min(start + chunkSize - 1, toBlock);
-    const currentBlock = await provider.getBlockNumber();
-
-    // Wait for the chain to catch up if end block doesn't exist yet
-    if (end > currentBlock) {
-      const blockTimeMs = getBlockTimeMs(chainId);
-      const blocksToWait = Math.max(50, chunkSize);
-      const waitTimeMs = blocksToWait * blockTimeMs;
-      const blocksBehind = end - currentBlock;
-      log(
-        `[LogScan] Chain ${blocksBehind} blocks behind (need ${end}, at ${currentBlock}). Waiting ${waitTimeMs}ms (${blocksToWait} blocks @ ${blockTimeMs}ms/block)`,
-      );
-      await new Promise(resolve => setTimeout(resolve, waitTimeMs));
-      continue; // Retry this chunk after waiting
-    }
-
-    const chunkFilter: Filter = {
-      // baseFilter represents core filter configuration (address, topics, etc.) without block range
-      ...baseFilter,
-      fromBlock: start,
-      toBlock: end,
+export const prepareAbortController = ({
+  setTimeout,
+  AbortController = globalThis.AbortController,
+  AbortSignal = globalThis.AbortSignal,
+}: {
+  setTimeout: typeof globalThis.setTimeout;
+  AbortController?: typeof globalThis.AbortController;
+  AbortSignal?: typeof globalThis.AbortSignal;
+}) => {
+  /**
+   * Make a new manually-abortable AbortSignal with optional timeout and/or
+   * optional signals whose own aborts should propagate (as with
+   * `AbortSignal.any`).
+   * As a convenience, the returned value includes an `abortedP` promise that
+   * promptly fulfills to undefined after the returned signal is aborted.
+   */
+  const makeAbortController = (
+    timeoutMillisec?: number,
+    racingSignals?: Iterable<AbortSignal | undefined>,
+  ): AbortController & { abortedP: Promise<void> } => {
+    let controller: AbortController | null = new AbortController();
+    const abort: AbortController['abort'] = reason => {
+      const controllerRef = controller;
+      controller = null;
+      return controllerRef?.abort(reason);
     };
-
-    try {
-      log(`[LogScan] Searching chunk ${start} → ${end}`);
-      const logs = await provider.getLogs(chunkFilter);
-      for (const evt of logs) {
-        if (await predicate(evt)) {
-          log(`[LogScan] Match in tx=${evt.transactionHash}`);
-          return evt;
-        }
-      }
-    } catch (err) {
-      log(`[LogScan] Error searching chunk ${start}–${end}:`, err);
-      // continue
+    if (timeoutMillisec !== undefined) {
+      setTimeout(() => abort(makeTimeoutReason()), timeoutMillisec);
     }
+    const racingArray: AbortSignal[] | undefined =
+      racingSignals && [...racingSignals].filter((x): x is AbortSignal => !!x);
 
-    start += chunkSize;
-  }
-  return undefined;
+    let signal: AbortSignal | null = racingArray?.length
+      ? AbortSignal.any([controller.signal, ...racingArray])
+      : controller.signal;
+    const { promise: abortedP, resolve } = makePromiseKit<void>();
+    const finish = async () => {
+      resolve();
+      signal?.removeEventListener('abort', onSignalAbort);
+      // Forget `signal`, but not before returning it to the caller.
+      signal = await null;
+    };
+    const onSignalAbort = _event => {
+      abort(signal?.reason);
+      void finish();
+    };
+    signal.addEventListener('abort', onSignalAbort);
+    if (signal?.aborted) void finish();
+
+    return { abort, signal: signal as AbortSignal, abortedP };
+  };
+  return makeAbortController;
 };
 
-export const waitForBlock = async (
-  provider: WebSocketProvider,
-  targetBlock: number,
-) => {
-  return new Promise(resolve => {
-    const listener = blockNumber => {
-      if (blockNumber >= targetBlock) {
-        void provider.off('block', listener);
-        resolve(blockNumber);
-      }
-    };
-    void provider.on('block', listener);
-  });
-};
+export type MakeAbortController = ReturnType<typeof prepareAbortController>;

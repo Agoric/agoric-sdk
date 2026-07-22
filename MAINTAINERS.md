@@ -189,13 +189,13 @@ the release process can be aborted.
   ```sh
   # Create a release branch.
   now=`date -u +%Y%m%dT%H%M%S`
-  git checkout -b prepare-release-$now
+  git switch -c prepare-release-$now
   ```
 
 - [ ] Do a `yarn install` to generate tooling needed for the release.
   ```sh
   # yarn install to build release tools
-  yarn install --force
+  yarn install
   ```
 
 - [ ] <a id="generate-sdk-version"></a>Generate new SDK version and per-package CHANGELOG.md files.
@@ -263,11 +263,28 @@ In particular, be sure that you have waited for the release PR's CI tests
 to pass and for reviewer approval.
 
 - [ ] Publish to NPM
-  ```sh
-  # Publish to NPM. NOTE: You may have to repeat this several times if there are failures.
-  # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-  yarn lerna publish --concurrency 1 from-package
-  ```
+
+  NPM enforces [trusted publishing](https://docs.npmjs.com/trusted-publishers)
+  for agoric-sdk packages, so publishing must happen in CI — a local
+  `npm publish` or `lerna publish` is rejected, even with 2FA. Trigger it from
+  the
+  [Post-merge publishes/checks workflow](https://github.com/Agoric/agoric-sdk/actions/workflows/after-merge.yml):
+
+  1. Select "Run workflow".
+  2. Leave "Use workflow from" on `master`; that ref only supplies the
+     workflow definition.
+  3. Set `branch` to the
+     [timestamped release branch](#user-content-release-branch) whose
+     committed versions should be published.
+  4. Set `mode` to `release`.
+  5. Set `tag` to the release's NPM dist-tag (e.g. `agoric-upgrade-23`).
+  6. Approve the `npm-publish-release` environment deployment when prompted.
+
+  The `release-publish` job checks out `branch` and runs
+  `yarn lerna publish from-package --concurrency 1 --dist-tag <tag>`,
+  publishing every package whose committed package.json version is not yet on
+  the registry. NOTE: If some packages fail to publish, re-run the workflow;
+  already-published packages are skipped.
 
 - [ ] Merge the release PR into the base branch.
 
@@ -288,6 +305,9 @@ to pass and for reviewer approval.
   ["Generate new SDK version" step](#user-content-generate-sdk-version).
 
 - [ ] (Optional) Publish an NPM distribution tag
+
+  Trusted publishing OIDC credentials cover only `npm publish`, so dist-tag
+  updates still use your regular npm login/token as before.
 
   If you want to update an
   [NPM dist-tag](https://docs.npmjs.com/cli/v6/commands/npm-dist-tag) for the
@@ -450,6 +470,28 @@ cd packages/SwingSet
 yarn test test/xsnap-store.test.js --update-snapshots
 git add test/snapshots/xsnap-store.*
 git commit -m 'chore(swingset-vat): Update xsnap store test snapshots'
+cd ../..
+```
+
+The Endo bump also shifts how many computrons `dispatch.startVat` consumes, which
+breaks `packages/SwingSet/test/metering/dynamic-vat-metered.test.js`. That test
+creates a dynamic vat with a meter sized to sit just above the startup cost: if
+the cost grows past the allocation, the vat overflows during creation or the
+first "normal" crank (`vat.dynamicIDs` length asserts `0` instead of `1`) rather
+than during the deliberate explosion. Re-fit the `cmargs` remaining-computrons
+figure in `overflowCrank()` to the new `consumedByStartVat` (printed by the
+`meter decrements` test as `-- consumedByStartVat`) plus one `run()` crank, with
+a little headroom. The test pins `xs-worker`, so the cost is deterministic and
+local matches CI — but measure it only after every `ses`/`@endo` patch is in
+place (including any `.yarn/patches/ses-*.patch`). A figure measured mid-rebase,
+before the ses patch is applied, will under-account for the patch's lockdown cost
+and overflow once the patch lands earlier in history.
+
+```sh
+cd packages/SwingSet
+# read the `-- consumedByStartVat` value, then update cmargs in the test
+yarn test test/metering/dynamic-vat-metered.test.js
+git commit -am 'chore(swingset-vat): increase meter allocation for Endo update'
 cd ../..
 ```
 

@@ -3,6 +3,11 @@ import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { M } from '@endo/patterns';
 import { makeHeapZone } from './heap.js';
 
+/**
+ * @import {MethodGuard} from '@endo/patterns';
+ * @import {Zone} from '@agoric/base-zone';
+ */
+
 // This attenuator implementation is just a simplification of the
 // revocable kit implementation in prepare-revocable.js. The revocable kit
 // provides both attenuation and revocation, since we can have both for the
@@ -77,7 +82,7 @@ harden(wrapperMethods);
  *   Defaults to the `uKindName`.
  * @property {Record<
  *   PropertyKey,
- *   import('@endo/patterns').MethodGuard
+ *   MethodGuard
  * >} [extraMethodGuards]
  * For guarding the `extraMethods`, if you include them below. These appear
  * only on the synthesized interface guard for the attenuator, and
@@ -95,7 +100,7 @@ harden(wrapperMethods);
  * where the wrapper is an attenuator of the underlying.
  *
  * @template [U=any]
- * @param {import('@agoric/base-zone').Zone} zone
+ * @param {Zone} zone
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
  * @param {(keyof U)[]} uMethodNames

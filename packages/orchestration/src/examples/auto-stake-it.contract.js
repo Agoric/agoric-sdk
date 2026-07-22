@@ -16,6 +16,7 @@ import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '../types.js';
  * @import {ZCF} from '@agoric/zoe';
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js';
  */
 
 /**

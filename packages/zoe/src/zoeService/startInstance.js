@@ -1,28 +1,40 @@
-import { E } from '@endo/eventual-send';
-import { passStyleOf } from '@endo/marshal';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { initEmpty } from '@agoric/store';
 import {
   M,
-  provideDurableWeakMapStore,
-  prepareExoClass,
   prepareExo,
+  prepareExoClass,
+  provideDurableWeakMapStore,
   watchPromise,
 } from '@agoric/vat-data';
-import { initEmpty } from '@agoric/store';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/marshal';
 
 import { Fail, q } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';
-import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
 import {
   AdminFacetI,
   InstanceAdminI,
   InstanceAdminShape,
 } from '../typeGuards.js';
+import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {WeakMapStore} from '@agoric/store';
  * @import {BundleCap} from '@agoric/swingset-vat';
+ * @import {Handle} from '@agoric/zoe';
+ * @import {StartInstance} from './utils.js';
+ * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
+ * @import {VatAdminFacet} from '@agoric/swingset-vat';
+ * @import {SeatHandle} from '../internal-types.js';
+ * @import {ZoeSeatAdmin} from '../internal-types.js';
+ * @import {Completion} from '../types-index.js';
+ * @import {ZoeInstanceStorageManager, ZoeStorageManager} from './internal-types.js';
+ * @import {ZCFRoot} from '../internal-types.js';
+ * @import {InstanceAdmin} from '../internal-types.js';
+ * @import {ZoeInstanceAdmin} from '../internal-types.js';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**
@@ -30,7 +42,7 @@ import {
  * @param {() => ERef<BundleCap>} getZcfBundleCapP
  * @param {(id: string) => BundleCap} getBundleCapByIdNow
  * @param {Baggage} zoeBaggage
- * @returns {import('./utils.js').StartInstance}
+ * @returns {StartInstance}
  */
 export const makeStartInstance = (
   startInstanceAccess,
@@ -64,7 +76,7 @@ export const makeStartInstance = (
     adminNode: M.remotable('adminNode'),
   });
 
-  /** @type {import('@agoric/swingset-liveslots').PromiseWatcher<Completion, [InstanceAdmin, Handle<'adminNode'>]>} */
+  /** @type {PromiseWatcher<Completion, [InstanceAdmin, Handle<'adminNode'>]>} */
   const watcher = prepareExo(
     zoeBaggage,
     'InstanceCompletionWatcher',
@@ -107,7 +119,7 @@ export const makeStartInstance = (
      * @param {ZoeInstanceStorageManager} instanceStorage
      * @param {InstanceAdmin} instanceAdmin
      * @param {WeakMapStore<SeatHandle, ZoeSeatAdmin>} seatHandleToSeatAdmin
-     * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
+     * @param {VatAdminFacet} adminNode
      */
     (instanceStorage, instanceAdmin, seatHandleToSeatAdmin, adminNode) => ({
       instanceStorage,
@@ -229,7 +241,7 @@ export const makeStartInstance = (
     AdminFacetI,
     /**
      *
-     * @param {import('@agoric/swingset-vat').VatAdminFacet} adminNode
+     * @param {VatAdminFacet} adminNode
      * @param {*} contractBundleCap
      */
     (adminNode, contractBundleCap) => ({
@@ -276,115 +288,117 @@ export const makeStartInstance = (
     },
   );
 
-  /**
-   * @type {import('./utils.js').StartInstance}
-   */
-  const startInstance = async (
-    installationP,
-    uncleanIssuerKeywordRecord = harden({}),
-    // @ts-expect-error FIXME may not match the expected terms of SF
-    customTerms = harden({}),
-    privateArgs = undefined,
-    instanceLabel = '',
-  ) => {
-    const { installation, bundle, bundleCap } =
-      await E(startInstanceAccess).unwrapInstallation(installationP);
-    // AWAIT ///
+  const startInstance = /** @type {StartInstance} */ (
+    async (
+      installationP,
+      uncleanIssuerKeywordRecord = harden({}),
+      // @ts-expect-error FIXME may not match the expected terms of SF
+      customTerms = harden({}),
+      privateArgs = undefined,
+      instanceLabel = '',
+    ) => {
+      const { installation, bundle, bundleCap } =
+        await E(startInstanceAccess).unwrapInstallation(installationP);
+      // AWAIT ///
 
-    const contractBundleCap = bundle || bundleCap;
-    assert(contractBundleCap);
+      const contractBundleCap = bundle || bundleCap;
+      assert(contractBundleCap);
 
-    if (privateArgs !== undefined) {
-      const passStyle = passStyleOf(privateArgs);
-      passStyle === 'copyRecord' ||
-        Fail`privateArgs must be a pass-by-copy record, but instead was a ${q(
-          passStyle,
-        )}: ${privateArgs}`;
+      if (privateArgs !== undefined) {
+        const passStyle = passStyleOf(privateArgs);
+        passStyle === 'copyRecord' ||
+          Fail`privateArgs must be a pass-by-copy record, but instead was a ${q(
+            passStyle,
+          )}: ${privateArgs}`;
+      }
+
+      const instanceHandle = makeInstanceHandle();
+
+      const zoeInstanceStorageManager = await E(
+        startInstanceAccess,
+      ).makeZoeInstanceStorageManager(
+        installation,
+        customTerms,
+        uncleanIssuerKeywordRecord,
+        instanceHandle,
+        contractBundleCap,
+        instanceLabel,
+      );
+      // AWAIT ///
+
+      const adminNode = zoeInstanceStorageManager.getAdminNode();
+      const zcfRoot = /** @type {ZCFRoot} */ (
+        zoeInstanceStorageManager.getRoot()
+      );
+
+      /** @type {InstanceAdmin} */
+      const instanceAdmin = instanceAdminMaker(
+        instanceHandle,
+        zoeInstanceStorageManager,
+        adminNode,
+      );
+      zoeInstanceStorageManager.initInstanceAdmin(
+        instanceHandle,
+        instanceAdmin,
+      );
+
+      void watchForAdminNodeDone(adminNode, instanceAdmin);
+
+      /** @type {ZoeInstanceAdmin} */
+      // @ts-expect-error XXX saveIssuer
+      const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(
+        zoeInstanceStorageManager,
+        instanceAdmin,
+        seatHandleToZoeSeatAdmin,
+        adminNode,
+      );
+
+      // At this point, the contract will start executing. All must be ready
+
+      const {
+        creatorFacet = makeEmptyCreatorFacet(),
+        publicFacet = makeEmptyPublicFacet(),
+        creatorInvitation: creatorInvitationP,
+        handleOfferObj,
+      } = await E(zcfRoot).startZcf(
+        zoeInstanceAdminForZcf,
+        zoeInstanceStorageManager.getInstanceRecord(),
+        zoeInstanceStorageManager.getIssuerRecords(),
+        /** @type {any} */ (privateArgs),
+      );
+
+      instanceAdmin.initDelayedState(handleOfferObj, publicFacet);
+
+      // creatorInvitation can be undefined, but if it is defined,
+      // let's make sure it is an invitation.
+      return E.when(
+        Promise.all([
+          creatorInvitationP,
+          creatorInvitationP !== undefined &&
+            zoeInstanceStorageManager
+              .getInvitationIssuer()
+              .isLive(creatorInvitationP),
+        ]),
+        ([creatorInvitation, isLiveResult]) => {
+          creatorInvitation === undefined ||
+            isLiveResult ||
+            Fail`The contract did not correctly return a creatorInvitation`;
+
+          const adminFacet = makeAdminFacet(adminNode, contractBundleCap);
+
+          // Actually returned to the user.
+          return harden({
+            creatorFacet,
+
+            // TODO (#5775) deprecate this return value from contracts.
+            creatorInvitation,
+            instance: instanceHandle,
+            publicFacet,
+            adminFacet,
+          });
+        },
+      );
     }
-
-    const instanceHandle = makeInstanceHandle();
-
-    const zoeInstanceStorageManager = await E(
-      startInstanceAccess,
-    ).makeZoeInstanceStorageManager(
-      installation,
-      customTerms,
-      uncleanIssuerKeywordRecord,
-      instanceHandle,
-      contractBundleCap,
-      instanceLabel,
-    );
-    // AWAIT ///
-
-    const adminNode = zoeInstanceStorageManager.getAdminNode();
-    /** @type {ZCFRoot} */
-    const zcfRoot = zoeInstanceStorageManager.getRoot();
-
-    /** @type {InstanceAdmin} */
-    const instanceAdmin = instanceAdminMaker(
-      instanceHandle,
-      zoeInstanceStorageManager,
-      adminNode,
-    );
-    zoeInstanceStorageManager.initInstanceAdmin(instanceHandle, instanceAdmin);
-
-    void watchForAdminNodeDone(adminNode, instanceAdmin);
-
-    /** @type {ZoeInstanceAdmin} */
-    // @ts-expect-error XXX saveIssuer
-    const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(
-      zoeInstanceStorageManager,
-      instanceAdmin,
-      seatHandleToZoeSeatAdmin,
-      adminNode,
-    );
-
-    // At this point, the contract will start executing. All must be ready
-
-    const {
-      creatorFacet = makeEmptyCreatorFacet(),
-      publicFacet = makeEmptyPublicFacet(),
-      creatorInvitation: creatorInvitationP,
-      handleOfferObj,
-    } = await E(zcfRoot).startZcf(
-      zoeInstanceAdminForZcf,
-      zoeInstanceStorageManager.getInstanceRecord(),
-      zoeInstanceStorageManager.getIssuerRecords(),
-      privateArgs,
-    );
-
-    instanceAdmin.initDelayedState(handleOfferObj, publicFacet);
-
-    // creatorInvitation can be undefined, but if it is defined,
-    // let's make sure it is an invitation.
-    // @ts-expect-error cast
-    return E.when(
-      Promise.all([
-        creatorInvitationP,
-        creatorInvitationP !== undefined &&
-          zoeInstanceStorageManager
-            .getInvitationIssuer()
-            .isLive(creatorInvitationP),
-      ]),
-      ([creatorInvitation, isLiveResult]) => {
-        creatorInvitation === undefined ||
-          isLiveResult ||
-          Fail`The contract did not correctly return a creatorInvitation`;
-
-        const adminFacet = makeAdminFacet(adminNode, contractBundleCap);
-
-        // Actually returned to the user.
-        return harden({
-          creatorFacet,
-
-          // TODO (#5775) deprecate this return value from contracts.
-          creatorInvitation,
-          instance: instanceHandle,
-          publicFacet,
-          adminFacet,
-        });
-      },
-    );
-  };
+  );
   return harden(startInstance);
 };
