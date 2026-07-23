@@ -1097,7 +1097,7 @@ test('evmHandler grant allocates sequential agent ids', async t => {
   t.is(callLogRaced[3][3], 4);
 });
 
-test('evmHandler grant returns the resulting agent key', async t => {
+test('evmHandler grant returns the resulting agent id', async t => {
   const ownerAddress = '0x5656565656565656565656565656565656565656' as const;
   const { makePortfolioKit, vowTools } = makeTestSetup();
   const { evmHandler } = makePortfolioKit({
@@ -1105,15 +1105,15 @@ test('evmHandler grant returns the resulting agent key', async t => {
     sourceAccountId: `eip155:42161:${ownerAddress}`,
   });
 
-  const agentKey1 = await vowTools.when(
+  const result1 = await vowTools.when(
     evmHandler.grant('agoric1delegate', { allocation: true }),
   );
-  t.is(agentKey1, 'agent1');
+  t.like(result1, { portfolioId: 23, policyVersion: 1, agentId: 1 });
 
-  const agentKey2 = await vowTools.when(
+  const result2 = await vowTools.when(
     evmHandler.grant('agoric1delegatetwo', { allocation: true }),
   );
-  t.is(agentKey2, 'agent2');
+  t.like(result2, { portfolioId: 23, policyVersion: 2, agentId: 2 });
 });
 
 test('delegation rebalance creates flow and calls executePlan', async t => {
@@ -1356,15 +1356,23 @@ test('evmHandler setAutoFeatures returns the resulting auto-features settings', 
     sourceAccountId: `eip155:42161:${ownerAddress}`,
   });
 
-  const settings1 = await vowTools.when(
+  const result1 = await vowTools.when(
     evmHandler.setAutoFeatures({ rebalance: true }),
   );
-  t.deepEqual(settings1, { rebalance: true });
+  t.deepEqual(result1, {
+    portfolioId: 24,
+    policyVersion: 1,
+    enabledAutoFeatures: { rebalance: true },
+  });
 
-  const settings2 = await vowTools.when(
+  const result2 = await vowTools.when(
     evmHandler.setAutoFeatures({ rebalance: false }),
   );
-  t.deepEqual(settings2, { rebalance: false });
+  t.deepEqual(result2, {
+    portfolioId: 24,
+    policyVersion: 2,
+    enabledAutoFeatures: { rebalance: false },
+  });
 });
 
 test('awaitingSteps is published in flowsRunning and reflects resolution state', async t => {

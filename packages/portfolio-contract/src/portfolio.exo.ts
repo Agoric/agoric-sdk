@@ -31,7 +31,6 @@ import {
   type FlowStatus,
   type FundsFlowPlan,
   type PortfolioAgentGrantee,
-  type PortfolioAgentKey,
   type PortfolioAgentStatus,
   type PortfolioContinuingInvitationMaker,
   type PortfolioPermissions,
@@ -41,6 +40,8 @@ import {
   type PortfolioAutoFeaturesExt,
   type PortfolioDelegatedRebalanceParams,
   type PortfolioDelegatedSetTargetAllocationParams,
+  type PortfolioGrantResult,
+  type PortfolioSetAutoFeaturesResult,
   PortfolioAutoFeaturesExtShape,
 } from '@agoric/portfolio-api';
 import {
@@ -1576,12 +1577,13 @@ export const preparePortfolioKit = (
          * resolution is the authorization check; this method then enforces
          * its own input validation.
          *
-         * Returns promptly the `PortfolioAgentKey` of the new delegation.
+         * Returns promptly the resulting `portfolioId`, `policyVersion`, and
+         * `agentId` of the new delegation.
          */
         grant(grantee: Bech32Address, permissions: PortfolioPermissionsExt) {
           return vowTools.asVow(async () => {
             mustMatch(permissions, PortfolioPermissionsShape);
-            const { sourceAccountId } = this.state;
+            const { portfolioId, sourceAccountId } = this.state;
             if (!sourceAccountId) {
               throw Fail`grant requires sourceAccountId to be set (portfolio must be opened from EVM)`;
             }
@@ -1593,32 +1595,45 @@ export const preparePortfolioKit = (
             // settles either way, since nothing else about the portfolio
             // changes from a plain grant.
             let agentId: number;
+            let policyVersion: number;
             try {
               // Returns promise promptly resolved
-              agentId = await this.facets.manager.grantDelegation(
-                grantee,
-                permissions,
-              );
+              ({ agentId, policyVersion } =
+                await this.facets.manager.grantDelegation(
+                  grantee,
+                  permissions,
+                ));
             } finally {
               this.facets.reporter.publishStatus();
             }
-            return `agent${agentId}` satisfies PortfolioAgentKey;
+            return harden({
+              portfolioId,
+              policyVersion,
+              agentId,
+            }) satisfies PortfolioGrantResult;
           });
         },
         /**
          * Set the auto-features for this portfolio.
          *
-         * Returns the new validated auto-features settings.
+         * Returns promptly the resulting `portfolioId`, `policyVersion`, and
+         * the new validated `enabledAutoFeatures` settings.
          */
         setAutoFeatures(features: PortfolioAutoFeaturesExt) {
-          return vowTools.asVow(() => {
+          return vowTools.asVow(async () => {
             mustMatch(features, PortfolioAutoFeaturesShape);
             const { sourceAccountId } = this.state;
             if (!sourceAccountId) {
               throw Fail`setAutoFeatures requires sourceAccountId to be set (portfolio must be opened from EVM)`;
             }
-            // Returns promise promptly resolved
-            return this.facets.manager.setAutoFeatures(features);
+            const { enabledAutoFeatures, policyVersion } =
+              await this.facets.manager.setAutoFeatures(features);
+            const { portfolioId } = this.state;
+            return harden({
+              portfolioId,
+              policyVersion,
+              enabledAutoFeatures,
+            }) satisfies PortfolioSetAutoFeaturesResult;
           });
         },
       },
