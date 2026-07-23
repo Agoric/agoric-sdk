@@ -385,6 +385,12 @@ const erc4626VaultAddresses = harden({
     },
     testnet: {},
   },
+  morphoRockawayxUsdcYield: {
+    mainnet: {
+      Ethereum: '0xE0181090c22579B6A217f1522cbf8c9f1F0C1965', // https://app.morpho.org/ethereum/vault/0xE0181090c22579B6A217f1522cbf8c9f1F0C1965/rockawayx-usdc-yield
+    },
+    testnet: {},
+  },
 });
 
 /** @type {AddressesMap} */
@@ -646,6 +652,8 @@ const mainnetContracts = {
     walletHelper: walletHelperAddresses.mainnet.Ethereum,
     ERC4626_morphoKpkUsdcPrime_Ethereum:
       erc4626VaultAddresses.morphoKpkUsdcPrime.mainnet.Ethereum,
+    ERC4626_morphoRockawayxUsdcYield_Ethereum:
+      erc4626VaultAddresses.morphoRockawayxUsdcYield.mainnet.Ethereum,
     oneInchRouter,
   },
   Optimism: {
