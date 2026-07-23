@@ -280,6 +280,25 @@ export type PortfolioAgentStatus = {
   grantee: PortfolioAgentGrantee;
   permissions: PortfolioPermissionsExt;
   state: PortfolioAgentState;
+  /**
+   * the policyVersion at which this agent's record was last changed
+   * May be missing on some legacy agent records
+   */
+  updatedAtPolicyVersion?: number;
+};
+
+/** Result of a `Grant` operation, referencing the resulting policyVersion. */
+export type PortfolioGrantResult = {
+  portfolioId: number;
+  policyVersion: number;
+  agentId: number;
+};
+
+/** Result of a `SetAutoFeatures` operation, referencing the resulting policyVersion. */
+export type PortfolioSetAutoFeaturesResult = {
+  portfolioId: number;
+  policyVersion: number;
+  enabledAutoFeatures: PortfolioAutoFeaturesExt;
 };
 
 export type PortfolioRemoteAccountCommonStates =

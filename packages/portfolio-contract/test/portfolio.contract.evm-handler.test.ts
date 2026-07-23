@@ -593,8 +593,10 @@ test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t =
     const statusBefore = await evmTrader.getPortfolioStatus();
     t.like(statusBefore, {
       enabledAutoFeatures: { rebalance: true },
-      policyVersion: 1,
-      rebalanceCount: 1,
+      // setAutoFeatures granted the planner delegation, bumping
+      // policyVersion again and resetting rebalanceCount
+      policyVersion: 2,
+      rebalanceCount: 0,
     });
 
     const amount = usdc.units(100);
@@ -639,8 +641,8 @@ test('evmHandler.setAutoFeatures enables planner-initiated rebalance', async t =
     const statusAfter = await evmTrader.getPortfolioStatus();
     t.like(statusAfter, {
       enabledAutoFeatures: { rebalance: true },
-      policyVersion: 1,
-      rebalanceCount: 2,
+      policyVersion: 2,
+      rebalanceCount: 1,
     });
     t.deepEqual(
       statusAfter.flowsRunning,
