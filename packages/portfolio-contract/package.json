@@ -4,6 +4,10 @@
   "version": "0.1.0",
   "description": "portfolio-contract aka ymax0 or YMax Proof of Concept (PoC)",
   "type": "module",
+  "exports": {
+    "./interfaces/erc20": "./src/interfaces/erc20.ts",
+    "./interfaces/pendle": "./src/interfaces/pendle.ts"
+  },
   "files": [
     "src",
     "tools"
