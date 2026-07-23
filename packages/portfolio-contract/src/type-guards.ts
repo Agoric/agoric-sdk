@@ -238,11 +238,17 @@ export const PortfolioStatusShapeExt: TypedPattern<StatusFor['portfolio']> =
   );
 
 export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
-  M.splitRecord({
-    grantee: AnyString<Bech32Address>(),
-    permissions: PortfolioPermissionsExtShape,
-    state: M.or('active', 'revoked', 'expired'),
-  });
+  M.splitRecord(
+    {
+      grantee: AnyString<Bech32Address>(),
+      permissions: PortfolioPermissionsExtShape,
+      state: M.or('active', 'revoked', 'expired'),
+    },
+    {
+      // Added later, not enforced by some legacy portfolios
+      updatedAtPolicyVersion: M.number(),
+    },
+  );
 
 export const PortfolioAgentsShape: TypedPattern<StatusFor['portfolioAgents']> =
   M.recordOf(PortfolioAgentKeyShape, PortfolioAgentStatusShape);

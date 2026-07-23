@@ -257,7 +257,9 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
 
   const rebalanceParams = {
     syncState: {
-      policyVersion: 1,
+      // setAutoFeatures granted the planner delegation, bumping policyVersion
+      // past the setTargetAllocation call above.
+      policyVersion: 2,
       rebalanceCount: 0,
     },
     agentMemo: '12345',
@@ -271,7 +273,7 @@ test('planner starts delegated rebalance and resolves its plan', async t => {
 
   const portfolioStatus = await getPortfolioStatus(1);
   t.like(portfolioStatus, {
-    policyVersion: 1,
+    policyVersion: 2,
     rebalanceCount: 1,
     flowsRunning: {
       flow1: { type: 'rebalance', agent: 'agent1', agentMemo: '12345' },
@@ -346,7 +348,9 @@ test('planner cannot start delegated rebalance with new positions', async t => {
 
   const rebalanceParams = {
     syncState: {
-      policyVersion: 1,
+      // setAutoFeatures granted the planner delegation, bumping policyVersion
+      // past the setTargetAllocation call above.
+      policyVersion: 2,
       rebalanceCount: 0,
     },
     agentMemo: '12345',

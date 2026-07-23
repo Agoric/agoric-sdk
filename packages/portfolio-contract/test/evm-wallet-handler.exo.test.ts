@@ -114,14 +114,22 @@ const makeMockPortfolioEvmHandler = ({
     grant(..._args: Parameters<PortfolioEVMFacet['grant']>) {
       // Not exercised by existing tests; present so the mock satisfies the
       // facet type after the security fix moved delegation onto evmHandler.
-      return vowTools.asVow(() => 'agent1' as const);
+      return vowTools.asVow(() => ({
+        portfolioId,
+        policyVersion: 1,
+        agentId: 1,
+      }));
     },
     setAutoFeatures(
       ..._args: Parameters<PortfolioEVMFacet['setAutoFeatures']>
     ) {
       calls.setAutoFeatures.push(_args);
-      const [features] = _args;
-      return vowTools.asVow(() => features);
+      const [enabledAutoFeatures] = _args;
+      return vowTools.asVow(() => ({
+        portfolioId,
+        policyVersion: 1,
+        enabledAutoFeatures,
+      }));
     },
   });
 };
