@@ -1,14 +1,21 @@
 #! /bin/sh
-# Usage: $0 [<command> [<initial argument>...]]
+# Usage: $0 [--base=<base-branch>] [<command> [<initial argument>...]]
 # Invokes `echo` or a specified other command with a list of "...@<version>" and
 # "v<version>" tags associated with the HEAD commit, specifically handling
 # "@agoric/sdk@<version>" tags in a dedicated invocation for CI convenience.
 # Fails if either expected tag category is empty.
+baseBranch=HEAD~2
+case "$1" in
+--base=*)
+	baseBranch=${1#--base=}
+	shift
+	;;
+esac
 cmd=${1:-echo}
 [ $# -gt 0 ] && shift
 sdkTags=
 otherTags=
-for tag in $(git tag -l --contains HEAD | grep -E '(@|^v)[0-9.]+(-[^.]*\.[0-9.]+)?$'); do
+for tag in $(git tag -l --contains "$baseBranch" | grep -E '(@|^v)[0-9.]+(-[^.]*\.[0-9.]+)?$'); do
 	case $tag in
 	@agoric/sdk@*) sdkTags="$sdkTags $tag" ;;
 	*) otherTags="$otherTags $tag" ;;
