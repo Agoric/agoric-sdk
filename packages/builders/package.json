@@ -55,6 +55,7 @@
   },
   "files": [
     "CHANGELOG.md",
+    "index.js",
     "src/",
     "scripts/",
     "tools/",

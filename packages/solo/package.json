@@ -7,6 +7,13 @@
     "ag-solo": "src/entrypoint.js"
   },
   "main": "src/main.js",
+  "files": [
+    "bin",
+    "src",
+    "public",
+    "solo-config.json",
+    "solo-README-to-install.md"
+  ],
   "repository": "https://github.com/Agoric/agoric-sdk",
   "scripts": {
     "build": "exit 0",
