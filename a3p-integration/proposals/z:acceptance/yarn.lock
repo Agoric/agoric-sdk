@@ -358,11 +358,11 @@ __metadata:
   languageName: node
   linkType: soft
 
-"@agoric/synthetic-chain@npm:^0.7.1":
-  version: 0.7.1
-  resolution: "@agoric/synthetic-chain@npm:0.7.1"
+"@agoric/synthetic-chain@npm:^0.7.2":
+  version: 0.7.2
+  resolution: "@agoric/synthetic-chain@npm:0.7.2"
   dependencies:
-    "@agoric/client-utils": "npm:0.1.1-dev-c393dc4.0.c393dc4"
+    "@agoric/client-utils": "npm:0.1.1-dev-04baeed.0.04baeed"
     "@endo/zip": "npm:^1.0.11"
     better-sqlite3: "npm:^12.6.2"
     chalk: "npm:^5.6.2"
@@ -372,7 +372,7 @@ __metadata:
     tmp: "npm:0.2.5"
   bin:
     synthetic-chain: dist/cli/cli.mjs
-  checksum: 10c0/933743040cb5f2b4c3b37163e801bebecdac6459effcf8f669672a92747cbdc567a1bb84368559eac39e35e9cff61cb251514b3fa61822c8bcdb69ee73a030a2
+  checksum: 10c0/792e229db6bf2264fb2f27fedceecc9a1caa024862e67b6a0c7bb76641eaf959d35b070ac939e8db0a28cc1120b31122361c63b6e09db6d8a657bfb4542e0414
   languageName: node
   linkType: hard
 
@@ -972,12 +972,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/lockdown@npm:^1.0.18, @endo/lockdown@npm:^1.0.19":
+"@endo/lockdown@npm:1.0.19":
   version: 1.0.19
   resolution: "@endo/lockdown@npm:1.0.19"
   dependencies:
     ses: "npm:^2.0.0"
   checksum: 10c0/df1166f35e8a64ced5c710a7ddb5fe938909ce400bd037be62898b63662277e2ef404c5d678dea5b6d5e62cdfb7fa4eeefe6c38e58f2b95b745696a6e37a9971
+  languageName: node
+  linkType: hard
+
+"@endo/lockdown@patch:@endo/lockdown@npm%3A1.0.19#~/.yarn/patches/@endo-lockdown-npm-1.0.19-5484a05dce.patch":
+  version: 1.0.19
+  resolution: "@endo/lockdown@patch:@endo/lockdown@npm%3A1.0.19#~/.yarn/patches/@endo-lockdown-npm-1.0.19-5484a05dce.patch::version=1.0.19&hash=4ee658"
+  dependencies:
+    ses: "npm:^2.0.0"
+  checksum: 10c0/f10b78062a386b484fbfa3a7dd71a01386a787912809c82f910a38c8d249a196997ee554223a763d8654cd9534129773c32acefd80891c388c312a33abfd5231
   languageName: node
   linkType: hard
 
@@ -6837,7 +6846,7 @@ __metadata:
     "@agoric/ertp": "npm:dev"
     "@agoric/internal": "npm:dev"
     "@agoric/store": "npm:dev"
-    "@agoric/synthetic-chain": "npm:^0.7.1"
+    "@agoric/synthetic-chain": "npm:^0.7.2"
     "@agoric/zoe": "npm:dev"
     "@cosmjs/stargate": "npm:^0.36.0"
     "@cosmjs/tendermint-rpc": "npm:^0.36.0"

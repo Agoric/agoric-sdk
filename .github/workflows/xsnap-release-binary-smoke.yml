@@ -19,7 +19,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version: 24
           # Corepack is not enabled yet, so setup-node must not try to detect
           # the yarn cache.
           package-manager-cache: false

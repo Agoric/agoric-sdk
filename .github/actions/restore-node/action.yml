@@ -51,9 +51,7 @@ runs:
             OUTPUT_NODE_VERSION="22"
             ;;
           node-new)
-            # We dropped Node 20 because it's EOL but we don't yet support Node 24
-            # so allow old=new until https://github.com/Agoric/agoric-sdk/pull/12670
-            OUTPUT_NODE_VERSION="22"
+            OUTPUT_NODE_VERSION="24"
             ;;
         esac
 

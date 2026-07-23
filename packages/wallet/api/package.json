@@ -47,9 +47,15 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/Agoric/agoric/issues"
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
   },
-  "homepage": "https://github.com/Agoric/agoric#readme",
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "ava": {
+    "files": [
+      "test/**/*.test.*"
+    ],
+    "timeout": "2m"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -57,6 +63,6 @@
     "atLeast": 0
   },
   "engines": {
-    "node": "^22.11"
+    "node": "^22.11 || ^24.14"
   }
 }

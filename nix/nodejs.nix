@@ -7,8 +7,8 @@
       # Add custom overlay for Node.js
       overlays = [
         (final: prev: {
-          nodejs = prev.nodejs_22;
-          corepack = prev.corepack_22;
+          nodejs = prev.nodejs_24;
+          corepack = prev.corepack_24;
         })
       ];
     };

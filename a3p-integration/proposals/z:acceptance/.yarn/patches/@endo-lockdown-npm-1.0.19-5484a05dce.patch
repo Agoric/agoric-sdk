@@ -1,0 +1,13 @@
+diff --git a/commit-debug.js b/commit-debug.js
+index e4fedbbe4cecfb401e1d5d4d3f48b39c30683abb..a929cf318db61933215526a8eb81806c92d42718 100644
+--- a/commit-debug.js
++++ b/commit-debug.js
+@@ -55,7 +55,7 @@ lockdown({
+   // NOTE TO REVIEWERS: If you see the following line commented out,
+   // this may be a development accident that should be fixed before merging.
+   //
+-  overrideTaming: 'min',
++  overrideTaming: 'moderate',
+ 
+   // The default `{consoleTaming: 'safe'}` setting usually makes for a
+   // better debugging experience, by wrapping the original `console` with

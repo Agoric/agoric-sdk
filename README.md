@@ -23,7 +23,7 @@ with this section (e.g., [repoconfig.sh](./repoconfig.sh) defines
 
 * Git
 * Go ^1.24.1
-* Node.js ^22.11
+* Node.js ^22.11 or ^24.14
   * we generally support the latest LTS release: use
     [nvm](https://github.com/nvm-sh/nvm) to keep your local system up-to-date
 * Yarn (`npm install -g yarn`)
