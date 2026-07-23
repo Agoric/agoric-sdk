@@ -1404,6 +1404,7 @@
       "ERC4626_morphoSteakhouseHighYieldInstant_Ethereum": "0xbeeff2C5bF38f90e3482a8b19F12E5a6D2FCa757",
       "ERC4626_morphoGauntletUsdcPrime_Ethereum": "0x8c106EEDAd96553e64287A5A6839c3Cc78afA3D0",
       "ERC4626_morphoKpkUsdcPrime_Ethereum": "0x4Ef53d2cAa51C447fdFEEedee8F07FD1962C9ee6",
+      "ERC4626_morphoRockawayxUsdcYield_Ethereum": "0xE0181090c22579B6A217f1522cbf8c9f1F0C1965",
       "aavePool": "0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2",
       "aaveRewardsController": "0x8164Cc65827dcFe994AB23944CBC90e0aa80bFcb",
       "aaveUSDC": "0x98C23E9d8f34FEFb1B7BD6a91B7FF122F4e16F5c",
