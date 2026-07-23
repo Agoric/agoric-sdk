@@ -6,11 +6,29 @@ name: Post-merge publishes/checks
 on:
   push:
     branches:
-      # $default-branch
       - master
       - 'release-*'
       - 'dev-*'
   workflow_dispatch:
+    inputs:
+      branch:
+        default: master
+        description: 'Branch whose committed versions to publish for mode=release; the workflow definition still comes from the "Use workflow from" ref'
+        required: false
+        type: string
+      mode:
+        default: dev-canary
+        description: 'Publish mode'
+        options:
+          - dev-canary
+          - release
+        type: choice
+      tag:
+        description:
+          'NPM dist-tag for mode=release (e.g. agoric-upgrade-23); required in
+          that mode so packages are never implicitly tagged `latest`'
+        required: false
+        type: string
 
 jobs:
   build:
@@ -31,6 +49,7 @@ jobs:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   dev-canary:
+    if: ${{ github.event_name == 'push' || inputs.mode == 'dev-canary' }}
     needs: build
     runs-on: ubuntu-latest
     # id-token: write enables npm OIDC trusted publishing; packages
@@ -88,6 +107,89 @@ jobs:
           git stash pop || true
       - name: notify on failure
         if: failure()
+        uses: ./.github/actions/notify-status
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  release-approval:
+    environment:
+      name: npm-publish-release
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: record approval
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
+          RELEASE_BRANCH: ${{ inputs.branch }}
+        run: |
+          printf "Approved publishing dist-tag '%s' from branch '%s'\n" \
+            "${NPM_DIST_TAG}" "${RELEASE_BRANCH}"
+
+  release-publish:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'release' }}
+    needs:
+      - build
+      - release-approval
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: validate inputs
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
+        run: |
+          set -o errexit -o xtrace
+
+          case "${NPM_DIST_TAG}" in
+            '' | latest)
+              printf "tag must name a release tag (e.g. agoric-upgrade-23); got '%s'\n" \
+                "${NPM_DIST_TAG}"
+              printf "Refusing to publish to '%s'.\n" "${NPM_DIST_TAG}"
+              exit 1
+              ;;
+            *[!A-Za-z0-9._-]* | .* | -*)
+              printf "tag must contain only letters, numbers, dots, underscores, and hyphens, and must not start with dot or hyphen; got '%s'\n" \
+                "${NPM_DIST_TAG}"
+              exit 1
+              ;;
+          esac
+
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/restore-node
+        with:
+          node-version: 'node-new'
+          ref: ${{ inputs.branch }}
+
+      - env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        name: configure NPM token
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+
+      - name: check credentials
+        run: npm whoami
+
+      - name: publish release versions to NPM
+        env:
+          NPM_DIST_TAG: ${{ inputs.tag }}
+        run: |
+          set -o errexit -o xtrace
+
+          git log --format="Publishing versions committed as of %H: %s" --max-count="1"
+
+          git stash || true
+
+          AGORIC_POSTPACK_PRESERVE_PACKAGE_JSON="1" \
+            yarn lerna publish from-package \
+            --concurrency "1" --dist-tag "${NPM_DIST_TAG}" --loglevel "verbose" \
+            --no-push --no-verify-access --yes
+
+          git stash pop || true
+
+      - if: failure()
+        name: notify on failure
         uses: ./.github/actions/notify-status
         with:
           webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
