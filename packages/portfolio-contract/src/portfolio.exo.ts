@@ -1084,6 +1084,7 @@ export const preparePortfolioKit = (
               permissions,
               state: 'active',
               activeClient: delegationKit.client,
+              updatedAtPolicyVersion: this.state.policyVersion,
             }),
           );
           await null;
@@ -1105,6 +1106,7 @@ export const preparePortfolioKit = (
                 grantee,
                 permissions,
                 state: 'revoked',
+                updatedAtPolicyVersion: this.state.policyVersion,
               }),
             );
             throw error;
@@ -1130,6 +1132,7 @@ export const preparePortfolioKit = (
               ...delegation,
               state: 'revoked',
               activeClient: undefined,
+              updatedAtPolicyVersion: this.state.policyVersion,
             }),
           );
           if (this.state.plannerAgentId === agentId) {
@@ -1170,7 +1173,11 @@ export const preparePortfolioKit = (
             } else {
               this.state.delegations!.set(
                 plannerAgentId,
-                harden({ ...delegation, permissions }),
+                harden({
+                  ...delegation,
+                  permissions,
+                  updatedAtPolicyVersion: this.state.policyVersion,
+                }),
               );
               this.facets.reporter.publishAgents();
             }

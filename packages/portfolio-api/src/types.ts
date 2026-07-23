@@ -280,6 +280,11 @@ export type PortfolioAgentStatus = {
   grantee: PortfolioAgentGrantee;
   permissions: PortfolioPermissionsExt;
   state: PortfolioAgentState;
+  /**
+   * the policyVersion at which this agent's record was last changed
+   * May be missing on some legacy agent records
+   */
+  updatedAtPolicyVersion?: number;
 };
 
 export type PortfolioRemoteAccountCommonStates =

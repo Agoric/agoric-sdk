@@ -264,6 +264,7 @@ test('PortfolioAgentStatusShape allows upgraded permission bags', t => {
       grantee: 'agoric1test',
       permissions: { futurePermission: true },
       state: 'active',
+      updatedAtPolicyVersion: 0,
     },
   } satisfies Record<string, PortfolioAgentStatus>);
   const failCases = harden({});
@@ -286,6 +287,7 @@ test('portfolio agent status shape allows future top-level fields', t => {
           grantee: 'agoric1test',
           permissions: { allocation: true },
           state: 'active',
+          updatedAtPolicyVersion: 1,
           expiresAt: 1234567890,
           revokedBy: 'agoric1admin',
         }),
