@@ -199,7 +199,9 @@ test('Pete may grant his own portfolio and grantee may rebalance through the red
       grantee: PETE_AGENT,
       permissions: { allocation: true },
       state: 'active',
-      updatedAtPolicyVersion: 1,
+      // the initial deposit/rebalance flow bumps policyVersion to 1, then
+      // grant() itself bumps it again
+      updatedAtPolicyVersion: 2,
     },
   });
   const after = await peteKit.evmTrader.getPortfolioStatus();
@@ -323,7 +325,9 @@ test('Delegation is active only while registered on the portfolio', async t => {
       grantee: PETE_AGENT,
       permissions: { allocation: true },
       state: 'active',
-      updatedAtPolicyVersion: 1,
+      // the initial deposit/rebalance flow bumps policyVersion to 1, then
+      // grant() itself bumps it again
+      updatedAtPolicyVersion: 2,
     },
   });
 
@@ -454,7 +458,9 @@ test('Pete may open a portfolio and grant control in a single signed message', a
       grantee: PETE_AGENT,
       permissions: { allocation: true },
       state: 'active',
-      updatedAtPolicyVersion: 0,
+      // grant() runs before the deposit/rebalance flow starts, so this is
+      // the portfolio's first policyVersion bump
+      updatedAtPolicyVersion: 1,
     },
   });
 

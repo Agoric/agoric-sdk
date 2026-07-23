@@ -1041,9 +1041,15 @@ export const preparePortfolioKit = (
           this.state.targetAllocation = allocation;
           this.facets.manager.incrPolicyVersion();
         },
-        incrPolicyVersion() {
-          this.state.policyVersion += 1;
+        /** state-only version bump; callers are responsible for publishing */
+        bumpPolicyVersion() {
+          const newPolicyVersion = this.state.policyVersion + 1;
+          this.state.policyVersion = newPolicyVersion;
           this.state.rebalanceCount = 0;
+          return newPolicyVersion;
+        },
+        incrPolicyVersion() {
+          this.facets.manager.bumpPolicyVersion();
           this.facets.reporter.publishStatus();
         },
         /**
@@ -1053,7 +1059,8 @@ export const preparePortfolioKit = (
          * Does not check if the grantee already has an active delegation, or if
          * the permissions are valid.
          *
-         * Returns promptly the agent ID of the new delegation.
+         * Returns promptly the `agentId` of the new delegation and the
+         * `policyVersion` it was granted at.
          */
         async grantDelegation(
           grantee: PortfolioAgentGrantee,
@@ -1071,6 +1078,13 @@ export const preparePortfolioKit = (
             agentId: nextAgentId,
             portfolioAccess: this.facets.delegationHelper,
           });
+          // A grant is always a policy change. Bump before initializing the
+          // record so it can be stamped with the resulting version. Only the
+          // agent-level publish happens here (below); the portfolio-level
+          // publish is left to the caller, which may have other portfolio
+          // fields (e.g. enabledAutoFeatures) to finalize first.
+          const updatedAtPolicyVersion =
+            this.facets.manager.bumpPolicyVersion();
           // Initialize the delegation record first to avoid any race claiming
           // the same agent ID or delivery failures resulting in a gap in the
           // delegation records, either of which could result in a
@@ -1084,7 +1098,7 @@ export const preparePortfolioKit = (
               permissions,
               state: 'active',
               activeClient: delegationKit.client,
-              updatedAtPolicyVersion: this.state.policyVersion,
+              updatedAtPolicyVersion,
             }),
           );
           await null;
@@ -1106,7 +1120,7 @@ export const preparePortfolioKit = (
                 grantee,
                 permissions,
                 state: 'revoked',
-                updatedAtPolicyVersion: this.state.policyVersion,
+                updatedAtPolicyVersion,
               }),
             );
             throw error;
@@ -1114,7 +1128,10 @@ export const preparePortfolioKit = (
             this.facets.reporter.publishAgents();
           }
 
-          return nextAgentId;
+          return {
+            agentId: nextAgentId,
+            policyVersion: updatedAtPolicyVersion,
+          };
         },
         revokeDelegation(agentId: number) {
           const { delegations } = this.state;
@@ -1125,6 +1142,9 @@ export const preparePortfolioKit = (
           if (!delegation) {
             throw Fail`no delegation found for agent ${agentId}`;
           }
+          // A revoke is always a policy change.
+          const updatedAtPolicyVersion =
+            this.facets.manager.bumpPolicyVersion();
           // XXX: consider interacting with client to have it drop our helper facet
           delegations.set(
             agentId,
@@ -1132,13 +1152,14 @@ export const preparePortfolioKit = (
               ...delegation,
               state: 'revoked',
               activeClient: undefined,
-              updatedAtPolicyVersion: this.state.policyVersion,
+              updatedAtPolicyVersion,
             }),
           );
           if (this.state.plannerAgentId === agentId) {
             this.state.plannerAgentId = undefined;
             this.state.enabledAutoFeatures = undefined;
           }
+          this.facets.reporter.publishStatus();
           this.facets.reporter.publishAgents();
         },
         /**
@@ -1159,6 +1180,7 @@ export const preparePortfolioKit = (
             permissions.allocation || permissions.rebalance;
 
           let plannerAgentId = this.state.plannerAgentId;
+          let updateDelegation = false;
 
           if (plannerAgentId !== undefined) {
             // delegations must exist if there previously was a planner agent
@@ -1171,31 +1193,57 @@ export const preparePortfolioKit = (
               plannerAgentId = undefined;
               this.state.plannerAgentId = undefined;
             } else {
-              this.state.delegations!.set(
-                plannerAgentId,
-                harden({
-                  ...delegation,
-                  permissions,
-                  updatedAtPolicyVersion: this.state.policyVersion,
-                }),
-              );
-              this.facets.reporter.publishAgents();
+              updateDelegation = true;
             }
           }
 
           await null;
+
+          // This call is always exactly one policy change, whether it grants
+          // a new planner delegation, updates an existing one, or only
+          // changes enabledAutoFeatures. Publishing must wait until every
+          // field touched by this operation (delegation record and/or
+          // enabledAutoFeatures) is in its final state, so a published
+          // snapshot never shows a bumped policyVersion next to stale data.
+          // `policyVersion` is captured directly from whichever bump this
+          // call caused, rather than re-read from state afterward, so an
+          // interleaved policy change can't be misattributed to this call.
+          let policyVersion: number;
           if (hasAnyPermission && plannerAgentId === undefined) {
-            // grantDelegation is guaranteed to be prompt, safe to await here
-            plannerAgentId = await this.facets.manager.grantDelegation(
-              PortfolioPlannerAgent,
-              permissions,
-            );
-            this.state.plannerAgentId = plannerAgentId;
+            // grantDelegation is guaranteed to be prompt, safe to await here.
+            // it bumps policyVersion and publishes the agent
+            // record itself; only the portfolio-level publish is left to us.
+            try {
+              const granted = await this.facets.manager.grantDelegation(
+                PortfolioPlannerAgent,
+                permissions,
+              );
+              plannerAgentId = granted.agentId;
+              policyVersion = granted.policyVersion;
+              this.state.plannerAgentId = plannerAgentId;
+              this.state.enabledAutoFeatures = features;
+            } finally {
+              this.facets.reporter.publishStatus();
+            }
+          } else {
+            policyVersion = this.facets.manager.bumpPolicyVersion();
+            if (updateDelegation) {
+              const delegation = this.state.delegations!.get(plannerAgentId!);
+              this.state.delegations!.set(
+                plannerAgentId!,
+                harden({
+                  ...delegation,
+                  permissions,
+                  updatedAtPolicyVersion: policyVersion,
+                }),
+              );
+            }
+            this.state.enabledAutoFeatures = features;
+            this.facets.reporter.publishStatus();
+            if (updateDelegation) this.facets.reporter.publishAgents();
           }
 
-          this.state.enabledAutoFeatures = features;
-          this.facets.reporter.publishStatus();
-          return features;
+          return { enabledAutoFeatures: features, policyVersion };
         },
       },
       accountWatcher: {
@@ -1539,11 +1587,21 @@ export const preparePortfolioKit = (
             }
             permissions.allocation === true ||
               Fail`grant requires allocation permission`;
-            // Returns promise promptly resolved
-            const agentId = await this.facets.manager.grantDelegation(
-              grantee,
-              permissions,
-            );
+            await null;
+            // grantDelegation bumps policyVersion and publishes the agent
+            // record itself; publish the portfolio-level status once it
+            // settles either way, since nothing else about the portfolio
+            // changes from a plain grant.
+            let agentId: number;
+            try {
+              // Returns promise promptly resolved
+              agentId = await this.facets.manager.grantDelegation(
+                grantee,
+                permissions,
+              );
+            } finally {
+              this.facets.reporter.publishStatus();
+            }
             return `agent${agentId}` satisfies PortfolioAgentKey;
           });
         },

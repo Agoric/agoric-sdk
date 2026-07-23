@@ -1041,14 +1041,16 @@ test('evmHandler rebalance without allocations fails without current target allo
 
 test('evmHandler grant passes only the delegation client to delivery', async t => {
   const ownerAddress = '0x1212121212121212121212121212121212121212' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup();
   const { evmHandler, delegationHelper } = makePortfolioKit({
     portfolioId: 14,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
   });
   t.truthy(delegationHelper);
 
-  await evmHandler.grant('agoric1delegate', { allocation: true });
+  await vowTools.when(
+    evmHandler.grant('agoric1delegate', { allocation: true }),
+  );
 
   const callLog = getCallLog();
   t.is(callLog.length, 1);
@@ -1066,14 +1068,18 @@ test('evmHandler grant passes only the delegation client to delivery', async t =
 
 test('evmHandler grant allocates sequential agent ids', async t => {
   const ownerAddress = '0x3434343434343434343434343434343434343434' as const;
-  const { makePortfolioKit, getCallLog } = makeTestSetup();
+  const { makePortfolioKit, getCallLog, vowTools } = makeTestSetup();
   const { evmHandler } = makePortfolioKit({
     portfolioId: 18,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
   });
 
-  await evmHandler.grant('agoric1delegatea', { allocation: true });
-  await evmHandler.grant('agoric1delegateb', { allocation: true });
+  await vowTools.when(
+    evmHandler.grant('agoric1delegatea', { allocation: true }),
+  );
+  await vowTools.when(
+    evmHandler.grant('agoric1delegateb', { allocation: true }),
+  );
 
   const callLog = getCallLog();
   t.is(callLog.length, 2);
@@ -1081,8 +1087,8 @@ test('evmHandler grant allocates sequential agent ids', async t => {
   t.is(callLog[1][3], 2);
 
   await Promise.all([
-    evmHandler.grant('agoric1delegatec', { allocation: true }),
-    evmHandler.grant('agoric1delegated', { allocation: true }),
+    vowTools.when(evmHandler.grant('agoric1delegatec', { allocation: true })),
+    vowTools.when(evmHandler.grant('agoric1delegated', { allocation: true })),
   ]);
 
   const callLogRaced = getCallLog();
@@ -1117,7 +1123,7 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
   });
   const { manager } = makePortfolioKit({ portfolioId: 20 });
 
-  const agentId = await manager.grantDelegation('agoric1delegate', {
+  const { agentId } = await manager.grantDelegation('agoric1delegate', {
     allocation: false,
     rebalance: true,
   });
@@ -1134,7 +1140,8 @@ test('delegation rebalance creates flow and calls executePlan', async t => {
   ];
 
   t.is(
-    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    // grantDelegation bumped policyVersion to 1
+    client.rebalance({ syncState: { policyVersion: 1, rebalanceCount: 0 } }),
     'flow1',
   );
   t.like(getCallLog()[1], ['executePlan', , {}, , undefined, { flowId: 1 }]);
@@ -1147,7 +1154,7 @@ test('allocation delegation cannot use rebalance', async t => {
   const { makePortfolioKit, getCallLog } = makeTestSetup();
   const { manager } = makePortfolioKit({ portfolioId: 21 });
 
-  const agentId = await manager.grantDelegation('agoric1delegate', {
+  const { agentId } = await manager.grantDelegation('agoric1delegate', {
     allocation: true,
   });
 
@@ -1176,16 +1183,19 @@ test('allocation delegation cannot use rebalance', async t => {
 test('revoked delegation client is no longer usable', async t => {
   const ownerAddress = '0x4545454545454545454545454545454545454545' as const;
   const storage = makeFakeStorageKit('published', { sequence: true });
-  const { makePortfolioKit, getCallLog, getPortfolioAgents } = makeTestSetup({
-    storage,
-  });
+  const { makePortfolioKit, getCallLog, getPortfolioAgents, vowTools } =
+    makeTestSetup({
+      storage,
+    });
   const { evmHandler, manager } = makePortfolioKit({
     portfolioId: 19,
     sourceAccountId: `eip155:42161:${ownerAddress}`,
   });
 
   manager.setTargetAllocation({ USDN: 100n });
-  await evmHandler.grant('agoric1delegate', { allocation: true });
+  await vowTools.when(
+    evmHandler.grant('agoric1delegate', { allocation: true }),
+  );
 
   const callLog = getCallLog();
   t.is(callLog.length, 1);
@@ -1261,7 +1271,8 @@ test('setAutoFeatures grants, updates, and regrants planner delegation and publi
   ];
 
   t.is(
-    client.rebalance({ syncState: { policyVersion: 0, rebalanceCount: 0 } }),
+    // the two setAutoFeatures calls above each bumped policyVersion once
+    client.rebalance({ syncState: { policyVersion: 2, rebalanceCount: 0 } }),
     'flow1',
   );
   t.is(getCallLog().length, 2);
