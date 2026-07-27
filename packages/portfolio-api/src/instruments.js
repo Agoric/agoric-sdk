@@ -70,6 +70,7 @@ export const InstrumentId = /** @type {const} */ ({
   ERC4626_morphoKpkUsdcPrime_Ethereum: 'ERC4626_morphoKpkUsdcPrime_Ethereum',
   ERC4626_morphoRockawayxUsdcYield_Ethereum:
     'ERC4626_morphoRockawayxUsdcYield_Ethereum',
+  ERC4626_morphoHumaUsdcMain_Ethereum: 'ERC4626_morphoHumaUsdcMain_Ethereum',
   USDN: 'USDN',
   USDNVault: 'USDNVault',
 });
