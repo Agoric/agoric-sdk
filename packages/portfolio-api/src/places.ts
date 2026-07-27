@@ -156,6 +156,10 @@ export const ERC4626PoolPlaces = {
     protocol: 'ERC4626',
     chainName: 'Ethereum',
   },
+  ERC4626_morphoHumaUsdcMain_Ethereum: {
+    protocol: 'ERC4626',
+    chainName: 'Ethereum',
+  },
 } as const satisfies Partial<Record<InstrumentId, PoolPlaceInfo>>;
 deepFreeze(ERC4626PoolPlaces);
 
