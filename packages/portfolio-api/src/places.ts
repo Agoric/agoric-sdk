@@ -200,10 +200,10 @@ export const chainOf = (id: AssetPlaceRef): SupportedChain => {
     return PoolPlaces[id as PoolKey].chainName;
   }
 
-  // Fallback: syntactic pool id like `${Protocol}_${Chain}` => `${Chain}`.
+  // Fallback: syntactic pool id ending in `_${Chain}` => `${Chain}`.
   // This enables base graph edges for pools even if not listed in PoolPlaces.
-  const m = /^([A-Za-z0-9]+)_([A-Za-z0-9-]+)$/.exec(id);
-  if (m) return m[2] as SupportedChain;
+  const m = /^(?:[A-Za-z0-9]+_)+([A-Za-z0-9]+)$/.exec(id);
+  if (m) return m[1] as SupportedChain;
 
   throw Fail`Cannot determine chain for ${id}`;
 };
