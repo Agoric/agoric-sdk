@@ -359,36 +359,36 @@ export function validateYmaxDomain(
     | Partial<Record<number | string, Address>>
     | undefined,
 ): asserts domain is YmaxFullDomain {
-  const baseDomain = domain;
-  validateYmaxDomainBase(baseDomain);
+  // Destructure before narrowing `domain` below, so `chainId`/`verifyingContract`
+  // remain accessible as independent bindings afterward.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { name, version, chainId, verifyingContract, ...extra } = domain;
+  validateYmaxDomainBase(domain);
 
-  if (
-    typeof domain.chainId !== 'bigint' ||
-    domain.verifyingContract === undefined
-  ) {
+  if (typeof chainId !== 'bigint' || verifyingContract === undefined) {
     throw new Error(`Ymax domain must include chain ID and verifying contract`);
   }
 
   if (validContractAddresses) {
-    const chainIdStr = String(domain.chainId);
+    const chainIdStr = String(chainId);
 
     if (!(chainIdStr in validContractAddresses)) {
-      throw new Error(`Unknown chain ID in Ymax domain: ${domain.chainId}`);
+      throw new Error(`Unknown chain ID in Ymax domain: ${chainId}`);
     }
 
-    if (
-      !sameEvmAddress(
-        domain.verifyingContract,
-        validContractAddresses[chainIdStr],
-      )
-    ) {
+    if (!sameEvmAddress(verifyingContract, validContractAddresses[chainIdStr])) {
       throw new Error(
-        `Invalid verifying contract for chain ID ${domain.chainId}: ${domain.verifyingContract} (expected ${validContractAddresses[chainIdStr]})`,
+        `Invalid verifying contract for chain ID ${chainId}: ${verifyingContract} (expected ${validContractAddresses[chainIdStr]})`,
       );
     }
   }
 
-  // XXX: check no extra fields?
+  const extraKeys = Object.keys(extra);
+  if (extraKeys.length) {
+    throw new Error(
+      `Unexpected field(s) in Ymax domain: ${extraKeys.join(', ')}`,
+    );
+  }
 }
 
 export function validateYmaxOperationTypeName<T extends OperationTypeNames>(

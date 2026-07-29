@@ -149,7 +149,7 @@ export function validatePermit2Domain(
     throw new Error(`Missing domain in permit2 data`);
   }
 
-  const { chainId, verifyingContract, name } = domain;
+  const { chainId, verifyingContract, name, ...extra } = domain;
   if (name !== PERMIT2_DOMAIN_NAME) {
     throw new Error(`Invalid permit2 domain name: ${name}`);
   }
@@ -170,7 +170,12 @@ export function validatePermit2Domain(
     }
   }
 
-  // XXX: check no extra fields?
+  const extraKeys = Object.keys(extra);
+  if (extraKeys.length) {
+    throw new Error(
+      `Unexpected field(s) in permit2 domain: ${extraKeys.join(', ')}`,
+    );
+  }
 }
 
 /**
