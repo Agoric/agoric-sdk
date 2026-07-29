@@ -17,7 +17,10 @@ import type {
   TypedDataToPrimitiveTypes,
 } from 'abitype';
 import type { TypedDataDefinition } from 'viem';
-import type { TypedDataParameter } from '@agoric/orchestration/src/utils/abitype.js';
+import type {
+  TypedDataParameter,
+  WithOptionalFields,
+} from '@agoric/orchestration/src/utils/abitype.js';
 import {
   type Witness,
   type getPermitWitnessTransferFromData,
@@ -26,6 +29,7 @@ import {
   TokenPermissionsComponents,
 } from '@agoric/orchestration/src/utils/permit2.ts';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
+import { normalizeEIP712Data } from '@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts';
 
 const YMAX_DOMAIN_NAME = 'Ymax';
 const YMAX_DOMAIN_VERSION = '1';
@@ -70,24 +74,39 @@ const PortfolioStandaloneTypeParams = [
  * The set of portfolio operations supported by EVM Wallets, and their associated params
  */
 const OperationTypes = {
-  OpenPortfolio: [{ name: 'allocations', type: 'Allocation[]' }],
+  /**
+   * Open a portfolio, optionally in the same signed message enabling
+   * auto-features and/or granting portfolio permissions to an automation
+   * agent's Agoric address, now that `features`/`grantee` can be marked
+   * `optional` in the EIP-712 type definition. This is the preferred,
+   * general form of the former separate {@link OpenPortfolioWithAutoFeatures}
+   * / {@link OpenPortfolioWithGrant} operations, which remain supported as
+   * distinct operation types for backward compatibility with existing
+   * clients/messages, but should not be needed for new callers. Granting
+   * delivers the delegation to `grantee.address`, exactly as a standalone
+   * {@link Grant} would; enabling auto-features behaves exactly as a
+   * standalone {@link SetAutoFeatures} would.
+   *
+   * - allocations: initial target allocation across instruments
+   * - features: auto-features to enable on open, if any
+   * - grantee: delegation recipient and encoded portfolio permissions, if any
+   */
+  OpenPortfolio: [
+    { name: 'allocations', type: 'Allocation[]' },
+    { name: 'features', type: 'PortfolioAutoFeatures', optional: true },
+    { name: 'grantee', type: 'DelegationGrantee', optional: true },
+  ],
+  /**
+   * @deprecated prefer {@link OpenPortfolio} with its optional `features`
+   * field. Kept as a distinct operation type for backward compatibility.
+   */
   OpenPortfolioWithAutoFeatures: [
     { name: 'allocations', type: 'Allocation[]' },
     { name: 'features', type: 'PortfolioAutoFeatures' },
   ],
   /**
-   * Open a portfolio and, in the same signed message, grant portfolio
-   * permissions to an automation agent's Agoric address. This collapses the
-   * former two-step "create portfolio" + "Grant" flow into a single user
-   * signature: the contract creates the portfolio with the given allocations
-   * and then delivers the delegation to `grantee.address`, exactly as a
-   * standalone {@link Grant} would.
-   *
-   * Like {@link OpenPortfolio}, this is a permit2-wrapped (funds-bearing)
-   * operation; the accompanying Permit2 supplies the initial deposit.
-   *
-   * - allocations: initial target allocation across instruments
-   * - grantee: delegation recipient and encoded portfolio permissions
+   * @deprecated prefer {@link OpenPortfolio} with its optional `grantee`
+   * field. Kept as a distinct operation type for backward compatibility.
    */
   OpenPortfolioWithGrant: [
     { name: 'allocations', type: 'Allocation[]' },
@@ -128,7 +147,15 @@ const OperationTypes = {
     { name: 'features', type: 'PortfolioAutoFeatures' },
     PortfolioIdParam,
   ],
-} as const satisfies TypedData;
+  // `satisfies Record<string, readonly TypedDataParameter[]>` rather than
+  // abitype's own `TypedData` (whose `TypedDataParameter` is strictly
+  // `{name, type}`) so struct fields here can carry the repo-local `optional`
+  // marker without tripping excess-property checks on this literal. Downstream
+  // consumption (e.g. `satisfies TypedData` on values derived from `typeof
+  // OperationTypes`) is unaffected: those check a type reference structurally,
+  // and an extra optional `optional?` property doesn't break assignability to
+  // abitype's `TypedData`.
+} as const satisfies Record<string, readonly TypedDataParameter[]>;
 type OperationTypes = typeof OperationTypes;
 export type OperationTypeNames = keyof OperationTypes;
 
@@ -139,14 +166,17 @@ const OperationSubTypes = {
   ],
   Asset: TokenPermissionsComponents,
   /** @see {@link PortfolioPermissions} */
-  PortfolioPermissions: [{ name: 'allocation', type: 'bool' }],
+  PortfolioPermissions: [
+    { name: 'allocation', type: 'bool' },
+    { name: 'rebalance', type: 'bool', optional: true },
+  ],
   DelegationGrantee: [
     { name: 'address', type: 'string' },
     { name: 'permissions', type: 'PortfolioPermissions' },
   ],
   /** @see {@link PortfolioAutoFeatures} */
   PortfolioAutoFeatures: [{ name: 'rebalance', type: 'bool' }],
-} as const satisfies TypedData;
+} as const satisfies Record<string, readonly TypedDataParameter[]>;
 
 /**
  * Target allocation for portfolio positions.
@@ -167,9 +197,10 @@ type YmaxOperationTypesWithSubTypes<
   [K in T]: P;
 } & typeof OperationSubTypes;
 
-export type PortfolioPermissionsEIP712 = TypedDataToPrimitiveTypes<
-  typeof OperationSubTypes
->['PortfolioPermissions'];
+export type PortfolioPermissionsEIP712 = WithOptionalFields<
+  TypedDataToPrimitiveTypes<typeof OperationSubTypes>['PortfolioPermissions'],
+  (typeof OperationSubTypes)['PortfolioPermissions']
+>;
 
 export type PortfolioAutoFeaturesEIP712 = TypedDataToPrimitiveTypes<
   typeof OperationSubTypes
@@ -234,13 +265,21 @@ type YmaxStandaloneTypes<T extends OperationTypeNames = OperationTypeNames> =
     };
 
 export type YmaxOperationType<T extends OperationTypeNames> =
-  TypedDataToPrimitiveTypes<OperationTypes & typeof OperationSubTypes>[T];
+  WithOptionalFields<
+    TypedDataToPrimitiveTypes<OperationTypes & typeof OperationSubTypes>[T],
+    OperationTypes[T]
+  >;
 
-type YmaxWitnessData<T extends OperationTypeNames> = TypedDataToPrimitiveTypes<
-  YmaxWitnessTypes<T>
->[YmaxWitnessTypeParam<T>['type']];
-type YmaxStandaloneData<T extends OperationTypeNames> =
-  TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T];
+type YmaxWitnessData<T extends OperationTypeNames> = WithOptionalFields<
+  TypedDataToPrimitiveTypes<
+    YmaxWitnessTypes<T>
+  >[YmaxWitnessTypeParam<T>['type']],
+  OperationTypes[T]
+>;
+type YmaxStandaloneData<T extends OperationTypeNames> = WithOptionalFields<
+  TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
+  OperationTypes[T]
+>;
 
 const getYmaxOperationAndSubTypes = <
   T extends string,
@@ -280,12 +319,26 @@ export const getYmaxOperationTypes = <T extends OperationTypeNames>(
 export const getYmaxWitness = <T extends OperationTypeNames>(
   operation: T,
   data: NoInfer<YmaxWitnessData<T>>,
-): Witness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>> =>
-  makeWitness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>>(
-    data,
-    getYmaxWitnessTypes(operation),
-    getYmaxWitnessTypeParam(operation),
+): Witness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>> => {
+  const witnessTypeParam = getYmaxWitnessTypeParam(operation);
+  // Normalize away unused `optional` fields (and their now-unreferenced
+  // types) so that e.g. omitting `grantee`/`features` on `OpenPortfolio`
+  // produces a `types`/`message` pair that real EIP-712 hashing can encode.
+  // This is the authoring side, not adversarial input, so extra fields are
+  // dropped rather than rejected.
+  const { message, types } = normalizeEIP712Data({
+    message: data as Record<string, unknown>,
+    types: getYmaxWitnessTypes(operation),
+    primaryType: witnessTypeParam.type,
+  });
+  return makeWitness<YmaxWitnessTypes<T>, YmaxWitnessTypeParam<T>>(
+    // `message`'s optional-aware type doesn't match the stricter
+    // (all-required) type makeWitness infers from `YmaxWitnessTypes`
+    message as any,
+    types as YmaxWitnessTypes<T>,
+    witnessTypeParam,
   );
+};
 
 export const getYmaxStandaloneDomain = (
   chainId: bigint | number,
@@ -304,13 +357,22 @@ export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
 ): TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
   domain: YmaxFullDomain;
 } => {
-  const types = getYmaxStandaloneTypes(operation);
+  // Normalize away unused `optional` fields (and their now-unreferenced
+  // types) so that e.g. omitting unchanged `features` on `SetAutoFeatures`
+  // produces a `types`/`message` pair that real EIP-712 hashing can encode.
+  // This is the authoring side, not adversarial input, so extra fields are
+  // dropped rather than rejected.
+  const { message, types } = normalizeEIP712Data({
+    message: data as Record<string, unknown>,
+    types: getYmaxStandaloneTypes(operation),
+    primaryType: operation,
+  });
 
   return {
     domain: getYmaxStandaloneDomain(chainId, verifyingContract),
     types,
     primaryType: operation,
-    message: data as TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
+    message: message as TypedDataToPrimitiveTypes<YmaxStandaloneTypes<T>>[T],
   } as TypedDataDefinition<YmaxStandaloneTypes<T>, T, T> & {
     domain: YmaxFullDomain;
   };
@@ -376,7 +438,9 @@ export function validateYmaxDomain(
       throw new Error(`Unknown chain ID in Ymax domain: ${chainId}`);
     }
 
-    if (!sameEvmAddress(verifyingContract, validContractAddresses[chainIdStr])) {
+    if (
+      !sameEvmAddress(verifyingContract, validContractAddresses[chainIdStr])
+    ) {
       throw new Error(
         `Invalid verifying contract for chain ID ${chainId}: ${verifyingContract} (expected ${validContractAddresses[chainIdStr]})`,
       );

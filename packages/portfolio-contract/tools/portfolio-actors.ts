@@ -474,8 +474,13 @@ export const makeEvmTrader = ({
             allocations,
             grantee: {
               address: granteeAddress,
-              // validated against PortfolioPermissionsEIP712Shape just above
-              permissions: permissions as PortfolioPermissionsEIP712,
+              // validated against PortfolioPermissionsEIP712Shape just above.
+              // XXX: `rebalance` is `optional` at the EIP-712 level, but
+              // TypedDataToPrimitiveTypes doesn't recursively apply that to
+              // nested fields, so the nested `permissions` field here still
+              // infers as fully required; cast around it.
+              permissions:
+                permissions as unknown as Required<PortfolioPermissionsEIP712>,
             },
           }) as unknown as ReturnType<
             // getPermitWitnessTransferFromData is not a fan of witness union types
@@ -605,7 +610,13 @@ export const makeEvmTrader = ({
           const message = getYmaxStandaloneOperationData(
             {
               accountHolder: granteeAddress,
-              permissions,
+              // XXX: `rebalance` is `optional` at the EIP-712 level, but
+              // TypedDataToPrimitiveTypes doesn't recursively apply that to
+              // nested fields (only top-level operation fields are patched
+              // via `WithOptionalFields`), so the nested `permissions` field
+              // here still infers as fully required; cast around it.
+              permissions:
+                permissions as unknown as Required<PortfolioPermissionsEIP712>,
               portfolio: BigInt(self.getPortfolioId()),
               nonce: (nonce += 1n),
               deadline,
