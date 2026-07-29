@@ -44,7 +44,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra top-level fiel
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true },
+      permissions: { allocation: true, rebalance: false },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -76,7 +76,7 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra nested field (
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true },
+      permissions: { allocation: true, rebalance: false },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -104,11 +104,37 @@ test('extractOperationDetailsFromDataWithAddress rejects an extra nested field (
   );
 });
 
+test('extractOperationDetailsFromDataWithAddress accepts a legitimate optional field (Grant with rebalance)', t => {
+  const message = getYmaxStandaloneOperationData(
+    {
+      accountHolder: 'agoric1exampleaccountholder',
+      permissions: { allocation: true, rebalance: true },
+      portfolio: 0n,
+      nonce: 1n,
+      deadline: 1700000000n,
+    },
+    'Grant',
+    CHAIN_ID,
+    CONTRACT_ADDRESS,
+  );
+
+  const details = extractOperationDetailsFromDataWithAddress(
+    { ...message, signature: MOCK_SIGNATURE, address: MOCK_ADDRESS } as any,
+    {},
+  );
+
+  t.is(details.operation, 'Grant');
+  t.deepEqual((details.data as any).permissions, {
+    allocation: true,
+    rebalance: true,
+  });
+});
+
 test('extractOperationDetailsFromDataWithAddress drops (does not reject) a field that was genuinely signed but is unsupported by this version (standalone Grant)', t => {
   const message = getYmaxStandaloneOperationData(
     {
       accountHolder: 'agoric1exampleaccountholder',
-      permissions: { allocation: true },
+      permissions: { allocation: true, rebalance: false },
       portfolio: 0n,
       nonce: 1n,
       deadline: 1700000000n,
@@ -140,10 +166,54 @@ test('extractOperationDetailsFromDataWithAddress drops (does not reject) a field
   t.is(details.operation, 'Grant');
   t.deepEqual(details.data, {
     accountHolder: 'agoric1exampleaccountholder',
-    permissions: { allocation: true },
+    permissions: { allocation: true, rebalance: false },
     portfolio: 0n,
   });
   t.false('memo' in (details.data as any));
+});
+
+test('extractOperationDetailsFromDataWithAddress rejects an extra field nested inside a permit2 witness (OpenPortfolio with grantee)', t => {
+  const witness = getYmaxWitness('OpenPortfolio', {
+    allocations: [{ instrument: 'Aave_Arbitrum', portion: 10000n }],
+    grantee: {
+      address: 'agoric1exampleagentaddress',
+      permissions: { allocation: true, rebalance: false },
+    },
+  });
+  const permitMessage = getPermitWitnessTransferFromData(
+    {
+      permitted: { token: USDC_ADDRESS, amount: 1_000_000n },
+      spender: CONTRACT_ADDRESS,
+      nonce: 1n,
+      deadline: 1700000000n,
+    },
+    PERMIT2_ADDRESS,
+    CHAIN_ID,
+    witness,
+  );
+
+  const witnessFieldName = witness.witnessField.name;
+  const witnessData = (permitMessage.message as any)[witnessFieldName];
+  const tamperedWitnessData = {
+    ...witnessData,
+    grantee: { ...witnessData.grantee, extra: 'not-signed' },
+  };
+  const tampered = {
+    ...permitMessage,
+    message: {
+      ...permitMessage.message,
+      [witnessFieldName]: tamperedWitnessData,
+    },
+    signature: MOCK_SIGNATURE,
+    address: MOCK_ADDRESS,
+  };
+
+  t.throws(
+    () => extractOperationDetailsFromDataWithAddress(tampered as any, {}),
+    {
+      message: /extra/,
+    },
+  );
 });
 
 test('extractOperationDetailsFromDataWithAddress computes the permit2 witness hash/type string from the actual signed data, not the (dropped) generated-types data', t => {

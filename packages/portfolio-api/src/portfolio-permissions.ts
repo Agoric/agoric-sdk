@@ -34,7 +34,7 @@ export const PortfolioPermissionsShape: TypedPattern<PortfolioPermissions> =
   M.splitRecord({}, { allocation: M.boolean(), rebalance: M.boolean() }, {});
 
 export const PortfolioPermissionsEIP712Shape: TypedPattern<PortfolioPermissionsEIP712> =
-  M.splitRecord({ allocation: M.boolean() });
+  M.splitRecord({ allocation: M.boolean() }, { rebalance: M.boolean() }, {});
 
 /**
  * Extensible app-level shape for portfolio permissions.
