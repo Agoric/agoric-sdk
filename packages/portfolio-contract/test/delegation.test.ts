@@ -421,14 +421,18 @@ test('Pete may open a portfolio and grant control in a single signed message', a
 
   // One user signature: create the portfolio AND grant allocation control to
   // the agent, replacing the former two-step OpenPortfolio + Grant flow.
-  const { portfolioId } = await peteArbitrum.openPortfolioWithGrant(
+  const { portfolioId } = await peteArbitrum.openPortfolio(
     [
       { instrument: 'Aave_Arbitrum', portion: 60n },
       { instrument: 'Compound_Arbitrum', portion: 40n },
     ],
     10_000_000n,
-    PETE_AGENT,
-    harden({ allocation: true }),
+    {
+      grantee: {
+        address: PETE_AGENT,
+        permissions: harden({ allocation: true }),
+      },
+    },
   );
   await eventLoopIteration();
 
@@ -502,14 +506,18 @@ test('open+grant with an unregistered grantee aborts before portfolio creation',
   const walletAddress = peteKit.evmAccount.address;
 
   await t.throwsAsync(
-    peteArbitrum.openPortfolioWithGrant(
+    peteArbitrum.openPortfolio(
       [
         { instrument: 'Aave_Arbitrum', portion: 60n },
         { instrument: 'Compound_Arbitrum', portion: 40n },
       ],
       10_000_000n,
-      PETE_AGENT,
-      harden({ allocation: true }),
+      {
+        grantee: {
+          address: PETE_AGENT,
+          permissions: harden({ allocation: true }),
+        },
+      },
     ),
     { message: /"nameKey" not found: "agoric1petesAgent"/ },
     'combined open+grant rejects when the grantee is not registered',
