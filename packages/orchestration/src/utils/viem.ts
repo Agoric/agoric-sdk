@@ -9,3 +9,4 @@
 
 export * from './viem-utils/hashTypedData.ts';
 export * from './viem-utils/types.ts';
+export * from './viem-utils/eip712-normalize.ts';
