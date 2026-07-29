@@ -533,7 +533,7 @@ test('handleOperation - openPortfolio with grant', async t => {
       allocations: [{ instrument: 'inst1', portion: 100n }],
       grantee: {
         address: granteeAddress,
-        permissions: { allocation: true },
+        permissions: { allocation: true, rebalance: false },
       },
     },
     permitDetails: {
