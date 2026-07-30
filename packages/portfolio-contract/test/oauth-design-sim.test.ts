@@ -1,44 +1,53 @@
 /**
  * @file Semantic decompilation of the OAuth design in
  * `.cache/linear/oauth-design-draft.md` into an executable object-capability
- * actor simulation.
+ * actor simulation. It reconstructs the authority represented by OAuth bearer
+ * artifacts as narrow object references and records their flow as sequence
+ * diagrams.
  *
- * The simulation asks what authority each cryptographic bearer artifact
- * represents, then expresses that authority as an object reference:
+ * The simulation maps:
  *
- * - DCR's `client_id` and registration authority become `client@AS[...]`;
- * - the signed consent round trip becomes a one-shot `consent@AS[...]`
+ * - DCR's `client_id` and registration authority to `client@AS[...]`;
+ * - SIWE broker registration and its client secret to `brokerClient@S[...]`;
+ * - a SIWE session ID to a one-shot `signIn@S[...]` facet;
+ * - broker callback state to a one-shot `resumeBroker@AS[...]` continuation;
+ * - a SIWE authorization code to a one-shot `exchange@S[...]` facet;
+ * - the signed consent round trip to a one-shot `consent@AS[...]`
  *   continuation;
- * - an access-token JWT becomes `grant@RS[...]`, a narrow RS-local facet;
- * - a rotating refresh token becomes `refresh@AS[...]`.
+ * - a consent-session JTI to a one-shot `grantSlot@DB[...]`;
+ * - an access-token JWT to `grant@RS[...]`, a narrow RS-local facet;
+ * - a rotating refresh token to `refresh@AS[...]`.
  *
- * Thus RS allocates the grant facet, sends it to the one-shot AS continuation,
- * AS retains it with the authorization code, and the token exchange forwards
- * that same reference to H. H invokes `grant@RS[...]` directly; the grant facet
- * rechecks its authoritative row on every call and gives the selected tool
- * only an attenuated scope-checking capability.
+ * RS allocates the grant facet and sends it through the one-shot AS
+ * continuation. AS retains it with the authorization code, and the token
+ * exchange forwards that same reference to H. On every call by H, the grant
+ * facet rechecks its authoritative row and gives the selected tool only an
+ * attenuated scope-checking capability.
  *
- * Each non-return sequence-diagram arrow is consequently a method call on its
- * receiver. The arrow head carries the destination designation, so labels omit
- * endpoint URLs and arguments used only to route to that object. Data remains
- * explicit when it binds separate exchanges or constrains authority, including
- * state, nonce, PKCE proof, wallet, agent, and scope.
+ * OAuth client state, OIDC and SIWE nonces, PKCE proof, wallet, agent, and scope
+ * remain explicit because they bind exchanges or constrain authority.
+ * Identity-based toy signing represents the unforgeability provided by
+ * production cryptography.
  *
- * This decompilation exposes authority flow for review; it is not an assertion
- * that URLs are object capabilities or a wire-compatible OAuth
- * implementation. Identity-based toy signing below stands in for the
- * unforgeability supplied by production cryptography.
+ * The diagram/test boundaries are discovery and registration (A), wallet proof
+ * (B9-B13), broker exchange (B14-B15), consent eligibility (C16-C25), grant
+ * commitment (C26-C29), capability delivery (D), and invocation with per-call
+ * enforcement (E). Splitting B and C at their one-shot artifacts makes each
+ * authority transfer independently reviewable.
  *
- * Natural diagram/test boundaries are discovery and registration (A), wallet
- * proof (B9-B13), broker callback (B14-B15), consent eligibility (C16-C25),
- * grant commitment (C26-C29), capability delivery (D), and invocation with
- * per-call enforcement (E). In particular, splitting B and C at their one-shot
- * artifacts makes each authority transfer independently reviewable.
+ * @see {@link ../docs-design/sequence-diagram-actor-simulations.md} for the
+ * semantic-decompilation method.
  *
  * @see {@link snapshots/oauth-design-sim.test.ts.md} for the protocol-first
  * snapshot report.
  */
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import type {
+  PortfolioAgentKey,
+  PortfolioAgentStatus,
+  PortfolioKey,
+  StatusFor,
+} from '@agoric/portfolio-api';
 import { createHash } from 'node:crypto';
 
 type Viz = ReturnType<typeof makeSequenceDiagram>;
@@ -283,14 +292,19 @@ test('OAuth design A: discovery designates and validates the AS before DCR', t =
 // Stage B --------------------------------------------------------------------
 
 type BrokerRequest = Readonly<{
-  brokerState: string;
   oidcNonce: string;
 }>;
 
 type IdClaims = Readonly<{ sub: string; nonce: string }>;
 
-type BrokerCallback = Readonly<{
-  resumeBroker(value: Readonly<{ code: string; state: string }>): IdClaims;
+type BrokerExchange = Readonly<{
+  designation: string;
+  exchange(): Signed<IdClaims>;
+}>;
+
+type BrokerContinuation = Readonly<{
+  designation: string;
+  complete(exchange: BrokerExchange): IdClaims;
 }>;
 
 type AuthorizationRequest = Readonly<{
@@ -320,8 +334,13 @@ type WalletProof = WalletProofFields &
     signature: string;
   }>;
 
+type SignInSession = Readonly<{
+  designation: string;
+  signIn(proof: WalletProof): void;
+}>;
+
 type SignInPage = Readonly<{
-  sessionId: string;
+  session: SignInSession;
   nonce: string;
   resource: string;
 }>;
@@ -344,8 +363,13 @@ type ConsentPage = Readonly<{
 type AuthorizationBrowser = SignInPageReceiver &
   Readonly<{ showConsent(form: ConsentPage): void }>;
 
-type SiweSignIn = Readonly<{
-  signIn(sessionId: string, proof: WalletProof): void;
+type SiweBrokerClient = Readonly<{
+  designation: string;
+  authorize(
+    request: BrokerRequest,
+    user: SignInPageReceiver,
+    resume: BrokerContinuation,
+  ): void;
 }>;
 
 const signatureFor = (fields: WalletProofFields) =>
@@ -354,116 +378,102 @@ const signatureFor = (fields: WalletProofFields) =>
 const signWalletProof = (fields: WalletProofFields): WalletProof =>
   harden({ ...fields, signature: signatureFor(fields) });
 
-const makeSiweOidcProvider = (
-  viz: Viz,
-  getBroker: () => BrokerCallback,
-  entropy: ActorEntropy,
-) => {
+const makeSiweOidcProvider = (viz: Viz, entropy: ActorEntropy) => {
   const config = harden({
     brokerEndpoint:
       'https://auth.ymax.app/realms/ymax/broker/siwe-oidc/endpoint',
   });
   const prng = entropy.makePrng(['8d3f1a', '7cae51', 'd138b7', '4e91ba']);
   const idTokenKey = makeSigningFacets<IdClaims>();
-  let registeredClientSecret: string | undefined;
-  const sessions = new Map<
-    string,
-    BrokerRequest & { siweNonce: string; code: string; signInCount: number }
-  >();
-  const codes = new Map<
-    string,
-    Readonly<{ wallet: string; oidcNonce: string; exchangeCount: number }>
-  >();
+  let clientRegistered = false;
   let pendingBrokerCallback:
-    | Readonly<{ code: string; state: string }>
+    | Readonly<{
+        resume: BrokerContinuation;
+        exchange: BrokerExchange;
+      }>
     | undefined;
 
   return harden({
     registerBrokerClient() {
-      if (registeredClientSecret) {
+      if (clientRegistered) {
         throw Error('SIWE broker client is already registered');
       }
-      registeredClientSecret = prng.makeId('siwe-secret');
-      return registeredClientSecret;
-    },
-    authorize(request: BrokerRequest, user: SignInPageReceiver) {
-      const sessionId = prng.makeId('siwe-session');
-      const nonce = prng.makeId('siwe-nonce');
-      const code = prng.makeId('siwe-code');
-      sessions.set(sessionId, {
-        ...request,
-        siweNonce: nonce,
-        code,
-        signInCount: 0,
+      clientRegistered = true;
+      const clientTag = prng.randomChars();
+      const clientDesignation = `brokerClient@S[${clientTag}]`;
+      const client: SiweBrokerClient = harden({
+        designation: clientDesignation,
+        authorize(request, user, resume) {
+          const sessionTag = prng.randomChars();
+          const sessionDesignation = `signIn@S[${sessionTag}]`;
+          const nonce = prng.makeId('siwe-nonce');
+          const exchangeTag = prng.randomChars();
+          let signInCount = 0;
+          const session: SignInSession = harden({
+            designation: sessionDesignation,
+            signIn(proof) {
+              if (signInCount !== 0) {
+                throw Error('SIWE sign-in session already consumed');
+              }
+              assertEqual(proof.domain, 'siwe.ymax.app', 'SIWE domain');
+              assertEqual(proof.nonce, nonce, 'SIWE nonce');
+              assertEqual(
+                proof.resource,
+                config.brokerEndpoint,
+                'SIWE broker resource',
+              );
+              assertEqual(
+                proof.signature,
+                signatureFor({
+                  address: proof.address,
+                  domain: proof.domain,
+                  nonce: proof.nonce,
+                  resource: proof.resource,
+                }),
+                'SIWE signature',
+              );
+              signInCount += 1;
+              let exchangeCount = 0;
+              const exchangeDesignation = `exchange@S[${exchangeTag}]`;
+              const exchange: BrokerExchange = harden({
+                designation: exchangeDesignation,
+                exchange() {
+                  if (exchangeCount !== 0) {
+                    throw Error('SIWE exchange already consumed');
+                  }
+                  exchangeCount += 1;
+                  const idToken = idTokenKey.signer.sign(
+                    harden({
+                      sub: `eip155:8453:${proof.address}`,
+                      nonce: request.oidcNonce,
+                    }),
+                  );
+                  viz.reply(
+                    exchangeDesignation,
+                    'AS',
+                    `id_token({ sub: ${idToken.payload.sub}, nonce: ${idToken.payload.nonce} })`,
+                  );
+                  return idToken;
+                },
+              });
+              pendingBrokerCallback = harden({ resume, exchange });
+            },
+          });
+          viz.reply(
+            clientDesignation,
+            'User',
+            `signInPage({ session: ${sessionDesignation}, nonce: ${nonce}, resource: brokerEndpoint })`,
+          );
+          return user.showSignInPage(
+            harden({
+              session,
+              nonce,
+              resource: config.brokerEndpoint,
+            }),
+          );
+        },
       });
-      viz.reply(
-        'S',
-        'User',
-        `signInPage({ session: ${sessionId}, nonce: ${nonce}, resource: brokerEndpoint })`,
-      );
-      return user.showSignInPage(
-        harden({
-          sessionId,
-          nonce,
-          resource: config.brokerEndpoint,
-        }),
-      );
-    },
-    signIn(sessionId: string, proof: WalletProof) {
-      const session = sessions.get(sessionId);
-      if (!session || session.signInCount !== 0) {
-        throw Error('invalid or replayed SIWE session');
-      }
-      assertEqual(proof.domain, 'siwe.ymax.app', 'SIWE domain');
-      assertEqual(proof.nonce, session.siweNonce, 'SIWE nonce');
-      assertEqual(
-        proof.resource,
-        config.brokerEndpoint,
-        'SIWE broker resource',
-      );
-      assertEqual(
-        proof.signature,
-        signatureFor({
-          address: proof.address,
-          domain: proof.domain,
-          nonce: proof.nonce,
-          resource: proof.resource,
-        }),
-        'SIWE signature',
-      );
-      session.signInCount += 1;
-      codes.set(
-        session.code,
-        harden({
-          wallet: `eip155:8453:${proof.address}`,
-          oidcNonce: session.oidcNonce,
-          exchangeCount: 0,
-        }),
-      );
-      pendingBrokerCallback = harden({
-        code: session.code,
-        state: session.brokerState,
-      });
-    },
-    exchangeCode(code: string, suppliedSecret: string) {
-      assertEqual(suppliedSecret, registeredClientSecret, 'SIWE client secret');
-      const record = codes.get(code);
-      if (!record || record.exchangeCount !== 0) {
-        throw Error('invalid or replayed SIWE code');
-      }
-      codes.set(code, harden({ ...record, exchangeCount: 1 }));
-      const idToken = idTokenKey.signer.sign(
-        harden({
-          sub: record.wallet,
-          nonce: record.oidcNonce,
-        }),
-      );
-      viz.reply(
-        'S',
-        'AS',
-        `id_token({ sub: ${idToken.payload.sub}, nonce: ${idToken.payload.nonce} })`,
-      );
-      return idToken;
+      return client;
     },
     deliverBrokerCallback() {
       if (!pendingBrokerCallback) {
@@ -473,16 +483,16 @@ const makeSiweOidcProvider = (
       pendingBrokerCallback = undefined;
       viz.reply(
         'S',
-        'AS',
-        `brokerCallback({ code: ${callback.code}, state: ${callback.state} })`,
+        callback.resume.designation,
+        `complete(${callback.exchange.designation})`,
       );
-      return getBroker().resumeBroker(callback);
+      return callback.resume.complete(callback.exchange);
     },
     idTokenVerifier: idTokenKey.verifier,
   });
 };
 
-const makeUser = (viz: Viz, getSiwe: () => SiweSignIn, address: string) => {
+const makeUser = (viz: Viz, address: string) => {
   let consentForm: ConsentForm | undefined;
   return harden({
     browser: harden({
@@ -500,10 +510,10 @@ const makeUser = (viz: Viz, getSiwe: () => SiweSignIn, address: string) => {
         );
         viz.call(
           'User',
-          'S',
-          `signIn({ session: ${page.sessionId}, signature: ${proof.signature} })`,
+          page.session.designation,
+          `signIn({ signature: ${proof.signature} })`,
         );
-        return getSiwe().signIn(page.sessionId, proof);
+        return page.session.signIn(proof);
       },
       showConsent(form: ConsentPage) {
         assertEqual(form.applicationHost, 'claude.ai', 'validated app host');
@@ -541,11 +551,7 @@ type Grant = Readonly<{
 
 const makeKeycloak = (
   viz: Viz,
-  siwe: Pick<
-    ReturnType<typeof makeSiweOidcProvider>,
-    'authorize' | 'exchangeCode'
-  >,
-  siweClientSecret: string,
+  siwe: SiweBrokerClient,
   idTokenVerifier: ReturnType<typeof makeSigningFacets<IdClaims>>['verifier'],
   consentReceiver: ReturnType<typeof makeYmaxMcpServerKit>['consentReceiver'],
   entropy: ActorEntropy,
@@ -574,7 +580,6 @@ const makeKeycloak = (
         request: AuthorizationRequest;
         user: AuthorizationBrowser;
         callback: { receive(response: AuthorizationResponse): void };
-        brokerState: string;
         oidcNonce: string;
         kcAuthSession: string;
       }>
@@ -607,31 +612,44 @@ const makeKeycloak = (
     }
     assertEqual(request.codeChallengeMethod, 'S256', 'PKCE method');
     assertEqual(request.resource, config.audience, 'OAuth resource');
-    const brokerState = prng.makeId('broker-state');
+    const brokerTag = prng.randomChars();
     const oidcNonce = prng.makeId('oidc-nonce');
     const kcAuthSession = prng.makeId('kc-auth-session');
-    pending = harden({
+    const authorization = harden({
       clientId: suppliedClientId,
       redirectHost: new URL(request.redirectUri).host,
       request,
       user,
       callback,
-      brokerState,
       oidcNonce,
       kcAuthSession,
     });
+    pending = authorization;
     authenticatedIdentity = undefined;
     sessionGrant = undefined;
-    const brokerRequest = harden({
-      brokerState,
-      oidcNonce,
+    let resumeCount = 0;
+    const resumeDesignation = `resumeBroker@AS[${brokerTag}]`;
+    const resume: BrokerContinuation = harden({
+      designation: resumeDesignation,
+      complete(exchange) {
+        if (resumeCount !== 0) {
+          throw Error('broker continuation already consumed');
+        }
+        resumeCount += 1;
+        viz.cont(resumeDesignation, exchange.designation, 'exchange()');
+        const signedIdToken = exchange.exchange();
+        const idToken = idTokenVerifier.verify(signedIdToken);
+        assertEqual(idToken.nonce, authorization.oidcNonce, 'OIDC nonce');
+        authenticatedIdentity = idToken;
+        return idToken;
+      },
     });
     viz.cont(
       'AS',
-      'S',
-      `authorize({ nonce: ${brokerRequest.oidcNonce}, state: ${brokerRequest.brokerState} })`,
+      siwe.designation,
+      `authorize({ nonce: ${oidcNonce} }, ${resumeDesignation})`,
     );
-    siwe.authorize(brokerRequest, user);
+    siwe.authorize(harden({ oidcNonce }), user, resume);
   };
 
   /**
@@ -732,22 +750,6 @@ const makeKeycloak = (
       viz.reply('AS', 'H', client.designation);
       return client;
     },
-    resumeBroker(callback: { code: string; state: string }) {
-      if (!pending) {
-        throw Error('missing authorization request');
-      }
-      assertEqual(callback.state, pending.brokerState, 'broker state');
-      viz.cont(
-        'AS',
-        'S',
-        `token({ code: ${callback.code}, client_secret: ${siweClientSecret} })`,
-      );
-      const signedIdToken = siwe.exchangeCode(callback.code, siweClientSecret);
-      const idToken = idTokenVerifier.verify(signedIdToken);
-      assertEqual(idToken.nonce, pending.oidcNonce, 'OIDC nonce');
-      authenticatedIdentity = idToken;
-      return idToken;
-    },
     beginConsent() {
       if (!pending || !authenticatedIdentity) {
         throw Error('authentication is not complete');
@@ -778,9 +780,9 @@ const makeKeycloak = (
        *
        * AS gives RS only this authentication-session-specific continuation.
        * Calling `complete` transfers the RS-created grant back into precisely
-       * the session being resumed; object identity replaces signature, `jti`,
-       * `return_uri`, and `kc_auth_session` routing checks. One-shot state
-       * preserves the wire design's replay boundary.
+       * the session being resumed; object identity replaces signature,
+       * `return_uri`, and `kc_auth_session` routing checks. Cloud SQL separately
+       * imports the session `jti` as a durable one-shot grant slot.
        */
       const resume = harden({
         designation: continuationDesignation,
@@ -793,7 +795,7 @@ const makeKeycloak = (
           viz.cont(
             continuationDesignation,
             'AS',
-            `consume continuation; store ${grant.designation}`,
+            `sessionGrant = ${grant.designation}`,
           );
         },
       });
@@ -811,6 +813,11 @@ const makeKeycloak = (
           codeChallenge: pending.request.codeChallenge,
           grant: sessionGrant,
         }),
+      );
+      viz.cont(
+        'AS',
+        'AS',
+        `authorizationCodes.set(${code}, { clientId: ${pending.clientId}, codeChallenge: ${pending.request.codeChallenge}, grant: ${sessionGrant.designation} })`,
       );
       const response = harden({
         code,
@@ -891,7 +898,7 @@ const makeHarness = (
         codeChallenge: `challenge-${codeVerifier}`,
         codeChallengeMethod: 'S256' as const,
         redirectUri: config.redirectUri,
-        scope: harden(['openid', 'portfolio:rebalance']),
+        scope: harden(['openid', 'portfolio:allocation']),
         resource,
         state,
       });
@@ -922,12 +929,16 @@ const makeOAuthSimulationFixture = ({
 }: { address?: string; discover?: boolean } = {}) => {
   const viz = makeSequenceDiagram();
   const entropyRegistry = makeFakePrngRegistry();
-  const cloudSql = makeCloudSql(viz);
+  const cloudSqlKit = makeCloudSqlKit(viz);
+  cloudSqlKit.delegationConfirmer.confirmDelegation(
+    'eip155:8453:0xAbC',
+    'agoric1managed',
+  );
   const agoricChain = makeAgoricChain(viz);
   const yds = makeYds(viz, agoricChain);
   const tool = harden({
     invoke(_request: object, authority: { allows(scope: string): boolean }) {
-      return authority.allows('portfolio:withdraw') ? 'invoked' : 'denied';
+      return authority.allows('portfolio:allocation') ? 'invoked' : 'denied';
     },
   });
   let connectedKeycloakDiscovery: DiscoveryAS | undefined;
@@ -941,50 +952,23 @@ const makeOAuthSimulationFixture = ({
     },
     {
       yds,
-      managedAgents: cloudSql.managedAgents,
-      grantWriter: cloudSql.grantWriter,
-      grantReader: cloudSql.grantReader,
+      managedAgents: cloudSqlKit.managedAgents,
+      grantWriter: cloudSqlKit.grantWriter,
+      grantReader: cloudSqlKit.grantReader,
       tool,
     },
     entropyRegistry.actor('RS'),
   );
-  let siweSignIn: SiweSignIn | undefined;
-  let broker: BrokerCallback | undefined;
-  const user = makeUser(
-    viz,
-    () => {
-      if (!siweSignIn) {
-        throw Error('SIWE sign-in is not connected');
-      }
-      return siweSignIn;
-    },
-    address,
-  );
-  const siwe = makeSiweOidcProvider(
-    viz,
-    () => {
-      if (!broker) {
-        throw Error('SIWE broker is not connected');
-      }
-      return broker;
-    },
-    entropyRegistry.actor('SIWE'),
-  );
-  siweSignIn = harden({ signIn: siwe.signIn });
-  const siweClientSecret = siwe.registerBrokerClient();
-  const siweBroker = harden({
-    authorize: siwe.authorize,
-    exchangeCode: siwe.exchangeCode,
-  });
+  const user = makeUser(viz, address);
+  const siwe = makeSiweOidcProvider(viz, entropyRegistry.actor('SIWE'));
+  const siweBroker = siwe.registerBrokerClient();
   const keycloak = makeKeycloak(
     viz,
     siweBroker,
-    siweClientSecret,
     siwe.idTokenVerifier,
     ymaxMcpServer.consentReceiver,
     entropyRegistry.actor('AS'),
   );
-  broker = harden({ resumeBroker: keycloak.resumeBroker });
   const keycloakDiscovery: DiscoveryAS = harden({
     metadata: keycloak.metadata,
     register: keycloak.register,
@@ -1007,7 +991,7 @@ const makeOAuthSimulationFixture = ({
     keycloak,
     keycloakDiscovery,
     ymaxMcpServer,
-    cloudSql,
+    cloudSqlKit,
     harness,
   });
 };
@@ -1027,21 +1011,31 @@ test('OAuth design B9-B13: broker redirect obtains a fresh wallet proof', t => {
 test('SIWE rejects a malformed wallet signature', t => {
   const siwe = makeSiweOidcProvider(
     makeSequenceDiagram(),
-    () => {
-      throw Error('broker callback is not used in this test');
-    },
     makeFakePrngRegistry().actor('SIWE'),
   );
-  siwe.registerBrokerClient();
+  const brokerClient = siwe.registerBrokerClient();
+  t.throws(() => siwe.registerBrokerClient(), {
+    message: 'SIWE broker client is already registered',
+  });
   let signInPage: SignInPage | undefined;
-  siwe.authorize(
+  brokerClient.authorize(
     {
-      brokerState: 'test-broker-state',
       oidcNonce: 'test-oidc-nonce',
     },
     harden({
       showSignInPage(page: SignInPage) {
         signInPage = page;
+      },
+    }),
+    harden({
+      designation: 'resumeBroker@AS[test]',
+      complete(exchange) {
+        t.deepEqual(Object.keys(exchange), ['designation', 'exchange']);
+        const signedIdToken = exchange.exchange();
+        t.throws(() => exchange.exchange(), {
+          message: 'SIWE exchange already consumed',
+        });
+        return signedIdToken.payload;
       },
     }),
   );
@@ -1052,7 +1046,7 @@ test('SIWE rejects a malformed wallet signature', t => {
 
   t.throws(
     () =>
-      siwe.signIn(page.sessionId, {
+      page.session.signIn({
         address: '0xAbC',
         domain: 'siwe.ymax.app',
         nonce: page.nonce,
@@ -1061,9 +1055,22 @@ test('SIWE rejects a malformed wallet signature', t => {
       }),
     { message: /SIWE signature/ },
   );
+  t.deepEqual(Object.keys(brokerClient), ['designation', 'authorize']);
+  t.deepEqual(Object.keys(page.session), ['designation', 'signIn']);
+  const proof = signWalletProof({
+    address: '0xAbC',
+    domain: 'siwe.ymax.app',
+    nonce: page.nonce,
+    resource: page.resource,
+  });
+  page.session.signIn(proof);
+  t.throws(() => page.session.signIn(proof), {
+    message: 'SIWE sign-in session already consumed',
+  });
+  t.is(siwe.deliverBrokerCallback().sub, 'eip155:8453:0xAbC');
 });
 
-test('OAuth design B14-B15: broker callback is bound before code exchange', t => {
+test('OAuth design B14-B15: broker continuation receives one-shot exchange', t => {
   const { viz, user, siwe, harness } = makeOAuthSimulationFixture();
   viz.pause();
   harness.beginAuthorization(user.browser);
@@ -1071,41 +1078,54 @@ test('OAuth design B14-B15: broker callback is bound before code exchange', t =>
 
   const idToken = siwe.deliverBrokerCallback();
 
-  // SECURITY AFFIRMATION: broker state, confidential-client authentication,
-  // one-time code use, and OIDC nonce protect distinct edges; no one generic
-  // `state` value is incorrectly asked to protect all of them.
+  // SECURITY AFFIRMATION: the registered-client, broker-continuation, and
+  // exchange facets replace client-secret, state, and code routing authority.
+  // The signed OIDC nonce remains cryptographic correlation data.
   t.is(idToken.sub, 'eip155:8453:0xAbC');
   t.snapshot(viz.lines(), 'sequence diagram');
 });
 
 // Stage C --------------------------------------------------------------------
 
-const makeCloudSql = (viz: Viz) => {
-  const managedByWallet = new Map<string, readonly string[]>([
-    ['eip155:8453:0xAbC', harden(['agoric1managed'])],
-  ]);
+const makeCloudSqlKit = (viz: Viz) => {
+  const managedByWallet = new Map<string, readonly string[]>();
   const grants = new Map<string, Grant>();
   const consumedSessionJtis = new Set<string>();
   let available = true;
   return harden({
+    delegationConfirmer: harden({
+      confirmDelegation(wallet: string, agent: string) {
+        const managed = managedByWallet.get(wallet) ?? harden([]);
+        if (!managed.includes(agent)) {
+          managedByWallet.set(wallet, harden([...managed, agent]));
+        }
+      },
+    }),
     managedAgents: harden({
       forWallet(wallet: string) {
-        viz.reply('DB', 'RS', 'agents with KMS signing keys');
-        return managedByWallet.get(wallet) ?? harden([]);
+        const agents = managedByWallet.get(wallet) ?? harden([]);
+        viz.reply('DB', 'RS', `[${agents.join(', ')}]`);
+        return agents;
       },
     }),
     grantWriter: harden({
-      assertSessionUnused(sessionJti: string) {
-        if (consumedSessionJtis.has(sessionJti)) {
-          throw Error('consent session already consumed');
-        }
-      },
-      insert(grant: Grant, sessionJti: string) {
+      claimSession(sessionJti: string) {
         if (consumedSessionJtis.has(sessionJti)) {
           throw Error('consent session already consumed');
         }
         consumedSessionJtis.add(sessionJti);
-        grants.set(grant.grantId, grant);
+        const designation = `grantSlot@DB[${sessionJti}]`;
+        let insertCount = 0;
+        return harden({
+          designation,
+          insert(grant: Grant) {
+            if (insertCount !== 0) {
+              throw Error('grant slot already consumed');
+            }
+            insertCount += 1;
+            grants.set(grant.grantId, grant);
+          },
+        });
       },
     }),
     grantReader: harden({
@@ -1134,41 +1154,130 @@ const makeCloudSql = (viz: Viz) => {
   });
 };
 
+test('Cloud SQL learns managed agents from confirmed delegations', t => {
+  const cloudSqlKit = makeCloudSqlKit(makeSequenceDiagram());
+  const wallet = 'eip155:8453:0xAbC';
+  const agent = 'agoric1managed';
+
+  t.deepEqual(cloudSqlKit.managedAgents.forWallet(wallet), []);
+  cloudSqlKit.delegationConfirmer.confirmDelegation(wallet, agent);
+  t.deepEqual(cloudSqlKit.managedAgents.forWallet(wallet), [agent]);
+});
+
+const formatPermissions = (permissions: PortfolioAgentStatus['permissions']) =>
+  `{ ${Object.entries(permissions)
+    .map(([name, value]) => `${name}: ${String(value)}`)
+    .join(', ')} }`;
+
+const formatAgentStatus = ({
+  grantee,
+  permissions,
+  state,
+}: PortfolioAgentStatus) =>
+  `{ grantee: ${grantee}, permissions: ${formatPermissions(permissions)}, state: ${state} }`;
+
 const makeAgoricChain = (viz: Viz) => {
-  const delegationsByWallet = new Map<
-    string,
-    Readonly<Record<string, readonly string[]>>
-  >([
+  const agentsByPortfolio = new Map<PortfolioKey, StatusFor['portfolioAgents']>(
     [
-      'eip155:8453:0xAbC',
-      harden({
-        agoric1managed: harden([
-          'portfolio:rebalance',
-          'portfolio:withdraw',
-          'portfolio:admin-not-in-catalog',
-        ]),
-        agoric1unmanaged: harden(['portfolio:withdraw']),
-      }),
+      [
+        'portfolio17',
+        harden({
+          agent1: harden({
+            grantee: 'agoric1managed',
+            permissions: harden({ allocation: true }),
+            state: 'active',
+          }),
+          agent2: harden({
+            grantee: 'agoric1unmanaged',
+            permissions: harden({ 'admin-not-in-catalog': true }),
+            state: 'active',
+          }),
+        }),
+      ],
     ],
-  ]);
+  );
   return harden({
-    readForWallet(wallet: string) {
-      const delegations = delegationsByWallet.get(wallet) ?? harden({});
-      viz.reply('Chain', 'YDS', 'delegated agents + permissions');
-      return delegations;
+    readPortfolioAgents(portfolioId: PortfolioKey) {
+      const agents = agentsByPortfolio.get(portfolioId) ?? harden({});
+      viz.reply(
+        'Chain',
+        'YDS',
+        `{ ${(
+          Object.entries(agents) as [PortfolioAgentKey, PortfolioAgentStatus][]
+        )
+          .map(
+            ([agentId, status]) => `${agentId}: ${formatAgentStatus(status)}`,
+          )
+          .join(', ')} }`,
+      );
+      return agents;
     },
   });
 };
 
-const makeYds = (viz: Viz, chain: ReturnType<typeof makeAgoricChain>) =>
-  harden({
+type IndexedDelegation = PortfolioAgentStatus & {
+  portfolioId: PortfolioKey;
+  agentId: PortfolioAgentKey;
+};
+
+const makeYds = (viz: Viz, chain: ReturnType<typeof makeAgoricChain>) => {
+  const portfoliosByWallet = new Map<string, readonly PortfolioKey[]>([
+    ['eip155:8453:0xAbC', harden(['portfolio17'])],
+  ]);
+  return harden({
     listDelegations(wallet: string) {
-      viz.cont('YDS', 'Chain', 'read delegation entries + permission defs');
-      const delegations = chain.readForWallet(wallet);
-      viz.reply('YDS', 'RS', 'delegated agents + permitted scopes');
-      return delegations;
+      const portfolioIds = portfoliosByWallet.get(wallet) ?? harden([]);
+      const delegations = portfolioIds.flatMap(portfolioId => {
+        viz.cont('YDS', 'Chain', `readPortfolioAgents(${portfolioId})`);
+        return (
+          Object.entries(chain.readPortfolioAgents(portfolioId)) as [
+            PortfolioAgentKey,
+            PortfolioAgentStatus,
+          ][]
+        ).map(([agentId, status]) =>
+          harden({
+            portfolioId,
+            agentId,
+            ...status,
+          }),
+        );
+      }) as readonly IndexedDelegation[];
+      viz.reply(
+        'YDS',
+        'RS',
+        `[${delegations
+          .map(
+            ({ portfolioId, agentId, ...status }) =>
+              `{ portfolioId: ${portfolioId}, agentId: ${agentId}, grantee: ${status.grantee}, permissions: ${formatPermissions(status.permissions)}, state: ${status.state} }`,
+          )
+          .join(', ')}]`,
+      );
+      return harden(delegations);
     },
   });
+};
+
+test('YDS resolves portfolio agent records without inventing a chain shape', t => {
+  const viz = makeSequenceDiagram();
+  const yds = makeYds(viz, makeAgoricChain(viz));
+
+  t.deepEqual(yds.listDelegations('eip155:8453:0xAbC'), [
+    {
+      portfolioId: 'portfolio17',
+      agentId: 'agent1',
+      grantee: 'agoric1managed',
+      permissions: { allocation: true },
+      state: 'active',
+    },
+    {
+      portfolioId: 'portfolio17',
+      agentId: 'agent2',
+      grantee: 'agoric1unmanaged',
+      permissions: { 'admin-not-in-catalog': true },
+      state: 'active',
+    },
+  ]);
+});
 
 /**
  * Constructs the related facets of the concrete YMax MCP server actor.
@@ -1184,9 +1293,9 @@ const makeYmaxMcpServerKit = (
   getAuthorizationServer: () => DiscoveryAS,
   powers: {
     yds: ReturnType<typeof makeYds>;
-    managedAgents: ReturnType<typeof makeCloudSql>['managedAgents'];
-    grantWriter: ReturnType<typeof makeCloudSql>['grantWriter'];
-    grantReader: ReturnType<typeof makeCloudSql>['grantReader'];
+    managedAgents: ReturnType<typeof makeCloudSqlKit>['managedAgents'];
+    grantWriter: ReturnType<typeof makeCloudSqlKit>['grantWriter'];
+    grantReader: ReturnType<typeof makeCloudSqlKit>['grantReader'];
     tool: {
       invoke(
         request: object,
@@ -1197,15 +1306,8 @@ const makeYmaxMcpServerKit = (
   entropy: ActorEntropy,
 ) => {
   const resource = 'https://ymax.app/mcp';
-  const writeCatalog = harden([
-    'portfolio:deposit',
-    'portfolio:rebalance',
-    'portfolio:withdraw',
-  ]);
-  const prng = entropy.makePrng([
-    '85d3b529-02d8-4f41-b42d-57d21284f6ec',
-    'f17e42',
-  ]);
+  const writeCatalog = harden(['portfolio:allocation']);
+  const prng = entropy.makePrng(['85d3b5', 'f17e42']);
   const publicMcp: YmaxMcpPublic = harden({
     callWithoutToken() {
       viz.reply('RS', 'H', '401 + WWW-Authenticate: resource_metadata + scope');
@@ -1239,28 +1341,49 @@ const makeYmaxMcpServerKit = (
       },
       user: AuthorizationBrowser,
     ) {
-      powers.grantWriter.assertSessionUnused(session.consentSessionId);
+      viz.cont('RS', 'DB', `claimSession(${session.consentSessionId})`);
+      const grantSlot = powers.grantWriter.claimSession(
+        session.consentSessionId,
+      );
+      viz.reply('DB', 'RS', grantSlot.designation);
 
-      viz.cont('RS', 'YDS', 'listDelegations(authenticated wallet)');
+      viz.cont('RS', 'YDS', `listDelegations(${session.wallet})`);
       const delegated = powers.yds.listDelegations(session.wallet);
 
-      viz.cont('RS', 'DB', 'readManagedAgents(authenticated wallet)');
+      viz.cont('RS', 'DB', `readManagedAgents(${session.wallet})`);
       const managed = powers.managedAgents.forWallet(session.wallet);
 
-      const eligibleAgents = managed.filter(agent => agent in delegated);
+      const eligibleDelegations = delegated.filter(
+        ({ grantee, state }) => state === 'active' && managed.includes(grantee),
+      );
+      const eligibleAgents = harden([
+        ...new Set(eligibleDelegations.map(({ grantee }) => grantee)),
+      ]);
       const scopesByAgent = harden(
         Object.fromEntries(
           eligibleAgents.map(agent => [
             agent,
-            delegated[agent].filter(scope => writeCatalog.includes(scope)),
+            [
+              ...new Set(
+                eligibleDelegations
+                  .filter(({ grantee }) => grantee === agent)
+                  .flatMap(({ permissions }) =>
+                    Object.entries(permissions)
+                      .filter(([, allowed]) => allowed === true)
+                      .map(([permission]) => `portfolio:${permission}`),
+                  ),
+              ),
+            ].filter(scope => writeCatalog.includes(scope)),
           ]),
         ),
       );
-      viz.cont('RS', 'RS', 'eligible = delegated AND ymax-managed');
+      viz.cont('RS', 'RS', `eligibleAgents = [${eligibleAgents.join(', ')}]`);
       viz.reply(
         'RS',
         'User',
-        'eligible agents + permitted scopes + validated application host',
+        `showConsent({ applicationHost: ${session.redirectHost}, agents: { ${eligibleAgents
+          .map(agent => `${agent}: [${scopesByAgent[agent].join(', ')}]`)
+          .join(', ')} } })`,
       );
 
       // This per-session facet is preferable to giving the browser or consent
@@ -1272,7 +1395,7 @@ const makeYmaxMcpServerKit = (
             'RS',
             `authorize({ agent: ${agent}, scopes: [${submittedScopes.join(', ')}] })`,
           );
-          if (!eligibleAgents.includes(agent)) {
+          if (!eligibleAgents.some(eligibleAgent => eligibleAgent === agent)) {
             throw Error('submitted agent is not eligible');
           }
           const grantedScopes = submittedScopes.filter(
@@ -1288,10 +1411,10 @@ const makeYmaxMcpServerKit = (
           const grantId = prng.randomChars();
           viz.cont(
             'RS',
-            'DB',
+            grantSlot.designation,
             `insertGrant({ grant_id: ${grantId}, wallet: ${session.wallet}, agent: ${agent}, scopes: [${grantedScopes.join(', ')}], client_id: ${session.clientId}, kc_auth_session: ${session.kcAuthSession} })`,
           );
-          powers.grantWriter.insert(
+          grantSlot.insert(
             harden({
               grantId,
               wallet: session.wallet,
@@ -1303,7 +1426,6 @@ const makeYmaxMcpServerKit = (
               revoked: false,
               exp: 200,
             }),
-            session.consentSessionId,
           );
           const designation = `grant@RS[${grantId}]`;
           /**
@@ -1393,13 +1515,13 @@ test('OAuth design C: consent wallet comes from the verified SIWE subject', t =>
       ),
   );
   t.throws(
-    () => user.authorizeConsent('agoric1managed', ['portfolio:withdraw']),
+    () => user.authorizeConsent('agoric1managed', ['portfolio:allocation']),
     { message: 'submitted agent is not eligible' },
   );
 });
 
 test('OAuth design C26-C29: untrusted consent input cannot widen a grant', t => {
-  const { viz, cloudSql, user, siwe, keycloak, harness } =
+  const { viz, cloudSqlKit, user, siwe, keycloak, harness } =
     makeOAuthSimulationFixture();
   viz.pause();
   harness.beginAuthorization(user.browser);
@@ -1409,28 +1531,31 @@ test('OAuth design C26-C29: untrusted consent input cannot widen a grant', t => 
   viz.reset();
 
   t.throws(
-    () => user.authorizeConsent('agoric1unmanaged', ['portfolio:withdraw']),
+    () =>
+      user.authorizeConsent('agoric1unmanaged', [
+        'portfolio:admin-not-in-catalog',
+      ]),
     {
       message: 'submitted agent is not eligible',
     },
   );
   viz.reset();
   user.authorizeConsent('agoric1managed', [
-    'portfolio:withdraw',
+    'portfolio:allocation',
     'portfolio:admin-not-in-catalog',
   ]);
-  const grant = cloudSql.inspection.onlyGrant();
+  const grant = cloudSqlKit.inspection.onlyGrant();
 
   // SECURITY AFFIRMATION: agent selection is rejected rather than clamped, and
   // scopes are clamped to both chain permission and the write catalog.
-  t.deepEqual(grant?.scopes, ['portfolio:withdraw']);
+  t.deepEqual(grant?.scopes, ['portfolio:allocation']);
   t.snapshot(viz.lines(), 'sequence diagram');
-  // SECURITY AFFIRMATION: the one-shot continuation and DB uniqueness make the
-  // whole consent form one-use even though its methods remain reachable.
+  // SECURITY AFFIRMATION: the one-shot continuation and durable grant slot make
+  // the whole consent form one-use even though its methods remain reachable.
   t.throws(
-    () => user.authorizeConsent('agoric1managed', ['portfolio:withdraw']),
+    () => user.authorizeConsent('agoric1managed', ['portfolio:allocation']),
     {
-      message: 'consent session already consumed',
+      message: 'grant slot already consumed',
     },
   );
 });
@@ -1443,7 +1568,7 @@ test('OAuth design D: callback validation precedes PKCE token exchange', t => {
   harness.beginAuthorization(user.browser);
   siwe.deliverBrokerCallback();
   keycloak.beginConsent();
-  user.authorizeConsent('agoric1managed', ['portfolio:withdraw']);
+  user.authorizeConsent('agoric1managed', ['portfolio:allocation']);
   viz.resume();
 
   keycloak.finishAuthorization();
@@ -1453,10 +1578,7 @@ test('OAuth design D: callback validation precedes PKCE token exchange', t => {
   // the token receiver. Checking JWT issuer later at RS cannot replace this.
   // POLA: the callback reference designates H; redirect_uri is routing data in
   // HTTP and is deliberately absent from the visible message label here.
-  t.is(
-    tokens.grant.designation,
-    'grant@RS[85d3b529-02d8-4f41-b42d-57d21284f6ec]',
-  );
+  t.is(tokens.grant.designation, 'grant@RS[85d3b5]');
   t.is(tokens.refresh.refresh(), tokens.grant);
   t.snapshot(viz.lines(), 'sequence diagram');
 });
@@ -1464,19 +1586,22 @@ test('OAuth design D: callback validation precedes PKCE token exchange', t => {
 // Stage E --------------------------------------------------------------------
 
 test('OAuth design E: the RS grant facet enforces live grant state', t => {
-  const { viz, cloudSql, user, siwe, keycloak, harness } =
+  const { viz, cloudSqlKit, user, siwe, keycloak, harness } =
     makeOAuthSimulationFixture();
   viz.pause();
   harness.beginAuthorization(user.browser);
   siwe.deliverBrokerCallback();
   keycloak.beginConsent();
-  user.authorizeConsent('agoric1managed', ['portfolio:withdraw']);
+  user.authorizeConsent('agoric1managed', ['portfolio:allocation']);
   keycloak.finishAuthorization();
   const tokens = harness.exchangeAuthorizationCode();
   viz.resume();
 
   viz.call('H', tokens.grant.designation, 'tools/call(tool request)');
-  t.is(tokens.grant.callTool(harden({ tool: 'withdraw' })), 'invoked');
+  t.is(
+    tokens.grant.callTool(harden({ tool: 'setTargetAllocation' })),
+    'invoked',
+  );
   t.snapshot(viz.lines(), 'sequence diagram');
 
   // SECURITY AFFIRMATION: H holds only the RS grant facet created during its
@@ -1490,8 +1615,11 @@ test('OAuth design E: the RS grant facet enforces live grant state', t => {
   // neither the grant row nor a general database capability crosses that edge.
   // DESIGN CRITICISM: "handed to the MCP tool" leaves this attenuation and the
   // secure tool-dispatch rule unspecified in the design.
-  cloudSql.availabilityControl.setAvailable(false);
-  t.throws(() => tokens.grant.callTool(harden({ tool: 'withdraw' })), {
-    message: 'grant database unavailable',
-  });
+  cloudSqlKit.availabilityControl.setAvailable(false);
+  t.throws(
+    () => tokens.grant.callTool(harden({ tool: 'setTargetAllocation' })),
+    {
+      message: 'grant database unavailable',
+    },
+  );
 });
