@@ -22,6 +22,7 @@ import type { WatcherResult } from '../pending-tx-manager.ts';
 import {
   extractPayloadHash,
   extractPaddedTxId,
+  extractExecuteSourceAddress,
   fetchReceiptWithRetry,
   handleTxRevert,
   handleOperationFailure,
@@ -71,8 +72,13 @@ export const padTxId = (txId: string, sourceAddress: string): string => {
 
 /**
  * Check whether a transaction's calldata matches the expected padded txId
- * or payloadHash. Resilient to contract bugs that may not correctly pad the
- * txId — returns true if either identifier matches, and warns if they disagree.
+ * or payloadHash, and that it was sent by the expected source address.
+ * Resilient to contract bugs that may not correctly pad the txId — returns true
+ * if either identifier matches, and warns if they disagree.
+ *
+ * The router is shared by all portfolios, so identifier agreement alone does not
+ * prove the transaction belongs to this pending tx: the GMP `sourceAddress` must
+ * also name the LCA that sent the message (cf. watchGmp).
  */
 const matchesTxPayload = (
   txData: string,
@@ -81,7 +87,16 @@ const matchesTxPayload = (
   log: (...args: unknown[]) => void,
   txHash: string,
   txId: string,
+  expectedSourceAddress: string,
 ): boolean => {
+  const gmpSourceAddress = extractExecuteSourceAddress(txData);
+  if (gmpSourceAddress !== expectedSourceAddress) {
+    log(
+      `⚠️  IGNORED: txHash=${txHash} sourceAddress mismatch: expected ${expectedSourceAddress}, got ${gmpSourceAddress}`,
+    );
+    return false;
+  }
+
   const extractedTxId = extractPaddedTxId(txData);
   const txIdMatches = extractedTxId === paddedTxId;
 
@@ -120,6 +135,7 @@ const parseOperationResultLog = (
   abiCoder: AbiCoder = new AbiCoder(),
 ): {
   idHash: string;
+  sourceAddressHash: string;
   txId: string;
   allegedRemoteAccount: string;
   instructionSelector: string;
@@ -131,6 +147,7 @@ const parseOperationResultLog = (
   }
 
   const idHash = log.topics[1];
+  const sourceAddressHash = log.topics[2];
   const allegedRemoteAccount = log.topics[3];
   const [txIdPadded, instructionSelector, success, reason] = abiCoder.decode(
     ['string', 'bytes4', 'bool', 'bytes'],
@@ -139,6 +156,7 @@ const parseOperationResultLog = (
 
   return {
     idHash,
+    sourceAddressHash,
     txId: txIdPadded.replace(/\0+$/, ''),
     allegedRemoteAccount,
     instructionSelector,
@@ -175,6 +193,8 @@ export const watchOperationResult = ({
     // The txId must be padded to match sourceAddress length
     const paddedTxId = padTxId(txId, sourceAddress);
     const expectedIdHash = id(paddedTxId);
+    // For indexed strings, Solidity stores keccak256(string) in the topic.
+    const expectedSourceAddressHash = id(sourceAddress);
 
     log(
       `Watching for OperationResult on router ${routerAddress} with id: ${txId}`,
@@ -277,7 +297,15 @@ export const watchOperationResult = ({
         }
 
         if (
-          !matchesTxPayload(txData, paddedTxId, payloadHash, log, txHash, txId)
+          !matchesTxPayload(
+            txData,
+            paddedTxId,
+            payloadHash,
+            log,
+            txHash,
+            txId,
+            sourceAddress,
+          )
         ) {
           return;
         }
@@ -294,11 +322,14 @@ export const watchOperationResult = ({
           return;
         }
 
-        // Check for OperationResult event in receipt
+        // Check for OperationResult event in receipt. The txId hash alone does
+        // not identify our transaction on a router shared by all portfolios, so
+        // the event must also come from the expected source address.
         const matchingLog = receipt.logs.find(
           l =>
             l.topics?.[0] === OPERATION_RESULT_SIGNATURE &&
-            l.topics?.[1] === expectedIdHash,
+            l.topics?.[1] === expectedIdHash &&
+            l.topics?.[2] === expectedSourceAddressHash,
         );
         if (matchingLog) {
           const { success } = parseOperationResultLog(matchingLog);
@@ -311,7 +342,11 @@ export const watchOperationResult = ({
           // Event-level failure: wait for confirmations before declaring failure
           const logFilter: Filter = {
             address: routerAddress,
-            topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
+            topics: [
+              OPERATION_RESULT_SIGNATURE,
+              expectedIdHash,
+              expectedSourceAddressHash,
+            ],
           };
           const watcherResult = await handleOperationFailure({
             eventLog: matchingLog,
@@ -425,14 +460,22 @@ export const lookBackOperationResult = async ({
     // The txId must be padded to match sourceAddress length (see padTxId).
     const paddedTxId = padTxId(txId, sourceAddress);
     const expectedIdHash = id(paddedTxId);
+    const expectedSourceAddressHash = id(sourceAddress);
 
     log(
-      `Searching blocks ${savedFromBlock} → ${toBlock} for OperationResult with id ${txId} (hash: ${expectedIdHash})`,
+      `Searching blocks ${savedFromBlock} → ${toBlock} for OperationResult with id ${txId} (hash: ${expectedIdHash}, sourceAddressHash: ${expectedSourceAddressHash})`,
     );
 
+    // The sourceAddressIndex topic authenticates the event against the LCA that
+    // sent this transaction's message; the shared router emits events for all
+    // sources, and any of them can carry a colliding id hash.
     const baseFilter: Filter = {
       address: routerAddress,
-      topics: [OPERATION_RESULT_SIGNATURE, expectedIdHash],
+      topics: [
+        OPERATION_RESULT_SIGNATURE,
+        expectedIdHash,
+        expectedSourceAddressHash,
+      ],
     };
 
     const updateFailedTxLowerBound = (_from: number, to: number) =>
@@ -456,8 +499,13 @@ export const lookBackOperationResult = async ({
       predicate: ev => {
         try {
           const parsed = parseOperationResultLog(ev);
-          log(`Check: idHash=${parsed.idHash} success=${parsed.success}`);
-          return parsed.idHash === expectedIdHash;
+          log(
+            `Check: idHash=${parsed.idHash} txId=${parsed.txId} sourceAddressHash=${parsed.sourceAddressHash} success=${parsed.success}`,
+          );
+          return (
+            parsed.idHash === expectedIdHash &&
+            parsed.sourceAddressHash === expectedSourceAddressHash
+          );
         } catch (e) {
           log(`Parse error:`, e);
           return false;
@@ -503,7 +551,15 @@ export const lookBackOperationResult = async ({
       signal: sharedSignal,
       toAddress: routerAddress,
       verifyFailedTx: tx =>
-        matchesTxPayload(tx.data, paddedTxId, payloadHash, log, tx.hash, txId),
+        matchesTxPayload(
+          tx.data,
+          paddedTxId,
+          payloadHash,
+          log,
+          tx.hash,
+          txId,
+          sourceAddress,
+        ),
       onRejectedChunk: updateFailedTxLowerBound,
     });
 

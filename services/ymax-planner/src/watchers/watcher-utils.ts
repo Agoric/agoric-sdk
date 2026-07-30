@@ -156,6 +156,26 @@ export const extractPayloadHash = (data: string): string | null => {
 };
 
 /**
+ * Parses the `execute(bytes32, string, string, bytes)` calldata and returns the
+ * Axelar GMP `sourceAddress` (arg index 2) — the account on the source chain
+ * that sent the message.
+ *
+ * @param data - Transaction input data (the full `execute()` calldata)
+ * @returns The source address, or null if parsing fails
+ */
+export const extractExecuteSourceAddress = (data: string): string | null => {
+  try {
+    const parsed = axelarExecuteIface.parseTransaction({ data });
+    if (!parsed) return null;
+
+    const [_commandId, _sourceChain, sourceAddress] = parsed.args;
+    return typeof sourceAddress === 'string' ? sourceAddress : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
  * Parses the `execute(bytes32, string, string, bytes)` calldata, extracts the
  * inner `payload`, strips its 4-byte function selector, and abi-decodes the
  * first argument as a string — which is the padded txId.
