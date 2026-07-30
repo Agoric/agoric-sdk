@@ -278,22 +278,40 @@ test('claim rewards on Morpho ERC4626 position successfully', async t => {
   const messagesBefore = common.utils.inspectLocalBridge();
 
   const claimRewards = {
-    users: ['0x0000000000000000000000000000000000000001'] as `0x${string}`[],
     tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
     amounts: [1_234_567n],
-    proofs: [
-      [
-        '0x1111111111111111111111111111111111111111111111111111111111111111',
-        '0x2222222222222222222222222222222222222222222222222222222222222222',
-      ],
-    ] as `0x${string}`[][],
+    morpho: {
+      proofs: [
+        [
+          '0x1111111111111111111111111111111111111111111111111111111111111111',
+          '0x2222222222222222222222222222222222222222222222222222222222222222',
+        ],
+      ] as `0x${string}`[][],
+    },
   };
 
-  const rebalanceP = trader1.deposit(t, usdc.make(100n));
+  const rebalanceP = trader1.rebalance(
+    t,
+    { give: {}, want: {} },
+    {
+      flow: [
+        {
+          // claiming rewards moves no funds; `amount` is nominal (>= 1n to
+          // satisfy the movement shape) and ignored by the claim handler.
+          src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
+          dest: '@Ethereum',
+          amount: usdc.make(1n),
+          fee: feeCall,
+          claimRewards,
+        },
+      ],
+    },
+  );
 
+  // GMP transaction settlement for the claim
   await txResolver.drainPending();
-
   await common.utils.transmitVTransferEvent('acknowledgementPacket', -1);
+
   const rebalanceResult = await rebalanceP;
   t.log('rebalance done', rebalanceResult);
 

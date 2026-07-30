@@ -529,14 +529,19 @@ export const ERC4626Protocol = {
   claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
     await null;
     if (isERC4626MorphoInstrumentId(ctx.poolKey)) {
-      const { users, tokens, amounts, proofs } = claimParams;
-      if (!users || !tokens || !amounts || !proofs) {
-        throw Fail`ERC4626 claimRewards requires users, tokens, amounts, and proofs`;
+      const { tokens, amounts, morpho } = claimParams;
+      if (!tokens || !amounts || !morpho?.proofs) {
+        throw Fail`ERC4626 claimRewards requires tokens, amounts, and morpho.proofs`;
       }
-      const lengths = [users, tokens, amounts, proofs].map(arr => arr.length);
+      const { proofs } = morpho;
+      const lengths = [tokens, amounts, proofs].map(arr => arr.length);
       if (new Set(lengths).size !== 1) {
-        throw Fail`ERC4626 claimRewards requires users, tokens, amounts, and proofs to be of uniform count`;
+        throw Fail`ERC4626 claimRewards requires tokens, amounts, and morpho.proofs to be of uniform count`;
       }
+      // The claiming account is this position's EVM wallet; derive one `user`
+      // per claim entry rather than accepting it as an untrusted input.
+      const { remoteAddress } = dest;
+      const users = tokens.map(() => remoteAddress);
       const { addresses: a } = ctx;
       const distributor =
         a.merkleDistributor ||

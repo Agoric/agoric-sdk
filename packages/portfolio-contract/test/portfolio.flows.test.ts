@@ -637,7 +637,7 @@ test.skip('claim rewards on Aave position', async t => {
             src: 'Aave_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: {},
+            claimRewards: { tokens: [], amounts: [] },
           },
         ],
       },
@@ -3809,15 +3809,16 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
   const amount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
   const claimRewards = {
-    users: ['0x0000000000000000000000000000000000000001'] as `0x${string}`[],
     tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
     amounts: [1_234_567n],
-    proofs: [
-      [
-        '0x1111111111111111111111111111111111111111111111111111111111111111',
-        '0x2222222222222222222222222222222222222222222222222222222222222222',
-      ],
-    ] as `0x${string}`[][],
+    morpho: {
+      proofs: [
+        [
+          '0x1111111111111111111111111111111111111111111111111111111111111111',
+          '0x2222222222222222222222222222222222222222222222222222222222222222',
+        ],
+      ] as `0x${string}`[][],
+    },
   };
   const actual = wayFromSrcToDest({
     src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
@@ -3859,15 +3860,16 @@ test('claim rewards from ERC4626 position', async t => {
   const emptyAmount = AmountMath.make(USDC, 0n);
 
   const claimRewards = {
-    users: ['0x0000000000000000000000000000000000000001'] as `0x${string}`[],
     tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
     amounts: [1_234_567n],
-    proofs: [
-      [
-        '0x1111111111111111111111111111111111111111111111111111111111111111',
-        '0x2222222222222222222222222222222222222222222222222222222222222222',
-      ],
-    ] as `0x${string}`[][],
+    morpho: {
+      proofs: [
+        [
+          '0x1111111111111111111111111111111111111111111111111111111111111111',
+          '0x2222222222222222222222222222222222222222222222222222222222222222',
+        ],
+      ] as `0x${string}`[][],
+    },
   };
 
   await Promise.all([
@@ -3912,10 +3914,20 @@ test('claim rewards from ERC4626 position', async t => {
   t.is(decoded.calls.length, 1);
   const [call] = decoded.calls;
   t.is(call.functionName, 'claim');
-  t.deepEqual(call.args, [
-    claimRewards.users,
-    claimRewards.tokens,
-    claimRewards.amounts,
-    claimRewards.proofs,
-  ]);
+  const [users, tokens, amounts, proofs] = call.args as [
+    string[],
+    string[],
+    bigint[],
+    string[][],
+  ];
+  // `users` is derived from the position's EVM wallet, one entry per claim.
+  // The decoder returns EIP-55 checksummed addresses, so compare case-insensitively.
+  const { remoteAddress } = kit.reader.getGMPInfo('Ethereum');
+  t.deepEqual(
+    users.map(u => u.toLowerCase()),
+    claimRewards.tokens.map(() => remoteAddress.toLowerCase()),
+  );
+  t.deepEqual(tokens, claimRewards.tokens);
+  t.deepEqual(amounts, claimRewards.amounts);
+  t.deepEqual(proofs, claimRewards.morpho.proofs);
 });
