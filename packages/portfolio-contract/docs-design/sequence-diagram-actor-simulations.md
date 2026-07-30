@@ -50,6 +50,43 @@ The model is useful for discovering missing participants, misplaced
 responsibilities, underspecified messages, and incorrect ordering before those
 decisions are embedded in contract or service code.
 
+## Semantic decompilation
+
+An actor simulation can also serve as a _semantic decompilation_ of a protocol
+design. Rather than reproduce the wire representation, it asks what each
+endpoint, identifier, bearer artifact, and signed message means in terms of
+designation and authority, then reconstructs an object-capability graph with
+those semantics.
+
+In this perspective:
+
+- an endpoint or public identifier designates an object that accepts the
+  corresponding messages;
+- a bearer artifact becomes a reference to a facet exposing only the authority
+  represented by possession of that artifact;
+- an unforgeable, single-use artifact becomes a one-shot continuation;
+- a signed statement becomes an object whose provenance a separate verifier
+  facet can recognize;
+- protocol data stays explicit when it binds exchanges or constrains authority,
+  but routing data already expressed by the destination reference can disappear.
+
+Each non-return diagram arrow is consequently a method call on the receiving
+object. The arrow head carries the destination designation, while the label
+describes the message and security-relevant data. Return arrows normally remain
+language-level return values.
+
+This change of representation makes authority flow directly reviewable: which
+actor creates an authority, who receives it, what operations it permits, and
+whether it can be replayed or widened. It can expose a design that accidentally
+places authority on a public facet, trusts input that should only select among
+already authorized choices, or gives a callee more capability than it needs.
+
+Semantic decompilation is not a claim that a URL or token is literally an
+object capability, nor that the simulation is wire-compatible. A simulation
+may use object identity in place of production cryptography and direct calls in
+place of transport. It should preserve the protocol's intended authority and
+information flow while stating such substitutions explicitly.
+
 ## Recording the diagram
 
 The stronger form of the pattern records each send as Mermaid-compatible text:
