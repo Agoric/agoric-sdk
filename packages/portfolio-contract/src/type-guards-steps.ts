@@ -142,7 +142,6 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
           minAmounts: M.arrayOf(M.nat()),
         },
         {
-          // TODO(#12707, #12711): additional per-protocol claim inputs
           morpho: M.splitRecord({
             proofs: M.arrayOf(M.arrayOf(M.string())),
           }),

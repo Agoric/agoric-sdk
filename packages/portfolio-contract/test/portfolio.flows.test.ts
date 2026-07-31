@@ -3954,7 +3954,7 @@ test('claim rewards from Compound position', async t => {
             src: 'Compound_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: {},
+            claimRewards: { tokens: [], minAmounts: [] },
           },
         ],
       },
