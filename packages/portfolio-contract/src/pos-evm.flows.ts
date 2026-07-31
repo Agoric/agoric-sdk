@@ -430,14 +430,22 @@ export const AaveProtocol = {
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
-  claimRewards: async (ctx, dest, _claimParams, ...optsArgs) => {
+  claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
     const { addresses: a } = ctx;
+    const { tokens, minAmounts: amounts } = claimParams;
+    if (!tokens.length || !amounts.length) {
+      throw Fail`Aave claimRewards requires at least one token and amount`;
+    }
     const session = makeEvmAbiCallBatch();
     const aaveRewardsController = session.makeContract(
       a.aaveRewardsController,
       aaveRewardsControllerABI,
     );
-    aaveRewardsController.claimAllRewardsToSelf([a.aaveUSDC]);
+    aaveRewardsController.claimRewardsToSelf(
+      [a.aaveUSDC],
+      amounts[0],
+      tokens[0],
+    );
     const calls = session.finish();
 
     await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
