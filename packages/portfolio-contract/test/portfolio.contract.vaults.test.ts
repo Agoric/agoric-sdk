@@ -282,7 +282,11 @@ test('claim rewards on Compound position successfully', async t => {
           src: 'Compound_Arbitrum',
           amount: usdc.make(100n),
           fee: feeCall,
-          claimRewards: {},
+          // Compound claims without using these, but the shape is enforced.
+          claimRewards: {
+            tokens: ['0x0000000000000000000000000000000000000002'],
+            amounts: [1_234_567n],
+          },
         },
       ],
     },
