@@ -360,7 +360,11 @@ test('claim rewards on Aave position successfully', async t => {
           src: 'Aave_Arbitrum',
           amount: usdc.make(100n),
           fee: feeCall,
-          claimRewards: {},
+          // Aave claims without using these, but the shape is enforced.
+          claimRewards: {
+            tokens: ['0x0000000000000000000000000000000000000002'],
+            amounts: [1_234_567n],
+          },
         },
       ],
     },
@@ -450,7 +454,7 @@ test('USDN claim fails currently', async t => {
           dest: '@noble',
           src: 'USDN',
           amount: usdc.make(100n),
-          claimRewards: {},
+          claimRewards: { tokens: [], amounts: [] },
         },
       ],
     },
