@@ -625,6 +625,10 @@ test.skip('claim rewards on Aave position', async t => {
   );
 
   const kit = await ctx.makePortfolioKit();
+  const claimRewards = {
+    tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
+    amounts: [1_234_567n],
+  };
   await Promise.all([
     rebalance(
       orch,
@@ -637,7 +641,7 @@ test.skip('claim rewards on Aave position', async t => {
             src: 'Aave_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: { tokens: [], amounts: [] },
+            claimRewards,
           },
         ],
       },
@@ -662,14 +666,16 @@ test.skip('claim rewards on Aave position', async t => {
 
   const rawMemo = log[4].opts!.memo;
   const decoded = decodeFunctionCall(rawMemo, [
-    'claimAllRewardsToSelf(address[])',
+    'claimRewardsToSelf(address[],uint256,address)',
   ]);
   t.is(decoded.calls.length, 1);
   const [call] = decoded.calls;
-  t.is(call.functionName, 'claimAllRewardsToSelf');
-  const [assets] = call.args as [string[]];
+  t.is(call.functionName, 'claimRewardsToSelf');
+  const [assets, claimAmount, reward] = call.args as [string[], bigint, string];
   t.is(assets.length, 1);
   t.is(assets[0].toLowerCase(), contractsMock.Arbitrum.aaveUSDC.toLowerCase());
+  t.is(claimAmount, claimRewards.amounts[0]);
+  t.is(reward.toLowerCase(), claimRewards.tokens[0].toLowerCase());
 });
 
 test('open portfolio with Beefy position', async t => {
