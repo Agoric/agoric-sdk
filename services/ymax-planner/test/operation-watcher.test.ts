@@ -23,6 +23,8 @@ const OPERATION_RESULT_SIGNATURE = id(
 );
 
 const MOCK_SOURCE_ADDRESS = 'agoric1testaddr0123456789abcdefghijklmno';
+/** Same length as MOCK_SOURCE_ADDRESS, so it pads txIds identically. */
+const ATTACKER_SOURCE_ADDRESS = 'agoric1attacker0123456789abcdefghijklmn';
 
 /**
  * Build a mock router payload that embeds the padded txId as the first
@@ -81,18 +83,19 @@ const createMockOperationResultLog = (
   reason: string = '',
   blockNumber: number = 1000,
   transactionHash: string = '0x123abc',
+  sourceAddress: string = MOCK_SOURCE_ADDRESS,
 ): Pick<
   Log,
   'address' | 'topics' | 'data' | 'blockNumber' | 'transactionHash'
 > => {
   const abiCoder = new AbiCoder();
   const expectedIdHash = id(paddedId);
-  const sourceAddressHash = id(MOCK_SOURCE_ADDRESS);
+  const sourceAddressHash = id(sourceAddress);
   const mockAccountAddress = zeroPadValue('0x01', 32);
   const reasonBytes = reason ? Buffer.from(reason, 'utf8') : new Uint8Array(0);
   const data = abiCoder.encode(
     ['string', 'bytes4', 'bool', 'bytes'],
-    [MOCK_SOURCE_ADDRESS, '0x00000000', success, reasonBytes],
+    [paddedId, '0x00000000', success, reasonBytes],
   );
 
   return {
@@ -425,7 +428,10 @@ test('lookBackOperationResult phase 2 detects reverted tx via padded txId', asyn
   // Build a router payload containing the padded txId
   const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
   const payload = buildRouterPayload(paddedId);
-  const { calldata, payloadHash } = encodeExecuteCalldata(payload);
+  const { calldata, payloadHash } = encodeExecuteCalldata(
+    payload,
+    MOCK_SOURCE_ADDRESS,
+  );
 
   // No OperationResult events (phase 1 finds nothing)
   const provider = createMockProvider(latestBlock, []);
@@ -508,7 +514,10 @@ test('watchOperationResult detects revert via Alchemy subscription (live mode)',
   // Build a router payload containing the padded txId
   const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
   const payload = buildRouterPayload(paddedId);
-  const { calldata, payloadHash } = encodeExecuteCalldata(payload);
+  const { calldata, payloadHash } = encodeExecuteCalldata(
+    payload,
+    MOCK_SOURCE_ADDRESS,
+  );
 
   // Receipt for the reverted tx (no OperationResult events)
   (provider as any).getTransactionReceipt = async (hash: string) => {
@@ -608,6 +617,329 @@ test('lookBackOperationResult returns not-found when both phases find nothing', 
   });
 
   t.false(result.settled, 'Should not be settled when nothing found');
+  t.true(
+    logMessages.some(msg => msg.includes('ROUTED_GMP_TX_NOT_FOUND')),
+    'Should log not-found code',
+  );
+});
+
+// --- Source authentication tests ---
+//
+// The router is shared by all portfolios, so an OperationResult whose padded id
+// hash collides with a pending txId must not settle that tx unless it also came
+// from the LCA that sent the message.
+
+test('watchOperationResult ignores OperationResult event from another source (live mode)', async t => {
+  const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const txId = 'tx8' as `tx${number}`;
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const chainId = 'eip155:1';
+  const provider = createMockProvider(1000);
+  const kvStore = makeKVStoreFromMap(new Map());
+  const txHash = '0xspoofedlivetx';
+  const blockNumber = 18500000;
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  // Event carries the victim's id hash but the attacker's source address.
+  const spoofedLog = createMockOperationResultLog(
+    routerAddress,
+    paddedId,
+    true, // success
+    '',
+    blockNumber,
+    txHash,
+    ATTACKER_SOURCE_ADDRESS,
+  );
+
+  const payload = buildRouterPayload(paddedId);
+  const { calldata, payloadHash } = encodeExecuteCalldata(
+    payload,
+    MOCK_SOURCE_ADDRESS,
+  );
+
+  (provider as any).getTransactionReceipt = async (hash: string) => {
+    if (hash === txHash) {
+      return {
+        status: 1,
+        blockNumber,
+        blockHash: '0xblockhash',
+        transactionHash: txHash,
+        logs: [spoofedLog],
+      };
+    }
+    return null;
+  };
+
+  const abortController = new AbortController();
+
+  setTimeout(() => {
+    const wsMessage = JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_subscription',
+      params: {
+        result: {
+          removed: false,
+          transaction: {
+            hash: txHash,
+            input: calldata,
+            to: routerAddress,
+            from: '0x0000000000000000000000000000000000000001',
+            value: '0x0',
+            blockNumber: `0x${blockNumber.toString(16)}`,
+          },
+        },
+        subscription: 'mock-sub-id',
+      },
+    });
+
+    (provider as any).websocket.emit('message', wsMessage);
+  }, 50);
+
+  // The watcher keeps waiting when it rejects an event, so stop it explicitly.
+  setTimeout(() => abortController.abort('test done'), 500);
+
+  const result = await watchOperationResult({
+    routerAddress: routerAddress as `0x${string}`,
+    provider,
+    chainId,
+    kvStore,
+    txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
+    payloadHash,
+    timeoutMs: 3000,
+    signal: abortController.signal,
+    log: logger,
+  });
+
+  t.false(result.settled, 'Should not settle on an event from another source');
+  t.false(
+    logMessages.some(msg => msg.includes('✅ SUCCESS')),
+    'Should not log success',
+  );
+});
+
+test('watchOperationResult ignores router tx from another source (live mode)', async t => {
+  const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const txId = 'tx9' as `tx${number}`;
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const chainId = 'eip155:1';
+  const provider = createMockProvider(1000);
+  const kvStore = makeKVStoreFromMap(new Map());
+  const txHash = '0xspoofedcalldatatx';
+  const blockNumber = 18500000;
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  // Replay of the victim's payload (so payloadHash matches) from the attacker's
+  // source address, reverting so it would otherwise settle as a failure.
+  const payload = buildRouterPayload(paddedId);
+  const { calldata, payloadHash } = encodeExecuteCalldata(
+    payload,
+    ATTACKER_SOURCE_ADDRESS,
+  );
+
+  (provider as any).getTransactionReceipt = async (hash: string) => {
+    if (hash === txHash) {
+      return {
+        status: 0,
+        blockNumber,
+        blockHash: '0xblockhash',
+        transactionHash: txHash,
+        logs: [],
+      };
+    }
+    return null;
+  };
+  (provider as any).getBlockNumber = async () => blockNumber + 5000;
+
+  const abortController = new AbortController();
+
+  setTimeout(() => {
+    const wsMessage = JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'eth_subscription',
+      params: {
+        result: {
+          removed: false,
+          transaction: {
+            hash: txHash,
+            input: calldata,
+            to: routerAddress,
+            from: '0x0000000000000000000000000000000000000001',
+            value: '0x0',
+            blockNumber: `0x${blockNumber.toString(16)}`,
+          },
+        },
+        subscription: 'mock-sub-id',
+      },
+    });
+
+    (provider as any).websocket.emit('message', wsMessage);
+  }, 50);
+
+  setTimeout(() => abortController.abort('test done'), 500);
+
+  const result = await watchOperationResult({
+    routerAddress: routerAddress as `0x${string}`,
+    provider,
+    chainId,
+    kvStore,
+    txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
+    payloadHash,
+    timeoutMs: 3000,
+    signal: abortController.signal,
+    log: logger,
+  });
+
+  t.false(result.settled, 'Should not settle on a tx from another source');
+  t.true(
+    logMessages.some(msg => msg.includes('sourceAddress mismatch')),
+    'Should log the source mismatch',
+  );
+  t.false(
+    logMessages.some(msg => msg.includes('REVERTED')),
+    'Should not report a revert',
+  );
+});
+
+test('lookBackOperationResult ignores OperationResult event from another source', async t => {
+  const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const txId = 'tx10' as `tx${number}`;
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const chainId = 'eip155:1';
+  const kvStore = makeKVStoreFromMap(new Map());
+  const latestBlock = 1000;
+
+  // Event carries the victim's id hash but the attacker's source address. The
+  // mock provider ignores topic filters, so this also covers an RPC that
+  // returns more logs than the filter asked for.
+  const spoofedLog = createMockOperationResultLog(
+    routerAddress,
+    paddedId,
+    true, // success
+    '',
+    latestBlock,
+    '0xspoofedlookbacktx',
+    ATTACKER_SOURCE_ADDRESS,
+  );
+
+  const provider = createMockProvider(latestBlock, [spoofedLog]);
+  // No failed txs either (phase 2 finds nothing)
+  (provider as any).send = async (method: string) => {
+    if (method === 'trace_filter') return [];
+    return 'mock-subscription-id';
+  };
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  const result = await lookBackOperationResult({
+    routerAddress: routerAddress as `0x${string}`,
+    provider,
+    chainId,
+    kvStore,
+    txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
+    payloadHash: MOCK_PAYLOAD_HASH,
+    makeAbortController,
+    publishTimeMs: Date.now() - 60000,
+    log: logger,
+  });
+
+  t.false(result.settled, 'Should not settle on an event from another source');
+  t.true(
+    logMessages.some(msg =>
+      msg.includes(`sourceAddressHash=${id(ATTACKER_SOURCE_ADDRESS)}`),
+    ),
+    'Should log the rejected event source hash',
+  );
+  t.true(
+    logMessages.some(msg => msg.includes('ROUTED_GMP_TX_NOT_FOUND')),
+    'Should log not-found code',
+  );
+});
+
+test('lookBackOperationResult phase 2 ignores reverted tx from another source', async t => {
+  const routerAddress = '0x8Cb4b25E77844fC0632aCa14f1f9B23bdd654EbF';
+  const txId = 'tx11' as `tx${number}`;
+  const chainId = 'eip155:1';
+  const kvStore = makeKVStoreFromMap(new Map());
+  const latestBlock = 1000;
+  const revertTxHash = '0xspoofedrevertedtx';
+
+  // Replay of the victim's payload from the attacker's source address.
+  const paddedId = padTxId(txId, MOCK_SOURCE_ADDRESS);
+  const payload = buildRouterPayload(paddedId);
+  const { calldata, payloadHash } = encodeExecuteCalldata(
+    payload,
+    ATTACKER_SOURCE_ADDRESS,
+  );
+
+  const provider = createMockProvider(latestBlock, []);
+
+  (provider as any).send = async (method: string, _params: any[]) => {
+    if (method === 'trace_filter') {
+      return [
+        {
+          type: 'call',
+          action: {
+            from: '0x0000000000000000000000000000000000000001',
+            to: routerAddress.toLowerCase(),
+            input: calldata,
+            value: '0x0',
+            gas: '0x186a0',
+            callType: 'call',
+          },
+          blockNumber: latestBlock,
+          transactionHash: revertTxHash,
+          error: 'Reverted',
+          subtraces: 0,
+          traceAddress: [],
+        },
+      ];
+    }
+    return 'mock-subscription-id';
+  };
+
+  (provider as any).getTransactionReceipt = async (hash: string) => {
+    if (hash === revertTxHash) {
+      return {
+        status: 0,
+        blockNumber: latestBlock,
+        blockHash: '0xblockhash',
+        transactionHash: revertTxHash,
+        logs: [],
+      };
+    }
+    return null;
+  };
+  (provider as any).getBlockNumber = async () => latestBlock + 5000;
+
+  const logMessages: string[] = [];
+  const logger = (...args: any[]) => logMessages.push(args.join(' '));
+
+  const result = await lookBackOperationResult({
+    routerAddress: routerAddress as `0x${string}`,
+    provider,
+    chainId,
+    kvStore,
+    txId,
+    sourceAddress: MOCK_SOURCE_ADDRESS,
+    payloadHash,
+    makeAbortController,
+    publishTimeMs: Date.now() - 60000,
+    log: logger,
+  });
+
+  t.false(result.settled, 'Should not settle on a tx from another source');
+  t.true(
+    logMessages.some(msg => msg.includes('sourceAddress mismatch')),
+    'Should log the source mismatch',
+  );
   t.true(
     logMessages.some(msg => msg.includes('ROUTED_GMP_TX_NOT_FOUND')),
     'Should log not-found code',
