@@ -19,7 +19,6 @@ import {
   hashStruct,
   isHex,
   recoverTypedDataAddress,
-  validateTypedData,
 } from '@agoric/orchestration/src/vendor/viem/viem-typedData.js';
 import type { StatusFor } from '@agoric/portfolio-api';
 import type {
@@ -476,7 +475,6 @@ export const prepareEVMWalletMessageHandler = (
     isHex,
     hashStruct,
     recoverTypedDataAddress,
-    validateTypedData,
     encodeType,
     getTypesForEIP712Domain,
   });

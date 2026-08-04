@@ -433,11 +433,9 @@ const doOpenEvmPortfolio = async (
   await planner1.redeem();
   const result = await evmTrader
     .forChain(inputs.fromChain)
-    .openPortfolio(
-      inputs.allocations,
-      inputs.depositAmount.value,
-      inputs.features,
-    );
+    .openPortfolio(inputs.allocations, inputs.depositAmount.value, {
+      features: inputs.features,
+    });
   await ackNFA(shared.common.utils, -1);
   await eventLoopIteration();
   const flowNum = await resolveDepositPlan(
