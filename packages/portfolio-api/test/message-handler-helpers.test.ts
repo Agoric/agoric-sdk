@@ -7,7 +7,6 @@ import {
   isHex,
   hashStruct,
   recoverTypedDataAddress,
-  validateTypedData,
   getTypesForEIP712Domain,
   encodeType,
 } from '@agoric/orchestration/src/stubs/viem-typedData.ts';
@@ -35,7 +34,6 @@ const { extractOperationDetailsFromDataWithAddress } = makeEVMHandlerUtils({
   isHex,
   hashStruct,
   recoverTypedDataAddress,
-  validateTypedData,
   encodeType,
   getTypesForEIP712Domain,
 });

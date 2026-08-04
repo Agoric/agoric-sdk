@@ -29,7 +29,7 @@ import {
   TokenPermissionsComponents,
 } from '@agoric/orchestration/src/utils/permit2.ts';
 import { sameEvmAddress } from '@agoric/orchestration/src/utils/address.js';
-import { normalizeEIP712Data } from '@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts';
+import { normalizeAndValidateEIP712Data } from '@agoric/orchestration/src/utils/viem-utils/eip712-normalize.ts';
 
 const YMAX_DOMAIN_NAME = 'Ymax';
 const YMAX_DOMAIN_VERSION = '1';
@@ -326,7 +326,7 @@ export const getYmaxWitness = <T extends OperationTypeNames>(
   // produces a `types`/`message` pair that real EIP-712 hashing can encode.
   // This is the authoring side, not adversarial input, so extra fields are
   // dropped rather than rejected.
-  const { message, types } = normalizeEIP712Data({
+  const { message, types } = normalizeAndValidateEIP712Data({
     message: data as Record<string, unknown>,
     types: getYmaxWitnessTypes(operation),
     primaryType: witnessTypeParam.type,
@@ -362,7 +362,7 @@ export const getYmaxStandaloneOperationData = <T extends OperationTypeNames>(
   // produces a `types`/`message` pair that real EIP-712 hashing can encode.
   // This is the authoring side, not adversarial input, so extra fields are
   // dropped rather than rejected.
-  const { message, types } = normalizeEIP712Data({
+  const { message, types } = normalizeAndValidateEIP712Data({
     message: data as Record<string, unknown>,
     types: getYmaxStandaloneTypes(operation),
     primaryType: operation,
