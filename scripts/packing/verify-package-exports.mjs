@@ -7,9 +7,8 @@
  * by Node (module code executes, so side effects may occur).
  *
  * Usage:
- *   node scripts/packing/verify-package-exports.mjs --mode=packed
- *   node scripts/packing/verify-package-exports.mjs --mode=scm
- *   node scripts/packing/verify-package-exports.mjs --mode=packed --quiet
+ *   node scripts/packing/verify-package-exports.mjs
+ *   node scripts/packing/verify-package-exports.mjs --quiet
  *   (or run via `yarn lerna run` with INIT_CWD set per package)
  */
 import fs from 'node:fs/promises';
@@ -49,46 +48,11 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     quiet: { type: 'boolean' },
-    mode: { type: 'string', required: true },
   },
   strict: true,
   allowPositionals: false,
 });
 const quiet = values.quiet ?? false;
-const mode = values.mode;
-if (mode !== 'packed' && mode !== 'scm') {
-  throw new Error(
-    'verify-package-exports: --mode is required and must be "packed" or "scm"',
-  );
-}
-const packed = mode === 'packed';
-
-const parseNodeVersion = version => {
-  const match = /^v?(\d+)\.(\d+)\.(\d+)/.exec(version);
-  if (!match) return null;
-  return {
-    major: Number(match[1]),
-    minor: Number(match[2]),
-    patch: Number(match[3]),
-  };
-};
-
-const pickStripTypesFlag = () => {
-  const parsed = parseNodeVersion(process.version);
-  if (!parsed) return null;
-  if (parsed.major >= 24) return '--no-strip-types';
-  if (parsed.major >= 22) return '--no-experimental-strip-types';
-  return null;
-};
-
-const stripTypesFlag = packed ? pickStripTypesFlag() : null;
-if (packed && !stripTypesFlag) {
-  throw new Error(
-    `verify-package-exports: Node ${process.version} does not support type stripping`,
-  );
-}
-
-const nodePackedArgs = stripTypesFlag ? [stripTypesFlag] : [];
 
 const posixPath = path.posix;
 
@@ -431,7 +395,7 @@ const collectExportSpecifiers = async (pkgDir, pkgJson) => {
 const needsJsonImport = specifier =>
   specifier.endsWith('.json') || specifier.endsWith('/package.json');
 
-const runImportAttempt = async (specifier, cwd, preload, packedArgs) => {
+const runImportAttempt = async (specifier, cwd, preload) => {
   const importOptions = needsJsonImport(specifier)
     ? ', { with: { type: "json" } }'
     : '';
@@ -442,7 +406,7 @@ const runImportAttempt = async (specifier, cwd, preload, packedArgs) => {
     '  process.exit(1);',
     '});',
   ].join('\n');
-  const args = [...packedArgs];
+  const args = [];
   if (preload) {
     args.push('--import', preload);
   }
@@ -468,7 +432,7 @@ const runImportAttempt = async (specifier, cwd, preload, packedArgs) => {
   }
 };
 
-const importSpecifier = async (specifier, cwd, packedArgs) => {
+const importSpecifier = async (specifier, cwd) => {
   const attempts = [
     { label: 'plain', preload: null },
     { label: 'with-endo', preload: '@endo/init/debug.js' },
@@ -476,12 +440,7 @@ const importSpecifier = async (specifier, cwd, packedArgs) => {
   const errors = [];
 
   for (const attempt of attempts) {
-    const result = await runImportAttempt(
-      specifier,
-      cwd,
-      attempt.preload,
-      packedArgs,
-    );
+    const result = await runImportAttempt(specifier, cwd, attempt.preload);
     if (result.ok) return;
     errors.push(`${attempt.label}: ${result.error}`);
   }
@@ -582,7 +541,7 @@ const main = async () => {
       }
       specifierCount += 1;
       try {
-        await importSpecifier(specifier, repoRoot, nodePackedArgs);
+        await importSpecifier(specifier, repoRoot);
         const existing = successesByPackage.get(pkgJson.name) || [];
         existing.push(specifier);
         successesByPackage.set(pkgJson.name, existing);

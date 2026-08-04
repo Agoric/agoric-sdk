@@ -19,7 +19,7 @@
     "install:prebuilt": "node src/install-prebuilt.js",
     "build": "yarn install:prebuilt",
     "check-version": "/bin/sh -c 'if test \"${npm_package_version}\" != \"$(./scripts/get_xsnap_version.sh)\"; then echo \"xsnap version mismatch; expected '${npm_package_version}'\"; exit 1; fi'",
-    "postinstall": "npm run install:prebuilt",
+    "postinstall": "node src/install-prebuilt.js",
     "clean": "rm -rf xsnap-native/xsnap/build",
     "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint:eslint": "node ../../scripts/eslint-repo.mjs 'src/**/*.js' 'test/**/*.js' api.js",

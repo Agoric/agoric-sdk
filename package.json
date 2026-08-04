@@ -44,8 +44,9 @@
     "prettier": "^3.8.1",
     "prettier-plugin-jsdoc": "~1.8.0",
     "prettier-plugin-sh": "^0.18.0",
-    "ts-blank-space": "^0.6.2",
+    "ts-blank-space": "^0.8.0",
     "ts-morph": "^27.0.2",
+    "ts-node-pack": "^0.3.4",
     "type-coverage": "^2.29.7",
     "typedoc": "^0.28.19",
     "typescript": "~6.0.3",
@@ -115,8 +116,6 @@
     "node": "^22.11"
   },
   "scripts": {
-    "prepack-package": "scripts/packing/prepack-package.mjs",
-    "postpack-package": "scripts/packing/postpack-package.mjs",
     "clean": "yarn lerna run --no-bail clean",
     "docs": "run-s docs:build docs:update-functions-path",
     "docs:build": "typedoc --tsconfig tsconfig.build.json",
@@ -142,7 +141,7 @@
     "typecheck-packages": "yarn workspaces foreach --all --parallel --verbose run lint:types",
     "build": "yarn workspaces foreach --all --topological run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "scripts/agd-builder.sh stamp yarn-installed",
-    "build-lockfiles": "./scripts/update-package-locks.sh",
+    "build-lockfiles": "./scripts/maintenance/update-package-locks.sh",
     "build-ts": "tsc --build tsconfig.build.json",
     "build-xs-worker": "cd packages/xs-vat-worker && yarn build:xs-lin"
   }

@@ -23,11 +23,13 @@ per https://agents.md/
   - Pre-commit runs `scripts/git-hooks/pre-commit-dprint.sh`, which formats staged JS/TS files with the pinned local binary `./node_modules/.bin/dprint`, auto-restages files that were fully staged already, and prints a custom message if formatting changes touched partially staged files.
 - `./scripts/env-doctor.sh`: Verify toolchain (Node, Go, compiler) versions.
 - Example, single package: `cd packages/eventual-send && yarn test`.
-- Packing/debugging workflow:
-  - Full sequential prepack pass across publishable packages: `yarn lerna run --reject-cycles --concurrency 1 prepack`
-  - If a package fails, fix it and verify locally in that package with `yarn postpack && yarn prepack`
-  - Resume from the failed package and include dependents needed for validation: `yarn lerna run prepack --since <failed-package-name> --include-dependencies --concurrency 1 --reject-cycles`
-  - After any prepack run, clean generated artifacts and restore package trees with: `yarn lerna run --reject-cycles --concurrency 1 postpack`
+- Packing/debugging workflow (ts-node-pack):
+  - Pack a single package into a tarball in the current directory: `yarn run -T ts-node-pack packages/<name>` (writes `<stem>-<version>.tgz`).
+  - Verify exports across all publishable workspaces (the same check `test-all-packages.yml` runs in CI): `scripts/packing/verify-package-exports.mjs --quiet` followed by looping `npm query .workspace` and invoking `ts-node-pack` per non-private workspace from a temp dir.
+  - Pre-stage every publishable workspace into `<pkg>/.ts-node-pack/` (used by `lerna publish --contents .ts-node-pack`): `node scripts/packing/stage-with-ts-node-pack.mjs`.
+  - Remove all `.ts-node-pack/` staging directories: `node scripts/packing/stage-with-ts-node-pack.mjs --clean`.
+  - Smoke-test the publish path (version bump → stage → `lerna publish --contents .ts-node-pack` → cleanup) against local Verdaccio: `scripts/packing/smoketest-publishing.sh`. This deliberately skips the dapp-offer-up integration test that `scripts/registry.sh ci` would run.
+  - Note: ts-node-pack stages each package into a temp directory and never mutates the source tree, so there is no `postpack` restore step. The previous in-place `prepack`/`postpack` scripts have been removed from `package.json` files.
 
 ## Coding Style & Naming Conventions
 - ESM by default; JS and TypeScript both used. Target Node ^22.11.

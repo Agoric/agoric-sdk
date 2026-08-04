@@ -16,18 +16,20 @@ yarn install
 yarn postinstall
 npm run build
 
+SRCDIR_ABS=$(pwd)
 npm query .workspace | jq -r '.[].location' | while read -r dir; do
   # Skip private packages.
   test "$(jq .private < "$dir/package.json")" != true || continue
 
-  # Create the tarball.
   pushd "$dir"
   name=$(jq -r .name < package.json)
+  version=$(jq -r .version < package.json)
   stem=$(echo "$name" | sed -e 's!^@!!; s!/!-!g;')
-  tarball="${stem}-replace.tgz"
-  rm -f "$tarball"
-  yarn pack --out "$tarball"
-  tar -xvf "$tarball"
+
+  # ts-node-pack writes <stem>-<version>.tgz into the current directory.
+  rm -f "${stem}-${version}.tgz"
+  "$SRCDIR_ABS/node_modules/.bin/ts-node-pack" .
+  tar -xvf "${stem}-${version}.tgz"
 
   # Replace the destination package.
   rm -rf "${DSTDIR:?}/$name"

@@ -5,12 +5,14 @@ import { createServer } from 'node:http';
 import {
   mkdtemp,
   readFile,
+  readdir,
   rm,
   writeFile,
   copyFile,
   mkdir,
 } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { $ } from 'execa';
 import test from 'ava';
@@ -105,8 +107,19 @@ test('pack and install xsnap', async t => {
   if (!address || typeof address === 'string') {
     throw Error('Failed to get test server address');
   }
-  const filename = join(tmp, 'package.tgz');
-  await $`yarn pack --out ${filename}`;
+  // Pack via ts-node-pack — the same path xsnap is published through — so
+  // that `workspace:` deps are resolved. Raw `npm pack` would leave
+  // `workspace:*` in the manifest, which the `npm install` below rejects with
+  // EUNSUPPORTEDPROTOCOL. ts-node-pack still runs `npm pack` internally, so
+  // this exercises the same files-list resolution the test exists to cover.
+  // It writes `<name>-<version>.tgz` into its CWD.
+  const tsNodePack = fileURLToPath(
+    new URL('../../../node_modules/.bin/ts-node-pack', import.meta.url),
+  );
+  await $({ cwd: tmp })`${tsNodePack} ${process.cwd()}`;
+  const packed = (await readdir(tmp)).find(name => name.endsWith('.tgz'));
+  if (!packed) throw Error('ts-node-pack produced no tarball');
+  const filename = join(tmp, packed);
   await $({ cwd: tmp })`tar xvf ${resolve(filename)}`;
   const { XSNAP_WORKER: _, XSNAP_WORKER_DEBUG: _2, ...envRest } = process.env;
   const env = {

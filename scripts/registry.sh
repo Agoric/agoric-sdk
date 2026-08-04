@@ -86,11 +86,18 @@ publish() {
 
     git commit -am "chore: update versions"
 
+    # See scripts/packing/stage-with-ts-node-pack.mjs for why we pack via
+    # --contents .ts-node-pack instead of letting lerna pack from the
+    # source tree. The cleanup pass keeps `bg-publish`'s downstream
+    # `git status` dirty check happy.
+    node "$thisdir/packing/stage-with-ts-node-pack.mjs"
     while ! yarn lerna publish from-package \
+      --contents .ts-node-pack \
       --dist-tag="$DISTTAG" --no-git-reset --no-verify-access --yes; do
       echo 1>&2 "Retrying publish..."
       sleep 5
     done
+    node "$thisdir/packing/stage-with-ts-node-pack.mjs" --clean
 
     git reset --hard HEAD
 

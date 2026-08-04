@@ -68,6 +68,7 @@ build
 bundles
 compiled
 dist
+.ts-node-pack
 api-docs
 *.tsbuildinfo
 
