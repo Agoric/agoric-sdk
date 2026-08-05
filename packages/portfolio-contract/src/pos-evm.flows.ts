@@ -31,7 +31,10 @@ import { Fail, q, X } from '@endo/errors';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
 import { aavePoolABI } from './interfaces/aave.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
-import { compoundABI } from './interfaces/compound.ts';
+import {
+  compoundABI,
+  compoundRewardsControllerABI,
+} from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
 import { erc4626ABI } from './interfaces/erc4626.ts';
 import { getOneInchSwapArgs, oneInchRouterABI } from './interfaces/one-inch.ts';
@@ -447,6 +450,18 @@ export const CompoundProtocol = {
     const calls = session.finish();
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
+  claimRewards: async (ctx, dest, _claimParams, ...optsArgs) => {
+    const { addresses: a } = ctx;
+    const session = makeEvmAbiCallBatch();
+    const compoundRewardsController = session.makeContract(
+      a.compoundRewardsController,
+      compoundRewardsControllerABI,
+    );
+    compoundRewardsController.claim(a.compound, dest.remoteAddress, true);
+    const calls = session.finish();
+
+    await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
 } as const satisfies ProtocolDetail<'Compound', AxelarChain, EVMContext>;
 

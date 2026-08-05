@@ -637,7 +637,7 @@ test.skip('claim rewards on Aave position', async t => {
             src: 'Aave_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: {},
+            claimRewards: { tokens: [], minAmounts: [] },
           },
         ],
       },
@@ -3808,7 +3808,7 @@ test('nobleToAgoric.apply transfers uusdc from Noble ICA', async t => {
 test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
   const amount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const claimRewards = {};
+  const claimRewards = { tokens: [], minAmounts: [] };
   const actual = wayFromSrcToDest({
     src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: '@Ethereum',
@@ -3817,7 +3817,7 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
     claimRewards,
   });
   t.deepEqual(actual, {
-    claimRewards: {},
+    claimRewards: { tokens: [], minAmounts: [] },
     how: 'ERC4626',
     poolKey: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: 'Ethereum',
@@ -3835,4 +3835,61 @@ test('wayFromSrcToDest with different dest and poolKey should fail', t => {
       fee: feeCall,
     }),
   );
+});
+
+test('claim rewards from Compound position', async t => {
+  const amount = AmountMath.make(USDC, 1_000_000n);
+  const feeCall = AmountMath.make(BLD, 100n);
+  const { orch, tapPK, ctx, offer, txResolver } = mocks(
+    {},
+    { Deposit: amount },
+  );
+
+  const kit = await ctx.makePortfolioKit();
+  const emptyAmount = AmountMath.make(USDC, 0n);
+
+  await Promise.all([
+    rebalance(
+      orch,
+      ctx,
+      offer.seat,
+      {
+        flow: [
+          {
+            dest: '@Arbitrum',
+            src: 'Compound_Arbitrum',
+            amount: emptyAmount,
+            fee: feeCall,
+            claimRewards: { tokens: [], minAmounts: [] },
+          },
+        ],
+      },
+      kit,
+    ),
+    Promise.all([tapPK.promise, offer.factoryPK.promise]).then(async () => {
+      await txResolver.drainPending();
+    }),
+  ]);
+
+  const { log } = offer;
+  t.log(log.map(msg => msg._method).join(', '));
+  t.like(log, [
+    { _method: 'monitorTransfers' },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
+    { _method: 'send' },
+    { _method: 'transfer', address: { chainId: 'axelar-dojo-1' } },
+    { _method: 'exit', _cap: 'seat' },
+  ]);
+
+  const rawMemo = log[4].opts!.memo;
+  const decoded = decodeFunctionCall(rawMemo, ['claim(address,address,bool)']);
+  t.is(decoded.calls.length, 1);
+  const [call] = decoded.calls;
+  t.is(call.functionName, 'claim');
+  const { remoteAddress } = kit.reader.getGMPInfo('Arbitrum');
+  const [comet, to, shouldAccrue] = call.args as [string, string, boolean];
+  t.is(comet.toLowerCase(), contractsMock.Arbitrum.compound.toLowerCase());
+  t.is(to.toLowerCase(), remoteAddress.toLowerCase());
+  t.is(shouldAccrue, true);
 });

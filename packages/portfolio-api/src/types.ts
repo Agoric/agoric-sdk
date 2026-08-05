@@ -12,7 +12,6 @@ import type {
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import type { Address as EvmAddress } from 'abitype';
-import type { CopyRecord } from '@endo/pass-style';
 import type {
   AxelarChain,
   SupportedChain,
@@ -197,10 +196,20 @@ export type SwapDesc = OneInchSwapDesc;
 export type SwapProvider = SwapDesc['provider'];
 
 /**
- * Per-protocol parameters for claiming external rewards.
+ * Parameters for claiming external rewards.
+ *
+ * `tokens` and `minAmounts` are common across protocols. Some protocols (e.g.
+ * Compound) claim without needing these, but callers must still supply them so
+ * the input shape is uniform.
+ *
  * TODO(#12701, #12707, #12711): Refine this type
  */
-export type ClaimRewardsParams = CopyRecord;
+export type ClaimRewardsParams = {
+  /** reward token addresses being claimed */
+  tokens: EvmAddress[];
+  /** minimum amount to claim constraint per corresponding entry in `tokens` */
+  minAmounts: bigint[];
+};
 
 export type MovementDesc = {
   amount: NatAmount;
