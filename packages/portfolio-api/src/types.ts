@@ -198,7 +198,7 @@ export type SwapProvider = SwapDesc['provider'];
 /**
  * Parameters for claiming external rewards.
  *
- * `tokens` and `amounts` are common across protocols. Some protocols (e.g.
+ * `tokens` and `minAmounts` are common across protocols. Some protocols (e.g.
  * Compound) claim without needing these, but callers must still supply them so
  * the input shape is uniform.
  *
@@ -207,8 +207,8 @@ export type SwapProvider = SwapDesc['provider'];
 export type ClaimRewardsParams = {
   /** reward token addresses being claimed */
   tokens: EvmAddress[];
-  /** amount to claim per corresponding entry in `tokens` */
-  amounts: bigint[];
+  /** minimum amount to claim constraint per corresponding entry in `tokens` */
+  minAmounts: bigint[];
 };
 
 export type MovementDesc = {

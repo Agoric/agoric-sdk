@@ -637,7 +637,7 @@ test.skip('claim rewards on Aave position', async t => {
             src: 'Aave_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: { tokens: [], amounts: [] },
+            claimRewards: { tokens: [], minAmounts: [] },
           },
         ],
       },
@@ -3808,7 +3808,7 @@ test('nobleToAgoric.apply transfers uusdc from Noble ICA', async t => {
 test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
   const amount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const claimRewards = { tokens: [], amounts: [] };
+  const claimRewards = { tokens: [], minAmounts: [] };
   const actual = wayFromSrcToDest({
     src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: '@Ethereum',
@@ -3817,7 +3817,7 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
     claimRewards,
   });
   t.deepEqual(actual, {
-    claimRewards: { tokens: [], amounts: [] },
+    claimRewards: { tokens: [], minAmounts: [] },
     how: 'ERC4626',
     poolKey: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: 'Ethereum',
@@ -3860,7 +3860,7 @@ test('claim rewards from Compound position', async t => {
             src: 'Compound_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: { tokens: [], amounts: [] },
+            claimRewards: { tokens: [], minAmounts: [] },
           },
         ],
       },
