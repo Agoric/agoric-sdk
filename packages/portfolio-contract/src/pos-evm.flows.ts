@@ -529,7 +529,8 @@ export const ERC4626Protocol = {
   claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
     await null;
     if (isERC4626MorphoInstrumentId(ctx.poolKey)) {
-      const { tokens, amounts, morpho } = claimParams;
+      // This instrument can only withdraw precise amounts, so interpret the minAmounts as such.
+      const { tokens, minAmounts: amounts, morpho } = claimParams;
       if (!tokens || !amounts || !morpho?.proofs) {
         throw Fail`ERC4626 claimRewards requires tokens, amounts, and morpho.proofs`;
       }
