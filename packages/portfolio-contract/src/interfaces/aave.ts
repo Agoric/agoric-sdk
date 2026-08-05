@@ -39,12 +39,13 @@ export const aavePoolABI = [
 export const aaveRewardsControllerABI = [
   {
     type: 'function',
-    name: 'claimAllRewardsToSelf',
-    inputs: [{ name: 'assets', type: 'address[]' }],
-    outputs: [
-      { name: 'rewardsList', type: 'address[]' },
-      { name: 'claimedAmounts', type: 'uint256[]' },
+    name: 'claimRewardsToSelf',
+    inputs: [
+      { name: 'assets', type: 'address[]' },
+      { name: 'amount', type: 'uint256' },
+      { name: 'reward', type: 'address' },
     ],
+    outputs: [{ name: '', type: 'uint256' }],
     stateMutability: 'nonpayable',
   },
 ] as const satisfies Abi;

@@ -29,7 +29,7 @@ import { AxelarChain } from '@agoric/portfolio-api/src/constants.js';
 import { fromBech32 } from '@cosmjs/encoding';
 import { Fail, q, X } from '@endo/errors';
 import { makeEvmAbiCallBatch } from './evm-facade.ts';
-import { aavePoolABI } from './interfaces/aave.ts';
+import { aavePoolABI, aaveRewardsControllerABI } from './interfaces/aave.ts';
 import { beefyVaultABI } from './interfaces/beefy.ts';
 import { compoundABI } from './interfaces/compound.ts';
 import { erc20ABI } from './interfaces/erc20.ts';
@@ -422,6 +422,26 @@ export const AaveProtocol = {
     const calls = session.finish();
 
     return sendGMPContractCall(ctx, dest, calls, ...optsArgs);
+  },
+  claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
+    const { addresses: a } = ctx;
+    const { tokens, minAmounts } = claimParams;
+    if (!tokens.length || !minAmounts.length) {
+      throw Fail`Aave claimRewards requires at least one token and minAmount`;
+    }
+    const session = makeEvmAbiCallBatch();
+    const aaveRewardsController = session.makeContract(
+      a.aaveRewardsController,
+      aaveRewardsControllerABI,
+    );
+    aaveRewardsController.claimRewardsToSelf(
+      [a.aaveUSDC],
+      minAmounts[0],
+      tokens[0],
+    );
+    const calls = session.finish();
+
+    await sendGMPContractCall(ctx, dest, calls, ...optsArgs);
   },
 } as const satisfies ProtocolDetail<'Aave', AxelarChain, EVMContext>;
 

@@ -12,7 +12,6 @@ import type {
   ContractInvitationSpec,
 } from '@agoric/smart-wallet/src/invitations.js';
 import type { Address as EvmAddress } from 'abitype';
-import type { CopyRecord } from '@endo/pass-style';
 import type {
   AxelarChain,
   SupportedChain,
@@ -197,10 +196,14 @@ export type SwapDesc = OneInchSwapDesc;
 export type SwapProvider = SwapDesc['provider'];
 
 /**
- * Per-protocol parameters for claiming external rewards.
+ * Parameters for claiming external rewards.
+ *
  * TODO(#12701, #12707, #12711): Refine this type
  */
-export type ClaimRewardsParams = CopyRecord;
+export type ClaimRewardsParams = {
+  tokens: EvmAddress[];
+  minAmounts: bigint[];
+};
 
 export type MovementDesc = {
   amount: NatAmount;

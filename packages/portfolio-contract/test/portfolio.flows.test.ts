@@ -619,12 +619,16 @@ test.skip('claim rewards on Aave position', async t => {
   const amount = AmountMath.make(USDC, 2_000_000n);
   const emptyAmount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const { orch, tapPK, ctx, offer, storage, txResolver, cosmosId } = mocks(
+  const { orch, tapPK, ctx, offer, txResolver, cosmosId } = mocks(
     {},
     { Deposit: amount },
   );
 
   const kit = await ctx.makePortfolioKit();
+  const claimRewards = {
+    tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
+    minAmounts: [1_234_567n],
+  };
   await Promise.all([
     rebalance(
       orch,
@@ -637,7 +641,7 @@ test.skip('claim rewards on Aave position', async t => {
             src: 'Aave_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: {},
+            claimRewards,
           },
         ],
       },
@@ -659,16 +663,19 @@ test.skip('claim rewards on Aave position', async t => {
     { _method: 'transfer', address: { chainId: axelarId } },
     { _method: 'exit', _cap: 'seat' },
   ]);
-  t.snapshot(log, 'call log'); // see snapshot for remaining arg details
 
-  const rawMemo = log[4].opts?.memo;
-  const decodedCalls = decodeFunctionCall(rawMemo, [
-    'claimAllRewardsToSelf(address[])',
-    'withdraw(address,uint256,address)',
+  const rawMemo = log[4].opts!.memo;
+  const decoded = decodeFunctionCall(rawMemo, [
+    'claimRewardsToSelf(address[],uint256,address)',
   ]);
-  t.snapshot(decodedCalls, 'decoded calls');
-
-  await documentStorageSchema(t, storage, docOpts);
+  t.is(decoded.calls.length, 1);
+  const [call] = decoded.calls;
+  t.is(call.functionName, 'claimRewardsToSelf');
+  const [assets, claimAmount, reward] = call.args as [string[], bigint, string];
+  t.is(assets.length, 1);
+  t.is(assets[0].toLowerCase(), contractsMock.Arbitrum.aaveUSDC.toLowerCase());
+  t.is(claimAmount, claimRewards.minAmounts[0]);
+  t.is(reward.toLowerCase(), claimRewards.tokens[0].toLowerCase());
 });
 
 test('open portfolio with Beefy position', async t => {
@@ -3808,7 +3815,7 @@ test('nobleToAgoric.apply transfers uusdc from Noble ICA', async t => {
 test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
   const amount = AmountMath.make(USDC, 0n);
   const feeCall = AmountMath.make(BLD, 100n);
-  const claimRewards = {};
+  const claimRewards = { tokens: [], minAmounts: [] };
   const actual = wayFromSrcToDest({
     src: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: '@Ethereum',
@@ -3817,7 +3824,7 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
     claimRewards,
   });
   t.deepEqual(actual, {
-    claimRewards: {},
+    claimRewards: { tokens: [], minAmounts: [] },
     how: 'ERC4626',
     poolKey: 'ERC4626_morphoGauntletUsdcRwa_Ethereum',
     dest: 'Ethereum',
