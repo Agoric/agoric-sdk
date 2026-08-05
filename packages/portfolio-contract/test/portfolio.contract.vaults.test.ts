@@ -279,7 +279,7 @@ test('claim rewards on Morpho ERC4626 position successfully', async t => {
 
   const claimRewards = {
     tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
-    amounts: [1_234_567n],
+    minAmounts: [1_234_567n],
     morpho: {
       proofs: [
         [

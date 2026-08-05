@@ -637,7 +637,7 @@ test.skip('claim rewards on Aave position', async t => {
             src: 'Aave_Arbitrum',
             amount: emptyAmount,
             fee: feeCall,
-            claimRewards: { tokens: [], amounts: [] },
+            claimRewards: { tokens: [], minAmounts: [] },
           },
         ],
       },
@@ -3810,7 +3810,7 @@ test('wayFromSrcToDest handles claimRewards for ERC4626 position', t => {
   const feeCall = AmountMath.make(BLD, 100n);
   const claimRewards = {
     tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
-    amounts: [1_234_567n],
+    minAmounts: [1_234_567n],
     morpho: {
       proofs: [
         [
@@ -3861,7 +3861,7 @@ test('claim rewards from ERC4626 position', async t => {
 
   const claimRewards = {
     tokens: ['0x0000000000000000000000000000000000000002'] as `0x${string}`[],
-    amounts: [1_234_567n],
+    minAmounts: [1_234_567n],
     morpho: {
       proofs: [
         [
@@ -3907,7 +3907,6 @@ test('claim rewards from ERC4626 position', async t => {
   ]);
 
   const rawMemo = log[4].opts!.memo;
-  t.deepEqual;
   const decoded = decodeFunctionCall(rawMemo, [
     'claim(address[],address[],uint256[],bytes32[][])',
   ]);
@@ -3928,6 +3927,6 @@ test('claim rewards from ERC4626 position', async t => {
     claimRewards.tokens.map(() => remoteAddress.toLowerCase()),
   );
   t.deepEqual(tokens, claimRewards.tokens);
-  t.deepEqual(amounts, claimRewards.amounts);
+  t.deepEqual(amounts, claimRewards.minAmounts);
   t.deepEqual(proofs, claimRewards.morpho.proofs);
 });

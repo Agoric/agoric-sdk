@@ -139,7 +139,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       claimRewards: M.splitRecord(
         {
           tokens: M.arrayOf(M.string()),
-          amounts: M.arrayOf(M.nat()),
+          minAmounts: M.arrayOf(M.nat()),
         },
         {
           // TODO(#12707, #12711): additional per-protocol claim inputs

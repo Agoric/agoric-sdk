@@ -198,16 +198,16 @@ export type SwapProvider = SwapDesc['provider'];
 /**
  * Parameters for claiming external rewards.
  *
- * `tokens` and `amounts` are common across protocols. Protocol-specific inputs
- * are nested under a per-protocol key (e.g. `morpho`).
+ * `tokens` and `minAmounts` are common across protocols. Protocol-specific
+ * inputs are nested under a per-protocol key (e.g. `morpho`).
  *
  * TODO(#12707, #12711): Refine this type
  */
 export type ClaimRewardsParams = {
   /** reward token addresses being claimed */
   tokens: EvmAddress[];
-  /** amount to claim per corresponding entry in `tokens` */
-  amounts: bigint[];
+  /** minimum amount to claim constraint per corresponding entry in `tokens` */
+  minAmounts: bigint[];
   /** Morpho-specific claim inputs (e.g. for the Merkle rewards distributor) */
   morpho?: {
     /** Merkle proof per corresponding claim entry */

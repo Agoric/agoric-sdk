@@ -335,6 +335,8 @@ export const contractsMock = {
     merkleDistributor: '0x330eefa8a787552DC5cAd3C3cA644844B1E61Ddb',
     oneInchRouter: '0x111111125421cA6dc452d289314280a0f8842A65',
     ERC4626_vaultU2_Ethereum: '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
+    ERC4626_morphoGauntletUsdcRwa_Ethereum:
+      '0x562Ea6FfFD1293b9433E7b81A2682C31892ea013',
   },
   Optimism: {
     aavePool: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
