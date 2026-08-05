@@ -245,7 +245,7 @@ const formatSemver = version =>
  * @param {string[]} prerelease
  * @param {string | undefined} preid
  */
-const incrementPrerelease = (prerelease, preid) => {
+const incrementPrerelease = (prerelease, preid = undefined) => {
   if (preid) {
     if (prerelease[0] === preid) {
       return [preid, ...incrementPrerelease(prerelease.slice(1))];
