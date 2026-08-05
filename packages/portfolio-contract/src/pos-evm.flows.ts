@@ -425,9 +425,9 @@ export const AaveProtocol = {
   },
   claimRewards: async (ctx, dest, claimParams, ...optsArgs) => {
     const { addresses: a } = ctx;
-    const { tokens, amounts } = claimParams;
-    if (!tokens.length || !amounts.length) {
-      throw Fail`Aave claimRewards requires at least one token and amount`;
+    const { tokens, minAmounts } = claimParams;
+    if (!tokens.length || !minAmounts.length) {
+      throw Fail`Aave claimRewards requires at least one token and minAmount`;
     }
     const session = makeEvmAbiCallBatch();
     const aaveRewardsController = session.makeContract(
@@ -436,7 +436,7 @@ export const AaveProtocol = {
     );
     aaveRewardsController.claimRewardsToSelf(
       [a.aaveUSDC],
-      amounts[0],
+      minAmounts[0],
       tokens[0],
     );
     const calls = session.finish();

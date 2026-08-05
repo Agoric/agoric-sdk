@@ -363,7 +363,7 @@ test('claim rewards on Aave position successfully', async t => {
           // Aave claims without using these, but the shape is enforced.
           claimRewards: {
             tokens: ['0x0000000000000000000000000000000000000002'],
-            amounts: [1_234_567n],
+            minAmounts: [1_234_567n],
           },
         },
       ],
@@ -454,7 +454,7 @@ test('USDN claim fails currently', async t => {
           dest: '@noble',
           src: 'USDN',
           amount: usdc.make(100n),
-          claimRewards: { tokens: [], amounts: [] },
+          claimRewards: { tokens: [], minAmounts: [] },
         },
       ],
     },

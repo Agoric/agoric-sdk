@@ -202,7 +202,7 @@ export type SwapProvider = SwapDesc['provider'];
  */
 export type ClaimRewardsParams = {
   tokens: EvmAddress[];
-  amounts: bigint[];
+  minAmounts: bigint[];
 };
 
 export type MovementDesc = {

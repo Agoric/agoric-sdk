@@ -138,7 +138,7 @@ export const makeOfferArgsShapes = (usdcBrand: Brand<'nat'>) => {
       }),
       claimRewards: M.splitRecord({
         tokens: M.arrayOf(M.string()),
-        amounts: M.arrayOf(M.nat()),
+        minAmounts: M.arrayOf(M.nat()),
       }),
     },
     // Be robust in the face of additional properties
