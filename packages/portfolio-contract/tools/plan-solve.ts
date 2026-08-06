@@ -157,6 +157,8 @@ export type GasEstimator = {
     chainName: AxelarChain,
     operationType?: EvmWalletOperationType,
     protocol?: YieldProtocol,
+    // TODO(AGO-625): Consider refactoring this signature.
+    gasLimit?: bigint,
   ) => Promise<bigint>;
   getFactoryContractEstimate: (chainName: AxelarChain) => Promise<bigint>;
   getReturnFeeEstimate: (chainName: AxelarChain) => Promise<bigint>;

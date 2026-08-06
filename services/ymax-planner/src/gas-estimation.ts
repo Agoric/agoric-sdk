@@ -123,17 +123,20 @@ export const makeGasEstimator = ({
     chainName: AxelarChain,
     operationType?: EvmWalletOperationType,
     protocol?: YieldProtocol,
+    gasLimit?: bigint,
   ) => {
-    const estimates = operationType
-      ? walletOperationGasLimitEstimates[operationType]
-      : {};
-    // Absent a protocol-specific gas estimate, pick the first value for this
-    // operation type (e.g., DepositForBurn might have the same value for all
-    // protocols) or the generic fallback.
-    const gasLimit =
-      (protocol && estimates[protocol]) ??
-      Object.values(estimates)[0] ??
-      walletOperationFallbackGasLimit;
+    if (gasLimit === undefined) {
+      const estimates = operationType
+        ? walletOperationGasLimitEstimates[operationType]
+        : {};
+      // Absent a protocol-specific gas estimate, pick the first value for this
+      // operation type (e.g., DepositForBurn might have the same value for all
+      // protocols) or the generic fallback.
+      gasLimit =
+        (protocol && estimates[protocol]) ??
+        Object.values(estimates)[0] ??
+        walletOperationFallbackGasLimit;
+    }
     return queryAxelarGasAPI(AGORIC_CHAIN, chainName, gasLimit, BLD_TOKEN);
   };
 
