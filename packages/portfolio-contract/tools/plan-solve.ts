@@ -157,6 +157,10 @@ export type GasEstimator = {
     chainName: AxelarChain,
     operationType?: EvmWalletOperationType,
     protocol?: YieldProtocol,
+    // XXX Consider refactoring this signature; exposing a separate method with
+    // (chainName, gasLimit) inputs might be more straightforward than abusing
+    // `getWalletEstimate` with an explicitly-specified gas limit.
+    gasLimit?: bigint,
   ) => Promise<bigint>;
   getFactoryContractEstimate: (chainName: AxelarChain) => Promise<bigint>;
   getReturnFeeEstimate: (chainName: AxelarChain) => Promise<bigint>;
