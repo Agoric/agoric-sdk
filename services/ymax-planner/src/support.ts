@@ -123,6 +123,15 @@ export const walletOperationGasLimitEstimates: Record<
     YieldProtocol,
     () => 151_320n,
   ),
+  // TODO(AGO-625): Get real numbers, and link to examples.
+  [EvmWalletOperationType.Claim]: objectMap(
+    YieldProtocol,
+    () => 1_000_000n,
+  ),
+  [EvmWalletOperationType.Swap]: objectMap(
+    YieldProtocol,
+    () => 1_000_000n,
+  ),
 };
 
 /** In the absence of a more specific gas estimate, use this one. */
