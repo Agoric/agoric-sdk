@@ -253,6 +253,9 @@ export const PortfolioAgentStatusShape: TypedPattern<PortfolioAgentStatus> =
 export const PortfolioAgentsShape: TypedPattern<StatusFor['portfolioAgents']> =
   M.recordOf(PortfolioAgentKeyShape, PortfolioAgentStatusShape);
 
+export const InstrumentStatusShape: TypedPattern<StatusFor['instrument']> =
+  M.splitRecord({ tvlUsd: M.nat(), asOf: M.number() });
+
 /**
  * Creates vstorage path for position transfer history.
  *
