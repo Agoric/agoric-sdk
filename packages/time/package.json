@@ -6,7 +6,7 @@
   "main": "index.js",
   "types": "index.js",
   "engines": {
-    "node": "^22.11"
+    "node": "^22.11 || ^24.14"
   },
   "scripts": {
     "build": "exit 0",

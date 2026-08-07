@@ -5,16 +5,32 @@
   },
   "type": "module",
   "license": "Apache-2.0",
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@4.17.1",
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.7.1",
-    "agoric": "dev"
+    "@agoric/synthetic-chain": "^0.7.2",
+    "@endo/init": "portal:./local-packages/@endo/init",
+    "agoric": "dev",
+    "ses": "^2.2.0"
   },
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5"
+  },
+  "resolutions": {
+    "@endo/init": "portal:./local-packages/@endo/init",
+    "better-sqlite3": "~12.10.0",
+    "ses": "portal:./local-packages/ses"
+  },
+  "vendorPackages": [
+    "@endo/init",
+    "ses"
+  ],
+  "dependenciesMeta": {
+    "better-sqlite3": {
+      "built": true
+    }
   }
 }
