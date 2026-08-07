@@ -16,6 +16,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aglocal/portfolio-contract@portal:./local-packages/portfolio-contract::locator=f%3Aymax0-restart%40workspace%3A."
   dependencies:
+    "@agoric/base-zone": "npm:dev"
     "@agoric/cosmic-proto": "npm:dev"
     "@agoric/ertp": "npm:dev"
     "@agoric/internal": "npm:dev"
@@ -151,6 +152,21 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
   checksum: 10c0/1367d1ee383e518b037675e5358496d5cd4b8f2b63e7b15429b0aeeebbe3a2aabeae2eeb181d4817a1fe72c8fd27227637c546c11aab8dce2a24a729cddd52ba
+  languageName: node
+  linkType: hard
+
+"@agoric/base-zone@npm:dev":
+  version: 0.1.1-dev-90d550b.0.90d550b
+  resolution: "@agoric/base-zone@npm:0.1.1-dev-90d550b.0.90d550b"
+  dependencies:
+    "@agoric/store": "npm:0.9.3-dev-90d550b.0.90d550b"
+    "@endo/common": "npm:^1.4.0"
+    "@endo/errors": "npm:^1.3.1"
+    "@endo/exo": "npm:^1.7.0"
+    "@endo/far": "npm:^1.1.14"
+    "@endo/pass-style": "npm:^1.8.1"
+    "@endo/patterns": "npm:^1.9.1"
+  checksum: 10c0/a8e7165cd8fc8e7aaf50c55af06148c75a9ed123a1d6b47461ee40edbcb48a327d651bb1cf3c8a32f742cb47f94b2cfd56a587794b75ea0c774bf76f7728971a
   languageName: node
   linkType: hard
 
@@ -783,6 +799,19 @@ __metadata:
     "@endo/pass-style": "npm:^1.6.3"
     "@endo/patterns": "npm:^1.7.0"
   checksum: 10c0/5767cacadee0b07c47c910c0c08ad9b87f8bfc3e5d7b547a97013c223c02bd55a5365464b6e2a2c841334d7bae53d9a579d246096e36ce117dba058851f46d0c
+  languageName: node
+  linkType: hard
+
+"@agoric/store@npm:0.9.3-dev-90d550b.0.90d550b":
+  version: 0.9.3-dev-90d550b.0.90d550b
+  resolution: "@agoric/store@npm:0.9.3-dev-90d550b.0.90d550b"
+  dependencies:
+    "@endo/errors": "npm:^1.3.1"
+    "@endo/exo": "npm:^1.7.0"
+    "@endo/marshal": "npm:^1.10.0"
+    "@endo/pass-style": "npm:^1.8.1"
+    "@endo/patterns": "npm:^1.9.1"
+  checksum: 10c0/acffdbe5f6d606ec4aee4bf874ea2d537fb73731dcc123530b0f7a97aa2319689c4c93cf16ce66a9dacf7586db45d1eefba22e3f22089e99f0d91b2d111596ce
   languageName: node
   linkType: hard
 
@@ -2027,7 +2056,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/exo@npm:^1.5.12":
+"@endo/exo@npm:^1.5.12, @endo/exo@npm:^1.7.0":
   version: 1.7.0
   resolution: "@endo/exo@npm:1.7.0"
   dependencies:
